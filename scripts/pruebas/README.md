@@ -117,7 +117,9 @@ LEFT JOIN usuario_rol r ON r.usuario_id = u.id GROUP BY u.id;
 - 150 alumnos (129 activos, 21 bajas), expedientes hasta ~200 con huecos; todos con al menos un
   `alumno_deporte` (157 en total: taekwondo, kickboxing, pilates y defensa personal femenina).
 - 40 DNI compartidos por 81 alumnos, todos personas distintas; 33 grupos con algún menor.
-  `responsable_legal_nif` nunca coincide con el DNI compartido.
+  `responsable_legal_nif` nunca coincide con el DNI compartido. Los datos son de V17: el responsable
+  legal va en `alumno.responsable_legal_*`; V25 lo copia a `tutor` y V29 rellena los que solo tienen NIF
+  y borra esas columnas (`segunda-escuela.sql` ya no las escribe).
 - Grupos y turnos iguales a los que siembra `InicializadorDatos`; `limite_turno` = 36.
 - Productos con los conceptos exactos que busca el código (`docs/multi-escuela/valores-actuales.md`),
   mensualidades, licencias, tarifas de competidor, derechos de examen (pagados y pendientes),

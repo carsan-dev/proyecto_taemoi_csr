@@ -348,8 +348,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setGenero(nuevoAlumnoDTO.getGenero());
 		nuevoAlumno.setLocalidad(textoOpcional(nuevoAlumnoDTO.getLocalidad()));
 		nuevoAlumno.setCodigoPostal(textoOpcional(nuevoAlumnoDTO.getCodigoPostal()));
-		nuevoAlumno.setResponsableLegalNombre(nuevoAlumnoDTO.getResponsableLegalNombre());
-		nuevoAlumno.setResponsableLegalNif(NifUtils.normalizeForStorage(nuevoAlumnoDTO.getResponsableLegalNif()));
 		nuevoAlumno.setObservaciones(nuevoAlumnoDTO.getObservaciones());
 		nuevoAlumno.setTieneDiscapacidad(Optional.ofNullable(nuevoAlumnoDTO.getTieneDiscapacidad()).orElse(false));
 
@@ -376,7 +374,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
-		tutorService.sincronizarDesdeCamposHeredados(alumnoGuardado);
+		// El responsable legal de la ficha vive en tutor (vacío = sin responsable).
+		tutorService.aplicarResponsableLegal(alumnoGuardado, TutorService.CambioResponsableLegal.fijar(
+				nuevoAlumnoDTO.getResponsableLegalNombre(), nuevoAlumnoDTO.getResponsableLegalNif()));
 		// La autorización de imagen de la ficha queda como consentimiento (origen APP, firmado por quien da el alta).
 		consentimientoService.registrarCambioAutorizacionWeb(alumnoGuardado,
 				Boolean.TRUE.equals(alumnoGuardado.getAutorizacionWeb()));
@@ -637,17 +637,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				alumnoExistente.setCodigoPostal(textoOpcional(alumnoActualizado.getCodigoPostal()));
 			}
 			// Responsable legal: nulo (o ausente) = sin cambios; cadena vacía = quitarlo.
-			boolean cambiaResponsable = alumnoActualizado.getResponsableLegalNombre() != null
-					|| alumnoActualizado.getResponsableLegalNif() != null;
-			if (alumnoActualizado.getResponsableLegalNombre() != null) {
-				alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
-			}
-			if (alumnoActualizado.getResponsableLegalNif() != null) {
-				alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
-			}
-			if (cambiaResponsable) {
-				tutorService.sincronizarDesdeCamposHeredados(alumnoExistente);
-			}
+			tutorService.aplicarResponsableLegal(alumnoExistente, new TutorService.CambioResponsableLegal(
+					alumnoActualizado.getResponsableLegalNombre(), alumnoActualizado.getResponsableLegalNif()));
 			if (alumnoActualizado.getObservaciones() != null) {
 				alumnoExistente.setObservaciones(alumnoActualizado.getObservaciones());
 			}

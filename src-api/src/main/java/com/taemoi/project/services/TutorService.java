@@ -17,25 +17,46 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.TutorRepository;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.NifUtils;
-import com.taemoi.project.utils.ResponsableLegal;
 import com.taemoi.project.utils.TelefonoUtils;
 
 /**
- * Tutores de un alumno y su puente con los campos heredados {@code responsableLegalNombre/Nif}.
+ * Tutores de un alumno, incluido el responsable legal que la ficha (alta, edición, preinscripción)
+ * sigue enviando y recibiendo como {@code responsableLegalNombre/Nif} (ver {@code ResponsableLegal}).
  *
- * <p>Invariante hasta la contracción de {@code alumno.responsable_legal_*}: si el alumno tiene algún
- * tutor responsable legal, esas columnas valen lo mismo que el primero (por {@code orden}, {@code id});
- * si no tiene ninguno, guardan lo último escrito por los campos heredados (puede ser solo un NIF).
  * <ul>
- * <li>Escribir por los campos heredados ({@link #sincronizarDesdeCamposHeredados}) crea o actualiza
- * ese tutor; dejar el nombre vacío quita la marca de responsable legal (no borra a nadie).</li>
- * <li>Escribir por {@code /tutores} vuelve a copiar el primer responsable legal en las columnas.</li>
+ * <li>Escribir por la ficha ({@link #aplicarResponsableLegal}) crea o actualiza el primer tutor
+ * responsable legal; dejar el nombre vacío quita la marca de responsable legal (no borra a nadie).</li>
+ * <li>Si solo se conoce el NIF, el responsable legal es un tutor sin nombre (marcador solo-NIF,
+ * parentesco TUTOR_LEGAL). Invariante: si existe, es el único responsable legal del alumno; desaparece
+ * cuando la ficha vacía el NIF o cuando otro tutor (con nombre) pasa a ser responsable legal.</li>
  * </ul>
  */
 @Service
 public class TutorService {
 
-	private static final int MAX_NOMBRE_HEREDADO = 180;
+	/**
+	 * Nombre del marcador solo-NIF: {@code null} (V29; la restricción ck_tutor_nombre_o_nif exige entonces
+	 * NIF). Quien lee trata igual vacío y {@code null} ({@link Tutor#tieneNombre()}).
+	 */
+	static final String NOMBRE_SOLO_NIF = null;
+
+	/**
+	 * Cambio del responsable legal tal y como llega por la ficha del alumno: en cada campo,
+	 * {@code null} = sin cambios y vacío (o en blanco) = quitarlo.
+	 */
+	public record CambioResponsableLegal(String nombre, String nif) {
+
+		public static final CambioResponsableLegal SIN_CAMBIOS = new CambioResponsableLegal(null, null);
+
+		/** Valores completos (alta, alumno creado desde una preinscripción): {@code null} = sin dato. */
+		public static CambioResponsableLegal fijar(String nombre, String nif) {
+			return new CambioResponsableLegal(nombre == null ? "" : nombre, nif == null ? "" : nif);
+		}
+
+		public boolean sinCambios() {
+			return nombre == null && nif == null;
+		}
+	}
 
 	private final TutorRepository tutores;
 	private final AlumnoRepository alumnos;
@@ -61,7 +82,7 @@ public class TutorService {
 		tutor = tutores.saveAndFlush(tutor);
 		anadirEnMemoria(alumno, tutor);
 		if (tutor.isResponsableLegal()) {
-			reflejarEnCamposHeredados(alumno);
+			retirarMarcadorSoloNif(alumno, tutor);
 		}
 		return TutorDTO.de(tutor);
 	}
@@ -70,7 +91,6 @@ public class TutorService {
 	public TutorDTO actualizar(Long alumnoId, Long tutorId, TutorRequest datos) {
 		Alumno alumno = buscarAlumno(alumnoId);
 		Tutor tutor = buscarTutor(alumnoId, tutorId);
-		boolean eraResponsable = tutor.isResponsableLegal();
 		aplicar(tutor, datos);
 		if (datos.responsableLegal() != null) {
 			tutor.setResponsableLegal(datos.responsableLegal());
@@ -79,8 +99,8 @@ public class TutorService {
 			tutor.setOrden(datos.orden());
 		}
 		tutores.saveAndFlush(tutor);
-		if (eraResponsable || tutor.isResponsableLegal()) {
-			reflejarEnCamposHeredados(alumno);
+		if (tutor.isResponsableLegal()) {
+			retirarMarcadorSoloNif(alumno, tutor);
 		}
 		return TutorDTO.de(tutor);
 	}
@@ -89,20 +109,12 @@ public class TutorService {
 	public void eliminar(Long alumnoId, Long tutorId) {
 		Alumno alumno = buscarAlumno(alumnoId);
 		Tutor tutor = buscarTutor(alumnoId, tutorId);
-		boolean eraResponsable = tutor.isResponsableLegal();
-		if (Hibernate.isInitialized(alumno.getTutores())) {
-			alumno.getTutores().remove(tutor);
-		}
-		tutores.delete(tutor);
-		tutores.flush();
-		if (eraResponsable) {
-			reflejarEnCamposHeredados(alumno);
-		}
+		borrar(alumno, tutor);
 	}
 
 	/**
 	 * Pone {@code nif} a un tutor existente (y opcionalmente lo marca responsable legal) sin tocar el
-	 * resto de sus datos; mantiene los campos heredados si es o pasa a ser responsable legal.
+	 * resto de sus datos.
 	 */
 	@Transactional
 	public TutorDTO asignarNif(Long alumnoId, Long tutorId, String nif, boolean marcarResponsable) {
@@ -114,62 +126,103 @@ public class TutorService {
 		}
 		tutores.saveAndFlush(tutor);
 		if (tutor.isResponsableLegal()) {
-			reflejarEnCamposHeredados(alumno);
+			retirarMarcadorSoloNif(alumno, tutor);
 		}
 		return TutorDTO.de(tutor);
 	}
 
 	/**
-	 * Lleva los campos heredados {@code responsableLegalNombre/Nif} del alumno (recién escritos por el
-	 * alta, la edición o una preinscripción) al tutor responsable legal. El alumno debe estar guardado.
+	 * Aplica al primer tutor responsable legal lo que la ficha del alumno envía como
+	 * {@code responsableLegalNombre/Nif} (alta, edición o preinscripción). El alumno debe estar guardado.
+	 * <ul>
+	 * <li>Con nombre: si no hay responsable legal se crea un tutor TUTOR_LEGAL; si lo hay, se le pone el
+	 * nombre (salvo que sea el mismo nombre completo, para conservar el reparto nombre/apellidos) y el
+	 * NIF. Sin enviar el nombre, el del responsable actual se conserva.</li>
+	 * <li>Sin nombre: ningún tutor con nombre sigue siendo responsable legal (sus datos se conservan) y
+	 * el NIF, si lo hay, queda en el marcador solo-NIF.</li>
+	 * </ul>
 	 */
 	@Transactional
-	public void sincronizarDesdeCamposHeredados(Alumno alumno) {
-		if (alumno == null || alumno.getId() == null) {
+	public void aplicarResponsableLegal(Alumno alumno, CambioResponsableLegal cambio) {
+		if (alumno == null || alumno.getId() == null || cambio == null || cambio.sinCambios()) {
 			return;
 		}
-		String nombre = limpiar(alumno.getResponsableLegalNombre());
-		String nif = NifUtils.normalizeForStorage(alumno.getResponsableLegalNif());
 		List<Tutor> responsables = tutores.findByAlumnoIdAndResponsableLegalTrueOrderByOrdenAscIdAsc(alumno.getId());
+		Tutor principal = responsables.isEmpty() ? null : responsables.get(0);
+		String nif = cambio.nif() != null ? NifUtils.normalizeForStorage(cambio.nif())
+				: principal == null ? null : principal.getNif();
+		String nombre;
+		if (cambio.nombre() != null) {
+			nombre = limpiar(cambio.nombre());
+		} else if (principal != null && principal.tieneNombre()) {
+			// Solo cambia el NIF del responsable actual.
+			principal.setNif(nif);
+			return;
+		} else {
+			nombre = null;
+		}
 
 		if (nombre == null) {
-			// Se vació el responsable legal: nadie lo es ya; los datos del tutor se conservan.
-			responsables.forEach(t -> t.setResponsableLegal(false));
-			alumno.setResponsableLegalNombre(null);
-			alumno.setResponsableLegalNif(nif);
+			Tutor marcador = null;
+			for (Tutor t : responsables) {
+				if (t.tieneNombre()) {
+					t.setResponsableLegal(false);
+				} else if (marcador == null) {
+					marcador = t;
+				} else {
+					borrar(alumno, t);
+				}
+			}
+			if (nif == null) {
+				if (marcador != null) {
+					borrar(alumno, marcador);
+				}
+			} else if (marcador != null) {
+				marcador.setNif(nif);
+			} else {
+				nuevoResponsable(alumno, NOMBRE_SOLO_NIF, nif);
+			}
 			return;
 		}
 
-		Tutor principal;
-		if (responsables.isEmpty()) {
-			principal = new Tutor(alumno);
-			principal.setNombre(nombre);
-			principal.setNif(nif);
-			principal.setParentesco(ParentescoTutor.TUTOR_LEGAL);
-			principal.setResponsableLegal(true);
-			principal.setOrden(tutores.maxOrden(alumno.getId()) + 1);
-			principal = tutores.saveAndFlush(principal);
-			anadirEnMemoria(alumno, principal);
-		} else {
-			principal = responsables.get(0);
-			// Mismo nombre completo (salvo espacios): se conserva el reparto nombre/apellidos.
-			if (!mismoNombre(principal.getNombreCompleto(), nombre)) {
-				principal.setNombre(nombre);
-				principal.setApellidos(null);
-			}
-			principal.setNif(nif);
+		if (principal == null) {
+			nuevoResponsable(alumno, nombre, nif);
+			return;
 		}
-		alumno.setResponsableLegalNombre(ResponsableLegal.truncar(principal.getNombreCompleto(), MAX_NOMBRE_HEREDADO));
-		alumno.setResponsableLegalNif(principal.getNif());
+		// Mismo nombre completo (salvo espacios): se conserva el reparto nombre/apellidos.
+		if (!mismoNombre(principal.getNombreCompleto(), nombre)) {
+			principal.setNombre(nombre);
+			principal.setApellidos(null);
+		}
+		principal.setNif(nif);
 	}
 
-	private void reflejarEnCamposHeredados(Alumno alumno) {
-		Tutor principal = tutores.findByAlumnoIdAndResponsableLegalTrueOrderByOrdenAscIdAsc(alumno.getId()).stream()
-				.findFirst().orElse(null);
-		alumno.setResponsableLegalNombre(
-				principal == null ? null : ResponsableLegal.truncar(principal.getNombreCompleto(), MAX_NOMBRE_HEREDADO));
-		alumno.setResponsableLegalNif(principal == null ? null : principal.getNif());
-		alumnos.save(alumno);
+	private void nuevoResponsable(Alumno alumno, String nombre, String nif) {
+		Tutor tutor = new Tutor(alumno);
+		tutor.setNombre(nombre);
+		tutor.setNif(nif);
+		tutor.setParentesco(ParentescoTutor.TUTOR_LEGAL);
+		tutor.setResponsableLegal(true);
+		tutor.setOrden(tutores.maxOrden(alumno.getId()) + 1);
+		tutor = tutores.saveAndFlush(tutor);
+		anadirEnMemoria(alumno, tutor);
+	}
+
+	/** Otro tutor (con nombre) es ya responsable legal: el marcador solo-NIF sobra. */
+	private void retirarMarcadorSoloNif(Alumno alumno, Tutor responsable) {
+		for (Tutor t : tutores.findByAlumnoIdAndResponsableLegalTrueOrderByOrdenAscIdAsc(alumno.getId())) {
+			if (!t.getId().equals(responsable.getId()) && !t.tieneNombre()) {
+				borrar(alumno, t);
+			}
+		}
+	}
+
+	private void borrar(Alumno alumno, Tutor tutor) {
+		if (alumno.getTutores() != null && Hibernate.isInitialized(alumno.getTutores())) {
+			alumno.getTutores().remove(tutor);
+		}
+		tutores.delete(tutor);
+		tutores.flush();
 	}
 
 	private void aplicar(Tutor tutor, TutorRequest datos) {

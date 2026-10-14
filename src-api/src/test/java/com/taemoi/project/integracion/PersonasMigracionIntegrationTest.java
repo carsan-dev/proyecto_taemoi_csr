@@ -140,10 +140,12 @@ class PersonasMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1L, ((Number) t.get("organizacion_id")).longValue());
 
 		Map<String, Object> a = fila(conTutor);
-		assertEquals("  MARÍA PÉREZ GÓMEZ ", a.get("responsable_legal_nombre"), "la columna heredada no se toca");
+		// Este test se queda en V25: las columnas heredadas existen hasta V29, que las borra tras rellenar
+		// los responsables solo-NIF (PersonasContraccionMigracionIntegrationTest).
+		assertEquals("  MARÍA PÉREZ GÓMEZ ", a.get("responsable_legal_nombre"), "V25 no toca la columna heredada");
 		assertEquals(" 12345678z", a.get("responsable_legal_nif"));
 
-		assertEquals(0, contarTutores(soloNif), "sin nombre no hay tutor (el NIF sigue en la columna heredada)");
+		assertEquals(0, contarTutores(soloNif), "en V25, sin nombre no hay tutor (V29 lo crea con nombre NULL)");
 		assertEquals(0, contarTutores(enBlanco));
 		assertEquals(0, contarTutores(sinTelefono2));
 

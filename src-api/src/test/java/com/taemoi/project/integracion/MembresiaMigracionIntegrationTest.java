@@ -60,7 +60,7 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("28", jdbc.queryForObject(
+		assertEquals("29", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
 	}
@@ -149,7 +149,7 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private Flyway flyway(String objetivo) {
-		// V20..V28 en una sola ejecución: desactiva la guarda de V28 (como los entornos de prueba).
+		// V20..V29 en una sola ejecución: desactiva la guarda de V28 (como los entornos de prueba).
 		var config = Flyway.configure().dataSource(dataSource).locations("classpath:db/migration")
 				.placeholders(Map.of(ContraccionCatalogoMigracionIntegrationTest.PERMITIR_CON_V27, "true"));
 		if (objetivo != null) {

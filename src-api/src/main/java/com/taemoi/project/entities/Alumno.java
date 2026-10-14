@@ -8,10 +8,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.hibernate.LazyInitializationException;
 import org.hibernate.annotations.BatchSize;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.taemoi.project.utils.ResponsableLegal;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -88,13 +91,8 @@ public class Alumno extends EntidadOrganizacion {
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
 
-	@Column(name = "responsable_legal_nombre", length = 180)
-	private String responsableLegalNombre;
-
-	@Column(name = "responsable_legal_nif", length = 16)
-	private String responsableLegalNif;
-
-	// Tutores (V25). El primer responsable legal se refleja en responsable_legal_* (TutorService).
+	// Tutores (V25). El responsable legal que expone la API es el primero marcado como tal
+	// (ResponsableLegal); las columnas heredadas responsable_legal_* las borró V29.
 	@JsonIgnore
 	@OneToMany(mappedBy = "alumno", fetch = FetchType.LAZY)
 	@OrderBy("orden ASC, id ASC")
@@ -263,28 +261,37 @@ public class Alumno extends EntidadOrganizacion {
 		return tutores;
 	}
 
+	/*
+	 * El JSON de la entidad (p. ej. /api/admin) llevaba las columnas heredadas responsable_legal_*;
+	 * se mantienen esas claves, ahora desde el tutor responsable legal (solo lectura).
+	 */
+	@JsonGetter("responsableLegalNombre")
+	public String responsableLegalNombreJson() {
+		ResponsableLegal responsable = responsableLegalJson();
+		return responsable == null ? null : responsable.nombre();
+	}
+
+	@JsonGetter("responsableLegalNif")
+	public String responsableLegalNifJson() {
+		ResponsableLegal responsable = responsableLegalJson();
+		return responsable == null ? null : responsable.nif();
+	}
+
+	private ResponsableLegal responsableLegalJson() {
+		try {
+			return ResponsableLegal.de(this);
+		} catch (LazyInitializationException e) {
+			// Serializado fuera de sesión: no se sabe (antes se leía de las columnas del propio alumno).
+			return null;
+		}
+	}
+
 	public String getEmail() {
 		return email;
 	}
 
 	public void setEmail(String email) {
 		this.email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
-	}
-
-	public String getResponsableLegalNombre() {
-		return responsableLegalNombre;
-	}
-
-	public void setResponsableLegalNombre(String responsableLegalNombre) {
-		this.responsableLegalNombre = responsableLegalNombre;
-	}
-
-	public String getResponsableLegalNif() {
-		return responsableLegalNif;
-	}
-
-	public void setResponsableLegalNif(String responsableLegalNif) {
-		this.responsableLegalNif = responsableLegalNif;
 	}
 
 	// DEPRECATED: Categoria moved to AlumnoDeporte

@@ -101,8 +101,10 @@ class ContraccionCatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(inscripcionesAntes, jdbc.queryForList(
 				"SELECT id, alumno_id, disciplina_id, tarifa_id, grado_id, categoria_id FROM alumno_deporte ORDER BY id"));
 		assertEquals(gradosAntes, jdbc.queryForList("SELECT id, codigo, sistema_grados_id, nombre, orden FROM grado ORDER BY id"));
-		// No se toca responsable_legal_* (tarea aparte) ni el archivo de V22.
-		assertTrue(existeColumna(jdbc, "alumno", "responsable_legal_nombre"));
+		// responsable_legal_* no es de V28: lo borra V29 (PersonasContraccionMigracionIntegrationTest), que
+		// también se aplica aquí. El archivo de V22 no se toca.
+		assertFalse(existeColumna(jdbc, "alumno", "responsable_legal_nombre"));
+		assertFalse(existeColumna(jdbc, "alumno", "responsable_legal_nif"));
 		assertTrue(existeColumna(jdbc, "alumno_monodeporte_archivo", "deporte"));
 	}
 

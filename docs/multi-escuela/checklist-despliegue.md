@@ -41,6 +41,14 @@
       resultado. Las siete primeras columnas, `alumno_deporte_disciplina_repetida` y `plantilla_version_repetida`
       deben ser 0. Si V28 se detiene (`Table '…v28_<tabla>_<columna>_no_coincide_con_el_catalogo' doesn't exist`),
       no ha cambiado nada: corregir las filas de esa tabla, `flyway repair` y volver a desplegar.
+- [ ] **V29 (contracción de personas) va en el MISMO despliegue que V28** y que el código que ya no lee ni
+      escribe `alumno.responsable_legal_nombre`/`_nif` (el responsable legal es el primer tutor marcado como
+      tal). Nunca ese código sin V29 ni V29 con el código anterior. Antes, ejecutar
+      `docs/multi-escuela/precheck-v29.sql` (solo lectura, solo recuentos) y guardar el resultado:
+      `responsable_nombre_diferente`, `responsable_nif_diferente` y `tutores_sin_nombre_ni_nif` deben ser 0.
+      Si V29 se detiene (`Table '…v29_<motivo>' doesn't exist`), no ha cambiado nada: corregir las filas,
+      `flyway repair` y volver a desplegar. Si falla a medias, `flyway repair` y volver a desplegar: cada paso
+      vuelve a comprobar el esquema y los datos.
 - [ ] Desde V27, NUNCA ejecutar a mano `db/resync/resync_catalogo_v24.sql`: su UPDATE que pone
       `tarifa_id = NULL` donde `tipo_tarifa` es NULL no se limita a una organización y borraría las tarifas
       con código propio de otras escuelas (que no escriben `tipo_tarifa`). Ninguna migración posterior a V27
@@ -55,7 +63,8 @@
 **Después de V28 la única vuelta atrás es restaurar la copia de seguridad** tomada justo antes de V28: V28
 borra columnas (`deporte`, `tipo_grado`, `tipo_tarifa`, `tipo_categoria`) que el código anterior lee y escribe,
 y no hay forma de reconstruirlas desde la aplicación. Por eso la copia de seguridad previa a V28 es
-obligatoria y se guarda hasta confirmar que la versión con V28 funciona.
+obligatoria y se guarda hasta confirmar que la versión con V28 funciona. Lo mismo vale para V29 (mismo
+despliegue y misma copia): borra `alumno.responsable_legal_nombre`/`_nif`, que el código anterior lee.
 
 Desde V20 los roles viven en `membresia` y `usuario_rol` deja de actualizarse: volver al código
 anterior exige restaurar la copia de seguridad.

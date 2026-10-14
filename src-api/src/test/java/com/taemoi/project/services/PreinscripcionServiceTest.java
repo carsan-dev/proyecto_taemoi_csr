@@ -169,12 +169,11 @@ class PreinscripcionServiceTest {
 		assertEquals("612345678", creado.getTelefono());
 		assertEquals("611222333", creado.getTelefono2());
 		assertFalse(creado.getTieneDiscapacidad());
-		assertEquals("María García", creado.getResponsableLegalNombre());
-		assertEquals("87654321X", creado.getResponsableLegalNif());
 		assertTrue(creado.getActivo());
 		assertFalse(creado.getAutorizacionWeb());
-		// V25: el responsable legal pasa a tutor y la firma deja sus consentimientos.
-		verify(tutores).sincronizarDesdeCamposHeredados(creado);
+		// El responsable legal va directamente a tutor y la firma deja sus consentimientos.
+		verify(tutores).aplicarResponsableLegal(creado,
+				TutorService.CambioResponsableLegal.fijar("María García", "87654321X"));
 		verify(consentimientos).registrarDesdePreinscripcion(creado, preinscripcion);
 		assertEquals(Set.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
@@ -419,6 +418,61 @@ class PreinscripcionServiceTest {
 		assertTrue(existente.getAutorizacionWeb());
 		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
 		verify(alumnoDeportes).save(deporte);
+		// Sin los campos del responsable legal confirmados, el tutor no se toca.
+		verify(tutores).aplicarResponsableLegal(existente, TutorService.CambioResponsableLegal.SIN_CAMBIOS);
+	}
+
+	@Test
+	void losCamposConfirmadosDelResponsableLegalVanAlTutor() {
+		Alumno existente = vincularExistente();
+
+		service.finalizar("PRE-1", request(3L,
+				Set.of(CampoActualizable.RESPONSABLE_LEGAL_NOMBRE, CampoActualizable.RESPONSABLE_LEGAL_NIF), null));
+
+		verify(tutores).aplicarResponsableLegal(existente,
+				new TutorService.CambioResponsableLegal("María García", "87654321X"));
+	}
+
+	@Test
+	void soloElNifConfirmadoDelResponsableLegalConservaSuNombre() {
+		Alumno existente = vincularExistente();
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.RESPONSABLE_LEGAL_NIF), null));
+
+		verify(tutores).aplicarResponsableLegal(existente, new TutorService.CambioResponsableLegal(null, "87654321X"));
+	}
+
+	@Test
+	void unNombreConfirmadoVacioQuitaElResponsableLegal() {
+		Alumno existente = vincularExistente();
+		preinscripcion.setTutorNombre(null);
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.RESPONSABLE_LEGAL_NOMBRE), null));
+
+		verify(tutores).aplicarResponsableLegal(existente, new TutorService.CambioResponsableLegal("", null));
+	}
+
+	@Test
+	void losCamposDelResponsableLegalDeUnAdultoNoSeAplican() {
+		Alumno existente = vincularExistente();
+		preinscripcion.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+		existente.setFechaNacimiento(java.sql.Date.valueOf(LocalDate.of(1990, 1, 1)));
+
+		service.finalizar("PRE-1", request(3L,
+				Set.of(CampoActualizable.RESPONSABLE_LEGAL_NOMBRE, CampoActualizable.RESPONSABLE_LEGAL_NIF), null));
+
+		verify(tutores).aplicarResponsableLegal(existente, TutorService.CambioResponsableLegal.SIN_CAMBIOS);
+	}
+
+	private Alumno vincularExistente() {
+		Alumno existente = alumnoExistente(true);
+		existente.setEmail("ana@example.com");
+		AlumnoDeporte deporte = deporte(existente, true);
+		lenient().when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		lenient().when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO.name()))
+				.thenReturn(Optional.of(deporte));
+		return existente;
 	}
 
 	@Test
@@ -599,6 +653,49 @@ class PreinscripcionServiceTest {
 
 		assertNull(existente.getNif());
 		assertSame(existente, preinscripcion.getAlumno());
+	}
+
+	@Test
+	void unResponsableSoloNifNoCuentaComoTutorAlIncorporarElDni() {
+		// Antes ese NIF solo estaba en alumno.responsable_legal_nif y no impedía incorporar el DNI.
+		Alumno existente = alumnoExistente(true);
+		existente.setNif(null);
+		com.taemoi.project.entities.Tutor soloNif = new com.taemoi.project.entities.Tutor(existente);
+		soloNif.setNif("12345678Z");
+		soloNif.setResponsableLegal(true);
+		existente.getTutores().add(soloNif);
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO.name())).thenReturn(Optional.of(deporte(existente, true)));
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.NIF), null));
+
+		assertEquals("12345678Z", existente.getNif());
+	}
+
+	@Test
+	void vaciarSoloElNombreDelResponsableNoDuplicaLaComprobacionDelDni() {
+		// Tras vaciar solo el nombre: el tutor con nombre conserva el NIF y hay además un responsable
+		// sin nombre con el mismo NIF. Cuenta como un tutor con ese DNI (como antes) y no se incorpora.
+		Alumno existente = alumnoExistente(true);
+		existente.setNif(null);
+		com.taemoi.project.entities.Tutor madre = new com.taemoi.project.entities.Tutor(existente);
+		madre.setNombre("Ana Madre");
+		madre.setNif("12345678Z");
+		com.taemoi.project.entities.Tutor soloNif = new com.taemoi.project.entities.Tutor(existente);
+		soloNif.setNif("12345678Z");
+		soloNif.setResponsableLegal(true);
+		existente.getTutores().add(madre);
+		existente.getTutores().add(soloNif);
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO.name())).thenReturn(Optional.of(deporte(existente, true)));
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.NIF), null));
+
+		assertNull(existente.getNif());
+		assertSame(existente, preinscripcion.getAlumno());
+		verify(tutores).aplicarResponsableLegal(existente, TutorService.CambioResponsableLegal.SIN_CAMBIOS);
 	}
 
 	@Test
