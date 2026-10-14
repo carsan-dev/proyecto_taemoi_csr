@@ -112,6 +112,15 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 		tokenAdminOtra = login(adminOtra.getEmail());
 	}
 
+	/** Token de la sesión tras cambiar a la escuela indicada ({@code POST /api/auth/organizacion}). */
+	private String cambiarA(String token, long organizacion) throws Exception {
+		MvcResult cambio = mvc.perform(post("/api/auth/organizacion").cookie(jwt(token))
+				.contentType(MediaType.APPLICATION_JSON).content("{\"organizacionId\":" + organizacion + "}"))
+				.andExpect(status().isOk())
+				.andReturn();
+		return json.readTree(cambio.getResponse().getContentAsString()).get("token").asText();
+	}
+
 	@AfterEach
 	void sinFugaDeOrganizacion() {
 		assertNull(TenantContext.get(), "El test dejó una organización fijada en el hilo");
@@ -258,7 +267,44 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(publico.toString().contains("JUDO"));
 	}
 
+	/**
+	 * Propietario (ROLE_ADMIN) en Taemoi y familia (ROLE_USER) en la segunda escuela, con la sesión en la
+	 * segunda: manda el rol de la escuela de la sesión (sin tarifas) y solo se ven filas de esa escuela.
+	 */
+	@Test
+	void usuarioMultiEscuela_enLaSegundaComoFamilia_sinTarifasYSoloSusFilas() throws Exception {
+		Usuario multi = crearUsuario("cat-multi-" + sufijo + "@example.test");
+		dar(multi, ORG1, RolMembresia.PROPIETARIO);
+		alumnoConEmail(org2, multi.getEmail());
+		dar(multi, org2, RolMembresia.FAMILIA);
+		String tokenOrg2 = cambiarA(login(multi.getEmail()), org2);
+
+		JsonNode cat = leer(get("/api/catalogo").cookie(jwt(tokenOrg2)));
+		assertEquals(org2, cat.get("organizacion").get("id").asLong());
+		assertTrue(cat.get("tarifas").isArray());
+		assertEquals(0, cat.get("tarifas").size(), "familia en la escuela de la sesión: sin tarifas (D14)");
+		assertEquals(List.of("JUDO", "YOGA"), textos(cat.get("disciplinas"), "codigo"));
+		assertEquals(List.of(sistemaOrg2), List.of(cat.get("sistemasGrados").get(0).get("id").asLong()));
+		assertEquals(1, cat.get("sistemasGrados").size());
+		assertEquals(List.of("IT-INF-" + sufijo, "IT-ABS-" + sufijo), textos(cat.get("categorias"), "codigo"));
+		String texto = cat.toString();
+		for (String ajeno : List.of("TAEKWONDO", "MARRÓN", "PADRES_HIJOS", "Defensa Personal Femenina")) {
+			assertFalse(texto.contains(ajeno), "fuga de Taemoi: " + ajeno);
+		}
+
+		// La misma persona en Taemoi (propietaria) sí recibe las tarifas.
+		String tokenOrg1 = cambiarA(tokenOrg2, ORG1);
+		assertFalse(leer(get("/api/catalogo").cookie(jwt(tokenOrg1))).get("tarifas").isEmpty());
+	}
+
 	// ------------------------------------------------------------------ público y anónimo
+
+	/** Solo es público {@code /api/catalogo/publico} exacto: con barra final u otra ruta debajo, 401. */
+	@Test
+	void anonimo_variantesDeLaRutaPublica401() throws Exception {
+		mvc.perform(get("/api/catalogo/publico/")).andExpect(status().isUnauthorized());
+		mvc.perform(get("/api/catalogo/publico/x")).andExpect(status().isUnauthorized());
+	}
 
 	@Test
 	void anonimo_catalogoCompleto401() throws Exception {
@@ -313,6 +359,14 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 		String etagFamilia = mvc.perform(get("/api/catalogo").cookie(jwt(tokenFamilia))).andReturn().getResponse()
 				.getHeader(HttpHeaders.ETAG);
 		assertNotEquals(etag, etagFamilia, "sin tarifas, otro ETag");
+	}
+
+	/** El filtro de ETag solo actúa en las dos rutas del catálogo: otro endpoint de la API no lleva ETag. */
+	@Test
+	void otroEndpointDeLaApi_sinEtag() throws Exception {
+		MvcResult r = mvc.perform(get("/api/auth/organizaciones").cookie(jwt(tokenAdmin))).andExpect(status().isOk())
+				.andReturn();
+		assertNull(r.getResponse().getHeader(HttpHeaders.ETAG), "ETag fuera de /api/catalogo");
 	}
 
 	// ---------------------------------------------------------------------------------
@@ -384,7 +438,11 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private void alumnoConEmail(String email) {
-		TenantContext.ejecutarCon(ORG1, () -> {
+		alumnoConEmail(ORG1, email);
+	}
+
+	private void alumnoConEmail(long organizacion, String email) {
+		TenantContext.ejecutarCon(organizacion, () -> {
 			Alumno alumno = new Alumno();
 			alumno.setNombre("Familia " + sufijo);
 			alumno.setApellidos("PRUEBA CATALOGO");
