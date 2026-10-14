@@ -89,7 +89,7 @@ public class AlumnoCortoDTO {
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
-			grado = principal.getGrado().getTipoGrado().getNombre();
+			grado = nombreGrado(principal.getGrado());
 		}
 		return new AlumnoCortoDTO(
 			alumno.getId(),
@@ -109,7 +109,7 @@ public class AlumnoCortoDTO {
 
 		Alumno alumno = alumnoDeporte.getAlumno();
 		String grado = alumnoDeporte.getGrado() != null
-				? alumnoDeporte.getGrado().getTipoGrado().getNombre()
+				? nombreGrado(alumnoDeporte.getGrado())
 				: null;
 
 		return new AlumnoCortoDTO(
@@ -121,5 +121,15 @@ public class AlumnoCortoDTO {
 			grado,
 			alumno.getActivo()
 		);
+	}
+
+	/**
+	 * Nombre del grado en los listados cortos: el del antiguo {@code TipoGrado.getNombre()} para los códigos de
+	 * Taemoi (el mismo en todas las disciplinas: «Rojo» también en kickboxing, como antes de V28) y el del
+	 * catálogo para los códigos propios de otras escuelas.
+	 */
+	private static String nombreGrado(com.taemoi.project.entities.Grado grado) {
+		String legado = com.taemoi.project.services.CatalogoLegadoTaemoi.nombreGradoLegado(grado.getCodigo());
+		return legado != null ? legado : grado.getNombre();
 	}
 }

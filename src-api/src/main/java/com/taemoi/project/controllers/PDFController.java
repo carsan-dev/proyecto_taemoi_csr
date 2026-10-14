@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.services.PDFService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +22,9 @@ import jakarta.servlet.http.HttpServletResponse;
 @RestController
 @RequestMapping("/api/informes")
 public class PDFController {
+
+	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
 	@Autowired
 	private PDFService pdfService;
@@ -267,8 +269,10 @@ public class PDFController {
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month,
 			@RequestParam(required = false) String grupo,
 			@RequestParam(required = false) List<String> grupos,
-			@RequestParam(required = false) Deporte deporte,
+			@RequestParam(name = "deporte", required = false) String deporteParametro,
 			HttpServletResponse response) throws IOException {
+		// Antes el enum Deporte (Spring respondía 400 a un valor no válido); ahora, el catálogo de la escuela.
+		String deporte = catalogoDisciplinas.validarParametro(deporteParametro);
 
 		List<String> gruposSeleccionados = (grupos != null && !grupos.isEmpty())
 				? grupos
@@ -284,7 +288,7 @@ public class PDFController {
 		byte[] pdfBytes = pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte);
 
 		String grupoSuffix = gruposSeleccionados.size() == 1 ? gruposSeleccionados.get(0) : "varios-dias";
-		String deporteSuffix = deporte != null ? "_" + deporte.name() : "";
+		String deporteSuffix = deporte != null ? "_" + deporte : "";
 		String filename = "Asistencia-%s%s-%d-%02d.pdf".formatted(grupoSuffix, deporteSuffix, year, month);
 
 		response.setContentType(MediaType.APPLICATION_PDF_VALUE);

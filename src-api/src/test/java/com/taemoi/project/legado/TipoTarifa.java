@@ -1,4 +1,4 @@
-package com.taemoi.project.entities;
+package com.taemoi.project.legado;
 
 public enum TipoTarifa {
 	// Tarifas para Taekwondo

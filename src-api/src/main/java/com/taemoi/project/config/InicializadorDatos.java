@@ -1,5 +1,7 @@
 package com.taemoi.project.config;
 
+
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.taemoi.project.entities.Categoria;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
@@ -20,8 +21,6 @@ import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.RolMembresia;
-import com.taemoi.project.entities.TipoCategoria;
-import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
@@ -193,8 +192,7 @@ public class InicializadorDatos implements CommandLineRunner {
 			nuevoGrupo.setTipo(tipo);
 
 			// Asignar deporte basado en el tipo del grupo
-			nuevoGrupo.setDeporte(determinarDeportePorTipo(tipo));
-			nuevoGrupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(nuevoGrupo.getDeporte().name()));
+			nuevoGrupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(determinarDeportePorTipo(tipo)));
 
 			return grupoRepository.save(nuevoGrupo);
 		});
@@ -203,25 +201,25 @@ public class InicializadorDatos implements CommandLineRunner {
 	/**
 	 * Determina el deporte basándose en el tipo del grupo.
 	 */
-	private Deporte determinarDeportePorTipo(String tipo) {
+	private String determinarDeportePorTipo(String tipo) {
 		if (tipo == null) {
-			return Deporte.TAEKWONDO;
+			return CatalogoLegadoTaemoi.TAEKWONDO;
 		}
 
 		String tipoLower = tipo.toLowerCase();
 
 		if (tipoLower.contains("taekwondo")) {
-			return Deporte.TAEKWONDO;
+			return CatalogoLegadoTaemoi.TAEKWONDO;
 		} else if (tipoLower.contains("kickboxing")) {
-			return Deporte.KICKBOXING;
+			return CatalogoLegadoTaemoi.KICKBOXING;
 		} else if (tipoLower.contains("pilates")) {
-			return Deporte.PILATES;
+			return CatalogoLegadoTaemoi.PILATES;
 		} else if (tipoLower.contains("defensa") || tipoLower.contains("femenina")) {
-			return Deporte.DEFENSA_PERSONAL_FEMENINA;
+			return CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA;
 		}
 
 		// Por defecto, asignar Taekwondo
-		return Deporte.TAEKWONDO;
+		return CatalogoLegadoTaemoi.TAEKWONDO;
 	}
 
 	private void generarUsuarios() {
@@ -262,22 +260,35 @@ public class InicializadorDatos implements CommandLineRunner {
 	 * Genera los grados si no existen en la base de datos.
 	 */
 	private void generarGrados() {
-		for (TipoGrado tipoGrado : TipoGrado.values()) {
-			if (!gradoRepository.existsByTipoGrado(tipoGrado)) {
+		// Sin uso desde V23 (que siembra los grados de Taemoi con su sistema): solo una base sin grados.
+		for (String codigo : CatalogoLegadoTaemoi.codigosGrado()) {
+			if (!gradoRepository.existsByCodigo(codigo)) {
 				Grado nuevoGrado = new Grado();
-				nuevoGrado.setTipoGrado(tipoGrado);
+				nuevoGrado.setCodigo(codigo);
+				nuevoGrado.setNombre(CatalogoLegadoTaemoi.nombreGradoLegado(codigo));
 				gradoRepository.save(nuevoGrado);
 			}
 		}
 	}
 
+	/**
+	 * Categorías de competición de taekwondo (las del antiguo {@code TipoCategoria}), con su disciplina y su
+	 * rango de edad (catálogo de V28) para que se sigan asignando por edad.
+	 */
 	private void generarCategorias() {
-		for (TipoCategoria tipoCategoria : TipoCategoria.values()) {
-			if (!categoriaRepository.existsByNombre(tipoCategoria.getNombre())) {
+		var taekwondo = catalogoDisciplinas.buscarPorCodigo(CatalogoLegadoTaemoi.TAEKWONDO).orElse(null);
+		int orden = 1;
+		for (CatalogoLegadoTaemoi.CategoriaLegado legado : CatalogoLegadoTaemoi.CATEGORIAS_TAEKWONDO) {
+			if (!categoriaRepository.existsByNombre(legado.nombre())) {
 				Categoria categoria = new Categoria();
-				categoria.setNombre(tipoCategoria.getNombre());
+				categoria.setNombre(legado.nombre());
+				categoria.setDisciplina(taekwondo);
+				categoria.setEdadMin(legado.edadMin());
+				categoria.setEdadMax(legado.edadMax());
+				categoria.setOrden(orden);
 				categoriaRepository.save(categoria);
 			}
+			orden++;
 		}
 	}
 

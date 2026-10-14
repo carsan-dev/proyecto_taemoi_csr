@@ -25,9 +25,9 @@ import com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grado;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.impl.MaterialExamenServiceImpl;
@@ -72,7 +72,7 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(nuevo.resolve("temario"));
 		Files.writeString(nuevo.resolve("temario").resolve("nuevo.pdf"), "nuevo");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(40L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(40L, Deporte.TAEKWONDO.name());
 
 		assertEquals("nuevo.pdf", material.getTemario().getFileName());
 	}
@@ -84,7 +84,7 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(heredado.resolve("temario"));
 		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(41L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(41L, Deporte.TAEKWONDO.name());
 
 		assertEquals("heredado.pdf", material.getTemario().getFileName());
 	}
@@ -97,25 +97,25 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(heredado.resolve("temario"));
 		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
 
-		MaterialExamenDTO sinMaterial = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		MaterialExamenDTO sinMaterial = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO.name());
 		assertNull(sinMaterial.getTemario());
-		assertThrows(java.util.NoSuchElementException.class, () -> service.obtenerTemario(42L, Deporte.TAEKWONDO));
+		assertThrows(java.util.NoSuchElementException.class, () -> service.obtenerTemario(42L, Deporte.TAEKWONDO.name()));
 
 		Path propio = tempDir.resolve("org-2").resolve("materiales").resolve("taekwondo").resolve("b01_inicio_a_amarillo");
 		Files.createDirectories(propio.resolve("temario"));
 		Files.writeString(propio.resolve("temario").resolve("propio.pdf"), "propio");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO.name());
 		assertEquals("propio.pdf", material.getTemario().getFileName());
 		assertEquals(propio.resolve("temario").resolve("propio.pdf").toRealPath(),
-				service.obtenerTemario(42L, Deporte.TAEKWONDO).getPath().toRealPath());
+				service.obtenerTemario(42L, Deporte.TAEKWONDO.name()).getPath().toRealPath());
 	}
 
 	@Test
 	void sinEscuelaActivaFallaCerrado() {
 		TenantContext.clear();
 		mockAlumnoConDeporte(43L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
-		assertThrows(IllegalStateException.class, () -> service.obtenerMaterialExamen(43L, Deporte.TAEKWONDO));
+		assertThrows(IllegalStateException.class, () -> service.obtenerMaterialExamen(43L, Deporte.TAEKWONDO.name()));
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class MaterialExamenServiceImplTest {
 		Files.writeString(bloque.resolve("videos").resolve("02_tecnicas_base.mp4"), "v2");
 		Files.writeString(bloque.resolve("videos").resolve("01_presentacion.mp4"), "v1");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(10L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(10L, Deporte.TAEKWONDO.name());
 
 		assertEquals("b01_inicio_a_amarillo", material.getBloqueId());
 		assertEquals("BLANCO_AMARILLO", material.getGradoActual());
@@ -155,7 +155,7 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(bloque.resolve("videos"));
 		Files.writeString(bloque.resolve("videos").resolve("01_SOGUIS_COMP.mp4"), "v1");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(14L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(14L, Deporte.TAEKWONDO.name());
 
 		assertEquals(1, material.getVideos().size());
 		assertEquals("SOGUIS", material.getVideos().get(0).getTitle());
@@ -180,7 +180,7 @@ class MaterialExamenServiceImplTest {
 				}
 				""");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(11L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(11L, Deporte.TAEKWONDO.name());
 
 		assertEquals(2, material.getVideos().size());
 		assertEquals("02_tecnicas_base.mp4", material.getVideos().get(0).getId());
@@ -217,7 +217,7 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(bloqueActual.resolve("videos"));
 		Files.writeString(bloqueActual.resolve("videos").resolve("01_naranja.mp4"), "v3");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(15L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(15L, Deporte.TAEKWONDO.name());
 
 		assertEquals(1, material.getVideos().size());
 		assertEquals(2, material.getVideosAnteriores().size());
@@ -240,7 +240,7 @@ class MaterialExamenServiceImplTest {
 		Files.createDirectories(bloqueActualCompartido.resolve("videos"));
 		Files.writeString(bloqueActualCompartido.resolve("videos").resolve("01_amarillo.mp4"), "v2");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(16L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(16L, Deporte.TAEKWONDO.name());
 
 		assertEquals("b02_amarillo_a_naranja", material.getBloqueId());
 		assertEquals(1, material.getVideosAnteriores().size());
@@ -258,7 +258,7 @@ class MaterialExamenServiceImplTest {
 
 		crearBloque("kickboxing", "b03_naranja_a_verde");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(17L, Deporte.KICKBOXING);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(17L, Deporte.KICKBOXING.name());
 
 		assertEquals(0, material.getVideosAnteriores().size());
 	}
@@ -275,7 +275,7 @@ class MaterialExamenServiceImplTest {
 
 		var archivo = service.obtenerVideo(
 				18L,
-				Deporte.TAEKWONDO,
+				Deporte.TAEKWONDO.name(),
 				"anterior__b01_inicio_a_amarillo__01_taeguk_blanco.mp4");
 
 		assertEquals("01_taeguk_blanco.mp4", archivo.getFileName());
@@ -286,7 +286,7 @@ class MaterialExamenServiceImplTest {
 		mockAlumnoConDeporte(12L, Deporte.TAEKWONDO, TipoGrado.BLANCO);
 		crearBloque("taekwondo", "b01_inicio_a_amarillo");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(12L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(12L, Deporte.TAEKWONDO.name());
 
 		assertEquals("b01_inicio_a_amarillo", material.getBloqueId());
 		assertNull(material.getTemario());
@@ -308,7 +308,7 @@ class MaterialExamenServiceImplTest {
 		Files.writeString(bloque.resolve("documentacion").resolve("01_glosario.docx"), "docx");
 		Files.writeString(bloque.resolve("documentacion").resolve(".gitkeep"), "");
 
-		MaterialExamenDTO material = service.obtenerMaterialExamen(13L, Deporte.TAEKWONDO);
+		MaterialExamenDTO material = service.obtenerMaterialExamen(13L, Deporte.TAEKWONDO.name());
 
 		assertNotNull(material.getDocumentos());
 		assertEquals(3, material.getDocumentos().size());
@@ -323,22 +323,21 @@ class MaterialExamenServiceImplTest {
 	void shouldRejectInvalidVideoFileName() {
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> service.obtenerVideo(99L, Deporte.TAEKWONDO, "../secret.mp4"));
+				() -> service.obtenerVideo(99L, Deporte.TAEKWONDO.name(), "../secret.mp4"));
 	}
 
 	@Test
 	void shouldRejectInvalidDocumentFileName() {
 		assertThrows(
 				IllegalArgumentException.class,
-				() -> service.obtenerDocumento(99L, Deporte.TAEKWONDO, "../secret.pdf"));
+				() -> service.obtenerDocumento(99L, Deporte.TAEKWONDO.name(), "../secret.pdf"));
 	}
 
 	private void mockAlumnoConDeporte(Long alumnoId, Deporte deporte, TipoGrado grado) {
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
-		alumnoDeporte.setDeporte(deporte);
+		alumnoDeporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));
 
 		Grado entidadGrado = new Grado();
-		entidadGrado.setTipoGrado(grado);
 		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 
@@ -347,10 +346,9 @@ class MaterialExamenServiceImplTest {
 
 	private void mockAlumnoConDeporteMenorTaekwondo(Long alumnoId, TipoGrado grado) {
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
-		alumnoDeporte.setDeporte(Deporte.TAEKWONDO);
+		alumnoDeporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 
 		Grado entidadGrado = new Grado();
-		entidadGrado.setTipoGrado(grado);
 		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 

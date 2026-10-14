@@ -2,7 +2,6 @@ package com.taemoi.project.dtos;
 
 import java.util.Date;
 
-import com.taemoi.project.entities.Deporte;
 
 public class ConvocatoriaDTO {
 
@@ -10,7 +9,7 @@ public class ConvocatoriaDTO {
 
 	private Date fechaConvocatoria;
 
-	private Deporte deporte;
+	private String deporte;
 
 	public Long getId() {
 		return id;
@@ -28,11 +27,11 @@ public class ConvocatoriaDTO {
 		this.fechaConvocatoria = fechaConvocatoria;
 	}
 
-	public Deporte getDeporte() {
+	public String getDeporte() {
 		return deporte;
 	}
 
-	public void setDeporte(Deporte deporte) {
+	public void setDeporte(String deporte) {
 		this.deporte = deporte;
 	}
 

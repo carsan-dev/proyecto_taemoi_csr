@@ -26,7 +26,6 @@ import jakarta.validation.Valid;
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.services.PDFService;
@@ -39,6 +38,9 @@ public class ConvocatoriaController {
 	private ConvocatoriaService convocatoriaService;
 
 	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
 	private PDFService pdfService;
 
 	@Autowired
@@ -46,7 +48,10 @@ public class ConvocatoriaController {
 
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(@RequestParam(required = false) Deporte deporte) {
+	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(
+			@RequestParam(name = "deporte", required = false) String deporteParametro) {
+		// Antes el enum Deporte (Spring respondía 400 a un valor no válido); ahora, el catálogo de la escuela.
+		String deporte = catalogoDisciplinas.validarParametro(deporteParametro);
 		List<ConvocatoriaDTO> convocatorias;
 		if (deporte != null) {
 			convocatorias = convocatoriaService.obtenerConvocatoriasPorDeporte(deporte);

@@ -3,7 +3,6 @@ package com.taemoi.project.services;
 import java.io.IOException;
 import java.util.List;
 
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Preinscripcion;
 
 public interface PDFService {
@@ -45,9 +44,9 @@ public interface PDFService {
 
 	byte[] generarListadoMensualidadMensual(String mesAno, boolean soloActivos);
 
-	byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException;
+	byte[] generarListadoAsistencia(int year, int month, String grupo, String deporte) throws IOException;
 
-	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, Deporte deporte) throws IOException;
+	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte) throws IOException;
 
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 
@@ -57,5 +56,5 @@ public interface PDFService {
 
 	byte[] generarPreinscripcionFirmada(Preinscripcion preinscripcion);
 
-	byte[] generarPreviewPreinscripcion(Deporte deporte, String contenido, String instrucciones);
+	byte[] generarPreviewPreinscripcion(String deporte, String contenido, String instrucciones);
 }

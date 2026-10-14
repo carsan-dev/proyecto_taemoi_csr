@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 
 /**
  * Sin {@code @Transactional} de clase: cada consulta va en la transacción del repositorio, y la
@@ -28,13 +29,22 @@ public class CatalogoDisciplinasServiceImpl implements CatalogoDisciplinasServic
 		if (codigo == null) {
 			return Optional.empty();
 		}
-		return disciplinas.findByCodigo(codigo);
+		// Código exacto (la intercalación de la columna no distingue mayúsculas; el antiguo enum sí)
+		return disciplinas.findByCodigo(codigo).filter(d -> codigo.equals(d.getCodigo()));
 	}
 
 	@Override
 	public Disciplina obtenerPorCodigo(String codigo) {
 		return buscarPorCodigo(codigo)
 				.orElseThrow(() -> new IllegalArgumentException("Disciplina no encontrada: " + codigo));
+	}
+
+	@Override
+	public String validarCodigo(String codigo) {
+		if (codigo != null && buscarPorCodigo(codigo).isPresent()) {
+			return codigo;
+		}
+		throw CatalogoLegadoTaemoi.valorNoValido("Deporte", codigo);
 	}
 
 	@Override

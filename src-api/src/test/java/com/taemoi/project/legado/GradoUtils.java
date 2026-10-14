@@ -1,7 +1,5 @@
-package com.taemoi.project.utils;
+package com.taemoi.project.legado;
 
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.TipoGrado;
 
 /**
  * Utilidades para la gestión de grados en diferentes deportes.

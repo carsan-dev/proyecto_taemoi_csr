@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -67,7 +67,7 @@ class PreinscripcionRequestValidationTest {
 
 	private PreinscripcionRequest request(String dni, LocalDate nacimiento, String tutor, String tutorDni,
 			Boolean discapacidad, String observaciones) {
-		return new PreinscripcionRequest(Deporte.TAEKWONDO, List.of(11L), "Ana", "García López", dni,
+		return new PreinscripcionRequest(Deporte.TAEKWONDO.name(), List.of(11L), "Ana", "García López", dni,
 				nacimiento, "Calle Mayor 1", "612 345 678", "611 222 333", "ana@example.com",
 				observaciones, tutor, tutorDni, discapacidad, false, true, "María García", "data:image/png;base64,AAAA");
 	}

@@ -1,5 +1,7 @@
 package com.taemoi.project.services.impl;
 
+
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,12 +40,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.PlantillaPreinscripcion;
-import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -84,7 +84,7 @@ public class PDFServiceImpl implements PDFService {
 	/** Grupo de edad del alumno en la disciplina de la inscripción (disciplina.edad_adulto, año natural). */
 	private boolean esMenor(Alumno alumno, AlumnoDeporte alumnoDeporte) {
 		return catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
-				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name());
+				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte());
 	}
 
 	/** Nombre visible del grado de la inscripción (el de su fila: «MARRÓN» en kickboxing); «N/A» sin grado. */
@@ -98,29 +98,29 @@ public class PDFServiceImpl implements PDFService {
 			return null;
 		}
 		return progresionGrados.obtenerSiguienteGrado(
-				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name(),
+				alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte(),
 				esMenor(alumno, alumnoDeporte), alumnoDeporte.getGrado().getCodigo()).orElse(null);
 	}
 
-	/** Tipo del grado (para dibujar el cinturón); nulo si no hay grado. */
-	private static TipoGrado tipoDe(Grado grado) {
-		return grado == null || grado.getCodigo() == null ? null : TipoGrado.valueOf(grado.getCodigo());
+	/** Código del grado (para dibujar el cinturón); nulo si no hay grado. */
+	private static String tipoDe(Grado grado) {
+		return grado == null ? null : grado.getCodigo();
 	}
 
 	// Cache for the PNG logo to avoid repeated conversion
 	private String logoPngBase64Cache = null;
 	private String logoPreinscripcionBase64Cache = null;
 
-	@Override public byte[] generarPreviewPreinscripcion(Deporte deporte,String contenido,String instrucciones){
-		PlantillaPreinscripcion plantilla=new PlantillaPreinscripcion();plantilla.setDeporte(deporte);plantilla.setVersion(0);plantilla.setContenido(contenido);plantilla.setInstrucciones(instrucciones);
-		Preinscripcion p=new Preinscripcion();p.setDeporte(deporte);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setTelefono2("611 111 111");p.setEmail("maria@example.org");p.setTieneDiscapacidad(false);p.setDireccion("Calle Ejemplo, 1, Umbrete");p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
+	@Override public byte[] generarPreviewPreinscripcion(String deporte,String contenido,String instrucciones){
+		com.taemoi.project.entities.Disciplina disciplina=catalogoDisciplinas.obtenerPorCodigo(deporte);PlantillaPreinscripcion plantilla=new PlantillaPreinscripcion();plantilla.setDisciplina(disciplina);plantilla.setVersion(0);plantilla.setContenido(contenido);plantilla.setInstrucciones(instrucciones);
+		Preinscripcion p=new Preinscripcion();p.setDisciplina(disciplina);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setTelefono2("611 111 111");p.setEmail("maria@example.org");p.setTieneDiscapacidad(false);p.setDireccion("Calle Ejemplo, 1, Umbrete");p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
 	}
 	private byte[] firmaPreview(){try{java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(360,90,java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();g.setColor(java.awt.Color.WHITE);g.fillRect(0,0,360,90);g.setColor(java.awt.Color.DARK_GRAY);g.drawString("Firma de previsualización",80,48);g.dispose();ByteArrayOutputStream out=new ByteArrayOutputStream();javax.imageio.ImageIO.write(image,"png",out);return out.toByteArray();}catch(Exception e){throw new IllegalStateException(e);}}
 
 	@Override
 	public byte[] generarPreinscripcionFirmada(Preinscripcion p) {
 		String firma = "data:image/png;base64," + Base64.getEncoder().encodeToString(p.getFirma());
-		String nombreDeporte = p.getDeporte().name().replace('_', ' ');
+		String nombreDeporte = p.getDeporte().replace('_', ' ');
 		boolean conNormas = true;
 		JsonNode contenidoPlantilla = parsearContenidoPlantilla(p.getPlantilla().getContenido());
 		String cabecera=campoPlantilla(contenidoPlantilla,"cabecera","Escuela Moi Kim Do");
@@ -147,7 +147,8 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	private String esc(String value){ if(value==null)return ""; return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;"); }
-	private String nombreDeportePublico(Deporte deporte){return switch(deporte){case TAEKWONDO->"Taekwondo";case KICKBOXING->"Kickboxing";case PILATES->"Pilates";case DEFENSA_PERSONAL_FEMENINA->"Defensa personal femenina";};}
+	/** Nombre público de la disciplina (en Taemoi, los de siempre: «Taekwondo», «Defensa personal femenina»…). */
+	private String nombreDeportePublico(String deporte){return catalogoDisciplinas.obtenerPorCodigo(deporte).getNombre();}
 	private JsonNode parsearContenidoPlantilla(String contenido) {
 		if (contenido == null || contenido.isBlank()) {
 			return TEMPLATE_JSON_MAPPER.createObjectNode();
@@ -342,24 +343,24 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeAlumnosPorGrado(boolean soloActivos) {
-		return generarInformePorGrado(Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING), soloActivos);
+		return generarInformePorGrado(Arrays.asList(CatalogoLegadoTaemoi.TAEKWONDO, CatalogoLegadoTaemoi.KICKBOXING), soloActivos);
 	}
 
 	@Override
 	public byte[] generarInformeTaekwondoPorGrado(boolean soloActivos) {
-		return generarInformePorGrado(Collections.singletonList(Deporte.TAEKWONDO), soloActivos);
+		return generarInformePorGrado(Collections.singletonList(CatalogoLegadoTaemoi.TAEKWONDO), soloActivos);
 	}
 
 	@Override
 	public byte[] generarInformeKickboxingPorGrado(boolean soloActivos) {
-		return generarInformePorGrado(Collections.singletonList(Deporte.KICKBOXING), soloActivos);
+		return generarInformePorGrado(Collections.singletonList(CatalogoLegadoTaemoi.KICKBOXING), soloActivos);
 	}
 
 	/**
 	 * Genera el informe PDF filtrando los alumnos según la lista de deportes. Si se
 	 * solicitan ambos deportes, se generan secciones separadas para cada uno.
 	 */
-	private byte[] generarInformePorGrado(List<Deporte> deportes, boolean soloActivos) {
+	private byte[] generarInformePorGrado(List<String> deportes, boolean soloActivos) {
 		List<AlumnoDeporte> alumnos = alumnoDeporteRepository.findByGradoNotNullAndDeporteIn(deportes);
 
 		// Filter by active status if requested
@@ -385,17 +386,17 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<body>");
 
 		// Add header with logo
-		if (deportes.size() == 2 && deportes.contains(Deporte.TAEKWONDO) && deportes.contains(Deporte.KICKBOXING)) {
+		if (deportes.size() == 2 && deportes.contains(CatalogoLegadoTaemoi.TAEKWONDO) && deportes.contains(CatalogoLegadoTaemoi.KICKBOXING)) {
 			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
 
-			List<AlumnoDeporte> alumnosTaekwondo = alumnos.stream().filter(a -> a.getDeporte() == Deporte.TAEKWONDO)
+			List<AlumnoDeporte> alumnosTaekwondo = alumnos.stream().filter(a -> CatalogoLegadoTaemoi.TAEKWONDO.equals(a.getDeporte()))
 					.collect(Collectors.toList());
 			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
 			html.append("Taekwondo");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
 
-			List<AlumnoDeporte> alumnosKickboxing = alumnos.stream().filter(a -> a.getDeporte() == Deporte.KICKBOXING)
+			List<AlumnoDeporte> alumnosKickboxing = alumnos.stream().filter(a -> CatalogoLegadoTaemoi.KICKBOXING.equals(a.getDeporte()))
 					.collect(Collectors.toList());
 			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
 			html.append("Kickboxing");
@@ -403,7 +404,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append(generarSeccion(alumnosKickboxing));
 		} else {
 			// Use sport-specific colors for the header border
-			if (deportes.get(0) == Deporte.TAEKWONDO) {
+			if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deportes.get(0))) {
 				html.append(generarCabeceraConLogo("Taekwondo por Grado", "#0D47A1"));
 			} else {
 				html.append(generarCabeceraConLogo("Kickboxing por Grado", "#ff4500"));
@@ -454,13 +455,13 @@ public class PDFServiceImpl implements PDFService {
 				}
 				return (alumno.getNombre() + " " + alumno.getApellidos()).toLowerCase();
 			}));
-			TipoGrado tipo = tipoDe(grado);
+			String tipo = tipoDe(grado);
 
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
 			html.append("<div class='izquierda'>");
-			if (tipo.name().contains("ROJO_NEGRO")) {
-				String[] parts = tipo.name().split("_");
+			if (tipo.contains("ROJO_NEGRO")) {
+				String[] parts = tipo.split("_");
 				String colorInferior = obtenerColorPorNombre(parts[0]);
 				String colorSuperior = obtenerColorPorNombre(parts[1]);
 				int stripeCount = 0;
@@ -482,13 +483,13 @@ public class PDFServiceImpl implements PDFService {
 							+ "px; z-index: 2;'></div>");
 				}
 				html.append("</div>");
-			} else if (tipo.name().contains("DAN")
-					|| (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+			} else if (tipo.contains("DAN")
+					|| (tipo.contains("PUM") && !tipo.contains("ROJO_NEGRO"))) {
 				html.append("<div class='cinturon' style='background-color: " + obtenerColorCinturon(tipo) + ";'>");
 				try {
 					int stripeCount = 0;
-					if (tipo.name().contains("DAN")) {
-						String[] parts = tipo.name().split("_");
+					if (tipo.contains("DAN")) {
+						String[] parts = tipo.split("_");
 						stripeCount = Integer.parseInt(parts[1]);
 					}
 					int stripeWidth = 6;
@@ -502,8 +503,8 @@ public class PDFServiceImpl implements PDFService {
 				} catch (Exception e) {
 				}
 				html.append("</div>");
-			} else if (tipo.name().contains("_")) {
-				String[] parts = tipo.name().split("_");
+			} else if (tipo.contains("_")) {
+				String[] parts = tipo.split("_");
 				String colorSuperior = obtenerColorPorNombre(parts[1]);
 				String colorInferior = obtenerColorPorNombre(parts[0]);
 				html.append("<div class='cinturon doble'>");
@@ -566,7 +567,7 @@ public class PDFServiceImpl implements PDFService {
 	 * Retorna el estilo en línea para el div del cinturón. Para grados DAN se
 	 * retorna únicamente el color base (ya que las rayas se generan en el HTML).
 	 */
-	private String obtenerEstiloCinturon(TipoGrado tipo) {
+	private String obtenerEstiloCinturon(String tipo) {
 		if (tipo == null) {
 			return "background-color: #CCCCCC;";
 		}
@@ -576,41 +577,41 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Devuelve un color (en formato hexadecimal) según el TipoGrado.
 	 */
-	private String obtenerColorCinturon(TipoGrado tipo) {
+	private String obtenerColorCinturon(String tipo) {
 		if (tipo == null)
 			return "#CCCCCC";
 		switch (tipo) {
-		case BLANCO:
+		case "BLANCO":
 			return "#FFFFFF";
-		case BLANCO_AMARILLO:
+		case "BLANCO_AMARILLO":
 			return "#FFFACD";
-		case AMARILLO:
+		case "AMARILLO":
 			return "#FFFF00";
-		case AMARILLO_NARANJA:
+		case "AMARILLO_NARANJA":
 			return "#FFD700";
-		case NARANJA:
+		case "NARANJA":
 			return "#FFA500";
-		case NARANJA_VERDE:
+		case "NARANJA_VERDE":
 			return "#ADFF2F";
-		case VERDE:
+		case "VERDE":
 			return "#008000";
-		case VERDE_AZUL:
+		case "VERDE_AZUL":
 			return "#20B2AA";
-		case AZUL:
+		case "AZUL":
 			return "#0000FF";
-		case AZUL_ROJO:
+		case "AZUL_ROJO":
 			return "#8A2BE2";
-		case ROJO:
+		case "ROJO":
 			return "#FF0000";
-		case ROJO_NEGRO_1_PUM:
-		case ROJO_NEGRO_2_PUM:
-		case ROJO_NEGRO_3_PUM:
+		case "ROJO_NEGRO_1_PUM":
+		case "ROJO_NEGRO_2_PUM":
+		case "ROJO_NEGRO_3_PUM":
 			return "#800000";
-		case NEGRO_1_DAN:
-		case NEGRO_2_DAN:
-		case NEGRO_3_DAN:
-		case NEGRO_4_DAN:
-		case NEGRO_5_DAN:
+		case "NEGRO_1_DAN":
+		case "NEGRO_2_DAN":
+		case "NEGRO_3_DAN":
+		case "NEGRO_4_DAN":
+		case "NEGRO_5_DAN":
 			return "#000000";
 		default:
 			return "#CCCCCC";
@@ -659,7 +660,7 @@ public class PDFServiceImpl implements PDFService {
 		}
 		// Exclude sports without license requirements (disciplina.requiere_licencia)
 		alumnos = alumnos.stream().filter(
-				ad -> ad.getDeporte() != null && catalogoDisciplinas.requiereLicencia(ad.getDeporte().name()))
+				ad -> ad.getDeporte() != null && catalogoDisciplinas.requiereLicencia(ad.getDeporte()))
 				.collect(Collectors.toList());
 
 		LocalDate today = LocalDate.now();
@@ -790,7 +791,7 @@ public class PDFServiceImpl implements PDFService {
 			}
 			html.append("<td>").append(fechaLic).append("</td>");
 			// Use belt drawing for grade
-			TipoGrado tipoGrado = tipoDe(alumnoDeporte.getGrado());
+			String tipoGrado = tipoDe(alumnoDeporte.getGrado());
 			html.append(generarCeldaGrado(tipoGrado, nombreGrado(alumnoDeporte)));
 			html.append("</tr>");
 		}
@@ -809,8 +810,9 @@ public class PDFServiceImpl implements PDFService {
 	private static final Map<String, Integer> ORDEN_PRESENTACION_TAEMOI = new java.util.HashMap<>();
 
 	static {
-		for (TipoGrado tipo : TipoGrado.values()) {
-			ORDEN_PRESENTACION_TAEMOI.put(tipo.name(), tipo.ordinal() + 1);
+		List<String> codigos = CatalogoLegadoTaemoi.codigosGrado();
+		for (int i = 0; i < codigos.size(); i++) {
+			ORDEN_PRESENTACION_TAEMOI.put(codigos.get(i), i + 1);
 		}
 	}
 
@@ -826,7 +828,7 @@ public class PDFServiceImpl implements PDFService {
 		return grado == null ? Integer.MIN_VALUE : ordenPresentacion(grado.getCodigo(), grado.getOrden());
 	}
 
-	private String generarCeldaGrado(TipoGrado tipoGrado, String texto) {
+	private String generarCeldaGrado(String tipoGrado, String texto) {
 		String textoSeguro = (texto == null || texto.trim().isEmpty()) ? "N/A" : texto;
 		if (tipoGrado == null) {
 			return "<td class='grado-cell'><div class='grado-text'>" + textoSeguro + "</div></td>";
@@ -850,8 +852,8 @@ public class PDFServiceImpl implements PDFService {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
 		String fechaGeneracion = today.format(formatter);
 
-		// Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
-		Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
+		// Map<String, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
+		Map<String, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
 
 		for (Alumno alumno : todosAlumnos) {
 			if (alumno.getFechaNacimiento() == null) {
@@ -874,7 +876,7 @@ public class PDFServiceImpl implements PDFService {
 				String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
 
 				// Add to the map
-				Deporte deporte = alumnoDeporte.getDeporte();
+				String deporte = alumnoDeporte.getDeporte();
 				deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
 				deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
 				deporteGradoMap.get(deporte).get(promotionGrade)
@@ -914,8 +916,8 @@ public class PDFServiceImpl implements PDFService {
 		} else {
 
 			// Iterate through sports
-			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
-				Deporte deporte = deporteEntry.getKey();
+			for (Map.Entry<String, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
+				String deporte = deporteEntry.getKey();
 
 				html.append("<div class='sport-section'>");
 				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
@@ -1002,8 +1004,8 @@ public class PDFServiceImpl implements PDFService {
 		String fechaGeneracion = today.format(formatter);
 
 		// Create a structure to hold alumno-deporte-promotion info
-		// Map<Deporte, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
-		Map<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
+		// Map<String, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
+		Map<String, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
 
 		for (Alumno alumno : todosAlumnos) {
 			if (alumno.getFechaNacimiento() == null) {
@@ -1025,7 +1027,7 @@ public class PDFServiceImpl implements PDFService {
 				String promotionGrade = getPromotionGradeForSport(alumno, alumnoDeporte);
 
 				// Add to the map
-				Deporte deporte = alumnoDeporte.getDeporte();
+				String deporte = alumnoDeporte.getDeporte();
 				deporteGradoMap.putIfAbsent(deporte, new java.util.LinkedHashMap<>());
 				deporteGradoMap.get(deporte).putIfAbsent(promotionGrade, new ArrayList<>());
 				deporteGradoMap.get(deporte).get(promotionGrade)
@@ -1064,8 +1066,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("</p>");
 		} else {
 			// Iterate through sports
-			for (Map.Entry<Deporte, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
-				Deporte deporte = deporteEntry.getKey();
+			for (Map.Entry<String, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
+				String deporte = deporteEntry.getKey();
 				html.append("<div class='sport-section'>");
 				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
 
@@ -1133,22 +1135,22 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeInfantilesAPromocionarTaekwondo(boolean soloActivos) {
-		return generarInformePromocionPorDeporte(soloActivos, Deporte.TAEKWONDO, true);
+		return generarInformePromocionPorDeporte(soloActivos, CatalogoLegadoTaemoi.TAEKWONDO, true);
 	}
 
 	@Override
 	public byte[] generarInformeInfantilesAPromocionarKickboxing(boolean soloActivos) {
-		return generarInformePromocionPorDeporte(soloActivos, Deporte.KICKBOXING, true);
+		return generarInformePromocionPorDeporte(soloActivos, CatalogoLegadoTaemoi.KICKBOXING, true);
 	}
 
 	@Override
 	public byte[] generarInformeAdultosAPromocionarTaekwondo(boolean soloActivos) {
-		return generarInformePromocionPorDeporte(soloActivos, Deporte.TAEKWONDO, false);
+		return generarInformePromocionPorDeporte(soloActivos, CatalogoLegadoTaemoi.TAEKWONDO, false);
 	}
 
 	@Override
 	public byte[] generarInformeAdultosAPromocionarKickboxing(boolean soloActivos) {
-		return generarInformePromocionPorDeporte(soloActivos, Deporte.KICKBOXING, false);
+		return generarInformePromocionPorDeporte(soloActivos, CatalogoLegadoTaemoi.KICKBOXING, false);
 	}
 
 	/**
@@ -1160,7 +1162,7 @@ public class PDFServiceImpl implements PDFService {
 	 *                    adultos
 	 * @return PDF bytes
 	 */
-	private byte[] generarInformePromocionPorDeporte(boolean soloActivos, Deporte deporte, boolean esInfantil) {
+	private byte[] generarInformePromocionPorDeporte(boolean soloActivos, String deporte, boolean esInfantil) {
 		List<Alumno> todosAlumnos = alumnoRepository.findAll();
 
 		// Filter by active status if requested
@@ -1184,7 +1186,7 @@ public class PDFServiceImpl implements PDFService {
 			// Check each sport the student practices
 			for (AlumnoDeporte alumnoDeporte : alumno.getDeportes()) {
 				// Skip if not the sport we're looking for
-				if (alumnoDeporte.getDeporte() != deporte) {
+				if (!java.util.Objects.equals(alumnoDeporte.getDeporte(), deporte)) {
 					continue;
 				}
 
@@ -1318,12 +1320,12 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	@Override
-	public byte[] generarListadoAsistencia(int year, int month, String grupo, Deporte deporte) throws IOException {
+	public byte[] generarListadoAsistencia(int year, int month, String grupo, String deporte) throws IOException {
 		return generarListadoAsistencia(year, month, Collections.singletonList(grupo), deporte);
 	}
 
 	@Override
-	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, Deporte deporte)
+	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte)
 			throws IOException {
 		List<String> gruposFiltrados = grupos == null ? Collections.emptyList()
 				: grupos.stream().filter(g -> g != null && !g.isBlank()).map(String::trim).distinct()
@@ -1335,13 +1337,13 @@ public class PDFServiceImpl implements PDFService {
 
 		gruposFiltrados.sort(Comparator.comparing(g -> DiaSemanaUtils.mapGrupoToDayOfWeek(g).getValue()));
 
-		List<Deporte> deportesFiltrar = deporte != null ? Collections.singletonList(deporte)
-				: Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
-						Deporte.DEFENSA_PERSONAL_FEMENINA);
+		List<String> deportesFiltrar = deporte != null ? Collections.singletonList(deporte)
+				: Arrays.asList(CatalogoLegadoTaemoi.TAEKWONDO, CatalogoLegadoTaemoi.KICKBOXING, CatalogoLegadoTaemoi.PILATES,
+						CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA);
 
-		List<Deporte> deportesOrdenados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING, Deporte.PILATES,
-				Deporte.DEFENSA_PERSONAL_FEMENINA);
-		List<Deporte> deportesReporte = deportesOrdenados.stream().filter(deportesFiltrar::contains)
+		List<String> deportesOrdenados = Arrays.asList(CatalogoLegadoTaemoi.TAEKWONDO, CatalogoLegadoTaemoi.KICKBOXING, CatalogoLegadoTaemoi.PILATES,
+				CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA);
+		List<String> deportesReporte = deportesOrdenados.stream().filter(deportesFiltrar::contains)
 				.collect(Collectors.toList());
 
 		class TurnoWithAlumnos {
@@ -1444,12 +1446,12 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 
 			// Collect all turnos with their alumnos, grouped by deporte
-			Map<Deporte, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
+			Map<String, List<TurnoWithAlumnos>> turnosByDeporte = new java.util.HashMap<>();
 
 			// Process each alumno to build the turno-alumno-deporte relationships
 			for (AlumnoDeporte alumnoDeporte : allAlumnosDeporte) {
 				Alumno alumno = alumnoDeporte.getAlumno();
-				Deporte alumnoDeporteEnum = alumnoDeporte.getDeporte();
+				String alumnoDeporteEnum = alumnoDeporte.getDeporte();
 				if (alumno == null || alumnoDeporteEnum == null) {
 					continue;
 				}
@@ -1461,7 +1463,7 @@ public class PDFServiceImpl implements PDFService {
 					if (turno.getGrupo() == null || turno.getGrupo().getDeporte() == null) {
 						continue;
 					}
-					if (turno.getGrupo().getDeporte() != alumnoDeporteEnum) {
+					if (!java.util.Objects.equals(turno.getGrupo().getDeporte(), alumnoDeporteEnum)) {
 						continue;
 					}
 
@@ -1496,7 +1498,7 @@ public class PDFServiceImpl implements PDFService {
 				actual = actual.plusWeeks(1);
 			}
 
-			for (Deporte deporteActual : deportesReporte) {
+			for (String deporteActual : deportesReporte) {
 				List<TurnoWithAlumnos> turnosDeporte = turnosByDeporte.get(deporteActual);
 				if (turnosDeporte == null || turnosDeporte.isEmpty()) {
 					continue;
@@ -1529,7 +1531,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<h2>LISTADO DE ASISTENCIA - ")
 							.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
 							.append(" ").append(year).append("</h2>");
-					html.append("<p class='deporte-label'>").append(deporteActual.name().replace("_", " "))
+					html.append("<p class='deporte-label'>").append(deporteActual.replace("_", " "))
 							.append("</p>");
 					html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
 					html.append("<p class='info'>").append(grupo.toUpperCase()).append(" - Turno de ").append(turnoStr)
@@ -1595,7 +1597,7 @@ public class PDFServiceImpl implements PDFService {
 
 						html.append("<tr>");
 						html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
-						TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+						String tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
 						html.append(generateBeltCellHtml(tipoGrado));
 						html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 						html.append("<td>").append(edad).append("</td>");
@@ -1655,12 +1657,12 @@ public class PDFServiceImpl implements PDFService {
 	 * Generates HTML content for the belt color cell in the attendance list. Shows
 	 * dan numbers for black belts and split colors for half-color belts.
 	 */
-	private String generateBeltCellHtml(TipoGrado tipoGrado) {
+	private String generateBeltCellHtml(String tipoGrado) {
 		if (tipoGrado == null) {
 			return "<td class='cinturon-blanco'></td>";
 		}
 
-		String enumName = tipoGrado.name();
+		String enumName = tipoGrado;
 
 		// Handle black belt grades (NEGRO_X_DAN) - show dan number
 		if (enumName.startsWith("NEGRO_")) {
@@ -2055,12 +2057,12 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeMensualidadesTaekwondo(boolean soloActivos) {
-		return generarInformeMensualidadesPorDeporte(Deporte.TAEKWONDO, soloActivos);
+		return generarInformeMensualidadesPorDeporte(CatalogoLegadoTaemoi.TAEKWONDO, soloActivos);
 	}
 
 	@Override
 	public byte[] generarInformeMensualidadesKickboxing(boolean soloActivos) {
-		return generarInformeMensualidadesPorDeporte(Deporte.KICKBOXING, soloActivos);
+		return generarInformeMensualidadesPorDeporte(CatalogoLegadoTaemoi.KICKBOXING, soloActivos);
 	}
 
 	@Override
@@ -2093,8 +2095,8 @@ public class PDFServiceImpl implements PDFService {
 
 		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte = new java.util.LinkedHashMap<>();
 		for (com.taemoi.project.entities.ProductoAlumno reserva : reservas) {
-			Deporte deporte = obtenerDeporteReserva(reserva);
-			String key = deporte != null ? deporte.name() : "SIN_DEPORTE";
+			String deporte = obtenerDeporteReserva(reserva);
+			String key = deporte != null ? deporte : "SIN_DEPORTE";
 			reservasPorDeporte.computeIfAbsent(key, ignored -> new ArrayList<>()).add(reserva);
 		}
 
@@ -2127,7 +2129,7 @@ public class PDFServiceImpl implements PDFService {
 
 			for (Map.Entry<String, List<com.taemoi.project.entities.ProductoAlumno>> entry : ordenarReservasPorDeporte(reservasPorDeporte).entrySet()) {
 				List<com.taemoi.project.entities.ProductoAlumno> reservasDeporte = entry.getValue();
-				Deporte deporte = obtenerDeporteReserva(reservasDeporte.get(0));
+				String deporte = obtenerDeporteReserva(reservasDeporte.get(0));
 				String deporteNombre = deporte != null ? getDeporteNombre(deporte) : "Sin deporte";
 				String color = getColorDeporte(deporte);
 
@@ -2212,27 +2214,27 @@ public class PDFServiceImpl implements PDFService {
 						java.util.LinkedHashMap::new));
 	}
 
-	private int prioridadDeporte(Deporte deporte) {
-		if (deporte == Deporte.TAEKWONDO) {
+	private int prioridadDeporte(String deporte) {
+		if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
 			return 0;
 		}
-		if (deporte == Deporte.KICKBOXING) {
+		if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
 			return 1;
 		}
 		return 2;
 	}
 
-	private String getColorDeporte(Deporte deporte) {
-		if (deporte == Deporte.TAEKWONDO) {
+	private String getColorDeporte(String deporte) {
+		if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
 			return "#0D47A1";
 		}
-		if (deporte == Deporte.KICKBOXING) {
+		if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
 			return "#ff4500";
 		}
-		if (deporte == Deporte.PILATES) {
+		if (CatalogoLegadoTaemoi.PILATES.equals(deporte)) {
 			return "#57A2A8";
 		}
-		if (deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+		if (CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA.equals(deporte)) {
 			return "#c2185b";
 		}
 		return "#007bff";
@@ -2245,11 +2247,11 @@ public class PDFServiceImpl implements PDFService {
 		return reserva.getAlumno();
 	}
 
-	private Deporte obtenerDeporteReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
+	private String obtenerDeporteReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
 		if (reserva.getAlumnoDeporte() != null && reserva.getAlumnoDeporte().getDeporte() != null) {
 			return reserva.getAlumnoDeporte().getDeporte();
 		}
-		Deporte deporteConcepto = inferDeporteFromConcepto(reserva.getConcepto());
+		String deporteConcepto = inferDeporteFromConcepto(reserva.getConcepto());
 		if (deporteConcepto != null) {
 			return deporteConcepto;
 		}
@@ -2257,7 +2259,7 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/** Deporte del AlumnoDeporte principal del alumno, o null si no tiene deportes. */
-	private Deporte deportePrincipal(Alumno alumno) {
+	private String deportePrincipal(Alumno alumno) {
 		if (alumno == null) {
 			return null;
 		}
@@ -2288,11 +2290,11 @@ public class PDFServiceImpl implements PDFService {
 	 *                      sport.
 	 * @param soloActivos   If true, only includes active students.
 	 */
-	private byte[] generarInformeMensualidadesPorDeporte(Deporte deporteFiltro, boolean soloActivos) {
+	private byte[] generarInformeMensualidadesPorDeporte(String deporteFiltro, boolean soloActivos) {
 		List<com.taemoi.project.entities.ProductoAlumno> todasMensualidades;
 		if (deporteFiltro != null) {
 			todasMensualidades = productoAlumnoRepository
-					.findMensualidadesYTarifasCompetidorByDeporteOrConcepto(deporteFiltro, deporteFiltro.name());
+					.findMensualidadesYTarifasCompetidorByDeporteOrConcepto(deporteFiltro, deporteFiltro);
 		} else {
 			todasMensualidades = productoAlumnoRepository.findAllMensualidadesYTarifasCompetidorWithAlumno();
 		}
@@ -2317,10 +2319,10 @@ public class PDFServiceImpl implements PDFService {
 
 		class MensualidadGroup {
 			private final Alumno alumno;
-			private final Deporte deporte;
+			private final String deporte;
 			private final List<com.taemoi.project.entities.ProductoAlumno> mensualidades = new ArrayList<>();
 
-			MensualidadGroup(Alumno alumno, Deporte deporte) {
+			MensualidadGroup(Alumno alumno, String deporte) {
 				this.alumno = alumno;
 				this.deporte = deporte;
 			}
@@ -2333,15 +2335,15 @@ public class PDFServiceImpl implements PDFService {
 			if (alumno == null) {
 				continue;
 			}
-			Deporte deporte = alumnoDeporte != null ? alumnoDeporte.getDeporte() : null;
+			String deporte = alumnoDeporte != null ? alumnoDeporte.getDeporte() : null;
 			if (deporte == null) {
 				deporte = inferDeporteFromConcepto(pa.getConcepto());
 			}
 			if (deporte == null) {
 				deporte = deportePrincipal(alumno);
 			}
-			Deporte deporteFinal = deporte;
-			String deporteKey = deporteFinal != null ? deporteFinal.name() : "SIN_DEPORTE";
+			String deporteFinal = deporte;
+			String deporteKey = deporteFinal != null ? deporteFinal : "SIN_DEPORTE";
 			String key = alumno.getId() + "_" + deporteKey;
 			MensualidadGroup group = mensualidadesPorAlumno.get(key);
 			if (group == null) {
@@ -2408,10 +2410,10 @@ public class PDFServiceImpl implements PDFService {
 		// Determine title and color based on sport filter
 		String titulo;
 		String colorPrincipal;
-		if (deporteFiltro == Deporte.TAEKWONDO) {
+		if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporteFiltro)) {
 			titulo = "Informe de Mensualidades - Taekwondo";
 			colorPrincipal = "#0D47A1"; // Blue for Taekwondo
-		} else if (deporteFiltro == Deporte.KICKBOXING) {
+		} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporteFiltro)) {
 			titulo = "Informe de Mensualidades - Kickboxing";
 			colorPrincipal = "#ff4500"; // Orange for Kickboxing
 		} else {
@@ -2435,9 +2437,9 @@ public class PDFServiceImpl implements PDFService {
 			html.append("</div>");
 		} else {
 			String tituloSeccion;
-			if (deporteFiltro == Deporte.TAEKWONDO) {
+			if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporteFiltro)) {
 				tituloSeccion = "Mensualidades de Alumnos - Taekwondo (" + totalAlumnos + " alumnos)";
-			} else if (deporteFiltro == Deporte.KICKBOXING) {
+			} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporteFiltro)) {
 				tituloSeccion = "Mensualidades de Alumnos - Kickboxing (" + totalAlumnos + " alumnos)";
 			} else {
 				tituloSeccion = "Mensualidades de Alumnos (" + totalAlumnos + " alumnos)";
@@ -2450,15 +2452,15 @@ public class PDFServiceImpl implements PDFService {
 			// Sort by student name (and sport)
 			List<MensualidadGroup> sortedGroups = mensualidadesPorAlumno.values().stream().sorted((g1, g2) -> {
 				String nombre1 = (g1.alumno != null ? g1.alumno.getNombre() + " " + g1.alumno.getApellidos() : "") + " "
-						+ (g1.deporte != null ? g1.deporte.name() : "");
+						+ (g1.deporte != null ? g1.deporte : "");
 				String nombre2 = (g2.alumno != null ? g2.alumno.getNombre() + " " + g2.alumno.getApellidos() : "") + " "
-						+ (g2.deporte != null ? g2.deporte.name() : "");
+						+ (g2.deporte != null ? g2.deporte : "");
 				return nombre1.compareTo(nombre2);
 			}).collect(Collectors.toList());
 
 			for (MensualidadGroup group : sortedGroups) {
 				Alumno alumno = group.alumno;
-				Deporte deporte = group.deporte;
+				String deporte = group.deporte;
 				List<com.taemoi.project.entities.ProductoAlumno> mensualidades = group.mensualidades;
 
 				int pagas = (int) mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
@@ -2478,10 +2480,10 @@ public class PDFServiceImpl implements PDFService {
 				String deporteNombre = "";
 				if (deporteFiltro == null) {
 					// In general PDF, color-code by sport
-					if (deporte == Deporte.TAEKWONDO) {
+					if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
 						colorAlumno = "#0D47A1"; // Blue
 						deporteNombre = " <span style='color: #0D47A1; font-weight: bold;'>[Taekwondo]</span>";
-					} else if (deporte == Deporte.KICKBOXING) {
+					} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
 						colorAlumno = "#ff4500"; // Orange
 						deporteNombre = " <span style='color: #ff4500; font-weight: bold;'>[Kickboxing]</span>";
 					} else if (deporte != null) {
@@ -2610,7 +2612,7 @@ public class PDFServiceImpl implements PDFService {
 		String mesAnoConcepto = nombreMes + " " + anio; // Para buscar tarifas competidor
 
 		// Get AlumnoDeporte for Taekwondo and Kickboxing (active only if requested)
-		List<Deporte> deportesFiltrados = Arrays.asList(Deporte.TAEKWONDO, Deporte.KICKBOXING);
+		List<String> deportesFiltrados = Arrays.asList(CatalogoLegadoTaemoi.TAEKWONDO, CatalogoLegadoTaemoi.KICKBOXING);
 		List<AlumnoDeporte> alumnoDeportes;
 		if (soloActivos) {
 			alumnoDeportes = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrados);
@@ -2628,7 +2630,7 @@ public class PDFServiceImpl implements PDFService {
 		// tarifa competidor)
 		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes
 				.stream().filter(pa -> pa.getAlumno() != null && pa.getAlumnoDeporte() != null).collect(Collectors
-						.groupingBy(pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte().name()));
+						.groupingBy(pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte()));
 
 		// Build HTML for PDF
 		String fechaGeneracion = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
@@ -2696,10 +2698,10 @@ public class PDFServiceImpl implements PDFService {
 				String nombre = alumno.getNombre() == null ? "" : alumno.getNombre();
 				return (apellidos + " " + nombre).trim().toLowerCase(Locale.ROOT);
 			}).thenComparing(ad -> {
-				if (ad.getDeporte() == Deporte.TAEKWONDO) {
+				if (CatalogoLegadoTaemoi.TAEKWONDO.equals(ad.getDeporte())) {
 					return 0;
 				}
-				if (ad.getDeporte() == Deporte.KICKBOXING) {
+				if (CatalogoLegadoTaemoi.KICKBOXING.equals(ad.getDeporte())) {
 					return 1;
 				}
 				return 2;
@@ -2740,10 +2742,10 @@ public class PDFServiceImpl implements PDFService {
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String deporteClass = "";
 					String deporteNombre = "";
-					if (ad.getDeporte() == Deporte.TAEKWONDO) {
+					if (CatalogoLegadoTaemoi.TAEKWONDO.equals(ad.getDeporte())) {
 						deporteClass = "deporte-taekwondo";
 						deporteNombre = "Taekwondo";
-					} else if (ad.getDeporte() == Deporte.KICKBOXING) {
+					} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(ad.getDeporte())) {
 						deporteClass = "deporte-kickboxing";
 						deporteNombre = "Kickboxing";
 					} else if (ad.getDeporte() != null) {
@@ -2766,7 +2768,7 @@ public class PDFServiceImpl implements PDFService {
 				// CUANTIA
 				html.append("<td>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
 							.get(mapKey);
 					String cuantia = "-";
@@ -2784,7 +2786,7 @@ public class PDFServiceImpl implements PDFService {
 				// COMP
 				html.append("<td class='comp-cell'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
 							.get(mapKey);
 					String comp = "-";
@@ -2806,7 +2808,7 @@ public class PDFServiceImpl implements PDFService {
 				// GRADO
 				html.append("<td class='grado-cell'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					TipoGrado tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
+					String tipoGrado = ad.getGrado() != null ? ad.getGrado().getTipoGrado() : null;
 					html.append("<div class='line-item'>");
 					if (tipoGrado != null) {
 						html.append(generarCinturonInlineHTML(tipoGrado, 60, 12));
@@ -2820,7 +2822,7 @@ public class PDFServiceImpl implements PDFService {
 				// FECHA DE PAGO
 				html.append("<td>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String mapKey = alumno.getId() + "_" + ad.getDeporte().name();
+					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
 							.get(mapKey);
 					String fechaPago = "";
@@ -2871,7 +2873,7 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarInformeAlumnasDpf(boolean soloActivos) {
 		List<Alumno> alumnas = alumnoDeporteRepository
-				.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA).stream()
+				.findActivosByDeporteWithAlumno(CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA).stream()
 				.map(AlumnoDeporte::getAlumno)
 				.filter(alumno -> alumno != null && (!soloActivos || Boolean.TRUE.equals(alumno.getActivo())))
 				.sorted(Comparator.comparing(alumno ->
@@ -2911,8 +2913,7 @@ public class PDFServiceImpl implements PDFService {
 	public byte[] generarInformeCompetidores() {
 		// Get all active competitors for Taekwondo and Kickboxing
 		List<AlumnoDeporte> competidores = alumnoDeporteRepository
-				.findCompetidoresActivosByDeporteIn(catalogoDisciplinas.codigosQuePermitenCompeticion().stream()
-						.map(Deporte::valueOf).toList());
+				.findCompetidoresActivosByDeporteIn(catalogoDisciplinas.codigosQuePermitenCompeticion());
 
 		LocalDate now = LocalDate.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
@@ -2946,10 +2947,10 @@ public class PDFServiceImpl implements PDFService {
 
 		// Separate by sport
 		List<AlumnoDeporte> competidoresTaekwondo = competidores.stream()
-				.filter(ad -> ad.getDeporte() == Deporte.TAEKWONDO).collect(Collectors.toList());
+				.filter(ad -> CatalogoLegadoTaemoi.TAEKWONDO.equals(ad.getDeporte())).collect(Collectors.toList());
 
 		List<AlumnoDeporte> competidoresKickboxing = competidores.stream()
-				.filter(ad -> ad.getDeporte() == Deporte.KICKBOXING).collect(Collectors.toList());
+				.filter(ad -> CatalogoLegadoTaemoi.KICKBOXING.equals(ad.getDeporte())).collect(Collectors.toList());
 
 		// Taekwondo section
 		if (!competidoresTaekwondo.isEmpty()) {
@@ -2996,13 +2997,13 @@ public class PDFServiceImpl implements PDFService {
 	private String generarSeccionCompetidores(List<AlumnoDeporte> competidores) {
 		StringBuilder html = new StringBuilder();
 
-		Deporte deporte = competidores.isEmpty() ? Deporte.TAEKWONDO : competidores.get(0).getDeporte();
+		String deporte = competidores.isEmpty() ? CatalogoLegadoTaemoi.TAEKWONDO : competidores.get(0).getDeporte();
 
 		// Color según deporte para la badge
 		String colorAcento;
-		if (deporte == Deporte.KICKBOXING) {
+		if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
 			colorAcento = "#ff4500";
-		} else if (deporte == Deporte.TAEKWONDO) {
+		} else if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
 			colorAcento = "#0D47A1";
 		} else {
 			colorAcento = "#007bff";
@@ -3088,7 +3089,7 @@ public class PDFServiceImpl implements PDFService {
 				}
 
 				// Grado del alumno
-				TipoGrado tipoGrado = tipoDe(ad.getGrado());
+				String tipoGrado = tipoDe(ad.getGrado());
 				String nombreGrado = (tipoGrado != null) ? progresionGrados.obtenerNombreVisible(ad.getGrado())
 						: "Sin grado";
 
@@ -3185,10 +3186,10 @@ public class PDFServiceImpl implements PDFService {
 		List<Map.Entry<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>>> sortedGroups = new ArrayList<>(
 				groupedByGrade.entrySet());
 		sortedGroups.sort((e1, e2) -> {
-			TipoGrado t1 = e1.getValue().get(0).getGradoActual();
-			TipoGrado t2 = e2.getValue().get(0).getGradoActual();
-			int g1 = ordenPresentacion(t1 == null ? null : t1.name(), null);
-			int g2 = ordenPresentacion(t2 == null ? null : t2.name(), null);
+			String t1 = e1.getValue().get(0).getGradoActual();
+			String t2 = e2.getValue().get(0).getGradoActual();
+			int g1 = ordenPresentacion(t1 == null ? null : t1, null);
+			int g2 = ordenPresentacion(t2 == null ? null : t2, null);
 			return Integer.compare(g2, g1);
 		});
 
@@ -3197,8 +3198,8 @@ public class PDFServiceImpl implements PDFService {
 			if (alumnos.isEmpty())
 				continue;
 
-			TipoGrado gradoActual = alumnos.get(0).getGradoActual();
-			TipoGrado gradoSiguiente = alumnos.get(0).getGradoSiguiente();
+			String gradoActual = alumnos.get(0).getGradoActual();
+			String gradoSiguiente = alumnos.get(0).getGradoSiguiente();
 
 			// Sort students by name
 			alumnos.sort(Comparator.comparing(a -> a.getNombreCompleto().toLowerCase()));
@@ -3213,8 +3214,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<span class='belt-with-text'>");
 			html.append(generarCinturonInlineHTML(gradoActual, 50, 15));
 			html.append("<span class='belt-text'>DE ")
-					.append(progresionGrados.obtenerNombreVisible(convocatoria.getDeporte().name(),
-							gradoActual == null ? null : gradoActual.name()).toUpperCase())
+					.append(progresionGrados.obtenerNombreVisible(convocatoria.getDeporte(),
+							gradoActual == null ? null : gradoActual).toUpperCase())
 					.append("</span>");
 			html.append("</span>");
 			html.append("</td>");
@@ -3228,8 +3229,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<td class='grade-to'>");
 			html.append("<span class='belt-with-text'>");
 			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(
-					progresionGrados.obtenerNombreVisible(convocatoria.getDeporte().name(),
-							gradoSiguiente == null ? null : gradoSiguiente.name()).toUpperCase())
+					progresionGrados.obtenerNombreVisible(convocatoria.getDeporte(),
+							gradoSiguiente == null ? null : gradoSiguiente).toUpperCase())
 					.append("</span>");
 			html.append(generarCinturonInlineHTML(gradoSiguiente, 50, 15));
 			html.append("</span>");
@@ -3295,15 +3296,15 @@ public class PDFServiceImpl implements PDFService {
 		return outputStream.toByteArray();
 	}
 
-	private String generarCinturonInlineHTML(TipoGrado tipo, int width, int height) {
+	private String generarCinturonInlineHTML(String tipo, int width, int height) {
 		if (tipo == null) {
 			return "";
 		}
 
 		StringBuilder html = new StringBuilder();
 
-		if (tipo.name().contains("ROJO_NEGRO")) {
-			String[] parts = tipo.name().split("_");
+		if (tipo.contains("ROJO_NEGRO")) {
+			String[] parts = tipo.split("_");
 			String colorInferior = obtenerColorPorNombre(parts[0]);
 			String colorSuperior = obtenerColorPorNombre(parts[1]);
 			int stripeCount = 0;
@@ -3329,15 +3330,15 @@ public class PDFServiceImpl implements PDFService {
 						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
 			}
 			html.append("</div>");
-		} else if (tipo.name().contains("DAN")
-				|| (tipo.name().contains("PUM") && !tipo.name().contains("ROJO_NEGRO"))) {
+		} else if (tipo.contains("DAN")
+				|| (tipo.contains("PUM") && !tipo.contains("ROJO_NEGRO"))) {
 			html.append("<div style='background-color: ").append(obtenerColorCinturon(tipo)).append("; width: ")
 					.append(width).append("px; height: ").append(height)
 					.append("px; position: relative; display: inline-block; vertical-align: middle; border: 1px solid #495057;'>");
 
 			int stripeCount = 0;
-			if (tipo.name().contains("DAN")) {
-				String[] parts = tipo.name().split("_");
+			if (tipo.contains("DAN")) {
+				String[] parts = tipo.split("_");
 				try {
 					stripeCount = Integer.parseInt(parts[1]);
 				} catch (Exception e) {
@@ -3354,8 +3355,8 @@ public class PDFServiceImpl implements PDFService {
 						.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
 			}
 			html.append("</div>");
-		} else if (tipo.name().contains("_")) {
-			String[] parts = tipo.name().split("_");
+		} else if (tipo.contains("_")) {
+			String[] parts = tipo.split("_");
 			String colorSuperior = obtenerColorPorNombre(parts[1]);
 			String colorInferior = obtenerColorPorNombre(parts[0]);
 			html.append("<div style='position: relative; width: ").append(width).append("px; height: ").append(height)
@@ -3387,40 +3388,40 @@ public class PDFServiceImpl implements PDFService {
 	/**
 	 * Gets the display name for a sport
 	 */
-	private String getDeporteNombre(Deporte deporte) {
+	private String getDeporteNombre(String deporte) {
 		if (deporte == null) {
 			return "N/A";
 		}
 		switch (deporte) {
-		case TAEKWONDO:
+		case CatalogoLegadoTaemoi.TAEKWONDO:
 			return "Taekwondo";
-		case KICKBOXING:
+		case CatalogoLegadoTaemoi.KICKBOXING:
 			return "Kickboxing";
-		case PILATES:
+		case CatalogoLegadoTaemoi.PILATES:
 			return "Pilates";
-		case DEFENSA_PERSONAL_FEMENINA:
+		case CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA:
 			return "D.P. Fem.";
 		default:
-			return deporte.name();
+			return deporte;
 		}
 	}
 
-	private Deporte inferDeporteFromConcepto(String concepto) {
+	private String inferDeporteFromConcepto(String concepto) {
 		if (concepto == null || concepto.isBlank()) {
 			return null;
 		}
 		String upper = concepto.toUpperCase(Locale.ROOT);
 		if (upper.contains("KICKBOXING")) {
-			return Deporte.KICKBOXING;
+			return CatalogoLegadoTaemoi.KICKBOXING;
 		}
 		if (upper.contains("TAEKWONDO")) {
-			return Deporte.TAEKWONDO;
+			return CatalogoLegadoTaemoi.TAEKWONDO;
 		}
 		if (upper.contains("PILATES")) {
-			return Deporte.PILATES;
+			return CatalogoLegadoTaemoi.PILATES;
 		}
 		if (upper.contains("DEFENSA")) {
-			return Deporte.DEFENSA_PERSONAL_FEMENINA;
+			return CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA;
 		}
 		return null;
 	}

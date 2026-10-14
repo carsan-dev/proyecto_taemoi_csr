@@ -35,11 +35,11 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Grado;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoGrado;
+import com.taemoi.project.legado.TipoTarifa;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRetoDiarioLogRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -82,8 +82,20 @@ public class AlumnoServiceImplTest {
 	@Mock
 	private com.taemoi.project.services.ContadorService contadorService;
 
+	@Mock
+	private com.taemoi.project.services.CatalogoCategoriasService catalogoCategorias;
+
+	/** Taemoi: comportamiento heredado (V28). */
+	@Mock
+	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
+
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
+
+	@org.junit.jupiter.api.BeforeEach
+	void taemoi() {
+		org.mockito.Mockito.lenient().when(comportamientoLegado.activo()).thenReturn(true);
+	}
 
 	@Test
 	public void testObtenerTodosLosAlumnos() {
@@ -146,14 +158,15 @@ public class AlumnoServiceImplTest {
 	 */
 	@Test
 	public void testAsignarCuantiaTarifa() {
-		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO);
+		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO.name());
 
 		assertEquals(30.0, result, 0.0);
 	}
 
 	@Test
 	public void testAsignarCategoriaSegunEdad() {
-		when(categoriaRepository.findByNombre(anyString())).thenReturn(new Categoria());
+		// V28: la categoría por edad sale del catálogo de categorías de la disciplina (taekwondo por defecto).
+		when(catalogoCategorias.categoriaPorEdad("TAEKWONDO", 10)).thenReturn(java.util.Optional.of(new Categoria()));
 
 		Categoria result = alumnoService.asignarCategoriaSegunEdad(10);
 
@@ -202,7 +215,7 @@ public class AlumnoServiceImplTest {
 		alumnoDTO.setDireccion("Calle Principal");
 		alumnoDTO.setEmail("juan@example.com");
 		alumnoDTO.setTelefono("123456789");
-		alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO);
+		alumnoDTO.setTipoTarifa(TipoTarifa.ADULTO.name());
 		alumnoDTO.setFechaAlta(new Date());
 
 		boolean result = alumnoService.datosAlumnoValidos(alumnoDTO);
@@ -262,19 +275,19 @@ public class AlumnoServiceImplTest {
 
 		AlumnoDeporte deporteActual = new AlumnoDeporte();
 		deporteActual.setAlumno(alumnoActual);
-		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteActual.setActivo(true);
 
 		AlumnoDeporte deporteRival = new AlumnoDeporte();
 		deporteRival.setAlumno(alumnoRival);
-		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteRival.setActivo(true);
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
-		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO.name())).thenReturn(true);
 		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
 				.thenReturn(true);
-		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO.name()))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
@@ -331,7 +344,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
 				.thenReturn(List.of(scoreActual, scoreRival));
 
-		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO.name(), 10);
 
 		assertNotNull(ranking);
 		assertEquals("TAEKWONDO", ranking.getDeporte());
@@ -362,19 +375,19 @@ public class AlumnoServiceImplTest {
 
 		AlumnoDeporte deporteActual = new AlumnoDeporte();
 		deporteActual.setAlumno(alumnoActual);
-		deporteActual.setDeporte(Deporte.KICKBOXING);
+		deporteActual.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.KICKBOXING.name()));
 		deporteActual.setActivo(true);
 
 		AlumnoDeporte deporteRival = new AlumnoDeporte();
 		deporteRival.setAlumno(alumnoRival);
-		deporteRival.setDeporte(Deporte.KICKBOXING);
+		deporteRival.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.KICKBOXING.name()));
 		deporteRival.setActivo(true);
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
-		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.KICKBOXING)).thenReturn(true);
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.KICKBOXING.name())).thenReturn(true);
 		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
 				.thenReturn(true);
-		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.KICKBOXING))
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.KICKBOXING.name()))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
@@ -428,7 +441,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
 				.thenReturn(List.of(scoreActual, scoreRival));
 
-		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.KICKBOXING, 10);
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.KICKBOXING.name(), 10);
 
 		assertNotNull(ranking);
 		assertNotNull(ranking.getMiPosicion());
@@ -453,19 +466,19 @@ public class AlumnoServiceImplTest {
 
 		AlumnoDeporte deporteActual = new AlumnoDeporte();
 		deporteActual.setAlumno(alumnoActual);
-		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteActual.setActivo(true);
 
 		AlumnoDeporte deporteRival = new AlumnoDeporte();
 		deporteRival.setAlumno(alumnoRival);
-		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteRival.setActivo(true);
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
-		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO.name())).thenReturn(true);
 		when(alumnoRetoDiarioLogRepository.existsByAnioIsoAndSemanaIso(any(Integer.class), any(Integer.class)))
 				.thenReturn(true);
-		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO.name()))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate hoy = LocalDate.now(RETO_DIARIO_ZONE_ID);
@@ -518,7 +531,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoRetoDiarioLogRepository.obtenerPuntuacionesSemana(any(Integer.class), any(Integer.class), any(List.class)))
 				.thenReturn(List.of(scoreActual, scoreRival));
 
-		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO, 10);
+		var ranking = alumnoService.obtenerRankingSemanalRetoDiario(1L, Deporte.TAEKWONDO.name(), 10);
 
 		assertNotNull(ranking);
 		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
@@ -545,17 +558,17 @@ public class AlumnoServiceImplTest {
 
 		AlumnoDeporte deporteActual = new AlumnoDeporte();
 		deporteActual.setAlumno(alumnoActual);
-		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteActual.setActivo(true);
 
 		AlumnoDeporte deporteRival = new AlumnoDeporte();
 		deporteRival.setAlumno(alumnoRival);
-		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteRival.setActivo(true);
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
-		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
-		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO.name())).thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO.name()))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate base = LocalDate.of(2026, 2, 1);
@@ -573,7 +586,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
 				.thenReturn(List.of(a1d1, a1d2, a1d3, a1d4, a2d1, a2d2, a2d3, a2d4, a2d5));
 
-		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
+		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO.name(), 10);
 
 		assertNotNull(ranking);
 		assertEquals("TAEKWONDO", ranking.getDeporte());
@@ -604,17 +617,17 @@ public class AlumnoServiceImplTest {
 
 		AlumnoDeporte deporteActual = new AlumnoDeporte();
 		deporteActual.setAlumno(alumnoActual);
-		deporteActual.setDeporte(Deporte.TAEKWONDO);
+		deporteActual.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteActual.setActivo(true);
 
 		AlumnoDeporte deporteRival = new AlumnoDeporte();
 		deporteRival.setAlumno(alumnoRival);
-		deporteRival.setDeporte(Deporte.TAEKWONDO);
+		deporteRival.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		deporteRival.setActivo(true);
 
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(alumnoActual));
-		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO)).thenReturn(true);
-		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO))
+		when(alumnoDeporteRepository.existsByAlumnoIdAndDeporteAndActivoTrue(1L, Deporte.TAEKWONDO.name())).thenReturn(true);
+		when(alumnoDeporteRepository.findActivosConAlumnoActivoByDeporte(Deporte.TAEKWONDO.name()))
 				.thenReturn(List.of(deporteActual, deporteRival));
 
 		LocalDate base = LocalDate.of(2026, 2, 1);
@@ -628,7 +641,7 @@ public class AlumnoServiceImplTest {
 		when(alumnoRetoDiarioLogRepository.obtenerFechasCompletadoHistorico(any(List.class)))
 				.thenReturn(List.of(a1d1, a1d2, a1d3, a2d1, a2d2, a2d3));
 
-		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO, 10);
+		var ranking = alumnoService.obtenerRankingGeneralRetoDiario(1L, Deporte.TAEKWONDO.name(), 10);
 
 		assertNotNull(ranking);
 		assertEquals("Alumno Actual", ranking.getTop().get(0).getAlias());
@@ -685,7 +698,7 @@ public class AlumnoServiceImplTest {
 		apto.setNombre("Ana");
 		AlumnoDeporte taekwondo = deporteApto(Deporte.TAEKWONDO, true, true);
 		Grado verde = new Grado();
-		verde.setTipoGrado(TipoGrado.VERDE);
+		verde.setCodigo(TipoGrado.VERDE.name());
 		taekwondo.setGrado(verde);
 		apto.addDeporte(deporteApto(Deporte.KICKBOXING, true, false));
 		apto.addDeporte(taekwondo);
@@ -717,7 +730,7 @@ public class AlumnoServiceImplTest {
 		when(progresionGrados.obtenerSiguienteGrado("TAEKWONDO", false, "AMARILLO"))
 				.thenReturn(Optional.of(gradoConCodigo("NARANJA")));
 
-		assertEquals(TipoGrado.NARANJA, alumnoService.calcularSiguienteGrado(alumno));
+		assertEquals(TipoGrado.NARANJA.name(), alumnoService.calcularSiguienteGrado(alumno));
 	}
 
 	@Test
@@ -730,7 +743,7 @@ public class AlumnoServiceImplTest {
 		alumno.addDeporte(kickboxing);
 		when(progresionGrados.obtenerSiguienteGrado("KICKBOXING", false, "VERDE"))
 				.thenReturn(Optional.of(gradoConCodigo("AZUL")));
-		assertEquals(TipoGrado.AZUL, alumnoService.calcularSiguienteGrado(alumno));
+		assertEquals(TipoGrado.AZUL.name(), alumnoService.calcularSiguienteGrado(alumno));
 
 		Alumno soloPilates = new Alumno();
 		soloPilates.addDeporte(deporteApto(Deporte.PILATES, true, false));
@@ -740,7 +753,6 @@ public class AlumnoServiceImplTest {
 	private static AlumnoDeporte deporteConGrado(Deporte deporte, boolean activo, TipoGrado tipoGrado) {
 		AlumnoDeporte ad = deporteApto(deporte, activo, false);
 		Grado grado = new Grado();
-		grado.setTipoGrado(tipoGrado);
 		grado.setCodigo(tipoGrado.name());
 		ad.setGrado(grado);
 		return ad;
@@ -754,7 +766,7 @@ public class AlumnoServiceImplTest {
 
 	private static AlumnoDeporte deporteApto(Deporte deporte, boolean activo, boolean apto) {
 		AlumnoDeporte ad = new AlumnoDeporte();
-		ad.setDeporte(deporte);
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));
 		ad.setActivo(activo);
 		ad.setAptoParaExamen(apto);
 		return ad;

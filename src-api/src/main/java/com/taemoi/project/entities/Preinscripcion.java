@@ -11,10 +11,11 @@ public class Preinscripcion extends EntidadOrganizacion {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Column(nullable=false,unique=true,length=32) private String referencia;
  @Column(nullable=false,length=9) private String temporada;
- @Enumerated(EnumType.STRING) @Column(nullable=false) private Deporte deporte;
- /** Disciplina (V26, NOT NULL); se escribe junto a {@code deporte} hasta la contracción. */
- @com.fasterxml.jackson.annotation.JsonIgnore @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="disciplina_id",nullable=false) private Disciplina disciplina;
+ /** Disciplina (V26, NOT NULL). Desde V28 la única fuente del deporte (la columna {@code deporte} se borró). */
+ @com.fasterxml.jackson.annotation.JsonIgnore @ManyToOne(fetch=FetchType.EAGER) @JoinColumn(name="disciplina_id",nullable=false) private Disciplina disciplina;
  public Disciplina getDisciplina(){return disciplina;} public void setDisciplina(Disciplina v){disciplina=v;}
+ /** Código de la disciplina: el valor de la antigua columna {@code deporte}. */
+ @com.fasterxml.jackson.annotation.JsonProperty("deporte") public String getDeporte(){return disciplina==null?null:disciplina.getCodigo();}
  @Enumerated(EnumType.STRING) @Column(nullable=false) private EstadoPreinscripcion estado=EstadoPreinscripcion.PENDIENTE;
  @Column(nullable=false,length=100) private String nombre; @Column(nullable=false,length=160) private String apellidos;
  @Column(length=16) private String dni; @Column(name="identidad_hash",nullable=false,length=64) private String identidadHash; @Column(name="fecha_nacimiento",nullable=false) private LocalDate fechaNacimiento;
@@ -57,7 +58,7 @@ public class Preinscripcion extends EntidadOrganizacion {
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="alumno_id") private Alumno alumno;
  @PrePersist void create(){creadaEn=actualizadaEn=Instant.now();} @PreUpdate void update(){actualizadaEn=Instant.now();}
  public Long getId(){return id;} public String getReferencia(){return referencia;} public void setReferencia(String v){referencia=v;} public String getTemporada(){return temporada;} public void setTemporada(String v){temporada=v;}
- public Deporte getDeporte(){return deporte;} public void setDeporte(Deporte v){deporte=v;} public EstadoPreinscripcion getEstado(){return estado;} public void setEstado(EstadoPreinscripcion v){estado=v;}
+ public EstadoPreinscripcion getEstado(){return estado;} public void setEstado(EstadoPreinscripcion v){estado=v;}
  public String getNombre(){return nombre;} public void setNombre(String v){nombre=v;} public String getApellidos(){return apellidos;} public void setApellidos(String v){apellidos=v;} public String getDni(){return dni;} public void setDni(String v){dni=v;} public String getIdentidadHash(){return identidadHash;} public void setIdentidadHash(String v){identidadHash=v;}
  public LocalDate getFechaNacimiento(){return fechaNacimiento;} public void setFechaNacimiento(LocalDate v){fechaNacimiento=v;} public String getDireccion(){return direccion;} public void setDireccion(String v){direccion=v;} public String getTelefono(){return telefono;} public void setTelefono(String v){telefono=v;} public String getTelefono2(){return telefono2;} public void setTelefono2(String v){telefono2=v;} public String getEmail(){return email;} public void setEmail(String v){email=v;} public Boolean getTieneDiscapacidad(){return tieneDiscapacidad;} public void setTieneDiscapacidad(Boolean v){tieneDiscapacidad=v;}
  public String getObservaciones(){return observaciones;} public void setObservaciones(String v){observaciones=v;}

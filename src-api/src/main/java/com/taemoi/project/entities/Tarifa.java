@@ -13,7 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
- * Tarifa de una organización. Sustituirá a {@link TipoTarifa} + {@code TarifaConfig}:
+ * Tarifa de una organización. Sustituye a los antiguos {@code TipoTarifa} + {@code TarifaConfig} (V28):
  * {@code codigo} conserva los valores del enum ({@code ADULTO}…).
  *
  * <p>{@code importe} es la cuantía general. {@code importeAdulto} / {@code importeMenor} solo

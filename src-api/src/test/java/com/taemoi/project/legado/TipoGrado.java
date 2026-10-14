@@ -1,4 +1,4 @@
-package com.taemoi.project.entities;
+package com.taemoi.project.legado;
 
 /**
  * Enumeración que representa los diferentes tipos de grado en artes marciales.

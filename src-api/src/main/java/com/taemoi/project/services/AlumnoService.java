@@ -17,13 +17,10 @@ import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Categoria;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
 
 import jakarta.validation.Valid;
 
@@ -59,15 +56,15 @@ public interface AlumnoService {
 
 	void removerAlumnoDeTurno(Long alumnoId, Long turnoId);
 
-	double asignarCuantiaTarifa(TipoTarifa tipoTarifa);
+	double asignarCuantiaTarifa(String tipoTarifa);
 
-	double asignarCuantiaTarifa(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar);
+	double asignarCuantiaTarifa(String tipoTarifa, RolFamiliar rolFamiliar);
 
 	Categoria asignarCategoriaSegunEdad(int edad);
 
 	Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO);
 
-	TipoGrado calcularSiguienteGrado(Alumno alumno);
+	String calcularSiguienteGrado(Alumno alumno);
 
 	boolean fechaNacimientoValida(Date fechaNacimiento);
 
@@ -89,7 +86,7 @@ public interface AlumnoService {
 
 	Optional<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(Long id);
 
-	List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(com.taemoi.project.entities.Deporte deporte);
+	List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(String deporte);
 
 	AlumnoConvocatoriaDTO agregarAlumnoAConvocatoria(Long alumnoId, Long convocatoriaId, boolean porRecompensa,
 			boolean rojoBordado);
@@ -112,9 +109,9 @@ public interface AlumnoService {
 
 	RetoDiarioEstadoDTO completarRetoDiario(Long alumnoId);
 
-	RetoDiarioRankingSemanalResponse obtenerRankingSemanalRetoDiario(Long alumnoId, Deporte deporte, Integer limit);
+	RetoDiarioRankingSemanalResponse obtenerRankingSemanalRetoDiario(Long alumnoId, String deporte, Integer limit);
 
-	RetoDiarioRankingGeneralResponse obtenerRankingGeneralRetoDiario(Long alumnoId, Deporte deporte, Integer limit);
+	RetoDiarioRankingGeneralResponse obtenerRankingGeneralRetoDiario(Long alumnoId, String deporte, Integer limit);
 
 	// ==================== MÉTODOS MULTI-DEPORTE ====================
 
@@ -132,8 +129,8 @@ public interface AlumnoService {
 	 * Agrega un deporte a un alumno
 	 */
 	com.taemoi.project.entities.AlumnoDeporte agregarDeporteAAlumno(Long alumnoId,
-			com.taemoi.project.entities.Deporte deporte,
-			com.taemoi.project.entities.TipoGrado gradoInicial,
+			String deporte,
+			String gradoInicial,
 			java.util.Date fechaAlta,
 			java.util.Date fechaAltaInicial,
 			java.util.Date fechaGrado);
@@ -141,27 +138,27 @@ public interface AlumnoService {
 	/**
 	 * Remueve un deporte de un alumno
 	 */
-	void removerDeporteDeAlumno(Long alumnoId, com.taemoi.project.entities.Deporte deporte);
+	void removerDeporteDeAlumno(Long alumnoId, String deporte);
 
 	/**
 	 * Actualiza el grado de un alumno en un deporte específico
 	 */
 	com.taemoi.project.entities.AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId,
-			com.taemoi.project.entities.Deporte deporte,
-			com.taemoi.project.entities.TipoGrado nuevoGrado);
+			String deporte,
+			String nuevoGrado);
 
 	/**
 	 * Pasa de grado por recompensa en un deporte específico y asigna el producto correspondiente
 	 */
 	com.taemoi.project.entities.AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId,
-			com.taemoi.project.entities.Deporte deporte, boolean rojoBordado);
+			String deporte, boolean rojoBordado);
 
 	/**
 	 * Pasa de grado con derecho de examen (no recompensa) y asigna el producto correspondiente.
 	 * Cuando el producto se marque como pagado, se actualizará el grado.
 	 */
 	com.taemoi.project.entities.AlumnoDeporte pasarGradoConDerechoExamen(Long alumnoId,
-			com.taemoi.project.entities.Deporte deporte, boolean rojoBordado);
+			String deporte, boolean rojoBordado);
 
 	/**
 	 * Actualiza la fecha de alta inicial del alumno

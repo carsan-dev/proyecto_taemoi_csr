@@ -29,6 +29,9 @@ public class ProductoServiceImpl implements ProductoService {
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
 
+	@Autowired
+	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
+
 	@Override
 	public List<Producto> obtenerTodosLosProductos() {
 		return productoRepository.findAll();
@@ -84,7 +87,7 @@ public class ProductoServiceImpl implements ProductoService {
 		if (Objects.equals(producto.getConcepto(), conceptoNuevo)) {
 			return;
 		}
-		TipoProducto tipo = CatalogoLegadoTaemoi.tipoDeCatalogo(producto);
+		TipoProducto tipo = CatalogoLegadoTaemoi.tipoDeCatalogo(producto, comportamientoLegado.activo());
 		boolean generaCargos = tipo == TipoProducto.MENSUALIDAD || tipo == TipoProducto.COMPETIDOR
 				|| tipo == TipoProducto.LICENCIA || tipo == TipoProducto.RESERVA_PLAZA;
 		if (generaCargos && productoAlumnoRepository.existsByProductoId(producto.getId())) {

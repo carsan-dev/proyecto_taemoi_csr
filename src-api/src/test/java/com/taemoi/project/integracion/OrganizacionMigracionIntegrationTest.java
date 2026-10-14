@@ -58,7 +58,8 @@ class OrganizacionMigracionIntegrationTest extends MySqlIntegrationTest {
 		// puede tener otro nombre. V19 debe encontrarlo por sus columnas, no por su nombre.
 		jdbc.execute("ALTER TABLE alumno RENAME INDEX UKi2otd4eccxkj7jwqeygr3wgoj TO uk_nombre_heredado_hibernate");
 
-		flyway(null).migrate();
+		// Fijado a V27: comprueba V18-V21 (índices por deporte que V28 sustituye; V28 tiene su propio test).
+		flyway("27").migrate();
 	}
 
 	@Test

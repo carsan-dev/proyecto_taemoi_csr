@@ -22,14 +22,14 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.taemoi.project.config.ExamEligibilityConfig;
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.config.GradeProgressionConfig;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.ExamEligibilityConfig;
+import com.taemoi.project.legado.ExamMaterialBlockConfig;
+import com.taemoi.project.legado.GradeProgressionConfig;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Organizacion;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
@@ -38,9 +38,9 @@ import com.taemoi.project.repositories.SistemaGradosRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.GradoService;
 import com.taemoi.project.services.ProgresionGradosService;
-import com.taemoi.project.utils.DeporteEdadUtils;
-import com.taemoi.project.utils.FechaUtils;
-import com.taemoi.project.utils.GradoUtils;
+import com.taemoi.project.legado.DeporteEdadUtils;
+import com.taemoi.project.legado.FechaUtils;
+import com.taemoi.project.legado.GradoUtils;
 
 /**
  * Paridad del catálogo (V23) con las clases que sustituye, para Taemoi (organización 1): para
@@ -80,6 +80,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 	@Autowired DisciplinaRepository disciplinas;
 	@Autowired SistemaGradosRepository sistemas;
 	@Autowired OrganizacionRepository organizaciones;
+	@Autowired com.taemoi.project.services.CatalogoCategoriasService categorias;
 
 	long org2;
 
@@ -436,7 +437,7 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 				Grado tkd = progresion.buscarGrado("TAEKWONDO", tipo.name()).orElse(null);
 				assertNotNull(tkd, tipo.name());
 				assertEquals(sistemaTkd, tkd.getSistemaGrados().getId(), tipo.name());
-				assertEquals(tipo, tkd.getTipoGrado());
+				assertEquals(tipo.name(), tkd.getTipoGrado());
 			}
 			List<Grado> listado = gradoService.obtenerTodosLosGrados();
 			assertEquals(TipoGrado.values().length, listado.size());
@@ -445,6 +446,46 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 			Long sistemaKb = catalogo.obtenerPorCodigo("KICKBOXING").getSistemaGrados().getId();
 			assertEquals(TipoGrado.values().length, grados.findBySistemaGradosIdOrderByOrdenAscIdAsc(sistemaTkd).size());
 			assertEquals(TipoGrado.values().length, grados.findBySistemaGradosIdOrderByOrdenAscIdAsc(sistemaKb).size());
+		});
+	}
+
+	// ---------------- Categorías (V28: TipoCategoria -> categoria) ----------------
+
+	/**
+	 * Regla del código anterior a V28 (AlumnoDeporteServiceImpl / AlumnoServiceImpl.asignarCategoriaSegunEdad),
+	 * copiada literalmente: solo taekwondo, por años cumplidos, la categoría de {@code TipoCategoria} buscada por
+	 * su nombre.
+	 */
+	private static String categoriaAntigua(int edad) {
+		com.taemoi.project.legado.TipoCategoria tipoCategoria;
+		if (edad <= 9) {
+			tipoCategoria = com.taemoi.project.legado.TipoCategoria.INFANTIL;
+		} else if (edad <= 11) {
+			tipoCategoria = com.taemoi.project.legado.TipoCategoria.PRECADETE;
+		} else if (edad <= 13) {
+			tipoCategoria = com.taemoi.project.legado.TipoCategoria.CADETE;
+		} else if (edad <= 16) {
+			tipoCategoria = com.taemoi.project.legado.TipoCategoria.JUNIOR;
+		} else {
+			tipoCategoria = com.taemoi.project.legado.TipoCategoria.SENIOR;
+		}
+		return tipoCategoria.getNombre();
+	}
+
+	@Test
+	void categoriaPorEdad_igualQueTipoCategoria_soloEnTaekwondo() {
+		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
+			for (int edad = -1; edad <= 90; edad++) {
+				assertEquals(categoriaAntigua(edad),
+						categorias.categoriaPorEdad("TAEKWONDO", edad).map(c -> c.getNombre()).orElse(null),
+						"taekwondo edad=" + edad);
+				for (String otra : List.of("KICKBOXING", "PILATES", "DEFENSA_PERSONAL_FEMENINA")) {
+					assertTrue(categorias.categoriaPorEdad(otra, edad).isEmpty(), otra + " edad=" + edad);
+				}
+			}
+			assertTrue(categorias.asignaCategoriaPorEdad("TAEKWONDO"));
+			assertFalse(categorias.asignaCategoriaPorEdad("KICKBOXING"));
+			assertFalse(categorias.asignaCategoriaPorEdad("PILATES"));
 		});
 	}
 

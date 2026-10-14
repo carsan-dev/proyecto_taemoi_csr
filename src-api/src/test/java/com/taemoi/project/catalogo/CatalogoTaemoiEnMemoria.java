@@ -18,7 +18,7 @@ import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.SistemaGrados;
 import com.taemoi.project.entities.Tarifa;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.TarifaRepository;
@@ -67,6 +67,7 @@ public final class CatalogoTaemoiEnMemoria {
 	private final CatalogoDisciplinasService catalogo = new CatalogoDisciplinasServiceImpl(disciplinas);
 	private final ProgresionGradosService progresion = new ProgresionGradosServiceImpl(catalogo, grados);
 	private final List<Grado> todos = new ArrayList<>();
+	private final List<Disciplina> lista;
 	private final TarifaRepository tarifaRepository = mock(TarifaRepository.class);
 	private final TarifasService tarifas = new TarifasServiceImpl(tarifaRepository);
 	private final List<Tarifa> listaTarifas = new ArrayList<>();
@@ -74,7 +75,7 @@ public final class CatalogoTaemoiEnMemoria {
 	public CatalogoTaemoiEnMemoria() {
 		SistemaGrados tkd = sistema(SISTEMA_TKD, "TAEKWONDO");
 		SistemaGrados kb = sistema(SISTEMA_KB, "KICKBOXING");
-		List<Disciplina> lista = List.of(disciplina(1L, "TAEKWONDO", tkd, true, 14, 1),
+		lista = List.of(disciplina(1L, "TAEKWONDO", tkd, true, 14, 1),
 				disciplina(2L, "KICKBOXING", kb, true, 15, 2), disciplina(3L, "PILATES", null, false, 14, 3),
 				disciplina(4L, "DEFENSA_PERSONAL_FEMENINA", null, false, 14, 4));
 		long id = 100;
@@ -129,6 +130,41 @@ public final class CatalogoTaemoiEnMemoria {
 				.filter(g -> g.getCodigo().equals(inv.getArgument(1))).findFirst());
 		lenient().when(grados.findById(anyLong())).thenAnswer(inv -> todos.stream()
 				.filter(g -> g.getId().equals(inv.getArgument(0))).findFirst());
+		lenient().when(grados.findCodigosDistintos()).thenAnswer(inv -> todos.stream().map(Grado::getCodigo).distinct().toList());
+	}
+
+	/** Disciplina del catálogo en memoria con ese código (para montar entidades en los tests). */
+	public Disciplina disciplina(String codigo) {
+		return lista.stream().filter(d -> d.getCodigo().equals(codigo)).findFirst().orElseThrow();
+	}
+
+	/**
+	 * Disciplina suelta con el código y los datos de Taemoi (V23), para entidades de tests que no usan el
+	 * catálogo en memoria.
+	 */
+	public static Disciplina disciplinaTaemoi(String codigo) {
+		// Sin simulaciones (se puede llamar dentro de un when(...) de Mockito).
+		return switch (codigo) {
+		case "TAEKWONDO" -> disciplina(1L, "TAEKWONDO", sistema(SISTEMA_TKD, "TAEKWONDO"), true, 14, 1);
+		case "KICKBOXING" -> disciplina(2L, "KICKBOXING", sistema(SISTEMA_KB, "KICKBOXING"), true, 15, 2);
+		case "PILATES" -> disciplina(3L, "PILATES", null, false, 14, 3);
+		case "DEFENSA_PERSONAL_FEMENINA" -> disciplina(4L, "DEFENSA_PERSONAL_FEMENINA", null, false, 14, 4);
+		default -> throw new IllegalArgumentException(codigo);
+		};
+	}
+
+	/** Comportamiento heredado de Taemoi activo (organización 1, V28). */
+	public com.taemoi.project.services.ComportamientoLegadoService comportamientoTaemoi() {
+		return () -> true;
+	}
+
+	/** Tarifa de Taemoi (V24) con ese código, suelta, para montar inscripciones en los tests. */
+	public static Tarifa tarifaTaemoi(String codigo) {
+		// Sin simulaciones (se puede llamar dentro de un when(...) de Mockito).
+		Tarifa tarifa = new Tarifa();
+		tarifa.setCodigo(codigo);
+		tarifa.setNombre(codigo);
+		return tarifa;
 	}
 
 	public CatalogoDisciplinasService catalogo() {
@@ -185,7 +221,6 @@ public final class CatalogoTaemoiEnMemoria {
 		grado.setId(id);
 		grado.setSistemaGrados(sistema);
 		grado.setCodigo((String) fila[0]);
-		grado.setTipoGrado(TipoGrado.valueOf((String) fila[0]));
 		grado.setNombre(nombre);
 		grado.setOrden(orden);
 		grado.setAplicaA(aplica);

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Categoria;
-import com.taemoi.project.entities.TipoCategoria;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -29,7 +28,7 @@ public class CategoriaTest {
 	@Test
 	void testCategoria_EntidadValida() {
 		Categoria categoria = new Categoria();
-		categoria.setTipoCategoria(TipoCategoria.INFANTIL);
+		categoria.setCodigo("INFANTIL");
 		categoria.setNombre("PreCadete");
 
 		Set<ConstraintViolation<Categoria>> violations = validator.validate(categoria);
@@ -40,7 +39,7 @@ public class CategoriaTest {
 	@Test
 	void testCategoria_NombreInvalido() {
 		Categoria categoria = new Categoria();
-		categoria.setTipoCategoria(TipoCategoria.INFANTIL);
+		categoria.setCodigo("INFANTIL");
 		categoria.setNombre("");
 
 		Set<ConstraintViolation<Categoria>> violations = validator.validate(categoria);

@@ -6,13 +6,12 @@ import java.time.ZoneId;
 import java.util.Date;
 
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
 
 public class AlumnoDeporteDTO {
 
 	// Identity and sport
 	private Long id;
-	private Deporte deporte;
+	private String deporte;
 
 	// Grade data (per-sport)
 	private String grado; // TipoGrado como String
@@ -71,7 +70,7 @@ public class AlumnoDeporteDTO {
 		dto.setDeporte(alumnoDeporte.getDeporte());
 
 		// Grade data
-		dto.setGrado(alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getTipoGrado().name() : null);
+		dto.setGrado(alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getCodigo() : null);
 		dto.setFechaGrado(alumnoDeporte.getFechaGrado());
 		dto.setAptoParaExamen(alumnoDeporte.getAptoParaExamen());
 
@@ -178,11 +177,11 @@ public class AlumnoDeporteDTO {
 		this.id = id;
 	}
 
-	public Deporte getDeporte() {
+	public String getDeporte() {
 		return deporte;
 	}
 
-	public void setDeporte(Deporte deporte) {
+	public void setDeporte(String deporte) {
 		this.deporte = deporte;
 	}
 

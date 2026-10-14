@@ -449,14 +449,14 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void laFinalizacionDeUnaPreinscripcionDejaSusConsentimientosUnaSolaVez() {
 		long plantilla = jdbc.queryForObject(
-				"SELECT id FROM plantilla_preinscripcion WHERE deporte = 'TAEKWONDO' ORDER BY id LIMIT 1", Long.class);
+				"SELECT p.id FROM plantilla_preinscripcion p JOIN disciplina d ON d.id = p.disciplina_id WHERE p.organizacion_id = 1 AND d.codigo = 'TAEKWONDO' ORDER BY p.id LIMIT 1", Long.class);
 		String referencia = "IT-PER-" + sufijo;
 		jdbc.update("""
-				INSERT INTO preinscripcion (referencia, temporada, deporte, estado, nombre, apellidos, dni, identidad_hash,
+				INSERT INTO preinscripcion (referencia, temporada, estado, nombre, apellidos, dni, identidad_hash,
 				  fecha_nacimiento, direccion, telefono, email, consentimiento_fotografico, aceptacion_normas,
 				  firmante_nombre, firma, plantilla_id, plantilla_snapshot, pdf_firmado, token_documento_hash,
 				  creada_en, actualizada_en, alumno_id, organizacion_id, disciplina_id)
-				VALUES (?, '2025-2026', 'TAEKWONDO', 'FINALIZADA', 'Ana', 'Prueba', NULL, ?, '2012-05-05', 'Calle 1',
+				VALUES (?, '2025-2026', 'FINALIZADA', 'Ana', 'Prueba', NULL, ?, '2012-05-05', 'Calle 1',
 				  '600000000', 'ana@example.test', 0, 1, 'Madre Firmante', x'00', ?, '{}', x'00', ?,
 				  '2025-09-10 12:00:00', '2025-09-10 12:00:00', ?, 1,
 				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = 'TAEKWONDO'))

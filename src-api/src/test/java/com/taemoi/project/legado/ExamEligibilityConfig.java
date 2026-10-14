@@ -1,4 +1,4 @@
-package com.taemoi.project.config;
+package com.taemoi.project.legado;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.taemoi.project.entities.TipoGrado;
 
 import jakarta.annotation.PostConstruct;
 

@@ -29,7 +29,7 @@ import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.DisciplinaRepository;
@@ -198,6 +198,10 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 			DisciplinasDePrueba.asegurar(disciplinas, "PILATES");
 			// Tarifa propia de la escuela (V27): la cuantía por defecto del alta sale de ella.
 			DisciplinasDePrueba.tarifa(tarifas, "KICKBOXING", "30.00", kb);
+			// V28: las demás tarifas de estas altas también son de la escuela (un código que la escuela no tiene es
+			// un 400; antes se guardaba en tipo_tarifa sin tarifa_id).
+			DisciplinasDePrueba.tarifa(tarifas, "PILATES", "30.00", disciplinas.findByCodigo("PILATES").orElseThrow());
+			DisciplinasDePrueba.tarifa(tarifas, "INFANTIL", "28.00", null);
 			productos.save(new Producto("MENSUALIDAD", 30.0, null));
 		});
 		return org;
@@ -214,10 +218,12 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		a.setTelefono("600000000");
 		long id = alumnos.save(a).getId();
 		jdbc.update("""
-				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, principal,
-				  tipo_tarifa, cuantia_tarifa, tiene_licencia, organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id)
-				VALUES (1, 0, ?, 'TAEKWONDO', 0, 1, 'ADULTO', 30, 0, ?, '2020-09-01', '2020-09-01', ?)
-				""", id, TenantContext.get(), DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO").getId());
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal,
+				  tarifa_id, cuantia_tarifa, tiene_licencia, organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id)
+				VALUES (1, 0, ?, 0, 1, (SELECT t.id FROM tarifa t WHERE t.organizacion_id = ? AND t.codigo = 'ADULTO'),
+				  30, 0, ?, '2020-09-01', '2020-09-01', ?)
+				""", id, TenantContext.get(), TenantContext.get(),
+				DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO").getId());
 		return id;
 	}
 
@@ -232,8 +238,9 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private long idDeporte(long alumnoId, String deporte) {
-		return jdbc.queryForObject("SELECT id FROM alumno_deporte WHERE alumno_id = ? AND deporte = ?", Long.class,
-				alumnoId, deporte);
+		return jdbc.queryForObject("""
+				SELECT ad.id FROM alumno_deporte ad JOIN disciplina d ON d.id = ad.disciplina_id
+				WHERE ad.alumno_id = ? AND d.codigo = ?""", Long.class, alumnoId, deporte);
 	}
 
 	private static String mensualidad(String mesAno, String deporte) {

@@ -5,7 +5,7 @@ public interface PreinscripcionRepository extends JpaRepository<Preinscripcion,L
  @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
  @Query("select p from Preinscripcion p where p.referencia = :referencia")
  Optional<Preinscripcion> findByReferenciaForUpdate(@org.springframework.data.repository.query.Param("referencia") String referencia);
- boolean existsByIdentidadHashAndDeporteAndTemporadaAndEstadoIn(String identidadHash,Deporte deporte,String temporada,Collection<EstadoPreinscripcion> estados);
+ boolean existsByIdentidadHashAndDisciplinaCodigoAndTemporadaAndEstadoIn(String identidadHash,String deporte,String temporada,Collection<EstadoPreinscripcion> estados);
  boolean existsByIdempotencyKeyHash(String idempotencyKeyHash);
  long countDistinctByTurnosContainingAndTemporadaAndEstado(Turno turno,String temporada,EstadoPreinscripcion estado);
  @Query("select count(distinct p.id) from Preinscripcion p left join p.turnos t left join p.turno turnoLegacy where p.estado in :estados and (t.id=:turnoId or turnoLegacy.id=:turnoId)")

@@ -27,7 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.EstadoEmailFinalizacion;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
@@ -135,7 +135,7 @@ class PreinscripcionFinalizacionEmailServiceTest {
 		Grupo grupo = new Grupo();
 		grupo.setId(7L);
 		grupo.setNombre("Taekwondo infantil");
-		grupo.setDeporte(Deporte.TAEKWONDO);
+		grupo.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		Turno lunes = turno(11L, "Lunes", grupo);
 		Turno miercoles = turno(12L, "Miércoles", grupo);
 		Alumno alumno = new Alumno();
@@ -144,7 +144,7 @@ class PreinscripcionFinalizacionEmailServiceTest {
 		p.setReferencia("PRE-2026-ABC");
 		p.setNombre("Ana");
 		p.setApellidos("García");
-		p.setDeporte(Deporte.TAEKWONDO);
+		p.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		p.setTemporada("2026/2027");
 		p.setEstado(EstadoPreinscripcion.FINALIZADA);
 		p.setAlumno(alumno);

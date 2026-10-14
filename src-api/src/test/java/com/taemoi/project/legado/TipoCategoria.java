@@ -1,4 +1,4 @@
-package com.taemoi.project.entities;
+package com.taemoi.project.legado;
 
 public enum TipoCategoria {
 	INFANTIL("Infantil", 8, 9), PRECADETE("Precadete", 10, 11), CADETE("Cadete", 12, 13), JUNIOR("Junior", 14, 16),

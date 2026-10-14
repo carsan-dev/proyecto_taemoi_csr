@@ -78,6 +78,14 @@ public class Organizacion {
 	@Column(nullable = false)
 	private Boolean activa = Boolean.TRUE;
 
+	/**
+	 * V28: comportamiento heredado de Taemoi para los productos con códigos de V24 (concepto literal de los
+	 * cargos, competidor a 20 €, tesorería por concepto, variantes sin clasificar). TRUE solo para la
+	 * organización 1; el resto usa siempre el comportamiento del catálogo ({@code CatalogoLegadoTaemoi}).
+	 */
+	@Column(name = "comportamiento_legado_taemoi", nullable = false)
+	private Boolean comportamientoLegadoTaemoi = Boolean.FALSE;
+
 	@Column(name = "creada_en", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime creadaEn;
 
@@ -227,6 +235,14 @@ public class Organizacion {
 
 	public void setZonaHoraria(String zonaHoraria) {
 		this.zonaHoraria = zonaHoraria;
+	}
+
+	public Boolean getComportamientoLegadoTaemoi() {
+		return comportamientoLegadoTaemoi;
+	}
+
+	public void setComportamientoLegadoTaemoi(Boolean comportamientoLegadoTaemoi) {
+		this.comportamientoLegadoTaemoi = comportamientoLegadoTaemoi;
 	}
 
 	public Boolean getActiva() {

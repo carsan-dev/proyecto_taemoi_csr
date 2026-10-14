@@ -1,11 +1,10 @@
-package com.taemoi.project.utils;
+package com.taemoi.project.legado;
 
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.Date;
 
-import com.taemoi.project.entities.Deporte;
 
 public final class DeporteEdadUtils {
 	private static final int EDAD_ADULTO_TAEKWONDO = 14;

@@ -143,13 +143,9 @@ public class PreinscripcionFinalizacionEmailService {
 		return (p.getNombre() + " " + p.getApellidos()).trim();
 	}
 
+	/** Nombre público de la disciplina (en Taemoi, los de siempre: «Taekwondo», «Defensa personal femenina»…). */
 	private String nombreDeporte(Preinscripcion p) {
-		return switch (p.getDeporte()) {
-			case TAEKWONDO -> "Taekwondo";
-			case KICKBOXING -> "Kickboxing";
-			case PILATES -> "Pilates";
-			case DEFENSA_PERSONAL_FEMENINA -> "Defensa personal femenina";
-		};
+		return p.getDisciplina().getNombre();
 	}
 
 	private String fila(String etiqueta, String valor) {

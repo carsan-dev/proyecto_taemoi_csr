@@ -83,7 +83,6 @@ import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
@@ -162,6 +161,8 @@ public class AlumnoController {
 	@Autowired
 	private AlumnoAccessControlService alumnoAccessControlService;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
+	@Autowired private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+	@Autowired private com.taemoi.project.services.ProgresionGradosService progresionGrados;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -704,9 +705,9 @@ public class AlumnoController {
 					.body(Map.of("error", "InvalidArgument", "message", "El parámetro limit debe estar entre 1 y 10."));
 		}
 
-		Deporte deporte;
+		String deporte;
 		try {
-			deporte = Deporte.valueOf(deporteParam.trim().toUpperCase(Locale.ROOT));
+			deporte = catalogoDisciplinas.validarCodigo(deporteParam.trim().toUpperCase(Locale.ROOT));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Map.of("error", "InvalidArgument", "message", "Deporte inválido: " + deporteParam));
@@ -744,9 +745,9 @@ public class AlumnoController {
 					.body(Map.of("error", "InvalidArgument", "message", "El parámetro limit debe estar entre 1 y 10."));
 		}
 
-		Deporte deporte;
+		String deporte;
 		try {
-			deporte = Deporte.valueOf(deporteParam.trim().toUpperCase(Locale.ROOT));
+			deporte = catalogoDisciplinas.validarCodigo(deporteParam.trim().toUpperCase(Locale.ROOT));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Map.of("error", "InvalidArgument", "message", "Deporte inválido: " + deporteParam));
@@ -843,8 +844,9 @@ public class AlumnoController {
 	@GetMapping("/aptos/convocatoria")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosElegiblesParaConvocatoria(
-			@RequestParam com.taemoi.project.entities.Deporte deporte) {
-		List<AlumnoConGruposDTO> alumnosElegibles = alumnoService.obtenerAlumnosElegiblesParaConvocatoria(deporte);
+			@RequestParam String deporte) {
+		List<AlumnoConGruposDTO> alumnosElegibles = alumnoService
+				.obtenerAlumnosElegiblesParaConvocatoria(deporteDeParametro(deporte));
 		return ResponseEntity.ok(alumnosElegibles);
 	}
 
@@ -912,7 +914,7 @@ public class AlumnoController {
 		}
 
 		try {
-			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenDTO material = materialExamenService.obtenerMaterialExamen(alumnoId, deporteEnum);
 			return ResponseEntity.ok(material);
 		} catch (IllegalArgumentException e) {
@@ -936,7 +938,7 @@ public class AlumnoController {
 		}
 
 		try {
-			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo temario = materialExamenService.obtenerTemario(alumnoId, deporteEnum);
 			if (!esTemarioPermitido(temario.getMimeType())) {
 				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
@@ -965,7 +967,7 @@ public class AlumnoController {
 		}
 
 		try {
-			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo documento = materialExamenService
 					.obtenerDocumento(alumnoId, deporteEnum, documentoFile);
 			boolean forzarDownload = download || !esTemarioPermitido(documento.getMimeType());
@@ -993,7 +995,7 @@ public class AlumnoController {
 		}
 
 		try {
-			Deporte deporteEnum = Deporte.valueOf(deporte.toUpperCase(Locale.ROOT));
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo video = materialExamenService.obtenerVideo(alumnoId, deporteEnum, videoFile);
 			if (!esVideoPermitido(video.getMimeType())) {
 				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
@@ -1030,9 +1032,9 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El deporte es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporte = com.taemoi.project.entities.Deporte.valueOf(deporteStr);
-			com.taemoi.project.entities.TipoGrado gradoInicial = gradoStr != null
-					? com.taemoi.project.entities.TipoGrado.valueOf(gradoStr)
+			String deporte = catalogoDisciplinas.validarCodigo(deporteStr);
+			String gradoInicial = gradoStr != null
+					? progresionGrados.validarCodigoGrado(gradoStr)
 					: null;
 
 			// Parse dates if provided (format: YYYY-MM-DD)
@@ -1093,7 +1095,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> desactivarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			alumnoDeporteService.desactivarDeporteDeAlumno(id, deporteEnum);
 			preinscripcionService.promocionarTodas();
 			return ResponseEntity.ok().body("Deporte desactivado correctamente");
@@ -1112,7 +1114,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> activarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			alumnoDeporteService.activarDeporteDeAlumno(id, deporteEnum);
 			return ResponseEntity.ok().body("Deporte activado correctamente");
 		} catch (IllegalArgumentException e) {
@@ -1134,7 +1136,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> establecerDeportePrincipal(@PathVariable Long id, @PathVariable String deporte) {
 		try {
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.establecerDeportePrincipal(id, deporteEnum);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1152,7 +1154,7 @@ public class AlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> removerDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			alumnoService.removerDeporteDeAlumno(id, deporteEnum);
 			preinscripcionService.promocionarTodas();
 			return ResponseEntity.noContent().build();
@@ -1179,8 +1181,8 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El grado es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
-			com.taemoi.project.entities.TipoGrado nuevoGrado = com.taemoi.project.entities.TipoGrado.valueOf(nuevoGradoStr);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
+			String nuevoGrado = progresionGrados.validarCodigoGrado(nuevoGradoStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.actualizarGradoPorDeporte(id, deporteEnum, nuevoGrado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO.deAlumnoDeporte(alumnoDeporte);
@@ -1204,7 +1206,7 @@ public class AlumnoController {
 			@RequestBody(required = false) Map<String, Object> params) {
 		try {
 			boolean rojoBordado = params != null && Boolean.TRUE.equals(params.get("rojoBordado"));
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoPorRecompensa(id,
 					deporteEnum, rojoBordado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1228,7 +1230,7 @@ public class AlumnoController {
 			@RequestBody(required = false) Map<String, Object> params) {
 		try {
 			boolean rojoBordado = params != null && Boolean.TRUE.equals(params.get("rojoBordado"));
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoService.pasarGradoConDerechoExamen(id,
 					deporteEnum, rojoBordado);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1257,7 +1259,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El campo aptoParaExamen es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarAptoParaExamen(id, deporteEnum, aptoParaExamen);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1287,7 +1289,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de grado es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaGrado = java.sql.Date.valueOf(fechaGradoStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1324,7 +1326,7 @@ public class AlumnoController {
 				fechaAlta = java.sql.Date.valueOf(fechaAltaStr);
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarFechaAlta(id, deporteEnum, fechaAlta);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1359,7 +1361,7 @@ public class AlumnoController {
 				fechaBaja = java.sql.Date.valueOf(fechaBajaStr);
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarFechaBaja(id, deporteEnum, fechaBaja);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
@@ -1389,7 +1391,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de alta inicial es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaAltaInicial = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1421,7 +1423,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El tipo de tarifa es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			// Código de la tarifa de la organización (los de TipoTarifa en Taemoi)
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1454,7 +1456,7 @@ public class AlumnoController {
 			}
 
 			Double cuantiaTarifa = Double.valueOf(cuantiaObj.toString());
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarCuantiaTarifa(id, deporteEnum, cuantiaTarifa);
@@ -1485,7 +1487,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El rol familiar es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarRolFamiliar(id, deporteEnum, rolFamiliar);
@@ -1516,7 +1518,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El grupo familiar es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarGrupoFamiliar(id, deporteEnum, grupoFamiliar);
@@ -1547,7 +1549,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El campo tieneLicencia es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarTieneLicencia(id, deporteEnum, tieneLicencia);
@@ -1579,7 +1581,7 @@ public class AlumnoController {
 			}
 
 			Integer numeroLicencia = Integer.valueOf(numeroObj.toString());
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarNumeroLicencia(id, deporteEnum, numeroLicencia);
@@ -1610,7 +1612,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de licencia es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaLicencia = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1642,7 +1644,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("El campo competidor es requerido");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarCompetidor(id, deporteEnum, competidor);
@@ -1674,7 +1676,7 @@ public class AlumnoController {
 			}
 
 			Double peso = Double.valueOf(pesoObj.toString());
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarPeso(id, deporteEnum, peso);
@@ -1705,7 +1707,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de peso es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaPeso = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1737,7 +1739,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La categoría es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
 					.actualizarCategoria(id, deporteEnum, categoriaNombre);
@@ -1768,7 +1770,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de alta competición es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaAltaCompeticion = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1800,7 +1802,7 @@ public class AlumnoController {
 				return ResponseEntity.badRequest().body("La fecha de alta inicial competidor es requerida");
 			}
 
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 			java.util.Date fechaAltaCompetidorInicial = java.sql.Date.valueOf(fechaStr);
 
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
@@ -1828,7 +1830,7 @@ public class AlumnoController {
 	public ResponseEntity<?> actualizarDatosCompetidor(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Object> params) {
 		try {
-			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
+			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
 
 			// Parse optional fields
 			Boolean competidor = params.containsKey("competidor") ? (Boolean) params.get("competidor") : null;
@@ -2443,5 +2445,17 @@ public class AlumnoController {
 	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		return alumnoAccessControlService.canAccessAlumno(alumnoId, authentication);
+	}
+
+	/**
+	 * Código de disciplina recibido como parámetro de consulta: 400 sin cuerpo propio si la escuela no lo
+	 * tiene (lo que daba Spring al convertir el antiguo enum {@code Deporte}).
+	 */
+	private String deporteDeParametro(String valor) {
+		try {
+			return catalogoDisciplinas.validarCodigo(valor);
+		} catch (IllegalArgumentException | NullPointerException e) {
+			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
 	}
 }

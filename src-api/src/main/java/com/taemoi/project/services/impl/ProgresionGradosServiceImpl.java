@@ -13,6 +13,7 @@ import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.ProgresionGradosService;
 
 @Service
@@ -35,6 +36,21 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 	}
 
 	@Override
+	public String validarCodigoGrado(String codigoGrado) {
+		// Los códigos de Taemoi (los del antiguo TipoGrado) se siguen aceptando aquí en cualquier escuela, como
+		// antes: que la disciplina tenga ese grado lo dice después buscarGrado (mismos errores que antes de V28).
+		if (existeCodigoGrado(codigoGrado) || CatalogoLegadoTaemoi.nombreGradoLegado(codigoGrado) != null) {
+			return codigoGrado;
+		}
+		throw CatalogoLegadoTaemoi.valorNoValido("TipoGrado", codigoGrado);
+	}
+
+	@Override
+	public boolean existeCodigoGrado(String codigoGrado) {
+		return codigoGrado != null && grados.findCodigosDistintos().contains(codigoGrado);
+	}
+
+	@Override
 	public Optional<Grado> buscarGrado(String codigoDisciplina, String codigoGrado) {
 		if (codigoDisciplina == null || codigoGrado == null) {
 			return Optional.empty();
@@ -43,7 +59,9 @@ public class ProgresionGradosServiceImpl implements ProgresionGradosService {
 		if (!disciplina.tieneGrados()) {
 			return Optional.empty();
 		}
-		return grados.findBySistemaGradosIdAndCodigo(disciplina.getSistemaGrados().getId(), codigoGrado);
+		// Código exacto (la intercalación de la columna no distingue mayúsculas; el antiguo enum sí)
+		return grados.findBySistemaGradosIdAndCodigo(disciplina.getSistemaGrados().getId(), codigoGrado)
+				.filter(g -> codigoGrado.equals(g.getCodigo()));
 	}
 
 	@Override

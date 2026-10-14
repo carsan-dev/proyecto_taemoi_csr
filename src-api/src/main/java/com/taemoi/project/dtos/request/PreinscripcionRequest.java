@@ -2,11 +2,10 @@ package com.taemoi.project.dtos.request;
 
 import java.time.LocalDate;
 import java.util.List;
-import com.taemoi.project.entities.Deporte;
 import jakarta.validation.constraints.*;
 
 public record PreinscripcionRequest(
- @NotNull Deporte deporte,
+ @NotNull String deporte,
  @NotEmpty List<@NotNull @Positive Long> turnoIds,
  @NotBlank @Size(max=100) String nombre,
  @NotBlank @Size(max=160) String apellidos,

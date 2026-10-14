@@ -1,6 +1,5 @@
 package com.taemoi.project.dtos.response;
 
-import com.taemoi.project.entities.TipoGrado;
 
 public class AlumnoConvocatoriaDTO {
 	private Long id;
@@ -13,14 +12,14 @@ public class AlumnoConvocatoriaDTO {
 
 	private Double cuantiaExamen;
 
-	private TipoGrado gradoActual;
+	private String gradoActual;
 
-	private TipoGrado gradoSiguiente;
+	private String gradoSiguiente;
 
 	private Boolean pagado;
 
 	public AlumnoConvocatoriaDTO(Long id, Long alumnoId, String nombre, String apellidos, Double cuantiaExamen,
-			TipoGrado gradoActual, TipoGrado gradoSiguiente, Boolean pagado) {
+			String gradoActual, String gradoSiguiente, Boolean pagado) {
 		this.id = id;
 		this.alumnoId = alumnoId;
 		this.nombre = nombre;
@@ -75,19 +74,19 @@ public class AlumnoConvocatoriaDTO {
 		this.cuantiaExamen = cuantiaExamen;
 	}
 
-	public TipoGrado getGradoActual() {
+	public String getGradoActual() {
 		return gradoActual;
 	}
 
-	public void setGradoActual(TipoGrado gradoActual) {
+	public void setGradoActual(String gradoActual) {
 		this.gradoActual = gradoActual;
 	}
 
-	public TipoGrado getGradoSiguiente() {
+	public String getGradoSiguiente() {
 		return gradoSiguiente;
 	}
 
-	public void setGradoSiguiente(TipoGrado gradoSiguiente) {
+	public void setGradoSiguiente(String gradoSiguiente) {
 		this.gradoSiguiente = gradoSiguiente;
 	}
 

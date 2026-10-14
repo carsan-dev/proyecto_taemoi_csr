@@ -36,16 +36,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taemoi.project.config.TarifaConfig;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.TarifaConfig;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.Tarifa;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.entities.TipoProducto;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoTarifa;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -133,10 +133,8 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 						WHERE organizacion_id = 1 AND CAST(concepto AS BINARY) = CAST(? AS BINARY)""", Long.class, concepto));
 			}
 		}
-		try (Connection conexion = dataSource.getConnection()) {
-			ScriptUtils.executeSqlScript(conexion, new EncodedResource(
-					new ClassPathResource("db/migration/V24__tarifas_y_productos.sql"), StandardCharsets.UTF_8));
-		}
+		// Resync de V24 (productos y grados; desde V28 sin las sentencias de tipo_tarifa, que ya no existe).
+		ResyncProductosDePrueba.clasificarProductos(dataSource);
 
 		Organizacion org = new Organizacion();
 		org.setSlug("it-tarifas-" + UUID.randomUUID().toString().substring(0, 8));
@@ -495,24 +493,26 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		Long adulto = TenantContext.calcularCon(ORG_TAEMOI, () -> tarifas.obtenerPorCodigo("ADULTO").getId());
 		Long infantil = TenantContext.calcularCon(ORG_TAEMOI, () -> tarifas.obtenerPorCodigo("INFANTIL").getId());
 		jdbc.update("""
-				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, tipo_tarifa,
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor,
 				  tarifa_id, organizacion_id, disciplina_id)
-				VALUES (1, 0, ?, 'TAEKWONDO', 0, 'ADULTO', ?, 1,
+				VALUES (1, 0, ?, 0, ?, 1,
 				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = 'TAEKWONDO'))""", alumno, adulto);
 		try {
 			// Camino real: PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa -> actualizarTipoTarifa.
 			TenantContext.ejecutarCon(ORG_TAEMOI,
-					() -> alumnoDeporteService.actualizarTipoTarifa(alumno, Deporte.TAEKWONDO, TipoTarifa.INFANTIL));
+					() -> alumnoDeporteService.actualizarTipoTarifa(alumno, Deporte.TAEKWONDO.name(), TipoTarifa.INFANTIL.name()));
 			Map<String, Object> fila = jdbc.queryForMap(
-					"SELECT tipo_tarifa, tarifa_id FROM alumno_deporte WHERE alumno_id = ?", alumno);
+					"SELECT t.codigo AS tipo_tarifa, ad.tarifa_id FROM alumno_deporte ad JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.alumno_id = ?", alumno);
 			assertEquals("INFANTIL", fila.get("tipo_tarifa"));
 			assertEquals(infantil, ((Number) fila.get("tarifa_id")).longValue(), "escrita junto a tipo_tarifa (V27)");
 			assertNotEquals(adulto, ((Number) fila.get("tarifa_id")).longValue());
 
-			ejecutar("db/resync/resync_catalogo_v24.sql");
+			// Desde V28 el resync ya no se puede ejecutar (lee tipo_tarifa, que no existe): falla en su primera
+			// sentencia y no toca tarifa_id.
+			assertThrows(Exception.class, () -> ejecutar("db/resync/resync_catalogo_v24.sql"));
 			assertEquals(infantil, jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE alumno_id = ?",
 					Long.class, alumno));
-			ejecutar("db/resync/resync_catalogo_v24.sql");
+			assertThrows(Exception.class, () -> ejecutar("db/resync/resync_catalogo_v24.sql"));
 			assertEquals(infantil, jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE alumno_id = ?",
 					Long.class, alumno));
 		} finally {

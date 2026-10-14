@@ -1,6 +1,7 @@
 package com.taemoi.project.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,10 +18,9 @@ import jakarta.validation.constraints.NotNull;
 /**
  * Grado de un {@link SistemaGrados}.
  *
- * <p>Fase de ampliación (V23): conviven {@code tipoGrado} (código heredado, lo que usa hoy el
- * código) y las columnas del catálogo ({@code codigo} = {@code tipo_grado}, {@code nombre},
- * {@code orden}…), que solo leen los servicios nuevos. Las columnas nuevas no se exponen en JSON
- * para no cambiar las respuestas de la API.
+ * <p>Desde V28 {@code codigo} es la única identificación del grado (la columna heredada
+ * {@code tipo_grado} se borró). El JSON sigue siendo {@code {id, tipoGrado}}: {@code tipoGrado} es el
+ * {@code codigo} ({@link #getTipoGrado()}). Las demás columnas del catálogo no se exponen.
  */
 @Entity
 public class Grado extends EntidadOrganizacion {
@@ -28,17 +28,14 @@ public class Grado extends EntidadOrganizacion {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotNull(message = "El tipo de grado no puede ser nulo")
-	@Enumerated(EnumType.STRING)
-	private TipoGrado tipoGrado;
-
 	@JsonIgnore
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "sistema_grados_id")
 	private SistemaGrados sistemaGrados;
 
 	@JsonIgnore
-	@Column(length = 40)
+	@NotNull(message = "El tipo de grado no puede ser nulo")
+	@Column(length = 40, nullable = false)
 	private String codigo;
 
 	/** Nombre visible en su disciplina (en kickboxing, ROJO = «MARRÓN»). */
@@ -106,12 +103,10 @@ public class Grado extends EntidadOrganizacion {
 		this.id = id;
 	}
 
-	public TipoGrado getTipoGrado() {
-		return tipoGrado;
-	}
-
-	public void setTipoGrado(TipoGrado tipoGrado) {
-		this.tipoGrado = tipoGrado;
+	/** Código del grado: el valor que la API devolvía (y devuelve) en el campo {@code tipoGrado}. */
+	@JsonProperty("tipoGrado")
+	public String getTipoGrado() {
+		return codigo;
 	}
 
 	public SistemaGrados getSistemaGrados() {

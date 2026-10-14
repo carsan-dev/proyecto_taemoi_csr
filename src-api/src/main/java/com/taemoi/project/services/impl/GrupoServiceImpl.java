@@ -1,5 +1,7 @@
 package com.taemoi.project.services.impl;
 
+
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,7 +23,6 @@ import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
@@ -250,16 +251,16 @@ public class GrupoServiceImpl implements GrupoService {
 		for (String tipo : tipos) {
 			String tipoUpper = tipo.toUpperCase();
 			boolean esCompeticion = tipoUpper.contains("COMPET");
-			Deporte deporte;
+			String deporte;
 
 			if (tipoUpper.contains("TAEKWONDO")) {
-				deporte = Deporte.TAEKWONDO;
+				deporte = CatalogoLegadoTaemoi.TAEKWONDO;
 			} else if (tipoUpper.contains("KICKBOXING")) {
-				deporte = Deporte.KICKBOXING;
+				deporte = CatalogoLegadoTaemoi.KICKBOXING;
 			} else if (tipoUpper.contains("PILATES")) {
-				deporte = Deporte.PILATES;
+				deporte = CatalogoLegadoTaemoi.PILATES;
 			} else if (tipoUpper.contains("DEFENSA")) {
-				deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
+				deporte = CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA;
 			} else {
 				continue;
 			}
@@ -289,17 +290,17 @@ public class GrupoServiceImpl implements GrupoService {
 	public List<AlumnoCortoDTO> obtenerAlumnosPorTipo(String tipo) {
 		String tipoUpper = tipo.toUpperCase();
 		boolean esCompeticion = tipoUpper.contains("COMPET");
-		Deporte deporte;
+		String deporte;
 		List<AlumnoDeporte> alumnosDeporte;
 
 		if (tipoUpper.contains("TAEKWONDO")) {
-			deporte = Deporte.TAEKWONDO;
+			deporte = CatalogoLegadoTaemoi.TAEKWONDO;
 		} else if (tipoUpper.contains("KICKBOXING")) {
-			deporte = Deporte.KICKBOXING;
+			deporte = CatalogoLegadoTaemoi.KICKBOXING;
 		} else if (tipoUpper.contains("PILATES")) {
-			deporte = Deporte.PILATES;
+			deporte = CatalogoLegadoTaemoi.PILATES;
 		} else if (tipoUpper.contains("DEFENSA")) {
-			deporte = Deporte.DEFENSA_PERSONAL_FEMENINA;
+			deporte = CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA;
 		} else {
 			throw new GrupoNoEncontradoException("Deporte no válido: " + tipo);
 		}
@@ -472,17 +473,17 @@ public class GrupoServiceImpl implements GrupoService {
 		GrupoConAlumnosDTO grupoDTO = new GrupoConAlumnosDTO();
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
-		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
+		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte() : null);
 		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
 		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
 
-		Deporte deporteGrupo = grupo.getDeporte();
+		String deporteGrupo = grupo.getDeporte();
 		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
 				.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo()))
 				.map(alumno -> {
 					if (deporteGrupo != null && alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
 						AlumnoDeporte alumnoDeporte = alumno.getDeportes().stream()
-								.filter(ad -> ad.getDeporte() == deporteGrupo && Boolean.TRUE.equals(ad.getActivo()))
+								.filter(ad -> java.util.Objects.equals(ad.getDeporte(), deporteGrupo) && Boolean.TRUE.equals(ad.getActivo()))
 								.findFirst()
 								.orElse(null);
 						if (alumnoDeporte != null) {
@@ -516,13 +517,10 @@ public class GrupoServiceImpl implements GrupoService {
 		// Set deporte from DTO
 		if (grupoDTO.getDeporte() != null && !grupoDTO.getDeporte().isEmpty()) {
 			try {
-				grupo.setDeporte(Deporte.valueOf(grupoDTO.getDeporte()));
+				grupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(
+						catalogoDisciplinas.validarCodigo(grupoDTO.getDeporte())));
 			} catch (IllegalArgumentException e) {
 				// If invalid deporte, leave it null
-			}
-			if (grupo.getDeporte() != null) {
-				// disciplina_id (V26) junto al deporte heredado
-				grupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(grupo.getDeporte().name()));
 			}
 		}
 
@@ -551,7 +549,7 @@ public class GrupoServiceImpl implements GrupoService {
 		GrupoResponseDTO grupoDTO = new GrupoResponseDTO();
 		grupoDTO.setId(grupo.getId());
 		grupoDTO.setNombre(grupo.getNombre());
-		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte().name() : null);
+		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte() : null);
 		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
 		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
 		return grupoDTO;

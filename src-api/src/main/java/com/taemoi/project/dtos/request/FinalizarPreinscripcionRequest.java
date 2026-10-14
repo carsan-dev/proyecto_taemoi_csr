@@ -4,8 +4,6 @@ import java.time.LocalDate;
 import java.util.Set;
 
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -37,11 +35,11 @@ public record FinalizarPreinscripcionRequest(
 	}
 
 	public record DatosAltaDeporte(
-			TipoTarifa tipoTarifa,
+			String tipoTarifa,
 			@PositiveOrZero Double cuantiaTarifa,
 			RolFamiliar rolFamiliar,
 			@Size(max = 50) String grupoFamiliar,
-			TipoGrado grado,
+			String grado,
 			LocalDate fechaGrado) {
 	}
 

@@ -108,10 +108,9 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 				productosInsertados.add(idPorConcepto(concepto));
 			}
 		}
-		try (Connection conexion = dataSource.getConnection()) {
-			ScriptUtils.executeSqlScript(conexion, new EncodedResource(
-					new ClassPathResource("db/migration/V27__switch_tarifas_productos.sql"), StandardCharsets.UTF_8));
-		}
+		// Resync de V24 que repite V27 (productos y grados; desde V28 sin las sentencias de tipo_tarifa, que ya
+		// no existe).
+		ResyncProductosDePrueba.clasificarProductos(dataSource);
 		for (Map.Entry<String, Double> licencia : PRECIO_LICENCIA.entrySet()) {
 			fijarPrecio(idPorConcepto(licencia.getKey()), licencia.getValue());
 		}
@@ -177,7 +176,7 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 					.cargarMensualidadIndividualPorDeporte(alumno, deporte, "2041-03", false, LocalDate.of(2041, 3, 1))));
 
 			Map<String, Object> inscripcion = jdbc.queryForMap("""
-					SELECT ad.tipo_tarifa, t.codigo AS tarifa FROM alumno_deporte ad
+					SELECT t.codigo AS tipo_tarifa, t.codigo AS tarifa FROM alumno_deporte ad
 					LEFT JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.alumno_id = ?""", alumno);
 			assertEquals(tarifa, inscripcion.get("tipo_tarifa"), tarifa);
 			assertEquals(tarifa, inscripcion.get("tarifa"), tarifa + ": tarifa_id escrita en el alta");
@@ -663,12 +662,12 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 		long id = jdbc.queryForObject("SELECT id FROM alumno WHERE organizacion_id = 1 AND numero_expediente = ?",
 				Long.class, expediente);
 		jdbc.update("""
-				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, deporte, competidor, principal,
-				  tipo_tarifa, cuantia_tarifa, tiene_licencia, fecha_licencia, organizacion_id, fecha_alta,
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal,
+				  cuantia_tarifa, tiene_licencia, fecha_licencia, organizacion_id, fecha_alta,
 				  fecha_alta_inicial, disciplina_id)
-				VALUES (1, 0, ?, ?, 0, 1, NULL, NULL, 1, ?, 1, '2040-09-01', '2040-09-01',
+				VALUES (1, 0, ?, 0, 1, NULL, 1, ?, 1, '2040-09-01', '2040-09-01',
 				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = ?))""",
-				id, deporte, java.sql.Date.valueOf(fechaLicencia), deporte);
+				id, java.sql.Date.valueOf(fechaLicencia), deporte);
 		alumnosCreados.add(id);
 		return id;
 	}

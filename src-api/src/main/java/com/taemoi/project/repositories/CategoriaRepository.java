@@ -22,4 +22,7 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 	Categoria findByNombre(String nombre);
 
 	boolean existsByNombre(String nombre);
+
+	/** Categorías de la disciplina (catálogo V28), por {@code orden}. */
+	java.util.List<Categoria> findByDisciplinaIdOrderByOrdenAscIdAsc(Long disciplinaId);
 }

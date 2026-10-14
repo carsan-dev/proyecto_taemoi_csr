@@ -7,11 +7,9 @@ import java.util.List;
 import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Genero;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.NifUtils;
@@ -36,7 +34,7 @@ public class AlumnoDTO {
 	private String codigoPostal;
 	private String observaciones;
 	private Double cuantiaTarifa;
-	private TipoTarifa tipoTarifa;
+	private String tipoTarifa;
 	private RolFamiliar rolFamiliar;
 	private String grupoFamiliar;
 	private Date fechaAlta;
@@ -48,7 +46,7 @@ public class AlumnoDTO {
 	private Boolean competidor;
 	private Double peso;
 	private Date fechaPeso;
-	private Deporte deporte;
+	private String deporte;
 	private String categoria;
 	private String grado;
 	private Date fechaGrado;
@@ -70,10 +68,10 @@ public class AlumnoDTO {
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
-			String nif, String direccion, String email, String telefono, String telefono2, String observaciones, Double cuantiaTarifa, TipoTarifa tipoTarifa,
+			String nif, String direccion, String email, String telefono, String telefono2, String observaciones, Double cuantiaTarifa, String tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
 			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
-			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
+			String deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
 			Integer numeroLicencia, Date fechaLicencia, Boolean tieneDiscapacidad, Boolean aptoParaExamen) {
 		this.id = id;
 		this.nombre = nombre;
@@ -223,11 +221,11 @@ public class AlumnoDTO {
 		this.observaciones = observaciones;
 	}
 
-	public TipoTarifa getTipoTarifa() {
+	public String getTipoTarifa() {
 		return tipoTarifa;
 	}
 
-	public void setTipoTarifa(TipoTarifa tipoTarifa) {
+	public void setTipoTarifa(String tipoTarifa) {
 		this.tipoTarifa = tipoTarifa;
 	}
 
@@ -299,11 +297,11 @@ public class AlumnoDTO {
 		return fechaPeso;
 	}
 
-	public Deporte getDeporte() {
+	public String getDeporte() {
 		return deporte;
 	}
 
-	public void setDeporte(Deporte deporte) {
+	public void setDeporte(String deporte) {
 		this.deporte = deporte;
 	}
 
@@ -453,7 +451,7 @@ public class AlumnoDTO {
 
 		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
-		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
+		String tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
 		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null;
 		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : null;
 		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : null;
@@ -464,7 +462,7 @@ public class AlumnoDTO {
 				: null;
 		String gradoTipo = null;
 		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
-			gradoTipo = deportePrincipal.getGrado().getTipoGrado().name();
+			gradoTipo = deportePrincipal.getGrado().getCodigo();
 		}
 
 		String telefono = alumno.getTelefono();
@@ -476,7 +474,7 @@ public class AlumnoDTO {
 		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : null;
 		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : null;
 		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : null;
-		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : null;
+		String deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : null;
 		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : null;
 		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : null;
 		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : null;
@@ -522,7 +520,7 @@ public class AlumnoDTO {
 	 * Convierte un objeto Alumno en un objeto AlumnoDTO usando el deporte indicado
 	 * como referencia (si existe en el alumno).
 	 */
-	public static AlumnoDTO deAlumno(Alumno alumno, Deporte deporte) {
+	public static AlumnoDTO deAlumno(Alumno alumno, String deporte) {
 		if (alumno == null) {
 			return null;
 		}
@@ -550,7 +548,7 @@ public class AlumnoDTO {
 			return deAlumno(alumno);
 		}
 
-		TipoTarifa tipoTarifa = deporteSeleccionado.getTipoTarifa();
+		String tipoTarifa = deporteSeleccionado.getTipoTarifa();
 		Double cuantiaTarifa = deporteSeleccionado.getCuantiaTarifa();
 		RolFamiliar rolFamiliar = deporteSeleccionado.getRolFamiliar();
 		String grupoFamiliar = deporteSeleccionado.getGrupoFamiliar();
@@ -561,7 +559,7 @@ public class AlumnoDTO {
 				: null;
 		String gradoTipo = null;
 		if (deporteSeleccionado.getGrado() != null) {
-			gradoTipo = deporteSeleccionado.getGrado().getTipoGrado().name();
+			gradoTipo = deporteSeleccionado.getGrado().getCodigo();
 		}
 
 		String telefono = alumno.getTelefono();
@@ -573,7 +571,7 @@ public class AlumnoDTO {
 		Boolean competidor = deporteSeleccionado.getCompetidor();
 		Double peso = deporteSeleccionado.getPeso();
 		Date fechaPeso = deporteSeleccionado.getFechaPeso();
-		Deporte deporteAlumno = deporteSeleccionado.getDeporte();
+		String deporteAlumno = deporteSeleccionado.getDeporte();
 		Date fechaGrado = deporteSeleccionado.getFechaGrado();
 		Boolean tieneLicencia = deporteSeleccionado.getTieneLicencia();
 		Integer numeroLicencia = deporteSeleccionado.getNumeroLicencia();

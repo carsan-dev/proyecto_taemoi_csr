@@ -1,4 +1,4 @@
-package com.taemoi.project.config;
+package com.taemoi.project.legado;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,8 +8,6 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.TipoGrado;
 
 import jakarta.annotation.PostConstruct;
 
