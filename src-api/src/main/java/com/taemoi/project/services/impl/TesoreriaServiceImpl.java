@@ -46,6 +46,9 @@ import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.TipoProducto;
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
@@ -75,6 +78,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 	@Autowired
 	private AlumnoRepository alumnoRepository;
+
+	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
 	@Override
 	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos) {
@@ -218,7 +224,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					textoNormalizado,
 					soloActivosNormalizado,
 					pageable)
-					.map(this::convertirAMovimientoDTO);
+					.map(conversorAMovimientoDTO());
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
@@ -240,7 +246,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				pageable,
 				idsFiltrados.size());
 
-		return pagina.map(this::convertirAMovimientoDTO);
+		return pagina.map(conversorAMovimientoDTO());
 	}
 
 	@Override
@@ -285,7 +291,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				pagado,
 				textoNormalizado,
 				soloActivosNormalizado).stream()
-				.map(this::convertirAMovimientoDTO)
+				.map(conversorAMovimientoDTO())
 				.collect(Collectors.toList());
 
 		StringBuilder csv = new StringBuilder();
@@ -323,7 +329,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				pagado,
 				textoNormalizado,
 				soloActivosNormalizado).stream()
-				.map(this::convertirAMovimientoDTO)
+				.map(conversorAMovimientoDTO())
 				.collect(Collectors.toList());
 		String html = generarHtmlInformeTesoreria(movimientos, filtro, pagado);
 
@@ -394,6 +400,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		for (ProductoAlumno movimiento : movimientos) {
 			PeriodoMovimiento periodo = obtenerPeriodoMovimiento(
 					movimiento.getConcepto(),
+					tipoProducto(movimiento),
 					movimiento.getFechaAsignacion(),
 					movimiento.getFechaPago());
 			if (periodo != null && Objects.equals(periodo.ano, ano) && periodo.mes != null && periodo.mes >= 1 && periodo.mes <= 12) {
@@ -404,15 +411,33 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return new CertificadoCobrosData(alumno, ano, importesPorMes);
 	}
 
+	/**
+	 * Cobros del certificado: los conceptos que contaba el código hasta V27 y, además, los cargos de
+	 * productos del catálogo de mensualidad, competidor o reserva de plaza (nombres de otra organización).
+	 */
 	private boolean esConceptoCertificable(ProductoAlumno productoAlumno) {
 		String concepto = productoAlumno.getConcepto() != null
 				? productoAlumno.getConcepto().toUpperCase(Locale.ROOT)
 				: "";
-		return concepto.startsWith("MENSUALIDAD")
+		if (concepto.startsWith("MENSUALIDAD")
 				|| concepto.startsWith("TARIFA COMPETIDOR")
 				|| concepto.startsWith("RESERVA DE PLAZA")
 				|| concepto.startsWith("MATRICULA")
-				|| concepto.startsWith("MATRÍCULA");
+				|| concepto.startsWith("MATRÍCULA")) {
+			return true;
+		}
+		TipoProducto tipo = tipoProducto(productoAlumno);
+		return tipo == TipoProducto.MENSUALIDAD || tipo == TipoProducto.COMPETIDOR
+				|| tipo == TipoProducto.RESERVA_PLAZA;
+	}
+
+	/**
+	 * Tipo del catálogo del producto cobrado, solo si su código es PROPIO (otras escuelas). NULL para los
+	 * códigos heredados de Taemoi (se clasifican por concepto, como antes de V27), los productos sin
+	 * clasificar y los cargos sin producto (producto borrado).
+	 */
+	private static TipoProducto tipoProducto(ProductoAlumno productoAlumno) {
+		return CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProducto());
 	}
 
 	private byte[] generarPdfCertificadoCobros(CertificadoCobrosData certificado) {
@@ -740,12 +765,13 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return soloActivos == null ? Boolean.TRUE : soloActivos;
 	}
 
-	private PeriodoMovimiento obtenerPeriodoMovimiento(String concepto, Date fechaAsignacion, Date fechaPago) {
+	private PeriodoMovimiento obtenerPeriodoMovimiento(String concepto, TipoProducto tipo, Date fechaAsignacion,
+			Date fechaPago) {
 		Date fechaReferencia = fechaAsignacion != null ? fechaAsignacion : fechaPago;
 		PeriodoMovimiento periodoFecha = obtenerPeriodoDesdeFecha(fechaReferencia);
 		PeriodoMovimiento periodoConcepto = extraerPeriodoDesdeConcepto(concepto);
 
-		if (esCategoriaConPeriodoPorConcepto(concepto)) {
+		if (esCategoriaConPeriodo(concepto, tipo)) {
 			if (periodoConcepto != null) {
 				Integer ano = periodoConcepto.ano != null
 						? periodoConcepto.ano
@@ -771,10 +797,16 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return new PeriodoMovimiento(localDate.getYear(), localDate.getMonthValue());
 	}
 
-	private boolean esCategoriaConPeriodoPorConcepto(String concepto) {
+	/**
+	 * Cobros con periodo mensual en el concepto: los que reconocía el código hasta V27 por el concepto y
+	 * los de productos del catálogo de mensualidad o competidor (misma regla que las consultas).
+	 */
+	private boolean esCategoriaConPeriodo(String concepto, TipoProducto tipo) {
 		String conceptoUpper = concepto != null ? concepto.toUpperCase(Locale.ROOT) : "";
 		return conceptoUpper.startsWith("MENSUALIDAD")
-				|| conceptoUpper.startsWith("TARIFA COMPETIDOR");
+				|| conceptoUpper.startsWith("TARIFA COMPETIDOR")
+				|| tipo == TipoProducto.MENSUALIDAD
+				|| tipo == TipoProducto.COMPETIDOR;
 	}
 
 	private PeriodoMovimiento extraerPeriodoDesdeConcepto(String concepto) {
@@ -804,6 +836,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private boolean coincideConFiltroPeriodo(ProductoAlumno productoAlumno, FiltroTesoreria filtro) {
 		return coincideConFiltroPeriodo(
 				productoAlumno.getConcepto(),
+				tipoProducto(productoAlumno),
 				productoAlumno.getFechaAsignacion(),
 				productoAlumno.getFechaPago(),
 				filtro);
@@ -814,6 +847,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro) {
 		return coincideConFiltroPeriodo(
 				productoAlumno.getConcepto(),
+				CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProductoCodigo(), productoAlumno.getProductoTipo()),
 				productoAlumno.getFechaAsignacion(),
 				productoAlumno.getFechaPago(),
 				filtro);
@@ -821,10 +855,11 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 	private boolean coincideConFiltroPeriodo(
 			String concepto,
+			TipoProducto tipo,
 			Date fechaAsignacion,
 			Date fechaPago,
 			FiltroTesoreria filtro) {
-		PeriodoMovimiento periodo = obtenerPeriodoMovimiento(concepto, fechaAsignacion, fechaPago);
+		PeriodoMovimiento periodo = obtenerPeriodoMovimiento(concepto, tipo, fechaAsignacion, fechaPago);
 		if (periodo == null) {
 			return false;
 		}
@@ -837,16 +872,36 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return true;
 	}
 
-	private TesoreriaMovimientoDTO convertirAMovimientoDTO(ProductoAlumno productoAlumno) {
+	/**
+	 * Conversor de una consulta: las disciplinas (para los productos con código propio) se cargan una sola
+	 * vez, y solo si algún movimiento las necesita.
+	 */
+	private java.util.function.Function<ProductoAlumno, TesoreriaMovimientoDTO> conversorAMovimientoDTO() {
+		Map<Long, String> disciplinasPorId = new HashMap<>();
+		boolean[] cargadas = { false };
+		java.util.function.Supplier<Map<Long, String>> disciplinas = () -> {
+			if (!cargadas[0]) {
+				cargadas[0] = true;
+				if (catalogoDisciplinas != null) {
+					catalogoDisciplinas.listarTodas().forEach(d -> disciplinasPorId.put(d.getId(), d.getCodigo()));
+				}
+			}
+			return disciplinasPorId;
+		};
+		return productoAlumno -> convertirAMovimientoDTO(productoAlumno, disciplinas);
+	}
+
+	private TesoreriaMovimientoDTO convertirAMovimientoDTO(ProductoAlumno productoAlumno,
+			java.util.function.Supplier<Map<Long, String>> disciplinas) {
 		Alumno alumno = obtenerAlumno(productoAlumno);
 		TesoreriaMovimientoDTO dto = new TesoreriaMovimientoDTO();
 		dto.setProductoAlumnoId(productoAlumno.getId());
 		dto.setAlumnoId(alumno != null ? alumno.getId() : null);
 		dto.setAlumnoNombreCompleto(obtenerNombreCompletoAlumno(alumno));
 		dto.setAlumnoActivo(alumno != null && !Boolean.FALSE.equals(alumno.getActivo()));
-		dto.setDeporte(obtenerDeporte(productoAlumno));
+		dto.setDeporte(obtenerDeporte(productoAlumno, disciplinas));
 		dto.setConcepto(productoAlumno.getConcepto());
-		dto.setCategoria(obtenerCategoria(productoAlumno.getConcepto()));
+		dto.setCategoria(obtenerCategoria(productoAlumno.getConcepto(), tipoProducto(productoAlumno)));
 		dto.setFechaAsignacion(productoAlumno.getFechaAsignacion());
 		dto.setPagado(Boolean.TRUE.equals(productoAlumno.getPagado()));
 		dto.setFechaPago(productoAlumno.getFechaPago());
@@ -878,7 +933,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return nombreCompleto.isEmpty() ? "Sin nombre" : nombreCompleto;
 	}
 
-	private String obtenerDeporte(ProductoAlumno productoAlumno) {
+	private String obtenerDeporte(ProductoAlumno productoAlumno,
+			java.util.function.Supplier<Map<Long, String>> disciplinas) {
 		if (productoAlumno.getAlumnoDeporte() != null && productoAlumno.getAlumnoDeporte().getDeporte() != null) {
 			return productoAlumno.getAlumnoDeporte().getDeporte().name();
 		}
@@ -899,10 +955,44 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			return Deporte.DEFENSA_PERSONAL_FEMENINA.name();
 		}
 
-		return "GENERAL";
+		// Sin pista en el concepto: la disciplina del producto del catálogo, si la tiene.
+		String disciplinaProducto = disciplinaDelProducto(productoAlumno, disciplinas);
+		return disciplinaProducto != null ? disciplinaProducto : "GENERAL";
 	}
 
-	private String obtenerCategoria(String concepto) {
+	/**
+	 * Código de la disciplina del producto cobrado, solo para productos con código PROPIO (los heredados de
+	 * Taemoi dan GENERAL, como antes de V27). Por id (el enlace es perezoso y aquí no hay sesión abierta).
+	 */
+	private String disciplinaDelProducto(ProductoAlumno productoAlumno,
+			java.util.function.Supplier<Map<Long, String>> disciplinas) {
+		Producto producto = productoAlumno.getProducto();
+		if (CatalogoLegadoTaemoi.tipoDeCatalogo(producto) == null || producto.getDisciplina() == null) {
+			return null;
+		}
+		return disciplinas.get().get(producto.getDisciplina().getId());
+	}
+
+	/**
+	 * Categoría del cobro: la regla por concepto del código hasta V27 y, si no reconoce el concepto
+	 * (OTRO), el tipo del producto del catálogo (nombres propios de otra organización).
+	 */
+	private String obtenerCategoria(String concepto, TipoProducto tipo) {
+		String porConcepto = obtenerCategoriaPorConcepto(concepto);
+		if (!"OTRO".equals(porConcepto) || tipo == null) {
+			return porConcepto;
+		}
+		return switch (tipo) {
+		case MENSUALIDAD -> "MENSUALIDAD";
+		case COMPETIDOR -> "TARIFA_COMPETIDOR";
+		case LICENCIA -> "LICENCIA";
+		case RESERVA_PLAZA -> "RESERVA_PLAZA";
+		case EXAMEN, RECOMPENSA -> "EXAMEN";
+		case OTRO -> "OTRO";
+		};
+	}
+
+	private String obtenerCategoriaPorConcepto(String concepto) {
 		String conceptoUpper = concepto != null ? concepto.toUpperCase(Locale.ROOT) : "";
 
 		if (conceptoUpper.startsWith("MENSUALIDAD")) {

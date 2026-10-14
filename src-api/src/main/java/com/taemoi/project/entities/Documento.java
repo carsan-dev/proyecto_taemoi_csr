@@ -1,6 +1,8 @@
 package com.taemoi.project.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.taemoi.project.archivos.UrlArchivoSerializer;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,7 +15,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Entity
-public class Documento {
+public class Documento extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -27,6 +29,8 @@ public class Documento {
 	@Column(length = 150, nullable = false)
 	private String tipo; // MIME type (application/pdf, application/msword, etc.)
 
+	/** Sin host para ficheros nuevos ({@code /imagenes/…}); se serializa absoluta con {@code app.base.url}. */
+	@JsonSerialize(using = UrlArchivoSerializer.class)
 	private String url;
 
 	@NotBlank(message = "La ruta no puede estar en blanco")

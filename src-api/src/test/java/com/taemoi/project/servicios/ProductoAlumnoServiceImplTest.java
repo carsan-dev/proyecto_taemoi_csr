@@ -70,6 +70,24 @@ class ProductoAlumnoServiceImplTest {
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
+	/**
+	 * Desde V27 los productos se resuelven con el catálogo: el real sobre el repositorio simulado de
+	 * este test y el catálogo de disciplinas de Taemoi en memoria. Los productos simulados no están
+	 * clasificados (sin codigo ni tipo), así que se encuentran por el concepto de antes (respaldo).
+	 */
+	@org.junit.jupiter.api.BeforeEach
+	void catalogoEnMemoria() {
+		com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria memoria = new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria();
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "catalogoDisciplinas",
+				memoria.catalogo());
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "progresionGrados",
+				memoria.progresion());
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "productosCatalogo",
+				new com.taemoi.project.services.impl.ProductosCatalogoServiceImpl(productoRepository,
+						org.mockito.Mockito.mock(com.taemoi.project.repositories.GradoRepository.class),
+						memoria.catalogo(), memoria.progresion()));
+	}
+
 	private void prepararAsignacion(String concepto) {
 		Alumno alumno = new Alumno();
 		alumno.setId(10L);
@@ -250,7 +268,6 @@ class ProductoAlumnoServiceImplTest {
 		alumno.setId(alumnoId);
 		alumno.setNombre("Alumno");
 		alumno.setApellidos("Test");
-		alumno.setCuantiaTarifa(35.0);
 		alumno.setProductosAlumno(new ArrayList<>());
 
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
@@ -292,6 +309,42 @@ class ProductoAlumnoServiceImplTest {
 		assertEquals(2, guardados.size());
 		assertEquals(fechaEsperada, guardados.get(0).getFechaAsignacion());
 		assertEquals(fechaEsperada, guardados.get(1).getFechaAsignacion());
+	}
+
+	@Test
+	void cargarMensualidadIndividualPorDeporte_usaSoloLaTarifaDelDeporte() {
+		Long alumnoId = 2L;
+		Alumno alumno = new Alumno();
+		alumno.setId(alumnoId);
+		alumno.setNombre("Alumno");
+		alumno.setApellidos("Tarifa");
+		alumno.setProductosAlumno(new ArrayList<>());
+
+		AlumnoDeporte kickboxing = new AlumnoDeporte();
+		kickboxing.setAlumno(alumno);
+		kickboxing.setDeporte(Deporte.KICKBOXING);
+		kickboxing.setActivo(true);
+		kickboxing.setCompetidor(false);
+		kickboxing.setCuantiaTarifa(42.0);
+
+		Producto productoMensualidad = new Producto();
+		productoMensualidad.setId(100L);
+		productoMensualidad.setConcepto("MENSUALIDAD");
+		productoMensualidad.setPrecio(30.0);
+
+		when(alumnoRepository.findById(alumnoId)).thenReturn(Optional.of(alumno));
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.KICKBOXING))
+				.thenReturn(Optional.of(kickboxing));
+		when(productoRepository.findFirstByConcepto("MENSUALIDAD")).thenReturn(Optional.of(productoMensualidad));
+		when(productoAlumnoRepository.save(any(ProductoAlumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, "KICKBOXING", "2026-02", false,
+				LocalDate.of(2026, 2, 1));
+
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		assertEquals(42.0, captor.getValue().getPrecio());
+		assertEquals(kickboxing, captor.getValue().getAlumnoDeporte());
 	}
 
 	@Test

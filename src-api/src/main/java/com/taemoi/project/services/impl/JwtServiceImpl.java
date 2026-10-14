@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.TokenJwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -57,11 +58,34 @@ public class JwtServiceImpl implements JwtService {
 		return generateToken(new HashMap<>(), userDetails, expirationMillis);
 	}
 
-	// Generar un token de refresco con mayor duración
-	public String generateRefreshToken(UserDetails userDetails) {
-		return Jwts.builder().subject(userDetails.getUsername()).issuedAt(new Date(System.currentTimeMillis()))
-				.expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 7 días de validez
-				.signWith(getSigningKey()).compact();
+	@Override
+	public String generateToken(UserDetails userDetails, long expirationMillis, Long organizacionId) {
+		if (organizacionId == null) {
+			throw new IllegalArgumentException("El token de sesión necesita organización");
+		}
+		Map<String, Object> claims = new HashMap<>();
+		claims.put(CLAIM_ORGANIZACION, organizacionId);
+		return generateToken(claims, userDetails, expirationMillis);
+	}
+
+	// Generar un token de refresco con mayor duración (no se usa hoy; lleva la organización como el de acceso)
+	public String generateRefreshToken(UserDetails userDetails, Long organizacionId) {
+		return generateToken(userDetails, 1000L * 60 * 60 * 24 * 7, organizacionId); // 7 días de validez
+	}
+
+	@Override
+	public TokenJwt verificar(String token) {
+		Claims claims = extractAllClaims(token); // firma + caducidad (lanza si no son válidas)
+		Object org = claims.get(CLAIM_ORGANIZACION);
+		Long organizacionId;
+		if (org == null) {
+			organizacionId = null;
+		} else if (org instanceof Number numero) {
+			organizacionId = numero.longValue();
+		} else {
+			throw new IllegalArgumentException("Claim org no numérico");
+		}
+		return new TokenJwt(claims.getSubject(), organizacionId, claims.getIssuedAt(), claims.getExpiration());
 	}
 
 	/**

@@ -1,5 +1,8 @@
 package com.taemoi.project.entities;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.taemoi.project.archivos.UrlArchivoSerializer;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,7 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Entity
-public class Imagen {
+public class Imagen extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -21,6 +24,8 @@ public class Imagen {
 	@Size(max = 50, message = "El tipo no puede tener más de 50 caracteres")
 	private String tipo;
 
+	/** Sin host para ficheros nuevos ({@code /imagenes/…}); se serializa absoluta con {@code app.base.url}. */
+	@JsonSerialize(using = UrlArchivoSerializer.class)
 	private String url;
 
 	// En lugar de byte[], almacenamos la ruta del archivo

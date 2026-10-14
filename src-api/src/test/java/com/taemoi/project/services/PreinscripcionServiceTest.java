@@ -45,7 +45,6 @@ import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
-import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PlantillaPreinscripcionRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
@@ -59,13 +58,17 @@ class PreinscripcionServiceTest {
 	@Mock TurnoRepository turnos;
 	@Mock AlumnoRepository alumnos;
 	@Mock AlumnoDeporteRepository alumnoDeportes;
-	@Mock GradoRepository grados;
+	@Mock com.taemoi.project.services.ProgresionGradosService grados;
+	@Mock com.taemoi.project.services.CatalogoDisciplinasService catalogo;
 	@Mock TemporadaService temporadas;
 	@Mock PDFService pdf;
 	@Mock EmailService email;
 	@Mock ConfiguracionSistemaService configuracion;
 	@Mock AforoPreinscripcionService aforo;
 	@Mock ApplicationEventPublisher eventos;
+	@Mock ContadorService contadores;
+	@Mock TutorService tutores;
+	@Mock ConsentimientoService consentimientos;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -76,7 +79,13 @@ class PreinscripcionServiceTest {
 	@BeforeEach
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
-				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos);
+				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas());
+		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
+			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
+			disciplina.setCodigo(inv.getArgument(0));
+			return disciplina;
+		});
 		lenient().when(temporadas.edadCohorte(any(LocalDate.class), anyString())).thenAnswer(inv -> {
 			LocalDate nacimiento = inv.getArgument(0);
 			String temporada = inv.getArgument(1);
@@ -143,11 +152,12 @@ class PreinscripcionServiceTest {
 	void creaAlumnoDeporteGrupoYTodosLosTurnosEnUnaFinalizacion() {
 		preinscripcion.setNombre("Ana María");
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
 		Grado blanco = new Grado();
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(blanco);
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(blanco));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -156,13 +166,16 @@ class PreinscripcionServiceTest {
 		assertEquals("ANA MARÍA", creado.getNombre());
 		assertEquals("GARCÍA LÓPEZ", creado.getApellidos());
 		assertEquals(41, creado.getNumeroExpediente());
-		assertEquals(612345678, creado.getTelefono());
-		assertEquals(611222333, creado.getTelefono2());
+		assertEquals("612345678", creado.getTelefono());
+		assertEquals("611222333", creado.getTelefono2());
 		assertFalse(creado.getTieneDiscapacidad());
 		assertEquals("María García", creado.getResponsableLegalNombre());
 		assertEquals("87654321X", creado.getResponsableLegalNif());
 		assertTrue(creado.getActivo());
 		assertFalse(creado.getAutorizacionWeb());
+		// V25: el responsable legal pasa a tutor y la firma deja sus consentimientos.
+		verify(tutores).sincronizarDesdeCamposHeredados(creado);
+		verify(consentimientos).registrarDesdePreinscripcion(creado, preinscripcion);
 		assertEquals(Set.of(grupo), creado.getGrupos());
 		assertEquals(List.of(lunes, miercoles), creado.getTurnos());
 		assertEquals(EstadoPreinscripcion.FINALIZADA, preinscripcion.getEstado());
@@ -185,10 +198,11 @@ class PreinscripcionServiceTest {
 		mismoGrupo.setDeporte(grupo.getDeporte());
 		miercoles.setGrupo(mismoGrupo);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -212,10 +226,11 @@ class PreinscripcionServiceTest {
 		preinscripcion.setTurnos(new java.util.LinkedHashSet<>(List.of(lunes, jueves)));
 		when(aforo.bloquearTurnos(List.of(11L, 21L))).thenReturn(List.of(lunes, jueves));
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -228,10 +243,11 @@ class PreinscripcionServiceTest {
 	void finalizaTurnosAsignadosAdministrativamenteAunqueEstanFueraDeEdad() {
 		grupo.setRangoEdadMax(10);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -399,7 +415,7 @@ class PreinscripcionServiceTest {
 
 		assertEquals("Ana", existente.getNombre());
 		assertEquals("conservar@example.com", existente.getEmail());
-		assertEquals(611222333, existente.getTelefono2());
+		assertEquals("611222333", existente.getTelefono2());
 		assertTrue(existente.getAutorizacionWeb());
 		assertEquals(List.of(lunes, miercoles), existente.getTurnos());
 		verify(alumnoDeportes).save(deporte);
@@ -540,10 +556,11 @@ class PreinscripcionServiceTest {
 	void creaMenorSinDniSinGenerarUnNifArtificial() {
 		preinscripcion.setDni(null);
 		preinscripcion.setTieneDiscapacidad(true);
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 
 		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
 
@@ -566,9 +583,28 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
+	void noIncorporaComoNifDelAlumnoElDniDeUnoDeSusTutores() {
+		// Corrección de DNIs compartidos: el DNI del padre se movió a tutor y no debe volver a la ficha.
+		Alumno existente = alumnoExistente(true);
+		existente.setNif(null);
+		com.taemoi.project.entities.Tutor padre = new com.taemoi.project.entities.Tutor(existente);
+		padre.setNombre("Padre");
+		padre.setNif("12345678-z");
+		existente.getTutores().add(padre);
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO)).thenReturn(Optional.of(deporte(existente, true)));
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.NIF), null));
+
+		assertNull(existente.getNif());
+		assertSame(existente, preinscripcion.getAlumno());
+	}
+
+	@Test
 	void conservaTelefonoSecundarioExistenteCuandoNoFueFacilitado() {
 		Alumno existente = alumnoExistente(true);
-		existente.setTelefono2(699887766);
+		existente.setTelefono2("699887766");
 		preinscripcion.setTelefono2(null);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
 		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
@@ -577,7 +613,7 @@ class PreinscripcionServiceTest {
 
 		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.TELEFONO2), null));
 
-		assertEquals(699887766, existente.getTelefono2());
+		assertEquals("699887766", existente.getTelefono2());
 	}
 
 	@Test
@@ -597,10 +633,11 @@ class PreinscripcionServiceTest {
 		preinscripcion.setTurno(lunes);
 		preinscripcion.setTieneDiscapacidad(null);
 		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
-		when(alumnos.findMaxNumeroExpediente()).thenReturn(40);
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
 		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO)).thenReturn(Optional.empty());
 		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
-		when(grados.findByTipoGrado(TipoGrado.BLANCO)).thenReturn(new Grado());
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
 		FinalizarPreinscripcionRequest solicitud = new FinalizarPreinscripcionRequest(
 				FinalizarPreinscripcionRequest.AccionAlumno.CREAR_NUEVO, null, Set.of(), false,
 				null, datosTaekwondo());
@@ -644,7 +681,8 @@ class PreinscripcionServiceTest {
 				turnos, alumnoDeportes, preinscripciones, configuracion);
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
-				new ObjectMapper(), aforoReal, eventos);
+				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas());
 
 		servicioPromocion.promocionarTodas();
 
@@ -749,7 +787,7 @@ class PreinscripcionServiceTest {
 		a.setApellidos("García López");
 		a.setFechaNacimiento(java.sql.Date.valueOf(LocalDate.of(2014, 4, 12)));
 		a.setDireccion("Calle Mayor 1");
-		a.setTelefono(612345678);
+		a.setTelefono("612345678");
 		a.setEmail("ana@example.com");
 		a.setActivo(activo);
 		return a;

@@ -6,7 +6,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.HandlerInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,18 +24,6 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Value("${cors.allowed.origin}")
 	private String allowedOrigin;
-
-	@Value("${app.imagenes.directorio.linux}")
-	private String directorioImagenesLinux;
-
-	@Value("${app.imagenes.directorio.windows}")
-	private String directorioImagenesWindows;
-
-	@Value("${app.documentos.directorio.linux}")
-	private String directorioDocumentosLinux;
-
-	@Value("${app.documentos.directorio.windows}")
-	private String directorioDocumentosWindows;
 
 	/**
 	 * Agrega la configuración de CORS (Cross-Origin Resource Sharing) para permitir
@@ -67,46 +54,10 @@ public class WebConfig implements WebMvcConfigurer {
 				.allowCredentials(true);
 	}
 
-	@Override
-	public void addResourceHandlers(ResourceHandlerRegistry registry) {
-		String userProfile = System.getenv("USERPROFILE");
-
-		logger.info("========================================");
-		logger.info("Configuring Resource Handlers for static files");
-		logger.info("USERPROFILE env variable: {}", userProfile);
-
-		// Determine which paths to use based on OS
-		if (userProfile != null) {
-			// Windows environment - use Windows paths from environment variables
-			// Replace %USERPROFILE% placeholder with actual user profile path
-			String imagenesPath = directorioImagenesWindows.replace("%USERPROFILE%", userProfile);
-			String documentosPath = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-
-			logger.info("Windows environment detected");
-			logger.info("Imagenes handler: /imagenes/** -> file:{}", imagenesPath);
-			logger.info("Documentos handler: /documentos/** -> file:{}", documentosPath);
-
-			registry.addResourceHandler("/imagenes/**")
-					.addResourceLocations("file:" + imagenesPath)
-					.setCachePeriod(3600);
-			registry.addResourceHandler("/documentos/**")
-					.addResourceLocations("file:" + documentosPath)
-					.setCachePeriod(3600);
-		} else {
-			// Linux/Docker environment - use Linux paths from environment variables
-			logger.info("Linux/Docker environment detected");
-			logger.info("Imagenes handler: /imagenes/** -> file:{}", directorioImagenesLinux);
-			logger.info("Documentos handler: /documentos/** -> file:{}", directorioDocumentosLinux);
-
-			registry.addResourceHandler("/imagenes/**")
-					.addResourceLocations("file:" + directorioImagenesLinux)
-					.setCachePeriod(3600);
-			registry.addResourceHandler("/documentos/**")
-					.addResourceLocations("file:" + directorioDocumentosLinux)
-					.setCachePeriod(3600);
-		}
-		logger.info("========================================");
-	}
+	/*
+	 * /imagenes/** y /documentos/** ya no se sirven como recursos estáticos: los atiende
+	 * ArchivoEstaticoController, que decide el acceso por escuela activa y fila Imagen/Documento.
+	 */
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {

@@ -86,7 +86,7 @@ public class SecurityConfiguration {
 		logger.info("========================================");
 		logger.info("Configuring SecurityFilterChain");
 		logger.info("CSRF ignoring: /api/**, /login/oauth2/**, /oauth2/**");
-		logger.info("Protected resources: /imagenes/alumnos/**, /documentos/** (ADMIN/MANAGER only)");
+		logger.info("Protected resources: /imagenes/alumnos/**, /imagenes/org-*/alumnos/**, /documentos/** (ADMIN/MANAGER of the active school)");
 		logger.info("Public images: /imagenes/** (except alumnos subdirectory)");
 		logger.info("========================================");
 
@@ -100,13 +100,15 @@ public class SecurityConfiguration {
 						.requestMatchers("/oauth2/**").permitAll()
 						// Static resources that browsers request automatically
 						.requestMatchers("/favicon.ico", "/error").permitAll()
-						// Protected images - alumno photos require ADMIN or MANAGER role
-						.requestMatchers("/imagenes/alumnos/**")
+						// Protected images - alumno photos require ADMIN or MANAGER role (heredadas y por escuela).
+						// ArchivoEstaticoController/AccesoArchivos además exige la escuela activa y la fila Imagen.
+						.requestMatchers("/imagenes/alumnos/**", "/imagenes/org-*/alumnos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Public images - eventos, etc. (must come after specific rules)
 						.requestMatchers("/imagenes/**").permitAll()
-						// Public event documents
-						.requestMatchers(HttpMethod.GET, "/documentos/Documentos_Eventos/**").permitAll()
+						// Public event documents (heredados y por escuela)
+						.requestMatchers(HttpMethod.GET, "/documentos/Documentos_Eventos/**", "/documentos/org-*/eventos/**")
+						.permitAll()
 						// Document access - requires ADMIN or MANAGER role
 						.requestMatchers("/documentos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())

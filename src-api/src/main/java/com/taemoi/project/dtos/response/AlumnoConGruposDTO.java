@@ -98,8 +98,6 @@ public class AlumnoConGruposDTO {
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
 			grado = principal.getGrado().getTipoGrado().name();
-		} else if (alumno.getGrado() != null) {
-			grado = alumno.getGrado().getTipoGrado().name();
 		}
 
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),

@@ -22,6 +22,14 @@ public interface AuditoriaService {
 			String ipCliente,
 			String userAgent);
 
+	/**
+	 * Registra el acceso a datos sensibles (p. ej. salud) en la transacción del llamador y SIN
+	 * capturar errores: si no se puede auditar, el acceso falla. Guarda quién, cuándo, la acción y el
+	 * recurso; nunca el contenido.
+	 */
+	void registrarAccesoSensible(AuditoriaAccion accion, String modulo, String endpoint, Long recursoId,
+			String resumen);
+
 	Page<AuditoriaEventoDTO> obtenerEventos(
 			LocalDate desde,
 			LocalDate hasta,

@@ -8,12 +8,14 @@ import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.entities.Genero;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.NifUtils;
+import com.taemoi.project.utils.ResponsableLegal;
 
 public class AlumnoDTO {
 	private final Long id;
@@ -26,8 +28,12 @@ public class AlumnoDTO {
 	private String email;
 	private String responsableLegalNombre;
 	private String responsableLegalNif;
-	private Integer telefono;
-	private Integer telefono2;
+	/** Texto desde V25. En la entrada se aceptan número o texto (Jackson convierte 600111222 a "600111222"). */
+	private String telefono;
+	private String telefono2;
+	private Genero genero;
+	private String localidad;
+	private String codigoPostal;
 	private String observaciones;
 	private Double cuantiaTarifa;
 	private TipoTarifa tipoTarifa;
@@ -64,7 +70,7 @@ public class AlumnoDTO {
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
 
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
-			String nif, String direccion, String email, Integer telefono, Integer telefono2, String observaciones, Double cuantiaTarifa, TipoTarifa tipoTarifa,
+			String nif, String direccion, String email, String telefono, String telefono2, String observaciones, Double cuantiaTarifa, TipoTarifa tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,
 			Date fechaBaja, Boolean activo, Boolean autorizacionWeb, Boolean competidor, Double peso, Date fechaPeso,
 			Deporte deporte, String categoria, String grado, Date fechaGrado, Imagen fotoAlumno, Boolean tieneLicencia,
@@ -169,20 +175,44 @@ public class AlumnoDTO {
 		this.responsableLegalNif = responsableLegalNif;
 	}
 
-	public Integer getTelefono() {
+	public String getTelefono() {
 		return telefono;
 	}
 
-	public void setTelefono(Integer telefono) {
+	public void setTelefono(String telefono) {
 		this.telefono = telefono;
 	}
 
-	public Integer getTelefono2() {
+	public String getTelefono2() {
 		return telefono2;
 	}
 
-	public void setTelefono2(Integer telefono2) {
+	public void setTelefono2(String telefono2) {
 		this.telefono2 = telefono2;
+	}
+
+	public Genero getGenero() {
+		return genero;
+	}
+
+	public void setGenero(Genero genero) {
+		this.genero = genero;
+	}
+
+	public String getLocalidad() {
+		return localidad;
+	}
+
+	public void setLocalidad(String localidad) {
+		this.localidad = localidad;
+	}
+
+	public String getCodigoPostal() {
+		return codigoPostal;
+	}
+
+	public void setCodigoPostal(String codigoPostal) {
+		this.codigoPostal = codigoPostal;
 	}
 
 	public String getObservaciones() {
@@ -423,10 +453,10 @@ public class AlumnoDTO {
 
 		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
-		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : alumno.getTipoTarifa();
-		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : alumno.getCuantiaTarifa();
-		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : alumno.getRolFamiliar();
-		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : alumno.getGrupoFamiliar();
+		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
+		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null;
+		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : null;
+		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : null;
 
 		// Categoria is now per-sport (in AlumnoDeporte), not global
 		String categoriaNombre = deportePrincipal != null && deportePrincipal.getCategoria() != null
@@ -435,32 +465,23 @@ public class AlumnoDTO {
 		String gradoTipo = null;
 		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
 			gradoTipo = deportePrincipal.getGrado().getTipoGrado().name();
-		} else if (alumno.getGrado() != null) {
-			gradoTipo = alumno.getGrado().getTipoGrado().name();
 		}
 
-		Integer telefono = null;
-		if (alumno.getTelefono() != null) {
-			telefono = Integer.valueOf(alumno.getTelefono());
-		}
-
-		Integer telefono2 = null;
-		if (alumno.getTelefono2() != null) {
-			telefono2 = Integer.valueOf(alumno.getTelefono2());
-		}
+		String telefono = alumno.getTelefono();
+		String telefono2 = alumno.getTelefono2();
 
 		// Calcular antigüedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
 
-		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : alumno.getCompetidor();
-		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : alumno.getPeso();
-		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : alumno.getFechaPeso();
-		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : alumno.getDeporte();
-		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : alumno.getFechaGrado();
-		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : alumno.getTieneLicencia();
-		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : alumno.getNumeroLicencia();
-		Date fechaLicencia = deportePrincipal != null ? deportePrincipal.getFechaLicencia() : alumno.getFechaLicencia();
-		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : alumno.getAptoParaExamen();
+		Boolean competidor = deportePrincipal != null ? deportePrincipal.getCompetidor() : null;
+		Double peso = deportePrincipal != null ? deportePrincipal.getPeso() : null;
+		Date fechaPeso = deportePrincipal != null ? deportePrincipal.getFechaPeso() : null;
+		Deporte deporte = deportePrincipal != null ? deportePrincipal.getDeporte() : null;
+		Date fechaGrado = deportePrincipal != null ? deportePrincipal.getFechaGrado() : null;
+		Boolean tieneLicencia = deportePrincipal != null ? deportePrincipal.getTieneLicencia() : null;
+		Integer numeroLicencia = deportePrincipal != null ? deportePrincipal.getNumeroLicencia() : null;
+		Date fechaLicencia = deportePrincipal != null ? deportePrincipal.getFechaLicencia() : null;
+		Boolean aptoParaExamen = deportePrincipal != null ? deportePrincipal.getAptoParaExamen() : null;
 
 		AlumnoDTO dto = new AlumnoDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(), alumno.getFechaNacimiento(),
 				alumno.getNumeroExpediente(), NifUtils.normalizeForStorage(alumno.getNif()), alumno.getDireccion(), alumno.getEmail(), telefono, telefono2,
@@ -479,8 +500,12 @@ public class AlumnoDTO {
 				fechaLicencia,
 				alumno.getTieneDiscapacidad(),
 				aptoParaExamen);
-		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
-		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
+		ResponsableLegal responsableLegal = ResponsableLegal.de(alumno);
+		dto.setResponsableLegalNombre(responsableLegal.nombre());
+		dto.setResponsableLegalNif(responsableLegal.nif());
+		dto.setGenero(alumno.getGenero());
+		dto.setLocalidad(alumno.getLocalidad());
+		dto.setCodigoPostal(alumno.getCodigoPostal());
 
 		// Populate deportes list from AlumnoDeporte entities
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
@@ -537,19 +562,10 @@ public class AlumnoDTO {
 		String gradoTipo = null;
 		if (deporteSeleccionado.getGrado() != null) {
 			gradoTipo = deporteSeleccionado.getGrado().getTipoGrado().name();
-		} else if (alumno.getGrado() != null) {
-			gradoTipo = alumno.getGrado().getTipoGrado().name();
 		}
 
-		Integer telefono = null;
-		if (alumno.getTelefono() != null) {
-			telefono = Integer.valueOf(alumno.getTelefono());
-		}
-
-		Integer telefono2 = null;
-		if (alumno.getTelefono2() != null) {
-			telefono2 = Integer.valueOf(alumno.getTelefono2());
-		}
+		String telefono = alumno.getTelefono();
+		String telefono2 = alumno.getTelefono2();
 
 		// Calcular antiguedad desde fechaAltaInicial
 		String antiguedad = FechaUtils.calcularAntiguedad(alumno.getFechaAltaInicial());
@@ -581,8 +597,12 @@ public class AlumnoDTO {
 				fechaLicencia,
 				alumno.getTieneDiscapacidad(),
 				aptoParaExamen);
-		dto.setResponsableLegalNombre(alumno.getResponsableLegalNombre());
-		dto.setResponsableLegalNif(alumno.getResponsableLegalNif());
+		ResponsableLegal responsableLegal = ResponsableLegal.de(alumno);
+		dto.setResponsableLegalNombre(responsableLegal.nombre());
+		dto.setResponsableLegalNif(responsableLegal.nif());
+		dto.setGenero(alumno.getGenero());
+		dto.setLocalidad(alumno.getLocalidad());
+		dto.setCodigoPostal(alumno.getCodigoPostal());
 
 		// Populate deportes list from AlumnoDeporte entities
 		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {

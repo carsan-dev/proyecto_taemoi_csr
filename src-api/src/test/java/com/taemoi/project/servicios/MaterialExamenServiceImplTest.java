@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,14 +21,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.config.GradeProgressionConfig;
+import com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.impl.MaterialExamenServiceImpl;
 
@@ -45,14 +46,76 @@ class MaterialExamenServiceImplTest {
 	@BeforeEach
 	void setUp() {
 		service = new MaterialExamenServiceImpl();
-		GradeProgressionConfig gradeProgressionConfig = new GradeProgressionConfig();
-		gradeProgressionConfig.init();
+		CatalogoTaemoiEnMemoria catalogoTaemoi = new CatalogoTaemoiEnMemoria();
 		ReflectionTestUtils.setField(service, "alumnoDeporteService", alumnoDeporteService);
-		ReflectionTestUtils.setField(service, "examMaterialBlockConfig", new ExamMaterialBlockConfig());
-		ReflectionTestUtils.setField(service, "gradeProgressionConfig", gradeProgressionConfig);
+		ReflectionTestUtils.setField(service, "catalogo", catalogoTaemoi.catalogo());
+		ReflectionTestUtils.setField(service, "progresion", catalogoTaemoi.progresion());
 		ReflectionTestUtils.setField(service, "objectMapper", new ObjectMapper());
 		ReflectionTestUtils.setField(service, "directorioDocumentosWindows", tempDir.toString());
 		ReflectionTestUtils.setField(service, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(service, "organizacionPorDefecto", 1L);
+		TenantContext.set(1L);
+	}
+
+	@AfterEach
+	void limpiarOrganizacion() {
+		TenantContext.clear();
+	}
+
+	@Test
+	void laEscuelaPorDefectoUsaSuCarpetaConPrefijoSiExiste() throws Exception {
+		mockAlumnoConDeporte(40L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+		Path nuevo = tempDir.resolve("org-1").resolve("materiales").resolve("taekwondo").resolve("b01_inicio_a_amarillo");
+		Files.createDirectories(nuevo.resolve("temario"));
+		Files.writeString(nuevo.resolve("temario").resolve("nuevo.pdf"), "nuevo");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(40L, Deporte.TAEKWONDO);
+
+		assertEquals("nuevo.pdf", material.getTemario().getFileName());
+	}
+
+	@Test
+	void laEscuelaPorDefectoRecurreALaCarpetaHeredadaSiNoHayPrefijo() throws Exception {
+		mockAlumnoConDeporte(41L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(41L, Deporte.TAEKWONDO);
+
+		assertEquals("heredado.pdf", material.getTemario().getFileName());
+	}
+
+	@Test
+	void otraEscuelaSoloLeeSuCarpetaConPrefijoYNuncaLaHeredada() throws Exception {
+		TenantContext.set(2L);
+		mockAlumnoConDeporte(42L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		Path heredado = crearBloque("taekwondo", "b01_inicio_a_amarillo");
+		Files.createDirectories(heredado.resolve("temario"));
+		Files.writeString(heredado.resolve("temario").resolve("heredado.pdf"), "viejo");
+
+		MaterialExamenDTO sinMaterial = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		assertNull(sinMaterial.getTemario());
+		assertThrows(java.util.NoSuchElementException.class, () -> service.obtenerTemario(42L, Deporte.TAEKWONDO));
+
+		Path propio = tempDir.resolve("org-2").resolve("materiales").resolve("taekwondo").resolve("b01_inicio_a_amarillo");
+		Files.createDirectories(propio.resolve("temario"));
+		Files.writeString(propio.resolve("temario").resolve("propio.pdf"), "propio");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(42L, Deporte.TAEKWONDO);
+		assertEquals("propio.pdf", material.getTemario().getFileName());
+		assertEquals(propio.resolve("temario").resolve("propio.pdf").toRealPath(),
+				service.obtenerTemario(42L, Deporte.TAEKWONDO).getPath().toRealPath());
+	}
+
+	@Test
+	void sinEscuelaActivaFallaCerrado() {
+		TenantContext.clear();
+		mockAlumnoConDeporte(43L, Deporte.TAEKWONDO, TipoGrado.BLANCO_AMARILLO);
+		assertThrows(IllegalStateException.class, () -> service.obtenerMaterialExamen(43L, Deporte.TAEKWONDO));
 	}
 
 	@Test
@@ -276,6 +339,7 @@ class MaterialExamenServiceImplTest {
 
 		Grado entidadGrado = new Grado();
 		entidadGrado.setTipoGrado(grado);
+		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 
 		when(alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId)).thenReturn(List.of(alumnoDeporte));
@@ -287,6 +351,7 @@ class MaterialExamenServiceImplTest {
 
 		Grado entidadGrado = new Grado();
 		entidadGrado.setTipoGrado(grado);
+		entidadGrado.setCodigo(grado.name());
 		alumnoDeporte.setGrado(entidadGrado);
 
 		Alumno alumno = new Alumno();

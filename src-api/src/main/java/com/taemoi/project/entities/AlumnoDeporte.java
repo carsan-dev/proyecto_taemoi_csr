@@ -34,7 +34,7 @@ import jakarta.validation.constraints.NotNull;
 		@Index(name = "idx_alumno_deporte_deporte", columnList = "deporte"),
 		@Index(name = "idx_alumno_deporte_apto", columnList = "deporte, apto_para_examen")
 	})
-public class AlumnoDeporte {
+public class AlumnoDeporte extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +49,15 @@ public class AlumnoDeporte {
 	@Column(nullable = false)
 	@NotNull(message = "El deporte no puede ser nulo")
 	private Deporte deporte;
+
+	/**
+	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
+	 * contracción para poder volver al código anterior.
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "disciplina_id", nullable = false)
+	private Disciplina disciplina;
 
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "grado_id")
@@ -82,6 +91,16 @@ public class AlumnoDeporte {
 	// Per-sport tarifa, competidor, and licencia fields
 	@Enumerated(EnumType.STRING)
 	private TipoTarifa tipoTarifa;
+
+	/**
+	 * Tarifa del catálogo (V24). Desde V27 la escribe el código ({@code TarifasService.asignarTarifa})
+	 * junto a {@code tipoTarifa}, que se sigue escribiendo hasta la contracción (NULL para códigos de
+	 * tarifa propios de otra organización).
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "tarifa_id")
+	private Tarifa tarifa;
 
 	private Double cuantiaTarifa;
 
@@ -143,6 +162,14 @@ public class AlumnoDeporte {
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+	}
+
+	public Disciplina getDisciplina() {
+		return disciplina;
+	}
+
+	public void setDisciplina(Disciplina disciplina) {
+		this.disciplina = disciplina;
 	}
 
 	public Grado getGrado() {
@@ -223,6 +250,34 @@ public class AlumnoDeporte {
 
 	public void setTipoTarifa(TipoTarifa tipoTarifa) {
 		this.tipoTarifa = tipoTarifa;
+	}
+
+	public Tarifa getTarifa() {
+		return tarifa;
+	}
+
+	public void setTarifa(Tarifa tarifa) {
+		this.tarifa = tarifa;
+	}
+
+	/**
+	 * Código de la tarifa: {@code tipo_tarifa} (Taemoi, el de siempre) o, si es una tarifa propia de la
+	 * organización que no está en {@code TipoTarifa}, el código de {@code tarifa}. NULL si no hay tarifa o
+	 * si la tarifa no se puede cargar ya (entidad fuera de su sesión).
+	 */
+	@JsonIgnore
+	public String getCodigoTarifa() {
+		if (tipoTarifa != null) {
+			return tipoTarifa.name();
+		}
+		if (tarifa == null) {
+			return null;
+		}
+		try {
+			return tarifa.getCodigo();
+		} catch (org.hibernate.LazyInitializationException e) {
+			return null;
+		}
 	}
 
 	public Double getCuantiaTarifa() {

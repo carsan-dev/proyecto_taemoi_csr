@@ -1,5 +1,7 @@
 package com.taemoi.project.config;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,12 +16,17 @@ import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.NombresGrupo;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.TipoProducto;
+import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.entities.AuthProvider;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.TipoCategoria;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.services.MembresiaService;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
@@ -65,6 +72,18 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private ResolutorOrganizacion resolutorOrganizacion;
+
+	@Autowired
+	private MembresiaService membresiaService;
+
+	@Autowired
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
+	private ProductosCatalogoService productosCatalogo;
+
 	@Value("${app.bootstrap.admin.email:}")
 	private String bootstrapAdminEmail;
 
@@ -86,6 +105,11 @@ public class InicializadorDatos implements CommandLineRunner {
 	 */
 	@Override
 	public void run(String... args) throws Exception {
+		// Fuera de una petición no hay organización activa: las semillas son de la organización por defecto.
+		TenantContext.ejecutarCon(resolutorOrganizacion.getOrganizacionPorDefecto(), this::inicializarDatos);
+	}
+
+	private void inicializarDatos() {
 		// Initialize essential data only (no test/fake data)
 
 		// 1. Initialize grados (grades) if they don't exist
@@ -170,6 +194,7 @@ public class InicializadorDatos implements CommandLineRunner {
 
 			// Asignar deporte basado en el tipo del grupo
 			nuevoGrupo.setDeporte(determinarDeportePorTipo(tipo));
+			nuevoGrupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(nuevoGrupo.getDeporte().name()));
 
 			return grupoRepository.save(nuevoGrupo);
 		});
@@ -212,10 +237,12 @@ public class InicializadorDatos implements CommandLineRunner {
 				bootstrapAdminNombre,
 				bootstrapAdminApellidos,
 				bootstrapAdminPassword,
-				Roles.ROLE_ADMIN);
+				RolMembresia.PROPIETARIO);
 	}
 
-	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena, Roles rol) {
+	/** Crea el usuario con la membresía {@code rol} en la organización por defecto (la del arranque). */
+	private void crearUsuarioSiNoExiste(String email, String nombre, String apellidos, String contrasena,
+			RolMembresia rol) {
 		String normalizedEmail = EmailUtils.normalizeEmail(email);
 		if (usuarioRepository.findByEmailIgnoreCase(normalizedEmail).isEmpty()) {
 			Usuario usuario = new Usuario();
@@ -224,8 +251,10 @@ public class InicializadorDatos implements CommandLineRunner {
 			usuario.setEmail(normalizedEmail);
 			usuario.setContrasena(passwordEncoder.encode(contrasena));
 			usuario.setAuthProvider(AuthProvider.LOCAL);
-			usuario.getRoles().add(rol);
+			Long organizacionId = resolutorOrganizacion.getOrganizacionPorDefecto();
+			usuario.setUltimaOrganizacionId(organizacionId);
 			usuarioRepository.save(usuario);
+			membresiaService.asegurarMembresia(usuario.getId(), organizacionId, rol);
 		}
 	}
 
@@ -263,31 +292,45 @@ public class InicializadorDatos implements CommandLineRunner {
 	}
 
 	/**
-	 * Genera los productos básicos necesarios para el funcionamiento del sistema.
-	 * Estos productos son esenciales para las operaciones básicas:
+	 * Genera los productos básicos necesarios para el funcionamiento del sistema, ya clasificados en el
+	 * catálogo (codigo y tipo, V27). Un producto se da por existente si ya hay uno con su codigo o, como
+	 * antes de V27, con su concepto (la resincronización de V24 lo clasifica):
 	 * - MENSUALIDAD: Producto genérico para mensualidades (precio base 28€)
 	 * - LICENCIA FEDERATIVA: Alta de licencia federativa (sin coste adicional, 0€)
 	 * - RESERVA DE PLAZA: Reserva de plaza para nuevos alumnos (10€)
+	 * - TARIFA COMPETIDOR TAEKWONDO / KICKBOXING (20€), enlazados a su disciplina
 	 */
 	private void generarProductosBasicos() {
-		crearProductoSiNoExiste("MENSUALIDAD", 28.0);
-		crearProductoSiNoExiste("LICENCIA FEDERATIVA", 0.0);
-		crearProductoSiNoExiste("RESERVA DE PLAZA", 10.0);
-		crearProductoSiNoExiste("TARIFA COMPETIDOR TAEKWONDO", 20.0);
-		crearProductoSiNoExiste("TARIFA COMPETIDOR KICKBOXING", 20.0);
+		crearProductoSiNoExiste("MENSUALIDAD", TipoProducto.MENSUALIDAD, "MENSUALIDAD", 28.0);
+		crearProductoSiNoExiste("LICENCIA_FEDERATIVA", TipoProducto.LICENCIA, "LICENCIA FEDERATIVA", 0.0);
+		crearProductoSiNoExiste("RESERVA_PLAZA", TipoProducto.RESERVA_PLAZA, "RESERVA DE PLAZA", 10.0);
+		// Competidor: el de la disciplina (enlace, codigo o concepto) o uno nuevo enlazado a ella.
+		for (String disciplina : List.of("TAEKWONDO", "KICKBOXING")) {
+			if (catalogoDisciplinas.buscarPorCodigo(disciplina).isPresent()) {
+				productosCatalogo.asegurarProductoCompetidor(disciplina);
+			} else {
+				crearProductoSiNoExiste("COMPETIDOR_" + disciplina, TipoProducto.COMPETIDOR,
+						"TARIFA COMPETIDOR " + disciplina, ProductosCatalogoService.PRECIO_LEGADO_COMPETIDOR);
+			}
+		}
 	}
 
 	/**
-	 * Crea un producto si no existe en la base de datos.
+	 * Crea un producto si no existe en la base de datos (ni con su codigo ni con su concepto).
 	 *
+	 * @param codigo   El codigo del catálogo.
+	 * @param tipo     El tipo del catálogo.
 	 * @param concepto El concepto/nombre del producto.
-	 * @param precio El precio del producto.
+	 * @param precio   El precio del producto.
 	 */
-	private void crearProductoSiNoExiste(String concepto, Double precio) {
-		if (productoRepository.findFirstByConcepto(concepto).isEmpty()) {
+	private void crearProductoSiNoExiste(String codigo, TipoProducto tipo, String concepto, Double precio) {
+		if (productoRepository.findByCodigo(codigo).isEmpty()
+				&& productoRepository.findFirstByConcepto(concepto).isEmpty()) {
 			Producto producto = new Producto();
 			producto.setConcepto(concepto);
 			producto.setPrecio(precio);
+			producto.setCodigo(codigo);
+			producto.setTipo(tipo);
 			productoRepository.save(producto);
 		}
 	}

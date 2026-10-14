@@ -1,5 +1,7 @@
 package com.taemoi.project.controllers;
 
+import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.request.CambioOrganizacionRequest;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.PasswordResetEmailRequest;
 import com.taemoi.project.dtos.request.PasswordResetUpdateRequest;
@@ -43,16 +47,21 @@ import com.taemoi.project.dtos.request.RegistroRequest;
 import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.dtos.response.AlumnoParaUsuarioDTO;
 import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
+import com.taemoi.project.dtos.response.OrganizacionUsuarioDTO;
 import com.taemoi.project.dtos.response.RecordatorioRachaEmailResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.SesionVerificada;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 import com.taemoi.project.utils.EmailUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -98,6 +107,9 @@ public class AuthenticationController {
 	@Autowired
 	private RegistroService registroService;
 
+	@Autowired
+	private MembresiaService membresiaService;
+
 	/**
 	 * Registra un nuevo usuario en el sistema.
 	 *
@@ -134,7 +146,9 @@ public class AuthenticationController {
 					.body(Map.of("mensaje", "Cuenta bloqueada temporalmente."));
 		} catch (DisabledException e) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN)
-					.body(Map.of("mensaje", "No hay alumnos activos asociados a esta cuenta."));
+					.body(Map.of("mensaje", AuthenticationServiceImpl.SIN_ESCUELA.equals(e.getMessage())
+							? AuthenticationServiceImpl.SIN_ESCUELA
+							: AuthenticationServiceImpl.SIN_ALUMNOS_ACTIVOS));
 		} catch (BadCredentialsException e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(Map.of("mensaje", "Credenciales invalidas."));
@@ -238,21 +252,9 @@ public class AuthenticationController {
 			return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED).body(response);
 		}
 
-		Object principal = authentication.getPrincipal();
-
-		if (principal instanceof Usuario usuario) {
-			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
-			return ResponseEntity.ok(roles);
-		} else if (principal instanceof UserDetails details) {
-			String email = details.getUsername();
-			Usuario usuario = usuarioService.encontrarPorEmail(email)
-					.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
-			Set<String> roles = usuario.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
-			return ResponseEntity.ok(roles);
-		} else {
-			throw new ClassCastException(
-					"El principal no es un Usuario ni un UserDetails. Tipo: " + principal.getClass().getName());
-		}
+		// Roles de la sesión: los de las membresías del usuario en la escuela activa (mismo formato de siempre).
+		return ResponseEntity.ok(autoridadesDeSesion(authentication).stream().map(Enum::name)
+				.collect(Collectors.toSet()));
 	}
 
 	@GetMapping("/user")
@@ -266,7 +268,7 @@ public class AuthenticationController {
 			UsuarioConAlumnoAsociadoDTO usuarioDTO = new UsuarioConAlumnoAsociadoDTO();
 			usuarioDTO.setId(usuario.getId());
 			usuarioDTO.setEmail(usuario.getEmail());
-			usuarioDTO.setAlumnoDTO(obtenerAlumnoVisibleParaUsuario(usuario));
+			usuarioDTO.setAlumnoDTO(obtenerAlumnoVisibleParaUsuario(usuario, autoridadesDeSesion(authentication)));
 
 			return usuarioDTO;
 		} else {
@@ -328,13 +330,16 @@ public class AuthenticationController {
 		return ResponseEntity.ok(alumnosDTO);
 	}
 
-	private AlumnoParaUsuarioDTO obtenerAlumnoVisibleParaUsuario(Usuario usuario) {
+	private AlumnoParaUsuarioDTO obtenerAlumnoVisibleParaUsuario(Usuario usuario, Set<Roles> autoridades) {
 		if (usuario == null) {
 			return null;
 		}
 
-		if (!usuario.getRoles().contains(Roles.ROLE_USER)) {
-			Alumno alumnoAsociado = usuario.getAlumno();
+		Long alumnoAsociadoId = usuario.getAlumnoId();
+		if (!autoridades.contains(Roles.ROLE_USER)) {
+			// El alumno asociado puede ser de otra escuela: solo se muestra si es de la activa.
+			Alumno alumnoAsociado = alumnoAsociadoId == null ? null
+					: alumnoRepository.buscarPorIdEnOrganizacionActiva(alumnoAsociadoId).orElse(null);
 			if (alumnoAsociado != null && Boolean.TRUE.equals(alumnoAsociado.getActivo())) {
 				return AlumnoParaUsuarioDTO.deAlumno(alumnoAsociado);
 			}
@@ -347,16 +352,103 @@ public class AuthenticationController {
 			return null;
 		}
 
-		Alumno alumnoAsociado = usuario.getAlumno();
-		if (alumnoAsociado != null && alumnoAsociado.getId() != null) {
+		if (alumnoAsociadoId != null) {
 			for (Alumno alumnoActivo : alumnosActivos) {
-				if (alumnoAsociado.getId().equals(alumnoActivo.getId())) {
+				if (alumnoAsociadoId.equals(alumnoActivo.getId())) {
 					return AlumnoParaUsuarioDTO.deAlumno(alumnoActivo);
 				}
 			}
 		}
 
 		return AlumnoParaUsuarioDTO.deAlumno(alumnosActivos.get(0));
+	}
+
+	/**
+	 * Escuelas del usuario autenticado, con sus roles en cada una y cuál es la de la sesión.
+	 */
+	@GetMapping("/organizaciones")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<List<OrganizacionUsuarioDTO>> obtenerOrganizaciones() {
+		Usuario usuario = usuarioAutenticado();
+		return ResponseEntity.ok(membresiaService.organizacionesDe(usuario.getId(), TenantContext.get()));
+	}
+
+	/**
+	 * Cambia la escuela de la sesión: valida la membresía, emite un token nuevo (misma caducidad que
+	 * el actual) en la cookie {@code jwt} y recuerda la escuela para el próximo inicio de sesión.
+	 * 403 si el usuario no puede entrar en esa escuela.
+	 */
+	@PostMapping("/organizacion")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<?> cambiarOrganizacion(@RequestBody CambioOrganizacionRequest request,
+			HttpServletRequest httpRequest, HttpServletResponse response) {
+		if (!(httpRequest.getAttribute(SesionVerificada.ATRIBUTO) instanceof SesionVerificada sesion)) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", "No autenticado."));
+		}
+		Usuario usuario = usuarioAutenticado();
+		Long organizacionId = request == null ? null : request.getOrganizacionId();
+		Optional<JwtAuthenticationResponse> nuevo = authenticationService.cambiarOrganizacion(usuario,
+				organizacionId, sesion.token().expiraEn());
+		if (nuevo.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", "Acceso denegado."));
+		}
+
+		// Misma cookie que el login: persistente si la sesión actual lo era (recordarme).
+		Date emitido = sesion.token().emitidoEn();
+		Date expira = sesion.token().expiraEn();
+		boolean persistente = emitido != null
+				&& expira.getTime() - emitido.getTime() > AuthenticationServiceImpl.DURACION_SESION_MILLIS;
+		Duration maxAge = persistente
+				? Duration.ofMillis(Math.max(0, expira.getTime() - System.currentTimeMillis()))
+				: null;
+		escribirCookieSesion(response, nuevo.get().getToken(), maxAge);
+		return ResponseEntity.ok(nuevo.get());
+	}
+
+	private Usuario usuarioAutenticado() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication != null && authentication.getPrincipal() instanceof Usuario usuario) {
+			return usuario;
+		}
+		String email = authentication == null ? null : authentication.getName();
+		return usuarioService.encontrarPorEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+	}
+
+	private static Set<Roles> autoridadesDeSesion(Authentication authentication) {
+		Set<Roles> roles = EnumSet.noneOf(Roles.class);
+		if (authentication == null || authentication.getAuthorities() == null) {
+			return roles;
+		}
+		for (GrantedAuthority authority : authentication.getAuthorities()) {
+			for (Roles rol : Roles.values()) {
+				if (rol.name().equals(authority.getAuthority())) {
+					roles.add(rol);
+				}
+			}
+		}
+		return roles;
+	}
+
+	private void escribirCookieSesion(HttpServletResponse response, String token, Duration maxAge) {
+		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
+		Optional<String> domainOpt = resolverDominioCookie();
+		response.addHeader(HttpHeaders.SET_COOKIE,
+				construirCookieJwt("", isProduction, false, true, null).toString());
+		if (domainOpt.isPresent()) {
+			response.addHeader(HttpHeaders.SET_COOKIE,
+					construirCookieJwt("", isProduction, false, true, domainOpt.get()).toString());
+		}
+		ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from("jwt", token)
+				.httpOnly(true)
+				.secure(isProduction)
+				.path("/")
+				.sameSite("Lax");
+		if (maxAge != null) {
+			builder.maxAge(maxAge);
+		}
+		domainOpt.ifPresent(builder::domain);
+		response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
 	}
 
 	private Optional<String> resolverDominioCookie() {

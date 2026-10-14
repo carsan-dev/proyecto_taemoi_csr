@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "producto_alumno")
-public class ProductoAlumno {
+public class ProductoAlumno extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

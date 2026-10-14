@@ -40,6 +40,7 @@ import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
@@ -97,6 +98,9 @@ class SecurityAuthorizationWebMvcTest {
 
 	@MockitoBean
 	private OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+
+	@MockitoBean
+	private MembresiaService membresiaService;
 
 	@Test
 	void anonymousCannotReadAuthRoles() throws Exception {
@@ -180,11 +184,8 @@ class SecurityAuthorizationWebMvcTest {
 	static class FilterTestConfig {
 
 		@Bean
-		JwtAuthenticationFilter jwtAuthenticationFilter(
-				JwtService jwtService,
-				UsuarioService usuarioService,
-				AlumnoRepository alumnoRepository) {
-			return new JwtAuthenticationFilter(jwtService, usuarioService, alumnoRepository);
+		JwtAuthenticationFilter jwtAuthenticationFilter() {
+			return new JwtAuthenticationFilter();
 		}
 
 		@Bean

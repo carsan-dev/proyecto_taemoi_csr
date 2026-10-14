@@ -82,10 +82,12 @@ public class ProductoController {
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @Valid @RequestBody Producto productoDetalles) {
+	public ResponseEntity<?> actualizarProducto(@PathVariable Long id, @Valid @RequestBody Producto productoDetalles) {
 		try {
 			Producto productoActualizado = productoService.actualizarProducto(id, productoDetalles);
 			return ResponseEntity.ok(productoActualizado);
+		} catch (org.springframework.web.server.ResponseStatusException e) {
+			return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of("mensaje", e.getReason()));
 		} catch (RuntimeException e) {
 			return ResponseEntity.notFound().build();
 		}

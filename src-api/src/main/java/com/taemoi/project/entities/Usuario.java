@@ -4,16 +4,17 @@ import java.io.Serial;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.hibernate.proxy.HibernateProxy;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -73,20 +74,40 @@ private String contrasena;
 	@Column(name = "ultimo_recordatorio_racha_reset")
 	private LocalDate ultimoRecordatorioRachaReset;
 
+	/**
+	 * Roles globales heredados ({@code usuario_rol}). OBSOLETO desde V20: los permisos viven en
+	 * {@link Membresia} por organización. Ya no se escriben ni se usan para autorizar; se
+	 * mantienen mapeados hasta la contracción para que borrar un usuario borre también sus filas.
+	 */
+	@Deprecated
 	@ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
 	@Enumerated(EnumType.STRING)
 	@CollectionTable(name = "usuario_rol")
 	@Column(name = "Roles")
 	private Set<Roles> roles = new HashSet<>();
 
-	@OneToOne
+	/** Escuela elegida en el último inicio de sesión o cambio de escuela (V20). */
+	@Column(name = "ultima_organizacion_id")
+	private Long ultimaOrganizacionId;
+
+	/**
+	 * LAZY: el alumno es de una organización ({@code @TenantId}) y el usuario es global. Cargar un
+	 * usuario (p. ej. al autenticar, antes de conocer la escuela) no debe cargar un alumno que puede
+	 * ser de otra escuela. Usar {@link #getAlumnoId()} para obtener el id sin inicializarlo.
+	 */
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "alumno_id")
 	@JsonBackReference
 	private Alumno alumno;
 
+	/**
+	 * Siempre vacío: las autoridades dependen de la organización activa y las calcula
+	 * {@code MembresiaService} a partir de las membresías (ver {@code JwtAuthenticationFilter}).
+	 * No usar como fuente de permisos.
+	 */
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return roles.stream().map(role -> new SimpleGrantedAuthority(role.name())).collect(Collectors.toSet());
+		return Collections.emptySet();
 	}
 
 	@Override
@@ -151,16 +172,41 @@ private String contrasena;
 		this.contrasena = contrasena;
 	}
 
+	/** @deprecated ver el campo {@code roles}: usar {@code MembresiaService}. */
+	@Deprecated
 	public Set<Roles> getRoles() {
 		return roles;
 	}
 
+	/** @deprecated ver el campo {@code roles}: usar {@code MembresiaService}. */
+	@Deprecated
 	public void setRoles(Set<Roles> roles) {
 		this.roles = roles;
 	}
 
 	public Alumno getAlumno() {
 		return alumno;
+	}
+
+	/** Id del alumno asociado sin inicializar el proxy LAZY (no consulta la base de datos). */
+	@JsonIgnore
+	public Long getAlumnoId() {
+		if (alumno == null) {
+			return null;
+		}
+		if (alumno instanceof HibernateProxy proxy) {
+			return (Long) proxy.getHibernateLazyInitializer().getIdentifier();
+		}
+		return alumno.getId();
+	}
+
+	@JsonIgnore
+	public Long getUltimaOrganizacionId() {
+		return ultimaOrganizacionId;
+	}
+
+	public void setUltimaOrganizacionId(Long ultimaOrganizacionId) {
+		this.ultimaOrganizacionId = ultimaOrganizacionId;
 	}
 
 	public void setAlumno(Alumno alumno) {

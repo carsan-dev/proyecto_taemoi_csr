@@ -75,6 +75,8 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	 */
 	long countByDeporteAndActivoTrue(Deporte deporte);
 
+	long countByDisciplinaIdAndActivoTrue(Long disciplinaId);
+
 	/**
 	 * Cuenta alumnos activos por deporte (deporte activo y alumno activo)
 	 */

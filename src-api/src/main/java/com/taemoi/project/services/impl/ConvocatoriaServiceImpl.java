@@ -16,15 +16,15 @@ import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Convocatoria;
 import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
-import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
+import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ConvocatoriaService;
+import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.utils.FechaUtils;
 
 @Service
@@ -43,7 +43,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	private AlumnoRepository alumnoRepository;
 
 	@Autowired
-	private GradoRepository gradoRepository;
+	private CatalogoDisciplinasService catalogo;
+
+	@Autowired
+	private ProgresionGradosService progresion;
 
 	@Autowired
 	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
@@ -53,6 +56,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		Convocatoria convocatoria = new Convocatoria();
 		convocatoria.setFechaConvocatoria(convocatoriaDTO.getFechaConvocatoria());
 		convocatoria.setDeporte(convocatoriaDTO.getDeporte());
+		if (convocatoriaDTO.getDeporte() != null) {
+			convocatoria.setDisciplina(catalogo.obtenerPorCodigo(convocatoriaDTO.getDeporte().name()));
+		}
 		Convocatoria convocatoriaGuardada = convocatoriaRepository.save(convocatoria);
 
 		return convertirAConvocatoriaDTO(convocatoriaGuardada);
@@ -190,8 +196,8 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	        TipoGrado nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
 	        if (nuevoTipo != null) {
-	        	Grado nuevoGrado = gradoRepository.findByTipoGrado(nuevoTipo);
-	        	if (nuevoGrado != null) {
+	        	// El siguiente grado debe existir en el sistema de grados de la disciplina
+	        	if (progresion.buscarGrado(alumnoDeporte.getDeporte().name(), nuevoTipo.name()).isPresent()) {
 	        		alumnoDeporteService.actualizarGradoPorDeporte(
 	        				alumnoDeporte.getAlumno().getId(),
 	        				alumnoDeporte.getDeporte(),
@@ -278,10 +284,11 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					.orElse(null);
 		}
 
-		if (alumnoDeporte == null || alumnoDeporte.getGrado() == null || alumnoDeporte.getGrado().getTipoGrado() == null) {
+		if (alumnoDeporte == null || alumnoDeporte.getGrado() == null || alumnoDeporte.getGrado().getCodigo() == null) {
 			return false;
 		}
 
-		return alumnoDeporte.getGrado().getTipoGrado() == alumnoConvocatoria.getGradoSiguiente();
+		// Ya procesada si el alumno tiene ya el grado al que se presentaba (por codigo, en su sistema)
+		return alumnoDeporte.getGrado().getCodigo().equals(alumnoConvocatoria.getGradoSiguiente().name());
 	}
 }

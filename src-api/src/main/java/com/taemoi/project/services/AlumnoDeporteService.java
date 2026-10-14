@@ -33,7 +33,8 @@ public interface AlumnoDeporteService {
 	 * @param fechaAlta Fecha de alta en el deporte (puede ser null, se asigna fecha actual)
 	 * @param fechaAltaInicial Fecha de alta inicial para calcular antigüedad (puede ser null, se usa fechaAlta)
 	 * @param fechaGrado Fecha de grado (puede ser null, se asigna fecha actual)
-	 * @param tipoTarifa Tipo de tarifa para este deporte (puede ser null)
+	 * @param codigoTarifa Código de la tarifa de la organización para este deporte (puede ser null);
+	 *        escribe {@code tarifa_id} y, si es de {@code TipoTarifa}, también {@code tipo_tarifa}
 	 * @param cuantiaTarifa Cuantía de la tarifa (puede ser null)
 	 * @param rolFamiliar Rol familiar para tarifas PADRES_HIJOS (puede ser null)
 	 * @param grupoFamiliar Grupo familiar para tarifa HERMANOS (puede ser null)
@@ -49,7 +50,7 @@ public interface AlumnoDeporteService {
 	 * @return AlumnoDeporte creado
 	 */
 	AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
-		java.util.Date fechaAlta, java.util.Date fechaAltaInicial, java.util.Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
+		java.util.Date fechaAlta, java.util.Date fechaAltaInicial, java.util.Date fechaGrado, String codigoTarifa, Double cuantiaTarifa,
 		String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
 		java.util.Date fechaAltaCompeticion, java.util.Date fechaAltaCompetidorInicial,
 		Double peso, java.util.Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, java.util.Date fechaLicencia);
@@ -131,6 +132,15 @@ public interface AlumnoDeporteService {
 	AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId, Deporte deporte, TipoGrado nuevoGrado);
 
 	/**
+	 * Como {@link #actualizarGradoPorDeporte(Long, Deporte, TipoGrado)} con el código de grado del
+	 * catálogo (resuelto en el sistema de grados de la disciplina de la inscripción). No exige que el
+	 * código sea un {@link TipoGrado}: sirve para escuelas con sistemas propios.
+	 *
+	 * @throws IllegalArgumentException si la disciplina no tiene grados o no tiene ese código.
+	 */
+	AlumnoDeporte actualizarGradoPorCodigo(Long alumnoId, Deporte deporte, String codigoGrado);
+
+	/**
 	 * Actualiza el estado de aptitud para examen de un alumno en un deporte específico
 	 *
 	 * @param alumnoId ID del alumno
@@ -190,6 +200,15 @@ public interface AlumnoDeporteService {
 	 * @return AlumnoDeporte actualizado
 	 */
 	AlumnoDeporte actualizarTipoTarifa(Long alumnoId, Deporte deporte, TipoTarifa tipoTarifa);
+
+	/**
+	 * Cambia la tarifa de un alumno en un deporte por su código (el de la tarifa de la organización):
+	 * escribe {@code tarifa_id} y, si el código es de {@code TipoTarifa}, también {@code tipo_tarifa}.
+	 *
+	 * @throws IllegalArgumentException si el código no es de la organización ni de {@code TipoTarifa}
+	 *         (antes que comprobar la inscripción, como hacía el controlador con {@code valueOf}).
+	 */
+	AlumnoDeporte actualizarTarifa(Long alumnoId, Deporte deporte, String codigoTarifa);
 
 	/**
 	 * Actualiza la cuantía de tarifa de un alumno en un deporte específico

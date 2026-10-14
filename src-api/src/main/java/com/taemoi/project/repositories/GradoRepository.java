@@ -1,6 +1,7 @@
 package com.taemoi.project.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -9,29 +10,20 @@ import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.TipoGrado;
 
 /**
- * Repositorio para la entidad Grado. Proporciona métodos para buscar por tipo
- * de grado.
+ * Grados del catálogo (filtrados por {@code @TenantId}). Cada código de grado existe una vez por
+ * sistema de grados (taekwondo y kickboxing en Taemoi): las búsquedas van siempre por sistema
+ * ({@code ProgresionGradosService}), nunca solo por código.
  */
 @Repository
 public interface GradoRepository extends JpaRepository<Grado, Long> {
 
-	/**
-	 * Recupera un grado de la base de datos por su tipo de grado.
-	 * 
-	 * @param tipoGrado El tipo de grado a buscar.
-	 * @return El grado correspondiente al tipo de grado especificado.
-	 */
-	Grado findByTipoGrado(TipoGrado tipoGrado);
-
-	/**
-	 * Recupera grados de la base de datos cuyos tipos de grado están en la lista
-	 * proporcionada.
-	 * 
-	 * @param tiposGrado La lista de tipos de grado a buscar.
-	 * @return Una lista de grados cuyos tipos de grado están en la lista
-	 *         proporcionada.
-	 */
-	Grado findByTipoGradoIn(List<TipoGrado> tiposGrado);
-
+	/** Solo para las semillas de {@code InicializadorDatos}. */
 	boolean existsByTipoGrado(TipoGrado tipoGrado);
+
+	List<Grado> findBySistemaGradosIdOrderByOrdenAscIdAsc(Long sistemaGradosId);
+
+	List<Grado> findBySistemaGradosIdOrderByIdAsc(Long sistemaGradosId);
+
+	Optional<Grado> findBySistemaGradosIdAndCodigo(Long sistemaGradosId, String codigo);
+
 }

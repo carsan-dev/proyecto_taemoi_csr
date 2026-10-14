@@ -16,6 +16,9 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taemoi.project.repositories.ConsentimientoRepository;
+import com.taemoi.project.exceptions.DocumentoReferenciadoException;
+import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.FileUtils;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
@@ -31,9 +34,6 @@ public class DocumentoServiceImpl implements DocumentoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(DocumentoServiceImpl.class);
 
-	@Value("${app.base.url}")
-	private String baseUrl;
-
 	@Value("${app.documentos.directorio.linux}")
 	private String directorioDocumentosLinux;
 
@@ -43,87 +43,20 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Autowired
 	private DocumentoRepository documentoRepository;
 
+	@Autowired
+	private ConsentimientoRepository consentimientoRepository;
+
 	@Override
 	public Documento guardarDocumento(Alumno alumno, MultipartFile archivo) throws IOException {
 		if (archivo == null || archivo.isEmpty()) {
 			throw new IllegalArgumentException("No se ha enviado ningun documento.");
 		}
-
-		String os = System.getProperty("os.name").toLowerCase();
-		String directorioDocumentos;
-
-		if (os.contains("win")) {
-			String userProfile = System.getenv("USERPROFILE");
-			directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-		} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-			directorioDocumentos = directorioDocumentosLinux;
-		} else {
-			throw new IllegalStateException("Sistema operativo no soportado: " + os);
+		if (alumno == null || alumno.getId() == null) {
+			throw new IllegalArgumentException("El alumno debe existir antes de adjuntarle documentos.");
 		}
-
-		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Alumnos_Moiskimdo")
-				.toAbsolutePath().normalize();
-		if (!Files.exists(rutaBaseDocumentos)) {
-			Files.createDirectories(rutaBaseDocumentos);
-		}
-
-		// Try to find existing folder for this alumno (case-insensitive)
-		String numeroExpediente = String.valueOf(alumno.getNumeroExpediente());
-		logger.info("*** Searching for existing folder for alumno expediente: {}", numeroExpediente);
-		logger.info("*** Base path: {}", rutaBaseDocumentos);
-
-		Path rutaCarpetaAlumno = findExistingAlumnoFolder(rutaBaseDocumentos, numeroExpediente);
-
-		// If no folder exists, create a new one
-		if (rutaCarpetaAlumno == null) {
-			logger.warn("*** NO existing folder found for expediente: {}. Creating new folder.", numeroExpediente);
-			String nombreLimpio = FileUtils.limpiarNombreArchivo(alumno.getNombre());
-			String apellidosLimpio = FileUtils.limpiarNombreArchivo(alumno.getApellidos());
-			String carpetaAlumno = alumno.getNumeroExpediente() + "_" + nombreLimpio + "_" + apellidosLimpio;
-			rutaCarpetaAlumno = rutaBaseDocumentos.resolve(carpetaAlumno).normalize();
-			if (!rutaCarpetaAlumno.startsWith(rutaBaseDocumentos)) {
-				throw new IllegalArgumentException("Ruta de alumno fuera del directorio permitido.");
-			}
-			logger.info("*** New folder path: {}", rutaCarpetaAlumno);
-
-			if (!Files.exists(rutaCarpetaAlumno)) {
-				Files.createDirectories(rutaCarpetaAlumno);
-			}
-		} else {
-			logger.info("*** FOUND existing folder: {}", rutaCarpetaAlumno);
-		}
-
-		String nombreOriginalArchivo = archivo.getOriginalFilename();
-		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
-		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
-		String nombreArchivoFinal = nombreOriginalLimpio;
-
-		Path rutaCarpetaAlumnoSegura = rutaCarpetaAlumno.toAbsolutePath().normalize();
-		Path rutaArchivoFinal = rutaCarpetaAlumnoSegura.resolve(nombreArchivoFinal).normalize().toAbsolutePath();
-		if (!rutaCarpetaAlumnoSegura.startsWith(rutaBaseDocumentos)
-				|| !rutaArchivoFinal.startsWith(rutaCarpetaAlumnoSegura)
-				|| !rutaCarpetaAlumnoSegura.equals(rutaArchivoFinal.getParent())
-				|| !rutaArchivoFinal.startsWith(rutaBaseDocumentos)) {
-			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
-		}
-		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
-
-		// Use the actual folder name (not the generated one) for the URL
-		String carpetaNombreReal = rutaCarpetaAlumno.getFileName().toString();
-		String urlAcceso = "%s/documentos/Documentos_Alumnos_Moiskimdo/%s/%s".formatted(baseUrl, carpetaNombreReal,
-                nombreArchivoFinal);
-
-		// Store RELATIVE path (from documentos directory) to be environment-independent
-		String rutaRelativa = "Documentos_Alumnos_Moiskimdo/" + carpetaNombreReal + "/" + nombreArchivoFinal;
-
-		Documento documento = new Documento();
-		documento.setNombre(nombreArchivoFinal);
-		documento.setTipo(mimeTypeSeguro);
-		documento.setUrl(urlAcceso);
-		documento.setRuta(rutaRelativa);  // Store relative path instead of absolute
-		documento.setAlumno(alumno);
-
-		return documentoRepository.save(documento);
+		// Carpeta por escuela y por id de alumno (el expediente se repite entre escuelas).
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_ALUMNOS) + "/" + alumno.getId();
+		return guardarEnCarpeta(carpetaRelativa, archivo, documento -> documento.setAlumno(alumno));
 	}
 
 	@Override
@@ -131,67 +64,56 @@ public class DocumentoServiceImpl implements DocumentoService {
 		if (archivo == null || archivo.isEmpty()) {
 			throw new IllegalArgumentException("No se ha enviado ningun documento.");
 		}
-
-		String os = System.getProperty("os.name").toLowerCase();
-		String directorioDocumentos;
-
-		if (os.contains("win")) {
-			String userProfile = System.getenv("USERPROFILE");
-			if (userProfile == null) {
-				userProfile = System.getProperty("user.home");
-			}
-			directorioDocumentos = directorioDocumentosWindows.replace("%USERPROFILE%", userProfile);
-		} else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
-			directorioDocumentos = directorioDocumentosLinux;
-		} else {
-			throw new IllegalStateException("Sistema operativo no soportado: " + os);
+		if (evento == null || evento.getId() == null) {
+			throw new IllegalArgumentException("El evento debe existir antes de adjuntarle documentos.");
 		}
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_EVENTOS) + "/" + evento.getId();
+		return guardarEnCarpeta(carpetaRelativa, archivo, documento -> documento.setEvento(evento));
+	}
 
-		Path rutaBaseDocumentos = Path.of(directorioDocumentos, "Documentos_Eventos")
-				.toAbsolutePath().normalize();
-		if (!Files.exists(rutaBaseDocumentos)) {
-			Files.createDirectories(rutaBaseDocumentos);
-		}
-
-		String tituloLimpio = FileUtils.limpiarNombreArchivo(evento.getTitulo());
-		String carpetaEvento = evento.getId() + "_" + tituloLimpio;
-		Path rutaCarpetaEvento = rutaBaseDocumentos.resolve(carpetaEvento).normalize();
-		if (!rutaCarpetaEvento.startsWith(rutaBaseDocumentos)) {
-			throw new IllegalArgumentException("Ruta de evento fuera del directorio permitido.");
-		}
-
-		if (!Files.exists(rutaCarpetaEvento)) {
-			Files.createDirectories(rutaCarpetaEvento);
-		}
-
-		String nombreOriginalArchivo = archivo.getOriginalFilename();
-		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(nombreOriginalArchivo);
+	/**
+	 * Guarda el fichero en {@code <raiz>/<carpetaRelativa>/} y persiste SOLO la ruta relativa
+	 * ({@code org-<id>/…}) y una URL sin host ({@code /documentos/…}); la absoluta se compone al leer.
+	 */
+	private Documento guardarEnCarpeta(String carpetaRelativa, MultipartFile archivo,
+			java.util.function.Consumer<Documento> vincular) throws IOException {
+		String nombreOriginalLimpio = FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename());
 		String mimeTypeSeguro = DocumentoSecurityUtils.detectarMimePermitido(nombreOriginalLimpio, archivo.getContentType());
 
-		Path rutaCarpetaEventoSegura = rutaCarpetaEvento.toAbsolutePath().normalize();
-		Path rutaArchivoFinal = rutaCarpetaEventoSegura.resolve(nombreOriginalLimpio).normalize().toAbsolutePath();
-		if (!rutaArchivoFinal.startsWith(rutaCarpetaEventoSegura)
-				|| !rutaCarpetaEventoSegura.equals(rutaArchivoFinal.getParent())
+		Path rutaBaseDocumentos = obtenerRutaBaseDocumentos();
+		Path carpeta = RutasArchivos.resolverDentroDe(rutaBaseDocumentos, carpetaRelativa);
+		Path rutaArchivoFinal = carpeta.resolve(nombreOriginalLimpio).normalize().toAbsolutePath();
+		if (!rutaArchivoFinal.startsWith(carpeta) || !carpeta.equals(rutaArchivoFinal.getParent())
 				|| !rutaArchivoFinal.startsWith(rutaBaseDocumentos)) {
 			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
 		}
+		Files.createDirectories(carpeta);
 		Files.copy(archivo.getInputStream(), rutaArchivoFinal, StandardCopyOption.REPLACE_EXISTING);
 
-		String urlAcceso = "%s/documentos/Documentos_Eventos/%s/%s".formatted(baseUrl, carpetaEvento, nombreOriginalLimpio);
-		String rutaRelativa = "Documentos_Eventos/" + carpetaEvento + "/" + nombreOriginalLimpio;
-
+		String rutaRelativa = carpetaRelativa + "/" + nombreOriginalLimpio;
 		Documento documento = new Documento();
 		documento.setNombre(nombreOriginalLimpio);
 		documento.setTipo(mimeTypeSeguro);
-		documento.setUrl(urlAcceso);
+		documento.setUrl("/documentos/" + rutaRelativa);
 		documento.setRuta(rutaRelativa);
-		documento.setEvento(evento);
+		vincular.accept(documento);
 
 		return documentoRepository.save(documento);
 	}
 
+	/** {@code org-<id>/<categoria>} de la escuela activa; falla cerrado si no hay ninguna. */
+	private static String carpetaDeEscuela(String categoria) {
+		return RutasArchivos.carpetaOrganizacion(RutasArchivos.organizacionActiva()) + "/" + categoria;
+	}
+
 	@Override
 	public void eliminarDocumento(Documento documento) {
+		// Antes de tocar el disco: la prueba de un consentimiento no se borra.
+		if (documento != null && documento.getId() != null
+				&& consentimientoRepository.existsByDocumentoId(documento.getId())) {
+			throw new DocumentoReferenciadoException("El documento es la prueba de un consentimiento registrado "
+					+ "y no se puede eliminar.");
+		}
 		if (documento != null && documento.getRuta() != null) {
 			Path rutaArchivo = resolveStoredPath(documento.getRuta());
 
@@ -248,10 +170,21 @@ public class DocumentoServiceImpl implements DocumentoService {
 	}
 
 	@Override
+	public Path resolverRutaArchivo(Documento documento) {
+		if (documento == null) {
+			throw new IllegalArgumentException("El documento es obligatorio.");
+		}
+		try {
+			return resolvePathCaseInsensitive(resolveStoredPath(documento.getRuta()));
+		} catch (IOException e) {
+			throw new IllegalStateException("No se pudo resolver la ruta del documento: " + documento.getId(), e);
+		}
+	}
+
+	@Override
 	public Resource obtenerRecursoDocumento(Documento documento) {
 		try {
-			Path rutaArchivo = resolveStoredPath(documento.getRuta());
-			rutaArchivo = resolvePathCaseInsensitive(rutaArchivo);
+			Path rutaArchivo = resolverRutaArchivo(documento);
 			if (!Files.exists(rutaArchivo)) {
 				throw new RuntimeException("El archivo no existe en el sistema de archivos: " + rutaArchivo);
 			}
@@ -289,7 +222,10 @@ public class DocumentoServiceImpl implements DocumentoService {
 			}
 		}
 
-		rutaNormalizada = resolveLegacyFolderByPrefix(rutaBaseDocumentos, rutaNormalizada);
+		// Los recursos heredados (sin prefijo de escuela) pueden haber cambiado de carpeta; los nuevos no.
+		if (RutasArchivos.organizacionDeRuta(rutaDocumentoNormalizada) == null) {
+			rutaNormalizada = resolveLegacyFolderByPrefix(rutaBaseDocumentos, rutaNormalizada);
+		}
 
 		if (!rutaNormalizada.startsWith(rutaBaseDocumentos)) {
 			throw new IllegalArgumentException("Ruta de documento fuera del directorio permitido.");
@@ -489,47 +425,5 @@ public class DocumentoServiceImpl implements DocumentoService {
 				.replaceAll("\\p{M}+", "")
 				.toLowerCase(Locale.ROOT);
 		return normalizado;
-	}
-	/**
-	 * Busca una carpeta existente para el alumno basandose en el numero de expediente.
-	 * La busqueda es case-insensitive para manejar diferencias de capitalizacion.
-	 *
-	 * @param rutaBase La ruta base donde buscar
-	 * @param numeroExpediente El numero de expediente del alumno
-	 * @return La ruta de la carpeta existente, o null si no existe
-	 * @throws IOException Si ocurre un error al listar directorios
-	 */
-	private Path findExistingAlumnoFolder(Path rutaBase, String numeroExpediente) throws IOException {
-		logger.info("*** findExistingAlumnoFolder called with: rutaBase={}, numeroExpediente={}", rutaBase, numeroExpediente);
-
-		if (!Files.exists(rutaBase)) {
-			logger.warn("*** Base path does NOT exist: {}", rutaBase);
-			return null;
-		}
-
-		if (!Files.isDirectory(rutaBase)) {
-			logger.warn("*** Base path is NOT a directory: {}", rutaBase);
-			return null;
-		}
-
-		logger.info("*** Listing directories in: {}", rutaBase);
-
-		// List all directories that start with the numero expediente
-		try (Stream<Path> paths = Files.list(rutaBase)) {
-			List<Path> allDirs = paths.filter(Files::isDirectory).collect(java.util.stream.Collectors.toList());
-			logger.info("*** Found {} directories total", allDirs.size());
-
-			for (Path dir : allDirs) {
-				String folderName = dir.getFileName().toString();
-				logger.info("*** Checking directory: {}", folderName);
-				if (folderName.toLowerCase().startsWith(numeroExpediente.toLowerCase() + "_")) {
-					logger.info("*** MATCH FOUND: {}", dir);
-					return dir;
-				}
-			}
-
-			logger.warn("*** NO MATCH found for pattern: {}_{}", numeroExpediente, "*");
-			return null;
-		}
 	}
 }

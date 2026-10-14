@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.hibernate.annotations.BatchSize;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
@@ -23,21 +26,18 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 @Entity
-public class Alumno {
+public class Alumno extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -48,7 +48,7 @@ public class Alumno {
 	@NotBlank(message = "Los apellidos no pueden estar en blanco")
 	private String apellidos;
 
-	@Column(unique = true)
+	// Único por organización: UNIQUE (organizacion_id, numero_expediente) en V19.
 	@NotNull(message = "El número de expediente no puede ser nulo")
 	private Integer numeroExpediente;
 
@@ -63,14 +63,27 @@ public class Alumno {
 	@NotBlank(message = "La dirección no puede estar en blanco")
 	private String direccion;
 
-	@NotNull(message = "El teléfono no puede ser nulo")
-	@Min(value = 100000000, message = "El teléfono debe tener 9 dígitos")
-	@Max(value = 999999999, message = "El teléfono debe tener 9 dígitos")
-	private Integer telefono;
+	// VARCHAR(20) NULL desde V25: hay fichas en papel sin teléfono. Su obligatoriedad y formato se
+	// validan en el alta (TelefonoUtils), no aquí.
+	@Column(length = 20)
+	@Size(max = 20, message = "El teléfono no puede tener más de 20 caracteres")
+	private String telefono;
 
-	@Min(value = 100000000, message = "El teléfono secundario debe tener 9 dígitos")
-	@Max(value = 999999999, message = "El teléfono secundario debe tener 9 dígitos")
-	private Integer telefono2;
+	@Column(length = 20)
+	@Size(max = 20, message = "El teléfono secundario no puede tener más de 20 caracteres")
+	private String telefono2;
+
+	@Enumerated(EnumType.STRING)
+	@Column(columnDefinition = "ENUM('FEMENINO','MASCULINO')")
+	private Genero genero;
+
+	@Column(length = 100)
+	@Size(max = 100, message = "La localidad no puede tener más de 100 caracteres")
+	private String localidad;
+
+	@Column(name = "codigo_postal", length = 10)
+	@Size(max = 10, message = "El código postal no puede tener más de 10 caracteres")
+	private String codigoPostal;
 
 	@Email(message = "La dirección de correo electrónico debe ser válida")
 	private String email;
@@ -81,28 +94,12 @@ public class Alumno {
 	@Column(name = "responsable_legal_nif", length = 16)
 	private String responsableLegalNif;
 
-	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Enumerated(EnumType.STRING)
-	@Column(length = 50, nullable = true)
-	private TipoTarifa tipoTarifa;
-
-	// Note: Nullable for multi-sport mode (tarifa is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@PositiveOrZero(message = "La cuantía de la tarifa debe ser un valor positivo o cero")
-	@Column(nullable = true)
-	private Double cuantiaTarifa;
-
-	// Note: Nullable for multi-sport mode (rolFamiliar is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = true)
-	private RolFamiliar rolFamiliar;
-
-	// Note: Nullable for multi-sport mode (grupoFamiliar is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(length = 50, nullable = true)
-	private String grupoFamiliar;
+	// Tutores (V25). El primer responsable legal se refleja en responsable_legal_* (TutorService).
+	@JsonIgnore
+	@OneToMany(mappedBy = "alumno", fetch = FetchType.LAZY)
+	@OrderBy("orden ASC, id ASC")
+	@BatchSize(size = 50)
+	private List<Tutor> tutores = new ArrayList<>();
 
 	@Temporal(TemporalType.DATE)
 	private Date fechaAlta;
@@ -123,38 +120,6 @@ public class Alumno {
 	@Column(columnDefinition = "LONGTEXT")
 	private String observaciones;
 
-	// Note: Nullable for multi-sport mode (competidor is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Boolean competidor;
-
-	// Note: Nullable for multi-sport mode (peso is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Double peso;
-
-	// Note: Nullable for multi-sport mode (fechaPeso is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaPeso;
-
-	// Note: Nullable for multi-sport mode (tieneLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Boolean tieneLicencia;
-
-	// Note: Nullable for multi-sport mode (numeroLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Column(nullable = true)
-	private Integer numeroLicencia;
-
-	// Note: Nullable for multi-sport mode (fechaLicencia is per-sport in AlumnoDeporte)
-	// Only required for legacy single-sport mode
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaLicencia;
-
 	private Boolean tieneDiscapacidad = false;
 
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -164,31 +129,6 @@ public class Alumno {
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference("alumno-documentos")
 	private List<Documento> documentos = new ArrayList<>();
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (deporte is per-sport in AlumnoDeporte)
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = true)
-	private Deporte deporte;
-
-	// DEPRECATED: Categoria moved to AlumnoDeporte for per-sport categories
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (grado is per-sport in AlumnoDeporte)
-	@ManyToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name = "grado_id", nullable = true)
-	@JsonManagedReference
-	private Grado grado;
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (fechaGrado is per-sport in AlumnoDeporte)
-	@Temporal(TemporalType.DATE)
-	@Column(nullable = true)
-	private Date fechaGrado;
-
-	// DEPRECATED: Mantenido temporalmente para migración y rollback
-	// Nullable for multi-sport mode (aptoParaExamen is per-sport in AlumnoDeporte)
-	@Column(nullable = true)
-	private Boolean aptoParaExamen;
 
 	// NUEVO: Relación de deportes del alumno (multi-deporte)
 	@OneToMany(mappedBy = "alumno", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -247,38 +187,6 @@ public class Alumno {
 		this.apellidos = apellidos;
 	}
 
-	public TipoTarifa getTipoTarifa() {
-		return tipoTarifa;
-	}
-
-	public void setTipoTarifa(TipoTarifa tipoTarifa) {
-		this.tipoTarifa = tipoTarifa;
-	}
-
-	public Double getCuantiaTarifa() {
-		return cuantiaTarifa;
-	}
-
-	public void setCuantiaTarifa(Double cuantiaTarifa) {
-		this.cuantiaTarifa = cuantiaTarifa;
-	}
-
-	public RolFamiliar getRolFamiliar() {
-		return rolFamiliar;
-	}
-
-	public void setRolFamiliar(RolFamiliar rolFamiliar) {
-		this.rolFamiliar = rolFamiliar;
-	}
-
-	public String getGrupoFamiliar() {
-		return grupoFamiliar;
-	}
-
-	public void setGrupoFamiliar(String grupoFamiliar) {
-		this.grupoFamiliar = grupoFamiliar;
-	}
-
 	public Integer getNumeroExpediente() {
 		return numeroExpediente;
 	}
@@ -311,20 +219,48 @@ public class Alumno {
 		this.direccion = direccion;
 	}
 
-	public Integer getTelefono() {
+	public String getTelefono() {
 		return telefono;
 	}
 
-	public void setTelefono(Integer telefono) {
+	public void setTelefono(String telefono) {
 		this.telefono = telefono;
 	}
 
-	public Integer getTelefono2() {
+	public String getTelefono2() {
 		return telefono2;
 	}
 
-	public void setTelefono2(Integer telefono2) {
+	public void setTelefono2(String telefono2) {
 		this.telefono2 = telefono2;
+	}
+
+	public Genero getGenero() {
+		return genero;
+	}
+
+	public void setGenero(Genero genero) {
+		this.genero = genero;
+	}
+
+	public String getLocalidad() {
+		return localidad;
+	}
+
+	public void setLocalidad(String localidad) {
+		this.localidad = localidad;
+	}
+
+	public String getCodigoPostal() {
+		return codigoPostal;
+	}
+
+	public void setCodigoPostal(String codigoPostal) {
+		this.codigoPostal = codigoPostal;
+	}
+
+	public List<Tutor> getTutores() {
+		return tutores;
 	}
 
 	public String getEmail() {
@@ -359,30 +295,6 @@ public class Alumno {
 	// public void setCategoria(Categoria categoria) {
 	// 	this.categoria = categoria;
 	// }
-
-	public Grado getGrado() {
-		return grado;
-	}
-
-	public void setGrado(Grado grado) {
-		this.grado = grado;
-	}
-
-	public Date getFechaGrado() {
-		return fechaGrado;
-	}
-
-	public void setFechaGrado(Date fechaGrado) {
-		this.fechaGrado = fechaGrado;
-	}
-
-	public Boolean getAptoParaExamen() {
-		return aptoParaExamen;
-	}
-
-	public void setAptoParaExamen(Boolean aptoParaExamen) {
-		this.aptoParaExamen = aptoParaExamen;
-	}
 	
 	public Boolean getTieneDerechoExamen() {
 		return tieneDerechoExamen;
@@ -440,54 +352,6 @@ public class Alumno {
 		this.observaciones = observaciones;
 	}
 
-	public Boolean getCompetidor() {
-		return competidor;
-	}
-
-	public void setCompetidor(Boolean competidor) {
-		this.competidor = competidor;
-	}
-
-	public Double getPeso() {
-		return peso;
-	}
-
-	public void setPeso(Double peso) {
-		this.peso = peso;
-	}
-
-	public Date getFechaPeso() {
-		return fechaPeso;
-	}
-
-	public void setFechaPeso(Date fechaPeso) {
-		this.fechaPeso = fechaPeso;
-	}
-
-	public Boolean getTieneLicencia() {
-		return tieneLicencia;
-	}
-
-	public void setTieneLicencia(Boolean tieneLicencia) {
-		this.tieneLicencia = tieneLicencia;
-	}
-
-	public Integer getNumeroLicencia() {
-		return numeroLicencia;
-	}
-
-	public void setNumeroLicencia(Integer numeroLicencia) {
-		this.numeroLicencia = numeroLicencia;
-	}
-
-	public Date getFechaLicencia() {
-		return fechaLicencia;
-	}
-
-	public void setFechaLicencia(Date fechaLicencia) {
-		this.fechaLicencia = fechaLicencia;
-	}
-
 	public Boolean getTieneDiscapacidad() {
 		return tieneDiscapacidad;
 	}
@@ -510,14 +374,6 @@ public class Alumno {
 
 	public void setDocumentos(List<Documento> documentos) {
 		this.documentos = documentos;
-	}
-
-	public Deporte getDeporte() {
-		return deporte;
-	}
-
-	public void setDeporte(Deporte deporte) {
-		this.deporte = deporte;
 	}
 
 	public Set<Grupo> getGrupos() {

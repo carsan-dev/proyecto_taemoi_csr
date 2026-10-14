@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,6 +26,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Documento;
+import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.ConsentimientoRepository;
 import com.taemoi.project.repositories.DocumentoRepository;
 import com.taemoi.project.services.impl.DocumentoServiceImpl;
 
@@ -33,11 +37,24 @@ class DocumentoServiceImplTest {
 	@Mock
 	private DocumentoRepository documentoRepository;
 
+	@Mock
+	private ConsentimientoRepository consentimientoRepository;
+
 	@InjectMocks
 	private DocumentoServiceImpl documentoService;
 
 	@TempDir
 	Path tempDir;
+
+	@BeforeEach
+	void fijarOrganizacion() {
+		TenantContext.set(1L);
+	}
+
+	@AfterEach
+	void limpiarOrganizacion() {
+		TenantContext.clear();
+	}
 
 	@Test
 	void obtenerRecursoDocumento_debeResolverRutaAbsolutaCaseInsensitive() throws Exception {
@@ -201,7 +218,6 @@ class DocumentoServiceImplTest {
 	void guardarDocumentoEvento_debeRechazarTipoNoPermitido() {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
-		ReflectionTestUtils.setField(documentoService, "baseUrl", "http://localhost:8080");
 
 		Evento evento = new Evento();
 		evento.setId(9L);
@@ -220,7 +236,6 @@ class DocumentoServiceImplTest {
 	void guardarDocumentoEvento_debeAceptarDocxConMimeZipComun() throws Exception {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
-		ReflectionTestUtils.setField(documentoService, "baseUrl", "http://localhost:8080");
 		when(documentoRepository.save(org.mockito.ArgumentMatchers.any(Documento.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -244,11 +259,11 @@ class DocumentoServiceImplTest {
 	void guardarDocumento_debeMantenerLaEscrituraDentroDelDirectorioPermitido() throws Exception {
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
 		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
-		ReflectionTestUtils.setField(documentoService, "baseUrl", "http://localhost:8080");
 		when(documentoRepository.save(org.mockito.ArgumentMatchers.any(Documento.class)))
 				.thenAnswer(invocation -> invocation.getArgument(0));
 
 		Alumno alumno = new Alumno();
+		alumno.setId(27L);
 		alumno.setNumeroExpediente(27);
 		alumno.setNombre("../../Ana");
 		alumno.setApellidos("../Prueba");
@@ -260,10 +275,73 @@ class DocumentoServiceImplTest {
 
 		Documento documento = documentoService.guardarDocumento(alumno, archivo);
 
-		Path basePermitida = tempDir.resolve("Documentos_Alumnos_Moiskimdo").toAbsolutePath().normalize();
+		Path basePermitida = tempDir.resolve("org-1").resolve("alumnos").resolve("27").toAbsolutePath().normalize();
 		Path rutaGuardada = tempDir.resolve(documento.getRuta()).toAbsolutePath().normalize();
 		assertTrue(rutaGuardada.startsWith(basePermitida));
 		assertTrue(Files.exists(rutaGuardada));
+	}
+
+	@Test
+	void guardarDocumento_enOtraEscuelaUsaSuPrefijoYElIdDelAlumnoConRutaRelativa() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+		when(documentoRepository.save(org.mockito.ArgumentMatchers.any(Documento.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+		TenantContext.set(2L);
+
+		Alumno alumno = new Alumno();
+		alumno.setId(15L);
+		alumno.setNumeroExpediente(1);
+		alumno.setNombre("Ana");
+		alumno.setApellidos("Prueba");
+		// Una carpeta heredada con el mismo expediente (de la escuela 1) NO se reutiliza.
+		Files.createDirectories(tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("1_OTRA_ESCUELA"));
+
+		Documento documento = documentoService.guardarDocumento(alumno,
+				new MockMultipartFile("archivo", "dni.pdf", "application/pdf", "pdf".getBytes()));
+
+		assertEquals("org-2/alumnos/15/dni.pdf", documento.getRuta());
+		assertEquals("/documentos/org-2/alumnos/15/dni.pdf", documento.getUrl());
+		assertTrue(Files.exists(tempDir.resolve("org-2").resolve("alumnos").resolve("15").resolve("dni.pdf")));
+		assertFalse(Files.exists(tempDir.resolve("Documentos_Alumnos_Moiskimdo").resolve("1_OTRA_ESCUELA").resolve("dni.pdf")));
+
+		Resource recurso = documentoService.obtenerRecursoDocumento(documento);
+		assertEquals(tempDir.resolve("org-2/alumnos/15/dni.pdf").toRealPath(), Path.of(recurso.getURI()).toRealPath());
+	}
+
+	@Test
+	void guardarDocumento_sinEscuelaActivaOSinIdDeAlumnoFallaCerrado() {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+		MultipartFile archivo = new MockMultipartFile("archivo", "dni.pdf", "application/pdf", "pdf".getBytes());
+
+		Alumno sinId = new Alumno();
+		assertThrows(IllegalArgumentException.class, () -> documentoService.guardarDocumento(sinId, archivo));
+
+		TenantContext.clear();
+		Alumno alumno = new Alumno();
+		alumno.setId(3L);
+		assertThrows(IllegalStateException.class, () -> documentoService.guardarDocumento(alumno, archivo));
+	}
+
+	@Test
+	void guardarDocumentoEvento_usaElPrefijoDeLaEscuela() throws Exception {
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosLinux", tempDir.toString());
+		ReflectionTestUtils.setField(documentoService, "directorioDocumentosWindows", tempDir.toString());
+		when(documentoRepository.save(org.mockito.ArgumentMatchers.any(Documento.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+		TenantContext.set(2L);
+
+		Evento evento = new Evento();
+		evento.setId(7L);
+		evento.setTitulo("Open ../../Sierra");
+
+		Documento documento = documentoService.guardarDocumentoEvento(evento,
+				new MockMultipartFile("archivo", "bases.pdf", "application/pdf", "pdf".getBytes()));
+
+		assertEquals("org-2/eventos/7/bases.pdf", documento.getRuta());
+		assertEquals("/documentos/org-2/eventos/7/bases.pdf", documento.getUrl());
+		assertTrue(Files.exists(tempDir.resolve("org-2").resolve("eventos").resolve("7").resolve("bases.pdf")));
 	}
 
 	private Documento crearDocumento(String ruta, String nombre) {

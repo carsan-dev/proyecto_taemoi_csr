@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.taemoi.project.cifrado.DatoCifradoIlegibleException;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
@@ -20,6 +21,8 @@ import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaExcep
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
+import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
+import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -86,6 +89,28 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(PreinscripcionDuplicadaException.class)
 	public ResponseEntity<Map<String,String>> handlePreinscripcionDuplicada(PreinscripcionDuplicadaException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(UsuarioNoEncontradoException.class)
+	public ResponseEntity<Map<String,String>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException e) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(UsuarioCompartidoException.class)
+	public ResponseEntity<Map<String,String>> handleUsuarioCompartido(UsuarioCompartidoException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
+	}
+
+	@ExceptionHandler(DatoCifradoIlegibleException.class)
+	public ResponseEntity<Map<String,String>> handleDatoCifradoIlegible(DatoCifradoIlegibleException e) {
+		// Mensaje fijo: ni contenido ni detalle técnico en la respuesta.
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("mensaje", "No se han podido leer unos datos protegidos. Avisa al administrador."));
+	}
+
+	@ExceptionHandler(DocumentoReferenciadoException.class)
+	public ResponseEntity<Map<String,String>> handleDocumentoReferenciado(DocumentoReferenciadoException e) {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
 	}
 

@@ -31,7 +31,6 @@ import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -51,12 +50,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.controllers.PreinscripcionController;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.exceptions.GlobalExceptionHandler;
+import com.taemoi.project.integracion.MySqlIntegrationTest;
 import com.taemoi.project.services.AforoPreinscripcionService;
+import com.taemoi.project.organizacion.IdentificadorSesion;
+import com.taemoi.project.organizacion.OrganizacionHibernateConfig;
+import com.taemoi.project.organizacion.OrganizacionRequestFilter;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.services.ConfiguracionSistemaService;
+import com.taemoi.project.services.ConsentimientoService;
+import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.services.PreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
+import com.taemoi.project.services.TutorService;
 
 @DataJpaTest(properties = {
 		"spring.flyway.enabled=true",
@@ -65,11 +72,14 @@ import com.taemoi.project.services.TemporadaService;
 		"spring.datasource.hikari.maximum-pool-size=8"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({ PreinscripcionService.class, AforoPreinscripcionService.class,
-		PreinscripcionMySqlConcurrencyTest.Config.class })
-@EnabledIfSystemProperty(named = "preinscripcion.mysql-it", matches = "true")
+@Import({ PreinscripcionService.class, AforoPreinscripcionService.class, ContadorService.class,
+		TutorService.class, ConsentimientoService.class,
+		com.taemoi.project.services.impl.CatalogoDisciplinasServiceImpl.class,
+		com.taemoi.project.services.impl.TarifasServiceImpl.class,
+		com.taemoi.project.services.impl.ProgresionGradosServiceImpl.class,
+		OrganizacionHibernateConfig.class, PreinscripcionMySqlConcurrencyTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class PreinscripcionMySqlConcurrencyTest {
+class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 	private static final String TEMPORADA = "2026-2027";
 
 	@Autowired PreinscripcionService service;
@@ -100,6 +110,8 @@ class PreinscripcionMySqlConcurrencyTest {
 		when(pdfMock.generarPreinscripcionFirmada(any())).thenReturn("pdf-test".getBytes(StandardCharsets.UTF_8));
 		firma = firmaValida();
 		mvc = MockMvcBuilders.standaloneSetup(new PreinscripcionController(service, temporadas))
+				// Como en producción: la petición anónima corre en la organización por defecto.
+				.addFilters(new OrganizacionRequestFilter(new ResolutorOrganizacion(1L), IdentificadorSesion.ANONIMO))
 				.setControllerAdvice(new GlobalExceptionHandler())
 				.setValidator(validator)
 				.build();
@@ -185,10 +197,11 @@ class PreinscripcionMySqlConcurrencyTest {
 				"SELECT t.id FROM turno t JOIN grupo g ON g.id=t.grupo_id WHERE g.nombre=? ORDER BY t.id LIMIT 1",
 				Long.class, nombreGrupo);
 		if (!existentes.isEmpty()) return existentes.get(0);
-		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max) VALUES (?,NULL,?,0,99)",
-				nombreGrupo, deporte.name());
+		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max,organizacion_id,disciplina_id) VALUES (?,NULL,?,0,99,1,"
+				+ "(SELECT d.id FROM disciplina d WHERE d.organizacion_id=1 AND d.codigo=?))",
+				nombreGrupo, deporte.name(), deporte.name());
 		Long grupoId = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre=?", Long.class, nombreGrupo);
-		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id) VALUES ('Lunes','18:00','19:00',NULL,?)",
+		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id,organizacion_id) VALUES ('Lunes','18:00','19:00',NULL,?,1)",
 				grupoId);
 		return jdbc.queryForObject("SELECT id FROM turno WHERE grupo_id=?", Long.class, grupoId);
 	}

@@ -1,0 +1,4 @@
+# Artefactos generados del entorno de pruebas (datos-sinteticos.sql sí se versiona)
+backup*.sql
+*.log
+smoke-*.out

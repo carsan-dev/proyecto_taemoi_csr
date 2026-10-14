@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "registro_pendiente")
-public class RegistroPendiente {
+public class RegistroPendiente extends EntidadOrganizacion {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;

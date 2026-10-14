@@ -1,6 +1,8 @@
 package com.taemoi.project.services.impl;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -12,8 +14,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.UsuarioDTO;
+import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -32,6 +37,12 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private MembresiaService membresiaService;
+
+	@Autowired
+	private ResolutorOrganizacion resolutorOrganizacion;
 
 	/**
 	 * Carga los detalles del usuario por su nombre de usuario (email) para
@@ -56,7 +67,12 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	 */
 	@Override
 	public List<UsuarioDTO> obtenerTodos() {
-		return usuarioRepository.findAll().stream().map(UsuarioDTO::deUsuario).collect(Collectors.toList());
+		// Solo los usuarios de la organización activa, con sus roles en ella (no los de otras escuelas).
+		Long organizacionId = resolutorOrganizacion.organizacionActual();
+		Map<Long, Set<Roles>> roles = membresiaService.autoridadesPorUsuario(organizacionId);
+		return membresiaService.usuariosDeOrganizacion(organizacionId).stream()
+				.map(usuario -> UsuarioDTO.deUsuario(usuario, roles.getOrDefault(usuario.getId(), Set.of())))
+				.collect(Collectors.toList());
 	}
 
 	/**

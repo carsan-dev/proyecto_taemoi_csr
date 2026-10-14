@@ -16,7 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -76,7 +77,13 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 
 		LocalDate hoy = ahora.toLocalDate();
 		LocalDate objetivoReset = proximoReset.toLocalDate();
-		List<Usuario> usuarios = usuarioRepository.findByRolAndRecordatorioRachaEmailHabilitadoTrue(Roles.ROLE_USER);
+		// Familias de la organización activa (la fija EjecutorPorOrganizacion en el job).
+		Long organizacionId = TenantContext.get();
+		if (organizacionId == null) {
+			throw new IllegalStateException("El recordatorio de racha necesita una organización activa");
+		}
+		List<Usuario> usuarios = usuarioRepository.findConRecordatorioRachaYMembresiaActiva(organizacionId,
+				RolMembresia.FAMILIA);
 
 		int evaluados = 0;
 		int enviados = 0;

@@ -22,7 +22,7 @@ import jakarta.persistence.Index;
 				"fecha_completado" }) }, indexes = {
 						@Index(name = "idx_alumno_reto_diario_log_semana", columnList = "anio_iso, semana_iso"),
 						@Index(name = "idx_alumno_reto_diario_log_alumno_semana", columnList = "alumno_id, anio_iso, semana_iso") })
-public class AlumnoRetoDiarioLog {
+public class AlumnoRetoDiarioLog extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

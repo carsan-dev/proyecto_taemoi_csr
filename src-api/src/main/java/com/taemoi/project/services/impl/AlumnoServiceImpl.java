@@ -6,7 +6,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
@@ -29,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
+import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralItemResponse;
@@ -59,6 +59,10 @@ import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
+import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
+import com.taemoi.project.repositories.AlumnoSaludRepository;
+import com.taemoi.project.repositories.ConsentimientoRepository;
+import com.taemoi.project.repositories.TutorRepository;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRetoDiarioLogRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -72,15 +76,18 @@ import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
+import com.taemoi.project.services.MembresiaService;
+import com.taemoi.project.services.TutorService;
+import com.taemoi.project.services.ConsentimientoService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
-import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
-import com.taemoi.project.utils.FechaUtils;
 import com.taemoi.project.utils.EmailUtils;
 import com.taemoi.project.utils.MensualidadUtils;
 import com.taemoi.project.utils.NifUtils;
+import com.taemoi.project.utils.TelefonoUtils;
 
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -95,6 +102,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
 	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
+	/** Nombres de producto de rojo que buscaba el código hasta V27 (respaldo si falta el catálogo). */
 	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
 	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN ROJO BORDADO";
 	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
@@ -131,6 +139,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private UsuarioRepository usuarioRepository;
 
 	@Autowired
+	private MembresiaService membresiaService;
+
+	@Autowired
+	private TutorService tutorService;
+
+	@Autowired
+	private ConsentimientoService consentimientoService;
+
+	@Autowired
+	private ConsentimientoRepository consentimientoRepository;
+
+	@Autowired
+	private TutorRepository tutorRepository;
+
+	@Autowired
+	private AlumnoSaludRepository alumnoSaludRepository;
+
+	@Autowired
 	private TurnoRepository turnoRepository;
 
 	@Autowired
@@ -146,9 +172,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private ProductoAlumnoRepository productoAlumnoRepository;
 	
 	@Autowired
-	private ProductoAlumnoService productoAlumnoService;
-
-	@Autowired
 	private ImagenService imagenService;
 	
 	@Autowired
@@ -161,13 +184,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private PasswordEncoder passwordEncoder;
 
 	@Autowired
-	private com.taemoi.project.config.GradeProgressionConfig gradeProgressionConfig;
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
 	@Autowired
-	private com.taemoi.project.config.ExamEligibilityConfig examEligibilityConfig;
+	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
 
 	@Autowired
-	private com.taemoi.project.config.TarifaConfig tarifaConfig;
+	private com.taemoi.project.services.TarifasService tarifasService;
+
+	@Autowired
+	private com.taemoi.project.services.ProductosCatalogoService productosCatalogo;
 
 	@Autowired
 	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
@@ -177,6 +203,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
+
+	@Autowired
+	private com.taemoi.project.services.ContadorService contadorService;
 
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
@@ -277,54 +306,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false));
 	}
 
-	/**
-	 * Crea un nuevo alumno.
-	 *
-	 * @param alumno El objeto Alumno a crear.
-	 * @return El alumno creado.
-	 */
-	@Override
-	public Alumno crearAlumno(@NonNull Alumno alumno) {
-		// Save the alumno image first, if exists
-		Imagen imagen = alumno.getFotoAlumno();
-		if (imagen != null) {
-			imagenRepository.save(imagen); // Save image
-			alumno.setFotoAlumno(imagen); // Set the saved image to the alumno
-		}
-
-		// Generate and assign a unique student number (numeroExpediente)
-		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente();
-		alumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
-
-		boolean usaLegacy = alumno.getDeportes() == null || alumno.getDeportes().isEmpty();
-		if (usaLegacy) {
-			// Set the current weight date if the student is a competitor
-			if (Boolean.TRUE.equals(alumno.getCompetidor())) {
-				alumno.setFechaPeso(new Date());
-			}
-
-			if (Boolean.TRUE.equals(alumno.getTieneLicencia())) {
-				alumno.setFechaLicencia(new Date());
-			}
-
-			if (alumno.getGrado() != null) {
-				alumno.setFechaGrado(new Date()); // Fecha de grado especifica para el alumno
-			}
-		}
-
-		// Save Alumno entity first
-		Alumno alumnoGuardado = alumnoRepository.save(alumno);
-
-		// If there is a Usuario associated, save it after Alumno
-		if (alumnoGuardado.getUsuario() != null) {
-			Usuario usuario = alumnoGuardado.getUsuario();
-			usuario.setAlumno(alumnoGuardado); // Ensure user references saved alumno
-			usuarioRepository.save(usuario); // Now save the Usuario
-		}
-
-		return alumnoGuardado;
-	}
-
 	@Override
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
@@ -335,6 +316,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new AlumnoDuplicadoException("El alumno con NIF " + nifNormalizado + " ya existe.");
 		}
 
+		// Todo alumno nace con al menos un deporte (AlumnoDeporte). Si el cliente envía los
+		// campos de deporte único en el nivel superior, se traducen al deporte principal.
+		boolean desdeCamposDeporteUnico = nuevoAlumnoDTO.getDeportesInicial() == null
+				|| nuevoAlumnoDTO.getDeportesInicial().isEmpty();
+		List<AlumnoDeporteCreacionDTO> deportesIniciales = desdeCamposDeporteUnico
+				? List.of(mapearDeporteUnicoADeporteInicial(nuevoAlumnoDTO))
+				: nuevoAlumnoDTO.getDeportesInicial();
+		// Se valida todo antes de guardar nada: los errores de datos son un 400, no un 500.
+		validarDeportesIniciales(deportesIniciales);
+
 		// Crear nuevo Alumno
 		Alumno nuevoAlumno = new Alumno();
 		nuevoAlumno.setNombre(nuevoAlumnoDTO.getNombre());
@@ -344,8 +335,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 		nuevoAlumno.setDireccion(nuevoAlumnoDTO.getDireccion());
 		String normalizedEmail = EmailUtils.normalizeEmail(nuevoAlumnoDTO.getEmail());
 		nuevoAlumno.setEmail(normalizedEmail);
-		nuevoAlumno.setTelefono(nuevoAlumnoDTO.getTelefono());
-		nuevoAlumno.setTelefono2(nuevoAlumnoDTO.getTelefono2());
+		// El teléfono es obligatorio en el alta (la columna admite NULL por las fichas en papel).
+		if (TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono()) == null) {
+			throw new DatosAlumnoInvalidosException("El teléfono es obligatorio.");
+		}
+		nuevoAlumno.setTelefono(TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono()));
+		nuevoAlumno.setTelefono2(TelefonoUtils.normalizar(nuevoAlumnoDTO.getTelefono2()));
+		nuevoAlumno.setGenero(nuevoAlumnoDTO.getGenero());
+		nuevoAlumno.setLocalidad(textoOpcional(nuevoAlumnoDTO.getLocalidad()));
+		nuevoAlumno.setCodigoPostal(textoOpcional(nuevoAlumnoDTO.getCodigoPostal()));
 		nuevoAlumno.setResponsableLegalNombre(nuevoAlumnoDTO.getResponsableLegalNombre());
 		nuevoAlumno.setResponsableLegalNif(NifUtils.normalizeForStorage(nuevoAlumnoDTO.getResponsableLegalNif()));
 		nuevoAlumno.setObservaciones(nuevoAlumnoDTO.getObservaciones());
@@ -354,79 +352,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Asignar AutorizacionWeb, si no está definida por defecto a true
 		nuevoAlumno.setAutorizacionWeb(
 				nuevoAlumnoDTO.getAutorizacionWeb() != null ? nuevoAlumnoDTO.getAutorizacionWeb() : true);
-
-		// LEGACY CODE: Only set these fields if NOT using multi-sport mode
-		// In multi-sport mode, all these fields are per-sport in AlumnoDeporte
-		boolean isMultiSportMode = nuevoAlumnoDTO.getDeportesInicial() != null && !nuevoAlumnoDTO.getDeportesInicial().isEmpty();
-
-		if (!isMultiSportMode) {
-			// Legacy single-sport mode
-			nuevoAlumno.setTipoTarifa(nuevoAlumnoDTO.getTipoTarifa());
-			nuevoAlumno.setRolFamiliar(nuevoAlumnoDTO.getRolFamiliar() != null ? nuevoAlumnoDTO.getRolFamiliar() : RolFamiliar.NINGUNO);
-			nuevoAlumno.setGrupoFamiliar(nuevoAlumnoDTO.getGrupoFamiliar());
-			nuevoAlumno.setDeporte(nuevoAlumnoDTO.getDeporte());
-
-			// Asignar CuantiaTarifa si no está definida o es menor o igual a 0
-			if (nuevoAlumnoDTO.getCuantiaTarifa() == null || nuevoAlumnoDTO.getCuantiaTarifa() <= 0) {
-				nuevoAlumno.setCuantiaTarifa(asignarCuantiaTarifa(nuevoAlumnoDTO.getTipoTarifa(), nuevoAlumno.getRolFamiliar()));
-			} else {
-				nuevoAlumno.setCuantiaTarifa(nuevoAlumnoDTO.getCuantiaTarifa());
-			}
-
-			// Asignar Competidor, Peso y FechaPeso si es aplicable
-			nuevoAlumno.setCompetidor(nuevoAlumnoDTO.getCompetidor());
-			if (Boolean.TRUE.equals(nuevoAlumno.getCompetidor())) {
-				nuevoAlumno.setPeso(nuevoAlumnoDTO.getPeso());
-				nuevoAlumno.setFechaPeso(new Date());
-				// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte)
-			// nuevoAlumno.setCategoria(asignarCategoriaSegunEdad(FechaUtils.calcularEdad(nuevoAlumnoDTO.getFechaNacimiento())));
-			}
-
-			// Configurar Licencia
-			nuevoAlumno.setTieneLicencia(nuevoAlumnoDTO.getTieneLicencia());
-			if (Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia())) {
-				nuevoAlumno.setNumeroLicencia(nuevoAlumnoDTO.getNumeroLicencia());
-				nuevoAlumno.setFechaLicencia(new Date());
-			}
-
-			if (nuevoAlumnoDTO.getGrado() != null && !nuevoAlumnoDTO.getGrado().isEmpty()) {
-				// Buscar y asignar el grado seleccionado
-				TipoGrado tipoGradoSeleccionado = TipoGrado.valueOf(nuevoAlumnoDTO.getGrado());
-				Grado gradoSeleccionado = gradoRepository.findByTipoGrado(tipoGradoSeleccionado);
-				nuevoAlumno.setGrado(gradoSeleccionado);
-			} else {
-				// Si no se seleccionó un grado, puedes asignar un valor por defecto (ejemplo: Blanco)
-				Grado gradoPorDefecto = gradoRepository.findByTipoGrado(TipoGrado.BLANCO);
-				nuevoAlumno.setGrado(gradoPorDefecto);
-			}
-
-			// **Asignar fecha de grado actual al alumno**
-			nuevoAlumno.setFechaGrado(new Date());
-
-			// Legacy: Calculate aptoParaExamen for single-sport mode
-			if (nuevoAlumnoDTO.getAptoParaExamen() != null) {
-				nuevoAlumno.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen());
-			} else {
-				nuevoAlumno.setAptoParaExamen(esAptoParaExamen(nuevoAlumno));
-			}
-		} else {
-			// Multi-sport mode: explicitly set all legacy fields to null
-			nuevoAlumno.setTipoTarifa(null);
-			nuevoAlumno.setCuantiaTarifa(null);
-			nuevoAlumno.setRolFamiliar(null);
-			nuevoAlumno.setGrupoFamiliar(null);
-			nuevoAlumno.setDeporte(null);
-			nuevoAlumno.setCompetidor(null);
-			nuevoAlumno.setPeso(null);
-			nuevoAlumno.setFechaPeso(null);
-			nuevoAlumno.setTieneLicencia(null);
-			nuevoAlumno.setNumeroLicencia(null);
-			nuevoAlumno.setFechaLicencia(null);
-			nuevoAlumno.setGrado(null);
-			nuevoAlumno.setFechaGrado(null);
-			nuevoAlumno.setAptoParaExamen(null);
-			// Note: Categoria is set separately for competitors in AlumnoDeporte
-		}
 
 		// Asignar imagen si se proporcionó
 		if (nuevoAlumnoDTO.getFotoAlumno() != null) {
@@ -442,40 +367,40 @@ public class AlumnoServiceImpl implements AlumnoService {
 		// Asignar fecha de alta inicial (solo se establece una vez en la creación)
 		nuevoAlumno.setFechaAltaInicial(nuevoAlumnoDTO.getFechaAltaInicial() != null ? nuevoAlumnoDTO.getFechaAltaInicial() : fechaAlta);
 
-		// Note: License handling already done above (lines 394-399), duplicate code removed
-
-		// Generar y asignar el número de expediente
-		Integer maxNumeroExpediente = alumnoRepository.findMaxNumeroExpediente(); // Asegúrate de tener este método en
-																					// tu repositorio
-		nuevoAlumno.setNumeroExpediente(maxNumeroExpediente == null ? 1 : maxNumeroExpediente + 1);
+		// Número de expediente de la organización activa (contador con bloqueo, misma transacción)
+		nuevoAlumno.setNumeroExpediente(contadorService.siguienteNumeroExpediente());
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
+		tutorService.sincronizarDesdeCamposHeredados(alumnoGuardado);
+		// La autorización de imagen de la ficha queda como consentimiento (origen APP, firmado por quien da el alta).
+		consentimientoService.registrarCambioAutorizacionWeb(alumnoGuardado,
+				Boolean.TRUE.equals(alumnoGuardado.getAutorizacionWeb()));
 
-		// NEW: Multi-sport support
-		if (nuevoAlumnoDTO.getDeportesInicial() != null && !nuevoAlumnoDTO.getDeportesInicial().isEmpty()) {
-			// Multi-sport mode: crear deportes desde la lista
-			logger.info("Creando alumno con {} deportes", nuevoAlumnoDTO.getDeportesInicial().size());
+		logger.info("Creando alumno con {} deporte(s){}", deportesIniciales.size(),
+				desdeCamposDeporteUnico ? " (campos de deporte único)" : "");
 
-			for (com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO deporteDTO : nuevoAlumnoDTO.getDeportesInicial()) {
-				TipoGrado gradoTipo = null;
-				if (deporteDTO.getGrado() != null && !deporteDTO.getGrado().isEmpty()) {
-					gradoTipo = TipoGrado.valueOf(deporteDTO.getGrado());
-				}
+		AlumnoDeporte primerDeporte = null;
+		for (AlumnoDeporteCreacionDTO deporteDTO : deportesIniciales) {
+			TipoGrado gradoTipo = null;
+			if (deporteDTO.getGrado() != null && !deporteDTO.getGrado().isEmpty()) {
+				gradoTipo = TipoGrado.valueOf(deporteDTO.getGrado());
+			}
 
-				Date fechaAltaDeporte = deporteDTO.getFechaAlta() != null ? deporteDTO.getFechaAlta() : new Date();
-				Date fechaAltaInicialDeporte = deporteDTO.getFechaAltaInicial() != null ? deporteDTO.getFechaAltaInicial() : fechaAltaDeporte;
-				Date fechaGradoDeporte = deporteDTO.getFechaGrado() != null ? deporteDTO.getFechaGrado() : new Date();
+			Date fechaAltaDeporte = deporteDTO.getFechaAlta() != null ? deporteDTO.getFechaAlta() : new Date();
+			Date fechaAltaInicialDeporte = deporteDTO.getFechaAltaInicial() != null ? deporteDTO.getFechaAltaInicial() : fechaAltaDeporte;
+			Date fechaGradoDeporte = deporteDTO.getFechaGrado() != null ? deporteDTO.getFechaGrado() : new Date();
 
-				// Use the new method that accepts per-sport fields
-				alumnoDeporteService.agregarDeporteAAlumnoCompleto(
+			AlumnoDeporte creado;
+			try {
+				creado = alumnoDeporteService.agregarDeporteAAlumnoCompleto(
 					alumnoGuardado.getId(),
 					deporteDTO.getDeporte(),
 					gradoTipo,
 					fechaAltaDeporte,
 					fechaAltaInicialDeporte,
 					fechaGradoDeporte,
-					deporteDTO.getTipoTarifa(),
+					deporteDTO.codigoTarifaEfectivo(),
 					deporteDTO.getCuantiaTarifa(),
 					deporteDTO.getRolFamiliar(),
 					deporteDTO.getGrupoFamiliar(),
@@ -489,29 +414,136 @@ public class AlumnoServiceImpl implements AlumnoService {
 					deporteDTO.getNumeroLicencia(),
 					deporteDTO.getFechaLicencia()
 				);
+			} catch (IllegalArgumentException e) {
+				// Datos del deporte no válidos (p. ej. categoría inexistente): 400 y se deshace el alta.
+				throw new DatosAlumnoInvalidosException(e.getMessage());
 			}
-		} else if (nuevoAlumnoDTO.getDeporte() != null) {
-			// Backward compatibility: single-sport mode
-			logger.info("Creando alumno con deporte único (modo legacy)");
-			// El deporte único ya está asignado en nuevoAlumno.setDeporte() (línea 324)
-			// No se necesita acción adicional aquí ya que el sistema legacy aún existe
-		} else {
-			throw new IllegalArgumentException("Al menos un deporte debe ser especificado");
+			// Mantener la colección en memoria al día: la respuesta y los cargos se calculan con ella
+			if (creado != null) {
+				alumnoGuardado.addDeporte(creado);
+				if (primerDeporte == null) {
+					primerDeporte = creado;
+				}
+			}
 		}
 
-	    boolean tieneLicencia = Boolean.TRUE.equals(nuevoAlumno.getTieneLicencia());
-	    if (!tieneLicencia && alumnoGuardado.getDeportes() != null) {
-	    	tieneLicencia = alumnoGuardado.getDeportes().stream()
-	    			.anyMatch(ad -> Boolean.TRUE.equals(ad.getTieneLicencia()));
-	    }
-	    if (tieneLicencia) {
-	        productoAlumnoService.crearAltaLicenciaFederativa(alumnoGuardado);
-	    }
+		if (desdeCamposDeporteUnico && primerDeporte != null) {
+			// El deporte traducido desde los campos de nivel superior es el principal
+			primerDeporte.setPrincipal(true);
+			primerDeporte.setAptoParaExamen(nuevoAlumnoDTO.getAptoParaExamen() != null
+					? nuevoAlumnoDTO.getAptoParaExamen()
+					: alumnoDeporteService.esAptoParaExamen(primerDeporte));
+			alumnoDeporteRepository.save(primerDeporte);
+		}
 
-	    asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
+		// La licencia federativa se gestiona aparte: el alta del alumno nunca la cobra.
+
+		asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
 
 		// Finalmente, retornar el Alumno guardado
 		return alumnoGuardado;
+	}
+
+	/**
+	 * Comprueba los deportes iniciales de un alta antes de guardar nada.
+	 *
+	 * @throws DatosAlumnoInvalidosException si falta el deporte, se repite, el grado no existe en la
+	 *         escuela o no es válido, o se marca como competidor sin licencia.
+	 */
+	private void validarDeportesIniciales(List<AlumnoDeporteCreacionDTO> deportesIniciales) {
+		java.util.Set<Deporte> vistos = java.util.EnumSet.noneOf(Deporte.class);
+		for (AlumnoDeporteCreacionDTO deporteDTO : deportesIniciales) {
+			if (deporteDTO == null || deporteDTO.getDeporte() == null) {
+				throw new DatosAlumnoInvalidosException("Cada deporte del alta debe indicar el deporte.");
+			}
+			Deporte deporte = deporteDTO.getDeporte();
+			if (!vistos.add(deporte)) {
+				throw new DatosAlumnoInvalidosException("El deporte " + deporte + " está repetido en el alta.");
+			}
+			if (deporteDTO.getGrado() != null && !deporteDTO.getGrado().isEmpty()) {
+				TipoGrado tipoGrado;
+				try {
+					tipoGrado = TipoGrado.valueOf(deporteDTO.getGrado());
+				} catch (IllegalArgumentException e) {
+					throw new DatosAlumnoInvalidosException("Grado no válido para " + deporte + ": " + deporteDTO.getGrado());
+				}
+				if (catalogoDisciplinas.buscarPorCodigo(deporte.name()).isEmpty()) {
+					throw new DatosAlumnoInvalidosException(
+							"El deporte " + deporte + " no está configurado en la escuela.");
+				}
+				if (!progresionGrados.tieneProgresion(deporte.name())) {
+					throw new DatosAlumnoInvalidosException("El deporte " + deporte + " no tiene sistema de grados.");
+				}
+				if (progresionGrados.buscarGrado(deporte.name(), tipoGrado.name()).isEmpty()) {
+					throw new DatosAlumnoInvalidosException(
+							"El grado " + tipoGrado + " no está configurado en la escuela.");
+				}
+			}
+			if (Boolean.TRUE.equals(deporteDTO.getCompetidor()) && !Boolean.TRUE.equals(deporteDTO.getTieneLicencia())) {
+				throw new DatosAlumnoInvalidosException("El alumno debe tener una licencia federativa activa para "
+						+ "ser marcado como competidor en " + deporte + ".");
+			}
+		}
+	}
+
+	/**
+	 * Traduce los campos de deporte único del nivel superior de {@link AlumnoDTO} (contrato
+	 * anterior de la API) al deporte inicial del alumno, con los mismos valores por defecto
+	 * que aplicaba el antiguo modo de deporte único.
+	 *
+	 * @throws DatosAlumnoInvalidosException si no se indica ningún deporte o los datos no son coherentes.
+	 */
+	private AlumnoDeporteCreacionDTO mapearDeporteUnicoADeporteInicial(AlumnoDTO dto) {
+		if (dto.getDeporte() == null) {
+			throw new DatosAlumnoInvalidosException(
+					"Debe indicarse al menos un deporte: 'deportesInicial' o el campo 'deporte'.");
+		}
+		Date hoy = new Date();
+		AlumnoDeporteCreacionDTO deporte = new AlumnoDeporteCreacionDTO();
+		deporte.setDeporte(dto.getDeporte());
+
+		if (dto.getGrado() != null && !dto.getGrado().isEmpty()) {
+			deporte.setGrado(dto.getGrado());
+		} else if (catalogoDisciplinas.buscarPorCodigo(dto.getDeporte().name()).isPresent()) {
+			// Disciplina con grados: grado de entrada de su sistema (BLANCO en Taemoi)
+			progresionGrados.obtenerGradoInicial(dto.getDeporte().name())
+					.ifPresent(inicial -> deporte.setGrado(inicial.getCodigo()));
+		}
+		deporte.setFechaGrado(dto.getFechaGrado() != null ? dto.getFechaGrado() : hoy);
+		deporte.setFechaAlta(dto.getFechaAlta());
+		deporte.setFechaAltaInicial(dto.getFechaAltaInicial());
+
+		RolFamiliar rolFamiliar = dto.getRolFamiliar() != null ? dto.getRolFamiliar() : RolFamiliar.NINGUNO;
+		deporte.setTipoTarifa(dto.getTipoTarifa());
+		deporte.setRolFamiliar(rolFamiliar.name());
+		deporte.setGrupoFamiliar(dto.getGrupoFamiliar());
+		if (dto.getCuantiaTarifa() != null && dto.getCuantiaTarifa() > 0) {
+			deporte.setCuantiaTarifa(dto.getCuantiaTarifa());
+		} else if (dto.getTipoTarifa() != null) {
+			try {
+				deporte.setCuantiaTarifa(asignarCuantiaTarifa(dto.getTipoTarifa(), rolFamiliar));
+			} catch (IllegalArgumentException e) {
+				// La organización no tiene esa tarifa (en Taemoi están todas las de TipoTarifa)
+				throw new DatosAlumnoInvalidosException(e.getMessage());
+			}
+		} else {
+			throw new DatosAlumnoInvalidosException("Debe indicarse el tipo de tarifa o la cuantía de la tarifa.");
+		}
+
+		boolean tieneLicencia = Boolean.TRUE.equals(dto.getTieneLicencia());
+		deporte.setTieneLicencia(tieneLicencia);
+		if (tieneLicencia) {
+			deporte.setNumeroLicencia(dto.getNumeroLicencia());
+			deporte.setFechaLicencia(dto.getFechaLicencia() != null ? dto.getFechaLicencia() : hoy);
+		}
+
+		boolean competidor = Boolean.TRUE.equals(dto.getCompetidor());
+		deporte.setCompetidor(competidor);
+		if (competidor) {
+			deporte.setPeso(dto.getPeso());
+			deporte.setFechaPeso(dto.getFechaPeso() != null ? dto.getFechaPeso() : hoy);
+		}
+		return deporte;
 	}
 
     @Override
@@ -547,27 +579,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 		if (optionalAlumno.isPresent()) {
 			Alumno alumnoExistente = optionalAlumno.get();
-			boolean usaLegacy = alumnoExistente.getDeportes() == null || alumnoExistente.getDeportes().isEmpty();
 
 			// Actualizar datos generales del alumno
 			alumnoExistente.setNombre(alumnoActualizado.getNombre());
 			alumnoExistente.setApellidos(alumnoActualizado.getApellidos());
 			alumnoExistente.setFechaNacimiento(nuevaFechaNacimiento);
-
-			if (usaLegacy) {
-				// Obtener el grado actual
-				Grado gradoActual = alumnoExistente.getGrado();
-
-				// Buscar el nuevo grado (si se actualiza)
-				Grado nuevoGrado = gradoRepository.findByTipoGrado(
-						alumnoActualizado.getGrado() != null ? TipoGrado.valueOf(alumnoActualizado.getGrado()) : null);
-
-				// Si el grado cambia, actualizar la fecha de grado
-				if (nuevoGrado != null && !nuevoGrado.equals(gradoActual)) {
-					alumnoExistente.setGrado(nuevoGrado);
-					alumnoExistente.setFechaGrado(new Date());
-				}
-			}
 
 			// Actualizar otros campos del alumno
 			String nifNormalizado = NifUtils.normalizeForStorage(alumnoActualizado.getNif());
@@ -581,6 +597,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			if (usuario != null && normalizedEmail != null) {
 				String usuarioEmail = usuario.getEmail();
 				if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
+					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
+					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
+							alumnoExistente.getOrganizacionId())) {
+						throw new UsuarioCompartidoException("El alumno está vinculado a una cuenta que también "
+								+ "pertenece a otra escuela: su email no se puede cambiar desde esta escuela.");
+					}
 					Optional<Usuario> usuarioConEmail = usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
 					if (usuarioConEmail.isPresent() && !usuarioConEmail.get().getId().equals(usuario.getId())) {
 						throw new IllegalArgumentException("El correo electronico ya esta asociado a otro usuario.");
@@ -590,21 +612,33 @@ public class AlumnoServiceImpl implements AlumnoService {
 				}
 			}
 			alumnoExistente.setEmail(normalizedEmail);
-			alumnoExistente.setTelefono(alumnoActualizado.getTelefono());
-			alumnoExistente.setTelefono2(alumnoActualizado.getTelefono2());
-			alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
-			alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
+			alumnoExistente.setTelefono(TelefonoUtils.normalizar(alumnoActualizado.getTelefono()));
+			alumnoExistente.setTelefono2(TelefonoUtils.normalizar(alumnoActualizado.getTelefono2()));
+			// Campos nuevos (V25): el frontend actual aún no los envía, así que nulo = sin cambios (si no,
+			// cada edición borraría lo importado). Una cadena vacía sí vacía localidad y código postal.
+			if (alumnoActualizado.getGenero() != null) {
+				alumnoExistente.setGenero(alumnoActualizado.getGenero());
+			}
+			if (alumnoActualizado.getLocalidad() != null) {
+				alumnoExistente.setLocalidad(textoOpcional(alumnoActualizado.getLocalidad()));
+			}
+			if (alumnoActualizado.getCodigoPostal() != null) {
+				alumnoExistente.setCodigoPostal(textoOpcional(alumnoActualizado.getCodigoPostal()));
+			}
+			// Responsable legal: nulo (o ausente) = sin cambios; cadena vacía = quitarlo.
+			boolean cambiaResponsable = alumnoActualizado.getResponsableLegalNombre() != null
+					|| alumnoActualizado.getResponsableLegalNif() != null;
+			if (alumnoActualizado.getResponsableLegalNombre() != null) {
+				alumnoExistente.setResponsableLegalNombre(alumnoActualizado.getResponsableLegalNombre());
+			}
+			if (alumnoActualizado.getResponsableLegalNif() != null) {
+				alumnoExistente.setResponsableLegalNif(NifUtils.normalizeForStorage(alumnoActualizado.getResponsableLegalNif()));
+			}
+			if (cambiaResponsable) {
+				tutorService.sincronizarDesdeCamposHeredados(alumnoExistente);
+			}
 			if (alumnoActualizado.getObservaciones() != null) {
 				alumnoExistente.setObservaciones(alumnoActualizado.getObservaciones());
-			}
-
-			if (usaLegacy) {
-				alumnoExistente.setTipoTarifa(alumnoActualizado.getTipoTarifa());
-				alumnoExistente.setRolFamiliar(alumnoActualizado.getRolFamiliar() != null
-						? alumnoActualizado.getRolFamiliar()
-						: RolFamiliar.NINGUNO);
-				alumnoExistente.setGrupoFamiliar(alumnoActualizado.getGrupoFamiliar());
-				alumnoExistente.setDeporte(alumnoActualizado.getDeporte());
 			}
 
 			if (alumnoActualizado.getFechaAlta() != null) {
@@ -617,36 +651,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			alumnoExistente.setFechaBaja(alumnoActualizado.getFechaBaja());
+			Boolean autorizacionAnterior = alumnoExistente.getAutorizacionWeb();
 			alumnoExistente.setAutorizacionWeb(alumnoActualizado.getAutorizacionWeb());
-
-			if (usaLegacy) {
-				alumnoExistente.setTieneLicencia(Optional.ofNullable(alumnoActualizado.getTieneLicencia()).orElse(false));
-				if (alumnoActualizado.getTieneLicencia() != null && alumnoActualizado.getTieneLicencia()) {
-					alumnoExistente.setNumeroLicencia(alumnoActualizado.getNumeroLicencia());
-					alumnoExistente.setFechaLicencia(alumnoActualizado.getFechaLicencia());
-				}
+			if (alumnoActualizado.getAutorizacionWeb() != null
+					&& !alumnoActualizado.getAutorizacionWeb().equals(autorizacionAnterior)) {
+				consentimientoService.registrarCambioAutorizacionWeb(alumnoExistente,
+						alumnoActualizado.getAutorizacionWeb());
 			}
 
 			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
-
-			if (usaLegacy) {
-				// Actualizar los campos relacionados con "competidor"
-				alumnoExistente.setCompetidor(Optional.ofNullable(alumnoActualizado.getCompetidor()).orElse(false));
-				if (alumnoActualizado.getCompetidor() != null && alumnoActualizado.getCompetidor()) {
-					// Si es competidor, actualizar el peso y la fecha de peso
-					alumnoExistente.setPeso(alumnoActualizado.getPeso());
-					alumnoExistente.setFechaPeso(alumnoActualizado.getFechaPeso());
-				}
-			}
-
-			if (usaLegacy) {
-				if (alumnoActualizado.getAptoParaExamen() != null) {
-					alumnoExistente.setAptoParaExamen(alumnoActualizado.getAptoParaExamen());
-				} else {
-					// Si no se asigna manualmente, calcular si es apto automaticamente
-					alumnoExistente.setAptoParaExamen(esAptoParaExamen(alumnoExistente));
-				}
-			}
 
 			// Manejo de la imagen del alumno
 			try {
@@ -674,15 +687,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 				}
 			} catch (IOException e) {
 				throw new RuntimeException("Error al procesar la imagen", e);
-			}
-
-			if (usaLegacy) {
-				// Si no se especifica una cuantia de tarifa o es invalida, se asigna una por defecto
-				if (alumnoActualizado.getCuantiaTarifa() == null || alumnoActualizado.getCuantiaTarifa() <= 0) {
-					alumnoExistente.setCuantiaTarifa(asignarCuantiaTarifa(alumnoActualizado.getTipoTarifa(), alumnoExistente.getRolFamiliar()));
-				} else {
-					alumnoExistente.setCuantiaTarifa(alumnoActualizado.getCuantiaTarifa());
-				}
 			}
 
 			// Guardar los cambios en el alumno en la base de datos
@@ -1576,6 +1580,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Transactional
 	public boolean eliminarAlumno(@NonNull Long id) {
 		return alumnoRepository.findById(id).map(alumno -> {
+			// Primero sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos, que se
+			// borran en cascada con el alumno), tutores y salud. Es la supresión completa del alumno.
+			consentimientoRepository.borrarDelAlumno(alumno.getId());
+			tutorRepository.borrarDelAlumno(alumno.getId());
+			alumnoSaludRepository.borrarDelAlumno(alumno.getId());
 			Imagen imagen = alumno.getFotoAlumno();
 			if (imagen != null) {
 				imagenService.eliminarImagenDeSistema(imagen);
@@ -1583,9 +1592,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 			}
 
 			if (alumno.getUsuario() != null) {
+				// La cuenta es global: se quita solo su acceso como familia a esta escuela y se borra
+				// únicamente si ya no le queda ninguna membresía (en ninguna escuela).
 				Usuario usuario = alumno.getUsuario();
 				alumno.setUsuario(null);
-				usuarioRepository.delete(usuario);
+				usuario.setAlumno(null);
+				if (membresiaService.retirarFamilia(usuario.getId(), alumno.getOrganizacionId())) {
+					usuarioRepository.save(usuario);
+				} else {
+					usuarioRepository.delete(usuario);
+				}
 			}
 
 			for (Grupo grupo : alumno.getGrupos()) {
@@ -1834,21 +1850,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
-	 * Delegado a TarifaConfig para centralizar la configuración de precios.
+	 * Cuantía de la tarifa de la organización activa con ese código (tabla {@code tarifa}).
 	 *
 	 * @param tipoTarifa El tipo de tarifa del alumno.
 	 * @return La cuantía asignada.
+	 * @throws IllegalArgumentException si la tarifa es nula o la organización no la tiene.
 	 */
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
-		return tarifaConfig.obtenerCuantia(tipoTarifa);
+		if (tipoTarifa == null) {
+			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
+		}
+		return tarifasService.obtenerImporte(tipoTarifa.name()).doubleValue();
 	}
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa y el rol familiar.
-	 * Este método considera el rol familiar para la tarifa PADRES_HIJOS, donde el
-	 * precio varía según si el alumno es el padre (28€) o el hijo (26€).
+	 * Regla de {@link com.taemoi.project.services.TarifasService#calcularImporte}: importe por rol
+	 * si la tarifa lo tiene (PADRES_HIJOS en Taemoi: progenitor 28 €, hijo 26 €).
 	 *
 	 * @param tipoTarifa El tipo de tarifa del alumno.
 	 * @param rolFamiliar El rol familiar del alumno (PADRE, HIJO, NINGUNO).
@@ -1856,7 +1875,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar) {
-		return tarifaConfig.obtenerCuantiaConRol(tipoTarifa, rolFamiliar);
+		if (tipoTarifa == null) {
+			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
+		}
+		return tarifasService.obtenerImporte(tipoTarifa.name(), rolFamiliar).doubleValue();
 	}
 
 	/**
@@ -1891,74 +1913,56 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public Grado asignarGradoSegunEdad(AlumnoDTO nuevoAlumnoDTO) {
-		Deporte deporte = nuevoAlumnoDTO.getDeporte() != null ? nuevoAlumnoDTO.getDeporte() : Deporte.TAEKWONDO;
-		boolean esMenor = FechaUtils.esMenor(nuevoAlumnoDTO.getFechaNacimiento(), deporte);
+		// Sin deporte: taekwondo, como siempre. Disciplina sin grados: los de taekwondo (contrato heredado).
+		String disciplina = nuevoAlumnoDTO.getDeporte() != null ? nuevoAlumnoDTO.getDeporte().name()
+				: com.taemoi.project.services.GradoService.DISCIPLINA_POR_DEFECTO;
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(nuevoAlumnoDTO.getFechaNacimiento(), disciplina);
+		String disciplinaConGrados = progresionGrados.tieneProgresion(disciplina) ? disciplina
+				: com.taemoi.project.services.GradoService.DISCIPLINA_POR_DEFECTO;
 
-		List<TipoGrado> gradosDisponibles;
-
-		// Si el alumno es menor, asignar grados correspondientes a menores
-		if (esMenor) {
-			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.BLANCO_AMARILLO, TipoGrado.AMARILLO,
-					TipoGrado.AMARILLO_NARANJA, TipoGrado.NARANJA, TipoGrado.NARANJA_VERDE, TipoGrado.VERDE,
-					TipoGrado.VERDE_AZUL, TipoGrado.AZUL, TipoGrado.AZUL_ROJO, TipoGrado.ROJO,
-					TipoGrado.ROJO_NEGRO_1_PUM, TipoGrado.ROJO_NEGRO_2_PUM, TipoGrado.ROJO_NEGRO_3_PUM);
-		} else {
-			// Si el alumno es adulto, asignar grados correspondientes a adultos
-			gradosDisponibles = Arrays.asList(TipoGrado.BLANCO, TipoGrado.AMARILLO, TipoGrado.NARANJA, TipoGrado.VERDE,
-					TipoGrado.AZUL, TipoGrado.ROJO, TipoGrado.NEGRO_1_DAN, TipoGrado.NEGRO_2_DAN, TipoGrado.NEGRO_3_DAN,
-					TipoGrado.NEGRO_4_DAN, TipoGrado.NEGRO_5_DAN);
+		// Grados del grupo de edad del alumno en el sistema de la disciplina (aplica_a)
+		List<Grado> gradosDisponibles = progresionGrados.listarGradosAplicables(disciplinaConGrados, esMenor);
+		if (gradosDisponibles.isEmpty()) {
+			throw new IllegalStateException("La disciplina " + disciplinaConGrados + " no tiene grados configurados");
 		}
 
 		// Asignar un grado aleatoriamente de la lista de grados disponibles
-		TipoGrado tipoGradoAsignado = gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
-
-		// Buscar si el grado ya existe en la base de datos
-		Grado gradoExistente = gradoRepository.findByTipoGrado(tipoGradoAsignado);
-		if (gradoExistente != null) {
-			return gradoExistente;
-		}
-
-		// Si no existe, crear un nuevo grado y guardarlo
-		Grado nuevoGrado = new Grado();
-		nuevoGrado.setTipoGrado(tipoGradoAsignado);
-		return gradoRepository.save(nuevoGrado);
+		return gradosDisponibles.get(new Random().nextInt(gradosDisponibles.size()));
 	}
 
 	/**
 	 * Calcula el siguiente grado para un alumno según su deporte, edad y grado actual.
-	 * Delegado a GradeProgressionConfig para centralizar la lógica de progresión.
+	 * Progresión del catálogo (ProgresionGradosService) en el sistema de grados de su disciplina.
 	 */
 	@Override
 	public TipoGrado calcularSiguienteGrado(Alumno alumno) {
-		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
-
-		TipoGrado gradoActual = null;
-		Deporte deporte = null;
-		if (deportePrincipal != null && deportePrincipal.getGrado() != null) {
-			gradoActual = deportePrincipal.getGrado().getTipoGrado();
-			deporte = deportePrincipal.getDeporte();
-		} else if (alumno.getGrado() != null && alumno.getDeporte() != null) {
-			gradoActual = alumno.getGrado().getTipoGrado();
-			deporte = alumno.getDeporte();
+		AlumnoDeporte deporteConGrado = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
+		if (deporteConGrado == null || deporteConGrado.getGrado() == null) {
+			// El principal no tiene grado (p. ej. Pilates): usar el primer deporte activo con grado
+			List<AlumnoDeporte> activosConGrado = alumno.getDeportes() == null ? List.of()
+					: alumno.getDeportes().stream()
+							.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && ad.getGrado() != null)
+							.toList();
+			deporteConGrado = AlumnoDeporteUtils.seleccionarDeportePrincipal(activosConGrado);
 		}
-		if (gradoActual == null || deporte == null) {
+		if (deporteConGrado == null || deporteConGrado.getGrado() == null || deporteConGrado.getDeporte() == null) {
 			return null;
 		}
-
-		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
-
-		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
+		return calcularSiguienteGradoPorDeporte(deporteConGrado.getGrado().getCodigo(), deporteConGrado.getDeporte(),
+				alumno);
 	}
 
 	/**
 	 * Calcula el siguiente grado para un alumno según un deporte específico y grado actual.
 	 * Útil para sistema multi-deporte.
 	 */
-	private TipoGrado calcularSiguienteGradoPorDeporte(TipoGrado gradoActual, Deporte deporte, Alumno alumno) {
-		// Usar FechaUtils.esMenor para aplicar la regla correcta según el deporte
-		boolean esMenor = FechaUtils.esMenor(alumno.getFechaNacimiento(), deporte);
-		return gradeProgressionConfig.obtenerSiguienteGrado(deporte, esMenor, gradoActual);
+	private TipoGrado calcularSiguienteGradoPorDeporte(String codigoGradoActual, Deporte deporte, Alumno alumno) {
+		String disciplina = deporte == null ? null : deporte.name();
+		// Grupo de edad por disciplina.edad_adulto (año natural); siguiente grado en su sistema
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(), disciplina);
+		return progresionGrados.obtenerSiguienteGrado(disciplina, esMenor, codigoGradoActual)
+				.map(siguiente -> TipoGrado.valueOf(siguiente.getCodigo()))
+				.orElse(null);
 	}
 
 	private String resolverConceptoProducto(TipoGrado gradoSiguiente, boolean porRecompensa, boolean rojoBordado) {
@@ -1971,27 +1975,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoSiguiente.obtenerNombreProducto(porRecompensa);
 	}
 
-	private Producto buscarProductoPorConcepto(String conceptoProducto, TipoGrado gradoSiguiente) {
-		Optional<Producto> productoExacto = productoRepository.findFirstByConcepto(conceptoProducto);
-		if (productoExacto.isPresent()) {
-			return productoExacto.get();
-		}
-
-		String conceptoNormalizado = normalizarConcepto(conceptoProducto);
-		return productoRepository.findAll().stream()
-				.filter(producto -> normalizarConcepto(producto.getConcepto()).equals(conceptoNormalizado))
-				.findFirst()
+	/**
+	 * Producto que se cobra para llegar al siguiente grado, del catálogo
+	 * ({@link com.taemoi.project.services.ProductosCatalogoService#resolverProductoGrado}): enlace del
+	 * grado o codigo; si no hay, el nombre que buscaba el código hasta V27 ({@link #resolverConceptoProducto}).
+	 */
+	private Producto buscarProductoDeGrado(Deporte deporte, TipoGrado gradoSiguiente, boolean porRecompensa,
+			boolean rojoBordado) {
+		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
+		boolean bordado = rojoBordado && gradoSiguiente == TipoGrado.ROJO;
+		return productosCatalogo
+				.resolverProductoGrado(deporte == null ? null : deporte.name(), gradoSiguiente.name(), porRecompensa,
+						bordado, conceptoProducto)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"Producto no encontrado para el grado: " + gradoSiguiente + " (" + conceptoProducto + ")"));
-	}
-
-	private String normalizarConcepto(String concepto) {
-		if (concepto == null) {
-			return "";
-		}
-
-		String sinAcentos = Normalizer.normalize(concepto, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-		return sinAcentos.replaceAll("\\s+", " ").trim().toUpperCase(Locale.ROOT);
 	}
 
 	@Override
@@ -2018,16 +2015,17 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Calculate next grade based on the AlumnoDeporte's current grade
 		TipoGrado gradoActual = alumnoDeporte.getGrado().getTipoGrado();
-		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, convocatoria.getDeporte(), alumno);
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(alumnoDeporte.getGrado().getCodigo(),
+				convocatoria.getDeporte(), alumno);
 		if (gradoSiguiente == null) {
 			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno para el deporte " + convocatoria.getDeporte());
 		}
 
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
-		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
+		Producto producto = buscarProductoDeGrado(convocatoria.getDeporte(), gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(convocatoria.getDeporte());
+		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null) + " - "
+				+ formatearNombreDeporte(convocatoria.getDeporte());
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2092,8 +2090,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
-		// Validar que el deporte admite grados
-		if (deporte == Deporte.PILATES || deporte == Deporte.DEFENSA_PERSONAL_FEMENINA) {
+		// Validar que el deporte admite grados (disciplina sin sistema de grados)
+		if (!progresionGrados.tieneProgresion(deporte == null ? null : deporte.name())) {
 			throw new IllegalArgumentException("El deporte " + deporte + " no tiene sistema de grados");
 		}
 
@@ -2109,18 +2107,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Calcular siguiente grado con la misma lógica por edad y deporte
-		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(gradoActual, deporte, alumno);
+		TipoGrado gradoSiguiente = calcularSiguienteGradoPorDeporte(alumnoDeporte.getGrado().getCodigo(), deporte,
+				alumno);
 		if (gradoSiguiente == null) {
 			throw new IllegalArgumentException(
 					"No se pudo determinar el siguiente grado del alumno para el deporte " + deporte);
 		}
 
 		// Obtener producto asociado al siguiente grado (recompensa o derecho de examen)
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
-		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
+		Producto producto = buscarProductoDeGrado(deporte, gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(deporte);
+		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null) + " - "
+				+ formatearNombreDeporte(deporte);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2175,6 +2174,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param alumnoDTO El objeto AlumnoDTO con los datos del alumno.
 	 * @return true si los datos son válidos, false si no lo son.
 	 */
+	private static String textoOpcional(String valor) {
+		return valor == null || valor.isBlank() ? null : valor.strip();
+	}
+
 	@Override
 	public boolean datosAlumnoValidos(AlumnoDTO alumnoDTO) {
 		return datosAlumnoValidos(alumnoDTO, true);
@@ -2194,7 +2197,16 @@ public class AlumnoServiceImpl implements AlumnoService {
 				|| alumnoDTO.getEmail().isEmpty()) {
 			return false;
 		}
-		if (alumnoDTO.getTelefono() != null && alumnoDTO.getTelefono() <= 0) {
+		if (TelefonoUtils.normalizar(alumnoDTO.getTelefono()) != null && !TelefonoUtils.esValido(alumnoDTO.getTelefono())) {
+			return false;
+		}
+		if (TelefonoUtils.normalizar(alumnoDTO.getTelefono2()) != null && !TelefonoUtils.esValido(alumnoDTO.getTelefono2())) {
+			return false;
+		}
+		if (alumnoDTO.getCodigoPostal() != null && alumnoDTO.getCodigoPostal().strip().length() > 10) {
+			return false;
+		}
+		if (alumnoDTO.getLocalidad() != null && alumnoDTO.getLocalidad().strip().length() > 100) {
 			return false;
 		}
 		if (requiereTarifaYFechaAlta) {
@@ -2225,67 +2237,36 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Calcula si un alumno es apto para examen según su grado y su edad.
-	 * 
-	 * @param alumno El alumno para el cual se realiza el cálculo.
-	 * @return true si el alumno es apto para examen, false en caso contrario.
+	 * Indica si el alumno es apto para examen en alguno de sus deportes activos. La aptitud
+	 * se calcula y guarda por deporte en {@link AlumnoDeporte#getAptoParaExamen()}.
+	 *
+	 * @param alumno El alumno a comprobar.
+	 * @return true si algún deporte activo del alumno está marcado como apto para examen.
 	 */
 	@Override
 	public boolean esAptoParaExamen(Alumno alumno) {
-		if (alumno.getDeportes() != null && !alumno.getDeportes().isEmpty()) {
-			return alumno.getDeportes().stream()
-					.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
-					.anyMatch(ad -> Boolean.TRUE.equals(ad.getAptoParaExamen()));
-		}
-
-		if (alumno.getGrado() == null || alumno.getFechaGrado() == null) {
-			return false; // Si no hay grado o fecha de grado, no es apto
-		}
-
-		try {
-			LocalDate fechaGrado = toLocalDate(alumno.getFechaGrado());
-			if (fechaGrado == null) {
-				return false;
-			}
-
-			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-
-			long mesesRequeridos = obtenerMesesRequeridosParaExamen(edad, alumno.getGrado().getTipoGrado());
-
-			LocalDate fechaExamenPosible = fechaGrado.plusMonths(mesesRequeridos);
-
-			// Si la fecha actual es igual o mayor a la fecha posible, es apto
-			return !LocalDate.now().isBefore(fechaExamenPosible);
-		} catch (Exception e) {
-			// Registrar el error para depuración
-			System.err.println("Error calculando aptitud para examen: " + e.getMessage());
-			return false;
-		}
+		return alumno.getDeportes() != null && alumno.getDeportes().stream()
+				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
+				.anyMatch(ad -> Boolean.TRUE.equals(ad.getAptoParaExamen()));
 	}
 
-	/**
-	 * Calcula los meses requeridos para ser apto para examen según la edad y el grado.
-	 * Delegado a ExamEligibilityConfig para centralizar las reglas de elegibilidad.
-	 *
-	 * @param edad      La edad del alumno.
-	 * @param tipoGrado El grado actual del alumno.
-	 * @return Los meses requeridos para ser apto para examen.
-	 */
-	private long obtenerMesesRequeridosParaExamen(int edad, TipoGrado tipoGrado) {
-		return examEligibilityConfig.obtenerMesesRequeridos(edad, tipoGrado);
-	}
-	
 	private void asignarMensualidadGeneralSiCorresponde(Alumno alumno) {
 	    LocalDate fechaActual = LocalDate.now();
 	    String mesAno = fechaActual.getYear() + "-" + "%02d".formatted(fechaActual.getMonthValue());
 
-	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+	    AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
+	    String disciplina = deportePrincipal != null && deportePrincipal.getDeporte() != null
+	            ? deportePrincipal.getDeporte().name() : null;
+	    // Producto de mensualidad del catálogo (o, sin catálogo, el de concepto «MENSUALIDAD»)
+	    var optionalProductoMensualidad = productosCatalogo.resolverProductoMensualidad(disciplina);
+	    String nombreProducto = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(
+	            optionalProductoMensualidad.orElse(null),
+	            com.taemoi.project.services.ProductosCatalogoService.CONCEPTO_LEGADO_MENSUALIDAD);
+	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(nombreProducto, mesAno);
 
 	    boolean mensualidadCargada = productoAlumnoRepository.existsByConcepto(nombreMensualidad);
 
 	    if (mensualidadCargada) {
-	        // Check if MENSUALIDAD product exists before trying to use it
-	        var optionalProductoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD");
 	        if (optionalProductoMensualidad.isEmpty()) {
 	            System.out.println("ADVERTENCIA: Producto 'MENSUALIDAD' no encontrado. " +
 	                    "Se omitirá la asignación automática de mensualidad para el alumno " + alumno.getId());
@@ -2298,7 +2279,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        productoAlumno.setAlumno(alumno);
 	        productoAlumno.setProducto(productoMensualidad);
 	        productoAlumno.setConcepto(nombreMensualidad);
-	        productoAlumno.setPrecio(alumno.getCuantiaTarifa());
+	        productoAlumno.setAlumnoDeporte(deportePrincipal);
+	        productoAlumno.setPrecio(deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null);
 	        productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 	        productoAlumno.setCantidad(1);
 	        productoAlumno.setPagado(false);
@@ -2337,6 +2319,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	private org.springframework.data.jpa.domain.Specification<Alumno> buildAlumnoSpecification(
 			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, boolean aptoParaExamen) {
+		// El filtro por grado compara por codigo: el id que envía la aplicación es el de
+		// /api/grados (taekwondo) y debe encontrar también a los alumnos de kickboxing, cuyos
+		// grados están en su propio sistema (V26). Un id que no existe en la escuela no encuentra a nadie.
+		final boolean filtrarPorGrado = gradoId != null;
+		final String codigoGradoFiltro = gradoId == null ? null
+				: gradoRepository.findById(gradoId).map(Grado::getCodigo).orElse(null);
 		return (root, query, criteriaBuilder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
@@ -2362,7 +2350,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 				predicates.add(criteriaBuilder.or(fullNamePredicate, nombrePredicate, apellidosPredicate));
 			}
 
-			if (gradoId != null || categoriaId != null) {
+			if (filtrarPorGrado || categoriaId != null) {
 				jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
 				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> deporteRoot = subquery.from(com.taemoi.project.entities.AlumnoDeporte.class);
 				List<Predicate> deportePredicates = new ArrayList<>();
@@ -2370,8 +2358,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("alumno").get("id"), root.get("id")));
 				deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("activo"), true));
 
-				if (gradoId != null) {
-					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("grado").get("id"), gradoId));
+				if (filtrarPorGrado) {
+					deportePredicates.add(codigoGradoFiltro == null ? criteriaBuilder.disjunction()
+							: criteriaBuilder.equal(deporteRoot.get("grado").get("codigo"), codigoGradoFiltro));
 				}
 				if (categoriaId != null) {
 					deportePredicates.add(criteriaBuilder.equal(deporteRoot.get("categoria").get("id"), categoriaId));

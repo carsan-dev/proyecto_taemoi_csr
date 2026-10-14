@@ -4,12 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
 
 /**
@@ -56,6 +57,21 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 	Boolean existsByEmailIgnoreCase(String email);
 
-	@Query("SELECT DISTINCT u FROM Usuario u JOIN u.roles r WHERE r = :rol AND u.recordatorioRachaEmailHabilitado = true")
-	List<Usuario> findByRolAndRecordatorioRachaEmailHabilitadoTrue(@Param("rol") Roles rol);
+	/** Usuarios con el recordatorio activado y una membresía activa con {@code rol} en la organización. */
+	@Query("""
+			SELECT u FROM Usuario u
+			WHERE u.recordatorioRachaEmailHabilitado = true
+			  AND EXISTS (
+			    SELECT 1 FROM Membresia m
+			    WHERE m.usuarioId = u.id
+			      AND m.organizacionId = :organizacionId
+			      AND m.activa = true
+			      AND m.rol = :rol)
+			""")
+	List<Usuario> findConRecordatorioRachaYMembresiaActiva(@Param("organizacionId") Long organizacionId,
+			@Param("rol") RolMembresia rol);
+
+	@Modifying
+	@Query("UPDATE Usuario u SET u.ultimaOrganizacionId = :organizacionId WHERE u.id = :usuarioId")
+	int actualizarUltimaOrganizacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
 }

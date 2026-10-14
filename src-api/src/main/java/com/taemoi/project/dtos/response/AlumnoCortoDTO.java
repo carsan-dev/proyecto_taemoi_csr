@@ -90,8 +90,6 @@ public class AlumnoCortoDTO {
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
 			grado = principal.getGrado().getTipoGrado().getNombre();
-		} else if (alumno.getGrado() != null) {
-			grado = alumno.getGrado().getTipoGrado().getNombre();
 		}
 		return new AlumnoCortoDTO(
 			alumno.getId(),

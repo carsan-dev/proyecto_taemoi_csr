@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Grupo;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.entities.Turno;
 
 import jakarta.validation.ConstraintViolation;
@@ -38,10 +37,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -57,10 +54,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -78,10 +73,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -95,8 +88,7 @@ public class AlumnoTest {
 	 * Alumno(); alumno.setNombre("John"); alumno.setApellidos("Doe");
 	 * alumno.setNumeroExpediente(null); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif("12345678A"); alumno.setDireccion("Calle Principal, 123");
-	 * alumno.setTelefono(123456789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(30.0);
+	 * alumno.setTelefono("123456789"); alumno.setEmail("john@example.com");
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 
@@ -115,10 +107,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(null);
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -132,8 +122,7 @@ public class AlumnoTest {
 	 * alumno.setNombre("John"); alumno.setApellidos("Doe");
 	 * alumno.setNumeroExpediente(12345); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif(""); alumno.setDireccion("Calle Principal, 123");
-	 * alumno.setTelefono(123456789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(30.0);
+	 * alumno.setTelefono("123456789"); alumno.setEmail("john@example.com");
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 
@@ -151,10 +140,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -164,7 +151,8 @@ public class AlumnoTest {
 	}
 
 	@Test
-	void testAlumno_TelefonoInvalido() {
+	void testAlumno_TelefonoNuloEsValidoEnLaEntidad() {
+		// V25: telefono admite NULL (fichas en papel sin teléfono); se exige en el alta, no en la entidad.
 		Alumno alumno = new Alumno();
 		alumno.setNombre("John");
 		alumno.setApellidos("Doe");
@@ -174,14 +162,26 @@ public class AlumnoTest {
 		alumno.setDireccion("Calle Principal, 123");
 		alumno.setTelefono(null);
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
+
+		assertEquals(0, validator.validate(alumno).size());
+	}
+
+	@Test
+	void testAlumno_TelefonoDemasiadoLargo() {
+		Alumno alumno = new Alumno();
+		alumno.setNombre("John");
+		alumno.setApellidos("Doe");
+		alumno.setNumeroExpediente(12345);
+		alumno.setFechaNacimiento(new Date());
+		alumno.setNif("12345678A");
+		alumno.setDireccion("Calle Principal, 123");
+		alumno.setTelefono("123456789012345678901");
+		alumno.setEmail("john@example.com");
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
 		assertEquals(1, violations.size());
-		ConstraintViolation<Alumno> violation = violations.iterator().next();
-		assertEquals("El teléfono no puede ser nulo", violation.getMessage());
+		assertEquals("El teléfono no puede tener más de 20 caracteres", violations.iterator().next().getMessage());
 	}
 
 	@Test
@@ -193,10 +193,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("emailinvalido.com");
-		alumno.setTipoTarifa(TipoTarifa.ADULTO);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -214,10 +212,8 @@ public class AlumnoTest {
 		alumno.setFechaNacimiento(new Date());
 		alumno.setNif("12345678A");
 		alumno.setDireccion("Calle Principal, 123");
-		alumno.setTelefono(123456789);
+		alumno.setTelefono("123456789");
 		alumno.setEmail("john@example.com");
-		alumno.setTipoTarifa(null);
-		alumno.setCuantiaTarifa(30.0);
 
 		Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 
@@ -263,8 +259,7 @@ public class AlumnoTest {
 	 * alumno.setNombre("John"); alumno.setApellidos("Doe");
 	 * alumno.setNumeroExpediente(12345); alumno.setFechaNacimiento(new Date());
 	 * alumno.setNif("12345678A"); alumno.setDireccion("Calle Principal, 123");
-	 * alumno.setTelefono(12345789); alumno.setEmail("john@example.com");
-	 * alumno.setTipoTarifa(TipoTarifa.ADULTO); alumno.setCuantiaTarifa(null);
+	 * alumno.setTelefono("12345789"); alumno.setEmail("john@example.com");
 	 * 
 	 * Set<ConstraintViolation<Alumno>> violations = validator.validate(alumno);
 	 * 

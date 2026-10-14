@@ -109,9 +109,8 @@ class PreinscripcionControllerSecurityWebMvcTest {
 	@TestConfiguration
 	static class FilterTestConfig {
 		@Bean
-		JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UsuarioService usuarioService,
-				AlumnoRepository alumnoRepository) {
-			return new JwtAuthenticationFilter(jwtService, usuarioService, alumnoRepository);
+		JwtAuthenticationFilter jwtAuthenticationFilter() {
+			return new JwtAuthenticationFilter();
 		}
 
 		@Bean

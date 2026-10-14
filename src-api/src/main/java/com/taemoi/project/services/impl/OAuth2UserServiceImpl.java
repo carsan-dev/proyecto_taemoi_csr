@@ -10,10 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
-import com.taemoi.project.entities.Roles;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.OAuth2UserService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -27,13 +28,16 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	private final AlumnoRepository alumnoRepository;
 	private final UsuarioRepository usuarioRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final MembresiaService membresiaService;
 
 	public OAuth2UserServiceImpl(AlumnoRepository alumnoRepository,
 								 UsuarioRepository usuarioRepository,
-								 PasswordEncoder passwordEncoder) {
+								 PasswordEncoder passwordEncoder,
+								 MembresiaService membresiaService) {
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.membresiaService = membresiaService;
 	}
 
 	/**
@@ -66,10 +70,12 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
 			Usuario usuario = existingUser.get();
-			if (requiereAlumnoActivo(usuario)
-					&& !alumnoRepository.existsByEmailIgnoreCaseAndActivoTrue(email)) {
+			// Mismo criterio que el login con contraseña: alguna escuela en la que pueda entrar.
+			if (membresiaService.elegirOrganizacionParaLogin(usuario).isEmpty()) {
 				throw new IllegalArgumentException(
-						"No hay alumnos activos asociados a este email. Contacte con el administrador.");
+						membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()
+								? "El usuario no tiene acceso a ninguna escuela. Contacte con el administrador."
+								: "No hay alumnos activos asociados a este email. Contacte con el administrador.");
 			}
 			if (usuario.getAuthProvider() != AuthProvider.GOOGLE) {
 				usuario.setAuthProvider(AuthProvider.GOOGLE);
@@ -108,14 +114,15 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		String randomPassword = java.util.UUID.randomUUID().toString();
 		nuevoUsuario.setContrasena(passwordEncoder.encode(randomPassword));
 
-		// Asignar rol de usuario
-		nuevoUsuario.getRoles().add(Roles.ROLE_USER);
-
 		// Vincular con el primer alumno
 		nuevoUsuario.setAlumno(primerAlumno);
+		nuevoUsuario.setUltimaOrganizacionId(primerAlumno.getOrganizacionId());
 
 		// Guardar el usuario
 		Usuario savedUser = usuarioRepository.save(nuevoUsuario);
+
+		// Igual que el registro: familia en la escuela del alumno.
+		membresiaService.asegurarMembresia(savedUser.getId(), primerAlumno.getOrganizacionId(), RolMembresia.FAMILIA);
 
 		// Actualizar la referencia en el primer alumno
 		primerAlumno.setUsuario(savedUser);
@@ -124,11 +131,5 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		return savedUser;
 	}
 
-	private boolean requiereAlumnoActivo(Usuario usuario) {
-		boolean roleUser = usuario.getRoles().contains(Roles.ROLE_USER);
-		boolean roleAdminOrManager = usuario.getRoles().contains(Roles.ROLE_ADMIN)
-				|| usuario.getRoles().contains(Roles.ROLE_MANAGER);
-		return roleUser && !roleAdminOrManager;
-	}
 }
 

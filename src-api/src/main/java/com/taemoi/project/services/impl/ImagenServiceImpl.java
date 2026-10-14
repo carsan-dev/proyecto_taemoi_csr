@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.FileUtils;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.services.ImagenService;
@@ -44,13 +45,10 @@ public class ImagenServiceImpl implements ImagenService {
 	@Value("${app.imagenes.directorio.windows}")
 	private String directorioImagenesWindows;
 
-	@Value("${app.base.url}")
-	private String baseUrl;
-
 	@Override
 	public Imagen guardarImagen(MultipartFile archivo) throws IOException {
-		Path rutaImagenesBase = obtenerRutaImagenesBase();
-		Path rutaImagenesAlumnos = rutaImagenesBase.resolve("alumnos");
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_ALUMNOS);
+		Path rutaImagenesAlumnos = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
 		if (!Files.exists(rutaImagenesAlumnos)) {
 			Files.createDirectories(rutaImagenesAlumnos);
@@ -63,14 +61,14 @@ public class ImagenServiceImpl implements ImagenService {
 
 		BufferedImage redimensionada = redimensionarImagen(original, MAX_ALUMNO_WIDTH, MAX_ALUMNO_HEIGHT);
 		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
-		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesAlumnos, nombreBase, "alumnos",
+		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesAlumnos, nombreBase, carpetaRelativa,
 				ALUMNO_WEBP_QUALITY);
 	}
 
 	@Override
 	public Imagen guardarImagenEvento(MultipartFile archivo) throws IOException {
-		Path rutaImagenesBase = obtenerRutaImagenesBase();
-		Path rutaImagenesEventos = rutaImagenesBase.resolve("eventos");
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_EVENTOS);
+		Path rutaImagenesEventos = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
 		if (!Files.exists(rutaImagenesEventos)) {
 			Files.createDirectories(rutaImagenesEventos);
@@ -83,7 +81,7 @@ public class ImagenServiceImpl implements ImagenService {
 
 		BufferedImage redimensionada = redimensionarParaEvento(original);
 		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
-		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesEventos, nombreBase, "eventos",
+		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesEventos, nombreBase, carpetaRelativa,
 				EVENTO_WEBP_QUALITY);
 	}
 
@@ -93,7 +91,10 @@ public class ImagenServiceImpl implements ImagenService {
 			throw new IllegalArgumentException("La imagen o su ruta no es valida.");
 		}
 
-		Path rutaArchivo = Path.of(imagen.getRuta());
+		Path rutaArchivo = resolverRutaArchivo(imagen);
+		if (rutaArchivo == null) {
+			throw new IllegalArgumentException("La ruta de la imagen no es valida.");
+		}
 		try {
 			if (Files.exists(rutaArchivo)) {
 				Files.delete(rutaArchivo);
@@ -101,6 +102,29 @@ public class ImagenServiceImpl implements ImagenService {
 		} catch (IOException e) {
 			throw new RuntimeException("Error al eliminar el archivo de imagen: " + rutaArchivo, e);
 		}
+	}
+
+	@Override
+	public Path resolverRutaArchivo(Imagen imagen) {
+		if (imagen == null || imagen.getRuta() == null || imagen.getRuta().isBlank()) {
+			return null;
+		}
+		String ruta = imagen.getRuta().trim();
+		try {
+			if (RutasArchivos.esRutaAbsoluta(ruta)) {
+				// Fila heredada: ruta absoluta guardada por versiones anteriores.
+				return Path.of(ruta).toAbsolutePath().normalize();
+			}
+			return RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), ruta);
+		} catch (RuntimeException e) {
+			logger.warn("Ruta de imagen no valida (id {}): {}", imagen.getId(), e.getMessage());
+			return null;
+		}
+	}
+
+	/** {@code org-<id>/<categoria>} de la escuela activa; falla cerrado si no hay ninguna. */
+	private static String carpetaDeEscuela(String categoria) {
+		return RutasArchivos.carpetaOrganizacion(RutasArchivos.organizacionActiva()) + "/" + categoria;
 	}
 
 	private Path obtenerRutaImagenesBase() {
@@ -214,17 +238,24 @@ public class ImagenServiceImpl implements ImagenService {
 		String nombreBaseArchivo = UUID.randomUUID() + "_" + nombreBase;
 		String nombreWebp = nombreBaseArchivo + ".webp";
 		try {
-			Path rutaWebp = guardarComoWebp(imagen, directorioDestino, nombreWebp, webpQuality);
-			String urlAcceso = baseUrl + "/imagenes/" + carpetaPublica + "/" + nombreWebp;
-			return new Imagen(nombreWebp, "image/webp", urlAcceso, rutaWebp.toString());
+			guardarComoWebp(imagen, directorioDestino, nombreWebp, webpQuality);
+			return crearImagen(nombreWebp, "image/webp", carpetaPublica);
 		} catch (Exception e) {
 			logger.warn("Fallo al guardar imagen en WebP, se usara fallback JPEG. Carpeta: {}, nombreBase: {}. Causa: {}",
 					carpetaPublica, nombreBase, e.getMessage());
 			String nombreJpeg = nombreBaseArchivo + ".jpg";
-			Path rutaJpeg = guardarComoJpeg(imagen, directorioDestino, nombreJpeg, JPEG_FALLBACK_QUALITY);
-			String urlAcceso = baseUrl + "/imagenes/" + carpetaPublica + "/" + nombreJpeg;
-			return new Imagen(nombreJpeg, "image/jpeg", urlAcceso, rutaJpeg.toString());
+			guardarComoJpeg(imagen, directorioDestino, nombreJpeg, JPEG_FALLBACK_QUALITY);
+			return crearImagen(nombreJpeg, "image/jpeg", carpetaPublica);
 		}
+	}
+
+	/**
+	 * Solo se guarda la ruta RELATIVA a la raíz de imágenes ({@code org-<id>/<categoria>/<fichero>}) y una
+	 * URL sin host ({@code /imagenes/…}); la URL absoluta se compone al leer con {@code app.base.url}.
+	 */
+	private static Imagen crearImagen(String nombreArchivo, String tipo, String carpetaRelativa) {
+		String rutaRelativa = carpetaRelativa + "/" + nombreArchivo;
+		return new Imagen(nombreArchivo, tipo, "/imagenes/" + rutaRelativa, rutaRelativa);
 	}
 
 	private void configurarCompresionWebp(ImageWriteParam param, float quality) throws IOException {

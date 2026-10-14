@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,13 +20,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-public class Grupo {
+public class Grupo extends EntidadOrganizacion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +43,15 @@ public class Grupo {
 	@Enumerated(EnumType.STRING)
 	@NotNull(message = "El deporte del grupo no puede ser nulo")
 	private Deporte deporte;
+
+	/**
+	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
+	 * contracción para poder volver al código anterior.
+	 */
+	@JsonIgnore
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "disciplina_id", nullable = false)
+	private Disciplina disciplina;
 
 	// Rango de edad personalizado (opcional)
 	@Column(name = "rango_edad_min")
@@ -88,6 +99,14 @@ public class Grupo {
 
 	public void setDeporte(Deporte deporte) {
 		this.deporte = deporte;
+	}
+
+	public Disciplina getDisciplina() {
+		return disciplina;
+	}
+
+	public void setDisciplina(Disciplina disciplina) {
+		this.disciplina = disciplina;
 	}
 
 	public Integer getRangoEdadMin() {

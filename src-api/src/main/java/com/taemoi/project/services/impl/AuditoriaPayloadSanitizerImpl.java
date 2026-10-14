@@ -19,6 +19,7 @@ import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 public class AuditoriaPayloadSanitizerImpl implements AuditoriaPayloadSanitizer {
 
 	private static final String MASK = "***";
+	private static final String REDACTADO = "[redactado]";
 	private static final Set<String> CLAVES_SENSIBLES = Set.of(
 			"password",
 			"contrasena",
@@ -102,6 +103,40 @@ public class AuditoriaPayloadSanitizerImpl implements AuditoriaPayloadSanitizer 
 			return valor;
 		}
 		return valor.substring(0, maxChars);
+	}
+
+	@Override
+	public String redactarClaves(String payloadJson, Set<String> claves) {
+		if (payloadJson == null || payloadJson.isBlank() || claves == null || claves.isEmpty()) {
+			return payloadJson;
+		}
+		Set<String> clavesLower = new java.util.HashSet<>();
+		claves.forEach(c -> clavesLower.add(c.toLowerCase(Locale.ROOT)));
+		try {
+			Object parsed = objectMapper.readValue(payloadJson, Object.class);
+			return objectMapper.writeValueAsString(redactarRecursivo(parsed, clavesLower));
+		} catch (Exception ex) {
+			return REDACTADO;
+		}
+	}
+
+	private Object redactarRecursivo(Object source, Set<String> clavesLower) {
+		if (source instanceof Map<?, ?> map) {
+			Map<String, Object> resultado = new LinkedHashMap<>();
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String key = entry.getKey() == null ? "" : entry.getKey().toString();
+				resultado.put(key, clavesLower.contains(key.toLowerCase(Locale.ROOT))
+						? REDACTADO
+						: redactarRecursivo(entry.getValue(), clavesLower));
+			}
+			return resultado;
+		}
+		if (source instanceof List<?> list) {
+			List<Object> resultado = new ArrayList<>(list.size());
+			list.forEach(item -> resultado.add(redactarRecursivo(item, clavesLower)));
+			return resultado;
+		}
+		return source;
 	}
 
 	private String sanitizarJson(String payload) {

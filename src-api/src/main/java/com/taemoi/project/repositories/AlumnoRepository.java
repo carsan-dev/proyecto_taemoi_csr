@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Repository;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Deporte;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * Repositorio para la entidad Alumno. Proporciona métodos para realizar
@@ -85,46 +88,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	//  *         especificada.
 	//  */
 	// List<Alumno> findByCategoriaId(Long categoriaId);
-
-	/**
-	 * Busca una página de alumnos por el ID del grado especificado.
-	 *
-	 * @param gradoId  El ID del grado de los alumnos a buscar.
-	 * @param pageable Objeto Pageable para la paginación de resultados.
-	 * @return Una página de objetos Alumno que pertenecen al grado especificado.
-	 */
-	Page<Alumno> findByGradoId(Long gradoId, Pageable pageable);
-
-	/**
-	 * Busca una lista de alumnos por el ID del grado especificado.
-	 *
-	 * @param gradoId El ID del grado de los alumnos a buscar.
-	 * @return Una lista de objetos Alumno que pertenecen al grado especificado.
-	 */
-	List<Alumno> findByGradoId(Long gradoId);
-
-	/**
-	 * Busca una página de alumnos cuyo nombre contenga la cadena especificada y que
-	 * pertenezcan al grado con el ID especificado.
-	 *
-	 * @param nombre   La cadena a buscar en el nombre de los alumnos.
-	 * @param gradoId  El ID del grado de los alumnos a buscar.
-	 * @param pageable Objeto Pageable para la paginación de resultados.
-	 * @return Una página de objetos Alumno que cumplen con los criterios de
-	 *         búsqueda.
-	 */
-	Page<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId, Pageable pageable);
-
-	/**
-	 * Busca una lista de alumnos cuyo nombre contenga la cadena especificada y que
-	 * pertenezcan al grado con el ID especificado.
-	 *
-	 * @param nombre  La cadena a buscar en el nombre de los alumnos.
-	 * @param gradoId El ID del grado de los alumnos a buscar.
-	 * @return Una lista de objetos Alumno que cumplen con los criterios de
-	 *         búsqueda.
-	 */
-	List<Alumno> findByNombreContainingIgnoreCaseAndGradoId(String nombre, Long gradoId);
 
 	// DEPRECATED: Categoria is now per-sport (in AlumnoDeporte, not Alumno)
 	// /**
@@ -229,6 +192,41 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	boolean existsByEmailIgnoreCaseAndActivoTrue(String email);
 
+	/**
+	 * Alumnos activos con ese email en una organización CONCRETA, sin depender de la organización
+	 * de la sesión de Hibernate. Es la única consulta nativa permitida sobre {@code alumno}: se usa al
+	 * iniciar sesión o cambiar de escuela, cuando la sesión abierta (open-in-view) puede ser de otra
+	 * organización. Filtra explícitamente por {@code organizacion_id}.
+	 */
+	@Query(value = """
+			SELECT COUNT(*) FROM alumno
+			WHERE organizacion_id = :organizacionId
+			  AND activo = TRUE
+			  AND LOWER(email) = LOWER(:email)
+			""", nativeQuery = true)
+	long contarActivosPorEmailEnOrganizacion(@Param("email") String email,
+			@Param("organizacionId") Long organizacionId);
+
+	/**
+	 * Carga por id como consulta (filtrada por la organización activa). A diferencia de
+	 * {@code findById}, si ya hay un proxy sin inicializar de otra organización en el contexto de
+	 * persistencia devuelve vacío en lugar de intentar inicializarlo.
+	 */
+	@Query("SELECT a FROM Alumno a WHERE a.id = :id")
+	Optional<Alumno> buscarPorIdEnOrganizacionActiva(@Param("id") Long id);
+
+	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
+	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
+	List<Alumno> buscarConNifEnOrganizacionActiva();
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) los alumnos indicados de la escuela activa, en orden de id
+	 * ascendente para que dos bloqueos concurrentes no se crucen.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT a FROM Alumno a WHERE a.id IN :ids ORDER BY a.id")
+	List<Alumno> bloquearPorIdsEnOrganizacionActiva(@Param("ids") Collection<Long> ids);
+
 	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
 
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
@@ -249,23 +247,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
 		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.deporte = :deporte")
 	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
-
-	// Método para obtener alumnos aptos para examen por un deporte específico,
-	// excluyendo competición para taekwondo
-	@Query("SELECT a FROM Alumno a JOIN a.grupos g WHERE a.aptoParaExamen = true AND g.nombre LIKE %:deporte% AND g.nombre NOT LIKE %:exclusion%")
-	List<Alumno> findAptosParaExamenPorDeporte(@Param("deporte") String deporte, @Param("exclusion") String exclusion);
-
-	// Método para obtener un alumno apto para examen por su ID
-	@Query("SELECT a FROM Alumno a WHERE a.aptoParaExamen = true AND a.id = :id")
-	Optional<Alumno> findAptoParaExamenById(@Param("id") Long id);
-
-	List<Alumno> findByGradoNotNullAndDeporteIn(Collection<Deporte> deportes);
-
-	// Obtener todos los alumnos por deporte
-	List<Alumno> findByDeporte(Deporte deporte);
-
-	// Obtener todos los alumnos activos por deportes
-	List<Alumno> findByActivoTrueAndDeporteIn(Collection<Deporte> deportes);
 
 	List<Alumno> findByActivoTrue();
 }
