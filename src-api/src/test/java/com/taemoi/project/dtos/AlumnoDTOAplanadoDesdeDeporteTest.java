@@ -70,7 +70,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertEquals(2, conDeportes.getDeportes().size());
 
 		assertEquals(TipoGrado.AMARILLO.name(), AlumnoConGruposDTO.deAlumnoConGrupos(alumno).getGrado());
-		assertEquals(TipoGrado.AMARILLO.getNombre(), AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertEquals(TipoGrado.AMARILLO.getNombre(), AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertNull(dto.getTieneLicencia());
 		assertNull(dto.getAptoParaExamen());
 		assertNull(AlumnoConDeportesDTO.deAlumno(alumno).getTipoTarifa());
-		assertNull(AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertNull(AlumnoCortoDTO.deAlumno(alumno, true).getGrado());
 	}
 
 	@Test

@@ -81,7 +81,7 @@ public class AlumnoCortoDTO {
 		this.activo = activo;
 	}
 
-	public static AlumnoCortoDTO deAlumno(Alumno alumno) {
+	public static AlumnoCortoDTO deAlumno(Alumno alumno, boolean comportamientoLegadoTaemoi) {
 		if (alumno == null) {
 			return null;
 		}
@@ -89,7 +89,7 @@ public class AlumnoCortoDTO {
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
-			grado = nombreGrado(principal.getGrado());
+			grado = nombreGrado(principal.getGrado(), comportamientoLegadoTaemoi);
 		}
 		return new AlumnoCortoDTO(
 			alumno.getId(),
@@ -102,14 +102,14 @@ public class AlumnoCortoDTO {
 		);
 	}
 
-	public static AlumnoCortoDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
+	public static AlumnoCortoDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte, boolean comportamientoLegadoTaemoi) {
 		if (alumnoDeporte == null || alumnoDeporte.getAlumno() == null) {
 			return null;
 		}
 
 		Alumno alumno = alumnoDeporte.getAlumno();
 		String grado = alumnoDeporte.getGrado() != null
-				? nombreGrado(alumnoDeporte.getGrado())
+				? nombreGrado(alumnoDeporte.getGrado(), comportamientoLegadoTaemoi)
 				: null;
 
 		return new AlumnoCortoDTO(
@@ -124,12 +124,15 @@ public class AlumnoCortoDTO {
 	}
 
 	/**
-	 * Nombre del grado en los listados cortos: el del antiguo {@code TipoGrado.getNombre()} para los códigos de
-	 * Taemoi (el mismo en todas las disciplinas: «Rojo» también en kickboxing, como antes de V28) y el del
-	 * catálogo para los códigos propios de otras escuelas.
+	 * Nombre del grado en los listados cortos. Con el comportamiento heredado de Taemoi (organización con
+	 * {@code comportamiento_legado_taemoi}) es el del antiguo {@code TipoGrado.getNombre()} para los códigos de
+	 * Taemoi (el mismo en todas las disciplinas: «Rojo» también en kickboxing, como antes de V28); en el resto
+	 * de escuelas, y para códigos que no son de Taemoi, el del catálogo.
 	 */
-	private static String nombreGrado(com.taemoi.project.entities.Grado grado) {
-		String legado = com.taemoi.project.services.CatalogoLegadoTaemoi.nombreGradoLegado(grado.getCodigo());
+	private static String nombreGrado(com.taemoi.project.entities.Grado grado, boolean comportamientoLegadoTaemoi) {
+		String legado = comportamientoLegadoTaemoi
+				? com.taemoi.project.services.CatalogoLegadoTaemoi.nombreGradoLegado(grado.getCodigo())
+				: null;
 		return legado != null ? legado : grado.getNombre();
 	}
 }
