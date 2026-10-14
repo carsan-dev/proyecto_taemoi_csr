@@ -26,10 +26,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.TimeZone;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.logging.LogLevel;
+import org.springframework.boot.logging.LoggerConfiguration;
+import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -83,12 +88,12 @@ import jakarta.servlet.http.Cookie;
  * teléfonos como texto, permisos (familia y otra escuela) y aislamiento por organización.
  *
  * <p>Con el SQL y los parámetros enlazados en el log (TRACE) para comprobar que el texto de salud
- * nunca aparece en claro.
+ * nunca aparece en claro. El nivel TRACE se activa solo mientras corre esta clase y se restaura al
+ * terminar: los niveles de Logback son globales a la JVM, así que fijarlos con
+ * {@code logging.level.*} en {@code @SpringBootTest} los dejaba activos para las clases que corren
+ * después (p. ej. {@code DniCompartidoIntegrationTest}, que comprueba que el DNI no sale en el log).
  */
-@SpringBootTest(properties = {
-		"spring.jpa.show-sql=true",
-		"logging.level.org.hibernate.orm.jdbc.bind=TRACE",
-		"logging.level.org.hibernate.orm.jdbc.extract=TRACE" })
+@SpringBootTest(properties = "spring.jpa.show-sql=true")
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(OutputCaptureExtension.class)
@@ -96,6 +101,10 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	private static final long ORG1 = 1L;
 	private static final String CLAVE = "Clave-Segura-123";
+	private static final List<String> LOGGERS_TRACE = List.of(
+			"org.hibernate.orm.jdbc.bind", "org.hibernate.orm.jdbc.extract");
+	private static final LoggingSystem LOGGING = LoggingSystem.get(PersonasAlumnoIntegrationTest.class.getClassLoader());
+	private final Map<String, LogLevel> nivelesPrevios = new LinkedHashMap<>();
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -134,6 +143,20 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 	String tokenManager;
 	String tokenFamilia;
 	String tokenAdminOtra;
+
+	@BeforeAll
+	void activarTraceDeParametrosSoloEnEstaClase() {
+		for (String logger : LOGGERS_TRACE) {
+			LoggerConfiguration actual = LOGGING.getLoggerConfiguration(logger);
+			nivelesPrevios.put(logger, actual == null ? null : actual.getConfiguredLevel());
+			LOGGING.setLogLevel(logger, LogLevel.TRACE);
+		}
+	}
+
+	@AfterAll
+	void restaurarNivelesDeLog() {
+		nivelesPrevios.forEach(LOGGING::setLogLevel);
+	}
 
 	@BeforeAll
 	void crearEscuelasUsuariosYAlumnos() throws Exception {
