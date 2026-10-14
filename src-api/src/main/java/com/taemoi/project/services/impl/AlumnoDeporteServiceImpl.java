@@ -29,6 +29,7 @@ import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProgresionGradosService;
+import com.taemoi.project.services.TarifasService;
 import com.taemoi.project.utils.FechaUtils;
 
 @Service
@@ -49,6 +50,9 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 	@Autowired
 	private ProgresionGradosService progresion;
+
+	@Autowired
+	private TarifasService tarifas;
 
 	private static String codigo(Deporte deporte) {
 		return deporte == null ? null : deporte.name();
@@ -122,7 +126,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 	@Override
 	public AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
-			Date fechaAlta, Date fechaAltaInicial, Date fechaGrado, TipoTarifa tipoTarifa, Double cuantiaTarifa,
+			Date fechaAlta, Date fechaAltaInicial, Date fechaGrado, String codigoTarifa, Double cuantiaTarifa,
 			String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
 			Date fechaAltaCompeticion, Date fechaAltaCompetidorInicial, Double peso,
 			Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia) {
@@ -165,8 +169,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			alumnoDeporte.setFechaGrado(fechaGrado != null ? fechaGrado : new Date());
 		}
 
-		// Set per-sport fields
-		alumnoDeporte.setTipoTarifa(tipoTarifa);
+		// Set per-sport fields: tarifa_id del catálogo y, en paralelo, tipo_tarifa
+		tarifas.asignarTarifa(alumnoDeporte, codigoTarifa);
 		alumnoDeporte.setCuantiaTarifa(cuantiaTarifa);
 		// Set rolFamiliar and grupoFamiliar if provided
 		if (rolFamiliar != null && !rolFamiliar.isEmpty()) {
@@ -453,11 +457,20 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 	@Override
 	public AlumnoDeporte actualizarTipoTarifa(Long alumnoId, Deporte deporte, TipoTarifa tipoTarifa) {
+		return actualizarTarifa(alumnoId, deporte, tipoTarifa == null ? null : tipoTarifa.name());
+	}
+
+	@Override
+	public AlumnoDeporte actualizarTarifa(Long alumnoId, Deporte deporte, String codigoTarifa) {
+		if (codigoTarifa != null && tarifas.buscarPorCodigo(codigoTarifa).isEmpty()) {
+			// Código que no es de la organización: el mismo error que TipoTarifa.valueOf si tampoco es del enum
+			TipoTarifa.valueOf(codigoTarifa);
+		}
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
-		alumnoDeporte.setTipoTarifa(tipoTarifa);
+		tarifas.asignarTarifa(alumnoDeporte, codigoTarifa);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}
 

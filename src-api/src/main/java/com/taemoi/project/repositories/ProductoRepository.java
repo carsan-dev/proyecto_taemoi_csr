@@ -31,4 +31,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 	List<Producto> findByTipoAndDisciplinaIdOrderByIdAsc(TipoProducto tipo, Long disciplinaId);
 
 	List<Producto> findByTipoAndDisciplinaIsNullOrderByIdAsc(TipoProducto tipo);
+
+	/** Productos del catálogo con codigo (para detectar las variantes de licencia de una disciplina). */
+	List<Producto> findByCodigoIsNotNullOrderByIdAsc();
 }

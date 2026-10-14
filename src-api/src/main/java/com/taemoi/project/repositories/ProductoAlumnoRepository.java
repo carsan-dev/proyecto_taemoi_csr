@@ -21,6 +21,10 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 		Boolean getPagado();
 		Double getPrecio();
 		Long getAlumnoId();
+		/** Tipo del producto cobrado (NULL si el producto se borró). */
+		com.taemoi.project.entities.TipoProducto getProductoTipo();
+		/** Código del producto cobrado (los heredados de Taemoi se clasifican por concepto). */
+		String getProductoCodigo();
 	}
 
 	List<ProductoAlumno> findByAlumnoId(Long alumnoId);
@@ -94,6 +98,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"LEFT JOIN FETCH pa.alumnoDeporte ad " +
 					"LEFT JOIN FETCH ad.alumno adAlumno " +
 					"LEFT JOIN FETCH pa.alumno a " +
+					"LEFT JOIN FETCH pa.producto p " +
 					"WHERE (:pagado IS NULL OR " +
 					"(:pagado = true AND pa.pagado = true) OR " +
 					"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -101,13 +106,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"AND (:ano IS NULL OR " +
 					"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 					"(:anoTexto IS NOT NULL AND (" +
-					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+					"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 					"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 					"AND (:mes IS NULL OR " +
 					"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 					"(:mesNombre IS NOT NULL AND (" +
-					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+					"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 					"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 					"AND (:texto IS NULL OR " +
@@ -125,6 +132,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"LEFT JOIN pa.alumnoDeporte ad " +
 					"LEFT JOIN ad.alumno adAlumno " +
 					"LEFT JOIN pa.alumno a " +
+					"LEFT JOIN pa.producto p " +
 					"WHERE (:pagado IS NULL OR " +
 					"(:pagado = true AND pa.pagado = true) OR " +
 					"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -132,13 +140,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"AND (:ano IS NULL OR " +
 					"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 					"(:anoTexto IS NOT NULL AND (" +
-					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+					"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 					"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 					"AND (:mes IS NULL OR " +
 					"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 					"(:mesNombre IS NOT NULL AND (" +
-					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+					"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+					"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 					"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 					"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 					"AND (:texto IS NULL OR " +
@@ -167,6 +177,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"LEFT JOIN FETCH pa.alumnoDeporte ad " +
 			"LEFT JOIN FETCH ad.alumno adAlumno " +
 			"LEFT JOIN FETCH pa.alumno a " +
+			"LEFT JOIN FETCH pa.producto p " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -174,13 +185,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 			"(:anoTexto IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 			"(:mesNombre IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:texto IS NULL OR " +
@@ -206,12 +219,13 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			@Param("mesNombre") String mesNombre);
 
 	@Query("SELECT pa.id AS id, pa.concepto AS concepto, pa.fechaAsignacion AS fechaAsignacion, " +
-			"pa.fechaPago AS fechaPago, pa.pagado AS pagado, pa.precio AS precio, " +
+			"pa.fechaPago AS fechaPago, pa.pagado AS pagado, pa.precio AS precio, p.tipo AS productoTipo, p.codigo AS productoCodigo, " +
 			"COALESCE(a.id, adAlumno.id) AS alumnoId " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.alumno adAlumno " +
 			"LEFT JOIN pa.alumno a " +
+			"LEFT JOIN pa.producto p " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -219,13 +233,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 			"(:anoTexto IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 			"(:mesNombre IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:texto IS NULL OR " +
@@ -262,6 +278,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.alumno adAlumno " +
 			"LEFT JOIN pa.alumno a " +
+			"LEFT JOIN pa.producto p " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -269,13 +286,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 			"(:anoTexto IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 			"(:mesNombre IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
@@ -294,6 +313,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.alumno adAlumno " +
 			"LEFT JOIN pa.alumno a " +
+			"LEFT JOIN pa.producto p " +
 			"WHERE (:pagado IS NULL OR " +
 			"(:pagado = true AND pa.pagado = true) OR " +
 			"(:pagado = false AND (pa.pagado = false OR pa.pagado IS NULL))) " +
@@ -301,13 +321,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 			"(:anoTexto IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 			"(:mesNombre IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
@@ -326,18 +348,21 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"LEFT JOIN pa.alumno a " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.alumno adAlumno " +
+			"LEFT JOIN pa.producto p " +
 			"WHERE (pa.pagado = false OR pa.pagado IS NULL) " +
 			"AND (:deporte IS NULL OR ad.deporte = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
 			"AND (:ano IS NULL OR " +
 			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
 			"(:anoTexto IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
 			"AND (:mes IS NULL OR " +
 			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
 			"(:mesNombre IS NOT NULL AND (" +
-			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%') " +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))) " +
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true)")
@@ -361,11 +386,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	List<String> findConceptosTesoreriaSinFecha();
 
 	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
+			"LEFT JOIN pa.producto p " +
 			"WHERE pa.concepto IS NOT NULL " +
-			"AND (UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%')")
+			"AND (UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING')))")
 	List<String> findConceptosTesoreriaConPeriodoPotencial();
 
 	List<ProductoAlumno> findByAlumnoDeporteId(Long alumnoDeporteId);
 
 	List<ProductoAlumno> findByProductoId(Long productoId);
+
+	boolean existsByProductoId(Long productoId);
 }

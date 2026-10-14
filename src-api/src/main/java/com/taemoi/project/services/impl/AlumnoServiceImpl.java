@@ -102,6 +102,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AlumnoServiceImpl.class);
 	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
+	/** Nombres de producto de rojo que buscaba el código hasta V27 (respaldo si falta el catálogo). */
 	private static final String DERECHO_EXAMEN_ROJO = "DERECHO A EXAMEN ROJO";
 	private static final String DERECHO_EXAMEN_ROJO_BORDADO = "DERECHO A EXAMEN ROJO BORDADO";
 	private static final String DERECHO_RECOMPENSA_ROJO = "DERECHO DE CAMBIO A ROJO POR RECOMPENSA";
@@ -189,7 +190,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
 
 	@Autowired
-	private com.taemoi.project.config.TarifaConfig tarifaConfig;
+	private com.taemoi.project.services.TarifasService tarifasService;
+
+	@Autowired
+	private com.taemoi.project.services.ProductosCatalogoService productosCatalogo;
 
 	@Autowired
 	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
@@ -396,7 +400,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 					fechaAltaDeporte,
 					fechaAltaInicialDeporte,
 					fechaGradoDeporte,
-					deporteDTO.getTipoTarifa(),
+					deporteDTO.codigoTarifaEfectivo(),
 					deporteDTO.getCuantiaTarifa(),
 					deporteDTO.getRolFamiliar(),
 					deporteDTO.getGrupoFamiliar(),
@@ -516,7 +520,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (dto.getCuantiaTarifa() != null && dto.getCuantiaTarifa() > 0) {
 			deporte.setCuantiaTarifa(dto.getCuantiaTarifa());
 		} else if (dto.getTipoTarifa() != null) {
-			deporte.setCuantiaTarifa(asignarCuantiaTarifa(dto.getTipoTarifa(), rolFamiliar));
+			try {
+				deporte.setCuantiaTarifa(asignarCuantiaTarifa(dto.getTipoTarifa(), rolFamiliar));
+			} catch (IllegalArgumentException e) {
+				// La organización no tiene esa tarifa (en Taemoi están todas las de TipoTarifa)
+				throw new DatosAlumnoInvalidosException(e.getMessage());
+			}
 		} else {
 			throw new DatosAlumnoInvalidosException("Debe indicarse el tipo de tarifa o la cuantía de la tarifa.");
 		}
@@ -1841,21 +1850,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Asigna la cuantía de la tarifa según el tipo de tarifa.
-	 * Delegado a TarifaConfig para centralizar la configuración de precios.
+	 * Cuantía de la tarifa de la organización activa con ese código (tabla {@code tarifa}).
 	 *
 	 * @param tipoTarifa El tipo de tarifa del alumno.
 	 * @return La cuantía asignada.
+	 * @throws IllegalArgumentException si la tarifa es nula o la organización no la tiene.
 	 */
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa) {
-		return tarifaConfig.obtenerCuantia(tipoTarifa);
+		if (tipoTarifa == null) {
+			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
+		}
+		return tarifasService.obtenerImporte(tipoTarifa.name()).doubleValue();
 	}
 
 	/**
 	 * Asigna la cuantía de la tarifa según el tipo de tarifa y el rol familiar.
-	 * Este método considera el rol familiar para la tarifa PADRES_HIJOS, donde el
-	 * precio varía según si el alumno es el padre (28€) o el hijo (26€).
+	 * Regla de {@link com.taemoi.project.services.TarifasService#calcularImporte}: importe por rol
+	 * si la tarifa lo tiene (PADRES_HIJOS en Taemoi: progenitor 28 €, hijo 26 €).
 	 *
 	 * @param tipoTarifa El tipo de tarifa del alumno.
 	 * @param rolFamiliar El rol familiar del alumno (PADRE, HIJO, NINGUNO).
@@ -1863,7 +1875,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 */
 	@Override
 	public double asignarCuantiaTarifa(TipoTarifa tipoTarifa, RolFamiliar rolFamiliar) {
-		return tarifaConfig.obtenerCuantiaConRol(tipoTarifa, rolFamiliar);
+		if (tipoTarifa == null) {
+			throw new IllegalArgumentException("El tipo de tarifa no puede ser null");
+		}
+		return tarifasService.obtenerImporte(tipoTarifa.name(), rolFamiliar).doubleValue();
 	}
 
 	/**
@@ -1960,27 +1975,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return gradoSiguiente.obtenerNombreProducto(porRecompensa);
 	}
 
-	private Producto buscarProductoPorConcepto(String conceptoProducto, TipoGrado gradoSiguiente) {
-		Optional<Producto> productoExacto = productoRepository.findFirstByConcepto(conceptoProducto);
-		if (productoExacto.isPresent()) {
-			return productoExacto.get();
-		}
-
-		String conceptoNormalizado = normalizarConcepto(conceptoProducto);
-		return productoRepository.findAll().stream()
-				.filter(producto -> normalizarConcepto(producto.getConcepto()).equals(conceptoNormalizado))
-				.findFirst()
+	/**
+	 * Producto que se cobra para llegar al siguiente grado, del catálogo
+	 * ({@link com.taemoi.project.services.ProductosCatalogoService#resolverProductoGrado}): enlace del
+	 * grado o codigo; si no hay, el nombre que buscaba el código hasta V27 ({@link #resolverConceptoProducto}).
+	 */
+	private Producto buscarProductoDeGrado(Deporte deporte, TipoGrado gradoSiguiente, boolean porRecompensa,
+			boolean rojoBordado) {
+		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
+		boolean bordado = rojoBordado && gradoSiguiente == TipoGrado.ROJO;
+		return productosCatalogo
+				.resolverProductoGrado(deporte == null ? null : deporte.name(), gradoSiguiente.name(), porRecompensa,
+						bordado, conceptoProducto)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"Producto no encontrado para el grado: " + gradoSiguiente + " (" + conceptoProducto + ")"));
-	}
-
-	private String normalizarConcepto(String concepto) {
-		if (concepto == null) {
-			return "";
-		}
-
-		String sinAcentos = Normalizer.normalize(concepto, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-		return sinAcentos.replaceAll("\\s+", " ").trim().toUpperCase(Locale.ROOT);
 	}
 
 	@Override
@@ -2013,11 +2021,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new IllegalArgumentException("No se pudo determinar el siguiente grado del alumno para el deporte " + convocatoria.getDeporte());
 		}
 
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
-		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
+		Producto producto = buscarProductoDeGrado(convocatoria.getDeporte(), gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(convocatoria.getDeporte());
+		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null) + " - "
+				+ formatearNombreDeporte(convocatoria.getDeporte());
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2107,11 +2115,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		// Obtener producto asociado al siguiente grado (recompensa o derecho de examen)
-		String conceptoProducto = resolverConceptoProducto(gradoSiguiente, porRecompensa, rojoBordado);
-		Producto producto = buscarProductoPorConcepto(conceptoProducto, gradoSiguiente);
+		Producto producto = buscarProductoDeGrado(deporte, gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = producto.getConcepto() + " - " + formatearNombreDeporte(deporte);
+		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null) + " - "
+				+ formatearNombreDeporte(deporte);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2246,13 +2254,19 @@ public class AlumnoServiceImpl implements AlumnoService {
 	    LocalDate fechaActual = LocalDate.now();
 	    String mesAno = fechaActual.getYear() + "-" + "%02d".formatted(fechaActual.getMonthValue());
 
-	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+	    AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
+	    String disciplina = deportePrincipal != null && deportePrincipal.getDeporte() != null
+	            ? deportePrincipal.getDeporte().name() : null;
+	    // Producto de mensualidad del catálogo (o, sin catálogo, el de concepto «MENSUALIDAD»)
+	    var optionalProductoMensualidad = productosCatalogo.resolverProductoMensualidad(disciplina);
+	    String nombreProducto = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(
+	            optionalProductoMensualidad.orElse(null),
+	            com.taemoi.project.services.ProductosCatalogoService.CONCEPTO_LEGADO_MENSUALIDAD);
+	    String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(nombreProducto, mesAno);
 
 	    boolean mensualidadCargada = productoAlumnoRepository.existsByConcepto(nombreMensualidad);
 
 	    if (mensualidadCargada) {
-	        // Check if MENSUALIDAD product exists before trying to use it
-	        var optionalProductoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD");
 	        if (optionalProductoMensualidad.isEmpty()) {
 	            System.out.println("ADVERTENCIA: Producto 'MENSUALIDAD' no encontrado. " +
 	                    "Se omitirá la asignación automática de mensualidad para el alumno " + alumno.getId());
@@ -2265,7 +2279,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        productoAlumno.setAlumno(alumno);
 	        productoAlumno.setProducto(productoMensualidad);
 	        productoAlumno.setConcepto(nombreMensualidad);
-	        AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 	        productoAlumno.setAlumnoDeporte(deportePrincipal);
 	        productoAlumno.setPrecio(deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null);
 	        productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));

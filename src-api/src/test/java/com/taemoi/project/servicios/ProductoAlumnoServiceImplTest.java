@@ -70,6 +70,24 @@ class ProductoAlumnoServiceImplTest {
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
+	/**
+	 * Desde V27 los productos se resuelven con el catálogo: el real sobre el repositorio simulado de
+	 * este test y el catálogo de disciplinas de Taemoi en memoria. Los productos simulados no están
+	 * clasificados (sin codigo ni tipo), así que se encuentran por el concepto de antes (respaldo).
+	 */
+	@org.junit.jupiter.api.BeforeEach
+	void catalogoEnMemoria() {
+		com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria memoria = new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria();
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "catalogoDisciplinas",
+				memoria.catalogo());
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "progresionGrados",
+				memoria.progresion());
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "productosCatalogo",
+				new com.taemoi.project.services.impl.ProductosCatalogoServiceImpl(productoRepository,
+						org.mockito.Mockito.mock(com.taemoi.project.repositories.GradoRepository.class),
+						memoria.catalogo(), memoria.progresion()));
+	}
+
 	private void prepararAsignacion(String concepto) {
 		Alumno alumno = new Alumno();
 		alumno.setId(10L);

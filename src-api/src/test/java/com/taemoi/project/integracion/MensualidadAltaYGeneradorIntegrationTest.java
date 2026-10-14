@@ -59,6 +59,7 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 	@Autowired DisciplinaRepository disciplinas;
 	@Autowired SistemaGradosRepository sistemas;
 	@Autowired ProductoRepository productos;
+	@Autowired com.taemoi.project.repositories.TarifaRepository tarifas;
 	@Autowired ProductoAlumnoRepository productosAlumno;
 	@Autowired ProductoAlumnoService productoAlumnoService;
 	@Autowired ContadorService contadores;
@@ -192,8 +193,11 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(org, () -> {
 			// Catálogo propio de la escuela (V26): grados por disciplina.
 			DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "TAEKWONDO", 14, TipoGrado.BLANCO);
-			DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "KICKBOXING", 15, TipoGrado.BLANCO);
+			com.taemoi.project.entities.Disciplina kb = DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados,
+					"KICKBOXING", 15, TipoGrado.BLANCO);
 			DisciplinasDePrueba.asegurar(disciplinas, "PILATES");
+			// Tarifa propia de la escuela (V27): la cuantía por defecto del alta sale de ella.
+			DisciplinasDePrueba.tarifa(tarifas, "KICKBOXING", "30.00", kb);
 			productos.save(new Producto("MENSUALIDAD", 30.0, null));
 		});
 		return org;

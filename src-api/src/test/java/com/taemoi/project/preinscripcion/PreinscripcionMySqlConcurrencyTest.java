@@ -75,6 +75,7 @@ import com.taemoi.project.services.TutorService;
 @Import({ PreinscripcionService.class, AforoPreinscripcionService.class, ContadorService.class,
 		TutorService.class, ConsentimientoService.class,
 		com.taemoi.project.services.impl.CatalogoDisciplinasServiceImpl.class,
+		com.taemoi.project.services.impl.TarifasServiceImpl.class,
 		com.taemoi.project.services.impl.ProgresionGradosServiceImpl.class,
 		OrganizacionHibernateConfig.class, PreinscripcionMySqlConcurrencyTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)

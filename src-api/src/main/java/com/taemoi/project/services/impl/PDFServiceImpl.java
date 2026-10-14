@@ -2757,8 +2757,8 @@ public class PDFServiceImpl implements PDFService {
 				// DESCUENTO
 				html.append("<td>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String tipoTarifa = ad.getTipoTarifa() != null ? ad.getTipoTarifa().toString().replace("_", " ")
-							: "-";
+					String codigoTarifa = ad.getCodigoTarifa();
+					String tipoTarifa = codigoTarifa != null ? codigoTarifa.replace("_", " ") : "-";
 					html.append("<div class='line-item'>").append(tipoTarifa).append("</div>");
 				}
 				html.append("</td>");

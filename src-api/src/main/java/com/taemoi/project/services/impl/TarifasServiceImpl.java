@@ -4,11 +4,15 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.Tarifa;
+import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.repositories.TarifaRepository;
 import com.taemoi.project.services.TarifasService;
 
@@ -18,6 +22,11 @@ import com.taemoi.project.services.TarifasService;
  */
 @Service
 public class TarifasServiceImpl implements TarifasService {
+
+	private static final Logger log = LoggerFactory.getLogger(TarifasServiceImpl.class);
+
+	/** Regla heredada de la preinscripción: la tarifa de hermanos exige grupo familiar. */
+	private static final String CODIGO_HERMANOS = "HERMANOS";
 
 	private final TarifaRepository tarifas;
 
@@ -88,5 +97,44 @@ public class TarifasServiceImpl implements TarifasService {
 		Tarifa tarifa = obtenerPorCodigo(codigoTarifa);
 		return tarifa.getDisciplina() == null
 				|| (codigoDisciplina != null && codigoDisciplina.equals(tarifa.getDisciplina().getCodigo()));
+	}
+
+	@Override
+	public void asignarTarifa(AlumnoDeporte inscripcion, String codigoTarifa) {
+		if (codigoTarifa == null) {
+			inscripcion.setTarifa(null);
+			inscripcion.setTipoTarifa(null);
+			return;
+		}
+		TipoTarifa legado = tipoLegado(codigoTarifa);
+		Optional<Tarifa> tarifa = buscarPorCodigo(codigoTarifa);
+		if (tarifa.isEmpty()) {
+			if (legado == null) {
+				// Mismo error que TipoTarifa.valueOf (lo que devolvía el código anterior).
+				TipoTarifa.valueOf(codigoTarifa);
+			}
+			log.warn("La organización no tiene la tarifa {}: la inscripción queda sin tarifa_id", codigoTarifa);
+		}
+		inscripcion.setTarifa(tarifa.orElse(null));
+		inscripcion.setTipoTarifa(legado);
+	}
+
+	@Override
+	public boolean requiereRolFamiliar(Tarifa tarifa) {
+		return tarifa != null && (tarifa.getImporteAdulto() != null || tarifa.getImporteMenor() != null);
+	}
+
+	@Override
+	public boolean requiereGrupoFamiliar(Tarifa tarifa) {
+		return tarifa != null && CODIGO_HERMANOS.equals(tarifa.getCodigo());
+	}
+
+	private static TipoTarifa tipoLegado(String codigo) {
+		for (TipoTarifa tipo : TipoTarifa.values()) {
+			if (tipo.name().equals(codigo)) {
+				return tipo;
+			}
+		}
+		return null;
 	}
 }

@@ -1422,10 +1422,10 @@ public class AlumnoController {
 			}
 
 			com.taemoi.project.entities.Deporte deporteEnum = com.taemoi.project.entities.Deporte.valueOf(deporte);
-			com.taemoi.project.entities.TipoTarifa tipoTarifa = com.taemoi.project.entities.TipoTarifa.valueOf(tipoTarifaStr);
 
+			// Código de la tarifa de la organización (los de TipoTarifa en Taemoi)
 			com.taemoi.project.entities.AlumnoDeporte alumnoDeporte = alumnoDeporteService
-					.actualizarTipoTarifa(id, deporteEnum, tipoTarifa);
+					.actualizarTarifa(id, deporteEnum, tipoTarifaStr);
 			com.taemoi.project.dtos.AlumnoDeporteDTO dto = com.taemoi.project.dtos.AlumnoDeporteDTO
 					.deAlumnoDeporte(alumnoDeporte);
 

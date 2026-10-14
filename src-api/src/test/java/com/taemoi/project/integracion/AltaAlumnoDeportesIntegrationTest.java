@@ -66,6 +66,7 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 	@Autowired SistemaGradosRepository sistemas;
 	@Autowired DisciplinaRepository disciplinas;
 	@Autowired ProductoRepository productos;
+	@Autowired com.taemoi.project.repositories.TarifaRepository tarifas;
 	@Autowired ProductoAlumnoRepository productosAlumno;
 	@Autowired ContadorService contadores;
 	@Autowired AlumnoController alumnoController;
@@ -98,6 +99,8 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 			disciplina("TAEKWONDO", tkd, 14, 1);
 			disciplina("KICKBOXING", kb, 15, 2);
 			disciplina("PILATES", null, 14, 3);
+			// Tarifa propia de la escuela (V27): la cuantía por defecto del alta sale de ella.
+			DisciplinasDePrueba.tarifa(tarifas, "KICKBOXING", "30.00", disciplinas.findByCodigo("KICKBOXING").orElseThrow());
 			// Mensualidad del mes ya cargada: el alta debe añadir la del nuevo alumno.
 			Producto mensualidad = productos.save(new Producto("MENSUALIDAD", 30.0, null));
 			// Si el alta cobrara la licencia, este producto lo permitiría: no debe usarse.

@@ -68,8 +68,10 @@ public class AlumnoServiceImplTest {
 	@Mock
 	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
 
-	@Mock
-	private com.taemoi.project.config.TarifaConfig tarifaConfig;
+	/** Tarifas de Taemoi (V24) en memoria: desde V27 la cuantía sale de la tabla tarifa. */
+	@org.mockito.Spy
+	private com.taemoi.project.services.TarifasService tarifasService =
+			new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas();
 
 	@Mock
 	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
@@ -144,7 +146,6 @@ public class AlumnoServiceImplTest {
 	 */
 	@Test
 	public void testAsignarCuantiaTarifa() {
-		when(tarifaConfig.obtenerCuantia(TipoTarifa.ADULTO)).thenReturn(30.0);
 		double result = alumnoService.asignarCuantiaTarifa(TipoTarifa.ADULTO);
 
 		assertEquals(30.0, result, 0.0);

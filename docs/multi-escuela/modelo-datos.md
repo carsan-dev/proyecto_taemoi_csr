@@ -206,7 +206,7 @@ Las tablas de unión (`alumno_grupo`, `alumno_turno`, `preinscripcion_turno`) no
 | V24 | `tarifa` desde `TarifaConfig`; `producto.tipo`/`codigo` desde los conceptos conocidos; `alumno_deporte.tarifa_id` | 2 |
 | V25 | `tutor` desde `responsable_legal_*`; `alumno_salud` y `consentimiento` vacías; `genero`, `localidad`, `codigo_postal`; teléfonos a VARCHAR | 2 |
 | V26 | Cambio de código a disciplinas y grados: reasignación de grados de kickboxing por sistema, relleno de `disciplina_id` y NOT NULL en las cinco tablas, resincronización de V24 (grado que concede cada producto). Comprobación previa: `postcheck-v26.sql` | 2 |
-| V27 | Cambio de código a tarifas y productos: resincronización de V24 y NOT NULL donde proceda | 2 |
+| V27 | Cambio de código a tarifas y productos: resincronización de V24 (texto idéntico). Ninguna columna pasa a NOT NULL: `tarifa_id` admite inscripciones sin tarifa y las claves hacia `producto` son ON DELETE SET NULL. El código escribe `tarifa_id` y, en paralelo, `tipo_tarifa`; busca los productos por tipo, codigo o enlace con el concepto de antes como respaldo. Comprobación: `postcheck-v27.sql` | 2 |
 | V28 | Contracción del catálogo: borrar columnas `deporte`, `tipo_grado`, `tipo_categoria`, `tipo_tarifa` y `responsable_legal_*` | 2 |
 | V29 | `sede` (sede principal de Taemoi); `grupo.sede_id` y `alumno.sede_principal_id`; `usuario_alumno` desde `usuario.alumno_id` y las coincidencias de email actuales | 3 |
 | V30+ | Contracción de permisos: borrar `usuario_rol` y `usuario.alumno_id` | 3 |

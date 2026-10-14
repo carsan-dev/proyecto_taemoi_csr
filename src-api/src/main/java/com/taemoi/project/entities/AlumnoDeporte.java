@@ -93,8 +93,9 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	private TipoTarifa tipoTarifa;
 
 	/**
-	 * Tarifa del catálogo (V24, rellenada desde {@code tipoTarifa}). Todavía no la escribe ni la lee
-	 * el código actual: {@code tipoTarifa} sigue siendo la fuente hasta el cambio de llamadores.
+	 * Tarifa del catálogo (V24). Desde V27 la escribe el código ({@code TarifasService.asignarTarifa})
+	 * junto a {@code tipoTarifa}, que se sigue escribiendo hasta la contracción (NULL para códigos de
+	 * tarifa propios de otra organización).
 	 */
 	@JsonIgnore
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -257,6 +258,26 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 
 	public void setTarifa(Tarifa tarifa) {
 		this.tarifa = tarifa;
+	}
+
+	/**
+	 * Código de la tarifa: {@code tipo_tarifa} (Taemoi, el de siempre) o, si es una tarifa propia de la
+	 * organización que no está en {@code TipoTarifa}, el código de {@code tarifa}. NULL si no hay tarifa o
+	 * si la tarifa no se puede cargar ya (entidad fuera de su sesión).
+	 */
+	@JsonIgnore
+	public String getCodigoTarifa() {
+		if (tipoTarifa != null) {
+			return tipoTarifa.name();
+		}
+		if (tarifa == null) {
+			return null;
+		}
+		try {
+			return tarifa.getCodigo();
+		} catch (org.hibernate.LazyInitializationException e) {
+			return null;
+		}
 	}
 
 	public Double getCuantiaTarifa() {

@@ -43,6 +43,12 @@ public class AlumnoDeporteCreacionDTO {
     private TipoTarifa tipoTarifa;
 
     /**
+     * Código de la tarifa de la organización (V27). Si viene, manda sobre {@link #tipoTarifa}: permite
+     * tarifas propias de otras organizaciones que no están en {@code TipoTarifa}.
+     */
+    private String codigoTarifa;
+
+    /**
      * Cuantía de la tarifa (puede ser personalizada)
      */
     private Double cuantiaTarifa;
@@ -162,6 +168,23 @@ public class AlumnoDeporteCreacionDTO {
 
     public void setTipoTarifa(TipoTarifa tipoTarifa) {
         this.tipoTarifa = tipoTarifa;
+    }
+
+    public String getCodigoTarifa() {
+        return codigoTarifa;
+    }
+
+    public void setCodigoTarifa(String codigoTarifa) {
+        this.codigoTarifa = codigoTarifa;
+    }
+
+    /** Código efectivo de la tarifa: {@link #codigoTarifa} o, si no viene, el de {@link #tipoTarifa}. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public String codigoTarifaEfectivo() {
+        if (codigoTarifa != null && !codigoTarifa.isBlank()) {
+            return codigoTarifa.trim();
+        }
+        return tipoTarifa != null ? tipoTarifa.name() : null;
     }
 
     public Double getCuantiaTarifa() {

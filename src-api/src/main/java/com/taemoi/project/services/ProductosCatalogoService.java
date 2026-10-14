@@ -80,4 +80,73 @@ public interface ProductosCatalogoService {
 	 * cada disciplina lo resuelve en su propio sistema.
 	 */
 	Optional<String> buscarCodigoGradoConcedido(Long productoId, String conceptoCargo);
+
+	// ------------------------------------------------------------------------------------------
+	// Resolución de los productos que cobra el código (V27). Orden: el producto SIN clasificar con el
+	// concepto que buscaba el código hasta V27 (lo que elegía findFirstByConcepto: variantes de id menor
+	// o con otras mayúsculas), después el catálogo (enlace, tipo o codigo) y, si no hay nada, el producto
+	// con ese concepto aunque esté clasificado. WARN en los respaldos por concepto.
+	// Nunca lanzan: vacío si tampoco hay producto con ese concepto.
+	// ------------------------------------------------------------------------------------------
+
+	/** Concepto que buscaba el código hasta V27 para la mensualidad. */
+	String CONCEPTO_LEGADO_MENSUALIDAD = "MENSUALIDAD";
+
+	/** Concepto que buscaba el código hasta V27 para la reserva de plaza. */
+	String CONCEPTO_LEGADO_RESERVA_PLAZA = "RESERVA DE PLAZA";
+
+	/** Precio con el que el código creaba (y cobraba) la tarifa de competidor hasta V27. */
+	double PRECIO_LEGADO_COMPETIDOR = 20.0;
+
+	/**
+	 * Producto de mensualidad: tipo {@code MENSUALIDAD} de la disciplina; si no hay, el general (sin
+	 * disciplina); si no, el de concepto «MENSUALIDAD». El de menor id en cada paso.
+	 */
+	Optional<Producto> resolverProductoMensualidad(String codigoDisciplina);
+
+	/** Como {@link #resolverProductoMensualidad} con el tipo {@code RESERVA_PLAZA} («RESERVA DE PLAZA»). */
+	Optional<Producto> resolverProductoReservaPlaza(String codigoDisciplina);
+
+	/**
+	 * Producto de competidor de la disciplina: {@code disciplina.producto_competidor_id}; si no, el de
+	 * codigo {@code COMPETIDOR_<disciplina>}; si no, el de concepto «TARIFA COMPETIDOR <disciplina>».
+	 */
+	Optional<Producto> resolverProductoCompetidor(String codigoDisciplina);
+
+	/**
+	 * {@link #resolverProductoCompetidor} y, si no hay ninguno, lo crea como hacía el código hasta V27
+	 * (concepto «TARIFA COMPETIDOR <disciplina>», 20 €), ya clasificado ({@code COMPETIDOR_<disciplina>})
+	 * y enlazado a la disciplina. Vacío si la disciplina no existe o no admite competidores.
+	 */
+	Optional<Producto> asegurarProductoCompetidor(String codigoDisciplina);
+
+	/**
+	 * Producto de licencia federativa por codigo {@code LICENCIA_<disciplina>_<variante>[_PROPORCIONAL]},
+	 * variante {@code DISCAPACIDAD}, {@code INFANTIL} o {@code ADULTO}. La disciplina usa la variante
+	 * de discapacidad o la parte proporcional solo si tiene algún producto de licencia con ella
+	 * (Taemoi: taekwondo sí, kickboxing no). Si el codigo no existe, el concepto que buscaba el código
+	 * hasta V27 ({@link #conceptoLegadoLicencia}).
+	 */
+	Optional<Producto> resolverProductoLicencia(String codigoDisciplina, boolean discapacidad, boolean menor,
+			boolean proporcional);
+
+	/**
+	 * Concepto de licencia que buscaba el código hasta V27: kickboxing sin discapacidad ni parte
+	 * proporcional; cualquier otra disciplina (o ninguna), los nombres de taekwondo.
+	 */
+	String conceptoLegadoLicencia(String codigoDisciplina, boolean discapacidad, boolean menor, boolean proporcional);
+
+	/**
+	 * Producto que se cobra para llegar a un grado: con {@code bordado}, el de codigo
+	 * {@code EXAMEN_<grado>_BORDADO} / {@code RECOMPENSA_<grado>_BORDADO}; si no, el enlace
+	 * {@code grado.producto_*_id} del grado en el sistema de la disciplina y después el codigo
+	 * {@code EXAMEN_<grado>} / {@code RECOMPENSA_<grado>}. Si nada de eso existe, el producto con el
+	 * {@code conceptoLegado} exacto y después el que coincide sin distinguir mayúsculas, acentos ni
+	 * espacios repetidos (la búsqueda de {@code AlumnoServiceImpl} hasta V27).
+	 */
+	Optional<Producto> resolverProductoGrado(String codigoDisciplina, String codigoGrado, boolean recompensa,
+			boolean bordado, String conceptoLegado);
+
+	/** Tipo del producto con ese id; vacío si el id es nulo o el producto ya no existe. */
+	Optional<TipoProducto> tipoDeProducto(Long productoId);
 }

@@ -417,6 +417,16 @@ class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(v24.contains(resync), "V24 debe contener el texto exacto de resync_catalogo_v24.sql");
 	}
 
+	/** Las migraciones de cambio de llamadores (V26 y V27) repiten el resync con el texto exacto. */
+	@Test
+	void migracionesDeCambio_incluyenElResyncLiteralmente() throws Exception {
+		String resync = leer("db/resync/resync_catalogo_v24.sql");
+		for (String migracion : List.of("db/migration/V26__switch_grados_disciplinas.sql",
+				"db/migration/V27__switch_tarifas_productos.sql")) {
+			assertTrue(leer(migracion).contains(resync), migracion + " debe contener el texto exacto de resync_catalogo_v24.sql");
+		}
+	}
+
 	private static String leer(String recurso) throws Exception {
 		return new String(new ClassPathResource(recurso).getInputStream().readAllBytes(), StandardCharsets.UTF_8)
 				.replace("\r\n", "\n");

@@ -89,7 +89,7 @@ public class AlumnoDeporteDTO {
 		dto.setAntiguedad(calcularAntiguedad(fechaParaAntiguedad, alumnoDeporte.getFechaBaja()));
 
 		// Tarifa (per-sport)
-		dto.setTipoTarifa(alumnoDeporte.getTipoTarifa() != null ? alumnoDeporte.getTipoTarifa().name() : null);
+		dto.setTipoTarifa(alumnoDeporte.getCodigoTarifa());
 		dto.setCuantiaTarifa(alumnoDeporte.getCuantiaTarifa());
 		dto.setRolFamiliar(alumnoDeporte.getRolFamiliar() != null ? alumnoDeporte.getRolFamiliar().name() : null);
 		dto.setGrupoFamiliar(alumnoDeporte.getGrupoFamiliar());

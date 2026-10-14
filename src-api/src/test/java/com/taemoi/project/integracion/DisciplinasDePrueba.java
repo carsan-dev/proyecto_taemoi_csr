@@ -3,10 +3,12 @@ package com.taemoi.project.integracion;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.SistemaGrados;
+import com.taemoi.project.entities.Tarifa;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.SistemaGradosRepository;
+import com.taemoi.project.repositories.TarifaRepository;
 
 /**
  * Disciplinas para los datos de prueba. Desde V26 toda inscripción, grupo, convocatoria y
@@ -33,6 +35,19 @@ final class DisciplinasDePrueba {
 			nueva.setEdadAdulto(14);
 			return disciplinas.save(nueva);
 		});
+	}
+
+	/**
+	 * Tarifa de la organización activa (desde V27 la cuantía por defecto del alta sale de la tabla
+	 * tarifa de cada escuela, no de los valores de Taemoi).
+	 */
+	static Tarifa tarifa(TarifaRepository tarifas, String codigo, String importe, Disciplina disciplina) {
+		Tarifa tarifa = new Tarifa();
+		tarifa.setCodigo(codigo);
+		tarifa.setNombre(codigo);
+		tarifa.setImporte(new java.math.BigDecimal(importe));
+		tarifa.setDisciplina(disciplina);
+		return tarifas.save(tarifa);
 	}
 
 	/**

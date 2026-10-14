@@ -16,6 +16,15 @@
       Si V26 falla, corregir la fila indicada en el error (`v26_<tabla>_tiene_filas_sin_disciplina`),
       ejecutar `flyway repair` y volver a desplegar: V26 se detiene antes de cambiar ninguna columna.
 
+- [ ] Antes de V27, ejecutar `docs/multi-escuela/postcheck-v24.sql` y `docs/multi-escuela/postcheck-v27.sql`
+      (solo lectura, solo recuentos) y guardar el resultado. V27 no se detiene por ningún recuento; para
+      Taemoi el código conserva el comportamiento anterior (20 € de competidor, variantes sin clasificar,
+      conceptos literales, tesorería por concepto) y los recuentos solo dicen a qué afectaría cambiarlo.
+- [ ] Desde V27, NUNCA ejecutar a mano `db/resync/resync_catalogo_v24.sql`: su UPDATE que pone
+      `tarifa_id = NULL` donde `tipo_tarifa` es NULL no se limita a una organización y borraría las tarifas
+      con código propio de otras escuelas (que no escriben `tipo_tarifa`). Ninguna migración posterior a V27
+      lo incluye (un test lo comprueba).
+
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.
 - [ ] Dar de alta un alumno; su expediente es el siguiente al más alto.
@@ -24,6 +33,10 @@
 ## Vuelta atrás
 Desde V20 los roles viven en `membresia` y `usuario_rol` deja de actualizarse: volver al código
 anterior exige restaurar la copia de seguridad.
+
+Desde V27 el código escribe `tarifa_id` y sigue escribiendo `tipo_tarifa` (salvo códigos de tarifa propios
+de otra escuela), y los productos que crea llevan `codigo`/`tipo`: el código anterior funciona sobre esos
+datos sin cambios de esquema.
 
 Desde V26 las cinco columnas `disciplina_id` son NOT NULL y el código anterior a V26 no las escribe.
 Volver a ese código exige antes `ALTER TABLE … MODIFY disciplina_id BIGINT NULL` en `alumno_deporte`,

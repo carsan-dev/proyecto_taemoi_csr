@@ -480,7 +480,11 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 	// ---------------- Resincronización tras V24 ----------------
 
 	@Test
-	void cambiarTipoTarifaPorElServicioActual_dejaTarifaIdDesfasada_yElResyncLaCorrige() throws Exception {
+	/**
+	 * Hasta V27 el servicio solo escribía tipo_tarifa y tarifa_id quedaba desfasada hasta el resync.
+	 * Desde V27 escribe las dos a la vez; el resync (incluido en V27) no cambia nada.
+	 */
+	void cambiarTipoTarifaPorElServicio_escribeTarifaIdALaVez_yElResyncNoLaCambia() throws Exception {
 		int expediente = 900000 + (int) (System.nanoTime() % 90000);
 		jdbc.update("""
 				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
@@ -502,7 +506,8 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 			Map<String, Object> fila = jdbc.queryForMap(
 					"SELECT tipo_tarifa, tarifa_id FROM alumno_deporte WHERE alumno_id = ?", alumno);
 			assertEquals("INFANTIL", fila.get("tipo_tarifa"));
-			assertEquals(adulto, ((Number) fila.get("tarifa_id")).longValue(), "desfasada hasta el resync");
+			assertEquals(infantil, ((Number) fila.get("tarifa_id")).longValue(), "escrita junto a tipo_tarifa (V27)");
+			assertNotEquals(adulto, ((Number) fila.get("tarifa_id")).longValue());
 
 			ejecutar("db/resync/resync_catalogo_v24.sql");
 			assertEquals(infantil, jdbc.queryForObject("SELECT tarifa_id FROM alumno_deporte WHERE alumno_id = ?",

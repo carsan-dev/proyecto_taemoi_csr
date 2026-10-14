@@ -17,13 +17,17 @@ import com.taemoi.project.entities.AplicaGrado;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.SistemaGrados;
+import com.taemoi.project.entities.Tarifa;
 import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
+import com.taemoi.project.repositories.TarifaRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProgresionGradosService;
+import com.taemoi.project.services.TarifasService;
 import com.taemoi.project.services.impl.CatalogoDisciplinasServiceImpl;
 import com.taemoi.project.services.impl.ProgresionGradosServiceImpl;
+import com.taemoi.project.services.impl.TarifasServiceImpl;
 
 /**
  * Catálogo de Taemoi (los datos de V23) en memoria para tests unitarios: los servicios reales
@@ -63,6 +67,9 @@ public final class CatalogoTaemoiEnMemoria {
 	private final CatalogoDisciplinasService catalogo = new CatalogoDisciplinasServiceImpl(disciplinas);
 	private final ProgresionGradosService progresion = new ProgresionGradosServiceImpl(catalogo, grados);
 	private final List<Grado> todos = new ArrayList<>();
+	private final TarifaRepository tarifaRepository = mock(TarifaRepository.class);
+	private final TarifasService tarifas = new TarifasServiceImpl(tarifaRepository);
+	private final List<Tarifa> listaTarifas = new ArrayList<>();
 
 	public CatalogoTaemoiEnMemoria() {
 		SistemaGrados tkd = sistema(SISTEMA_TKD, "TAEKWONDO");
@@ -88,6 +95,28 @@ public final class CatalogoTaemoiEnMemoria {
 			todos.add(grado(++id, kb, fila, codigo.equals("ROJO") ? "MARRÓN" : (String) fila[1], orden, aplica));
 		}
 
+		// Tarifas de V24: codigo, importe, importe adulto, importe menor, disciplina.
+		Object[][] filasTarifa = { { "FAMILIAR", "0.00", null, null, 0 }, { "PADRES_HIJOS", "0.00", "28.00", "26.00", 0 },
+				{ "ADULTO_GRUPO", "20.00", null, null, 0 }, { "INFANTIL_GRUPO", "20.00", null, null, 0 },
+				{ "HERMANOS", "26.00", null, null, 0 }, { "INFANTIL", "28.00", null, null, 0 },
+				{ "ADULTO", "30.00", null, null, 0 }, { "KICKBOXING", "30.00", null, null, 1 },
+				{ "PILATES", "30.00", null, null, 2 }, { "DEFENSA_PERSONAL_FEMENINA", "25.00", null, null, 3 } };
+		long idTarifa = 0;
+		for (Object[] fila : filasTarifa) {
+			Tarifa tarifa = new Tarifa();
+			ReflectionTestUtils.setField(tarifa, "id", ++idTarifa);
+			tarifa.setCodigo((String) fila[0]);
+			tarifa.setNombre((String) fila[0]);
+			tarifa.setImporte(new java.math.BigDecimal((String) fila[1]));
+			tarifa.setImporteAdulto(fila[2] == null ? null : new java.math.BigDecimal((String) fila[2]));
+			tarifa.setImporteMenor(fila[3] == null ? null : new java.math.BigDecimal((String) fila[3]));
+			tarifa.setDisciplina(lista.get((Integer) fila[4]));
+			listaTarifas.add(tarifa);
+		}
+		lenient().when(tarifaRepository.findByCodigo(any())).thenAnswer(inv -> listaTarifas.stream()
+				.filter(t -> t.getCodigo().equals(inv.getArgument(0))).findFirst());
+		lenient().when(tarifaRepository.findByActivaTrueOrderByIdAsc()).thenReturn(listaTarifas);
+
 		lenient().when(disciplinas.findByCodigo(any())).thenAnswer(inv -> lista.stream()
 				.filter(d -> d.getCodigo().equals(inv.getArgument(0))).findFirst());
 		lenient().when(disciplinas.findAllByOrderByOrdenAscIdAsc()).thenReturn(lista);
@@ -108,6 +137,11 @@ public final class CatalogoTaemoiEnMemoria {
 
 	public ProgresionGradosService progresion() {
 		return progresion;
+	}
+
+	/** {@link TarifasServiceImpl} real sobre las 10 tarifas de Taemoi (V24). */
+	public TarifasService tarifas() {
+		return tarifas;
 	}
 
 	/** Grado del catálogo con ese código en el sistema de la disciplina. */

@@ -8,7 +8,10 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,7 +30,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
@@ -36,6 +39,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductosCatalogoService;
@@ -47,24 +51,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ProductoAlumnoServiceImpl.class);
 
-	private static final String TARIFA_COMPETIDOR_TAEKWONDO = "TARIFA COMPETIDOR TAEKWONDO";
-	private static final String TARIFA_COMPETIDOR_KICKBOXING = "TARIFA COMPETIDOR KICKBOXING";
-	private static final Double PRECIO_TARIFA_COMPETIDOR = 20.0;
-	private static final String LICENCIA_FEDERATIVA_ADULTO = "LICENCIA FEDERATIVA TAEKWONDO ADULTO";
-	private static final String LICENCIA_FEDERATIVA_INFANTIL = "LICENCIA FEDERATIVA TAEKWONDO INFANTIL";
-	private static final String LICENCIA_FEDERATIVA_DISCAPACIDAD = "LICENCIA FEDERATIVA TAEKWONDO DISCAPACIDAD";
-	private static final String LICENCIA_FEDERATIVA_KICKBOXING_ADULTO = "LICENCIA FEDERATIVA KICKBOXING ADULTO";
-	private static final String LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL = "LICENCIA FEDERATIVA KICKBOXING INFANTIL";
-	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_ADULTO =
-			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO ADULTO";
-	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL =
-			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO INFANTIL";
-	private static final String PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD =
-			"PARTE PROPORCIONAL LICENCIA FEDERATIVA TAEKWONDO DISCAPACIDAD";
-	@SuppressWarnings("unused")
-	private static final int EDAD_LIMITE_INFANTIL_TAEKWONDO = 14;
-	@SuppressWarnings("unused")
-	private static final int EDAD_LIMITE_INFANTIL_KICKBOXING = 15;
+	/** Nombre que daba el código hasta V27 al producto de competidor (si no hay producto que lo diga). */
+	private static final String CONCEPTO_LEGADO_COMPETIDOR = "TARIFA COMPETIDOR ";
 	private static final int MES_CORTE_LICENCIA = 9;
 	private static final DateTimeFormatter FORMATO_FECHA_LICENCIA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -104,6 +92,21 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return normalizarConcepto(concepto).matches(".*\\bMATRICULA\\b.*");
 	}
 
+
+	/**
+	 * Si el cargo da derecho a examen: el concepto que miraba el código hasta V27 o, además, un producto
+	 * de tipo EXAMEN con código PROPIO (otras escuelas). Los códigos heredados de Taemoi solo por concepto,
+	 * como antes ({@link CatalogoLegadoTaemoi#tipoDeCatalogo}).
+	 */
+	private boolean daDerechoAExamen(ProductoAlumno productoAlumno) {
+		String concepto = productoAlumno.getConcepto() != null ? productoAlumno.getConcepto() : "";
+		if (concepto.contains("DERECHO A EXAMEN") || concepto.contains("PASE DE GRADO POR RECOMPENSA")) {
+			return true;
+		}
+		Producto producto = productoAlumno.getProducto();
+		return CatalogoLegadoTaemoi.tipoDeCatalogo(producto) == TipoProducto.EXAMEN;
+	}
+
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -132,9 +135,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
-		if (Boolean.TRUE.equals(savedProductoAlumno.getPagado())
-				&& (savedProductoAlumno.getConcepto().contains("DERECHO A EXAMEN")
-						|| savedProductoAlumno.getConcepto().contains("PASE DE GRADO POR RECOMPENSA"))) {
+		if (Boolean.TRUE.equals(savedProductoAlumno.getPagado()) && daDerechoAExamen(savedProductoAlumno)) {
 			Alumno a = savedProductoAlumno.getAlumno();
 			a.setTieneDerechoExamen(true);
 			alumnoRepository.save(a);
@@ -204,11 +205,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				});
 
 		Alumno alumno = updatedProductoAlumno.getAlumno();
-		String concepto = updatedProductoAlumno.getConcepto() != null
-				? updatedProductoAlumno.getConcepto()
-				: "";
-		boolean esProductoExamen = concepto.contains("DERECHO A EXAMEN")
-				|| concepto.contains("PASE DE GRADO POR RECOMPENSA");
+		boolean esProductoExamen = daDerechoAExamen(updatedProductoAlumno);
 		alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
 		alumnoRepository.save(alumno);
 
@@ -240,6 +237,16 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * no tiene grados), no promueve y lo registra: el cobro nunca falla por el grado.
 	 */
 	private void activarGradoPorRecompensaPagada(ProductoAlumno productoAlumno) {
+		try {
+			activarGradoConcedido(productoAlumno);
+		} catch (RuntimeException e) {
+			// El cobro ya está guardado: un fallo al resolver el grado en el catálogo no lo deshace.
+			LOG.warn("Cobro {} pagado: no se pudo resolver el grado que concede ({}); no se promueve",
+					productoAlumno.getId(), e.toString());
+		}
+	}
+
+	private void activarGradoConcedido(ProductoAlumno productoAlumno) {
 		Long productoId = productoAlumno.getProducto() != null ? productoAlumno.getProducto().getId() : null;
 		String codigoGrado = productosCatalogo
 				.buscarCodigoGradoConcedido(productoId, productoAlumno.getConcepto())
@@ -276,8 +283,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		productoAlumnoRepository.deleteById(id);
 
-		String concepto = pa.getConcepto() != null ? pa.getConcepto() : "";
-		if (concepto.contains("DERECHO A EXAMEN") || concepto.contains("PASE DE GRADO POR RECOMPENSA")) {
+		if (daDerechoAExamen(pa)) {
 			Alumno alumno = pa.getAlumno();
 			alumno.setTieneDerechoExamen(false);
 			alumnoRepository.save(alumno);
@@ -298,7 +304,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		Producto productoReserva = productoRepository.findFirstByConcepto("RESERVA DE PLAZA")
+		Producto productoReserva = productosCatalogo.resolverProductoReservaPlaza(null)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -346,7 +352,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			}
 		}
 
-		Producto productoReserva = productoRepository.findFirstByConcepto("RESERVA DE PLAZA")
+		Producto productoReserva = productosCatalogo.resolverProductoReservaPlaza(deporteEnum.name())
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
@@ -368,37 +374,22 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacionManual) {
-		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
-		String nombreMensualidadUpper = nombreMensualidad.toUpperCase(Locale.ROOT);
-		String etiquetaMes = nombreMensualidad.replace("MENSUALIDAD ", "");
-		String etiquetaMesUpper = etiquetaMes.toUpperCase(Locale.ROOT);
-
-		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
-				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Obtener todos los AlumnoDeporte activos
 		List<AlumnoDeporte> alumnosDeportes = alumnoDeporteRepository.findAll().stream()
 				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
 				.collect(Collectors.toList());
+		Map<String, Producto> productosMensualidad = resolverProductosMensualidad(alumnosDeportes);
 
-		// Get existing mensualidades y tarifas competidor del mes en batch to avoid N+1 queries
-		java.util.Set<String> conceptosExistentes = productoAlumnoRepository.findAll().stream()
-				.filter(pa -> pa.getConcepto() != null)
-				.filter(pa -> {
-					String conceptoUpper = pa.getConcepto().toUpperCase(Locale.ROOT);
-					return conceptoUpper.startsWith(nombreMensualidadUpper)
-							|| (conceptoUpper.startsWith("TARIFA COMPETIDOR") && conceptoUpper.contains(etiquetaMesUpper));
-				})
-				.map(pa -> {
-					Long alumnoId = obtenerAlumnoIdProducto(pa);
-					return alumnoId != null ? alumnoId + "-" + pa.getConcepto().toUpperCase(Locale.ROOT) : null;
-				})
-				.filter(Objects::nonNull)
-				.collect(java.util.stream.Collectors.toSet());
+		// Cargos existentes en lote (sin N+1): se buscan por clave exacta alumno-CONCEPTO
+		Set<String> conceptosExistentes = clavesDeCargosExistentes();
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			Producto productoMensualidad = productosMensualidad.get(codigoDisciplina(alumnoDeporte));
+			String nombreMensualidad = nombreMensualidad(productoMensualidad, mesAno);
 			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
 			String claveUnica = alumno.getId() + "-" + conceptoCompleto.toUpperCase(Locale.ROOT);
 
@@ -436,10 +427,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacionManual) {
-		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
-		String nombreMensualidadUpper = nombreMensualidad.toUpperCase(Locale.ROOT);
-		String etiquetaMes = nombreMensualidad.replace("MENSUALIDAD ", "");
-		String etiquetaMesUpper = etiquetaMes.toUpperCase(Locale.ROOT);
+		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Convert string to Deporte enum
 		com.taemoi.project.entities.Deporte deporteEnum;
@@ -450,30 +438,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					". Valores válidos: TAEKWONDO, KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA");
 		}
 
-		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
-				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+		Producto productoMensualidad = resolverProductoMensualidad(deporteEnum.name());
 
 		// Obtener todos los AlumnoDeporte activos del deporte especificado
 		List<AlumnoDeporte> alumnosDeportes = alumnoDeporteRepository.findAll().stream()
 				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()) && ad.getDeporte() == deporteEnum)
 				.collect(Collectors.toList());
 
-		String conceptoCompleto = nombreMensualidad + " - " + deporteEnum.name();
+		String conceptoCompleto = nombreMensualidad(productoMensualidad, mesAno) + " - " + deporteEnum.name();
 
-		// Get existing mensualidades y tarifas competidor del mes en batch to avoid N+1 queries
-		java.util.Set<String> conceptosExistentes = productoAlumnoRepository.findAll().stream()
-				.filter(pa -> pa.getConcepto() != null)
-				.filter(pa -> {
-					String conceptoUpper = pa.getConcepto().toUpperCase(Locale.ROOT);
-					return conceptoUpper.startsWith(nombreMensualidadUpper)
-							|| (conceptoUpper.startsWith("TARIFA COMPETIDOR") && conceptoUpper.contains(etiquetaMesUpper));
-				})
-				.map(pa -> {
-					Long alumnoId = obtenerAlumnoIdProducto(pa);
-					return alumnoId != null ? alumnoId + "-" + pa.getConcepto().toUpperCase(Locale.ROOT) : null;
-				})
-				.filter(Objects::nonNull)
-				.collect(java.util.stream.Collectors.toSet());
+		// Cargos existentes en lote (sin N+1): se buscan por clave exacta alumno-CONCEPTO
+		Set<String> conceptosExistentes = clavesDeCargosExistentes();
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
@@ -515,16 +490,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Override
 	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar,
 			LocalDate fechaAsignacionManual) {
-		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
-		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
-				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
 
 		// Obtener todos los deportes activos del alumno
 		List<AlumnoDeporte> deportesActivos = alumnoDeporteRepository.findByAlumnoId(alumnoId).stream()
 				.filter(ad -> Boolean.TRUE.equals(ad.getActivo()))
 				.collect(Collectors.toList());
+
+		// Producto(s) antes que nada (el error de producto ausente va primero, como antes de V27)
+		Map<String, Producto> productosMensualidad = resolverProductosMensualidad(deportesActivos);
 
 		if (deportesActivos.isEmpty()) {
 			throw new IllegalStateException("El alumno no tiene deportes activos asignados");
@@ -542,6 +518,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		for (AlumnoDeporte alumnoDeporte : deportesActivos) {
 			String deporteNombre = alumnoDeporte.getDeporte().name();
+			String nombreMensualidad = nombreMensualidad(productosMensualidad.get(codigoDisciplina(alumnoDeporte)), mesAno);
 			String conceptoMensualidad = (nombreMensualidad + " - " + deporteNombre).toUpperCase(Locale.ROOT);
 			boolean mensualidadExiste = conceptosExistentes.contains(conceptoMensualidad);
 			boolean tarifaAplica = aplicaTarifaCompetidor(alumnoDeporte);
@@ -579,7 +556,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		// Crear una mensualidad por cada deporte activo
 		for (AlumnoDeporte alumnoDeporte : deportesActivos) {
-			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
+			Producto productoMensualidad = productosMensualidad.get(codigoDisciplina(alumnoDeporte));
+			String conceptoCompleto = nombreMensualidad(productoMensualidad, mesAno) + " - "
+					+ alumnoDeporte.getDeporte().name();
 
 			// Verificar si ya existe esta mensualidad para este deporte
 			boolean yaExiste = conceptosExistentes.contains(conceptoCompleto.toUpperCase(Locale.ROOT));
@@ -637,7 +616,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			Alumno alumno = alumnoDeporte.getAlumno();
 			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
-					productoLicencia.getConcepto(),
+					CatalogoLegadoTaemoi.conceptoBase(productoLicencia, null),
 					fechaInicio,
 					fechaFin);
 			String clave = alumno.getId() + "-" + concepto;
@@ -686,7 +665,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		for (AlumnoDeporte alumnoDeporte : deportesObjetivo) {
 			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
-					productoLicencia.getConcepto(),
+					CatalogoLegadoTaemoi.conceptoBase(productoLicencia, null),
 					fechaInicio,
 					fechaFin);
 
@@ -803,7 +782,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(productoLicencia);
 		productoAlumno.setConcepto(
-				"RENOVACION " + productoLicencia.getConcepto() + " " + mesEnEspanol + " " + fechaActual.getYear());
+				"RENOVACION " + CatalogoLegadoTaemoi.conceptoBase(productoLicencia, null) + " " + mesEnEspanol + " " + fechaActual.getYear());
 		productoAlumno.setCantidad(1);
 		productoAlumno.setPrecio(precio);
 		productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
@@ -843,34 +822,19 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return esSegundaMitadDelAno ? LocalDate.of(ano, MES_CORTE_LICENCIA, 1) : LocalDate.of(ano, 1, 1);
 	}
 
+	/**
+	 * Producto de licencia por codigo del catálogo (variante por discapacidad, edad y parte proporcional
+	 * desde septiembre; ver {@link ProductosCatalogoService#resolverProductoLicencia}).
+	 */
 	private Producto obtenerProductoLicencia(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte, int anioReferencia) {
-		String concepto;
-		if (deporte == Deporte.KICKBOXING) {
-			boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(), deporte.name(),
-					anioReferencia);
-			concepto = esMenor
-					? LICENCIA_FEDERATIVA_KICKBOXING_INFANTIL
-					: LICENCIA_FEDERATIVA_KICKBOXING_ADULTO;
-		} else if (Boolean.TRUE.equals(alumno.getTieneDiscapacidad())) {
-			concepto = esSegundaMitadDelAno
-					? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_DISCAPACIDAD
-					: LICENCIA_FEDERATIVA_DISCAPACIDAD;
-		} else {
-			boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
-					deporte == null ? null : deporte.name(), anioReferencia);
-			if (esMenor) {
-				concepto = esSegundaMitadDelAno
-						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_INFANTIL
-						: LICENCIA_FEDERATIVA_INFANTIL;
-			} else {
-				concepto = esSegundaMitadDelAno
-						? PARTE_PROPORCIONAL_LICENCIA_FEDERATIVA_ADULTO
-						: LICENCIA_FEDERATIVA_ADULTO;
-			}
-		}
-
-		return productoRepository.findFirstByConcepto(concepto)
-				.orElseThrow(() -> new ProductoNoEncontradoException("Producto '" + concepto + "' no encontrado"));
+		String disciplina = deporte == null ? null : deporte.name();
+		boolean discapacidad = Boolean.TRUE.equals(alumno.getTieneDiscapacidad());
+		boolean esMenor = catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(), disciplina,
+				anioReferencia);
+		return productosCatalogo.resolverProductoLicencia(disciplina, discapacidad, esMenor, esSegundaMitadDelAno)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto '"
+						+ productosCatalogo.conceptoLegadoLicencia(disciplina, discapacidad, esMenor, esSegundaMitadDelAno)
+						+ "' no encontrado"));
 	}
 
 	private double calcularPrecioLicenciaFallback(Alumno alumno, boolean esSegundaMitadDelAno, Deporte deporte, int anioReferencia) {
@@ -959,9 +923,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return deporte != null && catalogoDisciplinas.requiereLicencia(deporte.name());
 	}
 
+	/**
+	 * Claves alumno-concepto de todos los cargos: se busca la clave exacta de cada licencia, así que no
+	 * hace falta filtrar por el nombre del producto (el de otra organización puede ser distinto).
+	 */
 	private Set<String> obtenerConceptosLicenciaExistentes() {
 		return productoAlumnoRepository.findAll().stream()
-				.filter(pa -> pa.getConcepto() != null && pa.getConcepto().contains("LICENCIA FEDERATIVA"))
+				.filter(pa -> pa.getConcepto() != null)
 				.map(pa -> {
 					Long alumnoId = obtenerAlumnoIdProducto(pa);
 					return alumnoId != null ? alumnoId + "-" + pa.getConcepto() : null;
@@ -1063,20 +1031,21 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void cargarMensualidadesMultiDeporte(String mesAno) {
-		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
-		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
-				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Obtener todos los AlumnoDeporte activos
 		List<com.taemoi.project.entities.AlumnoDeporte> alumnosDeportes =
 			alumnoDeporteRepository.findAll().stream()
 				.filter(ad -> ad.getActivo() != null && ad.getActivo())
 				.collect(Collectors.toList());
+		Map<String, Producto> productosMensualidad = resolverProductosMensualidad(alumnosDeportes);
 
 		Date fechaAsignacion = new Date();
 		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
-			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte().name();
+			Producto productoMensualidad = productosMensualidad.get(codigoDisciplina(alumnoDeporte));
+			String conceptoCompleto = nombreMensualidad(productoMensualidad, mesAno) + " - "
+					+ alumnoDeporte.getDeporte().name();
 
 			// Verificar si ya existe esta mensualidad para este deporte
 			boolean yaExiste = productoAlumnoRepository.findByAlumnoId(alumno.getId()).stream()
@@ -1097,10 +1066,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 				productoAlumnoRepository.save(productoAlumno);
 
-				// Añadir tarifa competidor si es Taekwondo o Kickboxing y es competidor
-				if ((alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO
-						|| alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING)
-						&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor())) {
+				// Añadir tarifa competidor si la disciplina admite competidores y lo es
+				if (aplicaTarifaCompetidor(alumnoDeporte)) {
 					asignarTarifaCompetidorPorDeporte(alumno, alumnoDeporte, mesAno, fechaAsignacion);
 				}
 			}
@@ -1110,7 +1077,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Override
 	public void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
 			LocalDate fechaAsignacionManual) {
-		String nombreMensualidad = MensualidadUtils.formatearNombreMensualidad(mesAno);
+		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
@@ -1130,10 +1097,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 					"El alumno no practica el deporte " + deporte));
 
-		Producto productoMensualidad = productoRepository.findFirstByConcepto("MENSUALIDAD")
-				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+		Producto productoMensualidad = resolverProductoMensualidad(deporteEnum.name());
 
-		String conceptoCompleto = nombreMensualidad + " - " + deporteEnum.name();
+		String conceptoCompleto = nombreMensualidad(productoMensualidad, mesAno) + " - " + deporteEnum.name();
 
 		Set<String> conceptosExistentes = alumno.getProductosAlumno().stream()
 				.filter(pa -> pa.getConcepto() != null)
@@ -1204,20 +1170,25 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	// ===== MÉTODOS AUXILIARES PARA TARIFA COMPETIDOR =====
 
+	/** Competidor en una disciplina que admite competidores ({@code disciplina.permite_competicion}). */
 	private boolean aplicaTarifaCompetidor(AlumnoDeporte alumnoDeporte) {
-		return (alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.TAEKWONDO
-				|| alumnoDeporte.getDeporte() == com.taemoi.project.entities.Deporte.KICKBOXING)
-				&& Boolean.TRUE.equals(alumnoDeporte.getCompetidor());
+		return Boolean.TRUE.equals(alumnoDeporte.getCompetidor())
+				&& alumnoDeporte.getDeporte() != null
+				&& catalogoDisciplinas.permiteCompeticion(alumnoDeporte.getDeporte().name());
 	}
 
+	/**
+	 * Nombre del producto de competidor de la disciplina (el concepto del producto del catálogo) o, si
+	 * no hay producto, el que le daba el código hasta V27 («TARIFA COMPETIDOR <DISCIPLINA>»).
+	 */
 	private String obtenerNombreProductoCompetidor(com.taemoi.project.entities.Deporte deporte) {
-		if (deporte == com.taemoi.project.entities.Deporte.TAEKWONDO) {
-			return TARIFA_COMPETIDOR_TAEKWONDO;
+		if (deporte == null || !catalogoDisciplinas.permiteCompeticion(deporte.name())) {
+			return null;
 		}
-		if (deporte == com.taemoi.project.entities.Deporte.KICKBOXING) {
-			return TARIFA_COMPETIDOR_KICKBOXING;
-		}
-		return null;
+		String legado = CONCEPTO_LEGADO_COMPETIDOR + deporte.name();
+		return productosCatalogo.resolverProductoCompetidor(deporte.name())
+				.map(producto -> CatalogoLegadoTaemoi.conceptoBase(producto, legado))
+				.orElse(legado);
 	}
 
 	private String construirConceptoTarifaCompetidor(com.taemoi.project.entities.Deporte deporte, String mesAno) {
@@ -1225,19 +1196,16 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (nombreProducto == null) {
 			return null;
 		}
-		return nombreProducto + " " + MensualidadUtils.formatearNombreMensualidad(mesAno).replace("MENSUALIDAD ", "");
+		return nombreProducto + " " + MensualidadUtils.formatearMesAno(mesAno);
 	}
 
 	/**
-	 * Asigna la tarifa competidor a un alumno para un deporte específico (Taekwondo o Kickboxing).
+	 * Asigna la tarifa competidor a un alumno para un deporte (el producto de competidor de su
+	 * disciplina, que se crea como antes si no existe). Importe: 20 € para el código heredado (como antes);
+	 * el precio del producto para códigos propios.
 	 */
 	private void asignarTarifaCompetidorPorDeporte(Alumno alumno, AlumnoDeporte alumnoDeporte,
 			String mesAno, Date fechaAsignacion) {
-		String nombreProducto = obtenerNombreProductoCompetidor(alumnoDeporte.getDeporte());
-		if (nombreProducto == null) {
-			return;
-		}
-
 		String conceptoTarifaCompetidor = construirConceptoTarifaCompetidor(alumnoDeporte.getDeporte(), mesAno);
 		if (conceptoTarifaCompetidor == null) {
 			return;
@@ -1248,26 +1216,87 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoTarifaCompetidor));
 
 		if (!yaExiste) {
-			Producto productoTarifaCompetidor = productoRepository.findFirstByConcepto(nombreProducto)
-					.orElseGet(() -> {
-						// Crear el producto si no existe
-						Producto nuevo = new Producto();
-						nuevo.setConcepto(nombreProducto);
-						nuevo.setPrecio(PRECIO_TARIFA_COMPETIDOR);
-						return productoRepository.save(nuevo);
-					});
+			Producto productoTarifaCompetidor = productosCatalogo
+					.asegurarProductoCompetidor(alumnoDeporte.getDeporte().name())
+					.orElse(null);
+			if (productoTarifaCompetidor == null) {
+				return;
+			}
+			// Códigos heredados de Taemoi (o sin clasificar): 20 € fijos, como antes de V27, aunque el producto
+			// tenga otro precio. Códigos propios: el precio del producto.
+			boolean codigoPropio = CatalogoLegadoTaemoi.tipoDeCatalogo(productoTarifaCompetidor) != null;
+			Double precio = codigoPropio ? productoTarifaCompetidor.getPrecio()
+					: ProductosCatalogoService.PRECIO_LEGADO_COMPETIDOR;
+			if (precio == null) {
+				LOG.warn("El producto de competidor {} no tiene precio: se cobra el de antes de V27 ({} €)",
+						productoTarifaCompetidor.getId(), ProductosCatalogoService.PRECIO_LEGADO_COMPETIDOR);
+				precio = ProductosCatalogoService.PRECIO_LEGADO_COMPETIDOR;
+			}
 
 			ProductoAlumno productoAlumno = new ProductoAlumno();
 			productoAlumno.setAlumno(alumno);
 			productoAlumno.setProducto(productoTarifaCompetidor);
 			productoAlumno.setAlumnoDeporte(alumnoDeporte);
 			productoAlumno.setConcepto(conceptoTarifaCompetidor);
-			productoAlumno.setPrecio(PRECIO_TARIFA_COMPETIDOR);
+			productoAlumno.setPrecio(precio);
 			productoAlumno.setFechaAsignacion(fechaAsignacion);
 			productoAlumno.setCantidad(1);
 			productoAlumno.setPagado(false);
 
 			productoAlumnoRepository.save(productoAlumno);
 		}
+	}
+
+	// ===== MENSUALIDADES: PRODUCTO DEL CATÁLOGO =====
+
+	private static String codigoDisciplina(AlumnoDeporte alumnoDeporte) {
+		return alumnoDeporte.getDeporte() == null ? null : alumnoDeporte.getDeporte().name();
+	}
+
+	/** @throws IllegalArgumentException si no hay producto de mensualidad (como antes de V27). */
+	private Producto resolverProductoMensualidad(String codigoDisciplina) {
+		return productosCatalogo.resolverProductoMensualidad(codigoDisciplina)
+				.orElseThrow(() -> new IllegalArgumentException("Producto 'MENSUALIDAD' no encontrado"));
+	}
+
+	/**
+	 * Producto de mensualidad de cada disciplina de las inscripciones, resuelto ANTES de crear ningún
+	 * cargo: si falta, la carga falla sin dejar cargos a medias (como antes de V27). Sin inscripciones,
+	 * el general (la carga fallaba igual si no existía).
+	 */
+	private Map<String, Producto> resolverProductosMensualidad(List<AlumnoDeporte> inscripciones) {
+		Set<String> disciplinas = new LinkedHashSet<>();
+		for (AlumnoDeporte inscripcion : inscripciones) {
+			disciplinas.add(codigoDisciplina(inscripcion));
+		}
+		if (disciplinas.isEmpty()) {
+			disciplinas.add(null);
+		}
+		Map<String, Producto> productos = new HashMap<>();
+		for (String disciplina : disciplinas) {
+			productos.put(disciplina, resolverProductoMensualidad(disciplina));
+		}
+		return productos;
+	}
+
+	/**
+	 * «<NOMBRE> <MES> <AÑO>»: «MENSUALIDAD» para el código heredado o un producto sin clasificar (como
+	 * antes de V27, aunque se renombre el producto); el nombre del producto para códigos propios.
+	 */
+	private static String nombreMensualidad(Producto productoMensualidad, String mesAno) {
+		return MensualidadUtils.formatearNombreMensualidad(CatalogoLegadoTaemoi.conceptoBase(productoMensualidad,
+				ProductosCatalogoService.CONCEPTO_LEGADO_MENSUALIDAD), mesAno);
+	}
+
+	/** Claves alumno-CONCEPTO (mayúsculas) de todos los cargos, para comprobar existencias exactas. */
+	private Set<String> clavesDeCargosExistentes() {
+		return productoAlumnoRepository.findAll().stream()
+				.filter(pa -> pa.getConcepto() != null)
+				.map(pa -> {
+					Long alumnoId = obtenerAlumnoIdProducto(pa);
+					return alumnoId != null ? alumnoId + "-" + pa.getConcepto().toUpperCase(Locale.ROOT) : null;
+				})
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
 	}
 }

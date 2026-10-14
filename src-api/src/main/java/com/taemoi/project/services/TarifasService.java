@@ -4,14 +4,17 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.Tarifa;
 
 /**
  * Tarifas de la organización activa (tabla {@code tarifa}).
  *
- * <p>Sustituirá a {@code TipoTarifa} + {@code TarifaConfig}. Todavía no lo usa ningún llamador:
- * los tests de paridad comprueban que da lo mismo que {@code TarifaConfig} para Taemoi.
+ * <p>Sustituye a {@code TipoTarifa} + {@code TarifaConfig} desde V27: las altas y cambios de tarifa
+ * escriben {@code alumno_deporte.tarifa_id} (y, hasta la contracción, {@code tipo_tarifa} en
+ * paralelo) y la cuantía por defecto sale de aquí. Los tests de paridad comprueban que da lo mismo
+ * que {@code TarifaConfig} para Taemoi.
  *
  * <p>Regla del importe ({@link #calcularImporte}), la de {@code TarifaConfig.obtenerCuantiaConRol}
  * expresada con datos:
@@ -58,4 +61,27 @@ public interface TarifasService {
 	 * @throws IllegalArgumentException si la tarifa es nula o no existe.
 	 */
 	boolean admiteDisciplina(String codigoTarifa, String codigoDisciplina);
+
+	/**
+	 * Escribe la tarifa de una inscripción por su código: {@code tarifa_id} (la tarifa de la organización
+	 * activa) y, en paralelo hasta la contracción, {@code tipo_tarifa} si el código es de
+	 * {@code TipoTarifa} (si no, NULL). Código nulo: las dos a NULL. Un código del enum que la organización
+	 * no tiene deja {@code tarifa_id} a NULL (WARN), como el código anterior.
+	 *
+	 * @throws IllegalArgumentException si el código no es ni de la organización ni de {@code TipoTarifa}
+	 *         (el mismo error que {@code TipoTarifa.valueOf}).
+	 */
+	void asignarTarifa(AlumnoDeporte inscripcion, String codigoTarifa);
+
+	/**
+	 * Si la tarifa exige rol familiar (la preinscripción lo pide): tiene importes por rol
+	 * ({@code PADRES_HIJOS} en Taemoi).
+	 */
+	boolean requiereRolFamiliar(Tarifa tarifa);
+
+	/**
+	 * Si la tarifa exige grupo familiar (la preinscripción lo pide). Regla heredada por código
+	 * ({@code HERMANOS}): la tabla no tiene todavía una columna para ello.
+	 */
+	boolean requiereGrupoFamiliar(Tarifa tarifa);
 }
