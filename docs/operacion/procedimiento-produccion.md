@@ -59,34 +59,70 @@ Debe salir: `## develop...origin/develop` sin ficheros modificados. Si no: parar
 
 Sin migraciones nuevas = ningún fichero nuevo en `src-api/src/main/resources/db/migration`.
 
-1. Actualizar y desplegar:
+1. Esperar a que la CI de `develop` termine en verde, incluido el job `publish-images`:
 
 ```bash
-cd /opt/taemoi && git pull --ff-only && bash scripts/deploy.sh
+gh run list --branch develop --limit 1
 ```
 
-Debe salir: `Deployment Completed!` y `docker-compose ps` con los contenedores `Up`. `deploy.sh` ejecuta `scripts/verify-deployment.sh`, hace `down` y `up -d` (el compose tiene `pull_policy: always`, así que descarga las imágenes del `.env`) y espera a base de datos, backend y frontend. Si `git pull --ff-only` falla: parar, no forzar.
+Debe salir: `CI` en `completed success` con el commit a desplegar (o la pestaña Actions de GitHub). El compose no construye nada: `backend` y `frontend` solo tienen `image:` con `pull_policy: always` (`docker-compose.production.yml`, líneas 23-26 y 64-67) y `up` descarga la imagen de GHCR que indique el `.env`. Si `publish-images` no ha terminado, se levantaría la imagen anterior con el compose nuevo. Si está en curso o en rojo: parar y esperar.
 
-2. Salud del backend:
+2. Actualizar el repositorio:
 
 ```bash
-docker inspect --format '{{.State.Health.Status}}' taemoi-backend-prod
+cd /opt/taemoi && git pull --ff-only
 ```
 
-Debe salir: `healthy`. Si es `starting`, esperar (el compose da 180 s de `start_period`). Si pasa a `unhealthy`: logs (sección 6).
+Debe salir: `Fast-forward` o `Already up to date.`. Si falla: parar, no forzar.
 
-3. Comprobaciones funcionales: sección 3, paso 9.
+3. Parar todo (`down` también para la base de datos: hay corte total hasta el paso 4):
+
+```bash
+docker compose -f docker-compose.production.yml down
+```
+
+4. Levantar descargando las imágenes del `.env` (`--build` no hace nada aquí):
+
+```bash
+docker compose -f docker-compose.production.yml up -d --build backend frontend
+```
+
+Debe salir: `database`, `backend` y `frontend` creados/`Started` (la base de datos arranca como dependencia). Si da error de imagen o de `pull`: parar y revisar el `.env` (sección 1, paso 3).
+
+> `bash scripts/deploy.sh` sigue en el repositorio como alternativa (verifica, hace `down`/`up -d` y espera a los servicios), pero este procedimiento no lo usa.
+
+3. Logs del backend (sin errores de arranque):
+
+```bash
+docker logs --tail 50 taemoi-backend-prod
+```
+
+4. Comprobaciones funcionales: sección 3, paso 9.
 
 ## 3. Despliegue con migraciones Flyway
 
-Con ventana de mantenimiento. Qué versión va en qué despliegue (V28 no con V27, V28 y V29 juntos, V32 no con V31)
+Con ventana de mantenimiento (corte total: `down` para también la base de datos). Qué versión va en qué despliegue (V28 no con V27, V28 y V29 juntos, V32 no con V31)
 está en la checklist; aquí solo el procedimiento.
 
-1. Parar frontend y backend dejando la BD arriba:
+1. Esperar a que la CI de `develop` termine en verde, incluido `publish-images` (si no, `up` levantaría la imagen anterior; ver sección 2, paso 1):
 
 ```bash
-cd /opt/taemoi && docker-compose -f docker-compose.production.yml stop frontend backend
+gh run list --branch develop --limit 1
 ```
+
+Debe salir: `CI` en `completed success` con el commit a desplegar. Si no: parar.
+
+Actualizar el repositorio (no afecta a los contenedores en marcha) y parar frontend y backend dejando la BD arriba:
+
+```bash
+cd /opt/taemoi && git pull --ff-only
+```
+
+```bash
+docker compose -f docker-compose.production.yml stop frontend backend
+```
+
+Se usa `stop` y no `down` porque `backup_taemoi.sh` necesita el contenedor MySQL en marcha para el volcado (`check_mysql_container`).
 
 Comprobar que la BD sigue en marcha:
 
@@ -141,16 +177,22 @@ sudo restaurar_taemoi.sh db-verify latest
 
 Debe salir: el snapshot nuevo en la lista y `VERIFICACIÓN CORRECTA` con tablas, filas y última versión de Flyway. Anote el ID del snapshot: es la vuelta atrás. Si falla: no migrar.
 
-6. Desplegar:
+6. Desplegar (ya con copia hecha y verificada). `down` para también la BD; `up` la rearranca y descarga las imágenes del `.env`:
 
 ```bash
-cd /opt/taemoi && git pull --ff-only && bash scripts/deploy.sh
+docker compose -f docker-compose.production.yml down
 ```
 
-**Tiempo de espera.** `deploy.sh` espera al backend 90 × 2 s (~180 s, `curl http://localhost:8080/api/eventos`) y, si se agota, solo avisa (`Backend health check timeout`), sigue y acaba con `Deployment Completed!` aunque Flyway siga migrando. Además, el compose de producción no publica el 8080 (solo 80 y 443 del frontend), así que ese `curl` puede fallar siempre (comprobar en el servidor). Si salta el aviso, no relance nada y mire:
+```bash
+docker compose -f docker-compose.production.yml up -d --build backend frontend
+```
+
+Debe salir: los tres servicios `Started`. Si la descarga de la imagen falla: parar y revisar el `.env`. (`deploy.sh` queda como alternativa, no se usa.)
+
+**Espera a Flyway.** El arranque puede tardar hasta el `start_period` del healthcheck (180 s) mientras Flyway migra. No relance nada ni reinicie el backend con una migración en curso (MySQL no deshace el DDL a medias). Siga el log:
 
 ```bash
-cd /opt/taemoi && docker-compose -f docker-compose.production.yml logs -f backend
+docker logs -f taemoi-backend-prod
 ```
 
 Debe salir: líneas de Flyway (`Migrating schema ... to version ...`) y al final el arranque de Spring. No reinicie el backend con una migración en curso (MySQL no deshace el DDL a medias). Espere a:
@@ -331,10 +373,10 @@ Reiniciar un servicio:
 cd /opt/taemoi && docker-compose -f docker-compose.production.yml restart backend
 ```
 
-Backend sano desde dentro (mismo test que el healthcheck del compose):
+Backend sano (debe salir `healthy`):
 
 ```bash
-docker exec taemoi-backend-prod wget --no-verbose --tries=1 --spider http://localhost:8080/api/eventos
+docker inspect --format '{{.State.Health.Status}}' taemoi-backend-prod
 ```
 
 Imágenes de alumnos: el host `/opt/taemoi/static_resources/imagenes` se monta en `/var/www/app/imagenes`.
