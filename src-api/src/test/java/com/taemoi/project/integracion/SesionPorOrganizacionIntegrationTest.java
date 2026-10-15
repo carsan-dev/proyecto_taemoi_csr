@@ -444,6 +444,7 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(org2, () -> crearAlumno("GOOGLE " + sufijo, email));
 		OAuth2User google = mock(OAuth2User.class);
 		when(google.getAttribute("email")).thenReturn(email);
+		when(google.getAttribute("email_verified")).thenReturn(true);
 
 		Usuario usuario = TenantContext.calcularCon(org2, () -> oauth2UserService.processOAuth2Login(google, "google"));
 
