@@ -8,12 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.taemoi.project.entities.Convocatoria;
-import com.taemoi.project.entities.Deporte;
 
 public interface ConvocatoriaRepository extends JpaRepository<Convocatoria, Long> {
 
-	@Query("SELECT c FROM Convocatoria c WHERE c.fechaConvocatoria = CURRENT_DATE AND c.deporte = :deporte")
-	Optional<Convocatoria> findConvocatoriaActualPorDeporte(@Param("deporte") Deporte deporte);
+	@Query("SELECT c FROM Convocatoria c WHERE c.fechaConvocatoria = CURRENT_DATE AND c.disciplina.codigo = :deporte")
+	Optional<Convocatoria> findConvocatoriaActualPorDeporte(@Param("deporte") String deporte);
 
-	List<Convocatoria> findByDeporte(Deporte deporte);
+	@Query("SELECT c FROM Convocatoria c WHERE c.disciplina.codigo = :deporte")
+	List<Convocatoria> findByDeporte(@Param("deporte") String deporte);
 }

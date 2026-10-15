@@ -17,7 +17,6 @@ class GradoJsonTest {
 	void soloSeExponenIdYTipoGrado() throws Exception {
 		Grado grado = new Grado();
 		grado.setId(7L);
-		grado.setTipoGrado(TipoGrado.ROJO);
 		grado.setCodigo("ROJO");
 		grado.setNombre("MARRÓN");
 		grado.setOrden(11);

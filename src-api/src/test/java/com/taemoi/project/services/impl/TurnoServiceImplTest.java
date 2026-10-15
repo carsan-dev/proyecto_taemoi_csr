@@ -20,7 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.repositories.GrupoRepository;
@@ -102,7 +102,7 @@ class TurnoServiceImplTest {
 		Grupo grupo = new Grupo();
 		grupo.setId(id);
 		grupo.setNombre("Grupo " + id);
-		grupo.setDeporte(Deporte.TAEKWONDO);
+		grupo.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		grupo.setTurnos(new java.util.ArrayList<>());
 		return grupo;
 	}

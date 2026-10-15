@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Grado;
-import com.taemoi.project.entities.TipoGrado;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -29,7 +28,7 @@ public class GradoTest {
 	@Test
 	void testGrado_EntidadValida() {
 		Grado grado = new Grado();
-		grado.setTipoGrado(TipoGrado.BLANCO);
+		grado.setCodigo("BLANCO");
 
 		Set<ConstraintViolation<Grado>> violations = validator.validate(grado);
 
@@ -39,7 +38,7 @@ public class GradoTest {
 	@Test
 	void testGrado_TipoGradoInvalido() {
 		Grado grado = new Grado();
-		grado.setTipoGrado(null);
+		grado.setCodigo(null);
 
 		Set<ConstraintViolation<Grado>> violations = validator.validate(grado);
 

@@ -55,7 +55,7 @@ class SwitchTarifasMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		flyway(dataSource, "26").migrate();
 		insertarDatosEscritosAntesDeV27();
-		flyway(dataSource, null).migrate();
+		flyway(dataSource, "27").migrate(); // fijado a V27 (V28 borra tipo_tarifa, que se comprueba aquí)
 	}
 
 	@Test

@@ -13,7 +13,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.taemoi.project.controllers.PDFController;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.services.impl.PDFServiceImpl;
 
@@ -32,9 +32,9 @@ class PDFServiceImplTest {
         // Otro deporte de la misma alumna no debe excluir su inscripción en DPF.
         AlumnoDeporte otherSport = new AlumnoDeporte();
         otherSport.setAlumno(a.getAlumno());
-        otherSport.setDeporte(Deporte.TAEKWONDO);
+        otherSport.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
         a.getAlumno().setDeportes(List.of(otherSport, a));
-        when(repository.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA))
+        when(repository.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA.name()))
                 .thenReturn(List.of(z, membership("Inactiva", "Prueba", false), a, membership(null, null, true)));
         String active = text(service.generarInformeAlumnasDpf(true));
         assertTrue(active.contains("Ana & Eva"));
@@ -46,13 +46,13 @@ class PDFServiceImplTest {
             assertFalse(active.contains(excluded), excluded);
         }
         assertTrue(text(service.generarInformeAlumnasDpf(false)).contains("Inactiva"));
-        verify(repository, times(2)).findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA);
+        verify(repository, times(2)).findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA.name());
         verifyNoMoreInteractions(repository);
     }
 
     @Test
     void listadoDpfVacioProducePdfLegible() throws Exception {
-        when(repository.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA)).thenReturn(List.of());
+        when(repository.findActivosByDeporteWithAlumno(Deporte.DEFENSA_PERSONAL_FEMENINA.name())).thenReturn(List.of());
         assertTrue(text(service.generarInformeAlumnasDpf(true)).contains("No hay alumnas"));
     }
 
@@ -79,7 +79,7 @@ class PDFServiceImplTest {
         alumno.setNumeroExpediente(987654);
         AlumnoDeporte membership = new AlumnoDeporte();
         membership.setAlumno(alumno);
-        membership.setDeporte(Deporte.DEFENSA_PERSONAL_FEMENINA);
+        membership.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.DEFENSA_PERSONAL_FEMENINA.name()));
         membership.setActivo(true);
         return membership;
     }

@@ -2,9 +2,8 @@ package com.taemoi.project.entities;
 
 import java.util.Date;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -48,11 +47,13 @@ public class AlumnoConvocatoria extends EntidadOrganizacion {
 	@Temporal(TemporalType.DATE)
 	private Date fechaPago;
 
-	@Enumerated(EnumType.STRING)
-	private TipoGrado gradoActual;
+	/** Código del grado actual (texto; V28 lo pasa de ENUM de TipoGrado a VARCHAR para cualquier escuela). */
+	@Column(name = "grado_actual", length = 40)
+	private String gradoActual;
 
-	@Enumerated(EnumType.STRING)
-	private TipoGrado gradoSiguiente;
+	/** Código del grado siguiente (texto, como {@link #gradoActual}). */
+	@Column(name = "grado_siguiente", length = 40)
+	private String gradoSiguiente;
 
 	public Long getId() {
 		return id;
@@ -110,19 +111,19 @@ public class AlumnoConvocatoria extends EntidadOrganizacion {
 		this.fechaPago = fechaPago;
 	}
 
-	public TipoGrado getGradoActual() {
+	public String getGradoActual() {
 		return gradoActual;
 	}
 
-	public void setGradoActual(TipoGrado gradoActual) {
+	public void setGradoActual(String gradoActual) {
 		this.gradoActual = gradoActual;
 	}
 
-	public TipoGrado getGradoSiguiente() {
+	public String getGradoSiguiente() {
 		return gradoSiguiente;
 	}
 
-	public void setGradoSiguiente(TipoGrado gradoSiguiente) {
+	public void setGradoSiguiente(String gradoSiguiente) {
 		this.gradoSiguiente = gradoSiguiente;
 	}
 

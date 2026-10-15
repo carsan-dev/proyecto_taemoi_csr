@@ -41,6 +41,33 @@ public interface CatalogoDisciplinasService {
 	/** @throws IllegalArgumentException si la organización activa no tiene esa disciplina. */
 	Disciplina obtenerPorCodigo(String codigo);
 
+	/**
+	 * Valida un código de disciplina recibido en una petición (lo que antes hacía {@code Deporte.valueOf}):
+	 * devuelve el código si la organización activa tiene una disciplina con ese código EXACTO (mayúsculas
+	 * incluidas).
+	 *
+	 * @throws IllegalArgumentException con el mismo texto que {@code Deporte.valueOf} si no existe.
+	 * @throws NullPointerException con un código nulo, como {@code Deporte.valueOf}.
+	 */
+	String validarCodigo(String codigo);
+
+	/**
+	 * Código de disciplina recibido como parámetro de ruta o de consulta (antes convertido por Spring al enum
+	 * {@code Deporte}): nulo o en blanco = sin filtro ({@code null}, como Spring con el enum); si la escuela no
+	 * tiene esa disciplina, 400 sin cuerpo propio, como el error de conversión del enum.
+	 */
+	default String validarParametro(String codigo) {
+		if (codigo == null || codigo.isBlank()) {
+			return null;
+		}
+		try {
+			return validarCodigo(codigo);
+		} catch (IllegalArgumentException e) {
+			throw new org.springframework.web.server.ResponseStatusException(
+					org.springframework.http.HttpStatus.BAD_REQUEST);
+		}
+	}
+
 	/** Disciplinas activas, por {@code orden}. */
 	List<Disciplina> listarActivas();
 

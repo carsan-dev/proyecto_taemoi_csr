@@ -2,8 +2,6 @@ package com.taemoi.project.dtos.request;
 
 import java.util.Date;
 
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.TipoTarifa;
 
 /**
  * DTO para crear deportes al crear un alumno
@@ -14,7 +12,7 @@ public class AlumnoDeporteCreacionDTO {
     /**
      * Deporte a asignar al alumno
      */
-    private Deporte deporte;
+    private String deporte;
 
     /**
      * Grado inicial en este deporte (como String, ej: "BLANCO", "AMARILLO")
@@ -40,7 +38,7 @@ public class AlumnoDeporteCreacionDTO {
     /**
      * Tipo de tarifa para este deporte
      */
-    private TipoTarifa tipoTarifa;
+    private String tipoTarifa;
 
     /**
      * Código de la tarifa de la organización (V27). Si viene, manda sobre {@link #tipoTarifa}: permite
@@ -113,7 +111,7 @@ public class AlumnoDeporteCreacionDTO {
     public AlumnoDeporteCreacionDTO() {
     }
 
-    public AlumnoDeporteCreacionDTO(Deporte deporte, String grado, Date fechaGrado, Date fechaAlta) {
+    public AlumnoDeporteCreacionDTO(String deporte, String grado, Date fechaGrado, Date fechaAlta) {
         this.deporte = deporte;
         this.grado = grado;
         this.fechaGrado = fechaGrado;
@@ -122,11 +120,11 @@ public class AlumnoDeporteCreacionDTO {
 
     // Getters and Setters
 
-    public Deporte getDeporte() {
+    public String getDeporte() {
         return deporte;
     }
 
-    public void setDeporte(Deporte deporte) {
+    public void setDeporte(String deporte) {
         this.deporte = deporte;
     }
 
@@ -162,11 +160,11 @@ public class AlumnoDeporteCreacionDTO {
         this.fechaAltaInicial = fechaAltaInicial;
     }
 
-    public TipoTarifa getTipoTarifa() {
+    public String getTipoTarifa() {
         return tipoTarifa;
     }
 
-    public void setTipoTarifa(TipoTarifa tipoTarifa) {
+    public void setTipoTarifa(String tipoTarifa) {
         this.tipoTarifa = tipoTarifa;
     }
 
@@ -184,7 +182,7 @@ public class AlumnoDeporteCreacionDTO {
         if (codigoTarifa != null && !codigoTarifa.isBlank()) {
             return codigoTarifa.trim();
         }
-        return tipoTarifa != null ? tipoTarifa.name() : null;
+        return tipoTarifa != null ? tipoTarifa : null;
     }
 
     public Double getCuantiaTarifa() {

@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.ExamMaterialBlockConfig;
+import com.taemoi.project.legado.Deporte;
+import com.taemoi.project.legado.TipoGrado;
 
 class ExamMaterialBlockConfigTest {
 

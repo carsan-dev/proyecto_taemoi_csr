@@ -859,6 +859,8 @@ partes.append(insert("evento", ["id", "titulo", "descripcion", "fecha_evento", "
      date(2026, 9, 5), 4, None, False],
 ]))
 
+# Esquema de V17: el responsable legal todavía va en alumno.responsable_legal_* (no existe `tutor`).
+# V25 lo copia a `tutor` y V29 rellena los que solo tienen NIF y borra las columnas.
 cols_alumno = ["id", "activo", "apellidos", "apto_para_examen", "autorizacion_web", "competidor",
                "cuantia_tarifa", "deporte", "direccion", "email", "rol_familiar", "grupo_familiar",
                "fecha_alta", "fecha_alta_inicial", "fecha_baja", "fecha_grado", "fecha_licencia",

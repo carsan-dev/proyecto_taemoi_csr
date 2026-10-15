@@ -1,5 +1,17 @@
+import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { PreinscripcionComponent } from './preinscripcion.component';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { CATALOGO_PUBLICO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
+
+/** Catálogo público de Taemoi, síncrono, para los componentes que se construyen sin TestBed. */
+function crearComponente(api: unknown, route: unknown, scrollService: unknown): PreinscripcionComponent {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [{ provide: CatalogoService, useValue: { cargarPublico: () => of(CATALOGO_PUBLICO_TAEMOI) } }],
+  });
+  return TestBed.runInInjectionContext(() => new PreinscripcionComponent(api as any, route as any, scrollService as any));
+}
 
 describe('PreinscripcionComponent normas', () => {
   function crear(
@@ -17,7 +29,7 @@ describe('PreinscripcionComponent normas', () => {
       crear: () => of({ referencia: 'PRE-123', plazaAsignada: true }),
     };
     const route = { snapshot: { queryParamMap: { get: (clave:string) => parametros[clave] ?? null } } };
-    return new PreinscripcionComponent(api as any, route as any, scrollService as any);
+    return crearComponente(api, route, scrollService);
   }
 
   it('muestra normas recibidas como objeto y mantiene bloqueada su aceptación', () => {
@@ -232,7 +244,7 @@ describe('PreinscripcionComponent normas', () => {
     };
     const route = { snapshot: { queryParamMap: { get: () => null } } };
     const scrollService = { scrollToTopAfterNextRender: () => Promise.resolve(true) };
-    const component = new PreinscripcionComponent(api as any, route as any, scrollService as any);
+    const component = crearComponente(api, route, scrollService);
     component.configuracion = { deporte: 'PILATES', version: 1, contenido: { normas: ['Norma'] } } as any;
     component.form.controls.aceptacionNormas.enable();
     component.form.patchValue({
@@ -248,5 +260,85 @@ describe('PreinscripcionComponent normas', () => {
 
     expect(api.crear).toHaveBeenCalledTimes(1);
     expect(api.crear.calls.mostRecent().args[1]).toMatch(/^[A-Za-z0-9-]+$/);
+  });
+});
+
+describe('PreinscripcionComponent actividades del catálogo público', () => {
+  function crear(publico: unknown, parametros: Record<string, string> = {}) {
+    const api = {
+      temporada: () => of({ temporada: '2026-2027' }),
+      grupos: jasmine.createSpy('grupos').and.returnValue(of([])),
+      configuracion: jasmine.createSpy('configuracion').and.returnValue(new Subject<any>()),
+    };
+    const route = { snapshot: { queryParamMap: { get: (clave: string) => parametros[clave] ?? null } } };
+    const scroll = { scrollToTopAfterNextRender: () => Promise.resolve(true) };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: CatalogoService, useValue: { cargarPublico: () => publico } }],
+    });
+    const component = TestBed.runInInjectionContext(
+      () => new PreinscripcionComponent(api as any, route as any, scroll as any)
+    );
+    return { component, api };
+  }
+
+  it('Taemoi: ofrece las actividades del catálogo público, por orden y con su nombre', () => {
+    const { component } = crear(of({
+      disciplinas: [
+        { codigo: 'PILATES', nombre: 'Pilates', orden: 3 },
+        { codigo: 'TAEKWONDO', nombre: 'Taekwondo', orden: 1 },
+        { codigo: 'DEFENSA_PERSONAL_FEMENINA', nombre: 'Defensa Personal Femenina', orden: 4 },
+        { codigo: 'KICKBOXING', nombre: 'Kickboxing', orden: 2 },
+      ],
+    }));
+    expect(component.deportes).toEqual([
+      ['TAEKWONDO', 'Taekwondo'],
+      ['KICKBOXING', 'Kickboxing'],
+      ['PILATES', 'Pilates'],
+      ['DEFENSA_PERSONAL_FEMENINA', 'Defensa Personal Femenina'],
+    ]);
+    expect(component.cargandoDeportes).toBeFalse();
+  });
+
+  it('segunda escuela: solo ofrece JUDO y acepta ?deporte=JUDO', () => {
+    const { component, api } = crear(of({ disciplinas: [{ codigo: 'JUDO', nombre: 'Judo', orden: 1 }] }), {
+      deporte: 'JUDO',
+      turnoId: '5',
+    });
+    component.ngOnInit();
+    expect(component.deportes).toEqual([['JUDO', 'Judo']]);
+    expect(component.form.controls.deporte.value).toBe('JUDO');
+    expect(api.grupos).toHaveBeenCalledWith('JUDO');
+  });
+
+  it('ignora ?deporte= con una disciplina que la escuela no ofrece', () => {
+    const { component, api } = crear(of({ disciplinas: [{ codigo: 'JUDO', nombre: 'Judo', orden: 1 }] }), {
+      deporte: 'TAEKWONDO',
+    });
+    component.ngOnInit();
+    expect(component.form.controls.deporte.value).toBe('');
+    expect(api.grupos).not.toHaveBeenCalled();
+  });
+
+  it('muestra «Cargando» hasta recibir el catálogo y aplica entonces ?deporte=', () => {
+    const respuesta = new Subject<any>();
+    const { component, api } = crear(respuesta, { deporte: 'JUDO' });
+    component.ngOnInit();
+    expect(component.cargandoDeportes).toBeTrue();
+    expect(component.deportes).toEqual([]);
+    expect(api.grupos).not.toHaveBeenCalled();
+
+    respuesta.next({ disciplinas: [{ codigo: 'JUDO', nombre: 'Judo', orden: 1 }] });
+
+    expect(component.cargandoDeportes).toBeFalse();
+    expect(component.form.controls.deporte.value).toBe('JUDO');
+    expect(api.grupos).toHaveBeenCalledWith('JUDO');
+  });
+
+  it('si falla el catálogo público, lista vacía y aviso (nunca las actividades de Taemoi)', () => {
+    const { component } = crear(throwError(() => new Error('fallo')));
+    expect(component.deportes).toEqual([]);
+    expect(component.cargandoDeportes).toBeFalse();
+    expect(component.errorDeportes).toBeTrue();
   });
 });

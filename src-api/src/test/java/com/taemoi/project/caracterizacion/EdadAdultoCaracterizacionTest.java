@@ -11,9 +11,9 @@ import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.utils.DeporteEdadUtils;
-import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.legado.Deporte;
+import com.taemoi.project.legado.DeporteEdadUtils;
+import com.taemoi.project.legado.FechaUtils;
 
 /**
  * Caracterizacion de las reglas de edad adulta: FechaUtils y DeporteEdadUtils.

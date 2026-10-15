@@ -40,6 +40,9 @@ services:
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:-false}
+      # Desarrollo: una base vacía aplica V27 y V28 en el mismo arranque, así que desactiva la guarda de V28.
+      # En producción (docker-compose.production.yml) esta variable no existe.
+      TAEMOI_V28_PERMITIR_MISMO_DESPLIEGUE_QUE_V27: "true"
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
       APP_PREINSCRIPCIONES_ADMIN_EMAIL: ${APP_PREINSCRIPCIONES_ADMIN_EMAIL:-${EMAIL:-}}

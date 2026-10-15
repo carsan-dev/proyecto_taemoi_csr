@@ -1,6 +1,6 @@
 package com.taemoi.project.caracterizacion;
 
-import static com.taemoi.project.entities.TipoGrado.*;
+import static com.taemoi.project.legado.TipoGrado.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,7 +10,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 
 /**
  * Caracterizacion del enum TipoGrado: orden, nombres, productos y busquedas.

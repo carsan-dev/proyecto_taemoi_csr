@@ -11,7 +11,7 @@
 
   <div class="filters">
     <input [(ngModel)]="filtros.temporada" placeholder="Temporada">
-    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option><option>TAEKWONDO</option><option>KICKBOXING</option><option>PILATES</option><option>DEFENSA_PERSONAL_FEMENINA</option></select>
+    <select [(ngModel)]="filtros.deporte"><option value="">Todos los deportes</option>@for (d of deportes; track d) { <option [value]="d">{{d}}</option> }</select>
     <select [(ngModel)]="filtros.estado"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_LISTA_ESPERA</option><option>FINALIZADA</option><option>CANCELADA</option></select>
     <input [(ngModel)]="filtros.q" placeholder="DNI, referencia o nombre">
     <button (click)="buscar(true)">Filtrar</button>
@@ -212,18 +212,19 @@
           <div class="form-grid">
             <label>Tipo de tarifa
               <select [(ngModel)]="datosAlta.tipoTarifa" (ngModelChange)="cambiarTarifa()">
-                @for (tarifa of tarifasDisponibles; track tarifa) { <option [value]="tarifa">{{tarifa}}</option> }
+                @if (!datosAlta.tipoTarifa) { <option value="" disabled>Selecciona una tarifa</option> }
+                @for (tarifa of tarifasDisponibles; track tarifa.codigo) { <option [value]="tarifa.codigo">{{tarifa.nombre}}</option> }
               </select>
             </label>
             <label>Cuantía mensual (€)<input type="number" min="0" step="0.01" [(ngModel)]="datosAlta.cuantiaTarifa"></label>
-            @if (datosAlta.tipoTarifa === 'PADRES_HIJOS') {
+            @if (requiereRolFamiliar) {
               <label>Rol familiar<select [(ngModel)]="datosAlta.rolFamiliar"><option value="NINGUNO">Seleccionar</option><option>PADRE</option><option>MADRE</option><option>HIJO</option><option>HIJA</option></select></label>
             }
-            @if (datosAlta.tipoTarifa === 'HERMANOS') {
+            @if (requiereGrupoFamiliar) {
               <label>Grupo familiar<input maxlength="50" [(ngModel)]="datosAlta.grupoFamiliar"></label>
             }
             @if (requiereDatosDeporte && requiereGrado) {
-              <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado) { <option [value]="grado">{{grado}}</option> }</select></label>
+              <label>Grado inicial<select [(ngModel)]="datosAlta.grado">@for (grado of gradosDisponibles; track grado.codigo) { <option [value]="grado.codigo">{{grado.nombre}}</option> }</select></label>
               <label>Fecha del grado<input type="date" [(ngModel)]="datosAlta.fechaGrado"></label>
             }
           </div>

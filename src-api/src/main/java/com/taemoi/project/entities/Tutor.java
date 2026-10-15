@@ -16,8 +16,11 @@ import jakarta.persistence.Table;
 
 /**
  * Padre, madre o tutor de un alumno. {@code responsableLegal} marca a quien firma por un menor; el
- * primero de ellos (por {@code orden}, {@code id}) se refleja en las columnas heredadas
- * {@code alumno.responsable_legal_*} hasta la contracción (ver {@code TutorService}).
+ * primero de ellos (por {@code orden}, {@code id}) es el que la API expone como responsable legal del
+ * alumno (ver {@code ResponsableLegal}).
+ *
+ * <p>Un responsable legal del que solo se conoce el NIF es un tutor sin nombre ({@link #tieneNombre()}
+ * falso; ver {@code TutorService}). Quien lea {@code nombre} debe tratar igual {@code null} y vacío.
  */
 @Entity
 @Table(name = "tutor")
@@ -32,7 +35,8 @@ public class Tutor extends EntidadOrganizacion {
 	@JoinColumn(name = "alumno_id", nullable = false, updatable = false)
 	private Alumno alumno;
 
-	@Column(nullable = false, length = 180)
+	// NULL para el responsable legal del que solo se conoce el NIF (V29: CHECK nombre o NIF).
+	@Column(length = 180)
 	private String nombre;
 
 	@Column(length = 160)
@@ -70,6 +74,11 @@ public class Tutor extends EntidadOrganizacion {
 		String a = apellidos == null ? "" : apellidos.trim();
 		String completo = (n + " " + a).trim();
 		return completo.isEmpty() ? null : completo;
+	}
+
+	/** Falso para el responsable legal del que solo se conoce el NIF (nombre nulo o vacío). */
+	public boolean tieneNombre() {
+		return getNombreCompleto() != null;
 	}
 
 	public Long getId() {

@@ -73,8 +73,7 @@
 
             <div class="convocatoria-header-content">
               <!-- Sport Badge -->
-              <div class="sport-badge" [class.taekwondo]="convocatoria.deporte === 'TAEKWONDO'"
-                   [class.kickboxing]="convocatoria.deporte === 'KICKBOXING'">
+              <div class="sport-badge" [ngClass]="claseCssDisciplina(convocatoria.deporte)">
                 <i class="bi bi-trophy-fill"></i>
                 <span>{{ convocatoria.deporte }}</span>
               </div>
@@ -191,10 +190,10 @@
                         </div>
                       </td>
                       <td>
-                        <span class="badge badge-grade current" [style]="getGradoStyle(alumno.gradoActual)">{{ alumno.gradoActual }}</span>
+                        <span class="badge badge-grade current" [style]="getGradoStyle(alumno.gradoActual)">{{ getGradoNombre(alumno.gradoActual) }}</span>
                       </td>
                       <td>
-                        <span class="badge badge-grade next" [style]="getGradoStyle(alumno.gradoSiguiente)">{{ alumno.gradoSiguiente }}</span>
+                        <span class="badge badge-grade next" [style]="getGradoStyle(alumno.gradoSiguiente)">{{ getGradoNombre(alumno.gradoSiguiente) }}</span>
                       </td>
                       <td class="text-center">
                         <input type="number" class="cuantia-input" step="0.01" min="0"
@@ -259,7 +258,7 @@
                     <option [value]="null" disabled>Seleccione un alumno apto para examen</option>
                     @for (alumno of alumnosFiltrados; track alumno.id) {
                       <option [value]="alumno.id">
-                        {{ alumno.nombre }} {{ alumno.apellidos }} - {{ alumno.grado }}
+                        {{ alumno.nombre }} {{ alumno.apellidos }} - {{ getGradoNombre(alumno.grado) }}
                       </option>
                     }
                   </select>

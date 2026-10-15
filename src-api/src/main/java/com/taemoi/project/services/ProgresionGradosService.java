@@ -37,6 +37,20 @@ public interface ProgresionGradosService {
 	/** Si la disciplina tiene sistema de grados. {@code false} si es nula. */
 	boolean tieneProgresion(String codigoDisciplina);
 
+	/**
+	 * Valida un código de grado recibido en una petición (lo que antes hacía {@code TipoGrado.valueOf}): lo
+	 * devuelve si algún sistema de grados de la organización activa tiene un grado con ese código EXACTO o si es
+	 * uno de los códigos de Taemoi (los del antiguo enum, válidos en cualquier escuela como antes). Que el grado
+	 * exista en el sistema de una disciplina concreta se comprueba después ({@link #buscarGrado}).
+	 *
+	 * @throws IllegalArgumentException con el mismo texto que {@code TipoGrado.valueOf} si no existe.
+	 * @throws NullPointerException con un código nulo, como {@code TipoGrado.valueOf}.
+	 */
+	String validarCodigoGrado(String codigoGrado);
+
+	/** Si algún sistema de grados de la organización activa tiene ese código exacto. */
+	boolean existeCodigoGrado(String codigoGrado);
+
 	/** Grado del sistema de la disciplina con ese código. Vacío si algo es nulo o no hay grados. */
 	Optional<Grado> buscarGrado(String codigoDisciplina, String codigoGrado);
 

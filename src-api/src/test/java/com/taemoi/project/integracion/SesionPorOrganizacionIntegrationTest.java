@@ -586,7 +586,7 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 			Alumno alumno = alumnos.findById(alumnoId).orElseThrow();
 			AlumnoDTO dto = AlumnoDTO.deAlumno(alumno);
 			dto.setEmail(nuevoEmail);
-			dto.setTipoTarifa(com.taemoi.project.entities.TipoTarifa.ADULTO);
+			dto.setTipoTarifa(com.taemoi.project.legado.TipoTarifa.ADULTO.name());
 			alumnoService.actualizarAlumno(alumnoId, dto, alumno.getFechaNacimiento(), null);
 		});
 	}

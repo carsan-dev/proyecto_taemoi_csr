@@ -1,6 +1,6 @@
 package com.taemoi.project.caracterizacion;
 
-import static com.taemoi.project.entities.TipoGrado.*;
+import static com.taemoi.project.legado.TipoGrado.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -10,9 +10,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.config.ExamMaterialBlockConfig;
-import com.taemoi.project.entities.Deporte;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.ExamMaterialBlockConfig;
+import com.taemoi.project.legado.Deporte;
+import com.taemoi.project.legado.TipoGrado;
 
 /**
  * Completa servicios/ExamMaterialBlockConfigTest con la tabla completa

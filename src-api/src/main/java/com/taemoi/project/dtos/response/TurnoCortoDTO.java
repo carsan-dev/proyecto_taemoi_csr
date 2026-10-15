@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.taemoi.project.dtos.AlumnoDTO;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Turno;
 
 public class TurnoCortoDTO {
@@ -117,7 +116,7 @@ public class TurnoCortoDTO {
 
 		// Map alumnos to AlumnoDTO
 		if (turno.getAlumnos() != null) {
-			Deporte deporteGrupo = turno.getGrupo() != null ? turno.getGrupo().getDeporte() : null;
+			String deporteGrupo = turno.getGrupo() != null ? turno.getGrupo().getDeporte() : null;
 			turnoDTO.setAlumnos(turno.getAlumnos().stream()
 					.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo()))
 					.filter(alumno -> {

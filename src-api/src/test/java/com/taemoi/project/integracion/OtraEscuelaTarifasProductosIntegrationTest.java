@@ -33,12 +33,12 @@ import com.taemoi.project.dtos.AlumnoDeporteDTO;
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.Tarifa;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.DisciplinaRepository;
@@ -106,9 +106,12 @@ class OtraEscuelaTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 				   "codigoTarifa":"CUOTA_GENERAL","cuantiaTarifa":45.0,"competidor":true,"tieneLicencia":true,
 				   "fechaLicencia":"2040-09-01"}]}""".formatted(sufijo()));
 		Map<String, Object> inscripcion = jdbc.queryForMap("""
-				SELECT ad.tipo_tarifa, t.codigo AS tarifa, ad.cuantia_tarifa FROM alumno_deporte ad
+				SELECT t.codigo AS tarifa, ad.cuantia_tarifa FROM alumno_deporte ad
 				LEFT JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.alumno_id = ?""", alumno);
-		assertNull(inscripcion.get("tipo_tarifa"), "el código propio no es de TipoTarifa");
+		// Hasta V27 tipo_tarifa quedaba NULL para los códigos propios; V28 borra la columna.
+		assertEquals(0, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+				  AND TABLE_NAME = 'alumno_deporte' AND COLUMN_NAME = 'tipo_tarifa'""", Integer.class));
 		assertEquals("CUOTA_GENERAL", inscripcion.get("tarifa"));
 
 		// Mensualidad del mes: concepto y precio del producto de la escuela; competidor por su enlace.
@@ -170,13 +173,13 @@ class OtraEscuelaTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 
 		// Cambio de tarifa por código propio; un código que no es de la escuela ni del enum es un 400.
 		AlumnoDeporteDTO cambiado = TenantContext.calcularCon(org, () -> AlumnoDeporteDTO.deAlumnoDeporte(
-				alumnoDeporteService.actualizarTarifa(alumno, Deporte.TAEKWONDO, "CUOTA_REDUCIDA")));
+				alumnoDeporteService.actualizarTarifa(alumno, "TAEKWONDO", "CUOTA_REDUCIDA")));
 		assertEquals("CUOTA_REDUCIDA", cambiado.getTipoTarifa());
 		assertEquals("CUOTA_REDUCIDA", jdbc.queryForObject(
 				"SELECT t.codigo FROM alumno_deporte ad JOIN tarifa t ON t.id = ad.tarifa_id WHERE ad.alumno_id = ?",
 				String.class, alumno));
 		assertThrows(IllegalArgumentException.class, () -> TenantContext.ejecutarCon(org,
-				() -> alumnoDeporteService.actualizarTarifa(alumno, Deporte.TAEKWONDO, "NO_EXISTE")));
+				() -> alumnoDeporteService.actualizarTarifa(alumno, "TAEKWONDO", "NO_EXISTE")));
 
 		// Alta con una tarifa del enum que la escuela no tiene: 400 (no 500).
 		SecurityContextHolder.getContext().setAuthentication(admin());

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import {
@@ -10,16 +10,16 @@ import {
   Validators,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { TipoTarifa } from '../../../enums/tipo-tarifa';
-import { TipoGrado } from '../../../enums/tipo-grado';
 import { RolFamiliar } from '../../../enums/rol-familiar';
 import { Router } from '@angular/router';
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
-import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { showSuccessToast } from '../../../utils/toast.util';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { CatalogoTarifa } from '../../../features/catalogo/catalogo.models';
+import { cuantiaEstandar } from '../../../features/catalogo/catalogo-reglas';
 
 /**
  * Interface for sport entry in the form
@@ -56,12 +56,13 @@ export class CrearAlumnoComponent implements OnInit {
   alumnoData!: FormGroup;
   imagen: File | null = null;
   imagenPreview: string | ArrayBuffer | null = null;
-  tiposTarifa: TipoTarifa[] = Object.values(TipoTarifa);
   rolesFamiliares: RolFamiliar[] = Object.values(RolFamiliar);
-  tiposGrado: TipoGrado[] = [];
+  /** Códigos de grado que el backend ofrece para la fecha de nacimiento (filtro por edad). */
+  tiposGrado: string[] = [];
   grados: any[] = [];
   todosLosGrados: any[] = [];
   categorias = ['Infantil', 'Precadete', 'Cadete', 'Junior', 'Senior'];
+  readonly catalogo = inject(CatalogoService);
 
   constructor(
     private readonly fb: FormBuilder,
@@ -132,8 +133,8 @@ export class CrearAlumnoComponent implements OnInit {
       fechaAltaInicial: [''],  // Optional, defaults to fechaAlta if not provided
       tipoTarifa: ['', Validators.required],
       cuantiaTarifa: [null],
-      rolFamiliar: [{ value: '', disabled: true }],  // For PADRES_HIJOS tarifa, disabled by default
-      grupoFamiliar: [{ value: '', disabled: true }],  // For HERMANOS tarifa, disabled by default
+      rolFamiliar: [{ value: '', disabled: true }],  // Solo para tarifas con requiereRolFamiliar; deshabilitado por defecto
+      grupoFamiliar: [{ value: '', disabled: true }],  // Solo para tarifas con requiereGrupoFamiliar; deshabilitado por defecto
       categoria: [''],
       competidor: [false],
       fechaAltaCompeticion: [''],
@@ -189,27 +190,14 @@ export class CrearAlumnoComponent implements OnInit {
 
     let gradosFiltrados = this.todosLosGrados;
 
-    // Filter by sport (Kickboxing has limited grades, Pilates has none)
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string>([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
-      );
-    } else if (deporteSeleccionado === 'PILATES' || deporteSeleccionado === 'DEFENSA_PERSONAL_FEMENINA') {
-      return []; // Pilates and Defensa Personal don't have grades
+    // Filter by sport: the grades the discipline's grading system offers (none if it has no system)
+    if (!this.catalogo.tieneGrados(deporteSeleccionado)) {
+      return [];
     }
+    const gradosDeLaDisciplina = new Set<string>(
+      this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
+    );
+    gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
 
     // Filter by age if fechaNacimiento is set
     const fechaNacimiento = this.alumnoData.get('fechaNacimiento')?.value;
@@ -222,39 +210,25 @@ export class CrearAlumnoComponent implements OnInit {
     return gradosFiltrados;
   }
 
-  obtenerTarifasFiltradas(index: number): TipoTarifa[] {
-    const deporteControl = this.deportesFormArray.at(index).get('deporte');
-    const deporteSeleccionado = deporteControl?.value;
+  /** D7: tarifas que admite la disciplina de la fila, en orden del catálogo (sin disciplina: ninguna). */
+  obtenerTarifasFiltradas(index: number): CatalogoTarifa[] {
+    const deporteSeleccionado = this.deportesFormArray.at(index).get('deporte')?.value;
+    return deporteSeleccionado ? this.catalogo.tarifasDe(deporteSeleccionado) : [];
+  }
 
-    if (!deporteSeleccionado) {
-      return [];
-    }
+  /** Tarifa elegida en la fila (del catálogo), o `undefined`. */
+  private tarifaSeleccionada(index: number): CatalogoTarifa | undefined {
+    return this.catalogo.tarifa(this.deportesFormArray.at(index).get('tipoTarifa')?.value);
+  }
 
-    // Filter tarifas based on selected sport
-    switch (deporteSeleccionado) {
-      case 'TAEKWONDO':
-        // All tarifas except sport-specific ones (KICKBOXING, PILATES, DEFENSA_PERSONAL_FEMENINA)
-        return this.tiposTarifa.filter(tarifa =>
-          tarifa !== TipoTarifa.KICKBOXING &&
-          tarifa !== TipoTarifa.PILATES &&
-          tarifa !== TipoTarifa.DEFENSA_PERSONAL_FEMENINA
-        );
+  /** La tarifa elegida pide rol familiar (bandera `requiereRolFamiliar` del catálogo). */
+  requiereRolFamiliar(index: number): boolean {
+    return this.tarifaSeleccionada(index)?.requiereRolFamiliar === true;
+  }
 
-      case 'KICKBOXING':
-        // Only KICKBOXING tarifa
-        return [TipoTarifa.KICKBOXING];
-
-      case 'PILATES':
-        // Only PILATES tarifa
-        return [TipoTarifa.PILATES];
-
-      case 'DEFENSA_PERSONAL_FEMENINA':
-        // Only DEFENSA_PERSONAL_FEMENINA tarifa
-        return [TipoTarifa.DEFENSA_PERSONAL_FEMENINA];
-
-      default:
-        return [];
-    }
+  /** La tarifa elegida pide grupo familiar (bandera `requiereGrupoFamiliar` del catálogo). */
+  requiereGrupoFamiliar(index: number): boolean {
+    return this.tarifaSeleccionada(index)?.requiereGrupoFamiliar === true;
   }
 
   onDeporteChangeEnLista(index: number): void {
@@ -265,26 +239,62 @@ export class CrearAlumnoComponent implements OnInit {
 
     // Reset tarifa when sport changes, as valid tarifas depend on the sport
     const currentTarifa = tipoTarifaControl?.value;
-    const validTarifas = this.obtenerTarifasFiltradas(index);
+    const validTarifas = this.obtenerTarifasFiltradas(index).map((tarifa) => tarifa.codigo);
 
     // If current tarifa is not valid for the new sport, clear it
     if (currentTarifa && !validTarifas.includes(currentTarifa)) {
       tipoTarifaControl?.setValue('');
     }
 
-    if (deporteControl?.value === 'PILATES' || deporteControl?.value === 'DEFENSA_PERSONAL_FEMENINA') {
-      // Clear validators and values for Pilates and Defensa Personal Femenina
+    const deporte = deporteControl?.value;
+    if (this.catalogo.tieneGrados(deporte)) {
+      // The discipline has a grading system: grade and grade date are required
+      gradoControl?.setValidators(Validators.required);
+      fechaGradoControl?.setValidators(Validators.required);
+    } else {
+      // No grading system (e.g. Pilates): clear validators and values
       gradoControl?.clearValidators();
       gradoControl?.setValue('');
       fechaGradoControl?.clearValidators();
       fechaGradoControl?.setValue('');
-    } else {
-      // Set validators for Taekwondo and Kickboxing
-      gradoControl?.setValidators(Validators.required);
-      fechaGradoControl?.setValidators(Validators.required);
     }
     gradoControl?.updateValueAndValidity();
     fechaGradoControl?.updateValueAndValidity();
+
+    this.reiniciarLicenciaYCompeticionSiNoAplican(index);
+  }
+
+  /**
+   * Al cambiar de disciplina, los datos de licencia y de competición que la nueva disciplina no admite
+   * se reinician: los controles quedan ocultos y, si no, el valor anterior se enviaría al guardar.
+   */
+  private reiniciarLicenciaYCompeticionSiNoAplican(index: number): void {
+    const deporteForm = this.deportesFormArray.at(index);
+    const deporte = deporteForm.get('deporte')?.value;
+
+    if (!this.catalogo.requiereLicencia(deporte)) {
+      deporteForm.patchValue(
+        {
+          tieneLicencia: false,
+          numeroLicencia: null,
+          fechaLicencia: this.obtenerFechaHoy(),
+        },
+        { emitEvent: false }
+      );
+    }
+
+    if (!this.catalogo.permiteCompeticion(deporte)) {
+      deporteForm.patchValue(
+        {
+          competidor: false,
+          categoria: '',
+          fechaAltaCompeticion: '',
+          fechaAltaCompetidorInicial: '',
+          peso: null,
+        },
+        { emitEvent: false }
+      );
+    }
   }
 
   onTipoTarifaChangeEnLista(index: number): void {
@@ -296,19 +306,19 @@ export class CrearAlumnoComponent implements OnInit {
     if (tipoTarifaControl?.value) {
       // Set default cuantía
       const rolFamiliar = rolFamiliarControl?.value || undefined;
-      const cuantiaDefault = obtenerCuantiaTarifaEstandar(tipoTarifaControl.value, rolFamiliar);
+      const cuantiaDefault = cuantiaEstandar(this.tarifaSeleccionada(index), rolFamiliar);
       cuantiaTarifaControl?.setValue(cuantiaDefault);
 
-      // Handle PADRES_HIJOS tarifa - needs rolFamiliar
-      if (tipoTarifaControl.value === 'PADRES_HIJOS') {
+      // Tarifa que pide rol familiar
+      if (this.requiereRolFamiliar(index)) {
         rolFamiliarControl?.setValidators(Validators.required);
         rolFamiliarControl?.enable();
         grupoFamiliarControl?.clearValidators();
         grupoFamiliarControl?.setValue('');
         grupoFamiliarControl?.disable();
       }
-      // Handle HERMANOS tarifa - needs grupoFamiliar
-      else if (tipoTarifaControl.value === 'HERMANOS') {
+      // Tarifa que pide grupo familiar
+      else if (this.requiereGrupoFamiliar(index)) {
         grupoFamiliarControl?.setValidators(Validators.required);
         grupoFamiliarControl?.enable();
         rolFamiliarControl?.clearValidators();
@@ -332,14 +342,13 @@ export class CrearAlumnoComponent implements OnInit {
 
   onRolFamiliarChangeEnLista(index: number, event: any): void {
     const deporteForm = this.deportesFormArray.at(index);
-    const tipoTarifa = deporteForm.get('tipoTarifa')?.value;
-    if (tipoTarifa !== 'PADRES_HIJOS') {
+    if (!this.requiereRolFamiliar(index)) {
       return;
     }
 
     const rolFamiliar = event.target.value;
     const cuantiaTarifaControl = deporteForm.get('cuantiaTarifa');
-    const cuantiaDefault = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
+    const cuantiaDefault = cuantiaEstandar(this.tarifaSeleccionada(index), rolFamiliar);
     cuantiaTarifaControl?.setValue(cuantiaDefault);
   }
 
@@ -361,7 +370,7 @@ export class CrearAlumnoComponent implements OnInit {
 
   obtenerGradosDisponibles(fechaNacimiento: string): void {
     this.endpointsService.obtenerGradosPorFechaNacimiento(fechaNacimiento).subscribe({
-      next: (tiposGrado: TipoGrado[]) => {
+      next: (tiposGrado: string[]) => {
         this.tiposGrado = tiposGrado;
         this.aplicarFiltrosGrado();
       },
@@ -379,24 +388,12 @@ export class CrearAlumnoComponent implements OnInit {
     const deporteSeleccionado = this.alumnoData.get('deporte')?.value;
     let gradosFiltrados = this.todosLosGrados;
 
-    // First, filter by sport
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string>([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
+    // First, filter by sport: the grades its grading system offers
+    if (deporteSeleccionado) {
+      const gradosDeLaDisciplina = new Set<string>(
+        this.catalogo.gradosSeleccionables(deporteSeleccionado).map((grado) => grado.codigo)
       );
+      gradosFiltrados = gradosFiltrados.filter((grado) => gradosDeLaDisciplina.has(grado.tipoGrado));
     }
 
     // Then, filter by age if tiposGrado has values
@@ -409,7 +406,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.grados = gradosFiltrados;
   }
 
-  private obtenerCategoriaPorEdadActual(deporte: string = 'TAEKWONDO'): string {
+  private obtenerCategoriaPorEdadActual(deporte?: string | null): string {
     return calcularCategoriaPorEdad(this.alumnoData.get('fechaNacimiento')?.value || null, deporte);
   }
 
@@ -417,7 +414,7 @@ export class CrearAlumnoComponent implements OnInit {
     this.deportesFormArray.controls.forEach((control) => {
       const competidor = control.get('competidor')?.value;
       const categoriaControl = control.get('categoria');
-      const deporteSeleccionado = control.get('deporte')?.value || 'TAEKWONDO';
+      const deporteSeleccionado = control.get('deporte')?.value || this.catalogo.primeraDisciplinaActiva();
       if (!categoriaControl) {
         return;
       }
@@ -439,7 +436,7 @@ export class CrearAlumnoComponent implements OnInit {
     const categoriaControl = deporteForm.get('categoria');
     const fechaAltaCompeticionControl = deporteForm.get('fechaAltaCompeticion');
     const fechaAltaCompetidorInicialControl = deporteForm.get('fechaAltaCompetidorInicial');
-    const deporteSeleccionado = deporteForm.get('deporte')?.value || 'TAEKWONDO';
+    const deporteSeleccionado = deporteForm.get('deporte')?.value || this.catalogo.primeraDisciplinaActiva();
     if (!categoriaControl) {
       return;
     }
@@ -488,30 +485,6 @@ export class CrearAlumnoComponent implements OnInit {
     );
   }
 
-  onTipoTarifaChange(event: any): void {
-    const tipoTarifa = event.target.value;
-
-    // Reset family fields
-    this.alumnoData.get('rolFamiliar')?.setValue(RolFamiliar.NINGUNO);
-    this.alumnoData.get('grupoFamiliar')?.setValue('');
-    this.alumnoData.get('rolFamiliar')?.disable();
-    this.alumnoData.get('grupoFamiliar')?.disable();
-    this.alumnoData.get('rolFamiliar')?.clearValidators();
-    this.alumnoData.get('grupoFamiliar')?.clearValidators();
-
-    // Enable fields based on tarifa type
-    if (tipoTarifa === TipoTarifa.PADRES_HIJOS) {
-      this.alumnoData.get('rolFamiliar')?.enable();
-      this.alumnoData.get('rolFamiliar')?.setValidators(Validators.required);
-    } else if (tipoTarifa === TipoTarifa.HERMANOS) {
-      this.alumnoData.get('grupoFamiliar')?.enable();
-      this.alumnoData.get('grupoFamiliar')?.setValidators(Validators.required);
-    }
-
-    this.alumnoData.get('rolFamiliar')?.updateValueAndValidity();
-    this.alumnoData.get('grupoFamiliar')?.updateValueAndValidity();
-  }
-
   onSubmit(): void {
     if (this.alumnoData.invalid) {
       Swal.fire({
@@ -535,7 +508,10 @@ export class CrearAlumnoComponent implements OnInit {
         if (!deporteData.fechaAltaInicial) {
           deporteData.fechaAltaInicial = deporteData.fechaAlta;
         }
-        if (!deporteData.tieneLicencia) {
+        if (
+          !this.catalogo.permiteCompeticion(deporteData.deporte) ||
+          (this.catalogo.requiereLicencia(deporteData.deporte) && !deporteData.tieneLicencia)
+        ) {
           deporteData.competidor = false;
         }
         if (deporteData.competidor) {
@@ -548,7 +524,7 @@ export class CrearAlumnoComponent implements OnInit {
           }
           if (!deporteData.categoria) {
             // Calcular categoría según el deporte específico
-            deporteData.categoria = this.obtenerCategoriaPorEdadActual(deporteData.deporte || 'TAEKWONDO');
+            deporteData.categoria = this.obtenerCategoriaPorEdadActual(deporteData.deporte || this.catalogo.primeraDisciplinaActiva());
           }
           if (deporteData.peso === '' || deporteData.peso === null || deporteData.peso === undefined) {
             deporteData.peso = null;
@@ -636,87 +612,6 @@ export class CrearAlumnoComponent implements OnInit {
 
     this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
     this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
-  }
-
-  onDeporteChange(event: any): void {
-    const selectedDeporte = event.target.value;
-
-    this.resetFormControls();
-
-    if (selectedDeporte === 'TAEKWONDO') {
-      this.showAllFields();
-      // Tarifas para Taekwondo
-      this.tiposTarifa = [
-        TipoTarifa.ADULTO,
-        TipoTarifa.ADULTO_GRUPO,
-        TipoTarifa.INFANTIL,
-        TipoTarifa.INFANTIL_GRUPO,
-        TipoTarifa.HERMANOS,
-        TipoTarifa.PADRES_HIJOS,
-        TipoTarifa.FAMILIAR,
-      ];
-      this.aplicarFiltrosGrado();
-    } else if (selectedDeporte === 'KICKBOXING') {
-      this.showAllFields();
-      // Tarifas específicas para Kickboxing
-      this.tiposTarifa = [
-        TipoTarifa.KICKBOXING,
-      ];
-      this.aplicarFiltrosGrado();
-    } else if (selectedDeporte === 'PILATES') {
-      this.showAllFields();
-      // Tarifas para Pilates
-      this.tiposTarifa = [
-        TipoTarifa.PILATES,
-      ];
-      // Pilates typically doesn't have grades, so clear grade requirement
-      this.alumnoData.get('grado')?.clearValidators();
-      this.alumnoData.get('grado')?.updateValueAndValidity();
-    } else if (selectedDeporte === 'DEFENSA_PERSONAL_FEMENINA') {
-      this.showAllFields();
-      // Tarifas para Defensa Personal Femenina
-      this.tiposTarifa = [
-        TipoTarifa.DEFENSA_PERSONAL_FEMENINA,
-      ];
-      this.aplicarFiltrosGrado();
-    }
-  }
-
-  resetFormControls(): void {
-    this.alumnoData.get('tipoTarifa')?.clearValidators();
-    this.alumnoData.get('rolFamiliar')?.clearValidators();
-    this.alumnoData.get('grupoFamiliar')?.clearValidators();
-    this.alumnoData.get('grado')?.clearValidators();
-    this.alumnoData.get('competidor')?.clearValidators();
-    this.alumnoData.get('tieneLicencia')?.clearValidators();
-    this.alumnoData.get('numeroLicencia')?.clearValidators();
-    this.alumnoData.get('fechaLicencia')?.clearValidators();
-
-    this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoData.get('rolFamiliar')?.updateValueAndValidity();
-    this.alumnoData.get('grupoFamiliar')?.updateValueAndValidity();
-    this.alumnoData.get('grado')?.updateValueAndValidity();
-    this.alumnoData.get('competidor')?.updateValueAndValidity();
-    this.alumnoData.get('tieneLicencia')?.updateValueAndValidity();
-    this.alumnoData.get('numeroLicencia')?.updateValueAndValidity();
-    this.alumnoData.get('fechaLicencia')?.updateValueAndValidity();
-
-    this.alumnoData.get('tipoTarifa')?.enable();
-    this.alumnoData.get('rolFamiliar')?.disable();
-    this.alumnoData.get('grupoFamiliar')?.disable();
-    this.alumnoData.get('grado')?.enable();
-    this.alumnoData.get('competidor')?.enable();
-    this.alumnoData.get('tieneLicencia')?.enable();
-    this.alumnoData.get('numeroLicencia')?.enable();
-    this.alumnoData.get('fechaLicencia')?.enable();
-  }
-
-  showAllFields(): void {
-    this.alumnoData.get('tipoTarifa')?.setValidators(Validators.required);
-    this.alumnoData.get('grado')?.setValidators(Validators.required);
-
-    this.alumnoData.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoData.get('grado')?.updateValueAndValidity();
   }
 
   getGradoNombre(grado: any, deporte?: string): string {

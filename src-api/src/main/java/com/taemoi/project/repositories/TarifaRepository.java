@@ -14,6 +14,9 @@ public interface TarifaRepository extends JpaRepository<Tarifa, Long> {
 
 	Optional<Tarifa> findByCodigo(String codigo);
 
-	/** Orden de alta (en Taemoi, el de {@code TarifaConfig.obtenerTodasLasCuantias}). */
-	List<Tarifa> findByActivaTrueOrderByIdAsc();
+	/** Orden del catálogo: {@code tarifa.orden} y, a igualdad, el de alta (V30). */
+	List<Tarifa> findByActivaTrueOrderByOrdenAscIdAsc();
+
+	/** Todas (también inactivas), en el orden del catálogo. */
+	List<Tarifa> findAllByOrderByOrdenAscIdAsc();
 }

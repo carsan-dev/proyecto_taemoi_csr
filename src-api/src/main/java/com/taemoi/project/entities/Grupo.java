@@ -8,11 +8,10 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -39,18 +38,15 @@ public class Grupo extends EntidadOrganizacion {
 
 	private String tipo;
 
-	// NUEVO: Campo para identificar explícitamente el deporte del grupo
-	@Enumerated(EnumType.STRING)
-	@NotNull(message = "El deporte del grupo no puede ser nulo")
-	private Deporte deporte;
-
 	/**
-	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
-	 * contracción para poder volver al código anterior.
+	 * Disciplina (V26, NOT NULL). Desde V28 es la única fuente del deporte del grupo (la columna heredada
+	 * {@code deporte} se borró); el JSON expone su código como {@code deporte}. EAGER: se lee fuera de la
+	 * sesión (grupos del alumno, informes), como antes la columna.
 	 */
 	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "disciplina_id", nullable = false)
+	@NotNull(message = "El deporte del grupo no puede ser nulo")
 	private Disciplina disciplina;
 
 	// Rango de edad personalizado (opcional)
@@ -93,12 +89,10 @@ public class Grupo extends EntidadOrganizacion {
 		this.tipo = tipo;
 	}
 
-	public Deporte getDeporte() {
-		return deporte;
-	}
-
-	public void setDeporte(Deporte deporte) {
-		this.deporte = deporte;
+	/** Código de la disciplina: el valor de la antigua columna {@code deporte}, que la API sigue devolviendo. */
+	@JsonProperty("deporte")
+	public String getDeporte() {
+		return disciplina == null ? null : disciplina.getCodigo();
 	}
 
 	public Disciplina getDisciplina() {

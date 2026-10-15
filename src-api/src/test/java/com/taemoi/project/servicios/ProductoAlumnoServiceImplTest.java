@@ -35,7 +35,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
@@ -85,7 +85,9 @@ class ProductoAlumnoServiceImplTest {
 		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "productosCatalogo",
 				new com.taemoi.project.services.impl.ProductosCatalogoServiceImpl(productoRepository,
 						org.mockito.Mockito.mock(com.taemoi.project.repositories.GradoRepository.class),
-						memoria.catalogo(), memoria.progresion()));
+						memoria.catalogo(), memoria.progresion(), memoria.comportamientoTaemoi()));
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "comportamientoLegado",
+				memoria.comportamientoTaemoi());
 	}
 
 	private void prepararAsignacion(String concepto) {
@@ -126,24 +128,24 @@ class ProductoAlumnoServiceImplTest {
 		when(productoAlumnoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 		for (Deporte deporte : List.of(Deporte.TAEKWONDO, Deporte.KICKBOXING)) {
 			AlumnoDeporte ad = new AlumnoDeporte();
-			ad.setDeporte(deporte);
-			when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, deporte)).thenReturn(Optional.of(ad));
+			ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));
+			when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, deporte.name())).thenReturn(Optional.of(ad));
 			ProductoAlumnoDTO resultado = productoAlumnoService.asignarProductoAAlumnoDeporte(
 					10L, 20L, deporte.name().toLowerCase(), new ProductoAlumnoDTO());
 			assertEquals("Matrícula anual - " + deporte.name(), resultado.getConcepto());
 		}
 		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
 		verify(productoAlumnoRepository, times(2)).save(captor.capture());
-		assertEquals(Deporte.TAEKWONDO, captor.getAllValues().get(0).getAlumnoDeporte().getDeporte());
-		assertEquals(Deporte.KICKBOXING, captor.getAllValues().get(1).getAlumnoDeporte().getDeporte());
+		assertEquals(Deporte.TAEKWONDO.name(), captor.getAllValues().get(0).getAlumnoDeporte().getDeporte());
+		assertEquals(Deporte.KICKBOXING.name(), captor.getAllValues().get(1).getAlumnoDeporte().getDeporte());
 	}
 
 	@Test
 	void matricula_conceptoConDeporteNoLoDuplica() {
 		prepararAsignacion("Matrícula - taekwondo");
 		AlumnoDeporte ad = new AlumnoDeporte();
-		ad.setDeporte(Deporte.TAEKWONDO);
-		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, Deporte.TAEKWONDO)).thenReturn(Optional.of(ad));
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, Deporte.TAEKWONDO.name())).thenReturn(Optional.of(ad));
 		when(productoAlumnoRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 		assertEquals("Matrícula - taekwondo", productoAlumnoService.asignarProductoAAlumnoDeporte(
 				10L, 20L, "TAEKWONDO", new ProductoAlumnoDTO()).getConcepto());
@@ -272,7 +274,7 @@ class ProductoAlumnoServiceImplTest {
 
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
 		alumnoDeporte.setAlumno(alumno);
-		alumnoDeporte.setDeporte(Deporte.TAEKWONDO);
+		alumnoDeporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
 		alumnoDeporte.setActivo(true);
 		alumnoDeporte.setCompetidor(true);
 		alumnoDeporte.setCuantiaTarifa(35.0);
@@ -288,7 +290,7 @@ class ProductoAlumnoServiceImplTest {
 		productoTarifa.setPrecio(20.0);
 
 		when(alumnoRepository.findById(alumnoId)).thenReturn(Optional.of(alumno));
-		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.TAEKWONDO))
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.TAEKWONDO.name()))
 				.thenReturn(Optional.of(alumnoDeporte));
 		when(productoRepository.findFirstByConcepto("MENSUALIDAD")).thenReturn(Optional.of(productoMensualidad));
 		when(productoRepository.findFirstByConcepto("TARIFA COMPETIDOR TAEKWONDO"))
@@ -322,7 +324,7 @@ class ProductoAlumnoServiceImplTest {
 
 		AlumnoDeporte kickboxing = new AlumnoDeporte();
 		kickboxing.setAlumno(alumno);
-		kickboxing.setDeporte(Deporte.KICKBOXING);
+		kickboxing.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.KICKBOXING.name()));
 		kickboxing.setActivo(true);
 		kickboxing.setCompetidor(false);
 		kickboxing.setCuantiaTarifa(42.0);
@@ -333,7 +335,7 @@ class ProductoAlumnoServiceImplTest {
 		productoMensualidad.setPrecio(30.0);
 
 		when(alumnoRepository.findById(alumnoId)).thenReturn(Optional.of(alumno));
-		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.KICKBOXING))
+		when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, Deporte.KICKBOXING.name()))
 				.thenReturn(Optional.of(kickboxing));
 		when(productoRepository.findFirstByConcepto("MENSUALIDAD")).thenReturn(Optional.of(productoMensualidad));
 		when(productoAlumnoRepository.save(any(ProductoAlumno.class))).thenAnswer(invocation -> invocation.getArgument(0));

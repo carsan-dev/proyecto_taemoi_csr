@@ -83,8 +83,8 @@ import com.taemoi.project.services.ContadorService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * V25 por HTTP real (MockMvc + cadena de filtros completa) contra MySQL: tutores y su puente con los
- * campos heredados, salud cifrada y auditada, consentimientos solo-añadir y {@code autorizacion_web},
+ * V25 por HTTP real (MockMvc + cadena de filtros completa) contra MySQL: tutores y el responsable legal
+ * de la ficha (solo en tutor), salud cifrada y auditada, consentimientos solo-añadir y {@code autorizacion_web},
  * teléfonos como texto, permisos (familia y otra escuela) y aislamiento por organización.
  *
  * <p>Con el SQL y los parámetros enlazados en el log (TRACE) para comprobar que el texto de salud
@@ -316,7 +316,7 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 	// ------------------------------------------------------------------ tutores
 
 	@Test
-	void losTutoresSeGestionanYElResponsableLegalSeReflejaEnLosCamposHeredados() throws Exception {
+	void losTutoresSeGestionanYElResponsableLegalSeReflejaEnLaFicha() throws Exception {
 		String base = "/api/alumnos/" + alumnoTutores + "/tutores";
 		MvcResult creado = mvc.perform(post(base).cookie(jwt(tokenAdmin)).contentType(MediaType.APPLICATION_JSON)
 				.content("""
@@ -336,7 +336,7 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(jsonPath("$.responsableLegal").value(false))
 				.andExpect(jsonPath("$.orden").value(2));
 
-		assertHeredado(alumnoTutores, "Lucía Ruiz Sanz", "12345678Z");
+		assertResponsableLegal(alumnoTutores, "Lucía Ruiz Sanz", "12345678Z");
 		mvc.perform(get("/api/alumnos/" + alumnoTutores).cookie(jwt(tokenAdmin)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.responsableLegalNombre").value("Lucía Ruiz Sanz"))
@@ -348,7 +348,7 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 				.content("{\"nombre\":\"Lucía\",\"apellidos\":\"Ruiz\",\"responsableLegal\":false}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.responsableLegal").value(false));
-		assertHeredado(alumnoTutores, null, null);
+		assertResponsableLegal(alumnoTutores, null, null);
 
 		mvc.perform(put(base + "/999999").cookie(jwt(tokenAdmin)).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nombre\":\"x\"}")).andExpect(status().isNotFound());
@@ -382,7 +382,7 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("87654321X", filas.get(0).get("nif"));
 		assertEquals("TUTOR_LEGAL", filas.get(0).get("parentesco"));
 		assertEquals(Boolean.TRUE, filas.get(0).get("responsable_legal"));
-		assertHeredado(alumnoEdicion, "Pedro Gómez", "87654321X");
+		assertResponsableLegal(alumnoEdicion, "Pedro Gómez", "87654321X");
 		Map<String, Object> alumno = jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", alumnoEdicion);
 		assertEquals("600222333", alumno.get("telefono"));
 		assertEquals("FEMENINO", alumno.get("genero"));
@@ -415,7 +415,7 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(sinResponsable.get("responsableLegalNombre").isNull());
 		assertEquals(Boolean.FALSE, jdbc.queryForObject("SELECT responsable_legal FROM tutor WHERE id = ?",
 				Boolean.class, tutorId));
-		assertHeredado(alumnoEdicion, null, null);
+		assertResponsableLegal(alumnoEdicion, null, null);
 
 		// Teléfono inválido: 400.
 		mvc.perform(multipart(HttpMethod.PUT, "/api/alumnos/" + alumnoEdicion).cookie(jwt(tokenAdmin))
@@ -472,14 +472,14 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void laFinalizacionDeUnaPreinscripcionDejaSusConsentimientosUnaSolaVez() {
 		long plantilla = jdbc.queryForObject(
-				"SELECT id FROM plantilla_preinscripcion WHERE deporte = 'TAEKWONDO' ORDER BY id LIMIT 1", Long.class);
+				"SELECT p.id FROM plantilla_preinscripcion p JOIN disciplina d ON d.id = p.disciplina_id WHERE p.organizacion_id = 1 AND d.codigo = 'TAEKWONDO' ORDER BY p.id LIMIT 1", Long.class);
 		String referencia = "IT-PER-" + sufijo;
 		jdbc.update("""
-				INSERT INTO preinscripcion (referencia, temporada, deporte, estado, nombre, apellidos, dni, identidad_hash,
+				INSERT INTO preinscripcion (referencia, temporada, estado, nombre, apellidos, dni, identidad_hash,
 				  fecha_nacimiento, direccion, telefono, email, consentimiento_fotografico, aceptacion_normas,
 				  firmante_nombre, firma, plantilla_id, plantilla_snapshot, pdf_firmado, token_documento_hash,
 				  creada_en, actualizada_en, alumno_id, organizacion_id, disciplina_id)
-				VALUES (?, '2025-2026', 'TAEKWONDO', 'FINALIZADA', 'Ana', 'Prueba', NULL, ?, '2012-05-05', 'Calle 1',
+				VALUES (?, '2025-2026', 'FINALIZADA', 'Ana', 'Prueba', NULL, ?, '2012-05-05', 'Calle 1',
 				  '600000000', 'ana@example.test', 0, 1, 'Madre Firmante', x'00', ?, '{}', x'00', ?,
 				  '2025-09-10 12:00:00', '2025-09-10 12:00:00', ?, 1,
 				  (SELECT d.id FROM disciplina d WHERE d.organizacion_id = 1 AND d.codigo = 'TAEKWONDO'))
@@ -708,12 +708,145 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 		editarComo(alumnoResponsable, "RESPONSABLE", "\"telefono\":\"600000000\"");
 		assertEquals(Boolean.TRUE, jdbc.queryForObject(
 				"SELECT responsable_legal FROM tutor WHERE alumno_id = ?", Boolean.class, alumnoResponsable));
-		assertHeredado(alumnoResponsable, "Rosa Díaz", "22222222J");
+		assertResponsableLegal(alumnoResponsable, "Rosa Díaz", "22222222J");
 		editarComo(alumnoResponsable, "RESPONSABLE", "\"telefono\":\"600000000\",\"responsableLegalNombre\":null");
-		assertHeredado(alumnoResponsable, "Rosa Díaz", "22222222J");
+		assertResponsableLegal(alumnoResponsable, "Rosa Díaz", "22222222J");
 		editarComo(alumnoResponsable, "RESPONSABLE", "\"telefono\":\"600000000\",\"responsableLegalNombre\":\"\"");
 		assertEquals(Boolean.FALSE, jdbc.queryForObject(
-				"SELECT responsable_legal FROM tutor WHERE alumno_id = ?", Boolean.class, alumnoResponsable));
+				"SELECT responsable_legal FROM tutor WHERE alumno_id = ? AND nombre = 'Rosa Díaz'", Boolean.class,
+				alumnoResponsable));
+		// El NIF no enviado se conserva (como antes) y queda en un responsable legal sin nombre.
+		assertResponsableLegal(alumnoResponsable, null, "22222222J");
+		assertEquals(List.of("Rosa Díaz|null|22222222J|TUTOR_LEGAL|false", "null|null|22222222J|TUTOR_LEGAL|true"),
+				filasTutor(alumnoResponsable));
+	}
+
+	// ------------------------------------------------------------------ responsable legal: solo en tutor
+
+	@Test
+	void elAltaGuardaElResponsableLegalEnTutorParaCadaCombinacion() throws Exception {
+		// Nombre y NIF: un tutor TUTOR_LEGAL responsable, nombre con los espacios normalizados.
+		JsonNode ambos = altaConResponsable("TVAMBOS",
+				"\"responsableLegalNombre\":\" Marta  Ruiz \",\"responsableLegalNif\":\" 12345678z\"");
+		assertResponsableEn(ambos, "Marta Ruiz", "12345678Z", "respuesta del alta");
+		assertResponsableLegal(ambos.get("id").asLong(), "Marta Ruiz", "12345678Z");
+		assertEquals(List.of("Marta Ruiz|null|12345678Z|TUTOR_LEGAL|true"), filasTutor(ambos.get("id").asLong()));
+
+		// Solo nombre (NIF vacío o el marcador "sin NIF").
+		JsonNode soloNombre = altaConResponsable("TVNOMBRE",
+				"\"responsableLegalNombre\":\"Marta Ruiz\",\"responsableLegalNif\":\"00000000Z\"");
+		assertResponsableEn(soloNombre, "Marta Ruiz", null, "respuesta del alta");
+		assertResponsableLegal(soloNombre.get("id").asLong(), "Marta Ruiz", null);
+		assertEquals(List.of("Marta Ruiz|null|null|TUTOR_LEGAL|true"), filasTutor(soloNombre.get("id").asLong()));
+
+		// Solo NIF: ahora también es un tutor responsable legal, sin nombre (antes solo quedaba en
+		// alumno.responsable_legal_nif). La API devuelve lo mismo que antes.
+		JsonNode soloNif = altaConResponsable("TVNIF",
+				"\"responsableLegalNombre\":\"   \",\"responsableLegalNif\":\"12345678z\"");
+		long idSoloNif = soloNif.get("id").asLong();
+		assertResponsableEn(soloNif, null, "12345678Z", "respuesta del alta");
+		assertResponsableLegal(idSoloNif, null, "12345678Z");
+		assertEquals(List.of("null|null|12345678Z|TUTOR_LEGAL|true"), filasTutor(idSoloNif));
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ? AND nombre IS NULL",
+				Integer.class, idSoloNif), "guardado con nombre NULL (V29), no vacío");
+		mvc.perform(get("/api/alumnos/" + idSoloNif + "/tutores").cookie(jwt(tokenAdmin)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].nombre").value(nullValue()))
+				.andExpect(jsonPath("$[0].nif").value("12345678Z"))
+				.andExpect(jsonPath("$[0].responsableLegal").value(true));
+
+		// Vacíos o ausentes: sin responsable y sin tutores.
+		JsonNode vacios = altaConResponsable("TVVACIO", "\"responsableLegalNombre\":\"\",\"responsableLegalNif\":\"\"");
+		assertResponsableLegal(vacios.get("id").asLong(), null, null);
+		assertEquals(List.of(), filasTutor(vacios.get("id").asLong()));
+		JsonNode ausentes = altaConResponsable("TVAUSENTE", "");
+		assertResponsableEn(ausentes, null, null, "respuesta del alta");
+		assertResponsableLegal(ausentes.get("id").asLong(), null, null);
+		assertEquals(List.of(), filasTutor(ausentes.get("id").asLong()));
+	}
+
+	@Test
+	void editarElResponsableLegalPorLaFichaSigueLaTablaDeVerdad() throws Exception {
+		long id = TenantContext.calcularCon(ORG1, () -> crearAlumno("TVEDICION", null));
+		String n = "TVEDICION";
+
+		// Solo NIF sin responsable previo: tutor responsable sin nombre.
+		JsonNode r = editarFicha(id, n, "\"responsableLegalNif\":\"12345678z\"");
+		assertResponsableEn(r, null, "12345678Z", "respuesta de la edición");
+		assertResponsableLegal(id, null, "12345678Z");
+		assertEquals(List.of("null|null|12345678Z|TUTOR_LEGAL|true"), filasTutor(id));
+		long marcador = jdbc.queryForObject("SELECT id FROM tutor WHERE alumno_id = ?", Long.class, id);
+
+		// Cambiar solo el NIF: el mismo tutor.
+		editarFicha(id, n, "\"responsableLegalNif\":\"87654321X\",\"responsableLegalNombre\":null");
+		assertResponsableLegal(id, null, "87654321X");
+		assertEquals(List.of("null|null|87654321X|TUTOR_LEGAL|true"), filasTutor(id));
+
+		// Sin los campos: nada cambia.
+		editarFicha(id, n, "");
+		assertResponsableLegal(id, null, "87654321X");
+		assertEquals(List.of("null|null|87654321X|TUTOR_LEGAL|true"), filasTutor(id));
+
+		// Solo el nombre: completa ese tutor y conserva el NIF.
+		r = editarFicha(id, n, "\"responsableLegalNombre\":\"Ana  López\"");
+		assertResponsableEn(r, "Ana López", "87654321X", "respuesta de la edición");
+		assertResponsableLegal(id, "Ana López", "87654321X");
+		assertEquals(List.of("Ana López|null|87654321X|TUTOR_LEGAL|true"), filasTutor(id));
+		assertEquals(marcador, jdbc.queryForObject("SELECT id FROM tutor WHERE alumno_id = ?", Long.class, id));
+
+		// Vaciar solo el nombre: Ana deja de ser responsable (no se borra) y el NIF sigue visible.
+		r = editarFicha(id, n, "\"responsableLegalNombre\":\"\"");
+		assertResponsableEn(r, null, "87654321X", "respuesta de la edición");
+		assertResponsableLegal(id, null, "87654321X");
+		assertEquals(List.of("Ana López|null|87654321X|TUTOR_LEGAL|false", "null|null|87654321X|TUTOR_LEGAL|true"),
+				filasTutor(id));
+
+		// Vaciar ambos: sin responsable; el tutor sin nombre desaparece, Ana se conserva.
+		r = editarFicha(id, n, "\"responsableLegalNombre\":\"\",\"responsableLegalNif\":\"\"");
+		assertResponsableEn(r, null, null, "respuesta de la edición");
+		assertResponsableLegal(id, null, null);
+		assertEquals(List.of("Ana López|null|87654321X|TUTOR_LEGAL|false"), filasTutor(id));
+
+		// Nombre y NIF sin responsable: tutor nuevo al final (como antes).
+		editarFicha(id, n, "\"responsableLegalNombre\":\"Rosa Gil\",\"responsableLegalNif\":\"11111111h\"");
+		assertResponsableLegal(id, "Rosa Gil", "11111111H");
+		assertEquals(List.of("Ana López|null|87654321X|TUTOR_LEGAL|false", "Rosa Gil|null|11111111H|TUTOR_LEGAL|true"),
+				filasTutor(id));
+
+		// Vaciar solo el NIF: el nombre sigue.
+		editarFicha(id, n, "\"responsableLegalNif\":\"\"");
+		assertResponsableLegal(id, "Rosa Gil", null);
+		assertEquals(List.of("Ana López|null|87654321X|TUTOR_LEGAL|false", "Rosa Gil|null|null|TUTOR_LEGAL|true"),
+				filasTutor(id));
+	}
+
+	@Test
+	void unResponsableDesdeTutoresSustituyeAlResponsableSoloNif() throws Exception {
+		long id = TenantContext.calcularCon(ORG1, () -> crearAlumno("TVTUTORES", null));
+		editarFicha(id, "TVTUTORES", "\"responsableLegalNombre\":\"\",\"responsableLegalNif\":\"12345678Z\"");
+		assertResponsableLegal(id, null, "12345678Z");
+
+		// Un tutor que no es responsable legal no cambia nada.
+		mvc.perform(post("/api/alumnos/" + id + "/tutores").cookie(jwt(tokenAdmin))
+				.contentType(MediaType.APPLICATION_JSON).content("{\"nombre\":\"Abuela\",\"parentesco\":\"OTRO\"}"))
+				.andExpect(status().isCreated());
+		assertResponsableLegal(id, null, "12345678Z");
+
+		// Uno que sí lo es pasa a ser el responsable legal (antes sobrescribía las columnas heredadas).
+		mvc.perform(post("/api/alumnos/" + id + "/tutores").cookie(jwt(tokenAdmin))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombre\":\"Luis\",\"apellidos\":\"Pardo\",\"parentesco\":\"PADRE\",\"responsableLegal\":true}"))
+				.andExpect(status().isCreated());
+		assertResponsableLegal(id, "Luis Pardo", null);
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ? AND nombre IS NULL",
+				Integer.class, id), "el responsable solo-NIF desaparece");
+		assertEquals(2, filasTutor(id).size());
+
+		// La ficha con el mismo nombre completo conserva el reparto nombre/apellidos y pone el NIF.
+		editarFicha(id, "TVTUTORES", "\"responsableLegalNombre\":\"Luis  Pardo\",\"responsableLegalNif\":\"22222222j\"");
+		assertResponsableLegal(id, "Luis Pardo", "22222222J");
+		assertTrue(filasTutor(id).contains("Luis|Pardo|22222222J|PADRE|true"));
 	}
 
 	// ------------------------------------------------------------------ revisión: zona horaria de los Instant
@@ -773,11 +906,61 @@ class PersonasAlumnoIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForObject("SELECT autorizacion_web FROM alumno WHERE id = ?", Boolean.class, alumnoId);
 	}
 
-	private void assertHeredado(long alumnoId, String nombre, String nif) {
-		Map<String, Object> a = jdbc.queryForMap(
-				"SELECT responsable_legal_nombre, responsable_legal_nif FROM alumno WHERE id = ?", alumnoId);
-		assertEquals(nombre, a.get("responsable_legal_nombre"));
-		assertEquals(nif, a.get("responsable_legal_nif"));
+	/**
+	 * El responsable legal tal y como lo devuelve la API: la ficha ({@code AlumnoDTO}), la ficha
+	 * completa ({@code AlumnoConDeportesDTO}) y el JSON de la propia entidad ({@code /api/admin}).
+	 */
+	private void assertResponsableLegal(long alumnoId, String nombre, String nif) throws Exception {
+		for (String ruta : List.of("/api/alumnos/" + alumnoId, "/api/alumnos/" + alumnoId + "/completo",
+				"/api/admin/" + alumnoId)) {
+			JsonNode r = json.readTree(mvc.perform(get(ruta).cookie(jwt(tokenAdmin))).andExpect(status().isOk())
+					.andReturn().getResponse().getContentAsString());
+			assertResponsableEn(r, nombre, nif, ruta);
+		}
+	}
+
+	private static void assertResponsableEn(JsonNode r, String nombre, String nif, String donde) {
+		assertEquals(nombre, texto(r.get("responsableLegalNombre")), donde + ": responsableLegalNombre");
+		assertEquals(nif, texto(r.get("responsableLegalNif")), donde + ": responsableLegalNif");
+	}
+
+	private static String texto(JsonNode valor) {
+		return valor == null || valor.isNull() ? null : valor.asText();
+	}
+
+	/** Filas de tutor del alumno como "nombre|apellidos|nif|parentesco|responsable" (orden, id). */
+	private List<String> filasTutor(long alumnoId) {
+		return jdbc.queryForList("SELECT * FROM tutor WHERE alumno_id = ? ORDER BY orden, id", alumnoId).stream()
+				.map(f -> f.get("nombre") + "|" + f.get("apellidos") + "|" + f.get("nif") + "|" + f.get("parentesco")
+						+ "|" + f.get("responsable_legal"))
+				.toList();
+	}
+
+	private JsonNode altaConResponsable(String nombre, String camposResponsable) throws Exception {
+		String nuevo = """
+				{"nombre":"%s %s","apellidos":"PRUEBA PERSONAS","fechaNacimiento":"2015-03-04","direccion":"Calle 2",
+				 "telefono":"600 000 010","email":"%s-%s@example.test","autorizacionWeb":true,"tieneDiscapacidad":false,
+				 "deportesInicial":[{"deporte":"PILATES","fechaAlta":"2024-09-01","tipoTarifa":"PILATES",
+				   "cuantiaTarifa":25.0,"competidor":false,"tieneLicencia":false}]%s}"""
+				.formatted(nombre, sufijo, nombre.toLowerCase(), sufijo,
+						camposResponsable.isEmpty() ? "" : "," + camposResponsable);
+		MvcResult r = mvc.perform(multipart("/api/alumnos/crear").param("nuevo", nuevo).cookie(jwt(tokenAdmin)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		return json.readTree(r.getResponse().getContentAsString());
+	}
+
+	private JsonNode editarFicha(long alumnoId, String nombre, String camposResponsable) throws Exception {
+		MvcResult r = mvc.perform(multipart(HttpMethod.PUT, "/api/alumnos/" + alumnoId).cookie(jwt(tokenAdmin))
+				.param("alumnoEditado", """
+						{"nombre":"%s %s","apellidos":"PRUEBA PERSONAS","fechaNacimiento":"2012-05-05",
+						 "direccion":"Calle Prueba 1","email":"%s-%s@example.test","telefono":"600000000",
+						 "autorizacionWeb":true,"tipoTarifa":"INFANTIL","fechaAlta":"2020-09-01"%s}
+						""".formatted(nombre, sufijo, nombre.toLowerCase(), sufijo,
+						camposResponsable.isEmpty() ? "" : "," + camposResponsable)))
+				.andExpect(status().isOk())
+				.andReturn();
+		return json.readTree(r.getResponse().getContentAsString());
 	}
 
 	private int lecturasSalud(long alumnoId) {

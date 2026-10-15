@@ -358,7 +358,7 @@ export class AlumnoService {
    * Update grade for a specific sport
    * @param alumnoId Student ID
    * @param deporte Sport name
-   * @param nuevoGrado New grade (TipoGrado value)
+   * @param nuevoGrado Código del nuevo grado (del catálogo)
    */
   actualizarGradoPorDeporte(
     alumnoId: number,
@@ -717,25 +717,6 @@ export class AlumnoService {
     return this.http.put<any>(
       `${this.urlBase}/${alumnoId}/deportes/${deporte}/datos-competidor`,
       datosCompetidor,
-      { withCredentials: true }
-    );
-  }
-
-  /**
-   * Update the student's initial enrollment date (fechaAltaInicial)
-   * This date affects the antiguedad calculation for all sports
-   * @deprecated Use actualizarFechaAltaInicialDeporte for per-sport updates
-   *
-   * @param alumnoId Student ID
-   * @param fechaAltaInicial New initial enrollment date (YYYY-MM-DD format)
-   */
-  actualizarFechaAltaInicial(
-    alumnoId: number,
-    fechaAltaInicial: string
-  ): Observable<any> {
-    return this.http.put<any>(
-      `${this.urlBase}/${alumnoId}/fecha-alta-inicial`,
-      { fechaAltaInicial },
       { withCredentials: true }
     );
   }

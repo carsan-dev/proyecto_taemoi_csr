@@ -688,7 +688,7 @@
             </div>
             }
 
-            @if (deporteItem.deporte !== 'PILATES' && deporteItem.deporte !== 'DEFENSA_PERSONAL_FEMENINA') {
+            @if (!deporteSinGrado(deporteItem.deporte)) {
             <div class="sport-info-item">
               <i class="bi" [class.bi-check-circle-fill]="deporteItem.aptoParaExamen"
                 [class.bi-x-circle-fill]="!deporteItem.aptoParaExamen"></i>

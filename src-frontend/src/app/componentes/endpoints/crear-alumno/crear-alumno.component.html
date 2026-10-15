@@ -258,16 +258,15 @@
                                   (change)="onDeporteChangeEnLista(i)"
                                   required>
                             <option value="" disabled selected>Selecciona el deporte</option>
-                            <option value="TAEKWONDO">Taekwondo</option>
-                            <option value="KICKBOXING">Kickboxing</option>
-                            <option value="PILATES">Pilates</option>
-                            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal Femenina</option>
+                            @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                            <option [value]="disciplina.codigo">{{ disciplina.nombre }}</option>
+                            }
                           </select>
                         </div>
                       </div>
 
-                      <!-- Grado dropdown (only for Taekwondo and Kickboxing) -->
-                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') {
+                      <!-- Grado dropdown (only for disciplines with a grading system) -->
+                      @if (catalogo.tieneGrados(deporteForm.get('deporte')?.value)) {
                       <div class="col-12 col-md-6">
                         <div class="admin-form-field">
                           <label [for]="'grado-' + i">
@@ -280,7 +279,7 @@
                             <option value="" disabled selected>Selecciona el grado</option>
                             @for (grado of obtenerGradosFiltradosParaDeporte(i); track grado.id) {
                               <option [value]="grado.tipoGrado">
-                                {{ grado.tipoGrado | titlecase }}
+                                {{ getGradoNombre(grado, deporteForm.get('deporte')?.value) }}
                               </option>
                             }
                           </select>
@@ -342,8 +341,8 @@
                                   formControlName="tipoTarifa" required
                                   (change)="onTipoTarifaChangeEnLista(i)">
                             <option value="" disabled selected>Selecciona una tarifa</option>
-                            @for (tarifa of obtenerTarifasFiltradas(i); track $index) {
-                              <option [value]="tarifa">{{ tarifa }}</option>
+                            @for (tarifa of obtenerTarifasFiltradas(i); track tarifa.codigo) {
+                              <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
                             }
                           </select>
                         </div>
@@ -361,8 +360,8 @@
                         </div>
                       </div>
 
-                      <!-- Rol Familiar (only for PADRES_HIJOS) -->
-                      @if (deporteForm.get('tipoTarifa')?.value === 'PADRES_HIJOS') {
+                      <!-- Rol Familiar (solo si la tarifa lo pide) -->
+                      @if (requiereRolFamiliar(i)) {
                       <div class="col-12 col-md-6">
                         <div class="admin-form-field">
                           <label [for]="'rolFamiliar-' + i">
@@ -382,8 +381,8 @@
                       </div>
                       }
 
-                      <!-- Grupo Familiar (only for HERMANOS) -->
-                      @if (deporteForm.get('tipoTarifa')?.value === 'HERMANOS') {
+                      <!-- Grupo Familiar (solo si la tarifa lo pide) -->
+                      @if (requiereGrupoFamiliar(i)) {
                       <div class="col-12 col-md-6">
                         <div class="admin-form-field">
                           <label [for]="'grupoFamiliar-' + i">
@@ -397,8 +396,8 @@
                       </div>
                       }
 
-                      <!-- Licencia Federativa (only for Taekwondo and Kickboxing) -->
-                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') {
+                      <!-- Licencia Federativa (only for disciplines that require a licence) -->
+                      @if (catalogo.requiereLicencia(deporteForm.get('deporte')?.value)) {
                       <div class="col-12">
                         <div class="admin-form-switch">
                           <label [for]="'tieneLicencia-' + i">
@@ -440,9 +439,9 @@
                       }
                       }
 
-                      <!-- Competidor (Taekwondo y Kickboxing) -->
-                      @if (deporteForm.get('deporte')?.value === 'TAEKWONDO' || deporteForm.get('deporte')?.value === 'KICKBOXING') {
-                      @if (deporteForm.get('tieneLicencia')?.value) {
+                      <!-- Competidor (disciplinas que permiten competición; con licencia si la disciplina la requiere) -->
+                      @if (catalogo.permiteCompeticion(deporteForm.get('deporte')?.value)) {
+                      @if (!catalogo.requiereLicencia(deporteForm.get('deporte')?.value) || deporteForm.get('tieneLicencia')?.value) {
                       <div class="col-12">
                         <div class="admin-form-switch">
                           <label [for]="'competidor-' + i">

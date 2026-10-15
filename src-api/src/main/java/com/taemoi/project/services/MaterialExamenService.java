@@ -3,17 +3,16 @@ package com.taemoi.project.services;
 import java.nio.file.Path;
 
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
-import com.taemoi.project.entities.Deporte;
 
 public interface MaterialExamenService {
 
-	MaterialExamenDTO obtenerMaterialExamen(Long alumnoId, Deporte deporte);
+	MaterialExamenDTO obtenerMaterialExamen(Long alumnoId, String deporte);
 
-	MaterialExamenArchivo obtenerTemario(Long alumnoId, Deporte deporte);
+	MaterialExamenArchivo obtenerTemario(Long alumnoId, String deporte);
 
-	MaterialExamenArchivo obtenerVideo(Long alumnoId, Deporte deporte, String videoFile);
+	MaterialExamenArchivo obtenerVideo(Long alumnoId, String deporte, String videoFile);
 
-	MaterialExamenArchivo obtenerDocumento(Long alumnoId, Deporte deporte, String documentoFile);
+	MaterialExamenArchivo obtenerDocumento(Long alumnoId, String deporte, String documentoFile);
 
 	class MaterialExamenArchivo {
 		private final Path path;

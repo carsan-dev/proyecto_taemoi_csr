@@ -7,6 +7,8 @@ import { TesoreriaCobrosComponent } from '../tesoreria-cobros/tesoreria-cobros.c
 import { InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
+import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('Acciones de informes administrativos', () => {
   let service: InformePdfService;
@@ -27,7 +29,7 @@ describe('Acciones de informes administrativos', () => {
   ];
   beforeEach(() => {
     const loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
-    TestBed.configureTestingModule({ providers: [InformePdfService, { provide: LoadingService, useValue: loading }] });
+    TestBed.configureTestingModule({ providers: [InformePdfService, { provide: LoadingService, useValue: loading }, proveerCatalogoTesting(CATALOGO_TAEMOI)] });
     service = TestBed.inject(InformePdfService);
     api = jasmine.createSpyObj('EndpointsService', [...casos.map(c => c[1]), 'generarInformeDeudas',
       'generarInformeDeudasCSV', 'generarInformeReservasPlaza', 'descargarAsistencia',

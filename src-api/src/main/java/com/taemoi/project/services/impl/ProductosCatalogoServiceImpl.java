@@ -1,5 +1,7 @@
 package com.taemoi.project.services.impl;
 
+
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -16,11 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Producto;
-import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
+import com.taemoi.project.services.ComportamientoLegadoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.ProgresionGradosService;
 
@@ -38,13 +40,16 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	private final GradoRepository grados;
 	private final CatalogoDisciplinasService catalogo;
 	private final ProgresionGradosService progresion;
+	private final ComportamientoLegadoService comportamientoLegado;
 
 	public ProductosCatalogoServiceImpl(ProductoRepository productos, GradoRepository grados,
-			CatalogoDisciplinasService catalogo, ProgresionGradosService progresion) {
+			CatalogoDisciplinasService catalogo, ProgresionGradosService progresion,
+			ComportamientoLegadoService comportamientoLegado) {
 		this.productos = productos;
 		this.grados = grados;
 		this.catalogo = catalogo;
 		this.progresion = progresion;
+		this.comportamientoLegado = comportamientoLegado;
 	}
 
 	@Override
@@ -149,19 +154,24 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	}
 
 	/**
-	 * Nombre de producto (en mayúsculas) -> código de grado que concede: los productos clasificados de
-	 * la organización activa y, hasta la contracción, los nombres que usaba el código (Taemoi).
+	 * Nombre de producto (en mayúsculas) -> código de grado que concede: con comportamiento heredado (solo
+	 * Taemoi), primero los nombres que usaba el código anterior ({@link CatalogoLegadoTaemoi}, los del antiguo
+	 * {@code TipoGrado} y las variantes «rojo bordado»); después, los productos clasificados de la
+	 * organización activa.
 	 */
 	private Map<String, String> nombresQueConcedenGrado(TipoProducto tipo) {
 		boolean recompensa = tipo == TipoProducto.RECOMPENSA;
 		Map<String, String> nombres = new LinkedHashMap<>();
-		for (TipoGrado grado : TipoGrado.values()) {
-			if (recompensa ? grado.tieneProductoRecompensa() : grado.tieneProductoExamen()) {
-				nombres.put(grado.obtenerNombreProducto(recompensa).toUpperCase(Locale.ROOT), grado.name());
+		if (comportamientoLegado.activo()) {
+			for (String grado : CatalogoLegadoTaemoi.codigosGrado()) {
+				String producto = CatalogoLegadoTaemoi.productoGradoLegado(grado, recompensa);
+				if (producto != null) {
+					nombres.put(producto.toUpperCase(Locale.ROOT), grado);
+				}
 			}
+			nombres.put((recompensa ? RECOMPENSA_ROJO_BORDADO : EXAMEN_ROJO_BORDADO).toUpperCase(Locale.ROOT),
+					CatalogoLegadoTaemoi.GRADO_ROJO);
 		}
-		nombres.put((recompensa ? RECOMPENSA_ROJO_BORDADO : EXAMEN_ROJO_BORDADO).toUpperCase(Locale.ROOT),
-				TipoGrado.ROJO.name());
 		for (Producto producto : productos.findByTipoAndGradoIsNotNullOrderByIdAsc(tipo)) {
 			if (producto.getConcepto() != null && !producto.getConcepto().isBlank()) {
 				nombres.putIfAbsent(producto.getConcepto().trim().toUpperCase(Locale.ROOT), producto.getGrado().getCodigo());
@@ -273,11 +283,12 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 		String prefijo = "LICENCIA_" + codigoDisciplina + "_";
 		String variante = discapacidad ? "DISCAPACIDAD" : (menor ? "INFANTIL" : "ADULTO");
 		String edad = menor ? "INFANTIL" : "ADULTO";
-		// 1. Un producto SIN clasificar con el concepto que buscaba el código hasta V27 (p. ej. una variante
-		// con otras mayúsculas o de id menor que V24 no clasificó): es el que se cobraba, y sigue siéndolo.
+		// 1. Solo con comportamiento heredado (Taemoi): un producto SIN clasificar con el concepto que buscaba
+		// el código hasta V27 (p. ej. una variante con otras mayúsculas o de id menor que V24 no clasificó): es
+		// el que se cobraba, y sigue siéndolo.
 		String conceptoLegado = conceptoLegadoLicencia(codigoDisciplina, discapacidad, menor, proporcional);
 		Optional<Producto> legado = productos.findFirstByConcepto(conceptoLegado);
-		if (legado.isPresent() && legado.get().getCodigo() == null) {
+		if (legado.isPresent() && legado.get().getCodigo() == null && comportamientoLegado.activo()) {
 			log.warn("Producto de licencia ({}) sin catálogo: se usa el de concepto «{}» (id {})", codigoDisciplina,
 					legado.get().getConcepto(), legado.get().getId());
 			return legado;
@@ -396,6 +407,10 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	 * continúa por el catálogo.
 	 */
 	private Optional<Producto> sinClasificar(String concepto, String uso, String codigoDisciplina) {
+		if (!comportamientoLegado.activo()) {
+			// Solo Taemoi (comportamiento heredado): las demás escuelas usan siempre el catálogo.
+			return Optional.empty();
+		}
 		Optional<Producto> producto = productos.findFirstByConcepto(concepto).filter(p -> p.getCodigo() == null);
 		producto.ifPresent(p -> log.warn("Producto de {} ({}) sin clasificar: se usa, como antes de V27, el de concepto «{}» (id {})",
 				uso, codigoDisciplina, p.getConcepto(), p.getId()));

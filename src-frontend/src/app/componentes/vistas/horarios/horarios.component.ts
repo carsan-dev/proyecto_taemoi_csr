@@ -1,9 +1,11 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { disciplinaDeEtiquetaHorario } from '../../../features/catalogo/legado-taemoi';
 
 interface TimeSlot {
   horaInicio: string;
@@ -42,6 +44,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
   // Mobile: selected day for tab view
   selectedDayIndex: number = 0;
   private readonly subscriptions: Subscription = new Subscription();
+  private readonly catalogo = inject(CatalogoService);
+  /** Primera disciplina del catálogo público (la página es pública: no hay catálogo autenticado). */
+  private primeraDisciplinaPublica = '';
 
   constructor(
     private readonly endpointsService: EndpointsService,
@@ -51,6 +56,18 @@ export class HorariosComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarLimiteTurno();
     this.obtenerTurnos();
+    this.cargarPrimeraDisciplinaPublica();
+  }
+
+  private cargarPrimeraDisciplinaPublica(): void {
+    const sub = this.catalogo.cargarPublico().subscribe({
+      next: (publico) => {
+        const disciplinas = [...(publico?.disciplinas ?? [])].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+        this.primeraDisciplinaPublica = disciplinas[0]?.codigo ?? '';
+      },
+      error: () => undefined,
+    });
+    this.subscriptions.add(sub);
   }
 
   cargarLimiteTurno(): void {
@@ -295,8 +312,10 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   private obtenerDeporteQuery(turno: any): string {
-    const deportes: Record<string, string> = { taekwondo: 'TAEKWONDO', kickboxing: 'KICKBOXING', pilates: 'PILATES', defensa: 'DEFENSA_PERSONAL_FEMENINA' };
-    return deportes[this.obtenerEtiquetaColor(turno)] ?? 'TAEKWONDO';
+    return (
+      disciplinaDeEtiquetaHorario(this.obtenerEtiquetaColor(turno)) ??
+      (this.catalogo.primeraDisciplinaActiva() || this.primeraDisciplinaPublica)
+    );
   }
 
   getAvailabilityClass(turno: any): string {

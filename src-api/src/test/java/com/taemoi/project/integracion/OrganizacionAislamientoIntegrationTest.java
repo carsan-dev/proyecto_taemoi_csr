@@ -32,7 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Organizacion;
@@ -262,8 +262,8 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(ids(alumnos.findAlumnosSinGrupo()).contains(ajenos.alumnoId));
 		assertFalse(ids(alumnos.findAlumnosAptosParaExamen()).contains(ajenos.alumnoId));
 		assertTrue(ids(alumnos.findAlumnosAptosParaExamen()).contains(propios.alumnoId));
-		assertFalse(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO)).contains(ajenos.alumnoId));
-		assertTrue(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO)).contains(propios.alumnoId));
+		assertFalse(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO.name())).contains(ajenos.alumnoId));
+		assertTrue(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO.name())).contains(propios.alumnoId));
 
 		// Specification usada por AlumnoServiceImpl.obtenerAlumnosFiltrados
 		assertTrue(alumnoService.obtenerAlumnosFiltrados(ajenos.marca, null, null, true).isEmpty());
@@ -290,7 +290,6 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		d.alumnoId = alumnoGuardado.getId();
 		AlumnoDeporte deporte = new AlumnoDeporte();
 		deporte.setAlumno(alumnoGuardado);
-		deporte.setDeporte(Deporte.TAEKWONDO);
 		deporte.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO"));
 		deporte.setActivo(true);
 		deporte.setPrincipal(true);
@@ -299,7 +298,6 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 
 		Grupo grupo = new Grupo();
 		grupo.setNombre("G " + marca);
-		grupo.setDeporte(Deporte.TAEKWONDO);
 		grupo.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO"));
 		grupo.getAlumnos().add(alumnos.findById(d.alumnoId).orElseThrow());
 		Grupo grupoGuardado = grupos.save(grupo);
@@ -322,7 +320,6 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		// La misma plantilla (deporte, versión) y la misma identidad en las dos escuelas:
 		// los únicos ahora incluyen organizacion_id.
 		PlantillaPreinscripcion plantilla = new PlantillaPreinscripcion();
-		plantilla.setDeporte(Deporte.PILATES);
 		plantilla.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "PILATES"));
 		plantilla.setVersion(900);
 		plantilla.setActiva(false);
@@ -337,7 +334,6 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		Preinscripcion p = new Preinscripcion();
 		p.setReferencia("IT" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
 		p.setTemporada("2099-2100");
-		p.setDeporte(Deporte.PILATES);
 		p.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "PILATES"));
 		p.setEstado(EstadoPreinscripcion.PENDIENTE);
 		p.setNombre("PRE " + marca);

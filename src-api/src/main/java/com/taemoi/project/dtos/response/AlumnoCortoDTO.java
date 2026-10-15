@@ -5,6 +5,10 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.entities.Imagen;
 
+/**
+ * Alumno en los listados cortos (grupos). {@code grado} es el nombre del grado en el catálogo de su escuela
+ * ({@code grado.nombre}; en Taemoi, desde V30, «BLANCO-AMARILLO», «MARRÓN» en kickboxing…).
+ */
 public class AlumnoCortoDTO {
 	private Long id;
 	private String nombre;
@@ -89,7 +93,7 @@ public class AlumnoCortoDTO {
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
-			grado = principal.getGrado().getTipoGrado().getNombre();
+			grado = principal.getGrado().getNombre();
 		}
 		return new AlumnoCortoDTO(
 			alumno.getId(),
@@ -108,9 +112,7 @@ public class AlumnoCortoDTO {
 		}
 
 		Alumno alumno = alumnoDeporte.getAlumno();
-		String grado = alumnoDeporte.getGrado() != null
-				? alumnoDeporte.getGrado().getTipoGrado().getNombre()
-				: null;
+		String grado = alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getNombre() : null;
 
 		return new AlumnoCortoDTO(
 			alumno.getId(),

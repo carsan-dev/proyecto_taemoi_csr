@@ -1,43 +1,11 @@
-/**
- * Enum for sport types (Deporte)
- */
-export enum Deporte {
-  TAEKWONDO = 'TAEKWONDO',
-  KICKBOXING = 'KICKBOXING',
-  PILATES = 'PILATES',
-  DEFENSA_PERSONAL_FEMENINA = 'DEFENSA_PERSONAL_FEMENINA'
-}
+import { catalogoActual } from '../features/catalogo/catalogo-actual';
 
 /**
- * Human-readable labels for each sport
+ * Etiqueta de una disciplina: `disciplina.nombre` del catálogo cargado (D2: «Defensa Personal Femenina»).
+ * Código desconocido (inscripciones antiguas) o catálogo sin cargar: el propio código (D15, nunca etiquetas de Taemoi).
+ * Los componentes con `CatalogoService` pueden usar `etiquetaDisciplina`; esta función es para código sin inyección
+ * (Swal, utilidades); sigue en uso en cinco componentes.
  */
-export const DeporteLabels: Record<Deporte, string> = {
-  [Deporte.TAEKWONDO]: 'Taekwondo',
-  [Deporte.KICKBOXING]: 'Kickboxing',
-  [Deporte.PILATES]: 'Pilates',
-  [Deporte.DEFENSA_PERSONAL_FEMENINA]: 'Defensa Personal Femenina'
-};
-
-/**
- * Array of all sports for iteration
- */
-export const DeportesArray: Deporte[] = [
-  Deporte.TAEKWONDO,
-  Deporte.KICKBOXING,
-  Deporte.PILATES,
-  Deporte.DEFENSA_PERSONAL_FEMENINA
-];
-
-/**
- * Utility function to get label for a sport
- */
-export function getDeporteLabel(deporte: string | Deporte): string {
-  return DeporteLabels[deporte as Deporte] || deporte;
-}
-
-/**
- * Utility function to check if a string is a valid Deporte
- */
-export function isValidDeporte(value: string): value is Deporte {
-  return Object.values(Deporte).includes(value as Deporte);
+export function getDeporteLabel(deporte: string): string {
+  return catalogoActual()?.disciplinas.find((d) => d.codigo === deporte)?.nombre || deporte;
 }

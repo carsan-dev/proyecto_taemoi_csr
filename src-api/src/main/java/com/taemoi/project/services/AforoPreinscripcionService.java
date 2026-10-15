@@ -37,5 +37,5 @@ public class AforoPreinscripcionService {
  }
  public List<Preinscripcion> cola(String temporada){return preinscripciones.findByTemporadaAndEstadoOrderByCreadaEnAscIdAsc(temporada,EstadoPreinscripcion.EN_LISTA_ESPERA);}
  public long posicion(Preinscripcion p){return 1+preinscripciones.countAnterioresSolapadas(p.getTemporada(),EstadoPreinscripcion.EN_LISTA_ESPERA,p.getTurnos(),p.getCreadaEn(),p.getId());}
- private int alumnosActivos(Turno turno,Deporte deporte){return (int)turno.getAlumnos().stream().filter(a->Boolean.TRUE.equals(a.getActivo())).filter(a->alumnoDeportes.existsByAlumnoIdAndDeporteAndActivoTrue(a.getId(),deporte)).map(Alumno::getId).distinct().count();}
+ private int alumnosActivos(Turno turno,String deporte){return (int)turno.getAlumnos().stream().filter(a->Boolean.TRUE.equals(a.getActivo())).filter(a->alumnoDeportes.existsByAlumnoIdAndDeporteAndActivoTrue(a.getId(),deporte)).map(Alumno::getId).distinct().count();}
 }
