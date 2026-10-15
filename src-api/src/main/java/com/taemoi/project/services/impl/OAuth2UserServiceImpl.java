@@ -16,6 +16,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.OAuth2UserService;
+import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.utils.EmailUtils;
 
 /**
@@ -29,15 +30,18 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	private final UsuarioRepository usuarioRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final MembresiaService membresiaService;
+	private final VinculoFamiliaService vinculoFamiliaService;
 
 	public OAuth2UserServiceImpl(AlumnoRepository alumnoRepository,
 								 UsuarioRepository usuarioRepository,
 								 PasswordEncoder passwordEncoder,
-								 MembresiaService membresiaService) {
+								 MembresiaService membresiaService,
+								 VinculoFamiliaService vinculoFamiliaService) {
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.membresiaService = membresiaService;
+		this.vinculoFamiliaService = vinculoFamiliaService;
 	}
 
 	/**
@@ -49,7 +53,8 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	 * 2. Verifica si ya existe un usuario con ese email
 	 * 3. Si no existe, busca todos los alumnos con ese email (puede haber varios)
 	 * 4. Si encuentra alumnos sin cuenta, crea automáticamente un usuario y lo vincula al primero de ellos
-	 *    (los demás alumnos se pueden acceder a través del email compartido)
+	 *    (usuario.alumno_id) y escribe usuario_alumno con todos ellos y con los inactivos sin cuenta
+	 *    (los alumnos con otra cuenta, no)
 	 *
 	 * @param oauth2User El usuario OAuth2 autenticado (de Google).
 	 * @param registrationId El ID del proveedor (ej. "google").
@@ -94,17 +99,17 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		List<Alumno> alumnos = EmailUtils.puedeVincularAlumnos(email)
 				? alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email)
 				: List.of();
-		Optional<Alumno> alumnoSinCuenta = alumnos.stream()
+		List<Alumno> alumnosSinCuenta = alumnos.stream()
 				.filter(alumno -> alumno.getUsuario() == null)
-				.findFirst();
-		if (alumnoSinCuenta.isEmpty()) {
+				.toList();
+		if (alumnosSinCuenta.isEmpty()) {
 			// No hay ningún alumno libre con este email, no se puede crear usuario
 			throw sinAlumnoConEmail(email);
 		}
 
-		// Tomar el primer alumno libre para vincularlo al usuario
-		// (Los demás alumnos se accederán a través del email compartido)
-		Alumno primerAlumno = alumnoSinCuenta.get();
+		// Tomar el primer alumno libre para vincularlo al usuario (usuario.alumno_id es UNIQUE)
+		// (Los demás alumnos se accederán a través de usuario_alumno y, en Taemoi, del email compartido)
+		Alumno primerAlumno = alumnosSinCuenta.get(0);
 
 		// Crear nuevo usuario automáticamente
 		Usuario nuevoUsuario = new Usuario();
@@ -126,6 +131,18 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 
 		// Igual que el registro: familia en la escuela del alumno.
 		membresiaService.asegurarMembresia(savedUser.getId(), primerAlumno.getOrganizacionId(), RolMembresia.FAMILIA);
+
+		// Vínculo explícito de familia con TODOS los alumnos libres del email (fase 3, entrega 2b; §5 «Altas
+		// nuevas»), también los inactivos: la lectura ya filtra por activo y así se verán al reactivarlos. Los que ya
+		// tienen otra cuenta no se vinculan (opción conservadora, pendiente del propietario).
+		for (Alumno alumno : alumnosSinCuenta) {
+			vinculoFamiliaService.vincularAlta(savedUser, alumno);
+		}
+		for (Alumno alumno : alumnoRepository.findAllByEmailIgnoreCase(email)) {
+			if (!Boolean.TRUE.equals(alumno.getActivo()) && alumno.getUsuario() == null) {
+				vinculoFamiliaService.vincularAlta(savedUser, alumno);
+			}
+		}
 
 		// Actualizar la referencia en el primer alumno
 		primerAlumno.setUsuario(savedUser);

@@ -420,22 +420,20 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
 				usuarioId));
 
-		// Fase 3, entrega 2a: la escuela 2 no tiene comportamiento_legado_taemoi, así que solo el vínculo
-		// explícito (usuario_alumno) da acceso de familia. El registro aún no lo escribe (entrega 2b): sin él la
-		// cuenta no entra. Cuando la 2b lo escriba, esta comprobación fallará y se quita junto con el INSERT.
-		assertEquals(0, jdbc.queryForObject(
-				"SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", Integer.class,
-				usuarioId, alumnoId), "entrega 2b: el registro ya escribe usuario_alumno; quitar este bloque");
-		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
-				.content("{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.mensaje").value("No hay alumnos activos asociados a esta cuenta."));
-		jdbc.update("""
-				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
-				VALUES (?, ?, ?, 'TUTOR', 'REGISTRO')
-				""", usuarioId, alumnoId, org2);
-
-		assertEquals(org2, jwtService.verificar(login(email)).organizacionId());
+		// Fase 3: la escuela 2 no tiene comportamiento_legado_taemoi, así que solo el vínculo explícito
+		// (usuario_alumno) da acceso de familia. Desde la entrega 2b el registro escribe esa fila (origen REGISTRO;
+		// la relación por edad se prueba en AltasFamiliaUsuarioAlumnoIntegrationTest) y la cuenta entra y ve su
+		// alumno sin nada más.
+		assertEquals(List.of(org2 + ":REGISTRO"), jdbc.queryForList("""
+				SELECT CONCAT(organizacion_id, ':', origen) FROM usuario_alumno
+				WHERE usuario_id = ? AND alumno_id = ?
+				""", String.class, usuarioId, alumnoId));
+		String sesion = login(email);
+		assertEquals(org2, jwtService.verificar(sesion).organizacionId());
+		mvc.perform(get("/api/auth/user/alumnos").cookie(jwt(sesion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id").value(alumnoId));
 	}
 
 	@Test

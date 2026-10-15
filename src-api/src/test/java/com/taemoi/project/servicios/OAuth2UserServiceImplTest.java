@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -42,6 +44,7 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
+import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.services.impl.OAuth2UserServiceImpl;
 
 /**
@@ -58,11 +61,13 @@ class OAuth2UserServiceImplTest {
 	private final AlumnoRepository alumnos = mock(AlumnoRepository.class);
 	private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
 	private final MembresiaService membresias = mock(MembresiaService.class);
+	private final VinculoFamiliaService vinculos = mock(VinculoFamiliaService.class);
 	private OAuth2UserServiceImpl servicio;
 
 	@BeforeEach
 	void setup() {
-		servicio = new OAuth2UserServiceImpl(alumnos, usuarios, NoOpPasswordEncoder.getInstance(), membresias);
+		servicio = new OAuth2UserServiceImpl(alumnos, usuarios, NoOpPasswordEncoder.getInstance(), membresias,
+				vinculos);
 		when(usuarios.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
 		when(usuarios.save(any(Usuario.class))).thenAnswer(call -> {
 			Usuario u = call.getArgument(0);
@@ -106,6 +111,7 @@ class OAuth2UserServiceImplTest {
 		verify(usuarios, never()).save(any(Usuario.class));
 		verify(alumnos, never()).save(any(Alumno.class));
 		verify(membresias, never()).asegurarMembresia(anyLong(), any(), any());
+		verify(vinculos, never()).vincularAlta(any(), any());
 	}
 
 	@Test
@@ -207,6 +213,99 @@ class OAuth2UserServiceImplTest {
 
 		assertEquals(MENSAJE_SIN_ALUMNO, e.getMessage());
 		verificarSinEscrituras();
+	}
+
+	// ------------------------------------------------------------------ entrega 2b: usuario_alumno
+
+	@Test
+	void cuentaNuevaVinculaEnUsuarioAlumnoTodosLosAlumnosLibresDelEmail() {
+		Alumno primero = alumno(1L, EMAIL_X);
+		Alumno hermano = alumno(2L, EMAIL_X);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of(primero, hermano));
+
+		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
+
+		assertSame(primero, resultado.getAlumno(), "usuario.alumno_id sigue siendo el primer alumno libre");
+		verify(vinculos).vincularAlta(resultado, primero);
+		verify(vinculos).vincularAlta(resultado, hermano);
+		assertEquals(null, hermano.getUsuario(), "solo un alumno ocupa usuario.alumno_id (UNIQUE)");
+		verify(alumnos, never()).save(hermano);
+	}
+
+	@Test
+	void alumnoDelEmailConOtraCuentaNoSeVinculaEnUsuarioAlumno() {
+		// Opción conservadora (decisión pendiente del propietario): el alumno con email X que ya tiene la cuenta
+		// Y no se vincula a la cuenta nueva X.
+		Alumno vinculado = alumno(1L, EMAIL_X);
+		cuentaY(vinculado);
+		Alumno libre = alumno(2L, EMAIL_X);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of(vinculado, libre));
+
+		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
+
+		verify(vinculos).vincularAlta(resultado, libre);
+		verify(vinculos, never()).vincularAlta(any(), eq(vinculado));
+	}
+
+	@Test
+	void elVinculoSeEscribeDespuesDeLaMembresiaDeFamilia() {
+		Alumno alumnoX = alumno(1L, EMAIL_X);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of(alumnoX));
+
+		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
+
+		InOrder orden = inOrder(usuarios, membresias, vinculos);
+		orden.verify(usuarios).save(resultado);
+		orden.verify(membresias).asegurarMembresia(eq(99L), any(), eq(RolMembresia.FAMILIA));
+		orden.verify(vinculos).vincularAlta(resultado, alumnoX);
+	}
+
+	@Test
+	void tambienSeVinculanLosAlumnosInactivosSinCuentaPeroNuncaOcupanAlumnoId() {
+		Alumno activo = alumno(1L, EMAIL_X);
+		Alumno inactivoLibre = alumno(2L, EMAIL_X);
+		inactivoLibre.setActivo(false);
+		Alumno inactivoDeY = alumno(3L, EMAIL_X);
+		inactivoDeY.setActivo(false);
+		cuentaY(inactivoDeY);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of(activo));
+		when(alumnos.findAllByEmailIgnoreCase(EMAIL_X)).thenReturn(List.of(inactivoLibre, activo, inactivoDeY));
+
+		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
+
+		assertSame(activo, resultado.getAlumno());
+		verify(vinculos).vincularAlta(resultado, activo);
+		verify(vinculos).vincularAlta(resultado, inactivoLibre);
+		verify(vinculos, never()).vincularAlta(any(), eq(inactivoDeY));
+		verify(alumnos, never()).save(inactivoLibre);
+	}
+
+	@Test
+	void soloAlumnosInactivosLibresSigueRechazandose() {
+		Alumno inactivoLibre = alumno(2L, EMAIL_X);
+		inactivoLibre.setActivo(false);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of());
+		when(alumnos.findAllByEmailIgnoreCase(EMAIL_X)).thenReturn(List.of(inactivoLibre));
+
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
+
+		assertEquals(MENSAJE_SIN_ALUMNO, e.getMessage());
+		verificarSinEscrituras();
+	}
+
+	@Test
+	void cuentaExistenteNoEscribeVinculos() {
+		Usuario x = new Usuario();
+		x.setId(3L);
+		x.setEmail(EMAIL_X);
+		x.setAuthProvider(AuthProvider.GOOGLE);
+		when(usuarios.findByEmailIgnoreCase(EMAIL_X)).thenReturn(Optional.of(x));
+		when(membresias.elegirOrganizacionParaLogin(x)).thenReturn(Optional.of(1L));
+
+		servicio.processOAuth2Login(google(EMAIL_X, true), "google");
+
+		verify(vinculos, never()).vincularAlta(any(), any());
 	}
 
 	@Test

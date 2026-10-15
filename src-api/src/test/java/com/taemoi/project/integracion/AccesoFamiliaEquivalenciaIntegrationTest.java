@@ -212,7 +212,18 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		vincular(sinActiva2, alumno("org2-membresia-inactiva-1", org2, "mi2-otro-" + sufijo + "@example.test"),
 				org2, "MANUAL");
 
-		// Taemoi: un vínculo explícito (no MIGRACION) con un alumno de otro email también cuenta.
+		// Taemoi, entrega 2b: filas REGISTRO (registro o Google) de alumnos de su email; después la gestión cambia
+		// el email de uno y vacía el de otro. Como antes, en Taemoi esos dos dejan de verse (la fila REGISTRO solo
+		// cuenta con el email coincidente en las escuelas con la marca).
+		long registroT = cuenta("taemoi-registro", ORG1, RolMembresia.FAMILIA);
+		for (String ficha : List.of("taemoi-registro-igual", "taemoi-registro-cambiado", "taemoi-registro-vaciado")) {
+			vincular(registroT, alumno(ficha, ORG1, email(registroT)), ORG1, "REGISTRO");
+		}
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", "tr-cambiado-" + sufijo + "@example.test",
+				fichas.get("taemoi-registro-cambiado"));
+		jdbc.update("UPDATE alumno SET email = NULL WHERE id = ?", fichas.get("taemoi-registro-vaciado"));
+
+		// Taemoi: un vínculo MANUAL con un alumno de otro email también cuenta.
 		long manual1 = cuenta("taemoi-manual", ORG1, RolMembresia.FAMILIA);
 		alumno("taemoi-manual-propio", ORG1, email(manual1));
 	}
@@ -295,6 +306,7 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		esperarEnTaemoi("familia-r1-otro-email", "familia-r1-propio");
 		esperarEnTaemoi("espacio-alumno", "espacio-alumno-2");
 		esperarEnTaemoi("multi-escuela", "multi-1");
+		esperarEnTaemoi("taemoi-registro", "taemoi-registro-igual");
 
 		// Las filas que harían falta para distinguir los casos existen (V31 las creó).
 		assertEquals("MIGRACION", origen("gestor-activo", "gestor-activo-otro"));
@@ -302,6 +314,8 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("MIGRACION", origen("email-cambiado", "email-cambiado-1"));
 		assertEquals("MIGRACION", origen("mayus", "mayus-1"));
 		assertEquals("MIGRACION", origen("membresia-inactiva", "membresia-inactiva-1"));
+		assertEquals("REGISTRO", origen("taemoi-registro", "taemoi-registro-cambiado"));
+		assertEquals("REGISTRO", origen("taemoi-registro", "taemoi-registro-vaciado"));
 		assertNull(origen("familia-r1-otro-email", "familia-r1-otro"), "R1 solo familia y otro email: sin fila");
 		assertNull(origen("blanco", "blanco-1"), "email en blanco: sin fila");
 		assertNull(origen("sin-membresia", "sin-membresia-1"), "R3: sin membresía, sin fila");
@@ -309,9 +323,9 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Un vínculo explícito (no MIGRACION) da acceso también en Taemoi aunque el email sea otro. Hoy no existe
-	 * ninguno (V31 solo crea filas MIGRACION y esta entrega no escribe): la fila se quita al terminar para no
-	 * alterar la equivalencia, que describe los datos de hoy.
+	 * Un vínculo MANUAL da acceso también en Taemoi aunque el email sea otro (REGISTRO y MIGRACION no: ver el caso
+	 * «taemoi-registro»). Hoy no existe ninguno (V31 solo crea filas MIGRACION y las altas, REGISTRO): la fila se
+	 * quita al terminar para no alterar la equivalencia, que describe los datos de hoy.
 	 */
 	@Test
 	void taemoi_vinculoExplicitoConOtroEmailTambienDaAcceso() {

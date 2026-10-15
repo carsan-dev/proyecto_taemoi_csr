@@ -15,8 +15,8 @@ import jakarta.persistence.Table;
 /**
  * Ficha de alumno que ve una cuenta (V31). Sustituirá a {@code usuario.alumno_id} y a la comprobación por email
  * del acceso de familia (fase 3, entrega 2). Desde la entrega 2a la lee el acceso de familia
- * ({@code AlumnoRepository.ACCESO_FAMILIA} vía {@code AccesoFamiliaService}); la rellena V31 y aún no la escribe
- * el código (registro y Google: entrega 2b).
+ * ({@code AlumnoRepository.ACCESO_FAMILIA} vía {@code AccesoFamiliaService}); la rellena V31 y, desde la entrega
+ * 2b, la escriben el registro y el primer login con Google ({@code VinculoFamiliaService}, origen REGISTRO).
  *
  * <p>{@code organizacion_id} es la del alumno (desnormalizada). NO es una {@link EntidadOrganizacion}: como
  * {@link Membresia}, el inicio de sesión la consultará antes de fijar la escuela. Por eso TODA consulta debe

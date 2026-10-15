@@ -203,10 +203,12 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	 *
 	 * <p>Alumno ACTIVO de la escuela, cuenta con alguna membresía ACTIVA en ella (sin ella no hay sesión), y:
 	 * <ul>
-	 * <li>(a) fila en {@code usuario_alumno}, salvo una fila de V31 ({@code origen = 'MIGRACION'}) de un alumno
-	 * cuyo email no es el de la cuenta: esa fila solo la pudo crear R1 para un gestor (o el email cambió después)
-	 * y solo cuenta mientras la cuenta tenga una membresía de gestión ACTIVA en la escuela (el «gestor degradado»
-	 * de §5 deja de verla) y la escuela no tenga la marca (en Taemoi, D6, el email sigue mandando: ver (b));</li>
+	 * <li>(a) fila en {@code usuario_alumno} que cuenta: {@code MANUAL} siempre; {@code REGISTRO} (altas por
+	 * registro o Google, entrega 2b) siempre en las escuelas sin la marca; cualquier fila cuyo alumno tenga el email
+	 * de la cuenta; y, solo en escuelas sin la marca, cualquier fila mientras la cuenta tenga una membresía de
+	 * gestión ACTIVA (una fila {@code MIGRACION} de otro email solo la pudo crear R1 para un gestor; el «gestor
+	 * degradado» de §5 deja de verla). En Taemoi (D6) las filas {@code REGISTRO} y {@code MIGRACION} solo cuentan
+	 * con el email coincidente, así que cambiar o vaciar el email del alumno le quita el acceso como antes;</li>
 	 * <li>(b) solo con {@code organizacion.comportamiento_legado_taemoi}: el email del alumno es el de la cuenta,
 	 * exactamente como antes ({@code LOWER(email) = LOWER(:email)}, email del alumno sin recortar).</li>
 	 * </ul>
@@ -228,7 +230,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 			                  WHERE ua.usuario_id = :usuarioId
 			                    AND ua.alumno_id = a.id
 			                    AND ua.organizacion_id = a.organizacion_id
-			                    AND (ua.origen <> 'MIGRACION'
+			                    AND (ua.origen = 'MANUAL'
+			                         OR (ua.origen = 'REGISTRO' AND o.comportamiento_legado_taemoi = FALSE)
 			                         OR (:email <> '' AND LOWER(a.email) = LOWER(:email))
 			                         OR (o.comportamiento_legado_taemoi = FALSE
 			                             AND EXISTS (SELECT 1 FROM membresia g

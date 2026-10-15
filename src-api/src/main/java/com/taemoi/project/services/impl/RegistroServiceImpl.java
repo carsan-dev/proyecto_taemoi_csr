@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.request.RegistroSolicitudRequest;
 import com.taemoi.project.entities.Alumno;
@@ -29,6 +30,7 @@ import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.RegistroService;
+import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.utils.EmailUtils;
 
 @Service
@@ -41,6 +43,7 @@ public class RegistroServiceImpl implements RegistroService {
 	private final PasswordEncoder passwordEncoder;
 	private final EmailService emailService;
 	private final MembresiaService membresiaService;
+	private final VinculoFamiliaService vinculoFamiliaService;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Value("${app.frontend.base-url:https://moiskimdo.es}")
@@ -54,13 +57,15 @@ public class RegistroServiceImpl implements RegistroService {
 			UsuarioRepository usuarioRepository,
 			PasswordEncoder passwordEncoder,
 			EmailService emailService,
-			MembresiaService membresiaService) {
+			MembresiaService membresiaService,
+			VinculoFamiliaService vinculoFamiliaService) {
 		this.registroPendienteRepository = registroPendienteRepository;
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.emailService = emailService;
 		this.membresiaService = membresiaService;
+		this.vinculoFamiliaService = vinculoFamiliaService;
 	}
 
 	@Override
@@ -107,7 +112,14 @@ public class RegistroServiceImpl implements RegistroService {
 		emailService.sendEmail(normalizedEmail, "Confirmar registro", contenido);
 	}
 
+	/**
+	 * Transaccional: cuenta, membresía, vínculo {@code usuario_alumno} y borrado de la solicitud se confirman juntos
+	 * (si el vínculo falla no queda una cuenta sin él). Los rechazos ({@code IllegalArgumentException}) no deshacen
+	 * nada: así se mantiene el borrado de la solicitud caducada o inservible que hacen antes de lanzar, y ninguno se
+	 * lanza después de crear la cuenta.
+	 */
 	@Override
+	@Transactional(noRollbackFor = IllegalArgumentException.class)
 	public void confirmarRegistro(String token) {
 		if (token == null || token.isBlank()) {
 			throw new IllegalArgumentException("Token invalido o caducado.");
@@ -147,6 +159,12 @@ public class RegistroServiceImpl implements RegistroService {
 		usuarioRepository.save(usuario);
 		// Familia en la escuela del alumno (sustituye a ROLE_USER en usuario_rol).
 		membresiaService.asegurarMembresia(usuario.getId(), alumno.getOrganizacionId(), RolMembresia.FAMILIA);
+		// Vínculo explícito de familia (fase 3, entrega 2b), además de usuario.alumno_id hasta V32. Solo si el
+		// alumno sigue teniendo el email de la cuenta (pudo cambiar desde la solicitud): como V31, una cuenta solo
+		// familia no se vincula con un alumno de otro email, que hoy no ve.
+		if (alumnoRepository.existsByIdAndEmailIgnoreCase(alumno.getId(), registro.getEmail())) {
+			vinculoFamiliaService.vincularAlta(usuario, alumno);
+		}
 
 		alumno.setUsuario(usuario);
 		alumnoRepository.save(alumno);
