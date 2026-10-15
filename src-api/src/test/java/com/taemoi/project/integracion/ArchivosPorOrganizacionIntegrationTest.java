@@ -262,6 +262,72 @@ class ArchivosPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(401, estado(get("/imagenes/" + imagenLegado)));
 	}
 
+	@Test
+	void fotoHeredadaConRutaDeOtroEntornoYNombreOriginalSeSirvePorElNombreDeLaRuta() throws Exception {
+		// Como en producción: ruta absoluta del host anterior a Docker (no existe aquí) y nombre = nombre ORIGINAL
+		// de la subida, distinto del fichero guardado; el fichero está en <raiz>/alumnos/<fichero de la ruta>.
+		String fichero = UUID.randomUUID() + "_x.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(fichero), "img-otro-entorno");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("foto original.jpg", "image/webp",
+				"/imagenes/alumnos/" + fichero, "/opt/taemoi/static_resources/imagenes/alumnos/" + fichero)));
+
+		MockHttpServletResponse r = mvc.perform(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenAdmin1)))
+				.andReturn().getResponse();
+		assertEquals(200, r.getStatus());
+		assertEquals("img-otro-entorno", r.getContentAsString());
+		// Escuela activa 2: no se sirve.
+		assertDenegado(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenAdmin2)));
+		assertEquals(401, estado(get("/imagenes/alumnos/" + fichero)));
+		assertDenegado(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenFamiliaA)));
+
+		// Fila con la misma forma pero de OTRA escuela: la consulta filtrada por escuela no la ve.
+		String deOtraEscuela = UUID.randomUUID() + "_y.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(deOtraEscuela), "img-de-otra-escuela");
+		TenantContext.ejecutarCon(org2, () -> imagenes.save(new Imagen("otra original.jpg", "image/webp",
+				"/imagenes/alumnos/" + deOtraEscuela, "/opt/taemoi/static_resources/imagenes/alumnos/" + deOtraEscuela)));
+		assertDenegado(get("/imagenes/alumnos/" + deOtraEscuela).cookie(jwt(tokenAdmin1)));
+
+		// Fichero en disco sin ninguna fila: no se sirve.
+		String sinFila = UUID.randomUUID() + "_z.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(sinFila), "img-sin-fila");
+		assertDenegado(get("/imagenes/alumnos/" + sinFila).cookie(jwt(tokenAdmin1)));
+	}
+
+	@Test
+	void fotoHeredadaNoDaAccesoAFicherosSinFilaQueSoloCoincidenEnParteDelNombre() throws Exception {
+		String otroEntorno = "/opt/taemoi/static_resources/imagenes/alumnos/";
+		String id = UUID.randomUUID().toString();
+
+		// Fila de la escuela 1 cuya ruta termina en "<id>_x_"; en disco hay un fichero SIN fila cuyo nombre
+		// empieza igual ("<id>_x_foto.webp"): no se sirve.
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("foto.jpg", "image/webp",
+				"/imagenes/alumnos/" + id + "_x_", otroEntorno + id + "_x_")));
+		String empiezaIgual = id + "_x_foto.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(empiezaIgual), "img-empieza-igual");
+		assertDenegado(get("/imagenes/alumnos/" + empiezaIgual).cookie(jwt(tokenAdmin1)));
+
+		// Fila cuya ruta TERMINA con el nombre de un fichero sin fila (la consulta por sufijo la encuentra):
+		// su propio fichero se sirve, el del sufijo no.
+		String sufijo = UUID.randomUUID() + "_s.webp";
+		String conPrefijo = "pre" + sufijo;
+		escribir(IMAGENES.resolve("alumnos").resolve(conPrefijo), "img-con-prefijo");
+		escribir(IMAGENES.resolve("alumnos").resolve(sufijo), "img-sufijo-sin-fila");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("original.jpg", "image/webp",
+				"/imagenes/alumnos/" + conPrefijo, otroEntorno + conPrefijo)));
+		assertEquals(200, estado(get("/imagenes/alumnos/" + conPrefijo).cookie(jwt(tokenAdmin1))));
+		assertDenegado(get("/imagenes/alumnos/" + sufijo).cookie(jwt(tokenAdmin1)));
+
+		// "_" pedido no actúa como comodín: la fila "<id2>Zw.webp" no autoriza el fichero sin fila "<id2>_w.webp".
+		String id2 = UUID.randomUUID().toString();
+		String deLaFila = id2 + "Zw.webp";
+		String comodin = id2 + "_w.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(deLaFila), "img-de-la-fila");
+		escribir(IMAGENES.resolve("alumnos").resolve(comodin), "img-comodin-sin-fila");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("otra.jpg", "image/webp",
+				"/imagenes/alumnos/" + deLaFila, otroEntorno + deLaFila)));
+		assertDenegado(get("/imagenes/alumnos/" + comodin).cookie(jwt(tokenAdmin1)));
+	}
+
 	// ------------------------------------------------------------------ públicos
 
 	@Test
