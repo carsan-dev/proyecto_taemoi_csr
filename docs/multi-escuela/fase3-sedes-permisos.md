@@ -226,7 +226,9 @@ Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en 
 - **`relacion`:** `PROPIO` si el alumno tiene 18 años o más hoy, `TUTOR` si no o sin fecha (D7). Solo
   informativa en esta fase.
 - Altas nuevas: registro y Google escriben `usuario_alumno` (y `alumno_id` hasta V32); Google vincula
-  todos los alumnos del email, no solo el primero.
+  todos los alumnos del email **que no tengan ya otra cuenta**, no solo el primero (decisión del
+  propietario, 15/10/2026, opción A: un alumno ya vinculado a otra cuenta solo se comparte con un
+  vínculo MANUAL que crea la gestión).
 - Cambio de email del alumno o alta de un hermano en Taemoi: ver D6.
 - **Gestor degradado después de V31:** una fila creada por R1 para un gestor activo (alumno de otro email)
   deja de corresponder a un acceso de hoy si después se le degrada (membresía de gestión desactivada). La
