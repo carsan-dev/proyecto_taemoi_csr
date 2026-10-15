@@ -1,5 +1,7 @@
 # Checklist de despliegue multi-escuela
 
+Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-produccion.md](../operacion/procedimiento-produccion.md).
+
 ## Antes
 - [ ] Copia de seguridad de la base de datos y de las carpetas de documentos e imágenes.
 - [x] Contar usuarios sin rol (no podrán iniciar sesión tras V20); decidir su rol si hay alguno.

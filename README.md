@@ -221,6 +221,7 @@ npm run build:production
 
 - Documentación general del proyecto: `docs/`
 - Despliegue: `docs/Despliegue/README.md`
+- Operación en producción (despliegue, copias, vuelta atrás): `docs/operacion/procedimiento-produccion.md`
 - Diseño: `docs/Diseño/README.md`
 - Esquema de base de datos: `docs/BBDD/Esquema-relacional-BBDD-TaeMoi.pdf`
 - Colección Postman del backend: `src-api/API TAEMOI.postman_collection.json`
