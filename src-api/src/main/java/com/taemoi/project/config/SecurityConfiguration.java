@@ -100,6 +100,8 @@ public class SecurityConfiguration {
 						.requestMatchers("/oauth2/**").permitAll()
 						// Static resources that browsers request automatically
 						.requestMatchers("/favicon.ico", "/error").permitAll()
+						// Healthcheck de Docker/despliegue: solo GET y solo esta ruta; fuera de /api, no se audita.
+						.requestMatchers(HttpMethod.GET, "/healthz").permitAll()
 						// Protected images - alumno photos require ADMIN or MANAGER role (heredadas y por escuela).
 						// ArchivoEstaticoController/AccesoArchivos además exige la escuela activa y la fila Imagen.
 						.requestMatchers("/imagenes/alumnos/**", "/imagenes/org-*/alumnos/**")

@@ -190,15 +190,19 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			Integer size,
 			Boolean incluirRuido) {
 		Specification<AuditoriaEvento> spec = Specification.unrestricted();
+		RangoEstadoHttp rangoResultado = rangoResultado(resultado);
 		spec = spec.and(filtroFechaDesde(desde))
 				.and(filtroFechaHasta(hasta))
-				.and(filtroResultado(resultado))
+				.and(filtroResultado(rangoResultado))
 				.and(filtroAccion(accion))
 				.and(filtroModulo(modulo))
 				.and(filtroUsuario(usuario))
 				.and(filtroEndpoint(endpoint))
 				.and(filtroTextoLibre(texto));
-		if (!Boolean.TRUE.equals(incluirRuido)) {
+		// El ruido de escáner exige estado_http IN (401,403,404,405,415): si el filtro de resultado ya excluye
+		// esos estados (p. ej. EXITO = 200..299), el predicado vale TRUE en toda fila que llegue hasta él y no se
+		// añade. Mismas filas y mismo total, pero el COUNT del Page se queda sin los LIKE sobre el endpoint.
+		if (!Boolean.TRUE.equals(incluirRuido) && puedeContenerRuidoEscaner(rangoResultado)) {
 			spec = spec.and(filtroExcluirRuidoEscaner());
 		}
 
@@ -391,18 +395,44 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 		return (root, query, cb) -> cb.equal(root.get("accion"), accionEnum);
 	}
 
-	private Specification<AuditoriaEvento> filtroResultado(String resultado) {
+	/** Rango de estado_http de un valor del filtro «resultado»; {@code maximo} null = sin límite superior. */
+	private record RangoEstadoHttp(int minimo, Integer maximo) {
+		boolean contiene(int estado) {
+			return estado >= minimo && (maximo == null || estado <= maximo);
+		}
+	}
+
+	private static final RangoEstadoHttp RANGO_EXITO = new RangoEstadoHttp(200, 299);
+	private static final RangoEstadoHttp RANGO_ERROR = new RangoEstadoHttp(400, null);
+
+	/** {@code null} = sin filtro de resultado (vacío o TODOS). */
+	private RangoEstadoHttp rangoResultado(String resultado) {
 		if (resultado == null || resultado.isBlank() || "TODOS".equalsIgnoreCase(resultado)) {
 			return null;
 		}
 
 		String resultadoNormalizado = resultado.trim().toUpperCase(Locale.ROOT);
 		return switch (resultadoNormalizado) {
-		case "EXITO" -> (root, query, cb) -> cb.between(root.get("estadoHttp"), 200, 299);
-		case "ERROR" -> (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("estadoHttp"), 400);
+		case "EXITO" -> RANGO_EXITO;
+		case "ERROR" -> RANGO_ERROR;
 		default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 				"Resultado de auditoria no valido: " + resultado);
 		};
+	}
+
+	private Specification<AuditoriaEvento> filtroResultado(RangoEstadoHttp rango) {
+		if (rango == null) {
+			return null;
+		}
+		if (rango.maximo() == null) {
+			return (root, query, cb) -> cb.greaterThanOrEqualTo(root.get("estadoHttp"), rango.minimo());
+		}
+		return (root, query, cb) -> cb.between(root.get("estadoHttp"), rango.minimo(), rango.maximo());
+	}
+
+	/** Si alguna fila del rango puede tener un estado de ruido de escáner (sin rango: todas pueden). */
+	private static boolean puedeContenerRuidoEscaner(RangoEstadoHttp rango) {
+		return rango == null || ESTADOS_HTTP_RUIDO_ESCANER.stream().anyMatch(rango::contiene);
 	}
 
 	private Specification<AuditoriaEvento> filtroModulo(String modulo) {
