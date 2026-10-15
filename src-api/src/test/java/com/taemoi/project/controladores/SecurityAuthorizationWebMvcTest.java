@@ -31,6 +31,7 @@ import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.AuthenticationService;
@@ -99,6 +100,9 @@ class SecurityAuthorizationWebMvcTest {
 
 	@MockitoBean
 	private MembresiaService membresiaService;
+
+	@MockitoBean
+	private AccesoFamiliaService accesoFamiliaService;
 
 	@Test
 	void anonymousCannotReadAuthRoles() throws Exception {

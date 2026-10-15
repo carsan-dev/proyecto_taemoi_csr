@@ -30,6 +30,8 @@ import com.taemoi.project.services.impl.*;
 class PasswordResetServiceImplTest {
     private final UsuarioRepository users = mock(UsuarioRepository.class);
     private final AlumnoRepository alumnos = mock(AlumnoRepository.class);
+    private final com.taemoi.project.services.AccesoFamiliaService acceso =
+        mock(com.taemoi.project.services.AccesoFamiliaService.class);
     private final EmailService email = mock(EmailService.class);
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private final MembresiaRepository membresiaRepo = mock(MembresiaRepository.class);
@@ -49,7 +51,7 @@ class PasswordResetServiceImplTest {
         when(membresiaRepo.findActivasDeUsuario(5L)).thenAnswer(call -> java.util.List.copyOf(membresiasUsuario));
         when(membresiaRepo.findRolesActivos(5L, 1L)).thenAnswer(call ->
             membresiasUsuario.stream().map(Membresia::getRol).toList());
-        membresias = new MembresiaServiceImpl(membresiaRepo, mock(OrganizacionRepository.class), users, alumnos,
+        membresias = new MembresiaServiceImpl(membresiaRepo, mock(OrganizacionRepository.class), users, acceso,
             new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
         user.setAlumno(new Alumno());
         when(users.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
@@ -63,7 +65,7 @@ class PasswordResetServiceImplTest {
         auth = new AuthenticationServiceImpl(users, new LoginAttemptServiceImpl(), encoder,
             mock(JwtService.class), new ProviderManager(provider), membresias,
             new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
-        when(alumnos.contarActivosPorEmailEnOrganizacion(user.getEmail(), 1L)).thenReturn(1L);
+        when(acceso.tieneAlgunoAccesible(user, 1L)).thenReturn(true);
     }
 
     @AfterEach
@@ -103,7 +105,7 @@ class PasswordResetServiceImplTest {
         assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder, membresias).processOAuth2Login(google, "google"));
         assertEquals(hash, user.getContrasena());
         assertDoesNotThrow(() -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
-        when(alumnos.contarActivosPorEmailEnOrganizacion(user.getEmail(), 1L)).thenReturn(0L);
+        when(acceso.tieneAlgunoAccesible(user, 1L)).thenReturn(false);
         assertThrows(DisabledException.class, () -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
         membresiasUsuario.add(new Membresia(5L, 1L, RolMembresia.PROPIETARIO));
         assertDoesNotThrow(() -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));

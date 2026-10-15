@@ -31,7 +31,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.impl.RecordatorioRachaServiceImpl;
@@ -43,7 +43,7 @@ class RecordatorioRachaServiceImplTest {
 	private UsuarioRepository usuarioRepository;
 
 	@Mock
-	private AlumnoRepository alumnoRepository;
+	private AccesoFamiliaService accesoFamilia;
 
 	@Mock
 	private EmailService emailService;
@@ -76,7 +76,7 @@ class RecordatorioRachaServiceImplTest {
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
 		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
-		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
 				.thenReturn(List.of(crearAlumno("Ana", "Activa", "familia@example.com", 5, LocalDate.of(2026, 2, 16))));
 
 		recordatorioRachaService.enviarRecordatoriosSiCorresponde();
@@ -114,7 +114,7 @@ class RecordatorioRachaServiceImplTest {
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
 		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
-		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
 				.thenReturn(List.of(
 						crearAlumno("Ana", "Hoy", "familia@example.com", 6, LocalDate.of(2026, 2, 17)),
 						crearAlumno("Beto", "Perdida", "familia@example.com", 6, LocalDate.of(2026, 2, 15))));
@@ -144,7 +144,7 @@ class RecordatorioRachaServiceImplTest {
 		Usuario usuario = crearUsuario("familia@example.com", true, null);
 		when(usuarioRepository.findConRecordatorioRachaYMembresiaActiva(ORGANIZACION, RolMembresia.FAMILIA))
 				.thenReturn(List.of(usuario));
-		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue("familia@example.com"))
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
 				.thenReturn(List.of(
 						crearAlumno("Ana", "Activa", "familia@example.com", 7, LocalDate.of(2026, 2, 16)),
 						crearAlumno("Beto", "Activo", "familia@example.com", 4, LocalDate.of(2026, 2, 16))));

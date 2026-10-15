@@ -419,6 +419,22 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				String.class, usuarioId, org2));
 		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
 				usuarioId));
+
+		// Fase 3, entrega 2a: la escuela 2 no tiene comportamiento_legado_taemoi, así que solo el vínculo
+		// explícito (usuario_alumno) da acceso de familia. El registro aún no lo escribe (entrega 2b): sin él la
+		// cuenta no entra. Cuando la 2b lo escriba, esta comprobación fallará y se quita junto con el INSERT.
+		assertEquals(0, jdbc.queryForObject(
+				"SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", Integer.class,
+				usuarioId, alumnoId), "entrega 2b: el registro ya escribe usuario_alumno; quitar este bloque");
+		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.mensaje").value("No hay alumnos activos asociados a esta cuenta."));
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'REGISTRO')
+				""", usuarioId, alumnoId, org2);
+
 		assertEquals(org2, jwtService.verificar(login(email)).organizacionId());
 	}
 

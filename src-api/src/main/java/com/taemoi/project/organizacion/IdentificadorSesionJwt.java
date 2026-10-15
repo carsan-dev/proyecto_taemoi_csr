@@ -13,8 +13,8 @@ import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.TokenJwt;
@@ -31,13 +31,13 @@ import jakarta.servlet.http.HttpServletRequest;
  * <li>organización: el claim {@code org}; en tokens heredados (sin claim) solo se acepta si el usuario
  * tiene membresías activas en exactamente UNA organización;</li>
  * <li>el usuario sigue teniendo membresía activa en esa organización (y esta está activa), en CADA
- * petición; si solo es familia, además algún alumno activo con su email en esa escuela.</li>
+ * petición; si solo es familia, además algún alumno accesible en esa escuela ({@link AccesoFamiliaService}).</li>
  * </ol>
  * Si algo falla, la petición sigue como anónima (Spring Security responde 401 donde haga falta).
  *
  * <p>Se ejecuta antes de conocer la organización: {@link OrganizacionRequestFilter} la invoca con la
  * organización por defecto fijada, y aquí solo se consultan tablas globales ({@code usuario},
- * {@code membresia}, {@code organizacion}) y la consulta nativa de alumnos filtrada explícitamente.
+ * {@code membresia}, {@code organizacion}) y la consulta nativa del acceso de familia, filtrada explícitamente.
  */
 @Component
 public class IdentificadorSesionJwt implements IdentificadorSesion {
@@ -47,14 +47,14 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 	private final JwtService jwtService;
 	private final UsuarioRepository usuarios;
 	private final MembresiaService membresias;
-	private final AlumnoRepository alumnos;
+	private final AccesoFamiliaService accesoFamilia;
 
 	public IdentificadorSesionJwt(JwtService jwtService, UsuarioRepository usuarios, MembresiaService membresias,
-			AlumnoRepository alumnos) {
+			AccesoFamiliaService accesoFamilia) {
 		this.jwtService = jwtService;
 		this.usuarios = usuarios;
 		this.membresias = membresias;
-		this.alumnos = alumnos;
+		this.accesoFamilia = accesoFamilia;
 	}
 
 	@Override
@@ -114,10 +114,8 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 					usuario.getEmail(), organizacionId);
 			return Optional.empty();
 		}
-		String emailCuenta = EmailUtils.normalizeEmail(usuario.getEmail());
 		if (RolMembresia.requiereAlumnoActivo(autoridades)
-				&& (!EmailUtils.puedeVincularAlumnos(emailCuenta)
-						|| alumnos.contarActivosPorEmailEnOrganizacion(emailCuenta, organizacionId) == 0)) {
+				&& !accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId)) {
 			logger.info(">>> JWT rechazado para usuario sin alumnos activos: {} ({})", usuario.getEmail(), path);
 			return Optional.empty();
 		}

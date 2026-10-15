@@ -18,8 +18,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.TokenJwt;
@@ -27,9 +27,10 @@ import com.taemoi.project.services.TokenJwt;
 import jakarta.servlet.http.Cookie;
 
 /**
- * Comprobación de alumno activo al validar el JWT de una familia: se compara con el email normalizado de
- * la cuenta, y un email en blanco nunca cuenta como coincidencia (aunque haya alumnos activos con el email
- * vacío). Los roles de gestión no necesitan alumno.
+ * Comprobación de alumno accesible al validar el JWT de una cuenta solo familia, en CADA petición: la decide
+ * {@link AccesoFamiliaService} (regla única; su email normalizado y el guard de email en blanco se prueban en
+ * {@code AccesoFamiliaServiceImplTest} y contra MySQL en {@code AccesoFamiliaEquivalenciaIntegrationTest}). Los
+ * roles de gestión no necesitan alumno.
  *
  * <p>La cuenta se busca por el email del token, así que por HTTP su email nunca llega en blanco ni con
  * espacios a esta comprobación: se simulan datos inconsistentes escribiendo el campo directamente.
@@ -41,45 +42,46 @@ class IdentificadorSesionJwtTest {
 	private final JwtService jwtService = mock(JwtService.class);
 	private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
 	private final MembresiaService membresias = mock(MembresiaService.class);
-	private final AlumnoRepository alumnos = mock(AlumnoRepository.class);
+	private final AccesoFamiliaService acceso = mock(AccesoFamiliaService.class);
 	private final IdentificadorSesionJwt identificador = new IdentificadorSesionJwt(jwtService, usuarios,
-			membresias, alumnos);
+			membresias, acceso);
 
 	@Test
-	void familiaConEmailDeCuentaEnBlancoSeRechazaAunqueHayaAlumnosConEmailVacio() {
-		cuentaCon("", Roles.ROLE_USER);
-		when(alumnos.contarActivosPorEmailEnOrganizacion(any(), anyLong())).thenReturn(1L);
+	void familiaSinAlumnoAccesibleSeRechaza() {
+		Usuario cuenta = cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(false);
 
 		assertTrue(identificador.identificar(peticion()).isEmpty());
-		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+		verify(acceso).tieneAlgunoAccesible(cuenta, 1L);
 	}
 
 	@Test
-	void familiaConAlumnoActivoDeSuEmailSigueEntrando() {
-		cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
-		when(alumnos.contarActivosPorEmailEnOrganizacion(EMAIL_TOKEN, 1L)).thenReturn(1L);
+	void familiaConAlumnoAccesibleSigueEntrando() {
+		Usuario cuenta = cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
 
 		assertTrue(identificador.identificar(peticion()).isPresent());
 	}
 
 	@Test
-	void familiaCoincideConSusAlumnosPorElEmailNormalizado() {
-		cuentaCon(" Familia@Example.test ", Roles.ROLE_USER);
-		when(alumnos.contarActivosPorEmailEnOrganizacion(EMAIL_TOKEN, 1L)).thenReturn(1L);
+	void familiaConEmailGuardadoDistintoSePreguntaConLaCuentaYLaEscuelaDelToken() {
+		// Email guardado con espacios y mayúsculas: la normalización es del servicio central.
+		Usuario cuenta = cuentaCon(" Familia@Example.test ", Roles.ROLE_USER);
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
 
 		assertTrue(identificador.identificar(peticion()).isPresent());
 	}
 
 	@Test
-	void gestionConEmailDeCuentaEnBlancoSigueEntrando() {
+	void gestionConEmailDeCuentaEnBlancoSigueEntrandoSinPreguntarPorAlumnos() {
 		for (Roles rol : new Roles[] { Roles.ROLE_ADMIN, Roles.ROLE_MANAGER }) {
 			cuentaCon("", rol);
 			assertTrue(identificador.identificar(peticion()).isPresent(), rol.name());
 		}
-		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
-	private void cuentaCon(String emailGuardado, Roles rol) {
+	private Usuario cuentaCon(String emailGuardado, Roles rol) {
 		when(jwtService.verificar("tok")).thenReturn(new TokenJwt(EMAIL_TOKEN, 1L, new Date(),
 				new Date(System.currentTimeMillis() + 60_000)));
 		Usuario cuenta = new Usuario();
@@ -87,6 +89,7 @@ class IdentificadorSesionJwtTest {
 		ReflectionTestUtils.setField(cuenta, "email", emailGuardado);
 		when(usuarios.findByEmailIgnoreCase(EMAIL_TOKEN)).thenReturn(Optional.of(cuenta));
 		when(membresias.autoridadesEn(5L, 1L)).thenReturn(Set.of(rol));
+		return cuenta;
 	}
 
 	private static MockHttpServletRequest peticion() {

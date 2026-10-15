@@ -192,19 +192,67 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	boolean existsByEmailIgnoreCaseAndActivoTrue(String email);
 
 	/**
-	 * Alumnos activos con ese email en una organización CONCRETA, sin depender de la organización
-	 * de la sesión de Hibernate. Es la única consulta nativa permitida sobre {@code alumno}: se usa al
-	 * iniciar sesión o cambiar de escuela, cuando la sesión abierta (open-in-view) puede ser de otra
-	 * organización. Filtra explícitamente por {@code organizacion_id}.
+	 * Regla ÚNICA del acceso de familia (fase3-sedes-permisos.md §5 y D6; fase 3, entrega 2a): alumnos de la
+	 * organización {@code :organizacionId} que la cuenta {@code :usuarioId} puede ver como familia. Solo la usan
+	 * las consultas de abajo, y estas solo {@code AccesoFamiliaService}.
+	 *
+	 * <p>Es la única consulta nativa permitida sobre {@code alumno}: se usa también al iniciar sesión, cambiar de
+	 * escuela y verificar el JWT, antes de fijar la escuela o con una sesión de Hibernate (open-in-view) de otra.
+	 * Por eso NO depende de {@code @TenantId}: filtra explícitamente {@code organizacion_id} en el alumno, en la
+	 * membresía y en {@code usuario_alumno}.
+	 *
+	 * <p>Alumno ACTIVO de la escuela, cuenta con alguna membresía ACTIVA en ella (sin ella no hay sesión), y:
+	 * <ul>
+	 * <li>(a) fila en {@code usuario_alumno}, salvo una fila de V31 ({@code origen = 'MIGRACION'}) de un alumno
+	 * cuyo email no es el de la cuenta: esa fila solo la pudo crear R1 para un gestor (o el email cambió después)
+	 * y solo cuenta mientras la cuenta tenga una membresía de gestión ACTIVA en la escuela (el «gestor degradado»
+	 * de §5 deja de verla) y la escuela no tenga la marca (en Taemoi, D6, el email sigue mandando: ver (b));</li>
+	 * <li>(b) solo con {@code organizacion.comportamiento_legado_taemoi}: el email del alumno es el de la cuenta,
+	 * exactamente como antes ({@code LOWER(email) = LOWER(:email)}, email del alumno sin recortar).</li>
+	 * </ul>
+	 * {@code :email} es el email de la cuenta normalizado ({@code EmailUtils.normalizeEmail}) o {@code ''} si no
+	 * puede vincular ({@code EmailUtils.puedeVincularAlumnos}): un email en blanco nunca coincide.
 	 */
-	@Query(value = """
-			SELECT COUNT(*) FROM alumno
-			WHERE organizacion_id = :organizacionId
-			  AND activo = TRUE
-			  AND LOWER(email) = LOWER(:email)
-			""", nativeQuery = true)
-	long contarActivosPorEmailEnOrganizacion(@Param("email") String email,
+	String ACCESO_FAMILIA = """
+			FROM alumno a
+			JOIN organizacion o ON o.id = a.organizacion_id
+			WHERE a.organizacion_id = :organizacionId
+			  AND a.activo = TRUE
+			  AND EXISTS (SELECT 1 FROM membresia m
+			              WHERE m.usuario_id = :usuarioId
+			                AND m.organizacion_id = a.organizacion_id
+			                AND m.activa = TRUE)
+			  AND ((o.comportamiento_legado_taemoi = TRUE
+			        AND :email <> '' AND LOWER(a.email) = LOWER(:email))
+			       OR EXISTS (SELECT 1 FROM usuario_alumno ua
+			                  WHERE ua.usuario_id = :usuarioId
+			                    AND ua.alumno_id = a.id
+			                    AND ua.organizacion_id = a.organizacion_id
+			                    AND (ua.origen <> 'MIGRACION'
+			                         OR (:email <> '' AND LOWER(a.email) = LOWER(:email))
+			                         OR (o.comportamiento_legado_taemoi = FALSE
+			                             AND EXISTS (SELECT 1 FROM membresia g
+			                                         WHERE g.usuario_id = :usuarioId
+			                                           AND g.organizacion_id = a.organizacion_id
+			                                           AND g.activa = TRUE
+			                                           AND g.rol IN ('PROPIETARIO', 'ADMINISTRADOR',
+			                                                         'RESPONSABLE_SEDE', 'PROFESOR'))))))
+			""";
+
+	/** Ids de {@link #ACCESO_FAMILIA}, en orden ascendente. Usar {@code AccesoFamiliaService}. */
+	@Query(value = "SELECT a.id " + ACCESO_FAMILIA + " ORDER BY a.id", nativeQuery = true)
+	List<Long> idsAccesiblesComoFamilia(@Param("usuarioId") Long usuarioId, @Param("email") String email,
 			@Param("organizacionId") Long organizacionId);
+
+	/** Número de alumnos de {@link #ACCESO_FAMILIA}. Usar {@code AccesoFamiliaService}. */
+	@Query(value = "SELECT COUNT(*) " + ACCESO_FAMILIA, nativeQuery = true)
+	long contarAccesiblesComoFamilia(@Param("usuarioId") Long usuarioId, @Param("email") String email,
+			@Param("organizacionId") Long organizacionId);
+
+	/** 1 si el alumno cumple {@link #ACCESO_FAMILIA}, 0 si no. Usar {@code AccesoFamiliaService}. */
+	@Query(value = "SELECT COUNT(*) " + ACCESO_FAMILIA + " AND a.id = :alumnoId", nativeQuery = true)
+	long contarAlumnoAccesibleComoFamilia(@Param("usuarioId") Long usuarioId, @Param("email") String email,
+			@Param("organizacionId") Long organizacionId, @Param("alumnoId") Long alumnoId);
 
 	/**
 	 * Carga por id como consulta (filtrada por la organización activa). A diferencia de
@@ -225,8 +273,6 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT a FROM Alumno a WHERE a.id IN :ids ORDER BY a.id")
 	List<Alumno> bloquearPorIdsEnOrganizacionActiva(@Param("ids") Collection<Long> ids);
-
-	boolean existsByIdAndEmailIgnoreCaseAndActivoTrue(Long id, String email);
 
 	@Query("SELECT a FROM Alumno a WHERE a.grupos IS EMPTY")
 	List<Alumno> findAlumnosSinGrupo();
