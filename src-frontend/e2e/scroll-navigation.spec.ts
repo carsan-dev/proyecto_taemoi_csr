@@ -176,6 +176,18 @@ test('la navegación a anclas descuenta la cabecera fija', async ({ page }) => {
   });
 
   await page.goto('/');
+  // Los @defer (on viewport) situados por encima del ancla se renderizan a
+  // mitad del scroll suave y cambian la altura sobre #map-section. Se
+  // materializan antes de hacer clic para medir el descuento de la cabecera
+  // y no la carga del contenido diferido.
+  // Un salto directo al mapa se saltaría el viewport del carrusel, así que se
+  // visita cada bloque diferido por orden de aparición.
+  await page.locator('.events-body').scrollIntoViewIfNeeded();
+  await expect(page.locator('app-slider-tocable')).toBeAttached();
+  await page.locator('#map-section').scrollIntoViewIfNeeded();
+  await expect(page.locator('app-mapa')).toBeAttached();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expectScrollNear(page, 0);
   await page
     .locator('.schedule-btn')
     .filter({ hasText: /Dónde estamos/i })
@@ -379,6 +391,21 @@ test('abrir y cerrar overlays bloquea y restaura el viewport real', async ({
     )
     .first();
   await expect(classCard).toBeVisible();
+  // La tabla entra con fadeInUp (retardo + translateY). Si se mide o se hace
+  // clic durante la animación, Playwright ve el elemento «not stable» y fuerza
+  // un scroll que invalida la referencia. Se esperan solo las animaciones
+  // finitas de la tarjeta y sus ancestros (hay otras infinitas decorativas).
+  await classCard.evaluate(async (element) => {
+    const finite = document.getAnimations().filter((animation) => {
+      const target = (animation.effect as KeyframeEffect | null)?.target;
+      return (
+        target instanceof Element &&
+        target.contains(element) &&
+        animation.effect!.getComputedTiming().iterations !== Infinity
+      );
+    });
+    await Promise.all(finite.map((animation) => animation.finished));
+  });
   await classCard.scrollIntoViewIfNeeded();
   const previousY = await page.evaluate(() => window.scrollY);
   await classCard.click();
