@@ -114,9 +114,10 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 					usuario.getEmail(), organizacionId);
 			return Optional.empty();
 		}
+		String emailCuenta = EmailUtils.normalizeEmail(usuario.getEmail());
 		if (RolMembresia.requiereAlumnoActivo(autoridades)
-				&& (!EmailUtils.puedeVincularAlumnos(usuario.getEmail())
-						|| alumnos.contarActivosPorEmailEnOrganizacion(usuario.getEmail(), organizacionId) == 0)) {
+				&& (!EmailUtils.puedeVincularAlumnos(emailCuenta)
+						|| alumnos.contarActivosPorEmailEnOrganizacion(emailCuenta, organizacionId) == 0)) {
 			logger.info(">>> JWT rechazado para usuario sin alumnos activos: {} ({})", usuario.getEmail(), path);
 			return Optional.empty();
 		}

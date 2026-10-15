@@ -224,8 +224,9 @@ public class MembresiaServiceImpl implements MembresiaService {
 		if (!RolMembresia.requiereAlumnoActivo(autoridades)) {
 			return true;
 		}
-		return EmailUtils.puedeVincularAlumnos(usuario.getEmail())
-				&& alumnos.contarActivosPorEmailEnOrganizacion(usuario.getEmail(), organizacionId) > 0;
+		String email = EmailUtils.normalizeEmail(usuario.getEmail());
+		return EmailUtils.puedeVincularAlumnos(email)
+				&& alumnos.contarActivosPorEmailEnOrganizacion(email, organizacionId) > 0;
 	}
 
 	/** Autoridades por organización (ordenadas por id) a partir de las membresías activas. */

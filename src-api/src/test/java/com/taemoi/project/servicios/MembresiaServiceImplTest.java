@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.RolMembresia;
@@ -103,6 +104,39 @@ class MembresiaServiceImplTest {
 		activas.add(new Membresia(10L, 2L, RolMembresia.ADMINISTRADOR));
 
 		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
+		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+	}
+
+	@Test
+	void familiaCoincideConSusAlumnosPorElEmailNormalizado() {
+		// Email guardado con espacios y mayúsculas (datos escritos fuera de la aplicación).
+		ReflectionTestUtils.setField(usuario, "email", " Persona@Example.test ");
+		activas.add(new Membresia(10L, 2L, RolMembresia.FAMILIA));
+		when(alumnos.contarActivosPorEmailEnOrganizacion("persona@example.test", 2L)).thenReturn(1L);
+
+		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
+	}
+
+	@Test
+	void familiaConEmailEnBlancoNoEntraAunqueHayaAlumnosConEmailVacio() {
+		when(alumnos.contarActivosPorEmailEnOrganizacion(any(), anyLong())).thenReturn(1L);
+		activas.add(new Membresia(10L, 2L, RolMembresia.FAMILIA));
+		for (String email : new String[] { null, "", "   " }) {
+			ReflectionTestUtils.setField(usuario, "email", email);
+			assertTrue(servicio.elegirOrganizacionParaLogin(usuario).isEmpty(), "Email: [" + email + "]");
+		}
+		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+	}
+
+	@Test
+	void gestionConEmailEnBlancoSigueEntrando() {
+		ReflectionTestUtils.setField(usuario, "email", "");
+		activas.add(new Membresia(10L, 2L, RolMembresia.PROPIETARIO));
+		activas.add(new Membresia(10L, 3L, RolMembresia.ADMINISTRADOR));
+		when(repo.findRolesActivos(10L, 3L)).thenReturn(List.of(RolMembresia.ADMINISTRADOR));
+
+		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario), "ADMIN (PROPIETARIO)");
+		assertTrue(servicio.puedeEntrarEn(usuario, 3L), "MANAGER (ADMINISTRADOR)");
 		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
 	}
 

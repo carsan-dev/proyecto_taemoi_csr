@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
@@ -26,10 +27,16 @@ import com.taemoi.project.services.TokenJwt;
 import jakarta.servlet.http.Cookie;
 
 /**
- * Comprobación de alumno activo al validar el JWT de una familia: un email de cuenta en blanco nunca
- * cuenta como coincidencia (aunque haya alumnos activos con el email vacío).
+ * Comprobación de alumno activo al validar el JWT de una familia: se compara con el email normalizado de
+ * la cuenta, y un email en blanco nunca cuenta como coincidencia (aunque haya alumnos activos con el email
+ * vacío). Los roles de gestión no necesitan alumno.
+ *
+ * <p>La cuenta se busca por el email del token, así que por HTTP su email nunca llega en blanco ni con
+ * espacios a esta comprobación: se simulan datos inconsistentes escribiendo el campo directamente.
  */
 class IdentificadorSesionJwtTest {
+
+	private static final String EMAIL_TOKEN = "familia@example.test";
 
 	private final JwtService jwtService = mock(JwtService.class);
 	private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
@@ -40,37 +47,51 @@ class IdentificadorSesionJwtTest {
 
 	@Test
 	void familiaConEmailDeCuentaEnBlancoSeRechazaAunqueHayaAlumnosConEmailVacio() {
-		// Datos inconsistentes: el token trae un email, pero la cuenta encontrada lo tiene vacío.
-		when(jwtService.verificar("tok")).thenReturn(new TokenJwt("familia@example.test", 1L, new Date(),
-				new Date(System.currentTimeMillis() + 60_000)));
-		Usuario cuenta = new Usuario();
-		cuenta.setId(5L);
-		cuenta.setEmail("");
-		when(usuarios.findByEmailIgnoreCase("familia@example.test")).thenReturn(Optional.of(cuenta));
-		when(membresias.autoridadesEn(5L, 1L)).thenReturn(Set.of(Roles.ROLE_USER));
+		cuentaCon("", Roles.ROLE_USER);
 		when(alumnos.contarActivosPorEmailEnOrganizacion(any(), anyLong())).thenReturn(1L);
 
-		MockHttpServletRequest peticion = new MockHttpServletRequest("GET", "/api/auth/user/alumnos");
-		peticion.setCookies(new Cookie("jwt", "tok"));
-
-		assertTrue(identificador.identificar(peticion).isEmpty());
+		assertTrue(identificador.identificar(peticion()).isEmpty());
 		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
 	}
 
 	@Test
 	void familiaConAlumnoActivoDeSuEmailSigueEntrando() {
-		when(jwtService.verificar("tok")).thenReturn(new TokenJwt("familia@example.test", 1L, new Date(),
+		cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
+		when(alumnos.contarActivosPorEmailEnOrganizacion(EMAIL_TOKEN, 1L)).thenReturn(1L);
+
+		assertTrue(identificador.identificar(peticion()).isPresent());
+	}
+
+	@Test
+	void familiaCoincideConSusAlumnosPorElEmailNormalizado() {
+		cuentaCon(" Familia@Example.test ", Roles.ROLE_USER);
+		when(alumnos.contarActivosPorEmailEnOrganizacion(EMAIL_TOKEN, 1L)).thenReturn(1L);
+
+		assertTrue(identificador.identificar(peticion()).isPresent());
+	}
+
+	@Test
+	void gestionConEmailDeCuentaEnBlancoSigueEntrando() {
+		for (Roles rol : new Roles[] { Roles.ROLE_ADMIN, Roles.ROLE_MANAGER }) {
+			cuentaCon("", rol);
+			assertTrue(identificador.identificar(peticion()).isPresent(), rol.name());
+		}
+		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+	}
+
+	private void cuentaCon(String emailGuardado, Roles rol) {
+		when(jwtService.verificar("tok")).thenReturn(new TokenJwt(EMAIL_TOKEN, 1L, new Date(),
 				new Date(System.currentTimeMillis() + 60_000)));
 		Usuario cuenta = new Usuario();
 		cuenta.setId(5L);
-		cuenta.setEmail("familia@example.test");
-		when(usuarios.findByEmailIgnoreCase("familia@example.test")).thenReturn(Optional.of(cuenta));
-		when(membresias.autoridadesEn(5L, 1L)).thenReturn(Set.of(Roles.ROLE_USER));
-		when(alumnos.contarActivosPorEmailEnOrganizacion("familia@example.test", 1L)).thenReturn(1L);
+		ReflectionTestUtils.setField(cuenta, "email", emailGuardado);
+		when(usuarios.findByEmailIgnoreCase(EMAIL_TOKEN)).thenReturn(Optional.of(cuenta));
+		when(membresias.autoridadesEn(5L, 1L)).thenReturn(Set.of(rol));
+	}
 
+	private static MockHttpServletRequest peticion() {
 		MockHttpServletRequest peticion = new MockHttpServletRequest("GET", "/api/auth/user/alumnos");
 		peticion.setCookies(new Cookie("jwt", "tok"));
-
-		assertTrue(identificador.identificar(peticion).isPresent());
+		return peticion;
 	}
 }

@@ -45,6 +45,7 @@ import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 
 import jakarta.servlet.http.Cookie;
 
@@ -119,17 +120,31 @@ class EmailEnBlancoFamiliaIntegrationTest extends MySqlIntegrationTest {
 			MvcResult resultado = mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
 					.content("{\"email\":\"" + email + "\",\"contrasena\":\"" + CLAVE + "\"}"))
 					.andExpect(status().isForbidden())
+					.andExpect(jsonPath("$.mensaje").value(AuthenticationServiceImpl.SIN_ALUMNOS_ACTIVOS))
 					.andReturn();
 			assertTrue(resultado.getResponse().getHeaders(HttpHeaders.SET_COOKIE).stream()
 					.noneMatch(c -> c.startsWith("jwt=e")), "No se emite ninguna cookie de sesión");
 		}
 	}
 
+	/**
+	 * Este rechazo NO llega a la comprobación de alumno activo (IdentificadorSesionJwt, guard de email
+	 * vinculable): el token de una cuenta con email vacío lleva el email en blanco y se descarta antes, al
+	 * verificar el email del token. Por HTTP no se puede llegar a ese guard con una cuenta en blanco, porque
+	 * la cuenta se busca por el email del token; el guard se prueba en IdentificadorSesionJwtTest.
+	 */
 	@Test
-	void elJwtDeLaCuentaConEmailVacioSeRechaza() throws Exception {
+	void elJwtDeLaCuentaConEmailVacioSeRechazaPorElEmailEnBlancoDelToken() throws Exception {
 		Usuario cuenta = cuenta();
 		assertEquals("", cuenta.getEmail());
 		String token = jwtService.generateToken(cuenta, 600_000, ORG1);
+		String emailDelToken;
+		try {
+			emailDelToken = jwtService.verificar(token).email();
+		} catch (RuntimeException e) {
+			emailDelToken = null;
+		}
+		assertTrue(emailDelToken == null || emailDelToken.isBlank(), "El token no lleva email: " + emailDelToken);
 
 		mvc.perform(get("/api/auth/roles").cookie(new Cookie("jwt", token))).andExpect(status().isUnauthorized());
 		mvc.perform(get("/api/auth/user/alumnos").cookie(new Cookie("jwt", token)))
