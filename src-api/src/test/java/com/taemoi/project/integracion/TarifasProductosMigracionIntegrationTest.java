@@ -29,8 +29,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoGrado;
+import com.taemoi.project.legado.TipoTarifa;
 
 /**
  * V24 sobre datos con la forma de producción: esquema propio migrado hasta V23, productos con

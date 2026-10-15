@@ -5,6 +5,10 @@ import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-pr
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
 import { RouteScrollPolicy } from './servicios/generales/page-scroll.service';
+import { catalogoResolver } from './features/catalogo/catalogo.resolver';
+
+/** Las rutas autenticadas esperan al catálogo (tras los guards) para que los componentes lo lean de forma síncrona. */
+const CATALOGO_RESOLVE = { catalogo: catalogoResolver };
 
 type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER';
 export type PortalContext = 'public' | 'admin' | 'user';
@@ -187,42 +191,49 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/vistas/vista-principal-admin/vista-principal-admin.component').then(m => m.VistaPrincipalAdminComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'userpage',
     data: privateRouteData(ROUTE_ROLE_SETS.userPortal, 'user'),
     loadComponent: () => import('./componentes/vistas/vista-principal-user/vista-principal-user.component').then(m => m.VistaPrincipalUserComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'userpage/turnos',
     data: privateRouteData(ROUTE_ROLE_SETS.userPortal, 'user'),
     loadComponent: () => import('./componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component').then(m => m.TurnosUsuarioComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-alumnos/listado-alumnos.component').then(m => m.ListadoAlumnosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'preinscripciones',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component').then(m => m.PreinscripcionesAdminComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosEditar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
     pathMatch: 'full',
   },
   {
@@ -230,126 +241,147 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component').then(m => m.ProductosAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-alumno/crear-alumno.component').then(m => m.CrearAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosEliminar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/eliminar-alumno/eliminar-alumno.component').then(m => m.EliminarAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'gruposListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/listado-grupos.component').then(m => m.ListadoGruposComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'gruposCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'gruposEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-grupo/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'gestionarAlumnos/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'seleccionarAlumnos/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component').then(m => m.SeleccionarAlumnosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'turnosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'turnosEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-turno/editar-turno.component').then(m => m.EditarTurnoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'eventosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-eventos/listado-eventos.component').then(m => m.ListadoEventosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'eventosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-evento/crear-evento.component').then(m => m.CrearEventoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'eventosEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-evento/editar-evento.component').then(m => m.EditarEventoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'productosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-productos/listado-productos.component').then(m => m.ListadoProductosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'productosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-producto/crear-producto.component').then(m => m.CrearProductoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'productosEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-producto/editar-producto.component').then(m => m.EditarProductoComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'tesoreriaCobros',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'auditoriaSistema',
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'convocatoriasListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'configuracion-sistema',
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: '**',

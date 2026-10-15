@@ -97,7 +97,7 @@ public class AlumnoConGruposDTO {
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 		if (principal != null && principal.getGrado() != null) {
-			grado = principal.getGrado().getTipoGrado().name();
+			grado = principal.getGrado().getCodigo();
 		}
 
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
@@ -114,7 +114,7 @@ public class AlumnoConGruposDTO {
 				.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
 
 		String grado = alumnoDeporte != null && alumnoDeporte.getGrado() != null
-				? alumnoDeporte.getGrado().getTipoGrado().name()
+				? alumnoDeporte.getGrado().getCodigo()
 				: null;
 
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),

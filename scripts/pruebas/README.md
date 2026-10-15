@@ -48,7 +48,9 @@ Desde la raíz del repositorio. Cada script tiene versión `.sh` (Git Bash) y `.
    ```
 
 5. Construir y arrancar backend y frontend de la rama actual (árbol de trabajo tal cual). Al
-   arrancar, el backend aplica V18–V20 con Flyway sobre los datos sintéticos (~7–10 s):
+   arrancar, el backend aplica V18–V29 con Flyway en un solo arranque (~15 s). Como V28 no puede ir en el mismo
+   despliegue que V27, `docker-compose.pruebas.yml` fija `TAEMOI_V28_PERMITIR_MISMO_DESPLIEGUE_QUE_V27=true`
+   (solo en este entorno; en producción esa variable no existe):
 
    ```sh
    docker compose -f docker-compose.pruebas.yml up -d --build backend frontend
@@ -58,14 +60,15 @@ Desde la raíz del repositorio. Cada script tiene versión `.sh` (Git Bash) y `.
    Abrir http://localhost:8088 (API directa en http://localhost:8081).
 
 6. Cargar la segunda escuela sintética (organización 2, slug `sierra-sur-sintetica`) sobre la base
-   ya en V20. Repetible (borra antes lo suyo):
+   ya en V29. Repetible (borra antes lo suyo):
 
    ```sh
    docker compose -f docker-compose.pruebas.yml exec -T database      mysql --default-character-set=utf8mb4 -utaemoi -ptaemoi-pruebas-local taemoi_pruebas      < scripts/pruebas/segunda-escuela.sql
    ```
 
-   Crea 10 alumnos (expedientes 1–10 propios de la org 2, sin grado: grados y categorías siguen
-   siendo filas de la org 1), un grupo con dos turnos, productos y cobros, y los usuarios de la
+   Crea 10 alumnos (expedientes 1–10 propios de la org 2, sin grado), su catálogo propio
+   (disciplinas TAEKWONDO, KICKBOXING y PILATES sin sistema de grados, y sus tarifas), un grupo con
+   dos turnos, productos y cobros, y los usuarios de la
    tabla siguiente. Al usuario `multiescuela@example.test` le asigna el correo de un alumno activo
    de la org 1 (el de menor id cuyo correo no tenía usuario).
 
@@ -81,7 +84,7 @@ Desde la raíz del repositorio. Cada script tiene versión `.sh` (Git Bash) y `.
 
 ```sh
 scripts/pruebas/restaurar-v17.sh        # o .ps1: para el backend y restaura backup-v17.sql
-docker compose -f docker-compose.pruebas.yml up -d backend   # vuelve a migrar a V20 al arrancar
+docker compose -f docker-compose.pruebas.yml up -d backend   # vuelve a migrar a V29 al arrancar
 # esperar "Started TaeMoiApplication" y repetir el paso 6
 ```
 
@@ -117,7 +120,9 @@ LEFT JOIN usuario_rol r ON r.usuario_id = u.id GROUP BY u.id;
 - 150 alumnos (129 activos, 21 bajas), expedientes hasta ~200 con huecos; todos con al menos un
   `alumno_deporte` (157 en total: taekwondo, kickboxing, pilates y defensa personal femenina).
 - 40 DNI compartidos por 81 alumnos, todos personas distintas; 33 grupos con algún menor.
-  `responsable_legal_nif` nunca coincide con el DNI compartido.
+  `responsable_legal_nif` nunca coincide con el DNI compartido. Los datos son de V17: el responsable
+  legal va en `alumno.responsable_legal_*`; V25 lo copia a `tutor` y V29 rellena los que solo tienen NIF
+  y borra esas columnas (`segunda-escuela.sql` ya no las escribe).
 - Grupos y turnos iguales a los que siembra `InicializadorDatos`; `limite_turno` = 36.
 - Productos con los conceptos exactos que busca el código (`docs/multi-escuela/valores-actuales.md`),
   mensualidades, licencias, tarifas de competidor, derechos de examen (pagados y pendientes),
@@ -138,4 +143,4 @@ FROM (SELECT nif, COUNT(*) n, SUM(YEAR(fecha_nacimiento) + 14 > YEAR(CURDATE()))
 docker compose -f docker-compose.pruebas.yml down -v   # borra los volúmenes del proyecto taemoi-pruebas
 ```
 
-Después, repetir los pasos 1–3 (y 4–6 si se quiere el estado V20).
+Después, repetir los pasos 1–3 (y 4–6 si se quiere el estado V29).

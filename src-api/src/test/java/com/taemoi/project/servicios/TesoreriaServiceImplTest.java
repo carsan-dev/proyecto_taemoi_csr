@@ -36,7 +36,7 @@ import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
@@ -51,20 +51,31 @@ class TesoreriaServiceImplTest {
 	@Mock
 	private AlumnoRepository alumnoRepository;
 
+	/** Taemoi: comportamiento heredado (V28). */
+	@Mock
+	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
+
 	@InjectMocks
 	private TesoreriaServiceImpl tesoreriaService;
+
+	@org.junit.jupiter.api.BeforeEach
+	void taemoi() {
+		org.mockito.Mockito.lenient().when(comportamientoLegado.activo()).thenReturn(true);
+		org.springframework.test.util.ReflectionTestUtils.setField(tesoreriaService, "catalogoDisciplinas",
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().catalogo());
+	}
 
 	@Test
 	void obtenerMovimientos_matriculaPriorizaAsociacionExplicita() {
 		ProductoAlumno matricula = crearMovimiento(9L, "Matrícula - TAEKWONDO", fecha(2026, 1, 20), false, 25.0);
 		AlumnoDeporte ad = new AlumnoDeporte();
 		ad.setAlumno(matricula.getAlumno());
-		ad.setDeporte(Deporte.KICKBOXING);
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.KICKBOXING.name()));
 		matricula.setAlumnoDeporte(ad);
 		ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection base =
 				crearMovimientoBase(9L, matricula.getConcepto(), matricula.getFechaAsignacion());
 		when(productoAlumnoRepository.findMovimientosTesoreriaPeriodoBase(
-				any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true)))
 				.thenReturn(List.of(base));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any())).thenReturn(List.of(matricula));
 		TesoreriaMovimientoDTO resultado = tesoreriaService.obtenerMovimientos(
@@ -108,7 +119,7 @@ class TesoreriaServiceImplTest {
 	void exportarMovimientosCSV_incluyeCategoriaMatriculaYDeporteDelConcepto() {
 		ProductoAlumno matricula = crearMovimiento(9L, "Matrícula - TAEKWONDO", fecha(2026, 1, 20), false, 25.0);
 		when(productoAlumnoRepository.findMovimientosTesoreriaFiltrados(
-				any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true)))
 				.thenReturn(List.of(matricula));
 
 		String csv = new String(tesoreriaService.exportarMovimientosCSV(
@@ -122,7 +133,7 @@ class TesoreriaServiceImplTest {
 	private TesoreriaMovimientoDTO obtenerMovimientoSinPeriodo(String concepto) {
 		ProductoAlumno movimiento = crearMovimiento(9L, concepto, fecha(2026, 1, 20), false, 25.0);
 		when(productoAlumnoRepository.findMovimientosTesoreriaPaginados(
-				any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+				any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true)))
 				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(movimiento)));
 		return tesoreriaService.obtenerMovimientos(
 				null, null, "TODOS", null, null, null, 1, 25).getContent().get(0);
@@ -160,7 +171,7 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
-				any()))
+				any(), eq(true)))
 				.thenReturn(List.of(baseFebrero, baseEnero));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(mensualidadFebrero, mensualidadEnero));
@@ -196,7 +207,7 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
-				any()))
+				any(), eq(true)))
 				.thenReturn(List.of(baseLicencia));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(licencia));
@@ -211,7 +222,7 @@ class TesoreriaServiceImplTest {
 	@Test
 	void obtenerAniosDisponibles_incluyeAniosDesdeConceptoConFechaExistente() {
 		when(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha()).thenReturn(List.of(2025));
-		when(productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial())
+		when(productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(true))
 				.thenReturn(List.of("MENSUALIDAD FEBRERO 2026 - TAEKWONDO"));
 		when(productoAlumnoRepository.findConceptosTesoreriaSinFecha()).thenReturn(List.of());
 
@@ -241,7 +252,7 @@ class TesoreriaServiceImplTest {
 				eq(2026),
 				eq("2026"),
 				eq(2),
-				eq("FEBRERO")))
+				eq("FEBRERO"), eq(true)))
 				.thenReturn(List.of(baseFebrero));
 		when(productoAlumnoRepository.findMovimientosTesoreriaByIds(any()))
 				.thenReturn(List.of(mensualidadFebrero));
@@ -252,19 +263,19 @@ class TesoreriaServiceImplTest {
 
 	@Test
 	void obtenerResumen_sinFiltroPeriodoUsaConsultasAgregadas() {
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(10L);
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(6L);
-		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(4L);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), isNull(), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(350.0);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(true), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(240.0);
-		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.sumarImporteMovimientosTesoreria(any(), any(), eq(false), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(110.0);
-		when(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(any(), any(), eq(true), isNull(), isNull(), isNull(), isNull()))
+		when(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(any(), any(), eq(true), isNull(), isNull(), isNull(), isNull(), eq(true)))
 				.thenReturn(3L);
 
 		TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(null, null, "TODOS", null);
@@ -285,7 +296,7 @@ class TesoreriaServiceImplTest {
 				any(),
 				any(),
 				any(),
-				any());
+				any(), eq(true));
 	}
 
 	@Test
@@ -320,7 +331,7 @@ class TesoreriaServiceImplTest {
 				eq(2026),
 				eq("2026"),
 				isNull(),
-				isNull()))
+				isNull(), eq(true)))
 				.thenReturn(List.of(mensualidad, examen));
 
 		byte[] pdf = tesoreriaService.generarCertificadoCobrosAlumno(20L, 2026);
@@ -345,7 +356,7 @@ class TesoreriaServiceImplTest {
 				eq(2026),
 				eq("2026"),
 				isNull(),
-				isNull());
+				isNull(), eq(true));
 	}
 
 	private ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection crearMovimientoBase(

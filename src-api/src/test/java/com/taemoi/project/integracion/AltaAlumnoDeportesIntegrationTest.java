@@ -29,15 +29,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.SistemaGrados;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoGrado;
+import com.taemoi.project.legado.TipoTarifa;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.DisciplinaRepository;
@@ -101,6 +101,11 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 			disciplina("PILATES", null, 14, 3);
 			// Tarifa propia de la escuela (V27): la cuantía por defecto del alta sale de ella.
 			DisciplinasDePrueba.tarifa(tarifas, "KICKBOXING", "30.00", disciplinas.findByCodigo("KICKBOXING").orElseThrow());
+			// V28: las demás tarifas que usan estas altas también son de la escuela (sin tipo_tarifa, un código que la
+			// escuela no tiene ya no se guarda: es un 400).
+			DisciplinasDePrueba.tarifa(tarifas, "ADULTO", "30.00", null);
+			DisciplinasDePrueba.tarifa(tarifas, "INFANTIL", "28.00", null);
+			DisciplinasDePrueba.tarifa(tarifas, "PILATES", "30.00", disciplinas.findByCodigo("PILATES").orElseThrow());
 			// Mensualidad del mes ya cargada: el alta debe añadir la del nuevo alumno.
 			Producto mensualidad = productos.save(new Producto("MENSUALIDAD", 30.0, null));
 			// Si el alta cobrara la licencia, este producto lo permitiría: no debe usarse.
@@ -132,7 +137,6 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 
 	private void grado(SistemaGrados sistema, TipoGrado tipo, int orden) {
 		Grado g = new Grado();
-		g.setTipoGrado(tipo);
 		g.setCodigo(tipo.name());
 		g.setNombre(tipo.getNombre());
 		g.setOrden(orden);
@@ -177,9 +181,9 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(2, deportesDe(respuesta.getId()).size());
 		// Sin principal marcado, el principal es el de alta más antigua (TAEKWONDO).
-		assertEquals(Deporte.TAEKWONDO, respuesta.getDeporte());
+		assertEquals(Deporte.TAEKWONDO.name(), respuesta.getDeporte());
 		assertEquals("AMARILLO", respuesta.getGrado());
-		assertEquals(TipoTarifa.INFANTIL, respuesta.getTipoTarifa());
+		assertEquals(TipoTarifa.INFANTIL.name(), respuesta.getTipoTarifa());
 		assertEquals(27.0, respuesta.getCuantiaTarifa());
 		assertEquals(2, respuesta.getDeportes().size());
 		assertEquals(27.0, precioMensualidadDe(respuesta.getId()), "mensualidad con la tarifa del deporte principal");
@@ -213,13 +217,13 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(70.5, ((Number) ad.get("peso")).doubleValue());
 		assertNotNull(ad.get("fecha_peso"));
 		assertEquals(Boolean.FALSE, ad.get("apto_para_examen"), "grado recién asignado: aún no apto");
-		assertEquals("BLANCO", jdbc.queryForObject("SELECT tipo_grado FROM grado WHERE id = ?", String.class,
+		assertEquals("BLANCO", jdbc.queryForObject("SELECT codigo FROM grado WHERE id = ?", String.class,
 				ad.get("grado_id")));
 
 		// La respuesta mantiene la forma de siempre, con los campos planos del deporte principal.
-		assertEquals(Deporte.KICKBOXING, respuesta.getDeporte());
+		assertEquals(Deporte.KICKBOXING.name(), respuesta.getDeporte());
 		assertEquals("BLANCO", respuesta.getGrado());
-		assertEquals(TipoTarifa.KICKBOXING, respuesta.getTipoTarifa());
+		assertEquals(TipoTarifa.KICKBOXING.name(), respuesta.getTipoTarifa());
 		assertEquals(30.0, respuesta.getCuantiaTarifa());
 		assertEquals(Boolean.TRUE, respuesta.getTieneLicencia());
 		assertEquals(777, respuesta.getNumeroLicencia());
@@ -329,8 +333,11 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private List<Map<String, Object>> deportesDe(Long alumnoId) {
-		return jdbc.queryForList("SELECT * FROM alumno_deporte WHERE alumno_id = ? AND organizacion_id = ?",
-				alumnoId, org);
+		// V28: deporte y tipo_tarifa ya no son columnas; las mismas claves salen del catálogo.
+		return jdbc.queryForList("""
+				SELECT ad.*, d.codigo AS deporte, t.codigo AS tipo_tarifa FROM alumno_deporte ad
+				JOIN disciplina d ON d.id = ad.disciplina_id LEFT JOIN tarifa t ON t.id = ad.tarifa_id
+				WHERE ad.alumno_id = ? AND ad.organizacion_id = ?""", alumnoId, org);
 	}
 
 	private Double precioMensualidadDe(Long alumnoId) {
@@ -344,8 +351,9 @@ class AltaAlumnoDeportesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private Long idDeporte(Long alumnoId, String deporte) {
-		return jdbc.queryForObject("SELECT id FROM alumno_deporte WHERE alumno_id = ? AND deporte = ?", Long.class,
-				alumnoId, deporte);
+		return jdbc.queryForObject("""
+				SELECT ad.id FROM alumno_deporte ad JOIN disciplina d ON d.id = ad.disciplina_id
+				WHERE ad.alumno_id = ? AND d.codigo = ?""", Long.class, alumnoId, deporte);
 	}
 
 	private List<String> conceptosDe(Long alumnoId) {

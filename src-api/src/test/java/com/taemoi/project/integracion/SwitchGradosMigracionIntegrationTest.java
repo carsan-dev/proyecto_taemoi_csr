@@ -23,7 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 
 /**
  * V26 sobre datos con la forma de producción: esquema migrado hasta V21 con grados de ids propios
@@ -62,7 +62,7 @@ class SwitchGradosMigracionIntegrationTest extends MySqlIntegrationTest {
 		insertarDatosV21();
 		flyway(dataSource, "25").migrate();
 		insertarDatosEscritosTrasV23();
-		flyway(dataSource, null).migrate();
+		flyway(dataSource, "26").migrate(); // fijado a V26 (V28 borra las columnas heredadas que se comprueban aquí)
 	}
 
 	/** Id heredado de cada grado: inverso al orden del enum (BLANCO = 119 … NEGRO_5_DAN = 101). */
@@ -211,7 +211,7 @@ class SwitchGradosMigracionIntegrationTest extends MySqlIntegrationTest {
 		// debe haberse pasado a NOT NULL.
 		fallo.update("INSERT INTO grupo (nombre, deporte, organizacion_id) VALUES ('Grupo sin catálogo', 'TAEKWONDO', 2)");
 
-		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuenteFallo, null).migrate());
+		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuenteFallo, "26").migrate());
 		assertTrue(error.getMessage().contains("v26_grupo_tiene_filas_sin_disciplina"), error.getMessage());
 		for (String tabla : TABLAS_CON_DEPORTE) {
 			assertEquals("YES", fallo.queryForObject("""
@@ -222,7 +222,7 @@ class SwitchGradosMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		// Se corrige la fila, se repara el historial y V26 termina.
 		fallo.update("DELETE FROM grupo WHERE organizacion_id = 2");
-		Flyway reintento = flyway(fuenteFallo, null);
+		Flyway reintento = flyway(fuenteFallo, "26");
 		reintento.repair();
 		reintento.migrate();
 		for (String tabla : TABLAS_CON_DEPORTE) {

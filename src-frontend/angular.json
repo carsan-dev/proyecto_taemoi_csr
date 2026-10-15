@@ -217,7 +217,25 @@
               "src/app/componentes/generales/informe-pdf-modal/informe-pdf-modal.component.spec.ts",
               "src/app/componentes/generales/pdf-viewer/pdf-viewer.component.spec.ts",
               "src/app/componentes/endpoints/listado-alumnos/informes-preview.spec.ts",
-              "src/app/core/interceptors/error.interceptor.spec.ts"
+              "src/app/core/interceptors/error.interceptor.spec.ts",
+              "src/app/enums/deporte.caracterizacion.spec.ts",
+              "src/app/utilities/categoria-por-edad.caracterizacion.spec.ts",
+              "src/app/utilities/grado-progresion.caracterizacion.spec.ts",
+              "src/app/utilities/grado-colors.caracterizacion.spec.ts",
+              "src/app/componentes/vistas/vista-principal-user/vista-principal-user.caracterizacion.spec.ts",
+              "src/app/componentes/vistas/vista-principal-user/materiales-examen-user/materiales-examen-user.caracterizacion.spec.ts",
+              "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.caracterizacion.spec.ts",
+              "src/app/features/catalogo/catalogo-reglas.spec.ts",
+              "src/app/features/catalogo/legado-taemoi.spec.ts",
+              "src/app/features/catalogo/catalogo.service.spec.ts",
+              "src/app/componentes/disciplinas-por-catalogo.spec.ts",
+              "src/app/features/catalogo/catalogo.service.disciplinas.spec.ts",
+              "src/app/componentes/endpoints/crear-alumno/crear-alumno.disciplinas.spec.ts",
+              "src/app/componentes/grados-por-catalogo.spec.ts",
+              "src/app/features/catalogo/tarifas-taemoi.equivalencia.spec.ts",
+              "src/app/componentes/endpoints/crear-alumno/crear-alumno.tarifas.spec.ts",
+              "src/app/componentes/endpoints/editar-alumno/editar-alumno.tarifas.spec.ts",
+              "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.tarifas.spec.ts"
             ]
           }
         }

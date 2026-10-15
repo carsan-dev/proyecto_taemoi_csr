@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Subscription, concat, forkJoin, of } from 'rxjs';
 import { finalize, catchError, tap } from 'rxjs/operators';
@@ -13,18 +13,19 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { TipoTarifa } from '../../../enums/tipo-tarifa';
 import { RolFamiliar } from '../../../enums/rol-familiar';
-import { TipoGrado } from '../../../enums/tipo-grado';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
-import { Deporte, DeporteLabels, getDeporteLabel } from '../../../enums/deporte';
+import { getDeporteLabel } from '../../../enums/deporte';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { claseCssDisciplina, cuantiaEstandar } from '../../../features/catalogo/catalogo-reglas';
+import { CatalogoTarifa } from '../../../features/catalogo/catalogo.models';
+import { ofreceDerechoExamenManual, ofreceRecompensa } from '../../../features/catalogo/legado-taemoi';
 import { formatDate } from '../../../utilities/formatear-fecha';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad';
 import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
-import { obtenerCuantiaTarifaEstandar } from '../../../constants/tarifa.constants';
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
@@ -61,6 +62,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   // Control de formulario
   mostrarFormulario: boolean = false;
   alumnoForm: FormGroup;
+  readonly catalogo = inject(CatalogoService);
   imagenPreview: string | null = null;
 
   // Otras propiedades
@@ -71,15 +73,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   guardandoObservaciones: boolean = false;
 
   // Opciones de dropdown
-  tiposTarifa = Object.values(TipoTarifa);
   rolesFamiliares = Object.values(RolFamiliar);
-  tiposGrado = Object.values(TipoGrado);
-  deportes = [
-    'TAEKWONDO',
-    'KICKBOXING',
-  ];
-  todosLosGrados: any[] = [];
-  grados: any[] = [];
 
   // Productos del alumno
   productosAlumno: ProductoAlumnoDTO[] = [];
@@ -108,7 +102,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   // Multi-sport properties
   deportesDelAlumno: AlumnoDeporteDTO[] = [];
-  deporteActivo: string = Deporte.TAEKWONDO;
+  deporteActivo: string = '';
   mostrarModalAgregarDeporte = false;
   mostrarModalActualizarGrado = false;
   nuevoDeporte: string = '';
@@ -119,7 +113,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   deporteParaActualizarGrado: string = '';
   nuevoGradoActualizar: string = '';
   fechaGradoActualizar: string = '';
-  private readonly deportesSinGrado = new Set(['PILATES', 'DEFENSA_PERSONAL_FEMENINA']);
   deporteParaConvocatoria: string = '';
   convocatoriasFiltradasPorDeporte: any[] = [];
 
@@ -156,7 +149,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     fechaAltaInicial?: string;
   }> = new Map();
 
-  deportesDisponibles: Deporte[] = [];
+  deportesDisponibles: string[] = [];
 
   // Pending changes for basic info (inline editing)
   pendingBasicInfoChanges: {
@@ -209,8 +202,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     'Junior',
     'Senior'
   ];
-  DeporteEnum = Deporte;
-  DeporteLabels = DeporteLabels;
+  readonly claseCssDisciplina = claseCssDisciplina;
 
   // Grupos y Turnos
   gruposDelAlumno: any[] = [];
@@ -277,22 +269,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.cargarGrados();
     this.cargarCatalogoGruposYTurnos();
 
     // Load the list of IDs first, then handle route changes
     this.cargarTodosLosAlumnosIds();
-
-    // DEPRECATED: Deporte is now managed via tabs, not through form
-    // this.alumnoForm.get('deporte')?.valueChanges.subscribe((valor) => {
-    //   this.onDeporteChange(valor);
-    // });
-
-    this.alumnoForm.get('fechaNacimiento')?.valueChanges.subscribe((valor) => {
-      if (valor) {
-        this.obtenerGradosDisponibles(valor);
-      }
-    });
 
     // Per-sport fields (tipoTarifa, competidor, tieneLicencia) are now managed in sport tabs
     // No longer need valueChanges subscriptions in the general form
@@ -916,11 +896,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const fechaNacimiento = formatDate(alumno.fechaNacimiento);
     const fechaBaja = alumno.fechaBaja ? formatDate(alumno.fechaBaja) : '';
 
-    // Cargar grados disponibles en base a la fecha de nacimiento
-    if (fechaNacimiento) {
-      this.obtenerGradosDisponibles(fechaNacimiento);
-    }
-
     // Only set general form fields (not per-sport fields)
     this.alumnoForm.patchValue({
       nombre: alumno.nombre,
@@ -1379,83 +1354,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Para cargar los diferentes grados disponibles (según tu lógica de backend).
-   */
-  cargarGrados(): void {
-    this.endpointsService.obtenerGrados().subscribe({
-      next: (grados) => {
-        this.todosLosGrados = grados;
-        this.grados = grados;
-      },
-      error: () => {
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los grados',
-          icon: 'error',
-        });
-      },
-    });
-  }
-
-  /**
-   * Obtiene desde el backend los grados disponibles para la fecha de nacimiento dada.
-   */
-  obtenerGradosDisponibles(fechaNacimiento: string) {
-    this.endpointsService
-      .obtenerGradosPorFechaNacimiento(fechaNacimiento)
-      .subscribe({
-        next: (tiposGrado: TipoGrado[]) => {
-          this.tiposGrado = tiposGrado;
-          this.aplicarFiltrosGrado();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudieron cargar los grados disponibles.',
-            icon: 'error',
-          });
-        },
-      });
-  }
-
-  /**
-   * Aplica filtros de deporte y edad para determinar los grados disponibles.
-   */
-  aplicarFiltrosGrado(): void {
-    const deporteSeleccionado = this.alumnoForm.get('deporte')?.value;
-    let gradosFiltrados = this.todosLosGrados;
-
-    // First, filter by sport
-    if (deporteSeleccionado === 'KICKBOXING') {
-      const gradosKickboxing = new Set<string> ([
-        'BLANCO',
-        'AMARILLO',
-        'NARANJA',
-        'VERDE',
-        'AZUL',
-        'ROJO',
-        'NEGRO_1_DAN',
-        'NEGRO_2_DAN',
-        'NEGRO_3_DAN',
-        'NEGRO_4_DAN',
-        'NEGRO_5_DAN',
-      ]);
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        gradosKickboxing.has(grado.tipoGrado)
-      );
-    }
-
-    // Then, filter by age if tiposGrado has values
-    if (this.tiposGrado.length > 0) {
-      gradosFiltrados = gradosFiltrados.filter((grado) =>
-        this.tiposGrado.includes(grado.tipoGrado)
-      );
-    }
-
-    this.grados = gradosFiltrados;
-  }
-
-  /**
    * Renueva la licencia del alumno.
    */
   renovarLicencia(alumnoId: number): void {
@@ -1529,35 +1427,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
     numeroLicenciaControl?.updateValueAndValidity();
     fechaLicenciaControl?.updateValueAndValidity();
-  }
-
-  /**
-   * Al elegir un deporte, se adaptan validaciones y campos (licencia, competidor, etc.)
-   */
-  onDeporteChange(deporteSeleccionado: string): void {
-    this.resetFormControls();
-
-    if (deporteSeleccionado === 'TAEKWONDO') {
-      this.showAllFields();
-      // Tarifas para Taekwondo
-      this.tiposTarifa = [
-        TipoTarifa.ADULTO,
-        TipoTarifa.ADULTO_GRUPO,
-        TipoTarifa.INFANTIL,
-        TipoTarifa.INFANTIL_GRUPO,
-        TipoTarifa.HERMANOS,
-        TipoTarifa.PADRES_HIJOS,
-        TipoTarifa.FAMILIAR,
-      ];
-      this.aplicarFiltrosGrado();
-    } else if (deporteSeleccionado === 'KICKBOXING') {
-      this.showAllFields();
-      // Tarifas específicas para Kickboxing
-      this.tiposTarifa = [
-        TipoTarifa.KICKBOXING,
-      ];
-      this.aplicarFiltrosGrado();
-    }
   }
 
   /**
@@ -1639,49 +1508,32 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Resetea validaciones y habilita campos.
-   */
-  resetFormControls(): void {
-    this.alumnoForm.get('tipoTarifa')?.clearValidators();
-    this.alumnoForm.get('grado')?.clearValidators();
-    this.alumnoForm.get('competidor')?.clearValidators();
-    this.alumnoForm.get('tieneLicencia')?.clearValidators();
-    this.alumnoForm.get('numeroLicencia')?.clearValidators();
-    this.alumnoForm.get('fechaLicencia')?.clearValidators();
-
-    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoForm.get('grado')?.updateValueAndValidity();
-    this.alumnoForm.get('competidor')?.updateValueAndValidity();
-    this.alumnoForm.get('tieneLicencia')?.updateValueAndValidity();
-    this.alumnoForm.get('numeroLicencia')?.updateValueAndValidity();
-    this.alumnoForm.get('fechaLicencia')?.updateValueAndValidity();
-
-    // Habilita todos
-    this.alumnoForm.get('tipoTarifa')?.enable();
-    this.alumnoForm.get('grado')?.enable();
-    this.alumnoForm.get('competidor')?.enable();
-    this.alumnoForm.get('tieneLicencia')?.enable();
-    this.alumnoForm.get('numeroLicencia')?.enable();
-    this.alumnoForm.get('fechaLicencia')?.enable();
-  }
-
-  showAllFields(): void {
-    this.alumnoForm.get('tipoTarifa')?.setValidators(Validators.required);
-    this.alumnoForm.get('grado')?.setValidators(Validators.required);
-
-    this.alumnoForm.get('tipoTarifa')?.updateValueAndValidity();
-    this.alumnoForm.get('grado')?.updateValueAndValidity();
-  }
-
   getGradoNombre(grado: any, deporte?: string): string {
     const deporteSeleccionado = deporte || this.alumnoForm.get('deporte')?.value;
     const tipoGrado = typeof grado === 'string' ? grado : grado?.tipoGrado;
     return getGradoNombreParaDeporte(tipoGrado, deporteSeleccionado);
   }
 
-  getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+  /**
+   * Grados que ofrece el sistema de la disciplina (modales de alta de deporte y cambio de grado), por `orden`.
+   * Si se indica el grado actual del alumno y la disciplina ya no lo ofrece (p. ej. un intermedio antiguo de
+   * Kickboxing), se añade al final con su nombre del catálogo para que el desplegable nunca se abra vacío.
+   */
+  gradosDeLaDisciplina(deporte: string | null | undefined, gradoActual?: string | null): { codigo: string; nombre: string }[] {
+    const grados: { codigo: string; nombre: string }[] = this.catalogo.gradosSeleccionables(deporte);
+    if (!gradoActual || grados.some((g) => g.codigo === gradoActual)) {
+      return grados;
+    }
+    return [...grados, { codigo: gradoActual, nombre: this.catalogo.grado(deporte, gradoActual)?.nombre ?? gradoActual }];
+  }
+
+  /** Grado guardado del alumno en la disciplina, o `null` si no tiene. */
+  gradoGuardado(deporte: string | null | undefined): string | null {
+    return this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado || null;
+  }
+
+  getGradoStyle(tipoGrado: string, deporte?: string | null): string {
+    return getGradoTextStyle(tipoGrado, deporte || this.alumnoForm.get('deporte')?.value);
   }
 
   /**
@@ -2097,39 +1949,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     this.mostrarModalEliminarConvocatorias = false;
   }
 
-  /**
-   * Asigna el valor de la cuantía de la tarifa según el tipoTarifa.
-   */
-  asignarCuantiaTarifa(tipoTarifa: TipoTarifa): number {
-    switch (tipoTarifa) {
-      case TipoTarifa.ADULTO:
-        return 30;
-      case TipoTarifa.ADULTO_GRUPO:
-        return 20;
-      case TipoTarifa.FAMILIAR:
-        return 0;
-      case TipoTarifa.INFANTIL:
-        return 28;
-      case TipoTarifa.INFANTIL_GRUPO:
-        return 20;
-      case TipoTarifa.HERMANOS:
-        return 26;
-      case TipoTarifa.PADRES_HIJOS:
-        // For PADRES_HIJOS, the price depends on the rol
-        { const rolFamiliar = this.alumnoForm.get('rolFamiliar')?.value;
-        if (rolFamiliar === RolFamiliar.PADRE || rolFamiliar === RolFamiliar.MADRE) {
-          return 28;
-        } else if (rolFamiliar === RolFamiliar.HIJO || rolFamiliar === RolFamiliar.HIJA) {
-          return 26;
-        }
-        return 0; }
-      case TipoTarifa.KICKBOXING:
-        return 30;
-      default:
-        throw new Error('Tipo de descuento no válido');
-    }
-  }
-
   // onTipoTarifaChange method removed - now handled by per-sport batch updates
 
   /**
@@ -2266,9 +2085,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Get list of sports available to add (not already assigned)
    */
-  getDeportesDisponiblesParaAgregar(): Deporte[] {
+  getDeportesDisponiblesParaAgregar(): string[] {
     const deportesAsignados = new Set(this.deportesDelAlumno.map(d => d.deporte));
-    return Object.values(Deporte).filter(d => !deportesAsignados.has(d));
+    return this.catalogo.disciplinasActivas().map(d => d.codigo).filter(d => !deportesAsignados.has(d));
   }
 
   private ordenarDeportesPorPrincipal(deportes: AlumnoDeporteDTO[]): AlumnoDeporteDTO[] {
@@ -2367,7 +2186,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
     this.nuevoDeporte = this.deportesDisponibles[0];
-    this.gradoInicialDeporte = 'BLANCO';
+    this.gradoInicialDeporte = '';
 
     // Set default dates to today
     const today = new Date();
@@ -2399,7 +2218,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (!deporte) {
       return false;
     }
-    return this.deportesSinGrado.has(deporte);
+    return this.catalogo.sinGrados(deporte);
   }
 
   requiereGradoNuevoDeporte(): boolean {
@@ -2413,8 +2232,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.gradoInicialDeporte) {
-      this.gradoInicialDeporte = 'BLANCO';
+    // Grado inicial: el primero que ofrece el sistema de grados de la disciplina (BLANCO en Taemoi).
+    const gradosDeLaDisciplina = this.catalogo.gradosSeleccionables(deporte).map((grado) => grado.codigo);
+    if (!gradosDeLaDisciplina.includes(this.gradoInicialDeporte)) {
+      this.gradoInicialDeporte = gradosDeLaDisciplina[0] ?? '';
     }
 
     if (!this.fechaGradoDeporte) {
@@ -3023,6 +2844,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return getDeporteLabel(deporte);
   }
 
+  /** D10: botón «Añadir derecho de examen» (solo Kickboxing de Taemoi). */
+  ofreceDerechoExamen(deporte: string): boolean {
+    return ofreceDerechoExamenManual(this.catalogo.esLegadoTaemoi(), deporte);
+  }
+
+  /** D10: botón «Pasar de grado por recompensa» (el resto de casos). */
+  ofreceRecompensaGrado(deporte: string): boolean {
+    return ofreceRecompensa(this.catalogo.esLegadoTaemoi(), deporte);
+  }
+
   /**
    * Get the count of active sports for this alumno
    */
@@ -3044,7 +2875,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   abrirModalActualizarGrado(deporte: string): void {
     this.deporteParaActualizarGrado = deporte;
     const deporteActual = this.deportesDelAlumno.find(d => d.deporte === deporte);
-    this.nuevoGradoActualizar = deporteActual?.grado || 'BLANCO';
+    this.nuevoGradoActualizar = deporteActual?.grado || this.catalogo.gradosSeleccionables(deporte)[0]?.codigo || '';
     this.fechaGradoActualizar =
       this.formatDateForInput(deporteActual?.fechaGrado) || this.formatDateForInput(new Date());
     this.mostrarModalActualizarGrado = true;
@@ -3089,9 +2920,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     concat(...updates).subscribe({
       complete: () => {
         const deporteLabel = getDeporteLabel(this.deporteParaActualizarGrado);
+        const gradoNombre = this.getGradoNombre(this.nuevoGradoActualizar, this.deporteParaActualizarGrado);
         const mensaje = this.fechaGradoActualizar
-          ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${this.nuevoGradoActualizar}`
-          : `El grado para ${deporteLabel} ha sido actualizado a ${this.nuevoGradoActualizar}`;
+          ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${gradoNombre}`
+          : `El grado para ${deporteLabel} ha sido actualizado a ${gradoNombre}`;
 
         Swal.fire({
           title: 'Grado actualizado!',
@@ -3244,8 +3076,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Always autofill cuantia with the standard amount for the new tipoTarifa
     // User can manually change it afterwards if they want a custom amount
-    const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
-    pending.cuantiaTarifa = cuantiaEstandar;
+    pending.cuantiaTarifa = cuantiaEstandar(this.catalogo.tarifa(tipoTarifa), rolFamiliar);
 
     this.pendingTarifaChanges.set(deporte, pending);
   }
@@ -3284,8 +3115,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Always autofill cuantia with the standard amount for the new tipoTarifa
     // User can manually change it afterwards if they want a custom amount
-    const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
-    pending.cuantiaTarifa = cuantiaEstandar;
+    pending.cuantiaTarifa = cuantiaEstandar(this.catalogo.tarifa(tipoTarifa), rolFamiliar);
 
     this.pendingTarifaChanges.set(deporte, pending);
   }
@@ -3319,7 +3149,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Handle rol familiar change - updates pending changes and recalculates cuantia for PADRES_HIJOS
+   * Handle rol familiar change - updates pending changes and recalculates cuantia if the tarifa requires a rol
    */
   onRolFamiliarChange(deporte: string, event: any): void {
     const rolFamiliar = event.target.value;
@@ -3327,13 +3157,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const pending = this.pendingTarifaChanges.get(deporte) || {};
     pending.rolFamiliar = rolFamiliar;
 
-    // If it's PADRES_HIJOS tarifa, recalculate cuantia based on rol
+    // Tarifa que pide rol familiar: el importe depende del rol
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
     const tipoTarifa = pending.tipoTarifa || deporteData?.tipoTarifa;
 
-    if (tipoTarifa === 'PADRES_HIJOS') {
-      const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
-      pending.cuantiaTarifa = cuantiaEstandar;
+    if (this.catalogo.tarifa(tipoTarifa)?.requiereRolFamiliar) {
+      pending.cuantiaTarifa = cuantiaEstandar(this.catalogo.tarifa(tipoTarifa), rolFamiliar);
     }
 
     this.pendingTarifaChanges.set(deporte, pending);
@@ -3346,13 +3175,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const pending = this.pendingTarifaChanges.get(deporte) || {};
     pending.rolFamiliar = rolFamiliar;
 
-    // If it's PADRES_HIJOS tarifa, recalculate cuantia based on rol
+    // Tarifa que pide rol familiar: el importe depende del rol
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
     const tipoTarifa = pending.tipoTarifa || deporteData?.tipoTarifa;
 
-    if (tipoTarifa === 'PADRES_HIJOS') {
-      const cuantiaEstandar = obtenerCuantiaTarifaEstandar(tipoTarifa, rolFamiliar);
-      pending.cuantiaTarifa = cuantiaEstandar;
+    if (this.catalogo.tarifa(tipoTarifa)?.requiereRolFamiliar) {
+      pending.cuantiaTarifa = cuantiaEstandar(this.catalogo.tarifa(tipoTarifa), rolFamiliar);
     }
 
     this.pendingTarifaChanges.set(deporte, pending);
@@ -3391,13 +3219,6 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const pending = this.pendingLicenciaChanges.get(deporte) || {};
     pending.tieneLicencia = tieneLicencia;
     this.pendingLicenciaChanges.set(deporte, pending);
-  }
-
-  /**
-   * @deprecated Use onTieneLicenciaChange instead - kept for backward compatibility
-   */
-  actualizarTieneLicencia(deporte: string, event: any): void {
-    this.onTieneLicenciaChange(deporte, event);
   }
 
   /**
@@ -3931,7 +3752,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     return categoriaActual;
   }
 
-  private obtenerCategoriaPorEdad(deporte: string = 'TAEKWONDO'): string {
+  private obtenerCategoriaPorEdad(deporte?: string | null): string {
     return calcularCategoriaPorEdad(this.alumno?.fechaNacimiento ?? null, deporte);
   }
 
@@ -3956,6 +3777,30 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
     return deporteData?.tipoTarifa || '';
+  }
+
+  /**
+   * D7/D8: tarifas que admite la disciplina, en orden del catálogo, con su nombre. Si la tarifa guardada del
+   * alumno no la admite la disciplina (datos anteriores), se añade al final para que siga siendo seleccionable
+   * aunque se cambie a otra y se vuelva atrás.
+   */
+  tarifasParaDeporte(deporte: string): Pick<CatalogoTarifa, 'codigo' | 'nombre'>[] {
+    const tarifas: Pick<CatalogoTarifa, 'codigo' | 'nombre'>[] = this.catalogo.tarifasDe(deporte);
+    const actual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.tipoTarifa;
+    if (!actual || tarifas.some((t) => t.codigo === actual)) {
+      return tarifas;
+    }
+    return [...tarifas, { codigo: actual, nombre: this.catalogo.tarifa(actual)?.nombre ?? actual }];
+  }
+
+  /** La tarifa mostrada (pendiente o guardada) pide rol familiar (bandera `requiereRolFamiliar`). */
+  requiereRolFamiliar(deporte: string): boolean {
+    return this.catalogo.tarifa(this.getDisplayedTipoTarifa(deporte))?.requiereRolFamiliar === true;
+  }
+
+  /** La tarifa mostrada (pendiente o guardada) pide grupo familiar (bandera `requiereGrupoFamiliar`). */
+  requiereGrupoFamiliar(deporte: string): boolean {
+    return this.catalogo.tarifa(this.getDisplayedTipoTarifa(deporte))?.requiereGrupoFamiliar === true;
   }
 
   getDisplayedCuantiaTarifa(deporte: string): number | string {

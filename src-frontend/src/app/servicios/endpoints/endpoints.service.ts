@@ -4,6 +4,7 @@ import { HttpContext } from '@angular/common/http';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
 import { environment } from '../../../environments/environment';
+import { disciplinaActual } from '../../features/catalogo/catalogo-actual';
 import { Turno } from '../../interfaces/turno';
 import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 import { Producto } from '../../interfaces/producto';
@@ -1025,9 +1026,12 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, deporte: string = 'TAEKWONDO'): Observable<any> {
+  obtenerGradosPorFechaNacimiento(fechaNacimiento: string, deporte?: string | null): Observable<any> {
+    // Sin disciplina: la primera disciplina activa del catálogo (antes, TAEKWONDO fijo).
+    const codigo = deporte ?? disciplinaActual(null)?.codigo;
+    const consulta = codigo ? `?deporte=${encodeURIComponent(codigo)}` : '';
     return this.http
-      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}?deporte=${deporte}`, {
+      .get<any>(`${this.urlBase}/grados/disponibles/${fechaNacimiento}${consulta}`, {
         withCredentials: true,
       })
       .pipe(catchError(this.manejarError));

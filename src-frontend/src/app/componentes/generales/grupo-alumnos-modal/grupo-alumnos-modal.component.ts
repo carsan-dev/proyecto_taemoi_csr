@@ -5,7 +5,7 @@ import { PaginacionComponent } from '../paginacion/paginacion.component';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { getGradoTextStylePorNombre } from '../../../utilities/grado-colors';
 
 @Component({
   selector: 'app-grupo-alumnos-modal',
@@ -135,7 +135,11 @@ export class GrupoAlumnosModalComponent implements OnInit, OnDestroy, OnChanges 
     }, 300);
   }
 
-  getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+  /**
+   * `alumno.grado` llega como `grado.nombre` (AlumnoCortoDTO), sin código ni disciplina: el color se busca
+   * por nombre en el catálogo (D5).
+   */
+  getGradoStyle(nombreGrado: string): string {
+    return getGradoTextStylePorNombre(nombreGrado);
   }
 }

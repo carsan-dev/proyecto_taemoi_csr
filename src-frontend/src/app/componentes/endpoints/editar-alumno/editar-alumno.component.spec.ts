@@ -1,9 +1,12 @@
+import { TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { PageScrollSnapshot } from '../../../servicios/generales/page-scroll.service';
 import { EditarAlumnoComponent } from './editar-alumno.component';
+import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('EditarAlumnoComponent scroll continuity', () => {
   afterEach(() => Swal.close());
@@ -22,14 +25,18 @@ describe('EditarAlumnoComponent scroll continuity', () => {
     ]);
     pageScroll.captureSnapshot.and.returnValue(snapshot);
     pageScroll.restoreSnapshotAfterNextRender.and.returnValue(Promise.resolve(true));
-    const component = new EditarAlumnoComponent(
-      endpoints as any,
-      {} as any,
-      new FormBuilder(),
-      {} as any,
-      {} as any,
-      {} as any,
-      pageScroll
+    TestBed.configureTestingModule({ providers: [proveerCatalogoTesting(CATALOGO_TAEMOI)] });
+    const component = TestBed.runInInjectionContext(
+      () =>
+        new EditarAlumnoComponent(
+          endpoints as any,
+          {} as any,
+          new FormBuilder(),
+          {} as any,
+          {} as any,
+          {} as any,
+          pageScroll
+        )
     );
     component.alumnoId = 7;
     component.alumno = {

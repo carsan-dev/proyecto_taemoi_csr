@@ -12,9 +12,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.config.TarifaConfig;
+import com.taemoi.project.legado.TarifaConfig;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoTarifa;
 
 /**
  * Caracterizacion de TarifaConfig: cuantia por tipo de tarifa y regla de rol familiar.

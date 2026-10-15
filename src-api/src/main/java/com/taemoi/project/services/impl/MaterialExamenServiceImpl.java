@@ -1,5 +1,7 @@
 package com.taemoi.project.services.impl;
 
+
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,9 +33,7 @@ import com.taemoi.project.dtos.response.MaterialExamenVideoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenVideoGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Grado;
-import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.MaterialExamenService;
 
@@ -67,11 +67,11 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private ObjectMapper objectMapper;
 
 	@Override
-	public MaterialExamenDTO obtenerMaterialExamen(Long alumnoId, Deporte deporte) {
+	public MaterialExamenDTO obtenerMaterialExamen(Long alumnoId, String deporte) {
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 
 		MaterialExamenDTO response = new MaterialExamenDTO();
-		response.setDeporte(deporte != null ? deporte.name() : null);
+		response.setDeporte(deporte != null ? deporte : null);
 		response.setGradoActual(contexto.gradoActual());
 		response.setSiguienteGrado(contexto.siguienteGrado());
 		response.setBloqueId(contexto.bloqueId());
@@ -79,7 +79,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		if (contexto.temario() != null) {
 			response.setTemario(new MaterialExamenTemarioDTO(
 					contexto.temario().getFileName().toString(),
-					"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name() + "/material-examen/temario"));
+					"/api/alumnos/" + alumnoId + "/deportes/" + deporte + "/material-examen/temario"));
 		}
 
 		List<MaterialExamenVideoDTO> videos = contexto.videos().stream()
@@ -87,7 +87,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 						video.fileName(),
 						video.title(),
 						video.order(),
-						"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+						"/api/alumnos/" + alumnoId + "/deportes/" + deporte
 								+ "/material-examen/videos/"
 								+ UriUtils.encodePathSegment(video.fileName(), StandardCharsets.UTF_8)))
 				.toList();
@@ -100,8 +100,8 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		List<MaterialExamenVideoGrupoDTO> gruposVideosAnteriores = contexto.gruposVideosAnteriores().stream()
 				.map(grupo -> new MaterialExamenVideoGrupoDTO(
-						grupo.grado().name(),
-						"Taeguks/Pumses de " + formatearGrado(grupo.grado()),
+						grupo.grado(),
+						"Taeguks/Pumses de " + nombreGrado(grupo),
 						grupo.bloqueId(),
 						grupo.videos().stream()
 								.map(video -> crearVideoDto(alumnoId, deporte, video))
@@ -112,7 +112,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		List<MaterialExamenDocumentoDTO> documentos = new ArrayList<>();
 		if (contexto.temario() != null) {
 			String fileName = contexto.temario().getFileName().toString();
-			String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte.name();
+			String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte;
 			documentos.add(new MaterialExamenDocumentoDTO(
 					fileName,
 					fileName,
@@ -126,7 +126,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		documentos.addAll(contexto.documentos().stream()
 				.map(documento -> {
-					String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+					String baseUrl = "/api/alumnos/" + alumnoId + "/deportes/" + deporte
 							+ "/material-examen/documentacion/"
 							+ UriUtils.encodePathSegment(documento.fileName(), StandardCharsets.UTF_8);
 					return new MaterialExamenDocumentoDTO(
@@ -146,7 +146,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	}
 
 	@Override
-	public MaterialExamenArchivo obtenerTemario(Long alumnoId, Deporte deporte) {
+	public MaterialExamenArchivo obtenerTemario(Long alumnoId, String deporte) {
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 		if (contexto.temario() == null) {
 			throw new NoSuchElementException("No hay temario para el bloque de material actual");
@@ -157,7 +157,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	}
 
 	@Override
-	public MaterialExamenArchivo obtenerVideo(Long alumnoId, Deporte deporte, String videoFile) {
+	public MaterialExamenArchivo obtenerVideo(Long alumnoId, String deporte, String videoFile) {
 		String nombreVideo = sanitizarNombreArchivo(videoFile, "video");
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 
@@ -188,7 +188,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	}
 
 	@Override
-	public MaterialExamenArchivo obtenerDocumento(Long alumnoId, Deporte deporte, String documentoFile) {
+	public MaterialExamenArchivo obtenerDocumento(Long alumnoId, String deporte, String documentoFile) {
 		String nombreDocumento = sanitizarNombreArchivo(documentoFile, "documento");
 		MaterialContext contexto = resolverContexto(alumnoId, deporte);
 
@@ -203,7 +203,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return crearArchivo(match.get().path(), null);
 	}
 
-	private MaterialContext resolverContexto(Long alumnoId, Deporte deporte) {
+	private MaterialContext resolverContexto(Long alumnoId, String deporte) {
 		if (alumnoId == null || alumnoId <= 0) {
 			throw new IllegalArgumentException("El alumnoId es obligatorio");
 		}
@@ -213,21 +213,21 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 		List<AlumnoDeporte> deportesActivos = alumnoDeporteService.obtenerDeportesActivosDelAlumno(alumnoId);
 		AlumnoDeporte deporteSeleccionado = deportesActivos.stream()
-				.filter(alumnoDeporte -> alumnoDeporte.getDeporte() == deporte)
+				.filter(alumnoDeporte -> java.util.Objects.equals(alumnoDeporte.getDeporte(), deporte))
 				.findFirst()
 				.orElse(null);
 
 		String gradoActual = null;
 		String siguienteGrado = null;
 		String bloqueId = null;
-		TipoGrado tipoGradoActual = null;
+		String tipoGradoActual = null;
 		Alumno alumno = null;
 		boolean esMenor = false;
 		if (deporteSeleccionado != null && deporteSeleccionado.getGrado() != null
 				&& deporteSeleccionado.getGrado().getCodigo() != null) {
-			String disciplina = deporte.name();
+			String disciplina = deporte;
 			gradoActual = deporteSeleccionado.getGrado().getCodigo();
-			tipoGradoActual = TipoGrado.valueOf(gradoActual);
+			tipoGradoActual = gradoActual;
 			bloqueId = progresion.obtenerBloqueTemario(disciplina, gradoActual);
 
 			alumno = deporteSeleccionado.getAlumno();
@@ -269,16 +269,16 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	}
 
 	private List<VideoGroupEntry> resolverGruposVideosAnteriores(
-			Deporte deporte,
+			String deporte,
 			boolean esMenor,
-			TipoGrado tipoGradoActual,
+			String tipoGradoActual,
 			String bloqueActual) {
-		if (deporte != Deporte.TAEKWONDO || tipoGradoActual == null) {
+		if (!CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte) || tipoGradoActual == null) {
 			return List.of();
 		}
 
-		List<Grado> gradosAnteriores = progresion.obtenerGradosAnteriores(deporte.name(), esMenor,
-				tipoGradoActual.name());
+		List<Grado> gradosAnteriores = progresion.obtenerGradosAnteriores(deporte, esMenor,
+				tipoGradoActual);
 		List<VideoGroupEntry> grupos = new ArrayList<>();
 		List<String> bloquesVisitados = new ArrayList<>();
 
@@ -307,20 +307,20 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 					.toList();
 
 			if (!videos.isEmpty()) {
-				grupos.add(new VideoGroupEntry(TipoGrado.valueOf(gradoAnterior.getCodigo()), bloqueAnterior, videos));
+				grupos.add(new VideoGroupEntry(gradoAnterior.getCodigo(), gradoAnterior.getNombre(), bloqueAnterior, videos));
 			}
 		}
 
 		return grupos;
 	}
 
-	private MaterialExamenVideoDTO crearVideoDto(Long alumnoId, Deporte deporte, VideoFileEntry video) {
+	private MaterialExamenVideoDTO crearVideoDto(Long alumnoId, String deporte, VideoFileEntry video) {
 		String videoId = crearIdVideoAnterior(video.bloqueId(), video.fileName());
 		return new MaterialExamenVideoDTO(
 				videoId,
 				video.title(),
 				video.order(),
-				"/api/alumnos/" + alumnoId + "/deportes/" + deporte.name()
+				"/api/alumnos/" + alumnoId + "/deportes/" + deporte
 						+ "/material-examen/videos/"
 						+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
 	}
@@ -332,8 +332,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
 	}
 
-	private String formatearGrado(TipoGrado grado) {
-		return grado.name().replace('_', '-');
+	/** Nombre del grado en el catálogo (D3); sin nombre, el código con guiones, como antes. */
+	private String nombreGrado(VideoGroupEntry grupo) {
+		return grupo.nombre() != null ? grupo.nombre() : grupo.grado().replace('_', '-');
 	}
 
 	/**
@@ -341,10 +342,10 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	 * escuela por defecto recurre a la carpeta heredada {@code Materiales_Examen/<deporte>/<bloque>}
 	 * cuando la suya no existe; otra escuela nunca lee material ajeno.
 	 */
-	private Path obtenerCarpetaBloque(Deporte deporte, String bloqueId) {
+	private Path obtenerCarpetaBloque(String deporte, String bloqueId) {
 		Long organizacion = RutasArchivos.organizacionActiva();
 		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
-		String deporteDir = deporte.name().toLowerCase(Locale.ROOT);
+		String deporteDir = deporte.toLowerCase(Locale.ROOT);
 		Path propia = base.resolve(RutasArchivos.carpetaOrganizacion(organizacion))
 				.resolve(RutasArchivos.CARPETA_MATERIALES)
 				.resolve(deporteDir)
@@ -636,7 +637,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	private record VideoFileEntry(String fileName, String title, Integer order, Path path, String bloqueId) {
 	}
 
-	private record VideoGroupEntry(TipoGrado grado, String bloqueId, List<VideoFileEntry> videos) {
+	private record VideoGroupEntry(String grado, String nombre, String bloqueId, List<VideoFileEntry> videos) {
 	}
 
 	private record DocumentoFileEntry(

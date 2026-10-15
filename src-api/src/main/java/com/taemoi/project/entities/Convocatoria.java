@@ -5,11 +5,10 @@ import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -32,17 +31,14 @@ public class Convocatoria extends EntidadOrganizacion {
 	@Temporal(TemporalType.DATE)
 	private Date fechaConvocatoria;
 
-	@Enumerated(EnumType.STRING)
-	@NotNull(message = "El deporte de la convocatoria no puede ser nulo")
-	private Deporte deporte;
-
 	/**
-	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
-	 * contracción para poder volver al código anterior.
+	 * Disciplina (V26, NOT NULL). Desde V28 es la única fuente del deporte de la convocatoria (la columna
+	 * heredada {@code deporte} se borró); el JSON expone su código como {@code deporte}.
 	 */
 	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "disciplina_id", nullable = false)
+	@NotNull(message = "El deporte de la convocatoria no puede ser nulo")
 	private Disciplina disciplina;
 
 	@OneToMany(mappedBy = "convocatoria", cascade = CascadeType.ALL)
@@ -64,12 +60,10 @@ public class Convocatoria extends EntidadOrganizacion {
 		this.fechaConvocatoria = fechaConvocatoria;
 	}
 
-	public Deporte getDeporte() {
-		return deporte;
-	}
-
-	public void setDeporte(Deporte deporte) {
-		this.deporte = deporte;
+	/** Código de la disciplina: el valor de la antigua columna {@code deporte}, que la API sigue devolviendo. */
+	@JsonProperty("deporte")
+	public String getDeporte() {
+		return disciplina == null ? null : disciplina.getCodigo();
 	}
 
 	public Disciplina getDisciplina() {

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Deporte;
 
 import jakarta.persistence.LockModeType;
 
@@ -245,8 +244,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 
 	// Mゼtodo para obtener alumnos activos aptos para examen por deporte (multi-deporte)
 	@Query("SELECT DISTINCT a FROM Alumno a JOIN a.deportes ad " +
-		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.deporte = :deporte")
-	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") Deporte deporte);
+		   "WHERE a.activo = true AND ad.activo = true AND ad.aptoParaExamen = true AND ad.disciplina.codigo = :deporte")
+	List<Alumno> findAlumnosAptosParaExamenPorDeporte(@Param("deporte") String deporte);
 
 	List<Alumno> findByActivoTrue();
 }

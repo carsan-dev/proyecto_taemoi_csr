@@ -18,6 +18,7 @@ import { LoadingService } from '../../../servicios/generales/loading.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { PaginatedResponse } from '../../../interfaces/paginated-response';
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDTO } from '../../../interfaces/alumno-dto';
@@ -49,13 +50,15 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
     { value: 12, label: 'Diciembre' },
   ];
 
-  readonly deportes = [
-    { value: 'TODOS', label: 'Todos los deportes' },
-    { value: 'TAEKWONDO', label: 'Taekwondo' },
-    { value: 'KICKBOXING', label: 'Kickboxing' },
-    { value: 'PILATES', label: 'Pilates' },
-    { value: 'DEFENSA_PERSONAL_FEMENINA', label: 'Defensa Personal Femenina' },
-  ];
+  readonly catalogo = inject(CatalogoService);
+
+  /** `TODOS` más las disciplinas activas del catálogo, por orden. */
+  get deportes(): Array<{ value: string; label: string }> {
+    return [
+      { value: 'TODOS', label: 'Todos los deportes' },
+      ...this.catalogo.disciplinasActivas().map((d) => ({ value: d.codigo, label: d.nombre })),
+    ];
+  }
 
   readonly estados: Array<{ value: EstadoFiltro; label: string }> = [
     { value: 'TODOS', label: 'Todos' },
@@ -417,10 +420,13 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   }
 
   getDeporteLabel(deporte: string): string {
-    return (
-      this.deportes.find((item) => item.value === deporte)?.label ??
-      (deporte === 'GENERAL' ? 'General' : deporte)
-    );
+    if (deporte === 'TODOS') {
+      return 'Todos los deportes';
+    }
+    if (deporte === 'GENERAL') {
+      return 'General';
+    }
+    return this.catalogo.etiquetaDisciplina(deporte);
   }
 
   onAnoChange(): void {

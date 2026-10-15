@@ -44,6 +44,11 @@ class AlumnoControllerTest {
 	@Mock
 	private AlumnoAccessControlService alumnoAccessControlService;
 
+	/** Catálogo de Taemoi en memoria (V28: los deportes de la ruta se validan contra el catálogo). */
+	@org.mockito.Spy
+	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas =
+			new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().catalogo();
+
 	@InjectMocks
 	private AlumnoController alumnoController;
 
@@ -184,7 +189,7 @@ class AlumnoControllerTest {
 		ranking.setMiPosicion(new RetoDiarioRankingMiPosicionResponse(1, "Alumno U.", 3, null));
 
 		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
-		when(alumnoService.obtenerRankingSemanalRetoDiario(eq(alumnoId), eq(com.taemoi.project.entities.Deporte.TAEKWONDO),
+		when(alumnoService.obtenerRankingSemanalRetoDiario(eq(alumnoId), eq(com.taemoi.project.legado.Deporte.TAEKWONDO.name()),
 				eq(10))).thenReturn(ranking);
 
 		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "TAEKWONDO", 10);
@@ -222,7 +227,7 @@ class AlumnoControllerTest {
 		ranking.setMiPosicion(new RetoDiarioRankingGeneralMiPosicionResponse(2, "Alumno U.", 4, 12, 2));
 
 		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
-		when(alumnoService.obtenerRankingGeneralRetoDiario(eq(alumnoId), eq(com.taemoi.project.entities.Deporte.TAEKWONDO),
+		when(alumnoService.obtenerRankingGeneralRetoDiario(eq(alumnoId), eq(com.taemoi.project.legado.Deporte.TAEKWONDO.name()),
 				eq(10))).thenReturn(ranking);
 
 		ResponseEntity<?> result = alumnoController.obtenerRankingGeneralRetoDiario(alumnoId, "TAEKWONDO", 10);

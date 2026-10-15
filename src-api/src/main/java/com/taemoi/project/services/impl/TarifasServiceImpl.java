@@ -12,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.RolFamiliar;
 import com.taemoi.project.entities.Tarifa;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.repositories.TarifaRepository;
+import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.TarifasService;
 
 /**
@@ -39,7 +39,8 @@ public class TarifasServiceImpl implements TarifasService {
 		if (codigo == null) {
 			return Optional.empty();
 		}
-		return tarifas.findByCodigo(codigo);
+		// Código exacto (la intercalación de la columna no distingue mayúsculas; el antiguo enum sí)
+		return tarifas.findByCodigo(codigo).filter(t -> codigo.equals(t.getCodigo()));
 	}
 
 	@Override
@@ -53,7 +54,12 @@ public class TarifasServiceImpl implements TarifasService {
 
 	@Override
 	public List<Tarifa> listarActivas() {
-		return tarifas.findByActivaTrueOrderByIdAsc();
+		return tarifas.findByActivaTrueOrderByOrdenAscIdAsc();
+	}
+
+	@Override
+	public List<Tarifa> listarTodas() {
+		return tarifas.findAllByOrderByOrdenAscIdAsc();
 	}
 
 	@Override
@@ -100,23 +106,22 @@ public class TarifasServiceImpl implements TarifasService {
 	}
 
 	@Override
+	public String validarCodigo(String codigoTarifa) {
+		if (buscarPorCodigo(codigoTarifa).isEmpty()) {
+			throw CatalogoLegadoTaemoi.valorNoValido("TipoTarifa", codigoTarifa);
+		}
+		return codigoTarifa;
+	}
+
+	@Override
 	public void asignarTarifa(AlumnoDeporte inscripcion, String codigoTarifa) {
 		if (codigoTarifa == null) {
 			inscripcion.setTarifa(null);
-			inscripcion.setTipoTarifa(null);
 			return;
 		}
-		TipoTarifa legado = tipoLegado(codigoTarifa);
-		Optional<Tarifa> tarifa = buscarPorCodigo(codigoTarifa);
-		if (tarifa.isEmpty()) {
-			if (legado == null) {
-				// Mismo error que TipoTarifa.valueOf (lo que devolvía el código anterior).
-				TipoTarifa.valueOf(codigoTarifa);
-			}
-			log.warn("La organización no tiene la tarifa {}: la inscripción queda sin tarifa_id", codigoTarifa);
-		}
-		inscripcion.setTarifa(tarifa.orElse(null));
-		inscripcion.setTipoTarifa(legado);
+		Tarifa tarifa = buscarPorCodigo(codigoTarifa)
+				.orElseThrow(() -> CatalogoLegadoTaemoi.valorNoValido("TipoTarifa", codigoTarifa));
+		inscripcion.setTarifa(tarifa);
 	}
 
 	@Override
@@ -129,12 +134,4 @@ public class TarifasServiceImpl implements TarifasService {
 		return tarifa != null && CODIGO_HERMANOS.equals(tarifa.getCodigo());
 	}
 
-	private static TipoTarifa tipoLegado(String codigo) {
-		for (TipoTarifa tipo : TipoTarifa.values()) {
-			if (tipo.name().equals(codigo)) {
-				return tipo;
-			}
-		}
-		return null;
-	}
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -12,6 +12,7 @@ import {
   MaterialExamenVideoDTO,
 } from '../../../../interfaces/material-examen';
 import { getDeporteLabel } from '../../../../enums/deporte';
+import { CatalogoService } from '../../../../features/catalogo/catalogo.service';
 
 @Component({
   selector: 'app-materiales-examen-user',
@@ -64,26 +65,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private rafScrollDocsId: number | null = null;
   private readonly mobileViewportMediaQuery =
     '(max-width: 768px), (max-height: 540px) and (pointer: coarse)';
-  private readonly etiquetasSiguienteGrado: Record<string, string> = {
-    BLANCO_AMARILLO: 'BLANCO-AMARILLO',
-    AMARILLO: 'AMARILLO',
-    AMARILLO_NARANJA: 'AMARILLO-NARANJA',
-    NARANJA: 'NARANJA',
-    NARANJA_VERDE: 'NARANJA-VERDE',
-    VERDE: 'VERDE',
-    VERDE_AZUL: 'VERDE-AZUL',
-    AZUL: 'AZUL',
-    AZUL_ROJO: 'AZUL-ROJO',
-    ROJO: 'ROJO',
-    ROJO_NEGRO_1_PUM: 'NEGRO 1\u00BA PUM',
-    ROJO_NEGRO_2_PUM: 'NEGRO 2\u00BA PUM',
-    ROJO_NEGRO_3_PUM: 'NEGRO 3\u00BA PUM',
-    NEGRO_1_DAN: 'NEGRO 1\u00BA DAN',
-    NEGRO_2_DAN: 'NEGRO 2\u00BA DAN',
-    NEGRO_3_DAN: 'NEGRO 3\u00BA DAN',
-    NEGRO_4_DAN: 'NEGRO 4\u00BA DAN',
-    NEGRO_5_DAN: 'NEGRO 5\u00BA DAN',
-  };
+  private readonly catalogo = inject(CatalogoService);
 
   constructor(
     private readonly endpointsService: EndpointsService
@@ -494,12 +476,15 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   private obtenerDocumentosCompatibles(
     material: MaterialExamenDTO | null | undefined
   ): MaterialExamenDocumentoDTO[] {
+    const deporte = material?.deporte || this.deporteSeleccionado;
     const documentos = Array.isArray(material?.documentos)
       ? material!.documentos.filter((documento) => !!documento?.openUrl || !!documento?.downloadUrl)
       : [];
 
     if (documentos.length > 0) {
-      return documentos.map((documento) => this.normalizarNombreTemarioDocumento(documento, material?.siguienteGrado));
+      return documentos.map((documento) =>
+        this.normalizarNombreTemarioDocumento(documento, material?.siguienteGrado, deporte)
+      );
     }
 
     if (!material?.temario?.downloadUrl) {
@@ -509,7 +494,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     const fileName = this.construirNombreTemarioParaGrado(
       material?.siguienteGrado,
       material.temario.fileName,
-      'application/pdf'
+      'application/pdf',
+      deporte
     );
     const openUrl = material.temario.downloadUrl;
     const downloadUrl = this.agregarDownloadParam(openUrl);
@@ -518,7 +504,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       {
         id: fileName,
         fileName,
-        title: this.construirTituloTemarioParaGrado(material?.siguienteGrado),
+        title: this.construirTituloTemarioParaGrado(material?.siguienteGrado, deporte),
         order: 0,
         mimeType: 'application/pdf',
         previewable: true,
@@ -596,7 +582,8 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
 
   private normalizarNombreTemarioDocumento(
     documento: MaterialExamenDocumentoDTO,
-    siguienteGrado: string | null | undefined
+    siguienteGrado: string | null | undefined,
+    deporte: string | null | undefined
   ): MaterialExamenDocumentoDTO {
     if (!this.esDocumentoPrincipal(documento)) {
       return documento;
@@ -605,26 +592,28 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     const fileName = this.construirNombreTemarioParaGrado(
       siguienteGrado,
       documento.fileName,
-      documento.mimeType
+      documento.mimeType,
+      deporte
     );
 
     return {
       ...documento,
       fileName,
-      title: this.construirTituloTemarioParaGrado(siguienteGrado),
+      title: this.construirTituloTemarioParaGrado(siguienteGrado, deporte),
     };
   }
 
   private construirNombreTemarioParaGrado(
     siguienteGrado: string | null | undefined,
     fileNameOriginal: string | null | undefined,
-    mimeType: string | null | undefined
+    mimeType: string | null | undefined,
+    deporte: string | null | undefined
   ): string {
     const extension =
       this.extraerExtensionDesdeNombre(fileNameOriginal) ||
       this.obtenerExtensionDesdeMime(mimeType) ||
       'pdf';
-    const titulo = this.construirTituloTemarioParaGrado(siguienteGrado);
+    const titulo = this.construirTituloTemarioParaGrado(siguienteGrado, deporte);
     const baseSanitizada = titulo
       .replace(/\s*\/\s*/g, '-')
       .replace(/[\\:*?"<>|]/g, '-')
@@ -633,19 +622,35 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
     return `${baseSanitizada}.${extension}`;
   }
 
-  private construirTituloTemarioParaGrado(siguienteGrado: string | null | undefined): string {
-    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(siguienteGrado);
+  private construirTituloTemarioParaGrado(
+    siguienteGrado: string | null | undefined,
+    deporte: string | null | undefined
+  ): string {
+    const etiquetaCinturon = this.obtenerEtiquetaCinturonObjetivo(siguienteGrado, deporte);
     if (!etiquetaCinturon) {
       return 'Temario';
     }
     return `Temario para cintur\u00F3n ${this.formatearEtiquetaCinturon(etiquetaCinturon)}`;
   }
 
-  private obtenerEtiquetaCinturonObjetivo(siguienteGrado: string | null | undefined): string | null {
+  /** D3: nombre del grado actual del material en el catálogo de su disciplina (el código si no está). */
+  nombreGradoActual(material: MaterialExamenDTO): string | null {
+    const codigo = material.gradoActual;
+    if (!codigo) {
+      return null;
+    }
+    return this.catalogo.grado(material.deporte || this.deporteSeleccionado, codigo)?.nombre ?? codigo;
+  }
+
+  /** D3: nombre del grado siguiente en el catálogo de la disciplina; `null` si no está (o no hay catálogo). */
+  private obtenerEtiquetaCinturonObjetivo(
+    siguienteGrado: string | null | undefined,
+    deporte: string | null | undefined
+  ): string | null {
     if (!siguienteGrado) {
       return null;
     }
-    return this.etiquetasSiguienteGrado[siguienteGrado] ?? null;
+    return this.catalogo.grado(deporte, siguienteGrado)?.nombre ?? null;
   }
 
   private formatearEtiquetaCinturon(etiquetaRaw: string): string {
@@ -693,7 +698,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
   }
 
   private obtenerDescripcionBloque(material: MaterialExamenDTO): string | null {
-    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.siguienteGrado);
+    const etiqueta = this.obtenerEtiquetaCinturonObjetivo(material.siguienteGrado, material.deporte || this.deporteSeleccionado);
     if (!etiqueta) {
       return null;
     }
@@ -709,7 +714,7 @@ export class MaterialesExamenUserComponent implements OnChanges, OnDestroy {
       !!item?.deporte &&
       !!item?.grado &&
       item.activo !== false &&
-      (item.deporte === 'TAEKWONDO' || item.deporte === 'KICKBOXING')
+      this.catalogo.tieneMaterialExamen(item.deporte)
     );
 
     return deportesConMaterial

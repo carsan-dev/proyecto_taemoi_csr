@@ -1,5 +1,6 @@
 package com.taemoi.project.services.impl;
 
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -16,17 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Categoria;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoCategoria;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.CategoriaRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
+import com.taemoi.project.services.CatalogoCategoriasService;
 import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.services.TarifasService;
@@ -54,33 +52,28 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Autowired
 	private TarifasService tarifas;
 
-	private static String codigo(Deporte deporte) {
-		return deporte == null ? null : deporte.name();
-	}
+	@Autowired
+	private CatalogoCategoriasService categorias;
 
 	/** Disciplina de la organización activa con el código del deporte. */
-	private Disciplina disciplinaDe(Deporte deporte) {
+	private Disciplina disciplinaDe(String deporte) {
 		if (deporte == null) {
 			throw new IllegalArgumentException("El deporte es obligatorio");
 		}
-		return catalogo.obtenerPorCodigo(deporte.name());
+		return catalogo.obtenerPorCodigo(deporte);
 	}
 
 	/** Grado con ese código en el sistema de grados de la disciplina. */
-	private Grado resolverGrado(Deporte deporte, TipoGrado tipoGrado) {
-		return resolverGrado(deporte, tipoGrado.name());
-	}
-
-	private Grado resolverGrado(Deporte deporte, String codigoGrado) {
-		if (!progresion.tieneProgresion(codigo(deporte))) {
+	private Grado resolverGrado(String deporte, String codigoGrado) {
+		if (!progresion.tieneProgresion(deporte)) {
 			throw new IllegalArgumentException("El deporte " + deporte + " no tiene sistema de grados");
 		}
-		return progresion.buscarGrado(codigo(deporte), codigoGrado)
+		return progresion.buscarGrado(deporte, codigoGrado)
 				.orElseThrow(() -> new IllegalArgumentException("Grado no encontrado: " + codigoGrado));
 	}
 
 	@Override
-	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, Deporte deporte, TipoGrado gradoInicial, Date fechaAlta,
+	public AlumnoDeporte agregarDeporteAAlumno(Long alumnoId, String deporte, String gradoInicial, Date fechaAlta,
 			Date fechaAltaInicial, Date fechaGrado) {
 		// Verificar que el alumno existe
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -102,7 +95,6 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		// Crear nuevo AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
 		alumnoDeporte.setAlumno(alumno);
-		alumnoDeporte.setDeporte(deporte);
 		alumnoDeporte.setDisciplina(disciplinaDe(deporte));
 		alumnoDeporte.setActivo(true);
 		// Use provided fechaAlta or default to current date
@@ -125,7 +117,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, Deporte deporte, TipoGrado gradoInicial,
+	public AlumnoDeporte agregarDeporteAAlumnoCompleto(Long alumnoId, String deporte, String gradoInicial,
 			Date fechaAlta, Date fechaAltaInicial, Date fechaGrado, String codigoTarifa, Double cuantiaTarifa,
 			String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
 			Date fechaAltaCompeticion, Date fechaAltaCompetidorInicial, Double peso,
@@ -150,7 +142,6 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		// Crear nuevo AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
 		alumnoDeporte.setAlumno(alumno);
-		alumnoDeporte.setDeporte(deporte);
 		alumnoDeporte.setDisciplina(disciplinaDe(deporte));
 		alumnoDeporte.setActivo(true);
 		// Use provided fechaAlta or default to current date
@@ -208,9 +199,9 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 				throw new IllegalArgumentException("Categoria no encontrada: " + categoria);
 			}
 			alumnoDeporte.setCategoria(categoriaEntity);
-		} else if (esCompetidor && deporte == Deporte.TAEKWONDO) {
+		} else if (esCompetidor && categorias.asignaCategoriaPorEdad(deporte)) {
 			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			Categoria categoriaEntity = asignarCategoriaSegunEdad(edad);
+			Categoria categoriaEntity = asignarCategoriaSegunEdad(deporte, edad);
 			alumnoDeporte.setCategoria(categoriaEntity);
 		}
 
@@ -221,14 +212,14 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte establecerDeportePrincipal(Long alumnoId, Deporte deporte) {
+	public AlumnoDeporte establecerDeportePrincipal(Long alumnoId, String deporte) {
 		List<AlumnoDeporte> deportesDelAlumno = alumnoDeporteRepository.findByAlumnoId(alumnoId);
 		if (deportesDelAlumno.isEmpty()) {
 			throw new IllegalArgumentException("El alumno no tiene deportes asignados");
 		}
 
 		AlumnoDeporte deportePrincipal = deportesDelAlumno.stream()
-				.filter(ad -> ad.getDeporte() == deporte)
+				.filter(ad -> java.util.Objects.equals(ad.getDeporte(), deporte))
 				.findFirst()
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -238,7 +229,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		}
 
 		for (AlumnoDeporte alumnoDeporte : deportesDelAlumno) {
-			alumnoDeporte.setPrincipal(alumnoDeporte.getDeporte() == deporte);
+			alumnoDeporte.setPrincipal(java.util.Objects.equals(alumnoDeporte.getDeporte(), deporte));
 		}
 		alumnoDeporteRepository.saveAll(deportesDelAlumno);
 
@@ -246,7 +237,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public void desactivarDeporteDeAlumno(Long alumnoId, Deporte deporte) {
+	public void desactivarDeporteDeAlumno(Long alumnoId, String deporte) {
 		// Verificar que el alumno tiene más de un deporte activo
 		long deportesActivos = alumnoDeporteRepository.countByAlumnoIdAndActivoTrue(alumnoId);
 		if (deportesActivos <= 1) {
@@ -272,7 +263,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public void activarDeporteDeAlumno(Long alumnoId, Deporte deporte) {
+	public void activarDeporteDeAlumno(Long alumnoId, String deporte) {
 		// Buscar el AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
@@ -307,7 +298,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	private com.taemoi.project.repositories.ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Override
-	public void removerDeporteDeAlumno(Long alumnoId, Deporte deporte) {
+	public void removerDeporteDeAlumno(Long alumnoId, String deporte) {
 		// Verificar que el alumno tiene más de un deporte activo
 		long deportesActivos = alumnoDeporteRepository.countByAlumnoIdAndActivoTrue(alumnoId);
 		if (deportesActivos <= 1) {
@@ -345,7 +336,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public Optional<AlumnoDeporte> obtenerAlumnoDeporte(Long alumnoId, Deporte deporte) {
+	public Optional<AlumnoDeporte> obtenerAlumnoDeporte(Long alumnoId, String deporte) {
 		return alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte);
 	}
 
@@ -363,12 +354,12 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId, Deporte deporte, TipoGrado nuevoGrado) {
-		return actualizarGradoPorCodigo(alumnoId, deporte, nuevoGrado.name());
+	public AlumnoDeporte actualizarGradoPorDeporte(Long alumnoId, String deporte, String nuevoGrado) {
+		return actualizarGradoPorCodigo(alumnoId, deporte, nuevoGrado);
 	}
 
 	@Override
-	public AlumnoDeporte actualizarGradoPorCodigo(Long alumnoId, Deporte deporte, String nuevoGrado) {
+	public AlumnoDeporte actualizarGradoPorCodigo(Long alumnoId, String deporte, String nuevoGrado) {
 		// Buscar el AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
@@ -390,7 +381,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarAptoParaExamen(Long alumnoId, Deporte deporte, Boolean aptoParaExamen) {
+	public AlumnoDeporte actualizarAptoParaExamen(Long alumnoId, String deporte, Boolean aptoParaExamen) {
 		// Buscar el AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
@@ -403,14 +394,14 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaGrado(Long alumnoId, Deporte deporte, java.util.Date fechaGrado) {
+	public AlumnoDeporte actualizarFechaGrado(Long alumnoId, String deporte, java.util.Date fechaGrado) {
 		// Buscar el AlumnoDeporte
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
 		// Validar que el deporte admite grados
-		if (!progresion.tieneProgresion(codigo(deporte))) {
+		if (!progresion.tieneProgresion(deporte)) {
 			throw new IllegalArgumentException(
 					"El deporte " + deporte + " no tiene sistema de grados");
 		}
@@ -426,7 +417,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaAlta(Long alumnoId, Deporte deporte, java.util.Date fechaAlta) {
+	public AlumnoDeporte actualizarFechaAlta(Long alumnoId, String deporte, java.util.Date fechaAlta) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -436,7 +427,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaBaja(Long alumnoId, Deporte deporte, java.util.Date fechaBaja) {
+	public AlumnoDeporte actualizarFechaBaja(Long alumnoId, String deporte, java.util.Date fechaBaja) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -446,7 +437,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaAltaInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaInicial) {
+	public AlumnoDeporte actualizarFechaAltaInicial(Long alumnoId, String deporte, java.util.Date fechaAltaInicial) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -456,15 +447,15 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarTipoTarifa(Long alumnoId, Deporte deporte, TipoTarifa tipoTarifa) {
-		return actualizarTarifa(alumnoId, deporte, tipoTarifa == null ? null : tipoTarifa.name());
+	public AlumnoDeporte actualizarTipoTarifa(Long alumnoId, String deporte, String tipoTarifa) {
+		return actualizarTarifa(alumnoId, deporte, tipoTarifa == null ? null : tipoTarifa);
 	}
 
 	@Override
-	public AlumnoDeporte actualizarTarifa(Long alumnoId, Deporte deporte, String codigoTarifa) {
-		if (codigoTarifa != null && tarifas.buscarPorCodigo(codigoTarifa).isEmpty()) {
-			// Código que no es de la organización: el mismo error que TipoTarifa.valueOf si tampoco es del enum
-			TipoTarifa.valueOf(codigoTarifa);
+	public AlumnoDeporte actualizarTarifa(Long alumnoId, String deporte, String codigoTarifa) {
+		if (codigoTarifa != null) {
+			// Código que no es de la organización: el mismo error que daba TipoTarifa.valueOf
+			tarifas.validarCodigo(codigoTarifa);
 		}
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
@@ -475,7 +466,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarCuantiaTarifa(Long alumnoId, Deporte deporte, Double cuantiaTarifa) {
+	public AlumnoDeporte actualizarCuantiaTarifa(Long alumnoId, String deporte, Double cuantiaTarifa) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -485,7 +476,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarRolFamiliar(Long alumnoId, Deporte deporte, String rolFamiliar) {
+	public AlumnoDeporte actualizarRolFamiliar(Long alumnoId, String deporte, String rolFamiliar) {
 	    AlumnoDeporte alumnoDeporte = alumnoDeporteRepository
 	            .findByAlumnoIdAndDeporte(alumnoId, deporte)
 	            .orElseThrow(() -> new IllegalArgumentException(
@@ -507,7 +498,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarGrupoFamiliar(Long alumnoId, Deporte deporte, String grupoFamiliar) {
+	public AlumnoDeporte actualizarGrupoFamiliar(Long alumnoId, String deporte, String grupoFamiliar) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -517,7 +508,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarTieneLicencia(Long alumnoId, Deporte deporte, Boolean tieneLicencia) {
+	public AlumnoDeporte actualizarTieneLicencia(Long alumnoId, String deporte, Boolean tieneLicencia) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -527,7 +518,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarNumeroLicencia(Long alumnoId, Deporte deporte, Integer numeroLicencia) {
+	public AlumnoDeporte actualizarNumeroLicencia(Long alumnoId, String deporte, Integer numeroLicencia) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -537,7 +528,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaLicencia(Long alumnoId, Deporte deporte, java.util.Date fechaLicencia) {
+	public AlumnoDeporte actualizarFechaLicencia(Long alumnoId, String deporte, java.util.Date fechaLicencia) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -547,7 +538,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarCompetidor(Long alumnoId, Deporte deporte, Boolean competidor) {
+	public AlumnoDeporte actualizarCompetidor(Long alumnoId, String deporte, Boolean competidor) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -560,11 +551,11 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 		alumnoDeporte.setCompetidor(competidor);
 
-		// Auto-assign categoria for Taekwondo competitors based on age
-		if (Boolean.TRUE.equals(competidor) && deporte == Deporte.TAEKWONDO) {
+		// Categoría por edad si la disciplina tiene categorías (en Taemoi, solo taekwondo)
+		if (Boolean.TRUE.equals(competidor) && categorias.asignaCategoriaPorEdad(deporte)) {
 			Alumno alumno = alumnoDeporte.getAlumno();
 			int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-			Categoria categoria = asignarCategoriaSegunEdad(edad);
+			Categoria categoria = asignarCategoriaSegunEdad(deporte, edad);
 			alumnoDeporte.setCategoria(categoria);
 		} else if (Boolean.FALSE.equals(competidor)) {
 			// If unmarking as competitor, remove categoria
@@ -575,30 +566,15 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	/**
-	 * Asigna una categoría según la edad del alumno para competidores de Taekwondo
-	 *
-	 * @param edad La edad del alumno
-	 * @return La categoría asignada
+	 * Categoría de la disciplina según la edad del competidor (catálogo de categorías, V28); null si la
+	 * disciplina no tiene ninguna para esa edad.
 	 */
-	private Categoria asignarCategoriaSegunEdad(int edad) {
-		TipoCategoria tipoCategoria;
-		if (edad <= 9) {
-			tipoCategoria = TipoCategoria.INFANTIL;
-		} else if (edad <= 11) {
-			tipoCategoria = TipoCategoria.PRECADETE;
-		} else if (edad <= 13) {
-			tipoCategoria = TipoCategoria.CADETE;
-		} else if (edad <= 16) {
-			tipoCategoria = TipoCategoria.JUNIOR;
-		} else {
-			tipoCategoria = TipoCategoria.SENIOR;
-		}
-
-		return categoriaRepository.findByNombre(tipoCategoria.getNombre());
+	private Categoria asignarCategoriaSegunEdad(String deporte, int edad) {
+		return categorias.categoriaPorEdad(deporte, edad).orElse(null);
 	}
 
 	@Override
-	public AlumnoDeporte actualizarPeso(Long alumnoId, Deporte deporte, Double peso) {
+	public AlumnoDeporte actualizarPeso(Long alumnoId, String deporte, Double peso) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -608,7 +584,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaPeso(Long alumnoId, Deporte deporte, java.util.Date fechaPeso) {
+	public AlumnoDeporte actualizarFechaPeso(Long alumnoId, String deporte, java.util.Date fechaPeso) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -618,7 +594,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaAltaCompeticion(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompeticion) {
+	public AlumnoDeporte actualizarFechaAltaCompeticion(Long alumnoId, String deporte, java.util.Date fechaAltaCompeticion) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -628,7 +604,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarFechaAltaCompetidorInicial(Long alumnoId, Deporte deporte, java.util.Date fechaAltaCompetidorInicial) {
+	public AlumnoDeporte actualizarFechaAltaCompetidorInicial(Long alumnoId, String deporte, java.util.Date fechaAltaCompetidorInicial) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -638,7 +614,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarCategoria(Long alumnoId, Deporte deporte, String categoriaNombre) {
+	public AlumnoDeporte actualizarCategoria(Long alumnoId, String deporte, String categoriaNombre) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
@@ -660,7 +636,7 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public AlumnoDeporte actualizarDatosCompetidor(Long alumnoId, Deporte deporte, Boolean competidor,
+	public AlumnoDeporte actualizarDatosCompetidor(Long alumnoId, String deporte, Boolean competidor,
 			java.util.Date fechaAltaCompeticion, java.util.Date fechaAltaCompetidorInicial,
 			String categoriaNombre, Double peso, java.util.Date fechaPeso) {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
@@ -677,11 +653,11 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		if (competidor != null) {
 			alumnoDeporte.setCompetidor(competidor);
 
-			// Auto-assign categoria for Taekwondo competitors based on age if becoming competitor
-			if (Boolean.TRUE.equals(competidor) && deporte == Deporte.TAEKWONDO && categoriaNombre == null) {
+			// Categoría por edad si la disciplina tiene categorías (en Taemoi, solo taekwondo)
+			if (Boolean.TRUE.equals(competidor) && categorias.asignaCategoriaPorEdad(deporte) && categoriaNombre == null) {
 				Alumno alumno = alumnoDeporte.getAlumno();
 				int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-				Categoria categoria = asignarCategoriaSegunEdad(edad);
+				Categoria categoria = asignarCategoriaSegunEdad(deporte, edad);
 				alumnoDeporte.setCategoria(categoria);
 			} else if (Boolean.FALSE.equals(competidor)) {
 				// If unmarking as competitor, remove categoria
@@ -715,10 +691,10 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 
 		Boolean competidorFinal = competidor != null ? competidor : alumnoDeporte.getCompetidor();
 		if (Boolean.TRUE.equals(competidorFinal)
-				&& deporte == Deporte.TAEKWONDO
+				&& categorias.asignaCategoriaPorEdad(deporte)
 				&& alumnoDeporte.getCategoria() == null) {
 			int edad = FechaUtils.calcularEdad(alumnoDeporte.getAlumno().getFechaNacimiento());
-			Categoria categoria = asignarCategoriaSegunEdad(edad);
+			Categoria categoria = asignarCategoriaSegunEdad(deporte, edad);
 			alumnoDeporte.setCategoria(categoria);
 		}
 
@@ -726,27 +702,27 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public TipoGrado calcularSiguienteGrado(AlumnoDeporte alumnoDeporte) {
+	public String calcularSiguienteGrado(AlumnoDeporte alumnoDeporte) {
 		// Validar que tiene grado actual
 		if (alumnoDeporte.getGrado() == null) {
 			return null;
 		}
 
-		String disciplina = codigo(alumnoDeporte.getDeporte());
+		String disciplina = alumnoDeporte.getDeporte();
 
 		// Grupo de edad por disciplina.edad_adulto (año natural)
 		boolean esMenor = catalogo.esMenorPorAnioNatural(alumnoDeporte.getAlumno().getFechaNacimiento(), disciplina);
 
-		// Siguiente grado del sistema de la disciplina (orden + aplica_a)
+		// Siguiente grado del sistema de la disciplina (orden + aplica_a), con los códigos de cada escuela
 		return progresion.obtenerSiguienteGrado(disciplina, esMenor, alumnoDeporte.getGrado().getCodigo())
-				.map(siguiente -> TipoGrado.valueOf(siguiente.getCodigo()))
+				.map(Grado::getCodigo)
 				.orElse(null);
 	}
 
 	@Override
 	public boolean esAptoParaExamen(AlumnoDeporte alumnoDeporte) {
 		// Deportes sin grados no tienen exámenes
-		String disciplina = codigo(alumnoDeporte.getDeporte());
+		String disciplina = alumnoDeporte.getDeporte();
 		if (!progresion.tieneProgresion(disciplina)) {
 			return false;
 		}
@@ -797,12 +773,12 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	}
 
 	@Override
-	public List<AlumnoDeporte> obtenerAptosParaExamenPorDeporte(Deporte deporte) {
+	public List<AlumnoDeporte> obtenerAptosParaExamenPorDeporte(String deporte) {
 		return alumnoDeporteRepository.findAptosParaExamenPorDeporte(deporte);
 	}
 
 	@Override
-	public boolean alumnoTieneDeporte(Long alumnoId, Deporte deporte) {
+	public boolean alumnoTieneDeporte(Long alumnoId, String deporte) {
 		return alumnoDeporteRepository.existsByAlumnoIdAndDeporte(alumnoId, deporte);
 	}
 

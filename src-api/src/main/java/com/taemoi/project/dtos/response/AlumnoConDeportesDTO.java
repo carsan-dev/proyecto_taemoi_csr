@@ -11,7 +11,6 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Genero;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoTarifa;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.NifUtils;
 import com.taemoi.project.utils.ResponsableLegal;
@@ -38,7 +37,7 @@ public class AlumnoConDeportesDTO {
 	private String email;
 	private String responsableLegalNombre;
 	private String responsableLegalNif;
-	private TipoTarifa tipoTarifa;
+	private String tipoTarifa;
 	private Double cuantiaTarifa;
 	private RolFamiliar rolFamiliar;
 	private String grupoFamiliar;
@@ -75,7 +74,7 @@ public class AlumnoConDeportesDTO {
 		AlumnoConDeportesDTO dto = new AlumnoConDeportesDTO();
 		AlumnoDeporte deportePrincipal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
 
-		TipoTarifa tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
+		String tipoTarifa = deportePrincipal != null ? deportePrincipal.getTipoTarifa() : null;
 		Double cuantiaTarifa = deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null;
 		RolFamiliar rolFamiliar = deportePrincipal != null ? deportePrincipal.getRolFamiliar() : null;
 		String grupoFamiliar = deportePrincipal != null ? deportePrincipal.getGrupoFamiliar() : null;
@@ -247,11 +246,11 @@ public class AlumnoConDeportesDTO {
 		this.email = email;
 	}
 
-	public TipoTarifa getTipoTarifa() {
+	public String getTipoTarifa() {
 		return tipoTarifa;
 	}
 
-	public void setTipoTarifa(TipoTarifa tipoTarifa) {
+	public void setTipoTarifa(String tipoTarifa) {
 		this.tipoTarifa = tipoTarifa;
 	}
 

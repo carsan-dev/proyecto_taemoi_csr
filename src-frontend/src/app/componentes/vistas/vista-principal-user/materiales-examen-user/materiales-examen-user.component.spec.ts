@@ -5,6 +5,8 @@ import { of } from 'rxjs';
 import { MaterialesExamenUserComponent } from './materiales-examen-user.component';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
+import { proveerCatalogoTesting } from '../../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('MaterialesExamenUserComponent', () => {
   let component: MaterialesExamenUserComponent;
@@ -31,7 +33,7 @@ describe('MaterialesExamenUserComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [MaterialesExamenUserComponent],
-      providers: [{ provide: EndpointsService, useValue: endpointsServiceSpy }],
+      providers: [{ provide: EndpointsService, useValue: endpointsServiceSpy }, proveerCatalogoTesting(CATALOGO_TAEMOI)],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MaterialesExamenUserComponent);

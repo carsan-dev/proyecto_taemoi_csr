@@ -233,8 +233,9 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("TUTOR_LEGAL", tutorHijo.get("parentesco"));
 		assertEquals(Boolean.TRUE, tutorHijo.get("responsable_legal"));
 		assertEquals(ORG1, ((Number) tutorHijo.get("organizacion_id")).longValue());
-		// Campos heredados sincronizados con el nuevo responsable legal.
-		assertEquals(nif, jdbc.queryForObject("SELECT responsable_legal_nif FROM alumno WHERE id = ?", String.class, hijo));
+		// La ficha devuelve el nuevo responsable legal.
+		assertEquals(nif, fichaApi(hijo).get("responsableLegalNif").asText());
+		assertEquals("MADRE " + sufijo + " PRUEBA DNI", fichaApi(hijo).get("responsableLegalNombre").asText());
 		List<Map<String, Object>> tutoresHija = jdbc.queryForList(
 				"SELECT * FROM tutor WHERE alumno_id = ? ORDER BY orden, id", hija);
 		assertEquals(2, tutoresHija.size());
@@ -371,9 +372,75 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 			Map<String, Object> t = jdbc.queryForMap("SELECT * FROM tutor WHERE alumno_id = ?", id);
 			assertEquals(nif, t.get("nif"));
 			assertEquals(Boolean.TRUE, t.get("responsable_legal"));
-			assertEquals(nif, jdbc.queryForObject("SELECT responsable_legal_nif FROM alumno WHERE id = ?", String.class, id));
+			assertEquals(nif, fichaApi(id).get("responsableLegalNif").asText());
 			assertNull(nifDe(id));
 		}
+	}
+
+	@Test
+	void elResponsableSoloNifNoCuentaComoTutorYCedeAlResponsableCreado() throws Exception {
+		// Antes ese NIF solo estaba en alumno.responsable_legal_nif: el informe y la corrección no cambian.
+		String nif = nifAleatorio();
+		long padre = alumno(ORG1, "PADRESN", adulto(), nif);
+		long hijo = alumno(ORG1, "HIJOSN", menor(), nif);
+		responsableSoloNif(hijo, nif);
+
+		JsonNode grupo = grupoCon(tokenAdmin, padre);
+		assertEquals(0, miembro(grupo, hijo).get("tutores").size(), "el responsable solo-NIF no se lista");
+		JsonNode cambioHijo = cambio(grupo.get("propuesta"), hijo);
+		assertTrue(cambioHijo.get("crearTutor").asBoolean());
+		assertTrue(cambioHijo.get("responsableLegal").asBoolean(), "menor sin responsable con nombre");
+
+		JsonNode resultado = leer(aplicar(tokenAdmin, grupo, "PROPUESTA", null, null)
+				.andExpect(status().isOk()).andReturn());
+		assertEquals(1, resultado.get("tutoresCreados").asInt());
+		List<Map<String, Object>> tutoresHijo = jdbc.queryForList("SELECT * FROM tutor WHERE alumno_id = ?", hijo);
+		assertEquals(1, tutoresHijo.size(), "el responsable solo-NIF desaparece");
+		assertEquals("PADRESN " + sufijo, tutoresHijo.get(0).get("nombre"));
+		assertEquals(nif, tutoresHijo.get(0).get("nif"));
+		assertEquals(Boolean.TRUE, tutoresHijo.get(0).get("responsable_legal"));
+		JsonNode ficha = fichaApi(hijo);
+		assertEquals("PADRESN " + sufijo + " PRUEBA DNI", ficha.get("responsableLegalNombre").asText());
+		assertEquals(nif, ficha.get("responsableLegalNif").asText());
+
+		// Repetir la corrección es idempotente.
+		JsonNode otraVez = leer(aplicar(tokenAdmin, grupo, "PROPUESTA", null, null)
+				.andExpect(status().isOk()).andReturn());
+		assertFalse(otraVez.get("aplicado").asBoolean());
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ?", Integer.class, hijo));
+	}
+
+	@Test
+	void vaciarSoloElNombreDelResponsableNoCuentaDosVecesAlAlumno() throws Exception {
+		// Lo que deja la ficha al vaciar solo el nombre del responsable legal (PersonasAlumnoIntegrationTest):
+		// el tutor con nombre deja de ser responsable y conserva su NIF, y el NIF queda además en un
+		// responsable legal sin nombre.
+		String nif = nifAleatorio();
+		long padre = alumno(ORG1, "PADREVN", adulto(), nif);
+		long hijo = alumno(ORG1, "HIJOVN", menor(), nif);
+		tutorExistente(hijo, "Ana Madre", nif, false);
+		responsableSoloNif(hijo, nif);
+
+		JsonNode grupo = grupoCon(tokenAdmin, padre);
+		assertEquals(2, grupo.get("miembros").size(), "cada alumno una vez");
+		assertEquals(1, miembro(grupo, hijo).get("tutores").size(), "solo el tutor con nombre");
+		JsonNode cambioHijo = cambio(grupo.get("propuesta"), hijo);
+		assertTrue(cambioHijo.get("quitarNif").asBoolean());
+		assertFalse(cambioHijo.get("crearTutor").asBoolean(), "ya tiene un tutor con ese NIF");
+		assertTrue(cambioHijo.get("tutorExistenteId").isNull());
+
+		JsonNode resultado = leer(aplicar(tokenAdmin, grupo, "PROPUESTA", null, null)
+				.andExpect(status().isOk()).andReturn());
+		assertEquals(0, resultado.get("tutoresCreados").asInt());
+		assertEquals(0, resultado.get("tutoresCompletados").asInt());
+		assertNull(nifDe(hijo));
+		assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ?", Integer.class, hijo));
+
+		// Ya corregido: el alumno cuenta una sola vez en la huella del grupo y repetir no cambia nada.
+		JsonNode otraVez = leer(aplicar(tokenAdmin, grupo, "PROPUESTA", null, null)
+				.andExpect(status().isOk()).andReturn());
+		assertFalse(otraVez.get("aplicado").asBoolean());
+		assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM tutor WHERE alumno_id = ?", Integer.class, hijo));
 	}
 
 	@Test
@@ -639,6 +706,26 @@ class DniCompartidoIntegrationTest extends MySqlIntegrationTest {
 
 	private JsonNode leer(MvcResult r) throws Exception {
 		return json.readTree(r.getResponse().getContentAsString());
+	}
+
+	/** Ficha del alumno tal y como la devuelve la API (GET /api/alumnos/{id}). */
+	private JsonNode fichaApi(long alumnoId) throws Exception {
+		return leer(mvc.perform(get("/api/alumnos/" + alumnoId).cookie(jwt(tokenAdmin)))
+				.andExpect(status().isOk()).andReturn());
+	}
+
+	/** Responsable legal del que solo se conoce el NIF, como lo deja la ficha (tutor sin nombre). */
+	private void responsableSoloNif(long alumnoId, String nif) {
+		long org = jdbc.queryForObject("SELECT organizacion_id FROM alumno WHERE id = ?", Long.class, alumnoId);
+		jdbc.update("""
+				INSERT INTO tutor (organizacion_id, alumno_id, nombre, nif, parentesco, responsable_legal, orden)
+				VALUES (?, ?, NULL, ?, 'TUTOR_LEGAL', TRUE, ?)
+				""", org, alumnoId, nif, orden(alumnoId));
+	}
+
+	private int orden(long alumnoId) {
+		return jdbc.queryForObject("SELECT COALESCE(MAX(orden), 0) + 1 FROM tutor WHERE alumno_id = ?", Integer.class,
+				alumnoId);
 	}
 
 	private String nifDe(long alumnoId) {

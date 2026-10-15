@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
@@ -8,15 +8,20 @@ import { PaginacionComponent } from '../../generales/paginacion/paginacion.compo
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { CatalogoTarifa } from '../../../features/catalogo/catalogo.models';
+import { cuantiaEstandar } from '../../../features/catalogo/catalogo-reglas';
+import { tarifaInicialPreinscripcion } from '../../../features/catalogo/legado-taemoi';
 
 @Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent,SkeletonCardComponent],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
 export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
+  readonly catalogo=inject(CatalogoService);
   items:any[]=[]; cargando=true; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
   mostrandoFinalizacion=false; procesandoFinalizacion=false; camposActualizar=new Set<string>();
   editandoTurnos=false; cargandoTurnos=false; procesandoTurnos=false; turnosDisponibles:any[]=[]; turnoIdsEdicion:number[]=[];
   accionAlumno:''|'CREAR_NUEVO'|'VINCULAR_EXISTENTE'=''; alumnoSeleccionado:any; discapacidadHistorica:boolean|null=null;
   decisionEmail:''|'CONSERVAR_FICHA'|'USAR_PREINSCRIPCION'='';
-  datosAlta:any={tipoTarifa:'',cuantiaTarifa:null,rolFamiliar:'NINGUNO',grupoFamiliar:'',grado:'BLANCO',fechaGrado:''};
+  datosAlta:any={tipoTarifa:'',cuantiaTarifa:null,rolFamiliar:'NINGUNO',grupoFamiliar:'',grado:'',fechaGrado:''};
   readonly camposComparables=[
     {clave:'NOMBRE',etiqueta:'Nombre',pre:'nombre',alumno:'nombre'},
     {clave:'APELLIDOS',etiqueta:'Apellidos',pre:'apellidos',alumno:'apellidos'},
@@ -31,8 +36,8 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
     {clave:'EMAIL',etiqueta:'Correo electrónico',pre:'email',alumno:'email'},
   ];
   pagina=0; readonly tamanoPagina=25; totalElementos=0; totalPaginas=0;
-  tab:'solicitudes'|'plantillas'='solicitudes'; deportePlantilla='TAEKWONDO'; plantilla:any=this.vacia(); historial:any[]=[]; cargandoPlantilla=false; procesandoPlantilla=false; dirty=false;
-  readonly deportes=['TAEKWONDO','KICKBOXING','PILATES','DEFENSA_PERSONAL_FEMENINA'];
+  tab:'solicitudes'|'plantillas'='solicitudes'; deportePlantilla=this.catalogo.primeraDisciplinaActiva(); plantilla:any=this.vacia(); historial:any[]=[]; cargandoPlantilla=false; procesandoPlantilla=false; dirty=false;
+  get deportes():string[]{return this.catalogo.disciplinasActivas().map(d=>d.codigo);}
   constructor(private readonly api:PreinscripcionService,public readonly auth:AuthenticationService,private readonly route:ActivatedRoute,private readonly router:Router){}
   ngOnInit(){this.tab=this.route.snapshot.queryParamMap.get('tab')==='plantillas'?'plantillas':'solicitudes';this.buscar();if(this.tab==='plantillas')this.cargarPlantilla();}
   ngOnDestroy(){this.liberarFirma();}
@@ -97,15 +102,22 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   private valorComparable(v:any,campo:string){if(v==null)return '';if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='boolean')return v?'true':'false';const texto=String(v).trim().toLowerCase();if(['TELEFONO','TELEFONO2'].includes(campo)){const digitos=texto.replace(/\D/g,'');if(digitos.length===13&&digitos.startsWith('0034'))return digitos.slice(4);return digitos.length===11&&digitos.startsWith('34')?digitos.slice(2):digitos;}return /^\d{4}-\d{2}-\d{2}/.test(texto)?texto.slice(0,10):texto.replace(/\s+/g,' ');}
   get requiereDatosDeporte(){return this.accionAlumno==='CREAR_NUEVO'||(this.accionAlumno==='VINCULAR_EXISTENTE'&&this.alumnoSeleccionado?.requiereDatosDeporte);}
   get esMenorSeleccionado(){const nacimiento=new Date(this.seleccion?.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return false;const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18;}
-  get requiereGrado(){return ['TAEKWONDO','KICKBOXING'].includes(this.seleccion?.deporte);}
-  get tarifasDisponibles():string[]{switch(this.seleccion?.deporte){case 'KICKBOXING':return ['KICKBOXING'];case 'PILATES':return ['PILATES'];case 'DEFENSA_PERSONAL_FEMENINA':return ['DEFENSA_PERSONAL_FEMENINA'];default:return ['INFANTIL','ADULTO','INFANTIL_GRUPO','ADULTO_GRUPO','FAMILIAR','HERMANOS','PADRES_HIJOS'];}}
-  private tarifaInicial(){if(this.seleccion?.deporte!=='TAEKWONDO')return this.tarifasDisponibles[0]||'';const nacimiento=new Date(this.seleccion.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return 'INFANTIL';const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18?'INFANTIL':'ADULTO';}
-  private prepararTarifa(alumno?:any){const hoy=new Date().toISOString().slice(0,10),tipo=alumno?.tipoTarifa||this.tarifaInicial();this.datosAlta={tipoTarifa:tipo,cuantiaTarifa:alumno?.cuantiaTarifa??this.cuantiaEstandar(tipo),rolFamiliar:alumno?.rolFamiliar||'NINGUNO',grupoFamiliar:alumno?.grupoFamiliar||'',grado:'BLANCO',fechaGrado:hoy};}
-  get gradosDisponibles():string[]{const todos=['BLANCO','BLANCO_AMARILLO','AMARILLO','AMARILLO_NARANJA','NARANJA','NARANJA_VERDE','VERDE','VERDE_AZUL','AZUL','AZUL_ROJO','ROJO','ROJO_NEGRO_1_PUM','ROJO_NEGRO_2_PUM','ROJO_NEGRO_3_PUM','NEGRO_1_DAN','NEGRO_2_DAN','NEGRO_3_DAN','NEGRO_4_DAN','NEGRO_5_DAN'];if(this.seleccion?.deporte!=='KICKBOXING')return todos;const kick=new Set(['BLANCO','AMARILLO','NARANJA','VERDE','AZUL','ROJO','NEGRO_1_DAN','NEGRO_2_DAN','NEGRO_3_DAN','NEGRO_4_DAN','NEGRO_5_DAN']);return todos.filter(g=>kick.has(g));}
-  cambiarTarifa(){this.datosAlta.cuantiaTarifa=this.cuantiaEstandar(this.datosAlta.tipoTarifa);if(this.datosAlta.tipoTarifa!=='PADRES_HIJOS')this.datosAlta.rolFamiliar='NINGUNO';if(this.datosAlta.tipoTarifa!=='HERMANOS')this.datosAlta.grupoFamiliar='';}
-  private cuantiaEstandar(t:string){const importes:Record<string,number>={FAMILIAR:0,PADRES_HIJOS:0,ADULTO_GRUPO:20,INFANTIL_GRUPO:20,HERMANOS:26,INFANTIL:28,ADULTO:30,KICKBOXING:30,PILATES:30,DEFENSA_PERSONAL_FEMENINA:25};return importes[t]??0;}
+  get requiereGrado(){return this.catalogo.tieneGrados(this.seleccion?.deporte);}
+  /** D7/D8: tarifas que admite la disciplina de la solicitud, en orden del catálogo (se muestra `nombre`, se envía `codigo`). */
+  get tarifasDisponibles():CatalogoTarifa[]{return this.catalogo.tarifasDe(this.seleccion?.deporte);}
+  /** D9: preselección de Taemoi (legado-taemoi); otras escuelas, ninguna. */
+  private tarifaInicial(){const deporte=this.seleccion?.deporte;return tarifaInicialPreinscripcion(this.catalogo.esLegadoTaemoi(),deporte,this.seleccion?.fechaNacimiento,this.catalogo.tarifasDe(deporte))??'';}
+  /** La tarifa elegida pide rol familiar / grupo familiar (banderas del catálogo). */
+  get requiereRolFamiliar(){return this.catalogo.tarifa(this.datosAlta.tipoTarifa)?.requiereRolFamiliar===true;}
+  get requiereGrupoFamiliar(){return this.catalogo.tarifa(this.datosAlta.tipoTarifa)?.requiereGrupoFamiliar===true;}
+  private prepararTarifa(alumno?:any){const hoy=new Date().toISOString().slice(0,10),tipo=alumno?.tipoTarifa||this.tarifaInicial();this.datosAlta={tipoTarifa:tipo,cuantiaTarifa:alumno?.cuantiaTarifa??this.cuantiaEstandar(tipo),rolFamiliar:alumno?.rolFamiliar||'NINGUNO',grupoFamiliar:alumno?.grupoFamiliar||'',grado:this.gradosDisponibles[0]?.codigo??'',fechaGrado:hoy};}
+  /** Grados que ofrece el sistema de la disciplina de la solicitud, por `orden` (D3: se muestra `nombre`). */
+  get gradosDisponibles():{codigo:string;nombre:string}[]{return this.catalogo.gradosSeleccionables(this.seleccion?.deporte);}
+  cambiarTarifa(){this.datosAlta.cuantiaTarifa=this.cuantiaEstandar(this.datosAlta.tipoTarifa);if(!this.requiereRolFamiliar)this.datosAlta.rolFamiliar='NINGUNO';if(!this.requiereGrupoFamiliar)this.datosAlta.grupoFamiliar='';}
+  /** Importe estándar sin rol, como hasta ahora en esta pantalla (la tarifa que pide rol da su `importe`). Desconocida: 0. */
+  private cuantiaEstandar(t:string){return cuantiaEstandar(this.catalogo.tarifa(t));}
   get correosDiferentes(){return this.accionAlumno==='VINCULAR_EXISTENTE'&&this.alumnoSeleccionado&&this.valorComparable(this.alumnoSeleccionado.email,'EMAIL')!==this.valorComparable(this.seleccion?.email,'EMAIL');}
-  get finalizacionValida(){if(!this.accionAlumno||this.discapacidadEfectiva==null||this.accionAlumno==='VINCULAR_EXISTENTE'&&!this.alumnoSeleccionado)return false;if(this.correosDiferentes&&!this.decisionEmail)return false;if(!this.datosAlta.tipoTarifa||this.datosAlta.cuantiaTarifa==null||this.datosAlta.cuantiaTarifa<0)return false;if(this.requiereDatosDeporte&&this.requiereGrado&&(!this.datosAlta.grado||!this.datosAlta.fechaGrado))return false;if(this.datosAlta.tipoTarifa==='PADRES_HIJOS'&&this.datosAlta.rolFamiliar==='NINGUNO')return false;if(this.datosAlta.tipoTarifa==='HERMANOS'&&!this.datosAlta.grupoFamiliar.trim())return false;return true;}
+  get finalizacionValida(){if(!this.accionAlumno||this.discapacidadEfectiva==null||this.accionAlumno==='VINCULAR_EXISTENTE'&&!this.alumnoSeleccionado)return false;if(this.correosDiferentes&&!this.decisionEmail)return false;if(!this.datosAlta.tipoTarifa||this.datosAlta.cuantiaTarifa==null||this.datosAlta.cuantiaTarifa<0)return false;if(this.requiereDatosDeporte&&this.requiereGrado&&(!this.datosAlta.grado||!this.datosAlta.fechaGrado))return false;if(this.requiereRolFamiliar&&this.datosAlta.rolFamiliar==='NINGUNO')return false;if(this.requiereGrupoFamiliar&&!this.datosAlta.grupoFamiliar.trim())return false;return true;}
   get discapacidadEfectiva(){return this.seleccion?.tieneDiscapacidad??this.discapacidadHistorica;}
   get tieneCoincidenciaDniExacta(){const dni=this.seleccion?.dni?.trim().toUpperCase();return Boolean(dni&&(this.seleccion?.alumnosCoincidentes||[]).some((a:any)=>a.nif?.trim().toUpperCase()===dni));}
   finalizar(){if(!this.seleccion||!this.finalizacionValida||this.procesandoFinalizacion)return;this.procesandoFinalizacion=true;const datosDeporte={...this.datosAlta,grado:this.requiereDatosDeporte&&this.requiereGrado?this.datosAlta.grado:null,fechaGrado:this.requiereDatosDeporte&&this.requiereGrado?this.datosAlta.fechaGrado:null};this.api.finalizar(this.seleccion.referencia,{accionAlumno:this.accionAlumno,alumnoId:this.accionAlumno==='VINCULAR_EXISTENTE'?this.alumnoSeleccionado.id:undefined,camposActualizar:[...this.camposActualizar],discapacidadHistorica:this.seleccion.tieneDiscapacidad==null?this.discapacidadHistorica:null,decisionEmail:this.decisionEmail||undefined,datosDeporte}).subscribe({next:()=>{this.procesandoFinalizacion=false;showSuccessToast('Preinscripción finalizada: tarifa, grupos y turnos actualizados.');this.cerrarFinalizacion();this.cerrarDetalle();this.buscar();},error:e=>{this.procesandoFinalizacion=false;showErrorToast(e?.error?.mensaje||'No se pudo finalizar la preinscripción.');}});}

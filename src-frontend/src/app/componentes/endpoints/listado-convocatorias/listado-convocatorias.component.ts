@@ -8,7 +8,9 @@ import { CommonModule, registerLocaleData } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { formatDate } from '../../../utilities/formatear-fecha';
-import { getGradoTextStyle } from '../../../utilities/grado-colors';
+import { getGradoNombreParaDeporte, getGradoTextStyle } from '../../../utilities/grado-colors';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { claseCssDisciplina } from '../../../features/catalogo/catalogo-reglas';
 import { esSiguienteGradoRojo } from '../../../utilities/grado-progresion';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -82,13 +84,18 @@ export class CapitalizeMonthPipe implements PipeTransform {
 })
 export class ListadoConvocatoriasComponent implements OnInit {
   readonly informes = inject(InformePdfService);
+  readonly catalogo = inject(CatalogoService);
+  readonly claseCssDisciplina = claseCssDisciplina;
   convocatorias: any[] = [];
   convocatoriaSeleccionada: any;
   alumnosInscritos: any[] = [];
   alumnos: any[] = [];
   alumnosFiltrados: any[] = [];
-  deportes = ['TAEKWONDO', 'KICKBOXING'];
-  deporteSeleccionado = 'TAEKWONDO';
+  /** Disciplinas con grados (las únicas con convocatorias de examen), por orden del catálogo. */
+  get deportes(): string[] {
+    return this.catalogo.disciplinasConGrados().map((d) => d.codigo);
+  }
+  deporteSeleccionado = this.catalogo.disciplinasConGrados()[0]?.codigo ?? '';
   cargando: boolean = true; // Loading state
   cargandoAlumnos: boolean = false; // Loading state for alumnos
 
@@ -166,8 +173,18 @@ export class ListadoConvocatoriasComponent implements OnInit {
     this.guardarEstadoPaginacion();
   }
 
+  /** Disciplina de la convocatoria abierta (o la seleccionada en el filtro): sus grados dan nombre y color. */
+  private deporteDeLaConvocatoria(): string {
+    return this.convocatoriaSeleccionada?.deporte || this.deporteSeleccionado;
+  }
+
   getGradoStyle(tipoGrado: string): string {
-    return getGradoTextStyle(tipoGrado);
+    return getGradoTextStyle(tipoGrado, this.deporteDeLaConvocatoria());
+  }
+
+  /** D3: nombre del grado en el catálogo de la disciplina de la convocatoria. */
+  getGradoNombre(tipoGrado: string | null | undefined): string {
+    return getGradoNombreParaDeporte(tipoGrado, this.deporteDeLaConvocatoria());
   }
 
   crearConvocatoria(): void {
@@ -182,8 +199,7 @@ export class ListadoConvocatoriasComponent implements OnInit {
             Deporte:
           </label>
           <select id="swal-deporte" class="swal2-input" style="width: 100%; padding: 10px; margin: 0;">
-            <option value="TAEKWONDO" ${this.deporteSeleccionado === 'TAEKWONDO' ? 'selected' : ''}>TAEKWONDO</option>
-            <option value="KICKBOXING" ${this.deporteSeleccionado === 'KICKBOXING' ? 'selected' : ''}>KICKBOXING</option>
+            ${this.deportes.map((d) => `<option value="${d}" ${this.deporteSeleccionado === d ? 'selected' : ''}>${d}</option>`).join('')}
           </select>
         </div>
         <div style="text-align: left;">

@@ -1,5 +1,5 @@
 ﻿import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -17,6 +17,11 @@ import { RetoDiarioRankingGeneral } from '../../../interfaces/reto-diario-rankin
 import { RetoDiarioRankingSemanal } from '../../../interfaces/reto-diario-ranking-semanal';
 import { Turno } from '../../../interfaces/turno';
 import { getDeporteLabel } from '../../../enums/deporte';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { CatalogoGrado } from '../../../features/catalogo/catalogo.models';
+import { coloresGrado } from '../../../features/catalogo/catalogo-reglas';
+import { getGradoColors } from '../../../utilities/grado-colors';
+import { retosDiariosDisciplina } from '../../../features/catalogo/legado-taemoi-retos';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { MaterialesExamenUserComponent } from './materiales-examen-user/materiales-examen-user.component';
 import { RetoDiarioAyudaModalComponent } from './reto-diario-ayuda-modal/reto-diario-ayuda-modal.component';
@@ -127,6 +132,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   private readonly subscriptions: Subscription = new Subscription();
   private readonly beltWidthPx = 84;
   private readonly beltVisualCache = new Map<string, BeltVisualData>();
+  /** Catálogo con el que se llenó `beltVisualCache`. */
+  private beltCacheCatalogo: unknown = null;
   private readonly gruposCache = new Map<number, any[]>();
   private readonly turnosCache = new Map<number, Turno[]>();
   private readonly deportesCache = new Map<number, AlumnoDeporteDTO[]>();
@@ -167,100 +174,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     'Flexiones inclinadas: 2 series de 10 repeticiones',
     'Estiramiento de cadena posterior: 4 minutos',
   ];
-  private readonly retosDiariosPorDeporte: Record<string, string[]> = {
-    TAEKWONDO: [
-      'Ap chagi: 4 series de 12 repeticiones por pierna',
-      'Yop chagi: 4 series de 10 repeticiones por pierna',
-      'Dollyo chagi: 3 series de 12 repeticiones por pierna',
-      'Paso adelante + ap chagi: 3 series de 8 repeticiones por lado',
-      'Paso atrás + contraataque: 3 series de 8 repeticiones por lado',
-      'Guardia de taekwondo con rebote suave: 5 minutos',
-      'Rodilla arriba + extensión controlada: 3 series de 10 repeticiones por pierna',
-      'Equilibrio en pierna de apoyo: 4 series de 20 segundos por lado',
-      'Combinación ap chagi + dollyo chagi: 3 series de 8 repeticiones por lado',
-      'Bloqueos medios + altos: 3 series de 10 repeticiones por lado',
-      'Desplazamientos de combate con cambios de dirección: 2 series de 90 segundos',
-      'Elevaciones de rodilla explosiva: 3 series de 12 repeticiones por lado',
-      'Giro de cadera y pivote para técnica circular: 3 series de 8 repeticiones por lado',
-      'Trabajo de distancia sin impacto: 4 series de 30 segundos',
-      'Chagi a altura media con control: 3 series de 10 repeticiones por pierna',
-      'Sombra técnica de taekwondo: 2 series de 2 minutos',
-      'Combinación de 1-2 patadas: 3 series de 6 repeticiones por lado',
-      'Saltos cortos con pies juntos: 3 series de 12 repeticiones',
-      'Cámara de patada mantenida 2 segundos: 3 series de 10 repeticiones por lado',
-      'Movilidad específica de cadera para patada: 4 minutos',
-      'Colocarte el cinturón: 1 repetición',
-      'Combinación de patadas sin bajar la pierna: 3 repeticiones',
-      'Apertura de piernas: 3 series de 30 segundos',
-      'Piernas juntas, tocar el suelo con las palmas sin doblar rodillas: 3 series de 12 repeticiones'
-    ],
-    KICKBOXING: [
-      'Jab en sombra con técnica limpia: 4 series de 20 segundos',
-      'Jab-cross en sombra: 4 series de 20 segundos',
-      'Low kick técnica: 3 series de 15 repeticiones por pierna',
-      'Front kick: 3 series de 12 repeticiones por pierna',
-      'Teep + paso atrás: 3 series de 10 repeticiones por lado',
-      'Sombra con guardia alta: 2 series de 2 minutos',
-      'Desplazamiento lateral en guardia: 4 series de 30 segundos',
-      'Slip izquierda + slip derecha: 3 series de 10 repeticiones',
-      'Bloqueo de low kick: 3 series de 10 repeticiones por lado',
-      'Rodillazos al aire: 4 series de 12 repeticiones por lado',
-      'Combinación jab-cross-low kick: 3 series de 8 repeticiones por lado',
-      'Combinación jab-cross-hook: 3 series de 8 repeticiones por lado',
-      'Defensa activa sin bajar manos: 2 series de 90 segundos',
-      'Uppercut al aire: 3 series de 12 repeticiones por lado',
-      'Paso adelante + 1-2: 3 series de 10 repeticiones por lado',
-      'Paso atrás + contra 1-2: 3 series de 10 repeticiones por lado',
-      'Sombra a ritmo alto: 4 series de 20 segundos',
-      'Chequeo de distancia con jab: 3 series de 10 repeticiones',
-      'Condición física específica (cuerda o rebote): 2 series de 2 minutos',
-      'Sentadilla + low kick técnica: 3 series de 12 repeticiones por lado',
-    ],
-    PILATES: [
-      'Hundred modificado con control respiratorio: 3 series de 10 repeticiones',
-      'Puente articulado de columna: 3 series de 12 repeticiones',
-      'Roll down segmentado: 3 series de 10 repeticiones',
-      'Dead bug controlado: 3 series de 10 repeticiones por lado',
-      'Clam shell: 3 series de 12 repeticiones por lado',
-      'Side kick en decúbito lateral: 3 series de 10 repeticiones por lado',
-      'Swimming en colchoneta: 3 series de 8 repeticiones',
-      'Cat-cow lento con respiración: 3 series de 10 repeticiones',
-      'Movilización de columna torácica: 3 series de 10 repeticiones',
-      'Single leg stretch: 3 series de 10 repeticiones por lado',
-      'Double leg stretch controlado: 3 series de 8 repeticiones',
-      'Plancha de antebrazos con alineación: 2 series de 60 segundos',
-      'Elevación de pelvis unilateral: 3 series de 10 repeticiones por lado',
-      'Apertura de cadera en cuadrupedia: 3 series de 10 repeticiones por lado',
-      'Respiración costal lateral: 5 minutos',
-      'Elevaciones escapulares tumbado: 3 series de 12 repeticiones',
-      'Articulación de hombros sin dolor: 3 series de 10 repeticiones',
-      'Equilibrio en un pie con centro activo: 3 series de 8 repeticiones por lado',
-      'Movilidad suave de columna y cadera: 4 minutos',
-      'Control del core en posición neutra: 3 series de 10 repeticiones',
-    ],
-    DEFENSA_PERSONAL_FEMENINA: [
-      'Postura base + manos preparadas: 3 series de 10 repeticiones',
-      'Desplazamiento lateral y salida de línea: 3 series de 12 repeticiones',
-      'Palm strike al aire: 3 series de 10 repeticiones por lado',
-      'Golpe de codo corto: 3 series de 10 repeticiones por lado',
-      'Rodillazo frontal: 3 series de 10 repeticiones por lado',
-      'Secuencia voz fuerte + paso atrás + guardia: 3 series de 8 repeticiones',
-      'Práctica de distancia de seguridad: 2 series de 2 minutos',
-      'Liberación de agarre de muñeca: 3 series de 8 repeticiones por lado',
-      'Salida de agarre de ropa: 3 series de 8 repeticiones por lado',
-      'Empuje y escape a espacio seguro: 3 series de 10 repeticiones',
-      'Giro de cadera para salir de agarre: 3 series de 8 repeticiones por lado',
-      'Combinación palm strike + escape: 3 series de 10 repeticiones',
-      'Combinación rodillazo + salida lateral: 3 series de 10 repeticiones',
-      'Simulación de reacción rápida: 2 series de 90 segundos',
-      'Trabajo de base y equilibrio: 3 series de 12 repeticiones',
-      'Defensa ante agarre frontal sin fuerza bruta: 3 series de 8 repeticiones',
-      'Defensa ante aproximación con antebrazos: 3 series de 8 repeticiones',
-      'Técnica corta de choque y separación: 3 series de 10 repeticiones',
-      'Respiración para bajar estrés post-esfuerzo: 4 minutos',
-      'Secuencia simple de bloqueo, golpe y salida: 3 series de 8 repeticiones',
-    ],
-  };
+  private readonly catalogo = inject(CatalogoService);
   private countdownIntervalId: number | null = null;
   private retoCountdownIntervalId: number | null = null;
   private nextRetoResetAtEpochMs: number | null = null;
@@ -1545,8 +1459,7 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
   }
 
   private deporteUsaEstadoExamen(deporte: string): boolean {
-    const deporteNormalizado = (deporte || '').toString().toUpperCase().trim();
-    return deporteNormalizado !== 'PILATES' && deporteNormalizado !== 'DEFENSA_PERSONAL_FEMENINA';
+    return !this.catalogo.sinGrados((deporte || '').toString().toUpperCase().trim());
   }
 
   private formatearGradoNovedad(grado: string | null, deporte: string): string {
@@ -2126,8 +2039,8 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     )).sort();
 
     deportesActivos.forEach((deporte) => {
-      const retosDeporte = this.retosDiariosPorDeporte[deporte];
-      if (Array.isArray(retosDeporte) && retosDeporte.length > 0) {
+      const retosDeporte = retosDiariosDisciplina(this.catalogo.esLegadoTaemoi(), deporte);
+      if (retosDeporte.length > 0) {
         retos.push(...retosDeporte);
       }
     });
@@ -2739,34 +2652,19 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return getDeporteLabel(deporte);
   }
 
-  private isKickboxing(deporte: string | null | undefined): boolean {
-    return (deporte || '').toUpperCase() === 'KICKBOXING';
+  /** Disciplina sin sistema de grados (sin estado de examen). */
+  deporteSinGrado(deporte: string | null | undefined): boolean {
+    return this.catalogo.sinGrados(deporte);
   }
 
-  private getBeltColorByName(colorName: string, isKickboxing: boolean): string {
-    const normalized = (colorName || '').toUpperCase().trim();
-    if (normalized === 'ROJO' && isKickboxing) {
-      return '#8B4513';
+  /** Grado del sistema de la disciplina en el catálogo (código sin distinguir mayúsculas); `undefined` si no está. */
+  private gradoDelCatalogo(tipoGrado: string, deporte: string | null | undefined): CatalogoGrado | undefined {
+    const codigo = (tipoGrado || '').toUpperCase().trim();
+    const disciplina = (deporte || '').toUpperCase().trim();
+    if (!codigo || !disciplina) {
+      return undefined;
     }
-
-    switch (normalized) {
-      case 'BLANCO':
-        return '#FFFFFF';
-      case 'AMARILLO':
-        return '#FFFF00';
-      case 'NARANJA':
-        return '#FFA500';
-      case 'VERDE':
-        return '#008000';
-      case 'AZUL':
-        return '#0000FF';
-      case 'ROJO':
-        return '#FF0000';
-      case 'NEGRO':
-        return '#000000';
-      default:
-        return '#CCCCCC';
-    }
+    return this.catalogo.grados(disciplina).find((grado) => grado.codigo.toUpperCase() === codigo);
   }
 
   private getStripeOffsets(stripeCount: number): number[] {
@@ -2777,46 +2675,23 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
     return Array.from({ length: safeCount }, (_, index) => initialMargin + index * (stripeWidth + gap));
   }
 
+  /** D3/D4: nombre del grado en el catálogo de la disciplina («MARRÓN» en Kickboxing); sin catálogo, el código. */
   private getBeltLabel(tipoGrado: string, deporte: string | null | undefined): string {
     const upper = (tipoGrado || '').toUpperCase().trim();
     if (!upper) {
       return '';
     }
-
-    const isKickboxing = this.isKickboxing(deporte);
-    const adaptPart = (part: string): string => {
-      if (isKickboxing && part === 'ROJO') {
-        return 'MARRON';
-      }
-      return part;
-    };
-
-    if (upper.startsWith('NEGRO_') && upper.includes('_DAN')) {
-      const parts = upper.split('_');
-      const dan = parts.length >= 2 ? parts[1] : '';
-      return dan ? `NEGRO ${dan} DAN` : 'NEGRO DAN';
-    }
-
-    if (upper.startsWith('ROJO_NEGRO_')) {
-      const parts = upper.split('_');
-      const pum = parts.length >= 3 ? parts[2] : '';
-      const rojoName = isKickboxing ? 'MARRON' : 'ROJO';
-      return pum ? `${rojoName}/NEGRO ${pum} PUM` : `${rojoName}/NEGRO`;
-    }
-
-    if (upper.includes('_')) {
-      const parts = upper
-        .split('_')
-        .filter((part) => part !== 'DAN' && part !== 'PUM' && !/^\d+$/.test(part));
-      if (parts.length > 0) {
-        return parts.map(adaptPart).join('/');
-      }
-    }
-
-    return adaptPart(upper);
+    return this.gradoDelCatalogo(upper, deporte)?.nombre ?? upper;
   }
 
   getBeltVisual(tipoGrado: string | null | undefined, deporte: string | null | undefined): BeltVisualData {
+    // La caché depende de la disciplina (clave) y del catálogo cargado: si este cambia, se vacía.
+    const catalogoVigente = this.catalogo.catalogo();
+    if (this.beltCacheCatalogo !== catalogoVigente) {
+      this.beltVisualCache.clear();
+      this.beltCacheCatalogo = catalogoVigente;
+    }
+
     const grado = (tipoGrado || '').toUpperCase().trim();
     const sport = (deporte || '').toUpperCase().trim();
     const cacheKey = `${sport}|${grado}`;
@@ -2825,7 +2700,6 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return cached;
     }
 
-    const isKickboxing = this.isKickboxing(sport);
     const defaultVisual: BeltVisualData = {
       topColor: '#CCCCCC',
       bottomColor: '#CCCCCC',
@@ -2839,39 +2713,17 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       return defaultVisual;
     }
 
-    let topColor = '#CCCCCC';
-    let bottomColor = '#CCCCCC';
-    let isSplit = false;
-    let stripeOffsets: number[] = [];
-
-    if (grado.startsWith('ROJO_NEGRO_')) {
-      const parts = grado.split('_');
-      const stripeCount = Number.parseInt(parts[2] || '0', 10);
-      topColor = this.getBeltColorByName(parts[1], isKickboxing);
-      bottomColor = this.getBeltColorByName(parts[0], isKickboxing);
-      isSplit = true;
-      stripeOffsets = this.getStripeOffsets(stripeCount);
-    } else if (grado.includes('DAN') || (grado.includes('PUM') && !grado.includes('ROJO_NEGRO'))) {
-      const parts = grado.split('_');
-      const stripeCount = grado.includes('DAN') ? Number.parseInt(parts[1] || '0', 10) : 0;
-      topColor = '#000000';
-      bottomColor = '#000000';
-      stripeOffsets = this.getStripeOffsets(stripeCount);
-    } else if (grado.includes('_')) {
-      const parts = grado.split('_');
-      topColor = this.getBeltColorByName(parts[1], isKickboxing);
-      bottomColor = this.getBeltColorByName(parts[0], isKickboxing);
-      isSplit = true;
-    } else {
-      topColor = this.getBeltColorByName(grado, isKickboxing);
-      bottomColor = topColor;
-    }
+    // D5: color1 = mitad inferior, color2 = superior; sin color1 en el catálogo, paleta por nombre de color.
+    const delCatalogo = this.gradoDelCatalogo(grado, sport);
+    const colores = delCatalogo?.color1 ? coloresGrado(delCatalogo) : getGradoColors(grado);
+    // Las franjas de PUM/DAN se derivan del código (`..._<n>_PUM|DAN`).
+    const franjas = /_(\d+)_(?:PUM|DAN)$/.exec(grado);
 
     const visual: BeltVisualData = {
-      topColor,
-      bottomColor,
-      isSplit,
-      stripeOffsets,
+      topColor: colores.colors[1] ?? colores.colors[0],
+      bottomColor: colores.colors[0],
+      isSplit: colores.isSplit,
+      stripeOffsets: this.getStripeOffsets(franjas ? Number.parseInt(franjas[1], 10) : 0),
       label: this.getBeltLabel(grado, sport)
     };
 

@@ -2,20 +2,21 @@ package com.taemoi.project.utils;
 
 import java.util.Comparator;
 
-import org.hibernate.LazyInitializationException;
-
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Tutor;
 
 /**
  * Lo que la API sigue exponiendo como {@code responsableLegalNombre}/{@code responsableLegalNif}:
- * el primer tutor responsable legal del alumno (por {@code orden}, {@code id}).
+ * el primer tutor responsable legal del alumno (por {@code orden}, {@code id}). Si solo se conoce su
+ * NIF (tutor sin nombre), el nombre sale {@code null}; si no tiene ninguno, ambos son {@code null}.
  *
- * <p>Si el alumno no tiene ninguno (o sus tutores no se pueden cargar fuera de sesión), se usan las
- * columnas heredadas {@code alumno.responsable_legal_*}, que {@code TutorService} mantiene iguales a
- * ese tutor y que también guardan el caso «solo NIF» (sin nombre no hay tutor).
+ * <p>Lee {@code alumno.getTutores()}: hay que llamarlo con la sesión abierta (petición web o
+ * transacción), como el resto de los mapeos de la ficha.
  */
 public record ResponsableLegal(String nombre, String nif) {
+
+	/** Longitud del antiguo campo único {@code responsable_legal_nombre}; la API no devuelve más. */
+	public static final int MAX_NOMBRE = 180;
 
 	/** Orden de los tutores: {@code orden} y, a igualdad, {@code id} (los nuevos sin id, al final). */
 	public static final Comparator<Tutor> ORDEN = Comparator
@@ -23,23 +24,14 @@ public record ResponsableLegal(String nombre, String nif) {
 			.thenComparing(t -> t.getId() == null ? Long.MAX_VALUE : t.getId());
 
 	public static ResponsableLegal de(Alumno alumno) {
-		if (alumno == null) {
+		if (alumno == null || alumno.getTutores() == null) {
 			return new ResponsableLegal(null, null);
 		}
-		try {
-			if (alumno.getTutores() != null) {
-				Tutor principal = alumno.getTutores().stream()
-						.filter(Tutor::isResponsableLegal)
-						.min(ORDEN)
-						.orElse(null);
-				if (principal != null) {
-					return new ResponsableLegal(truncar(principal.getNombreCompleto(), 180), principal.getNif());
-				}
-			}
-		} catch (LazyInitializationException e) {
-			// Fuera de sesión: las columnas heredadas tienen el mismo valor.
-		}
-		return new ResponsableLegal(alumno.getResponsableLegalNombre(), alumno.getResponsableLegalNif());
+		return alumno.getTutores().stream()
+				.filter(Tutor::isResponsableLegal)
+				.min(ORDEN)
+				.map(t -> new ResponsableLegal(truncar(t.getNombreCompleto(), MAX_NOMBRE), t.getNif()))
+				.orElse(new ResponsableLegal(null, null));
 	}
 
 	public static String truncar(String valor, int maximo) {

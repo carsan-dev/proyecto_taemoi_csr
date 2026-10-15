@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -59,7 +60,7 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("27", jdbc.queryForObject(
+		assertEquals("30", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
 	}
@@ -148,7 +149,9 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private Flyway flyway(String objetivo) {
-		var config = Flyway.configure().dataSource(dataSource).locations("classpath:db/migration");
+		// V20..V29 en una sola ejecución: desactiva la guarda de V28 (como los entornos de prueba).
+		var config = Flyway.configure().dataSource(dataSource).locations("classpath:db/migration")
+				.placeholders(Map.of(ContraccionCatalogoMigracionIntegrationTest.PERMITIR_CON_V27, "true"));
 		if (objetivo != null) {
 			config.target(objetivo);
 		}

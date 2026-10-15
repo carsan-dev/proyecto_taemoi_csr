@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.GrupoRepository;
@@ -33,7 +33,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("27", actual.getVersion().getVersion());
+		assertEquals("30", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 
@@ -54,14 +54,13 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		Grupo grupo = new Grupo();
 		grupo.setNombre("IT smoke grupo");
 		grupo.setTipo("Pilates");
-		grupo.setDeporte(Deporte.PILATES);
 		grupo.setDisciplina(disciplinas.findByCodigo("PILATES").orElseThrow());
 
 		Long id = grupos.save(grupo).getId();
 		try {
 			Grupo leido = grupos.findById(id).orElseThrow();
 			assertEquals("IT smoke grupo", leido.getNombre());
-			assertEquals(Deporte.PILATES, leido.getDeporte());
+			assertEquals(Deporte.PILATES.name(), leido.getDeporte());
 		} finally {
 			grupos.deleteById(id);
 		}

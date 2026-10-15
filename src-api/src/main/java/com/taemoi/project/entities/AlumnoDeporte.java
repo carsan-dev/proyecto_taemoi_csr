@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -28,11 +29,12 @@ import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "alumno_deporte",
-	uniqueConstraints = @UniqueConstraint(columnNames = {"alumno_id", "deporte"}),
+	uniqueConstraints = @UniqueConstraint(name = "uk_alumno_deporte_alumno_disciplina",
+		columnNames = {"alumno_id", "disciplina_id"}),
 	indexes = {
 		@Index(name = "idx_alumno_deporte_alumno_id", columnList = "alumno_id"),
-		@Index(name = "idx_alumno_deporte_deporte", columnList = "deporte"),
-		@Index(name = "idx_alumno_deporte_apto", columnList = "deporte, apto_para_examen")
+		@Index(name = "idx_alumno_deporte_disciplina", columnList = "disciplina_id"),
+		@Index(name = "idx_alumno_deporte_disciplina_apto", columnList = "disciplina_id, apto_para_examen")
 	})
 public class AlumnoDeporte extends EntidadOrganizacion {
 
@@ -45,18 +47,16 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	@JsonIgnore
 	private Alumno alumno;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	@NotNull(message = "El deporte no puede ser nulo")
-	private Deporte deporte;
-
 	/**
-	 * Disciplina (V26, NOT NULL). Se escribe junto a {@code deporte}, que se conserva hasta la
-	 * contracción para poder volver al código anterior.
+	 * Disciplina (V26, NOT NULL). Desde V28 es la única fuente del deporte: la columna heredada
+	 * {@code deporte} se borró y el JSON expone su código como {@code deporte} ({@link #getDeporte()}).
+	 * EAGER: el código del deporte se lee también fuera de la sesión (respuestas, correos, informes), como
+	 * antes la columna.
 	 */
 	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "disciplina_id", nullable = false)
+	@NotNull(message = "El deporte no puede ser nulo")
 	private Disciplina disciplina;
 
 	@ManyToOne(fetch = FetchType.EAGER)
@@ -88,17 +88,13 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	@Temporal(TemporalType.DATE)
 	private Date fechaBaja;
 
-	// Per-sport tarifa, competidor, and licencia fields
-	@Enumerated(EnumType.STRING)
-	private TipoTarifa tipoTarifa;
-
 	/**
-	 * Tarifa del catálogo (V24). Desde V27 la escribe el código ({@code TarifasService.asignarTarifa})
-	 * junto a {@code tipoTarifa}, que se sigue escribiendo hasta la contracción (NULL para códigos de
-	 * tarifa propios de otra organización).
+	 * Tarifa del catálogo (V24). Desde V28 es la única fuente: la columna heredada {@code tipo_tarifa} se
+	 * borró y el JSON expone su código como {@code tipoTarifa} ({@link #getTipoTarifa()}). EAGER por la misma
+	 * razón que {@link #disciplina}.
 	 */
 	@JsonIgnore
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "tarifa_id")
 	private Tarifa tarifa;
 
@@ -156,12 +152,13 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 		this.alumno = alumno;
 	}
 
-	public Deporte getDeporte() {
-		return deporte;
-	}
-
-	public void setDeporte(Deporte deporte) {
-		this.deporte = deporte;
+	/**
+	 * Código de la disciplina ({@code TAEKWONDO}…): el valor que tenía la columna {@code deporte} y que la API
+	 * sigue devolviendo en el campo {@code deporte}. Null si no hay disciplina.
+	 */
+	@JsonProperty("deporte")
+	public String getDeporte() {
+		return disciplina == null ? null : disciplina.getCodigo();
 	}
 
 	public Disciplina getDisciplina() {
@@ -244,12 +241,13 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 		this.convocatorias = convocatorias;
 	}
 
-	public TipoTarifa getTipoTarifa() {
-		return tipoTarifa;
-	}
-
-	public void setTipoTarifa(TipoTarifa tipoTarifa) {
-		this.tipoTarifa = tipoTarifa;
+	/**
+	 * Código de la tarifa: el valor que tenía la columna {@code tipo_tarifa} (Taemoi) y que la API sigue
+	 * devolviendo en el campo {@code tipoTarifa}. Null si no hay tarifa.
+	 */
+	@JsonProperty("tipoTarifa")
+	public String getTipoTarifa() {
+		return getCodigoTarifa();
 	}
 
 	public Tarifa getTarifa() {
@@ -260,24 +258,10 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 		this.tarifa = tarifa;
 	}
 
-	/**
-	 * Código de la tarifa: {@code tipo_tarifa} (Taemoi, el de siempre) o, si es una tarifa propia de la
-	 * organización que no está en {@code TipoTarifa}, el código de {@code tarifa}. NULL si no hay tarifa o
-	 * si la tarifa no se puede cargar ya (entidad fuera de su sesión).
-	 */
+	/** Código de la tarifa del catálogo; null si no hay tarifa. */
 	@JsonIgnore
 	public String getCodigoTarifa() {
-		if (tipoTarifa != null) {
-			return tipoTarifa.name();
-		}
-		if (tarifa == null) {
-			return null;
-		}
-		try {
-			return tarifa.getCodigo();
-		} catch (org.hibernate.LazyInitializationException e) {
-			return null;
-		}
+		return tarifa == null ? null : tarifa.getCodigo();
 	}
 
 	public Double getCuantiaTarifa() {

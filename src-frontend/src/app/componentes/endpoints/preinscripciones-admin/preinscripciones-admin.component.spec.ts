@@ -1,6 +1,9 @@
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 import { PreinscripcionesAdminComponent } from './preinscripciones-admin.component';
+import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
+import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('PreinscripcionesAdminComponent', () => {
   let component: PreinscripcionesAdminComponent;
@@ -21,7 +24,10 @@ describe('PreinscripcionesAdminComponent', () => {
     const auth = {tieneRolAdmin: () => true};
     const route = {snapshot: {queryParamMap: {get: () => null}}};
     const router = {navigate: () => Promise.resolve(true)};
-    component = new PreinscripcionesAdminComponent(api, auth as any, route as any, router as any);
+    TestBed.configureTestingModule({ providers: [proveerCatalogoTesting(CATALOGO_TAEMOI)] });
+    component = TestBed.runInInjectionContext(
+      () => new PreinscripcionesAdminComponent(api, auth as any, route as any, router as any)
+    );
   });
 
   it('prepara alta automática cuando no existe ficha', () => {

@@ -4,7 +4,7 @@ import com.taemoi.project.entities.Disciplina;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.SistemaGrados;
 import com.taemoi.project.entities.Tarifa;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.TipoGrado;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.repositories.SistemaGradosRepository;
@@ -63,7 +63,6 @@ final class DisciplinasDePrueba {
 		int orden = 1;
 		for (TipoGrado tipo : tipos) {
 			Grado grado = new Grado();
-			grado.setTipoGrado(tipo);
 			grado.setCodigo(tipo.name());
 			grado.setNombre(tipo.getNombre());
 			grado.setOrden(orden++);

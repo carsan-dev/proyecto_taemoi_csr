@@ -15,9 +15,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Convocatoria;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.ProductoAlumno;
-import com.taemoi.project.entities.TipoGrado;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
@@ -55,9 +53,8 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
 		Convocatoria convocatoria = new Convocatoria();
 		convocatoria.setFechaConvocatoria(convocatoriaDTO.getFechaConvocatoria());
-		convocatoria.setDeporte(convocatoriaDTO.getDeporte());
 		if (convocatoriaDTO.getDeporte() != null) {
-			convocatoria.setDisciplina(catalogo.obtenerPorCodigo(convocatoriaDTO.getDeporte().name()));
+			convocatoria.setDisciplina(catalogo.obtenerPorCodigo(convocatoriaDTO.getDeporte()));
 		}
 		Convocatoria convocatoriaGuardada = convocatoriaRepository.save(convocatoria);
 
@@ -88,12 +85,12 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	}
 
 	@Override
-	public Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(Deporte deporte) {
+	public Optional<ConvocatoriaDTO> obtenerConvocatoriaActualPorDeporte(String deporte) {
 		return convocatoriaRepository.findConvocatoriaActualPorDeporte(deporte).map(this::convertirAConvocatoriaDTO);
 	}
 
 	@Override
-	public List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(Deporte deporte) {
+	public List<ConvocatoriaDTO> obtenerConvocatoriasPorDeporte(String deporte) {
 		return convocatoriaRepository.findByDeporte(deporte).stream().map(this::convertirAConvocatoriaDTO)
 				.collect(Collectors.toList());
 	}
@@ -126,7 +123,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
 					if (alumnoDeporte == null && alumno != null) {
 						alumnoDeporte = alumno.getDeportes().stream()
-								.filter(ad -> ad.getDeporte() == convocatoria.getDeporte())
+								.filter(ad -> java.util.Objects.equals(ad.getDeporte(), convocatoria.getDeporte()))
 								.findFirst()
 								.orElse(null);
 					}
@@ -185,7 +182,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	        AlumnoDeporte alumnoDeporte = ac.getAlumnoDeporte();
 	        if (alumnoDeporte == null && ac.getAlumno() != null) {
 	        	alumnoDeporte = alumnoDeporteService.obtenerDeportesDelAlumno(ac.getAlumno().getId()).stream()
-	        			.filter(ad -> ad.getDeporte() == convocatoria.getDeporte())
+	        			.filter(ad -> java.util.Objects.equals(ad.getDeporte(), convocatoria.getDeporte()))
 	        			.findFirst()
 	        			.orElse(null);
 	        }
@@ -194,10 +191,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	        	continue;
 	        }
 
-	        TipoGrado nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
+	        String nuevoTipo = alumnoDeporteService.calcularSiguienteGrado(alumnoDeporte);
 	        if (nuevoTipo != null) {
 	        	// El siguiente grado debe existir en el sistema de grados de la disciplina
-	        	if (progresion.buscarGrado(alumnoDeporte.getDeporte().name(), nuevoTipo.name()).isPresent()) {
+	        	if (progresion.buscarGrado(alumnoDeporte.getDeporte(), nuevoTipo).isPresent()) {
 	        		alumnoDeporteService.actualizarGradoPorDeporte(
 	        				alumnoDeporte.getAlumno().getId(),
 	        				alumnoDeporte.getDeporte(),
@@ -234,7 +231,7 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
 		if (alumnoDeporte == null && alumno != null) {
 			alumnoDeporte = alumnoDeporteService.obtenerDeportesDelAlumno(alumno.getId()).stream()
-					.filter(ad -> ad.getDeporte() == alumnoConvocatoria.getConvocatoria().getDeporte())
+					.filter(ad -> java.util.Objects.equals(ad.getDeporte(), alumnoConvocatoria.getConvocatoria().getDeporte()))
 					.findFirst()
 					.orElse(null);
 		}
@@ -277,9 +274,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
 		if (alumnoDeporte == null && alumnoConvocatoria.getAlumno() != null
 				&& alumnoConvocatoria.getConvocatoria() != null) {
-			Deporte deporteConvocatoria = alumnoConvocatoria.getConvocatoria().getDeporte();
+			String deporteConvocatoria = alumnoConvocatoria.getConvocatoria().getDeporte();
 			alumnoDeporte = alumnoConvocatoria.getAlumno().getDeportes().stream()
-					.filter(ad -> ad.getDeporte() == deporteConvocatoria)
+					.filter(ad -> java.util.Objects.equals(ad.getDeporte(), deporteConvocatoria))
 					.findFirst()
 					.orElse(null);
 		}
@@ -289,6 +286,6 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		}
 
 		// Ya procesada si el alumno tiene ya el grado al que se presentaba (por codigo, en su sistema)
-		return alumnoDeporte.getGrado().getCodigo().equals(alumnoConvocatoria.getGradoSiguiente().name());
+		return alumnoDeporte.getGrado().getCodigo().equals(alumnoConvocatoria.getGradoSiguiente());
 	}
 }

@@ -1,6 +1,6 @@
 package com.taemoi.project.caracterizacion;
 
-import static com.taemoi.project.entities.TipoGrado.*;
+import static com.taemoi.project.legado.TipoGrado.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -13,8 +13,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.taemoi.project.config.ExamEligibilityConfig;
-import com.taemoi.project.entities.TipoGrado;
+import com.taemoi.project.legado.ExamEligibilityConfig;
+import com.taemoi.project.legado.TipoGrado;
 
 /**
  * Caracterizacion de ExamEligibilityConfig: meses minimos por grado y umbral de edad

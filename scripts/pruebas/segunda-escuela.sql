@@ -1,6 +1,8 @@
 -- Segunda escuela SINTÉTICA (organización 2) para probar el aislamiento multi-escuela.
--- Requiere la base migrada hasta V27 (catálogo: disciplina, tarifa, producto con codigo/tipo; V22 ya
--- quitó de alumno las columnas monodeporte, así que el deporte vive solo en alumno_deporte).
+-- Requiere la base migrada hasta V29 (V22 quitó de alumno las columnas monodeporte; V28 quitó los
+-- enums deporte/tipo_tarifa/tipo_grado: la disciplina y la tarifa se identifican solo por
+-- disciplina_id y tarifa_id; V29 quitó alumno.responsable_legal_*). organizacion 2 queda con
+-- comportamiento_legado_taemoi = FALSE (valor por defecto).
 -- Repetible: borra antes lo que crea. Contraseña de los usuarios: la de README.md.
 -- La organización 2 tiene su propio catálogo: disciplinas TAEKWONDO, KICKBOXING y PILATES (sin
 -- sistema de grados: sus alumnos no tienen grado, alumno_deporte.grado_id = NULL) y las tarifas
@@ -70,8 +72,8 @@ INSERT INTO tarifa (id, organizacion_id, disciplina_id, codigo, nombre, importe,
   (104, 2, 103, 'PILATES', 'Pilates', 30.00, 1);
 
 -- ---------------------------------------------------------------- grupo, turno y productos
-INSERT INTO grupo (id, nombre, tipo, deporte, rango_edad_min, rango_edad_max, organizacion_id, disciplina_id)
-VALUES (101, 'Sierra Sur Taekwondo Lunes y Miercoles', 'Taekwondo', 'TAEKWONDO', NULL, NULL, 2, 101);
+INSERT INTO grupo (id, nombre, tipo, rango_edad_min, rango_edad_max, organizacion_id, disciplina_id)
+VALUES (101, 'Sierra Sur Taekwondo Lunes y Miercoles', 'Taekwondo', NULL, NULL, 2, 101);
 INSERT INTO turno (id, dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id) VALUES
   (201, 'Lunes', '18:00', '19:00', 'Sierra Sur Taekwondo Lunes', 101, 2),
   (202, 'Miércoles', '18:00', '19:00', 'Sierra Sur Taekwondo Miércoles', 101, 2);
@@ -95,33 +97,34 @@ INSERT INTO alumno (id, activo, apellidos, autorizacion_web, direccion, email, f
 (1009, 1, 'Sur Herrador', 1, 'Calle Sintetica 8', 'sur.alumno9@example.test', '2026-09-11', '2026-09-11', NULL, '2018-12-01', NULL, 'Gael', 9, '611000009', 0, 0, 2),
 (1010, 0, 'Sur Iglesias', 1, 'Calle Sintetica 9', 'sur.alumno10@example.test', '2026-09-11', '2026-09-11', '2026-10-01', '1979-04-22', '45000010G', 'Eva', 10, '611000010', 0, 0, 2);
 
-INSERT INTO alumno_deporte (id, activo, principal, apto_para_examen, deporte, fecha_alta, fecha_alta_inicial,
-  fecha_baja, tipo_tarifa, cuantia_tarifa, rol_familiar, competidor, tiene_licencia, alumno_id, grado_id,
+INSERT INTO alumno_deporte (id, activo, principal, apto_para_examen, fecha_alta, fecha_alta_inicial,
+  fecha_baja, cuantia_tarifa, rol_familiar, competidor, tiene_licencia, alumno_id, grado_id,
   organizacion_id, disciplina_id, tarifa_id) VALUES
-(1001, 1, 1, 0, 'TAEKWONDO', '2026-09-07', '2026-09-07', NULL, 'INFANTIL', 32.0, 'NINGUNO', 0, 0, 1001, NULL, 2, 101, 101),
-(1002, 1, 1, 0, 'TAEKWONDO', '2026-09-07', '2026-09-07', NULL, 'INFANTIL', 32.0, 'NINGUNO', 0, 0, 1002, NULL, 2, 101, 101),
-(1003, 1, 1, 0, 'TAEKWONDO', '2026-09-08', '2026-09-08', NULL, 'ADULTO', 32.0, 'NINGUNO', 0, 0, 1003, NULL, 2, 101, 102),
-(1004, 1, 1, 0, 'TAEKWONDO', '2026-09-08', '2026-09-08', NULL, 'ADULTO', 32.0, 'NINGUNO', 0, 0, 1004, NULL, 2, 101, 102),
-(1005, 1, 1, 0, 'TAEKWONDO', '2026-09-09', '2026-09-09', NULL, 'INFANTIL', 32.0, 'NINGUNO', 0, 0, 1005, NULL, 2, 101, 101),
-(1006, 1, 1, 0, 'TAEKWONDO', '2026-09-09', '2026-09-09', NULL, 'INFANTIL', 32.0, 'NINGUNO', 0, 0, 1006, NULL, 2, 101, 101),
-(1007, 1, 1, 0, 'KICKBOXING', '2026-09-10', '2026-09-10', NULL, 'KICKBOXING', 30.0, 'NINGUNO', 0, 0, 1007, NULL, 2, 102, 103),
-(1008, 1, 1, 0, 'TAEKWONDO', '2026-09-10', '2026-09-10', NULL, 'ADULTO', 32.0, 'NINGUNO', 0, 0, 1008, NULL, 2, 101, 102),
-(1009, 1, 1, 0, 'TAEKWONDO', '2026-09-11', '2026-09-11', NULL, 'INFANTIL', 32.0, 'NINGUNO', 0, 0, 1009, NULL, 2, 101, 101),
-(1010, 0, 1, 0, 'TAEKWONDO', '2026-09-11', '2026-09-11', '2026-10-01', 'ADULTO', 32.0, 'NINGUNO', 0, 0, 1010, NULL, 2, 101, 102);
+(1001, 1, 1, 0, '2026-09-07', '2026-09-07', NULL, 32.0, 'NINGUNO', 0, 0, 1001, NULL, 2, 101, 101),
+(1002, 1, 1, 0, '2026-09-07', '2026-09-07', NULL, 32.0, 'NINGUNO', 0, 0, 1002, NULL, 2, 101, 101),
+(1003, 1, 1, 0, '2026-09-08', '2026-09-08', NULL, 32.0, 'NINGUNO', 0, 0, 1003, NULL, 2, 101, 102),
+(1004, 1, 1, 0, '2026-09-08', '2026-09-08', NULL, 32.0, 'NINGUNO', 0, 0, 1004, NULL, 2, 101, 102),
+(1005, 1, 1, 0, '2026-09-09', '2026-09-09', NULL, 32.0, 'NINGUNO', 0, 0, 1005, NULL, 2, 101, 101),
+(1006, 1, 1, 0, '2026-09-09', '2026-09-09', NULL, 32.0, 'NINGUNO', 0, 0, 1006, NULL, 2, 101, 101),
+(1007, 1, 1, 0, '2026-09-10', '2026-09-10', NULL, 30.0, 'NINGUNO', 0, 0, 1007, NULL, 2, 102, 103),
+(1008, 1, 1, 0, '2026-09-10', '2026-09-10', NULL, 32.0, 'NINGUNO', 0, 0, 1008, NULL, 2, 101, 102),
+(1009, 1, 1, 0, '2026-09-11', '2026-09-11', NULL, 32.0, 'NINGUNO', 0, 0, 1009, NULL, 2, 101, 101),
+(1010, 0, 1, 0, '2026-09-11', '2026-09-11', '2026-10-01', 32.0, 'NINGUNO', 0, 0, 1010, NULL, 2, 101, 102);
 
 INSERT INTO alumno_grupo (grupo_id, alumno_id)
 SELECT 101, ad.alumno_id FROM alumno_deporte ad
-WHERE ad.organizacion_id = 2 AND ad.activo = 1 AND ad.deporte = 'TAEKWONDO';
+WHERE ad.organizacion_id = 2 AND ad.activo = 1 AND ad.disciplina_id = 101;
 INSERT INTO alumno_turno (alumno_id, turno_id)
 SELECT ad.alumno_id, t.id FROM alumno_deporte ad JOIN turno t ON t.grupo_id = 101
-WHERE ad.organizacion_id = 2 AND ad.activo = 1 AND ad.deporte = 'TAEKWONDO';
+WHERE ad.organizacion_id = 2 AND ad.activo = 1 AND ad.disciplina_id = 101;
 
 INSERT INTO producto_alumno (cantidad, concepto, fecha_asignacion, fecha_pago, notas, pagado, precio, alumno_id,
   producto_id, alumno_deporte_id, organizacion_id)
-SELECT 1, CONCAT('MENSUALIDAD OCTUBRE 2026 - ', ad.deporte), '2026-10-01 10:00:00',
+SELECT 1, CONCAT('MENSUALIDAD OCTUBRE 2026 - ', d.codigo), '2026-10-01 10:00:00',
        IF(MOD(ad.alumno_id, 3) = 0, NULL, '2026-10-03 18:00:00'), NULL, MOD(ad.alumno_id, 3) <> 0,
        ad.cuantia_tarifa, ad.alumno_id, 101, ad.id, 2
-FROM alumno_deporte ad WHERE ad.organizacion_id = 2 AND ad.activo = 1;
+FROM alumno_deporte ad JOIN disciplina d ON d.id = ad.disciplina_id
+WHERE ad.organizacion_id = 2 AND ad.activo = 1;
 INSERT INTO producto_alumno (cantidad, concepto, fecha_asignacion, fecha_pago, notas, pagado, precio, alumno_id,
   producto_id, alumno_deporte_id, organizacion_id)
 VALUES (1, 'RESERVA DE PLAZA', '2026-09-07 10:00:00', '2026-09-07 10:05:00', NULL, 1, 15.0, 1001, 103, 1001, 2);

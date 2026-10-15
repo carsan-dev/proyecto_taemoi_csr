@@ -22,8 +22,12 @@ public interface TutorRepository extends JpaRepository<Tutor, Long> {
 	@Query("SELECT COALESCE(MAX(t.orden), 0) FROM Tutor t WHERE t.alumno.id = :alumnoId")
 	int maxOrden(@Param("alumnoId") Long alumnoId);
 
-	/** Pares {alumnoId, nif} de los tutores con NIF (la comparación normalizada se hace en Java). */
-	@Query("SELECT t.alumno.id, t.nif FROM Tutor t WHERE t.nif IS NOT NULL AND t.nif <> ''")
+	/**
+	 * Pares {alumnoId, nif} de los tutores con NIF y nombre (la comparación normalizada se hace en Java).
+	 * El responsable legal del que solo se conoce el NIF (sin nombre) no cuenta.
+	 */
+	@Query("SELECT t.alumno.id, t.nif FROM Tutor t WHERE t.nif IS NOT NULL AND t.nif <> ''"
+			+ " AND (TRIM(COALESCE(t.nombre, '')) <> '' OR TRIM(COALESCE(t.apellidos, '')) <> '')")
 	List<Object[]> buscarAlumnoYNifConNif();
 
 	/** Solo para el borrado completo del alumno. */

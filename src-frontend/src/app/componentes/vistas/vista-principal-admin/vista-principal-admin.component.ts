@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -7,6 +7,7 @@ import { interval, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, skip } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 
 interface DashboardStats {
   totalAlumnos: number;
@@ -179,6 +180,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       color: '#0f766e'
     },
   ];
+
+  private readonly catalogo = inject(CatalogoService);
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -506,34 +509,19 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     return `${ano}-${mes}-${dia}`;
   }
 
+  /** Nombre de la disciplina en el catálogo (D2); el propio código si no está. */
   getDeporteLabel(deporte: string): string {
-    const labels: { [key: string]: string } = {
-      'TAEKWONDO': 'Taekwondo',
-      'KICKBOXING': 'Kickboxing',
-      'PILATES': 'Pilates',
-      'DEFENSA_PERSONAL_FEMENINA': 'Defensa Personal'
-    };
-    return labels[deporte] || deporte;
+    return this.catalogo.etiquetaDisciplina(deporte);
   }
 
+  /** D12: emoji de Taemoi por código; neutro para el resto. */
   getDeporteIcon(deporte: string): string {
-    const icons: { [key: string]: string } = {
-      'TAEKWONDO': '🥋',
-      'KICKBOXING': '🥊',
-      'PILATES': '🧘',
-      'DEFENSA_PERSONAL_FEMENINA': '🛡️'
-    };
-    return icons[deporte] || '⭐';
+    return this.catalogo.emojiDisciplina(deporte);
   }
 
+  /** D12: color de Taemoi por código; neutro para el resto. */
   getDeporteColor(deporte: string): string {
-    const colors: { [key: string]: string } = {
-      'TAEKWONDO': '#4a90d9',
-      'KICKBOXING': '#e74c3c',
-      'PILATES': '#50c878',
-      'DEFENSA_PERSONAL_FEMENINA': '#f5a623'
-    };
-    return colors[deporte] || '#6c757d';
+    return this.catalogo.colorDisciplina(deporte);
   }
 
   getTotalDeportes(): number {

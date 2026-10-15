@@ -3,7 +3,6 @@ package com.taemoi.project.dtos;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Turno;
 
 public class TurnoDTO {
@@ -141,7 +140,7 @@ public class TurnoDTO {
 
 		// Mapear la lista de alumnos a AlumnoDTO
 		if (turno.getAlumnos() != null) {
-			Deporte deporteGrupo = turno.getGrupo() != null ? turno.getGrupo().getDeporte() : null;
+			String deporteGrupo = turno.getGrupo() != null ? turno.getGrupo().getDeporte() : null;
 			turnoDTO.setAlumnos(turno.getAlumnos().stream()
 					.filter(alumno -> Boolean.TRUE.equals(alumno.getActivo()))
 					.filter(alumno -> {

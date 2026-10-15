@@ -50,10 +50,9 @@
             (ngModelChange)="filtrarPorDeporte()"
             aria-label="Filtrar alumnos por deporte">
             <option value="TODOS">Todos los deportes</option>
-            <option value="TAEKWONDO">Taekwondo</option>
-            <option value="KICKBOXING">Kickboxing</option>
-            <option value="PILATES">Pilates</option>
-            <option value="DEFENSA_PERSONAL_FEMENINA">Defensa Personal</option>
+            @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+            <option [value]="disciplina.codigo">{{ disciplina.nombre }}</option>
+            }
           </select>
         </div>
 
@@ -210,11 +209,11 @@
                           @if (getGradoNombrePartes(deporteItem.grado, deporteItem.deporte); as gradoPartes) {
                           <span class="deporte-detalle-grado">
                             <span class="grado-line">
-                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '')">
+                              <span class="grado-text" [style]="getGradoStyle(deporteItem.grado || '', deporteItem.deporte)">
                                 {{ gradoPartes.texto }}
                               </span>
                               @if (gradoPartes.sufijo) {
-                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '')">
+                              <span class="grado-suffix" [style]="getGradoStyle(deporteItem.grado || '', deporteItem.deporte)">
                                 {{ gradoPartes.sufijo }}
                               </span>
                               }
@@ -439,8 +438,9 @@
                       </label>
                       <select appSearchableSelect id="deporteSeleccionado" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionado">
                         <option value="TODOS">Todos los Alumnos</option>
-                        <option value="TAEKWONDO">Solo Taekwondo</option>
-                        <option value="KICKBOXING">Solo Kickboxing</option>
+                        @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                        <option [value]="disciplina.codigo">Solo {{ disciplina.nombre }}</option>
+                        }
                       </select>
                     </div>
                     <div class="mb-3">
@@ -486,8 +486,9 @@
                       </label>
                       <select appSearchableSelect id="deporteSeleccionadoIndividual" class="admin-form-control form-select" [(ngModel)]="deporteSeleccionadoIndividual">
                         <option value="TODOS">Todos los Deportes</option>
-                        <option value="TAEKWONDO">Solo Taekwondo</option>
-                        <option value="KICKBOXING">Solo Kickboxing</option>
+                        @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                        <option [value]="disciplina.codigo">Solo {{ disciplina.nombre }}</option>
+                        }
                       </select>
                     </div>
                     <div class="mb-3">
@@ -550,8 +551,11 @@
                       </label>
                       <select appSearchableSelect id="deporteLicenciaGeneral" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionado">
                         <option value="TODOS">Todos los Alumnos</option>
-                        <option value="TAEKWONDO">Solo Taekwondo</option>
-                        <option value="KICKBOXING">Solo Kickboxing</option>
+                        @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                        @if (disciplina.requiereLicencia) {
+                        <option [value]="disciplina.codigo">Solo {{ disciplina.nombre }}</option>
+                        }
+                        }
                       </select>
                     </div>
                     <div class="mb-3">
@@ -597,8 +601,11 @@
                       </label>
                       <select appSearchableSelect id="deporteLicenciaIndividual" class="admin-form-control form-select" [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
                         <option value="TODOS">Todos los Deportes</option>
-                        <option value="TAEKWONDO">Solo Taekwondo</option>
-                        <option value="KICKBOXING">Solo Kickboxing</option>
+                        @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                        @if (disciplina.requiereLicencia) {
+                        <option [value]="disciplina.codigo">Solo {{ disciplina.nombre }}</option>
+                        }
+                        }
                       </select>
                     </div>
                     <div class="mb-3">

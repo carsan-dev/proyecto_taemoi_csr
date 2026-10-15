@@ -48,7 +48,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.controllers.PreinscripcionController;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.exceptions.GlobalExceptionHandler;
 import com.taemoi.project.integracion.MySqlIntegrationTest;
 import com.taemoi.project.services.AforoPreinscripcionService;
@@ -174,16 +174,16 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 		assertTrue(indiceUnicoPresente("uk_preinscripcion_activa"));
 		assertTrue(indiceUnicoPresente("uk_preinscripcion_idempotencia"));
 		assertEquals(1, jdbc.queryForObject(
-				"SELECT COUNT(*) FROM plantilla_preinscripcion WHERE deporte='KICKBOXING' AND activa=1",
+				"SELECT COUNT(*) FROM plantilla_preinscripcion p JOIN disciplina d ON d.id=p.disciplina_id WHERE d.codigo='KICKBOXING' AND p.organizacion_id=1 AND p.activa=1",
 				Integer.class));
 		assertEquals(11, jdbc.queryForObject("""
 				SELECT JSON_LENGTH(JSON_EXTRACT(contenido, '$.normas'))
-				FROM plantilla_preinscripcion
-				WHERE deporte='KICKBOXING' AND activa=1
+				FROM plantilla_preinscripcion p JOIN disciplina d ON d.id=p.disciplina_id
+				WHERE d.codigo='KICKBOXING' AND p.organizacion_id=1 AND p.activa=1
 				""", Integer.class));
 		String contenidoKickboxing = jdbc.queryForObject("""
-				SELECT contenido FROM plantilla_preinscripcion
-				WHERE deporte='KICKBOXING' AND activa=1
+				SELECT contenido FROM plantilla_preinscripcion p JOIN disciplina d ON d.id=p.disciplina_id
+				WHERE d.codigo='KICKBOXING' AND p.organizacion_id=1 AND p.activa=1
 				""", String.class);
 		assertTrue(contenidoKickboxing.contains("54,95 €"));
 		assertTrue(contenidoKickboxing.contains("71,95 €"));
@@ -197,9 +197,9 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 				"SELECT t.id FROM turno t JOIN grupo g ON g.id=t.grupo_id WHERE g.nombre=? ORDER BY t.id LIMIT 1",
 				Long.class, nombreGrupo);
 		if (!existentes.isEmpty()) return existentes.get(0);
-		jdbc.update("INSERT INTO grupo(nombre,tipo,deporte,rango_edad_min,rango_edad_max,organizacion_id,disciplina_id) VALUES (?,NULL,?,0,99,1,"
+		jdbc.update("INSERT INTO grupo(nombre,tipo,rango_edad_min,rango_edad_max,organizacion_id,disciplina_id) VALUES (?,NULL,0,99,1,"
 				+ "(SELECT d.id FROM disciplina d WHERE d.organizacion_id=1 AND d.codigo=?))",
-				nombreGrupo, deporte.name(), deporte.name());
+				nombreGrupo, deporte.name());
 		Long grupoId = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre=?", Long.class, nombreGrupo);
 		jdbc.update("INSERT INTO turno(dia_semana,hora_inicio,hora_fin,tipo,grupo_id,organizacion_id) VALUES ('Lunes','18:00','19:00',NULL,?,1)",
 				grupoId);

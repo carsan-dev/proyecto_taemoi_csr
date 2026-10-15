@@ -1,6 +1,7 @@
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { roleGuard } from './guards/role.guard';
 import { resolverPortalContexto, routes } from './app.routes';
+import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 
 describe('app routes', () => {
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
@@ -30,5 +31,17 @@ describe('app routes', () => {
     expect(resolverPortalContexto('/userpage/turnos')).toBe('user');
     expect(resolverPortalContexto('/alumnosEditar/10')).toBe('admin');
     expect(resolverPortalContexto('/contacto')).toBe('public');
+  });
+
+  it('toda ruta protegida por roleGuard resuelve el catálogo antes de activarse', () => {
+    const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
+
+    expect(protectedRoutes.every((route) => route.resolve?.['catalogo'] === catalogoResolver)).toBeTrue();
+  });
+
+  it('las rutas públicas no piden el catálogo autenticado', () => {
+    const publicRoutes = routes.filter((route) => !route.canActivate?.includes(roleGuard));
+
+    expect(publicRoutes.some((route) => route.resolve?.['catalogo'])).toBeFalse();
   });
 });

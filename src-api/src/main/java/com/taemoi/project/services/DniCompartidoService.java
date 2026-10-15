@@ -59,6 +59,11 @@ import com.taemoi.project.utils.NifUtils;
  * tutor con ese NIF no se toca; si tiene uno SIN NIF con el mismo nombre (sin distinguir mayúsculas,
  * acentos ni espacios) se le pone el NIF en lugar de crear otro.
  *
+ * <p>El responsable legal del que solo se conoce el NIF (tutor sin nombre, ver {@code TutorService})
+ * no cuenta como tutor en ninguna de estas reglas: el informe y la corrección se comportan como cuando
+ * ese NIF solo estaba en la ficha del alumno. Si la corrección crea un responsable legal, el marcador
+ * desaparece ({@code TutorService.crear/asignarNif}).
+ *
  * <p>El DNI completo solo sale en el cuerpo de la respuesta del informe (administradores, sin caché):
  * logs, auditoría, mensajes de error y la respuesta de la corrección llevan la versión enmascarada, y
  * la referencia de grupo que viaja del cliente es el NIF cifrado (AES-GCM) ligado a la escuela activa.
@@ -268,22 +273,15 @@ public class DniCompartidoService {
 
 	/**
 	 * Nombre del tutor dueño del DNI si ya consta, mirando solo tutores sin NIF o con ese NIF (uno con
-	 * otro NIF es otra persona): un tutor con ese NIF; el responsable legal heredado con ese NIF; o, si
-	 * todos los miembros tienen como primer responsable legal a la misma persona sin NIF o con ese NIF,
-	 * esa. Si no, {@code null}.
+	 * otro NIF es otra persona): un tutor con nombre y ese NIF (el primer responsable legal con ese NIF
+	 * también lo es); o, si todos los miembros tienen como primer responsable legal a la misma persona
+	 * sin NIF o con ese NIF, esa. Si no, {@code null}.
 	 */
 	private static Nombre nombreConocido(String nif, List<Ficha> fichas) {
 		for (Ficha f : fichas) {
 			Tutor t = tutorConNif(f, nif);
 			if (t != null && t.getNombreCompleto() != null) {
 				return new Nombre(t.getNombre(), t.getApellidos());
-			}
-		}
-		for (Ficha f : fichas) {
-			Alumno a = f.alumno();
-			if (nif.equals(NifUtils.normalizeForComparison(a.getResponsableLegalNif()))
-					&& a.getResponsableLegalNombre() != null && !a.getResponsableLegalNombre().isBlank()) {
-				return new Nombre(a.getResponsableLegalNombre().strip(), null);
 			}
 		}
 		Set<String> claves = new LinkedHashSet<>();
@@ -332,7 +330,10 @@ public class DniCompartidoService {
 	private Ficha ficha(Alumno alumno, LocalDate hoy) {
 		LocalDate nacimiento = fecha(alumno.getFechaNacimiento());
 		Integer edad = nacimiento == null ? null : Period.between(nacimiento, hoy).getYears();
-		return new Ficha(alumno, nacimiento, edad, tutores.findByAlumnoIdOrderByOrdenAscIdAsc(alumno.getId()));
+		// El responsable legal solo-NIF (tutor sin nombre) no cuenta: ver la cabecera de la clase.
+		List<Tutor> conNombre = tutores.findByAlumnoIdOrderByOrdenAscIdAsc(alumno.getId()).stream()
+				.filter(Tutor::tieneNombre).toList();
+		return new Ficha(alumno, nacimiento, edad, conNombre);
 	}
 
 	private static Miembro miembro(Ficha f) {

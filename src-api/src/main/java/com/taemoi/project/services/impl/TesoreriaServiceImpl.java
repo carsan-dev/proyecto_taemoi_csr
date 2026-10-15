@@ -45,7 +45,6 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.Deporte;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
@@ -74,6 +73,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	};
 
 	@Autowired
+	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
+
+	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
 
 	@Autowired
@@ -98,7 +100,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			long totalPagados = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -107,7 +110,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			long totalPendientes = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -116,7 +120,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			double importeTotal = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -125,7 +130,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			double importePagado = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -134,7 +140,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			double importePendiente = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -143,7 +150,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			long alumnosConPendientes = valorSeguro(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -151,7 +159,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					filtro.ano,
 					anoTexto,
 					filtro.mes,
-					mesNombre));
+					mesNombre,
+					legado()));
 			return construirResumen(
 					filtro,
 					totalMovimientos,
@@ -253,7 +262,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	public List<Integer> obtenerAniosDisponibles() {
 		TreeSet<Integer> anios = new TreeSet<>();
 		anios.addAll(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha());
-		aniadirAniosDesdeConceptos(anios, productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial());
+		aniadirAniosDesdeConceptos(anios, productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(legado()));
 
 		List<String> conceptosSinFecha = productoAlumnoRepository.findConceptosTesoreriaSinFecha();
 		aniadirAniosDesdeConceptos(anios, conceptosSinFecha);
@@ -436,8 +445,16 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	 * códigos heredados de Taemoi (se clasifican por concepto, como antes de V27), los productos sin
 	 * clasificar y los cargos sin producto (producto borrado).
 	 */
-	private static TipoProducto tipoProducto(ProductoAlumno productoAlumno) {
-		return CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProducto());
+	private TipoProducto tipoProducto(ProductoAlumno productoAlumno) {
+		return CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProducto(), legado());
+	}
+
+	/**
+	 * Comportamiento heredado de Taemoi en la organización activa (V28): solo entonces los productos con
+	 * códigos de V24 se clasifican por concepto; en las demás escuelas decide el tipo del catálogo.
+	 */
+	private boolean legado() {
+		return comportamientoLegado.activo();
 	}
 
 	private byte[] generarPdfCertificadoCobros(CertificadoCobrosData certificado) {
@@ -636,7 +653,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.ano,
 				anoTexto,
 				filtro.mes,
-				mesNombre);
+				mesNombre,
+					legado());
 	}
 
 	private List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> filtrarMovimientosPeriodoBase(
@@ -668,7 +686,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.ano,
 				anoTexto,
 				filtro.mes,
-				mesNombre);
+				mesNombre,
+					legado());
 	}
 
 	private Page<ProductoAlumno> obtenerPaginaMovimientosFiltrados(
@@ -690,7 +709,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				anoTexto,
 				filtro.mes,
 				mesNombre,
-				pageable);
+				pageable,
+					legado());
 	}
 
 	private List<ProductoAlumno> obtenerMovimientosPaginaPorIds(List<Long> idsOrdenados) {
@@ -721,7 +741,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		TesoreriaResumenDTO resumen = new TesoreriaResumenDTO();
 		resumen.setMes(filtro.mes);
 		resumen.setAno(filtro.ano);
-		resumen.setDeporte(filtro.deporte != null ? filtro.deporte.name() : "TODOS");
+		resumen.setDeporte(filtro.deporte != null ? filtro.deporte : "TODOS");
 		resumen.setTotalMovimientos(totalMovimientos);
 		resumen.setTotalPagados(totalPagados);
 		resumen.setTotalPendientes(totalPendientes);
@@ -847,7 +867,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro) {
 		return coincideConFiltroPeriodo(
 				productoAlumno.getConcepto(),
-				CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProductoCodigo(), productoAlumno.getProductoTipo()),
+				CatalogoLegadoTaemoi.tipoDeCatalogo(productoAlumno.getProductoCodigo(), productoAlumno.getProductoTipo(), legado()),
 				productoAlumno.getFechaAsignacion(),
 				productoAlumno.getFechaPago(),
 				filtro);
@@ -936,23 +956,23 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private String obtenerDeporte(ProductoAlumno productoAlumno,
 			java.util.function.Supplier<Map<Long, String>> disciplinas) {
 		if (productoAlumno.getAlumnoDeporte() != null && productoAlumno.getAlumnoDeporte().getDeporte() != null) {
-			return productoAlumno.getAlumnoDeporte().getDeporte().name();
+			return productoAlumno.getAlumnoDeporte().getDeporte();
 		}
 
 		String concepto = productoAlumno.getConcepto() != null
 				? productoAlumno.getConcepto().toUpperCase(Locale.ROOT)
 				: "";
-		if (concepto.contains(Deporte.TAEKWONDO.name())) {
-			return Deporte.TAEKWONDO.name();
+		if (concepto.contains(CatalogoLegadoTaemoi.TAEKWONDO)) {
+			return CatalogoLegadoTaemoi.TAEKWONDO;
 		}
 		if (concepto.contains("KICKBOXING")) {
-			return Deporte.KICKBOXING.name();
+			return CatalogoLegadoTaemoi.KICKBOXING;
 		}
 		if (concepto.contains("PILATES")) {
-			return Deporte.PILATES.name();
+			return CatalogoLegadoTaemoi.PILATES;
 		}
 		if (concepto.contains("DEFENSA") || concepto.contains("PERSONAL")) {
-			return Deporte.DEFENSA_PERSONAL_FEMENINA.name();
+			return CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA;
 		}
 
 		// Sin pista en el concepto: la disciplina del producto del catálogo, si la tiene.
@@ -967,7 +987,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	private String disciplinaDelProducto(ProductoAlumno productoAlumno,
 			java.util.function.Supplier<Map<Long, String>> disciplinas) {
 		Producto producto = productoAlumno.getProducto();
-		if (CatalogoLegadoTaemoi.tipoDeCatalogo(producto) == null || producto.getDisciplina() == null) {
+		if (CatalogoLegadoTaemoi.tipoDeCatalogo(producto, legado()) == null || producto.getDisciplina() == null) {
 			return null;
 		}
 		return disciplinas.get().get(producto.getDisciplina().getId());
@@ -1027,18 +1047,18 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			throw new IllegalArgumentException("Para filtrar por mes, también debes indicar el año.");
 		}
 
-		Deporte deporteEnum = parsearDeporte(deporte);
-		String deporteNombre = deporteEnum != null ? deporteEnum.name() : null;
+		String deporteEnum = parsearDeporte(deporte);
+		String deporteNombre = deporteEnum != null ? deporteEnum : null;
 		return new FiltroTesoreria(deporteEnum, deporteNombre, mes, ano);
 	}
 
-	private Deporte parsearDeporte(String deporte) {
+	private String parsearDeporte(String deporte) {
 		if (deporte == null || deporte.isBlank() || "TODOS".equalsIgnoreCase(deporte)) {
 			return null;
 		}
 
 		try {
-			return Deporte.valueOf(deporte.trim().toUpperCase(Locale.ROOT));
+			return catalogoDisciplinas.validarCodigo(deporte.trim().toUpperCase(Locale.ROOT));
 		} catch (IllegalArgumentException ex) {
 			throw new IllegalArgumentException("Deporte no válido: " + deporte);
 		}
@@ -1056,7 +1076,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 		String titulo = "Informe de Tesoreria";
 		String estadoLabel = pagado == null ? "Todos" : (Boolean.TRUE.equals(pagado) ? "Pagados" : "Pendientes");
-		String deporteLabel = filtro.deporte != null ? filtro.deporte.name() : "TODOS";
+		String deporteLabel = filtro.deporte != null ? filtro.deporte : "TODOS";
 		String periodoLabel = obtenerPeriodoLabel(filtro.mes, filtro.ano);
 
 		StringBuilder html = new StringBuilder();
@@ -1170,12 +1190,12 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	}
 
 	private static class FiltroTesoreria {
-		private final Deporte deporte;
+		private final String deporte;
 		private final String deporteNombre;
 		private final Integer mes;
 		private final Integer ano;
 
-		private FiltroTesoreria(Deporte deporte, String deporteNombre, Integer mes, Integer ano) {
+		private FiltroTesoreria(String deporte, String deporteNombre, Integer mes, Integer ano) {
 			this.deporte = deporte;
 			this.deporteNombre = deporteNombre;
 			this.mes = mes;

@@ -14,7 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
- * Disciplina que ofrece una organización. Sustituirá al enum {@link Deporte}: {@code codigo}
+ * Disciplina que ofrece una organización. Sustituye al antiguo enum {@code Deporte} (V28): {@code codigo}
  * conserva sus valores ({@code TAEKWONDO}…). Sin {@link SistemaGrados} = disciplina sin grados.
  */
 @Entity

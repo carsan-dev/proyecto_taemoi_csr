@@ -13,11 +13,11 @@ import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
-import com.taemoi.project.entities.Deporte;
+import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.RolFamiliar;
-import com.taemoi.project.entities.TipoGrado;
-import com.taemoi.project.entities.TipoTarifa;
+import com.taemoi.project.legado.TipoGrado;
+import com.taemoi.project.legado.TipoTarifa;
 
 /**
  * Los campos "planos" por deporte de las respuestas (deporte, grado, tarifa, licencia...) salen
@@ -46,10 +46,10 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 
 		AlumnoDTO dto = AlumnoDTO.deAlumno(alumno);
 
-		assertEquals(Deporte.KICKBOXING, dto.getDeporte());
+		assertEquals(Deporte.KICKBOXING.name(), dto.getDeporte());
 		assertEquals(TipoGrado.AMARILLO.name(), dto.getGrado());
 		assertEquals(Date.valueOf("2022-09-01"), dto.getFechaGrado());
-		assertEquals(TipoTarifa.KICKBOXING, dto.getTipoTarifa());
+		assertEquals(TipoTarifa.KICKBOXING.name(), dto.getTipoTarifa());
 		assertEquals(35.0, dto.getCuantiaTarifa());
 		assertEquals(RolFamiliar.HIJO, dto.getRolFamiliar());
 		assertEquals("FAM-7", dto.getGrupoFamiliar());
@@ -62,7 +62,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertEquals(Boolean.TRUE, dto.getAptoParaExamen());
 
 		AlumnoConDeportesDTO conDeportes = AlumnoConDeportesDTO.deAlumno(alumno);
-		assertEquals(TipoTarifa.KICKBOXING, conDeportes.getTipoTarifa());
+		assertEquals(TipoTarifa.KICKBOXING.name(), conDeportes.getTipoTarifa());
 		assertEquals(35.0, conDeportes.getCuantiaTarifa());
 		assertEquals(RolFamiliar.HIJO, conDeportes.getRolFamiliar());
 		assertEquals(Boolean.TRUE, conDeportes.getCompetidor());
@@ -70,7 +70,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		assertEquals(2, conDeportes.getDeportes().size());
 
 		assertEquals(TipoGrado.AMARILLO.name(), AlumnoConGruposDTO.deAlumnoConGrupos(alumno).getGrado());
-		assertEquals(TipoGrado.AMARILLO.getNombre(), AlumnoCortoDTO.deAlumno(alumno).getGrado());
+		assertEquals("AMARILLO", AlumnoCortoDTO.deAlumno(alumno).getGrado(), "grado.nombre del catálogo");
 	}
 
 	@Test
@@ -81,7 +81,7 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 
 		AlumnoDTO dto = AlumnoDTO.deAlumno(alumno);
 
-		assertEquals(Deporte.TAEKWONDO, dto.getDeporte());
+		assertEquals(Deporte.TAEKWONDO.name(), dto.getDeporte());
 		assertEquals(TipoGrado.VERDE.name(), dto.getGrado());
 		assertEquals(40.0, dto.getCuantiaTarifa());
 	}
@@ -111,9 +111,9 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 		alumno.addDeporte(taekwondo);
 		alumno.addDeporte(deporte(Deporte.KICKBOXING, TipoGrado.NARANJA, TipoTarifa.KICKBOXING, 35.0, "2022-09-01"));
 
-		AlumnoDTO dto = AlumnoDTO.deAlumno(alumno, Deporte.KICKBOXING);
+		AlumnoDTO dto = AlumnoDTO.deAlumno(alumno, Deporte.KICKBOXING.name());
 
-		assertEquals(Deporte.KICKBOXING, dto.getDeporte());
+		assertEquals(Deporte.KICKBOXING.name(), dto.getDeporte());
 		assertEquals(TipoGrado.NARANJA.name(), dto.getGrado());
 		assertEquals(35.0, dto.getCuantiaTarifa());
 	}
@@ -131,15 +131,16 @@ class AlumnoDTOAplanadoDesdeDeporteTest {
 	private static AlumnoDeporte deporte(Deporte deporte, TipoGrado tipoGrado, TipoTarifa tarifa, Double cuantia,
 			String fechaAlta) {
 		AlumnoDeporte ad = new AlumnoDeporte();
-		ad.setDeporte(deporte);
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));
 		ad.setActivo(true);
-		ad.setTipoTarifa(tarifa);
+		ad.setTarifa(tarifa == null ? null : com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.tarifaTaemoi(tarifa.name()));
 		ad.setCuantiaTarifa(cuantia);
 		ad.setFechaAlta(Date.valueOf(fechaAlta));
 		ad.setFechaAltaInicial(Date.valueOf(fechaAlta));
 		if (tipoGrado != null) {
 			Grado grado = new Grado();
-			grado.setTipoGrado(tipoGrado);
+			grado.setCodigo(tipoGrado.name());
+			grado.setNombre(tipoGrado.name()); // V30: en Taemoi el nombre de un color simple es el código
 			ad.setGrado(grado);
 			ad.setFechaGrado(Date.valueOf(fechaAlta));
 		}

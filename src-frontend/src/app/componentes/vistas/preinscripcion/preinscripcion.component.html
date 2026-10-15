@@ -58,7 +58,7 @@
         <h2>Actividad y horarios</h2>
         <label>Deporte
           <select formControlName="deporte" (change)="cambiarDeporte()">
-            <option value="">Selecciona una actividad</option>
+            <option value="">{{cargandoDeportes?'Cargando actividades…':(errorDeportes?'No se pudieron cargar las actividades':'Selecciona una actividad')}}</option>
             @for(d of deportes;track d[0]){<option [value]="d[0]">{{d[1]}}</option>}
           </select>
         </label>
