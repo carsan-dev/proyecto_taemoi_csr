@@ -27,6 +27,7 @@ import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.MembresiaService;
+import com.taemoi.project.utils.EmailUtils;
 
 @Service
 public class MembresiaServiceImpl implements MembresiaService {
@@ -223,7 +224,8 @@ public class MembresiaServiceImpl implements MembresiaService {
 		if (!RolMembresia.requiereAlumnoActivo(autoridades)) {
 			return true;
 		}
-		return alumnos.contarActivosPorEmailEnOrganizacion(usuario.getEmail(), organizacionId) > 0;
+		return EmailUtils.puedeVincularAlumnos(usuario.getEmail())
+				&& alumnos.contarActivosPorEmailEnOrganizacion(usuario.getEmail(), organizacionId) > 0;
 	}
 
 	/** Autoridades por organización (ordenadas por id) a partir de las membresías activas. */

@@ -85,7 +85,10 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		}
 
 		// Buscar TODOS los alumnos con este email (puede haber múltiples)
-		List<Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email);
+		// Un email en blanco nunca vincula alumnos (aunque haya alumnos activos con el email vacío)
+		List<Alumno> alumnos = EmailUtils.puedeVincularAlumnos(email)
+				? alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email)
+				: List.of();
 		if (alumnos.isEmpty()) {
 			// No hay ningún alumno con este email, no se puede crear usuario
 			throw new IllegalArgumentException(

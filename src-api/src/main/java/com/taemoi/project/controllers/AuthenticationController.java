@@ -316,11 +316,12 @@ public class AuthenticationController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<AlumnoParaUsuarioDTO>> obtenerTodosLosAlumnosDelUsuario() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		String email = authentication.getName();
+		String email = EmailUtils.normalizeEmail(authentication.getName());
 
-		// Buscar todos los alumnos con el email del usuario
-		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository
-				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(email));
+		// Buscar todos los alumnos con el email del usuario (un email en blanco no vincula ninguno)
+		List<com.taemoi.project.entities.Alumno> alumnos = EmailUtils.puedeVincularAlumnos(email)
+				? alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email)
+				: List.of();
 
 		// Convertir a DTOs
 		List<AlumnoParaUsuarioDTO> alumnosDTO = alumnos.stream()
@@ -346,8 +347,11 @@ public class AuthenticationController {
 			return null;
 		}
 
-		List<Alumno> alumnosActivos = alumnoRepository
-				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(usuario.getEmail()));
+		String email = EmailUtils.normalizeEmail(usuario.getEmail());
+		if (!EmailUtils.puedeVincularAlumnos(email)) {
+			return null;
+		}
+		List<Alumno> alumnosActivos = alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email);
 		if (alumnosActivos.isEmpty()) {
 			return null;
 		}
