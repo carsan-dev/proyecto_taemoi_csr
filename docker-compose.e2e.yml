@@ -56,7 +56,7 @@ services:
       - images_data:/var/www/app/imagenes
       - documents_data:/var/www/app/documentos
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/api/eventos"]
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/healthz"]
       interval: 5s
       timeout: 5s
       retries: 40

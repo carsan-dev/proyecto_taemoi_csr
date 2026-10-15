@@ -119,7 +119,8 @@ done
 # Wait for backend
 echo "Waiting for backend..."
 for i in {1..90}; do
-    if curl -s http://localhost:${PORT_BACKEND}/api/eventos > /dev/null 2>&1; then
+    # Dentro del contenedor: el compose de producción no publica el 8080 en el host. /healthz no se audita.
+    if docker-compose -f "$COMPOSE_FILE" exec -T backend wget -q --spider http://localhost:8080/healthz > /dev/null 2>&1; then
         success "Backend is ready"
         break
     fi
