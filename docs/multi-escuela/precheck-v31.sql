@@ -5,6 +5,7 @@
 --
 -- «Email igual» = como hoy el acceso de familia y como V31: email de la cuenta normalizado (TRIM + LOWER)
 -- contra LOWER(alumno.email), sin recortar el del alumno, con la colación de la columna.
+-- El email en blanco (TRIM = '') nunca cuenta como coincidencia, igual que AlumnoAccessControlServiceImpl.
 -- «Gestión» = membresía ACTIVA PROPIETARIO, ADMINISTRADOR, RESPONSABLE_SEDE o PROFESOR (una inactiva no da
 -- autoridades: la pantalla de roles degrada desactivando la membresía).
 --
@@ -51,12 +52,12 @@ SELECT
     WHERE NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id))
     AS alumno_id_escuela_sin_membresia,
   (SELECT COUNT(*) FROM usuario u JOIN alumno a ON a.id = u.alumno_id
-    WHERE NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)))
+    WHERE NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> '')
       AND NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id
                         AND m.activa = TRUE AND m.rol IN ('PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR')))
     AS alumno_id_email_distinto_familia,
   (SELECT COUNT(*) FROM usuario u JOIN alumno a ON a.id = u.alumno_id
-    WHERE NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)))
+    WHERE NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> '')
       AND EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id
                     AND m.activa = TRUE AND m.rol IN ('PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR')))
     AS alumno_id_email_distinto_gestion;
@@ -71,7 +72,7 @@ SELECT
     WHERE a.email IS NOT NULL AND TRIM(a.email) <> ''
       AND NOT EXISTS (SELECT 1 FROM usuario u2 WHERE LOWER(a.email) = LOWER(TRIM(u2.email))))
     AS alumnos_email_solo_espacios,
-  (SELECT COUNT(*) FROM alumno a JOIN usuario u ON LOWER(a.email) = LOWER(TRIM(u.email))
+  (SELECT COUNT(*) FROM alumno a JOIN usuario u ON LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
     WHERE a.email IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id))
     AS alumno_cuenta_escuela_sin_membresia,
@@ -91,7 +92,7 @@ SELECT d.alumnos_por_email, COUNT(*) AS cuentas
 FROM (
   SELECT u.id AS usuario_id, a.organizacion_id, COUNT(*) AS alumnos_por_email
   FROM usuario u
-  JOIN alumno a ON a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))
+  JOIN alumno a ON a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
   WHERE EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id)
   GROUP BY u.id, a.organizacion_id
 ) d
@@ -115,7 +116,7 @@ SELECT
      HAVING SUM(m.rol <> 'FAMILIA') = 0
         AND NOT EXISTS (SELECT 1 FROM alumno a
                         WHERE a.organizacion_id = m.organizacion_id AND a.activo = TRUE
-                          AND LOWER(a.email) = LOWER(TRIM(u.email)))) f)
+                          AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> '')) f)
     AS cuentas_solo_familia_sin_alumno,
   (SELECT COUNT(*) FROM membresia m WHERE m.rol IN ('RESPONSABLE_SEDE', 'PROFESOR'))
     AS membresias_responsable_o_profesor,
@@ -126,7 +127,7 @@ SELECT
   (SELECT COUNT(*) FROM organizacion o)
     AS organizaciones,
   (SELECT COUNT(*) FROM usuario u JOIN alumno a ON a.id = u.alumno_id
-    WHERE (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))
+    WHERE (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
            AND EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id))
        OR EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id
                     AND m.activa = TRUE AND m.rol IN ('PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR')))
@@ -137,7 +138,7 @@ SELECT
     AS filas_usuario_alumno_r2,
   (SELECT COUNT(*) FROM (
      SELECT u.id AS usuario_id, a.id AS alumno_id FROM usuario u JOIN alumno a ON a.id = u.alumno_id
-     WHERE (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))
+     WHERE (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
             AND EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id))
         OR EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = a.organizacion_id
                      AND m.activa = TRUE AND m.rol IN ('PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR'))

@@ -25,7 +25,7 @@ SELECT
   (SELECT COUNT(*)
      FROM usuario u
      JOIN alumno a ON a.organizacion_id = 1 AND a.activo = TRUE
-                  AND a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))
+                  AND a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
     WHERE EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
                     AND m.rol = 'FAMILIA' AND m.activa = TRUE)
       AND NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
@@ -40,7 +40,7 @@ SELECT
                     AND m.rol = 'FAMILIA' AND m.activa = TRUE)
       AND NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
                         AND m.rol <> 'FAMILIA' AND m.activa = TRUE)
-      AND NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))))
+      AND NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''))
     AS familia_alumnos_vinculo_sin_email,
   (SELECT COUNT(*) FROM grupo g WHERE g.sede_id IS NULL)
     AS grupos_sin_sede,
@@ -49,7 +49,7 @@ SELECT
   (SELECT COUNT(*)
      FROM usuario u
      JOIN alumno a ON a.organizacion_id = 1 AND a.activo = TRUE
-                  AND a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))
+                  AND a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
     WHERE EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
                     AND m.rol = 'FAMILIA' AND m.activa = TRUE)
       AND EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
@@ -64,7 +64,7 @@ SELECT
                     AND m.rol = 'FAMILIA' AND m.activa = TRUE)
       AND EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id AND m.organizacion_id = 1
                     AND m.rol <> 'FAMILIA' AND m.activa = TRUE)
-      AND NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email))))
+      AND NOT (a.email IS NOT NULL AND LOWER(a.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''))
     AS mixtas_alumnos_vinculo_sin_email,
   (SELECT COUNT(*) FROM alumno a WHERE a.sede_principal_id IS NULL)
     AS alumnos_sin_sede_principal,

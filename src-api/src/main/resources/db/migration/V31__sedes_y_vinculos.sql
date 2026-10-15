@@ -39,6 +39,7 @@
 --      EmailUtils.normalizeEmail) contra LOWER(alumno.email) con la colación de la columna. El email del alumno
 --      NO se recorta: un alumno con espacios sobrantes no es visible hoy y no gana acceso (el precheck los
 --      cuenta en emails_alumno_solo_espacios).
+--      El email en blanco (TRIM = '') nunca cuenta como coincidencia, igual que AlumnoAccessControlServiceImpl.
 --      relacion: PROPIO si el alumno tiene 18 años o más hoy, TUTOR si no o sin fecha (D7; informativa).
 --   9. usuario_rol: su FK pasa a ON DELETE CASCADE. El código deja de mapear Usuario.roles (fase 3, entrega 1)
 --      y ya no borra esas filas al borrar un usuario; usuario_rol se borra en V32.
@@ -257,7 +258,7 @@ FROM (
   SELECT u.id AS usuario_id, x.id AS alumno_id
   FROM usuario u
   JOIN alumno x ON x.id = u.alumno_id
-  WHERE (x.email IS NOT NULL AND LOWER(x.email) = LOWER(TRIM(u.email))
+  WHERE (x.email IS NOT NULL AND LOWER(x.email) = LOWER(TRIM(u.email)) AND TRIM(u.email) <> ''
          AND EXISTS (SELECT 1 FROM membresia m
                      WHERE m.usuario_id = u.id
                        AND m.organizacion_id = x.organizacion_id))

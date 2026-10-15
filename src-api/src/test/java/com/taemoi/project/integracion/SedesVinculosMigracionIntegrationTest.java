@@ -225,6 +225,17 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(vinculado(fx.u9Directo, fx.a13));
 	}
 
+	/**
+	 * R1: cuenta con email solo espacios y alumno_id a un alumno de su escuela con email vacío, sin gestión
+	 * (solo FAMILIA activa) -> sin fila: '' = '' no es un vínculo (como en R2). El postcheck no lo cuenta.
+	 */
+	@Test
+	void r1_emailVacioEnAmbosLados_sinFila() {
+		assertFalse(vinculado(fx.u12EmailVacio, fx.a15EmailVacio));
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ?", Integer.class,
+				fx.u12EmailVacio));
+	}
+
 	/** R2: todos los alumnos del email, activos o no, en escuelas con membresía; también membresía inactiva. */
 	@Test
 	void r2_alumnosDelEmailConMembresia_fila() {
@@ -275,10 +286,10 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void precheck_recuentosDeCadaCaso() {
 		Map<String, Object> q1 = precheckAntes.get(0).get(0);
-		assertEquals(6L, numero(q1, "usuarios_con_alumno_id"));
+		assertEquals(7L, numero(q1, "usuarios_con_alumno_id"));
 		assertEquals(0L, numero(q1, "alumno_id_inexistente"));
 		assertEquals(2L, numero(q1, "alumno_id_escuela_sin_membresia"));
-		assertEquals(3L, numero(q1, "alumno_id_email_distinto_familia"));
+		assertEquals(4L, numero(q1, "alumno_id_email_distinto_familia"));
 		assertEquals(1L, numero(q1, "alumno_id_email_distinto_gestion"));
 
 		Map<String, Object> q2 = precheckAntes.get(1).get(0);
@@ -297,7 +308,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 
 		Map<String, Object> q4 = precheckAntes.get(3).get(0);
 		assertEquals(1L, numero(q4, "tutor_email_candidatos"));
-		assertEquals(4L, numero(q4, "cuentas_solo_familia_sin_alumno"));
+		assertEquals(5L, numero(q4, "cuentas_solo_familia_sin_alumno"));
 		assertEquals(1L, numero(q4, "membresias_responsable_o_profesor"));
 		assertEquals(1L, numero(q4, "grupos_nombre_repetido"));
 		assertEquals(3L, numero(q4, "organizaciones"));
@@ -610,6 +621,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 	 * u9 familia org2, alumno_id = a13 (org1, mismo email)          -> no (R3: sin membresía en org1)
 	 * u10 PROFESOR org2                                             -> precheck membresias_responsable_o_profesor
  * u11 ADMINISTRADOR org1 INACTIVA + familia activa, alumno_id = a14 (otro email) -> no (gestor degradado)
+	 * u12 email solo espacios, familia org1, alumno_id = a15 (org1, activo, email '') -> no (email vacío)
 	 * </pre>
 	 */
 	static final class Fixture {
@@ -617,9 +629,9 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		long org3;
 		long disciplina1;
 		long u1Familia, u2Familia, u3Gestor, u4Espacios, u5Inactiva, u6SinMembresia, u7Tutor, u8GestorOtra, u9Directo,
-				u11Degradado;
+				u11Degradado, u12EmailVacio;
 		long a1Propio, a2Hermano, a3Inactivo, a4Otro, a5Propio, a6Ajeno, a7Espacios, a8OtraEscuela, a9, a10, a11Tutelado,
-				a12, a13, a14;
+				a12, a13, a14, a15EmailVacio;
 
 		static Fixture cargar(JdbcTemplate j) {
 			Fixture fx = new Fixture();
@@ -654,6 +666,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 			fx.a12 = alumno(j, 1, "ajeno2@v31.test", true, "DATE_SUB(CURDATE(), INTERVAL 30 YEAR)");
 			fx.a13 = alumno(j, 1, "directo@v31.test", true, "DATE_SUB(CURDATE(), INTERVAL 30 YEAR)");
 			fx.a14 = alumno(j, 1, "otro.degradado@v31.test", true, "DATE_SUB(CURDATE(), INTERVAL 30 YEAR)");
+			fx.a15EmailVacio = alumno(j, 1, "", true, "DATE_SUB(CURDATE(), INTERVAL 30 YEAR)");
 			j.update("""
 					INSERT INTO tutor (organizacion_id, alumno_id, nombre, apellidos, nif, parentesco, email, responsable_legal, orden)
 					VALUES (1, ?, 'Tutor', 'Prueba', NULL, 'MADRE', 'Tutor@v31.test', TRUE, 1)""", fx.a11Tutelado);
@@ -679,6 +692,9 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 			fx.u11Degradado = usuario(j, "degradado@v31.test", fx.a14);
 			membresia(j, fx.u11Degradado, 1, "ADMINISTRADOR", false);
 			membresia(j, fx.u11Degradado, 1, "FAMILIA", true);
+			// Email solo espacios (TRIM = '') con alumno_id a un alumno de email vacío y sin gestión.
+			fx.u12EmailVacio = usuario(j, "   ", fx.a15EmailVacio);
+			membresia(j, fx.u12EmailVacio, 1, "FAMILIA", true);
 			long profesor = usuario(j, "profe@v31.test", null);
 			membresia(j, profesor, fx.org2, "PROFESOR", true);
 			// Filas heredadas de usuario_rol (sin escribirse desde V20).
