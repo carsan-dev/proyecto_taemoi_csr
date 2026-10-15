@@ -56,9 +56,12 @@
 - [ ] **V30 (catálogo visual) va en el despliegue 2, en la misma ejecución que V28/V29 (después de ellas)**,
       o en uno posterior, pero siempre con el código que la usa: la entidad `Tarifa` mapea `tarifa.orden` y
       Hibernate (`ddl-auto=validate`) no arranca sin esa columna, y los listados y PDF muestran `grado.nombre`
-      y `color_1`/`color_2` (sin V30, Taemoi vería los nombres de V23, «Blanco-Amarillo»). Se recomienda el
-      despliegue 2 porque ese código está en la punta de la rama, desde la que se construye el despliegue 2:
-      llevar V28/V29 sin V30 obligaría a construir desde un commit anterior. V30 no tiene guarda ni
+      y `color_1`/`color_2` (sin V30, Taemoi vería los nombres de V23, «Blanco-Amarillo»). Va en el
+      despliegue 2, que NO se construye desde la punta de feature/multi-escuela (lleva V31 y código que la
+      necesita), sino desde `despliegue/fase2-2`: develop con el arreglo de fotos (`7925bb07`) y fusionado
+      `27cc7e19`, último commit anterior a V31. V31 y `1a9af487`, `af0eec8f`, `2ce13224`, `814399b8` van en
+      un despliegue posterior. Las imágenes del servidor deben apuntar a `:develop` o `:sha-<sha7>` (`latest`
+      solo se publica desde main). V30 no tiene guarda ni
       comprobación previa: solo actualiza datos de la organización 1 y añade una columna; no depende de V28/V29
       (usa `grado.codigo`, `sistema_grados` y `tarifa`, de V23/V24). Si falla a medias, `flyway repair` y volver
       a desplegar: cada paso vuelve a comprobar el esquema y los datos. No exige copia propia: la de V28 sirve;
