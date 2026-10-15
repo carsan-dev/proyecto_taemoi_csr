@@ -23,6 +23,7 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -44,6 +45,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * la reanudación tras fallos a medias. Ejecuta también {@code docs/multi-escuela/precheck-v31.sql} (antes y
  * después) y {@code postcheck-v31.sql}.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 

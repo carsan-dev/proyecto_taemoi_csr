@@ -17,6 +17,7 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -33,6 +34,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * el resto por id) y nada más de las otras escuelas; repetible, y un fallo a medias se completa con
  * {@code repair} + {@code migrate}. Todos los datos son sintéticos.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 

@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -29,6 +30,7 @@ import com.taemoi.project.legado.TipoGrado;
  * disciplinas sin grados; se migra a la última versión (la V22 real borra las columnas
  * monodeporte de alumno antes de V23) y se repite V23. V23 solo amplía: ningún grado_id cambia.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CatalogoMigracionIntegrationTest extends MySqlIntegrationTest {
 

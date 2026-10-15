@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -31,6 +32,7 @@ import com.taemoi.project.legado.TipoGrado;
  * código anterior después de V23 (sin disciplina_id) y un producto de examen creado después de
  * V24 (sin clasificar). Después se aplica V26 y se repite.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SwitchGradosMigracionIntegrationTest extends MySqlIntegrationTest {
 
