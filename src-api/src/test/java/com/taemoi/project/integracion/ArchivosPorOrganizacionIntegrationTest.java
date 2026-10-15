@@ -262,6 +262,37 @@ class ArchivosPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(401, estado(get("/imagenes/" + imagenLegado)));
 	}
 
+	@Test
+	void fotoHeredadaConRutaDeOtroEntornoYNombreOriginalSeSirvePorElNombreDeLaRuta() throws Exception {
+		// Como en producción: ruta absoluta del host anterior a Docker (no existe aquí) y nombre = nombre ORIGINAL
+		// de la subida, distinto del fichero guardado; el fichero está en <raiz>/alumnos/<fichero de la ruta>.
+		String fichero = UUID.randomUUID() + "_x.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(fichero), "img-otro-entorno");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("foto original.jpg", "image/webp",
+				"/imagenes/alumnos/" + fichero, "/opt/taemoi/static_resources/imagenes/alumnos/" + fichero)));
+
+		MockHttpServletResponse r = mvc.perform(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenAdmin1)))
+				.andReturn().getResponse();
+		assertEquals(200, r.getStatus());
+		assertEquals("img-otro-entorno", r.getContentAsString());
+		// Escuela activa 2: no se sirve.
+		assertDenegado(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenAdmin2)));
+		assertEquals(401, estado(get("/imagenes/alumnos/" + fichero)));
+		assertDenegado(get("/imagenes/alumnos/" + fichero).cookie(jwt(tokenFamiliaA)));
+
+		// Fila con la misma forma pero de OTRA escuela: la consulta filtrada por escuela no la ve.
+		String deOtraEscuela = UUID.randomUUID() + "_y.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(deOtraEscuela), "img-de-otra-escuela");
+		TenantContext.ejecutarCon(org2, () -> imagenes.save(new Imagen("otra original.jpg", "image/webp",
+				"/imagenes/alumnos/" + deOtraEscuela, "/opt/taemoi/static_resources/imagenes/alumnos/" + deOtraEscuela)));
+		assertDenegado(get("/imagenes/alumnos/" + deOtraEscuela).cookie(jwt(tokenAdmin1)));
+
+		// Fichero en disco sin ninguna fila: no se sirve.
+		String sinFila = UUID.randomUUID() + "_z.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(sinFila), "img-sin-fila");
+		assertDenegado(get("/imagenes/alumnos/" + sinFila).cookie(jwt(tokenAdmin1)));
+	}
+
 	// ------------------------------------------------------------------ públicos
 
 	@Test
