@@ -1,6 +1,5 @@
 package com.taemoi.project.services.impl;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,7 +47,7 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	 * 1. Extrae el email del usuario OAuth2
 	 * 2. Verifica si ya existe un usuario con ese email
 	 * 3. Si no existe, busca todos los alumnos con ese email (puede haber varios)
-	 * 4. Si encuentra alumnos, crea automáticamente un usuario y lo vincula al primer alumno
+	 * 4. Si encuentra alumnos sin cuenta, crea automáticamente un usuario y lo vincula al primero de ellos
 	 *    (los demás alumnos se pueden acceder a través del email compartido)
 	 *
 	 * @param oauth2User El usuario OAuth2 autenticado (de Google).
@@ -64,6 +63,10 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 
 		if (email == null) {
 			throw new IllegalArgumentException("No se pudo obtener el email del proveedor OAuth2");
+		}
+		// Solo un email que Google haya verificado identifica a la persona.
+		if (!emailVerificado(oauth2User.getAttribute("email_verified"))) {
+			throw sinAlumnoConEmail(email);
 		}
 
 		// Verificar si ya existe un usuario con este email
@@ -84,24 +87,19 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 			return usuario;
 		}
 
-		// Buscar TODOS los alumnos con este email (puede haber múltiples)
-		List<Alumno> alumnos = alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email);
-		if (alumnos.isEmpty()) {
-			// No hay ningún alumno con este email, no se puede crear usuario
-			throw new IllegalArgumentException(
-				"No se encontró ningun alumno activo registrado con el email: " + email +
-				". Por favor, contacte con el administrador para registrarse."
-			);
+		// Buscar los alumnos con este email que aún no tienen cuenta. Un alumno ya vinculado lo está a
+		// otra cuenta (con otro email, porque no hay ninguna con este): nunca se devuelve esa cuenta.
+		Optional<Alumno> alumnoSinCuenta = alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email).stream()
+				.filter(alumno -> alumno.getUsuario() == null)
+				.findFirst();
+		if (alumnoSinCuenta.isEmpty()) {
+			// No hay ningún alumno libre con este email, no se puede crear usuario
+			throw sinAlumnoConEmail(email);
 		}
 
-		// Tomar el primer alumno para vincularlo al usuario
+		// Tomar el primer alumno libre para vincularlo al usuario
 		// (Los demás alumnos se accederán a través del email compartido)
-		Alumno primerAlumno = alumnos.get(0);
-
-		// Verificar si el primer alumno ya tiene un usuario asociado
-		if (primerAlumno.getUsuario() != null) {
-			return primerAlumno.getUsuario();
-		}
+		Alumno primerAlumno = alumnoSinCuenta.get();
 
 		// Crear nuevo usuario automáticamente
 		Usuario nuevoUsuario = new Usuario();
@@ -129,6 +127,18 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		alumnoRepository.save(primerAlumno);
 
 		return savedUser;
+	}
+
+	private static boolean emailVerificado(Object emailVerified) {
+		return Boolean.TRUE.equals(emailVerified)
+				|| (emailVerified instanceof String texto && "true".equalsIgnoreCase(texto.trim()));
+	}
+
+	private static IllegalArgumentException sinAlumnoConEmail(String email) {
+		return new IllegalArgumentException(
+			"No se encontró ningun alumno activo registrado con el email: " + email +
+			". Por favor, contacte con el administrador para registrarse."
+		);
 	}
 
 }

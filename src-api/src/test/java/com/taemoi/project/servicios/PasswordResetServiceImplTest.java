@@ -100,6 +100,7 @@ class PasswordResetServiceImplTest {
         String hash = user.getContrasena();
         OAuth2User google = mock(OAuth2User.class);
         when(google.getAttribute("email")).thenReturn(user.getEmail());
+        when(google.getAttribute("email_verified")).thenReturn(true);
         assertSame(user, new OAuth2UserServiceImpl(alumnos, users, encoder, membresias).processOAuth2Login(google, "google"));
         assertEquals(hash, user.getContrasena());
         assertDoesNotThrow(() -> auth.signin(new LoginRequest(user.getEmail(), "Nueva-456!")));
