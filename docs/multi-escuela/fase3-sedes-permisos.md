@@ -146,7 +146,7 @@ con `sede_id` NULL (debe ser 0).
 | Grupos y turnos: crear, editar, asignar alumnos | H | H | N·S | — | — | — |
 | Asistencia (PDF por grupo) | H | H | N·S | N·G | — | — |
 | Convocatorias, aptos, actualizar grado | H | H | N·S (D4) | N·G ver aptos (D5) | F ver (H) | — |
-| Tesorería, cobros, productos del alumno | H | H | — (D4; registrar cobros en efectivo, pendiente) | — | — | — |
+| Tesorería, cobros, productos del alumno | H | H | N·S (D4) | marcar cobros en efectivo (6b) | — | — |
 | Catálogo: productos, tarifas, disciplinas, grados | H | H | lectura | lectura | — | — |
 | Preinscripciones: gestionar | H | H | N·S (por grupo) | — | — | — |
 | Plantillas de preinscripción | H | — | — | — | — | — |
@@ -286,7 +286,11 @@ Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en 
 - D3 (cambia la recomendación): el superadmin tiene **acceso de soporte de solo lectura a todas las
   escuelas**, sin membresía. Cada acceso queda registrado (quién, cuándo, escuela) y lo ve el propietario
   en su registro de acciones; el contrato de encargo con cada escuela lo recoge.
-- D4 (cambia): el responsable de sede gestiona sus sedes **sin tesorería ni cobros**.
+- D4 (cambia de nuevo el 16/10/2026): el responsable de sede gestiona sus sedes **con la tesorería de sus
+  sedes** (cobros, productos del alumno, caja y totales de su sede); propietario y gestor ven todo con totales
+  por sede. Motivo: en Taekwondo Sierra Sur (un club, seis sedes) cada sede cobra lo suyo con tarifas comunes.
+  Caja de sede (entrega 6b): el profesor marca cobros en efectivo de sus alumnos y el dinero lo recoge el
+  responsable de su sede (o el gestor si no hay); se registra la entrega y la diferencia si no cuadra.
 - D5 (cambia): el profesor, además de consulta, asistencia, salud y aptos, **gestiona los grados de sus
   alumnos** (exámenes); sigue sin cobros ni edición de fichas. Comprobar qué genera hoy un cambio de grado
   (productos, convocatorias) antes de abrirlo.
@@ -303,7 +307,7 @@ Despliegue 3 = V31 + entregas 1–9 (pueden ir en varias versiones; V31 va con l
 | 3 | Administrador de plataforma: autoridad, sesión sin membresía, `/api/plataforma/errores`; auditoría del propietario filtrada (D2) | careful | Aislamiento: escuela 2 no ve la 1; plataforma ve ambas; test de arquitectura del repositorio | — |
 | 4 | Frontend auditoría: «Registro de acciones» para el propietario, pantalla de errores para plataforma, sin alerta | medio | Specs de componentes y rutas | **Sí** |
 | 5 | Autoridades nuevas que fallan cerradas, `AlcanceSesion`, bean `@acceso`, test de matriz | careful | Matriz por endpoint y rol; Taemoi: mismas respuestas para los tres roles actuales | — |
-| 6 | Abrir endpoints al responsable de sede con filtro por sede (alumnos/grupos/turnos; preinscripciones/convocatorias; sin tesorería por D4): dos PR | careful | Por módulo: ve lo suyo, 403/vacío en lo ajeno, por id y en listados | — |
+| 6 | Abrir endpoints al responsable de sede con filtro por sede (alumnos/grupos/turnos; preinscripciones/convocatorias; tesorería por sede, D4): tres PR | careful | Por módulo: ve lo suyo, 403/vacío en lo ajeno, por id y en listados | — |
 | 7 | Abrir endpoints al profesor (solo lectura por grupo, asistencia, salud) | careful | Igual que 6 | — |
 | 8 | API de sedes, miembros (rol, cargo, sedes) y asignación de profesores; `GET /api/auth/permisos` | careful | Servicio y WebMvc; D8 | — |
 | 9 | Frontend: sedes, miembros, asignación de profesores, selector de escuela, filtro de sede en alumnos, grupos, preinscripciones, convocatorias y tesorería; vistas de profesor | medio | Specs; e2e por rol | **Sí** (antes de construir) |
