@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { ErrorPlataforma, FiltrosErroresPlataforma } from '../../interfaces/error-plataforma';
+import { ErrorPlataforma, EscuelaPlataforma, FiltrosErroresPlataforma } from '../../interfaces/error-plataforma';
 import { PaginatedResponse } from '../../interfaces/paginated-response';
 import { AuthenticationService } from '../authentication/authentication.service';
 
@@ -18,6 +18,14 @@ export class PlataformaService {
   /** true si la sesión actual es administradora de plataforma; una sola consulta por sesión. */
   esAdminPlataforma(): Observable<boolean> {
     return this.auth.esAdminPlataforma();
+  }
+
+  /** Todas las escuelas (id y nombre), ordenadas por nombre. */
+  escuelas(): Observable<EscuelaPlataforma[]> {
+    return this.http.get<EscuelaPlataforma[]>(`${environment.apiUrl}/plataforma/escuelas`, {
+      withCredentials: true,
+      context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
+    });
   }
 
   errores(filtros: FiltrosErroresPlataforma): Observable<PaginatedResponse<ErrorPlataforma>> {

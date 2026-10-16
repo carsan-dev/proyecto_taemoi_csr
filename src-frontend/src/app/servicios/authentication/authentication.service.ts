@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpContext, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
@@ -67,16 +67,16 @@ export class AuthenticationService {
     if (!this.sondeoPlataforma$) {
       this.sondeoPlataforma$ = this.http
         .get(`${environment.apiUrl}/plataforma/errores`, {
-          params: new HttpParams().set('page', '1').set('size', '1'),
-          withCredentials: true,
-          headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+          // size=1 basta (page=1 es el valor por defecto); withCredentials lo añade credentialsInterceptor.
+          params: { size: 1 },
+          headers: { 'X-Skip-Loading': 'true' },
           context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
         })
         .pipe(
           switchMap(() => of(true)),
           catchError((error: HttpErrorResponse) => {
             // Solo 401/403 es definitivo; un fallo de red o 5xx se reintenta en la próxima llamada.
-            if (error?.status !== 401 && error?.status !== 403) {
+            if (error.status !== 401 && error.status !== 403) {
               this.sondeoPlataforma$ = null;
             }
             return of(false);

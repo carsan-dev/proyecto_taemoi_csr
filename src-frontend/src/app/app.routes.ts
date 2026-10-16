@@ -386,8 +386,9 @@ export const routes: Routes = [
   },
   {
     // Plataforma (todas las escuelas): sin requiredRoles ni catálogo; la sesión puede no tener membresía.
+    // Sin portalContext: solo distingue el portal 'user', y así no suma bytes al bundle inicial (al límite).
     path: 'plataformaErrores',
-    data: { seo: SEO_ROUTES.noIndex, portalContext: 'admin' },
+    data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-errores/plataforma-errores.component').then(m => m.PlataformaErroresComponent),
     canActivate: [plataformaGuard],
   },

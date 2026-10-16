@@ -1,6 +1,11 @@
 import { HeaderComponent } from './header.component';
 import { NgZone } from '@angular/core';
-import { of, Subject } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { BehaviorSubject, of, Subject } from 'rxjs';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
+import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 
 describe('HeaderComponent', () => {
   function createComponent(): HeaderComponent {
@@ -79,5 +84,57 @@ describe('HeaderComponent', () => {
     (component as any).actualizarContextoRuta('/alumnosListar');
 
     expect(component.isUserRoute).toBeFalse();
+  });
+});
+
+describe('HeaderComponent: menú lateral de administración', () => {
+  async function renderizar(esAdminPlataforma: boolean): Promise<HTMLElement> {
+    const authServiceMock = {
+      usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
+      usernameCambio: new BehaviorSubject<string | null>('admin'),
+      rolesCambio: new BehaviorSubject<string[]>(['ROLE_ADMIN']),
+      comprobarLogueado: () => true,
+      getRoles: () => of(['ROLE_ADMIN']),
+      esAdminPlataforma: () => of(esAdminPlataforma),
+      marcarVistaPreferidaSegunRuta: () => undefined,
+      tieneAccesoAdmin: () => true,
+      tieneAccesoUser: () => false,
+      tieneAccesoDual: () => false,
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceMock },
+        { provide: PageScrollService, useValue: { scrollTop: 0 } },
+        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const enlacesMenu = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('#admin-sidebar a.menu-link')).map((a) => a.textContent?.trim());
+
+  it('muestra la sección Superadmin con Errores de plataforma al administrador de plataforma', async () => {
+    const el = await renderizar(true);
+
+    expect(el.querySelector('#admin-sidebar')?.textContent).toContain('Superadmin');
+    const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaErrores"]');
+    expect(enlace?.textContent?.trim()).toBe('Errores de plataforma');
+    expect(enlacesMenu(el)).toContain('Registro de acciones');
+  });
+
+  it('la oculta cuando el sondeo de plataforma es false', async () => {
+    const el = await renderizar(false);
+
+    expect(el.querySelector('#admin-sidebar')?.textContent).not.toContain('Superadmin');
+    expect(el.querySelector('#admin-sidebar a[href="/plataformaErrores"]')).toBeNull();
+    expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 });

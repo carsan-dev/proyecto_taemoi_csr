@@ -4,7 +4,7 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
-import { ErrorPlataforma } from '../../../interfaces/error-plataforma';
+import { ErrorPlataforma, EscuelaPlataforma } from '../../../interfaces/error-plataforma';
 import { PlataformaService } from '../../../servicios/plataforma/plataforma.service';
 import { showErrorToast } from '../../../utils/toast.util';
 import { ventanaUltimosDias } from '../../../utils/ventana-fechas.util';
@@ -26,7 +26,7 @@ export class PlataformaErroresComponent implements OnInit, OnDestroy {
 
   readonly familias: Familia[] = ['5xx', '4xx'];
 
-  escuelas: number[] = [];
+  escuelas: EscuelaPlataforma[] = [];
   filtroEscuela: number | null = null;
   estados: Record<Familia, boolean> = { '5xx': true, '4xx': true };
   filtroDesde: string = '';
@@ -42,6 +42,7 @@ export class PlataformaErroresComponent implements OnInit, OnDestroy {
   totalErrores = 0;
 
   ngOnInit(): void {
+    this.cargarEscuelas();
     this.restablecerFechas();
     this.cargar();
   }
@@ -85,6 +86,14 @@ export class PlataformaErroresComponent implements OnInit, OnDestroy {
       return null;
     }
     return this.estados['5xx'] ? '5xx' : '4xx';
+  }
+
+  /** Nombre de la escuela; "Escuela N" si el backend no lo trae. */
+  nombreEscuela(id: number | null | undefined, nombre?: string | null): string {
+    if (id == null) {
+      return '-';
+    }
+    return nombre || this.escuelas.find((escuela) => escuela.id === id)?.nombre || `Escuela ${id}`;
   }
 
   claseEstado(estado: number | null | undefined): string {
@@ -154,16 +163,28 @@ export class PlataformaErroresComponent implements OnInit, OnDestroy {
     this.totalErrores = 0;
   }
 
-  /** El selector de escuela se construye con las escuelas vistas en los resultados. */
+  /** El selector lista todas las escuelas; si la consulta falla, se queda con las vistas en los resultados. */
+  private cargarEscuelas(): void {
+    this.plataforma.escuelas().subscribe({
+      next: (escuelas) => {
+        const vistas = this.escuelas.filter((vista) => !(escuelas ?? []).some((e) => e.id === vista.id));
+        this.escuelas = [...(escuelas ?? []), ...vistas];
+      },
+      error: () => undefined,
+    });
+  }
+
+  /** Añade al selector las escuelas de los resultados que aún no estén (respaldo si falla la lista completa). */
   private recordarEscuelas(errores: ErrorPlataforma[]): void {
-    const conocidas = new Set(this.escuelas);
+    const nuevas: EscuelaPlataforma[] = [];
     errores.forEach((error) => {
-      if (error.organizacionId != null) {
-        conocidas.add(error.organizacionId);
+      const id = error.organizacionId;
+      if (id != null && !this.escuelas.some((e) => e.id === id) && !nuevas.some((e) => e.id === id)) {
+        nuevas.push({ id, nombre: this.nombreEscuela(id, error.organizacionNombre) });
       }
     });
-    if (conocidas.size !== this.escuelas.length) {
-      this.escuelas = Array.from(conocidas).sort((a, b) => a - b);
+    if (nuevas.length > 0) {
+      this.escuelas = [...this.escuelas, ...nuevas];
     }
   }
 }

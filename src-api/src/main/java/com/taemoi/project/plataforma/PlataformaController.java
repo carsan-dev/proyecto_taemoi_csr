@@ -1,6 +1,7 @@
 package com.taemoi.project.plataforma;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -36,5 +37,11 @@ public class PlataformaController {
 			@RequestParam(defaultValue = "1") Integer page,
 			@RequestParam(defaultValue = "25") Integer size) {
 		return ResponseEntity.ok(errores.buscar(organizacionId, estado, desde, hasta, page, size));
+	}
+
+	/** Todas las escuelas (id y nombre), ordenadas por nombre: el filtro de escuela de la pantalla de errores. */
+	@GetMapping("/escuelas")
+	public ResponseEntity<List<EscuelaPlataformaDTO>> obtenerEscuelas() {
+		return ResponseEntity.ok(errores.escuelas());
 	}
 }
