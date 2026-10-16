@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -24,6 +25,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * teléfonos INT y responsable legal en las columnas heredadas (también solo NIF o en blanco), una
  * segunda escuela y preinscripciones finalizadas (menor y adulto), pendientes y sin alumno.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersonasMigracionIntegrationTest extends MySqlIntegrationTest {
 

@@ -56,6 +56,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
@@ -103,6 +104,9 @@ public class AuthenticationController {
 
 	@Autowired
 	private PasswordResetService passwordResetService;
+
+	@Autowired
+	private AccesoFamiliaService accesoFamilia;
 
 	@Autowired
 	private RegistroService registroService;
@@ -307,20 +311,15 @@ public class AuthenticationController {
 	}
 
 	/**
-	 * Obtiene todos los alumnos asociados al email del usuario autenticado.
-	 * Útil cuando múltiples alumnos (ej. familia) comparten el mismo email.
+	 * Obtiene todos los alumnos que el usuario autenticado ve como familia en la escuela de la sesión
+	 * (p. ej. hermanos). Regla única de {@link AccesoFamiliaService}, para cualquier rol.
 	 *
 	 * @return Lista de DTOs con información de todos los alumnos.
 	 */
 	@GetMapping("/user/alumnos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<AlumnoParaUsuarioDTO>> obtenerTodosLosAlumnosDelUsuario() {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		String email = authentication.getName();
-
-		// Buscar todos los alumnos con el email del usuario
-		List<com.taemoi.project.entities.Alumno> alumnos = alumnoRepository
-				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(email));
+		List<Alumno> alumnos = accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuarioAutenticado());
 
 		// Convertir a DTOs
 		List<AlumnoParaUsuarioDTO> alumnosDTO = alumnos.stream()
@@ -346,8 +345,7 @@ public class AuthenticationController {
 			return null;
 		}
 
-		List<Alumno> alumnosActivos = alumnoRepository
-				.findAllByEmailIgnoreCaseAndActivoTrue(EmailUtils.normalizeEmail(usuario.getEmail()));
+		List<Alumno> alumnosActivos = accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario);
 		if (alumnosActivos.isEmpty()) {
 			return null;
 		}

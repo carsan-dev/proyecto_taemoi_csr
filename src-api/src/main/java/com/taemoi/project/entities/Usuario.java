@@ -5,9 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import org.hibernate.proxy.HibernateProxy;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,9 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -77,17 +73,18 @@ private String contrasena;
 	@Column(name = "ultimo_recordatorio_racha_reset")
 	private LocalDate ultimoRecordatorioRachaReset;
 
+	// Los roles globales heredados (tabla usuario_rol) ya no se mapean (fase 3, entrega 1): los permisos viven en
+	// Membresia por organización desde V20. La tabla sigue hasta V32; desde V31 su FK borra en cascada las filas
+	// de un usuario borrado.
+
 	/**
-	 * Roles globales heredados ({@code usuario_rol}). OBSOLETO desde V20: los permisos viven en
-	 * {@link Membresia} por organización. Ya no se escriben ni se usan para autorizar; se
-	 * mantienen mapeados hasta la contracción para que borrar un usuario borre también sus filas.
+	 * Administrador de plataforma (V31): marca global, no una membresía. Solo se pone con SQL fuera del
+	 * repositorio: sin setter, fuera del JSON y Hibernate nunca la escribe (al insertar vale el FALSE por
+	 * defecto de la columna; al guardar un usuario cargado antes de marcarlo no se pisa la marca).
 	 */
-	@Deprecated
-	@ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
-	@Enumerated(EnumType.STRING)
-	@CollectionTable(name = "usuario_rol")
-	@Column(name = "Roles")
-	private Set<Roles> roles = new HashSet<>();
+	@JsonIgnore
+	@Column(name = "es_admin_plataforma", nullable = false, insertable = false, updatable = false)
+	private Boolean esAdminPlataforma = Boolean.FALSE;
 
 	/** Escuela elegida en el último inicio de sesión o cambio de escuela (V20). */
 	@Column(name = "ultima_organizacion_id")
@@ -176,16 +173,10 @@ private String contrasena;
 		this.contrasena = contrasena;
 	}
 
-	/** @deprecated ver el campo {@code roles}: usar {@code MembresiaService}. */
-	@Deprecated
-	public Set<Roles> getRoles() {
-		return roles;
-	}
-
-	/** @deprecated ver el campo {@code roles}: usar {@code MembresiaService}. */
-	@Deprecated
-	public void setRoles(Set<Roles> roles) {
-		this.roles = roles;
+	/** Administrador de plataforma (V31). Aún no da ninguna autoridad (fase 3, entrega 3). */
+	@JsonIgnore
+	public boolean isEsAdminPlataforma() {
+		return Boolean.TRUE.equals(esAdminPlataforma);
 	}
 
 	public Alumno getAlumno() {

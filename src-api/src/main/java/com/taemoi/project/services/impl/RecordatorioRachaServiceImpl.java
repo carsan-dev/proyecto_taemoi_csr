@@ -19,11 +19,10 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.RecordatorioRachaService;
-import com.taemoi.project.utils.EmailUtils;
 
 @Service
 public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
@@ -32,7 +31,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 	private static final ZoneId RETO_DIARIO_ZONE_ID = ZoneId.of("Europe/Madrid");
 
 	private final UsuarioRepository usuarioRepository;
-	private final AlumnoRepository alumnoRepository;
+	private final AccesoFamiliaService accesoFamilia;
 	private final EmailService emailService;
 
 	@Value("${streak.reminder.enabled:true}")
@@ -47,10 +46,10 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 	private Clock clock = Clock.system(RETO_DIARIO_ZONE_ID);
 
 	public RecordatorioRachaServiceImpl(UsuarioRepository usuarioRepository,
-			AlumnoRepository alumnoRepository,
+			AccesoFamiliaService accesoFamilia,
 			EmailService emailService) {
 		this.usuarioRepository = usuarioRepository;
-		this.alumnoRepository = alumnoRepository;
+		this.accesoFamilia = accesoFamilia;
 		this.emailService = emailService;
 	}
 
@@ -102,7 +101,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 					continue;
 				}
 
-				List<AlumnoRachaEnRiesgo> alumnosEnRiesgo = obtenerAlumnosEnRiesgo(usuario.getEmail(), hoy);
+				List<AlumnoRachaEnRiesgo> alumnosEnRiesgo = obtenerAlumnosEnRiesgo(usuario, hoy);
 				if (alumnosEnRiesgo.isEmpty()) {
 					sinRiesgo++;
 					continue;
@@ -129,13 +128,9 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 				evaluados, enviados, deduplicados, sinRiesgo, errores);
 	}
 
-	private List<AlumnoRachaEnRiesgo> obtenerAlumnosEnRiesgo(String email, LocalDate hoy) {
-		String normalizedEmail = EmailUtils.normalizeEmail(email);
-		if (normalizedEmail == null || normalizedEmail.isBlank()) {
-			return List.of();
-		}
-
-		return alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(normalizedEmail).stream()
+	private List<AlumnoRachaEnRiesgo> obtenerAlumnosEnRiesgo(Usuario usuario, LocalDate hoy) {
+		// Alumnos que la familia ve en la organización activa (regla única de AccesoFamiliaService).
+		return accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario).stream()
 				.map(alumno -> mapearAlumnoEnRiesgo(alumno, hoy))
 				.filter(Objects::nonNull)
 				.sorted(Comparator

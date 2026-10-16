@@ -22,10 +22,10 @@ import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
-import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.MembresiaService;
 
 @Service
@@ -34,15 +34,15 @@ public class MembresiaServiceImpl implements MembresiaService {
 	private final MembresiaRepository membresias;
 	private final OrganizacionRepository organizaciones;
 	private final UsuarioRepository usuarios;
-	private final AlumnoRepository alumnos;
+	private final AccesoFamiliaService accesoFamilia;
 	private final ResolutorOrganizacion resolutor;
 
 	public MembresiaServiceImpl(MembresiaRepository membresias, OrganizacionRepository organizaciones,
-			UsuarioRepository usuarios, AlumnoRepository alumnos, ResolutorOrganizacion resolutor) {
+			UsuarioRepository usuarios, AccesoFamiliaService accesoFamilia, ResolutorOrganizacion resolutor) {
 		this.membresias = membresias;
 		this.organizaciones = organizaciones;
 		this.usuarios = usuarios;
-		this.alumnos = alumnos;
+		this.accesoFamilia = accesoFamilia;
 		this.resolutor = resolutor;
 	}
 
@@ -223,7 +223,8 @@ public class MembresiaServiceImpl implements MembresiaService {
 		if (!RolMembresia.requiereAlumnoActivo(autoridades)) {
 			return true;
 		}
-		return alumnos.contarActivosPorEmailEnOrganizacion(usuario.getEmail(), organizacionId) > 0;
+		// Cuenta solo familia: algún alumno accesible (regla única de AccesoFamiliaService).
+		return accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId);
 	}
 
 	/** Autoridades por organización (ordenadas por id) a partir de las membresías activas. */

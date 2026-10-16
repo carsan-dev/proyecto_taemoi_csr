@@ -208,7 +208,7 @@ public class AccesoArchivos {
 	}
 
 	/** Último segmento de una ruta guardada, aceptando {@code /} y {@code \} como separadores. */
-	private static String ultimoSegmento(String ruta) {
+	static String ultimoSegmento(String ruta) {
 		String normalizada = ruta.trim().replace('\\', '/');
 		return normalizada.substring(normalizada.lastIndexOf('/') + 1);
 	}

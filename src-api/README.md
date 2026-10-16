@@ -148,6 +148,14 @@ cd src-api
 mvn test
 ```
 
+Los tests de migración Flyway (etiqueta JUnit `migracion`, más de la mitad del tiempo) se pueden excluir o aislar:
+
+```bash
+./mvnw verify                              # todo (por defecto)
+./mvnw verify -DexcludedGroups=migracion   # modo rápido, sin migraciones
+./mvnw verify -Dgroups=migracion           # solo migraciones
+```
+
 Ejecutar una clase concreta:
 
 ```bash

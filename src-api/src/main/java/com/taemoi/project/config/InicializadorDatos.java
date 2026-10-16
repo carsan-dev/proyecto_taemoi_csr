@@ -83,6 +83,9 @@ public class InicializadorDatos implements CommandLineRunner {
 	@Autowired
 	private ProductosCatalogoService productosCatalogo;
 
+	@Autowired
+	private com.taemoi.project.services.SedeService sedeService;
+
 	@Value("${app.bootstrap.admin.email:}")
 	private String bootstrapAdminEmail;
 
@@ -193,6 +196,8 @@ public class InicializadorDatos implements CommandLineRunner {
 
 			// Asignar deporte basado en el tipo del grupo
 			nuevoGrupo.setDisciplina(catalogoDisciplinas.obtenerPorCodigo(determinarDeportePorTipo(tipo)));
+			// Sede (V31): la única sede activa de la escuela, como un grupo creado desde la API.
+			sedeService.sedePorDefecto().ifPresent(nuevoGrupo::setSedeId);
 
 			return grupoRepository.save(nuevoGrupo);
 		});

@@ -275,8 +275,13 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 	void usuarioMultiEscuela_enLaSegundaComoFamilia_sinTarifasYSoloSusFilas() throws Exception {
 		Usuario multi = crearUsuario("cat-multi-" + sufijo + "@example.test");
 		dar(multi, ORG1, RolMembresia.PROPIETARIO);
-		alumnoConEmail(org2, multi.getEmail());
+		long alumnoOrg2 = alumnoConEmail(org2, multi.getEmail());
 		dar(multi, org2, RolMembresia.FAMILIA);
+		// La segunda escuela no tiene comportamiento_legado_taemoi: la familia necesita el vínculo explícito.
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')
+				""", multi.getId(), alumnoOrg2, org2);
 		String tokenOrg2 = cambiarA(login(multi.getEmail()), org2);
 
 		JsonNode cat = leer(get("/api/catalogo").cookie(jwt(tokenOrg2)));
@@ -441,8 +446,8 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 		alumnoConEmail(ORG1, email);
 	}
 
-	private void alumnoConEmail(long organizacion, String email) {
-		TenantContext.ejecutarCon(organizacion, () -> {
+	private long alumnoConEmail(long organizacion, String email) {
+		return TenantContext.calcularCon(organizacion, () -> {
 			Alumno alumno = new Alumno();
 			alumno.setNombre("Familia " + sufijo);
 			alumno.setApellidos("PRUEBA CATALOGO");
@@ -453,7 +458,7 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 			alumno.setActivo(true);
 			alumno.setAutorizacionWeb(true);
 			alumno.setEmail(email);
-			alumnos.save(alumno);
+			return alumnos.save(alumno).getId();
 		});
 	}
 

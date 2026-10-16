@@ -29,6 +29,7 @@ import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
@@ -48,6 +49,9 @@ class AuthenticationControllerTest {
 
 	@Mock
 	private AlumnoRepository alumnoRepository;
+
+	@Mock
+	private AccesoFamiliaService accesoFamilia;
 
 	@Mock
 	private PasswordResetService passwordResetService;
@@ -75,7 +79,7 @@ class AuthenticationControllerTest {
 		Usuario usuario = crearUsuario(99L, email, asociadoActivo);
 
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
-		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email))
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
 				.thenReturn(List.of(otroActivo, asociadoActivo));
 
 		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();
@@ -97,7 +101,7 @@ class AuthenticationControllerTest {
 		Usuario usuario = crearUsuario(100L, email, asociadoInactivo);
 
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
-		when(alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email))
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
 				.thenReturn(List.of(activo));
 
 		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();

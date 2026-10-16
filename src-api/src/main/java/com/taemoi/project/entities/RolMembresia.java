@@ -53,7 +53,7 @@ public enum RolMembresia {
 
 	/**
 	 * Regla de acceso heredada: una cuenta que solo es familia (sin rol de gestión) necesita
-	 * al menos un alumno activo con su email en la escuela.
+	 * al menos un alumno accesible en la escuela ({@code AccesoFamiliaService.tieneAlgunoAccesible}).
 	 */
 	public static boolean requiereAlumnoActivo(Set<Roles> autoridades) {
 		return autoridades.contains(Roles.ROLE_USER)

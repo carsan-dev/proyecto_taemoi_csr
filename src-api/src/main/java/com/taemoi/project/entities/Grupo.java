@@ -49,6 +49,14 @@ public class Grupo extends EntidadOrganizacion {
 	@NotNull(message = "El deporte del grupo no puede ser nulo")
 	private Disciplina disciplina;
 
+	/**
+	 * Sede del grupo (V31; NULL admitido hasta V32). Solo el id, fuera del JSON: las respuestas de la API no
+	 * cambian. Al crear un grupo sin sede se usa la única sede activa de la escuela ({@code SedeService}).
+	 */
+	@JsonIgnore
+	@Column(name = "sede_id")
+	private Long sedeId;
+
 	// Rango de edad personalizado (opcional)
 	@Column(name = "rango_edad_min")
 	private Integer rangoEdadMin;
@@ -101,6 +109,15 @@ public class Grupo extends EntidadOrganizacion {
 
 	public void setDisciplina(Disciplina disciplina) {
 		this.disciplina = disciplina;
+	}
+
+	@JsonIgnore
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
 	}
 
 	public Integer getRangoEdadMin() {

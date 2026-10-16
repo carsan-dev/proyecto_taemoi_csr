@@ -419,7 +419,21 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				String.class, usuarioId, org2));
 		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
 				usuarioId));
-		assertEquals(org2, jwtService.verificar(login(email)).organizacionId());
+
+		// Fase 3: la escuela 2 no tiene comportamiento_legado_taemoi, así que solo el vínculo explícito
+		// (usuario_alumno) da acceso de familia. Desde la entrega 2b el registro escribe esa fila (origen REGISTRO;
+		// la relación por edad se prueba en AltasFamiliaUsuarioAlumnoIntegrationTest) y la cuenta entra y ve su
+		// alumno sin nada más.
+		assertEquals(List.of(org2 + ":REGISTRO"), jdbc.queryForList("""
+				SELECT CONCAT(organizacion_id, ':', origen) FROM usuario_alumno
+				WHERE usuario_id = ? AND alumno_id = ?
+				""", String.class, usuarioId, alumnoId));
+		String sesion = login(email);
+		assertEquals(org2, jwtService.verificar(sesion).organizacionId());
+		mvc.perform(get("/api/auth/user/alumnos").cookie(jwt(sesion)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id").value(alumnoId));
 	}
 
 	@Test

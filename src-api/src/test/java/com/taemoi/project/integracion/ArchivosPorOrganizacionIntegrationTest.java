@@ -293,6 +293,41 @@ class ArchivosPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertDenegado(get("/imagenes/alumnos/" + sinFila).cookie(jwt(tokenAdmin1)));
 	}
 
+	@Test
+	void fotoHeredadaNoDaAccesoAFicherosSinFilaQueSoloCoincidenEnParteDelNombre() throws Exception {
+		String otroEntorno = "/opt/taemoi/static_resources/imagenes/alumnos/";
+		String id = UUID.randomUUID().toString();
+
+		// Fila de la escuela 1 cuya ruta termina en "<id>_x_"; en disco hay un fichero SIN fila cuyo nombre
+		// empieza igual ("<id>_x_foto.webp"): no se sirve.
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("foto.jpg", "image/webp",
+				"/imagenes/alumnos/" + id + "_x_", otroEntorno + id + "_x_")));
+		String empiezaIgual = id + "_x_foto.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(empiezaIgual), "img-empieza-igual");
+		assertDenegado(get("/imagenes/alumnos/" + empiezaIgual).cookie(jwt(tokenAdmin1)));
+
+		// Fila cuya ruta TERMINA con el nombre de un fichero sin fila (la consulta por sufijo la encuentra):
+		// su propio fichero se sirve, el del sufijo no.
+		String sufijo = UUID.randomUUID() + "_s.webp";
+		String conPrefijo = "pre" + sufijo;
+		escribir(IMAGENES.resolve("alumnos").resolve(conPrefijo), "img-con-prefijo");
+		escribir(IMAGENES.resolve("alumnos").resolve(sufijo), "img-sufijo-sin-fila");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("original.jpg", "image/webp",
+				"/imagenes/alumnos/" + conPrefijo, otroEntorno + conPrefijo)));
+		assertEquals(200, estado(get("/imagenes/alumnos/" + conPrefijo).cookie(jwt(tokenAdmin1))));
+		assertDenegado(get("/imagenes/alumnos/" + sufijo).cookie(jwt(tokenAdmin1)));
+
+		// "_" pedido no actúa como comodín: la fila "<id2>Zw.webp" no autoriza el fichero sin fila "<id2>_w.webp".
+		String id2 = UUID.randomUUID().toString();
+		String deLaFila = id2 + "Zw.webp";
+		String comodin = id2 + "_w.webp";
+		escribir(IMAGENES.resolve("alumnos").resolve(deLaFila), "img-de-la-fila");
+		escribir(IMAGENES.resolve("alumnos").resolve(comodin), "img-comodin-sin-fila");
+		TenantContext.ejecutarCon(ORG1, () -> imagenes.save(new Imagen("otra.jpg", "image/webp",
+				"/imagenes/alumnos/" + deLaFila, otroEntorno + deLaFila)));
+		assertDenegado(get("/imagenes/alumnos/" + comodin).cookie(jwt(tokenAdmin1)));
+	}
+
 	// ------------------------------------------------------------------ públicos
 
 	@Test

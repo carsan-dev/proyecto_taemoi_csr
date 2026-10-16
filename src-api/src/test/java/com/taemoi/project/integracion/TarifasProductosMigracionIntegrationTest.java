@@ -20,6 +20,7 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -38,6 +39,7 @@ import com.taemoi.project.legado.TipoTarifa;
  * productos desconocidos, inscripciones con cada {@link TipoTarifa} y una segunda organización.
  * Se migra a la última versión y se repite V24. V24 solo amplía.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TarifasProductosMigracionIntegrationTest extends MySqlIntegrationTest {
 

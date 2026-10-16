@@ -15,6 +15,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -29,6 +30,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * columnas de deporte único rellenas (y la clave ajena de grado_id con un nombre heredado, como
  * en las bases anteriores a Flyway), y migración a la última versión.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AlumnoMonodeporteMigracionIntegrationTest extends MySqlIntegrationTest {
 

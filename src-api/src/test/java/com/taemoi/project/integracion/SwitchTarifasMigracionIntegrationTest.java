@@ -15,6 +15,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -30,6 +31,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * competidor creada al vuelo) y una variante de nombre. Después se aplica V27, se ejecuta
  * docs/multi-escuela/postcheck-v27.sql y se repite V27.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SwitchTarifasMigracionIntegrationTest extends MySqlIntegrationTest {
 

@@ -35,6 +35,7 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.GrupoService;
+import com.taemoi.project.services.SedeService;
 
 import jakarta.transaction.Transactional;
 
@@ -71,6 +72,9 @@ public class GrupoServiceImpl implements GrupoService {
 
 	@Autowired
 	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
+
+	@Autowired
+	private SedeService sedeService;
 
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
@@ -110,6 +114,7 @@ public class GrupoServiceImpl implements GrupoService {
 	@Transactional
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
+		asignarSedePorDefecto(grupo);
 		grupo = grupoRepository.save(grupo);
 		return convertirEntidadADTO(grupo);
 	}
@@ -132,11 +137,23 @@ public class GrupoServiceImpl implements GrupoService {
 			grupo.setNombre(grupoDTO.getNombre());
 			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
 			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
+			asignarSedePorDefecto(grupo);
 			grupo = grupoRepository.save(grupo);
 
 			return convertirEntidadADTO(grupo);
 		} else {
 			return null;
+		}
+	}
+
+	/**
+	 * La API de grupos no pide sede (fase 3, entrega 1): un grupo sin sede recibe la única sede activa de la
+	 * escuela (Taemoi: «Umbrete»). Con varias o ninguna, queda sin sede hasta que la API permita elegirla. Un
+	 * grupo que ya tiene sede la conserva.
+	 */
+	private void asignarSedePorDefecto(Grupo grupo) {
+		if (grupo.getSedeId() == null) {
+			sedeService.sedePorDefecto().ifPresent(grupo::setSedeId);
 		}
 	}
 

@@ -69,10 +69,13 @@ class UsuarioSinSecretosEnJsonIntegrationTest extends MySqlIntegrationTest {
 	private static final String CLAVE = "Clave-Segura-123";
 	private static final List<String> CLAVES_PROHIBIDAS = List.of(
 			"contrasena", "password", "resetTokenHash", "resetTokenExpiresAt");
-	/** Forma JSON no sensible del usuario embebido, que debe mantenerse idéntica. */
+	/**
+	 * Forma JSON no sensible del usuario embebido, que debe mantenerse idéntica. Sin "roles": V31 quitó
+	 * esa relación de Usuario (las autoridades salen de las membresías y siguen en "authorities").
+	 */
 	private static final Set<String> CLAVES_USUARIO_ESPERADAS = new TreeSet<>(Set.of(
 			"id", "nombre", "apellidos", "email", "authProvider", "recordatorioRachaEmailHabilitado",
-			"ultimoRecordatorioRachaReset", "roles", "authorities", "username", "accountNonExpired",
+			"ultimoRecordatorioRachaReset", "authorities", "username", "accountNonExpired",
 			"accountNonLocked", "credentialsNonExpired", "enabled"));
 
 	@Autowired MockMvc mvc;

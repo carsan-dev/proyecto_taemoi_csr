@@ -17,23 +17,24 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
-import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.impl.MembresiaServiceImpl;
 
 /** Traducción de roles y regla de elección de escuela al iniciar sesión. */
 class MembresiaServiceImplTest {
 
 	private final MembresiaRepository repo = mock(MembresiaRepository.class);
-	private final AlumnoRepository alumnos = mock(AlumnoRepository.class);
+	private final AccesoFamiliaService acceso = mock(AccesoFamiliaService.class);
 	private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
 	private final List<Membresia> activas = new ArrayList<>();
 	private MembresiaServiceImpl servicio;
@@ -41,7 +42,7 @@ class MembresiaServiceImplTest {
 
 	@BeforeEach
 	void setUp() {
-		servicio = new MembresiaServiceImpl(repo, mock(OrganizacionRepository.class), usuarios, alumnos,
+		servicio = new MembresiaServiceImpl(repo, mock(OrganizacionRepository.class), usuarios, acceso,
 				new ResolutorOrganizacion(1L));
 		usuario = new Usuario();
 		usuario.setId(10L);
@@ -90,8 +91,8 @@ class MembresiaServiceImplTest {
 	void familiaSinAlumnoActivoNoCuentaComoEscuelaValida() {
 		activas.add(new Membresia(10L, 2L, RolMembresia.FAMILIA));
 		activas.add(new Membresia(10L, 4L, RolMembresia.FAMILIA));
-		when(alumnos.contarActivosPorEmailEnOrganizacion("persona@example.test", 2L)).thenReturn(0L);
-		when(alumnos.contarActivosPorEmailEnOrganizacion("persona@example.test", 4L)).thenReturn(2L);
+		when(acceso.tieneAlgunoAccesible(usuario, 2L)).thenReturn(false);
+		when(acceso.tieneAlgunoAccesible(usuario, 4L)).thenReturn(true);
 		usuario.setUltimaOrganizacionId(2L);
 
 		assertEquals(Optional.of(4L), servicio.elegirOrganizacionParaLogin(usuario));
@@ -103,7 +104,38 @@ class MembresiaServiceImplTest {
 		activas.add(new Membresia(10L, 2L, RolMembresia.ADMINISTRADOR));
 
 		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
-		verify(alumnos, never()).contarActivosPorEmailEnOrganizacion(any(), anyLong());
+		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
+	}
+
+	/**
+	 * La puerta de una cuenta solo familia la decide la regla única de AccesoFamiliaService (email normalizado,
+	 * guard de email en blanco y vínculos: AccesoFamiliaServiceImplTest y AccesoFamiliaEquivalenciaIntegrationTest).
+	 */
+	@Test
+	void familiaEntraSoloSiElServicioCentralLeDaAlgunAlumno() {
+		ReflectionTestUtils.setField(usuario, "email", " Persona@Example.test ");
+		activas.add(new Membresia(10L, 2L, RolMembresia.FAMILIA));
+		when(repo.findRolesActivos(10L, 2L)).thenReturn(List.of(RolMembresia.FAMILIA));
+
+		when(acceso.tieneAlgunoAccesible(usuario, 2L)).thenReturn(false);
+		assertTrue(servicio.elegirOrganizacionParaLogin(usuario).isEmpty());
+		assertFalse(servicio.puedeEntrarEn(usuario, 2L));
+
+		when(acceso.tieneAlgunoAccesible(usuario, 2L)).thenReturn(true);
+		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
+		assertTrue(servicio.puedeEntrarEn(usuario, 2L));
+	}
+
+	@Test
+	void gestionConEmailEnBlancoSigueEntrando() {
+		ReflectionTestUtils.setField(usuario, "email", "");
+		activas.add(new Membresia(10L, 2L, RolMembresia.PROPIETARIO));
+		activas.add(new Membresia(10L, 3L, RolMembresia.ADMINISTRADOR));
+		when(repo.findRolesActivos(10L, 3L)).thenReturn(List.of(RolMembresia.ADMINISTRADOR));
+
+		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario), "ADMIN (PROPIETARIO)");
+		assertTrue(servicio.puedeEntrarEn(usuario, 3L), "MANAGER (ADMINISTRADOR)");
+		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
 	@Test

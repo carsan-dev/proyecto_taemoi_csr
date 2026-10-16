@@ -208,9 +208,17 @@ propietario ve el registro de su escuela sin ellos (`AuditoriaController` filtra
 Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en la escuela de la sesión
 (igual que hoy, «activo» se comprueba al leer). Reglas de V31:
 
-- **R1 (vínculo directo):** `usuario.alumno_id` existente → fila si el email del alumno coincide
-  (`LOWER(TRIM())`) o si el usuario tiene membresía de gestión en esa escuela. Si es solo familia y el email
-  no coincide, no se crea (hoy no le da acceso) y sale en el precheck.
+- **R1 (vínculo directo):** `usuario.alumno_id` existente → fila si el email del alumno coincide (y el
+  usuario tiene alguna membresía en esa escuela, R3) o si el usuario tiene membresía de gestión **activa** en
+  esa escuela. Si es solo familia y el email no coincide, no se crea (hoy no le da acceso) y sale en el
+  precheck. Una membresía de gestión inactiva no cuenta: la pantalla de roles degrada desactivándola y solo
+  las activas dan autoridades, así que un gestor degradado ya no ve ese alumno.
+- **Comparación de email (implementada en V31, aceptada 15/10/2026):** email de la cuenta con `TRIM` +
+  `LOWER` (como `EmailUtils.normalizeEmail`) contra `LOWER(alumno.email)` **sin** `TRIM`, con la colación de
+  la columna: exactamente la comparación del acceso de familia de hoy (`existsByIdAndEmailIgnoreCaseAndActivoTrue`,
+  `contarActivosPorEmailEnOrganizacion`). Recortar también el email del alumno daría acceso a alumnos con
+  espacios sobrantes que hoy no son visibles; el precheck los cuenta (`alumnos_email_solo_espacios`) para
+  corregirlos a mano.
 - **R2 (email):** cada alumno, activo o no, cuyo email normalizado sea el de una cuenta con alguna membresía
   (activa o no) en la escuela del alumno.
 - **R3:** emails que coinciden con alumnos de una escuela sin membresía → sin fila; solo informe.
@@ -218,8 +226,19 @@ Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en 
 - **`relacion`:** `PROPIO` si el alumno tiene 18 años o más hoy, `TUTOR` si no o sin fecha (D7). Solo
   informativa en esta fase.
 - Altas nuevas: registro y Google escriben `usuario_alumno` (y `alumno_id` hasta V32); Google vincula
-  todos los alumnos del email, no solo el primero.
+  todos los alumnos del email **que no tengan ya otra cuenta**, no solo el primero (decisión del
+  propietario, 15/10/2026, opción A: un alumno ya vinculado a otra cuenta solo se comparte con un
+  vínculo MANUAL que crea la gestión).
 - Cambio de email del alumno o alta de un hermano en Taemoi: ver D6.
+- **Gestor degradado después de V31:** una fila creada por R1 para un gestor activo (alumno de otro email)
+  deja de corresponder a un acceso de hoy si después se le degrada (membresía de gestión desactivada). La
+  entrega 2 debe revocarla o ignorarla en ese caso (p. ej. al quitar la membresía de gestión, o no
+  contando filas R1 de alumnos de otro email sin gestión activa), y la resincronización R1 de V32 debe
+  seguir la misma regla (gestión activa).
+- **Integridad entre escuelas (entregas 6–8):** `asignacion_profesor` y `membresia_sede` no son
+  `@TenantId` y la base solo tiene FK simples. El servicio debe comprobar al escribir que
+  `asignacion_profesor.organizacion_id` es la organización del grupo (y de la membresía del profesor) y que
+  la sede de cada `membresia_sede` pertenece a la organización de la membresía.
 
 ## 6. Cambios visibles para Taemoi
 

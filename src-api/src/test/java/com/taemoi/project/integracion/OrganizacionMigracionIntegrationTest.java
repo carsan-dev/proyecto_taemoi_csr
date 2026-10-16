@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -26,6 +27,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * contenedor, sin tocar el de los demás tests) hasta V17, se insertan filas representativas,
  * se migra a la última versión y se comprueba el resultado en information_schema.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OrganizacionMigracionIntegrationTest extends MySqlIntegrationTest {
 

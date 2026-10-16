@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -24,6 +25,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * V20 (membresia) sobre usuarios y roles con la forma de producción: se migra un esquema propio
  * hasta V19, se cargan usuario/usuario_rol, se migra a la última versión y se comprueba el relleno.
  */
+@Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 
@@ -60,7 +62,7 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("30", jdbc.queryForObject(
+		assertEquals("31", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
 	}
