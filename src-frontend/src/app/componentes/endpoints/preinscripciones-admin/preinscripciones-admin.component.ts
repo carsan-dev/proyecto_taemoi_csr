@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import Swal from 'sweetalert2';
-import { PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
+import Swal, { SweetAlertOptions } from 'sweetalert2';
+import { MOTIVO_CANCELACION_MAX, MOTIVO_CANCELACION_POR_DEFECTO, PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
+import { FechaApiPipe, diaApi } from '../../../utils/fecha-api';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
@@ -13,7 +14,7 @@ import { CatalogoTarifa } from '../../../features/catalogo/catalogo.models';
 import { cuantiaEstandar } from '../../../features/catalogo/catalogo-reglas';
 import { tarifaInicialPreinscripcion } from '../../../features/catalogo/legado-taemoi';
 
-@Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent,SkeletonCardComponent],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
+@Component({selector:'app-preinscripciones-admin',standalone:true,imports:[CommonModule,FormsModule,PaginacionComponent,SkeletonCardComponent,FechaApiPipe],templateUrl:'./preinscripciones-admin.component.html',styleUrl:'./preinscripciones-admin.component.scss'})
 export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   readonly catalogo=inject(CatalogoService);
   items:any[]=[]; cargando=true; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
@@ -84,7 +85,9 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   private async confirmarSalida(){if(!this.dirty)return true;const r=await Swal.fire({title:'Cambios sin guardar',text:'Perderás los cambios realizados.',icon:'warning',showCancelButton:true,confirmButtonText:'Descartar cambios',cancelButtonText:'Seguir editando'});return r.isConfirmed;}
   @HostListener('window:beforeunload',['$event']) antesDeSalir(e:BeforeUnloadEvent){if(this.dirty)e.preventDefault();}
 
-  async cancelar(){if(!this.seleccion)return;const r=await Swal.fire({title:'¿Cancelar preinscripción?',text:`Se cancelará la solicitud ${this.seleccion.referencia}.`,icon:'warning',showCancelButton:true,confirmButtonText:'Sí, cancelar',cancelButtonText:'Volver',confirmButtonColor:'#a52229'});if(!r.isConfirmed)return;this.api.cancelar(this.seleccion.referencia).subscribe({next:()=>{showSuccessToast('Preinscripción cancelada.');this.cerrarDetalle();this.buscar();},error:e=>showErrorToast(e?.error?.mensaje||'No se pudo cancelar la preinscripción.')});}
+  async cancelar(){if(!this.seleccion)return;const r=await Swal.fire(this.dialogoCancelacion(this.seleccion.referencia,this.seleccion.email));if(!r.isConfirmed)return;this.api.cancelar(this.seleccion.referencia,String(r.value??'')).subscribe({next:()=>{showSuccessToast('Preinscripción cancelada.');this.cerrarDetalle();this.buscar();},error:e=>showErrorToast(e?.error?.mensaje||'No se pudo cancelar la preinscripción.')});}
+  /** Motivo opcional: se envía lo escrito o vacío (el backend aplica el de por defecto). La nota y el contador se montan con textContent. */
+  private dialogoCancelacion(referencia:string,email?:string):SweetAlertOptions{return {title:'¿Cancelar preinscripción?',text:`Se cancelará la solicitud ${referencia} y se avisará a la familia por correo.`,icon:'warning',input:'textarea',inputLabel:'Motivo (opcional)',inputPlaceholder:MOTIVO_CANCELACION_POR_DEFECTO,inputAttributes:{maxlength:String(MOTIVO_CANCELACION_MAX)},showCancelButton:true,confirmButtonText:'Cancelar y avisar',cancelButtonText:'Volver',confirmButtonColor:'#a52229',didOpen:(popup:HTMLElement)=>{const campo=popup.querySelector<HTMLTextAreaElement>('textarea.swal2-textarea');if(!campo)return;const ayuda=document.createElement('div');ayuda.className='swal2-motivo-ayuda';const nota=document.createElement('p');nota.id='swal2-motivo-nota';nota.textContent='Si lo dejas vacío se enviará el motivo por defecto.'+(email?` El aviso se enviará a ${email}.`:'');const contador=document.createElement('span');contador.setAttribute('aria-live','polite');const contar=()=>contador.textContent=`${campo.value.length}/${MOTIVO_CANCELACION_MAX}`;contar();ayuda.append(nota,contador);campo.insertAdjacentElement('afterend',ayuda);campo.setAttribute('aria-describedby',nota.id);campo.addEventListener('input',contar);}};}
   async eliminar(){if(!this.puedeEliminar)return;const referencia=this.seleccion.referencia;const r=await Swal.fire({title:'Eliminar definitivamente',html:`<p>Se eliminarán la solicitud <strong>${referencia}</strong>, sus datos personales, la firma y el PDF.</p><p>Escribe la referencia para confirmar:</p>`,input:'text',inputPlaceholder:referencia,icon:'error',showCancelButton:true,confirmButtonText:'Eliminar definitivamente',cancelButtonText:'Volver',confirmButtonColor:'#a52229',preConfirm:valor=>{if(valor?.trim().toUpperCase()!==referencia)return Swal.showValidationMessage('La referencia no coincide.');return valor;}});if(!r.isConfirmed)return;this.api.eliminar(referencia).subscribe({next:()=>{showSuccessToast('Preinscripción eliminada definitivamente.');this.cerrarDetalle();this.buscar();},error:e=>showErrorToast(e?.error?.mensaje||'No se pudo eliminar la preinscripción.')});}
   reenviar(){if(!this.seleccion)return;this.api.reenviar(this.seleccion.referencia).subscribe({next:()=>showSuccessToast('Solicitud original reenviada correctamente.'),error:e=>showErrorToast(e?.error?.mensaje||'No se pudo reenviar la solicitud original.')});}
   reenviarCambioTurnos(){if(!this.puedeReenviarCambioTurnos)return;this.api.reenviarCambioTurnos(this.seleccion.referencia).subscribe({next:()=>{showSuccessToast('Reenvío del aviso de cambio solicitado.');this.cerrarDetalle();this.buscar();},error:(e:any)=>showErrorToast(e?.error?.mensaje||'No se pudo reenviar el aviso de cambio.')});}
@@ -98,15 +101,17 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   get camposAplicables(){return this.camposComparables.filter(c=>c.clave!=='EMAIL'&&(!c.soloMenor||this.esMenorSeleccionado)&&(c.clave!=='NIF'||this.tieneValor(this.seleccion?.dni))&&(c.clave!=='TELEFONO2'||this.tieneValor(this.seleccion?.telefono2)));}
   hayDiferencia(c:any){const actual=this.valorComparable(this.alumnoSeleccionado?.[c.alumno],c.clave);const recibido=this.valorComparable(this.valorPreinscripcion(c),c.clave);return actual!==recibido;}
   valorPreinscripcion(c:any){return c.clave==='TIENE_DISCAPACIDAD'?(this.seleccion?.tieneDiscapacidad??this.discapacidadHistorica):this.seleccion?.[c.pre];}
-  mostrarValor(v:any){if(v===true)return 'Sí';if(v===false)return 'No';return v??'Sin dato';}
-  private valorComparable(v:any,campo:string){if(v==null)return '';if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='boolean')return v?'true':'false';const texto=String(v).trim().toLowerCase();if(['TELEFONO','TELEFONO2'].includes(campo)){const digitos=texto.replace(/\D/g,'');if(digitos.length===13&&digitos.startsWith('0034'))return digitos.slice(4);return digitos.length===11&&digitos.startsWith('34')?digitos.slice(2):digitos;}return /^\d{4}-\d{2}-\d{2}/.test(texto)?texto.slice(0,10):texto.replace(/\s+/g,' ');}
+  mostrarValor(v:any,campo?:string){if(campo==='FECHA_NACIMIENTO'&&v!=null){const dia=diaApi(v);if(dia)return dia.split('-').reverse().join('/');}if(v===true)return 'Sí';if(v===false)return 'No';return v??'Sin dato';}
+  /** FECHA_NACIMIENTO llega como [a,m,d] (preinscripción) o en ms (ficha): se compara el día, sin hora ni zona. */
+  private valorComparable(v:any,campo:string){if(v==null)return '';if(campo==='FECHA_NACIMIENTO')return diaApi(v)??String(v);if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='boolean')return v?'true':'false';const texto=String(v).trim().toLowerCase();if(['TELEFONO','TELEFONO2'].includes(campo)){const digitos=texto.replace(/\D/g,'');if(digitos.length===13&&digitos.startsWith('0034'))return digitos.slice(4);return digitos.length===11&&digitos.startsWith('34')?digitos.slice(2):digitos;}return /^\d{4}-\d{2}-\d{2}/.test(texto)?texto.slice(0,10):texto.replace(/\s+/g,' ');}
   get requiereDatosDeporte(){return this.accionAlumno==='CREAR_NUEVO'||(this.accionAlumno==='VINCULAR_EXISTENTE'&&this.alumnoSeleccionado?.requiereDatosDeporte);}
-  get esMenorSeleccionado(){const nacimiento=new Date(this.seleccion?.fechaNacimiento);if(Number.isNaN(nacimiento.getTime()))return false;const hoy=new Date();let edad=hoy.getFullYear()-nacimiento.getFullYear();if(hoy.getMonth()<nacimiento.getMonth()||(hoy.getMonth()===nacimiento.getMonth()&&hoy.getDate()<nacimiento.getDate()))edad--;return edad<18;}
+  /** Edad por año/mes/día de diaApi: la API envía [a,m,d] y new Date(array) no es portable (Safari/Firefox). */
+  get esMenorSeleccionado(){const dia=diaApi(this.seleccion?.fechaNacimiento);if(!dia)return false;const [a,m,d]=dia.split('-').map(Number);const hoy=new Date();let edad=hoy.getFullYear()-a;if(hoy.getMonth()+1<m||(hoy.getMonth()+1===m&&hoy.getDate()<d))edad--;return edad<18;}
   get requiereGrado(){return this.catalogo.tieneGrados(this.seleccion?.deporte);}
   /** D7/D8: tarifas que admite la disciplina de la solicitud, en orden del catálogo (se muestra `nombre`, se envía `codigo`). */
   get tarifasDisponibles():CatalogoTarifa[]{return this.catalogo.tarifasDe(this.seleccion?.deporte);}
   /** D9: preselección de Taemoi (legado-taemoi); otras escuelas, ninguna. */
-  private tarifaInicial(){const deporte=this.seleccion?.deporte;return tarifaInicialPreinscripcion(this.catalogo.esLegadoTaemoi(),deporte,this.seleccion?.fechaNacimiento,this.catalogo.tarifasDe(deporte))??'';}
+  private tarifaInicial(){const deporte=this.seleccion?.deporte;return tarifaInicialPreinscripcion(this.catalogo.esLegadoTaemoi(),deporte,diaApi(this.seleccion?.fechaNacimiento),this.catalogo.tarifasDe(deporte))??'';}
   /** La tarifa elegida pide rol familiar / grupo familiar (banderas del catálogo). */
   get requiereRolFamiliar(){return this.catalogo.tarifa(this.datosAlta.tipoTarifa)?.requiereRolFamiliar===true;}
   get requiereGrupoFamiliar(){return this.catalogo.tarifa(this.datosAlta.tipoTarifa)?.requiereGrupoFamiliar===true;}

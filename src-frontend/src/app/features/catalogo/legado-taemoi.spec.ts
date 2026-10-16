@@ -77,6 +77,10 @@ describe('legado-taemoi', () => {
       ['2008-06-16T12:00:00', 'INFANTIL'], // 17 años
       ['2008-06-15T12:00:00', 'ADULTO'], // 18 años hoy
       ['1990-01-01T12:00:00', 'ADULTO'],
+      // 'yyyy-MM-dd' (diaApi): edad por año/mes/día, sin pasar por UTC
+      ['2008-06-16', 'INFANTIL'],
+      ['2008-06-15', 'ADULTO'],
+      ['1990-01-01', 'ADULTO'],
       ['no-es-fecha', 'INFANTIL'],
       [null, 'INFANTIL'],
     ];

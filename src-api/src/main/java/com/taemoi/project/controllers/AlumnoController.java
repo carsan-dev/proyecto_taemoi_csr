@@ -215,6 +215,20 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Ids de los alumnos para la navegación anterior/siguiente de editar-alumno: los mismos y en el mismo orden
+	 * que {@code GET /api/alumnos?incluirInactivos=} sin paginar, sin cargar las fichas. Misma autorización que
+	 * el listado.
+	 *
+	 * @param incluirInactivos si se incluyen los alumnos inactivos (por defecto, no).
+	 * @return lista de ids.
+	 */
+	@GetMapping("/ids")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<List<Long>> obtenerIdsAlumnos(@RequestParam(required = false) Boolean incluirInactivos) {
+		return ResponseEntity.ok(alumnoService.obtenerIdsAlumnos(incluirInactivos != null && incluirInactivos));
+	}
+
+	/**
 	 * Obtiene un alumno por su ID.
 	 *
 	 * @param id ID del alumno.

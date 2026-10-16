@@ -119,6 +119,24 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /**
+   * Solo los ids de los alumnos, en el mismo orden y con el mismo filtro que
+   * obtenerAlumnosSinPaginar (navegación anterior/siguiente de editar-alumno).
+   */
+  obtenerIdsAlumnos(incluirInactivos: boolean = false): Observable<number[]> {
+    const params = new HttpParams().set(
+      'incluirInactivos',
+      incluirInactivos.toString()
+    );
+
+    return this.http
+      .get<number[]>(`${this.urlBase}/alumnos/ids`, {
+        params,
+        withCredentials: true,
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerTodosLosAlumnosSinPaginar(
     mostrarInactivos: boolean = false
   ): Observable<any[]> {

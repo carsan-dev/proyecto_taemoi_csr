@@ -33,6 +33,8 @@ import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.EstadoEmailCambioTurnos;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.EstadoEmailFinalizacion;
+import com.taemoi.project.entities.EstadoEmailCancelacion;
+import com.taemoi.project.events.PreinscripcionCanceladaEvent;
 import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
 import com.taemoi.project.events.PreinscripcionTurnosModificadosEvent;
 import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
@@ -793,6 +795,99 @@ class PreinscripcionServiceTest {
 		verify(preinscripciones).saveAndFlush(primera);
 		verify(preinscripciones, never()).saveAndFlush(segunda);
 		verify(email, times(1)).sendEmail(eq("primera@example.com"), startsWith("Ya tienes plaza"), anyString());
+	}
+
+	@Test
+	void cancelarSinMotivoGuardaElMotivoPorDefectoYPublicaElAviso() {
+		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		service.cancelar("PRE-1", null);
+
+		assertEquals(EstadoPreinscripcion.CANCELADA, preinscripcion.getEstado());
+		assertNotNull(preinscripcion.getCanceladaEn());
+		assertEquals(PreinscripcionService.MOTIVO_CANCELACION_POR_DEFECTO, preinscripcion.getMotivoCancelacion());
+		assertEquals("No ha sido posible confirmar tu plaza en esta ocasión.", preinscripcion.getMotivoCancelacion());
+		assertEquals(EstadoEmailCancelacion.PENDIENTE, preinscripcion.getEstadoEmailCancelacion());
+		assertNull(preinscripcion.getEmailCancelacionUltimoError());
+		verify(aforo).bloquearTurnos(List.of(11L, 12L));
+		verify(preinscripciones).saveAndFlush(preinscripcion);
+		verify(eventos).publishEvent(new PreinscripcionCanceladaEvent("PRE-1"));
+		verify(aforo).cola("2026-2027");
+		verifyNoInteractions(email);
+	}
+
+	@Test
+	void cancelarConMotivoVacioOEspaciosAplicaElMotivoPorDefecto() {
+		for (String motivo : new String[] { "", "   ", "\n\t " }) {
+			Preinscripcion solicitud = solicitudPendiente();
+			when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(solicitud));
+
+			service.cancelar("PRE-1", motivo);
+
+			assertEquals(PreinscripcionService.MOTIVO_CANCELACION_POR_DEFECTO, solicitud.getMotivoCancelacion(),
+					"motivo: [" + motivo + "]");
+		}
+	}
+
+	@Test
+	void cancelarConMotivoPropioLoGuardaSinEspaciosSobrantes() {
+		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		service.cancelar("PRE-1", "  El grupo de los lunes se ha cerrado.  ");
+
+		assertEquals("El grupo de los lunes se ha cerrado.", preinscripcion.getMotivoCancelacion());
+		assertEquals(EstadoPreinscripcion.CANCELADA, preinscripcion.getEstado());
+	}
+
+	@Test
+	void cancelarListaDeEsperaNoPromocionaPeroGuardaMotivoYAvisa() {
+		preinscripcion.setEstado(EstadoPreinscripcion.EN_LISTA_ESPERA);
+		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		service.cancelar("PRE-1", "Sin plaza este curso");
+
+		assertEquals(EstadoPreinscripcion.CANCELADA, preinscripcion.getEstado());
+		assertEquals("Sin plaza este curso", preinscripcion.getMotivoCancelacion());
+		verify(eventos).publishEvent(new PreinscripcionCanceladaEvent("PRE-1"));
+		verify(aforo, never()).cola(anyString());
+	}
+
+	@Test
+	void cancelarRechazaMotivoDeMasDe500Caracteres() {
+		lenient().when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		assertThrows(IllegalArgumentException.class, () -> service.cancelar("PRE-1", "x".repeat(501)));
+
+		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+		verify(preinscripciones, never()).saveAndFlush(any());
+		verifyNoInteractions(eventos);
+	}
+
+	@Test
+	void cancelarAdmiteMotivoDeExactamente500Caracteres() {
+		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+
+		service.cancelar("PRE-1", "x".repeat(500));
+
+		assertEquals(500, preinscripcion.getMotivoCancelacion().length());
+	}
+
+	@Test
+	void cancelarSolicitudFinalizadaOCanceladaSigueDandoErrorSinGuardarMotivo() {
+		for (EstadoPreinscripcion estado : List.of(EstadoPreinscripcion.FINALIZADA, EstadoPreinscripcion.CANCELADA)) {
+			Preinscripcion solicitud = solicitudPendiente();
+			solicitud.setEstado(estado);
+			when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(solicitud));
+
+			IllegalStateException error = assertThrows(IllegalStateException.class,
+					() -> service.cancelar("PRE-1", "Motivo"));
+
+			assertEquals("Solo se puede cancelar una solicitud pendiente o en lista de espera.", error.getMessage());
+			assertEquals(estado, solicitud.getEstado());
+			assertNull(solicitud.getMotivoCancelacion());
+		}
+		verify(preinscripciones, never()).saveAndFlush(any());
+		verifyNoInteractions(eventos);
 	}
 
 	@Test

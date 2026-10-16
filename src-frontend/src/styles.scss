@@ -23,10 +23,6 @@ $Taemoi_Angular_Front-theme: mat.define-theme();
 // Import CSS files (these remain as @import for CSS compatibility)
 @import "bootstrap-icons/font/bootstrap-icons.css";
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
-@import "leaflet/dist/leaflet.css";
-@import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
-@import "leaflet-control-geocoder/dist/Control.Geocoder.css";
-@import "leaflet-minimap/dist/Control.MiniMap.min.css";
 
 // Bootstrap enables smooth scrolling globally. Keep route restoration deterministic;
 // explicit smooth scrolls (for example the back-to-top button) still override this.
@@ -479,4 +475,33 @@ main#content {
   padding: 0.5rem 0.75rem;
   color: #6c757d;
   font-style: italic;
+}
+
+// Nota y contador bajo el textarea de un SweetAlert (motivo de cancelación de preinscripciones).
+// Alineada con los bordes de .swal2-textarea (margen 2em sobre su font-size de 1.125em = 2.25em del popup)
+// y con el gris del texto de SweetAlert (#545454).
+.swal2-motivo-ayuda {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1em;
+  margin: 0.5em 2.25em 0;
+  color: #545454;
+  line-height: 1.4;
+  text-align: left;
+
+  p,
+  span {
+    font-size: 0.875em;
+  }
+
+  p {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
 }
