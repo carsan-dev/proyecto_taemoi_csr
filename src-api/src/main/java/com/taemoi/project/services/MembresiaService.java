@@ -26,10 +26,16 @@ public interface MembresiaService {
 	List<Long> organizacionesConMembresiaActiva(Long usuarioId);
 
 	/**
-	 * Si el usuario puede abrir sesión en la organización: tiene membresía activa y, si solo es
-	 * familia, algún alumno activo con su email en esa escuela.
+	 * Si el usuario puede abrir sesión en la organización: sus autoridades abren sesión
+	 * ({@link RolMembresia#abreSesion}) y, si solo es familia, tiene algún alumno accesible en esa escuela.
 	 */
 	boolean puedeEntrarEn(Usuario usuario, Long organizacionId);
+
+	/**
+	 * Si el usuario tiene membresías activas y en NINGUNA escuela sus autoridades abren sesión (solo
+	 * RESPONSABLE_SEDE o PROFESOR). Decide el motivo del rechazo del inicio de sesión.
+	 */
+	boolean soloTieneRolesSinAcceso(Long usuarioId);
 
 	/**
 	 * Escuela con la que se abre la sesión, entre aquellas en las que {@link #puedeEntrarEn}: si solo
@@ -42,14 +48,20 @@ public interface MembresiaService {
 
 	void registrarUltimaOrganizacion(Usuario usuario, Long organizacionId);
 
+	/**
+	 * Escuelas del selector ({@code GET /api/auth/organizaciones}): las de membresía activa cuyas autoridades
+	 * abren sesión ({@link RolMembresia#abreSesion}; no se mira si hay alumnos accesibles).
+	 */
 	List<OrganizacionUsuarioDTO> organizacionesDe(Long usuarioId, Long organizacionActiva);
 
 	/**
-	 * Deja al usuario exactamente con {@code autoridades} en la organización: desactiva las
-	 * membresías cuya autoridad ya no está y crea (o reactiva) el rol canónico de las nuevas. Las
-	 * membresías que ya dan una autoridad pedida (p. ej. PROFESOR para ROLE_MANAGER) se conservan.
+	 * Deja al usuario exactamente con {@code autoridades} en la organización, entre los roles que gestiona la
+	 * API de roles (PROPIETARIO, ADMINISTRADOR y FAMILIA): desactiva las membresías cuya autoridad ya no está y
+	 * crea (o reactiva) el rol canónico de las nuevas. Las de RESPONSABLE_SEDE y PROFESOR no se tocan.
 	 *
-	 * @return las autoridades resultantes en esa organización.
+	 * @return las autoridades resultantes en esa organización (incluidas las de los roles no gestionados).
+	 * @throws IllegalArgumentException si se pide una autoridad que no se asigna desde aquí
+	 *         ({@link RolMembresia#asignableDesdeApiDeRoles}).
 	 */
 	Set<Roles> reemplazarAutoridades(Long usuarioId, Long organizacionId, Set<Roles> autoridades);
 

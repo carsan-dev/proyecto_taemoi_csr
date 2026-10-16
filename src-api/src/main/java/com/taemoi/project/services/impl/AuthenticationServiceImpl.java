@@ -40,6 +40,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	/** Motivos de rechazo del inicio de sesión (403). */
 	public static final String SIN_ESCUELA = "El usuario no tiene acceso a ninguna escuela.";
 	public static final String SIN_ALUMNOS_ACTIVOS = "No hay alumnos activos asociados a esta cuenta.";
+	/** Membresías activas, pero solo de roles que todavía no abren sesión (RESPONSABLE_SEDE, PROFESOR). */
+	public static final String ROL_SIN_ACCESO = "Tu rol en esta escuela todavía no tiene acceso a la aplicación.";
 
 	private final UsuarioRepository usuarioRepository;
 	private final LoginAttemptService loginAttemptService;
@@ -120,13 +122,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
 			Usuario user = (Usuario) authentication.getPrincipal();
 			// Escuela de la sesión: ver MembresiaService#elegirOrganizacionParaLogin. Sin ninguna
-			// válida (sin membresía activa, o familia sin alumnos activos) se rechaza como antes.
+			// válida (sin membresía activa, solo roles sin acceso o familia sin alumnos activos) se rechaza.
 			Long organizacionId = membresiaService.elegirOrganizacionParaLogin(user).orElse(null);
 			if (organizacionId == null) {
 				SecurityContextHolder.clearContext();
-				throw new DisabledException(membresiaService.organizacionesConMembresiaActiva(user.getId()).isEmpty()
-						? SIN_ESCUELA
-						: SIN_ALUMNOS_ACTIVOS);
+				throw new DisabledException(motivoRechazo(user));
 			}
 			loginAttemptService.loginSucceeded(email);
 			membresiaService.registrarUltimaOrganizacion(user, organizacionId);
@@ -138,6 +138,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			loginAttemptService.loginFailed(email);
 			throw new BadCredentialsException("Credenciales inválidas.");
 		}
+	}
+
+	/** Motivo del rechazo cuando ninguna escuela abre sesión: SIN_ESCUELA, ROL_SIN_ACCESO o SIN_ALUMNOS_ACTIVOS. */
+	private String motivoRechazo(Usuario user) {
+		if (membresiaService.organizacionesConMembresiaActiva(user.getId()).isEmpty()) {
+			return SIN_ESCUELA;
+		}
+		return membresiaService.soloTieneRolesSinAcceso(user.getId()) ? ROL_SIN_ACCESO : SIN_ALUMNOS_ACTIVOS;
 	}
 
 	@Override

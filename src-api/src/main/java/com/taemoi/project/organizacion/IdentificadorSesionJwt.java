@@ -31,7 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * <li>organización: el claim {@code org}; en tokens heredados (sin claim) solo se acepta si el usuario
  * tiene membresías activas en exactamente UNA organización;</li>
  * <li>el usuario sigue teniendo membresía activa en esa organización (y esta está activa), en CADA
- * petición; si solo es familia, además algún alumno accesible en esa escuela ({@link AccesoFamiliaService}).</li>
+ * petición, y sus autoridades abren sesión ({@link RolMembresia#abreSesion}: RESPONSABLE_SEDE o PROFESOR solos,
+ * no); si solo es familia, además algún alumno accesible en esa escuela ({@link AccesoFamiliaService}).</li>
  * </ol>
  * Administrador de plataforma ({@code usuario.es_admin_plataforma}, fase3-sedes-permisos.md §4): la sesión lleva
  * además {@code ROLE_ADMIN_PLATAFORMA} en cualquier escuela, sumada a sus autoridades de membresía. Si en la
@@ -116,20 +117,14 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 
 		boolean plataforma = usuario.isEsAdminPlataforma();
 		Set<Roles> autoridades = membresias.autoridadesEn(usuario.getId(), organizacionId);
-		if (autoridades.isEmpty()) {
+		// Misma puerta que el inicio de sesión (RolMembresia.puedeEntrar, regla única).
+		Long organizacion = organizacionId;
+		if (!RolMembresia.puedeEntrar(autoridades, () -> accesoFamilia.tieneAlgunoAccesible(usuario, organizacion))) {
 			if (plataforma && organizacionId.equals(resolutor.getOrganizacionPorDefecto())) {
 				return Optional.of(soloPlataforma(usuario, organizacionId, token));
 			}
-			logger.info(">>> JWT rechazado para {}: sin membresía activa en la organización {}",
-					usuario.getEmail(), organizacionId);
-			return Optional.empty();
-		}
-		if (RolMembresia.requiereAlumnoActivo(autoridades)
-				&& !accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId)) {
-			if (plataforma && organizacionId.equals(resolutor.getOrganizacionPorDefecto())) {
-				return Optional.of(soloPlataforma(usuario, organizacionId, token));
-			}
-			logger.info(">>> JWT rechazado para usuario sin alumnos activos: {} ({})", usuario.getEmail(), path);
+			logger.info(">>> JWT rechazado para {}: sin acceso en la organización {} (autoridades {}, {})",
+					usuario.getEmail(), organizacionId, autoridades, path);
 			return Optional.empty();
 		}
 		return Optional.of(new SesionVerificada(usuario, organizacionId, autoridades, token, plataforma));

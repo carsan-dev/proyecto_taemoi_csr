@@ -230,6 +230,57 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 	}
 
 	// ---------------------------------------------------------------------------------------------------------
+	// Invariante de la entrega 5b: los roles nuevos fallan cerrados
+	// ---------------------------------------------------------------------------------------------------------
+
+	/**
+	 * Líneas ({@code "MÉTODO RUTA"}) en las que RESPONSABLE_SEDE o PROFESOR pueden diferir de una sesión sin rol de
+	 * escuela. Vacía mientras ningún endpoint esté abierto a esos roles (D5-1 = A); las entregas 6 y 7 la
+	 * sustituyen por la política declarada.
+	 */
+	private static final Set<String> ROLES_NUEVOS_LISTA_BLANCA = Set.of();
+
+	/**
+	 * RESPONSABLE_SEDE y PROFESOR deciden en cada línea lo mismo que SOLO_PLATAFORMA (una sesión autenticada sin
+	 * ningún rol de escuela), salvo en {@code /api/plataforma/**}, que les deniega. Así un rol nuevo no pasa ninguna
+	 * regla de gestión ni de familia. El test B garantiza que el registro es la decisión real.
+	 */
+	@Test
+	void rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela() throws IOException {
+		assumeFalse(regenerando(), "regenerando el registro");
+		List<String> errores = new ArrayList<>();
+		List<RegistroMatrizPermisos.Linea> lineas = leerRegistro(errores);
+		int lineasDePlataforma = 0;
+		for (RegistroMatrizPermisos.Linea linea : lineas) {
+			if (ROLES_NUEVOS_LISTA_BLANCA.contains(linea.clave())) {
+				continue;
+			}
+			boolean plataforma = esRutaDePlataforma(linea.ruta());
+			if (plataforma) {
+				lineasDePlataforma++;
+			}
+			Decision esperada = plataforma ? Decision.DENIEGA : linea.decisiones().get(RolMatriz.SOLO_PLATAFORMA);
+			for (RolMatriz rol : List.of(RolMatriz.RESPONSABLE_SEDE, RolMatriz.PROFESOR)) {
+				if (linea.decisiones().get(rol) != esperada) {
+					errores.add(String.format("línea %d: %s, %s: %s, se esperaba %s", linea.numero(), linea.clave(),
+							rol, linea.decisiones().get(rol), esperada));
+				}
+			}
+		}
+		if (lineasDePlataforma == 0) {
+			errores.add("el registro no tiene ninguna línea de /api/plataforma/**: el invariante sería vacío");
+		}
+		if (!errores.isEmpty()) {
+			fail("Los roles nuevos pasan donde no pasa una sesión sin rol de escuela:\n  "
+					+ String.join("\n  ", errores));
+		}
+	}
+
+	private static boolean esRutaDePlataforma(String ruta) {
+		return ruta.equals("/api/plataforma") || ruta.startsWith("/api/plataforma/");
+	}
+
+	// ---------------------------------------------------------------------------------------------------------
 	// Casos de control: comportamiento conocido (comprobado por HTTP real en otros tests) que el arnés debe
 	// reproducir. Si el arnés dejara de ser fiel (p. ej. todo cae en anyRequest o no ve @PreAuthorize), fallan.
 	// ---------------------------------------------------------------------------------------------------------

@@ -15,22 +15,30 @@ la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y pro
 |---|---|
 | A. `cadaEndpointTieneExactamenteUnaPoliticaYNoSobraNinguna` | un manejador de `RequestMappingHandlerMapping` (método × patrón) no tiene línea, una línea no corresponde a ningún manejador, o hay líneas repetidas |
 | B. `laDecisionRealCoincideConLaDeclaradaParaCadaRol` | para alguna línea y rol, la decisión real (regla de URL **y** `@PreAuthorize`) no es la declarada |
+| `rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela` | RESPONSABLE_SEDE o PROFESOR deciden distinto de SOLO_PLATAFORMA en alguna línea (o no deniegan en `/api/plataforma/**`), fuera de una lista blanca explícita (vacía hasta las entregas 6 y 7) |
 | `control*` | el arnés deja de reproducir casos conocidos por HTTP real (p. ej. `/api/plataforma/errores`) |
 
 ## Cómo leer el registro
 
 ```
-# METODO RUTA                              ANONIMO FAMILIA GESTOR  PROPIETARIO SOLO_PLATAFORMA
-GET      /api/alumnos/{alumnoId}/grupos    DENIEGA PERMITE PERMITE PERMITE     DENIEGA   # AlumnoController#obtenerGruposDeAlumno
+# METODO RUTA                              ANONIMO FAMILIA GESTOR  PROPIETARIO SOLO_PLATAFORMA RESPONSABLE_SEDE PROFESOR
+GET      /api/alumnos/{alumnoId}/grupos    DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
 ```
 
 | Columna | Sesión | Autoridades |
 |---|---|---|
 | ANONIMO | sin sesión | (token anónimo) |
 | FAMILIA | FAMILIA | `ROLE_USER` |
-| GESTOR | ADMINISTRADOR, RESPONSABLE_SEDE, PROFESOR | `ROLE_MANAGER` |
+| GESTOR | ADMINISTRADOR | `ROLE_MANAGER` |
 | PROPIETARIO | PROPIETARIO | `ROLE_ADMIN` |
 | SOLO_PLATAFORMA | admin. de plataforma sin membresía | solo `ROLE_ADMIN_PLATAFORMA` |
+| RESPONSABLE_SEDE | RESPONSABLE_SEDE | `ROLE_RESPONSABLE_SEDE` |
+| PROFESOR | PROFESOR | `ROLE_PROFESOR` |
+
+Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia y no pasan ninguna regla de gestión ni
+de familia: deciden lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**`, que les deniega (lo comprueba
+`rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela`). Solos tampoco abren sesión (`RolMembresia.abreSesion`).
+Las columnas nuevas van al final: las cinco anteriores no cambiaron en ninguna casilla.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador. No garantiza un 200: el
   controlador o el servicio pueden seguir negando (p. ej. `usuarioPuedeAccederAlumno` para la familia, o
@@ -109,22 +117,24 @@ en caché que el resto de ITs).
 
 ## Anomalías encontradas
 
-Las tres marcadas RESUELTA se corrigieron en el hotfix #26 (16/10/2026); el resto sigue abierto.
+Tres de las marcadas RESUELTA se corrigieron en el hotfix #26 (16/10/2026) y la 1 en la entrega 5b-1; el resto
+sigue abierto.
 
 Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFORMA; P = PERMITE, D = DENIEGA.
 
 ### Graves
 
-1. **GESTOR lo puede casi todo, y GESTOR incluye RESPONSABLE_SEDE y PROFESOR.** Hay 188 líneas no públicas
-   con G=P. Ninguna se limita por sede o grupo, y muchas son las que §3 niega al profesor. Ejemplos:
+1. **RESUELTA en parte (entrega 5b-1): GESTOR incluía RESPONSABLE_SEDE y PROFESOR.** Desde la 5b-1 esos roles
+   tienen autoridad propia (`ROLE_RESPONSABLE_SEDE`, `ROLE_PROFESOR`) y columna propia, que falla cerrada en
+   todas las líneas. GESTOR es ya solo ADMINISTRADOR. **Sigue abierto:** ADMINISTRADOR lo puede casi todo y sin
+   límite por sede (188 líneas no públicas con G=P). Estos ejemplos los niega §3 al profesor, que ya no pasa:
    - `GET /api/tesoreria/movimientos`, `GET /api/informes/deudas`, `POST /api/productos-alumno/mensualidades/general`
      (D/D/P/P/D): §3 «Tesorería»: PROFESOR —.
    - `GET|PUT /api/alumnos/{alumnoId}/salud`, `DELETE /api/alumnos/{id}`, `POST /api/alumnos/crear` (D/D/P/P/D):
      §3: PROFESOR — en alta/edición/baja y solo sus grupos en salud.
    - `POST /api/preinscripciones/{referencia}/finalizar`, `POST /api/eventos/crear` (D/D/P/P/D): PROFESOR — en §3.
 
-   Es el hueco que cerrarán `ROLE_RESPONSABLE_SEDE` y `ROLE_PROFESOR`. Cuando lleguen, la columna GESTOR se
-   desdoblará.
+   Las entregas 6 y 7 abrirán a RESPONSABLE_SEDE y PROFESOR solo lo que §3 les da, con alcance por sede o grupo.
 2. **RESUELTA (hotfix #26, 16/10/2026): `POST /api/mail/enviar` con HTML sin escapar.** Sigue siendo P/P/P/P/P
    y sin `@PreAuthorize` (el formulario de contacto es público por diseño), pero el texto del usuario ya se
    escapa antes de entrar en el HTML del correo. Queda abierto que en multi-escuela el formulario de cualquier

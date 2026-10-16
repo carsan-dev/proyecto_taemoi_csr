@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
@@ -95,6 +96,32 @@ class AuthenticationServiceImplTest {
 		assertThrows(DisabledException.class, () -> authenticationService.signin(request));
 		verify(jwtService, never()).generateToken(any(), anyLong(), any());
 		verify(loginAttemptService, never()).loginSucceeded(any());
+	}
+
+	@Test
+	void signin_motivoDelRechazo_segunLasMembresiasActivas() {
+		LoginRequest request = new LoginRequest("john@example.com", "password");
+		Usuario usuario = usuario(1L, "john@example.com");
+		when(loginAttemptService.isBlocked("john@example.com")).thenReturn(false);
+		when(authenticationManager.authenticate(any()))
+				.thenReturn(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
+		when(membresiaService.elegirOrganizacionParaLogin(usuario)).thenReturn(Optional.empty());
+
+		when(membresiaService.organizacionesConMembresiaActiva(1L)).thenReturn(List.of());
+		assertEquals(AuthenticationServiceImpl.SIN_ESCUELA,
+				assertThrows(DisabledException.class, () -> authenticationService.signin(request)).getMessage());
+
+		when(membresiaService.organizacionesConMembresiaActiva(1L)).thenReturn(List.of(2L));
+		when(membresiaService.soloTieneRolesSinAcceso(1L)).thenReturn(false);
+		assertEquals(AuthenticationServiceImpl.SIN_ALUMNOS_ACTIVOS,
+				assertThrows(DisabledException.class, () -> authenticationService.signin(request)).getMessage());
+
+		when(membresiaService.soloTieneRolesSinAcceso(1L)).thenReturn(true);
+		assertEquals("Tu rol en esta escuela todavía no tiene acceso a la aplicación.",
+				assertThrows(DisabledException.class, () -> authenticationService.signin(request)).getMessage());
+		assertEquals("Tu rol en esta escuela todavía no tiene acceso a la aplicación.",
+				AuthenticationServiceImpl.ROL_SIN_ACCESO);
+		verify(jwtService, never()).generateToken(any(), anyLong(), any());
 	}
 
 	@Test

@@ -7,11 +7,13 @@ hay código ni migraciones escritas. Rutas relativas a `src-api/src/main/java/co
 ## 1. Estado actual
 
 **Membresías y autoridades**
-- `membresia.rol` ya admite los cinco roles (`entities/Membresia.java:36-39`, V20). `RESPONSABLE_SEDE` y
-  `PROFESOR` se traducen hoy a `ROLE_MANAGER` sin límite (`entities/RolMembresia.java:16-24`): verían todo.
-  Ningún código ni migración los crea (`desdeAutoridad`, `RolMembresia.java:38-44`, solo da
+- `membresia.rol` ya admite los cinco roles (`entities/Membresia.java:36-39`, V20). Desde la entrega 5b-1,
+  `RESPONSABLE_SEDE` y `PROFESOR` tienen autoridades propias (`ROLE_RESPONSABLE_SEDE`, `ROLE_PROFESOR`) que fallan
+  cerradas: no pasan ninguna regla y, solas, no abren sesión (`entities/RolMembresia.java`). Antes se traducían
+  a `ROLE_MANAGER` y lo veían todo.
+  Ningún código ni migración los crea (`RolMembresia.desdeAutoridad` solo da
   PROPIETARIO/ADMINISTRADOR/FAMILIA).
-- Autoridades por petición: `IdentificadorSesionJwt.verificar` (`organizacion/IdentificadorSesionJwt.java:90-122`)
+- Autoridades por petición: `IdentificadorSesionJwt.verificar` (`organizacion/IdentificadorSesionJwt.java`)
   lee el claim `org`, llama a `MembresiaServiceImpl.autoridadesEn` (`services/impl/MembresiaServiceImpl.java:50-55`)
   y guarda `SesionVerificada`; `OrganizacionRequestFilter` (`organizacion/OrganizacionRequestFilter.java:68-78`)
   fija la escuela y `config/JwtAuthenticationFilter.java:38-56` convierte las autoridades en `GrantedAuthority`.

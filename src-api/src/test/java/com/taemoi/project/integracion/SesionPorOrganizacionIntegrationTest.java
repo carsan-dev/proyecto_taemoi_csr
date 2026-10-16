@@ -292,6 +292,9 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(org2, jwtService.verificar(token).organizacionId());
 		mvc.perform(get("/api/auth/roles").cookie(jwt(token)))
 				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_MANAGER")));
+		// El selector sigue listando la escuela donde es familia sin alumnos activos (solo filtra abreSesion).
+		mvc.perform(get("/api/auth/organizaciones").cookie(jwt(token)))
+				.andExpect(jsonPath("$[*].id", containsInAnyOrder((int) ORG1, (int) org2)));
 		mvc.perform(post("/api/auth/organizacion").cookie(jwt(token))
 				.contentType(MediaType.APPLICATION_JSON).content("{\"organizacionId\":" + ORG1 + "}"))
 				.andExpect(status().isForbidden());
@@ -533,6 +536,105 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.content("{\"email\":\"" + usuario.getEmail() + "\",\"contrasena\":\"" + CLAVE + "\"}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.mensaje").value("No hay alumnos activos asociados a esta cuenta."));
+	}
+
+	// ------------------------------------------------------------------ roles sin acceso todavía (entrega 5b)
+
+	@Test
+	void soloProfesorOResponsableRecibeElMensajeDeRolSinAccesoYSuTokenNoVale() throws Exception {
+		Usuario usuario = crearUsuario("solo-profesor-" + sufijo + "@example.test", null, null);
+		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, org2, RolMembresia.RESPONSABLE_SEDE);
+
+		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"" + usuario.getEmail() + "\",\"contrasena\":\"" + CLAVE + "\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.mensaje")
+						.value("Tu rol en esta escuela todavía no tiene acceso a la aplicación."));
+
+		// Un token ya emitido (cuando PROFESOR daba ROLE_MANAGER) deja de abrir sesión en la siguiente petición.
+		String emitido = jwtService.generateToken(usuario, 600_000, ORG1);
+		mvc.perform(get("/api/auth/roles").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
+		mvc.perform(get("/api/alumnos").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void profesorYFamiliaEntraComoFamiliaYSusRolesIncluyenProfesor() throws Exception {
+		String email = "profesor-familia-" + sufijo + "@example.test";
+		TenantContext.ejecutarCon(ORG1, () -> crearAlumno("PROFESOR FAMILIA " + sufijo, email));
+		Usuario usuario = crearUsuario(email, null, null);
+		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, ORG1, RolMembresia.FAMILIA);
+
+		String token = login(email);
+
+		mvc.perform(get("/api/auth/roles").cookie(jwt(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_USER", "ROLE_PROFESOR")));
+		// Ser profesor no da gestión.
+		mvc.perform(get("/api/alumnos").cookie(jwt(token))).andExpect(status().isForbidden());
+	}
+
+	@Test
+	void selectorDeEscuelaNoListaLaEscuelaDondeSoloEsProfesor() throws Exception {
+		Usuario usuario = crearUsuario("gestor-y-profesor-" + sufijo + "@example.test", null, null);
+		dar(usuario, ORG1, RolMembresia.ADMINISTRADOR);
+		dar(usuario, org2, RolMembresia.PROFESOR);
+
+		mvc.perform(get("/api/auth/organizaciones").cookie(jwt(login(usuario.getEmail()))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id").value(ORG1))
+				.andExpect(jsonPath("$[0].activa").value(true));
+	}
+
+	@Test
+	void profesorYFamiliaSinAlumnoActivoNoEntra() throws Exception {
+		Usuario usuario = crearUsuario("profesor-sin-alumno-" + sufijo + "@example.test", null, null);
+		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, ORG1, RolMembresia.FAMILIA);
+
+		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"" + usuario.getEmail() + "\",\"contrasena\":\"" + CLAVE + "\"}"))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.mensaje").value("No hay alumnos activos asociados a esta cuenta."));
+	}
+
+	@Test
+	void editarRolesNoAdmiteLosRolesNuevosYNoDesactivaProfesor() throws Exception {
+		Usuario usuario = crearUsuario("roles-profesor-" + sufijo + "@example.test", null, null);
+		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, ORG1, RolMembresia.FAMILIA);
+		String tokenAdmin = login(adminOrg1.getEmail());
+
+		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
+				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_USER\",\"ROLE_PROFESOR\"]"))
+				.andExpect(status().isBadRequest());
+		assertEquals(List.of("FAMILIA", "PROFESOR"), rolesActivosEn1(usuario));
+
+		// Un null en la lista o un valor que no es un rol: 400 sin tocar ninguna membresía.
+		for (String cuerpo : List.of("[null]", "[\"ROLE_USER\", null]")) {
+			mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
+					.contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.mensaje").value("La lista de roles contiene un valor no válido."));
+		}
+		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
+				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_X\"]"))
+				.andExpect(status().isBadRequest());
+		assertEquals(List.of("FAMILIA", "PROFESOR"), rolesActivosEn1(usuario));
+
+		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
+				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_MANAGER\"]"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.rol").value("[ROLE_MANAGER, ROLE_PROFESOR]"));
+		assertEquals(List.of("ADMINISTRADOR", "PROFESOR"), rolesActivosEn1(usuario));
+	}
+
+	private List<String> rolesActivosEn1(Usuario usuario) {
+		return jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = 1 AND activa = TRUE",
+				String.class, usuario.getId()).stream().sorted().toList(); // ORDER BY de un ENUM sigue su orden
 	}
 
 	@Test

@@ -13,16 +13,19 @@ import com.taemoi.project.plataforma.AutoridadPlataforma;
 
 /**
  * Columnas de la matriz: las autoridades que deja en el contexto {@code JwtAuthenticationFilter} para cada tipo
- * de sesión (PROPIETARIO→ROLE_ADMIN; ADMINISTRADOR/RESPONSABLE_SEDE/PROFESOR→ROLE_MANAGER; FAMILIA→ROLE_USER; un
- * administrador de plataforma sin membresía, SOLO ROLE_ADMIN_PLATAFORMA). El anónimo es el token que pone
- * {@code AnonymousAuthenticationFilter}.
+ * de sesión (PROPIETARIO→ROLE_ADMIN; ADMINISTRADOR→ROLE_MANAGER; FAMILIA→ROLE_USER;
+ * RESPONSABLE_SEDE→ROLE_RESPONSABLE_SEDE; PROFESOR→ROLE_PROFESOR; un administrador de plataforma sin membresía,
+ * SOLO ROLE_ADMIN_PLATAFORMA). El anónimo es el token que pone {@code AnonymousAuthenticationFilter}. Las columnas
+ * nuevas van al final para que las antiguas no cambien de posición.
  */
 enum RolMatriz {
 	ANONIMO(null),
 	FAMILIA(Roles.ROLE_USER.name()),
 	GESTOR(Roles.ROLE_MANAGER.name()),
 	PROPIETARIO(Roles.ROLE_ADMIN.name()),
-	SOLO_PLATAFORMA(AutoridadPlataforma.ADMIN_PLATAFORMA);
+	SOLO_PLATAFORMA(AutoridadPlataforma.ADMIN_PLATAFORMA),
+	RESPONSABLE_SEDE(Roles.ROLE_RESPONSABLE_SEDE.name()),
+	PROFESOR(Roles.ROLE_PROFESOR.name());
 
 	private final String autoridad;
 

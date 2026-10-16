@@ -98,11 +98,13 @@ final class RegistroMatrizPermisos {
 				# La valida com.taemoi.project.seguridad.MatrizPermisosTest; léase docs/multi-escuela/matriz-endpoints.md.
 				#
 				# Columnas: MÉTODO RUTA y una decisión (PERMITE/DENIEGA) por rol:
-				#   ANONIMO         sin sesión
-				#   FAMILIA         ROLE_USER
-				#   GESTOR          ROLE_MANAGER (administrador, responsable de sede, profesor)
-				#   PROPIETARIO     ROLE_ADMIN
-				#   SOLO_PLATAFORMA solo ROLE_ADMIN_PLATAFORMA (administrador de plataforma sin membresía)
+				#   ANONIMO          sin sesión
+				#   FAMILIA          ROLE_USER
+				#   GESTOR           ROLE_MANAGER (administrador)
+				#   PROPIETARIO      ROLE_ADMIN
+				#   SOLO_PLATAFORMA  solo ROLE_ADMIN_PLATAFORMA (administrador de plataforma sin membresía)
+				#   RESPONSABLE_SEDE ROLE_RESPONSABLE_SEDE (responsable de sede)
+				#   PROFESOR         ROLE_PROFESOR (profesor)
 				# La decisión combina la regla de URL (SecurityConfiguration) y la de método (@PreAuthorize).
 				# RUTA es el patrón del controlador tal cual; para manejadores comodín (/imagenes/**, /documentos/**)
 				# cada línea es una ruta de ejemplo concreta que ese manejador atiende.
