@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,11 @@ public interface AlumnoRetoDiarioLogRepository extends JpaRepository<AlumnoRetoD
 	boolean existsByAlumnoIdAndFechaCompletado(Long alumnoId, LocalDate fechaCompletado);
 
 	boolean existsByAnioIsoAndSemanaIso(Integer anioIso, Integer semanaIso);
+
+	/** Solo para el borrado completo del alumno: su registro del reto diario no tiene sentido sin él. */
+	@Modifying(flushAutomatically = true)
+	@Query("DELETE FROM AlumnoRetoDiarioLog l WHERE l.alumno.id = :alumnoId")
+	int borrarDelAlumno(@Param("alumnoId") Long alumnoId);
 
 	@Query("SELECT l.alumno.id AS alumnoId, COUNT(l.id) AS diasCompletados, MAX(l.fechaCompletado) AS ultimaFechaCompletado, "
 			+ "MAX(l.id) AS ultimaMarcaCompletadoId "

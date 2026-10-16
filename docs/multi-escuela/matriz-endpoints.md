@@ -38,8 +38,9 @@ GET      /api/alumnos/{alumnoId}/grupos    DENIEGA PERMITE PERMITE PERMITE     D
 - `RUTA` es el patrón tal cual del controlador. Para los dos manejadores comodín (`/imagenes/**`,
   `/documentos/**`) cada línea es una **ruta de ejemplo** concreta, una por regla de URL distinta. Las rutas
   de `MUESTRAS_COMODIN` son obligatorias: si falta la línea de alguna, en GET o en HEAD, el test A falla.
-- **HEAD.** Spring MVC atiende HEAD con los manejadores GET, pero Spring Security ve el método HEAD, y casi
-  todas las reglas de URL son solo GET. Por eso cada GET tiene también su línea `HEAD`, con su propia decisión.
+- **HEAD.** Spring MVC atiende HEAD con los manejadores GET, y desde el hotfix #26 (16/10/2026)
+  `HeadComoGetAuthorizationManager` autoriza HEAD exactamente como GET. Cada GET tiene también su línea `HEAD`,
+  y el registro fija que decide igual que su GET.
 - Un mapeo sin método (solo `/error`) se expande a GET, HEAD, POST, PUT, PATCH y DELETE.
 - El comentario final es informativo; el test no lo lee.
 
@@ -106,7 +107,9 @@ en caché que el resto de ITs).
 - Las comprobaciones programáticas (propiedad de la ficha, escuela activa, fila `Imagen`/`Documento`).
 - El alcance por sede o grupo.
 
-## Anomalías encontradas (no corregidas)
+## Anomalías encontradas
+
+Las tres marcadas RESUELTA se corrigieron en el hotfix #26 (16/10/2026); el resto sigue abierto.
 
 Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFORMA; P = PERMITE, D = DENIEGA.
 
@@ -122,38 +125,16 @@ Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFO
 
    Es el hueco que cerrarán `ROLE_RESPONSABLE_SEDE` y `ROLE_PROFESOR`. Cuando lleguen, la columna GESTOR se
    desdoblará.
-2. **`POST /api/mail/enviar`: P/P/P/P/P**, sin `@PreAuthorize`. Desde el anonimato se hace que el servidor
-   envíe un correo a una dirección fija de Taemoi (`EmailController`). El texto del usuario se concatena sin
-   escapar en el HTML. En multi-escuela, el formulario de cualquier escuela llega a Taemoi. No hay límite de
-   frecuencia en la capa de URL ni en el controlador (no se comprobó en otras capas).
-3. **HEAD se salta las reglas de URL que son solo GET.** Spring MVC ejecuta el manejador GET (sin cuerpo en la
-   respuesta), pero la URL decide por el método HEAD. Casi todas las reglas son `HttpMethod.GET`, así que HEAD
-   suele caer en `anyRequest().authenticated()`. De 120 líneas HEAD, 17 deciden distinto que su GET.
-
-   Más abiertas que el GET: 3 líneas, 5 casillas. En ellas el handler se ejecuta y la respuesta revela
-   existencia y tamaño:
-
-   | Ruta | GET (A/F/G/P/SP) | HEAD (A/F/G/P/SP) | Por qué |
-   |---|---|---|---|
-   | `/api/alumnos/aptos` | D/D/P/P/D | **D/P/P/P/P** | sin `@PreAuthorize`; la regla `GET /api/alumnos/**` no cubre HEAD |
-   | `/api/eventos/{eventoId}/documentos` | D/D/P/P/D | **D/P/P/P/P** | sin `@PreAuthorize` |
-   | `/api/alumnos/{id}/completo` | D/D/P/P/D | **D/P/P/P/D** | su `@PreAuthorize` incluye `ROLE_USER` (anomalía 9) |
-
-   Más cerradas que el GET: 14 líneas. Son rutas públicas en GET que en HEAD piden sesión (anónimo D):
-   - `/api/catalogo/publico`, `/api/eventos`, `/api/eventos/{eventoId}` y `…/documentos/{documentoId}/descargar`;
-   - `/api/turnos/dto`, `/api/turnos/limite` y `/healthz`;
-   - `/api/preinscripciones/public/*` (4 rutas) y `/api/preinscripciones/{referencia}/documento`;
-   - los dos ejemplos de documentos de eventos (`/documentos/Documentos_Eventos/1.pdf`,
-     `/documentos/org-1/eventos/1.pdf`).
-
-   Las de preinscripciones y documentos de eventos además niegan a FAMILIA y SOLO_PLATAFORMA, porque las
-   reglas `/api/preinscripciones/**` y `/documentos/**` no distinguen método. No es fuga, pero rompe los HEAD
-   de clientes y proxies.
-
-   El resto de HEAD coincide con su GET. Hay dos motivos: o la regla no distingue método (`/imagenes/**`,
-   `/api/admin/**`, `/api/plataforma/**`, `/api/catalogo`), o el `@PreAuthorize` repite la restricción. La
-   corrección en producción va en un hotfix aparte. El registro describe el comportamiento de la base
-   `344cc683`.
+2. **RESUELTA (hotfix #26, 16/10/2026): `POST /api/mail/enviar` con HTML sin escapar.** Sigue siendo P/P/P/P/P
+   y sin `@PreAuthorize` (el formulario de contacto es público por diseño), pero el texto del usuario ya se
+   escapa antes de entrar en el HTML del correo. Queda abierto que en multi-escuela el formulario de cualquier
+   escuela llega a Taemoi y que no hay límite de frecuencia en la capa de URL ni en el controlador.
+3. **RESUELTA (hotfix #26, 16/10/2026): HEAD se saltaba las reglas de URL que son solo GET.** Antes, 17 de las
+   120 líneas HEAD decidían distinto que su GET (3 más abiertas, 14 más cerradas). Ahora
+   `HeadComoGetAuthorizationManager` autoriza HEAD como GET, se quitaron las reglas HEAD explícitas de
+   `SecurityConfiguration` y en el registro las 120 líneas HEAD coinciden con su GET. Esto también cierra la
+   exposición de `/api/alumnos/aptos`, `/api/eventos/{eventoId}/documentos` y `/api/alumnos/{id}/completo`
+   por HEAD.
 
 ### Medias
 
@@ -172,9 +153,8 @@ Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFO
 
 ### Incoherencias entre la regla de URL y `@PreAuthorize`
 
-En GET y en el resto de métodos declarados manda la regla más estricta, así que no hay fuga. Con HEAD sí la
-hay: ver la anomalía 3, que afecta a la 9 (`/completo`) y a las rutas de la 10 sin `@PreAuthorize`. El riesgo
-general está en editar una sola de las dos capas.
+Manda la regla más estricta, así que no hay fuga. Con HEAD tampoco desde el hotfix #26 (anomalía 3, resuelta).
+El riesgo general está en editar una sola de las dos capas.
 
 7. **`GET /api/preinscripciones/plantillas/{deporte}` y `POST …/plantillas/{deporte}/preview`: D/D/D/P/D.** El
    `@PreAuthorize` admite ADMIN y MANAGER, pero la URL solo ADMIN. §3 dice que las plantillas son solo del
@@ -203,8 +183,9 @@ general está en editar una sola de las dos capas.
 
 - `GET /api/preinscripciones/{referencia}/documento` (P×5): exige el `token` de la URL.
 - `GET /api/eventos/{eventoId}` y `…/documentos/{documentoId}/descargar` (P×5): el controlador oculta los
-  eventos no visibles. **Excepción**: `GET /api/eventos/{eventoId}/imagen` (P×5) no comprueba la visibilidad
-  en `EventoController#obtenerImagenEvento`. Cualquiera puede leer, por id, la imagen de un evento oculto.
+  eventos no visibles. `GET /api/eventos/{eventoId}/imagen` (P×5) también lo comprueba desde el hotfix #26
+  (16/10/2026): **RESUELTA**, la imagen de un evento oculto responde 404 a quien no gestiona eventos. La
+  comprobación está en `EventoController`; la regla de URL no cambia.
 - `/documentos/Documentos_Eventos/**`, `/documentos/org-*/eventos/**` e `/imagenes/**` salvo alumnos (P×5):
   `AccesoArchivos` comprueba escuela y fila.
 - Latente: el `permitAll` de `GET /api/eventos/{eventoId}` casa con cualquier GET de un solo segmento bajo

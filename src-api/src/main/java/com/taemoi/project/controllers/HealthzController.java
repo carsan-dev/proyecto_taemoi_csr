@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>Está FUERA de {@code /api} a propósito: {@code AuditoriaRequestFilter} solo audita rutas {@code /api/*},
  * así que el sondeo cada 30 s no genera filas en {@code auditoria_evento}. No consulta la base de datos ni
  * expone datos: solo indica que el proceso atiende peticiones HTTP. SecurityConfiguration la abre sin sesión
- * únicamente para {@code GET /healthz}.
+ * únicamente para {@code GET /healthz} (y {@code HEAD /healthz}, que se autoriza como el {@code GET}).
  */
 @RestController
 public class HealthzController {
