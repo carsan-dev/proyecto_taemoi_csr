@@ -1,10 +1,11 @@
 import { AfterViewInit, Component, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
+import { MapaLeafletEstilosComponent } from './mapa-leaflet-estilos.component';
 
 @Component({
   selector: 'app-mapa',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MapaLeafletEstilosComponent],
   templateUrl: './mapa.component.html',
   styleUrls: ['./mapa.component.scss'],
 })
