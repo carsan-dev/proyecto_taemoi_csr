@@ -238,11 +238,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   comprobarRoles() {
-    this.subscriptions.add(
-      this.authService.esAdminPlataforma().subscribe((esAdmin) => {
-        this.esAdminPlataforma = esAdmin;
-      })
-    );
+    // Emite una vez y completa: no hace falta guardar la suscripción.
+    this.authService.esAdminPlataforma().subscribe((esAdmin) => (this.esAdminPlataforma = esAdmin));
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
       this.isAdminOnly = roles.includes('ROLE_ADMIN');

@@ -325,14 +325,18 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 		JsonNode primero = json.readTree(texto).get("content").get(0);
 		List<String> campos = new ArrayList<>();
 		primero.fieldNames().forEachRemaining(campos::add);
-		assertEquals(Set.of("id", "fechaEvento", "organizacionId", "metodoHttp", "endpoint", "modulo", "estadoHttp",
-				"usuarioId", "resumen"), Set.copyOf(campos));
+		assertEquals(Set.of("id", "fechaEvento", "organizacionId", "organizacionNombre", "metodoHttp", "endpoint",
+				"modulo", "estadoHttp", "usuarioId", "resumen"), Set.copyOf(campos));
 		for (String prohibido : List.of("PAYLOAD-" + sufijo, "QUERY-" + sufijo, "10.9.8.7", "AgenteIT",
 				propietario1.getEmail(), "Nombre IT")) {
 			assertFalse(texto.contains(prohibido), prohibido);
 		}
 		JsonNode b4 = buscar(json.readTree(texto).get("content"), b4Error500);
 		assertEquals(org2, b4.get("organizacionId").asLong());
+		// Nombre real de la escuela (LEFT JOIN a organizacion), para org 2 y org 1.
+		assertEquals("Escuela plataforma " + sufijo, b4.get("organizacionNombre").asText());
+		assertEquals(nombreOrganizacion(ORG1),
+				buscar(json.readTree(texto).get("content"), a7Error500).get("organizacionNombre").asText());
 		assertEquals(500, b4.get("estadoHttp").asInt());
 		assertEquals(propietario2.getId(), b4.get("usuarioId").asLong());
 		assertEquals("PUT", b4.get("metodoHttp").asText());
@@ -352,6 +356,21 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 		}
 		mvc.perform(get("/api/plataforma/errores?desde=1000-01-01&hasta=9998-12-31").cookie(c))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	void escuelasDePlataformaListaTodasConIdYNombre() throws Exception {
+		mvc.perform(get("/api/plataforma/escuelas")).andExpect(status().isUnauthorized());
+		mvc.perform(get("/api/plataforma/escuelas").cookie(jwt(login(propietario1.getEmail()))))
+				.andExpect(status().isForbidden());
+
+		MvcResult r = mvc.perform(get("/api/plataforma/escuelas").cookie(jwt(login(plataformaSola.getEmail()))))
+				.andExpect(status().isOk()).andReturn();
+		JsonNode escuelas = json.readTree(r.getResponse().getContentAsString());
+		assertTrue(escuelas.isArray());
+		assertEquals(Set.of("id", "nombre"), Set.copyOf(nombresDeCampos(escuelas.get(0))));
+		assertEquals(nombreOrganizacion(ORG1), buscar(escuelas, ORG1).get("nombre").asText());
+		assertEquals("Escuela plataforma " + sufijo, buscar(escuelas, org2).get("nombre").asText());
 	}
 
 	// ------------------------------------------------------------------ registro del propietario (D2)
@@ -469,6 +488,16 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 			}
 		}
 		throw new AssertionError("No está el evento " + id);
+	}
+
+	private static List<String> nombresDeCampos(JsonNode nodo) {
+		List<String> campos = new ArrayList<>();
+		nodo.fieldNames().forEachRemaining(campos::add);
+		return campos;
+	}
+
+	private String nombreOrganizacion(long id) {
+		return TenantContext.calcularCon(ORG1, () -> organizaciones.findById(id).orElseThrow().getNombre());
 	}
 
 	private Set<String> claves(MvcResult r) throws Exception {

@@ -1,12 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { firstValueFrom, isObservable, of } from 'rxjs';
 
 import { plataformaGuard } from './plataforma.guard';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
 
 describe('plataformaGuard', () => {
-  const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+  const raiz = {} as UrlTree;
+  const routerSpy = jasmine.createSpyObj<Router>('Router', ['createUrlTree']);
+  routerSpy.createUrlTree.and.returnValue(raiz);
   const authMock = {
     esAdminPlataforma: jasmine.createSpy('esAdminPlataforma'),
     resolverRolesDisponibles: jasmine.createSpy('resolverRolesDisponibles'),
@@ -20,7 +22,7 @@ describe('plataformaGuard', () => {
   }
 
   beforeEach(() => {
-    routerSpy.navigate.calls.reset();
+    routerSpy.createUrlTree.calls.reset();
     authMock.esAdminPlataforma.calls.reset();
     authMock.resolverRolesDisponibles.calls.reset();
     TestBed.configureTestingModule({
@@ -35,14 +37,14 @@ describe('plataformaGuard', () => {
     authMock.esAdminPlataforma.and.returnValue(of(true));
 
     expect(await resolver(executeGuard({} as any, {} as any))).toBeTrue();
-    expect(routerSpy.navigate).not.toHaveBeenCalled();
+    expect(routerSpy.createUrlTree).not.toHaveBeenCalled();
   });
 
   it('devuelve a la raíz a quien no es administrador de plataforma', async () => {
     authMock.esAdminPlataforma.and.returnValue(of(false));
 
-    expect(await resolver(executeGuard({} as any, {} as any))).toBeFalse();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    expect(await resolver(executeGuard({} as any, {} as any))).toBe(raiz);
+    expect(routerSpy.createUrlTree).toHaveBeenCalledWith(['/']);
   });
 
   it('no depende de /api/auth/roles', async () => {

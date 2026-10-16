@@ -15,15 +15,16 @@ describe('PlataformaErroresComponent', () => {
     of({ content, totalPages, totalElements: content.length, size: 25, number: 0 } as any);
 
   const errores = [
-    { id: 1, fechaEvento: '2026-10-16T10:00:00Z', organizacionId: 4, metodoHttp: 'GET', endpoint: '/api/alumnos',
+    { id: 1, fechaEvento: '2026-10-16T10:00:00Z', organizacionId: 4, organizacionNombre: null, metodoHttp: 'GET', endpoint: '/api/alumnos',
       modulo: 'alumnos', estadoHttp: 500, usuarioId: 12, resumen: 'Fallo interno' },
-    { id: 2, fechaEvento: '2026-10-15T09:00:00Z', organizacionId: 2, metodoHttp: 'POST', endpoint: '/api/grupos',
+    { id: 2, fechaEvento: '2026-10-15T09:00:00Z', organizacionId: 2, organizacionNombre: 'Escuela Norte', metodoHttp: 'POST', endpoint: '/api/grupos',
       modulo: 'grupos', estadoHttp: 404, usuarioId: null, resumen: 'No encontrado' },
   ];
 
   beforeEach(async () => {
-    plataformaSpy = jasmine.createSpyObj<PlataformaService>('PlataformaService', ['errores', 'esAdminPlataforma']);
+    plataformaSpy = jasmine.createSpyObj<PlataformaService>('PlataformaService', ['errores', 'esAdminPlataforma', 'escuelas']);
     plataformaSpy.errores.and.returnValue(pagina(errores));
+    plataformaSpy.escuelas.and.returnValue(of([{ id: 1, nombre: "Moi's Kim Do" }, { id: 2, nombre: 'Escuela Norte' }]));
 
     await TestBed.configureTestingModule({
       imports: [PlataformaErroresComponent],
@@ -42,10 +43,23 @@ describe('PlataformaErroresComponent', () => {
     );
   });
 
-  it('construye el selector de escuela con las escuelas vistas', () => {
-    expect(component.escuelas).toEqual([2, 4]);
+  it('el selector lista todas las escuelas por nombre y añade las vistas que falten', () => {
+    fixture.detectChanges();
     const opciones = Array.from(fixture.nativeElement.querySelectorAll('#filtroEscuela option')).map((o: any) => o.textContent.trim());
-    expect(opciones).toEqual(['Todas', 'Escuela 2', 'Escuela 4']);
+    expect(opciones).toEqual(['Todas', "Moi's Kim Do", 'Escuela Norte', 'Escuela 4']);
+  });
+
+  it('la tabla muestra el nombre de la escuela y "Escuela N" si no llega', () => {
+    const celdas = Array.from(fixture.nativeElement.querySelectorAll('td.col-escuela')).map((td: any) => td.textContent.trim());
+    expect(celdas).toEqual(['Escuela 4', 'Escuela Norte']);
+  });
+
+  it('si falla la lista de escuelas, el selector usa las vistas en los resultados', async () => {
+    plataformaSpy.escuelas.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const otro = TestBed.createComponent(PlataformaErroresComponent);
+    otro.detectChanges();
+
+    expect(otro.componentInstance.escuelas.map((e) => e.nombre)).toEqual(['Escuela 4', 'Escuela Norte']);
   });
 
   it('pinta estado con tono por familia y la petición con método y endpoint', () => {

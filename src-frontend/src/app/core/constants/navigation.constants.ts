@@ -280,7 +280,6 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     label: 'Errores de plataforma',
     route: '/plataformaErrores',
     icon: 'bi-exclamation-octagon',
-    priority: 9,
     plataformaOnly: true,
   },
 ];

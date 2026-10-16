@@ -72,6 +72,11 @@ public class ErroresPlataformaService {
 		return new PageImpl<>(contenido, peticion, total);
 	}
 
+	/** Todas las escuelas (id y nombre), para el filtro de la pantalla de errores. */
+	public List<EscuelaPlataformaDTO> escuelas() {
+		return repositorio.escuelas();
+	}
+
 	/** Fechas fuera de lo que guarda un DATETIME (años 1000-9999): 400, no 500 al calcular el día siguiente. */
 	private static void comprobarFecha(LocalDate fecha, String nombre) {
 		if (fecha != null && (fecha.isBefore(FECHA_MINIMA) || fecha.isAfter(FECHA_MAXIMA))) {

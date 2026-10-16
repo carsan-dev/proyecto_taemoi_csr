@@ -526,6 +526,19 @@
       </ul>
     </li>
     }
+
+    <!-- Superadmin Section: solo la sesión administradora de plataforma -->
+    @if (esAdminPlataforma) {
+    <li class="menu-section">
+      <span class="section-title">Superadmin</span>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/plataformaErrores']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-exclamation-octagon"></i>
+        <span>Errores de plataforma</span>
+      </a>
+    </li>
+    }
   </ul>
 </nav>
 }

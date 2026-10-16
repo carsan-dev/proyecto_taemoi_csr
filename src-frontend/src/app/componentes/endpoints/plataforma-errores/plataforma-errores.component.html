@@ -10,8 +10,8 @@
         <label for="filtroEscuela">Escuela</label>
         <select id="filtroEscuela" [(ngModel)]="filtroEscuela" (ngModelChange)="aplicarFiltros()" [disabled]="cargando">
           <option [ngValue]="null">Todas</option>
-          @for (escuela of escuelas; track escuela) {
-            <option [ngValue]="escuela">Escuela {{ escuela }}</option>
+          @for (escuela of escuelas; track escuela.id) {
+            <option [ngValue]="escuela.id">{{ escuela.nombre }}</option>
           }
         </select>
       </div>
@@ -94,7 +94,7 @@
                       <span class="fecha">{{ error.fechaEvento | date:'dd/MM/yyyy' }}</span>
                     </time>
                   </td>
-                  <td>{{ error.organizacionId != null ? 'Escuela ' + error.organizacionId : '-' }}</td>
+                  <td class="col-escuela">{{ nombreEscuela(error.organizacionId, error.organizacionNombre) }}</td>
                   <td><span class="estado" [ngClass]="claseEstado(error.estadoHttp)">{{ error.estadoHttp }}</span></td>
                   <td class="col-peticion"><span class="metodo">{{ error.metodoHttp }}</span> {{ error.endpoint }}</td>
                   <td>{{ error.modulo || '-' }}</td>

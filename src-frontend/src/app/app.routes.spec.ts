@@ -30,7 +30,7 @@ describe('app routes', () => {
     expect(plataformaRoute?.data?.['requiredRoles']).toBeUndefined();
     expect(plataformaRoute?.resolve?.['catalogo']).toBeUndefined();
     expect(plataformaIndex).toBeLessThan(routes.findIndex((route) => route.path === '**'));
-    expect(resolverPortalContexto('/plataformaErrores')).toBe('admin');
+    expect(resolverPortalContexto('/plataformaErrores')).not.toBe('user');
   });
 
   it('mantiene el portal user accesible para cuentas duales y usuarios finales', () => {

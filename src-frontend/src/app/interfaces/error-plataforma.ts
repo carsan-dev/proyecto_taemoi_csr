@@ -3,6 +3,8 @@ export interface ErrorPlataforma {
   id: number;
   fechaEvento: string | Date;
   organizacionId: number | null;
+  /** Nombre de la escuela; null si el evento no tiene organización. */
+  organizacionNombre: string | null;
   metodoHttp: string;
   endpoint: string;
   modulo: string | null;
@@ -10,6 +12,12 @@ export interface ErrorPlataforma {
   /** null en peticiones sin sesión. */
   usuarioId: number | null;
   resumen: string | null;
+}
+
+/** Escuela para el filtro de la pantalla de errores (GET /api/plataforma/escuelas). */
+export interface EscuelaPlataforma {
+  id: number;
+  nombre: string;
 }
 
 export interface FiltrosErroresPlataforma {

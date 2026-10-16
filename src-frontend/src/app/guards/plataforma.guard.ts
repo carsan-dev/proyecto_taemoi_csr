@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { map, take } from 'rxjs';
+import { map } from 'rxjs';
 
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
 
@@ -12,14 +12,6 @@ export const plataformaGuard: CanActivateFn = () => {
   const auth = inject(AuthenticationService);
   const router = inject(Router);
 
-  return auth.esAdminPlataforma().pipe(
-    take(1),
-    map((esAdmin) => {
-      if (esAdmin) {
-        return true;
-      }
-      router.navigate(['/']);
-      return false;
-    })
-  );
+  // El sondeo emite una vez y completa (respuesta HTTP guardada); si no es plataforma, redirige a la raíz.
+  return auth.esAdminPlataforma().pipe(map((esAdmin) => esAdmin || router.createUrlTree(['/'])));
 };
