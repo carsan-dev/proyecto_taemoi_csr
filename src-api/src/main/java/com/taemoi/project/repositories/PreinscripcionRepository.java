@@ -13,4 +13,11 @@ public interface PreinscripcionRepository extends JpaRepository<Preinscripcion,L
  List<Preinscripcion> findByTemporadaAndEstadoOrderByCreadaEnAscIdAsc(String temporada,EstadoPreinscripcion estado);
  @Query("select count(distinct previa.id) from Preinscripcion previa join previa.turnos t where previa.temporada=:temporada and previa.estado=:estado and t in :turnos and (previa.creadaEn<:creadaEn or (previa.creadaEn=:creadaEn and previa.id<:id))")
  long countAnterioresSolapadas(@org.springframework.data.repository.query.Param("temporada") String temporada,@org.springframework.data.repository.query.Param("estado") EstadoPreinscripcion estado,@org.springframework.data.repository.query.Param("turnos") Collection<Turno> turnos,@org.springframework.data.repository.query.Param("creadaEn") java.time.Instant creadaEn,@org.springframework.data.repository.query.Param("id") Long id);
+ /**
+  * Solo para el borrado completo del alumno: la preinscripción se conserva como histórico (mismo estado) y deja
+  * de apuntar al alumno. Consulta JPQL, así que Hibernate la restringe a la escuela activa.
+  */
+ @Modifying(flushAutomatically = true)
+ @Query("update Preinscripcion p set p.alumno = null where p.alumno.id = :alumnoId")
+ int desvincularAlumno(@org.springframework.data.repository.query.Param("alumnoId") Long alumnoId);
 }

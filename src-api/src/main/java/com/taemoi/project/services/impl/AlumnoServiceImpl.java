@@ -203,6 +203,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
 
 	@Autowired
+	private com.taemoi.project.repositories.PreinscripcionRepository preinscripcionRepository;
+
+	@Autowired
+	private com.taemoi.project.repositories.RegistroPendienteRepository registroPendienteRepository;
+
+	@Autowired
 	private com.taemoi.project.services.ContadorService contadorService;
 
 	@Autowired
@@ -1587,6 +1593,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 			consentimientoRepository.borrarDelAlumno(alumno.getId());
 			tutorRepository.borrarDelAlumno(alumno.getId());
 			alumnoSaludRepository.borrarDelAlumno(alumno.getId());
+			// Las preinscripciones de las que salió se conservan como histórico (mismo estado), sin alumno.
+			preinscripcionRepository.desvincularAlumno(alumno.getId());
+			// Datos que solo existen para este alumno: su registro del reto diario y un registro de cuenta pendiente.
+			alumnoRetoDiarioLogRepository.borrarDelAlumno(alumno.getId());
+			registroPendienteRepository.borrarDelAlumno(alumno.getId());
+			// Los vínculos de familia (usuario_alumno) caen con el alumno: ON DELETE CASCADE (V31).
 			Imagen imagen = alumno.getFotoAlumno();
 			if (imagen != null) {
 				imagenService.eliminarImagenDeSistema(imagen);
