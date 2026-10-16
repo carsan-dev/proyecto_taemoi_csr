@@ -22,7 +22,7 @@ la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y pro
 
 ```
 # METODO RUTA                              ANONIMO FAMILIA GESTOR  PROPIETARIO SOLO_PLATAFORMA RESPONSABLE_SEDE PROFESOR
-GET      /api/alumnos/{alumnoId}/grupos    DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
+GET      /api/alumnos/{alumnoId}/grupos    DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
 ```
 
 | Columna | Sesión | Autoridades |
@@ -40,9 +40,15 @@ de familia: deciden lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**`, 
 `rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela`). Solos tampoco abren sesión (`RolMembresia.abreSesion`).
 Las columnas nuevas van al final: las cinco anteriores no cambiaron en ninguna casilla.
 
-- `PERMITE` = la seguridad declarativa deja llegar la petición al controlador. No garantiza un 200: el
-  controlador o el servicio pueden seguir negando (p. ej. `usuarioPuedeAccederAlumno` para la familia, o
-  `AccesoArchivos` para ficheros, que responde 404).
+- `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
+  un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
+  responde 404).
+- `ALCANCE` (desde la 5c-2) = la seguridad declarativa deja pasar **solo si el recurso está en el alcance o el
+  acceso de la sesión**: el `@PreAuthorize` llama a `@acceso` y este consultó datos para decidir. Hoy son las 16
+  rutas de familia con alumno (`@acceso.alumnoComoFamilia(#alumnoId)`, D5-2 y D5-4) y sus HEAD, en la columna
+  FAMILIA. PROPIETARIO y GESTOR siguen en `PERMITE` porque, con alcance total, el bean concede sin consultar. Una
+  denegación por rol u operación sigue siendo `DENIEGA`. Qué recursos concretos entran en el alcance no lo fija
+  la matriz (ver «Fuera de alcance»).
 - `RUTA` es el patrón tal cual del controlador. Para los dos manejadores comodín (`/imagenes/**`,
   `/documentos/**`) cada línea es una **ruta de ejemplo** concreta, una por regla de URL distinta. Las rutas
   de `MUESTRAS_COMODIN` son obligatorias: si falta la línea de alguna, en GET o en HEAD, el test A falla.
@@ -85,10 +91,18 @@ en caché que el resto de ITs).
    simulada. El `proceed()` final **no llama al método**: solo registra que la seguridad lo habría dejado pasar.
    Ningún controlador se ejecuta y no se toca ningún dato. Si un método tiene `@PreAuthorize` pero el arnés no
    encuentra su interceptor, el test lanza una excepción en vez de dar un PERMITE falso.
-   La invocación lleva argumentos nulos y no devuelve nada. Por eso, si una expresión de
-   `@PreAuthorize`/`@PostAuthorize`/`@PreFilter`/`@PostFilter` usa argumentos (`#`), beans (`@`) o
-   `returnObject`/`filterObject`, el test da ERROR nombrando el endpoint y pide ampliar el arnés, en vez de
-   decidir (`EvaluadorAutorizacionSalvaguardaTest`). Esto pasará con el bean `@acceso` de la fase 3.
+   La invocación no devuelve nada y lleva argumentos nulos, salvo los parámetros que una expresión pasa a
+   `@acceso`, que reciben un valor de ejemplo no nulo (`1` o `"1"`; con un id nulo el bean deniega y daría un
+   DENIEGA falso). Solo se admiten expresiones de roles y llamadas `@acceso.<método>(...)` cuyos argumentos son
+   `#parámetro` del método o literales `'TEXTO'`. Cualquier otro bean, un `#x` fuera de esas llamadas, un
+   `#x` que no es parámetro, `returnObject` o `filterObject` dan ERROR nombrando el endpoint y piden ampliar el
+   arnés, en vez de decidir (`EvaluadorAutorizacionSalvaguardaTest`).
+   **`@acceso` (5c-2).** Una `@TestConfiguration` de `MatrizPermisosTest` sustituye (`@Primary`) SOLO el puerto de
+   datos `ConsultaAccesoRecursos` por `RegistradorConsultaAcceso`: responde `true` y anota en un `ThreadLocal` que
+   se consultó. La lógica de rol × operación del bean se evalúa de verdad. Si la capa de método concede y el
+   registrador se consultó, la casilla es `ALCANCE`; si concede sin consultar, `PERMITE`. RESPONSABLE_SEDE y
+   PROFESOR llevan un `AutenticacionEscuela` con alcance de ejemplo (sede 1 / grupo 1) para que el bean llegue al
+   puerto. Si el registrador no está instalado, el arnés no arranca.
 3. **Controles.** Los tests `control*` reproducen casos comprobados por HTTP real en
    `SecurityAuthorizationWebMvcTest` y `PlataformaYAuditoriaPropietarioIntegrationTest`. Uno de ellos exige que
    exista un endpoint que la URL deja pasar y que solo `@PreAuthorize` deniega. Así se demuestra que se aplican
@@ -108,12 +122,18 @@ en caché que el resto de ITs).
 
    Se revirtió todo.
 
+   Tercera mutación, en la 5c-2: se quitó `and @acceso.alumnoComoFamilia(#alumnoId)` de
+   `AlumnoController#obtenerGruposDeAlumno`. Fallaron B (FAMILIA de `GET` y `HEAD /api/alumnos/{alumnoId}/grupos`:
+   declarado ALCANCE, real PERMITE) y el control de esa ruta. Se revirtió.
+
 **Fuera de alcance, a propósito.** Estas comprobaciones no se evalúan:
 
 - CSRF (solo afecta a métodos no GET fuera de `/api/**`, y el único manejador así es `/error`).
 - `OPTIONS`: Spring MVC lo responde de forma implícita y la URL lo deja pasar en `/api/**`.
 - Las comprobaciones programáticas (propiedad de la ficha, escuela activa, fila `Imagen`/`Documento`).
-- El alcance por sede o grupo.
+- Qué recursos concretos están en el alcance de una sesión (sede, grupo o alumno de la familia). La matriz solo
+  distingue `ALCANCE` (la decisión depende de esos datos) de `PERMITE` y `DENIEGA`; los datos los prueban
+  `AccesoRecursosAlcanceIntegrationTest`, `RutasFamiliaTaemoiIntegrationTest` y los tests de `AccesoRecursos`.
 
 ## Anomalías encontradas
 

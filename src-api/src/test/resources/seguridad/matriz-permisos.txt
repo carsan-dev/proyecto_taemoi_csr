@@ -1,7 +1,7 @@
 # Matriz de permisos por endpoint y rol (caracterización del comportamiento ACTUAL).
 # La valida com.taemoi.project.seguridad.MatrizPermisosTest; léase docs/multi-escuela/matriz-endpoints.md.
 #
-# Columnas: MÉTODO RUTA y una decisión (PERMITE/DENIEGA) por rol:
+# Columnas: MÉTODO RUTA y una decisión (PERMITE/ALCANCE/DENIEGA) por rol:
 #   ANONIMO          sin sesión
 #   FAMILIA          ROLE_USER
 #   GESTOR           ROLE_MANAGER (administrador)
@@ -10,6 +10,7 @@
 #   RESPONSABLE_SEDE ROLE_RESPONSABLE_SEDE (responsable de sede)
 #   PROFESOR         ROLE_PROFESOR (profesor)
 # La decisión combina la regla de URL (SecurityConfiguration) y la de método (@PreAuthorize).
+# ALCANCE: deja pasar solo si el recurso está en el alcance o el acceso de la sesión (@acceso).
 # RUTA es el patrón del controlador tal cual; para manejadores comodín (/imagenes/**, /documentos/**)
 # cada línea es una ruta de ejemplo concreta que ese manejador atiende.
 # El comentario final (Controlador#método) es informativo.
@@ -55,38 +56,38 @@ HEAD     /api/alumnos/deportes/distribucion                                     
 GET      /api/alumnos/{alumnoId}/consentimientos                                                  DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConsentimientoController#listar
 HEAD     /api/alumnos/{alumnoId}/consentimientos                                                  DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConsentimientoController#listar
 POST     /api/alumnos/{alumnoId}/consentimientos                                                  DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConsentimientoController#registrar
-GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerMaterialExamen
-HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerMaterialExamen
-GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile} DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumentoMaterialExamen
-HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile} DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumentoMaterialExamen
-GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/temario                       DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarTemarioMaterialExamen
-HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/temario                       DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarTemarioMaterialExamen
-GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}            DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#streamVideoMaterialExamen
-HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}            DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#streamVideoMaterialExamen
-GET      /api/alumnos/{alumnoId}/documentos                                                       DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDocumentosDelAlumno
-HEAD     /api/alumnos/{alumnoId}/documentos                                                       DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDocumentosDelAlumno
+GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerMaterialExamen
+HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerMaterialExamen
+GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile} DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumentoMaterialExamen
+HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile} DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumentoMaterialExamen
+GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/temario                       DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarTemarioMaterialExamen
+HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/temario                       DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarTemarioMaterialExamen
+GET      /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}            DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#streamVideoMaterialExamen
+HEAD     /api/alumnos/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}            DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#streamVideoMaterialExamen
+GET      /api/alumnos/{alumnoId}/documentos                                                       DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDocumentosDelAlumno
+HEAD     /api/alumnos/{alumnoId}/documentos                                                       DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDocumentosDelAlumno
 POST     /api/alumnos/{alumnoId}/documentos                                                       DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#subirDocumento
 DELETE   /api/alumnos/{alumnoId}/documentos/{documentoId}                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#eliminarDocumento
-GET      /api/alumnos/{alumnoId}/documentos/{documentoId}/descargar                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumento
-HEAD     /api/alumnos/{alumnoId}/documentos/{documentoId}/descargar                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumento
-GET      /api/alumnos/{alumnoId}/grupos                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
-HEAD     /api/alumnos/{alumnoId}/grupos                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
+GET      /api/alumnos/{alumnoId}/documentos/{documentoId}/descargar                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumento
+HEAD     /api/alumnos/{alumnoId}/documentos/{documentoId}/descargar                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#descargarDocumento
+GET      /api/alumnos/{alumnoId}/grupos                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
+HEAD     /api/alumnos/{alumnoId}/grupos                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerGruposDeAlumno
 POST     /api/alumnos/{alumnoId}/grupos/{grupoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#asignarAlumnoAGrupo
 DELETE   /api/alumnos/{alumnoId}/grupos/{grupoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#removerAlumnoDeGrupo
-GET      /api/alumnos/{alumnoId}/imagen                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerImagenAlumno
-HEAD     /api/alumnos/{alumnoId}/imagen                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerImagenAlumno
-GET      /api/alumnos/{alumnoId}/reto-diario                                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerEstadoRetoDiario
-HEAD     /api/alumnos/{alumnoId}/reto-diario                                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerEstadoRetoDiario
-PUT      /api/alumnos/{alumnoId}/reto-diario/completar                                            DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#completarRetoDiario
-GET      /api/alumnos/{alumnoId}/reto-diario/ranking-general                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingGeneralRetoDiario
-HEAD     /api/alumnos/{alumnoId}/reto-diario/ranking-general                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingGeneralRetoDiario
-GET      /api/alumnos/{alumnoId}/reto-diario/ranking-semanal                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingSemanalRetoDiario
-HEAD     /api/alumnos/{alumnoId}/reto-diario/ranking-semanal                                      DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingSemanalRetoDiario
+GET      /api/alumnos/{alumnoId}/imagen                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerImagenAlumno
+HEAD     /api/alumnos/{alumnoId}/imagen                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerImagenAlumno
+GET      /api/alumnos/{alumnoId}/reto-diario                                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerEstadoRetoDiario
+HEAD     /api/alumnos/{alumnoId}/reto-diario                                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerEstadoRetoDiario
+PUT      /api/alumnos/{alumnoId}/reto-diario/completar                                            DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#completarRetoDiario
+GET      /api/alumnos/{alumnoId}/reto-diario/ranking-general                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingGeneralRetoDiario
+HEAD     /api/alumnos/{alumnoId}/reto-diario/ranking-general                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingGeneralRetoDiario
+GET      /api/alumnos/{alumnoId}/reto-diario/ranking-semanal                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingSemanalRetoDiario
+HEAD     /api/alumnos/{alumnoId}/reto-diario/ranking-semanal                                      DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerRankingSemanalRetoDiario
 GET      /api/alumnos/{alumnoId}/salud                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoSaludController#obtener
 HEAD     /api/alumnos/{alumnoId}/salud                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoSaludController#obtener
 PUT      /api/alumnos/{alumnoId}/salud                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoSaludController#guardar
-GET      /api/alumnos/{alumnoId}/turnos                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerTurnosDelAlumno
-HEAD     /api/alumnos/{alumnoId}/turnos                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerTurnosDelAlumno
+GET      /api/alumnos/{alumnoId}/turnos                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerTurnosDelAlumno
+HEAD     /api/alumnos/{alumnoId}/turnos                                                           DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerTurnosDelAlumno
 POST     /api/alumnos/{alumnoId}/turnos/{turnoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#asignarAlumnoATurno
 DELETE   /api/alumnos/{alumnoId}/turnos/{turnoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#removerAlumnoDeTurno
 GET      /api/alumnos/{alumnoId}/tutores                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # TutorController#listar
@@ -104,8 +105,8 @@ PUT      /api/alumnos/{id}/alta                                                 
 PUT      /api/alumnos/{id}/baja                                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#darDeBajaAlumno
 GET      /api/alumnos/{id}/completo                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerAlumnoCompleto
 HEAD     /api/alumnos/{id}/completo                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerAlumnoCompleto
-GET      /api/alumnos/{id}/deportes                                                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDeportesDelAlumno
-HEAD     /api/alumnos/{id}/deportes                                                               DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDeportesDelAlumno
+GET      /api/alumnos/{id}/deportes                                                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDeportesDelAlumno
+HEAD     /api/alumnos/{id}/deportes                                                               DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#obtenerDeportesDelAlumno
 POST     /api/alumnos/{id}/deportes                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#agregarDeporteAAlumno
 DELETE   /api/alumnos/{id}/deportes/{deporte}                                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#removerDeporteDeAlumno
 PUT      /api/alumnos/{id}/deportes/{deporte}/activar                                             DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#activarDeporteDeAlumno
@@ -167,8 +168,8 @@ GET      /api/convocatorias                                                     
 HEAD     /api/convocatorias                                                                       DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatorias
 POST     /api/convocatorias                                                                       DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#crearConvocatoria
 PUT      /api/convocatorias/alumno/{alumnoConvocatoriaId}                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#actualizarAlumnoConvocatoria
-GET      /api/convocatorias/alumnos/{alumnoId}                                                    DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriasDeAlumno
-HEAD     /api/convocatorias/alumnos/{alumnoId}                                                    DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriasDeAlumno
+GET      /api/convocatorias/alumnos/{alumnoId}                                                    DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriasDeAlumno
+HEAD     /api/convocatorias/alumnos/{alumnoId}                                                    DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriasDeAlumno
 PUT      /api/convocatorias/{convocatoriaId}/actualizar-grados                                    DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#actualizarGrados
 GET      /api/convocatorias/{id}                                                                  DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriaPorId
 HEAD     /api/convocatorias/{id}                                                                  DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # ConvocatoriaController#obtenerConvocatoriaPorId
@@ -213,8 +214,8 @@ HEAD     /api/grupos/tipo/{tipo}/alumnos                                        
 POST     /api/grupos/{grupoId}/alumnos                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#agregarAlumnosAGrupo
 POST     /api/grupos/{grupoId}/alumnos/{alumnoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#agregarAlumnoAGrupo
 DELETE   /api/grupos/{grupoId}/alumnos/{alumnoId}                                                 DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#eliminarAlumnoDeGrupo
-GET      /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelAlumnoEnGrupo
-HEAD     /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelAlumnoEnGrupo
+GET      /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos                                          DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelAlumnoEnGrupo
+HEAD     /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos                                          DENIEGA ALCANCE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelAlumnoEnGrupo
 GET      /api/grupos/{grupoId}/turnos                                                             DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelGrupo
 HEAD     /api/grupos/{grupoId}/turnos                                                             DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#obtenerTurnosDelGrupo
 POST     /api/grupos/{grupoId}/turnos/{turnoId}                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoController#agregarTurnoAGrupo
@@ -360,7 +361,7 @@ HEAD     /documentos/org-1/alumnos/1.pdf                                        
 GET      /documentos/org-1/eventos/1.pdf                                                          PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # ArchivoEstaticoController#documento
 HEAD     /documentos/org-1/eventos/1.pdf                                                          PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # ArchivoEstaticoController#documento
 GET      /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#error,BasicErrorController#errorHtml
-HEAD     /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#errorHtml,BasicErrorController#error
+HEAD     /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#error,BasicErrorController#errorHtml
 POST     /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#error,BasicErrorController#errorHtml
 PUT      /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#error,BasicErrorController#errorHtml
 PATCH    /error                                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # BasicErrorController#error,BasicErrorController#errorHtml

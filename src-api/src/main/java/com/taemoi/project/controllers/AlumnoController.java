@@ -67,7 +67,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.exceptions.DocumentoReferenciadoException;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.archivos.UrlArchivoSerializer;
@@ -156,8 +155,6 @@ public class AlumnoController {
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
 
-	@Autowired
-	private AccesoRecursos acceso;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 	@Autowired private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 	@Autowired private com.taemoi.project.services.ProgresionGradosService progresionGrados;
@@ -236,14 +233,10 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/imagen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<Resource> obtenerImagenAlumno(
 			@PathVariable @NonNull Long alumnoId,
 			@RequestParam(name = "w", required = false) Integer anchoSolicitado) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		try {
 			Alumno alumno = alumnoService.buscarAlumno(alumnoId);
 			Imagen imagen = alumno.getFotoAlumno();
@@ -303,24 +296,18 @@ public class AlumnoController {
 	}
 	
     @GetMapping("/{alumnoId}/documentos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
     public ResponseEntity<List<Documento>> obtenerDocumentosDelAlumno(@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
         List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
         return ResponseEntity.ok(documentos);
     }
 
 	@GetMapping("/{alumnoId}/documentos/{documentoId}/descargar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<Resource> descargarDocumento(
 			@PathVariable Long alumnoId,
 			@PathVariable Long documentoId,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean forceDownload) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		try {
 			logger.info("Attempting to download document - AlumnoId: {}, DocumentoId: {}", alumnoId, documentoId);
 			Documento documento = alumnoService.obtenerDocumentoDeAlumno(alumnoId, documentoId);
@@ -407,11 +394,8 @@ public class AlumnoController {
 	 *         grupos para el alumno especificado.
 	 */
 	@GetMapping("/{alumnoId}/grupos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<List<GrupoResponseDTO>> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
 		return ResponseEntity.ok(gruposDTO);
 	}
@@ -656,43 +640,30 @@ public class AlumnoController {
 	 * @return ResponseEntity que contiene una lista de TurnoDTO.
 	 */
 	@GetMapping("/{alumnoId}/turnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
 		return ResponseEntity.ok(turnos);
 	}
 
 	@GetMapping("/{alumnoId}/reto-diario")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<RetoDiarioEstadoDTO> obtenerEstadoRetoDiario(@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		return ResponseEntity.ok(alumnoService.obtenerEstadoRetoDiario(alumnoId));
 	}
 
 	@PutMapping("/{alumnoId}/reto-diario/completar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<RetoDiarioEstadoDTO> completarRetoDiario(@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		return ResponseEntity.ok(alumnoService.completarRetoDiario(alumnoId));
 	}
 
 	@GetMapping("/{alumnoId}/reto-diario/ranking-semanal")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<?> obtenerRankingSemanalRetoDiario(
 			@PathVariable Long alumnoId,
 			@RequestParam(name = "deporte") String deporteParam,
 			@RequestParam(name = "limit", required = false) Integer limit) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		if (deporteParam == null || deporteParam.isBlank()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Map.of("error", "InvalidArgument", "message", "El parámetro deporte es obligatorio."));
@@ -724,15 +695,11 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/reto-diario/ranking-general")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<?> obtenerRankingGeneralRetoDiario(
 			@PathVariable Long alumnoId,
 			@RequestParam(name = "deporte") String deporteParam,
 			@RequestParam(name = "limit", required = false) Integer limit) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		if (deporteParam == null || deporteParam.isBlank()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(Map.of("error", "InvalidArgument", "message", "El parámetro deporte es obligatorio."));
@@ -881,11 +848,8 @@ public class AlumnoController {
 	 * GET /api/alumnos/{id}/deportes
 	 */
 	@GetMapping("/{id}/deportes")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#id)")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
-		if (!acceso.alumnoComoFamilia(id)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
 			List<com.taemoi.project.entities.AlumnoDeporte> deportes = alumnoDeporteService.obtenerDeportesDelAlumno(id);
@@ -903,14 +867,10 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<?> obtenerMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenDTO material = materialExamenService.obtenerMaterialExamen(alumnoId, deporteEnum);
@@ -925,16 +885,12 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/temario")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<Resource> descargarTemarioMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo temario = materialExamenService.obtenerTemario(alumnoId, deporteEnum);
@@ -953,17 +909,13 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/documentacion/{documentoFile}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<Resource> descargarDocumentoMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte,
 			@PathVariable String documentoFile,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo documento = materialExamenService
@@ -982,16 +934,12 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/deportes/{deporte}/material-examen/videos/{videoFile}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<Resource> streamVideoMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte,
 			@PathVariable String videoFile,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte.toUpperCase(Locale.ROOT));
 			MaterialExamenService.MaterialExamenArchivo video = materialExamenService.obtenerVideo(alumnoId, deporteEnum, videoFile);

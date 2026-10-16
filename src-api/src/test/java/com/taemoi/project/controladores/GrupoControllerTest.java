@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.GrupoController;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
-import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.services.GrupoService;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,22 +23,8 @@ class GrupoControllerTest {
 	@Mock
 	private GrupoService grupoService;
 
-	@Mock
-	private AccesoRecursos acceso;
-
 	@InjectMocks
 	private GrupoController grupoController;
-
-	@Test
-	void obtenerTurnosDelAlumnoEnGrupo_DebeDevolverForbiddenCuandoNoTieneAcceso() {
-		Long grupoId = 1L;
-		Long alumnoId = 10L;
-		when(acceso.alumnoComoFamilia(alumnoId)).thenReturn(false);
-
-		ResponseEntity<List<TurnoCortoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
-
-		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-	}
 
 	@Test
 	void obtenerTurnosDelAlumnoEnGrupo_DebeDevolverOkCuandoTieneAcceso() {
@@ -48,7 +33,6 @@ class GrupoControllerTest {
 		TurnoCortoDTO turno = new TurnoCortoDTO();
 		turno.setId(15L);
 
-		when(acceso.alumnoComoFamilia(alumnoId)).thenReturn(true);
 		when(grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId)).thenReturn(List.of(turno));
 
 		ResponseEntity<List<TurnoCortoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);

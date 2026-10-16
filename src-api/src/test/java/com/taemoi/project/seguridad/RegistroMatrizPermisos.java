@@ -13,8 +13,8 @@ import java.util.Map;
 /**
  * Lee y escribe el registro de políticas {@code src/test/resources/seguridad/matriz-permisos.txt}.
  *
- * <p>Formato: una línea por {@code MÉTODO RUTA}, seguida de una decisión ({@code PERMITE}/{@code DENIEGA}) por
- * cada columna de {@link RolMatriz}, en su orden. Separador: espacios o tabuladores. {@code #} inicia un
+ * <p>Formato: una línea por {@code MÉTODO RUTA}, seguida de una decisión ({@code PERMITE}/{@code ALCANCE}/
+ * {@code DENIEGA}, ver {@link Decision}) por cada columna de {@link RolMatriz}, en su orden. Separador: espacios o tabuladores. {@code #} inicia un
  * comentario (línea completa o al final de la línea).
  */
 final class RegistroMatrizPermisos {
@@ -61,7 +61,7 @@ final class RegistroMatrizPermisos {
 						decisiones.put(roles[i], Decision.valueOf(partes[2 + i]));
 					} catch (IllegalArgumentException e) {
 						errores.add("línea " + numero + ": decisión desconocida '" + partes[2 + i] + "' para "
-								+ roles[i] + " (usa PERMITE o DENIEGA)");
+								+ roles[i] + " (usa PERMITE, ALCANCE o DENIEGA)");
 						valida = false;
 					}
 				}
@@ -97,7 +97,7 @@ final class RegistroMatrizPermisos {
 				# Matriz de permisos por endpoint y rol (caracterización del comportamiento ACTUAL).
 				# La valida com.taemoi.project.seguridad.MatrizPermisosTest; léase docs/multi-escuela/matriz-endpoints.md.
 				#
-				# Columnas: MÉTODO RUTA y una decisión (PERMITE/DENIEGA) por rol:
+				# Columnas: MÉTODO RUTA y una decisión (PERMITE/ALCANCE/DENIEGA) por rol:
 				#   ANONIMO          sin sesión
 				#   FAMILIA          ROLE_USER
 				#   GESTOR           ROLE_MANAGER (administrador)
@@ -106,6 +106,7 @@ final class RegistroMatrizPermisos {
 				#   RESPONSABLE_SEDE ROLE_RESPONSABLE_SEDE (responsable de sede)
 				#   PROFESOR         ROLE_PROFESOR (profesor)
 				# La decisión combina la regla de URL (SecurityConfiguration) y la de método (@PreAuthorize).
+				# ALCANCE: deja pasar solo si el recurso está en el alcance o el acceso de la sesión (@acceso).
 				# RUTA es el patrón del controlador tal cual; para manejadores comodín (/imagenes/**, /documentos/**)
 				# cada línea es una ruta de ejemplo concreta que ese manejador atiende.
 				# El comentario final (Controlador#método) es informativo.

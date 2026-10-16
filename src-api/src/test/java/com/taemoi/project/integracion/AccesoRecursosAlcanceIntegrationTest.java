@@ -259,7 +259,8 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 			// aGrupo1 está en g1 (sede s1): en su grupo y en su sede, pero no es suyo como familia.
 			MvcResult ajeno = peticion("/api/alumnos/" + aGrupo1 + "/grupos", cuenta);
 			assertEquals(403, ajeno.getResponse().getStatus(), "cuenta " + cuenta);
-			assertEquals("", ajeno.getResponse().getContentAsString(), "403 sin cuerpo");
+			assertTrue(ajeno.getResponse().getContentAsString().contains("Acceso denegado"),
+					"403 de @PreAuthorize (5c-2, D5-4): " + ajeno.getResponse().getContentAsString());
 			assertEquals(403, peticion("/api/convocatorias/alumnos/" + aGrupo1, cuenta).getResponse().getStatus());
 		}
 		assertEquals(200, peticion("/api/alumnos/" + alumnoProfesor + "/grupos", profesor).getResponse().getStatus());

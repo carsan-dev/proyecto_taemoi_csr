@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
-import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
@@ -45,8 +44,6 @@ public class GrupoController {
 	@Autowired
 	private GrupoService grupoService;
 
-	@Autowired
-	private AccesoRecursos acceso;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	/**
@@ -115,12 +112,9 @@ public class GrupoController {
 	}
 
 	@GetMapping("/{grupoId}/alumnos/{alumnoId}/turnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId,
 			@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
 		if (!turnosDTO.isEmpty()) {
 			return ResponseEntity.ok(turnosDTO);

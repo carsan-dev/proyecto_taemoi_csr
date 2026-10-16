@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
-import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
@@ -40,9 +39,6 @@ public class ConvocatoriaController {
 
 	@Autowired
 	private PDFService pdfService;
-
-	@Autowired
-	private AccesoRecursos acceso;
 
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -68,11 +64,8 @@ public class ConvocatoriaController {
 	}
 
 	@GetMapping("/alumnos/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
-		if (!acceso.alumnoComoFamilia(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
 		return ResponseEntity.ok(convocatorias);
 	}

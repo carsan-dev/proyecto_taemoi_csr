@@ -28,6 +28,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.server.PathContainer;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -42,6 +45,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
+import com.taemoi.project.acceso.ConsultaAccesoRecursos;
 import com.taemoi.project.integracion.MySqlIntegrationTest;
 
 /**
@@ -52,8 +56,9 @@ import com.taemoi.project.integracion.MySqlIntegrationTest;
  * exactamente una línea en {@value RegistroMatrizPermisos#FUENTE}, y no sobra ninguna. Un endpoint nuevo sin línea
  * hace fallar la suite indicando qué añadir.</li>
  * <li><b>B, decisión</b>: para cada línea y rol, la decisión combinada de la regla de URL y de la seguridad de
- * método es la declarada. Se calcula con {@link EvaluadorAutorizacion} sin ejecutar ningún controlador ni tocar
- * datos.</li>
+ * método es la declarada ({@code PERMITE}, {@code ALCANCE} o {@code DENIEGA}). Se calcula con
+ * {@link EvaluadorAutorizacion} sin ejecutar ningún controlador ni tocar datos: el puerto de {@code @acceso} lo
+ * sustituye {@link RegistradorConsultaAcceso}.</li>
  * </ul>
  *
  * <p>Regenerar el registro desde el comportamiento actual (sobrescribe el fichero; revisar el diff):
@@ -93,6 +98,19 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 
 	@MockitoBean
 	JavaMailSender mailSender;
+
+	/**
+	 * Sustituye SOLO el puerto de datos de {@code @acceso} por el registrador (entrega5-plan.md §4.4.2): la lógica
+	 * de rol × operación del bean se evalúa de verdad. Cuesta un contexto de Spring más en caché.
+	 */
+	@TestConfiguration
+	static class ConsultaAccesoRegistrada {
+		@Bean
+		@Primary
+		ConsultaAccesoRecursos registradorConsultaAcceso() {
+			return new RegistradorConsultaAcceso();
+		}
+	}
 
 	@Autowired
 	WebApplicationContext contexto;
@@ -304,10 +322,18 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		assertEquals(Decision.DENIEGA, r.metodo().get(RolMatriz.PROPIETARIO), "y el @PreAuthorize del controlador también");
 	}
 
+	/**
+	 * Entrega 5c-2 (entrega5-plan.md §4.4.7): la familia pasa solo con su alumno ({@code @acceso} consulta el
+	 * puerto → ALCANCE); la gestión tiene alcance total y el bean corta sin consultar → PERMITE.
+	 * RutasFamiliaTaemoiIntegrationTest lo comprueba por HTTP.
+	 */
 	@Test
-	void controlRutaDeFamiliaPermitidaALaFamilia() {
+	void controlRutaDeFamiliaConAlcanceParaLaFamilia() {
 		EvaluadorAutorizacion.Resultado r = evaluarClave("GET /api/alumnos/{alumnoId}/grupos");
-		assertEquals(Decision.PERMITE, r.combinada().get(RolMatriz.FAMILIA));
+		assertEquals(Decision.ALCANCE, r.combinada().get(RolMatriz.FAMILIA));
+		assertEquals(Decision.ALCANCE, r.metodo().get(RolMatriz.FAMILIA), "el ALCANCE viene de @acceso");
+		assertEquals(Decision.PERMITE, r.combinada().get(RolMatriz.PROPIETARIO));
+		assertEquals(Decision.PERMITE, r.combinada().get(RolMatriz.GESTOR));
 		assertEquals(Decision.DENIEGA, r.combinada().get(RolMatriz.ANONIMO));
 		assertEquals(Decision.DENIEGA, r.combinada().get(RolMatriz.SOLO_PLATAFORMA));
 	}
