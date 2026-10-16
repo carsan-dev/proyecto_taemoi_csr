@@ -13,6 +13,11 @@ export interface ConfiguracionPreinscripcion {
  instrucciones?:string;
 }
 
+/** Motivo que recibe la familia si se cancela sin escribir uno (lo aplica el backend; aquí solo se muestra). */
+export const MOTIVO_CANCELACION_POR_DEFECTO='No ha sido posible confirmar tu plaza en esta ocasión.';
+/** Longitud máxima del motivo: la misma que valida el backend. */
+export const MOTIVO_CANCELACION_MAX=500;
+
 @Injectable({providedIn:'root'})
 export class PreinscripcionService {
  private readonly base=`${environment.apiUrl}/preinscripciones`;
@@ -23,7 +28,8 @@ export class PreinscripcionService {
  turnos(deporte:string){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`);}
  crear(data:any,idempotencyKey?:string){const headers=idempotencyKey?new HttpHeaders({'Idempotency-Key':idempotencyKey}):undefined;return this.http.post<any>(this.base,data,{headers});}
  listar(filtros:Record<string,string>={},page=0,size=25){let params=new HttpParams().set('page',page).set('size',size);Object.entries(filtros).filter(([,v])=>v).forEach(([k,v])=>params=params.set(k,v));return this.http.get<{content:any[];page:number;size:number;totalElements:number;totalPages:number;first:boolean;last:boolean}>(this.base,{params});}
- cancelar(ref:string){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{});}
+ /** `motivo` vacío o en blanco: el backend aplica {@link MOTIVO_CANCELACION_POR_DEFECTO}. */
+ cancelar(ref:string,motivo=''){return this.http.post<void>(`${this.base}/${ref}/cancelar`,{motivo});}
  eliminar(ref:string){return this.http.delete<void>(`${this.base}/${ref}`);}
  reenviar(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar`,{});}
  reenviarCambioTurnos(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar-cambio-turnos`,{});}

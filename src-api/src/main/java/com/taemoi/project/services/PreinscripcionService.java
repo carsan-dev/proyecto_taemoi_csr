@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.request.ActualizarTurnosPreinscripcionRequest;
+import com.taemoi.project.dtos.request.CancelarPreinscripcionRequest;
 import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest;
 import com.taemoi.project.dtos.request.PreinscripcionRequest;
 import com.taemoi.project.dtos.request.PlantillaPreinscripcionRequest;
@@ -46,6 +47,7 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.EstadoEmailCambioTurnos;
 import com.taemoi.project.entities.EstadoEmailFinalizacion;
+import com.taemoi.project.entities.EstadoEmailCancelacion;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.entities.Preinscripcion;
@@ -57,6 +59,7 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PlantillaPreinscripcionRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
+import com.taemoi.project.events.PreinscripcionCanceladaEvent;
 import com.taemoi.project.events.PreinscripcionFinalizadaEvent;
 import com.taemoi.project.events.PreinscripcionTurnosModificadosEvent;
 import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
@@ -69,6 +72,8 @@ import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaExcep
 public class PreinscripcionService {
  private static final Logger log=LoggerFactory.getLogger(PreinscripcionService.class);
  private static final Set<EstadoPreinscripcion> ESTADOS_NO_REPETIBLES=Set.of(EstadoPreinscripcion.PENDIENTE,EstadoPreinscripcion.EN_LISTA_ESPERA,EstadoPreinscripcion.FINALIZADA);
+ /** Motivo que recibe la familia cuando el personal cancela sin escribir uno. */
+ public static final String MOTIVO_CANCELACION_POR_DEFECTO="No ha sido posible confirmar tu plaza en esta ocasión.";
  private static final String MENSAJE_DUPLICADA="Ya existe una preinscripción para esta persona y deporte en la temporada actual.";
  private final PreinscripcionRepository repo; private final PlantillaPreinscripcionRepository plantillas; private final GrupoRepository grupos; private final TurnoRepository turnos;
  private final AlumnoRepository alumnos; private final AlumnoDeporteRepository alumnoDeportes; private final ProgresionGradosService progresion; private final CatalogoDisciplinasService catalogo; private final TemporadaService temporadas; private final PDFService pdf;
@@ -105,7 +110,10 @@ public Page<Preinscripcion> listar(String temporada,String deporteParametro,Esta
  public List<Map<String,Object>> turnosSolicitados(Preinscripcion p){return turnosDe(p).stream().map(t->{Grupo g=t.getGrupo();Map<String,Object> m=new LinkedHashMap<>();m.put("id",t.getId());m.put("grupoId",g==null?null:g.getId());m.put("grupo",g==null?"Grupo no disponible":g.getNombre());m.put("diaSemana",t.getDiaSemana());m.put("horaInicio",t.getHoraInicio());m.put("horaFin",t.getHoraFin());return m;}).toList();}
  public String grupoOriginal(Preinscripcion p){return p.getGrupoSnapshot()!=null?p.getGrupoSnapshot():p.getTurnoSnapshot();}
  public String grupoVigente(Preinscripcion p){return snapshotTurnos(p.getDeporte(),turnosDe(p));}
- @Transactional public void cancelar(String ref){Preinscripcion p=buscar(ref);if(p.getEstado()!=EstadoPreinscripcion.PENDIENTE&&p.getEstado()!=EstadoPreinscripcion.EN_LISTA_ESPERA)throw new IllegalStateException("Solo se puede cancelar una solicitud pendiente o en lista de espera.");boolean libera=p.getEstado()==EstadoPreinscripcion.PENDIENTE;String temporada=p.getTemporada();List<Turno> seleccion=turnosDe(p);aforo.bloquearTurnos(seleccion.stream().map(Turno::getId).toList());p.setEstado(EstadoPreinscripcion.CANCELADA);p.setCanceladaEn(Instant.now());repo.saveAndFlush(p);if(libera)promocionarDisponibles(temporada);}
+ /** Cancela, guarda el motivo (o el de por defecto si llega vacío) y publica el aviso a la familia, que sale tras el commit
+  * ({@link PreinscripcionCancelacionEmailListener}): si el correo falla la cancelación se mantiene y queda el error registrado. */
+ @Transactional public void cancelar(String ref,String motivo){String motivoFinal=motivoCancelacion(motivo);Preinscripcion p=buscar(ref);if(p.getEstado()!=EstadoPreinscripcion.PENDIENTE&&p.getEstado()!=EstadoPreinscripcion.EN_LISTA_ESPERA)throw new IllegalStateException("Solo se puede cancelar una solicitud pendiente o en lista de espera.");boolean libera=p.getEstado()==EstadoPreinscripcion.PENDIENTE;String temporada=p.getTemporada();List<Turno> seleccion=turnosDe(p);aforo.bloquearTurnos(seleccion.stream().map(Turno::getId).toList());p.setEstado(EstadoPreinscripcion.CANCELADA);p.setCanceladaEn(Instant.now());p.setMotivoCancelacion(motivoFinal);p.setEstadoEmailCancelacion(EstadoEmailCancelacion.PENDIENTE);p.setEmailCancelacionEnviadoEn(null);p.setEmailCancelacionUltimoError(null);repo.saveAndFlush(p);eventos.publishEvent(new PreinscripcionCanceladaEvent(p.getReferencia()));if(libera)promocionarDisponibles(temporada);}
+ private String motivoCancelacion(String motivo){if(blank(motivo))return MOTIVO_CANCELACION_POR_DEFECTO;String limpio=motivo.trim();if(limpio.length()>CancelarPreinscripcionRequest.MOTIVO_MAX)throw new IllegalArgumentException("El motivo no puede superar "+CancelarPreinscripcionRequest.MOTIVO_MAX+" caracteres.");return limpio;}
  @Transactional public void eliminar(String ref){Preinscripcion p=buscar(ref);if(p.getEstado()!=EstadoPreinscripcion.CANCELADA)throw new IllegalStateException("Solo se pueden eliminar definitivamente las solicitudes canceladas.");repo.delete(p);}
  @Transactional public void reenviar(String ref){reenviarSolicitudOriginal(buscar(ref));}
  @Transactional public void reenviarCambioTurnos(String ref){Preinscripcion p=repo.findByReferenciaForUpdate(ref).orElseThrow(()->new NoSuchElementException("Preinscripción no encontrada."));if(p.getEstado()!=EstadoPreinscripcion.PENDIENTE)throw new IllegalStateException("El aviso de cambio solo puede reenviarse mientras la solicitud siga pendiente.");if(blank(p.getEmailCambioTurnosAnteriorSnapshot())||blank(p.getEmailCambioTurnosNuevoSnapshot()))throw new IllegalStateException("La solicitud no tiene ningún cambio de turnos para reenviar.");p.setEstadoEmailCambioTurnos(EstadoEmailCambioTurnos.PENDIENTE);p.setEmailCambioTurnosUltimoError(null);eventos.publishEvent(new PreinscripcionTurnosModificadosEvent(p.getReferencia()));}
