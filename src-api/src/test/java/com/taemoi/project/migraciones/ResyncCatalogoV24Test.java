@@ -25,7 +25,8 @@ import com.taemoi.project.services.CatalogoLegadoTaemoi;
  */
 class ResyncCatalogoV24Test {
 
-	private static final Pattern VERSION = Pattern.compile("V(\\d+)__.*\\.sql");
+	/** Versión mayor; admite subversiones como V31_1 (Flyway 31.1, va tras V31 y antes de V32). */
+	private static final Pattern VERSION = Pattern.compile("V(\\d+)(?:_\\d+)?__.*\\.sql");
 
 	@Test
 	void ningunaMigracionPosteriorAV27IncluyeElResync() throws Exception {

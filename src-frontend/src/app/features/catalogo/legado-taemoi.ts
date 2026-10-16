@@ -69,6 +69,16 @@ export function tarifaInicialPreinscripcion(
   if (!fechaNacimiento) {
     return 'INFANTIL';
   }
+  // 'yyyy-MM-dd' (diaApi): edad por año/mes/día; new Date('yyyy-MM-dd') es medianoche UTC y en husos
+  // negativos daría el día anterior.
+  const dia = typeof fechaNacimiento === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(fechaNacimiento.trim()) : null;
+  if (dia) {
+    const [anio, mes, diaMes] = dia.slice(1).map(Number);
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - anio;
+    if (hoy.getMonth() + 1 < mes || (hoy.getMonth() + 1 === mes && hoy.getDate() < diaMes)) edad--;
+    return edad < 18 ? 'INFANTIL' : 'ADULTO';
+  }
   const nacimiento = new Date(fechaNacimiento);
   if (Number.isNaN(nacimiento.getTime())) {
     return 'INFANTIL';

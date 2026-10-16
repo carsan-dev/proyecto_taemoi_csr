@@ -56,6 +56,12 @@ public class Preinscripcion extends EntidadOrganizacion {
  @Column(name="finalizada_en") private Instant finalizadaEn; @Column(name="cancelada_en") private Instant canceladaEn;
  @Column(name="promocionada_en") private Instant promocionadaEn;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="alumno_id") private Alumno alumno;
+ /** V31_1: columnas NULL; las filas anteriores leen NO_ENVIADO y 0 intentos en los getters. */
+ @Column(name="motivo_cancelacion",length=500) private String motivoCancelacion;
+ @Enumerated(EnumType.STRING) @Column(name="email_cancelacion_estado",length=20) private EstadoEmailCancelacion estadoEmailCancelacion=EstadoEmailCancelacion.NO_ENVIADO;
+ @Column(name="email_cancelacion_intentos") private Integer emailCancelacionIntentos=0;
+ @Column(name="email_cancelacion_enviado_en") private Instant emailCancelacionEnviadoEn;
+ @Column(name="email_cancelacion_ultimo_error",length=500) private String emailCancelacionUltimoError;
  @PrePersist void create(){creadaEn=actualizadaEn=Instant.now();} @PreUpdate void update(){actualizadaEn=Instant.now();}
  public Long getId(){return id;} public String getReferencia(){return referencia;} public void setReferencia(String v){referencia=v;} public String getTemporada(){return temporada;} public void setTemporada(String v){temporada=v;}
  public EstadoPreinscripcion getEstado(){return estado;} public void setEstado(EstadoPreinscripcion v){estado=v;}
@@ -82,4 +88,9 @@ public class Preinscripcion extends EntidadOrganizacion {
  public String getEmailCambioTurnosNuevoSnapshot(){return emailCambioTurnosNuevoSnapshot;} public void setEmailCambioTurnosNuevoSnapshot(String v){emailCambioTurnosNuevoSnapshot=v;}
  public Instant getCreadaEn(){return creadaEn;} public Instant getFinalizadaEn(){return finalizadaEn;} public void setFinalizadaEn(Instant v){finalizadaEn=v;} public Instant getCanceladaEn(){return canceladaEn;} public void setCanceladaEn(Instant v){canceladaEn=v;} public Alumno getAlumno(){return alumno;} public void setAlumno(Alumno v){alumno=v;}
  public Instant getPromocionadaEn(){return promocionadaEn;} public void setPromocionadaEn(Instant v){promocionadaEn=v;}
+ public String getMotivoCancelacion(){return motivoCancelacion;} public void setMotivoCancelacion(String v){motivoCancelacion=v;}
+ public EstadoEmailCancelacion getEstadoEmailCancelacion(){return estadoEmailCancelacion==null?EstadoEmailCancelacion.NO_ENVIADO:estadoEmailCancelacion;} public void setEstadoEmailCancelacion(EstadoEmailCancelacion v){estadoEmailCancelacion=v;}
+ public Integer getEmailCancelacionIntentos(){return emailCancelacionIntentos==null?0:emailCancelacionIntentos;} public void setEmailCancelacionIntentos(Integer v){emailCancelacionIntentos=v;}
+ public Instant getEmailCancelacionEnviadoEn(){return emailCancelacionEnviadoEn;} public void setEmailCancelacionEnviadoEn(Instant v){emailCancelacionEnviadoEn=v;}
+ public String getEmailCancelacionUltimoError(){return emailCancelacionUltimoError;} public void setEmailCancelacionUltimoError(String v){emailCancelacionUltimoError=v;}
 }
