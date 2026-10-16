@@ -13,6 +13,8 @@ export interface AdminQuickNavigationItem extends NavigationItem {
   activePrefixes?: string[];
   priority?: number;
   adminOnly?: boolean;
+  /** Solo para la sesión administradora de plataforma (se detecta con PlataformaService). */
+  plataformaOnly?: boolean;
 }
 
 export interface NavigationDropdownItem {
@@ -170,7 +172,7 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-cash-stack',
       },
       {
-        label: 'Auditoría sistema',
+        label: 'Registro de acciones',
         route: '/auditoriaSistema',
         icon: 'bi-journal-text',
       },
@@ -252,7 +254,7 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     priority: 3,
   },
   {
-    label: 'Auditoría',
+    label: 'Registro de acciones',
     route: '/auditoriaSistema',
     icon: 'bi-journal-text',
     activePrefixes: ['/auditoriaSistema'],
@@ -273,6 +275,13 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     activePrefixes: ['/configuracion-sistema'],
     priority: 9,
     adminOnly: true,
+  },
+  {
+    label: 'Errores de plataforma',
+    route: '/plataformaErrores',
+    icon: 'bi-exclamation-octagon',
+    priority: 9,
+    plataformaOnly: true,
   },
 ];
 

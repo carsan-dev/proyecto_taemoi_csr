@@ -60,6 +60,15 @@ describe('HeaderComponent', () => {
     expect(routes).toContain('/configuracion-sistema');
   });
 
+  it('muestra el acceso a errores de plataforma solo al administrador de plataforma', () => {
+    component.isAdminOnly = true;
+    component.esAdminPlataforma = false;
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).not.toContain('/plataformaErrores');
+
+    component.esAdminPlataforma = true;
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).toContain('/plataformaErrores');
+  });
+
   it('detecta el portal user usando metadata de rutas', () => {
     (component as any).actualizarContextoRuta('/userpage/turnos');
 

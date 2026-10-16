@@ -1,5 +1,6 @@
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { roleGuard } from './guards/role.guard';
+import { plataformaGuard } from './guards/plataforma.guard';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 
@@ -19,6 +20,17 @@ describe('app routes', () => {
     expect(configuracionRoute?.canActivate).toEqual([roleGuard, adminOnlyGuard]);
     expect(auditoriaRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
     expect(configuracionRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
+  });
+
+  it('protege errores de plataforma con su propio guard, sin roles de escuela ni catálogo', () => {
+    const plataformaIndex = routes.findIndex((route) => route.path === 'plataformaErrores');
+    const plataformaRoute = routes[plataformaIndex];
+
+    expect(plataformaRoute?.canActivate).toEqual([plataformaGuard]);
+    expect(plataformaRoute?.data?.['requiredRoles']).toBeUndefined();
+    expect(plataformaRoute?.resolve?.['catalogo']).toBeUndefined();
+    expect(plataformaIndex).toBeLessThan(routes.findIndex((route) => route.path === '**'));
+    expect(resolverPortalContexto('/plataformaErrores')).toBe('admin');
   });
 
   it('mantiene el portal user accesible para cuentas duales y usuarios finales', () => {

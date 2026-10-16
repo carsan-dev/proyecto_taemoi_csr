@@ -23,6 +23,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioLogueado: boolean = false;
   isAdmin: boolean = false;
   isAdminOnly: boolean = false;
+  esAdminPlataforma: boolean = false;
   isUser: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
@@ -56,7 +57,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly adminQuickLinks: AdminQuickNavigationItem[] = ADMIN_HEADER_QUICK_LINKS;
 
   get visibleAdminQuickLinks(): AdminQuickNavigationItem[] {
-    return this.adminQuickLinks.filter((item) => !item.adminOnly || this.isAdminOnly);
+    return this.adminQuickLinks.filter(
+      (item) => (!item.adminOnly || this.isAdminOnly) && (!item.plataformaOnly || this.esAdminPlataforma)
+    );
   }
 
   constructor(
@@ -79,6 +82,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
         } else {
           this.isAdmin = false;
           this.isAdminOnly = false;
+          this.esAdminPlataforma = false;
           this.isUser = false;
           this.tieneAccesoDual = false;
           this.isAuthChecked = true;
@@ -234,6 +238,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   comprobarRoles() {
+    this.subscriptions.add(
+      this.authService.esAdminPlataforma().subscribe((esAdmin) => {
+        this.esAdminPlataforma = esAdmin;
+      })
+    );
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
       this.isAdminOnly = roles.includes('ROLE_ADMIN');

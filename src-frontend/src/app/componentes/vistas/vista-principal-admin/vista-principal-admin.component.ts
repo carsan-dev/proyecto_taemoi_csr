@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
-import { interval, Subscription, forkJoin, of } from 'rxjs';
-import { catchError, skip } from 'rxjs/operators';
+import { interval, Observable, Subscription, forkJoin, of } from 'rxjs';
+import { catchError, map, skip, switchMap, take } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { PlataformaService } from '../../../servicios/plataforma/plataforma.service';
+import { DIAS_VENTANA_ERRORES, ventanaUltimosDias } from '../../../utils/ventana-fechas.util';
 
 interface DashboardStats {
   totalAlumnos: number;
@@ -21,7 +23,8 @@ interface DashboardStats {
   alumnosAptos: number;
   cobrosPendientesMes: number;
   importePendienteMes: number;
-  erroresAuditoriaRecientes: number;
+  /** Solo administrador de plataforma: errores de todas las escuelas en los últimos 7 días. */
+  erroresPlataformaRecientes: number;
   proximosEventos: any[];
 }
 
@@ -32,6 +35,8 @@ interface DashboardQuickAction {
   icono: string;
   color: string;
   queryParams?: Record<string, string>;
+  /** D10: solo ROLE_ADMIN (adminOnlyGuard devolvería al gestor a la raíz). */
+  soloAdmin?: boolean;
 }
 
 interface DashboardAlert {
@@ -53,7 +58,6 @@ interface DashboardAlert {
   styleUrl: './vista-principal-admin.component.scss',
 })
 export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
-  private readonly ventanaErroresAuditoriaDias: number = 7;
   private readonly autoRefreshIntervalMs: number = 30000;
   private eventosSuscripcionInicializada = false;
   nombreUsuario: string | null = '';
@@ -76,7 +80,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     alumnosAptos: 0,
     cobrosPendientesMes: 0,
     importePendienteMes: 0,
-    erroresAuditoriaRecientes: 0,
+    erroresPlataformaRecientes: 0,
     proximosEventos: []
   };
 
@@ -113,11 +117,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       color: '#2f855a',
     },
     {
-      titulo: 'Auditoria de API',
-      descripcion: 'Consulta errores recientes y operaciones globales.',
+      titulo: 'Registro de acciones',
+      descripcion: 'Lo que se ha hecho en tu escuela.',
       ruta: '/auditoriaSistema',
-      icono: 'bi bi-bug-fill',
+      icono: 'bi bi-journal-text',
       color: '#0f766e',
+      soloAdmin: true,
     },
     {
       titulo: 'Roles y Configuracion',
@@ -125,11 +130,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       ruta: '/configuracion-sistema',
       icono: 'bi bi-gear-fill',
       color: '#2f855a',
+      soloAdmin: true,
     },
   ];
 
   // Navigation sections for quick access
-  seccionesAdmin = [
+  seccionesAdmin: DashboardQuickAction[] = [
     {
       titulo: 'Alumnos',
       descripcion: 'Gestiona información de los alumnos',
@@ -173,15 +179,28 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       color: '#16a085'
     },
     {
-      titulo: 'Auditoria',
-      descripcion: 'Revisa trazas del sistema y errores recientes de la API',
+      titulo: 'Registro de acciones',
+      descripcion: 'Altas, cambios y bajas hechas en tu escuela',
       ruta: '/auditoriaSistema',
       icono: 'bi bi-journal-text',
-      color: '#0f766e'
+      color: '#0f766e',
+      soloAdmin: true,
     },
   ];
 
   private readonly catalogo = inject(CatalogoService);
+  private readonly plataforma = inject(PlataformaService);
+
+  /** ROLE_ADMIN de la escuela; el gestor (ROLE_MANAGER) no ve las tarjetas solo-admin. */
+  esAdmin = false;
+
+  get operacionesVisibles(): DashboardQuickAction[] {
+    return this.operacionesPrioritarias.filter((operacion) => !operacion.soloAdmin || this.esAdmin);
+  }
+
+  get seccionesVisibles(): DashboardQuickAction[] {
+    return this.seccionesAdmin.filter((seccion) => !seccion.soloAdmin || this.esAdmin);
+  }
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -190,6 +209,12 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.subscriptions.add(
+      this.authService.getRoles().subscribe((roles) => {
+        this.esAdmin = (roles ?? []).includes('ROLE_ADMIN');
+      })
+    );
+
     this.authService.obtenerNombreUsuario().subscribe((nombre) => {
       this.nombreUsuario = nombre ?? '';
 
@@ -233,8 +258,6 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     this.endpointsService.obtenerTodosLosEventos();
     const mesActual = this.fechaActual.getMonth() + 1;
     const anoActual = this.fechaActual.getFullYear();
-    const fechaHastaErrores = this.formatearFechaLocal(new Date());
-    const fechaDesdeErrores = this.formatearFechaLocal(this.obtenerFechaDiasAtras(this.ventanaErroresAuditoriaDias));
 
     // Fetch all data in parallel
     const sub = forkJoin({
@@ -243,20 +266,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       grupos: this.endpointsService.obtenerTodosLosGrupos(),
       turnos: this.endpointsService.obtenerTodosLosTurnos(),
       alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen(),
-      auditoriaErroresRecientes: this.endpointsService.obtenerAuditoriaEventos(
-        {
-          desde: fechaDesdeErrores,
-          hasta: fechaHastaErrores,
-          resultado: 'ERROR',
-        },
-        1,
-        1
-      ).pipe(
-        catchError((error) => {
-          console.warn('No se pudieron cargar errores recientes de auditoria para el dashboard:', error);
-          return of(null);
-        })
-      ),
+      erroresPlataforma: this.contarErroresPlataforma(),
       tesoreriaResumen: this.endpointsService.obtenerTesoreriaResumen(mesActual, anoActual, 'TODOS').pipe(
         catchError((error) => {
           console.warn('No se pudo cargar el resumen de tesorería para el dashboard:', error);
@@ -282,7 +292,7 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
         this.stats.alumnosAptos = (data.alumnosAptos || []).length;
         this.stats.cobrosPendientesMes = data.tesoreriaResumen?.totalPendientes || 0;
         this.stats.importePendienteMes = data.tesoreriaResumen?.importePendiente || 0;
-        this.stats.erroresAuditoriaRecientes = data.auditoriaErroresRecientes?.totalElements || 0;
+        this.stats.erroresPlataformaRecientes = data.erroresPlataforma;
 
         this.cargandoEstadisticas = false;
         this.actualizarAlertasOperativas();
@@ -424,15 +434,16 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (this.stats.erroresAuditoriaRecientes > 0) {
+    if (this.stats.erroresPlataformaRecientes > 0) {
+      const total = this.stats.erroresPlataformaRecientes;
       alertas.push({
-        id: 'auditoria-errores-recientes',
+        id: 'errores-plataforma',
         tipo: 'critical',
-        titulo: 'Errores recientes en API',
-        descripcion: `${this.stats.erroresAuditoriaRecientes} errores en los ultimos ${this.ventanaErroresAuditoriaDias} dias.`,
-        accionTexto: 'Abrir auditoria',
-        ruta: '/auditoriaSistema',
-        icono: 'bi bi-bug-fill',
+        titulo: `${total} ${total === 1 ? 'error' : 'errores'} en ${DIAS_VENTANA_ERRORES} días`,
+        descripcion: 'Errores técnicos de la API en todas las escuelas.',
+        accionTexto: 'Ver errores de plataforma',
+        ruta: '/plataformaErrores',
+        icono: 'bi bi-exclamation-octagon-fill',
       });
     }
 
@@ -496,17 +507,30 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     return tipo === 'critical' || tipo === 'warning';
   }
 
-  private obtenerFechaDiasAtras(dias: number): Date {
-    const fecha = new Date();
-    fecha.setDate(fecha.getDate() - dias);
-    return fecha;
-  }
-
-  private formatearFechaLocal(fecha: Date): string {
-    const ano = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    const dia = String(fecha.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
+  /** 0 si la sesión no es administradora de plataforma o si la consulta falla: el aviso es secundario. */
+  private contarErroresPlataforma(): Observable<number> {
+    return this.plataforma.esAdminPlataforma().pipe(
+      take(1),
+      switchMap((esAdminPlataforma) => {
+        if (!esAdminPlataforma) {
+          return of(0);
+        }
+        // Sin estado, el backend incluye también peticiones anónimas con 2xx (tráfico público); y no admite
+        // "4xx o 5xx" en una sola llamada, así que se cuentan las dos familias por separado.
+        const ventana = ventanaUltimosDias();
+        const contar = (estado: '4xx' | '5xx') =>
+          this.plataforma
+            .errores({ ...ventana, estado, page: 1, size: 1 })
+            .pipe(map((respuesta) => respuesta?.totalElements ?? 0));
+        return forkJoin([contar('4xx'), contar('5xx')]).pipe(
+          map(([cuatro, cinco]) => cuatro + cinco),
+          catchError((error) => {
+            console.warn('No se pudieron contar los errores de plataforma para el dashboard:', error);
+            return of(0);
+          })
+        );
+      })
+    );
   }
 
   /** Nombre de la disciplina en el catálogo (D2); el propio código si no está. */
