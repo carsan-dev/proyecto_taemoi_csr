@@ -53,8 +53,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +67,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.exceptions.DocumentoReferenciadoException;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.archivos.UrlArchivoSerializer;
@@ -91,7 +90,6 @@ import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositories.AlumnoRepository;
-import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
@@ -159,7 +157,7 @@ public class AlumnoController {
 	private AlumnoDeporteService alumnoDeporteService;
 
 	@Autowired
-	private AlumnoAccessControlService alumnoAccessControlService;
+	private AccesoRecursos acceso;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 	@Autowired private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 	@Autowired private com.taemoi.project.services.ProgresionGradosService progresionGrados;
@@ -242,7 +240,7 @@ public class AlumnoController {
 	public ResponseEntity<Resource> obtenerImagenAlumno(
 			@PathVariable @NonNull Long alumnoId,
 			@RequestParam(name = "w", required = false) Integer anchoSolicitado) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -307,7 +305,7 @@ public class AlumnoController {
     @GetMapping("/{alumnoId}/documentos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
     public ResponseEntity<List<Documento>> obtenerDocumentosDelAlumno(@PathVariable Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
         List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
@@ -320,7 +318,7 @@ public class AlumnoController {
 			@PathVariable Long alumnoId,
 			@PathVariable Long documentoId,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean forceDownload) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		try {
@@ -411,7 +409,7 @@ public class AlumnoController {
 	@GetMapping("/{alumnoId}/grupos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<GrupoResponseDTO>> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
@@ -660,7 +658,7 @@ public class AlumnoController {
 	@GetMapping("/{alumnoId}/turnos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
@@ -670,7 +668,7 @@ public class AlumnoController {
 	@GetMapping("/{alumnoId}/reto-diario")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<RetoDiarioEstadoDTO> obtenerEstadoRetoDiario(@PathVariable Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		return ResponseEntity.ok(alumnoService.obtenerEstadoRetoDiario(alumnoId));
@@ -679,7 +677,7 @@ public class AlumnoController {
 	@PutMapping("/{alumnoId}/reto-diario/completar")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<RetoDiarioEstadoDTO> completarRetoDiario(@PathVariable Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		return ResponseEntity.ok(alumnoService.completarRetoDiario(alumnoId));
@@ -691,7 +689,7 @@ public class AlumnoController {
 			@PathVariable Long alumnoId,
 			@RequestParam(name = "deporte") String deporteParam,
 			@RequestParam(name = "limit", required = false) Integer limit) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -731,7 +729,7 @@ public class AlumnoController {
 			@PathVariable Long alumnoId,
 			@RequestParam(name = "deporte") String deporteParam,
 			@RequestParam(name = "limit", required = false) Integer limit) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -885,7 +883,7 @@ public class AlumnoController {
 	@GetMapping("/{id}/deportes")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
-		if (!usuarioPuedeAccederAlumno(id)) {
+		if (!acceso.alumnoComoFamilia(id)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 		try {
@@ -909,7 +907,7 @@ public class AlumnoController {
 	public ResponseEntity<?> obtenerMaterialExamen(
 			@PathVariable Long alumnoId,
 			@PathVariable String deporte) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -933,7 +931,7 @@ public class AlumnoController {
 			@PathVariable String deporte,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -962,7 +960,7 @@ public class AlumnoController {
 			@PathVariable String documentoFile,
 			@RequestParam(name = "download", required = false, defaultValue = "false") boolean download,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -990,7 +988,7 @@ public class AlumnoController {
 			@PathVariable String deporte,
 			@PathVariable String videoFile,
 			@RequestHeader HttpHeaders requestHeaders) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
+		if (!acceso.alumnoComoFamilia(alumnoId)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
@@ -2440,11 +2438,6 @@ public class AlumnoController {
 			resultado = resultado.replace("%USERPROFILE%", userProfile);
 		}
 		return resultado;
-	}
-
-	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		return alumnoAccessControlService.canAccessAlumno(alumnoId, authentication);
 	}
 
 	/**

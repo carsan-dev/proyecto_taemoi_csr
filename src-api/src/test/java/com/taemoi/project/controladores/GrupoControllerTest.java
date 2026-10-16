@@ -1,8 +1,6 @@
 package com.taemoi.project.controladores;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -17,7 +15,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.GrupoController;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
-import com.taemoi.project.services.AlumnoAccessControlService;
+import com.taemoi.project.acceso.AccesoRecursos;
 import com.taemoi.project.services.GrupoService;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,7 +25,7 @@ class GrupoControllerTest {
 	private GrupoService grupoService;
 
 	@Mock
-	private AlumnoAccessControlService alumnoAccessControlService;
+	private AccesoRecursos acceso;
 
 	@InjectMocks
 	private GrupoController grupoController;
@@ -36,7 +34,7 @@ class GrupoControllerTest {
 	void obtenerTurnosDelAlumnoEnGrupo_DebeDevolverForbiddenCuandoNoTieneAcceso() {
 		Long grupoId = 1L;
 		Long alumnoId = 10L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
+		when(acceso.alumnoComoFamilia(alumnoId)).thenReturn(false);
 
 		ResponseEntity<List<TurnoCortoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
 
@@ -50,7 +48,7 @@ class GrupoControllerTest {
 		TurnoCortoDTO turno = new TurnoCortoDTO();
 		turno.setId(15L);
 
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
+		when(acceso.alumnoComoFamilia(alumnoId)).thenReturn(true);
 		when(grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId)).thenReturn(List.of(turno));
 
 		ResponseEntity<List<TurnoCortoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);

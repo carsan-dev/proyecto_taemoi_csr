@@ -267,11 +267,15 @@ enum OperacionAcceso { LEER, EDITAR }   // la entrega 7 añade GRADO, SALUD, ASI
 ### 4.3 Migración
 
 1. **5c-1 (sin cambio de comportamiento):** crear el bean y sustituir las tres copias privadas por
-   `acceso.alumno(id, OperacionAcceso.LEER)` desde el controlador. Respuesta idéntica (403 sin cuerpo) y matriz sin
-   cambios.
+   `acceso.alumnoComoFamilia(id)` desde el controlador. Respuesta idéntica (403 sin cuerpo) y matriz sin cambios.
+   - `alumnoComoFamilia` = alcance total o SOLO la regla de familia de hoy, sin ramas de sede ni de grupo. Motivo
+     (D5-2, confirmada por el propietario): una cuenta mixta FAMILIA + PROFESOR/RESPONSABLE_SEDE entra solo como
+     familia hasta las entregas 6 y 7. Con `alumno(id, LEER)` («basta con que un rol conceda») esa cuenta habría
+     leído, por `ROLE_USER`, los alumnos de su grupo o su sede en las 16 rutas, incluida la escritura
+     `PUT …/reto-diario/completar`. `alumno(id, op)` queda para los endpoints de esas entregas.
 2. **5c-2 (decisión D5-4):** pasar las 16 rutas a
-   `@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumno(#alumnoId, 'LEER')")`
-   y quitar el `if`.
+   `@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")`
+   y quitar el `if` (expresión por D5-2, ver el paso 1).
    - `#alumnoId` funciona: el proyecto compila con `-parameters`. Lo hereda de `spring-boot-starter-parent` 3.5.9, y
      lo demuestran los `@PathVariable` sin nombre que ya funcionan.
    - Cambio visible: el 403 pasa a venir de Spring Security (`sendError(403)` → `/error`, con cuerpo JSON) en vez de
@@ -308,7 +312,8 @@ Hoy `EvaluadorAutorizacion.comprobarExpresionesSoportadas`
    con un alcance sintético (`sedes={1}` / `grupos={1}`). Así el bean llega al puerto y se clasifica como `ALCANCE`.
    Con un alcance vacío se denegaría sin consultar y daría un DENIEGA falso.
 6. Para la familia, el puerto incluye la comprobación de `AccesoFamiliaService` y el registrador también la intercepta.
-   Con 5c-2, la casilla FAMILIA de esas 16 líneas pasa de `PERMITE` a `ALCANCE`.
+   Con 5c-2, la casilla FAMILIA de esas 16 líneas (`@acceso.alumnoComoFamilia(#alumnoId)`, D5-2) pasa de `PERMITE`
+   a `ALCANCE`. La salvaguarda del punto 4 ya admite esa llamada (un solo argumento `#`).
 7. Nuevo control: `GET /api/alumnos/{alumnoId}/grupos` →
    - FAMILIA `ALCANCE`;
    - PROPIETARIO y GESTOR `PERMITE`;
@@ -410,7 +415,7 @@ La 5b-2 puede ir en paralelo a la 5b-1 si se fusiona después. Cada commit compi
 | D5-1 | Qué pasa cuando entra alguien que solo es responsable de sede o profesor, hasta la entrega 9 | **A:** no puede entrar, con un mensaje propio del tipo «Tu rol en esta escuela todavía no tiene acceso». El texto exacto lo decide el propietario. Alternativa B: entra a una página mínima con «Cerrar sesión»; exige abrir `/api/auth/roles` y `/api/auth/user` y una pantalla nueva. |
 | D5-2 | Cuentas mixtas (profesor + familia) | Entran como familia (necesitan un alumno activo, como cualquier familia). Ser profesor no da nada hasta la entrega 7. |
 | D5-3 | Si ser responsable o profesor cuenta como «gestión» en la regla de familia (`ACCESO_FAMILIA`, filas `MIGRACION` de otro email, escuelas nuevas) | **No:** solo PROPIETARIO y ADMINISTRADOR. Sin efecto en datos actuales. |
-| D5-4 | Pasar las 16 comprobaciones de familia a `@PreAuthorize("… and @acceso.alumno(#alumnoId,'LEER')")` en la 5c | **Sí.** Valida el arnés con rutas reales antes de las entregas 6 y 7. Único cambio visible: el 403 lleva el cuerpo JSON estándar de error en vez de ir vacío. |
+| D5-4 | Pasar las 16 comprobaciones de familia a `@PreAuthorize("… and @acceso.alumnoComoFamilia(#alumnoId)")` en la 5c (expresión por D5-2) | **Sí.** Valida el arnés con rutas reales antes de las entregas 6 y 7. Único cambio visible: el 403 lleva el cuerpo JSON estándar de error en vez de ir vacío. |
 | D5-5 | Si una sede inactiva sigue en el alcance de su responsable | **Sí**, para el histórico. Para quitarla, se quita la `membresia_sede`. |
 | D5-6 | Si la precondición §6 no da 0 | Convertir a ADMINISTRADOR (persona real) o desactivar (prueba), con SQL fuera del repositorio. |
 
