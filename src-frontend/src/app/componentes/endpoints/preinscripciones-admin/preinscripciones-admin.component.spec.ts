@@ -1,6 +1,9 @@
+import { ActivatedRoute, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
+import { PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { PreinscripcionesAdminComponent } from './preinscripciones-admin.component';
 import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
@@ -219,6 +222,28 @@ describe('PreinscripcionesAdminComponent', () => {
     expect(component.deportePlantilla).toBe('KICKBOXING');
     expect(component.plantilla.version).toBe(2);
     expect(component.plantilla.normas).toEqual(['Norma Kickboxing']);
+  });
+
+  it('pinta en la ficha el teléfono y el teléfono secundario con sus etiquetas', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [PreinscripcionesAdminComponent],
+      providers: [
+        proveerCatalogoTesting(CATALOGO_TAEMOI),
+        { provide: PreinscripcionService, useValue: api },
+        { provide: AuthenticationService, useValue: {tieneRolAdmin: () => true} },
+        { provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: {get: () => null}}} },
+        { provide: Router, useValue: {navigate: () => Promise.resolve(true)} },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(PreinscripcionesAdminComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.seleccion = {...solicitudBase(), telefono: '611222333', telefono2: '699887766'};
+    fixture.detectChanges();
+    const dl = (fixture.nativeElement as HTMLElement).querySelector('aside.detail-panel dl') as HTMLElement;
+    const pares = Array.from(dl.querySelectorAll('dt')).map(dt => [dt.textContent?.trim(), dt.nextElementSibling?.textContent?.trim()]);
+    expect(pares).toContain(['Teléfono', '611222333']);
+    expect(pares).toContain(['Teléfono secundario', '699887766']);
   });
 
   function solicitudBase() {
