@@ -36,7 +36,13 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
 12. **Web pública editable por escuela** (fase 4, cambio del 13/10/2026): plantilla con bloques
     editables (textos, imágenes, colores, orden), no editor libre. Horarios, tarifas, eventos,
     sedes y preinscripción se alimentan de la gestión. Escuela resuelta por dominio o subdominio.
-    El primer cliente la necesita para su alta. Sustituye a la decisión anterior:
+    El primer cliente la necesita para su alta. **Dos niveles** (decisión del 16/10/2026):
+    (a) plantilla con varios temas y bloques editables dentro de la plataforma, para la mayoría
+    (Taekwondo Sierra Sur entra por aquí); (b) web a medida como proyecto aparte por cliente, que
+    consume una API pública versionada de la plataforma (horarios, tarifas, eventos, sedes y
+    preinscripción, con CORS por dominio). Taemoi es el primer cliente a medida: su web actual se
+    separa en la fase 4 y hasta entonces sigue dentro de la aplicación. La gestión y el inicio de
+    sesión son siempre de la aplicación común. Sustituye a la decisión anterior:
 14. **Panel de gestión en tiempo real** (tras la fase 3, petición del usuario 13/10/2026): varias
     personas usan el panel a la vez y todas deben ver lo mismo. Avisos por SSE por escuela,
     filtrados por sede y permisos, que refrescan las pantallas abiertas; y bloqueo optimista
