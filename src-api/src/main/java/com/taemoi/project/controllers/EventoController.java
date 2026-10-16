@@ -166,6 +166,15 @@ public class EventoController {
 			@RequestParam(name = "w", required = false) Integer anchoSolicitado) {
 		try {
 			Evento evento = eventoService.obtenerEventoPorId(eventoId);
+			// Evento oculto: solo gestión (como el detalle); al resto, 404 para no revelar que existe.
+			boolean eventoVisible = Boolean.TRUE.equals(evento.getVisible());
+			if (!eventoVisible && !tieneAccesoPrivilegiadoEventos()) {
+				return ResponseEntity.notFound().build();
+			}
+			// La de un evento oculto no debe quedar en cachés compartidas (solo la sirve con sesión de gestión).
+			CacheControl cacheControl = eventoVisible
+					? CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate()
+					: CacheControl.maxAge(Duration.ofHours(8)).cachePrivate().mustRevalidate();
 			Imagen imagen = evento.getFotoEvento();
 
 			if (imagen == null || imagen.getRuta() == null) {
@@ -194,13 +203,15 @@ public class EventoController {
 			int anchoNormalizado = normalizarAnchoImagen(anchoSolicitado);
 			if (anchoNormalizado > 0) {
 				ResponseEntity<Resource> respuestaRedimensionada =
-						intentarConstruirRespuestaRedimensionada(rutaArchivo, mediaType, imagen.getNombre(), anchoNormalizado);
+						intentarConstruirRespuestaRedimensionada(rutaArchivo, mediaType, imagen.getNombre(), anchoNormalizado,
+								cacheControl);
 				if (respuestaRedimensionada != null) {
 					return respuestaRedimensionada;
 				}
 			}
 
-			return construirRespuestaImagenOriginal(recurso, mediaType, imagen.getNombre(), rutaArchivo, anchoNormalizado);
+			return construirRespuestaImagenOriginal(recurso, mediaType, imagen.getNombre(), rutaArchivo, anchoNormalizado,
+					cacheControl);
 		} catch (EventoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
 		} catch (Exception e) {
@@ -418,9 +429,10 @@ public class EventoController {
 			MediaType mediaType,
 			String nombreImagen,
 			Path rutaArchivo,
-			int anchoNormalizado) throws IOException {
+			int anchoNormalizado,
+			CacheControl cacheControl) throws IOException {
 		return ResponseEntity.ok()
-				.cacheControl(CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate())
+				.cacheControl(cacheControl)
 				.lastModified(Files.getLastModifiedTime(rutaArchivo).toMillis())
 				.header(HttpHeaders.VARY, "Accept-Encoding")
 				.contentType(mediaType)
@@ -433,7 +445,8 @@ public class EventoController {
 			Path rutaArchivo,
 			MediaType mediaTypeOriginal,
 			String nombreImagen,
-			int anchoObjetivo) {
+			int anchoObjetivo,
+			CacheControl cacheControl) {
 		if (!esImagenRasterRedimensionable(mediaTypeOriginal)) {
 			return null;
 		}
@@ -486,7 +499,7 @@ public class EventoController {
 			long lastModified = Files.getLastModifiedTime(rutaArchivo).toMillis();
 
 			return ResponseEntity.ok()
-					.cacheControl(CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate())
+					.cacheControl(cacheControl)
 					.lastModified(lastModified)
 					.header(HttpHeaders.VARY, "Accept-Encoding")
 					.contentType(mediaTypeSalida)
