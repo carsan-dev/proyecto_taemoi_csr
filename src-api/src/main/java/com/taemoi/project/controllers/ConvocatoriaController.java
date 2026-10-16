@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +24,6 @@ import jakarta.validation.Valid;
 import com.taemoi.project.dtos.ConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
-import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.services.PDFService;
 
@@ -42,9 +39,6 @@ public class ConvocatoriaController {
 
 	@Autowired
 	private PDFService pdfService;
-
-	@Autowired
-	private AlumnoAccessControlService alumnoAccessControlService;
 
 	@GetMapping
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -70,11 +64,8 @@ public class ConvocatoriaController {
 	}
 
 	@GetMapping("/alumnos/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
 	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
-		if (!usuarioPuedeAccederAlumno(alumnoId)) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
 		List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
 		return ResponseEntity.ok(convocatorias);
 	}
@@ -139,10 +130,5 @@ public class ConvocatoriaController {
 			@Valid @RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);
 		return ResponseEntity.ok().build();
-	}
-
-	private boolean usuarioPuedeAccederAlumno(Long alumnoId) {
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		return alumnoAccessControlService.canAccessAlumno(alumnoId, authentication);
 	}
 }

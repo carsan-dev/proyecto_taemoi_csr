@@ -16,9 +16,11 @@ import com.taemoi.project.services.TokenJwt;
  * @param token           contenido verificado del JWT con el que se identificó.
  * @param adminPlataforma si la sesión lleva además {@code ROLE_ADMIN_PLATAFORMA}
  *                        ({@link com.taemoi.project.plataforma.AutoridadPlataforma}).
+ * @param alcance         sedes y grupos de la sesión ({@link AlcanceSesion}); nulo equivale a
+ *                        {@link AlcanceSesion#NINGUNO}.
  */
 public record SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> autoridades, TokenJwt token,
-		boolean adminPlataforma) {
+		boolean adminPlataforma, AlcanceSesion alcance) {
 
 	public static final String ATRIBUTO = SesionVerificada.class.getName();
 
@@ -27,10 +29,11 @@ public record SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> 
 
 	public SesionVerificada {
 		autoridades = Set.copyOf(autoridades);
+		alcance = alcance == null ? AlcanceSesion.NINGUNO : alcance;
 	}
 
-	/** Sesión sin la autoridad de plataforma. */
+	/** Sesión sin la autoridad de plataforma y sin alcance ({@link AlcanceSesion#NINGUNO}). */
 	public SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> autoridades, TokenJwt token) {
-		this(usuario, organizacionId, autoridades, token, false);
+		this(usuario, organizacionId, autoridades, token, false, AlcanceSesion.NINGUNO);
 	}
 }

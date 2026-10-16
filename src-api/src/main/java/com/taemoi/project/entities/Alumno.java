@@ -161,6 +161,14 @@ public class Alumno extends EntidadOrganizacion {
 	@Column(nullable = true)
 	private Integer rachaRetoDiario = 0;
 
+	/**
+	 * Sede principal (V31, regla D9 del alcance por sede). Mapeo de SOLO LECTURA (entrega 5c-1): Hibernate no la
+	 * escribe nunca, para no pisar el relleno de V31 hasta que la entrega 8 o 9 la gestione. Fuera del JSON.
+	 */
+	@JsonIgnore
+	@Column(name = "sede_principal_id", insertable = false, updatable = false)
+	private Long sedePrincipalId;
+
 	public Long getId() {
 		return id;
 	}
@@ -461,6 +469,12 @@ public class Alumno extends EntidadOrganizacion {
 
 	public void setRachaRetoDiario(Integer rachaRetoDiario) {
 		this.rachaRetoDiario = rachaRetoDiario;
+	}
+
+	/** Solo lectura: sin setter, la escribe la base de datos (V31) y, más adelante, la entrega 8 o 9. */
+	@JsonIgnore
+	public Long getSedePrincipalId() {
+		return sedePrincipalId;
 	}
 
 	public List<AlumnoDeporte> getDeportes() {

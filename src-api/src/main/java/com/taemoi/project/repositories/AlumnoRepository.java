@@ -206,7 +206,8 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	 * <li>(a) fila en {@code usuario_alumno} que cuenta: {@code MANUAL} siempre; {@code REGISTRO} (altas por
 	 * registro o Google, entrega 2b) siempre en las escuelas sin la marca; cualquier fila cuyo alumno tenga el email
 	 * de la cuenta; y, solo en escuelas sin la marca, cualquier fila mientras la cuenta tenga una membresía de
-	 * gestión ACTIVA (una fila {@code MIGRACION} de otro email solo la pudo crear R1 para un gestor; el «gestor
+	 * gestión ACTIVA, PROPIETARIO o ADMINISTRADOR (D5-3: RESPONSABLE_SEDE y PROFESOR no cuentan. Una fila
+	 * {@code MIGRACION} de otro email solo la pudo crear R1 para un gestor; el «gestor
 	 * degradado» de §5 deja de verla). En Taemoi (D6) las filas {@code REGISTRO} y {@code MIGRACION} solo cuentan
 	 * con el email coincidente, así que cambiar o vaciar el email del alumno le quita el acceso como antes;</li>
 	 * <li>(b) solo con {@code organizacion.comportamiento_legado_taemoi}: el email del alumno es el de la cuenta,
@@ -238,8 +239,7 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 			                                         WHERE g.usuario_id = :usuarioId
 			                                           AND g.organizacion_id = a.organizacion_id
 			                                           AND g.activa = TRUE
-			                                           AND g.rol IN ('PROPIETARIO', 'ADMINISTRADOR',
-			                                                         'RESPONSABLE_SEDE', 'PROFESOR'))))))
+			                                           AND g.rol IN ('PROPIETARIO', 'ADMINISTRADOR'))))))
 			""";
 
 	/** Ids de {@link #ACCESO_FAMILIA}, en orden ascendente. Usar {@code AccesoFamiliaService}. */

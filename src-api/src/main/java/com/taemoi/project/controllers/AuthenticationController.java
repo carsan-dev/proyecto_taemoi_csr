@@ -149,10 +149,7 @@ public class AuthenticationController {
 			return ResponseEntity.status(HttpStatus.LOCKED)
 					.body(Map.of("mensaje", "Cuenta bloqueada temporalmente."));
 		} catch (DisabledException e) {
-			return ResponseEntity.status(HttpStatus.FORBIDDEN)
-					.body(Map.of("mensaje", AuthenticationServiceImpl.SIN_ESCUELA.equals(e.getMessage())
-							? AuthenticationServiceImpl.SIN_ESCUELA
-							: AuthenticationServiceImpl.SIN_ALUMNOS_ACTIVOS));
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", mensajeDeRechazo(e)));
 		} catch (BadCredentialsException e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(Map.of("mensaje", "Credenciales invalidas."));
@@ -411,6 +408,16 @@ public class AuthenticationController {
 		String email = authentication == null ? null : authentication.getName();
 		return usuarioService.encontrarPorEmail(email)
 				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+	}
+
+	/** Solo los motivos conocidos llegan tal cual; cualquier otro (p. ej. cuenta deshabilitada), el de siempre. */
+	private static String mensajeDeRechazo(DisabledException e) {
+		String mensaje = e.getMessage();
+		if (AuthenticationServiceImpl.SIN_ESCUELA.equals(mensaje)
+				|| AuthenticationServiceImpl.ROL_SIN_ACCESO.equals(mensaje)) {
+			return mensaje;
+		}
+		return AuthenticationServiceImpl.SIN_ALUMNOS_ACTIVOS;
 	}
 
 	private static Set<Roles> autoridadesDeSesion(Authentication authentication) {

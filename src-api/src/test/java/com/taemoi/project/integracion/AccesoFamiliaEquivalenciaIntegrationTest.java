@@ -212,6 +212,16 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		vincular(sinActiva2, alumno("org2-membresia-inactiva-1", org2, "mi2-otro-" + sufijo + "@example.test"),
 				org2, "MANUAL");
 
+		// Entrega 5b (D5-3): ser PROFESOR o RESPONSABLE_SEDE no cuenta como gestión. Una fila MIGRACION de otro
+		// email no da acceso a quien es profesor y familia (sí a un ADMINISTRADOR: caso «org2-gestor-activo»).
+		for (RolMembresia rolNuevo : List.of(RolMembresia.PROFESOR, RolMembresia.RESPONSABLE_SEDE)) {
+			String caso = "org2-" + rolNuevo.name().toLowerCase().replace('_', '-') + "-familia";
+			long cuentaNueva = cuenta(caso, org2, rolNuevo);
+			dar(cuentaNueva, org2, RolMembresia.FAMILIA);
+			vincular(cuentaNueva, alumno(caso + "-otro", org2, caso + "-otro-" + sufijo + "@example.test"), org2,
+					"MIGRACION");
+		}
+
 		// Taemoi, entrega 2b: filas REGISTRO (registro o Google) de alumnos de su email; después la gestión cambia
 		// el email de uno y vacía el de otro. Como antes, en Taemoi esos dos dejan de verse (la fila REGISTRO solo
 		// cuenta con el email coincidente en las escuelas con la marca).
@@ -363,6 +373,8 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		esperarEn(org2, "org2-membresia-inactiva");
 		esperarEn(org2, "org2-gestor-activo", "org2-gestor-activo-otro");
 		esperarEn(org2, "org2-gestor-degradado", "org2-gestor-degradado-propio");
+		esperarEn(org2, "org2-profesor-familia");
+		esperarEn(org2, "org2-responsable-sede-familia");
 		// Cuentas solo de Taemoi: nada en la otra escuela, aunque un alumno de allí tenga su email.
 		esperarEn(org2, "otra-escuela");
 		esperarEn(org2, "igual");

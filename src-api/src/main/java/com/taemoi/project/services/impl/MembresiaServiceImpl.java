@@ -65,6 +65,13 @@ public class MembresiaServiceImpl implements MembresiaService {
 	}
 
 	@Override
+	public boolean soloTieneRolesSinAcceso(Long usuarioId) {
+		Map<Long, Set<Roles>> porOrganizacion = autoridadesPorOrganizacion(usuarioId);
+		return !porOrganizacion.isEmpty()
+				&& porOrganizacion.values().stream().noneMatch(RolMembresia::abreSesion);
+	}
+
+	@Override
 	public Optional<Long> elegirOrganizacionParaLogin(Usuario usuario) {
 		List<Long> validas = new ArrayList<>();
 		autoridadesPorOrganizacion(usuario.getId()).forEach((organizacionId, autoridades) -> {
@@ -101,6 +108,9 @@ public class MembresiaServiceImpl implements MembresiaService {
 	@Override
 	public List<OrganizacionUsuarioDTO> organizacionesDe(Long usuarioId, Long organizacionActiva) {
 		Map<Long, Set<Roles>> porOrganizacion = autoridadesPorOrganizacion(usuarioId);
+		// Selector de escuela: fuera las escuelas cuyas autoridades no abren sesión (solo RESPONSABLE_SEDE o
+		// PROFESOR). Solo abreSesion: una familia sin alumnos activos sigue apareciendo, como siempre.
+		porOrganizacion.values().removeIf(autoridades -> !RolMembresia.abreSesion(autoridades));
 		Map<Long, Organizacion> datos = new HashMap<>();
 		organizaciones.findAllById(porOrganizacion.keySet()).forEach(o -> datos.put(o.getId(), o));
 		List<OrganizacionUsuarioDTO> resultado = new ArrayList<>();
@@ -120,12 +130,18 @@ public class MembresiaServiceImpl implements MembresiaService {
 		Set<Roles> deseadas = autoridades == null || autoridades.isEmpty()
 				? EnumSet.noneOf(Roles.class)
 				: EnumSet.copyOf(autoridades);
+		for (Roles autoridad : deseadas) {
+			if (!RolMembresia.asignableDesdeApiDeRoles(autoridad)) {
+				throw new IllegalArgumentException("El rol " + autoridad + " no se asigna desde la gestión de roles.");
+			}
+		}
 		List<Membresia> actuales = new ArrayList<>(
 				membresias.findByUsuarioIdAndOrganizacionId(usuarioId, organizacionId));
 
 		Set<Roles> cubiertas = EnumSet.noneOf(Roles.class);
 		for (Membresia membresia : actuales) {
-			if (!membresia.isActiva()) {
+			// RESPONSABLE_SEDE y PROFESOR no los gestiona esta API (entrega 8): ni cubren ni se desactivan.
+			if (!membresia.isActiva() || !membresia.getRol().gestionadoPorApiDeRoles()) {
 				continue;
 			}
 			if (deseadas.contains(membresia.getRol().autoridad())) {
@@ -220,14 +236,8 @@ public class MembresiaServiceImpl implements MembresiaService {
 	}
 
 	private boolean puedeEntrarCon(Usuario usuario, Long organizacionId, Set<Roles> autoridades) {
-		if (autoridades.isEmpty()) {
-			return false;
-		}
-		if (!RolMembresia.requiereAlumnoActivo(autoridades)) {
-			return true;
-		}
 		// Cuenta solo familia: algún alumno accesible (regla única de AccesoFamiliaService).
-		return accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId);
+		return RolMembresia.puedeEntrar(autoridades, () -> accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId));
 	}
 
 	/** Autoridades por organización (ordenadas por id) a partir de las membresías activas. */

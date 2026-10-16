@@ -36,7 +36,13 @@ Propuesta para revisión · 13/10/2026. Basada en el esquema actual (Flyway V1�
 12. **Web pública editable por escuela** (fase 4, cambio del 13/10/2026): plantilla con bloques
     editables (textos, imágenes, colores, orden), no editor libre. Horarios, tarifas, eventos,
     sedes y preinscripción se alimentan de la gestión. Escuela resuelta por dominio o subdominio.
-    El primer cliente la necesita para su alta. Sustituye a la decisión anterior:
+    El primer cliente la necesita para su alta. **Dos niveles** (decisión del 16/10/2026):
+    (a) plantilla con varios temas y bloques editables dentro de la plataforma, para la mayoría
+    (Taekwondo Sierra Sur entra por aquí); (b) web a medida como proyecto aparte por cliente, que
+    consume una API pública versionada de la plataforma (horarios, tarifas, eventos, sedes y
+    preinscripción, con CORS por dominio). Taemoi es el primer cliente a medida: su web actual se
+    separa en la fase 4 y hasta entonces sigue dentro de la aplicación. La gestión y el inicio de
+    sesión son siempre de la aplicación común. Sustituye a la decisión anterior:
 14. **Panel de gestión en tiempo real** (tras la fase 3, petición del usuario 13/10/2026): varias
     personas usan el panel a la vez y todas deben ver lo mismo. Avisos por SSE por escuela,
     filtrados por sede y permisos, que refrescan las pantallas abiertas; y bloqueo optimista
@@ -122,7 +128,7 @@ se cargan desde el panel de administración o con SQL manual fuera del repositor
 | Tabla | Columnas | Nota |
 |---|---|---|
 | `membresia` | `id`, `usuario_id`, `organizacion_id`, `rol` ENUM(`PROPIETARIO`, `ADMINISTRADOR`, `RESPONSABLE_SEDE`, `PROFESOR`, `FAMILIA`), `cargo` VARCHAR(100), `activa` | UNIQUE (`usuario_id`, `organizacion_id`, `rol`). `cargo` = «Director técnico», «Técnico deportivo»… Sustituye a `usuario_rol` |
-| `membresia_sede` | `membresia_id`, `sede_id` | Solo para `RESPONSABLE_SEDE` y `PROFESOR`. Sin filas = todas las sedes |
+| `membresia_sede` | `membresia_id`, `sede_id` | Solo las membresías `RESPONSABLE_SEDE` activas aportan sedes al alcance; sin filas, ninguna sede (falla cerrado). `PROFESOR` no usa esta tabla: su alcance va por `asignacion_profesor`. El comentario de V31 (línea 188) dice lo contrario; no se edita porque la migración está aplicada (checksum de Flyway). Manda este documento (decisión del 16/10/2026). |
 | `usuario_alumno` | `usuario_id`, `alumno_id`, `relacion` ENUM(`PROPIO`, `TUTOR`) | Qué fichas ve una familia. Sustituye a `usuario.alumno_id` y a la comprobación por email de `AlumnoAccessControlServiceImpl` |
 | `asignacion_profesor` | `organizacion_id`, `usuario_id`, `grupo_id`, `rol` ENUM(`TITULAR`, `AYUDANTE`) | PK (`usuario_id`, `grupo_id`) |
 

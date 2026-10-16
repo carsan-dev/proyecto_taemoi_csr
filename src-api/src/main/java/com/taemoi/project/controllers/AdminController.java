@@ -26,6 +26,7 @@ import com.taemoi.project.dtos.UsuarioDTO;
 import com.taemoi.project.dtos.request.PasswordResetAdminRequest;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
@@ -152,6 +153,15 @@ public class AdminController {
 	public ResponseEntity<UsuarioDTO> actualizarRolesUsuario(@PathVariable Long userId,
 			@RequestBody java.util.Set<Roles> roles) {
 		logger.info("## AdminController :: actualizarRolesUsuario - userId: {}, roles: {}", userId, roles);
+		// Un null en la lista (antes, 500 por NPE en EnumSet.copyOf) y los roles RESPONSABLE_SEDE y PROFESOR (los
+		// asignará la API de miembros) se rechazan con 400 antes de tocar nada.
+		if (roles != null && roles.stream().anyMatch(java.util.Objects::isNull)) {
+			throw new IllegalArgumentException("La lista de roles contiene un valor no válido.");
+		}
+		if (roles != null && roles.stream().anyMatch(r -> !RolMembresia.asignableDesdeApiDeRoles(r))) {
+			throw new IllegalArgumentException(
+					"Solo se pueden asignar los roles ROLE_ADMIN, ROLE_MANAGER y ROLE_USER.");
+		}
 
 		// Buscar el usuario (solo los de la escuela activa: los de otras escuelas no existen aquí)
 		Long organizacionId = resolutorOrganizacion.organizacionActual();

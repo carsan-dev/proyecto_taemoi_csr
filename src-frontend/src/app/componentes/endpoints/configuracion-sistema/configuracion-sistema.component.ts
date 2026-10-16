@@ -389,6 +389,8 @@ export class ConfiguracionSistemaComponent implements OnInit {
       case 'ROLE_MANAGER':
         return 'badge-manager';
       case 'ROLE_USER':
+      case 'ROLE_RESPONSABLE_SEDE':
+      case 'ROLE_PROFESOR':
         return 'badge-user';
       default:
         return '';
@@ -403,6 +405,10 @@ export class ConfiguracionSistemaComponent implements OnInit {
         return 'Manager';
       case 'ROLE_USER':
         return 'Usuario';
+      case 'ROLE_RESPONSABLE_SEDE':
+        return 'Responsable de sede';
+      case 'ROLE_PROFESOR':
+        return 'Profesor';
       default:
         return role;
     }

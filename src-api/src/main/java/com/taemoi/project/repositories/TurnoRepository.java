@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +17,7 @@ import com.taemoi.project.entities.Turno;
  * Repositorio para la entidad Turno.
  */
 @Repository
-public interface TurnoRepository extends JpaRepository<Turno, Long> {
+public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecificationExecutor<Turno> {
 	boolean existsByDiaSemana(String diaSemana);
 
 	boolean existsByDiaSemanaAndHoraInicioAndHoraFin(String dia, String horaInicio, String horaFin);

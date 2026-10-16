@@ -56,7 +56,8 @@ import jakarta.servlet.http.Cookie;
  * en Taemoi entran por el email (D6).
  *
  * <ul>
- * <li>16 rutas con alumno: 403 (cuerpo vacío, del control de acceso) con el alumno de otra familia, con un
+ * <li>16 rutas con alumno: 403 (desde la 5c-2 de {@code @PreAuthorize} con {@code @acceso}, con el cuerpo JSON
+ * del {@code accessDeniedHandler}; antes, vacío) con el alumno de otra familia, con un
  * alumno dado de baja con su email y, para un gestor degradado, con el alumno de otro email de su fila R1 de
  * V31; cualquier otro estado con el suyo.</li>
  * <li>5 rutas de {@code /api/auth} sin control por alumno: 2xx para la familia; 401 para una cuenta solo
@@ -259,7 +260,8 @@ class RutasFamiliaTaemoiIntegrationTest extends MySqlIntegrationTest {
 	private void esperar403(Map<String, Integer> fallos, String caso, String ruta, String token) throws Exception {
 		MvcResult r = peticion(ruta, token);
 		int estado = r.getResponse().getStatus();
-		if (estado != 403 || !r.getResponse().getContentAsString().isEmpty()) {
+		// Desde la 5c-2 lo deniega @PreAuthorize (@acceso): cuerpo JSON del accessDeniedHandler, ya no vacío (D5-4).
+		if (estado != 403 || !r.getResponse().getContentAsString().contains("Acceso denegado")) {
 			fallos.put(caso, estado);
 		}
 	}

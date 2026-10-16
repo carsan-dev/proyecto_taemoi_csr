@@ -20,6 +20,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.OAuth2UserService;
+import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -78,10 +79,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 			// Escuela de la sesión: misma regla que el login con contraseña.
 			Long organizacionId = membresiaService.elegirOrganizacionParaLogin(usuario)
-					.orElseThrow(() -> new IllegalArgumentException(
-							membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()
-								? "El usuario no tiene acceso a ninguna escuela. Contacte con el administrador."
-								: "No hay alumnos activos asociados a este email. Contacte con el administrador."));
+					.orElseThrow(() -> new IllegalArgumentException(motivoRechazo(usuario)));
 			membresiaService.registrarUltimaOrganizacion(usuario, organizacionId);
 			Set<Roles> autoridades = membresiaService.autoridadesEn(usuario.getId(), organizacionId);
 
@@ -136,6 +134,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 							  java.net.URLEncoder.encode("Error en la autenticación OAuth2", "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		}
+	}
+
+	/** Mismos motivos que el login con contraseña; los dos de siempre conservan su texto. */
+	private String motivoRechazo(Usuario usuario) {
+		if (membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()) {
+			return "El usuario no tiene acceso a ninguna escuela. Contacte con el administrador.";
+		}
+		if (membresiaService.soloTieneRolesSinAcceso(usuario.getId())) {
+			return AuthenticationServiceImpl.ROL_SIN_ACCESO;
+		}
+		return "No hay alumnos activos asociados a este email. Contacte con el administrador.";
 	}
 
 	private Optional<String> resolverDominioCookie() {

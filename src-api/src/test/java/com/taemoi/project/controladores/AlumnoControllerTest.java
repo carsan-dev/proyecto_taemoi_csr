@@ -25,7 +25,6 @@ import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
-import com.taemoi.project.services.AlumnoAccessControlService;
 import com.taemoi.project.services.AlumnoService;
 // import com.taemoi.project.utils.FechaUtils;
 
@@ -40,9 +39,6 @@ class AlumnoControllerTest {
 
 	@Mock
 	private GradoRepository gradoRepository;
-
-	@Mock
-	private AlumnoAccessControlService alumnoAccessControlService;
 
 	/** Catálogo de Taemoi en memoria (V28: los deportes de la ruta se validan contra el catálogo). */
 	@org.mockito.Spy
@@ -132,23 +128,12 @@ class AlumnoControllerTest {
 	}
 
 	@Test
-	void obtenerDocumentosDelAlumno_DebeDevolverForbiddenCuandoNoTieneAcceso() {
-		Long alumnoId = 1L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
-
-		ResponseEntity<List<Documento>> result = alumnoController.obtenerDocumentosDelAlumno(alumnoId);
-
-		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-	}
-
-	@Test
 	void obtenerDocumentosDelAlumno_DebeDevolverOkCuandoTieneAcceso() {
 		Long alumnoId = 1L;
 		Documento documento = new Documento();
 		documento.setId(99L);
 		documento.setNombre("autorizacion.pdf");
 
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
 		when(alumnoService.obtenerDocumentosAlumno(alumnoId)).thenReturn(List.of(documento));
 
 		ResponseEntity<List<Documento>> result = alumnoController.obtenerDocumentosDelAlumno(alumnoId);
@@ -159,19 +144,8 @@ class AlumnoControllerTest {
 	}
 
 	@Test
-	void obtenerRankingSemanalRetoDiario_DebeDevolverForbiddenCuandoNoTieneAcceso() {
-		Long alumnoId = 1L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
-
-		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "TAEKWONDO", 10);
-
-		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-	}
-
-	@Test
 	void obtenerRankingSemanalRetoDiario_DebeDevolverBadRequestSiDeporteEsInvalido() {
 		Long alumnoId = 1L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
 
 		ResponseEntity<?> result = alumnoController.obtenerRankingSemanalRetoDiario(alumnoId, "OTRO_DEPORTE", 10);
 
@@ -188,7 +162,6 @@ class AlumnoControllerTest {
 		ranking.setTotalParticipantes(1);
 		ranking.setMiPosicion(new RetoDiarioRankingMiPosicionResponse(1, "Alumno U.", 3, null));
 
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
 		when(alumnoService.obtenerRankingSemanalRetoDiario(eq(alumnoId), eq(com.taemoi.project.legado.Deporte.TAEKWONDO.name()),
 				eq(10))).thenReturn(ranking);
 
@@ -199,19 +172,8 @@ class AlumnoControllerTest {
 	}
 
 	@Test
-	void obtenerRankingGeneralRetoDiario_DebeDevolverForbiddenCuandoNoTieneAcceso() {
-		Long alumnoId = 1L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(false);
-
-		ResponseEntity<?> result = alumnoController.obtenerRankingGeneralRetoDiario(alumnoId, "TAEKWONDO", 10);
-
-		assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-	}
-
-	@Test
 	void obtenerRankingGeneralRetoDiario_DebeDevolverBadRequestSiDeporteEsInvalido() {
 		Long alumnoId = 1L;
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
 
 		ResponseEntity<?> result = alumnoController.obtenerRankingGeneralRetoDiario(alumnoId, "OTRO_DEPORTE", 10);
 
@@ -226,7 +188,6 @@ class AlumnoControllerTest {
 		ranking.setTotalParticipantes(2);
 		ranking.setMiPosicion(new RetoDiarioRankingGeneralMiPosicionResponse(2, "Alumno U.", 4, 12, 2));
 
-		when(alumnoAccessControlService.canAccessAlumno(eq(alumnoId), any())).thenReturn(true);
 		when(alumnoService.obtenerRankingGeneralRetoDiario(eq(alumnoId), eq(com.taemoi.project.legado.Deporte.TAEKWONDO.name()),
 				eq(10))).thenReturn(ranking);
 
