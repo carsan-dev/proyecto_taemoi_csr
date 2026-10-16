@@ -39,19 +39,22 @@ export function fechaApi(valor: unknown): Date | null {
 }
 
 const DIA_MS = 86_400_000;
-const DIA = /^(\d{4})-(\d{2})-(\d{2})$/;
+/** 'yyyy-MM-dd' solo o seguido de una hora SIN zona (LocalDate / LocalDateTime): el día es el escrito. */
+const DIA_SIN_ZONA = /^(\d{4}-\d{2}-\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/;
 
 /**
  * Fecha sin hora ni zona ('yyyy-MM-dd') para comparar fechas de calendario (p. ej. de nacimiento) que llegan en
- * formatos distintos: LocalDate como [año, mes, día] o 'yyyy-MM-dd' se toman tal cual; una marca de tiempo
- * (java.util.Date de una columna DATE = medianoche del huso del servidor, UTC o Europe/Madrid) se redondea a la
+ * formatos distintos: LocalDate como [año, mes, día], 'yyyy-MM-dd' o una fecha-hora sin zona dan su día tal cual
+ * (sin pasar por el huso del navegador); un `Date` da su día local; una marca de tiempo (java.util.Date de una
+ * columna DATE = medianoche del huso del servidor, UTC o Europe/Madrid) o una fecha-hora con zona se redondean a la
  * medianoche UTC más próxima, así el día no depende del huso del servidor ni del navegador (vale hasta ±12 h).
  */
 export function diaApi(valor: unknown): string | null {
-  if (typeof valor === 'string' && DIA.test(valor.trim())) return valor.trim();
-  if (Array.isArray(valor)) {
+  const sinZona = typeof valor === 'string' ? DIA_SIN_ZONA.exec(valor.trim()) : null;
+  if (sinZona) return sinZona[1];
+  if (Array.isArray(valor) || valor instanceof Date) {
     const fecha = fechaApi(valor);
-    return fecha ? [fecha.getFullYear(), fecha.getMonth() + 1, fecha.getDate()].map((n, i) => String(n).padStart(i ? 2 : 4, '0')).join('-') : null;
+    return fecha ? diaLocal(fecha) : null;
   }
   // Un número es SIEMPRE milisegundos aquí (java.util.Date): el umbral de fechaApi leería como segundos
   // las fechas entre 1966 y 1973.
@@ -62,6 +65,11 @@ export function diaApi(valor: unknown): string | null {
   const fecha = fechaApi(valor);
   if (!fecha) return null;
   return new Date(Math.round(fecha.getTime() / DIA_MS) * DIA_MS).toISOString().slice(0, 10);
+}
+
+function diaLocal(fecha: Date): string {
+  return [fecha.getFullYear(), fecha.getMonth() + 1, fecha.getDate()]
+    .map((n, i) => String(n).padStart(i ? 2 : 4, '0')).join('-');
 }
 
 /** `{{ valor | fechaApi | date:'medium' }}`: ver {@link fechaApi}. */

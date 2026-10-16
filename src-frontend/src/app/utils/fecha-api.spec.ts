@@ -48,6 +48,18 @@ describe('fechaApi', () => {
       expect(diaApi('94608000000')).toBe('1972-12-31');
       expect(diaApi(-99964800000)).toBe('1966-11-01');
     });
+    it('una fecha-hora SIN zona da su día tal cual escrito, a cualquier hora y en cualquier huso', () => {
+      // Antes se redondeaba a la medianoche UTC más próxima: en UTC '...T12:00:00' saltaba al día siguiente
+      // (CI en Linux/UTC) y en Madrid '...T23:59:59' también.
+      for (const hora of ['00:00:00', '11:59:59', '12:00:00', '12:00:00.000', '23:59:59']) {
+        expect(diaApi(`2008-06-15T${hora}`)).withContext(hora).toBe('2008-06-15');
+      }
+      expect(diaApi('2008-06-15 18:30')).toBe('2008-06-15');
+    });
+    it('una fecha-hora CON zona es un instante: se redondea como los ms', () => {
+      expect(diaApi('2014-04-11T22:00:00Z')).toBe('2014-04-12'); // medianoche CEST
+      expect(diaApi('2014-04-12T00:00:00+02:00')).toBe('2014-04-12');
+    });
     it('null si no es reconocible', () => {
       expect(diaApi(null)).toBeNull();
       expect(diaApi('no-es-fecha')).toBeNull();
