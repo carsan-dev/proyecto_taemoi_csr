@@ -265,6 +265,13 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	@Query("SELECT a FROM Alumno a WHERE a.id = :id")
 	Optional<Alumno> buscarPorIdEnOrganizacionActiva(@Param("id") Long id);
 
+	/**
+	 * Ids de los alumnos de la escuela activa (solo activos salvo {@code incluirInactivos}), en orden ascendente:
+	 * los mismos y en el mismo orden que el listado sin paginar ({@code GET /api/alumnos}), sin cargar las fichas.
+	 */
+	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) ORDER BY a.id")
+	List<Long> buscarIdsEnOrganizacionActiva(@Param("incluirInactivos") boolean incluirInactivos);
+
 	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
 	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
 	List<Alumno> buscarConNifEnOrganizacionActiva();

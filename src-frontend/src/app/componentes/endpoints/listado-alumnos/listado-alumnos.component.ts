@@ -342,7 +342,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           // Save current state after successful load
           this.guardarEstadoPaginacion();
 
-          // Load sports for all alumnos on this page
+          // Sports already come embedded in each alumno of the page (AlumnoDTO.deportes)
           this.cargarDeportesDeAlumnos();
         },
         error: () => {
@@ -393,34 +393,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load sports data for all alumnos on the current page
+   * Stores the sports of every alumno on the current page. They come embedded in the paginated
+   * response (AlumnoDTO.deportes, all of them, active and inactive, same as GET /alumnos/{id}/deportes),
+   * so no extra request per alumno is needed.
    */
   cargarDeportesDeAlumnos(): void {
-    if (this.alumnos.length === 0) {
-      return;
-    }
-
-    // Create an array of observables for loading each alumno's sports
-    const deportesRequests = this.alumnos.map((alumno) =>
-      this.alumnoService.obtenerDeportesDelAlumno(alumno.id)
-    );
-
-    // Execute all requests in parallel
-    forkJoin(deportesRequests).subscribe({
-      next: (deportesArrays: AlumnoDeporteDTO[][]) => {
-        // Clear the existing map
-        this.deportesPorAlumno.clear();
-
-        // Store deportes for each alumno
-        deportesArrays.forEach((deportes, index) => {
-          const alumnoId = this.alumnos[index].id;
-          this.deportesPorAlumno.set(alumnoId, deportes);
-        });
-      },
-      error: (error) => {
-        console.error('Error loading sports data:', error);
-        // Continue showing the page even if sports data fails to load
-      },
+    this.deportesPorAlumno.clear();
+    this.alumnos.forEach((alumno) => {
+      this.deportesPorAlumno.set(alumno.id, alumno.deportes ?? []);
     });
   }
 

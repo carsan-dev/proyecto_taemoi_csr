@@ -41,6 +41,8 @@ public interface AlumnoService {
 
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 
+	List<Long> obtenerIdsAlumnos(boolean incluirInactivos);
+
 	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO);
 
 	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
