@@ -16,6 +16,7 @@ public class EmailRequest {
 
 	@NotBlank(message = "El correo electrónico es obligatorio")
 	@Email(message = "El correo electrónico debe ser válido")
+	@Size(max = 160, message = "El correo electrónico no puede tener más de 160 caracteres")
 	private String email;
 
 	@NotBlank(message = "El asunto es obligatorio")

@@ -96,12 +96,15 @@ public class SecurityConfiguration {
 				.ignoringRequestMatchers("/api/**", "/login/oauth2/**", "/oauth2/**", "/imagenes/**"))
 				.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()))
 				.authorizeHttpRequests(request -> request
+						// HEAD recibe la misma decisión que GET a la misma ruta (MVC lo atiende con el handler de GET).
+						.withObjectPostProcessor(HeadComoGetAuthorizationManager.postProcesador())
 						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
 						// Static resources that browsers request automatically
 						.requestMatchers("/favicon.ico", "/error").permitAll()
-						// Healthcheck de Docker/despliegue: solo GET y solo esta ruta; fuera de /api, no se audita.
+						// Healthcheck de Docker/despliegue: solo GET (y HEAD, que se autoriza como GET) y solo esta
+						// ruta; fuera de /api, no se audita.
 						.requestMatchers(HttpMethod.GET, "/healthz").permitAll()
 						// Protected images - alumno photos require ADMIN or MANAGER role (heredadas y por escuela).
 						// ArchivoEstaticoController/AccesoArchivos además exige la escuela activa y la fila Imagen.
@@ -173,9 +176,6 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/imagen")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
-						.requestMatchers(HttpMethod.HEAD, "/api/alumnos/{alumnoId}/imagen")
-						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/reto-diario")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -232,7 +232,6 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/imagen").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/documentos/{documentoId}/descargar")
 						.permitAll()
-						.requestMatchers(HttpMethod.HEAD, "/api/eventos/{eventoId}/imagen").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/eventos/**")
