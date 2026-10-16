@@ -73,7 +73,10 @@ public class MembresiaServiceImpl implements MembresiaService {
 			}
 		});
 		if (validas.isEmpty()) {
-			return Optional.empty();
+			// Administrador de plataforma sin escuela válida: escuela por defecto, donde la sesión lleva SOLO
+			// ROLE_ADMIN_PLATAFORMA (IdentificadorSesionJwt). Sin la marca, se rechaza como siempre.
+			return usuario.isEsAdminPlataforma() ? Optional.of(resolutor.getOrganizacionPorDefecto())
+					: Optional.empty();
 		}
 		if (validas.size() == 1) {
 			return Optional.of(validas.get(0));

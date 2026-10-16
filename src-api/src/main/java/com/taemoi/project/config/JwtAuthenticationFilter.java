@@ -1,6 +1,7 @@
 package com.taemoi.project.config;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.plataforma.AutoridadPlataforma;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,7 +25,8 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Autentica la petición con la sesión que ya verificó {@code OrganizacionRequestFilter}
  * (firma y caducidad del JWT, usuario, membresía activa en la organización): no vuelve a leer el
- * token. Las autoridades son las de las membresías del usuario en la organización activa, no
+ * token. Las autoridades son las de las membresías del usuario en la organización activa (más
+ * {@code ROLE_ADMIN_PLATAFORMA} si la sesión es de un administrador de plataforma), no
  * {@code Usuario.getAuthorities()}.
  *
  * <p>Si no hay sesión verificada (sin JWT, JWT rechazado o filtro de organización ausente), la
@@ -40,9 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		if (SecurityContextHolder.getContext().getAuthentication() == null
 				&& request.getAttribute(SesionVerificada.ATRIBUTO) instanceof SesionVerificada sesion) {
 			if (sesion.organizacionId().equals(TenantContext.get())) {
-				List<SimpleGrantedAuthority> autoridades = sesion.autoridades().stream()
-						.map(rol -> new SimpleGrantedAuthority(rol.name()))
-						.toList();
+				List<SimpleGrantedAuthority> autoridades = new ArrayList<>();
+				sesion.autoridades().forEach(rol -> autoridades.add(new SimpleGrantedAuthority(rol.name())));
+				if (sesion.adminPlataforma()) {
+					autoridades.add(new SimpleGrantedAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA));
+				}
 				SecurityContextHolder.getContext().setAuthentication(
 						new UsernamePasswordAuthenticationToken(sesion.usuario(), null, autoridades));
 			} else {

@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import com.taemoi.project.entities.Roles;
+import com.taemoi.project.plataforma.AutoridadPlataforma;
 import com.taemoi.project.services.UsuarioService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,10 +117,13 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión
-						// (las tarifas solo para gestión, en CatalogoController).
+						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
+						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
+						// alguno de estos tres roles; la de un administrador de plataforma sin membresía, no.
 						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
-						.requestMatchers("/api/catalogo", "/api/catalogo/**").authenticated()
+						.requestMatchers("/api/catalogo", "/api/catalogo/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/preinscripciones").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/*/documento").permitAll()
@@ -290,6 +294,8 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.DELETE, "/api/informes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
+						// Administrador de plataforma (lecturas entre escuelas); el controlador lo exige también.
+						.requestMatchers("/api/plataforma/**").hasAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA)
 						.requestMatchers(HttpMethod.POST, "/api/mail/**").permitAll().anyRequest().authenticated())
 				.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())

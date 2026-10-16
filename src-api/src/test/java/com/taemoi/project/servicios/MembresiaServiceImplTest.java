@@ -70,6 +70,29 @@ class MembresiaServiceImplTest {
 	}
 
 	@Test
+	void administradorDePlataformaSinEscuelaValidaEntraEnLaEscuelaPorDefecto() {
+		ReflectionTestUtils.setField(usuario, "esAdminPlataforma", Boolean.TRUE);
+		assertEquals(Optional.of(1L), servicio.elegirOrganizacionParaLogin(usuario), "sin membresías");
+
+		// Solo familia sin alumno accesible en la escuela 4: tampoco es válida; por defecto.
+		activas.add(new Membresia(10L, 4L, RolMembresia.FAMILIA));
+		when(acceso.tieneAlgunoAccesible(usuario, 4L)).thenReturn(false);
+		assertEquals(Optional.of(1L), servicio.elegirOrganizacionParaLogin(usuario), "sin escuela válida");
+
+		// Con una escuela válida, la regla de siempre.
+		activas.add(new Membresia(10L, 7L, RolMembresia.PROPIETARIO));
+		assertEquals(Optional.of(7L), servicio.elegirOrganizacionParaLogin(usuario));
+	}
+
+	@Test
+	void sinMarcaYSinEscuelaValidaNoHayEscuela() {
+		activas.add(new Membresia(10L, 4L, RolMembresia.FAMILIA));
+		when(acceso.tieneAlgunoAccesible(usuario, 4L)).thenReturn(false);
+		assertFalse(usuario.isEsAdminPlataforma());
+		assertTrue(servicio.elegirOrganizacionParaLogin(usuario).isEmpty());
+	}
+
+	@Test
 	void unaSolaEscuela() {
 		activas.add(new Membresia(10L, 5L, RolMembresia.ADMINISTRADOR));
 		assertEquals(Optional.of(5L), servicio.elegirOrganizacionParaLogin(usuario));

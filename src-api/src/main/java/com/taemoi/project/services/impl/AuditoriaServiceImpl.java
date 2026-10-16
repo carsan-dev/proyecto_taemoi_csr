@@ -34,8 +34,10 @@ import com.taemoi.project.entities.AuditoriaAccion;
 import com.taemoi.project.entities.AuditoriaEvento;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.AuditoriaEventoRepository;
+import com.taemoi.project.services.AlumnoSaludService;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.VistaAuditoria;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,6 +68,12 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			"convocatorias",
 			"salud");
 	private static final Set<Integer> ESTADOS_HTTP_RUIDO_ESCANER = Set.of(401, 403, 404, 405, 415);
+	/** Altas, cambios y bajas: lo que el registro de acciones del propietario muestra además de salud (D2). */
+	private static final List<AuditoriaAccion> ACCIONES_MUTACION = List.of(
+			AuditoriaAccion.CREATE,
+			AuditoriaAccion.UPDATE,
+			AuditoriaAccion.DELETE);
+	private static final String MODULO_LECTURA_SALUD = AlumnoSaludService.MODULO_AUDITORIA;
 	private static final List<String> FRAGMENTOS_ENDPOINT_RUIDO_ESCANER = List.of(
 			"/upload",
 			"/files",
@@ -178,6 +186,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 	@Override
 	@Transactional(readOnly = true)
 	public Page<AuditoriaEventoDTO> obtenerEventos(
+			VistaAuditoria vista,
 			LocalDate desde,
 			LocalDate hasta,
 			String resultado,
@@ -189,20 +198,23 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 			Integer page,
 			Integer size,
 			Boolean incluirRuido) {
+		boolean propietario = esVistaPropietario(vista);
 		Specification<AuditoriaEvento> spec = Specification.unrestricted();
 		RangoEstadoHttp rangoResultado = rangoResultado(resultado);
-		spec = spec.and(filtroFechaDesde(desde))
+		spec = spec.and(propietario ? filtroRegistroPropietario() : null)
+				.and(filtroFechaDesde(desde))
 				.and(filtroFechaHasta(hasta))
 				.and(filtroResultado(rangoResultado))
 				.and(filtroAccion(accion))
 				.and(filtroModulo(modulo))
 				.and(filtroUsuario(usuario))
 				.and(filtroEndpoint(endpoint))
-				.and(filtroTextoLibre(texto));
+				.and(propietario ? filtroTextoResumen(texto) : filtroTextoLibre(texto));
 		// El ruido de escáner exige estado_http IN (401,403,404,405,415): si el filtro de resultado ya excluye
 		// esos estados (p. ej. EXITO = 200..299), el predicado vale TRUE en toda fila que llegue hasta él y no se
 		// añade. Mismas filas y mismo total, pero el COUNT del Page se queda sin los LIKE sobre el endpoint.
-		if (!Boolean.TRUE.equals(incluirRuido) && puedeContenerRuidoEscaner(rangoResultado)) {
+		// En la vista del propietario tampoco: solo hay 2xx con sesión, y el ruido es anónimo y 4xx.
+		if (!propietario && !Boolean.TRUE.equals(incluirRuido) && puedeContenerRuidoEscaner(rangoResultado)) {
 			spec = spec.and(filtroExcluirRuidoEscaner());
 		}
 
@@ -216,16 +228,61 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public AuditoriaEventoDetalleDTO obtenerEventoPorId(Long id) {
-		AuditoriaEvento evento = auditoriaEventoRepository.findById(id)
+	public AuditoriaEventoDetalleDTO obtenerEventoPorId(VistaAuditoria vista, Long id) {
+		if (!esVistaPropietario(vista)) {
+			AuditoriaEvento evento = auditoriaEventoRepository.findById(id)
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
+			return convertirADetalleDTO(evento);
+		}
+		Specification<AuditoriaEvento> porId = (root, query, cb) -> cb.equal(root.get("id"), id);
+		AuditoriaEvento evento = auditoriaEventoRepository.findOne(porId.and(filtroRegistroPropietario()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
-		return convertirADetalleDTO(evento);
+		AuditoriaEventoDetalleDTO dto = convertirADetalleDTO(evento);
+		// D2: el propietario nunca ve el contenido crudo de la petición; el resumen se mantiene.
+		dto.setPayloadJson(null);
+		dto.setQueryParamsJson(null);
+		return dto;
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<String> obtenerModulosDisponibles() {
-		return auditoriaEventoRepository.findDistinctModulos();
+	public List<String> obtenerModulosDisponibles(VistaAuditoria vista) {
+		if (!esVistaPropietario(vista)) {
+			return auditoriaEventoRepository.findDistinctModulos();
+		}
+		return auditoriaEventoRepository.findDistinctModulosRegistroPropietario(RANGO_EXITO.minimo(),
+				RANGO_EXITO.maximo(), ACCIONES_MUTACION, AuditoriaAccion.READ, MODULO_LECTURA_SALUD);
+	}
+
+	/** Falla cerrado: solo {@link VistaAuditoria#COMPLETA} explícita da el registro completo. */
+	private static boolean esVistaPropietario(VistaAuditoria vista) {
+		return vista != VistaAuditoria.COMPLETA;
+	}
+
+	/**
+	 * Registro de acciones del propietario (D2): con sesión, 2xx, y alta/cambio/baja o lectura de salud. Las
+	 * lecturas de salud son las que registra {@code AlumnoSaludService} ({@code accion = READ},
+	 * {@code modulo = 'salud'}); el filtro HTTP no audita las lecturas correctas de la ruta de salud. La misma
+	 * regla, en JPQL, está en {@code AuditoriaEventoRepository#findDistinctModulosRegistroPropietario}.
+	 */
+	private Specification<AuditoriaEvento> filtroRegistroPropietario() {
+		return (root, query, cb) -> cb.and(
+				cb.isNotNull(root.get("usuarioId")),
+				cb.between(root.get("estadoHttp"), RANGO_EXITO.minimo(), RANGO_EXITO.maximo()),
+				cb.or(
+						root.get("accion").in(ACCIONES_MUTACION),
+						cb.and(
+								cb.equal(root.get("accion"), AuditoriaAccion.READ),
+								cb.equal(root.get("modulo"), MODULO_LECTURA_SALUD))));
+	}
+
+	/** Búsqueda libre del propietario: solo en el resumen (el payload y los parámetros no se exponen). */
+	private Specification<AuditoriaEvento> filtroTextoResumen(String texto) {
+		if (texto == null || texto.isBlank()) {
+			return null;
+		}
+		String valor = "%" + texto.trim().toUpperCase(Locale.ROOT) + "%";
+		return (root, query, cb) -> cb.like(cb.upper(cb.coalesce(root.get("resumen"), "")), valor);
 	}
 
 	@Override
