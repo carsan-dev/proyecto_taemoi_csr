@@ -7,10 +7,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,6 +23,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.repositories.AlcanceRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.JwtService;
@@ -46,8 +50,9 @@ class IdentificadorSesionJwtTest {
 	private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
 	private final MembresiaService membresias = mock(MembresiaService.class);
 	private final AccesoFamiliaService acceso = mock(AccesoFamiliaService.class);
+	private final AlcanceRepository alcances = mock(AlcanceRepository.class);
 	private final IdentificadorSesionJwt identificador = new IdentificadorSesionJwt(jwtService, usuarios,
-			membresias, acceso, new ResolutorOrganizacion(1L));
+			membresias, acceso, alcances, new ResolutorOrganizacion(1L));
 
 	@Test
 	void familiaSinAlumnoAccesibleSeRechaza() {
@@ -126,6 +131,96 @@ class IdentificadorSesionJwtTest {
 
 		assertEquals(Set.of(), sesion.autoridades());
 		assertTrue(sesion.adminPlataforma());
+	}
+
+	// ------------------------------------------------------------------ alcance de la sesión (entrega 5b-2)
+
+	@Test
+	void gestionTieneAlcanceTotalSinConsultarElAlcance() {
+		// Invariante de Taemoi: propietario y gestor no añaden ninguna consulta por petición.
+		for (Set<Roles> autoridades : List.of(Set.of(Roles.ROLE_ADMIN), Set.of(Roles.ROLE_MANAGER),
+				Set.of(Roles.ROLE_MANAGER, Roles.ROLE_PROFESOR, Roles.ROLE_RESPONSABLE_SEDE),
+				Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER))) {
+			cuentaConAutoridades(autoridades);
+			assertEquals(AlcanceSesion.TOTAL, identificador.identificar(peticion()).orElseThrow().alcance(),
+					autoridades.toString());
+		}
+		verifyNoInteractions(alcances);
+	}
+
+	@Test
+	void familiaNoTieneAlcanceYNoSeConsulta() {
+		Usuario cuenta = cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
+
+		assertEquals(AlcanceSesion.NINGUNO, identificador.identificar(peticion()).orElseThrow().alcance());
+		verifyNoInteractions(alcances);
+	}
+
+	@Test
+	void responsableConFamiliaRecibeSusSedes() {
+		Usuario cuenta = cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER));
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
+		when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of(fila(AlcanceRepository.TIPO_SEDE, 30L),
+				fila(AlcanceRepository.TIPO_SEDE, 31L)));
+
+		AlcanceSesion alcance = identificador.identificar(peticion()).orElseThrow().alcance();
+
+		assertEquals(AlcanceSesion.limitado(Set.of(30L, 31L), Set.of()), alcance);
+		verify(alcances, times(1)).filasDeAlcance(5L, 1L);
+	}
+
+	@Test
+	void profesorConFamiliaRecibeSusGrupos() {
+		Usuario cuenta = cuentaConAutoridades(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER));
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
+		when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of(fila(AlcanceRepository.TIPO_GRUPO, 40L)));
+
+		AlcanceSesion alcance = identificador.identificar(peticion()).orElseThrow().alcance();
+
+		assertEquals(AlcanceSesion.limitado(Set.of(), Set.of(40L)), alcance);
+		verify(alcances, times(1)).filasDeAlcance(5L, 1L);
+	}
+
+	@Test
+	void responsableYProfesorConFamiliaGuardaSedesYGruposPorSeparadoEnUnaConsulta() {
+		Usuario cuenta = cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR,
+				Roles.ROLE_USER));
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(true);
+		when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of(fila(AlcanceRepository.TIPO_SEDE, 7L),
+				fila(AlcanceRepository.TIPO_GRUPO, 7L), fila(AlcanceRepository.TIPO_GRUPO, 8L),
+				fila("DESCONOCIDO", 9L)));
+
+		AlcanceSesion alcance = identificador.identificar(peticion()).orElseThrow().alcance();
+
+		assertEquals(AlcanceSesion.limitado(Set.of(7L), Set.of(7L, 8L)), alcance,
+				"un tipo desconocido no da alcance");
+		verify(alcances, times(1)).filasDeAlcance(5L, 1L);
+	}
+
+	@Test
+	void sesionRechazadaOSoloPlataformaNoConsultanElAlcance() {
+		Usuario cuenta = cuentaConAutoridades(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER));
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(false);
+		assertTrue(identificador.identificar(peticion()).isEmpty());
+
+		marcarPlataforma(cuentaConAutoridades(Set.of(Roles.ROLE_PROFESOR)));
+		assertEquals(AlcanceSesion.NINGUNO, identificador.identificar(peticion()).orElseThrow().alcance());
+		verifyNoInteractions(alcances);
+	}
+
+	private static AlcanceRepository.FilaAlcance fila(String tipo, long id) {
+		return new AlcanceRepository.FilaAlcance() {
+			@Override
+			public String getTipo() {
+				return tipo;
+			}
+
+			@Override
+			public Long getId() {
+				return id;
+			}
+		};
 	}
 
 	// ------------------------------------------------------------------ administrador de plataforma

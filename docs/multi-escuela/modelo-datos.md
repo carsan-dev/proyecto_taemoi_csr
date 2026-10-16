@@ -122,7 +122,7 @@ se cargan desde el panel de administración o con SQL manual fuera del repositor
 | Tabla | Columnas | Nota |
 |---|---|---|
 | `membresia` | `id`, `usuario_id`, `organizacion_id`, `rol` ENUM(`PROPIETARIO`, `ADMINISTRADOR`, `RESPONSABLE_SEDE`, `PROFESOR`, `FAMILIA`), `cargo` VARCHAR(100), `activa` | UNIQUE (`usuario_id`, `organizacion_id`, `rol`). `cargo` = «Director técnico», «Técnico deportivo»… Sustituye a `usuario_rol` |
-| `membresia_sede` | `membresia_id`, `sede_id` | Solo para `RESPONSABLE_SEDE` y `PROFESOR`. Sin filas = todas las sedes |
+| `membresia_sede` | `membresia_id`, `sede_id` | Solo las membresías `RESPONSABLE_SEDE` activas aportan sedes al alcance; sin filas, ninguna sede (falla cerrado). `PROFESOR` no usa esta tabla: su alcance va por `asignacion_profesor`. El comentario de V31 (línea 188) dice lo contrario; no se edita porque la migración está aplicada (checksum de Flyway). Manda este documento (decisión del 16/10/2026). |
 | `usuario_alumno` | `usuario_id`, `alumno_id`, `relacion` ENUM(`PROPIO`, `TUTOR`) | Qué fichas ve una familia. Sustituye a `usuario.alumno_id` y a la comprobación por email de `AlumnoAccessControlServiceImpl` |
 | `asignacion_profesor` | `organizacion_id`, `usuario_id`, `grupo_id`, `rol` ENUM(`TITULAR`, `AYUDANTE`) | PK (`usuario_id`, `grupo_id`) |
 

@@ -10,8 +10,10 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 /**
- * Sedes a las que se limita una membresía {@code RESPONSABLE_SEDE} o {@code PROFESOR} (V31). Sin filas = todas
- * las sedes de la escuela.
+ * Sedes de una membresía {@code RESPONSABLE_SEDE} (V31). Solo las membresías RESPONSABLE_SEDE activas aportan
+ * sedes al alcance ({@code AlcanceRepository}); sin filas, ninguna sede (falla cerrado). {@code PROFESOR} no usa
+ * esta tabla: su alcance va por {@link AsignacionProfesor}. El comentario de V31 dice lo contrario; manda este
+ * (decisión del propietario del 16/10/2026).
  *
  * <p>NO es una {@link EntidadOrganizacion} (la tabla no lleva {@code organizacion_id}): como {@link Membresia},
  * se consulta siempre por membresía (ver {@code MembresiaSedeRepository}).

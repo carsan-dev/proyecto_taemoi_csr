@@ -13,6 +13,7 @@ import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.repositories.AlcanceRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.JwtService;
@@ -38,11 +39,14 @@ import jakarta.servlet.http.HttpServletRequest;
  * además {@code ROLE_ADMIN_PLATAFORMA} en cualquier escuela, sumada a sus autoridades de membresía. Si en la
  * escuela del token no tiene membresía válida, solo se acepta en la organización por defecto y SOLO con esa
  * autoridad (ninguna de escuela); en cualquier otra escuela se rechaza como a cualquiera.
+ * Pasada la puerta, calcula el alcance de la sesión ({@link #alcanceDe}, entrega 5b-2): solo consulta
+ * {@link AlcanceRepository} si hace falta, sin caché entre peticiones.
  * Si algo falla, la petición sigue como anónima (Spring Security responde 401 donde haga falta).
  *
  * <p>Se ejecuta antes de conocer la organización: {@link OrganizacionRequestFilter} la invoca con la
  * organización por defecto fijada, y aquí solo se consultan tablas globales ({@code usuario},
- * {@code membresia}, {@code organizacion}) y la consulta nativa del acceso de familia, filtrada explícitamente.
+ * {@code membresia}, {@code organizacion}) y las consultas nativas del acceso de familia y del alcance,
+ * filtradas explícitamente.
  */
 @Component
 public class IdentificadorSesionJwt implements IdentificadorSesion {
@@ -53,14 +57,16 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 	private final UsuarioRepository usuarios;
 	private final MembresiaService membresias;
 	private final AccesoFamiliaService accesoFamilia;
+	private final AlcanceRepository alcances;
 	private final ResolutorOrganizacion resolutor;
 
 	public IdentificadorSesionJwt(JwtService jwtService, UsuarioRepository usuarios, MembresiaService membresias,
-			AccesoFamiliaService accesoFamilia, ResolutorOrganizacion resolutor) {
+			AccesoFamiliaService accesoFamilia, AlcanceRepository alcances, ResolutorOrganizacion resolutor) {
 		this.jwtService = jwtService;
 		this.usuarios = usuarios;
 		this.membresias = membresias;
 		this.accesoFamilia = accesoFamilia;
+		this.alcances = alcances;
 		this.resolutor = resolutor;
 	}
 
@@ -127,12 +133,27 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 					usuario.getEmail(), organizacionId, autoridades, path);
 			return Optional.empty();
 		}
-		return Optional.of(new SesionVerificada(usuario, organizacionId, autoridades, token, plataforma));
+		return Optional.of(new SesionVerificada(usuario, organizacionId, autoridades, token, plataforma,
+				alcanceDe(usuario.getId(), organizacionId, autoridades)));
 	}
 
-	/** Sesión de un administrador de plataforma sin membresía válida: ninguna autoridad de escuela. */
+	/**
+	 * Alcance de una sesión que ya pasó la puerta (entrega5-plan.md §3.3): ADMIN o MANAGER → {@code TOTAL} sin
+	 * consulta (Taemoi: coste cero); RESPONSABLE_SEDE o PROFESOR → UNA consulta; el resto (familia) → {@code NINGUNO}.
+	 */
+	private AlcanceSesion alcanceDe(Long usuarioId, Long organizacionId, Set<Roles> autoridades) {
+		if (autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER)) {
+			return AlcanceSesion.TOTAL;
+		}
+		if (autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE) || autoridades.contains(Roles.ROLE_PROFESOR)) {
+			return AlcanceSesion.desde(alcances.filasDeAlcance(usuarioId, organizacionId));
+		}
+		return AlcanceSesion.NINGUNO;
+	}
+
+	/** Sesión de un administrador de plataforma sin membresía válida: ninguna autoridad de escuela ni alcance. */
 	private static SesionVerificada soloPlataforma(Usuario usuario, Long organizacionId, TokenJwt token) {
-		return new SesionVerificada(usuario, organizacionId, Set.of(), token, true);
+		return new SesionVerificada(usuario, organizacionId, Set.of(), token, true, AlcanceSesion.NINGUNO);
 	}
 
 	private static List<String> candidatos(HttpServletRequest request) {
