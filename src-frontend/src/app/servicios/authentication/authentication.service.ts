@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 
 export type PortalPreferido = 'admin' | 'user';
 
@@ -51,9 +52,39 @@ export class AuthenticationService {
   private rolesCargados: boolean = false;
   private alumnosAsociadosCache: any[] | null = null;
   private alumnosAsociadosRequest$: Observable<any[]> | null = null;
+  private sondeoPlataforma$: Observable<boolean> | null = null;
 
   constructor(private readonly http: HttpClient) {
     this.verificarEstadoAutenticacion();
+  }
+
+  /**
+   * true si la sesión es administradora de plataforma. Esa autoridad no sale en /roles (una sesión solo de
+   * plataforma recibe 403 allí), así que se sondea el endpoint protegido. Vive aquí, y no en PlataformaService,
+   * para que la cabecera y el guard no añadan un módulo al bundle inicial.
+   */
+  esAdminPlataforma(): Observable<boolean> {
+    if (!this.sondeoPlataforma$) {
+      this.sondeoPlataforma$ = this.http
+        .get(`${environment.apiUrl}/plataforma/errores`, {
+          params: new HttpParams().set('page', '1').set('size', '1'),
+          withCredentials: true,
+          headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+          context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
+        })
+        .pipe(
+          switchMap(() => of(true)),
+          catchError((error: HttpErrorResponse) => {
+            // Solo 401/403 es definitivo; un fallo de red o 5xx se reintenta en la próxima llamada.
+            if (error?.status !== 401 && error?.status !== 403) {
+              this.sondeoPlataforma$ = null;
+            }
+            return of(false);
+          }),
+          shareReplay(1)
+        );
+    }
+    return this.sondeoPlataforma$;
   }
 
   comprobarLogueado(): boolean {
@@ -62,6 +93,8 @@ export class AuthenticationService {
 
   login(credenciales: LoginInterface): Observable<string[]> {
     this.rolesCargados = false;
+    // Cambiar de usuario sin cerrar sesión no debe reutilizar el sondeo del anterior.
+    this.sondeoPlataforma$ = null;
     return this.http
       .post<any>(`${this.urlBase}/signin`, credenciales, {
         withCredentials: true,
@@ -308,6 +341,10 @@ export class AuthenticationService {
   }
 
   actualizarEstadoLogueado(estado: boolean) {
+    // Cualquier cambio de sesión (login o logout) invalida el sondeo de plataforma.
+    if (estado !== this.usuarioLogueadoSubject.value) {
+      this.sondeoPlataforma$ = null;
+    }
     this.usuarioLogueadoSubject.next(estado);
   }
 

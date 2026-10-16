@@ -1,0 +1,128 @@
+<section class="plataforma-page">
+  <header class="page-header">
+    <h1><i class="bi bi-exclamation-octagon" aria-hidden="true"></i> Errores de plataforma</h1>
+    <p>Todas las escuelas · sin datos personales</p>
+  </header>
+
+  <div class="filtros-card" role="group" aria-label="Filtros de errores">
+    <div class="filtros-grid">
+      <div class="filtro">
+        <label for="filtroEscuela">Escuela</label>
+        <select id="filtroEscuela" [(ngModel)]="filtroEscuela" (ngModelChange)="aplicarFiltros()" [disabled]="cargando">
+          <option [ngValue]="null">Todas</option>
+          @for (escuela of escuelas; track escuela) {
+            <option [ngValue]="escuela">Escuela {{ escuela }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filtro">
+        <span class="filtro-etiqueta" id="etiquetaEstado">Estado</span>
+        <div class="chips-estado" role="group" aria-labelledby="etiquetaEstado">
+          @for (familia of familias; track familia) {
+            <button
+              type="button"
+              class="chip-estado"
+              [ngClass]="'chip-' + familia"
+              [class.activo]="estados[familia]"
+              [attr.aria-pressed]="estados[familia]"
+              [disabled]="cargando"
+              (click)="alternarEstado(familia)">
+              @if (estados[familia]) {
+                <i class="bi bi-check-lg" aria-hidden="true"></i>
+              }
+              {{ familia }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="filtro">
+        <label for="filtroDesdePlataforma">Desde</label>
+        <input id="filtroDesdePlataforma" type="date" [(ngModel)]="filtroDesde" (change)="aplicarFiltros()" />
+      </div>
+
+      <div class="filtro">
+        <label for="filtroHastaPlataforma">Hasta</label>
+        <input id="filtroHastaPlataforma" type="date" [(ngModel)]="filtroHasta" (change)="aplicarFiltros()" />
+      </div>
+    </div>
+
+    <div class="filtros-acciones">
+      <button type="button" class="btn-secundario" (click)="restablecer()" [disabled]="cargando">
+        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Restablecer
+      </button>
+    </div>
+  </div>
+
+  @if (errorFechas) {
+    <p class="aviso-fechas" role="alert">
+      <i class="bi bi-calendar-x" aria-hidden="true"></i>
+      {{ errorFechas }}
+    </p>
+  }
+
+  @if (cargando) {
+    <app-skeleton-card [type]="'table'" [count]="4"></app-skeleton-card>
+  } @else if (!errorFechas) {
+    <article class="tabla-card">
+      <header class="tabla-header">
+        <h2>Errores</h2>
+        <p>{{ totalErrores }} {{ totalErrores === 1 ? 'error' : 'errores' }}</p>
+      </header>
+
+      @if (errores.length > 0) {
+        <div class="tabla-responsive" tabindex="0" role="region" aria-label="Tabla de errores de plataforma">
+          <table class="tabla-errores">
+            <thead>
+              <tr>
+                <th scope="col">Cuándo</th>
+                <th scope="col">Escuela</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Petición</th>
+                <th scope="col">Módulo</th>
+                <th scope="col">Usuario</th>
+                <th scope="col">Resumen</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (error of errores; track trackById($index, error)) {
+                <tr>
+                  <td class="col-cuando">
+                    <time [attr.datetime]="error.fechaEvento">
+                      <span class="hora">{{ error.fechaEvento | date:'HH:mm:ss' }}</span>
+                      <span class="fecha">{{ error.fechaEvento | date:'dd/MM/yyyy' }}</span>
+                    </time>
+                  </td>
+                  <td>{{ error.organizacionId != null ? 'Escuela ' + error.organizacionId : '-' }}</td>
+                  <td><span class="estado" [ngClass]="claseEstado(error.estadoHttp)">{{ error.estadoHttp }}</span></td>
+                  <td class="col-peticion"><span class="metodo">{{ error.metodoHttp }}</span> {{ error.endpoint }}</td>
+                  <td>{{ error.modulo || '-' }}</td>
+                  <td>{{ error.usuarioId ?? 'anónimo' }}</td>
+                  <td class="col-resumen">{{ error.resumen || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (totalPaginas > 1) {
+          <div class="tabla-footer">
+            <app-paginacion
+              [paginaActual]="paginaActual"
+              [totalPaginas]="totalPaginas"
+              [tamanoPagina]="tamanoPagina"
+              [deshabilitado]="cargando"
+              (pageChange)="cambiarPagina($event)">
+            </app-paginacion>
+          </div>
+        }
+      } @else {
+        <div class="sin-resultados">
+          <i class="bi bi-check2-circle" aria-hidden="true"></i>
+          <p class="sin-resultados-titulo">Sin errores en este periodo</p>
+          <p>Cambia las fechas, la escuela o el estado para revisar otro periodo.</p>
+        </div>
+      }
+    </article>
+  }
+</section>

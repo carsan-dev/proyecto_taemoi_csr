@@ -1,6 +1,7 @@
 ﻿import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
+import { plataformaGuard } from './guards/plataforma.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -382,6 +383,13 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
     resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Plataforma (todas las escuelas): sin requiredRoles ni catálogo; la sesión puede no tener membresía.
+    path: 'plataformaErrores',
+    data: { seo: SEO_ROUTES.noIndex, portalContext: 'admin' },
+    loadComponent: () => import('./componentes/endpoints/plataforma-errores/plataforma-errores.component').then(m => m.PlataformaErroresComponent),
+    canActivate: [plataformaGuard],
   },
   {
     path: '**',

@@ -31,6 +31,7 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AuditoriaEventoRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.services.AuditoriaService;
+import com.taemoi.project.services.VistaAuditoria;
 
 /**
  * Auditoría frente al healthcheck y a la pantalla «Eventos de auditoría», contra MySQL real.
@@ -187,7 +188,7 @@ class AuditoriaEventosConsultaIntegrationTest extends MySqlIntegrationTest {
 
 	private Page<AuditoriaEventoDTO> consultar(String resultado, boolean incluirRuido, int pagina, int tamano) {
 		return TenantContext.calcularCon(org, () -> auditoria.obtenerEventos(
-				null, null, resultado, null, null, null, null, null, pagina, tamano, incluirRuido));
+				VistaAuditoria.COMPLETA, null, null, resultado, null, null, null, null, null, pagina, tamano, incluirRuido));
 	}
 
 	private long contar(String sql) {

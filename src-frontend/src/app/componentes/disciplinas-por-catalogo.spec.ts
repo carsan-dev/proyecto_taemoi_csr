@@ -5,6 +5,7 @@ import { FormBuilder } from '@angular/forms';
 import { Catalogo } from '../features/catalogo/catalogo.models';
 import { InformePdfService } from '../servicios/generales/informe-pdf.service';
 import { LoadingService } from '../servicios/generales/loading.service';
+import { PlataformaService } from '../servicios/plataforma/plataforma.service';
 import { proveerCatalogoTesting } from '../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 import { EditarAlumnoComponent } from './endpoints/editar-alumno/editar-alumno.component';
@@ -24,6 +25,7 @@ function construir<T>(catalogo: Catalogo, fabrica: () => T): T {
       proveerCatalogoTesting(catalogo),
       InformePdfService,
       { provide: LoadingService, useValue: { show: () => undefined, hide: () => undefined } },
+      { provide: PlataformaService, useValue: {} },
     ],
   });
   return TestBed.runInInjectionContext(fabrica);

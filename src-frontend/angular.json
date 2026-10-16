@@ -235,7 +235,12 @@
               "src/app/features/catalogo/tarifas-taemoi.equivalencia.spec.ts",
               "src/app/componentes/endpoints/crear-alumno/crear-alumno.tarifas.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/editar-alumno.tarifas.spec.ts",
-              "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.tarifas.spec.ts"
+              "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.tarifas.spec.ts",
+              "src/app/componentes/endpoints/auditoria-sistema/auditoria-sistema.component.spec.ts",
+              "src/app/componentes/endpoints/plataforma-errores/plataforma-errores.component.spec.ts",
+              "src/app/servicios/plataforma/plataforma.service.spec.ts",
+              "src/app/guards/plataforma.guard.spec.ts",
+              "src/app/componentes/vistas/vista-principal-admin/vista-principal-admin.component.spec.ts"
             ]
           }
         }

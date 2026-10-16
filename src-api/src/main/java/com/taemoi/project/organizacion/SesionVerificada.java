@@ -11,10 +11,14 @@ import com.taemoi.project.services.TokenJwt;
  * organización). Lo calcula UNA vez {@link OrganizacionRequestFilter} y lo consume
  * {@code JwtAuthenticationFilter} desde el atributo de petición {@link #ATRIBUTO}.
  *
- * @param autoridades autoridades del usuario en {@code organizacionId}, ya traducidas.
- * @param token       contenido verificado del JWT con el que se identificó.
+ * @param autoridades     autoridades de las membresías del usuario en {@code organizacionId}, ya traducidas
+ *                        (vacías solo en la sesión de un administrador de plataforma sin membresía).
+ * @param token           contenido verificado del JWT con el que se identificó.
+ * @param adminPlataforma si la sesión lleva además {@code ROLE_ADMIN_PLATAFORMA}
+ *                        ({@link com.taemoi.project.plataforma.AutoridadPlataforma}).
  */
-public record SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> autoridades, TokenJwt token) {
+public record SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> autoridades, TokenJwt token,
+		boolean adminPlataforma) {
 
 	public static final String ATRIBUTO = SesionVerificada.class.getName();
 
@@ -23,5 +27,10 @@ public record SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> 
 
 	public SesionVerificada {
 		autoridades = Set.copyOf(autoridades);
+	}
+
+	/** Sesión sin la autoridad de plataforma. */
+	public SesionVerificada(Usuario usuario, Long organizacionId, Set<Roles> autoridades, TokenJwt token) {
+		this(usuario, organizacionId, autoridades, token, false);
 	}
 }

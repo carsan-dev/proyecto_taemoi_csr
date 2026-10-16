@@ -1,5 +1,7 @@
 package com.taemoi.project.organizacion;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -44,7 +46,7 @@ class IdentificadorSesionJwtTest {
 	private final MembresiaService membresias = mock(MembresiaService.class);
 	private final AccesoFamiliaService acceso = mock(AccesoFamiliaService.class);
 	private final IdentificadorSesionJwt identificador = new IdentificadorSesionJwt(jwtService, usuarios,
-			membresias, acceso);
+			membresias, acceso, new ResolutorOrganizacion(1L));
 
 	@Test
 	void familiaSinAlumnoAccesibleSeRechaza() {
@@ -79,6 +81,84 @@ class IdentificadorSesionJwtTest {
 			assertTrue(identificador.identificar(peticion()).isPresent(), rol.name());
 		}
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
+	}
+
+	// ------------------------------------------------------------------ administrador de plataforma
+
+	@Test
+	void cuentaSinMarcaDePlataformaNoRecibeLaAutoridad() {
+		cuentaCon(EMAIL_TOKEN, Roles.ROLE_ADMIN);
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(Set.of(Roles.ROLE_ADMIN), sesion.autoridades());
+		assertFalse(sesion.adminPlataforma());
+	}
+
+	@Test
+	void plataformaConMembresiaSumaLaAutoridadALasDeSuEscuela() {
+		Usuario cuenta = cuentaCon(EMAIL_TOKEN, Roles.ROLE_ADMIN);
+		marcarPlataforma(cuenta);
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(1L, sesion.organizacionId());
+		assertEquals(Set.of(Roles.ROLE_ADMIN), sesion.autoridades());
+		assertTrue(sesion.adminPlataforma());
+	}
+
+	@Test
+	void plataformaSinMembresiaEntraSoloEnLaEscuelaPorDefectoYSinAutoridadesDeEscuela() {
+		Usuario cuenta = cuentaSin(1L);
+		marcarPlataforma(cuenta);
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(1L, sesion.organizacionId());
+		assertEquals(Set.of(), sesion.autoridades());
+		assertTrue(sesion.adminPlataforma());
+	}
+
+	@Test
+	void plataformaSinMembresiaEnOtraEscuelaSeRechaza() {
+		Usuario cuenta = cuentaSin(2L);
+		marcarPlataforma(cuenta);
+
+		assertTrue(identificador.identificar(peticion()).isEmpty());
+	}
+
+	@Test
+	void plataformaSoloFamiliaSinAlumnoAccesibleQuedaSoloConLaAutoridadDePlataforma() {
+		Usuario cuenta = cuentaCon(EMAIL_TOKEN, Roles.ROLE_USER);
+		marcarPlataforma(cuenta);
+		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(false);
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(Set.of(), sesion.autoridades());
+		assertTrue(sesion.adminPlataforma());
+	}
+
+	@Test
+	void sinMarcaYSinMembresiaSeRechazaComoAntes() {
+		cuentaSin(1L);
+
+		assertTrue(identificador.identificar(peticion()).isEmpty());
+	}
+
+	private static void marcarPlataforma(Usuario cuenta) {
+		ReflectionTestUtils.setField(cuenta, "esAdminPlataforma", Boolean.TRUE);
+	}
+
+	private Usuario cuentaSin(long organizacionToken) {
+		when(jwtService.verificar("tok")).thenReturn(new TokenJwt(EMAIL_TOKEN, organizacionToken, new Date(),
+				new Date(System.currentTimeMillis() + 60_000)));
+		Usuario cuenta = new Usuario();
+		cuenta.setId(5L);
+		ReflectionTestUtils.setField(cuenta, "email", EMAIL_TOKEN);
+		when(usuarios.findByEmailIgnoreCase(EMAIL_TOKEN)).thenReturn(Optional.of(cuenta));
+		when(membresias.autoridadesEn(5L, organizacionToken)).thenReturn(Set.of());
+		return cuenta;
 	}
 
 	private Usuario cuentaCon(String emailGuardado, Roles rol) {

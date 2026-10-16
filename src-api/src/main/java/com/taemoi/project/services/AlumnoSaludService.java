@@ -26,7 +26,8 @@ import com.taemoi.project.repositories.AlumnoSaludRepository;
 @Service
 public class AlumnoSaludService {
 
-	static final String MODULO_AUDITORIA = "salud";
+	/** Módulo de sus eventos de auditoría; identifica las lecturas de salud en el registro del propietario (D2). */
+	public static final String MODULO_AUDITORIA = "salud";
 	private static final String TABLA = "alumno_salud";
 
 	private final AlumnoSaludRepository salud;

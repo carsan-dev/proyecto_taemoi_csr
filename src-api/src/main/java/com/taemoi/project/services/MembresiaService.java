@@ -34,7 +34,9 @@ public interface MembresiaService {
 	/**
 	 * Escuela con la que se abre la sesión, entre aquellas en las que {@link #puedeEntrarEn}: si solo
 	 * hay una, esa; si hay varias, la última usada si sigue siendo válida y si no la de menor id.
-	 * Vacío si no puede entrar en ninguna (se rechaza el inicio de sesión).
+	 * Vacío si no puede entrar en ninguna (se rechaza el inicio de sesión), salvo para un administrador de
+	 * plataforma ({@code usuario.es_admin_plataforma}): la organización por defecto, donde su sesión no tiene
+	 * ninguna autoridad de escuela.
 	 */
 	Optional<Long> elegirOrganizacionParaLogin(Usuario usuario);
 

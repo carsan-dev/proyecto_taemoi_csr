@@ -20,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import com.taemoi.project.entities.AuditoriaEvento;
 import com.taemoi.project.repositories.AuditoriaEventoRepository;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.VistaAuditoria;
 import com.taemoi.project.services.impl.AuditoriaServiceImpl;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -84,7 +85,7 @@ class AuditoriaServiceImplFiltroRuidoTest {
 	@SuppressWarnings("unchecked")
 	private CriteriaBuilder evaluar(String resultado, Boolean incluirRuido) {
 		org.mockito.Mockito.clearInvocations(repositorio);
-		servicio.obtenerEventos(null, null, resultado, null, null, null, null, null, 1, 25, incluirRuido);
+		servicio.obtenerEventos(VistaAuditoria.COMPLETA, null, null, resultado, null, null, null, null, null, 1, 25, incluirRuido);
 
 		ArgumentCaptor<Specification<AuditoriaEvento>> captor = ArgumentCaptor.forClass(Specification.class);
 		verify(repositorio).findAll(captor.capture(), any(Pageable.class));

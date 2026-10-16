@@ -33,6 +33,10 @@ import jakarta.servlet.http.HttpServletRequest;
  * <li>el usuario sigue teniendo membresía activa en esa organización (y esta está activa), en CADA
  * petición; si solo es familia, además algún alumno accesible en esa escuela ({@link AccesoFamiliaService}).</li>
  * </ol>
+ * Administrador de plataforma ({@code usuario.es_admin_plataforma}, fase3-sedes-permisos.md §4): la sesión lleva
+ * además {@code ROLE_ADMIN_PLATAFORMA} en cualquier escuela, sumada a sus autoridades de membresía. Si en la
+ * escuela del token no tiene membresía válida, solo se acepta en la organización por defecto y SOLO con esa
+ * autoridad (ninguna de escuela); en cualquier otra escuela se rechaza como a cualquiera.
  * Si algo falla, la petición sigue como anónima (Spring Security responde 401 donde haga falta).
  *
  * <p>Se ejecuta antes de conocer la organización: {@link OrganizacionRequestFilter} la invoca con la
@@ -48,13 +52,15 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 	private final UsuarioRepository usuarios;
 	private final MembresiaService membresias;
 	private final AccesoFamiliaService accesoFamilia;
+	private final ResolutorOrganizacion resolutor;
 
 	public IdentificadorSesionJwt(JwtService jwtService, UsuarioRepository usuarios, MembresiaService membresias,
-			AccesoFamiliaService accesoFamilia) {
+			AccesoFamiliaService accesoFamilia, ResolutorOrganizacion resolutor) {
 		this.jwtService = jwtService;
 		this.usuarios = usuarios;
 		this.membresias = membresias;
 		this.accesoFamilia = accesoFamilia;
+		this.resolutor = resolutor;
 	}
 
 	@Override
@@ -108,18 +114,30 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 			organizacionId = suyas.get(0);
 		}
 
+		boolean plataforma = usuario.isEsAdminPlataforma();
 		Set<Roles> autoridades = membresias.autoridadesEn(usuario.getId(), organizacionId);
 		if (autoridades.isEmpty()) {
+			if (plataforma && organizacionId.equals(resolutor.getOrganizacionPorDefecto())) {
+				return Optional.of(soloPlataforma(usuario, organizacionId, token));
+			}
 			logger.info(">>> JWT rechazado para {}: sin membresía activa en la organización {}",
 					usuario.getEmail(), organizacionId);
 			return Optional.empty();
 		}
 		if (RolMembresia.requiereAlumnoActivo(autoridades)
 				&& !accesoFamilia.tieneAlgunoAccesible(usuario, organizacionId)) {
+			if (plataforma && organizacionId.equals(resolutor.getOrganizacionPorDefecto())) {
+				return Optional.of(soloPlataforma(usuario, organizacionId, token));
+			}
 			logger.info(">>> JWT rechazado para usuario sin alumnos activos: {} ({})", usuario.getEmail(), path);
 			return Optional.empty();
 		}
-		return Optional.of(new SesionVerificada(usuario, organizacionId, autoridades, token));
+		return Optional.of(new SesionVerificada(usuario, organizacionId, autoridades, token, plataforma));
+	}
+
+	/** Sesión de un administrador de plataforma sin membresía válida: ninguna autoridad de escuela. */
+	private static SesionVerificada soloPlataforma(Usuario usuario, Long organizacionId, TokenJwt token) {
+		return new SesionVerificada(usuario, organizacionId, Set.of(), token, true);
 	}
 
 	private static List<String> candidatos(HttpServletRequest request) {

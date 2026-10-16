@@ -245,7 +245,7 @@
       <h2>Operaciones Prioritarias</h2>
     </div>
     <div class="operations-grid">
-      @for (operacion of operacionesPrioritarias; track operacion.titulo) {
+      @for (operacion of operacionesVisibles; track operacion.titulo) {
         <a
           [routerLink]="[operacion.ruta]"
           [queryParams]="operacion.queryParams"
@@ -273,7 +273,7 @@
       <h2>Acceso Rápido</h2>
     </div>
     <div class="quick-access-grid">
-      @for (seccion of seccionesAdmin; track seccion.ruta) {
+      @for (seccion of seccionesVisibles; track seccion.ruta) {
         <a [routerLink]="[seccion.ruta]" class="quick-access-card" [style.--card-color]="seccion.color">
           <div class="quick-icon">
             <i [class]="seccion.icono"></i>
