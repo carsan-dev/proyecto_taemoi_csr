@@ -316,6 +316,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false));
 	}
 
+	/** Ids para la navegación de editar-alumno: mismo filtro que el listado sin paginar, sin cargar las fichas. */
+	@Override
+	public List<Long> obtenerIdsAlumnos(boolean incluirInactivos) {
+		return alumnoRepository.buscarIdsEnOrganizacionActiva(incluirInactivos);
+	}
+
 	@Override
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {

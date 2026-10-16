@@ -97,4 +97,18 @@ describe('EndpointsService', () => {
       done();
     });
   });
+
+  it('pide solo los ids de los alumnos con el mismo filtro de inactivos que el listado', (done) => {
+    const getSpy = jasmine.createSpy('get').and.returnValue(of([3, 7, 9]));
+    const service = createService(getSpy);
+
+    service.obtenerIdsAlumnos(true).subscribe((ids) => {
+      expect(ids).toEqual([3, 7, 9]);
+      const [url, opciones] = getSpy.calls.mostRecent().args;
+      expect(url).toMatch(/\/alumnos\/ids$/);
+      expect(opciones.params.get('incluirInactivos')).toBe('true');
+      expect(opciones.withCredentials).toBeTrue();
+      done();
+    });
+  });
 });
