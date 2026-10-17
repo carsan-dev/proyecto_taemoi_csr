@@ -138,3 +138,94 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 });
+
+describe('HeaderComponent: cabecera móvil', () => {
+  async function renderizar(rol: 'visitante' | 'familia') {
+    const logueado = rol === 'familia';
+    const roles = logueado ? ['ROLE_USER'] : [];
+    const authServiceMock = {
+      usuarioLogueadoCambio: new BehaviorSubject<boolean>(logueado),
+      usernameCambio: new BehaviorSubject<string | null>(logueado ? 'familia' : null),
+      rolesCambio: new BehaviorSubject<string[]>(roles),
+      comprobarLogueado: () => logueado,
+      getRoles: () => of(roles),
+      esAdminPlataforma: () => of(false),
+      marcarVistaPreferidaSegunRuta: () => undefined,
+      tieneAccesoAdmin: () => false,
+      tieneAccesoUser: () => logueado,
+      tieneAccesoDual: () => false,
+      logout: () => undefined,
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceMock },
+        { provide: PageScrollService, useValue: { scrollTop: 0 } },
+        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const textoDe = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim();
+
+  it('el visitante ve «Preinscríbete» y «Entrar» con texto y sin redes en la cabecera', async () => {
+    const fixture = await renderizar('visitante');
+    const el = fixture.nativeElement as HTMLElement;
+    const acciones = el.querySelector('.header-actions-mobile');
+
+    expect(textoDe(acciones?.querySelector('a[href="/preinscripcion"]') ?? null)).toBe('Preinscríbete');
+    expect(textoDe(acciones?.querySelector('a[href="/login"]') ?? null)).toBe('Entrar');
+    expect(acciones?.querySelector('a[href*="facebook"], a[href*="instagram"], a[href*="tiktok"]')).toBeNull();
+  });
+
+  it('las redes sociales están en el menú móvil del visitante', async () => {
+    const fixture = await renderizar('visitante');
+    fixture.componentInstance.toggleMobileMenu();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const redes = el.querySelectorAll<HTMLAnchorElement>('.mobile-header-panel .mobile-header-social a');
+    expect(Array.from(redes).map((a) => a.getAttribute('aria-label'))).toEqual(['Facebook', 'Instagram', 'TikTok']);
+    redes.forEach((a) => {
+      expect(a.getAttribute('target')).toBe('_blank');
+      expect(a.getAttribute('rel')).toBe('noopener noreferrer');
+    });
+  });
+
+  it('la familia ve «Mi cuenta» y al pulsarlo se abre el menú con «Cerrar sesión»', async () => {
+    const fixture = await renderizar('familia');
+    const el = fixture.nativeElement as HTMLElement;
+    const boton = el.querySelector<HTMLButtonElement>('.btn-cuenta-mobile');
+
+    expect(textoDe(boton)).toBe('Mi cuenta');
+    expect(boton?.getAttribute('aria-haspopup')).toBe('menu');
+    expect(boton?.getAttribute('aria-expanded')).toBe('false');
+    expect(el.querySelector('.mobile-user-quick-menu-panel')).toBeNull();
+
+    boton?.click();
+    fixture.detectChanges();
+
+    expect(boton?.getAttribute('aria-expanded')).toBe('true');
+    const panel = el.querySelector('.mobile-user-quick-menu-panel');
+    expect(textoDe(panel)).toContain('Mis Clases');
+    expect(textoDe(panel)).toContain('Cerrar sesión');
+  });
+
+  it('la familia tiene las redes y la preinscripción en el menú móvil', async () => {
+    const fixture = await renderizar('familia');
+    fixture.componentInstance.toggleMobileMenu();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const panel = el.querySelector('.mobile-header-panel');
+
+    expect(panel?.querySelectorAll('.mobile-header-social a').length).toBe(3);
+    expect(panel?.querySelector('a[href="/preinscripcion"]')).not.toBeNull();
+  });
+});
