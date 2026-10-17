@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import com.taemoi.project.acceso.GestionPorSede;
+import com.taemoi.project.acceso.PredicadosAlcance;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
@@ -76,6 +78,10 @@ public class GrupoServiceImpl implements GrupoService {
 	@Autowired
 	private SedeService sedeService;
 
+	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
+	@Autowired
+	private GestionPorSede gestionPorSede;
+
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
@@ -87,7 +93,10 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
-		List<Grupo> grupos = grupoRepository.findAll();
+		// Responsable de sede (entrega 6-1d): solo los grupos de sus sedes. Gestión: la consulta de siempre.
+		List<Grupo> grupos = gestionPorSede.restriccion()
+				.map(alcance -> grupoRepository.findAll(PredicadosAlcance.gruposDeSusSedes(alcance)))
+				.orElseGet(grupoRepository::findAll);
 		return grupos.stream().map(this::convertirEntidadADTO).collect(Collectors.toList());
 	}
 
@@ -114,7 +123,9 @@ public class GrupoServiceImpl implements GrupoService {
 	@Transactional
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
-		asignarSedePorDefecto(grupo);
+		// D6-5: sede del cuerpo (de la escuela; del responsable, una de las suyas; activa, D6-17). Sin sede: la del
+		// responsable si tiene una; para la gestión, la única sede activa (o ninguna, como hasta ahora).
+		grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
 		grupo = grupoRepository.save(grupo);
 		return convertirEntidadADTO(grupo);
 	}
@@ -137,6 +148,11 @@ public class GrupoServiceImpl implements GrupoService {
 			grupo.setNombre(grupoDTO.getNombre());
 			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
 			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
+			// Sin sede en el cuerpo (o la misma), el grupo conserva la suya. Un cambio de sede se valida como un
+			// alta: de la escuela, del responsable si lo es, y activa (D6-5, D6-17).
+			if (grupoDTO.getSedeId() != null && !Objects.equals(grupoDTO.getSedeId(), grupo.getSedeId())) {
+				grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
+			}
 			asignarSedePorDefecto(grupo);
 			grupo = grupoRepository.save(grupo);
 
@@ -229,6 +245,8 @@ public class GrupoServiceImpl implements GrupoService {
 	@Override
 	@Transactional
 	public void agregarAlumnosAGrupo(@NonNull Long grupoId, @NonNull List<Long> alumnosIds) {
+		// D6-6: el responsable solo añade alumnos que ya están en su alcance (403 si alguno no).
+		gestionPorSede.exigirAlumnosEnAlcance(alumnosIds);
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 
 		if (grupoOptional.isPresent()) {
@@ -493,6 +511,7 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte() : null);
 		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
 		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
+		grupoDTO.setSedeId(grupo.getSedeId());
 
 		String deporteGrupo = grupo.getDeporte();
 		List<AlumnoCortoDTO> alumnosDTO = grupo.getAlumnos().stream()
@@ -569,6 +588,7 @@ public class GrupoServiceImpl implements GrupoService {
 		grupoDTO.setDeporte(grupo.getDeporte() != null ? grupo.getDeporte() : null);
 		grupoDTO.setRangoEdadMin(grupo.getRangoEdadMin());
 		grupoDTO.setRangoEdadMax(grupo.getRangoEdadMax());
+		grupoDTO.setSedeId(grupo.getSedeId());
 		return grupoDTO;
 	}
 

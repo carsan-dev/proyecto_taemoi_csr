@@ -105,17 +105,20 @@ class PDFControllerSecurityWebMvcTest {
 				.andExpect(content().bytes(PDF));
 	}
 
-	/** Segunda barrera: aunque se reabriera la ruta en la cadena de filtros, el método sigue protegido. */
+	/**
+	 * Segunda barrera: aunque se reabriera la ruta en la cadena de filtros, el método sigue protegido. Desde la
+	 * entrega 6-1d lo descarga también el responsable de sede (solo los turnos de sus sedes, en el servicio); la
+	 * familia, nunca.
+	 */
 	@Test
-	void handlerDeAsistenciaExigeLosMismosRolesQueElRestoDeInformes() throws Exception {
+	void handlerDeAsistenciaExigeGestionOResponsableDeSede() throws Exception {
 		PreAuthorize asistencia = PDFController.class.getMethod("generarAsistencia", int.class, int.class,
 				String.class, List.class, String.class, jakarta.servlet.http.HttpServletResponse.class)
 				.getAnnotation(PreAuthorize.class);
-		PreAuthorize hermano = PDFController.class.getMethod("generarInformeAlumnosPorGrado", boolean.class)
-				.getAnnotation(PreAuthorize.class);
 
 		assertThat(asistencia).isNotNull();
-		assertThat(asistencia.value()).isEqualTo(hermano.value());
+		assertThat(asistencia.value())
+				.isEqualTo("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')");
 	}
 
 	@TestConfiguration

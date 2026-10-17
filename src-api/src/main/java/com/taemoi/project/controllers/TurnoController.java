@@ -55,7 +55,7 @@ public class TurnoController {
 	 *         tiene éxito.
 	 */
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnos() {
 		List<TurnoDTO> turnosDTO = turnoService.listarTurnosDTOCompleto();
 		return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
@@ -70,7 +70,7 @@ public class TurnoController {
 	 *         si el turno no se encuentra.
 	 */
 	@GetMapping("/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.turnoEnSede(#turnoId,'LEER')")
 	public ResponseEntity<TurnoDTO> obtenerTurnoPorId(@PathVariable @NonNull Long turnoId) {
 		try {
 			Turno turno = turnoService.obtenerTurnoPorId(turnoId);
@@ -114,7 +114,7 @@ public class TurnoController {
 	 *         correctamente.
 	 */
 	@PostMapping("/crear-asignando-grupo")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> crearTurnoConGrupo(@Valid @RequestBody TurnoDTO turnoDTO) {
 		turnoService.crearTurnoYAsignarAGrupo(turnoDTO);
 		return new ResponseEntity<>(HttpStatus.CREATED);
@@ -129,7 +129,7 @@ public class TurnoController {
 	 *         tiene éxito, o estado HTTP NOT FOUND si el turno no se encuentra.
 	 */
 	@PutMapping("/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<TurnoDTO> actualizarTurno(@PathVariable @NonNull Long turnoId,
 			@Valid @RequestBody TurnoDTO turnoDTO) {
 		TurnoDTO turnoActualizadoDTO = turnoService.actualizarTurno(turnoId, turnoDTO);
@@ -151,7 +151,7 @@ public class TurnoController {
 	 *         interno.
 	 */
 	@DeleteMapping("/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<Void> eliminarTurno(@PathVariable @NonNull Long turnoId) {
 		boolean eliminado = turnoService.eliminarTurno(turnoId);
 		if (eliminado) {

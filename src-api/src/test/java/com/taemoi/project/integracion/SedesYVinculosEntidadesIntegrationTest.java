@@ -64,13 +64,15 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void taemoi_grupoNuevoEnUmbrete_yElJsonNoCambia() throws Exception {
+	void taemoi_grupoNuevoEnUmbrete_yElJsonLlevaSuSede() throws Exception {
 		long umbrete = jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = 1 AND nombre = 'Umbrete'", Long.class);
 		GrupoConAlumnosDTO creado = TenantContext.calcularCon(ORG1, () -> grupoService.crearGrupo(dto("IT sede Taemoi")));
 
 		assertEquals(umbrete, sedeDe(creado.getId()));
+		// Entrega 6-1b (D6-5): el DTO de grupos lleva sedeId (campo aditivo); la entidad sigue sin exponerla.
 		JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(creado));
-		assertFalse(json.has("sede") || json.has("sedeId") || json.has("sede_id"), json.toString());
+		assertEquals(umbrete, json.get("sedeId").asLong(), json.toString());
+		assertFalse(json.has("sede") || json.has("sede_id"), json.toString());
 		Grupo entidad = TenantContext.calcularCon(ORG1, () -> grupos.findById(creado.getId()).orElseThrow());
 		JsonNode jsonEntidad = objectMapper.readTree(objectMapper.writeValueAsString(entidad));
 		assertFalse(jsonEntidad.has("sedeId") || jsonEntidad.has("sede"), jsonEntidad.toString());

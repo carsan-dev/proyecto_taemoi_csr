@@ -9,9 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Alumno;
@@ -24,7 +26,8 @@ import jakarta.persistence.LockModeType;
  * base de datos.
  */
 @Repository
-public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno> {
+public interface AlumnoRepository
+		extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno>, AlumnoIdsRepository {
 
 	/**
 	 * Guarda un objeto AlumnoDTO en la base de datos.
@@ -271,6 +274,16 @@ public interface AlumnoRepository extends JpaRepository<Alumno, Long>, JpaSpecif
 	 */
 	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) ORDER BY a.id")
 	List<Long> buscarIdsEnOrganizacionActiva(@Param("incluirInactivos") boolean incluirInactivos);
+
+	/**
+	 * Cambia la sede principal de un alumno de la escuela activa (entrega 6-1b). Es la ÚNICA escritura posterior al
+	 * alta: el mapeo de la entidad es {@code updatable = false}. Devuelve las filas cambiadas (0 si el alumno no es de
+	 * la escuela activa).
+	 */
+	@Transactional
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("UPDATE Alumno a SET a.sedePrincipalId = :sedeId WHERE a.id = :alumnoId")
+	int asignarSedePrincipal(@Param("alumnoId") Long alumnoId, @Param("sedeId") Long sedeId);
 
 	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
 	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")

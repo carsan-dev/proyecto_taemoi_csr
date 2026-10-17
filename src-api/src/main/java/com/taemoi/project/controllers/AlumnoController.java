@@ -172,7 +172,7 @@ public class AlumnoController {
 	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
 	 */
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	@Transactional(readOnly = true)
 	public ResponseEntity<?> obtenerAlumnosDTO(@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
@@ -223,7 +223,7 @@ public class AlumnoController {
 	 * @return lista de ids.
 	 */
 	@GetMapping("/ids")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<Long>> obtenerIdsAlumnos(@RequestParam(required = false) Boolean incluirInactivos) {
 		return ResponseEntity.ok(alumnoService.obtenerIdsAlumnos(incluirInactivos != null && incluirInactivos));
 	}
@@ -237,7 +237,7 @@ public class AlumnoController {
 	 *                                     ID especificado.
 	 */
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'LEER')")
 	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
 		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id)
@@ -247,7 +247,7 @@ public class AlumnoController {
 	}
 
 	@GetMapping("/{alumnoId}/imagen")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<Resource> obtenerImagenAlumno(
 			@PathVariable @NonNull Long alumnoId,
 			@RequestParam(name = "w", required = false) Integer anchoSolicitado) {
@@ -310,14 +310,14 @@ public class AlumnoController {
 	}
 	
     @GetMapping("/{alumnoId}/documentos")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
     public ResponseEntity<List<Documento>> obtenerDocumentosDelAlumno(@PathVariable Long alumnoId) {
         List<Documento> documentos = alumnoService.obtenerDocumentosAlumno(alumnoId);
         return ResponseEntity.ok(documentos);
     }
 
 	@GetMapping("/{alumnoId}/documentos/{documentoId}/descargar")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<Resource> descargarDocumento(
 			@PathVariable Long alumnoId,
 			@PathVariable Long documentoId,
@@ -386,14 +386,14 @@ public class AlumnoController {
 	}
 	
     @GetMapping("/count")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
     public ResponseEntity<Long> countAlumnos() {
         long total = alumnoService.countAlumnos();
         return ResponseEntity.ok(total);
     }
 
 	@GetMapping("/deportes/distribucion")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	@Transactional(readOnly = true)
 	public ResponseEntity<Map<String, Long>> obtenerDistribucionActivaPorDeporte() {
 		return ResponseEntity.ok(alumnoDeporteService.obtenerDistribucionActivaPorDeporte());
@@ -408,7 +408,7 @@ public class AlumnoController {
 	 *         grupos para el alumno especificado.
 	 */
 	@GetMapping("/{alumnoId}/grupos")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<List<GrupoResponseDTO>> obtenerGruposDeAlumno(@PathVariable @NonNull Long alumnoId) {
 		List<GrupoResponseDTO> gruposDTO = grupoService.obtenerGruposDelAlumno(alumnoId);
 		return ResponseEntity.ok(gruposDTO);
@@ -422,7 +422,7 @@ public class AlumnoController {
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@PostMapping("/{alumnoId}/grupos/{grupoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
 	public ResponseEntity<?> asignarAlumnoAGrupo(@PathVariable Long alumnoId, @PathVariable Long grupoId) {
 		try {
 			grupoService.agregarAlumnoAGrupo(grupoId, alumnoId);
@@ -441,7 +441,7 @@ public class AlumnoController {
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@DeleteMapping("/{alumnoId}/grupos/{grupoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
 	public ResponseEntity<?> removerAlumnoDeGrupo(@PathVariable Long alumnoId, @PathVariable Long grupoId) {
 		try {
 			grupoService.eliminarAlumnoDeGrupo(grupoId, alumnoId);
@@ -469,7 +469,7 @@ public class AlumnoController {
 	 *                                          NIF.
 	 */
 	@PostMapping(value = "/crear", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> crearAlumno(@Valid @RequestParam("nuevo") String alumnoJson,
 			@RequestParam(required = false) MultipartFile file) {
 		try {
@@ -501,6 +501,9 @@ public class AlumnoController {
 		} catch (IOException e) {
 			logger.error("Error al procesar el archivo o el JSON: {}", e.getMessage(), e);
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (org.springframework.security.access.AccessDeniedException e) {
+			// Entrega 6-1c: sede de otra sede del responsable. Spring Security responde 403, no un 500.
+			throw e;
 		} catch (Exception e) {
 			logger.error("Error inesperado al crear el alumno: {}", e.getMessage(), e); // Log de excepciones genéricas
 			return new ResponseEntity<>("Error inesperado al crear el alumno", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -508,7 +511,7 @@ public class AlumnoController {
 	}
 	
     @PostMapping("/{alumnoId}/documentos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
     public ResponseEntity<?> subirDocumento(
             @PathVariable Long alumnoId,
             @RequestParam MultipartFile archivo
@@ -523,7 +526,7 @@ public class AlumnoController {
     }
 
 	@PutMapping("/{id}/baja")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> darDeBajaAlumno(@PathVariable @NonNull Long id) {
 		alumnoService.darDeBajaAlumno(id);
 		preinscripcionService.promocionarTodas();
@@ -531,7 +534,7 @@ public class AlumnoController {
 	}
 
 	@PutMapping("/{id}/alta")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> darDeAltaAlumno(@PathVariable @NonNull Long id) {
 		alumnoService.darDeAltaAlumno(id);
 		return ResponseEntity.ok().build();
@@ -550,7 +553,7 @@ public class AlumnoController {
 	 *                                          son inválidos.
 	 */
 	@PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarAlumno(@PathVariable @NonNull Long id,
 			@Valid @RequestParam(required = false) MultipartFile file,
 			@Valid @RequestParam("alumnoEditado") String alumnoJson) {
@@ -587,7 +590,7 @@ public class AlumnoController {
 	 * @return ResponseEntity con el alumno actualizado.
 	 */
 	@PutMapping("/{id}/observaciones")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarObservaciones(@PathVariable @NonNull Long id,
 			@Valid @RequestBody AlumnoObservacionesDTO request) {
 		Alumno alumno = alumnoService.actualizarObservaciones(id,
@@ -606,7 +609,7 @@ public class AlumnoController {
 	 *                   alumno.
 	 */
 	@DeleteMapping("/{id}/imagen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> eliminarImagenAlumno(@PathVariable @NonNull Long id) {
 		try {
 			alumnoService.eliminarImagenAlumno(id);
@@ -618,7 +621,7 @@ public class AlumnoController {
 	}
 	
     @DeleteMapping("/{alumnoId}/documentos/{documentoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
     public ResponseEntity<?> eliminarDocumento(
             @PathVariable Long alumnoId,
             @PathVariable Long documentoId
@@ -654,7 +657,7 @@ public class AlumnoController {
 	 * @return ResponseEntity que contiene una lista de TurnoDTO.
 	 */
 	@GetMapping("/{alumnoId}/turnos")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnosDelAlumno(@PathVariable Long alumnoId) {
 		List<TurnoDTO> turnos = alumnoService.obtenerTurnosDelAlumno(alumnoId);
 		return ResponseEntity.ok(turnos);
@@ -753,7 +756,7 @@ public class AlumnoController {
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@PostMapping("/{alumnoId}/turnos/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<?> asignarAlumnoATurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
 		try {
 			alumnoService.asignarAlumnoATurno(alumnoId, turnoId);
@@ -774,7 +777,7 @@ public class AlumnoController {
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@DeleteMapping("/{alumnoId}/turnos/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<?> removerAlumnoDeTurno(@PathVariable Long alumnoId, @PathVariable Long turnoId) {
 		try {
 			alumnoService.removerAlumnoDeTurno(alumnoId, turnoId);
@@ -790,6 +793,7 @@ public class AlumnoController {
 
 	// Endpoint para obtener todos los alumnos aptos para examen
 	@GetMapping("/aptos")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosParaExamen() {
 		List<AlumnoConGruposDTO> alumnos = alumnoService.obtenerAlumnosAptosConGruposDTO();
 		return ResponseEntity.ok(alumnos);
@@ -797,7 +801,7 @@ public class AlumnoController {
 
 	// Endpoint para obtener alumnos aptos para examen por deporte
 	@GetMapping("/aptos/deporte")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosAptosPorDeporte(@RequestParam String deporte) {
 		String exclusion = "competición";
 		if (deporte.equalsIgnoreCase("kickboxing") || deporte.equalsIgnoreCase("pilates")
@@ -811,7 +815,7 @@ public class AlumnoController {
 
 	// Endpoint para obtener un alumno apto para examen por su ID
 	@GetMapping("/aptos/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'LEER')")
 	public ResponseEntity<AlumnoConGruposDTO> obtenerAlumnoAptoPorId(@PathVariable Long id) {
 		Optional<AlumnoConGruposDTO> alumno = alumnoService.obtenerAlumnoAptoPorId(id);
 
@@ -821,7 +825,7 @@ public class AlumnoController {
 
 	// Endpoint para obtener alumnos elegibles para una convocatoria específica
 	@GetMapping("/aptos/convocatoria")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoConGruposDTO>> obtenerAlumnosElegiblesParaConvocatoria(
 			@RequestParam String deporte) {
 		List<AlumnoConGruposDTO> alumnosElegibles = alumnoService
@@ -862,7 +866,7 @@ public class AlumnoController {
 	 * GET /api/alumnos/{id}/deportes
 	 */
 	@GetMapping("/{id}/deportes")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#id)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#id)")
 	public ResponseEntity<List<com.taemoi.project.dtos.AlumnoDeporteDTO>> obtenerDeportesDelAlumno(@PathVariable Long id) {
 		try {
 			// Changed to obtenerDeportesDelAlumno to include inactive sports for reactivation
@@ -978,7 +982,7 @@ public class AlumnoController {
 	 * Body: { "deporte": "TAEKWONDO", "gradoInicial": "BLANCO", "fechaAlta": "2024-01-15", "fechaAltaInicial": "2024-01-15", "fechaGrado": "2024-01-15" }
 	 */
 	@PostMapping("/{id}/deportes")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> agregarDeporteAAlumno(@PathVariable Long id,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1052,7 +1056,7 @@ public class AlumnoController {
 	 * Desactiva un deporte de un alumno (soft delete - mantiene todos los datos)
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/desactivar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> desactivarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
@@ -1071,7 +1075,7 @@ public class AlumnoController {
 	 * Activa un deporte de un alumno que estaba inactivo (preserva todos los datos)
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/activar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> activarDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
@@ -1093,7 +1097,7 @@ public class AlumnoController {
 	 * PUT /api/alumnos/{id}/deportes/{deporte}/principal
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/principal")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> establecerDeportePrincipal(@PathVariable Long id, @PathVariable String deporte) {
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
@@ -1111,7 +1115,7 @@ public class AlumnoController {
 	}
 
 	@DeleteMapping("/{id}/deportes/{deporte}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> removerDeporteDeAlumno(@PathVariable Long id, @PathVariable String deporte) {
 		try {
 			String deporteEnum = catalogoDisciplinas.validarCodigo(deporte);
@@ -1132,7 +1136,7 @@ public class AlumnoController {
 	 * Body: { "nuevoGrado": "AZUL" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/grado")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarGradoPorDeporte(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1161,7 +1165,7 @@ public class AlumnoController {
 	 * POST /api/alumnos/{id}/deportes/{deporte}/pase-recompensa
 	 */
 	@PostMapping("/{id}/deportes/{deporte}/pase-recompensa")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> pasarGradoPorRecompensa(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody(required = false) Map<String, Object> params) {
 		try {
@@ -1185,7 +1189,7 @@ public class AlumnoController {
 	 * POST /api/alumnos/{id}/deportes/{deporte}/pase-examen
 	 */
 	@PostMapping("/{id}/deportes/{deporte}/pase-examen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> pasarGradoConDerechoExamen(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody(required = false) Map<String, Object> params) {
 		try {
@@ -1210,7 +1214,7 @@ public class AlumnoController {
 	 * Body: { "aptoParaExamen": true }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/apto-examen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarAptoParaExamen(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Boolean> params) {
 		try {
@@ -1240,7 +1244,7 @@ public class AlumnoController {
 	 * Body: { "fechaGrado": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-grado")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaGrado(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1272,7 +1276,7 @@ public class AlumnoController {
 	 * Body: { "fechaAlta": "2025-01-15" } o { "fechaAlta": null }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-alta")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaAltaDeporte(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1307,7 +1311,7 @@ public class AlumnoController {
 	 * Body: { "fechaBaja": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-baja")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaBajaDeporte(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1342,7 +1346,7 @@ public class AlumnoController {
 	 * Body: { "fechaAltaInicial": "2020-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-inicial")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaAltaInicialDeporte(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1438,7 +1442,7 @@ public class AlumnoController {
 	 * Body: { "rolFamiliar": "PADRE" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/rol-familiar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarRolFamiliar(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1469,7 +1473,7 @@ public class AlumnoController {
 	 * Body: { "grupoFamiliar": "Familia Garcia" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/grupo-familiar")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarGrupoFamiliar(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1500,7 +1504,7 @@ public class AlumnoController {
 	 * Body: { "tieneLicencia": true }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/tiene-licencia")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarTieneLicencia(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Boolean> params) {
 		try {
@@ -1531,7 +1535,7 @@ public class AlumnoController {
 	 * Body: { "numeroLicencia": 12345 }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/numero-licencia")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarNumeroLicencia(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Object> params) {
 		try {
@@ -1563,7 +1567,7 @@ public class AlumnoController {
 	 * Body: { "fechaLicencia": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-licencia")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaLicencia(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1595,7 +1599,7 @@ public class AlumnoController {
 	 * Body: { "competidor": true }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/competidor")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarCompetidor(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Boolean> params) {
 		try {
@@ -1626,7 +1630,7 @@ public class AlumnoController {
 	 * Body: { "peso": 65.5 }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/peso")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarPeso(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Object> params) {
 		try {
@@ -1658,7 +1662,7 @@ public class AlumnoController {
 	 * Body: { "fechaPeso": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-peso")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaPeso(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1690,7 +1694,7 @@ public class AlumnoController {
 	 * Body: { "categoria": "INFANTIL" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/categoria")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarCategoria(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1721,7 +1725,7 @@ public class AlumnoController {
 	 * Body: { "fechaAltaCompeticion": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-competicion")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaAltaCompeticion(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1753,7 +1757,7 @@ public class AlumnoController {
 	 * Body: { "fechaAltaCompetidorInicial": "2025-01-15" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/fecha-alta-competidor-inicial")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaAltaCompetidorInicial(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1786,7 +1790,7 @@ public class AlumnoController {
 	 * Body: { "competidor": true, "fechaAltaCompeticion": "2025-01-15", ... }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/datos-competidor")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarDatosCompetidor(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Object> params) {
 		try {
@@ -1839,7 +1843,7 @@ public class AlumnoController {
 	 * Body: { "fechaAltaInicial": "2020-01-15" }
 	 */
 	@PutMapping("/{id}/fecha-alta-inicial")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarFechaAltaInicial(@PathVariable @NonNull Long id,
 			@RequestBody Map<String, String> body) {
 		try {
@@ -1870,7 +1874,7 @@ public class AlumnoController {
 	 * GET /api/alumnos/{id}/completo
 	 */
 	@GetMapping("/{id}/completo")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'LEER')")
 	public ResponseEntity<com.taemoi.project.dtos.response.AlumnoConDeportesDTO> obtenerAlumnoCompleto(@PathVariable Long id) {
 		try {
 			Alumno alumno = alumnoService.obtenerAlumnoPorId(id)
@@ -1891,7 +1895,7 @@ public class AlumnoController {
 	 * GET /api/alumnos/con-deportes
 	 */
 	@GetMapping("/con-deportes")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO>> obtenerTodosLosAlumnosConDeportes(
 			@RequestParam(required = false, defaultValue = "false") Boolean incluirInactivos) {
 		try {

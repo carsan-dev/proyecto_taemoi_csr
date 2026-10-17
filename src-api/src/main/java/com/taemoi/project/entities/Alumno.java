@@ -162,11 +162,12 @@ public class Alumno extends EntidadOrganizacion {
 	private Integer rachaRetoDiario = 0;
 
 	/**
-	 * Sede principal (V31, regla D9 del alcance por sede). Mapeo de SOLO LECTURA (entrega 5c-1): Hibernate no la
-	 * escribe nunca, para no pisar el relleno de V31 hasta que la entrega 8 o 9 la gestione. Fuera del JSON.
+	 * Sede principal (V31, regla D9 del alcance por sede). Se escribe en el ALTA (entrega 6-1b, D6-2) y nunca en un
+	 * {@code UPDATE} de la entidad ({@code updatable = false}): ningún {@code save} de una entidad a medio construir
+	 * la pone a NULL. Los cambios posteriores van por {@code AlumnoRepository.asignarSedePrincipal}. Fuera del JSON.
 	 */
 	@JsonIgnore
-	@Column(name = "sede_principal_id", insertable = false, updatable = false)
+	@Column(name = "sede_principal_id", insertable = true, updatable = false)
 	private Long sedePrincipalId;
 
 	public Long getId() {
@@ -471,10 +472,17 @@ public class Alumno extends EntidadOrganizacion {
 		this.rachaRetoDiario = rachaRetoDiario;
 	}
 
-	/** Solo lectura: sin setter, la escribe la base de datos (V31) y, más adelante, la entrega 8 o 9. */
 	@JsonIgnore
 	public Long getSedePrincipalId() {
 		return sedePrincipalId;
+	}
+
+	/**
+	 * Solo tiene efecto antes del primer {@code save} (alta): la columna no se actualiza con la entidad. Para cambiarla
+	 * después, {@code AlumnoRepository.asignarSedePrincipal}.
+	 */
+	public void setSedePrincipalId(Long sedePrincipalId) {
+		this.sedePrincipalId = sedePrincipalId;
 	}
 
 	public List<AlumnoDeporte> getDeportes() {

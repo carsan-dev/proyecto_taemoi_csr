@@ -61,6 +61,10 @@ public class PDFServiceImpl implements PDFService {
 	@Autowired
 	private AlumnoRepository alumnoRepository;
 
+	/** Entrega 6-1d: el listado de asistencia del responsable de sede solo lleva los turnos de sus sedes. */
+	@Autowired
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
 	@Autowired
 	private AlumnoDeporteRepository alumnoDeporteRepository;
 
@@ -1196,6 +1200,9 @@ public class PDFServiceImpl implements PDFService {
 		}
 
 		gruposFiltrados.sort(Comparator.comparing(g -> DiaSemanaUtils.mapGrupoToDayOfWeek(g).getValue()));
+		// Responsable de sede: solo los turnos de grupos de sus sedes. Gestión: todos, como hasta ahora.
+		final java.util.Set<Long> sedesDelResponsable = gestionPorSede.restriccion()
+				.map(com.taemoi.project.organizacion.AlcanceSesion::sedes).orElse(null);
 
 		List<String> deportesFiltrar = deporte != null ? Collections.singletonList(deporte)
 				: Arrays.asList(CatalogoLegadoTaemoi.TAEKWONDO, CatalogoLegadoTaemoi.KICKBOXING, CatalogoLegadoTaemoi.PILATES,
@@ -1321,6 +1328,10 @@ public class PDFServiceImpl implements PDFService {
 						continue;
 					}
 					if (turno.getGrupo() == null || turno.getGrupo().getDeporte() == null) {
+						continue;
+					}
+					if (sedesDelResponsable != null && (turno.getGrupo().getSedeId() == null
+							|| !sedesDelResponsable.contains(turno.getGrupo().getSedeId()))) {
 						continue;
 					}
 					if (!java.util.Objects.equals(turno.getGrupo().getDeporte(), alumnoDeporteEnum)) {

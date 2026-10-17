@@ -19,6 +19,10 @@ import com.taemoi.project.services.AlumnoSaludService;
 /**
  * Datos de salud de un alumno. Por ahora solo propietario y administración (ROLE_ADMIN/ROLE_MANAGER);
  * profesores en la fase 3. Respuestas con {@code Cache-Control: no-store}.
+ *
+ * <p>Entrega 6-1c: cada método lleva su {@code @PreAuthorize} (gestión, o responsable de sede por
+ * {@code @acceso.alumnoEnSede}: leer por D9, editar por la sede principal, D6-3). El de la clase queda como
+ * valor por defecto (solo gestión) para un método nuevo sin anotación.
  */
 @RestController
 @RequestMapping("/api/alumnos/{alumnoId}/salud")
@@ -34,11 +38,13 @@ public class AlumnoSaludController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER')")
 	public ResponseEntity<AlumnoSaludDTO> obtener(@PathVariable Long alumnoId) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(salud.obtener(alumnoId));
 	}
 
 	@PutMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<AlumnoSaludDTO> guardar(@PathVariable Long alumnoId, @RequestBody String cuerpo) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(salud.guardar(alumnoId, leer(cuerpo)));
 	}

@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -217,6 +218,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
 
+	/** Entrega 6: filtros y comprobaciones por sede del responsable (sin efecto para la gestión). */
+	@Autowired
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
 	 *
@@ -285,17 +290,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			@NonNull Pageable pageable) {
-		return alumnoRepository.findAll(
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false),
-				pageable);
+		return obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluirInactivos, false, pageable);
 	}
 
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			boolean aptoParaExamen, @NonNull Pageable pageable) {
-		return alumnoRepository.findAll(
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen),
-				pageable);
+		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen);
+		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
+		if (restriccion.isEmpty()) {
+			// Gestión: la misma consulta de siempre.
+			return alumnoRepository.findAll(filtro, pageable);
+		}
+		// Responsable de sede (entrega 6-1c): D9 por sus sedes. Sin paginar, por id, como GET /api/alumnos/ids.
+		filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		if (pageable.isUnpaged()) {
+			return new org.springframework.data.domain.PageImpl<>(
+					alumnoRepository.findAll(filtro, org.springframework.data.domain.Sort.by("id")));
+		}
+		return alumnoRepository.findAll(filtro, pageable);
 	}
 
 	/**
@@ -312,19 +326,43 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos) {
+		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false);
+		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
+		if (restriccion.isEmpty()) {
+			return alumnoRepository.findAll(filtro);
+		}
 		return alumnoRepository.findAll(
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false));
+				filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get())),
+				org.springframework.data.domain.Sort.by("id"));
 	}
 
-	/** Ids para la navegación de editar-alumno: mismo filtro que el listado sin paginar, sin cargar las fichas. */
+	/**
+	 * Ids para la navegación de editar-alumno: mismo filtro que el listado sin paginar, sin cargar las fichas. Para el
+	 * responsable de sede, solo los de su alcance (D9), por id.
+	 */
 	@Override
 	public List<Long> obtenerIdsAlumnos(boolean incluirInactivos) {
-		return alumnoRepository.buscarIdsEnOrganizacionActiva(incluirInactivos);
+		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
+		if (restriccion.isEmpty()) {
+			return alumnoRepository.buscarIdsEnOrganizacionActiva(incluirInactivos);
+		}
+		return alumnoRepository.buscarIds(
+				com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()), incluirInactivos);
 	}
 
 	@Override
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
+		// D6-2: sede principal del alta. Responsable: obligatoria y suya (403 si no; automática si tiene una).
+		// Gestión: la pedida o, si no, la única sede activa (con varias, NULL como hasta ahora).
+		Long sedePrincipal;
+		try {
+			// D6-18: tampoco en una sede inactiva (400), ni la gestión ni el responsable.
+			sedePrincipal = gestionPorSede.sedeDeAlta(nuevoAlumnoDTO.getSedePrincipalId(), true);
+		} catch (IllegalArgumentException e) {
+			throw new DatosAlumnoInvalidosException(e.getMessage());
+		}
 		String nifNormalizado = NifUtils.normalizeForStorage(nuevoAlumnoDTO.getNif());
 
 		// Verificar si el Alumno ya existe
@@ -383,6 +421,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// Número de expediente de la organización activa (contador con bloqueo, misma transacción)
 		nuevoAlumno.setNumeroExpediente(contadorService.siguienteNumeroExpediente());
+		nuevoAlumno.setSedePrincipalId(sedePrincipal);
 
 		// Guardar primero el Alumno
 		Alumno alumnoGuardado = alumnoRepository.save(nuevoAlumno);
@@ -619,7 +658,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 			Usuario usuario = alumnoExistente.getUsuario();
 			if (usuario != null && normalizedEmail != null) {
 				String usuarioEmail = usuario.getEmail();
-				if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
+				if ((usuarioEmail == null || !usuarioEmail.equals(normalizedEmail))
+						&& gestionPorSede.restriccion().isPresent()) {
+					// Entrega 6-1: el responsable de sede nunca cambia el email de una cuenta (es el de acceso; con él
+					// podría apropiarse de una cuenta de gestión). Cambiar el de un alumno con cuenta: 403; sin cambio
+					// en la ficha, la cuenta no se toca.
+					if (!java.util.Objects.equals(normalizedEmail, EmailUtils.normalizeEmail(alumnoExistente.getEmail()))) {
+						throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
+					}
+				} else if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
 					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
 					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
 							alumnoExistente.getOrganizacionId())) {
@@ -1799,8 +1846,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public List<AlumnoConGruposDTO> obtenerAlumnosAptosConGruposDTO() {
 		// Busca alumnos activos que tengan al menos un deporte activo con aptoParaExamen = true
 		List<Alumno> alumnos = alumnoRepository.findAlumnosAptosParaExamen();
+		java.util.Optional<Set<Long>> enAlcance = gestionPorSede.idsAlumnosEnAlcance();
 
 		return alumnos.stream()
+				.filter(alumno -> enAlcance.isEmpty() || enAlcance.get().contains(alumno.getId()))
 				.map(alumno -> {
 					AlumnoDeporte alumnoDeporte = null;
 					if (alumno.getDeportes() != null) {
@@ -1825,9 +1874,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}
 
 		List<AlumnoDeporte> alumnosDeporte = alumnoDeporteService.obtenerAptosParaExamenPorDeporte(deporteEnum);
+		java.util.Optional<Set<Long>> enAlcance = gestionPorSede.idsAlumnosEnAlcance();
 
 		return alumnosDeporte.stream()
 				.filter(ad -> ad.getAlumno() != null)
+				.filter(ad -> enAlcance.isEmpty() || enAlcance.get().contains(ad.getAlumno().getId()))
 				.map(ad -> AlumnoConGruposDTO.deAlumnoConGrupos(ad.getAlumno(), ad))
 				.collect(Collectors.toList());
 	}
@@ -1862,9 +1913,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public List<AlumnoConGruposDTO> obtenerAlumnosElegiblesParaConvocatoria(String deporte) {
 		List<AlumnoDeporte> alumnosDeporte = alumnoDeporteService.obtenerAptosParaExamenPorDeporte(deporte);
+		java.util.Optional<Set<Long>> enAlcance = gestionPorSede.idsAlumnosEnAlcance();
 
 		return alumnosDeporte.stream()
 				.filter(ad -> ad.getAlumno() != null)
+				.filter(ad -> enAlcance.isEmpty() || enAlcance.get().contains(ad.getAlumno().getId()))
 				.map(ad -> AlumnoConGruposDTO.deAlumnoConGrupos(ad.getAlumno(), ad))
 				.collect(Collectors.toList());
 	}
@@ -2318,7 +2371,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Override
 	public long countAlumnos() {
-        return alumnoRepository.count();
+		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
+		if (restriccion.isEmpty()) {
+			return alumnoRepository.count();
+		}
+		return alumnoRepository.count(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
 	}
 
 	/**

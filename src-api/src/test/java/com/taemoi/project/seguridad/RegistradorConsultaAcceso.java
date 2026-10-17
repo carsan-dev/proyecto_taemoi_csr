@@ -42,6 +42,11 @@ final class RegistradorConsultaAcceso implements ConsultaAccesoRecursos {
 	}
 
 	@Override
+	public boolean alumnoConSedePrincipalEn(Long alumnoId, Set<Long> sedes) {
+		return registrar();
+	}
+
+	@Override
 	public boolean alumnoEnGrupos(Long alumnoId, Set<Long> grupos) {
 		return registrar();
 	}

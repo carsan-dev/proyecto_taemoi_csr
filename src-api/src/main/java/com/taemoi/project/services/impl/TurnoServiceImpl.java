@@ -46,6 +46,9 @@ public class TurnoServiceImpl implements TurnoService {
 	@Autowired private AforoPreinscripcionService aforoPreinscripcionService;
 	@Autowired private TemporadaService temporadaService;
 	@Autowired private PreinscripcionRepository preinscripcionRepository;
+	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
+	@Autowired private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+	@Autowired private com.taemoi.project.repositories.SedeRepository sedeRepository;
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
@@ -94,7 +97,11 @@ public class TurnoServiceImpl implements TurnoService {
 
 	@Override
 	public List<TurnoDTO> listarTurnosDTOCompleto() {
-		List<Turno> turnos = turnoRepository.findAll();
+		// Responsable de sede (entrega 6-1d): turnos de grupos de sus sedes. Gestión: la consulta de siempre.
+		List<Turno> turnos = gestionPorSede.restriccion()
+				.map(alcance -> turnoRepository.findAll(
+						com.taemoi.project.acceso.PredicadosAlcance.turnosDeSusSedes(alcance)))
+				.orElseGet(turnoRepository::findAll);
 		return turnos.stream().map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
 				.collect(Collectors.toList());
 	}
@@ -121,6 +128,8 @@ public class TurnoServiceImpl implements TurnoService {
 	 */
 	@Override
 	public void crearTurnoYAsignarAGrupo(TurnoDTO turnoDTO) {
+		// D6-5: el responsable solo crea turnos en grupos de sus sedes (403).
+		gestionPorSede.exigirGrupoPropio(turnoDTO.getGrupoId());
 		Turno turno = new Turno();
 		turno.setDiaSemana(turnoDTO.getDiaSemana());
 		turno.setHoraInicio(turnoDTO.getHoraInicio());
@@ -129,6 +138,9 @@ public class TurnoServiceImpl implements TurnoService {
 		// Obtener el grupo por ID
 		Grupo grupo = grupoRepository.findById(turnoDTO.getGrupoId()).orElseThrow(
 				() -> new IllegalArgumentException("No se encontró el grupo con el ID: " + turnoDTO.getGrupoId()));
+
+		// D6-17: en una sede inactiva no se crean turnos (400).
+		gestionPorSede.exigirSedeActiva(grupo.getSedeId());
 
 		// Usar el tipo de grupo directamente del frontend
 		turno.setTipo(turnoDTO.getTipoGrupo()); // <- Aquí usamos el tipo de grupo del DTO
@@ -161,6 +173,12 @@ public class TurnoServiceImpl implements TurnoService {
 			if (!turno.getDiaSemana().equalsIgnoreCase(turnoDTO.getDiaSemana())) {
 				if (turno.getGrupo() != null) {
 					List<Grupo> grupos = grupoRepository.findAll();
+					// Entrega 6-1: con varias sedes, el reparto por índice (lógica heredada de Taemoi) solo mira los
+					// grupos de la MISMA sede que el turno, en el mismo orden. Con una sola sede, como siempre.
+					if (sedeRepository.findAllByOrderByIdAsc().size() > 1) {
+						Long sedeDelTurno = turno.getGrupo().getSedeId();
+						grupos = grupos.stream().filter(g -> Objects.equals(g.getSedeId(), sedeDelTurno)).toList();
+					}
 					Grupo nuevoGrupoAsignado;
 					if (turnoDTO.getDiaSemana().equalsIgnoreCase("lunes")
 							|| turnoDTO.getDiaSemana().equalsIgnoreCase("miércoles")) {
@@ -174,6 +192,8 @@ public class TurnoServiceImpl implements TurnoService {
 
 					if (!Objects.equals(turno.getGrupo().getId(), nuevoGrupoAsignado.getId())) {
 						validarSinPreinscripcionesActivas(turno);
+						// El responsable no mueve un turno a un grupo de otra sede (403).
+						gestionPorSede.exigirGrupoPropio(nuevoGrupoAsignado.getId());
 						turno.setGrupo(nuevoGrupoAsignado);
 					}
 				}

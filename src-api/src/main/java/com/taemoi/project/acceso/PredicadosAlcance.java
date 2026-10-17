@@ -32,6 +32,10 @@ import jakarta.persistence.criteria.Subquery;
  * </ul>
  * Un conjunto vacío o nulo no deja pasar nada. Las variantes con {@link AlcanceSesion} son las de lectura (sedes
  * O grupos); con alcance total no restringen.
+ *
+ * <p>Entrega 6: los listados que se abren al responsable de sede usan las variantes {@code ...DeSusSedes}, que solo
+ * miran las sedes del alcance (nunca los grupos de profesor, que llegan en la entrega 7). Con alcance total devuelven
+ * {@link Specification#unrestricted()}; los servicios, además, no las añaden: la consulta de gestión no cambia.
  */
 public final class PredicadosAlcance {
 
@@ -52,12 +56,22 @@ public final class PredicadosAlcance {
 		return lectura(alcance, gruposEnSedes(alcance.sedes()), gruposEnGrupos(alcance.grupos()));
 	}
 
+	/** Entrega 6: alcance total o grupos de sus sedes (sin la rama de profesor). */
+	public static Specification<Grupo> gruposDeSusSedes(AlcanceSesion alcance) {
+		return porSedes(alcance, alcance == null ? null : gruposEnSedes(alcance.sedes()));
+	}
+
 	// ------------------------------------------------------------------ alumnos (D9)
 
 	public static Specification<Alumno> alumnosEnSedes(Collection<Long> sedes) {
 		return (root, query, cb) -> vacio(sedes) ? cb.disjunction()
 				: cb.or(root.get("sedePrincipalId").in(sedes),
 						cb.exists(grupoDelAlumno(root, query, cb, "sedeId", sedes)));
+	}
+
+	/** D6-3: solo por la sede principal (sin mirar los grupos). */
+	public static Specification<Alumno> alumnosConSedePrincipalEn(Collection<Long> sedes) {
+		return (root, query, cb) -> en(cb, root.get("sedePrincipalId"), sedes);
 	}
 
 	public static Specification<Alumno> alumnosEnGrupos(Collection<Long> grupos) {
@@ -67,6 +81,11 @@ public final class PredicadosAlcance {
 
 	public static Specification<Alumno> alumnos(AlcanceSesion alcance) {
 		return lectura(alcance, alumnosEnSedes(alcance.sedes()), alumnosEnGrupos(alcance.grupos()));
+	}
+
+	/** Entrega 6: alcance total o D9 por sus sedes (sin la rama de profesor). */
+	public static Specification<Alumno> alumnosDeSusSedes(AlcanceSesion alcance) {
+		return porSedes(alcance, alcance == null ? null : alumnosEnSedes(alcance.sedes()));
 	}
 
 	// ------------------------------------------------------------------ turnos
@@ -81,6 +100,11 @@ public final class PredicadosAlcance {
 
 	public static Specification<Turno> turnos(AlcanceSesion alcance) {
 		return lectura(alcance, turnosEnSedes(alcance.sedes()), turnosEnGrupos(alcance.grupos()));
+	}
+
+	/** Entrega 6: alcance total o turnos de grupos de sus sedes (sin la rama de profesor). */
+	public static Specification<Turno> turnosDeSusSedes(AlcanceSesion alcance) {
+		return porSedes(alcance, alcance == null ? null : turnosEnSedes(alcance.sedes()));
 	}
 
 	// ------------------------------------------------------------------ preinscripciones
@@ -109,6 +133,16 @@ public final class PredicadosAlcance {
 			return Specification.unrestricted();
 		}
 		return porSedes.or(porGrupos);
+	}
+
+	private static <T> Specification<T> porSedes(AlcanceSesion alcance, Specification<T> enSusSedes) {
+		if (alcance == null) {
+			return (root, query, cb) -> cb.disjunction();
+		}
+		if (alcance.total()) {
+			return Specification.unrestricted();
+		}
+		return enSusSedes;
 	}
 
 	private static Predicate en(CriteriaBuilder cb, Path<?> ruta, Collection<Long> ids) {

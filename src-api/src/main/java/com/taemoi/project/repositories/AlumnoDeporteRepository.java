@@ -76,6 +76,14 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	long countByDisciplinaIdAndActivoTrue(Long disciplinaId);
 
 	/**
+	 * Como {@link #countByDisciplinaIdAndActivoTrue}, solo para esos alumnos (alcance del responsable de sede,
+	 * entrega 6-1c). Una fila por disciplina con inscripciones activas: {@code [disciplinaId, total]}.
+	 */
+	@Query("SELECT ad.disciplina.id, COUNT(ad) FROM AlumnoDeporte ad WHERE ad.activo = true AND ad.alumno.id IN :alumnos"
+			+ " GROUP BY ad.disciplina.id")
+	List<Object[]> contarActivosPorDisciplinaDeAlumnos(@Param("alumnos") java.util.Collection<Long> alumnos);
+
+	/**
 	 * Cuenta alumnos activos por deporte (deporte activo y alumno activo)
 	 */
 	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad JOIN ad.alumno a " +
