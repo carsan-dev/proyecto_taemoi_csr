@@ -23,6 +23,7 @@ import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
@@ -481,7 +482,7 @@ public class GrupoServiceImpl implements GrupoService {
 	}
 
 	@Override
-	public List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId) {
+	public List<TurnoDelAlumnoEnGrupoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId) {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(grupoId);
 		Optional<Alumno> alumnoOptional = alumnoRepository.findById(alumnoId);
 
@@ -491,8 +492,8 @@ public class GrupoServiceImpl implements GrupoService {
 			List<Turno> turnosAlumno = alumno.getTurnos().stream()
 					.filter(turno -> turno.getGrupo().getId().equals(grupoId)).collect(Collectors.toList());
 
-			// Convertir los turnos a DTO
-			return turnosAlumno.stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
+			// Convertir los turnos a DTO, sin los alumnos del turno (la familia del alumno también usa este endpoint)
+			return turnosAlumno.stream().map(TurnoDelAlumnoEnGrupoDTO::deTurno).collect(Collectors.toList());
 		}
 		return Collections.emptyList();
 	}
