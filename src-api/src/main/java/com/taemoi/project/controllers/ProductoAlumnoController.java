@@ -23,8 +23,10 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.acceso.SedeInactivaException;
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
+import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
 import com.taemoi.project.services.ProductoAlumnoService;
+import com.taemoi.project.services.ResultadoGeneracionMensualidades;
 
 /**
  * Cargos y cobros. Entrega 6-3 (D4, entrega6-plan.md §3.4): el responsable de sede crea cargos sueltos, ve y cobra los
@@ -118,8 +120,9 @@ public class ProductoAlumnoController {
 	public ResponseEntity<?> cargarMensualidadesGenerales(
 			@RequestBody String nombreMensualidad,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
-		int omitidos = productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad, fechaAsignacion);
-		return ResponseEntity.ok(respuestaMasiva("Mensualidades creadas correctamente.", omitidos));
+		ResultadoGeneracionMensualidades resultado = productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad,
+				fechaAsignacion);
+		return ResponseEntity.ok(respuestaMasiva("Mensualidades creadas correctamente.", resultado));
 	}
 
 	@PostMapping("/mensualidades/deporte")
@@ -128,10 +131,10 @@ public class ProductoAlumnoController {
 			@RequestParam String deporte,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			int omitidos = productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte,
-					fechaAsignacion);
+			ResultadoGeneracionMensualidades resultado = productoAlumnoService.cargarMensualidadesPorDeporte(
+					nombreMensualidad, deporte, fechaAsignacion);
 			return ResponseEntity.ok(respuestaMasiva(
-					"Mensualidades creadas correctamente para alumnos de " + deporte + ".", omitidos));
+					"Mensualidades creadas correctamente para alumnos de " + deporte + ".", resultado));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
 		}
@@ -144,8 +147,10 @@ public class ProductoAlumnoController {
 			@RequestParam(defaultValue = "false") boolean forzar,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadIndividual(alumnoId, nombreMensualidad, forzar, fechaAsignacion);
-			return ResponseEntity.ok(Map.of("mensaje", "Mensualidad individual creada correctamente."));
+			List<CuantiaPersonalizadaSuperiorDTO> superiores = productoAlumnoService.cargarMensualidadIndividual(alumnoId,
+					nombreMensualidad, forzar, fechaAsignacion);
+			return ResponseEntity.ok(conCuantiasSuperiores(
+					Map.of("mensaje", "Mensualidad individual creada correctamente."), superiores));
 		} catch (SedeInactivaException ex) {
 			// D6-17 (entrega 6-3): 400 como en el resto de altas; antes que el catch genérico (500).
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
@@ -249,9 +254,10 @@ public class ProductoAlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarMensualidadesMultiDeporte(@RequestBody String nombreMensualidad) {
 		try {
-			int omitidos = productoAlumnoService.cargarMensualidadesMultiDeporte(nombreMensualidad);
+			ResultadoGeneracionMensualidades resultado = productoAlumnoService
+					.cargarMensualidadesMultiDeporte(nombreMensualidad);
 			return ResponseEntity.ok(respuestaMasiva(
-				"Mensualidades multi-deporte creadas correctamente para todos los alumnos.", omitidos));
+				"Mensualidades multi-deporte creadas correctamente para todos los alumnos.", resultado));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(Map.of("mensaje", "Error al crear mensualidades: " + e.getMessage()));
@@ -271,10 +277,10 @@ public class ProductoAlumnoController {
 			@RequestParam(defaultValue = "false") boolean forzar,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar,
-					fechaAsignacion);
-			return ResponseEntity.ok(Map.of("mensaje",
-				"Mensualidad individual creada correctamente para " + deporte + "."));
+			List<CuantiaPersonalizadaSuperiorDTO> superiores = productoAlumnoService
+					.cargarMensualidadIndividualPorDeporte(alumnoId, deporte, nombreMensualidad, forzar, fechaAsignacion);
+			return ResponseEntity.ok(conCuantiasSuperiores(Map.of("mensaje",
+				"Mensualidad individual creada correctamente para " + deporte + "."), superiores));
 		} catch (MensualidadIncompletaException ex) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(Map.of(
@@ -310,5 +316,26 @@ public class ProductoAlumnoController {
 		respuesta.put("mensaje", mensaje);
 		respuesta.put("alumnosOmitidosSedeInactiva", omitidos);
 		return respuesta;
+	}
+
+	/** Respuesta de una generación masiva de mensualidades: la de siempre más la lista de la 6-4 si no está vacía. */
+	private static Map<String, ?> respuestaMasiva(String mensaje, ResultadoGeneracionMensualidades resultado) {
+		return conCuantiasSuperiores(respuestaMasiva(mensaje, resultado.alumnosOmitidosSedeInactiva()),
+				resultado.alumnosCuantiaPersonalizadaSuperior());
+	}
+
+	/**
+	 * Entrega 6-4 (D6-28, aditivo): {@code alumnosCuantiaPersonalizadaSuperior}, mensualidades creadas con una cuantía
+	 * personalizada mayor que la tarifa de la sede (se cobra la personalizada), para revisarlas. SOLO si hay alguna: sin
+	 * tarifas por sede (Moiskimdo) la lista siempre está vacía y la respuesta es la de antes, sin el campo.
+	 */
+	private static Map<String, ?> conCuantiasSuperiores(Map<String, ?> respuesta,
+			List<CuantiaPersonalizadaSuperiorDTO> superiores) {
+		if (superiores == null || superiores.isEmpty()) {
+			return respuesta;
+		}
+		Map<String, Object> ampliada = new java.util.LinkedHashMap<>(respuesta);
+		ampliada.put("alumnosCuantiaPersonalizadaSuperior", superiores);
+		return ampliada;
 	}
 }

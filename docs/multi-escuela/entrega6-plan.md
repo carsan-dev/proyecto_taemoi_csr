@@ -271,14 +271,29 @@ Nivel: careful, con revisión opus.
 recuento y la lista no cuadran o se filtran importes de otra sede. Mitigación: un test por consulta con datos de
 dos sedes. Nivel: careful, con revisión opus.
 
-### 4.4 (Opcional) PR 6-4 — tarifa por sede
+### 4.4 PR 6-4 — tarifa por sede
 
-Solo si D6-14 = B o se programa aparte antes de diciembre de 2026: tabla `tarifa_sede (organizacion_id, tarifa_id,
-sede_id, importe, importe_adulto, importe_menor, vigente_desde)`, solo para mensualidades. Migración **V31_4**.
-Al generar la mensualidad, si la cuantía de la inscripción es la de la tarifa base y la sede del alumno tiene una
-excepción vigente en ese mes, se cobra la de la sede; una cuantía personalizada (descuentos) no se toca. Esa
-interacción con `alumno_deporte.cuantia_tarifa` (copiada al asignar la tarifa, `TarifasServiceImpl.java:117`,
-`ProductoAlumnoServiceImpl.java:401`) es la razón para no meterlo en la 6-3.
+Programada aparte (D6-14 = A), antes de generar las mensualidades de enero de 2027. Tabla `tarifa_sede
+(organizacion_id, tarifa_id, sede_id, importe, importe_adulto, importe_menor, vigente_desde)`, solo para mensualidades.
+Migración **V31_4** (tabla nueva y vacía). Decisiones D6-27 a D6-36 (§8).
+
+Al generar la mensualidad de un mes, si la cuantía de la inscripción es la de la tarifa base (la que da el catálogo con
+el rol familiar, D6-27) y la sede principal del alumno tiene una excepción vigente en ese mes (D6-29, D6-34), se cobra
+la de la sede; una cuantía personalizada (descuentos) se cobra tal cual, y si es mayor que la de la sede la respuesta la
+lista para revisarla (D6-28). Los cargos ya generados no se recalculan (D6-32).
+
+Cómo se escribe hoy la cuantía (correcciones al borrador): `TarifasServiceImpl.asignarTarifa` **no copia la cuantía**,
+solo escribe `alumno_deporte.tarifa_id`; la cuantía la calcula el frontend con el catálogo y el rol y la envía (o el
+backend como respaldo en el alta). La línea `ProductoAlumnoServiceImpl.java:401` que citaba el borrador ya no es la
+generación. No existe ninguna marca de «cuantía personalizada»: por eso «base» se decide comparando con el catálogo.
+«Umbrete» es la sede de Moiskimdo (organización 1), no de Sierra Sur.
+
+Puntos que leen la cuantía para cobrar y pasan por el resolutor (`TarifaSedeService.preparar()`, una consulta por
+generación; sin filas, la misma cuantía de la inscripción): las cinco generaciones de `ProductoAlumnoServiceImpl`
+(general, por deporte, individual, multi-deporte e individual por deporte; el mes es el `mesAno` que se cobra), el alta
+de alumno (`AlumnoServiceImpl`, mes en curso) y la columna CUANTÍA del listado mensual cuando no hay cargo
+(`PDFServiceImpl`, el mes del listado, D6-33). API mínima `GET/POST /api/tarifas-sede` y `DELETE
+/api/tarifas-sede/{id}` (D6-30, D6-31).
 
 ### 4.5 Migraciones
 
@@ -286,7 +301,7 @@ interacción con `alumno_deporte.cuantia_tarifa` (copiada al asignar la tarifa, 
 |---|---|---|---|
 | V31_2 | 6-1b | Solo datos (UPDATE idempotente) | Escuelas con una sede |
 | V31_3 | 6-3a | Ampliación (columna NULL, índice, FK) + relleno | El código anterior sigue funcionando |
-| V31_4 | 6-4 (opcional) | Tabla nueva | Solo si se decide |
+| V31_4 | 6-4 | Tabla nueva (`tarifa_sede`), vacía | El código anterior sigue funcionando; postcheck `postcheck-v31_4.sql` |
 
 Ninguna pieza necesita V32 ni contraer nada. `sede_id` de grupo y de cargo y `sede_principal_id` siguen admitiendo
 NULL. Pasarlos a NOT NULL, si se decide, va con la contracción planificada (entrega 10). Siguen la convención de
@@ -474,6 +489,8 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
   nuevos quedarían sin sede y lo detectan `postcheck-v31_2.sql` (`alumnos_sin_sede_escuelas_una_sede`) y
   `postcheck-v31_3.sql` (`cargos_sin_sede_escuelas_una_sede`). Se corrige asignando la sede principal y repitiendo
   el relleno de V31_3 (idempotente).
+- D6-27 a D6-36 (PR 6-4, tarifa por sede, §4.4): tomadas por el propietario, todas con la opción A de la tabla. D6-37,
+  de la revisión de la 6-4: la opción A por defecto.
 
 | # | Decisión | Opciones (recomendada primero) | Por qué | Impacto en Moiskimdo |
 |---|---|---|---|---|
@@ -492,6 +509,17 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
 | D6-13 | Informes PDF y CSV para el responsable | **A.** Abrir solo deudas (PDF y CSV) y el listado de mensualidad mensual, filtrados por sede; el resto sigue de gestión hasta que se pida. B. Abrirlos todos, filtrados. | Cada informe tiene su propia consulta y se filtra uno a uno. La exportación de movimientos de tesorería no es un informe de D6-13: se abre por D6-26 | Ninguno |
 | D6-14 | Tarifa por sede (una sede a 30 € desde 2027) | **A.** Fuera de la E6: PR 6-4 propia (`tarifa_sede` con fecha de inicio, solo mensualidades, V31_4) antes de generar las mensualidades de enero de 2027; mientras tanto vale la cuantía por alumno. B. Dentro de la 6-3. C. Solo cuantía manual por alumno, sin tabla. | Interactúa con las cuantías personalizadas (descuentos) y con la generación mensual; mezclarlo con la 6-3 sube el riesgo de la PR de dinero | Ninguno |
 | D6-15 | Puerta de entrada de una cuenta que solo es responsable de sede | **A.** Sigue cerrada hasta la E9 (no hay pantallas); las cuentas FAMILIA + RESPONSABLE_SEDE ya entran y tendrán acceso de API a su sede. B. Abrirla en la E6 con la página mínima de D5-1 B. | Sin pantallas no aporta nada; la API se prueba con tests | Ninguno |
+| D6-27 | Cuándo una cuantía es la **base** de la tarifa (y se le aplica la de la sede) | **A.** Si coincide, redondeada a 2 decimales, con el importe del catálogo con el rol familiar (`calcularImporte`, la regla de la asignación); sin marca ni migración de `alumno_deporte`. B. Marca nueva `cuantia_personalizada`. C. Reescribir las cuantías con un UPDATE. | A no cambia datos ni pantallas y coincide con cómo se escribe hoy la cuantía | Ninguno (sin filas no se compara nada) |
+| D6-28 | Cuantía personalizada **mayor** que la de la sede | **A.** Se respeta (se cobra la personalizada) y la generación devuelve `alumnosCuantiaPersonalizadaSuperior` (alumno, nombre, deporte, cuantía y la de la sede) para revisarla; el campo solo aparece si la lista no está vacía. B. Se cobra la menor. | El descuento manual manda; la lista evita que pase inadvertido | Ninguno: sin filas la lista siempre está vacía y el JSON no cambia |
+| D6-29 | Qué sede manda | **A.** La sede principal del alumno al generar (la misma que `@PrePersist` pone en el cargo); sin sede principal o sin `tarifa_id`, la cuantía tal cual. B. La sede del grupo. | El cargo de la sede con excepción cae en su caja | Ninguno |
+| D6-30 | API | **A.** Mínima y sin pantalla: `GET`, `POST {codigoTarifa, sedeId, importe, importeAdulto?, importeMenor?, vigenteDesde: "YYYY-MM"}` y `DELETE /{id}` solo de meses posteriores al en curso (Europe/Madrid); sin `PUT`. 400 si tarifa o sede no son de la escuela, el mes o los importes no son válidos (importes ≥ 0, como el catálogo; desde la revisión, también el mes pasado, D6-37) o faltan los importes por rol de la tarifa base; 409 si ya existe (tarifa, sede, mes) o al borrar una del mes en curso o pasada. B. Solo SQL. | La fila de Sierra Sur se crea sin acceso a la base; la pantalla es de la E9 | Ninguno (rutas nuevas) |
+| D6-31 | Quién escribe | **A.** Propietario y gestor; el responsable de sede solo lee las de sus sedes; profesor y familia, 403. B. Solo el propietario. | Coherente con D6-11 y D6-14 (el responsable no edita el catálogo) | Ninguno |
+| D6-32 | Cargos ya generados | **A.** Nunca se recalculan (idempotencia de siempre). B. Recalcular los no pagados. | La fila debe crearse ANTES de generar el mes (checklist de despliegue) | Ninguno |
+| D6-33 | Listado mensual sin cargo | **A.** La columna CUANTÍA muestra la cuantía resuelta para el mes del listado. B. La cuantía guardada. | Antes de generar enero el listado ya enseña 30 | Ninguno (sin filas, la cuantía guardada) |
+| D6-34 | Granularidad de `vigente_desde` | **A.** Siempre día 1 (la API recibe `YYYY-MM`); para un mes vale la fila con el mayor `vigente_desde` ≤ día 1 de ese mes. B. Cualquier fecha. C. Prorrateo. | Las mensualidades son por mes; sin prorrateo en el sistema | Ninguno |
+| D6-35 | Ficha del alumno | **A.** La ficha y los DTO de alumno no cambian (muestran la cuantía guardada) hasta la E9. B. Añadir `cuantiaEfectiva`. | B cambiaría el JSON de la ficha también para Moiskimdo | Ninguno |
+| D6-36 | Fin de una excepción | **A.** Sin `vigente_hasta`: se borran las futuras o se añade otra fila (también con el importe del catálogo). B. Columna `vigente_hasta`. | YAGNI | Ninguno |
+| D6-37 | Tarifas de sede para meses pasados | **A.** (por defecto) No se crean tarifas de sede para meses pasados (400); el mes en curso sí (Europe/Madrid), y no se puede borrar después (409). B. Cualquier mes. | Los cargos de un mes pasado ya pueden existir y no se recalculan (D6-32): una fila retroactiva solo cambiaría los que falten | Ninguno |
 
 ## 9. Preguntas abiertas
 

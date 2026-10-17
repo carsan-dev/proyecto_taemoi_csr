@@ -90,7 +90,8 @@ class SedeCargosV31_3MigracionIntegrationTest extends MySqlIntegrationTest {
 		cSinSede = cargo(orgSinSede, alumno(orgSinSede, null), null, 30.0, false);
 
 		importesAntes = importes();
-		flyway(dataSource, null).migrate();
+		// Hasta V31_3: este test comprueba V31_3 y su postcheck, no las migraciones posteriores (V31_4 y siguientes).
+		flyway(dataSource, "31.3").migrate();
 	}
 
 	@Test

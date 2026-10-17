@@ -71,6 +71,10 @@ class ProductoAlumnoServiceImplTest {
 	@Mock
 	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 
+	/** Entrega 6-4: sin tarifas por sede, la cuantía de la inscripción tal cual (identidad). */
+	@Mock
+	private com.taemoi.project.services.TarifaSedeService tarifaSede;
+
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
@@ -81,6 +85,8 @@ class ProductoAlumnoServiceImplTest {
 	 */
 	@org.junit.jupiter.api.BeforeEach
 	void catalogoEnMemoria() {
+		org.mockito.Mockito.lenient().when(tarifaSede.preparar())
+				.thenReturn(com.taemoi.project.services.ResolutorCuantiaMensualidad.identidad());
 		com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria memoria = new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria();
 		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "catalogoDisciplinas",
 				memoria.catalogo());
@@ -179,14 +185,14 @@ class ProductoAlumnoServiceImplTest {
 
 		// Todas las sedes activas (Moiskimdo): se generan las dos y no se omite nadie.
 		when(gestionPorSede.sedesInactivas()).thenReturn(java.util.Set.of());
-		assertEquals(0, productoAlumnoService.cargarMensualidadesGenerales("2026-05", null));
+		assertEquals(0, productoAlumnoService.cargarMensualidadesGenerales("2026-05", null).alumnosOmitidosSedeInactiva());
 		verify(productoAlumnoRepository, times(2)).save(any());
 
 		// Sede 9 inactiva: solo la de la sede activa; un alumno omitido.
 		org.mockito.Mockito.clearInvocations(productoAlumnoRepository);
 		when(productoAlumnoRepository.findAll()).thenReturn(List.of());
 		when(gestionPorSede.sedesInactivas()).thenReturn(java.util.Set.of(9L));
-		assertEquals(1, productoAlumnoService.cargarMensualidadesGenerales("2026-06", null));
+		assertEquals(1, productoAlumnoService.cargarMensualidadesGenerales("2026-06", null).alumnosOmitidosSedeInactiva());
 		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
 		verify(productoAlumnoRepository).save(captor.capture());
 		assertEquals(1L, captor.getValue().getAlumno().getId());

@@ -98,6 +98,25 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       El código anterior sigue funcionando sobre el esquema
       ampliado (vuelta atrás sin migración), pero los cargos que cree quedan sin sede: si se vuelve atrás, repetir el
       relleno de V31_3 (sus dos `UPDATE`, idempotentes) al volver a la 6-3 y comprobar de nuevo el postcheck.
+- [ ] Tras V31_4 (entrega 6-4, tabla nueva `tarifa_sede`, vacía): ejecutar `docs/multi-escuela/postcheck-v31_4.sql`
+      (solo lectura, solo recuentos) y guardar el resultado: `tabla_tarifa_sede` = 1, `filas_tarifa_sede` = 0 y
+      `flyway_31_4` = 1. Con la tabla vacía todas las escuelas cobran lo mismo que antes (Moiskimdo no cambia). El
+      código anterior sigue funcionando sobre este esquema (no conoce la tabla).
+- [ ] **Antes de generar las mensualidades de enero de 2027**: crear la tarifa de la sede de Sierra Sur con
+      `POST /api/tarifas-sede` (propietario o gestor de Sierra Sur). Los cargos ya generados NUNCA se recalculan
+      (D6-32): si enero se genera antes, esos cargos quedan con el importe antiguo y hay que corregirlos a mano. Ejemplo
+      (valores ficticios; `<SEDE_ID>` es el id de la sede, `<JWT>` la cookie de sesión de la cuenta de Sierra Sur):
+
+      ```bash
+      curl -X POST "https://<dominio>/api/tarifas-sede" \
+        -H "Content-Type: application/json" --cookie "jwt=<JWT>" \
+        -d '{"codigoTarifa":"<CODIGO_TARIFA>","sedeId":<SEDE_ID>,"importe":<IMPORTE>,"vigenteDesde":"2027-01"}'
+      ```
+
+      Si la tarifa cobra por rol familiar (tiene importe de adulto o de menor), añadir también `importeAdulto` e
+      `importeMenor` (si no, 400). Comprobar después con `GET /api/tarifas-sede` y, antes de generar, con el listado
+      mensual de enero (`/api/informes/listado-mensualidad-mensual?mesAno=2027-01`), que ya enseña el importe de la sede.
+      Una fila de un mes futuro se puede borrar (`DELETE /api/tarifas-sede/{id}`); la del mes en curso o pasada, no.
 - [ ] Antes de desplegar la entrega 6: ejecutar `docs/multi-escuela/precheck-e6.sql` (solo lectura, solo recuentos)
       y guardar el resultado. `preinscripciones_sin_turnos_resolubles` debería dar 0 filas: una fila así hace que el
       listado de preinscripciones responda 409 (comportamiento anterior, sin cambios; lo decide el propietario).

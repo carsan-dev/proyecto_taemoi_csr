@@ -89,12 +89,18 @@ public class AlumnoServiceImplTest {
 	@Mock
 	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
 
+	/** Entrega 6-4: sin tarifas por sede, la cuantía de la inscripción tal cual (identidad). */
+	@Mock
+	private com.taemoi.project.services.TarifaSedeService tarifaSede;
+
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
 
 	@org.junit.jupiter.api.BeforeEach
 	void taemoi() {
 		org.mockito.Mockito.lenient().when(comportamientoLegado.activo()).thenReturn(true);
+		org.mockito.Mockito.lenient().when(tarifaSede.preparar())
+				.thenReturn(com.taemoi.project.services.ResolutorCuantiaMensualidad.identidad());
 	}
 
 	@Test
