@@ -4,7 +4,7 @@ import java.util.List;
 import org.springframework.lang.NonNull;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoPublicoDTO;
 import com.taemoi.project.entities.Turno;
 
 public interface TurnoService {
@@ -13,7 +13,8 @@ public interface TurnoService {
 
 	Turno obtenerTurnoPorId(@NonNull Long turnoId);
 
-	List<TurnoCortoDTO> listarTurnosDTO();
+	/** Turnos de la página pública /horarios: sin alumnos (ver {@link TurnoPublicoDTO}). */
+	List<TurnoPublicoDTO> listarTurnosDTO();
 
 	void crearTurnoSinGrupo(TurnoDTO turnoDTO);
 

@@ -219,7 +219,9 @@ Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFO
 ### Medias
 
 4. **`GET /api/turnos/dto` y `GET /api/turnos/limite`: P/P/P/P/P**, sin `@PreAuthorize`. Un anónimo puede leer:
-   - la lista de turnos, que son datos de la escuela;
+   - la lista de turnos, que son datos de la escuela. Hasta el hotfix del 17/10/2026 cada turno incrustaba el
+     `AlumnoDTO` completo de sus alumnos activos (NIF, dirección, contacto, responsable legal...); ahora devuelve
+     `TurnoPublicoDTO`, sin alumnos y con el rango de edad ya calculado (`edadMinAlumnos`/`edadMaxAlumnos`);
    - el límite de turno, que en `/api/admin/configuracion/limite-turno` es solo del PROPIETARIO (D/D/D/P/D).
 
    §3 no tiene columna pública para «Grupos y turnos: ver». No se comprobó a qué escuela resuelve una

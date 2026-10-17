@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoPublicoDTO;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.ConfiguracionSistemaService;
@@ -87,8 +87,9 @@ public class TurnoController {
 	 *         tiene éxito.
 	 */
 	@GetMapping("/dto")
-	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDTO() {
-		List<TurnoCortoDTO> turnosDTO = turnoService.listarTurnosDTO();
+	public ResponseEntity<List<TurnoPublicoDTO>> obtenerTurnosDTO() {
+		// Público (/horarios): sin alumnos ni datos personales; solo el rango de edad ya calculado.
+		List<TurnoPublicoDTO> turnosDTO = turnoService.listarTurnosDTO();
 		return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
 	}
 

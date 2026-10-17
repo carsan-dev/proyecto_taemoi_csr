@@ -1,5 +1,7 @@
 package com.taemoi.project.services.impl;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -11,7 +13,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.config.ValidacionRelojConfig;
+import com.taemoi.project.dtos.response.TurnoPublicoDTO;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Turno;
@@ -49,6 +52,11 @@ public class TurnoServiceImpl implements TurnoService {
 	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
 	@Autowired private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 	@Autowired private com.taemoi.project.repositories.SedeRepository sedeRepository;
+	/**
+	 * Reloj de la fecha de referencia de las edades de /horarios: Madrid (el visitante está en España; antes la
+	 * calculaba su navegador con su fecha local). Fijo en zona, no en la de la JVM (que suele ir en UTC).
+	 */
+	private Clock reloj = Clock.system(ValidacionRelojConfig.ZONA);
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
@@ -82,17 +90,24 @@ public class TurnoServiceImpl implements TurnoService {
 	 * @return Una lista de objetos TurnoDTO.
 	 */
 	@Override
-	public List<TurnoCortoDTO> listarTurnosDTO() {
+	public List<TurnoPublicoDTO> listarTurnosDTO() {
 		List<Turno> turnos = turnoRepository.findAllWithAlumnos();
 		String temporada = temporadaService.actual();
+		// Fecha de Madrid sea cual sea la zona del reloj (la CI corre en UTC).
+		LocalDate hoy = LocalDate.ofInstant(reloj.instant(), ValidacionRelojConfig.ZONA);
 		return turnos.stream().map(turno -> {
-			TurnoCortoDTO dto = TurnoCortoDTO.deTurno(turno);
+			TurnoPublicoDTO dto = TurnoPublicoDTO.deTurno(turno, hoy);
 			if (turno.getGrupo() != null) {
 				dto.setOcupacionEfectiva(aforoPreinscripcionService.ocupacionEfectiva(turno, turno.getGrupo(), temporada));
 				dto.setCompleto(aforoPreinscripcionService.completo(turno, temporada));
 			}
 			return dto;
 		}).collect(Collectors.toList());
+	}
+
+	/** Solo para tests: fija la fecha de referencia de las edades. */
+	void setReloj(Clock reloj) {
+		this.reloj = reloj;
 	}
 
 	@Override
