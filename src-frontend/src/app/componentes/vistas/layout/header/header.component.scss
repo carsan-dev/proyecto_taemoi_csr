@@ -1585,6 +1585,8 @@ header.fixed-header {
   background: linear-gradient(135deg, rgba($dark-bg, 0.97) 0%, rgba($dark-accent, 0.98) 100%);
   color: $text-light;
   overflow-y: auto;
+  // Evita encadenar el scroll al documento (barra del navegador en móvil: Chrome Android, Safari iOS).
+  overscroll-behavior: contain;
 }
 
 .mobile-header-top {
