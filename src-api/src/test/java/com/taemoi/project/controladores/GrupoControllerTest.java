@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.GrupoController;
-import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.services.GrupoService;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,12 +30,12 @@ class GrupoControllerTest {
 	void obtenerTurnosDelAlumnoEnGrupo_DebeDevolverOkCuandoTieneAcceso() {
 		Long grupoId = 1L;
 		Long alumnoId = 10L;
-		TurnoCortoDTO turno = new TurnoCortoDTO();
+		TurnoDelAlumnoEnGrupoDTO turno = new TurnoDelAlumnoEnGrupoDTO();
 		turno.setId(15L);
 
 		when(grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId)).thenReturn(List.of(turno));
 
-		ResponseEntity<List<TurnoCortoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
+		ResponseEntity<List<TurnoDelAlumnoEnGrupoDTO>> result = grupoController.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
 
 		assertEquals(HttpStatus.OK, result.getStatusCode());
 		assertEquals(1, result.getBody().size());

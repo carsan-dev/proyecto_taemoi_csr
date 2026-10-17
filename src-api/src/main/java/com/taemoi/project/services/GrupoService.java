@@ -10,6 +10,7 @@ import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.entities.Grupo;
 
 import jakarta.validation.Valid;
@@ -47,5 +48,5 @@ public interface GrupoService {
 
 	Map<String, Map<String, Long>> contarAlumnosPorGrupo();
 
-	List<TurnoCortoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);
+	List<TurnoDelAlumnoEnGrupoDTO> obtenerTurnosDelAlumnoEnGrupo(Long grupoId, Long alumnoId);
 }

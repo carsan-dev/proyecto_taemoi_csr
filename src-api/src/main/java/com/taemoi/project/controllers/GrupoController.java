@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.GrupoService;
@@ -113,9 +114,9 @@ public class GrupoController {
 
 	@GetMapping("/{grupoId}/alumnos/{alumnoId}/turnos")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
-	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId,
+	public ResponseEntity<List<TurnoDelAlumnoEnGrupoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId,
 			@PathVariable Long alumnoId) {
-		List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
+		List<TurnoDelAlumnoEnGrupoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
 		if (!turnosDTO.isEmpty()) {
 			return ResponseEntity.ok(turnosDTO);
 		} else {
