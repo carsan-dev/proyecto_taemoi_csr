@@ -1,5 +1,7 @@
 package com.taemoi.project.integracion;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,7 +33,11 @@ public abstract class MySqlIntegrationTest {
 			.withDatabaseName("taemoi_it")
 			.withUsername("taemoi_it")
 			.withPassword("taemoi_it")
-			.withCommand("--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci");
+			// Datos en memoria y sin durabilidad: el contenedor es desechable, solo importa la velocidad.
+			.withTmpFs(Map.of("/var/lib/mysql", "rw"))
+			.withCommand("--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci",
+					"--innodb_flush_log_at_trx_commit=0", "--sync_binlog=0", "--skip-log-bin",
+					"--innodb_doublewrite=0", "--innodb_flush_method=nosync");
 
 	static {
 		MYSQL.start();
