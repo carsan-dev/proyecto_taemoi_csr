@@ -467,6 +467,13 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/informes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Entrega 6-4 (D6-30, D6-31): tarifas por sede. Escriben propietario y gestor; el responsable de
+						// sede solo lee (las de sus sedes, filtradas en el servicio).
+						.requestMatchers(HttpMethod.GET, "/api/tarifas-sede")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers("/api/tarifas-sede", "/api/tarifas-sede/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						// Administrador de plataforma (lecturas entre escuelas); el controlador lo exige también.
 						.requestMatchers("/api/plataforma/**").hasAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA)

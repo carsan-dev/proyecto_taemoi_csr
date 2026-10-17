@@ -83,6 +83,13 @@ En el servicio, además: revertir un cobro sigue siendo solo de `ROLE_ADMIN`; el
 los roles) y los existentes se cobran (D6-17); las masivas saltan a esos alumnos e informan de cuántos (D6-23);
 ninguna ruta de tesorería cambia emails de cuentas.
 
+Entrega 6-4 (tarifa por sede, D6-30 y D6-31): 4 líneas nuevas (`GET`, `HEAD`, `POST /api/tarifas-sede` y
+`DELETE /api/tarifas-sede/{id}`); ninguna casilla de las rutas existentes cambia.
+- PROPIETARIO y GESTOR: `PERMITE` en las cuatro.
+- RESPONSABLE_SEDE: `PERMITE` declarado en `GET/HEAD /api/tarifas-sede` (el servicio devuelve solo las filas de sus
+  sedes); `DENIEGA` en `POST` y `DELETE` (no edita el catálogo, D6-11 y D6-14).
+- FAMILIA, PROFESOR, SOLO_PLATAFORMA y ANONIMO: `DENIEGA` en las cuatro.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

@@ -264,8 +264,11 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		String grupos = "integracion.ResponsableSedeGruposIntegrationTest#";
 		String preinscripciones = "integracion.ResponsableSedePreinscripcionesConvocatoriasIntegrationTest#";
 		String tesoreria = "integracion.ResponsableSedeTesoreriaIntegrationTest#";
+		String tarifasSede = "integracion.TarifaSedeApiIntegrationTest#";
 		Map<String, String> m = new TreeMap<>();
 		for (String metodo : List.of("GET", "HEAD")) {
+			// 6-4 (D6-31): tarifas por sede, solo las de sus sedes (filtro del servicio); escribir es de gestión.
+			m.put(metodo + " /api/tarifas-sede", tarifasSede + "responsable_leeSoloLasDeSusSedes");
 			// 6-3: tesorería de sus sedes (por la sede del cargo, D6-9/D6-12); catálogo común en lectura (D6-11);
 			// informes de deudas y listado mensual de sus sedes (D6-13). Los años disponibles no exponen datos.
 			m.put(metodo + " /api/tesoreria/resumen", tesoreria + "resumen_soloSusSedes_yGestionConDesglosePorSede");

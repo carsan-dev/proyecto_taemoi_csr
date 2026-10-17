@@ -2,6 +2,7 @@ package com.taemoi.project.services.impl;
 
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
+import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Producto;
@@ -43,6 +45,9 @@ import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.ProgresionGradosService;
+import com.taemoi.project.services.ResolutorCuantiaMensualidad;
+import com.taemoi.project.services.ResultadoGeneracionMensualidades;
+import com.taemoi.project.services.TarifaSedeService;
 import com.taemoi.project.utils.MensualidadUtils;
 
 @Service
@@ -88,6 +93,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	/** Entrega 6-3: sede inactiva (D6-17) y restricción del responsable de sede. */
 	@Autowired
 	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
+	/**
+	 * Entrega 6-4: cuantía de cada mensualidad con la tarifa de la sede del alumno para el mes que se cobra (D6-27 a
+	 * D6-34). Sin tarifas por sede (Moiskimdo), la cuantía de la inscripción tal cual.
+	 */
+	@Autowired
+	private TarifaSedeService tarifaSede;
 
 	private String normalizarConcepto(String concepto) {
 		return concepto == null ? "" : Normalizer.normalize(concepto, Normalizer.Form.NFD)
@@ -440,8 +452,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public int cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacionManual) {
+	public ResultadoGeneracionMensualidades cargarMensualidadesGenerales(String mesAno,
+			LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
+		YearMonth mes = YearMonth.parse(mesAno);
 
 		// Obtener todos los AlumnoDeporte activos
 		List<AlumnoDeporte> alumnosDeportes = alumnoDeporteRepository.findAll().stream()
@@ -454,6 +468,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
@@ -469,7 +484,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			// Verificar si ya existe esta mensualidad para este alumno y deporte
 			boolean mensualidadExiste = conceptosExistentes.contains(claveUnica);
 			if (!mensualidadExiste) {
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
+				Double precioMensualidad = cuantias.cuantiaMensualidad(alumnoDeporte, alumno, mes);
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -496,12 +511,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
-		return omitidos.size();
+		return new ResultadoGeneracionMensualidades(omitidos.size(), cuantias.personalizadasSuperiores());
 	}
 
 	@Override
-	public int cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacionManual) {
+	public ResultadoGeneracionMensualidades cargarMensualidadesPorDeporte(String mesAno, String deporte,
+			LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
+		YearMonth mes = YearMonth.parse(mesAno);
 
 		// Convert string to Deporte enum
 		String deporteEnum;
@@ -526,6 +543,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
@@ -538,7 +556,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			boolean mensualidadExiste = conceptosExistentes.contains(claveMensualidad);
 
 			if (!mensualidadExiste) {
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
+				Double precioMensualidad = cuantias.cuantiaMensualidad(alumnoDeporte, alumno, mes);
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -565,11 +583,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
-		return omitidos.size();
+		return new ResultadoGeneracionMensualidades(omitidos.size(), cuantias.personalizadasSuperiores());
 	}
 
 	@Override
-	public void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar,
+	public List<CuantiaPersonalizadaSuperiorDTO> cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar,
 			LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -632,6 +650,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
+		ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
+		YearMonth mes = YearMonth.parse(mesAno);
 		boolean algunoCreado = false;
 		boolean tarifaCreada = false;
 		StringBuilder mensajesExistentes = new StringBuilder();
@@ -651,7 +671,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 				mensajesExistentes.append(alumnoDeporte.getDeporte());
 			} else {
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
+				Double precioMensualidad = cuantias.cuantiaMensualidad(alumnoDeporte, alumno, mes);
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -682,6 +702,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (!algunoCreado && !tarifaCreada && mensajesExistentes.length() > 0 && !forzar) {
 			throw new IllegalStateException("El alumno ya tiene asignada la mensualidad para: " + mensajesExistentes);
 		}
+		return cuantias.personalizadasSuperiores();
 	}
 
 	@Override
@@ -1137,8 +1158,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public int cargarMensualidadesMultiDeporte(String mesAno) {
+	public ResultadoGeneracionMensualidades cargarMensualidadesMultiDeporte(String mesAno) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
+		YearMonth mes = YearMonth.parse(mesAno);
 
 		// Obtener todos los AlumnoDeporte activos
 		List<com.taemoi.project.entities.AlumnoDeporte> alumnosDeportes =
@@ -1149,6 +1171,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Date fechaAsignacion = new Date();
 		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
@@ -1165,7 +1188,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.anyMatch(pa -> pa.getConcepto().equalsIgnoreCase(conceptoCompleto));
 
 			if (!yaExiste) {
-				Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
+				Double precioMensualidad = cuantias.cuantiaMensualidad(alumnoDeporte, alumno, mes);
 
 				ProductoAlumno productoAlumno = new ProductoAlumno();
 				productoAlumno.setAlumno(alumno);
@@ -1185,11 +1208,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
-		return omitidos.size();
+		return new ResultadoGeneracionMensualidades(omitidos.size(), cuantias.personalizadasSuperiores());
 	}
 
 	@Override
-	public void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
+	public List<CuantiaPersonalizadaSuperiorDTO> cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
 			LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
@@ -1255,9 +1278,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 		boolean mensualidadCreada = false;
 		boolean tarifaCreada = false;
+		List<CuantiaPersonalizadaSuperiorDTO> superiores = List.of();
 
 		if (!mensualidadExiste) {
-			Double precioMensualidad = alumnoDeporte.getCuantiaTarifa();
+			ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
+			Double precioMensualidad = cuantias.cuantiaMensualidad(alumnoDeporte, alumno, YearMonth.parse(mesAno));
+			superiores = cuantias.personalizadasSuperiores();
 
 			ProductoAlumno productoAlumno = new ProductoAlumno();
 			productoAlumno.setAlumno(alumno);
@@ -1281,6 +1307,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (!mensualidadCreada && !tarifaCreada && !forzar) {
 			throw new IllegalStateException("El alumno ya tiene asignada la " + conceptoCompleto);
 		}
+		return superiores;
 	}
 
 	// ===== MÉTODOS AUXILIARES PARA TARIFA COMPETIDOR =====

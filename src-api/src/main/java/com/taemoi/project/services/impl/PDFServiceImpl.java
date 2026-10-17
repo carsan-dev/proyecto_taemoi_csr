@@ -86,6 +86,10 @@ public class PDFServiceImpl implements PDFService {
 	@Autowired
 	private com.taemoi.project.services.ProgresionGradosService progresionGrados;
 
+	/** Entrega 6-4 (D6-33): cuantía esperada del listado mensual con la tarifa de la sede del alumno para ese mes. */
+	@Autowired
+	private com.taemoi.project.services.TarifaSedeService tarifaSede;
+
 	/** Grupo de edad del alumno en la disciplina de la inscripción (disciplina.edad_adulto, año natural). */
 	private boolean esMenor(Alumno alumno, AlumnoDeporte alumnoDeporte) {
 		return catalogoDisciplinas.esMenorPorAnioNatural(alumno.getFechaNacimiento(),
@@ -2449,6 +2453,10 @@ public class PDFServiceImpl implements PDFService {
 		List<com.taemoi.project.entities.ProductoAlumno> productosDelMes = productoAlumnoRepository
 				.findMensualidadesYTarifasCompetidorByMes(conceptoBase, mesAnoConcepto);
 
+		// Entrega 6-4 (D6-33): sin cargo del mes, la cuantía resuelta para ese mes (con la tarifa de la sede, si la hay).
+		com.taemoi.project.services.ResolutorCuantiaMensualidad cuantias = tarifaSede.preparar();
+		java.time.YearMonth mesListado = java.time.YearMonth.of(anio, mes);
+
 		// Group products by alumno+deporte, collecting all products (mensualidad +
 		// tarifa competidor)
 		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes
@@ -2599,8 +2607,11 @@ public class PDFServiceImpl implements PDFService {
 						double totalCuantia = productosAlumno.stream().filter(p -> p.getPrecio() != null)
 								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
 						cuantia = String.format("%.2f EUR", totalCuantia);
-					} else if (ad.getCuantiaTarifa() != null) {
-						cuantia = String.format("%.2f EUR", ad.getCuantiaTarifa());
+					} else {
+						Double esperada = cuantias.cuantiaMensualidad(ad, mesListado);
+						if (esperada != null) {
+							cuantia = String.format("%.2f EUR", esperada);
+						}
 					}
 					html.append("<div class='line-item'>").append(cuantia).append("</div>");
 				}

@@ -4,6 +4,7 @@ import java.util.List;
 import java.time.LocalDate;
 
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
+import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.entities.Alumno;
 
 public interface ProductoAlumnoService {
@@ -29,13 +30,19 @@ public interface ProductoAlumnoService {
 	 */
 	ProductoAlumnoDTO reservarPlazaPorDeporte(Long alumnoId, String deporte, String concepto, boolean pagado, boolean forzar);
 
-	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
-	int cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacion);
+	/**
+	 * @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23) y, desde la 6-4, las mensualidades con una
+	 *         cuantía personalizada mayor que la tarifa de la sede (D6-28)
+	 */
+	ResultadoGeneracionMensualidades cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacion);
 
-	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
-	int cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacion);
+	/** Como {@link #cargarMensualidadesGenerales}, solo para una disciplina. */
+	ResultadoGeneracionMensualidades cargarMensualidadesPorDeporte(String mesAno, String deporte,
+			LocalDate fechaAsignacion);
 
-	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar, LocalDate fechaAsignacion);
+	/** @return mensualidades creadas con una cuantía personalizada mayor que la tarifa de la sede (6-4, D6-28). */
+	List<CuantiaPersonalizadaSuperiorDTO> cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar,
+			LocalDate fechaAsignacion);
 
 	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
 	int cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacion);
@@ -62,8 +69,8 @@ public interface ProductoAlumnoService {
 	 * Carga mensualidades para todos los alumnos, creando una por cada deporte que practican
 	 * @param mesAno Mes y año en formato "MM/YYYY"
 	 */
-	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
-	int cargarMensualidadesMultiDeporte(String mesAno);
+	/** Como {@link #cargarMensualidadesGenerales}, con la fecha de hoy. */
+	ResultadoGeneracionMensualidades cargarMensualidadesMultiDeporte(String mesAno);
 
 	/**
 	 * Carga mensualidad individual para un deporte específico de un alumno
@@ -71,7 +78,8 @@ public interface ProductoAlumnoService {
 	 * @param deporte Nombre del deporte
 	 * @param mesAno Mes y año en formato "MM/YYYY"
 	 * @param forzar Si true, crea la mensualidad aunque ya exista
+	 * @return mensualidades creadas con una cuantía personalizada mayor que la tarifa de la sede (6-4, D6-28)
 	 */
-	void cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte, String mesAno, boolean forzar,
-			LocalDate fechaAsignacion);
+	List<CuantiaPersonalizadaSuperiorDTO> cargarMensualidadIndividualPorDeporte(Long alumnoId, String deporte,
+			String mesAno, boolean forzar, LocalDate fechaAsignacion);
 }

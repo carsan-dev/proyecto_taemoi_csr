@@ -5,6 +5,7 @@ import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
@@ -221,6 +222,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	/** Entrega 6: filtros y comprobaciones por sede del responsable (sin efecto para la gestión). */
 	@Autowired
 	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
+	/** Entrega 6-4: tarifa de la sede en la mensualidad que crea el alta (D6-27 a D6-29). */
+	@Autowired
+	private com.taemoi.project.services.TarifaSedeService tarifaSede;
 
 	/**
 	 * Obtiene una página de todos los alumnos paginados.
@@ -2352,7 +2357,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	        productoAlumno.setProducto(productoMensualidad);
 	        productoAlumno.setConcepto(nombreMensualidad);
 	        productoAlumno.setAlumnoDeporte(deportePrincipal);
-	        productoAlumno.setPrecio(deportePrincipal != null ? deportePrincipal.getCuantiaTarifa() : null);
+	        // Entrega 6-4: la tarifa de la sede del alumno para el mes en curso, si la hay (D6-27 a D6-29); si no, la
+	        // cuantía de la inscripción tal cual.
+	        productoAlumno.setPrecio(deportePrincipal != null
+	                ? tarifaSede.preparar().cuantiaMensualidad(deportePrincipal, alumno, YearMonth.from(fechaActual))
+	                : null);
 	        productoAlumno.setFechaAsignacion(Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 	        productoAlumno.setCantidad(1);
 	        productoAlumno.setPagado(false);
