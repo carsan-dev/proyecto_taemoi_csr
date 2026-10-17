@@ -140,6 +140,26 @@ public class GestionPorSede {
 	}
 
 	/**
+	 * D6-3 (entrega 6-2, vincular una preinscripción a una ficha): para el responsable, la sede principal del alumno es
+	 * una de las suyas (si no, 403; también si no existe o no tiene sede principal). Sin restricción, nada.
+	 */
+	public void exigirAlumnoConSedePrincipalPropia(Long alumnoId) {
+		Optional<AlcanceSesion> restriccion = restriccion();
+		if (restriccion.isPresent() && !consulta.alumnoConSedePrincipalEn(alumnoId, restriccion.get().sedes())) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+	}
+
+	/**
+	 * Para el responsable, si puede vincular al alumno a una preinscripción: su sede principal es una de las suyas
+	 * (D6-3; los visibles solo por grupo, no). Sin restricción, siempre.
+	 */
+	public boolean alumnoVinculable(Long alumnoId) {
+		Optional<AlcanceSesion> restriccion = restriccion();
+		return restriccion.isEmpty() || consulta.alumnoConSedePrincipalEn(alumnoId, restriccion.get().sedes());
+	}
+
+	/**
 	 * D6-6: para el responsable, todos los alumnos están en su alcance (D9). Una sola consulta que compara el
 	 * recuento; un id que no existe en la escuela también deniega. Sin restricción, nada.
 	 */

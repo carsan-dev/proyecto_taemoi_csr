@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.TenantContext;
@@ -104,6 +105,27 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 	@Override
 	public boolean preinscripcionEnGrupos(String referencia, Set<Long> grupos) {
 		return existePreinscripcion(referencia, grupos, PredicadosAlcance.preinscripcionesEnGrupos(grupos));
+	}
+
+	@Override
+	public boolean alumnoConvocatoriaEnSedes(Long alumnoConvocatoriaId, Set<Long> sedes) {
+		return existeAlumnoDeInscripcion(alumnoConvocatoriaId, sedes, PredicadosAlcance.alumnosEnSedes(sedes));
+	}
+
+	@Override
+	public boolean alumnoConvocatoriaConSedePrincipalEn(Long alumnoConvocatoriaId, Set<Long> sedes) {
+		return existeAlumnoDeInscripcion(alumnoConvocatoriaId, sedes,
+				PredicadosAlcance.alumnosConSedePrincipalEn(sedes));
+	}
+
+	/** El alumno de la inscripción {@code alumnoConvocatoriaId} (de la escuela activa) cumple el predicado. */
+	private boolean existeAlumnoDeInscripcion(Long alumnoConvocatoriaId, Set<Long> sedes,
+			Specification<Alumno> predicado) {
+		if (alumnoConvocatoriaId == null || sedes == null || sedes.isEmpty() || TenantContext.get() == null) {
+			return false;
+		}
+		return alumnos.exists(
+				PredicadosAlcance.alumnoDeInscripcionEnConvocatoria(alumnoConvocatoriaId).and(predicado));
 	}
 
 	private static <T> boolean existe(JpaSpecificationExecutor<T> repositorio, Long id, Set<Long> conjunto,

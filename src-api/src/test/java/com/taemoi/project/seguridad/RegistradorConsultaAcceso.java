@@ -80,4 +80,14 @@ final class RegistradorConsultaAcceso implements ConsultaAccesoRecursos {
 	public boolean preinscripcionEnGrupos(String referencia, Set<Long> grupos) {
 		return registrar();
 	}
+
+	@Override
+	public boolean alumnoConvocatoriaEnSedes(Long alumnoConvocatoriaId, Set<Long> sedes) {
+		return registrar();
+	}
+
+	@Override
+	public boolean alumnoConvocatoriaConSedePrincipalEn(Long alumnoConvocatoriaId, Set<Long> sedes) {
+		return registrar();
+	}
 }

@@ -27,6 +27,11 @@ import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.services.PDFService;
 
+/**
+ * Convocatorias de examen. Entrega 6-2 (D6-8): son comunes a la escuela; el responsable de sede ve la lista y, dentro,
+ * solo a sus alumnos (D9, filtrado en el servicio), y marca la cuantía y el pago del examen de los alumnos de su sede
+ * principal ({@code @acceso.alumnoConvocatoriaEnSede}). Crear, borrar y actualizar grados siguen siendo de gestión.
+ */
 @RestController
 @RequestMapping("/api/convocatorias")
 public class ConvocatoriaController {
@@ -41,7 +46,7 @@ public class ConvocatoriaController {
 	private PDFService pdfService;
 
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatorias(
 			@RequestParam(name = "deporte", required = false) String deporteParametro) {
 		// Antes el enum Deporte (Spring respondía 400 a un valor no válido); ahora, el catálogo de la escuela.
@@ -57,14 +62,14 @@ public class ConvocatoriaController {
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<ConvocatoriaDTO> obtenerConvocatoriaPorId(@PathVariable Long id) {
 		ConvocatoriaDTO convocatoria = convocatoriaService.obtenerConvocatoriaPorId(id);
 		return ResponseEntity.ok(convocatoria);
 	}
 
 	@GetMapping("/alumnos/{alumnoId}")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<List<ConvocatoriaDTO>> obtenerConvocatoriasDeAlumno(@PathVariable Long alumnoId) {
 		List<ConvocatoriaDTO> convocatorias = convocatoriaService.obtenerConvocatoriasDeAlumno(alumnoId);
 		return ResponseEntity.ok(convocatorias);
@@ -78,21 +83,21 @@ public class ConvocatoriaController {
 	}
 
 	@GetMapping("/{id}/alumnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
 		List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
 		return ResponseEntity.ok(alumnos);
 	}
 
 	@GetMapping("/{id}/reporte")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoConvocatoriaReporteDTO>> obtenerReporteDeConvocatoria(@PathVariable Long id) {
 		List<AlumnoConvocatoriaReporteDTO> reporte = convocatoriaService.obtenerReporteDeConvocatoria(id);
 		return ResponseEntity.ok(reporte);
 	}
 
 	@GetMapping("/{id}/informe-pdf")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<byte[]> generarInformePDFConvocatoria(@PathVariable Long id) {
 		byte[] pdfBytes = pdfService.generarInformeConvocatoria(id);
 
@@ -125,7 +130,7 @@ public class ConvocatoriaController {
 	}
 
 	@PutMapping("/alumno/{alumnoConvocatoriaId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoConvocatoriaEnSede(#alumnoConvocatoriaId,'EDITAR')")
 	public ResponseEntity<Void> actualizarAlumnoConvocatoria(@PathVariable Long alumnoConvocatoriaId,
 			@Valid @RequestBody AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		convocatoriaService.actualizarAlumnoConvocatoria(alumnoConvocatoriaId, alumnoConvocatoriaDTO);

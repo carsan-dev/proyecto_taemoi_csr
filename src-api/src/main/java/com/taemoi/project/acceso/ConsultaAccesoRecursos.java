@@ -39,4 +39,10 @@ public interface ConsultaAccesoRecursos {
 	boolean preinscripcionEnSedes(String referencia, Set<Long> sedes);
 
 	boolean preinscripcionEnGrupos(String referencia, Set<Long> grupos);
+
+	/** Entrega 6-2 (D6-8): el alumno de esa inscripción en una convocatoria está en {@code sedes} por D9. */
+	boolean alumnoConvocatoriaEnSedes(Long alumnoConvocatoriaId, Set<Long> sedes);
+
+	/** Entrega 6-2 (D6-3): la sede principal del alumno de esa inscripción es una de {@code sedes}. */
+	boolean alumnoConvocatoriaConSedePrincipalEn(Long alumnoConvocatoriaId, Set<Long> sedes);
 }

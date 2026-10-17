@@ -439,6 +439,13 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
   el histórico y se pueden cobrar los cargos que ya existían.
 - D6-18 (nueva, de la revisión de la 6-1): no se da de alta un alumno en una sede inactiva, ni la gestión ni el
   responsable (400 de validación, como D6-17). Moiskimdo no cambia (su sede está activa).
+- D6-19 (nueva, de la revisión de la 6-2): finalizar una preinscripción VINCULANDO a un alumno existente también se
+  bloquea con 400 si la sede del grupo de la solicitud está inactiva, para todos los roles (como crear, D6-18).
+  Moiskimdo no cambia.
+- Nota de la 6-2 (coherente con D6-6): si el responsable finaliza con CREAR_NUEVO y el DNI de la solicitud ya es de
+  una ficha de otra sede, la respuesta es 400 («Ya existe una ficha con el DNI/NIE de la preinscripción.») y la
+  solicitud queda pendiente para la gestión: el responsable no ve esa ficha como candidata (solo las de su sede
+  principal, D6-3) ni puede vincularla.
 
 | # | Decisión | Opciones (recomendada primero) | Por qué | Impacto en Moiskimdo |
 |---|---|---|---|---|

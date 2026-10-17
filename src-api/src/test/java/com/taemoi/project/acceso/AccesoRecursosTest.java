@@ -480,6 +480,68 @@ class AccesoRecursosTest {
 		assertFalse(acceso.alumnoComoFamiliaOSede(9L));
 	}
 
+	// ------------------------------------------------------------------ preinscripciones y convocatorias (6-2)
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER" })
+	void preinscripcionYConvocatoriaEnSede_gestionTodoSinConsultar(String autoridad) {
+		sesion(token(autoridad));
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.preinscripcionEnSede("PRE-1", op.name()));
+			assertTrue(acceso.alumnoConvocatoriaEnSede(5L, op.name()));
+		}
+		assertFalse(acceso.preinscripcionEnSede(null, "LEER"));
+		assertFalse(acceso.alumnoConvocatoriaEnSede(null, "EDITAR"));
+		assertFalse(acceso.preinscripcionEnSede("PRE-1", "BORRAR"));
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void preinscripcionEnSede_responsablePorElGrupoDeLaSolicitud() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.preinscripcionEnSedes("PRE-1", SEDES)).thenReturn(true);
+		when(consulta.preinscripcionEnSedes("PRE-2", SEDES)).thenReturn(false);
+
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.preinscripcionEnSede("PRE-1", op.name()));
+			assertFalse(acceso.preinscripcionEnSede("PRE-2", op.name()));
+		}
+		verify(consulta, never()).preinscripcionEnGrupos(anyString(), anySet());
+	}
+
+	@Test
+	void alumnoConvocatoriaEnSede_responsableLeerPorD9EditarPorSedePrincipal() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.alumnoConvocatoriaEnSedes(5L, SEDES)).thenReturn(true);
+		when(consulta.alumnoConvocatoriaConSedePrincipalEn(5L, SEDES)).thenReturn(false);
+		when(consulta.alumnoConvocatoriaConSedePrincipalEn(6L, SEDES)).thenReturn(true);
+
+		assertTrue(acceso.alumnoConvocatoriaEnSede(5L, "LEER"), "D9: su alumno por grupo");
+		assertFalse(acceso.alumnoConvocatoriaEnSede(5L, "EDITAR"), "D6-3: marcar el pago, solo su sede principal");
+		assertTrue(acceso.alumnoConvocatoriaEnSede(6L, "EDITAR"));
+		verify(consulta, never()).alumnoConvocatoriaEnSedes(6L, SEDES);
+	}
+
+	@Test
+	void preinscripcionYConvocatoriaEnSede_familiaYProfesorNuncaConcedenNiConsultan() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"));
+
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertFalse(acceso.preinscripcionEnSede("PRE-1", op.name()));
+			assertFalse(acceso.alumnoConvocatoriaEnSede(5L, op.name()));
+		}
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void preinscripcionEnSede_responsableYProfesor_soloPorSedes() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"));
+		when(consulta.preinscripcionEnSedes("PRE-1", SEDES)).thenReturn(false);
+
+		assertFalse(acceso.preinscripcionEnSede("PRE-1", "LEER"), "su grupo de profesor no cuenta");
+		verify(consulta, never()).preinscripcionEnGrupos(anyString(), anySet());
+	}
+
 	// ------------------------------------------------------------------ SpEL (5c-2)
 
 	@Test

@@ -265,10 +265,10 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, peticion("/api/alumnos/" + aGrupo1 + "/grupos", responsable).getResponse().getStatus());
 		// aGrupo2 (sede principal s2, grupo g2 de s2): fuera de su sede.
 		assertEquals(403, peticion("/api/alumnos/" + aGrupo2 + "/grupos", responsable).getResponse().getStatus());
-		for (long cuenta : List.of(profesor, responsable)) {
-			// Convocatorias: entrega 6-2.
-			assertEquals(403, peticion("/api/convocatorias/alumnos/" + aGrupo1, cuenta).getResponse().getStatus());
-		}
+		// Convocatorias del alumno (entrega 6-2, alumnoComoFamiliaOSede): el responsable, por su sede; el profesor no.
+		assertEquals(403, peticion("/api/convocatorias/alumnos/" + aGrupo1, profesor).getResponse().getStatus());
+		assertEquals(200, peticion("/api/convocatorias/alumnos/" + aGrupo1, responsable).getResponse().getStatus());
+		assertEquals(403, peticion("/api/convocatorias/alumnos/" + aGrupo2, responsable).getResponse().getStatus());
 		assertEquals(200, peticion("/api/alumnos/" + alumnoProfesor + "/grupos", profesor).getResponse().getStatus());
 		assertEquals(200,
 				peticion("/api/alumnos/" + alumnoResponsable + "/grupos", responsable).getResponse().getStatus());

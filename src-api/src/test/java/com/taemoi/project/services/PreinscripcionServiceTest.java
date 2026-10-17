@@ -71,6 +71,7 @@ class PreinscripcionServiceTest {
 	@Mock ContadorService contadores;
 	@Mock TutorService tutores;
 	@Mock ConsentimientoService consentimientos;
+	@Mock com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -82,7 +83,7 @@ class PreinscripcionServiceTest {
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
-				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas());
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede);
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -781,7 +782,7 @@ class PreinscripcionServiceTest {
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
-				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas());
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede);
 
 		servicioPromocion.promocionarTodas();
 
@@ -902,6 +903,73 @@ class PreinscripcionServiceTest {
 		assertEquals(1, resultado.size());
 		assertNull(resultado.get(0).get("grupoId"));
 		assertEquals("Grupo no disponible", resultado.get(0).get("grupo"));
+	}
+
+	// ------------------------------------------------------------------ entrega 6-2 (sedes)
+
+	@Test
+	void d67_rechazaEnElAltaPublicaTurnosDeDosSedes() {
+		grupo.setSedeId(1L);
+		Turno jueves = turnoDeOtroGrupo(2L);
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.validarSeleccion(Deporte.TAEKWONDO.name(), LocalDate.of(2014, 4, 12), "2026-2027",
+						List.of(lunes, jueves)));
+
+		assertEquals("Todos los turnos deben ser de la misma sede.", error.getMessage());
+	}
+
+	@Test
+	void d67_unaSolaSedeOGruposSinSede_comoHastaAhora() {
+		grupo.setSedeId(1L);
+		assertDoesNotThrow(() -> service.validarSeleccion(Deporte.TAEKWONDO.name(), LocalDate.of(2014, 4, 12),
+				"2026-2027", List.of(lunes, turnoDeOtroGrupo(1L))));
+		grupo.setSedeId(null);
+		assertDoesNotThrow(() -> service.validarSeleccion(Deporte.TAEKWONDO.name(), LocalDate.of(2014, 4, 12),
+				"2026-2027", List.of(lunes, turnoDeOtroGrupo(null))));
+	}
+
+	@Test
+	void finalizarCreaElAlumnoConLaSedeDelGrupoDeLaSolicitud() {
+		grupo.setSedeId(5L);
+		when(gestionPorSede.sedeDeAlta(5L, true)).thenReturn(5L);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.empty());
+		when(contadores.siguienteNumeroExpediente()).thenReturn(41);
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(99L, Deporte.TAEKWONDO.name())).thenReturn(Optional.empty());
+		when(alumnoDeportes.countByAlumnoIdAndActivoTrue(99L)).thenReturn(0L);
+		when(grados.tieneProgresion("TAEKWONDO")).thenReturn(true);
+		when(grados.buscarGrado("TAEKWONDO", "BLANCO")).thenReturn(Optional.of(new Grado()));
+
+		service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo()));
+
+		assertEquals(5L, preinscripcion.getAlumno().getSedePrincipalId());
+	}
+
+	@Test
+	void finalizarHaciaUnaSedeInactivaNoCreaNada() {
+		grupo.setSedeId(5L);
+		when(gestionPorSede.sedeDeAlta(5L, true)).thenThrow(new IllegalArgumentException("La sede está inactiva."));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> service.finalizar("PRE-1", request(null, Set.of(), datosTaekwondo())));
+
+		verify(alumnos, never()).saveAndFlush(any(Alumno.class));
+		assertEquals(EstadoPreinscripcion.PENDIENTE, preinscripcion.getEstado());
+	}
+
+	private Turno turnoDeOtroGrupo(Long sede) {
+		Grupo otro = new Grupo();
+		otro.setId(8L);
+		otro.setNombre("Taekwondo jueves");
+		otro.setSedeId(sede);
+		otro.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
+		Turno jueves = new Turno();
+		jueves.setId(21L);
+		jueves.setDiaSemana("Jueves");
+		jueves.setHoraInicio("18:00");
+		jueves.setHoraFin("19:00");
+		jueves.setGrupo(otro);
+		return jueves;
 	}
 
 	private Preinscripcion solicitudEnEspera(String referencia, String correo, List<Turno> seleccion) {

@@ -35,8 +35,9 @@ public class SecurityConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
 
 	/*
-	 * Entrega 6-1 (docs/multi-escuela/entrega6-plan.md §3.1, §3.2): rutas abiertas al responsable de sede. Reglas
-	 * CONCRETAS antes de las amplias (/api/alumnos/**, /api/grupos/**, /api/turnos/**, /api/informes/**), que siguen
+	 * Entregas 6-1 y 6-2 (docs/multi-escuela/entrega6-plan.md §3.1 a §3.3): rutas abiertas al responsable de sede.
+	 * Reglas CONCRETAS antes de las amplias (/api/alumnos/**, /api/grupos/**, /api/turnos/**, /api/informes/**,
+	 * /api/preinscripciones/**, /api/convocatorias/**), que siguen
 	 * siendo solo de gestión: así una ruta sin @PreAuthorize bajo esos patrones no queda abierta. Cada ruta lleva
 	 * además su @PreAuthorize con @acceso (por id) o un filtro del servicio (listados, ids en el cuerpo); la matriz
 	 * de permisos lo comprueba (MatrizPermisosTest).
@@ -48,7 +49,13 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos", "/api/grupos/{id}",
-			"/api/turnos", "/api/turnos/{turnoId}" };
+			"/api/turnos", "/api/turnos/{turnoId}",
+			// 6-2: sin plantillas ni rutas públicas (sus reglas van antes).
+			"/api/preinscripciones", "/api/preinscripciones/{referencia}",
+			"/api/preinscripciones/{referencia}/documento-firmado", "/api/preinscripciones/{referencia}/firma",
+			// 6-2 (D6-8): la lista y el detalle son comunes; los alumnos, el reporte y el PDF, filtrados en el servicio.
+			"/api/convocatorias", "/api/convocatorias/{id}", "/api/convocatorias/{id}/alumnos",
+			"/api/convocatorias/{id}/reporte", "/api/convocatorias/{id}/informe-pdf" };
 	private static final String[] RESPONSABLE_SEDE_POST = {
 			"/api/alumnos/crear", "/api/alumnos/{alumnoId}/documentos", "/api/alumnos/{alumnoId}/grupos/{grupoId}",
 			"/api/alumnos/{alumnoId}/turnos/{turnoId}", "/api/alumnos/{id}/deportes",
@@ -56,7 +63,12 @@ public class SecurityConfiguration {
 			"/api/alumnos/{alumnoId}/tutores", "/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos", "/api/grupos/{grupoId}/alumnos", "/api/grupos/{grupoId}/alumnos/{alumnoId}",
 			"/api/grupos/{grupoId}/turnos/{turnoId}",
-			"/api/turnos/crear-asignando-grupo" };
+			"/api/turnos/crear-asignando-grupo",
+			// 6-2 (D6-8): apuntar a sus alumnos a una convocatoria.
+			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}",
+			"/api/preinscripciones/{referencia}/cancelar", "/api/preinscripciones/{referencia}/finalizar",
+			"/api/preinscripciones/{referencia}/reenviar", "/api/preinscripciones/{referencia}/reenviar-cambio-turnos",
+			"/api/preinscripciones/{referencia}/reenviar-finalizacion" };
 	/** Sin tipo-tarifa ni cuantia-tarifa (tesorería, entrega 6-3). */
 	private static final String[] RESPONSABLE_SEDE_PUT = {
 			"/api/alumnos/{id}", "/api/alumnos/{id}/observaciones", "/api/alumnos/{id}/fecha-alta-inicial",
@@ -77,14 +89,19 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta-competidor-inicial",
 			"/api/alumnos/{id}/deportes/{deporte}/datos-competidor",
 			"/api/grupos/{id}",
-			"/api/turnos/{turnoId}" };
+			"/api/turnos/{turnoId}",
+			"/api/preinscripciones/{referencia}/turnos",
+			// 6-2 (D6-8): cuantía y pago del examen de sus alumnos.
+			"/api/convocatorias/alumno/{alumnoConvocatoriaId}" };
 	/** Sin DELETE /api/alumnos/{id}: el borrado definitivo es solo de gestión (D6-4). */
 	private static final String[] RESPONSABLE_SEDE_DELETE = {
 			"/api/alumnos/{id}/imagen", "/api/alumnos/{alumnoId}/documentos/{documentoId}",
 			"/api/alumnos/{alumnoId}/grupos/{grupoId}", "/api/alumnos/{alumnoId}/turnos/{turnoId}",
 			"/api/alumnos/{id}/deportes/{deporte}", "/api/alumnos/{alumnoId}/tutores/{tutorId}",
 			"/api/grupos/{id}", "/api/grupos/{grupoId}/alumnos/{alumnoId}", "/api/grupos/{grupoId}/turnos/{turnoId}",
-			"/api/turnos/{turnoId}" };
+			"/api/turnos/{turnoId}",
+			// 6-2 (D6-8): quitar a sus alumnos de una convocatoria. Sin DELETE /api/preinscripciones/{referencia}.
+			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}" };
 
 	/**
 	 * Inyección del filtro de JWT.
@@ -183,6 +200,16 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/*/documento").permitAll()
 						.requestMatchers("/api/preinscripciones/plantillas/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
+						// Entrega 6-2: preinscripciones abiertas al responsable de sede (constantes RESPONSABLE_SEDE_*).
+						.requestMatchers(HttpMethod.GET, preinscripciones(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, preinscripciones(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, preinscripciones(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/preinscripciones/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(
 								"/api/auth/signin",
@@ -366,7 +393,14 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/convocatorias/alumnos/{alumnoId}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
+						// Entrega 6-2 (D6-8): convocatorias abiertas al responsable de sede.
+						.requestMatchers(HttpMethod.GET, convocatorias(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, convocatorias(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/convocatorias/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/convocatorias/**")
@@ -503,6 +537,14 @@ public class SecurityConfiguration {
 
 	private static String[] turnos(String[] rutas) {
 		return conPrefijo(rutas, "/api/turnos");
+	}
+
+	private static String[] preinscripciones(String[] rutas) {
+		return conPrefijo(rutas, "/api/preinscripciones");
+	}
+
+	private static String[] convocatorias(String[] rutas) {
+		return conPrefijo(rutas, "/api/convocatorias");
 	}
 
 	/** Las rutas que son {@code prefijo} o empiezan por {@code prefijo/}. */
