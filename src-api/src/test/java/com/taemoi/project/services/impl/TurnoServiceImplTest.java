@@ -19,7 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.taemoi.project.dtos.TurnoDTO;
-import com.taemoi.project.dtos.response.TurnoCortoDTO;
+import com.taemoi.project.dtos.response.TurnoPublicoDTO;
 import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Turno;
@@ -53,12 +53,39 @@ class TurnoServiceImplTest {
 		when(aforo.completo(lunes, "2026/2027")).thenReturn(true);
 		when(aforo.completo(miercoles, "2026/2027")).thenReturn(false);
 
-		List<TurnoCortoDTO> resultado = service.listarTurnosDTO();
+		List<TurnoPublicoDTO> resultado = service.listarTurnosDTO();
 
 		assertTrue(resultado.get(0).getCompleto());
 		assertFalse(resultado.get(1).getCompleto());
 		assertEquals(36, resultado.get(0).getOcupacionEfectiva());
 		assertEquals(20, resultado.get(1).getOcupacionEfectiva());
+	}
+
+	/**
+	 * La edad pública de /horarios se calcula con la fecha de Madrid, no con la de la JVM: a las 00:30 de Madrid
+	 * (22:30 UTC del día anterior) quien nace ese día ya ha cumplido años.
+	 */
+	@Test
+	void edadesPublicasConLaFechaDeMadrid() {
+		Grupo grupo = grupo(7L);
+		Turno turno = turno(11L, "Lunes", grupo);
+		com.taemoi.project.entities.Alumno alumno = new com.taemoi.project.entities.Alumno();
+		alumno.setActivo(true);
+		alumno.setFechaNacimiento(java.sql.Date.valueOf("2016-10-17"));
+		com.taemoi.project.entities.AlumnoDeporte deporte = new com.taemoi.project.entities.AlumnoDeporte();
+		deporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
+		deporte.setActivo(true);
+		alumno.setDeportes(new java.util.ArrayList<>(List.of(deporte)));
+		turno.setAlumnos(new java.util.ArrayList<>(List.of(alumno)));
+		when(turnoRepository.findAllWithAlumnos()).thenReturn(List.of(turno));
+		when(temporadas.actual()).thenReturn("2026/2027");
+		service.setReloj(java.time.Clock.fixed(java.time.Instant.parse("2026-10-16T22:30:00Z"),
+				java.time.ZoneOffset.UTC));
+
+		TurnoPublicoDTO dto = service.listarTurnosDTO().get(0);
+
+		assertEquals(10, dto.getEdadMinAlumnos());
+		assertEquals(10, dto.getEdadMaxAlumnos());
 	}
 
 	@Test

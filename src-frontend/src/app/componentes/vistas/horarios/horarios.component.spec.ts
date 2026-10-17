@@ -43,4 +43,35 @@ describe('HorariosComponent', () => {
     component.navegarAPreinscripcion({ id: 3, grupoId: 4, tipoGrupo: 'Competición' });
     expect(router.navigate).toHaveBeenCalledOnceWith(['/preinscripcion'], { queryParams: { deporte: 'TAEKWONDO', turnoId: 3 } });
   });
+
+  describe('rango de edades (calculado en el servidor, /api/turnos/dto ya no envía alumnos)', () => {
+    it('usa el rango configurado del grupo antes que las edades de los alumnos', () => {
+      expect(component.obtenerRangoEdades({ rangoEdadMin: 6, rangoEdadMax: 12, edadMinAlumnos: 8, edadMaxAlumnos: 9 }))
+        .toBe('6 - 12 años');
+      expect(component.obtenerRangoEdades({ rangoEdadMin: 6, rangoEdadMax: null })).toBe('Desde 6 años');
+      expect(component.obtenerRangoEdades({ rangoEdadMin: null, rangoEdadMax: 12 })).toBe('Hasta 12 años');
+      expect(component.obtenerRangoEdades({ rangoEdadMin: 0, rangoEdadMax: 99 })).toBe('0 - 99 años');
+    });
+
+    it('sin rango configurado pinta el mínimo y el máximo de los alumnos', () => {
+      expect(component.obtenerRangoEdades({ rangoEdadMin: null, rangoEdadMax: null, edadMinAlumnos: 10, edadMaxAlumnos: 14 }))
+        .toBe('10 - 14 años');
+    });
+
+    it('con una sola edad la muestra sin guion', () => {
+      expect(component.obtenerRangoEdades({ edadMinAlumnos: 9, edadMaxAlumnos: 9 })).toBe('9 años');
+      expect(component.obtenerRangoEdades({ edadMinAlumnos: 0, edadMaxAlumnos: 0 })).toBe('0 años');
+    });
+
+    it('sin alumnos que cuenten muestra "Sin alumnos"', () => {
+      expect(component.obtenerRangoEdades({ rangoEdadMin: null, rangoEdadMax: null, edadMinAlumnos: null, edadMaxAlumnos: null }))
+        .toBe('Sin alumnos');
+      expect(component.obtenerRangoEdades({ id: 1 })).toBe('Sin alumnos');
+    });
+
+    it('no depende de datos personales de los alumnos aunque llegaran', () => {
+      const turno = { edadMinAlumnos: 10, edadMaxAlumnos: 14, alumnos: [{ fechaNacimiento: '1950-01-01' }] };
+      expect(component.obtenerRangoEdades(turno)).toBe('10 - 14 años');
+    });
+  });
 });

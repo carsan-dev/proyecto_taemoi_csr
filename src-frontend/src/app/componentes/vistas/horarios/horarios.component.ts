@@ -242,17 +242,6 @@ export class HorariosComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  calcularEdad(fechaNacimiento: Date): number {
-    const today = new Date();
-    const birthDate = new Date(fechaNacimiento);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  }
-
   obtenerRangoEdades(turno: any): string {
     const rangoMin = turno?.rangoEdadMin;
     const rangoMax = turno?.rangoEdadMax;
@@ -266,16 +255,13 @@ export class HorariosComponent implements OnInit, OnDestroy {
       return `Hasta ${rangoMax} años`;
     }
 
-    if (!turno.alumnos || turno.alumnos.length === 0) {
+    // La página es pública: /api/turnos/dto no envía los alumnos, solo su rango de edad ya calculado en el
+    // servidor (alumnos activos del deporte del grupo, años cumplidos con la fecha de Madrid; null si no hay).
+    const minEdad = turno?.edadMinAlumnos;
+    const maxEdad = turno?.edadMaxAlumnos;
+    if (minEdad == null || maxEdad == null) {
       return 'Sin alumnos';
     }
-
-    const edades = turno.alumnos.map((alumno: any) =>
-      this.calcularEdad(alumno.fechaNacimiento)
-    );
-
-    const minEdad = Math.min(...edades);
-    const maxEdad = Math.max(...edades);
 
     if (minEdad === maxEdad) {
       return `${minEdad} años`;
