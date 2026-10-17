@@ -39,6 +39,7 @@ import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.SedeService;
+import com.taemoi.project.utils.OrdenAlfabetico;
 
 import jakarta.transaction.Transactional;
 
@@ -476,7 +477,10 @@ public class GrupoServiceImpl implements GrupoService {
 	public List<GrupoResponseDTO> obtenerGruposDelAlumno(@NonNull Long alumnoId) {
 		Alumno alumno = alumnoRepository.findById(alumnoId).orElse(null);
 		if (alumno != null) {
-			return alumno.getGrupos().stream().map(this::convertirGrupoADTO).collect(Collectors.toList());
+			// D2 (R2-P1): por nombre de grupo (Alumno.grupos es un Set sin orden).
+			return alumno.getGrupos().stream().map(this::convertirGrupoADTO)
+					.sorted(OrdenAlfabetico.porNombre(GrupoResponseDTO::getNombre, GrupoResponseDTO::getId))
+					.collect(Collectors.toList());
 		}
 		return Collections.emptyList();
 	}
@@ -531,6 +535,9 @@ public class GrupoServiceImpl implements GrupoService {
 					return AlumnoCortoDTO.deAlumno(alumno);
 				})
 				.filter(Objects::nonNull)
+				// D2 (R2-P1): por nombre y apellidos (Grupo.alumnos es un Set sin orden).
+				.sorted(OrdenAlfabetico.porNombreYApellidos(AlumnoCortoDTO::getNombre, AlumnoCortoDTO::getApellidos,
+						AlumnoCortoDTO::getId))
 				.collect(Collectors.toList());
 		grupoDTO.setAlumnos(alumnosDTO);
 
