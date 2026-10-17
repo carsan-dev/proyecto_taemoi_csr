@@ -1543,7 +1543,15 @@ header.fixed-header {
 // ========================================
 .mobile-header-overlay {
   position: fixed;
-  inset: 0;
+  // Mide siempre el viewport GRANDE (lvh): con la barra del navegador en móvil (Chrome Android,
+  // Safari iOS) escondida o visible nunca queda hueco. No volver a `inset: 0`: al seguir al
+  // viewport visible, Chrome redimensiona tarde y deja ver una franja blanca.
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  height: 100vh;
+  height: 100lvh;
   z-index: 10000;
   display: flex;
   align-items: stretch;
@@ -1587,6 +1595,12 @@ header.fixed-header {
   overflow-y: auto;
   // Evita encadenar el scroll al documento (barra del navegador en móvil: Chrome Android, Safari iOS).
   overscroll-behavior: contain;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+
+  // Con la barra visible el borde inferior del panel queda oculto: se compensa lvh - svh.
+  @supports (height: 100svh) {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px) + (100lvh - 100svh));
+  }
 }
 
 .mobile-header-top {

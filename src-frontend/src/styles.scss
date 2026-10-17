@@ -30,14 +30,6 @@ html {
   scroll-behavior: auto !important;
 }
 
-// Con el menú móvil abierto, la barra del navegador en móvil (Chrome Android, Safari iOS)
-// aparece/desaparece y el overlay se redimensiona con retraso; el hueco dejaba ver el lienzo
-// blanco. Se pinta oscuro solo mientras el menú está abierto.
-// Valor literal de $dark-bg (header.component.scss), no accesible desde aquí.
-html:has(.mobile-header-overlay.open) {
-  background-color: #1b2b2e;
-}
-
 // Modern replacement for ngx-spinner's legacy prefixed animation stylesheet.
 .la-ball-clip-rotate,
 .la-ball-clip-rotate > div {
