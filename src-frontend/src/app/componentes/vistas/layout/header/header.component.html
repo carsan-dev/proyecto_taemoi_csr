@@ -17,9 +17,9 @@
       </div>
       <div class="header-actions-mobile d-lg-none">
         <a class="btn-preinscribete-mobile" [routerLink]="['/preinscripcion']">Preinscríbete</a>
-        <a class="btn-entrar-mobile" [routerLink]="['/login']">
+        <a class="btn-entrar-mobile" [routerLink]="['/login']" aria-label="Acceso para alumnos">
           <i class="bi bi-person" aria-hidden="true"></i>
-          <span>Entrar</span>
+          <span>Alumnos</span>
         </a>
       </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -114,8 +114,8 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="btn btn-login" [routerLink]="['/login']">
-                <i class="bi bi-person" aria-hidden="true"></i>Entrar
+              <a class="btn btn-login" [routerLink]="['/login']" aria-label="Acceso para alumnos">
+                <i class="bi bi-person" aria-hidden="true"></i>Acceso alumnos
               </a>
             </li>
           </ul>

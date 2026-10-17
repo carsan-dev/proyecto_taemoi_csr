@@ -175,13 +175,13 @@ describe('HeaderComponent: cabecera móvil', () => {
 
   const textoDe = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim();
 
-  it('el visitante ve «Preinscríbete» y «Entrar» con texto y sin redes en la cabecera', async () => {
+  it('el visitante ve «Preinscríbete» y «Alumnos» con texto y sin redes en la cabecera', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
     const acciones = el.querySelector('.header-actions-mobile');
 
     expect(textoDe(acciones?.querySelector('a[href="/preinscripcion"]') ?? null)).toBe('Preinscríbete');
-    expect(textoDe(acciones?.querySelector('a[href="/login"]') ?? null)).toBe('Entrar');
+    expect(textoDe(acciones?.querySelector('a[href="/login"]') ?? null)).toBe('Alumnos');
     expect(acciones?.querySelector('a[href*="facebook"], a[href*="instagram"], a[href*="tiktok"]')).toBeNull();
   });
 
@@ -229,17 +229,17 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(panel?.querySelector('a[href="/preinscripcion"]')).not.toBeNull();
   });
 
-  it('en escritorio el visitante ve «Preinscríbete» y «Entrar», sin «Iniciar Sesión»', async () => {
+  it('en escritorio el visitante ve «Preinscríbete» y «Acceso alumnos», sin «Iniciar Sesión»', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
     const escritorio = el.querySelector('.navbar-collapse');
 
     expect(textoDe(escritorio?.querySelector('a.nav-link-join') ?? null)).toBe('Preinscríbete');
-    expect(textoDe(escritorio?.querySelector('a.btn-login') ?? null)).toBe('Entrar');
+    expect(textoDe(escritorio?.querySelector('a.btn-login') ?? null)).toBe('Acceso alumnos');
     expect(escritorio?.querySelector('a.btn-login i.bi-person')).not.toBeNull();
     expect(textoDe(escritorio ?? null)).not.toContain('Iniciar Sesión');
     expect(textoDe(escritorio ?? null)).not.toContain('Únete a nosotros');
-    expect(escritorio?.querySelector('a.btn-login')?.hasAttribute('aria-label')).toBeFalse();
+    expect(escritorio?.querySelector('a.btn-login')?.getAttribute('aria-label')).toBe('Acceso para alumnos');
   });
 
   it('en escritorio la familia ve la pastilla «Mi cuenta» y abre el mismo menú', async () => {
@@ -269,7 +269,7 @@ describe('HeaderComponent: cabecera móvil', () => {
 
     expect(acciones.length).toBe(2);
     expect(el.querySelectorAll('.navbar-collapse a.nav-link-join').length).toBe(1);
-    // «Entrar» y «Mi cuenta» son de contorno: no usan la clase rellena de la acción principal.
+    // «Acceso alumnos» y «Mi cuenta» son de contorno: no usan la clase rellena de la acción principal.
     expect(el.querySelector('.navbar-collapse a.btn-login')?.classList.contains('nav-link-join')).toBeFalse();
     const relleno = (e: Element | null) => e ? getComputedStyle(e).backgroundImage !== 'none' : false;
     expect(relleno(el.querySelector('.navbar-collapse a.nav-link-join'))).toBeTrue();
