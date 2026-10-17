@@ -41,7 +41,8 @@ public class Turno extends EntidadOrganizacion {
 	@JsonManagedReference
 	private Grupo grupo;
 
-	@ManyToMany(mappedBy = "turnos", fetch = FetchType.EAGER)
+	// LAZY (R2-P1): ver Alumno.grupos.
+	@ManyToMany(mappedBy = "turnos", fetch = FetchType.LAZY)
 	@JsonBackReference
 	private List<Alumno> alumnos = new ArrayList<>();
 

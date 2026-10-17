@@ -64,7 +64,8 @@ public class Grupo extends EntidadOrganizacion {
 	@Column(name = "rango_edad_max")
 	private Integer rangoEdadMax;
 
-	@ManyToMany(fetch = FetchType.EAGER)
+	// LAZY (R2-P1): ver Alumno.grupos.
+	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "alumno_grupo", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "alumno_id"))
 	@JsonBackReference
 	private Set<Alumno> alumnos = new LinkedHashSet<>();

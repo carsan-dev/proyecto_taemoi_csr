@@ -150,40 +150,6 @@
       "turno" : "De 18:00 a 19:00"
     },
     {
-      "diaSemana" : "Jueves",
-      "grupo" : {
-        "deporte" : "KICKBOXING",
-        "id" : "grupo:KB-INICIACION",
-        "nombre" : "DORADOR2 Kickboxing Iniciacion",
-        "rangoEdadMax" : null,
-        "rangoEdadMin" : null,
-        "tipo" : null
-      },
-      "horaFin" : "19:00",
-      "horaInicio" : "18:00",
-      "id" : "turno:KB-INICIACION/Jueves/18:00",
-      "tipo" : null,
-      "tipoTurno" : "No definido",
-      "turno" : "De 18:00 a 19:00"
-    },
-    {
-      "diaSemana" : "Lunes",
-      "grupo" : {
-        "deporte" : "TAEKWONDO",
-        "id" : "grupo:TKD-INFANTIL",
-        "nombre" : "DORADOR2 Taekwondo Infantil",
-        "rangoEdadMax" : 12,
-        "rangoEdadMin" : 6,
-        "tipo" : null
-      },
-      "horaFin" : "18:00",
-      "horaInicio" : "17:00",
-      "id" : "turno:TKD-INFANTIL/Lunes/17:00",
-      "tipo" : "Taekwondo",
-      "tipoTurno" : "No definido",
-      "turno" : "De 17:00 a 18:00"
-    },
-    {
       "diaSemana" : "Lunes",
       "grupo" : {
         "deporte" : "TAEKWONDO",

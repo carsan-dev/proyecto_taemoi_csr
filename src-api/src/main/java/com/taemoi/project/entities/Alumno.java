@@ -136,10 +136,13 @@ public class Alumno extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Boolean tieneDerechoExamen = false;
 
-	@ManyToMany(mappedBy = "alumnos", fetch = FetchType.EAGER)
+	// LAZY (R2-P1): en EAGER, Alumno.grupos → Grupo.alumnos → Alumno.turnos → Turno.alumnos cargaba la escuela entera
+	// con cada alumno y repetía turnos en la bolsa (H2). Se leen con la sesión de la petición (open-in-view) o dentro de
+	// una transacción, en lotes de hibernate.default_batch_fetch_size.
+	@ManyToMany(mappedBy = "alumnos", fetch = FetchType.LAZY)
 	private Set<Grupo> grupos = new LinkedHashSet<>();
 
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "alumno_turno", joinColumns = @JoinColumn(name = "alumno_id"), inverseJoinColumns = @JoinColumn(name = "turno_id"))
 	@JsonManagedReference
 	private List<Turno> turnos = new ArrayList<>();

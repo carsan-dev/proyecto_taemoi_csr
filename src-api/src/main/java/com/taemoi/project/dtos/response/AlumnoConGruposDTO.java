@@ -1,5 +1,6 @@
 package com.taemoi.project.dtos.response;
 
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,6 +8,7 @@ import java.util.stream.Collectors;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
+import com.taemoi.project.utils.OrdenAlfabetico;
 
 public class AlumnoConGruposDTO {
 	private Long id;
@@ -92,7 +94,7 @@ public class AlumnoConGruposDTO {
 
 		// Convertimos la lista de grupos de Alumno a GrupoDTO
 		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
-				.map(AlumnoConGruposDTO::grupoConSede).collect(Collectors.toList());
+				.map(AlumnoConGruposDTO::grupoConSede).sorted(POR_NOMBRE).collect(Collectors.toList());
 
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
@@ -111,7 +113,7 @@ public class AlumnoConGruposDTO {
 		}
 
 		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
-				.map(AlumnoConGruposDTO::grupoConSede).collect(Collectors.toList());
+				.map(AlumnoConGruposDTO::grupoConSede).sorted(POR_NOMBRE).collect(Collectors.toList());
 
 		String grado = alumnoDeporte != null && alumnoDeporte.getGrado() != null
 				? alumnoDeporte.getGrado().getCodigo()
@@ -120,6 +122,10 @@ public class AlumnoConGruposDTO {
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
 				alumno.getFechaNacimiento(), alumno.getNumeroExpediente(), grado, gruposDTO);
 	}
+
+	/** D2 (R2-P1): grupos por nombre ({@code Alumno.grupos} es un {@code Set} sin orden). */
+	private static final Comparator<GrupoResponseDTO> POR_NOMBRE = OrdenAlfabetico.porNombre(GrupoResponseDTO::getNombre,
+			GrupoResponseDTO::getId);
 
 	/** Id, nombre y sede del grupo (D6-5: el JSON de grupos lleva {@code sedeId}). */
 	private static GrupoResponseDTO grupoConSede(com.taemoi.project.entities.Grupo grupo) {
