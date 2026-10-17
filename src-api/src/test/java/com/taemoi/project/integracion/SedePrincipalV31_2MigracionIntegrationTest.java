@@ -63,7 +63,8 @@ class SedePrincipalV31_2MigracionIntegrationTest extends MySqlIntegrationTest {
 		aDosRelleno = alumno(orgDos, sedeDosA);
 		aSinSede = alumno(orgSinSede, null);
 
-		flyway(dataSource, null).migrate();
+		// Hasta V31_2: las versiones posteriores (V31_3, entrega 6-3) tienen su propio test.
+		flyway(dataSource, "31.2").migrate();
 	}
 
 	@Test

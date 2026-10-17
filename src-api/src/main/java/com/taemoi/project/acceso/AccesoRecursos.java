@@ -26,7 +26,8 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * consultar nada (coste de hoy).</li>
  * <li>Familia ({@code ROLE_USER}): solo {@code alumno(id, LEER)}, con la regla única de familia.</li>
  * <li>{@code ROLE_RESPONSABLE_SEDE}: el recurso está en sus sedes (alumno por D9; grupo por su sede; turno y
- * preinscripción por su grupo). {@code productoAlumno} → {@code false} (D4: sin tesorería).</li>
+ * preinscripción por su grupo). {@code productoAlumno} → {@code false}: la tesorería del responsable (entrega 6-3)
+ * va por {@link #productoAlumnoEnSede}.</li>
  * <li>{@code ROLE_PROFESOR}: solo {@code LEER}, si el recurso está en sus grupos.</li>
  * <li>Con varios roles basta con que uno conceda.</li>
  * </ul>
@@ -116,6 +117,16 @@ public class AccesoRecursos {
 				? sedes -> consulta.alumnoConvocatoriaConSedePrincipalEn(alumnoConvocatoriaId, sedes)
 				: sedes -> consulta.alumnoConvocatoriaEnSedes(alumnoConvocatoriaId, sedes);
 		return decidir(alumnoConvocatoriaId, op, null, porSedes, null);
+	}
+
+	/**
+	 * Entrega 6-3 (D4, D6-9), solo alcance total o sedes del responsable: la sede del cargo (fijada al crearlo) es una
+	 * de las suyas, para cualquier operación (cobrar un cargo de una sede inactiva sigue permitido, D6-17). Un cargo
+	 * sin sede, solo gestión. Revertir un cobro sigue siendo solo de {@code ROLE_ADMIN} (en el servicio).
+	 */
+	public boolean productoAlumnoEnSede(Long productoAlumnoId, String operacion) {
+		return decidir(productoAlumnoId, operacion(operacion, "productoAlumnoEnSede"), null,
+				sedes -> consulta.productoAlumnoEnSedes(productoAlumnoId, sedes), null);
 	}
 
 	/** Activa también la rama de profesor (solo {@code LEER}): para la entrega 7. */

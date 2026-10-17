@@ -29,13 +29,16 @@ public interface ProductoAlumnoService {
 	 */
 	ProductoAlumnoDTO reservarPlazaPorDeporte(Long alumnoId, String deporte, String concepto, boolean pagado, boolean forzar);
 
-	void cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacion);
+	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
+	int cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacion);
 
-	void cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacion);
+	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
+	int cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacion);
 
 	void cargarMensualidadIndividual(Long alumnoId, String mesAno, boolean forzar, LocalDate fechaAsignacion);
 
-	void cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacion);
+	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
+	int cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacion);
 
 	void cargarLicenciaIndividual(Long alumnoId, int ano, String deporte, boolean forzar, LocalDate fechaAsignacion);
 
@@ -59,7 +62,8 @@ public interface ProductoAlumnoService {
 	 * Carga mensualidades para todos los alumnos, creando una por cada deporte que practican
 	 * @param mesAno Mes y año en formato "MM/YYYY"
 	 */
-	void cargarMensualidadesMultiDeporte(String mesAno);
+	/** @return alumnos omitidos por ser de una sede inactiva (D6-17, D6-23); 0 si todas están activas. */
+	int cargarMensualidadesMultiDeporte(String mesAno);
 
 	/**
 	 * Carga mensualidad individual para un deporte específico de un alumno

@@ -21,10 +21,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
+import com.taemoi.project.acceso.SedeInactivaException;
 import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
 import com.taemoi.project.services.ProductoAlumnoService;
 
+/**
+ * Cargos y cobros. Entrega 6-3 (D4, entrega6-plan.md §3.4): el responsable de sede crea cargos sueltos, ve y cobra los
+ * de los alumnos de SU sede principal ({@code alumnoEnSede EDITAR}, D6-3) y cobra o borra los cargos de sus sedes
+ * ({@code productoAlumnoEnSede}, por la sede del cargo). Las generaciones masivas siguen siendo solo de gestión
+ * (D6-10). En una sede inactiva no se crean cargos (400, D6-17), pero se cobran los existentes.
+ */
 @RestController
 @RequestMapping("/api/productos-alumno")
 public class ProductoAlumnoController {
@@ -33,7 +40,7 @@ public class ProductoAlumnoController {
 	private ProductoAlumnoService productoAlumnoService;
 
 	@PostMapping("/alumno/{alumnoId}/producto/{productoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<ProductoAlumnoDTO> asignarProductoAAlumno(@PathVariable Long alumnoId,
 			@PathVariable Long productoId, @Valid @RequestBody ProductoAlumnoDTO detallesDTO) {
 
@@ -43,14 +50,14 @@ public class ProductoAlumnoController {
 	}
 
 	@GetMapping("/alumno/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<List<ProductoAlumnoDTO>> obtenerProductosDeAlumno(@PathVariable Long alumnoId) {
 		List<ProductoAlumnoDTO> productosAlumnoDTO = productoAlumnoService.obtenerProductosDeAlumno(alumnoId);
 		return ResponseEntity.ok(productosAlumnoDTO);
 	}
 
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<ProductoAlumnoDTO> actualizarProductoAlumno(@PathVariable Long id,
 			@Valid @RequestBody ProductoAlumnoDTO detallesDTO) {
 
@@ -59,14 +66,14 @@ public class ProductoAlumnoController {
 	}
 
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<Void> eliminarProductoAlumno(@PathVariable Long id) {
 		productoAlumnoService.eliminarProductoAlumno(id);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PostMapping("/{alumnoId}/reservar-plaza")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> reservarPlaza(@PathVariable Long alumnoId, @RequestParam boolean pagado,
 			@RequestParam(required = false, defaultValue = "false") boolean forzar) {
 		int anoActual = LocalDate.now().getYear();
@@ -86,7 +93,7 @@ public class ProductoAlumnoController {
 	 * POST /api/productos-alumno/{alumnoId}/reservar-plaza-deporte
 	 */
 	@PostMapping("/{alumnoId}/reservar-plaza-deporte")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> reservarPlazaPorDeporte(
 			@PathVariable Long alumnoId,
 			@RequestParam String deporte,
@@ -111,8 +118,8 @@ public class ProductoAlumnoController {
 	public ResponseEntity<?> cargarMensualidadesGenerales(
 			@RequestBody String nombreMensualidad,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
-		productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad, fechaAsignacion);
-		return ResponseEntity.ok(Map.of("mensaje", "Mensualidades creadas correctamente."));
+		int omitidos = productoAlumnoService.cargarMensualidadesGenerales(nombreMensualidad, fechaAsignacion);
+		return ResponseEntity.ok(respuestaMasiva("Mensualidades creadas correctamente.", omitidos));
 	}
 
 	@PostMapping("/mensualidades/deporte")
@@ -121,16 +128,17 @@ public class ProductoAlumnoController {
 			@RequestParam String deporte,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte, fechaAsignacion);
-			return ResponseEntity.ok(Map.of("mensaje",
-					"Mensualidades creadas correctamente para alumnos de " + deporte + "."));
+			int omitidos = productoAlumnoService.cargarMensualidadesPorDeporte(nombreMensualidad, deporte,
+					fechaAsignacion);
+			return ResponseEntity.ok(respuestaMasiva(
+					"Mensualidades creadas correctamente para alumnos de " + deporte + ".", omitidos));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", e.getMessage()));
 		}
 	}
 
 	@PostMapping("/mensualidades/individual")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> cargarMensualidadIndividual(@RequestParam Long alumnoId,
 			@RequestBody String nombreMensualidad,
 			@RequestParam(defaultValue = "false") boolean forzar,
@@ -138,6 +146,9 @@ public class ProductoAlumnoController {
 		try {
 			productoAlumnoService.cargarMensualidadIndividual(alumnoId, nombreMensualidad, forzar, fechaAsignacion);
 			return ResponseEntity.ok(Map.of("mensaje", "Mensualidad individual creada correctamente."));
+		} catch (SedeInactivaException ex) {
+			// D6-17 (entrega 6-3): 400 como en el resto de altas; antes que el catch genérico (500).
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
 		} catch (MensualidadIncompletaException ex) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
 					.body(Map.of(
@@ -170,15 +181,15 @@ public class ProductoAlumnoController {
 			@RequestParam(required = false, defaultValue = "TODOS") String deporte,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaAsignacion) {
 		try {
-			productoAlumnoService.cargarLicenciasGenerales(ano, deporte, fechaAsignacion);
-			return ResponseEntity.ok(Map.of("mensaje", "Licencias creadas correctamente."));
+			int omitidos = productoAlumnoService.cargarLicenciasGenerales(ano, deporte, fechaAsignacion);
+			return ResponseEntity.ok(respuestaMasiva("Licencias creadas correctamente.", omitidos));
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensaje", ex.getMessage()));
 		}
 	}
 
 	@PostMapping("/licencias/individual")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> cargarLicenciaIndividual(
 			@RequestParam Long alumnoId,
 			@RequestParam int ano,
@@ -201,7 +212,7 @@ public class ProductoAlumnoController {
 
 	
 	@PostMapping("{alumnoId}/renovar-licencia")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
     public ResponseEntity<ProductoAlumnoDTO> renovarLicencia(@PathVariable Long alumnoId) {
         ProductoAlumnoDTO productoAlumnoDTO = productoAlumnoService.renovarLicencia(alumnoId);
         return ResponseEntity.ok(productoAlumnoDTO);
@@ -214,7 +225,7 @@ public class ProductoAlumnoController {
 	 * POST /api/productos-alumno/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}
 	 */
 	@PostMapping("/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<ProductoAlumnoDTO> asignarProductoAAlumnoDeporte(
 			@PathVariable Long alumnoId,
 			@PathVariable Long productoId,
@@ -238,9 +249,9 @@ public class ProductoAlumnoController {
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
 	public ResponseEntity<?> cargarMensualidadesMultiDeporte(@RequestBody String nombreMensualidad) {
 		try {
-			productoAlumnoService.cargarMensualidadesMultiDeporte(nombreMensualidad);
-			return ResponseEntity.ok(Map.of("mensaje",
-				"Mensualidades multi-deporte creadas correctamente para todos los alumnos."));
+			int omitidos = productoAlumnoService.cargarMensualidadesMultiDeporte(nombreMensualidad);
+			return ResponseEntity.ok(respuestaMasiva(
+				"Mensualidades multi-deporte creadas correctamente para todos los alumnos.", omitidos));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(Map.of("mensaje", "Error al crear mensualidades: " + e.getMessage()));
@@ -252,7 +263,7 @@ public class ProductoAlumnoController {
 	 * POST /api/productos-alumno/mensualidades/individual-deporte
 	 */
 	@PostMapping("/mensualidades/individual-deporte")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> cargarMensualidadIndividualPorDeporte(
 			@RequestParam Long alumnoId,
 			@RequestParam String deporte,
@@ -288,5 +299,16 @@ public class ProductoAlumnoController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(Map.of("mensaje", "Ocurrió un error al crear la mensualidad.", "detalle", ex.getMessage()));
 		}
+	}
+
+	/**
+	 * Respuesta de una generación masiva: el mensaje de siempre y, desde la entrega 6-3 (D6-23, aditivo),
+	 * {@code alumnosOmitidosSedeInactiva}: alumnos saltados por ser de una sede inactiva (0 si todas están activas).
+	 */
+	private static Map<String, Object> respuestaMasiva(String mensaje, int omitidos) {
+		Map<String, Object> respuesta = new java.util.LinkedHashMap<>();
+		respuesta.put("mensaje", mensaje);
+		respuesta.put("alumnosOmitidosSedeInactiva", omitidos);
+		return respuesta;
 	}
 }

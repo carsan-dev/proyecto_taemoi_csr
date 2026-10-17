@@ -87,6 +87,17 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       `alumnos_sin_sede_escuelas_una_sede` debe ser 0 (en Moiskimdo, las altas posteriores a V31 quedan en
       «Umbrete»). Desde la 6-1 el alta de alumnos escribe la sede principal; desde la 6-2 también las altas desde
       una preinscripción finalizada (la sede del grupo de la solicitud; sin migración).
+- [ ] Tras V31_3 (entrega 6-3, ampliación: `producto_alumno.sede_id` NULL, índice y FK, con relleno): ejecutar
+      `docs/multi-escuela/postcheck-v31_3.sql` (solo lectura, solo recuentos) y guardar el resultado:
+      `cargos_sin_sede_escuelas_una_sede` y `cargos_con_sede_de_otra_escuela` deben ser 0 (en Moiskimdo todos los
+      cargos quedan en «Umbrete»; la segunda consulta da una fila con `sin_sede` = 0) y `cargos_total` debe coincidir
+      con el recuento previo (`SELECT COUNT(*) FROM producto_alumno`). Los importes no se tocan. Desde la 6-3 cada cargo
+      nuevo nace con la sede principal del alumno y nunca cambia; un alumno sin sede principal genera cargos sin sede
+      (en una escuela de una sede no debería existir: lo vigilan este postcheck y `postcheck-v31_2.sql`; repetirlos
+      tras el despliegue y, si alguno no da 0, asignar la sede principal y repetir el relleno de V31_3, idempotente).
+      El código anterior sigue funcionando sobre el esquema
+      ampliado (vuelta atrás sin migración), pero los cargos que cree quedan sin sede: si se vuelve atrás, repetir el
+      relleno de V31_3 (sus dos `UPDATE`, idempotentes) al volver a la 6-3 y comprobar de nuevo el postcheck.
 - [ ] Antes de desplegar la entrega 6: ejecutar `docs/multi-escuela/precheck-e6.sql` (solo lectura, solo recuentos)
       y guardar el resultado. `preinscripciones_sin_turnos_resolubles` debería dar 0 filas: una fila así hace que el
       listado de preinscripciones responda 409 (comportamiento anterior, sin cambios; lo decide el propietario).

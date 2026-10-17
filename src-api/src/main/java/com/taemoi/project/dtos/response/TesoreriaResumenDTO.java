@@ -12,6 +12,16 @@ public class TesoreriaResumenDTO {
 	private Double importePagado;
 	private Double importePendiente;
 	private Long alumnosConPendientes;
+	/** Entrega 6-3 (D6-12), aditivo: los mismos totales por sede del cargo (ver {@link TesoreriaResumenSedeDTO}). */
+	private java.util.List<TesoreriaResumenSedeDTO> porSede = new java.util.ArrayList<>();
+
+	public java.util.List<TesoreriaResumenSedeDTO> getPorSede() {
+		return porSede;
+	}
+
+	public void setPorSede(java.util.List<TesoreriaResumenSedeDTO> porSede) {
+		this.porSede = porSede;
+	}
 
 	public Integer getMes() {
 		return mes;

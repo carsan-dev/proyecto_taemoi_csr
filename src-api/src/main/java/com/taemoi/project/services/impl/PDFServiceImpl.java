@@ -1524,10 +1524,25 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 
+	/**
+	 * Entrega 6-3 (D6-13, D6-9): el responsable de sede, solo las deudas imputadas a sus sedes (sede del cargo). La
+	 * gestión, la lista de siempre (sin tocarla).
+	 */
+	private List<com.taemoi.project.entities.ProductoAlumno> deudasDeSusSedes(
+			List<com.taemoi.project.entities.ProductoAlumno> deudas) {
+		java.util.Optional<java.util.Set<Long>> suyas = gestionPorSede.restriccion()
+				.map(com.taemoi.project.organizacion.AlcanceSesion::sedes);
+		if (suyas.isEmpty()) {
+			return deudas;
+		}
+		return deudas.stream().filter(pa -> pa.getSedeId() != null && suyas.get().contains(pa.getSedeId()))
+				.collect(Collectors.toList());
+	}
+
 	@Override
 	public byte[] generarInformeDeudas(boolean soloActivos) {
-		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = productoAlumnoRepository
-				.findAllUnpaidWithAlumno();
+		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = deudasDeSusSedes(productoAlumnoRepository
+				.findAllUnpaidWithAlumno());
 
 		// Filter by active status if requested
 		if (soloActivos) {
@@ -1683,8 +1698,8 @@ public class PDFServiceImpl implements PDFService {
 
 	@Override
 	public byte[] generarInformeDeudasCSV(boolean soloActivos) {
-		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = productoAlumnoRepository
-				.findAllUnpaidWithAlumno();
+		List<com.taemoi.project.entities.ProductoAlumno> productosImpagados = deudasDeSusSedes(productoAlumnoRepository
+				.findAllUnpaidWithAlumno());
 
 		// Filter by active status if requested
 		if (soloActivos) {
@@ -2417,6 +2432,16 @@ public class PDFServiceImpl implements PDFService {
 		} else {
 			alumnoDeportes = alumnoDeporteRepository.findAll().stream()
 					.filter(ad -> ad.getDeporte() != null && deportesFiltrados.contains(ad.getDeporte()))
+					.collect(Collectors.toList());
+		}
+
+		// Entrega 6-3 (D6-13, D6-3): el responsable de sede, solo las filas de los alumnos de su sede principal.
+		java.util.Optional<java.util.Set<Long>> sedesDelResponsableListado = gestionPorSede.restriccion()
+				.map(com.taemoi.project.organizacion.AlcanceSesion::sedes);
+		if (sedesDelResponsableListado.isPresent()) {
+			alumnoDeportes = alumnoDeportes.stream()
+					.filter(ad -> ad.getAlumno() != null && ad.getAlumno().getSedePrincipalId() != null
+							&& sedesDelResponsableListado.get().contains(ad.getAlumno().getSedePrincipalId()))
 					.collect(Collectors.toList());
 		}
 

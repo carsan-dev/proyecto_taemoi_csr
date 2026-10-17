@@ -45,4 +45,10 @@ public interface ConsultaAccesoRecursos {
 
 	/** Entrega 6-2 (D6-3): la sede principal del alumno de esa inscripción es una de {@code sedes}. */
 	boolean alumnoConvocatoriaConSedePrincipalEn(Long alumnoConvocatoriaId, Set<Long> sedes);
+
+	/**
+	 * Entrega 6-3 (D6-9): la sede del cargo ({@code producto_alumno.sede_id}, fijada al crearlo) es una de
+	 * {@code sedes}. Un cargo sin sede no está en ningún alcance.
+	 */
+	boolean productoAlumnoEnSedes(Long productoAlumnoId, Set<Long> sedes);
 }

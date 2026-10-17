@@ -16,6 +16,16 @@ public class TesoreriaMovimientoDTO {
 	private Double precio;
 	private String notas;
 	private Boolean alumnoActivo;
+	/** Entrega 6-3 (D6-9), aditivo: sede del cargo (NULL si no tiene). */
+	private Long sedeId;
+
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
+	}
 
 	public Long getProductoAlumnoId() {
 		return productoAlumnoId;

@@ -112,14 +112,75 @@ public class GestionPorSede {
 		return sede.getId();
 	}
 
-	/** D6-17: en una sede inactiva no se crean grupos ni turnos. Sin sede no se comprueba. */
+	/**
+	 * D6-17: en una sede inactiva no se crean grupos, turnos ni cargos (6-3: la sede del cargo es la sede principal del
+	 * alumno). Sin sede no se comprueba. Para todos los roles; en Moiskimdo su única sede está activa.
+	 *
+	 * @throws SedeInactivaException (un {@link IllegalArgumentException}, 400)
+	 */
 	public void exigirSedeActiva(Long sedeId) {
 		if (sedeId == null) {
 			return;
 		}
 		Optional<Sede> sede = sedes.buscarEnEscuelaActiva(sedeId);
 		if (sede.isPresent() && !sede.get().isActiva()) {
-			throw new IllegalArgumentException("La sede está inactiva.");
+			throw new SedeInactivaException();
+		}
+	}
+
+	/**
+	 * D6-17 en las generaciones masivas (solo gestión, D6-10): ids de las sedes inactivas de la escuela activa, para
+	 * saltar a sus alumnos sin detener la generación del resto. Vacío si todas están activas (Moiskimdo): la generación
+	 * no cambia.
+	 */
+	public Set<Long> sedesInactivas() {
+		return sedes.findAllByOrderByIdAsc().stream().filter(sede -> !sede.isActiva()).map(Sede::getId)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Entrega 6-3 (D6-12): sedes de la tesorería de esta petición, por la sede del cargo.
+	 * <ul>
+	 * <li>Gestión (o sin sesión de responsable) sin {@code sedeSolicitada}: {@link FiltroSedesTesoreria#TODAS}, las
+	 * consultas de siempre.</li>
+	 * <li>Responsable sin {@code sedeSolicitada}: sus sedes.</li>
+	 * <li>Con {@code sedeSolicitada}: debe ser de la escuela activa (si no, 400); para el responsable, una de las suyas
+	 * (si no, 403). Solo esa sede.</li>
+	 * </ul>
+	 */
+	public FiltroSedesTesoreria filtroTesoreria(Long sedeSolicitada) {
+		Optional<AlcanceSesion> restriccion = restriccion();
+		if (sedeSolicitada == null) {
+			return restriccion.map(alcance -> FiltroSedesTesoreria.de(alcance.sedes()))
+					.orElse(FiltroSedesTesoreria.TODAS);
+		}
+		Sede sede = sedes.buscarEnEscuelaActiva(sedeSolicitada)
+				.orElseThrow(() -> new IllegalArgumentException("La sede no existe en la escuela."));
+		if (restriccion.isPresent() && !restriccion.get().sedes().contains(sede.getId())) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		return FiltroSedesTesoreria.de(Set.of(sede.getId()));
+	}
+
+	/**
+	 * Entrega 6-3 (D6-3): para el responsable, la sede principal de CADA alumno es una de las suyas (certificados de
+	 * cobros). Una consulta que compara el recuento; un id que no existe en la escuela también deniega. Sin
+	 * restricción, nada.
+	 */
+	public void exigirAlumnosConSedePrincipalPropia(Collection<Long> ids) {
+		Optional<AlcanceSesion> restriccion = restriccion();
+		if (restriccion.isEmpty() || ids == null) {
+			return;
+		}
+		Set<Long> distintos = ids.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+		if (distintos.isEmpty()) {
+			return;
+		}
+		Specification<Alumno> porIds = (root, query, cb) -> root.get("id").in(distintos);
+		long propios = alumnos
+				.count(porIds.and(PredicadosAlcance.alumnosConSedePrincipalEn(restriccion.get().sedes())));
+		if (propios != distintos.size()) {
+			throw new AccessDeniedException("Acceso denegado.");
 		}
 	}
 

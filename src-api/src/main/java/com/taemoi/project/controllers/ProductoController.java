@@ -32,7 +32,7 @@ public class ProductoController {
 	private ProductoService productoService;
 
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<Page<Producto>> obtenerProductos(@RequestParam(required = false) String concepto,
 			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size,
 			@RequestParam(defaultValue = "id") String orderBy, @RequestParam(defaultValue = "asc") String order) {
@@ -56,14 +56,14 @@ public class ProductoController {
 	}
 
 	@GetMapping("/todos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<Producto>> obtenerTodosLosProductos() {
 		List<Producto> productos = productoService.obtenerTodosLosProductos();
 		return ResponseEntity.ok(productos);
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable Long id) {
 		Optional<Producto> productoOpt = productoService.obtenerProductoPorId(id);
 		if (productoOpt.isPresent()) {

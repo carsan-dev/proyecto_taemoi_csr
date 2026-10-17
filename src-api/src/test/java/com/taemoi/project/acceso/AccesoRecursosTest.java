@@ -542,6 +542,49 @@ class AccesoRecursosTest {
 		verify(consulta, never()).preinscripcionEnGrupos(anyString(), anySet());
 	}
 
+	// ------------------------------------------------------------------ tesorería (6-3)
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER" })
+	void productoAlumnoEnSede_gestionSinConsultar(String autoridad) {
+		sesion(token(autoridad));
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.productoAlumnoEnSede(9L, op.name()));
+		}
+		assertFalse(acceso.productoAlumnoEnSede(null, "EDITAR"));
+		assertFalse(acceso.productoAlumnoEnSede(9L, "BORRAR"));
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void productoAlumnoEnSede_responsablePorLaSedeDelCargo() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.productoAlumnoEnSedes(9L, SEDES)).thenReturn(true);
+		when(consulta.productoAlumnoEnSedes(10L, SEDES)).thenReturn(false);
+
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.productoAlumnoEnSede(9L, op.name()));
+			assertFalse(acceso.productoAlumnoEnSede(10L, op.name()));
+		}
+		assertFalse(acceso.productoAlumno(9L, "EDITAR"), "el método de antes sigue solo con alcance total");
+	}
+
+	@Test
+	void productoAlumnoEnSede_familiaYProfesorNuncaConcedenNiConsultan() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"));
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertFalse(acceso.productoAlumnoEnSede(9L, op.name()));
+		}
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void productoAlumnoEnSede_responsableSinSedes_noConsulta() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_RESPONSABLE_SEDE", "ROLE_USER"));
+		assertFalse(acceso.productoAlumnoEnSede(9L, "LEER"));
+		verifyNoInteractions(consulta);
+	}
+
 	// ------------------------------------------------------------------ SpEL (5c-2)
 
 	@Test

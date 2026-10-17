@@ -85,6 +85,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private ProgresionGradosService progresionGrados;
 
+	/** Entrega 6-3: sede inactiva (D6-17) y restricción del responsable de sede. */
+	@Autowired
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
 	private String normalizarConcepto(String concepto) {
 		return concepto == null ? "" : Normalizer.normalize(concepto, Normalizer.Form.NFD)
 				.replaceAll("\\p{M}+", "").toUpperCase(Locale.ROOT);
@@ -116,6 +120,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto producto = productoRepository.findById(productoId)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+		exigirSedeActivaParaCargo(alumno);
 
 		if (esMatricula(producto.getConcepto())) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -150,6 +155,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Override
 	public List<ProductoAlumnoDTO> obtenerProductosDeAlumno(Long alumnoId) {
 		List<ProductoAlumno> productosAlumno = productoAlumnoRepository.findByAlumnoId(alumnoId);
+		// Entrega 6-3 (D6-9): el responsable de sede ve solo los cargos de sus sedes. Gestión: todos, como siempre.
+		java.util.Optional<Set<Long>> suyas = gestionPorSede.restriccion()
+				.map(com.taemoi.project.organizacion.AlcanceSesion::sedes);
+		if (suyas.isPresent()) {
+			productosAlumno = productosAlumno.stream()
+					.filter(pa -> pa.getSedeId() != null && suyas.get().contains(pa.getSedeId()))
+					.collect(Collectors.toList());
+		}
 		return productosAlumno.stream().map(this::convertirADTO).collect(Collectors.toList());
 	}
 
@@ -157,6 +170,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
 		ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
 				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+		exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
 
 		if (detallesDTO.getCantidad() != null) {
 			productoAlumno.setCantidad(detallesDTO.getCantidad());
@@ -216,6 +230,45 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		return convertirADTO(updatedProductoAlumno);
+	}
+
+	/** Cargo de una inscripción sin {@code alumno_id}: el código de cobro de siempre no lo admite (ver D6-20). */
+	private static final String CARGO_SIN_ALUMNO = "El cargo no tiene alumno asociado: lo gestiona la administración.";
+
+	/**
+	 * Entrega 6-3, solo para el responsable de sede (la gestión, como siempre):
+	 * <ul>
+	 * <li>D6-20: en un cargo YA COBRADO solo puede cambiar las notas; cualquier otro campo que llegue con un valor
+	 * distinto del guardado (precio, cantidad, concepto, fechas o deshacer el pago) → 403.</li>
+	 * <li>Un cargo sin {@code alumno_id} (solo inscripción) → 400 antes de guardar nada: el resto del método no lo
+	 * admite (NullPointerException al sincronizar el derecho a examen, comportamiento anterior a la entrega 6).</li>
+	 * </ul>
+	 */
+	private void exigirEdicionPermitidaAlResponsable(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		if (gestionPorSede.restriccion().isEmpty()) {
+			return;
+		}
+		if (Boolean.TRUE.equals(cargo.getPagado()) && cambiaAlgoMasQueLasNotas(cargo, cambios)) {
+			throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
+		}
+		if (cargo.getAlumno() == null) {
+			throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
+		}
+	}
+
+	private static boolean cambiaAlgoMasQueLasNotas(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		return (cambios.getCantidad() != null && !cambios.getCantidad().equals(cargo.getCantidad()))
+				|| (cambios.getPrecio() != null
+						&& (cargo.getPrecio() == null || Double.compare(cambios.getPrecio(), cargo.getPrecio()) != 0))
+				|| (cambios.getConcepto() != null && !cambios.getConcepto().equals(cargo.getConcepto()))
+				|| (cambios.getFechaAsignacion() != null && !mismoInstante(cambios.getFechaAsignacion(),
+						cargo.getFechaAsignacion()))
+				|| (cambios.getFechaPago() != null && !mismoInstante(cambios.getFechaPago(), cargo.getFechaPago()))
+				|| Boolean.FALSE.equals(cambios.getPagado());
+	}
+
+	private static boolean mismoInstante(Date a, Date b) {
+		return b != null && a.getTime() == b.getTime();
 	}
 
 	private boolean usuarioActualEsAdmin() {
@@ -282,6 +335,16 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	public void eliminarProductoAlumno(Long id) {
 		ProductoAlumno pa = productoAlumnoRepository.findById(id)
 				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+		// Entrega 6-3 (D6-22): borrar un cargo cobrado equivale a revertir el cobro, que el responsable de sede no
+		// puede (entrega6-plan.md §7). La gestión, como siempre.
+		if (gestionPorSede.restriccion().isPresent()) {
+			if (Boolean.TRUE.equals(pa.getPagado())) {
+				throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
+			}
+			if (pa.getAlumno() == null && daDerechoAExamen(pa)) {
+				throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
+			}
+		}
 
 		productoAlumnoRepository.deleteById(id);
 
@@ -297,6 +360,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
 
+		exigirSedeActivaParaCargo(alumno);
 		if (!forzar) {
 			boolean existeReserva = alumno.getProductosAlumno().stream()
 					.anyMatch(productoAlumno -> concepto.equals(productoAlumno.getConcepto()));
@@ -343,6 +407,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 					"El alumno no está inscrito en el deporte: " + deporte));
 
+		exigirSedeActivaParaCargo(alumno);
 		if (!forzar) {
 			// Check if reservation already exists for this exact concepto (includes year + sport)
 			// Only check this alumno's products, not all products
@@ -375,7 +440,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacionManual) {
+	public int cargarMensualidadesGenerales(String mesAno, LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Obtener todos los AlumnoDeporte activos
@@ -388,8 +453,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<String> conceptosExistentes = clavesDeCargosExistentes();
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
+		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (enSedeInactiva(alumno, sedesInactivas)) {
+				omitidos.add(alumno.getId());
+				continue;
+			}
 			Producto productoMensualidad = productosMensualidad.get(codigoDisciplina(alumnoDeporte));
 			String nombreMensualidad = nombreMensualidad(productoMensualidad, mesAno);
 			String conceptoCompleto = nombreMensualidad + " - " + alumnoDeporte.getDeporte();
@@ -425,10 +496,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
+		return omitidos.size();
 	}
 
 	@Override
-	public void cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacionManual) {
+	public int cargarMensualidadesPorDeporte(String mesAno, String deporte, LocalDate fechaAsignacionManual) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Convert string to Deporte enum
@@ -453,8 +525,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<String> conceptosExistentes = clavesDeCargosExistentes();
 
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
+		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (enSedeInactiva(alumno, sedesInactivas)) {
+				omitidos.add(alumno.getId());
+				continue;
+			}
 
 			String claveMensualidad = alumno.getId() + "-" + conceptoCompleto.toUpperCase(Locale.ROOT);
 			boolean mensualidadExiste = conceptosExistentes.contains(claveMensualidad);
@@ -487,6 +565,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
+		return omitidos.size();
 	}
 
 	@Override
@@ -495,6 +574,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+		exigirSedeActivaParaCargo(alumno);
 
 		// Obtener todos los deportes activos del alumno
 		List<AlumnoDeporte> deportesActivos = alumnoDeporteRepository.findByAlumnoId(alumnoId).stream()
@@ -605,7 +685,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacionManual) {
+	public int cargarLicenciasGenerales(int ano, String deporte, LocalDate fechaAsignacionManual) {
 		boolean esSegundaMitadDelAno = esSegundaMitadDelAno();
 		LocalDate fechaInicio = obtenerFechaInicioLicencia(ano, esSegundaMitadDelAno);
 		LocalDate fechaFin = LocalDate.of(ano, 12, 31);
@@ -614,8 +694,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<String> conceptosExistentes = obtenerConceptosLicenciaExistentes();
 		Date fechaAsignacion = resolverFechaAsignacion(fechaAsignacionManual);
 
+		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (enSedeInactiva(alumno, sedesInactivas)) {
+				omitidos.add(alumno.getId());
+				continue;
+			}
 			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
 					CatalogoLegadoTaemoi.conceptoBase(productoLicencia, null, legado()),
@@ -639,6 +725,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 			productoAlumnoRepository.save(productoAlumno);
 		}
+		return omitidos.size();
 	}
 
 	@Override
@@ -650,6 +737,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (!Boolean.TRUE.equals(alumno.getActivo())) {
 			throw new IllegalArgumentException("El alumno no está activo.");
 		}
+		exigirSedeActivaParaCargo(alumno);
 
 		List<AlumnoDeporte> deportesObjetivo = obtenerDeportesAlumnoParaLicencia(alumnoId, deporte);
 		if (deportesObjetivo.isEmpty()) {
@@ -756,6 +844,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	public ProductoAlumnoDTO renovarLicencia(Long alumnoId) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + alumnoId));
+		exigirSedeActivaParaCargo(alumno);
 
 		LocalDate fechaActual = LocalDate.now();
 		boolean esSegundaMitadDelAno = fechaActual.getMonthValue() >= MES_CORTE_LICENCIA;
@@ -808,6 +897,20 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return convertirADTO(savedProductoAlumno);
 	}
 
+
+	/**
+	 * D6-17 (entrega 6-3): un cargo nuevo va a la sede principal del alumno ({@code ProductoAlumno @PrePersist}); si
+	 * esa sede está inactiva, 400. Sin sede principal no se comprueba. Cobrar los cargos existentes sigue permitido.
+	 */
+	private void exigirSedeActivaParaCargo(Alumno alumno) {
+		gestionPorSede.exigirSedeActiva(alumno.getSedePrincipalId());
+	}
+
+	/** D6-17 en las generaciones masivas: el alumno es de una sede inactiva (se salta, sin detener el resto). */
+	private static boolean enSedeInactiva(Alumno alumno, Set<Long> sedesInactivas) {
+		return !sedesInactivas.isEmpty() && alumno != null && alumno.getSedePrincipalId() != null
+				&& sedesInactivas.contains(alumno.getSedePrincipalId());
+	}
 
 	private Date resolverFechaAsignacion(LocalDate fechaAsignacion) {
 		if (fechaAsignacion == null) {
@@ -973,6 +1076,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		dto.setFechaAsignacion(productoAlumno.getFechaAsignacion());
 		dto.setFechaPago(productoAlumno.getFechaPago());
 		dto.setNotas(productoAlumno.getNotas());
+		dto.setSedeId(productoAlumno.getSedeId());
 		return dto;
 	}
 
@@ -988,6 +1092,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto producto = productoRepository.findById(productoId)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+		exigirSedeActivaParaCargo(alumno);
 
 		// Convertir string a Deporte enum
 		String deporteEnum;
@@ -1032,7 +1137,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	@Override
-	public void cargarMensualidadesMultiDeporte(String mesAno) {
+	public int cargarMensualidadesMultiDeporte(String mesAno) {
 		MensualidadUtils.formatearNombreMensualidad(mesAno); // valida el formato antes de nada
 
 		// Obtener todos los AlumnoDeporte activos
@@ -1043,8 +1148,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Map<String, Producto> productosMensualidad = resolverProductosMensualidad(alumnosDeportes);
 
 		Date fechaAsignacion = new Date();
+		Set<Long> sedesInactivas = gestionPorSede.sedesInactivas();
+		Set<Long> omitidos = new java.util.HashSet<>();
 		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (enSedeInactiva(alumno, sedesInactivas)) {
+				omitidos.add(alumno.getId());
+				continue;
+			}
 			Producto productoMensualidad = productosMensualidad.get(codigoDisciplina(alumnoDeporte));
 			String conceptoCompleto = nombreMensualidad(productoMensualidad, mesAno) + " - "
 					+ alumnoDeporte.getDeporte();
@@ -1074,6 +1185,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				}
 			}
 		}
+		return omitidos.size();
 	}
 
 	@Override
@@ -1083,6 +1195,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado"));
+		exigirSedeActivaParaCargo(alumno);
 
 		// Convertir string a Deporte enum
 		String deporteEnum;
