@@ -34,6 +34,67 @@ $kickboxing-color: #ff4500;
 $pilates-color: #57A2A8;
 $defensa-color: #c2185b;
 
+// Recorta holguras de la cabecera móvil para que el nombre quepa sin tocar los botones.
+@mixin cabecera-movil-compacta {
+  nav {
+    .container-fluid {
+      padding: 0 0.5rem;
+      gap: 0.2rem;
+    }
+
+    .mobile-menu-toggle {
+      width: 34px;
+      margin-left: 0;
+    }
+
+    .header-logo-mobile {
+      height: 34px;
+      width: 34px;
+      max-height: 34px;
+      max-width: 34px;
+    }
+
+    .header-actions-mobile {
+      gap: 0.25rem;
+    }
+
+    // Pastillas escalonadas: más pequeñas para que el nombre no parezca secundario.
+    // El área táctil sigue en 44px gracias al ::after (inset negativo).
+    .btn-preinscribete-mobile,
+    .btn-entrar-mobile,
+    .btn-cuenta-mobile {
+      height: 32px;
+      padding: 0 0.65rem;
+      gap: 0.25rem;
+      font-size: 0.8125rem;
+
+      &::after {
+        inset: -6px -2px;
+      }
+
+      i {
+        font-size: 0.9rem;
+      }
+    }
+
+    .btn-cuenta-mobile {
+      padding-right: 0.5rem;
+
+      .btn-cuenta-chevron {
+        font-size: 0.65rem;
+      }
+    }
+
+    .header-title-mobile {
+      padding: 0 0.1rem 0 0.25rem;
+
+      .title-main {
+        letter-spacing: 0;
+      }
+    }
+  }
+}
+
 // ========================================
 // FIXED HEADER (PUBLIC & USER) - MODERN GLASSMORPHISM
 // ========================================
@@ -135,14 +196,26 @@ header.fixed-header {
       flex: 1;
       padding: 0 0.5rem;
       text-align: center;
+      // Su ancho sirve de referencia (cqw) para ajustar el tamaño del título.
+      container-type: inline-size;
+
+      // Siempre visible: una línea si cabe y, si no, dos con corte fijo
+      // «MOI'S» / «KIM DO» (cada línea indivisible). El tamaño baja (mínimo 10px)
+      // antes que ocultar el nombre o encoger los botones.
+      .title-line {
+        font: inherit;
+        letter-spacing: inherit;
+        display: inline-block;
+        white-space: nowrap;
+      }
 
       .title-main {
         font-family: 'Osaka-Sans Serif', sans-serif;
-        font-size: 1.23rem;
+        font-size: min(1.23rem, max(10px, 28cqw));
         font-weight: 700;
         color: $text-light;
         letter-spacing: 2px;
-        line-height: 1.2;
+        line-height: 1.1;
         text-transform: uppercase;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
@@ -390,6 +463,7 @@ header.fixed-header {
           transition: $transition;
           display: flex;
           align-items: center;
+          white-space: nowrap;
           position: relative;
           overflow: hidden;
 
@@ -489,6 +563,23 @@ header.fixed-header {
         .dropdown-toggle {
           cursor: pointer;
           user-select: none;
+
+          // El caret hereda el subrayado animado de .nav-link::after (absoluto, centrado
+          // abajo): se fuerza a flujo normal para que quede en la línea del texto.
+          &::after,
+          &:hover::after,
+          &.active::after {
+            position: static !important;
+            width: 0 !important;
+            height: 0 !important;
+            background: none !important;
+            transform: none !important;
+            flex-shrink: 0;
+          }
+
+          &[aria-expanded="true"]::after {
+            transform: rotate(180deg) !important;
+          }
 
           &::after {
             margin-left: 0.5rem;
@@ -786,49 +877,38 @@ header.fixed-header {
 
     // Login Button
     .btn-login {
-      background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
+      background: transparent;
       color: $text-light;
-      border: none;
+      border: 1.5px solid rgba($text-light, 0.6);
       border-radius: $border-radius-pill;
-      padding: 0.6rem 1.5rem;
+      padding: 0.5rem 1.15rem;
       font-weight: 600;
       font-size: 0.9rem;
+      line-height: 1.2;
+      white-space: nowrap;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 15px rgba($primary-color, 0.3);
-      transition: $transition;
-      position: relative;
-      overflow: hidden;
-
-      // Shine effect
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba($text-light, 0.2), transparent);
-        transition: left 0.5s ease;
-      }
+      gap: 0.4rem;
+      transition: $transition-fast;
 
       i {
         font-size: 1.1rem;
       }
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba($primary-color, 0.4);
+        color: $text-light;
+        background: rgba($text-light, 0.12);
+        border-color: $text-light;
+      }
 
-        &::before {
-          left: 100%;
-        }
+      &:focus-visible {
+        outline: 2px solid $text-light;
+        outline-offset: 2px;
       }
 
       &:active {
-        transform: translateY(0);
+        transform: scale(0.97);
       }
     }
 
@@ -873,68 +953,54 @@ header.fixed-header {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.55rem;
-      padding: 0.38rem 0.95rem 0.38rem 0.48rem;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem 0.5rem 1.15rem;
       border-radius: $border-radius-pill;
-      background: rgba($text-light, 0.1);
-      border: 1px solid rgba($text-light, 0.18);
+      background: transparent;
+      border: 1.5px solid rgba($text-light, 0.6);
       color: $text-light;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 0.9rem;
+      white-space: nowrap;
       cursor: pointer;
       transition: $transition-fast;
       text-decoration: none;
-      min-height: 38px;
-      line-height: 1;
+      line-height: 1.2;
 
-      .bi-person-circle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.45rem;
-        color: $pilates-color;
+      .bi-person {
+        font-size: 1.1rem;
         line-height: 1;
         flex-shrink: 0;
       }
 
       .user-name {
-        display: inline-flex;
-        align-items: center;
-        max-width: clamp(170px, 20vw, 320px);
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
-        color: rgba($text-light, 0.92);
-        line-height: 1.08;
       }
 
       .user-menu-chevron {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
         font-size: 0.72rem;
-        color: rgba($text-light, 0.72);
-        transition: $transition-fast;
         line-height: 1;
         flex-shrink: 0;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       &:hover,
       &.is-open {
-        background: rgba($text-light, 0.16);
-        border-color: rgba($text-light, 0.28);
-        box-shadow: $shadow-sm;
-        transform: translateY(-1px);
+        background: rgba($text-light, 0.12);
+        border-color: $text-light;
       }
 
-      &.is-open {
-        .user-menu-chevron {
-          color: $text-light;
-        }
+      &[aria-expanded="true"] .user-menu-chevron {
+        transform: rotate(180deg);
+      }
+
+      &:focus-visible {
+        outline: 2px solid $text-light;
+        outline-offset: 2px;
       }
 
       &:active {
-        transform: translateY(0);
+        transform: scale(0.97);
       }
     }
 
@@ -1033,7 +1099,10 @@ header.fixed-header {
         min-width: 0;
         overflow: hidden;
 
-        .title-main,
+        .title-main {
+          max-width: 100%;
+        }
+
         .title-sub {
           max-width: 100%;
           overflow: hidden;
@@ -1183,7 +1252,23 @@ header.fixed-header {
 
       .user-menu-toggle {
         min-height: 48px;
-        padding: 0.5rem 1.25rem 0.5rem 0.6rem;
+        padding: 0.5rem 1.25rem;
+      }
+    }
+  }
+
+  // Tablet apaisada: sin iconos en los enlaces y sin redes (están en el pie de página)
+  // para que ningún botón se parta en dos líneas ni se salga de la pantalla.
+  @media (min-width: 992px) and (max-width: 1199.98px) {
+    nav {
+      .navbar-nav .nav-item {
+        .nav-link i {
+          display: none;
+        }
+      }
+
+      .navbar-right .nav-item-social {
+        display: none;
       }
     }
   }
@@ -1225,21 +1310,10 @@ header.fixed-header {
         }
       }
 
+      .btn-login,
       .user-menu-toggle {
-        padding: 0.35rem 0.6rem 0.35rem 0.4rem;
+        padding: 0.4rem 0.9rem;
         font-size: 0.8rem;
-
-        .user-name {
-          display: none;
-        }
-
-        .bi-person-circle {
-          font-size: 1.4rem;
-        }
-
-        .user-menu-chevron {
-          font-size: 0.68rem;
-        }
       }
 
       .social-link {
@@ -1274,15 +1348,9 @@ header.fixed-header {
         padding: 0 0.35rem 0 0.7rem;
         min-width: 0;
 
-        // Prioridad de espacio: botones > título. El título pasa a dos líneas
-        // («MOI'S / KIM DO») en lugar de recortarse con puntos suspensivos.
         .title-main {
-          font-size: 1.18rem;
+          font-size: min(1.18rem, max(10px, 28cqw));
           letter-spacing: 1px;
-          line-height: 1.1;
-          white-space: normal;
-          text-overflow: clip;
-          text-wrap: balance;
         }
 
         .title-sub {
@@ -1357,16 +1425,8 @@ header.fixed-header {
 
   @media (max-width: 576px) {
     &.header-anonimo nav .header-title-mobile .title-main {
-      font-size: 0.95rem;
+      font-size: min(0.95rem, max(10px, 28cqw));
       letter-spacing: 0.5px;
-    }
-  }
-
-  // En la cabecera de visitante los dos botones con texto ocupan casi todo el ancho:
-  // por debajo de 390px el logo basta como identificación y el título se oculta.
-  @media (max-width: 389.98px) {
-    &.header-anonimo nav .header-title-mobile {
-      display: none;
     }
   }
 
@@ -1397,7 +1457,7 @@ header.fixed-header {
         padding: 0 0.2rem 0 0.6rem;
 
         .title-main {
-          font-size: 0.95rem;
+          font-size: min(0.95rem, max(10px, 28cqw));
           letter-spacing: 0.5px;
         }
 
@@ -1418,6 +1478,49 @@ header.fixed-header {
         padding: 0.8rem 0;
       }
 
+    }
+  }
+
+  // Móviles estrechos (320–479px): los botones conservan su tamaño y el título baja
+  // hasta 10px; para que el nombre quepa se recortan holguras del resto de la cabecera.
+  @media (max-width: 479.98px) {
+    @include cabecera-movil-compacta;
+  }
+
+
+  // 320px: se aprieta un poco más el logo, el botón del menú y las pastillas.
+  @media (max-width: 359.98px) {
+    nav {
+      .btn-preinscribete-mobile,
+      .btn-entrar-mobile,
+      .btn-cuenta-mobile {
+        height: 30px;
+        padding: 0 0.6rem;
+        font-size: 0.75rem;
+
+        &::after {
+          inset: -7px -2px;
+        }
+      }
+
+      .btn-cuenta-mobile {
+        padding-right: 0.45rem;
+      }
+
+      .header-logo-mobile {
+        height: 30px;
+        width: 30px;
+        max-height: 30px;
+        max-width: 30px;
+      }
+
+      .mobile-menu-toggle {
+        width: 30px;
+      }
+
+      .header-title-mobile {
+        padding: 0 0 0 0.2rem;
+      }
     }
   }
 }

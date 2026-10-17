@@ -12,7 +12,7 @@
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
       </a>
       <div class="header-title-mobile d-lg-none">
-        <div class="title-main">MOI'S KIM DO</div>
+        <div class="title-main"><span class="title-line">MOI'S</span>&ngsp;<span class="title-line">KIM DO</span></div>
         <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
       </div>
       <div class="header-actions-mobile d-lg-none">
@@ -88,34 +88,34 @@
             </li>
             <li class="nav-item">
               <a class="nav-link nav-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active">
-                <i class="bi bi-stars me-1"></i>Únete a nosotros
+                <i class="bi bi-stars me-1"></i>Preinscríbete
               </a>
             </li>
           </ul>
         </div>
         <div class="navbar-right">
           <ul class="navbar-nav d-flex flex-row align-items-center">
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
                 rel="noopener noreferrer" aria-label="Facebook">
                 <i class="bi bi-facebook"></i>
               </a>
             </li>
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
                 rel="noopener noreferrer" aria-label="Instagram">
                 <i class="bi bi-instagram"></i>
               </a>
             </li>
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
                 rel="noopener noreferrer" aria-label="TikTok">
                 <i class="bi bi-tiktok"></i>
               </a>
             </li>
             <li class="nav-item">
-              <a class="btn btn-login" [routerLink]="['/login']" aria-label="Iniciar sesión">
-                <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+              <a class="btn btn-login" [routerLink]="['/login']">
+                <i class="bi bi-person" aria-hidden="true"></i>Entrar
               </a>
             </li>
           </ul>
@@ -556,7 +556,7 @@
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
       </a>
       <div class="header-title-mobile d-lg-none">
-        <div class="title-main">MOI'S KIM DO</div>
+        <div class="title-main"><span class="title-line">MOI'S</span>&ngsp;<span class="title-line">KIM DO</span></div>
         <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
       </div>
       <div class="header-actions-mobile d-lg-none">
@@ -657,26 +657,26 @@
             </li>
             <li class="nav-item">
               <a class="nav-link nav-link-join" [routerLink]="['/preinscripcion']" routerLinkActive="active">
-                <i class="bi bi-stars me-1"></i>Únete a nosotros
+                <i class="bi bi-stars me-1"></i>Preinscríbete
               </a>
             </li>
           </ul>
         </div>
         <div class="navbar-right">
           <ul class="navbar-nav d-flex flex-row align-items-center">
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/" target="_blank"
                 rel="noopener noreferrer" aria-label="Facebook">
                 <i class="bi bi-facebook"></i>
               </a>
             </li>
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.instagram.com/moiskimdo_/" target="_blank"
                 rel="noopener noreferrer" aria-label="Instagram">
                 <i class="bi bi-instagram"></i>
               </a>
             </li>
-            <li class="nav-item me-3">
+            <li class="nav-item nav-item-social me-3">
               <a class="social-link" href="https://www.tiktok.com/@clubmoiskimdo" target="_blank"
                 rel="noopener noreferrer" aria-label="TikTok">
                 <i class="bi bi-tiktok"></i>
@@ -685,14 +685,13 @@
             <li class="nav-item user-desktop-menu d-none d-lg-flex">
               <button type="button" class="user-menu-toggle" (click)="toggleDesktopUserMenu()"
                 [class.is-open]="isDesktopUserMenuOpen" [attr.aria-expanded]="isDesktopUserMenuOpen"
-                aria-haspopup="menu" aria-label="Opciones de cuenta">
-                <i class="bi bi-person-circle"></i>
-                <span class="user-name" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
-                <i class="bi user-menu-chevron"
-                  [ngClass]="isDesktopUserMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                aria-haspopup="menu" aria-controls="user-desktop-menu-panel">
+                <i class="bi bi-person" aria-hidden="true"></i>
+                <span class="user-name">Mi cuenta</span>
+                <i class="bi bi-chevron-down user-menu-chevron" aria-hidden="true"></i>
               </button>
               @if (isDesktopUserMenuOpen) {
-              <div class="user-desktop-menu-panel" role="menu" aria-label="Opciones de cuenta">
+              <div class="user-desktop-menu-panel" id="user-desktop-menu-panel" role="menu" aria-label="Opciones de cuenta">
                 <a class="user-desktop-menu-item" [routerLink]="['/userpage']" (click)="closeDesktopUserMenu()">
                   <i class="bi bi-calendar2-check"></i>
                   <span>Mis Clases</span>
