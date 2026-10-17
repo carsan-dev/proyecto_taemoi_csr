@@ -236,63 +236,89 @@ header.fixed-header {
       }
     }
 
-    // Botón login móvil (usuario no logueado)
-    .btn-join-mobile {
-      display: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
+    // Acciones móviles: Preinscríbete / Entrar (visitante) y Mi cuenta (familia)
+    .btn-preinscribete-mobile,
+    .btn-entrar-mobile,
+    .btn-cuenta-mobile {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      flex-shrink: 0;
+      height: 36px;
+      padding: 0 0.8rem;
+      border-radius: $border-radius-pill;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
+      transition: $transition-fast;
+
+      // Área táctil de 44px sin agrandar el botón visible
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -4px -2px;
+      }
+
+      i {
+        font-size: 1rem;
+        line-height: 1;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $text-light;
+        outline-offset: 2px;
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+
+    .btn-preinscribete-mobile {
       background: linear-gradient(135deg, $primary-color, color.adjust($primary-color, $lightness: -10%));
       border: 1px solid rgba($primary-color, 0.55);
       color: $text-light;
-      font-size: 1.15rem;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: $transition-fast;
       box-shadow: 0 4px 14px rgba($primary-color, 0.32);
 
       &:hover {
         color: $text-light;
-        transform: scale(1.05);
         box-shadow: 0 6px 18px rgba($primary-color, 0.42);
       }
-
-      &:active {
-        transform: scale(0.95);
-      }
     }
 
-    .btn-login-mobile {
-      display: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, rgba($text-light, 0.18), rgba($text-light, 0.08));
-      border: 1px solid rgba($text-light, 0.42);
+    .btn-entrar-mobile,
+    .btn-cuenta-mobile {
+      background: transparent;
+      border: 1.5px solid rgba($text-light, 0.6);
       color: $text-light;
-      font-size: 1.25rem;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      margin-left: auto;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 
       &:hover {
-        background: linear-gradient(135deg, rgba($text-light, 0.28), rgba($text-light, 0.14));
-        border-color: rgba($text-light, 0.45);
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-
-      @media (max-width: 575.98px) {
-        display: flex;
+        color: $text-light;
+        background: rgba($text-light, 0.12);
+        border-color: $text-light;
       }
     }
+
+    .btn-cuenta-mobile {
+      padding-right: 0.65rem;
+
+      .btn-cuenta-chevron {
+        font-size: 0.7rem;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      &[aria-expanded="true"] .btn-cuenta-chevron {
+        transform: rotate(180deg);
+      }
+    }
+
+
 
     // Botón logout móvil (usuario logueado)
     .btn-logout-mobile {
@@ -658,33 +684,6 @@ header.fixed-header {
       z-index: 30;
     }
 
-    .btn-account-mobile {
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      min-height: 44px;
-      border-radius: 50%;
-      aspect-ratio: 1 / 1;
-      background: linear-gradient(135deg, rgba($pilates-color, 0.2), rgba($pilates-color, 0.08));
-      border: 1px solid rgba($pilates-color, 0.35);
-      color: $pilates-color;
-      font-size: 1.2rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-      cursor: pointer;
-      transition: $transition-fast;
-
-      &:hover {
-        background: linear-gradient(135deg, rgba($pilates-color, 0.3), rgba($pilates-color, 0.15));
-        transform: scale(1.04);
-      }
-
-      &:active {
-        transform: scale(0.96);
-      }
-    }
 
     .mobile-user-quick-menu-panel {
       position: absolute;
@@ -746,52 +745,7 @@ header.fixed-header {
       }
     }
 
-    .mobile-social-stack {
-      display: flex;
-      flex-direction: row;
-      gap: 0.4rem;
-      align-items: center;
-    }
 
-    .social-link-compact {
-      width: 26px;
-      height: 26px;
-      font-size: 0.85rem;
-      line-height: 1;
-      background: transparent;
-      border: 1px solid rgba($text-light, 0.15);
-      box-shadow: none;
-      color: $text-light;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-
-      i {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        transform: none;
-      }
-
-      &[href*="facebook"] {
-        background: linear-gradient(135deg, #1877f2, #0d65d9);
-        border-color: #1877f2;
-        color: $text-light;
-      }
-
-      &[href*="instagram"] {
-        background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-        border-color: #dc2743;
-        color: $text-light;
-      }
-
-      &[href*="tiktok"] {
-        background: linear-gradient(135deg, #111111, #25f4ee, #fe2c55);
-        border-color: #25f4ee;
-        color: $text-light;
-      }
-    }
 
     // Mobile My Classes Button
     .btn-my-classes-mobile {
@@ -1069,6 +1023,7 @@ header.fixed-header {
       .header-actions-mobile {
         display: flex;
         flex-wrap: nowrap;
+        flex-shrink: 0;
       }
 
       .header-title-mobile {
@@ -1076,12 +1031,18 @@ header.fixed-header {
         text-align: left;
         padding: 0 0.5rem 0 0.7rem;
         min-width: 0;
+        overflow: hidden;
+
+        .title-main,
+        .title-sub {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
       }
 
-      .btn-join-mobile,
-      .btn-login-mobile,
-      .btn-logout-mobile,
-      .btn-account-mobile {
+      .btn-logout-mobile {
         display: inline-flex;
         margin-left: 0;
         width: 36px;
@@ -1091,11 +1052,6 @@ header.fixed-header {
         font-size: 1rem;
       }
 
-      .social-link-compact {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-      }
 
       .navbar-left {
         flex-direction: column;
@@ -1318,9 +1274,15 @@ header.fixed-header {
         padding: 0 0.35rem 0 0.7rem;
         min-width: 0;
 
+        // Prioridad de espacio: botones > título. El título pasa a dos líneas
+        // («MOI'S / KIM DO») en lugar de recortarse con puntos suspensivos.
         .title-main {
           font-size: 1.18rem;
           letter-spacing: 1px;
+          line-height: 1.1;
+          white-space: normal;
+          text-overflow: clip;
+          text-wrap: balance;
         }
 
         .title-sub {
@@ -1328,10 +1290,7 @@ header.fixed-header {
         }
       }
 
-      .btn-join-mobile,
-      .btn-login-mobile,
-      .btn-logout-mobile,
-      .btn-account-mobile {
+      .btn-logout-mobile {
         margin-left: 0;
         width: 32px;
         min-width: 32px;
@@ -1349,11 +1308,6 @@ header.fixed-header {
           line-height: 1;
           transform: none;
         }
-      }
-
-      .btn-login-mobile i,
-      .btn-join-mobile i {
-        font-size: 1rem;
       }
 
       .btn-my-classes-mobile {
@@ -1380,11 +1334,6 @@ header.fixed-header {
         }
       }
 
-      .social-link-compact {
-        width: 32px;
-        height: 32px;
-        font-size: 0.95rem;
-      }
 
       .mobile-user-quick-menu-panel {
         right: 0;
@@ -1406,12 +1355,42 @@ header.fixed-header {
 
   }
 
+  @media (max-width: 576px) {
+    &.header-anonimo nav .header-title-mobile .title-main {
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  // En la cabecera de visitante los dos botones con texto ocupan casi todo el ancho:
+  // por debajo de 390px el logo basta como identificación y el título se oculta.
+  @media (max-width: 389.98px) {
+    &.header-anonimo nav .header-title-mobile {
+      display: none;
+    }
+  }
+
   @media (max-width: 400px) {
     margin: 0;
 
     nav {
       .container-fluid {
         padding: 0 0.75rem;
+      }
+
+      .header-actions-mobile {
+        gap: 0.35rem;
+      }
+
+      .btn-preinscribete-mobile,
+      .btn-entrar-mobile,
+      .btn-cuenta-mobile {
+        padding: 0 0.65rem;
+        font-size: 0.78rem;
+      }
+
+      .btn-cuenta-mobile {
+        padding-right: 0.55rem;
       }
 
       .header-title-mobile {
@@ -1439,11 +1418,6 @@ header.fixed-header {
         padding: 0.8rem 0;
       }
 
-      .social-link-compact {
-        width: 32px;
-        height: 32px;
-        font-size: 0.95rem;
-      }
     }
   }
 }
@@ -1536,8 +1510,41 @@ header.fixed-header {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 1rem 0 2rem;
+  padding: 1rem 0 1rem;
 }
+
+.mobile-header-social {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 0 2rem;
+  border-top: 1px solid rgba($text-light, 0.1);
+}
+
+.mobile-header-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba($text-light, 0.2);
+  background: rgba($text-light, 0.06);
+  color: rgba($text-light, 0.85);
+  font-size: 1.15rem;
+  text-decoration: none;
+  transition: $transition-fast;
+
+  &:hover {
+    background: rgba($text-light, 0.14);
+    color: $text-light;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $text-light;
+    outline-offset: 2px;
+  }
+}
+
 
 .mobile-header-section-title {
   margin: 1rem 0 0.4rem;
