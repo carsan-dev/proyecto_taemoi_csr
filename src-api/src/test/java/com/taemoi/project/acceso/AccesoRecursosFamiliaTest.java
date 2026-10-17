@@ -58,13 +58,17 @@ class AccesoRecursosFamiliaTest {
 	@Mock
 	private PreinscripcionRepository preinscripciones;
 
+	@Mock
+	private com.taemoi.project.repositories.ProductoAlumnoRepository productosAlumno;
+
 	private AccesoRecursos acceso;
 
 	@BeforeEach
 	void escuelaDeLaSesion() {
 		TenantContext.set(1L);
 		acceso = new AccesoRecursos(new AlcanceActual(),
-				new ConsultaAccesoRecursosJpa(accesoFamilia, usuarios, alumnos, grupos, turnos, preinscripciones));
+				new ConsultaAccesoRecursosJpa(accesoFamilia, usuarios, alumnos, grupos, turnos, preinscripciones,
+						productosAlumno));
 	}
 
 	@AfterEach

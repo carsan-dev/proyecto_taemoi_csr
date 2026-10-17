@@ -44,6 +44,11 @@ import org.springframework.stereotype.Service;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
+import com.taemoi.project.dtos.response.TesoreriaResumenSedeDTO;
+import com.taemoi.project.acceso.FiltroSedesTesoreria;
+import com.taemoi.project.acceso.GestionPorSede;
+import com.taemoi.project.entities.Sede;
+import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
@@ -84,8 +89,17 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	@Autowired
 	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 
+	/** Entrega 6-3 (D6-12): sedes de la tesorería de la petición (gestión: todas; responsable: las suyas). */
+	@Autowired
+	private GestionPorSede gestionPorSede;
+
+	@Autowired
+	private SedeRepository sedeRepository;
+
 	@Override
-	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos) {
+	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos,
+			Long sedeId) {
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(sedeId);
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
@@ -101,7 +115,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			long totalPagados = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -111,7 +127,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			long totalPendientes = valorSeguro(productoAlumnoRepository.contarMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -121,7 +139,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			double importeTotal = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -131,7 +151,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			double importePagado = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -141,7 +163,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			double importePendiente = valorSeguro(productoAlumnoRepository.sumarImporteMovimientosTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -151,7 +175,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
 			long alumnosConPendientes = valorSeguro(productoAlumnoRepository.contarAlumnosConPendientesTesoreria(
 					filtro.deporte,
 					filtro.deporteNombre,
@@ -160,8 +186,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					anoTexto,
 					filtro.mes,
 					mesNombre,
-					legado()));
-			return construirResumen(
+					legado(),
+					sedes.todas(),
+					sedes.parametro()));
+			TesoreriaResumenDTO resumen = construirResumen(
 					filtro,
 					totalMovimientos,
 					totalPagados,
@@ -170,10 +198,12 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					importePagado,
 					importePendiente,
 					alumnosConPendientes);
+			resumen.setPorSede(porSedeDesdeConsultas(filtro, soloActivosNormalizado, anoTexto, mesNombre, sedes));
+			return resumen;
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
-				obtenerMovimientosPeriodoBase(filtro, null, null, soloActivosNormalizado);
+				obtenerMovimientosPeriodoBase(filtro, null, null, soloActivosNormalizado, sedes);
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientos =
 				filtrarMovimientosPeriodoBase(movimientosBase, filtro);
 		long totalMovimientos = movimientos.size();
@@ -198,7 +228,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				.filter(Objects::nonNull)
 				.distinct()
 				.count();
-		return construirResumen(
+		TesoreriaResumenDTO resumen = construirResumen(
 				filtro,
 				totalMovimientos,
 				totalPagados,
@@ -207,6 +237,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				importePagado,
 				importePendiente,
 				alumnosConPendientes);
+		resumen.setPorSede(porSedeDesdeMovimientos(movimientos, sedes));
+		return resumen;
 	}
 
 	@Override
@@ -218,7 +250,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			String texto,
 			Boolean soloActivos,
 			Integer page,
-			Integer size) {
+			Integer size,
+			Long sedeId) {
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(sedeId);
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		int pageNumber = page == null || page < 1 ? 1 : page;
 		int pageSize = size == null ? DEFAULT_PAGE_SIZE : Math.max(1, Math.min(size, MAX_PAGE_SIZE));
@@ -232,12 +266,13 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					pagado,
 					textoNormalizado,
 					soloActivosNormalizado,
-					pageable)
+					pageable,
+					sedes)
 					.map(conversorAMovimientoDTO());
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
-				obtenerMovimientosPeriodoBase(filtro, pagado, textoNormalizado, soloActivosNormalizado);
+				obtenerMovimientosPeriodoBase(filtro, pagado, textoNormalizado, soloActivosNormalizado, sedes);
 		List<Long> idsFiltrados = filtrarMovimientosPeriodoBase(movimientosBase, filtro).stream()
 				.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getId)
 				.collect(Collectors.toList());
@@ -291,7 +326,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			String deporte,
 			Boolean pagado,
 			String texto,
-			Boolean soloActivos) {
+			Boolean soloActivos,
+			Long sedeId) {
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(sedeId);
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
 		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
@@ -299,7 +336,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro,
 				pagado,
 				textoNormalizado,
-				soloActivosNormalizado).stream()
+				soloActivosNormalizado,
+				sedes).stream()
 				.map(conversorAMovimientoDTO())
 				.collect(Collectors.toList());
 
@@ -329,7 +367,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			String deporte,
 			Boolean pagado,
 			String texto,
-			Boolean soloActivos) {
+			Boolean soloActivos,
+			Long sedeId) {
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(sedeId);
 		FiltroTesoreria filtro = construirFiltro(mes, ano, deporte);
 		String textoNormalizado = normalizarTextoBusqueda(texto);
 		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
@@ -337,7 +377,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro,
 				pagado,
 				textoNormalizado,
-				soloActivosNormalizado).stream()
+				soloActivosNormalizado,
+				sedes).stream()
 				.map(conversorAMovimientoDTO())
 				.collect(Collectors.toList());
 		String html = generarHtmlInformeTesoreria(movimientos, filtro, pagado);
@@ -356,6 +397,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	@Override
 	public byte[] generarCertificadoCobrosAlumno(Long alumnoId, Integer ano) {
 		validarCertificadoCobros(alumnoId, ano);
+		// D6-3: el responsable, solo de alumnos de su sede principal. El certificado es del alumno: todos sus cobros.
+		gestionPorSede.exigirAlumnosConSedePrincipalPropia(List.of(alumnoId));
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado: " + alumnoId));
 		CertificadoCobrosData certificado = construirCertificadoCobros(alumno, ano);
@@ -370,6 +413,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		if (ano == null || ano < 1900 || ano > 2200) {
 			throw new IllegalArgumentException("El año no es válido.");
 		}
+		gestionPorSede.exigirAlumnosConSedePrincipalPropia(alumnoIds);
 
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 				ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream)) {
@@ -400,7 +444,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 	private CertificadoCobrosData construirCertificadoCobros(Alumno alumno, Integer ano) {
 		FiltroTesoreria filtro = construirFiltro(null, ano, "TODOS");
-		List<ProductoAlumno> movimientos = obtenerMovimientosFiltrados(filtro, true, null, false).stream()
+		List<ProductoAlumno> movimientos = obtenerMovimientosFiltrados(filtro, true, null, false,
+				FiltroSedesTesoreria.TODAS).stream()
 				.filter(this::esConceptoCertificable)
 				.filter(pa -> Objects.equals(obtenerAlumnoId(pa), alumno.getId()))
 				.collect(Collectors.toList());
@@ -625,8 +670,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro,
 			Boolean pagado,
 			String texto,
-			Boolean soloActivos) {
-		List<ProductoAlumno> movimientosBase = obtenerMovimientosFiltradosBase(filtro, pagado, texto, soloActivos);
+			Boolean soloActivos,
+			FiltroSedesTesoreria sedes) {
+		List<ProductoAlumno> movimientosBase = obtenerMovimientosFiltradosBase(filtro, pagado, texto, soloActivos,
+				sedes);
 		if (!filtro.tieneFiltroPeriodo()) {
 			return movimientosBase;
 		}
@@ -640,7 +687,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro,
 			Boolean pagado,
 			String texto,
-			Boolean soloActivos) {
+			Boolean soloActivos,
+			FiltroSedesTesoreria sedes) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
 
@@ -654,7 +702,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				anoTexto,
 				filtro.mes,
 				mesNombre,
-					legado());
+					legado(),
+				sedes.todas(),
+				sedes.parametro());
 	}
 
 	private List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> filtrarMovimientosPeriodoBase(
@@ -673,7 +723,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			FiltroTesoreria filtro,
 			Boolean pagado,
 			String texto,
-			Boolean soloActivos) {
+			Boolean soloActivos,
+			FiltroSedesTesoreria sedes) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
 
@@ -687,7 +738,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				anoTexto,
 				filtro.mes,
 				mesNombre,
-					legado());
+					legado(),
+				sedes.todas(),
+				sedes.parametro());
 	}
 
 	private Page<ProductoAlumno> obtenerPaginaMovimientosFiltrados(
@@ -695,7 +748,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			Boolean pagado,
 			String texto,
 			Boolean soloActivos,
-			Pageable pageable) {
+			Pageable pageable,
+			FiltroSedesTesoreria sedes) {
 		String anoTexto = obtenerAnoTexto(filtro.ano);
 		String mesNombre = obtenerMesNombre(filtro.mes);
 
@@ -710,7 +764,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				filtro.mes,
 				mesNombre,
 				pageable,
-					legado());
+					legado(),
+				sedes.todas(),
+				sedes.parametro());
 	}
 
 	private List<ProductoAlumno> obtenerMovimientosPaginaPorIds(List<Long> idsOrdenados) {
@@ -727,6 +783,101 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			}
 		}
 		return ordenados;
+	}
+
+	/**
+	 * Entrega 6-3 (D6-12), resumen sin filtro de período: los mismos contadores y sumas agrupados por la sede del
+	 * cargo (dos consultas con el mismo {@code WHERE} que las de los totales).
+	 */
+	private List<TesoreriaResumenSedeDTO> porSedeDesdeConsultas(FiltroTesoreria filtro, Boolean soloActivos,
+			String anoTexto, String mesNombre, FiltroSedesTesoreria sedes) {
+		Map<Long, TesoreriaResumenSedeDTO> filas = new HashMap<>();
+		for (ProductoAlumnoRepository.TesoreriaResumenPorSedeProjection fila : productoAlumnoRepository
+				.resumirMovimientosTesoreriaPorSede(filtro.deporte, filtro.deporteNombre, null, soloActivos,
+						filtro.ano, anoTexto, filtro.mes, mesNombre, legado(), sedes.todas(), sedes.parametro())) {
+			TesoreriaResumenSedeDTO dto = filaVacia(fila.getSedeId());
+			dto.setTotalMovimientos(valorSeguro(fila.getTotalMovimientos()));
+			dto.setTotalPagados(valorSeguro(fila.getTotalPagados()));
+			dto.setTotalPendientes(valorSeguro(fila.getTotalPendientes()));
+			dto.setImporteTotal(valorSeguro(fila.getImporteTotal()));
+			dto.setImportePagado(valorSeguro(fila.getImportePagado()));
+			dto.setImportePendiente(valorSeguro(fila.getImportePendiente()));
+			filas.put(fila.getSedeId(), dto);
+		}
+		for (ProductoAlumnoRepository.TesoreriaAlumnosPendientesPorSedeProjection fila : productoAlumnoRepository
+				.contarAlumnosConPendientesTesoreriaPorSede(filtro.deporte, filtro.deporteNombre, soloActivos,
+						filtro.ano, anoTexto, filtro.mes, mesNombre, legado(), sedes.todas(), sedes.parametro())) {
+			filas.computeIfAbsent(fila.getSedeId(), this::filaVacia)
+					.setAlumnosConPendientes(valorSeguro(fila.getAlumnosConPendientes()));
+		}
+		return ordenarPorSede(filas, sedes);
+	}
+
+	/** Entrega 6-3 (D6-12), resumen con filtro de período: los mismos movimientos del total, agrupados por sede. */
+	private List<TesoreriaResumenSedeDTO> porSedeDesdeMovimientos(
+			List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientos, FiltroSedesTesoreria sedes) {
+		Map<Long, List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection>> porSede = new HashMap<>();
+		for (ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection movimiento : movimientos) {
+			porSede.computeIfAbsent(movimiento.getSedeId(), k -> new ArrayList<>()).add(movimiento);
+		}
+		Map<Long, TesoreriaResumenSedeDTO> filas = new HashMap<>();
+		porSede.forEach((sedeId, deLaSede) -> {
+			TesoreriaResumenSedeDTO dto = filaVacia(sedeId);
+			long pagados = deLaSede.stream().filter(pa -> Boolean.TRUE.equals(pa.getPagado())).count();
+			dto.setTotalMovimientos((long) deLaSede.size());
+			dto.setTotalPagados(pagados);
+			dto.setTotalPendientes(deLaSede.size() - pagados);
+			dto.setImporteTotal(deLaSede.stream().mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+			dto.setImportePagado(deLaSede.stream().filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
+					.mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+			dto.setImportePendiente(deLaSede.stream().filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
+					.mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+			dto.setAlumnosConPendientes(deLaSede.stream().filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
+					.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getAlumnoId).filter(Objects::nonNull)
+					.distinct().count());
+			filas.put(sedeId, dto);
+		});
+		return ordenarPorSede(filas, sedes);
+	}
+
+	/**
+	 * Una fila por cada sede del filtro (gestión sin filtro: todas las de la escuela), aunque no tenga movimientos, por
+	 * id; después la fila «Sin sede» (solo la gestión sin filtro), si tiene movimientos.
+	 */
+	private List<TesoreriaResumenSedeDTO> ordenarPorSede(Map<Long, TesoreriaResumenSedeDTO> filas,
+			FiltroSedesTesoreria sedes) {
+		List<TesoreriaResumenSedeDTO> resultado = new ArrayList<>();
+		java.util.Set<Long> incluidas = new java.util.HashSet<>();
+		for (Sede sede : sedeRepository.findAllByOrderByIdAsc()) {
+			if (!sedes.incluye(sede.getId())) {
+				continue;
+			}
+			TesoreriaResumenSedeDTO fila = filas.getOrDefault(sede.getId(), filaVacia(sede.getId()));
+			fila.setNombre(sede.getNombre());
+			resultado.add(fila);
+			incluidas.add(sede.getId());
+		}
+		filas.keySet().stream().filter(Objects::nonNull).filter(id -> !incluidas.contains(id)).sorted()
+				.forEach(id -> resultado.add(filas.get(id)));
+		TesoreriaResumenSedeDTO sinSede = filas.get(null);
+		if (sinSede != null && sinSede.getTotalMovimientos() > 0) {
+			sinSede.setNombre("Sin sede");
+			resultado.add(sinSede);
+		}
+		return resultado;
+	}
+
+	private TesoreriaResumenSedeDTO filaVacia(Long sedeId) {
+		TesoreriaResumenSedeDTO fila = new TesoreriaResumenSedeDTO();
+		fila.setSedeId(sedeId);
+		fila.setTotalMovimientos(0L);
+		fila.setTotalPagados(0L);
+		fila.setTotalPendientes(0L);
+		fila.setImporteTotal(0.0);
+		fila.setImportePagado(0.0);
+		fila.setImportePendiente(0.0);
+		fila.setAlumnosConPendientes(0L);
+		return fila;
 	}
 
 	private TesoreriaResumenDTO construirResumen(
@@ -927,6 +1078,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		dto.setFechaPago(productoAlumno.getFechaPago());
 		dto.setPrecio(productoAlumno.getPrecio() != null ? productoAlumno.getPrecio() : 0.0);
 		dto.setNotas(productoAlumno.getNotas());
+		dto.setSedeId(productoAlumno.getSedeId());
 		return dto;
 	}
 

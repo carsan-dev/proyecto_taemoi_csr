@@ -67,6 +67,10 @@ class ProductoAlumnoServiceImplTest {
 	@Mock
 	private AlumnoDeporteService alumnoDeporteService;
 
+	/** Entrega 6-3: sin sesión de responsable ni sedes inactivas (los valores por defecto del simulado). */
+	@Mock
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
@@ -159,6 +163,45 @@ class ProductoAlumnoServiceImplTest {
 		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
 		verify(productoAlumnoRepository).save(captor.capture());
 		assertNull(captor.getValue().getAlumnoDeporte());
+	}
+
+	/** D6-17 y D6-23 (entrega 6-3): la masiva salta a los alumnos de sedes inactivas y dice cuántos. */
+	@Test
+	void mensualidadesGenerales_saltaAlumnosDeSedesInactivasYLosCuenta() {
+		Producto mensualidad = new Producto();
+		mensualidad.setId(30L);
+		mensualidad.setConcepto("MENSUALIDAD");
+		when(productoRepository.findFirstByConcepto("MENSUALIDAD")).thenReturn(Optional.of(mensualidad));
+		when(productoAlumnoRepository.findAll()).thenReturn(List.of());
+		AlumnoDeporte activa = inscripcionEnSede(1L, 1L);
+		AlumnoDeporte inactiva = inscripcionEnSede(2L, 9L);
+		when(alumnoDeporteRepository.findAll()).thenReturn(List.of(activa, inactiva));
+
+		// Todas las sedes activas (Moiskimdo): se generan las dos y no se omite nadie.
+		when(gestionPorSede.sedesInactivas()).thenReturn(java.util.Set.of());
+		assertEquals(0, productoAlumnoService.cargarMensualidadesGenerales("2026-05", null));
+		verify(productoAlumnoRepository, times(2)).save(any());
+
+		// Sede 9 inactiva: solo la de la sede activa; un alumno omitido.
+		org.mockito.Mockito.clearInvocations(productoAlumnoRepository);
+		when(productoAlumnoRepository.findAll()).thenReturn(List.of());
+		when(gestionPorSede.sedesInactivas()).thenReturn(java.util.Set.of(9L));
+		assertEquals(1, productoAlumnoService.cargarMensualidadesGenerales("2026-06", null));
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		assertEquals(1L, captor.getValue().getAlumno().getId());
+	}
+
+	private static AlumnoDeporte inscripcionEnSede(long alumnoId, long sede) {
+		Alumno alumno = new Alumno();
+		alumno.setId(alumnoId);
+		alumno.setSedePrincipalId(sede);
+		AlumnoDeporte ad = new AlumnoDeporte();
+		ad.setAlumno(alumno);
+		ad.setActivo(true);
+		ad.setCuantiaTarifa(30.0);
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(Deporte.TAEKWONDO.name()));
+		return ad;
 	}
 
 	@AfterEach

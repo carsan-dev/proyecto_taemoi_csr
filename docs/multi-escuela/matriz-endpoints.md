@@ -63,6 +63,26 @@ una ficha de su sede principal y nunca cambia el email de una ficha con cuenta (
 turnos de otras sedes; los candidatos (`alumnosCoincidentes`) son solo los que puede vincular (su sede principal). D6-7
 (todos los turnos de la misma sede) se aplica al alta pública y a `PUT …/turnos` para todos los roles.
 
+Entrega 6-3 (tesorería por sede, §3.4, D4, D6-3, D6-9 a D6-13, D6-17): 39 casillas nuevas, todas en la columna
+RESPONSABLE_SEDE (las otras seis no cambian: `diff` vacío de las columnas 1-7 y 9).
+- `ALCANCE` (14): `@acceso.alumnoEnSede(#alumnoId,'EDITAR')` (sede principal, D6-3) en `GET/HEAD
+  /api/productos-alumno/alumno/{alumnoId}` y en los cargos sueltos (`POST …/alumno/{alumnoId}/producto/{productoId}`
+  y `/deporte/{deporte}`, `…/{alumnoId}/reservar-plaza`, `-deporte`, `…/{alumnoId}/renovar-licencia`,
+  `…/mensualidades/individual`, `-deporte` y `…/licencias/individual`, con `alumnoId` como parámetro);
+  `@acceso.productoAlumnoEnSede(#id,'EDITAR')` (sede del cargo, D6-9) en `PUT/DELETE /api/productos-alumno/{id}`;
+  `@acceso.alumnoEnSede(#id,'EDITAR')` en `PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa` y `cuantia-tarifa`.
+- `PERMITE` declarado (25): `GET/HEAD /api/tesoreria/resumen`, `/movimientos`, `/export/csv`, `/export/pdf` (el
+  servicio filtra por la sede del cargo; `sedeId` de otra sede → 403) y `/anios-disponibles` (solo años);
+  `GET/HEAD /api/productos`, `/todos`, `/{id}` y `/api/catalogo` (catálogo común en lectura, con tarifas, D6-11);
+  `GET/HEAD /api/informes/deudas`, `/deudas/csv` (deudas de sus sedes) y `/listado-mensualidad-mensual` (alumnos de su
+  sede principal), D6-13; `POST /api/tesoreria/certificados-cobros` (cada alumno de su sede principal, 403 si no).
+- Siguen en `DENIEGA`: las generaciones masivas (`mensualidades/general`, `/deporte`, `/multi-deporte`,
+  `licencias/general`, D6-10), crear, editar y borrar productos del catálogo y el resto de `/api/informes/**`.
+En el servicio, además: revertir un cobro sigue siendo solo de `ROLE_ADMIN`; el responsable no borra un cargo cobrado
+(403, D6-22) y en uno cobrado solo cambia las notas (403, D6-20); en una sede inactiva no se crean cargos (400, todos
+los roles) y los existentes se cobran (D6-17); las masivas saltan a esos alumnos e informan de cuántos (D6-23);
+ninguna ruta de tesorería cambia emails de cuentas.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

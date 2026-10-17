@@ -263,8 +263,25 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		String alumnos = "integracion.ResponsableSedeAlumnosIntegrationTest#";
 		String grupos = "integracion.ResponsableSedeGruposIntegrationTest#";
 		String preinscripciones = "integracion.ResponsableSedePreinscripcionesConvocatoriasIntegrationTest#";
+		String tesoreria = "integracion.ResponsableSedeTesoreriaIntegrationTest#";
 		Map<String, String> m = new TreeMap<>();
 		for (String metodo : List.of("GET", "HEAD")) {
+			// 6-3: tesorería de sus sedes (por la sede del cargo, D6-9/D6-12); catálogo común en lectura (D6-11);
+			// informes de deudas y listado mensual de sus sedes (D6-13). Los años disponibles no exponen datos.
+			m.put(metodo + " /api/tesoreria/resumen", tesoreria + "resumen_soloSusSedes_yGestionConDesglosePorSede");
+			m.put(metodo + " /api/tesoreria/movimientos", tesoreria + "movimientos_soloSusSedes");
+			m.put(metodo + " /api/tesoreria/export/csv", tesoreria + "exportaciones_soloSusSedes");
+			m.put(metodo + " /api/tesoreria/export/pdf", tesoreria + "exportaciones_soloSusSedes");
+			m.put(metodo + " /api/tesoreria/anios-disponibles", tesoreria + "exportaciones_soloSusSedes");
+			m.put(metodo + " /api/productos", tesoreria + "catalogo_leeConTarifasSinEditar");
+			m.put(metodo + " /api/productos/todos", tesoreria + "catalogo_leeConTarifasSinEditar");
+			m.put(metodo + " /api/productos/{id}", tesoreria + "catalogo_leeConTarifasSinEditar");
+			m.put(metodo + " /api/catalogo", tesoreria + "catalogo_leeConTarifasSinEditar");
+			m.put(metodo + " /api/informes/deudas", tesoreria + "informes_deudasYListadoMensual_soloSusSedes_restoDenegado");
+			m.put(metodo + " /api/informes/deudas/csv",
+					tesoreria + "informes_deudasYListadoMensual_soloSusSedes_restoDenegado");
+			m.put(metodo + " /api/informes/listado-mensualidad-mensual",
+					tesoreria + "informes_deudasYListadoMensual_soloSusSedes_restoDenegado");
 			// 6-2: listado de preinscripciones por el grupo; convocatorias comunes (D6-8), sus alumnos por D9.
 			m.put(metodo + " /api/preinscripciones", preinscripciones + "preinscripciones_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/convocatorias", preinscripciones + "convocatorias_listaYDetalleComunes");
@@ -287,6 +304,7 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		m.put("POST /api/alumnos/crear", alumnos + "alta_sedePrincipalObligatoriaYSuya");
 		m.put("POST /api/grupos", grupos + "grupos_altaEnSuSede");
 		m.put("POST /api/turnos/crear-asignando-grupo", grupos + "turnos_altaConGrupoDeSuSede");
+		m.put("POST /api/tesoreria/certificados-cobros", tesoreria + "certificados_soloAlumnosDeSuSedePrincipal");
 		return Map.copyOf(m);
 	}
 

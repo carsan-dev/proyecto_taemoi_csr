@@ -2073,6 +2073,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
+		// D6-17 (entrega 6-3): apuntarle crea el cargo del examen en su sede principal; si está inactiva, 400.
+		gestionPorSede.exigirSedeActiva(alumno.getSedePrincipalId());
 
 		// Find the AlumnoDeporte for the sport of the convocatoria
 		AlumnoDeporte alumnoDeporte = alumno.getDeportes().stream()
@@ -2162,6 +2164,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 		AlumnoDeporte alumnoDeporte = alumnoDeporteRepository.findByAlumnoIdAndDeporte(alumnoId, deporte)
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
+		// D6-17 (entrega 6-3): el pase crea un cargo en su sede principal; si está inactiva, 400.
+		gestionPorSede.exigirSedeActiva(alumno.getSedePrincipalId());
 
 		// Validar que el deporte admite grados (disciplina sin sistema de grados)
 		if (!progresionGrados.tieneProgresion(deporte == null ? null : deporte)) {

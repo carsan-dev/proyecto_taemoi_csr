@@ -14,6 +14,20 @@ public class ProductoAlumnoDTO {
 	private Date fechaPago;
 	private String notas;
 	private String motivoCambio;
+	/**
+	 * Entrega 6-3 (D6-9), aditivo y solo de salida: sede del cargo, fijada al crearlo. Se ignora si llega en una
+	 * petición (la sede no se elige ni se cambia).
+	 */
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private Long sedeId;
+
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
+	}
 
 	public Long getId() {
 		return id;

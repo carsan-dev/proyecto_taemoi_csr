@@ -4,12 +4,14 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -49,6 +51,33 @@ public class ProductoAlumno extends EntidadOrganizacion {
 	private Date fechaPago;
 
 	private String notas;
+
+	/**
+	 * Sede a la que se imputa el cargo (V31_3, entrega 6-3, D6-9): la sede principal del alumno AL CREARLO. Se fija
+	 * en {@link #fijarSedeAlCrear()} (cubre todos los puntos que crean cargos) y nunca cambia ({@code updatable =
+	 * false}): cambiar al alumno de sede no mueve sus cargos antiguos. NULL si el alumno no tiene sede principal (solo
+	 * la gestión lo ve, en «Sin sede»). Sin consultas: en una escuela de una sola sede todo alumno tiene sede principal
+	 * (alta 6-1, finalización 6-2 y V31_2), y los postchecks de V31_2 y V31_3 lo vigilan. Fuera del JSON de la
+	 * entidad; los DTO la exponen como {@code sedeId}.
+	 */
+	@JsonIgnore
+	@Column(name = "sede_id", updatable = false)
+	private Long sedeId;
+
+	/**
+	 * Entrega 6-3 (D6-9): si nadie fijó la sede, la sede principal del alumno del cargo en este momento. El alumno se
+	 * resuelve como en la tesorería: {@code COALESCE(alumno, alumnoDeporte.alumno)}. Sin acceso a la base de datos.
+	 */
+	@PrePersist
+	void fijarSedeAlCrear() {
+		if (sedeId != null) {
+			return;
+		}
+		Alumno delCargo = alumno != null ? alumno : (alumnoDeporte != null ? alumnoDeporte.getAlumno() : null);
+		if (delCargo != null) {
+			sedeId = delCargo.getSedePrincipalId();
+		}
+	}
 
 	public Long getId() {
 		return id;
@@ -128,6 +157,16 @@ public class ProductoAlumno extends EntidadOrganizacion {
 
 	public void setNotas(String notas) {
 		this.notas = notas;
+	}
+
+	@JsonIgnore
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	/** Solo antes de guardarlo por primera vez (la columna no se actualiza). */
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
 	}
 
 	public AlumnoDeporte getAlumnoDeporte() {

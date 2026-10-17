@@ -24,6 +24,12 @@ import com.taemoi.project.services.TesoreriaService;
 
 import jakarta.validation.Valid;
 
+/**
+ * Tesorería. Entrega 6-3 (D4, D6-12, entrega6-plan.md §3.4): abierta al responsable de sede, que solo ve los cargos de
+ * sus sedes (filtro en el servicio, por la sede del cargo). {@code sedeId} (opcional) filtra por una sede: la gestión,
+ * cualquiera de la escuela (otra → 400); el responsable, una de las suyas (otra → 403). Sin {@code sedeId} la gestión ve
+ * lo de siempre. Certificados: el responsable, solo de alumnos de su sede principal (D6-3).
+ */
 @RestController
 @RequestMapping("/api/tesoreria")
 @Validated
@@ -33,14 +39,15 @@ public class TesoreriaController {
 	private TesoreriaService tesoreriaService;
 
 	@GetMapping("/resumen")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> obtenerResumen(
 			@RequestParam(required = false) Integer mes,
 			@RequestParam(required = false) Integer ano,
 			@RequestParam(required = false) String deporte,
-			@RequestParam(required = false) Boolean soloActivos) {
+			@RequestParam(required = false) Boolean soloActivos,
+			@RequestParam(required = false) Long sedeId) {
 		try {
-			TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(mes, ano, deporte, soloActivos);
+			TesoreriaResumenDTO resumen = tesoreriaService.obtenerResumen(mes, ano, deporte, soloActivos, sedeId);
 			return ResponseEntity.ok(resumen);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
@@ -48,7 +55,7 @@ public class TesoreriaController {
 	}
 
 	@GetMapping("/movimientos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> obtenerMovimientos(
 			@RequestParam(required = false) Integer mes,
 			@RequestParam(required = false) Integer ano,
@@ -57,7 +64,8 @@ public class TesoreriaController {
 			@RequestParam(required = false) String texto,
 			@RequestParam(required = false) Boolean soloActivos,
 			@RequestParam(defaultValue = "1") Integer page,
-			@RequestParam(defaultValue = "25") Integer size) {
+			@RequestParam(defaultValue = "25") Integer size,
+			@RequestParam(required = false) Long sedeId) {
 		try {
 			Page<TesoreriaMovimientoDTO> movimientos = tesoreriaService.obtenerMovimientos(
 					mes,
@@ -67,7 +75,8 @@ public class TesoreriaController {
 					texto,
 					soloActivos,
 					page,
-					size);
+					size,
+					sedeId);
 			return ResponseEntity.ok(movimientos);
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
@@ -75,22 +84,24 @@ public class TesoreriaController {
 	}
 
 	@GetMapping("/anios-disponibles")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<Integer>> obtenerAniosDisponibles() {
 		return ResponseEntity.ok(tesoreriaService.obtenerAniosDisponibles());
 	}
 
 	@GetMapping("/export/csv")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> exportarCSV(
 			@RequestParam(required = false) Integer mes,
 			@RequestParam(required = false) Integer ano,
 			@RequestParam(required = false) String deporte,
 			@RequestParam(required = false) Boolean pagado,
 			@RequestParam(required = false) String texto,
-			@RequestParam(required = false) Boolean soloActivos) {
+			@RequestParam(required = false) Boolean soloActivos,
+			@RequestParam(required = false) Long sedeId) {
 		try {
-			byte[] csvBytes = tesoreriaService.exportarMovimientosCSV(mes, ano, deporte, pagado, texto, soloActivos);
+			byte[] csvBytes = tesoreriaService.exportarMovimientosCSV(mes, ano, deporte, pagado, texto, soloActivos,
+					sedeId);
 			String filename = construirNombreArchivo("csv", mes, ano, deporte, pagado);
 			return ResponseEntity.ok()
 					.contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
@@ -103,16 +114,18 @@ public class TesoreriaController {
 	}
 
 	@GetMapping("/export/pdf")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> exportarPDF(
 			@RequestParam(required = false) Integer mes,
 			@RequestParam(required = false) Integer ano,
 			@RequestParam(required = false) String deporte,
 			@RequestParam(required = false) Boolean pagado,
 			@RequestParam(required = false) String texto,
-			@RequestParam(required = false) Boolean soloActivos) {
+			@RequestParam(required = false) Boolean soloActivos,
+			@RequestParam(required = false) Long sedeId) {
 		try {
-			byte[] pdfBytes = tesoreriaService.exportarMovimientosPDF(mes, ano, deporte, pagado, texto, soloActivos);
+			byte[] pdfBytes = tesoreriaService.exportarMovimientosPDF(mes, ano, deporte, pagado, texto, soloActivos,
+					sedeId);
 			String filename = construirNombreArchivo("pdf", mes, ano, deporte, pagado);
 			return ResponseEntity.ok()
 					.contentType(MediaType.APPLICATION_PDF)
@@ -125,7 +138,7 @@ public class TesoreriaController {
 	}
 
 	@PostMapping("/certificados-cobros")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> generarCertificadosCobros(@Valid @RequestBody CertificadosCobrosRequest request) {
 		try {
 			List<Long> alumnoIds = request.getAlumnoIds().stream()

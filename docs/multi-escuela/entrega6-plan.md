@@ -446,6 +446,34 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
   una ficha de otra sede, la respuesta es 400 («Ya existe una ficha con el DNI/NIE de la preinscripción.») y la
   solicitud queda pendiente para la gestión: el responsable no ve esa ficha como candidata (solo las de su sede
   principal, D6-3) ni puede vincularla.
+- D6-20 (de la revisión de la 6-3): en un cargo YA COBRADO el responsable solo puede cambiar las notas; precio,
+  cantidad, concepto, fechas o deshacer el pago → 403 (cualquier campo que llegue con un valor distinto del guardado;
+  reenviar el cargo entero con otras notas vale). La gestión, igual que antes. Un cargo sin `alumno_id` (solo
+  inscripción) da 400 al responsable al editarlo o, si da derecho a examen, al borrarlo: el código de cobro de siempre
+  no admite esos cargos (para la gestión, sin cambios; ver el informe de la 6-3).
+- D6-21: los cargos los cobra y borra la sede DEL CARGO (D6-9; tras un cambio de sede, la sede antigua cobra los
+  cargos antiguos aunque ya no vea la ficha); ver los cargos de un alumno, crearle cargos sueltos, cambiar su tarifa o
+  cuantía y pedir su certificado, por su SEDE PRINCIPAL (D6-3). La lista de cargos de un alumno solo enseña los de sus
+  sedes.
+- D6-22: el responsable no borra cargos cobrados (403; equivale a revertir el cobro, que solo hace `ROLE_ADMIN`).
+- D6-23: las generaciones masivas (solo gestión) se saltan a los alumnos de sedes inactivas (D6-17) sin detenerse, y
+  la respuesta añade `alumnosOmitidosSedeInactiva` (alumnos distintos saltados). En Moiskimdo es 0 y el resto de la
+  respuesta no cambia.
+- D6-24: el certificado de cobros de un alumno (de su sede principal) incluye todos sus cobros, de cualquier sede.
+- D6-25: el informe de deudas del responsable va por la sede del cargo; el listado de mensualidad mensual, por la sede
+  principal actual del alumno.
+- D6-26: la exportación CSV/PDF de movimientos de tesorería (`/api/tesoreria/export/*`) se abre al responsable
+  filtrada por sus sedes: es parte de la tesorería (D4), no un informe de D6-13. Mismo formato que para la gestión.
+- Nota de la 6-3 sobre el resumen: en `porSede`, `alumnosConPendientes` de cada fila cuenta alumnos distintos de esa
+  sede; un alumno con pendientes en dos sedes cuenta en las dos, así que la suma de las filas puede superar el total.
+  La interfaz NO debe sumarlo (los demás campos de las filas sí suman el total).
+- La sede de un cargo nuevo es la sede principal del alumno al crearlo (`ProductoAlumno @PrePersist`, sin consultas
+  a la base de datos); sin sede principal, el cargo queda sin sede («Sin sede», solo gestión). Riesgo vigilado: en
+  una escuela de UNA sola sede todo alumno tiene sede principal (alta, 6-1; finalización de preinscripción, 6-2; y el
+  relleno de V31_2), así que no debería haber cargos sin sede; si apareciera un alumno sin sede principal, sus cargos
+  nuevos quedarían sin sede y lo detectan `postcheck-v31_2.sql` (`alumnos_sin_sede_escuelas_una_sede`) y
+  `postcheck-v31_3.sql` (`cargos_sin_sede_escuelas_una_sede`). Se corrige asignando la sede principal y repitiendo
+  el relleno de V31_3 (idempotente).
 
 | # | Decisión | Opciones (recomendada primero) | Por qué | Impacto en Moiskimdo |
 |---|---|---|---|---|
@@ -461,7 +489,7 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
 | D6-10 | Generación **masiva** de mensualidades y licencias | **A.** Solo propietario y gestor (tarifa común, una sola generación al mes); el responsable genera las individuales y cobra. B. El responsable genera «las de mi sede». | Evita generaciones solapadas y meses generados a medias por sede | Ninguno |
 | D6-11 | Catálogo de productos | **A.** Común a la escuela; el responsable lo lee (con tarifas) y no lo edita. B. Productos por sede (`producto.sede_id` NULL = común; migración). | Sierra Sur tiene tarifas comunes; B se puede añadir después sin romper A | `/api/catalogo` sin cambios para gestión |
 | D6-12 | Totales | **A.** Propietario y gestor ven el resumen con desglose por sede y un filtro opcional por sede; con una sola sede, la interfaz no muestra el desglose (E9). El responsable ve solo sus sedes. B. Sin desglose en el backend hasta la E9. | A deja la API lista; el desglose es aditivo | Ninguno visible (una fila «Umbrete» que la pantalla no pinta) |
-| D6-13 | Informes PDF y CSV para el responsable | **A.** Abrir solo deudas (PDF y CSV) y el listado de mensualidad mensual, filtrados por sede; el resto sigue de gestión hasta que se pida. B. Abrirlos todos, filtrados. | Cada informe tiene su propia consulta y se filtra uno a uno | Ninguno |
+| D6-13 | Informes PDF y CSV para el responsable | **A.** Abrir solo deudas (PDF y CSV) y el listado de mensualidad mensual, filtrados por sede; el resto sigue de gestión hasta que se pida. B. Abrirlos todos, filtrados. | Cada informe tiene su propia consulta y se filtra uno a uno. La exportación de movimientos de tesorería no es un informe de D6-13: se abre por D6-26 | Ninguno |
 | D6-14 | Tarifa por sede (una sede a 30 € desde 2027) | **A.** Fuera de la E6: PR 6-4 propia (`tarifa_sede` con fecha de inicio, solo mensualidades, V31_4) antes de generar las mensualidades de enero de 2027; mientras tanto vale la cuantía por alumno. B. Dentro de la 6-3. C. Solo cuantía manual por alumno, sin tabla. | Interactúa con las cuantías personalizadas (descuentos) y con la generación mensual; mezclarlo con la 6-3 sube el riesgo de la PR de dinero | Ninguno |
 | D6-15 | Puerta de entrada de una cuenta que solo es responsable de sede | **A.** Sigue cerrada hasta la E9 (no hay pantallas); las cuentas FAMILIA + RESPONSABLE_SEDE ya entran y tendrán acceso de API a su sede. B. Abrirla en la E6 con la página mínima de D5-1 B. | Sin pantallas no aporta nada; la API se prueba con tests | Ninguno |
 

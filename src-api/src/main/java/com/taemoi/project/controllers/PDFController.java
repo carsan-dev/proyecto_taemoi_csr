@@ -158,7 +158,7 @@ public class PDFController {
 	}
 
 	@GetMapping("/deudas")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<byte[]> generarInformeDeudas(
 			@RequestParam(defaultValue = "true") boolean soloActivos) {
 		byte[] pdfBytes = pdfService.generarInformeDeudas(soloActivos);
@@ -170,7 +170,7 @@ public class PDFController {
 	}
 
 	@GetMapping("/deudas/csv")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<byte[]> generarInformeDeudasCSV(
 			@RequestParam(defaultValue = "true") boolean soloActivos) {
 		byte[] csvBytes = pdfService.generarInformeDeudasCSV(soloActivos);
@@ -248,7 +248,7 @@ public class PDFController {
 	}
 
 	@GetMapping("/listado-mensualidad-mensual")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<byte[]> generarListadoMensualidadMensual(
 			@RequestParam String mesAno,
 			@RequestParam(defaultValue = "true") boolean soloActivos) {

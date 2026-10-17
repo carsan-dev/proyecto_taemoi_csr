@@ -30,7 +30,9 @@ import com.taemoi.project.services.CatalogoService;
 public class CatalogoController {
 
 	private static final CacheControl CACHE = CacheControl.noCache().cachePrivate();
-	private static final Set<String> GESTION = Set.of(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString());
+	/** Ven las tarifas. Entrega 6-3 (D6-11): también el responsable de sede (catálogo común, en lectura). */
+	private static final Set<String> GESTION = Set.of(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+			Roles.ROLE_RESPONSABLE_SEDE.toString());
 
 	private final CatalogoService catalogo;
 
@@ -38,7 +40,10 @@ public class CatalogoController {
 		this.catalogo = catalogo;
 	}
 
-	/** Usuarios autenticados. Las tarifas solo para gestión (ROLE_ADMIN, ROLE_MANAGER); el resto, vacías (D14). */
+	/**
+	 * Usuarios autenticados. Las tarifas solo para gestión (ROLE_ADMIN, ROLE_MANAGER) y, desde la entrega 6-3, el
+	 * responsable de sede (D6-11); el resto, vacías (D14).
+	 */
 	@GetMapping
 	public ResponseEntity<CatalogoDTO> obtener(Authentication autenticacion) {
 		return conCabeceras(catalogo.obtener(esGestion(autenticacion)));

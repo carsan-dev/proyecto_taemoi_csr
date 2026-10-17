@@ -35,9 +35,10 @@ public class SecurityConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
 
 	/*
-	 * Entregas 6-1 y 6-2 (docs/multi-escuela/entrega6-plan.md §3.1 a §3.3): rutas abiertas al responsable de sede.
+	 * Entregas 6-1 a 6-3 (docs/multi-escuela/entrega6-plan.md §3.1 a §3.4): rutas abiertas al responsable de sede.
 	 * Reglas CONCRETAS antes de las amplias (/api/alumnos/**, /api/grupos/**, /api/turnos/**, /api/informes/**,
-	 * /api/preinscripciones/**, /api/convocatorias/**), que siguen
+	 * /api/preinscripciones/**, /api/convocatorias/**, /api/tesoreria/**, /api/productos/**,
+	 * /api/productos-alumno/**), que siguen
 	 * siendo solo de gestión: así una ruta sin @PreAuthorize bajo esos patrones no queda abierta. Cada ruta lleva
 	 * además su @PreAuthorize con @acceso (por id) o un filtro del servicio (listados, ids en el cuerpo); la matriz
 	 * de permisos lo comprueba (MatrizPermisosTest).
@@ -55,7 +56,14 @@ public class SecurityConfiguration {
 			"/api/preinscripciones/{referencia}/documento-firmado", "/api/preinscripciones/{referencia}/firma",
 			// 6-2 (D6-8): la lista y el detalle son comunes; los alumnos, el reporte y el PDF, filtrados en el servicio.
 			"/api/convocatorias", "/api/convocatorias/{id}", "/api/convocatorias/{id}/alumnos",
-			"/api/convocatorias/{id}/reporte", "/api/convocatorias/{id}/informe-pdf" };
+			"/api/convocatorias/{id}/reporte", "/api/convocatorias/{id}/informe-pdf",
+			// 6-3 (D4, D6-11 a D6-13): tesorería de sus sedes (filtrada en el servicio), cargos de sus alumnos,
+			// catálogo de productos en lectura e informes de deudas y del listado mensual.
+			"/api/tesoreria/resumen", "/api/tesoreria/movimientos", "/api/tesoreria/anios-disponibles",
+			"/api/tesoreria/export/csv", "/api/tesoreria/export/pdf",
+			"/api/productos-alumno/alumno/{alumnoId}",
+			"/api/productos", "/api/productos/todos", "/api/productos/{id}",
+			"/api/informes/deudas", "/api/informes/deudas/csv", "/api/informes/listado-mensualidad-mensual" };
 	private static final String[] RESPONSABLE_SEDE_POST = {
 			"/api/alumnos/crear", "/api/alumnos/{alumnoId}/documentos", "/api/alumnos/{alumnoId}/grupos/{grupoId}",
 			"/api/alumnos/{alumnoId}/turnos/{turnoId}", "/api/alumnos/{id}/deportes",
@@ -68,8 +76,15 @@ public class SecurityConfiguration {
 			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}",
 			"/api/preinscripciones/{referencia}/cancelar", "/api/preinscripciones/{referencia}/finalizar",
 			"/api/preinscripciones/{referencia}/reenviar", "/api/preinscripciones/{referencia}/reenviar-cambio-turnos",
-			"/api/preinscripciones/{referencia}/reenviar-finalizacion" };
-	/** Sin tipo-tarifa ni cuantia-tarifa (tesorería, entrega 6-3). */
+			"/api/preinscripciones/{referencia}/reenviar-finalizacion",
+			// 6-3: cargos sueltos de sus alumnos (D6-3) y certificados; sin las generaciones masivas (D6-10).
+			"/api/tesoreria/certificados-cobros",
+			"/api/productos-alumno/alumno/{alumnoId}/producto/{productoId}",
+			"/api/productos-alumno/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}",
+			"/api/productos-alumno/{alumnoId}/reservar-plaza", "/api/productos-alumno/{alumnoId}/reservar-plaza-deporte",
+			"/api/productos-alumno/{alumnoId}/renovar-licencia", "/api/productos-alumno/mensualidades/individual",
+			"/api/productos-alumno/mensualidades/individual-deporte", "/api/productos-alumno/licencias/individual" };
+	/** tipo-tarifa y cuantia-tarifa desde la entrega 6-3 (tesorería, D6-3: solo su sede principal). */
 	private static final String[] RESPONSABLE_SEDE_PUT = {
 			"/api/alumnos/{id}", "/api/alumnos/{id}/observaciones", "/api/alumnos/{id}/fecha-alta-inicial",
 			"/api/alumnos/{id}/baja", "/api/alumnos/{id}/alta", "/api/alumnos/{alumnoId}/salud",
@@ -92,7 +107,10 @@ public class SecurityConfiguration {
 			"/api/turnos/{turnoId}",
 			"/api/preinscripciones/{referencia}/turnos",
 			// 6-2 (D6-8): cuantía y pago del examen de sus alumnos.
-			"/api/convocatorias/alumno/{alumnoConvocatoriaId}" };
+			"/api/convocatorias/alumno/{alumnoConvocatoriaId}",
+			// 6-3: tarifa y cuantía de sus alumnos; cobrar los cargos de sus sedes.
+			"/api/alumnos/{id}/deportes/{deporte}/tipo-tarifa", "/api/alumnos/{id}/deportes/{deporte}/cuantia-tarifa",
+			"/api/productos-alumno/{id}" };
 	/** Sin DELETE /api/alumnos/{id}: el borrado definitivo es solo de gestión (D6-4). */
 	private static final String[] RESPONSABLE_SEDE_DELETE = {
 			"/api/alumnos/{id}/imagen", "/api/alumnos/{alumnoId}/documentos/{documentoId}",
@@ -101,7 +119,9 @@ public class SecurityConfiguration {
 			"/api/grupos/{id}", "/api/grupos/{grupoId}/alumnos/{alumnoId}", "/api/grupos/{grupoId}/turnos/{turnoId}",
 			"/api/turnos/{turnoId}",
 			// 6-2 (D6-8): quitar a sus alumnos de una convocatoria. Sin DELETE /api/preinscripciones/{referencia}.
-			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}" };
+			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}",
+			// 6-3: borrar un cargo de sus sedes que no esté cobrado (el servicio deniega los cobrados).
+			"/api/productos-alumno/{id}" };
 
 	/**
 	 * Inyección del filtro de JWT.
@@ -195,7 +215,7 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.POST, "/api/preinscripciones").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/public/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/preinscripciones/*/documento").permitAll()
@@ -367,6 +387,28 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/pagos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Entrega 6-3: tesorería, catálogo de productos (lectura) y cargos abiertos al responsable de sede.
+						.requestMatchers(HttpMethod.GET, tesoreria(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, tesoreria(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.GET, productos(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.GET, productosAlumno(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, productosAlumno(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, productosAlumno(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.DELETE, productosAlumno(RESPONSABLE_SEDE_DELETE))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/tesoreria/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/tesoreria/**")
@@ -411,6 +453,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Entrega 6-1d: listado de asistencia del responsable (solo los turnos de sus sedes, en el servicio).
 						.requestMatchers(HttpMethod.GET, "/api/informes/asistencia")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						// Entrega 6-3 (D6-13): deudas y listado mensual del responsable (solo sus sedes, en el servicio).
+						.requestMatchers(HttpMethod.GET, informes(RESPONSABLE_SEDE_GET))
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/informes/**")
@@ -545,6 +591,23 @@ public class SecurityConfiguration {
 
 	private static String[] convocatorias(String[] rutas) {
 		return conPrefijo(rutas, "/api/convocatorias");
+	}
+
+	private static String[] tesoreria(String[] rutas) {
+		return conPrefijo(rutas, "/api/tesoreria");
+	}
+
+	private static String[] productos(String[] rutas) {
+		return conPrefijo(rutas, "/api/productos");
+	}
+
+	private static String[] productosAlumno(String[] rutas) {
+		return conPrefijo(rutas, "/api/productos-alumno");
+	}
+
+	/** Solo las de la 6-3; la regla de /api/informes/asistencia (6-1d) va aparte, antes. */
+	private static String[] informes(String[] rutas) {
+		return conPrefijo(rutas, "/api/informes");
 	}
 
 	/** Las rutas que son {@code prefijo} o empiezan por {@code prefijo/}. */

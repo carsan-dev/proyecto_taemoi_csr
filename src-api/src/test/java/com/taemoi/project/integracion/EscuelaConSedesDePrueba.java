@@ -175,7 +175,7 @@ final class EscuelaConSedesDePrueba {
 	}
 
 	/** Cuenta FAMILIA con un alumno propio vinculado (abre la puerta de entrada de familia). */
-	private long cuentaFamilia(UsuarioRepository usuarios, String nombre) {
+	long cuentaFamilia(UsuarioRepository usuarios, String nombre) {
 		long id = cuenta(usuarios, nombre);
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'FAMILIA')", id, org);
 		long propio = alumno("E6PROPIO" + nombre.toUpperCase() + marca, null, true);

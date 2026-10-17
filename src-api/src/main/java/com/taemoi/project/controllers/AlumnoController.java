@@ -1378,7 +1378,7 @@ public class AlumnoController {
 	 * Body: { "tipoTarifa": "INFANTIL" }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/tipo-tarifa")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarTipoTarifa(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, String> params) {
 		try {
@@ -1410,7 +1410,7 @@ public class AlumnoController {
 	 * Body: { "cuantiaTarifa": 45.00 }
 	 */
 	@PutMapping("/{id}/deportes/{deporte}/cuantia-tarifa")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<?> actualizarCuantiaTarifa(@PathVariable Long id, @PathVariable String deporte,
 			@RequestBody Map<String, Object> params) {
 		try {
