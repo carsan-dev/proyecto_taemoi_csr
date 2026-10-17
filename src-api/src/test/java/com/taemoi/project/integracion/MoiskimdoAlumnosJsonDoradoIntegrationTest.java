@@ -110,16 +110,32 @@ import jakarta.servlet.http.Cookie;
  * <li>{@code edadMinAlumnos}/{@code edadMaxAlumnos} de {@code /api/turnos/dto}: se fija el reloj de
  * {@code TurnoServiceImpl} a {@code 2026-10-01 10:00 Madrid} ({@link #HOY}); con nacimientos fijos la edad no cambia
  * con el día ni con la zona de la máquina (la CI va en UTC).</li>
- * <li>Arrays que salen de un {@code Set} sin orden (hoy, orden de HashSet: cambia entre ejecuciones): se comparan
- * ordenados por su {@code id} simbólico. Son los marcados en cada caso ({@code conjuntos}). Todos los demás arrays,
- * en orden estricto.</li>
+ * <li>Orden de los arrays: <b>por defecto se comparan como multiconjunto</b> (ordenados por id simbólico y contenido,
+ * CONSERVANDO los duplicados: los 4 turnos de A05 con H2 siguen siendo 4). Solo van en orden estricto las rutas cuyo
+ * orden está garantizado por construcción, declaradas en cada caso ({@code ordenados}):
+ * <ul>
+ * <li>{@code alumnos_pagina}/{@code alumnos_pagina_inactivos} {@code $.content}: {@code Sort.by("nombre")} en
+ * {@code AlumnoController} (nombres únicos en la siembra);</li>
+ * <li>{@code alumnos_ids} {@code $}: {@code ORDER BY a.id} en {@code AlumnoRepository.buscarIdsEnOrganizacionActiva}.</li>
+ * </ul>
+ * Sin orden garantizado (ninguna colección de entidad tiene {@code @OrderBy}/{@code @OrderColumn} salvo
+ * {@code Alumno.tutores}, que no sale en el JSON; los mappers no ordenan; las consultas no llevan ORDER BY), y por eso
+ * multiconjunto: los {@code Set} {@code Alumno.grupos} ({@code alumno_grupos $}, {@code $.grupos} de
+ * {@code /api/admin}) y {@code Grupo.alumnos} ({@code alumnos} de {@code /api/grupos} y {@code /api/grupos/{id}}), orden
+ * de HashSet; y las bolsas {@code Alumno.turnos} ({@code alumno_turnos $}, {@code grupo_alumno_turnos $},
+ * {@code $.turnos} de {@code /api/admin}: orden según el plan de MySQL y los duplicados de H2; falló así en la CI),
+ * {@code Alumno.deportes} ({@code deportes} en todo alumno), {@code Turno.alumnos} ({@code alumnos} de cada turno),
+ * {@code Grupo.turnos} ({@code grupo_turnos $}), {@code Alumno.documentos}/{@code productosAlumno}/{@code convocatorias};
+ * y los listados sin ORDER BY: {@code grupoRepository.findAll} ({@code grupos $}), {@code turnoRepository.findAll}
+ * ({@code turnos $}), {@code findAllWithAlumnos} ({@code turnos_dto $}), {@code alumnoRepository.findAll(filtro)} sin
+ * {@code Sort} para la gestión ({@code alumnos_sin_paginar $}, {@code alumnos_con_deportes $}) y
+ * {@code findByAlumnoIdWithGrado} ({@code alumno_deportes $}). Un cambio de orden en ellos no se detecta (hoy no es
+ * estable); si una pieza fija un orden (D2), su ruta pasa a {@code ordenados}.</li>
  * <li>Objetos: con las claves ordenadas (el orden de campos de un objeto JSON no forma parte del contrato).</li>
  * </ul>
  * Lo que hoy es un error también queda congelado tal cual, a propósito: p. ej. {@code alumno_turnos.json} repite cada
  * turno de A05 (H2 del informe; decisión D1 al romper el ciclo EAGER), y {@code GET /api/admin/{id}} de un alumno con
- * convocatoria responde 500 ({@code admin_alumno_con_convocatoria.json} guarda solo el estado). Los arrays tipo bolsa
- * ({@code deportes}, {@code turnos}, {@code convocatorias}...) se comparan en orden estricto: su orden se ve en pantalla
- * y hoy es determinista.
+ * convocatoria responde 500 ({@code admin_alumno_con_convocatoria.json} guarda solo el estado).
  *
  * <h2>Regenerar</h2>
  * Solo tras un cambio de contrato decidido: {@code ./mvnw -o test -Dtest=MoiskimdoAlumnosJsonDoradoIntegrationTest
@@ -182,10 +198,11 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 	 * @param incremental si el límite de sentencias es sobre el incremento respecto a la petición antes de sembrar
 	 *                    (endpoints de toda la organización).
 	 * @param jsonIncremental si el JSON es un total numérico que se guarda como incremento.
-	 * @param conjuntos rutas JSON ({@code $}, {@code .campo}, {@code [*]}) de los arrays sin orden (Set).
+	 * @param ordenados rutas JSON ({@code $}, {@code .campo}, {@code [*]}) de los arrays con orden garantizado (el resto,
+	 *                  multiconjunto).
 	 */
 	record Caso(String nombre, String ruta, boolean anonimo, Filtro filtro, boolean incremental,
-			boolean jsonIncremental, int limiteSql, Set<String> conjuntos, int estado) {
+			boolean jsonIncremental, int limiteSql, Set<String> ordenados, int estado) {
 
 		@Override
 		public String toString() {
@@ -193,15 +210,15 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
-	private static Caso caso(String nombre, String ruta, int limiteSql, String... conjuntos) {
-		return new Caso(nombre, ruta, false, Filtro.NINGUNO, false, false, limiteSql, Set.of(conjuntos), 200);
+	private static Caso caso(String nombre, String ruta, int limiteSql, String... ordenados) {
+		return new Caso(nombre, ruta, false, Filtro.NINGUNO, false, false, limiteSql, Set.of(ordenados), 200);
 	}
 
 	private static Caso deLaOrganizacion(String nombre, String ruta, Filtro filtro, int limiteDelta,
-			String... conjuntos) {
+			String... ordenados) {
 		boolean anonimo = ruta.startsWith("ANON:");
 		return new Caso(nombre, anonimo ? ruta.substring(5) : ruta, anonimo, filtro, true, false, limiteDelta,
-				Set.of(conjuntos), 200);
+				Set.of(ordenados), 200);
 	}
 
 	private static Caso total(String nombre, String ruta, int limiteDelta) {
@@ -222,25 +239,25 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 				// Límites: medido hoy (a704511c) + margen (2, o ~10 % en los grandes). Δ = incremento por la siembra.
 				total("alumnos_count", "/api/alumnos/count", 2), // Δ0
 				caso("alumnos_pagina", "/api/alumnos?page=1&size=9&nombre=" + PREFIJO + "&incluirInactivos=false",
-						23), // 21
+						23, "$.content"), // 21
 				caso("alumnos_pagina_inactivos",
-						"/api/alumnos?page=2&size=9&nombre=" + PREFIJO + "&incluirInactivos=true", 25), // 23 (pág. 2: A10 inactivo)
+						"/api/alumnos?page=2&size=9&nombre=" + PREFIJO + "&incluirInactivos=true", 25, "$.content"), // 23 (pág. 2)
 				deLaOrganizacion("alumnos_sin_paginar", "/api/alumnos?incluirInactivos=false", Filtro.ALUMNOS,
 						39), // Δ35
 				deLaOrganizacion("alumnos_con_deportes", "/api/alumnos/con-deportes?incluirInactivos=false",
 						Filtro.ALUMNOS, 39), // Δ35
 				deLaOrganizacion("alumnos_ids", "/api/alumnos/ids?incluirInactivos=false", Filtro.IDS_ALUMNOS,
-						2), // Δ0
+						2, "$"), // Δ0
 				caso("alumno_ficha", "/api/alumnos/{alumno:A05}", 11), // 9
 				caso("alumno_completo", "/api/alumnos/{alumno:A05}/completo", 11), // 9
-				caso("alumno_grupos", "/api/alumnos/{alumno:A05}/grupos", 9, "$"), // 7
+				caso("alumno_grupos", "/api/alumnos/{alumno:A05}/grupos", 9), // 7
 				caso("alumno_turnos", "/api/alumnos/{alumno:A05}/turnos", 9), // 7
 				caso("alumno_deportes", "/api/alumnos/{alumno:A05}/deportes", 8), // 6
-				caso("admin_alumno_entidad", "/api/admin/{alumno:A05}", 15, "$.grupos"), // 13
-				caso("admin_alumno_con_usuario", "/api/admin/{alumno:A03}", 18, "$.grupos"), // 16
+				caso("admin_alumno_entidad", "/api/admin/{alumno:A05}", 15), // 13
+				caso("admin_alumno_con_usuario", "/api/admin/{alumno:A03}", 18), // 16
 				fallaHoy("admin_alumno_con_convocatoria", "/api/admin/{alumno:A08}", 15, 500), // 13
-				deLaOrganizacion("grupos", "/api/grupos", Filtro.GRUPOS, 5, "$[*].alumnos"), // Δ3
-				caso("grupo_ficha", "/api/grupos/{grupo:TKD-INFANTIL}", 11, "$.alumnos"), // 9
+				deLaOrganizacion("grupos", "/api/grupos", Filtro.GRUPOS, 5), // Δ3
+				caso("grupo_ficha", "/api/grupos/{grupo:TKD-INFANTIL}", 11), // 9
 				caso("grupo_turnos", "/api/grupos/{grupo:TKD-INFANTIL}/turnos", 13), // 11
 				caso("grupo_alumno_turnos", "/api/grupos/{grupo:KB-INICIACION}/alumnos/{alumno:A05}/turnos",
 						11), // 9
@@ -683,7 +700,7 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 			case GRUPOS -> filtrar(nodo, n -> esSembrado(n.get("id"), "grupo:"));
 			case TURNOS -> filtrar(nodo, n -> esSembrado(n.get("id"), "turno:"));
 		};
-		return normalizarNodo(nodo, "$", caso.conjuntos());
+		return normalizarNodo(nodo, "$", caso.ordenados());
 	}
 
 	private boolean esSembrado(JsonNode id, String tipo) {
@@ -719,7 +736,7 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 		return despues;
 	}
 
-	private JsonNode normalizarNodo(JsonNode nodo, String ruta, Set<String> conjuntos) {
+	private JsonNode normalizarNodo(JsonNode nodo, String ruta, Set<String> ordenados) {
 		if (nodo.isObject()) {
 			ObjectNode o = JsonNodeFactory.instance.objectNode();
 			List<String> campos = new ArrayList<>();
@@ -728,14 +745,14 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 			for (String campo : campos) {
 				JsonNode valor = nodo.get(campo);
 				o.set(campo, CAMPOS_DE_HOY.contains(campo) ? marcadorDeTipo(valor)
-						: normalizarNodo(valor, ruta + "." + campo, conjuntos));
+						: normalizarNodo(valor, ruta + "." + campo, ordenados));
 			}
 			return o;
 		}
 		if (nodo.isArray()) {
 			List<JsonNode> hijos = new ArrayList<>();
-			nodo.forEach(h -> hijos.add(normalizarNodo(h, ruta + "[*]", conjuntos)));
-			if (conjuntos.contains(ruta)) {
+			nodo.forEach(h -> hijos.add(normalizarNodo(h, ruta + "[*]", ordenados)));
+			if (!ordenados.contains(ruta)) { // multiconjunto: sort estable, los duplicados se conservan
 				hijos.sort(Comparator.comparing(MoiskimdoAlumnosJsonDoradoIntegrationTest::claveDeOrden));
 			}
 			ArrayNode a = JsonNodeFactory.instance.arrayNode();

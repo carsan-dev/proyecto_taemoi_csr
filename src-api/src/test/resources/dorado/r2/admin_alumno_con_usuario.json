@@ -102,8 +102,8 @@
     "recordatorioRachaEmailHabilitado" : true,
     "ultimoRecordatorioRachaReset" : [
       2026,
-      9,
-      28
+      28,
+      9
     ],
     "username" : "dorado-r2-familia-a03@example.test"
   }

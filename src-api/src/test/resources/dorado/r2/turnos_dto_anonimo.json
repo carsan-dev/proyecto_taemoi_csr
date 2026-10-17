@@ -1,47 +1,5 @@
 [
   {
-    "completo" : true,
-    "diaSemana" : "Lunes",
-    "edadMaxAlumnos" : null,
-    "edadMinAlumnos" : null,
-    "grupoId" : "grupo:TKD-INFANTIL",
-    "horaFin" : "18:00",
-    "horaInicio" : "17:00",
-    "id" : "turno:TKD-INFANTIL/Lunes/17:00",
-    "ocupacionEfectiva" : 11,
-    "rangoEdadMax" : 12,
-    "rangoEdadMin" : 6,
-    "tipoGrupo" : "Taekwondo"
-  },
-  {
-    "completo" : false,
-    "diaSemana" : "Miércoles",
-    "edadMaxAlumnos" : null,
-    "edadMinAlumnos" : null,
-    "grupoId" : "grupo:TKD-INFANTIL",
-    "horaFin" : "18:00",
-    "horaInicio" : "17:00",
-    "id" : "turno:TKD-INFANTIL/Miércoles/17:00",
-    "ocupacionEfectiva" : 5,
-    "rangoEdadMax" : 12,
-    "rangoEdadMin" : 6,
-    "tipoGrupo" : null
-  },
-  {
-    "completo" : true,
-    "diaSemana" : "Martes",
-    "edadMaxAlumnos" : 38,
-    "edadMinAlumnos" : 31,
-    "grupoId" : "grupo:TKD-ADULTOS",
-    "horaFin" : "20:00",
-    "horaInicio" : "19:00",
-    "id" : "turno:TKD-ADULTOS/Martes/19:00",
-    "ocupacionEfectiva" : 9,
-    "rangoEdadMax" : null,
-    "rangoEdadMin" : null,
-    "tipoGrupo" : null
-  },
-  {
     "completo" : false,
     "diaSemana" : "Jueves",
     "edadMaxAlumnos" : 32,
@@ -67,6 +25,48 @@
     "ocupacionEfectiva" : null,
     "rangoEdadMax" : null,
     "rangoEdadMin" : null,
+    "tipoGrupo" : null
+  },
+  {
+    "completo" : true,
+    "diaSemana" : "Martes",
+    "edadMaxAlumnos" : 38,
+    "edadMinAlumnos" : 31,
+    "grupoId" : "grupo:TKD-ADULTOS",
+    "horaFin" : "20:00",
+    "horaInicio" : "19:00",
+    "id" : "turno:TKD-ADULTOS/Martes/19:00",
+    "ocupacionEfectiva" : 9,
+    "rangoEdadMax" : null,
+    "rangoEdadMin" : null,
+    "tipoGrupo" : null
+  },
+  {
+    "completo" : true,
+    "diaSemana" : "Lunes",
+    "edadMaxAlumnos" : null,
+    "edadMinAlumnos" : null,
+    "grupoId" : "grupo:TKD-INFANTIL",
+    "horaFin" : "18:00",
+    "horaInicio" : "17:00",
+    "id" : "turno:TKD-INFANTIL/Lunes/17:00",
+    "ocupacionEfectiva" : 11,
+    "rangoEdadMax" : 12,
+    "rangoEdadMin" : 6,
+    "tipoGrupo" : "Taekwondo"
+  },
+  {
+    "completo" : false,
+    "diaSemana" : "Miércoles",
+    "edadMaxAlumnos" : null,
+    "edadMinAlumnos" : null,
+    "grupoId" : "grupo:TKD-INFANTIL",
+    "horaFin" : "18:00",
+    "horaInicio" : "17:00",
+    "id" : "turno:TKD-INFANTIL/Miércoles/17:00",
+    "ocupacionEfectiva" : 5,
+    "rangoEdadMax" : 12,
+    "rangoEdadMin" : 6,
     "tipoGrupo" : null
   }
 ]

@@ -1,15 +1,15 @@
 [
   {
     "alumnos" : null,
-    "diaSemana" : "Lunes",
-    "grupoId" : "grupo:TKD-INFANTIL",
-    "grupoNombre" : "DORADOR2 Taekwondo Infantil",
-    "horaFin" : "18:00",
-    "horaInicio" : "17:00",
-    "id" : "turno:TKD-INFANTIL/Lunes/17:00",
+    "diaSemana" : "Jueves",
+    "grupoId" : "grupo:KB-INICIACION",
+    "grupoNombre" : "DORADOR2 Kickboxing Iniciacion",
+    "horaFin" : "19:00",
+    "horaInicio" : "18:00",
+    "id" : "turno:KB-INICIACION/Jueves/18:00",
     "rangoEdadMax" : null,
     "rangoEdadMin" : null,
-    "tipoGrupo" : "Taekwondo"
+    "tipoGrupo" : null
   },
   {
     "alumnos" : null,
@@ -37,14 +37,14 @@
   },
   {
     "alumnos" : null,
-    "diaSemana" : "Jueves",
-    "grupoId" : "grupo:KB-INICIACION",
-    "grupoNombre" : "DORADOR2 Kickboxing Iniciacion",
-    "horaFin" : "19:00",
-    "horaInicio" : "18:00",
-    "id" : "turno:KB-INICIACION/Jueves/18:00",
+    "diaSemana" : "Lunes",
+    "grupoId" : "grupo:TKD-INFANTIL",
+    "grupoNombre" : "DORADOR2 Taekwondo Infantil",
+    "horaFin" : "18:00",
+    "horaInicio" : "17:00",
+    "id" : "turno:TKD-INFANTIL/Lunes/17:00",
     "rangoEdadMax" : null,
     "rangoEdadMin" : null,
-    "tipoGrupo" : null
+    "tipoGrupo" : "Taekwondo"
   }
 ]
