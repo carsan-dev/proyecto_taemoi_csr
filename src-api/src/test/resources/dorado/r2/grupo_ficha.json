@@ -1,0 +1,115 @@
+{
+  "alumnos" : [
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoH Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A01",
+      "nombre" : "DORADOR2 A01",
+      "numeroExpediente" : 7700001
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoO Sintetico",
+      "fotoAlumno" : {
+        "id" : "imagen:A02",
+        "nombre" : "foto-a02.jpg",
+        "ruta" : "target/it-files/imagenes/foto-a02.jpg",
+        "tipo" : "image/jpeg",
+        "url" : null
+      },
+      "grado" : "BLANCO",
+      "id" : "alumno:A02",
+      "nombre" : "DORADOR2 A02",
+      "numeroExpediente" : 7700002
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoV Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A03",
+      "nombre" : "DORADOR2 A03",
+      "numeroExpediente" : 7700003
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoC Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A04",
+      "nombre" : "DORADOR2 A04",
+      "numeroExpediente" : 7700004
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoJ Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A05",
+      "nombre" : "DORADOR2 A05",
+      "numeroExpediente" : 7700005
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoQ Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A06",
+      "nombre" : "DORADOR2 A06",
+      "numeroExpediente" : 7700006
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoX Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A07",
+      "nombre" : "DORADOR2 A07",
+      "numeroExpediente" : 7700007
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoE Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A08",
+      "nombre" : "DORADOR2 A08",
+      "numeroExpediente" : 7700008
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoL Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A09",
+      "nombre" : "DORADOR2 A09",
+      "numeroExpediente" : 7700009
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoZ Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A11",
+      "nombre" : "DORADOR2 A11",
+      "numeroExpediente" : 7700011
+    },
+    {
+      "activo" : true,
+      "apellidos" : "ApellidoG Sintetico",
+      "fotoAlumno" : null,
+      "grado" : "BLANCO",
+      "id" : "alumno:A12",
+      "nombre" : "DORADOR2 A12",
+      "numeroExpediente" : 7700012
+    }
+  ],
+  "deporte" : "TAEKWONDO",
+  "id" : "grupo:TKD-INFANTIL",
+  "nombre" : "DORADOR2 Taekwondo Infantil",
+  "rangoEdadMax" : 12,
+  "rangoEdadMin" : 6,
+  "sedeId" : 1
+}
