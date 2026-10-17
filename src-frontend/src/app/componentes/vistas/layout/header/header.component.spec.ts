@@ -228,4 +228,70 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(panel?.querySelectorAll('.mobile-header-social a').length).toBe(3);
     expect(panel?.querySelector('a[href="/preinscripcion"]')).not.toBeNull();
   });
+
+  it('en escritorio el visitante ve «Preinscríbete» y «Entrar», sin «Iniciar Sesión»', async () => {
+    const fixture = await renderizar('visitante');
+    const el = fixture.nativeElement as HTMLElement;
+    const escritorio = el.querySelector('.navbar-collapse');
+
+    expect(textoDe(escritorio?.querySelector('a.nav-link-join') ?? null)).toBe('Preinscríbete');
+    expect(textoDe(escritorio?.querySelector('a.btn-login') ?? null)).toBe('Entrar');
+    expect(escritorio?.querySelector('a.btn-login i.bi-person')).not.toBeNull();
+    expect(textoDe(escritorio ?? null)).not.toContain('Iniciar Sesión');
+    expect(textoDe(escritorio ?? null)).not.toContain('Únete a nosotros');
+    expect(escritorio?.querySelector('a.btn-login')?.hasAttribute('aria-label')).toBeFalse();
+  });
+
+  it('en escritorio la familia ve la pastilla «Mi cuenta» y abre el mismo menú', async () => {
+    const fixture = await renderizar('familia');
+    const el = fixture.nativeElement as HTMLElement;
+    const boton = el.querySelector<HTMLButtonElement>('.navbar-collapse .user-menu-toggle');
+
+    expect(textoDe(boton)).toBe('Mi cuenta');
+    expect(boton?.getAttribute('aria-haspopup')).toBe('menu');
+    expect(boton?.getAttribute('aria-expanded')).toBe('false');
+    expect(boton?.querySelector('i.bi-person')).not.toBeNull();
+    expect(boton?.querySelector('i.bi-chevron-down')).not.toBeNull();
+
+    boton?.click();
+    fixture.detectChanges();
+
+    expect(boton?.getAttribute('aria-expanded')).toBe('true');
+    const panel = el.querySelector('.user-desktop-menu-panel');
+    expect(textoDe(panel)).toContain('Mis Clases');
+    expect(textoDe(panel)).toContain('Cerrar sesión');
+  });
+
+  it('en escritorio solo hay una pastilla rellena (Preinscríbete) junto a las de contorno', async () => {
+    const fixture = await renderizar('visitante');
+    const el = fixture.nativeElement as HTMLElement;
+    const acciones = el.querySelectorAll('.navbar-collapse a.nav-link-join, .navbar-collapse a.btn-login');
+
+    expect(acciones.length).toBe(2);
+    expect(el.querySelectorAll('.navbar-collapse a.nav-link-join').length).toBe(1);
+    // «Entrar» y «Mi cuenta» son de contorno: no usan la clase rellena de la acción principal.
+    expect(el.querySelector('.navbar-collapse a.btn-login')?.classList.contains('nav-link-join')).toBeFalse();
+    const relleno = (e: Element | null) => e ? getComputedStyle(e).backgroundImage !== 'none' : false;
+    expect(relleno(el.querySelector('.navbar-collapse a.nav-link-join'))).toBeTrue();
+    expect(relleno(el.querySelector('.navbar-collapse a.btn-login'))).toBeFalse();
+  });
+
+  it('las redes siguen en el DOM de escritorio (se ocultan por CSS en tablet apaisada)', async () => {
+    const fixture = await renderizar('visitante');
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelectorAll('.navbar-right .nav-item-social a.social-link').length).toBe(3);
+  });
+
+  it('el título móvil tiene corte fijo «MOI\'S» / «KIM DO» con líneas indivisibles y nunca se oculta', async () => {
+    for (const rol of ['visitante', 'familia'] as const) {
+      const fixture = await renderizar(rol);
+      const titulo = (fixture.nativeElement as HTMLElement).querySelector('.header-title-mobile .title-main');
+      const lineas = Array.from(titulo?.querySelectorAll('.title-line') ?? []);
+
+      expect(lineas.map((l) => l.textContent)).withContext(rol).toEqual(['MOI\'S', 'KIM DO']);
+      lineas.forEach((l) => expect(getComputedStyle(l).whiteSpace).withContext(rol).toBe('nowrap'));
+      expect(getComputedStyle(titulo?.parentElement as Element).display).withContext(rol).not.toBe('none');
+    }
+  });
 });
