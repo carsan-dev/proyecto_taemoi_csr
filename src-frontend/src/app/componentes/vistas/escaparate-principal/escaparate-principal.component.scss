@@ -3173,7 +3173,8 @@ $defensa-hover: #d81b60;
 // ========================================
 @media (max-width: 768px) {
   .video-container.vh-100 {
-    height: min(90dvh, 760px) !important;
+    // svh (no dvh): la altura no debe cambiar al mostrar/ocultar la barra de direcciones de Android.
+    height: min(90svh, 760px) !important;
     min-height: 620px;
   }
 
@@ -3664,7 +3665,7 @@ $defensa-hover: #d81b60;
 
 @media (max-width: 576px) {
   .video-container.vh-100 {
-    height: min(88dvh, 720px) !important;
+    height: min(88svh, 720px) !important;
     min-height: 560px;
   }
 
