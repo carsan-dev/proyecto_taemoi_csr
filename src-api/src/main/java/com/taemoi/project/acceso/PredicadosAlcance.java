@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.Turno;
@@ -120,6 +121,27 @@ public final class PredicadosAlcance {
 	public static Specification<Preinscripcion> preinscripciones(AlcanceSesion alcance) {
 		return lectura(alcance, preinscripcionesEnSedes(alcance.sedes()),
 				preinscripcionesEnGrupos(alcance.grupos()));
+	}
+
+	/** Entrega 6-2: alcance total o preinscripciones cuyo grupo es de sus sedes (sin la rama de profesor). */
+	public static Specification<Preinscripcion> preinscripcionesDeSusSedes(AlcanceSesion alcance) {
+		return porSedes(alcance, alcance == null ? null : preinscripcionesEnSedes(alcance.sedes()));
+	}
+
+	// ------------------------------------------------------------------ convocatorias
+
+	/** Entrega 6-2: el alumno de la inscripción {@code alumnoConvocatoriaId} (sin id, ninguno). */
+	public static Specification<Alumno> alumnoDeInscripcionEnConvocatoria(Long alumnoConvocatoriaId) {
+		return (root, query, cb) -> {
+			if (alumnoConvocatoriaId == null) {
+				return cb.disjunction();
+			}
+			Subquery<Long> sub = query.subquery(Long.class);
+			Root<AlumnoConvocatoria> inscripcion = sub.from(AlumnoConvocatoria.class);
+			sub.select(inscripcion.get("alumno").<Long>get("id"))
+					.where(cb.equal(inscripcion.get("id"), alumnoConvocatoriaId));
+			return cb.in(root.<Long>get("id")).value(sub);
+		};
 	}
 
 	// ------------------------------------------------------------------ utilidades

@@ -3,6 +3,8 @@ package com.taemoi.project.services.impl;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Autowired
 	private com.taemoi.project.services.AlumnoDeporteService alumnoDeporteService;
+
+	/** Entrega 6-2 (D6-8): el responsable de sede ve dentro de cada convocatoria solo a sus alumnos (D9). */
+	@Autowired
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 
 	@Override
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
@@ -100,7 +106,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
 				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
+		Predicate<AlumnoConvocatoria> enAlcance = enAlcanceDelResponsable();
 		return convocatoria.getAlumnosConvocatoria().stream()
+				.filter(enAlcance)
 				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(),
 						alumnoConvocatoria.getAlumno().getId(), alumnoConvocatoria.getAlumno().getNombre(),
 						alumnoConvocatoria.getAlumno().getApellidos(), alumnoConvocatoria.getCuantiaExamen(),
@@ -114,7 +122,9 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
 				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
+		Predicate<AlumnoConvocatoria> enAlcance = enAlcanceDelResponsable();
 		return convocatoria.getAlumnosConvocatoria().stream()
+				.filter(enAlcance)
 				.map(alumnoConvocatoria -> {
 					Alumno alumno = alumnoConvocatoria.getAlumno();
 					String nombreCompleto = alumno.getNombre() + " " + alumno.getApellidos();
@@ -256,6 +266,19 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			alumno.setTieneDerechoExamen(alumnoConvocatoriaDTO.getPagado());
 			alumnoRepository.save(alumno);
 		}
+	}
+
+	/**
+	 * Entrega 6-2 (D6-8): para el responsable de sede, solo las inscripciones de alumnos de su alcance (D9). Para la
+	 * gestión no filtra (mismos alumnos y mismo orden que antes).
+	 */
+	private Predicate<AlumnoConvocatoria> enAlcanceDelResponsable() {
+		Optional<Set<Long>> ids = gestionPorSede.idsAlumnosEnAlcance();
+		if (ids.isEmpty()) {
+			return inscripcion -> true;
+		}
+		Set<Long> visibles = ids.get();
+		return inscripcion -> inscripcion.getAlumno() != null && visibles.contains(inscripcion.getAlumno().getId());
 	}
 
 	private ConvocatoriaDTO convertirAConvocatoriaDTO(Convocatoria convocatoria) {

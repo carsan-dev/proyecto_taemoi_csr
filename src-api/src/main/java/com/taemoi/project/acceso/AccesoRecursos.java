@@ -96,6 +96,28 @@ public class AccesoRecursos {
 				sedes -> consulta.turnoEnSedes(turnoId, sedes), null);
 	}
 
+	/**
+	 * Entrega 6-2, solo alcance total o sedes del responsable: el grupo de la preinscripción es de una de sus sedes
+	 * (con D6-7 todos sus turnos son de la misma sede). Sin grupo, solo gestión.
+	 */
+	public boolean preinscripcionEnSede(String referencia, String operacion) {
+		return decidir(referencia, operacion(operacion, "preinscripcionEnSede"), null,
+				sedes -> consulta.preinscripcionEnSedes(referencia, sedes), null);
+	}
+
+	/**
+	 * Entrega 6-2 (D6-8), solo alcance total o sedes del responsable, por el alumno de la inscripción en la
+	 * convocatoria: {@code LEER} por D9; {@code EDITAR} (cuantía y pago del examen) solo si su sede principal es una de
+	 * las suyas (D6-3).
+	 */
+	public boolean alumnoConvocatoriaEnSede(Long alumnoConvocatoriaId, String operacion) {
+		OperacionAcceso op = operacion(operacion, "alumnoConvocatoriaEnSede");
+		Predicate<Set<Long>> porSedes = op == OperacionAcceso.EDITAR
+				? sedes -> consulta.alumnoConvocatoriaConSedePrincipalEn(alumnoConvocatoriaId, sedes)
+				: sedes -> consulta.alumnoConvocatoriaEnSedes(alumnoConvocatoriaId, sedes);
+		return decidir(alumnoConvocatoriaId, op, null, porSedes, null);
+	}
+
 	/** Activa también la rama de profesor (solo {@code LEER}): para la entrega 7. */
 	public boolean alumno(Long alumnoId, String operacion) {
 		return alumno(alumnoId, operacion(operacion, "alumno"));
@@ -126,7 +148,10 @@ public class AccesoRecursos {
 				grupos -> consulta.turnoEnGrupos(turnoId, grupos));
 	}
 
-	/** Las rutas de preinscripción usan su {@code referencia}, no el id. */
+	/**
+	 * Las rutas de preinscripción usan su {@code referencia}, no el id. Activa también la rama de profesor: para la
+	 * entrega 7 (las rutas de la 6-2 usan {@link #preinscripcionEnSede}).
+	 */
 	public boolean preinscripcion(String referencia, String operacion) {
 		return preinscripcion(referencia, operacion(operacion, "preinscripcion"));
 	}

@@ -46,6 +46,23 @@ Desviación anotada del plan (§3.1): `GET /api/grupos/{grupoId}/alumnos/{alumno
 `@acceso.alumnoComoFamiliaOSede(#alumnoId)` (no también `grupoEnSede`): por D6-16 el responsable lee todos los grupos
 (y sus turnos) de un alumno de su alcance, también los de otras sedes; la expresión de la familia no cambia.
 
+Entrega 6-2 (preinscripciones y convocatorias, §3.3, D6-7 y D6-8): 29 casillas nuevas, todas en la columna
+RESPONSABLE_SEDE (las otras seis no cambian; plantillas, `DELETE /api/preinscripciones/{referencia}` y las rutas
+públicas siguen igual, también sus anomalías).
+- `ALCANCE` (17): `@acceso.preinscripcionEnSede(#referencia, …)` en el detalle, `documento-firmado`, `firma` (GET y
+  HEAD), `cancelar`, `finalizar`, `reenviar*` y `PUT …/turnos` (por el grupo de la solicitud);
+  `@acceso.alumnoConvocatoriaEnSede(#alumnoConvocatoriaId,'EDITAR')` en `PUT /api/convocatorias/alumno/{…}` (pago del
+  examen, sede principal del alumno, D6-3); `@acceso.alumnoEnSede(#alumnoId,'EDITAR')` en `POST/DELETE
+  /api/alumnos/{convocatoriaId}/alumno/{alumnoId}`; `@acceso.alumnoComoFamiliaOSede` en
+  `GET/HEAD /api/convocatorias/alumnos/{alumnoId}` (la familia, igual que antes).
+- `PERMITE` declarado (12, GET y HEAD): `/api/preinscripciones` (el servicio añade `preinscripcionesDeSusSedes`),
+  `/api/convocatorias` y `/{id}` (comunes a la escuela, D6-8), `/{id}/alumnos`, `/{id}/reporte` e `/{id}/informe-pdf`
+  (solo sus alumnos, D9). Crear y borrar convocatorias y `actualizar-grados` siguen en `DENIEGA`.
+En el servicio, además: `PUT …/turnos` y `finalizar` exigen que todos los turnos sean de sus sedes; vincular exige
+una ficha de su sede principal y nunca cambia el email de una ficha con cuenta (403); vincular no quita grupos ni
+turnos de otras sedes; los candidatos (`alumnosCoincidentes`) son solo los que puede vincular (su sede principal). D6-7
+(todos los turnos de la misma sede) se aplica al alta pública y a `PUT …/turnos` para todos los roles.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

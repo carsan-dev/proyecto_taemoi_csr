@@ -26,6 +26,7 @@ class PredicadosAlcanceTest {
 		assertSinPredicado(PredicadosAlcance.alumnosDeSusSedes(AlcanceSesion.TOTAL));
 		assertSinPredicado(PredicadosAlcance.gruposDeSusSedes(AlcanceSesion.TOTAL));
 		assertSinPredicado(PredicadosAlcance.turnosDeSusSedes(AlcanceSesion.TOTAL));
+		assertSinPredicado(PredicadosAlcance.preinscripcionesDeSusSedes(AlcanceSesion.TOTAL));
 	}
 
 	@Test
@@ -37,6 +38,7 @@ class PredicadosAlcanceTest {
 			assertNotNull(PredicadosAlcance.alumnosDeSusSedes(alcance).toPredicate(raiz(), consulta(), cb));
 			assertNotNull(PredicadosAlcance.gruposDeSusSedes(alcance).toPredicate(raiz(), consulta(), cb));
 			assertNotNull(PredicadosAlcance.turnosDeSusSedes(alcance).toPredicate(raiz(), consulta(), cb));
+			assertNotNull(PredicadosAlcance.preinscripcionesDeSusSedes(alcance).toPredicate(raiz(), consulta(), cb));
 		}
 	}
 

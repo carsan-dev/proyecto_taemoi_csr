@@ -834,7 +834,7 @@ public class AlumnoController {
 	}
 
 	@PostMapping("/{convocatoriaId}/alumno/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> agregarAlumnoAConvocatoria(@PathVariable Long alumnoId, @PathVariable Long convocatoriaId,
 			@RequestBody(required = false) Map<String, Object> params) {
 
@@ -851,7 +851,7 @@ public class AlumnoController {
 	}
 
 	@DeleteMapping("/{convocatoriaId}/alumno/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<?> eliminarAlumnoDeConvocatoria(@PathVariable Long convocatoriaId,
 			@PathVariable Long alumnoId) {
 

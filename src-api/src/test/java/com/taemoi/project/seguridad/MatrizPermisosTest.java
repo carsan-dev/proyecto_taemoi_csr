@@ -262,8 +262,16 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 	private static Map<String, String> filtradoEnServicio() {
 		String alumnos = "integracion.ResponsableSedeAlumnosIntegrationTest#";
 		String grupos = "integracion.ResponsableSedeGruposIntegrationTest#";
+		String preinscripciones = "integracion.ResponsableSedePreinscripcionesConvocatoriasIntegrationTest#";
 		Map<String, String> m = new TreeMap<>();
 		for (String metodo : List.of("GET", "HEAD")) {
+			// 6-2: listado de preinscripciones por el grupo; convocatorias comunes (D6-8), sus alumnos por D9.
+			m.put(metodo + " /api/preinscripciones", preinscripciones + "preinscripciones_listadoSoloDeSusSedes");
+			m.put(metodo + " /api/convocatorias", preinscripciones + "convocatorias_listaYDetalleComunes");
+			m.put(metodo + " /api/convocatorias/{id}", preinscripciones + "convocatorias_listaYDetalleComunes");
+			m.put(metodo + " /api/convocatorias/{id}/alumnos", preinscripciones + "convocatoria_soloSusAlumnos");
+			m.put(metodo + " /api/convocatorias/{id}/reporte", preinscripciones + "convocatoria_soloSusAlumnos");
+			m.put(metodo + " /api/convocatorias/{id}/informe-pdf", preinscripciones + "convocatoria_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos", alumnos + "listado_soloAlumnosDeSusSedes");
 			m.put(metodo + " /api/alumnos/con-deportes", alumnos + "listado_soloAlumnosDeSusSedes");
 			m.put(metodo + " /api/alumnos/ids", alumnos + "ids_losDelListadoEnElMismoOrden");

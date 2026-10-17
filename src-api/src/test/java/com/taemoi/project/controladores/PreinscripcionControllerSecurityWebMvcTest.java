@@ -46,7 +46,9 @@ import com.taemoi.project.services.UsuarioService;
 
 @WebMvcTest(controllers = PreinscripcionController.class)
 @Import({ SecurityConfiguration.class, MethodSecurityCompatibilityConfig.class,
-		PreinscripcionControllerSecurityWebMvcTest.FilterTestConfig.class })
+		PreinscripcionControllerSecurityWebMvcTest.FilterTestConfig.class,
+		// Entrega 6-2: los @PreAuthorize consultan @acceso.preinscripcionEnSede (bean real, puerto simulado).
+		com.taemoi.project.acceso.AccesoRecursos.class, com.taemoi.project.organizacion.AlcanceActual.class })
 @TestPropertySource(properties = {
 		"app.base.url=http://localhost:8080",
 		"cors.allowed.origin=http://localhost:4200"
@@ -63,6 +65,27 @@ class PreinscripcionControllerSecurityWebMvcTest {
 	@MockitoBean AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
 	@MockitoBean PasswordEncoder passwordEncoder;
 	@MockitoBean OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+	@MockitoBean com.taemoi.project.acceso.ConsultaAccesoRecursos consultaAcceso;
+
+	/** Entrega 6-2: la gestión no consulta el alcance (alcance total, sin consulta extra). */
+	@Test
+	void gestionNoConsultaElAlcanceDeLaPreinscripcion() throws Exception {
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/reenviar-cambio-turnos")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER")))
+				.andExpect(status().isOk());
+
+		verifyNoInteractions(consultaAcceso);
+	}
+
+	/** Entrega 6-2: un responsable sin sesión de escuela no tiene sedes: 403 sin tocar el servicio. */
+	@Test
+	void responsableSinSedesNoPuedeCancelar() throws Exception {
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/cancelar")
+				.with(user("resp@example.com").authorities(() -> "ROLE_RESPONSABLE_SEDE")))
+				.andExpect(status().isForbidden());
+
+		verifyNoInteractions(preinscripciones);
+	}
 
 	@Test
 	void anonimoNoPuedeReenviarAvisoDeCambio() throws Exception {

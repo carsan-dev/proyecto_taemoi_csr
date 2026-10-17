@@ -92,6 +92,8 @@ class PreinscripcionMySqlConcurrencyTest extends MySqlIntegrationTest {
 	@MockitoBean ConfiguracionSistemaService configuracionMock;
 	@MockitoBean PDFService pdfMock;
 	@MockitoBean EmailService emailMock;
+	/** Entrega 6-2: sin restricción de sede (Optional vacío) y sin sede de alta, como la gestión de antes. */
+	@MockitoBean com.taemoi.project.acceso.GestionPorSede gestionPorSedeMock;
 
 	MockMvc mvc;
 	long turnoTaekwondo;
