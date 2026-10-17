@@ -15,7 +15,7 @@ la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y pro
 |---|---|
 | A. `cadaEndpointTieneExactamenteUnaPoliticaYNoSobraNinguna` | un manejador de `RequestMappingHandlerMapping` (método × patrón) no tiene línea, una línea no corresponde a ningún manejador, o hay líneas repetidas |
 | B. `laDecisionRealCoincideConLaDeclaradaParaCadaRol` | para alguna línea y rol, la decisión real (regla de URL **y** `@PreAuthorize`) no es la declarada |
-| `rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela` | RESPONSABLE_SEDE o PROFESOR deciden distinto de SOLO_PLATAFORMA en alguna línea (o no deniegan en `/api/plataforma/**`), fuera de una lista blanca explícita (vacía hasta las entregas 6 y 7) |
+| `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado` | PROFESOR decide distinto de SOLO_PLATAFORMA en alguna línea (o no deniega en `/api/plataforma/**`); o RESPONSABLE_SEDE es `PERMITE` en una línea que no está en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (listados y cuerpos que filtra el servicio, cada uno con el test que lo prueba) ni era ya `PERMITE` para SOLO_PLATAFORMA; o la lista declara una línea que no es `PERMITE` o cita un test que no existe (entrega 6, entrega6-plan.md §2.2) |
 | `control*` | el arnés deja de reproducir casos conocidos por HTTP real (p. ej. `/api/plataforma/errores`) |
 
 ## Cómo leer el registro
@@ -35,10 +35,16 @@ GET      /api/alumnos/{alumnoId}/grupos    DENIEGA ALCANCE PERMITE PERMITE     D
 | RESPONSABLE_SEDE | RESPONSABLE_SEDE | `ROLE_RESPONSABLE_SEDE` |
 | PROFESOR | PROFESOR | `ROLE_PROFESOR` |
 
-Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia y no pasan ninguna regla de gestión ni
-de familia: deciden lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**`, que les deniega (lo comprueba
-`rolesNuevosNoPasanDondeNoPasaUnaSesionSinRolDeEscuela`). Solos tampoco abren sesión (`RolMembresia.abreSesion`).
-Las columnas nuevas van al final: las cinco anteriores no cambiaron en ninguna casilla.
+Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. PROFESOR sigue decidiendo lo mismo que
+SOLO_PLATAFORMA salvo en `/api/plataforma/**`, que le deniega (hasta la entrega 7). Desde la entrega 6-1,
+RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
+`grupoEnSede`, `turnoEnSede`, `alumnoComoFamiliaOSede`, que nunca activan la rama de profesor) y `PERMITE` solo en los
+25 listados y altas que filtra o comprueba el servicio (`RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO`). Lo comprueba
+`rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado`. Solos tampoco abren sesión (`RolMembresia.abreSesion`, D6-15).
+Las columnas nuevas van al final; la 6-1 no cambió ninguna casilla de las otras seis columnas.
+Desviación anotada del plan (§3.1): `GET /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos` solo exige
+`@acceso.alumnoComoFamiliaOSede(#alumnoId)` (no también `grupoEnSede`): por D6-16 el responsable lee todos los grupos
+(y sus turnos) de un alumno de su alcance, también los de otras sedes; la expresión de la familia no cambia.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
@@ -196,7 +202,7 @@ El riesgo general está en editar una sola de las dos capas.
    ficha completa.
 10. **Protegidos solo por la URL, sin `@PreAuthorize`:**
    - `GET /api/admin/configuracion/limite-turno` (el PUT sí lo tiene);
-   - `GET /api/alumnos/aptos`;
+   - ~~`GET /api/alumnos/aptos`~~ (RESUELTA en la entrega 6-1: lleva `@PreAuthorize`);
    - `GET /api/eventos/{eventoId}/documentos`;
    - `GET /api/catalogo`;
    - `/imagenes/**` y `/documentos/**`.

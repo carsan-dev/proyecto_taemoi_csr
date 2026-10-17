@@ -92,7 +92,7 @@ public class AlumnoConGruposDTO {
 
 		// Convertimos la lista de grupos de Alumno a GrupoDTO
 		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
-				.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
+				.map(AlumnoConGruposDTO::grupoConSede).collect(Collectors.toList());
 
 		String grado = null;
 		AlumnoDeporte principal = AlumnoDeporteUtils.seleccionarDeportePrincipal(alumno.getDeportes());
@@ -111,7 +111,7 @@ public class AlumnoConGruposDTO {
 		}
 
 		List<GrupoResponseDTO> gruposDTO = alumno.getGrupos().stream()
-				.map(grupo -> new GrupoResponseDTO(grupo.getId(), grupo.getNombre())).collect(Collectors.toList());
+				.map(AlumnoConGruposDTO::grupoConSede).collect(Collectors.toList());
 
 		String grado = alumnoDeporte != null && alumnoDeporte.getGrado() != null
 				? alumnoDeporte.getGrado().getCodigo()
@@ -119,5 +119,12 @@ public class AlumnoConGruposDTO {
 
 		return new AlumnoConGruposDTO(alumno.getId(), alumno.getNombre(), alumno.getApellidos(),
 				alumno.getFechaNacimiento(), alumno.getNumeroExpediente(), grado, gruposDTO);
+	}
+
+	/** Id, nombre y sede del grupo (D6-5: el JSON de grupos lleva {@code sedeId}). */
+	private static GrupoResponseDTO grupoConSede(com.taemoi.project.entities.Grupo grupo) {
+		GrupoResponseDTO dto = new GrupoResponseDTO(grupo.getId(), grupo.getNombre());
+		dto.setSedeId(grupo.getSedeId());
+		return dto;
 	}
 }

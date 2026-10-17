@@ -55,6 +55,10 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Autowired
 	private CatalogoCategoriasService categorias;
 
+	/** Entrega 6: alcance del responsable de sede (sin efecto para la gestión). */
+	@Autowired
+	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
 	/** Disciplina de la organización activa con el código del deporte. */
 	private Disciplina disciplinaDe(String deporte) {
 		if (deporte == null) {
@@ -344,6 +348,23 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Transactional(readOnly = true)
 	public Map<String, Long> obtenerDistribucionActivaPorDeporte() {
 		Map<String, Long> distribucion = new LinkedHashMap<>();
+		java.util.Optional<java.util.Set<Long>> enAlcance = gestionPorSede.idsAlumnosEnAlcance();
+		if (enAlcance.isPresent()) {
+			// Responsable de sede: solo sus alumnos (D9), mismo orden y mismas claves que la gestión.
+			Map<Long, Long> porDisciplina = new java.util.HashMap<>();
+			if (!enAlcance.get().isEmpty()) {
+				for (Object[] fila : alumnoDeporteRepository.contarActivosPorDisciplinaDeAlumnos(enAlcance.get())) {
+					porDisciplina.put((Long) fila[0], (Long) fila[1]);
+				}
+			}
+			for (Disciplina disciplina : catalogo.listarTodas()) {
+				long total = porDisciplina.getOrDefault(disciplina.getId(), 0L);
+				if (total > 0) {
+					distribucion.put(disciplina.getCodigo(), total);
+				}
+			}
+			return distribucion;
+		}
 		for (Disciplina disciplina : catalogo.listarTodas()) {
 			long total = alumnoDeporteRepository.countByDisciplinaIdAndActivoTrue(disciplina.getId());
 			if (total > 0) {

@@ -53,7 +53,7 @@ public class GrupoController {
 	 *         grupos y sus alumnos.
 	 */
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
 		return grupoService.obtenerTodosLosGrupos();
 	}
@@ -85,7 +85,7 @@ public class GrupoController {
 	 *         NOT_FOUND.
 	 */
 	@GetMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#id,'LEER')")
 	public ResponseEntity<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@PathVariable @NonNull Long id) {
 		Optional<GrupoConAlumnosDTO> grupoDTO = grupoService.obtenerGrupoConAlumnosPorId(id);
 		return grupoDTO.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
@@ -101,7 +101,7 @@ public class GrupoController {
 	 *         NOT_FOUND.
 	 */
 	@GetMapping("/{grupoId}/turnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'LEER')")
 	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelGrupo(@PathVariable @NonNull Long grupoId) {
 		List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelGrupo(grupoId);
 		if (!turnosDTO.isEmpty()) {
@@ -112,7 +112,7 @@ public class GrupoController {
 	}
 
 	@GetMapping("/{grupoId}/alumnos/{alumnoId}/turnos")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER') and @acceso.alumnoComoFamilia(#alumnoId)")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#alumnoId)")
 	public ResponseEntity<List<TurnoCortoDTO>> obtenerTurnosDelAlumnoEnGrupo(@PathVariable Long grupoId,
 			@PathVariable Long alumnoId) {
 		List<TurnoCortoDTO> turnosDTO = grupoService.obtenerTurnosDelAlumnoEnGrupo(grupoId, alumnoId);
@@ -131,7 +131,7 @@ public class GrupoController {
 	 *         representa el grupo creado, con estado CREATED.
 	 */
 	@PostMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<GrupoConAlumnosDTO> crearGrupo(@Valid @RequestBody GrupoConAlumnosDTO grupoDTO) {
 		grupoDTO.setAlumnos(null);
 		GrupoConAlumnosDTO nuevoGrupoDTO = grupoService.crearGrupo(grupoDTO);
@@ -149,7 +149,7 @@ public class GrupoController {
 	 *         con estado NOT_FOUND si no se encuentra el grupo.
 	 */
 	@PutMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#id,'EDITAR')")
 	public ResponseEntity<GrupoConAlumnosDTO> actualizarGrupo(@PathVariable @NonNull Long id,
 			@Valid @RequestBody GrupoConAlumnosDTO grupoDTO) {
 		GrupoConAlumnosDTO grupoActualizadoDTO = grupoService.actualizarGrupo(id, grupoDTO);
@@ -167,7 +167,7 @@ public class GrupoController {
 	 * @return ResponseEntity con estado NO_CONTENT.
 	 */
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#id,'EDITAR')")
 	public ResponseEntity<Void> eliminarGrupo(@PathVariable @NonNull Long id) {
 		grupoService.eliminarGrupo(id);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -182,7 +182,7 @@ public class GrupoController {
 	 *         contrario, un ResponseEntity con estado NOT_FOUND.
 	 */
 	@PostMapping("/{grupoId}/alumnos/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR') and @acceso.alumnoEnSede(#alumnoId,'LEER')")
 	public ResponseEntity<?> agregarAlumnoAGrupo(@PathVariable @NonNull Long grupoId,
 			@PathVariable @NonNull Long alumnoId) {
 		Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
@@ -203,7 +203,7 @@ public class GrupoController {
 	 *         contrario, un ResponseEntity con estado NOT_FOUND.
 	 */
 	@PostMapping("/{grupoId}/alumnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
 	public ResponseEntity<?> agregarAlumnosAGrupo(@PathVariable @NonNull Long grupoId,
 			@RequestBody List<Long> alumnosIds) {
 		Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
@@ -224,7 +224,7 @@ public class GrupoController {
 	 *         contrario, un ResponseEntity con estado NOT_FOUND.
 	 */
 	@DeleteMapping("/{grupoId}/alumnos/{alumnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR') and @acceso.alumnoEnSede(#alumnoId,'LEER')")
 	public ResponseEntity<Void> eliminarAlumnoDeGrupo(@PathVariable @NonNull Long grupoId,
 			@PathVariable @NonNull Long alumnoId) {
 		Optional<GrupoConAlumnosDTO> grupoOptional = grupoService.obtenerGrupoConAlumnosPorId(grupoId);
@@ -255,7 +255,7 @@ public class GrupoController {
 	 *         contrario, un ResponseEntity con estado NOT_FOUND.
 	 */
 	@PostMapping("/{grupoId}/turnos/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<?> agregarTurnoAGrupo(@PathVariable @NonNull Long grupoId,
 			@PathVariable @NonNull Long turnoId) {
 		try {
@@ -275,7 +275,7 @@ public class GrupoController {
 	 *         contrario, un ResponseEntity con estado NOT_FOUND.
 	 */
 	@DeleteMapping("/{grupoId}/turnos/{turnoId}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR') and @acceso.turnoEnSede(#turnoId,'EDITAR')")
 	public ResponseEntity<?> eliminarTurnoDeGrupo(@PathVariable @NonNull Long grupoId,
 			@PathVariable @NonNull Long turnoId) {
 		try {

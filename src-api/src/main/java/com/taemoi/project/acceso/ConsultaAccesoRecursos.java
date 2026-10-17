@@ -20,6 +20,9 @@ public interface ConsultaAccesoRecursos {
 	/** D9: sede principal del alumno en {@code sedes} o alumno de algún grupo de esas sedes. */
 	boolean alumnoEnSedes(Long alumnoId, Set<Long> sedes);
 
+	/** Entrega 6 (D6-3): la sede principal del alumno es una de {@code sedes} (sin mirar sus grupos). */
+	boolean alumnoConSedePrincipalEn(Long alumnoId, Set<Long> sedes);
+
 	/** Alumno de alguno de esos grupos. */
 	boolean alumnoEnGrupos(Long alumnoId, Set<Long> grupos);
 

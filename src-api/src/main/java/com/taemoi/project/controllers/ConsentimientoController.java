@@ -18,7 +18,13 @@ import com.taemoi.project.services.ConsentimientoService;
 
 import jakarta.validation.Valid;
 
-/** Consentimientos de un alumno: se listan y se registran (nunca se editan ni se borran). */
+/**
+ * Consentimientos de un alumno: se listan y se registran (nunca se editan ni se borran).
+ *
+ * <p>Entrega 6-1c: cada método lleva su {@code @PreAuthorize} (gestión, o responsable de sede por
+ * {@code @acceso.alumnoEnSede}: leer por D9, editar por la sede principal, D6-3). El de la clase queda como
+ * valor por defecto (solo gestión) para un método nuevo sin anotación.
+ */
 @RestController
 @RequestMapping("/api/alumnos/{alumnoId}/consentimientos")
 @PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
@@ -31,11 +37,13 @@ public class ConsentimientoController {
 	}
 
 	@GetMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'LEER')")
 	public List<ConsentimientoDTO> listar(@PathVariable Long alumnoId) {
 		return consentimientos.listar(alumnoId);
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
 	public ResponseEntity<ConsentimientoDTO> registrar(@PathVariable Long alumnoId,
 			@Valid @RequestBody ConsentimientoRequest datos) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(consentimientos.registrar(alumnoId, datos));

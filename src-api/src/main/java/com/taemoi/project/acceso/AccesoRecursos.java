@@ -31,6 +31,13 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * <li>Con varios roles basta con que uno conceda.</li>
  * </ul>
  * Toda lectura de datos va por {@link ConsultaAccesoRecursos}: aquí solo se decide rol × operación.
+ *
+ * <p><b>Entrega 6 (entrega6-plan.md §2.1).</b> Las rutas que se abren al responsable de sede usan los métodos
+ * {@code ...EnSede} y {@link #alumnoComoFamiliaOSede}: conceden con alcance total o por las sedes de
+ * {@code ROLE_RESPONSABLE_SEDE} (y, el último, por la regla de familia de hoy), NUNCA por la rama de profesor. Así
+ * una cuenta FAMILIA + PROFESOR o RESPONSABLE_SEDE + PROFESOR no lee por sus grupos antes de la entrega 7 (D5-2).
+ * Los métodos {@link #alumno}, {@link #grupo}, {@link #turno} y {@link #preinscripcion} SÍ activan la rama de
+ * profesor: quedan para la entrega 7.
  */
 @Component("acceso")
 public class AccesoRecursos {
@@ -55,6 +62,41 @@ public class AccesoRecursos {
 		return decidir(alumnoId, OperacionAcceso.LEER, a -> consulta.familiaVeAlumno(a, alumnoId), null, null);
 	}
 
+	/**
+	 * Entrega 6: familia (regla de hoy, solo lectura) o responsable de sede por D9; nunca la rama de profesor. Para
+	 * las rutas de lectura que la familia comparte con el responsable (foto, grupos, turnos, deportes, documentos).
+	 */
+	public boolean alumnoComoFamiliaOSede(Long alumnoId) {
+		return decidir(alumnoId, OperacionAcceso.LEER, a -> consulta.familiaVeAlumno(a, alumnoId),
+				sedes -> consulta.alumnoEnSedes(alumnoId, sedes), null);
+	}
+
+	/**
+	 * Entrega 6, solo alcance total o sedes del responsable. {@code LEER}: regla D9 (sede principal o grupo de sus
+	 * sedes, D6-1). {@code EDITAR}: solo si su sede principal es una de las suyas (D6-3); sin sede principal, nadie
+	 * salvo gestión.
+	 */
+	public boolean alumnoEnSede(Long alumnoId, String operacion) {
+		OperacionAcceso op = operacion(operacion, "alumnoEnSede");
+		Predicate<Set<Long>> porSedes = op == OperacionAcceso.EDITAR
+				? sedes -> consulta.alumnoConSedePrincipalEn(alumnoId, sedes)
+				: sedes -> consulta.alumnoEnSedes(alumnoId, sedes);
+		return decidir(alumnoId, op, null, porSedes, null);
+	}
+
+	/** Entrega 6, solo alcance total o sedes del responsable: el grupo es de una de sus sedes. */
+	public boolean grupoEnSede(Long grupoId, String operacion) {
+		return decidir(grupoId, operacion(operacion, "grupoEnSede"), null,
+				sedes -> consulta.grupoEnSedes(grupoId, sedes), null);
+	}
+
+	/** Entrega 6, solo alcance total o sedes del responsable: el grupo del turno es de una de sus sedes. */
+	public boolean turnoEnSede(Long turnoId, String operacion) {
+		return decidir(turnoId, operacion(operacion, "turnoEnSede"), null,
+				sedes -> consulta.turnoEnSedes(turnoId, sedes), null);
+	}
+
+	/** Activa también la rama de profesor (solo {@code LEER}): para la entrega 7. */
 	public boolean alumno(Long alumnoId, String operacion) {
 		return alumno(alumnoId, operacion(operacion, "alumno"));
 	}
@@ -64,6 +106,7 @@ public class AccesoRecursos {
 				sedes -> consulta.alumnoEnSedes(alumnoId, sedes), grupos -> consulta.alumnoEnGrupos(alumnoId, grupos));
 	}
 
+	/** Activa también la rama de profesor (solo {@code LEER}): para la entrega 7. */
 	public boolean grupo(Long grupoId, String operacion) {
 		return grupo(grupoId, operacion(operacion, "grupo"));
 	}
@@ -73,6 +116,7 @@ public class AccesoRecursos {
 				grupos -> consulta.grupoEnGrupos(grupoId, grupos));
 	}
 
+	/** Activa también la rama de profesor (solo {@code LEER}): para la entrega 7. */
 	public boolean turno(Long turnoId, String operacion) {
 		return turno(turnoId, operacion(operacion, "turno"));
 	}

@@ -83,6 +83,10 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       `familia_alumnos_vinculo_sin_email`, `grupos_sin_sede` y `organizaciones_sin_sede` deben ser 0. Después,
       marcar el administrador de plataforma con SQL fuera del repositorio
       (`UPDATE usuario SET es_admin_plataforma = TRUE WHERE …`); la aplicación nunca escribe esa columna.
+- [ ] Tras V31_2 (entrega 6-1, solo datos): ejecutar `docs/multi-escuela/postcheck-v31_2.sql` y guardar el resultado:
+      `alumnos_sin_sede_escuelas_una_sede` debe ser 0 (en Moiskimdo, las altas posteriores a V31 quedan en
+      «Umbrete»). Desde la 6-1 el alta de alumnos escribe la sede principal; las altas desde una preinscripción
+      finalizada la escribirán con la 6-2.
 - [ ] **V32 (contracción de permisos) nunca en el mismo despliegue que V31**; antes, copia de seguridad (única
       vuelta atrás) y `postcheck-v31.sql` limpio.
 - [ ] Desde V27, NUNCA ejecutar a mano `db/resync/resync_catalogo_v24.sql`: su UPDATE que pone

@@ -34,6 +34,58 @@ public class SecurityConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
 
+	/*
+	 * Entrega 6-1 (docs/multi-escuela/entrega6-plan.md §3.1, §3.2): rutas abiertas al responsable de sede. Reglas
+	 * CONCRETAS antes de las amplias (/api/alumnos/**, /api/grupos/**, /api/turnos/**, /api/informes/**), que siguen
+	 * siendo solo de gestión: así una ruta sin @PreAuthorize bajo esos patrones no queda abierta. Cada ruta lleva
+	 * además su @PreAuthorize con @acceso (por id) o un filtro del servicio (listados, ids en el cuerpo); la matriz
+	 * de permisos lo comprueba (MatrizPermisosTest).
+	 */
+	private static final String[] RESPONSABLE_SEDE_GET = {
+			"/api/alumnos", "/api/alumnos/ids", "/api/alumnos/count", "/api/alumnos/con-deportes",
+			"/api/alumnos/deportes/distribucion", "/api/alumnos/aptos", "/api/alumnos/aptos/deporte",
+			"/api/alumnos/aptos/convocatoria", "/api/alumnos/aptos/{id}", "/api/alumnos/{id}",
+			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
+			"/api/alumnos/{alumnoId}/consentimientos",
+			"/api/grupos", "/api/grupos/{id}",
+			"/api/turnos", "/api/turnos/{turnoId}" };
+	private static final String[] RESPONSABLE_SEDE_POST = {
+			"/api/alumnos/crear", "/api/alumnos/{alumnoId}/documentos", "/api/alumnos/{alumnoId}/grupos/{grupoId}",
+			"/api/alumnos/{alumnoId}/turnos/{turnoId}", "/api/alumnos/{id}/deportes",
+			"/api/alumnos/{id}/deportes/{deporte}/pase-examen", "/api/alumnos/{id}/deportes/{deporte}/pase-recompensa",
+			"/api/alumnos/{alumnoId}/tutores", "/api/alumnos/{alumnoId}/consentimientos",
+			"/api/grupos", "/api/grupos/{grupoId}/alumnos", "/api/grupos/{grupoId}/alumnos/{alumnoId}",
+			"/api/grupos/{grupoId}/turnos/{turnoId}",
+			"/api/turnos/crear-asignando-grupo" };
+	/** Sin tipo-tarifa ni cuantia-tarifa (tesorería, entrega 6-3). */
+	private static final String[] RESPONSABLE_SEDE_PUT = {
+			"/api/alumnos/{id}", "/api/alumnos/{id}/observaciones", "/api/alumnos/{id}/fecha-alta-inicial",
+			"/api/alumnos/{id}/baja", "/api/alumnos/{id}/alta", "/api/alumnos/{alumnoId}/salud",
+			"/api/alumnos/{alumnoId}/tutores/{tutorId}",
+			"/api/alumnos/{id}/deportes/{deporte}/desactivar", "/api/alumnos/{id}/deportes/{deporte}/activar",
+			"/api/alumnos/{id}/deportes/{deporte}/principal", "/api/alumnos/{id}/deportes/{deporte}/grado",
+			"/api/alumnos/{id}/deportes/{deporte}/apto-examen", "/api/alumnos/{id}/deportes/{deporte}/fecha-grado",
+			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta", "/api/alumnos/{id}/deportes/{deporte}/fecha-baja",
+			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta-inicial",
+			"/api/alumnos/{id}/deportes/{deporte}/rol-familiar", "/api/alumnos/{id}/deportes/{deporte}/grupo-familiar",
+			"/api/alumnos/{id}/deportes/{deporte}/tiene-licencia",
+			"/api/alumnos/{id}/deportes/{deporte}/numero-licencia",
+			"/api/alumnos/{id}/deportes/{deporte}/fecha-licencia", "/api/alumnos/{id}/deportes/{deporte}/competidor",
+			"/api/alumnos/{id}/deportes/{deporte}/peso", "/api/alumnos/{id}/deportes/{deporte}/fecha-peso",
+			"/api/alumnos/{id}/deportes/{deporte}/categoria",
+			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta-competicion",
+			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta-competidor-inicial",
+			"/api/alumnos/{id}/deportes/{deporte}/datos-competidor",
+			"/api/grupos/{id}",
+			"/api/turnos/{turnoId}" };
+	/** Sin DELETE /api/alumnos/{id}: el borrado definitivo es solo de gestión (D6-4). */
+	private static final String[] RESPONSABLE_SEDE_DELETE = {
+			"/api/alumnos/{id}/imagen", "/api/alumnos/{alumnoId}/documentos/{documentoId}",
+			"/api/alumnos/{alumnoId}/grupos/{grupoId}", "/api/alumnos/{alumnoId}/turnos/{turnoId}",
+			"/api/alumnos/{id}/deportes/{deporte}", "/api/alumnos/{alumnoId}/tutores/{tutorId}",
+			"/api/grupos/{id}", "/api/grupos/{grupoId}/alumnos/{alumnoId}", "/api/grupos/{grupoId}/turnos/{turnoId}",
+			"/api/turnos/{turnoId}" };
+
 	/**
 	 * Inyección del filtro de JWT.
 	 */
@@ -145,19 +197,19 @@ public class SecurityConfiguration {
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/grupos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/deportes")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/documentos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/documentos/{documentoId}/descargar")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/deportes/{deporte}/material-examen")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -175,7 +227,7 @@ public class SecurityConfiguration {
 								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/imagen")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/{alumnoId}/reto-diario")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString())
@@ -190,6 +242,19 @@ public class SecurityConfiguration {
 								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/alumnos/aptos/{id}/actualizar-grado")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Entrega 6-1: alumnos abiertos al responsable de sede (constantes RESPONSABLE_SEDE_*).
+						.requestMatchers(HttpMethod.GET, alumnos(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, alumnos(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, alumnos(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.DELETE, alumnos(RESPONSABLE_SEDE_DELETE))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/alumnos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/alumnos/**")
@@ -203,12 +268,26 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/turnos")
-						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_USER.toString())
+								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/conteo-alumnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Entrega 6-1: grupos abiertos al responsable de sede.
+						.requestMatchers(HttpMethod.GET, grupos(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, grupos(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, grupos(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.DELETE, grupos(RESPONSABLE_SEDE_DELETE))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/grupos/**")
@@ -219,6 +298,19 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/turnos/dto").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/turnos/limite").permitAll()
+						// Entrega 6-1: turnos abiertos al responsable de sede (no POST /api/turnos/crear: sin grupo).
+						.requestMatchers(HttpMethod.GET, turnos(RESPONSABLE_SEDE_GET))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.POST, turnos(RESPONSABLE_SEDE_POST))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.PUT, turnos(RESPONSABLE_SEDE_PUT))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers(HttpMethod.DELETE, turnos(RESPONSABLE_SEDE_DELETE))
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/turnos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/turnos/**")
@@ -283,6 +375,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/convocatorias/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Entrega 6-1d: listado de asistencia del responsable (solo los turnos de sus sedes, en el servicio).
+						.requestMatchers(HttpMethod.GET, "/api/informes/asistencia")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers(HttpMethod.GET, "/api/informes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/informes/**")
@@ -395,5 +491,23 @@ public class SecurityConfiguration {
 	@Bean
 	AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
+	}
+
+	private static String[] alumnos(String[] rutas) {
+		return conPrefijo(rutas, "/api/alumnos");
+	}
+
+	private static String[] grupos(String[] rutas) {
+		return conPrefijo(rutas, "/api/grupos");
+	}
+
+	private static String[] turnos(String[] rutas) {
+		return conPrefijo(rutas, "/api/turnos");
+	}
+
+	/** Las rutas que son {@code prefijo} o empiezan por {@code prefijo/}. */
+	private static String[] conPrefijo(String[] rutas, String prefijo) {
+		return java.util.Arrays.stream(rutas).filter(r -> r.equals(prefijo) || r.startsWith(prefijo + "/"))
+				.toArray(String[]::new);
 	}
 }

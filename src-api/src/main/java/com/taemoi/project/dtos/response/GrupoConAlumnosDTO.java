@@ -8,6 +8,8 @@ public class GrupoConAlumnosDTO {
 	private String deporte; // Deporte del grupo (TAEKWONDO, KICKBOXING, PILATES, etc.)
 	private Integer rangoEdadMin;
 	private Integer rangoEdadMax;
+	/** Sede del grupo (entrega 6-1b, D6-5; aditivo). NULL: grupo sin sede (escuela con varias sedes). */
+	private Long sedeId;
 	private List<AlumnoCortoDTO> alumnos;
 
 	public Long getId() {
@@ -56,6 +58,14 @@ public class GrupoConAlumnosDTO {
 
 	public void setAlumnos(List<AlumnoCortoDTO> alumnos) {
 		this.alumnos = alumnos;
+	}
+
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
 	}
 
 }

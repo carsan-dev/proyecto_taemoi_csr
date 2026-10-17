@@ -437,6 +437,8 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
   lectura; solo puede cambiar los de sus sedes.
 - D6-17 (nueva, de §9): en una sede inactiva no se crean grupos, turnos ni cargos (error de validación); se consulta
   el histórico y se pueden cobrar los cargos que ya existían.
+- D6-18 (nueva, de la revisión de la 6-1): no se da de alta un alumno en una sede inactiva, ni la gestión ni el
+  responsable (400 de validación, como D6-17). Moiskimdo no cambia (su sede está activa).
 
 | # | Decisión | Opciones (recomendada primero) | Por qué | Impacto en Moiskimdo |
 |---|---|---|---|---|

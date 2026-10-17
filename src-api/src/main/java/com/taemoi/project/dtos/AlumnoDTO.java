@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.taemoi.project.dtos.request.AlumnoDeporteCreacionDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
@@ -56,6 +57,13 @@ public class AlumnoDTO {
 	private Date fechaLicencia;
 	private Boolean tieneDiscapacidad;
 	private Boolean aptoParaExamen;
+
+	/**
+	 * Sede principal pedida en el alta (entrega 6-1b, D6-2). Solo de entrada: las respuestas no cambian. El
+	 * responsable de sede debe indicar una de las suyas (automática si tiene una); la gestión, opcional.
+	 */
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	private Long sedePrincipalId;
 
 	/**
 	 * Lista de deportes para asignar durante la creación del alumno
@@ -419,6 +427,14 @@ public class AlumnoDTO {
 
 	public void setAptoParaExamen(Boolean aptoParaExamen) {
 		this.aptoParaExamen = aptoParaExamen;
+	}
+
+	public Long getSedePrincipalId() {
+		return sedePrincipalId;
+	}
+
+	public void setSedePrincipalId(Long sedePrincipalId) {
+		this.sedePrincipalId = sedePrincipalId;
 	}
 
 	public List<AlumnoDeporteCreacionDTO> getDeportesInicial() {

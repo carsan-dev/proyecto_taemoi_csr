@@ -67,6 +67,11 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 	}
 
 	@Override
+	public boolean alumnoConSedePrincipalEn(Long alumnoId, Set<Long> sedes) {
+		return existe(alumnos, alumnoId, sedes, PredicadosAlcance.alumnosConSedePrincipalEn(sedes));
+	}
+
+	@Override
 	public boolean alumnoEnGrupos(Long alumnoId, Set<Long> grupos) {
 		return existe(alumnos, alumnoId, grupos, PredicadosAlcance.alumnosEnGrupos(grupos));
 	}

@@ -36,6 +36,9 @@ class TurnoServiceImplTest {
 	@Mock AforoPreinscripcionService aforo;
 	@Mock TemporadaService temporadas;
 	@Mock PreinscripcionRepository preinscripciones;
+	/** Entrega 6-1: sin sedes (lista vacía) el reparto por día mira todos los grupos, como siempre. */
+	@Mock com.taemoi.project.repositories.SedeRepository sedes;
+	@Mock com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 	@InjectMocks TurnoServiceImpl service;
 
 	@Test
@@ -96,6 +99,50 @@ class TurnoServiceImplTest {
 		assertThrows(IllegalStateException.class, () -> service.actualizarTurno(11L, cambios));
 		verify(turnoRepository, never()).save(turno);
 		assertEquals(origen, turno.getGrupo());
+	}
+
+	/** Entrega 6-1: con dos sedes, el reparto por día solo mira los grupos de la sede del turno, en su orden. */
+	@Test
+	void cambiarElDia_conVariasSedes_reasignaEntreLosGruposDeSuSede() {
+		Grupo a1 = grupo(1L, 10L), b1 = grupo(2L, 20L), a2 = grupo(3L, 10L), b2 = grupo(4L, 20L);
+		Turno turno = turno(11L, "Lunes", b1);
+		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
+		when(grupoRepository.findAll()).thenReturn(List.of(a1, b1, a2, b2));
+		when(sedes.findAllByOrderByIdAsc()).thenReturn(List.of(new com.taemoi.project.entities.Sede(),
+				new com.taemoi.project.entities.Sede()));
+
+		service.actualizarTurno(11L, cambiosA("martes"));
+
+		assertEquals(b2, turno.getGrupo(), "índice 1 entre los grupos de la sede 20 (b1, b2), no b1");
+		verify(gestionPorSede).exigirGrupoPropio(4L);
+	}
+
+	/** Con una sola sede, el resultado es el de siempre: índice entre todos los grupos. */
+	@Test
+	void cambiarElDia_conUnaSede_igualQueAntes() {
+		Grupo g1 = grupo(1L, 10L), g2 = grupo(2L, 10L);
+		Turno turno = turno(11L, "Lunes", g1);
+		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
+		when(grupoRepository.findAll()).thenReturn(List.of(g1, g2));
+		when(sedes.findAllByOrderByIdAsc()).thenReturn(List.of(new com.taemoi.project.entities.Sede()));
+
+		service.actualizarTurno(11L, cambiosA("martes"));
+
+		assertEquals(g2, turno.getGrupo());
+	}
+
+	private static TurnoDTO cambiosA(String dia) {
+		TurnoDTO cambios = new TurnoDTO();
+		cambios.setDiaSemana(dia);
+		cambios.setHoraInicio("18:00");
+		cambios.setHoraFin("19:00");
+		return cambios;
+	}
+
+	private Grupo grupo(Long id, Long sede) {
+		Grupo grupo = grupo(id);
+		grupo.setSedeId(sede);
+		return grupo;
 	}
 
 	private Grupo grupo(Long id) {

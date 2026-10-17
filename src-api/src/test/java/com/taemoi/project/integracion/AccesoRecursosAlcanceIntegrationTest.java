@@ -255,12 +255,18 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 				Long.class, responsable, orgA);
 		jdbc.update("INSERT INTO membresia_sede (membresia_id, sede_id) VALUES (?, ?)", membresiaResp, s1);
 
+		// aGrupo1 está en g1 (sede s1): en el grupo del profesor y en la sede del responsable, pero de ninguno de los
+		// dos como familia. El profesor sigue entrando solo como familia (D5-2, hasta la entrega 7).
+		MvcResult ajeno = peticion("/api/alumnos/" + aGrupo1 + "/grupos", profesor);
+		assertEquals(403, ajeno.getResponse().getStatus());
+		assertTrue(ajeno.getResponse().getContentAsString().contains("Acceso denegado"),
+				"403 de @PreAuthorize (5c-2, D5-4): " + ajeno.getResponse().getContentAsString());
+		// Entrega 6-1 (D6-15): la cuenta FAMILIA + RESPONSABLE_SEDE lee por API los alumnos de su sede.
+		assertEquals(200, peticion("/api/alumnos/" + aGrupo1 + "/grupos", responsable).getResponse().getStatus());
+		// aGrupo2 (sede principal s2, grupo g2 de s2): fuera de su sede.
+		assertEquals(403, peticion("/api/alumnos/" + aGrupo2 + "/grupos", responsable).getResponse().getStatus());
 		for (long cuenta : List.of(profesor, responsable)) {
-			// aGrupo1 está en g1 (sede s1): en su grupo y en su sede, pero no es suyo como familia.
-			MvcResult ajeno = peticion("/api/alumnos/" + aGrupo1 + "/grupos", cuenta);
-			assertEquals(403, ajeno.getResponse().getStatus(), "cuenta " + cuenta);
-			assertTrue(ajeno.getResponse().getContentAsString().contains("Acceso denegado"),
-					"403 de @PreAuthorize (5c-2, D5-4): " + ajeno.getResponse().getContentAsString());
+			// Convocatorias: entrega 6-2.
 			assertEquals(403, peticion("/api/convocatorias/alumnos/" + aGrupo1, cuenta).getResponse().getStatus());
 		}
 		assertEquals(200, peticion("/api/alumnos/" + alumnoProfesor + "/grupos", profesor).getResponse().getStatus());
@@ -313,8 +319,12 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ Alumno.sedePrincipalId
 
+	/**
+	 * Entrega 6-1b: la sede principal se escribe en el alta y NUNCA en un UPDATE de la entidad (un {@code save} de una
+	 * entidad a medio construir no la pone a NULL); los cambios van por {@code asignarSedePrincipal}. Fuera del JSON.
+	 */
 	@Test
-	void sedePrincipal_soloLecturaYFueraDelJson() throws Exception {
+	void sedePrincipal_seEscribeEnElAltaNuncaEnUnSaveYFueraDelJson() throws Exception {
 		Alumno cargado = enA(() -> alumnos.findById(aPrincipal).orElseThrow());
 		assertEquals(s1, cargado.getSedePrincipalId());
 
@@ -328,11 +338,24 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Calle Cambiada 2",
 				jdbc.queryForObject("SELECT direccion FROM alumno WHERE id = ?", String.class, aPrincipal));
 
-		// Un INSERT tampoco la escribe.
+		// Un save con el campo a NULL (entidad a medio construir) tampoco la pone a NULL.
+		Alumno sinSede = enA(() -> alumnos.findById(aPrincipal).orElseThrow());
+		campo.set(sinSede, null);
+		enA(() -> alumnos.save(sinSede));
+		assertEquals(s1, jdbc.queryForObject("SELECT sede_principal_id FROM alumno WHERE id = ?", Long.class, aPrincipal));
+
+		// El alta (INSERT) sí la escribe.
 		Alumno nuevo = alumnoEntidad();
-		campo.set(nuevo, s1);
+		nuevo.setSedePrincipalId(s1);
 		long idNuevo = enA(() -> alumnos.save(nuevo).getId());
-		assertNull(jdbc.queryForObject("SELECT sede_principal_id FROM alumno WHERE id = ?", Long.class, idNuevo));
+		assertEquals(s1, jdbc.queryForObject("SELECT sede_principal_id FROM alumno WHERE id = ?", Long.class, idNuevo));
+
+		// El cambio posterior, solo por el UPDATE explícito, y solo en la escuela activa.
+		assertEquals(1, enA(() -> alumnos.asignarSedePrincipal(idNuevo, s2)));
+		assertEquals(s2, jdbc.queryForObject("SELECT sede_principal_id FROM alumno WHERE id = ?", Long.class, idNuevo));
+		assertEquals(0, TenantContext.calcularCon(orgB, () -> alumnos.asignarSedePrincipal(idNuevo, sB)),
+				"desde otra escuela no se toca");
+		assertEquals(s2, jdbc.queryForObject("SELECT sede_principal_id FROM alumno WHERE id = ?", Long.class, idNuevo));
 
 		Alumno conSede = new Alumno();
 		campo.set(conSede, s1);

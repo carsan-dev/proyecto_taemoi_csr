@@ -355,6 +355,131 @@ class AccesoRecursosTest {
 		verify(consulta, never()).alumnoEnGrupos(anyLong(), anySet());
 	}
 
+	// ------------------------------------------------------------------ métodos solo por sede (entrega 6, §2.1)
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER" })
+	void enSede_gestionTodoSinConsultar(String autoridad) {
+		sesion(token(autoridad));
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.alumnoEnSede(7L, op.name()));
+			assertTrue(acceso.grupoEnSede(7L, op.name()));
+			assertTrue(acceso.turnoEnSede(7L, op.name()));
+		}
+		assertTrue(acceso.alumnoComoFamiliaOSede(7L));
+		assertFalse(acceso.alumnoEnSede(null, "LEER"));
+		assertFalse(acceso.alumnoEnSede(7L, "BORRAR"));
+		assertFalse(acceso.alumnoComoFamiliaOSede(null));
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void enSede_responsable_leerPorD9EditarSoloPorSedePrincipal() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.alumnoEnSedes(7L, SEDES)).thenReturn(true);
+		when(consulta.alumnoConSedePrincipalEn(7L, SEDES)).thenReturn(false);
+		when(consulta.alumnoConSedePrincipalEn(8L, SEDES)).thenReturn(true);
+
+		assertTrue(acceso.alumnoEnSede(7L, "LEER"), "D9: por grupo de su sede");
+		assertFalse(acceso.alumnoEnSede(7L, "EDITAR"), "D6-3: sin ser su sede principal, solo lectura");
+		assertTrue(acceso.alumnoEnSede(8L, "EDITAR"));
+		verify(consulta, never()).alumnoEnSedes(8L, SEDES);
+		verify(consulta, never()).alumnoEnGrupos(anyLong(), anySet());
+		verify(consulta, never()).familiaVeAlumno(any(), anyLong());
+	}
+
+	@Test
+	void enSede_responsable_grupoYTurnoPorSusSedes() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.grupoEnSedes(1L, SEDES)).thenReturn(true);
+		when(consulta.turnoEnSedes(2L, SEDES)).thenReturn(true);
+		when(consulta.grupoEnSedes(9L, SEDES)).thenReturn(false);
+		when(consulta.turnoEnSedes(9L, SEDES)).thenReturn(false);
+
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.grupoEnSede(1L, op.name()));
+			assertTrue(acceso.turnoEnSede(2L, op.name()));
+			assertFalse(acceso.grupoEnSede(9L, op.name()));
+			assertFalse(acceso.turnoEnSede(9L, op.name()));
+		}
+		verify(consulta, never()).grupoEnGrupos(anyLong(), anySet());
+		verify(consulta, never()).turnoEnGrupos(anyLong(), anySet());
+	}
+
+	@Test
+	void enSede_profesor_nuncaConcedeNiConsulta() {
+		// La rama de profesor llega en la entrega 7: los métodos de la E6 no la activan.
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"));
+
+		assertFalse(acceso.alumnoEnSede(7L, "LEER"));
+		assertFalse(acceso.grupoEnSede(30L, "LEER"));
+		assertFalse(acceso.turnoEnSede(2L, "LEER"));
+		assertFalse(acceso.alumnoComoFamiliaOSede(7L));
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void enSede_responsableYProfesor_soloPorSedes() {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"));
+		when(consulta.alumnoEnSedes(7L, SEDES)).thenReturn(false);
+
+		assertFalse(acceso.alumnoEnSede(7L, "LEER"), "su grupo de profesor no cuenta");
+		assertFalse(acceso.grupoEnSede(30L, "LEER"));
+		verify(consulta, never()).alumnoEnGrupos(anyLong(), anySet());
+		verify(consulta, never()).grupoEnGrupos(anyLong(), anySet());
+	}
+
+	@Test
+	void enSede_familia_denegadoSinConsultar() {
+		sesion(token("ROLE_USER"));
+
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertFalse(acceso.alumnoEnSede(7L, op.name()));
+			assertFalse(acceso.grupoEnSede(7L, op.name()));
+			assertFalse(acceso.turnoEnSede(7L, op.name()));
+		}
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void comoFamiliaOSede_familiaIgualQueAlumnoComoFamilia() {
+		Authentication familia = token("ROLE_USER");
+		sesion(familia);
+		when(consulta.familiaVeAlumno(familia, 7L)).thenReturn(true);
+		when(consulta.familiaVeAlumno(familia, 8L)).thenReturn(false);
+
+		assertTrue(acceso.alumnoComoFamiliaOSede(7L));
+		assertFalse(acceso.alumnoComoFamiliaOSede(8L));
+		verify(consulta, never()).alumnoEnSedes(anyLong(), anySet());
+	}
+
+	@Test
+	void comoFamiliaOSede_familiaYProfesor_soloComoFamilia() {
+		AutenticacionEscuela mixta = escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR");
+		sesion(mixta);
+		when(consulta.familiaVeAlumno(mixta, 7L)).thenReturn(false);
+
+		assertFalse(acceso.alumnoComoFamiliaOSede(7L), "D5-2: la rama de profesor no se activa");
+		verify(consulta, never()).alumnoEnGrupos(anyLong(), anySet());
+		verify(consulta, never()).alumnoEnSedes(anyLong(), anySet());
+	}
+
+	@Test
+	void comoFamiliaOSede_familiaYResponsable_porSuSedeOComoFamilia() {
+		AutenticacionEscuela mixta = escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_USER",
+				"ROLE_RESPONSABLE_SEDE");
+		sesion(mixta);
+		when(consulta.familiaVeAlumno(mixta, 7L)).thenReturn(false);
+		when(consulta.alumnoEnSedes(7L, SEDES)).thenReturn(true);
+		when(consulta.familiaVeAlumno(mixta, 8L)).thenReturn(true);
+		when(consulta.familiaVeAlumno(mixta, 9L)).thenReturn(false);
+		when(consulta.alumnoEnSedes(9L, SEDES)).thenReturn(false);
+
+		assertTrue(acceso.alumnoComoFamiliaOSede(7L), "por su sede (D6-15)");
+		assertTrue(acceso.alumnoComoFamiliaOSede(8L), "su alumno de familia");
+		assertFalse(acceso.alumnoComoFamiliaOSede(9L));
+	}
+
 	// ------------------------------------------------------------------ SpEL (5c-2)
 
 	@Test

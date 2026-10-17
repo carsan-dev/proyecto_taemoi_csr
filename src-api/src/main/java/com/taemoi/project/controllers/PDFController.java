@@ -266,7 +266,7 @@ public class PDFController {
 	}
 
 	@GetMapping("/asistencia")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public void generarAsistencia(@RequestParam int year, @RequestParam int month,
 			@RequestParam(required = false) String grupo,
 			@RequestParam(required = false) List<String> grupos,
