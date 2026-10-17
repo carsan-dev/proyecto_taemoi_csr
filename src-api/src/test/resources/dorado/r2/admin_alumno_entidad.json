@@ -1,0 +1,205 @@
+{
+  "activo" : true,
+  "apellidos" : "ApellidoJ Sintetico",
+  "autorizacionWeb" : false,
+  "codigoPostal" : "41001",
+  "convocatorias" : [ ],
+  "deportes" : [
+    {
+      "activo" : true,
+      "aptoParaExamen" : true,
+      "categoria" : null,
+      "competidor" : true,
+      "convocatorias" : [ ],
+      "cuantiaTarifa" : 20.0,
+      "deporte" : "KICKBOXING",
+      "fechaAlta" : "fecha:2020-09-01",
+      "fechaAltaCompeticion" : "fecha:2025-02-01",
+      "fechaAltaCompetidorInicial" : "fecha:2024-02-01",
+      "fechaAltaInicial" : "fecha:2019-09-01",
+      "fechaBaja" : null,
+      "fechaGrado" : "fecha:2021-01-15",
+      "fechaLicencia" : "fecha:2026-01-10",
+      "fechaPeso" : "fecha:2026-09-05",
+      "grado" : null,
+      "grupoFamiliar" : "FAM-DORADO-1",
+      "id" : "alumnoDeporte:A05/KICKBOXING",
+      "numeroLicencia" : 1002,
+      "peso" : 28.5,
+      "principal" : false,
+      "rolFamiliar" : "HIJO",
+      "tieneLicencia" : true,
+      "tipoTarifa" : "KICKBOXING"
+    },
+    {
+      "activo" : true,
+      "aptoParaExamen" : true,
+      "categoria" : {
+        "id" : 1,
+        "nombre" : "Infantil",
+        "tipoCategoria" : null
+      },
+      "competidor" : true,
+      "convocatorias" : [ ],
+      "cuantiaTarifa" : 25.0,
+      "deporte" : "TAEKWONDO",
+      "fechaAlta" : "fecha:2020-09-01",
+      "fechaAltaCompeticion" : "fecha:2025-02-01",
+      "fechaAltaCompetidorInicial" : "fecha:2024-02-01",
+      "fechaAltaInicial" : "fecha:2019-09-01",
+      "fechaBaja" : null,
+      "fechaGrado" : "fecha:2021-01-15",
+      "fechaLicencia" : "fecha:2026-01-10",
+      "fechaPeso" : "fecha:2026-09-05",
+      "grado" : {
+        "id" : 1,
+        "tipoGrado" : "BLANCO"
+      },
+      "grupoFamiliar" : "FAM-DORADO-1",
+      "id" : "alumnoDeporte:A05/TAEKWONDO",
+      "numeroLicencia" : 1001,
+      "peso" : 28.5,
+      "principal" : true,
+      "rolFamiliar" : "HIJO",
+      "tieneLicencia" : true,
+      "tipoTarifa" : "INFANTIL"
+    }
+  ],
+  "direccion" : "Calle Dorado 5",
+  "documentos" : [
+    {
+      "id" : "documento:A05",
+      "nombre" : "autorizacion-a05.pdf",
+      "ruta" : "target/it-files/documentos/autorizacion-a05.pdf",
+      "tipo" : "application/pdf",
+      "url" : null
+    }
+  ],
+  "email" : "dorado-r2-a05@example.test",
+  "fechaAlta" : "fecha:2020-09-01",
+  "fechaAltaInicial" : "fecha:2019-09-01",
+  "fechaBaja" : null,
+  "fechaNacimiento" : "fecha:2018-06-06",
+  "fechaRetoDiarioCompletado" : "fecha:2026-09-30",
+  "fotoAlumno" : null,
+  "genero" : "MASCULINO",
+  "grupos" : [
+    {
+      "deporte" : "KICKBOXING",
+      "id" : "grupo:KB-INICIACION",
+      "nombre" : "DORADOR2 Kickboxing Iniciacion",
+      "rangoEdadMax" : null,
+      "rangoEdadMin" : null,
+      "tipo" : null
+    },
+    {
+      "deporte" : "TAEKWONDO",
+      "id" : "grupo:TKD-INFANTIL",
+      "nombre" : "DORADOR2 Taekwondo Infantil",
+      "rangoEdadMax" : 12,
+      "rangoEdadMin" : 6,
+      "tipo" : null
+    }
+  ],
+  "id" : "alumno:A05",
+  "localidad" : "Sevilla",
+  "nif" : null,
+  "nombre" : "DORADOR2 A05",
+  "numeroExpediente" : 7700005,
+  "observaciones" : null,
+  "productosAlumno" : [
+    {
+      "cantidad" : 2,
+      "concepto" : "Camiseta talla S",
+      "fechaAsignacion" : "fecha:2026-09-15T10:30",
+      "fechaPago" : "fecha:2026-09-20T12:00",
+      "id" : "productoAlumno:A05/CAMISETA",
+      "notas" : "Nota de prueba",
+      "pagado" : true,
+      "precio" : 31.0,
+      "producto" : {
+        "concepto" : "Dorado R2 camiseta",
+        "id" : "producto:CAMISETA",
+        "precio" : 15.5
+      }
+    }
+  ],
+  "rachaRetoDiario" : 4,
+  "responsableLegalNif" : null,
+  "responsableLegalNombre" : null,
+  "telefono" : "600000005",
+  "telefono2" : null,
+  "tieneDerechoExamen" : false,
+  "tieneDiscapacidad" : false,
+  "turnos" : [
+    {
+      "diaSemana" : "Jueves",
+      "grupo" : {
+        "deporte" : "KICKBOXING",
+        "id" : "grupo:KB-INICIACION",
+        "nombre" : "DORADOR2 Kickboxing Iniciacion",
+        "rangoEdadMax" : null,
+        "rangoEdadMin" : null,
+        "tipo" : null
+      },
+      "horaFin" : "19:00",
+      "horaInicio" : "18:00",
+      "id" : "turno:KB-INICIACION/Jueves/18:00",
+      "tipo" : null,
+      "tipoTurno" : "No definido",
+      "turno" : "De 18:00 a 19:00"
+    },
+    {
+      "diaSemana" : "Jueves",
+      "grupo" : {
+        "deporte" : "KICKBOXING",
+        "id" : "grupo:KB-INICIACION",
+        "nombre" : "DORADOR2 Kickboxing Iniciacion",
+        "rangoEdadMax" : null,
+        "rangoEdadMin" : null,
+        "tipo" : null
+      },
+      "horaFin" : "19:00",
+      "horaInicio" : "18:00",
+      "id" : "turno:KB-INICIACION/Jueves/18:00",
+      "tipo" : null,
+      "tipoTurno" : "No definido",
+      "turno" : "De 18:00 a 19:00"
+    },
+    {
+      "diaSemana" : "Lunes",
+      "grupo" : {
+        "deporte" : "TAEKWONDO",
+        "id" : "grupo:TKD-INFANTIL",
+        "nombre" : "DORADOR2 Taekwondo Infantil",
+        "rangoEdadMax" : 12,
+        "rangoEdadMin" : 6,
+        "tipo" : null
+      },
+      "horaFin" : "18:00",
+      "horaInicio" : "17:00",
+      "id" : "turno:TKD-INFANTIL/Lunes/17:00",
+      "tipo" : "Taekwondo",
+      "tipoTurno" : "No definido",
+      "turno" : "De 17:00 a 18:00"
+    },
+    {
+      "diaSemana" : "Lunes",
+      "grupo" : {
+        "deporte" : "TAEKWONDO",
+        "id" : "grupo:TKD-INFANTIL",
+        "nombre" : "DORADOR2 Taekwondo Infantil",
+        "rangoEdadMax" : 12,
+        "rangoEdadMin" : 6,
+        "tipo" : null
+      },
+      "horaFin" : "18:00",
+      "horaInicio" : "17:00",
+      "id" : "turno:TKD-INFANTIL/Lunes/17:00",
+      "tipo" : "Taekwondo",
+      "tipoTurno" : "No definido",
+      "turno" : "De 17:00 a 18:00"
+    }
+  ],
+  "usuario" : null
+}

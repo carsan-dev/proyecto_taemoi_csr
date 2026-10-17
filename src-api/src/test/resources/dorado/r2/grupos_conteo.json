@@ -1,0 +1,22 @@
+{
+  "Defensa Personal Femenina" : {
+    "active" : 0,
+    "total" : 0
+  },
+  "Kickboxing" : {
+    "active" : 7,
+    "total" : 7
+  },
+  "Pilates" : {
+    "active" : 0,
+    "total" : 0
+  },
+  "Taekwondo" : {
+    "active" : 22,
+    "total" : 24
+  },
+  "Taekwondo Competición" : {
+    "active" : 2,
+    "total" : 2
+  }
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "deporte" : "KICKBOXING",
+    "id" : "grupo:KB-INICIACION",
+    "nombre" : "DORADOR2 Kickboxing Iniciacion",
+    "rangoEdadMax" : null,
+    "rangoEdadMin" : null,
+    "sedeId" : null
+  },
+  {
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:TKD-INFANTIL",
+    "nombre" : "DORADOR2 Taekwondo Infantil",
+    "rangoEdadMax" : 12,
+    "rangoEdadMin" : 6,
+    "sedeId" : 1
+  }
+]

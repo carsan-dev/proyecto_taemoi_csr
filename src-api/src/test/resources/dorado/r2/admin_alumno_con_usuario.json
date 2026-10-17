@@ -1,0 +1,110 @@
+{
+  "activo" : true,
+  "apellidos" : "ApellidoV Sintetico",
+  "autorizacionWeb" : true,
+  "codigoPostal" : "41001",
+  "convocatorias" : [ ],
+  "deportes" : [
+    {
+      "activo" : true,
+      "aptoParaExamen" : false,
+      "categoria" : null,
+      "competidor" : false,
+      "convocatorias" : [ ],
+      "cuantiaTarifa" : null,
+      "deporte" : "TAEKWONDO",
+      "fechaAlta" : "fecha:2020-09-01",
+      "fechaAltaCompeticion" : null,
+      "fechaAltaCompetidorInicial" : null,
+      "fechaAltaInicial" : "fecha:2019-09-01",
+      "fechaBaja" : null,
+      "fechaGrado" : "fecha:2021-01-15",
+      "fechaLicencia" : null,
+      "fechaPeso" : null,
+      "grado" : {
+        "id" : 1,
+        "tipoGrado" : "BLANCO"
+      },
+      "grupoFamiliar" : null,
+      "id" : "alumnoDeporte:A03/TAEKWONDO",
+      "numeroLicencia" : null,
+      "peso" : null,
+      "principal" : true,
+      "rolFamiliar" : null,
+      "tieneLicencia" : false,
+      "tipoTarifa" : null
+    }
+  ],
+  "direccion" : "Calle Dorado 3",
+  "documentos" : [ ],
+  "email" : "dorado-r2-a03@example.test",
+  "fechaAlta" : "fecha:2020-09-01",
+  "fechaAltaInicial" : "fecha:2019-09-01",
+  "fechaBaja" : null,
+  "fechaNacimiento" : "fecha:2016-04-04",
+  "fechaRetoDiarioCompletado" : "fecha:2026-09-30",
+  "fotoAlumno" : null,
+  "genero" : "MASCULINO",
+  "grupos" : [
+    {
+      "deporte" : "TAEKWONDO",
+      "id" : "grupo:TKD-INFANTIL",
+      "nombre" : "DORADOR2 Taekwondo Infantil",
+      "rangoEdadMax" : 12,
+      "rangoEdadMin" : 6,
+      "tipo" : null
+    }
+  ],
+  "id" : "alumno:A03",
+  "localidad" : "Sevilla",
+  "nif" : "X7700003D",
+  "nombre" : "DORADOR2 A03",
+  "numeroExpediente" : 7700003,
+  "observaciones" : null,
+  "productosAlumno" : [ ],
+  "rachaRetoDiario" : 4,
+  "responsableLegalNif" : null,
+  "responsableLegalNombre" : null,
+  "telefono" : "600000003",
+  "telefono2" : null,
+  "tieneDerechoExamen" : false,
+  "tieneDiscapacidad" : false,
+  "turnos" : [
+    {
+      "diaSemana" : "Lunes",
+      "grupo" : {
+        "deporte" : "TAEKWONDO",
+        "id" : "grupo:TKD-INFANTIL",
+        "nombre" : "DORADOR2 Taekwondo Infantil",
+        "rangoEdadMax" : 12,
+        "rangoEdadMin" : 6,
+        "tipo" : null
+      },
+      "horaFin" : "18:00",
+      "horaInicio" : "17:00",
+      "id" : "turno:TKD-INFANTIL/Lunes/17:00",
+      "tipo" : "Taekwondo",
+      "tipoTurno" : "No definido",
+      "turno" : "De 17:00 a 18:00"
+    }
+  ],
+  "usuario" : {
+    "accountNonExpired" : true,
+    "accountNonLocked" : true,
+    "apellidos" : "Dorado A03",
+    "authProvider" : "LOCAL",
+    "authorities" : [ ],
+    "credentialsNonExpired" : true,
+    "email" : "dorado-r2-familia-a03@example.test",
+    "enabled" : true,
+    "id" : "usuario:A03",
+    "nombre" : "Familia",
+    "recordatorioRachaEmailHabilitado" : true,
+    "ultimoRecordatorioRachaReset" : [
+      2026,
+      28,
+      9
+    ],
+    "username" : "dorado-r2-familia-a03@example.test"
+  }
+}
