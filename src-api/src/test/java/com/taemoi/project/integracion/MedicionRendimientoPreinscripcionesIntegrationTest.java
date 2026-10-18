@@ -89,6 +89,11 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 	/** R2-P7c: {@code -Dr2.repeticiones} para medianas más estables en las peticiones cortas. */
 	private static final int REPETICIONES = Integer.getInteger("r2.repeticiones", 5);
 	private static final Path SALIDA = Path.of("target", System.getProperty("r2.salida", "r2-p7-medicion"));
+	/**
+	 * R2-P7d: {@code -Dr2.smtp.ms=300} simula un SMTP que tarda eso por envío (solo en las mediciones, no en la siembra).
+	 * Con 0 (por defecto), el {@link JavaMailSender} simulado de siempre (sin respuesta: el envío falla al momento).
+	 */
+	private static final long SMTP_MS = Long.getLong("r2.smtp.ms", 0L);
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -369,7 +374,7 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 		return "data:image/png;base64," + Base64.getEncoder().encodeToString(out.toByteArray());
 	}
 
-	private String dni() {
+	private synchronized String dni() {
 		int n = dniSecuencia++;
 		return n + String.valueOf("TRWAGMYFPDXBNJZSQVHLCKE".charAt(n % 23));
 	}
@@ -400,6 +405,15 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 	@Test
 	void medir() throws Exception {
 		Files.createDirectories(SALIDA);
+		if (SMTP_MS > 0) {
+			org.mockito.Mockito.when(mailSender.createMimeMessage())
+					.thenAnswer(inv -> new jakarta.mail.internet.MimeMessage((jakarta.mail.Session) null));
+			org.mockito.Mockito.doAnswer(inv -> {
+				Thread.sleep(SMTP_MS);
+				return null;
+			}).when(mailSender).send(org.mockito.ArgumentMatchers.any(jakarta.mail.internet.MimeMessage.class));
+			notas.append("- SMTP simulado: ").append(SMTP_MS).append(" ms por envío.\n");
+		}
 		String pendiente = jdbc.queryForObject("SELECT MIN(referencia) FROM preinscripcion WHERE referencia LIKE 'PRE-R2-%' AND estado = 'PENDIENTE' AND temporada = ?", String.class, temporada);
 		String espera = jdbc.queryForObject("SELECT MAX(referencia) FROM preinscripcion WHERE referencia LIKE 'PRE-R2-%' AND estado = 'EN_LISTA_ESPERA' AND temporada = ?", String.class, temporada);
 		Map<String, String> rutas = new LinkedHashMap<>();
@@ -483,6 +497,7 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 				WHERE p.referencia LIKE 'PRE-R2-%' AND p.estado = 'PENDIENTE' AND p.temporada = ? AND d.codigo = 'TAEKWONDO'
 				  AND p.grupo_id <> ?""", String.class, temporada, gruposTkd.get(0));
 		escritura("alta_publica_tkd", () -> altaPublicaMedida(), tabla, detalle, st);
+		dosAltasSimultaneas(tabla);
 		escritura("actualizar_turnos_pendiente", () -> mvc.perform(put("/api/preinscripciones/" + pendTkd + "/turnos")
 				.cookie(new Cookie("jwt", token)).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"turnoIds\":[" + turnoNuevo + "]}")).andReturn(), tabla, detalle, st);
@@ -536,7 +551,35 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 		body.put("firmanteNombre", "Firmante Sintético");
 		body.put("firmaBase64", firmaLienzo());
 		return mvc.perform(post("/api/preinscripciones").contentType(MediaType.APPLICATION_JSON)
-				.header("X-Forwarded-For", "10.0.1." + (ipSecuencia++)).content(json.writeValueAsString(body))).andReturn();
+				.header("X-Forwarded-For", "10.0.1." + ip()).content(json.writeValueAsString(body))).andReturn();
+	}
+
+	private synchronized int ip() {
+		return ipSecuencia++;
+	}
+
+	/**
+	 * R2-P7d: dos altas públicas a la vez en los mismos turnos (se serializan por el bloqueo de los turnos). Tiempo total
+	 * de las dos y de cada una; con el correo dentro de la transacción, la segunda espera también el SMTP de la primera.
+	 */
+	private void dosAltasSimultaneas(StringBuilder tabla) throws Exception {
+		java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+		try {
+			java.util.concurrent.Callable<long[]> alta = () -> {
+				long t = System.nanoTime();
+				int estado = altaPublicaMedida().getResponse().getStatus();
+				return new long[] { estado, (System.nanoTime() - t) / 1_000_000 };
+			};
+			long t = System.nanoTime();
+			var a = executor.submit(alta);
+			var b = executor.submit(alta);
+			long[] ra = a.get(), rb = b.get();
+			long total = (System.nanoTime() - t) / 1_000_000;
+			tabla.append(String.format("| alta_publica_tkd_2_simultaneas | HTTP %d/%d | - | - | %d (cada una: %d, %d) | - | - |%n",
+					ra[0], rb[0], total, Math.min(ra[1], rb[1]), Math.max(ra[1], rb[1])));
+		} finally {
+			executor.shutdownNow();
+		}
 	}
 
 	@FunctionalInterface
