@@ -342,6 +342,66 @@ public class AlumnoServiceImpl implements AlumnoService {
 				org.springframework.data.domain.Sort.by("id"));
 	}
 
+	@Override
+	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
+			boolean incluirInactivos, boolean aptoParaExamen, @NonNull Pageable pageable) {
+		// El nombre no va al filtro común (que busca también en «nombre apellidos» y sin distinguir tildes).
+		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
+				buildAlumnoSpecification(null, gradoId, categoriaId, incluirInactivos, aptoParaExamen)
+						.and(filtroDeporteComoElNavegador(deporte, nombre, incluirInactivos));
+		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
+		if (restriccion.isPresent()) {
+			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		}
+		return alumnoRepository.findAll(filtro, pageable);
+	}
+
+	/**
+	 * Criterio del navegador en el filtro por deporte (R2-P6, ver {@link AlumnoService#obtenerAlumnosPorDeporte}).
+	 * La ficha activa sin inactivos ya la pide el filtro común; aquí, el resto.
+	 */
+	private static org.springframework.data.jpa.domain.Specification<Alumno> filtroDeporteComoElNavegador(
+			String deporte, String nombre, boolean incluirInactivos) {
+		// JavaScript trim(): también el espacio duro y el BOM, que String.strip() no quita.
+		String texto = nombre == null ? "" : nombre.replaceAll("^[\\s\\u00A0\\uFEFF\\p{Z}]+|[\\s\\u00A0\\uFEFF\\p{Z}]+$", "")
+				.toLowerCase(java.util.Locale.ROOT);
+		// Comparaciones binarias con utf8mb4_bin/minusculas_utf8mb4_bin (FuncionesSqlContributor): convierten a utf8mb4
+		// antes de la colación, así no dependen del juego de caracteres de la columna.
+		return (root, query, cb) -> {
+			org.hibernate.query.criteria.HibernateCriteriaBuilder hcb =
+					(org.hibernate.query.criteria.HibernateCriteriaBuilder) cb;
+			List<Predicate> predicados = new ArrayList<>();
+			// Tiene el deporte, activo o no (practicaDeporte del navegador; código exacto, como su ===). La igualdad
+			// normal va delante para que la consulta pueda usar el índice del código; la binaria afina mayúsculas.
+			jakarta.persistence.criteria.Subquery<Long> conDeporte = query.subquery(Long.class);
+			jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> ad =
+					conDeporte.from(com.taemoi.project.entities.AlumnoDeporte.class);
+			jakarta.persistence.criteria.Path<String> codigo = ad.get("disciplina").get("codigo");
+			conDeporte.select(ad.get("id")).where(cb.equal(ad.get("alumno"), root), cb.equal(codigo, deporte),
+					cb.equal(cb.function(com.taemoi.project.config.FuncionesSqlContributor.UTF8MB4_BIN, String.class,
+							codigo), deporte));
+			predicados.add(cb.exists(conDeporte));
+			if (!incluirInactivos) {
+				// isAlumnoActivo del navegador: al menos un deporte activo (cualquiera).
+				jakarta.persistence.criteria.Subquery<Long> conActivo = query.subquery(Long.class);
+				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> activo =
+						conActivo.from(com.taemoi.project.entities.AlumnoDeporte.class);
+				conActivo.select(activo.get("id")).where(cb.equal(activo.get("alumno"), root),
+						cb.equal(activo.get("activo"), true));
+				predicados.add(cb.exists(conActivo));
+			}
+			if (!texto.isEmpty()) {
+				// includes() del navegador: binario tras pasar a minúsculas (distingue tildes) y sin comodines (LOCATE).
+				String minusculas = com.taemoi.project.config.FuncionesSqlContributor.MINUSCULAS_UTF8MB4_BIN;
+				predicados.add(cb.or(
+						cb.greaterThan(hcb.locate(cb.function(minusculas, String.class, root.get("nombre")), texto), 0),
+						cb.greaterThan(hcb.locate(cb.function(minusculas, String.class, root.get("apellidos")), texto),
+								0)));
+			}
+			return cb.and(predicados.toArray(new Predicate[0]));
+		};
+	}
+
 	/**
 	 * Ids para la navegación de editar-alumno: mismo filtro que el listado sin paginar, sin cargar las fichas. Para el
 	 * responsable de sede, solo los de su alcance (D9), por id.

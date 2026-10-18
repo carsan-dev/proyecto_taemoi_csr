@@ -41,6 +41,22 @@ public interface AlumnoService {
 
 	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
 
+	/**
+	 * R2-P6 (decisión D5): el listado filtrado por deporte en el servidor, con el criterio que aplicaba el navegador
+	 * sobre {@code GET /api/alumnos/con-deportes} (listado-alumnos, {@code actualizarAlumnosPaginadosCliente}):
+	 * <ul>
+	 * <li>el alumno tiene el deporte, activo o de baja en él;</li>
+	 * <li>sin inactivos: ficha activa y al menos un deporte activo (el de baja en ese deporte que sigue activo en otro
+	 * sale);</li>
+	 * <li>nombre: el texto sin espacios a los lados, en minúsculas, contenido en el nombre o en los apellidos (no en
+	 * «nombre apellidos»), distinguiendo tildes y sin comodines.</li>
+	 * </ul>
+	 * Mismo alcance que el listado (organización activa; el responsable de sede, sus sedes). El orden lo da el
+	 * {@code pageable} (el listado: nombre e id).
+	 */
+	Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
+			boolean incluirInactivos, boolean aptoParaExamen, @NonNull Pageable pageable);
+
 	List<Long> obtenerIdsAlumnos(boolean incluirInactivos);
 
 	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO);

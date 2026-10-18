@@ -25,6 +25,17 @@ public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecific
 	List<Turno> findByGrupo(Grupo grupo);
 
 	/**
+	 * R2-P6 (turnos públicos de preinscripción): los turnos con grupo de una disciplina, con su grupo y sin alumnos,
+	 * por id (antes, todos los turnos de la escuela con todos sus alumnos y el filtro en memoria).
+	 */
+	@Query("SELECT t FROM Turno t JOIN FETCH t.grupo g WHERE g.disciplina.codigo = :codigo ORDER BY t.id")
+	List<Turno> findConGrupoPorDisciplina(@Param("codigo") String codigo);
+
+	/** R2-P6 (grupos públicos de preinscripción): los turnos de esos grupos de una vez, por id (antes, uno por grupo). */
+	@Query("SELECT t FROM Turno t WHERE t.grupo IN :grupos ORDER BY t.id")
+	List<Turno> findByGrupoIn(@Param("grupos") java.util.Collection<Grupo> grupos);
+
+	/**
 	 * R2-P4 (resumen de grupos): día y horas de los turnos de esos grupos, sin cargar entidades ni alumnos. Filas
 	 * {@code [grupoId, id, diaSemana, horaInicio, horaFin]}, por id.
 	 */
