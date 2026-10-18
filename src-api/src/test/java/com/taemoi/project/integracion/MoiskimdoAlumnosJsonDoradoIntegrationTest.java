@@ -153,7 +153,8 @@ import jakarta.servlet.http.Cookie;
  * endpoints de toda la organización el número depende de lo que hayan dejado otras clases, así que el límite es
  * sobre el incremento respecto a la misma petición antes de sembrar ({@code Δ}); en los demás, absoluto. Valor =
  * medido + un margen pequeño (el mismo que en P0: 2, o ~10 % en los grandes); remedido tras R2-P1 (colecciones
- * Alumno–Grupo–Turno en LAZY). Cada pieza que mejore un endpoint baja su límite.
+ * Alumno–Grupo–Turno en LAZY) y tras R2-P2 ({@code Alumno.usuario} en LAZY). Cada pieza que mejore un endpoint baja su
+ * límite.
  */
 @SpringBootTest(properties = {
 		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias",
@@ -242,37 +243,39 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 	/** Endpoints de la tabla §1 del informe R2 (y el de turnos de un alumno en un grupo). */
 	static Stream<Caso> casos() {
 		return Stream.of(
-				// Límites: medido tras R2-P1 + margen (2, o ~10 % en los grandes). Δ = incremento por la siembra.
-				// Al final de cada línea: lo medido en P1 y, entre paréntesis, lo medido en P0 (a704511c).
-				total("alumnos_count", "/api/alumnos/count", 2), // Δ0 (Δ0)
+				// Límites: medido tras R2-P2 + margen (2, o ~10 % en los grandes); ninguno sube. Δ = incremento por la
+				// siembra. Al final de cada línea: lo medido en P2 y, entre paréntesis, en P1 y en P0 (a704511c). En los
+				// dos de /api/admin, P2 lee la cuenta con una sentencia propia (+1, antes iba en el select del alumno): el
+				// límite se queda donde estaba, con margen 1.
+				total("alumnos_count", "/api/alumnos/count", 2), // Δ0 (Δ0, Δ0)
 				caso("alumnos_pagina", "/api/alumnos?page=1&size=9&nombre=" + PREFIJO + "&incluirInactivos=false",
-						19, "$.content"), // 17 (21)
+						10, "$.content"), // 8 (17, 21)
 				caso("alumnos_pagina_inactivos",
-						"/api/alumnos?page=2&size=9&nombre=" + PREFIJO + "&incluirInactivos=true", 18, "$.content"), // 16 (23)
+						"/api/alumnos?page=2&size=9&nombre=" + PREFIJO + "&incluirInactivos=true", 9, "$.content"), // 7 (16, 23)
 				deLaOrganizacion("alumnos_sin_paginar", "/api/alumnos?incluirInactivos=false", Filtro.ALUMNOS,
-						35), // Δ31 (Δ35)
+						5), // Δ3 (Δ31, Δ35)
 				deLaOrganizacion("alumnos_con_deportes", "/api/alumnos/con-deportes?incluirInactivos=false",
-						Filtro.ALUMNOS, 35), // Δ31 (Δ35)
+						Filtro.ALUMNOS, 5), // Δ3 (Δ31, Δ35)
 				deLaOrganizacion("alumnos_ids", "/api/alumnos/ids?incluirInactivos=false", Filtro.IDS_ALUMNOS,
-						2, "$"), // Δ0 (Δ0)
-				caso("alumno_ficha", "/api/alumnos/{alumno:A05}", 8), // 6 (9)
-				caso("alumno_completo", "/api/alumnos/{alumno:A05}/completo", 8), // 6 (9)
-				caso("alumno_grupos", "/api/alumnos/{alumno:A05}/grupos", 7, "$"), // 5 (7)
-				caso("alumno_turnos", "/api/alumnos/{alumno:A05}/turnos", 7), // 5 (7)
-				caso("alumno_deportes", "/api/alumnos/{alumno:A05}/deportes", 8), // 6 (6)
-				caso("admin_alumno_entidad", "/api/admin/{alumno:A05}", 14), // 12 (13)
-				caso("admin_alumno_con_usuario", "/api/admin/{alumno:A03}", 14), // 12 (16)
-				fallaHoy("admin_alumno_con_convocatoria", "/api/admin/{alumno:A08}", 9, 500), // 7 (13)
-				deLaOrganizacion("grupos", "/api/grupos", Filtro.GRUPOS, 3, "$[*].alumnos"), // Δ1 (Δ3)
-				caso("grupo_ficha", "/api/grupos/{grupo:TKD-INFANTIL}", 8, "$.alumnos"), // 6 (9)
-				caso("grupo_turnos", "/api/grupos/{grupo:TKD-INFANTIL}/turnos", 10), // 8 (11)
+						2, "$"), // Δ0 (Δ0, Δ0)
+				caso("alumno_ficha", "/api/alumnos/{alumno:A05}", 8), // 6 (6, 9)
+				caso("alumno_completo", "/api/alumnos/{alumno:A05}/completo", 8), // 6 (6, 9)
+				caso("alumno_grupos", "/api/alumnos/{alumno:A05}/grupos", 7, "$"), // 5 (5, 7)
+				caso("alumno_turnos", "/api/alumnos/{alumno:A05}/turnos", 7), // 5 (5, 7)
+				caso("alumno_deportes", "/api/alumnos/{alumno:A05}/deportes", 8), // 6 (6, 6)
+				caso("admin_alumno_entidad", "/api/admin/{alumno:A05}", 14), // 13 (12, 13)
+				caso("admin_alumno_con_usuario", "/api/admin/{alumno:A03}", 14), // 13 (12, 16)
+				fallaHoy("admin_alumno_con_convocatoria", "/api/admin/{alumno:A08}", 9, 500), // 7 (7, 13)
+				deLaOrganizacion("grupos", "/api/grupos", Filtro.GRUPOS, 3, "$[*].alumnos"), // Δ1 (Δ1, Δ3)
+				caso("grupo_ficha", "/api/grupos/{grupo:TKD-INFANTIL}", 8, "$.alumnos"), // 6 (6, 9)
+				caso("grupo_turnos", "/api/grupos/{grupo:TKD-INFANTIL}/turnos", 10), // 8 (8, 11)
 				caso("grupo_alumno_turnos", "/api/grupos/{grupo:KB-INICIACION}/alumnos/{alumno:A05}/turnos",
-						8), // 6 (9)
-				total("grupos_conteo", "/api/grupos/conteo-alumnos", 2), // Δ0 (Δ0)
-				deLaOrganizacion("turnos", "/api/turnos", Filtro.TURNOS, 4), // Δ2 (Δ5)
-				caso("turno_ficha", "/api/turnos/{turno:TKD-INFANTIL/Lunes/17:00}", 9), // 7 (23)
-				deLaOrganizacion("turnos_dto", "/api/turnos/dto", Filtro.TURNOS, 126), // Δ114 (Δ116)
-				deLaOrganizacion("turnos_dto_anonimo", "ANON:/api/turnos/dto", Filtro.TURNOS, 126)); // Δ114 (Δ116)
+						8), // 6 (6, 9)
+				total("grupos_conteo", "/api/grupos/conteo-alumnos", 2), // Δ0 (Δ0, Δ0)
+				deLaOrganizacion("turnos", "/api/turnos", Filtro.TURNOS, 4), // Δ2 (Δ2, Δ5)
+				caso("turno_ficha", "/api/turnos/{turno:TKD-INFANTIL/Lunes/17:00}", 9), // 7 (7, 23)
+				deLaOrganizacion("turnos_dto", "/api/turnos/dto", Filtro.TURNOS, 86), // Δ78 (Δ114, Δ116)
+				deLaOrganizacion("turnos_dto_anonimo", "ANON:/api/turnos/dto", Filtro.TURNOS, 86)); // Δ78 (Δ114, Δ116)
 	}
 
 	@Autowired MockMvc mvc;

@@ -147,9 +147,17 @@ public class Alumno extends EntidadOrganizacion {
 	@JsonManagedReference
 	private List<Turno> turnos = new ArrayList<>();
 
-	@OneToOne(mappedBy = "alumno")
-	@JsonManagedReference
-	private Usuario usuario;
+	/*
+	 * Cuenta vinculada por usuario.alumno_id (lado inverso de Usuario.alumno). Hasta R2-P2 era un @OneToOne(mappedBy),
+	 * que Hibernate no puede cargar en LAZY sin bytecode enhancement: cada alumno cargado lanzaba un select de su usuario
+	 * (720-1200 por petición con 800 alumnos). Como colección inversa es LAZY de verdad: solo se lee cuando alguien llama
+	 * a getUsuario() (con la sesión de la petición, open-in-view, o dentro de una transacción) y en lotes de
+	 * hibernate.default_batch_fetch_size. Tiene como mucho un elemento (usuario.alumno_id es UNIQUE) y, como antes, el
+	 * alumno no escribe nada: el dueño del vínculo es Usuario.alumno. El campo se llama «usuario» para que el JSON de la
+	 * entidad no cambie (la clave «usuario» sale en la misma posición, con el valor de getUsuario()).
+	 */
+	@OneToMany(mappedBy = "alumno", fetch = FetchType.LAZY)
+	private List<Usuario> usuario = new ArrayList<>();
 
 	@OneToMany(mappedBy = "alumno")
 	private List<ProductoAlumno> productosAlumno = new ArrayList<>();
@@ -435,12 +443,18 @@ public class Alumno extends EntidadOrganizacion {
 		return actual == objetivo || actual.getId() != null && actual.getId().equals(objetivo.getId());
 	}
 
+	/** La cuenta vinculada ({@code usuario.alumno_id}) o {@code null}. Lee la colección perezosa la primera vez. */
+	@JsonManagedReference
 	public Usuario getUsuario() {
-		return usuario;
+		return usuario.isEmpty() ? null : usuario.get(0);
 	}
 
+	/** Solo en memoria, como antes: el vínculo lo escribe {@link Usuario#setAlumno(Alumno)}. */
 	public void setUsuario(Usuario usuario) {
-		this.usuario = usuario;
+		this.usuario.clear();
+		if (usuario != null) {
+			this.usuario.add(usuario);
+		}
 	}
 
 	public List<ProductoAlumno> getProductosAlumno() {

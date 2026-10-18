@@ -376,6 +376,71 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		assertEquals(e.sA, e.sedeDe(ficha), "vincular no cambia la sede principal");
 	}
 
+	/*
+	 * Finalizar vinculando una ficha que YA está en dos grupos, con turnos en ambos (sincronizarAsignaciones): solo se
+	 * quitan los grupos y turnos del deporte de la solicitud que no se seleccionan; los de otro deporte se conservan, y
+	 * con responsable de sede también los de otras sedes (D6-16).
+	 */
+
+	@Test
+	void finalizar_vincularFichaEnDosGruposDelMismoDeporte_quedaSoloLaSeleccion() throws Exception {
+		String dni = dni();
+		String email = "it-e6-2-dos-grupos-" + e.marca + "@example.test";
+		long ficha = e.alumno("E6DOSGRUPOS" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, email, ficha);
+		long tA2Bis = turno(e.org, e.gA2, "Jueves");
+		asignar(ficha, e.gA, e.tA);
+		asignar(ficha, e.gA2, tA2Bis);
+		String referencia = preinscripcion(e.org, e.gA2, List.of(tA2), dni, email);
+
+		MvcResult r = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "CONSERVAR_FICHA")), tokenGestor);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals("FINALIZADA", estadoDe(referencia));
+		assertEquals(List.of(e.gA2), gruposDe(ficha), "sale de gA (mismo deporte, no seleccionado); sigue en gA2");
+		assertEquals(List.of(tA2), turnosDe(ficha), "solo el turno seleccionado del deporte");
+	}
+
+	@Test
+	void finalizar_vincularFichaEnGruposDeDosDeportes_conservaLosDelOtroDeporte() throws Exception {
+		String dni = dni();
+		String email = "it-e6-2-dos-deportes-" + e.marca + "@example.test";
+		long ficha = e.alumno("E6DOSDEPORTES" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, email, ficha);
+		long gK = grupoKickboxing(e.sA);
+		long tK = turno(e.org, gK, "Miércoles");
+		asignar(ficha, e.gA, e.tA);
+		asignar(ficha, gK, tK);
+		String referencia = preinscripcion(e.org, e.gA2, List.of(tA2), dni, email);
+
+		MvcResult r = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "CONSERVAR_FICHA")), tokenGestor);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals(List.of(e.gA2, gK).stream().sorted().toList(), gruposDe(ficha), "el grupo de kickboxing sigue");
+		assertEquals(List.of(tA2, tK).stream().sorted().toList(), turnosDe(ficha), "el turno de kickboxing sigue");
+	}
+
+	@Test
+	void finalizar_responsableDeSede_conservaOtroDeporteYOtraSede() throws Exception {
+		String dni = dni();
+		String email = "it-e6-2-tres-grupos-" + e.marca + "@example.test";
+		long ficha = e.alumno("E6TRESGRUPOS" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, email, ficha);
+		long gK = grupoKickboxing(e.sA);
+		long tK = turno(e.org, gK, "Viernes");
+		asignar(ficha, e.gA, e.tA);
+		asignar(ficha, e.gB, tB2);
+		asignar(ficha, gK, tK);
+		String referencia = preinscripcion(e.org, e.gA2, List.of(tA2), dni, email);
+
+		MvcResult r = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "CONSERVAR_FICHA")), tokenA);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals(List.of(e.gA2, e.gB, gK).stream().sorted().toList(), gruposDe(ficha),
+				"sale de gA (su sede, mismo deporte); gB (otra sede) y kickboxing siguen");
+		assertEquals(List.of(tA2, tB2, tK).stream().sorted().toList(), turnosDe(ficha));
+	}
+
 	@Test
 	void finalizar_unaSolaSede_laUnicaTambienConGrupoSinSede() throws Exception {
 		UnaSede u = unaSede();
@@ -506,6 +571,29 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
 				VALUES (?, '18:00', '19:00', NULL, ?, ?)""", dia, grupo, org);
 		return jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE organizacion_id = ?", Long.class, org);
+	}
+
+	private void asignar(long alumno, long grupo, long turno) {
+		jdbc.update("INSERT INTO alumno_grupo (grupo_id, alumno_id) VALUES (?, ?)", grupo, alumno);
+		jdbc.update("INSERT INTO alumno_turno (turno_id, alumno_id) VALUES (?, ?)", turno, alumno);
+	}
+
+	/** Grupo de un segundo deporte (KICKBOXING) en la escuela de prueba; la disciplina se crea la primera vez. */
+	private long grupoKickboxing(long sede) {
+		jdbc.update("""
+				INSERT INTO disciplina (organizacion_id, codigo, nombre, sistema_grados_id, edad_adulto, orden)
+				SELECT ?, 'KICKBOXING', 'Kickboxing IT', NULL, 14, 2 FROM DUAL WHERE NOT EXISTS
+				  (SELECT 1 FROM disciplina WHERE organizacion_id = ? AND codigo = 'KICKBOXING')""", e.org, e.org);
+		GrupoConAlumnosDTO dto = new GrupoConAlumnosDTO();
+		dto.setNombre("IT E6 gK " + UUID.randomUUID().toString().substring(0, 8));
+		dto.setDeporte("KICKBOXING");
+		dto.setSedeId(sede);
+		return TenantContext.calcularCon(e.org, () -> grupoService.crearGrupo(dto).getId());
+	}
+
+	private List<Long> turnosDe(long alumno) {
+		return jdbc.queryForList("SELECT turno_id FROM alumno_turno WHERE alumno_id = ? ORDER BY turno_id", Long.class,
+				alumno);
 	}
 
 	private String preinscripcion(long org, Long grupo, List<Long> turnos) {
