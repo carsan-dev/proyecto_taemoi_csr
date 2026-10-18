@@ -47,9 +47,9 @@
   "estadoEmailCancelacion" : "NO_ENVIADO",
   "estadoEmailFinalizacion" : "NO_ENVIADO",
   "fechaNacimiento" : [
-    "fecha:1970-01-01T01:00:02.015",
-    "fecha:1970-01-01T01:00:00.003",
-    "fecha:1970-01-01T01:00:00.004"
+    2015,
+    3,
+    4
   ],
   "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1); Miércoles 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
   "grupoOriginal" : "Snapshot original P02",

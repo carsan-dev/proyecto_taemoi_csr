@@ -522,7 +522,10 @@ class PreinscripcionesListadoJsonDoradoIntegrationTest extends MySqlIntegrationT
 			nodo.forEach(h -> a.add(normalizarNodo(h, ruta + "[*]")));
 			return a;
 		}
-		if (nodo.isIntegralNumber() && ruta.substring(ruta.lastIndexOf('.') + 1).startsWith("fecha")) {
+		// Solo el campo escalar (java.util.Date en ms, como en MoiskimdoAlumnosJsonDoradoIntegrationTest): las LocalDate
+		// llegan como [año, mes, día] y esos números no son milisegundos (ruta «fechaNacimiento[*]»), se quedan tal cual.
+		if (nodo.isIntegralNumber() && !ruta.endsWith("[*]")
+				&& ruta.substring(ruta.lastIndexOf('.') + 1).startsWith("fecha")) {
 			return TextNode.valueOf(fecha(nodo.asLong()));
 		}
 		if (nodo.isNumber() && ruta.endsWith("En")) {

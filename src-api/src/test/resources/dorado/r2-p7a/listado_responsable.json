@@ -23,9 +23,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.988",
-        "fecha:1970-01-01T01:00:00.002",
-        "fecha:1970-01-01T01:00:00.010"
+        1988,
+        2,
+        10
       ],
       "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P01",
@@ -75,9 +75,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:02.015",
-        "fecha:1970-01-01T01:00:00.003",
-        "fecha:1970-01-01T01:00:00.004"
+        2015,
+        3,
+        4
       ],
       "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1); Miércoles 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P02",
@@ -135,9 +135,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:02.016",
-        "fecha:1970-01-01T01:00:00.005",
-        "fecha:1970-01-01T01:00:00.005"
+        2016,
+        5,
+        5
       ],
       "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P04",
@@ -187,9 +187,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:02.016",
-        "fecha:1970-01-01T01:00:00.006",
-        "fecha:1970-01-01T01:00:00.006"
+        2016,
+        6,
+        6
       ],
       "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1); Miércoles 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P05",
@@ -247,9 +247,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.995",
-        "fecha:1970-01-01T01:00:00.007",
-        "fecha:1970-01-01T01:00:00.007"
+        1995,
+        7,
+        7
       ],
       "grupo" : "Kickboxing · Jueves 19:00-20:00 (DORADOP7A Kickboxing Sede1)",
       "grupoOriginal" : "Snapshot original P06",
@@ -299,9 +299,9 @@
       "estadoEmailCancelacion" : "ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.985",
-        "fecha:1970-01-01T01:00:00.008",
-        "fecha:1970-01-01T01:00:00.008"
+        1985,
+        8,
+        8
       ],
       "grupo" : "Taekwondo · Miércoles 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P07",
@@ -351,9 +351,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.990",
-        "fecha:1970-01-01T01:00:00.001",
-        "fecha:1970-01-01T01:00:00.001"
+        1990,
+        1,
+        1
       ],
       "grupo" : "Kickboxing · Jueves 19:00-20:00 (DORADOP7A Kickboxing Sede1)",
       "grupoOriginal" : "Snapshot original P08",
@@ -403,9 +403,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:02.012",
-        "fecha:1970-01-01T01:00:00.006",
-        "fecha:1970-01-01T01:00:00.007"
+        2012,
+        6,
+        7
       ],
       "grupo" : "Taekwondo · Lunes 17:00-18:00 (DORADOP7A Taekwondo Sede1)",
       "grupoOriginal" : "Snapshot original P09",

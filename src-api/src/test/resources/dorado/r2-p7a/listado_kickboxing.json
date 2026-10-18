@@ -23,9 +23,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.995",
-        "fecha:1970-01-01T01:00:00.007",
-        "fecha:1970-01-01T01:00:00.007"
+        1995,
+        7,
+        7
       ],
       "grupo" : "Kickboxing · Jueves 19:00-20:00 (DORADOP7A Kickboxing Sede1)",
       "grupoOriginal" : "Snapshot original P06",
@@ -75,9 +75,9 @@
       "estadoEmailCancelacion" : "NO_ENVIADO",
       "estadoEmailFinalizacion" : "NO_ENVIADO",
       "fechaNacimiento" : [
-        "fecha:1970-01-01T01:00:01.990",
-        "fecha:1970-01-01T01:00:00.001",
-        "fecha:1970-01-01T01:00:00.001"
+        1990,
+        1,
+        1
       ],
       "grupo" : "Kickboxing · Jueves 19:00-20:00 (DORADOP7A Kickboxing Sede1)",
       "grupoOriginal" : "Snapshot original P08",
