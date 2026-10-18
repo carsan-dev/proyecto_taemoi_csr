@@ -52,6 +52,15 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	/** Entrega 6-3: el cargo (de la escuela activa) es de una de esas sedes ({@code @acceso.productoAlumnoEnSede}). */
 	boolean existsByIdAndSedeIdIn(Long id, java.util.Collection<Long> sedeIds);
 
+	/**
+	 * Pieza 6b-2: cuántos cargos con ese id (0 o 1) son de un alumno ({@code COALESCE(alumno, alumnoDeporte.alumno)},
+	 * como la tesorería) que está en alguno de esos grupos ({@code @acceso.cargoDeMisGrupos}).
+	 */
+	@Query("SELECT COUNT(pa) FROM ProductoAlumno pa LEFT JOIN pa.alumnoDeporte ad WHERE pa.id = :id AND EXISTS ("
+			+ "SELECT g.id FROM Grupo g JOIN g.alumnos m WHERE g.id IN :grupos "
+			+ "AND (m.id = pa.alumno.id OR m.id = ad.alumno.id))")
+	long contarCargoDeAlumnoEnGrupos(@Param("id") Long id, @Param("grupos") java.util.Collection<Long> grupos);
+
 	Optional<ProductoAlumno> findByAlumnoIdAndProductoId(Long id, Long id2);
 
 	boolean existsByConcepto(String concepto);

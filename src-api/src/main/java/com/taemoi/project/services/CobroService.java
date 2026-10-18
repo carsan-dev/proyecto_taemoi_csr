@@ -128,6 +128,28 @@ public class CobroService {
 		return Optional.of(cargo);
 	}
 
+	/**
+	 * Pieza 6b-2, dentro de una transacción: bloquea la fila del cobro (FOR UPDATE) y la devuelve con el estado que
+	 * tiene ahora en la base. Vacío si no existe en la escuela activa.
+	 */
+	public Optional<Cobro> bloquearCobro(Long cobroId) {
+		if (cobroId == null) {
+			return Optional.empty();
+		}
+		return cobros.bloquearPorId(cobroId).map(this::releer);
+	}
+
+	/**
+	 * Relee el cobro de la base (ya bloqueado): una consulta con bloqueo devuelve la instancia que la sesión ya tuviera
+	 * cargada SIN actualizar su estado (open-session-in-view).
+	 */
+	private Cobro releer(Cobro cobro) {
+		if (em != null && em.contains(cobro)) {
+			em.refresh(cobro);
+		}
+		return cobro;
+	}
+
 	// ------------------------------------------------------------------ operaciones
 
 	/**
@@ -156,9 +178,18 @@ public class CobroService {
 	/**
 	 * Anula el cobro ACTIVO del cargo, si lo tiene (los cargos pagados antes de la 6b-1 no tienen). Si va en una entrega
 	 * de caja, {@link CobroEntregadoException} sin cambiar nada.
+	 *
+	 * <p>Pieza 6b-2: BLOQUEA la fila del cobro (SELECT ... FOR UPDATE) y la relee ANTES de mirar {@code entrega_caja_id}.
+	 * Con READ_COMMITTED, una lectura sin bloqueo no vería una entrega que acaba de tomar el cobro y aún no ha
+	 * confirmado: la anulación esperaría después al UPDATE y dejaría un cobro ANULADO dentro de una entrega ACTIVA (o un
+	 * error de versión). Con el bloqueo, espera a que la entrega confirme, ve el cobro entregado y responde 409. Vale
+	 * para las tres vías que revierten (PUT del cargo, puerta de la convocatoria y deshacer del profesor) y para el
+	 * borrado del cargo. Orden de bloqueo: el llamador ya tiene el CARGO bloqueado ({@link #bloquearCargo}) y aquí se
+	 * bloquea el COBRO; la entrega de caja solo bloquea cobros, así que no hay ciclo.
 	 */
 	public Optional<Cobro> anular(ProductoAlumno cargo, Long usuarioId, String motivo) {
-		Optional<Cobro> activo = cobros.findFirstByProductoAlumnoIdAndEstado(cargo.getId(), EstadoCobro.ACTIVO);
+		Optional<Cobro> activo = cobros.bloquearActivoDeCargo(cargo.getId()).map(this::releer)
+				.filter(cobro -> cobro.getEstado() == EstadoCobro.ACTIVO);
 		activo.ifPresent(cobro -> {
 			if (cobro.getEntregaCajaId() != null) {
 				throw new CobroEntregadoException();

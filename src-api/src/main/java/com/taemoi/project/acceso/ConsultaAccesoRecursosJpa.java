@@ -8,13 +8,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
+import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
@@ -39,10 +42,13 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 	private final TurnoRepository turnos;
 	private final PreinscripcionRepository preinscripciones;
 	private final ProductoAlumnoRepository productosAlumno;
+	private final CobroRepository cobros;
+	private final SedeRepository sedes;
 
 	public ConsultaAccesoRecursosJpa(AccesoFamiliaService accesoFamilia, UsuarioRepository usuarios,
 			AlumnoRepository alumnos, GrupoRepository grupos, TurnoRepository turnos,
-			PreinscripcionRepository preinscripciones, ProductoAlumnoRepository productosAlumno) {
+			PreinscripcionRepository preinscripciones, ProductoAlumnoRepository productosAlumno,
+			CobroRepository cobros, SedeRepository sedes) {
 		this.accesoFamilia = accesoFamilia;
 		this.usuarios = usuarios;
 		this.alumnos = alumnos;
@@ -50,6 +56,8 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 		this.turnos = turnos;
 		this.preinscripciones = preinscripciones;
 		this.productosAlumno = productosAlumno;
+		this.cobros = cobros;
+		this.sedes = sedes;
 	}
 
 	@Override
@@ -127,6 +135,30 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 			return false;
 		}
 		return productosAlumno.existsByIdAndSedeIdIn(productoAlumnoId, sedes);
+	}
+
+	@Override
+	public boolean productoAlumnoEnGrupos(Long productoAlumnoId, Set<Long> grupos) {
+		if (productoAlumnoId == null || grupos == null || grupos.isEmpty() || TenantContext.get() == null) {
+			return false;
+		}
+		return productosAlumno.contarCargoDeAlumnoEnGrupos(productoAlumnoId, grupos) > 0;
+	}
+
+	@Override
+	public boolean cobroDelProfesor(Long cobroId, Long usuarioId) {
+		if (cobroId == null || usuarioId == null || TenantContext.get() == null) {
+			return false;
+		}
+		return cobros.existsByIdAndCobradoPorUsuarioIdAndOrigen(cobroId, usuarioId, OrigenCobro.PROFESOR);
+	}
+
+	@Override
+	public boolean sedeEnSedes(Long sedeId, Set<Long> conjunto) {
+		if (sedeId == null || conjunto == null || !conjunto.contains(sedeId) || TenantContext.get() == null) {
+			return false;
+		}
+		return sedes.buscarEnEscuelaActiva(sedeId).isPresent();
 	}
 
 	/** El alumno de la inscripción {@code alumnoConvocatoriaId} (de la escuela activa) cumple el predicado. */

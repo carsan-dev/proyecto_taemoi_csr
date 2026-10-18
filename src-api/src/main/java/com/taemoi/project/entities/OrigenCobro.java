@@ -6,6 +6,9 @@ public enum OrigenCobro {
 	TESORERIA,
 	/** PUT de la inscripción a una convocatoria, que copia el pago a su cargo. */
 	CONVOCATORIA,
-	/** Cobro en efectivo del profesor (se usará en la 6b-2). */
+	/**
+	 * Cobro en efectivo del profesor (pieza 6b-2, {@code POST /api/caja/profesor/cargos/{id}/cobrar}). El único que
+	 * queda pendiente de entrega hasta que se registra en una entrega de caja de su sede.
+	 */
 	PROFESOR
 }

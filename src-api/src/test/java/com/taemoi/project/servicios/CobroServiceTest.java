@@ -3,6 +3,7 @@ package com.taemoi.project.servicios;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -125,10 +126,21 @@ class CobroServiceTest {
 	void anular_conEntrega_409SinCambios() {
 		Cobro entregado = new Cobro();
 		entregado.setEntregaCajaId(3L);
-		when(cobros.findFirstByProductoAlumnoIdAndEstado(5L, EstadoCobro.ACTIVO)).thenReturn(Optional.of(entregado));
+		when(cobros.bloquearActivoDeCargo(5L)).thenReturn(Optional.of(entregado));
 		assertThrows(CobroEntregadoException.class, () -> servicio.anular(cargo(5L, 1.0), 1L, "x"));
 		assertEquals(EstadoCobro.ACTIVO, entregado.getEstado());
 		verify(cobros, never()).save(any());
+	}
+
+	@Test
+	void anular_leeElCobroConBloqueo_noConLaLecturaSinBloqueo() {
+		// Pieza 6b-2: la anulación bloquea la fila del cobro (FOR UPDATE) antes de mirar la entrega.
+		Cobro activo = new Cobro();
+		when(cobros.bloquearActivoDeCargo(6L)).thenReturn(Optional.of(activo));
+		when(cobros.save(any())).thenAnswer(i -> i.getArgument(0));
+		assertTrue(servicio.anular(cargo(6L, 1.0), 1L, "x").isPresent());
+		assertEquals(EstadoCobro.ANULADO, activo.getEstado());
+		verify(cobros, never()).findFirstByProductoAlumnoIdAndEstado(any(), any());
 	}
 
 	private static ProductoAlumno cargo(Long id, Double precio) {

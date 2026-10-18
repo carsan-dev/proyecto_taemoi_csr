@@ -616,6 +616,72 @@ class AccesoRecursosTest {
 		verify(consulta).turnoEnSedes(5L, SEDES);
 	}
 
+	// ------------------------------------------------------------------ pieza 6b-2: caja
+
+	@Test
+	void cargoDeMisGrupos_soloLaRamaDeProfesor_tambienParaEscribir() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.productoAlumnoEnGrupos(7L, GRUPOS)).thenReturn(true);
+		assertTrue(acceso.cargoDeMisGrupos(7L));
+		assertFalse(acceso.cargoDeMisGrupos(8L));
+		assertFalse(acceso.cargoDeMisGrupos(null));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER", "ROLE_RESPONSABLE_SEDE", "ROLE_USER" })
+	void cargoDeMisGrupos_niGestionNiResponsableNiFamilia(String autoridad) {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), autoridad));
+		assertFalse(acceso.cargoDeMisGrupos(7L));
+		// Gestión que además es profesor: alcance total, sin grupos → no entra por las rutas del profesor.
+		sesion(escuela(AlcanceSesion.TOTAL, autoridad, "ROLE_PROFESOR"));
+		assertFalse(acceso.cargoDeMisGrupos(7L));
+		verify(consulta, never()).productoAlumnoEnGrupos(anyLong(), anySet());
+	}
+
+	@Test
+	void alumnoDeMisGrupos_soloLaRamaDeProfesor() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.alumnoEnGrupos(7L, GRUPOS)).thenReturn(true);
+		assertTrue(acceso.alumnoDeMisGrupos(7L));
+		assertFalse(acceso.alumnoDeMisGrupos(8L));
+		sesion(escuela(AlcanceSesion.TOTAL, "ROLE_ADMIN", "ROLE_PROFESOR"));
+		assertFalse(acceso.alumnoDeMisGrupos(7L), "la gestión no vende por la ruta del profesor");
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		assertFalse(acceso.alumnoDeMisGrupos(7L));
+	}
+
+	@Test
+	void cargoDeMisGrupos_profesorSinGrupos_noConsulta() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_PROFESOR"));
+		assertFalse(acceso.cargoDeMisGrupos(7L));
+		verifyNoInteractions(consulta);
+	}
+
+	@Test
+	void cobroPropioDelProfesor_porSuCuenta() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.cobroDelProfesor(9L, 5L)).thenReturn(true);
+		assertTrue(acceso.cobroPropioDelProfesor(9L));
+		assertFalse(acceso.cobroPropioDelProfesor(10L));
+		sesion(escuela(AlcanceSesion.TOTAL, "ROLE_ADMIN"));
+		assertFalse(acceso.cobroPropioDelProfesor(9L), "el propietario no deshace por la ruta del profesor");
+	}
+
+	@Test
+	void cajaDeSede_gestionSinConsultar_responsablePorSusSedes_profesorNunca() {
+		sesion(token("ROLE_MANAGER"));
+		assertTrue(acceso.cajaDeSede(3L));
+		verifyNoInteractions(consulta);
+
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		org.mockito.Mockito.lenient().when(consulta.sedeEnSedes(3L, SEDES)).thenReturn(true);
+		assertTrue(acceso.cajaDeSede(3L));
+		assertFalse(acceso.cajaDeSede(4L));
+
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"));
+		assertFalse(acceso.cajaDeSede(3L));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private static void sesion(Authentication autenticacion) {

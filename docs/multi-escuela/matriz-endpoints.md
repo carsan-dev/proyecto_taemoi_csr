@@ -90,6 +90,20 @@ Entrega 6-4 (tarifa por sede, D6-30 y D6-31): 4 líneas nuevas (`GET`, `HEAD`, `
   sedes); `DENIEGA` en `POST` y `DELETE` (no edita el catálogo, D6-11 y D6-14).
 - FAMILIA, PROFESOR, SOLO_PLATAFORMA y ANONIMO: `DENIEGA` en las cuatro.
 
+Pieza 6b-2 (caja de sede, D4, decisiones 1 a 5 y 69): 21 líneas nuevas bajo `/api/caja`; ninguna casilla de las rutas
+existentes cambia (la puerta de convocatoria y el `PUT` del cargo siguen igual para todos los roles).
+- PROFESOR, solo sus rutas `/api/caja/profesor/**` (regla de URL `ROLE_PROFESOR`; el resto de roles, `DENIEGA`, también
+  PROPIETARIO y GESTOR, que cobran por el `PUT` del cargo): `PERMITE` declarado en `GET/HEAD …/cargos-pendientes`, `…/productos` (lista blanca de productos vendibles) y
+  `…/cobros-pendientes-entrega` (el servicio filtra por sus grupos y por sus cobros; filas y solo sus propios totales);
+  `ALCANCE` en `POST …/cargos/{cargoId}/cobrar` (`@acceso.cargoDeMisGrupos`, el alumno del cargo está en sus grupos) y
+  `POST …/cobros/{cobroId}/deshacer` (`@acceso.cobroPropioDelProfesor`, lo cobró él) y
+  `POST …/alumnos/{alumnoId}/productos/{productoId}/cobrar` (`@acceso.alumnoDeMisGrupos`, apuntar y cobrar un producto sin efectos).
+- Caja de una sede `/api/caja/sedes/{sedeId}/…` (`resumen`, `pendiente-entrega`, `entregas` GET y POST, `movimientos`
+  GET y POST): PROPIETARIO y GESTOR `PERMITE`; RESPONSABLE_SEDE `ALCANCE` (`@acceso.cajaDeSede`, una de sus sedes);
+  el resto, `DENIEGA`.
+- `POST /api/caja/entregas/{entregaId}/anular` y `/api/caja/movimientos/{movimientoId}/anular`: solo PROPIETARIO.
+- Cualquier otra ruta bajo `/api/caja` queda en `denyAll` en la regla de URL.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

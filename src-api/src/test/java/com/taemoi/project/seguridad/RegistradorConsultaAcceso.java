@@ -95,4 +95,19 @@ final class RegistradorConsultaAcceso implements ConsultaAccesoRecursos {
 	public boolean productoAlumnoEnSedes(Long productoAlumnoId, Set<Long> sedes) {
 		return registrar();
 	}
+
+	@Override
+	public boolean productoAlumnoEnGrupos(Long productoAlumnoId, Set<Long> grupos) {
+		return registrar();
+	}
+
+	@Override
+	public boolean cobroDelProfesor(Long cobroId, Long usuarioId) {
+		return registrar();
+	}
+
+	@Override
+	public boolean sedeEnSedes(Long sedeId, Set<Long> sedes) {
+		return registrar();
+	}
 }
