@@ -62,7 +62,7 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void llegaALaUltimaVersion() {
-		assertEquals("31.4", jdbc.queryForObject(
+		assertEquals("31.5", jdbc.queryForObject(
 				"SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1",
 				String.class));
 	}

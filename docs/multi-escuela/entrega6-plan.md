@@ -302,6 +302,7 @@ de alumno (`AlumnoServiceImpl`, mes en curso) y la columna CUANTÍA del listado 
 | V31_2 | 6-1b | Solo datos (UPDATE idempotente) | Escuelas con una sede |
 | V31_3 | 6-3a | Ampliación (columna NULL, índice, FK) + relleno | El código anterior sigue funcionando |
 | V31_4 | 6-4 | Tabla nueva (`tarifa_sede`), vacía | El código anterior sigue funcionando; postcheck `postcheck-v31_4.sql` |
+| V31_5 | 6b-1 | Tablas nuevas (`cobro`, `entrega_caja`, `movimiento_caja`), vacías, sin relleno | El código anterior sigue funcionando; postcheck `postcheck-v31_5.sql` |
 
 Ninguna pieza necesita V32 ni contraer nada. `sede_id` de grupo y de cargo y `sede_principal_id` siguen admitiendo
 NULL. Pasarlos a NOT NULL, si se decide, va con la contracción planificada (entrega 10). Siguen la convención de

@@ -90,6 +90,22 @@ public class AlumnoConvocatoriaDTO {
 		this.gradoSiguiente = gradoSiguiente;
 	}
 
+	/**
+	 * Pieza 6b-1, opcional y solo de entrada (PUT /api/convocatorias/alumno/{id}): método con el que se cobra al pasar
+	 * a pagado el cargo del examen. Ausente o nulo: {@code SIN_INDICAR}; un valor que no existe, 400. No sale en las
+	 * respuestas.
+	 */
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
+	private com.taemoi.project.entities.MetodoPago metodoPago;
+
+	public com.taemoi.project.entities.MetodoPago getMetodoPago() {
+		return metodoPago;
+	}
+
+	public void setMetodoPago(com.taemoi.project.entities.MetodoPago metodoPago) {
+		this.metodoPago = metodoPago;
+	}
+
 	public Boolean getPagado() {
 		return pagado;
 	}

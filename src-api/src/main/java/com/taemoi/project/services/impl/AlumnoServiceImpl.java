@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -170,7 +171,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 	@Autowired
 	private ProductoAlumnoRepository productoAlumnoRepository;
-	
+
+	/** Pieza 6b-1: los cobros activos de los cargos que se borran con el alumno o con su convocatoria se anulan. */
+	@Autowired
+	private com.taemoi.project.services.CobroService cobros;
+
 	@Autowired
 	private ImagenService imagenService;
 	
@@ -304,12 +309,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
 				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen);
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
-		if (restriccion.isEmpty()) {
-			// Gestión: la misma consulta de siempre.
-			return alumnoRepository.findAll(filtro, pageable);
+		if (restriccion.isPresent()) {
+			// Responsable de sede (entrega 6-1c): D9 por sus sedes.
+			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
 		}
-		// Responsable de sede (entrega 6-1c): D9 por sus sedes. Sin paginar, por id, como GET /api/alumnos/ids.
-		filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		// Sin paginar, por id, como GET /api/alumnos/ids (también con gestión): sin ORDER BY, MySQL devolvía el orden
+		// del índice que eligiera, y con estadísticas distintas elige uk (organizacion_id, numero_expediente).
 		if (pageable.isUnpaged()) {
 			return new org.springframework.data.domain.PageImpl<>(
 					alumnoRepository.findAll(filtro, org.springframework.data.domain.Sort.by("id")));
@@ -1746,6 +1751,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 				turnoRepository.save(turno);
 			}
 
+			// Pieza 6b-1: antes de borrar sus cargos (los suyos y los de sus convocatorias), en esta misma transacción,
+			// sus cobros ACTIVOS se anulan («cargo borrado»); los ya entregados en caja siguen activos, sin cargo.
+			List<Long> cargosQueSeBorran = new ArrayList<>();
+			alumno.getProductosAlumno().forEach(pa -> cargosQueSeBorran.add(pa.getId()));
+			alumno.getConvocatorias().stream().map(AlumnoConvocatoria::getProductoAlumno).filter(Objects::nonNull)
+					.forEach(pa -> cargosQueSeBorran.add(pa.getId()));
+			cobros.alBorrarCargos(cargosQueSeBorran);
+
 			for (ProductoAlumno productoAlumno : alumno.getProductosAlumno()) {
 				productoAlumnoRepository.delete(productoAlumno);
 			}
@@ -2199,6 +2212,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
 		if (productoAlumno != null) {
+			// Pieza 6b-1: su cobro ACTIVO se anula («cargo borrado») en esta transacción, antes de borrar el cargo.
+			cobros.alBorrarCargos(List.of(productoAlumno.getId()));
 			alumnoConvocatoria.setProductoAlumno(null);
 			alumnoConvocatoriaRepository.save(alumnoConvocatoria);
 			productoAlumnoRepository.delete(productoAlumno);

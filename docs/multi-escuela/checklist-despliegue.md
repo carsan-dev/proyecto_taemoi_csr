@@ -102,6 +102,11 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       (solo lectura, solo recuentos) y guardar el resultado: `tabla_tarifa_sede` = 1, `filas_tarifa_sede` = 0 y
       `flyway_31_4` = 1. Con la tabla vacía todas las escuelas cobran lo mismo que antes (Moiskimdo no cambia). El
       código anterior sigue funcionando sobre este esquema (no conoce la tabla).
+- [ ] Tras V31_5 (pieza 6b-1, tablas nuevas `cobro`, `entrega_caja` y `movimiento_caja`, vacías): ejecutar
+      `docs/multi-escuela/postcheck-v31_5.sql` (solo lectura, solo recuentos) y guardar el resultado: `tablas` = 3,
+      las tres `filas_*` = 0, `flyway_31_5` = 1 y las informativas a 0. Sin relleno: los cargos ya pagados no tienen
+      cobro. El código anterior sigue funcionando sobre este esquema (no conoce las tablas); si se vuelve atrás, los
+      cobros que se hagan con él no dejan fila en `cobro`.
 - [ ] **Antes de generar las mensualidades de enero de 2027**: crear la tarifa de la sede de Sierra Sur con
       `POST /api/tarifas-sede` (propietario o gestor de Sierra Sur). Los cargos ya generados NUNCA se recalculan
       (D6-32): si enero se genera antes, esos cargos quedan con el importe antiguo y hay que corregirlos a mano. Ejemplo

@@ -547,4 +547,12 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	List<ProductoAlumno> findByProductoId(Long productoId);
 
 	boolean existsByProductoId(Long productoId);
+
+	/**
+	 * Pieza 6b-1: bloquea (SELECT ... FOR UPDATE) la fila del cargo de la escuela activa, sin cargar la entidad ni
+	 * bloquear filas de otras tablas. Solo dentro de una transacción ({@code CobroService.bloquearCargo}).
+	 */
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT pa.id FROM ProductoAlumno pa WHERE pa.id = :id")
+	Optional<Long> bloquearPorId(@Param("id") Long id);
 }

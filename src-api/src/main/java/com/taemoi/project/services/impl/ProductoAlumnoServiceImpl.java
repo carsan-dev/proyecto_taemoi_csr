@@ -29,6 +29,8 @@ import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.MetodoPago;
+import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.TipoProducto;
@@ -42,6 +44,7 @@ import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.CatalogoDisciplinasService;
+import com.taemoi.project.services.CobroService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.ProgresionGradosService;
@@ -101,6 +104,31 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private TarifaSedeService tarifaSede;
 
+	/**
+	 * Pieza 6b-1: registro de cobros. Cada paso de un cargo a pagado deja un cobro ACTIVO y cada paso a no pagado (o el
+	 * borrado del cargo) lo anula; {@code pagado} y {@code fecha_pago} se siguen escribiendo igual que antes.
+	 */
+	@Autowired
+	private CobroService cobros;
+
+	/** Motivo de la anulación del cobro al revertir el pago por el PUT del cargo sin {@code motivoCambio}. */
+	private static final String MOTIVO_REVERSION = "pago revertido";
+
+	/**
+	 * Guarda un cargo NUEVO. Si nace pagado (asignación o reserva con {@code pagado = true}, licencias), en la misma
+	 * transacción registra su cobro (pieza 6b-1): ese dinero se cobró al crearlo. Si no, lo guarda como siempre.
+	 */
+	private ProductoAlumno guardarCargoNuevo(ProductoAlumno cargo, MetodoPago metodo) {
+		if (!Boolean.TRUE.equals(cargo.getPagado())) {
+			return productoAlumnoRepository.save(cargo);
+		}
+		return cobros.enTransaccion(() -> {
+			ProductoAlumno guardado = productoAlumnoRepository.save(cargo);
+			cobros.registrar(guardado, metodo, guardado.getFechaPago(), OrigenCobro.TESORERIA);
+			return guardado;
+		});
+	}
+
 	private String normalizarConcepto(String concepto) {
 		return concepto == null ? "" : Normalizer.normalize(concepto, Normalizer.Form.NFD)
 				.replaceAll("\\p{M}+", "").toUpperCase(Locale.ROOT);
@@ -153,7 +181,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			productoAlumno.setFechaPago(new Date());
 		}
 
-		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago());
 		if (Boolean.TRUE.equals(savedProductoAlumno.getPagado()) && daDerechoAExamen(savedProductoAlumno)) {
 			Alumno a = savedProductoAlumno.getAlumno();
 			a.setTieneDerechoExamen(true);
@@ -180,7 +208,42 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public ProductoAlumnoDTO actualizarProductoAlumno(Long id, ProductoAlumnoDTO detallesDTO) {
-		ProductoAlumno productoAlumno = productoAlumnoRepository.findById(id)
+		// Pieza 6b-1: el cargo se bloquea y se relee, se cambia, se guarda y se registra o anula su cobro en una sola
+		// transacción. Lo demás (convocatoria, derecho a examen, promoción de grado) sigue fuera, como antes.
+		CargoActualizado cambio = cobros.enTransaccion(() -> aplicarCambiosAlCargo(id, detallesDTO));
+		ProductoAlumno updatedProductoAlumno = cambio.cargo();
+		boolean pagadoAntes = cambio.pagadoAntes();
+
+		alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
+				.ifPresent(ac -> {
+					ac.setCuantiaExamen(updatedProductoAlumno.getPrecio());
+					ac.setPagado(updatedProductoAlumno.getPagado());
+					alumnoConvocatoriaRepository.save(ac);
+				});
+
+		Alumno alumno = updatedProductoAlumno.getAlumno();
+		boolean esProductoExamen = daDerechoAExamen(updatedProductoAlumno);
+		alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
+		alumnoRepository.save(alumno);
+
+		if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !pagadoAntes) {
+			activarGradoPorRecompensaPagada(updatedProductoAlumno);
+		}
+
+		return convertirADTO(updatedProductoAlumno);
+	}
+
+	/** El cargo guardado y si estaba pagado antes del cambio (leído con la fila bloqueada). */
+	private record CargoActualizado(ProductoAlumno cargo, boolean pagadoAntes) {
+	}
+
+	/**
+	 * Dentro de la transacción de {@link CobroService#enTransaccion}: las mismas reglas que antes de la 6b-1 sobre el
+	 * cargo bloqueado y releído, y el cobro (registrar si pasa a pagado, anular si pasa a no pagado; 409 si va en una
+	 * entrega de caja). Se puede repetir: vuelve a leerlo todo.
+	 */
+	private CargoActualizado aplicarCambiosAlCargo(Long id, ProductoAlumnoDTO detallesDTO) {
+		ProductoAlumno productoAlumno = cobros.bloquearCargo(id)
 				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
 		exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
 
@@ -224,24 +287,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 
 		ProductoAlumno updatedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
-
-		alumnoConvocatoriaRepository.findByProductoAlumnoId(updatedProductoAlumno.getId())
-				.ifPresent(ac -> {
-					ac.setCuantiaExamen(updatedProductoAlumno.getPrecio());
-					ac.setPagado(updatedProductoAlumno.getPagado());
-					alumnoConvocatoriaRepository.save(ac);
-				});
-
-		Alumno alumno = updatedProductoAlumno.getAlumno();
-		boolean esProductoExamen = daDerechoAExamen(updatedProductoAlumno);
-		alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
-		alumnoRepository.save(alumno);
-
-		if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !pagadoAntes) {
-			activarGradoPorRecompensaPagada(updatedProductoAlumno);
-		}
-
-		return convertirADTO(updatedProductoAlumno);
+		String motivo = detallesDTO.getMotivoCambio() != null && !detallesDTO.getMotivoCambio().isBlank()
+				? detallesDTO.getMotivoCambio()
+				: MOTIVO_REVERSION;
+		cobros.alCambiarPago(updatedProductoAlumno, pagadoAntes, detallesDTO.getMetodoPago(), OrigenCobro.TESORERIA,
+				motivo);
+		return new CargoActualizado(updatedProductoAlumno, pagadoAntes);
 	}
 
 	/** Cargo de una inscripción sin {@code alumno_id}: el código de cobro de siempre no lo admite (ver D6-20). */
@@ -345,20 +396,25 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 	@Override
 	public void eliminarProductoAlumno(Long id) {
-		ProductoAlumno pa = productoAlumnoRepository.findById(id)
-				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
-		// Entrega 6-3 (D6-22): borrar un cargo cobrado equivale a revertir el cobro, que el responsable de sede no
-		// puede (entrega6-plan.md §7). La gestión, como siempre.
-		if (gestionPorSede.restriccion().isPresent()) {
-			if (Boolean.TRUE.equals(pa.getPagado())) {
-				throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
+		// Pieza 6b-1: con el cargo bloqueado, 409 si su cobro va en una entrega de caja; si no, su cobro ACTIVO se anula
+		// («cargo borrado») y deja de apuntar al cargo, y el cargo se borra como siempre, en la misma transacción.
+		ProductoAlumno pa = cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = cobros.bloquearCargo(id)
+					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			// Entrega 6-3 (D6-22): borrar un cargo cobrado equivale a revertir el cobro, que el responsable de sede no
+			// puede (entrega6-plan.md §7). La gestión, como siempre.
+			if (gestionPorSede.restriccion().isPresent()) {
+				if (Boolean.TRUE.equals(cargo.getPagado())) {
+					throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
+				}
+				if (cargo.getAlumno() == null && daDerechoAExamen(cargo)) {
+					throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
+				}
 			}
-			if (pa.getAlumno() == null && daDerechoAExamen(pa)) {
-				throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
-			}
-		}
-
-		productoAlumnoRepository.deleteById(id);
+			cobros.alBorrarCargo(cargo);
+			productoAlumnoRepository.deleteById(id);
+			return cargo;
+		});
 
 		if (daDerechoAExamen(pa)) {
 			Alumno alumno = pa.getAlumno();
@@ -396,7 +452,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (pagado) {
 			productoAlumno.setFechaPago(new Date());
 		}
-		productoAlumnoRepository.save(productoAlumno);
+		guardarCargoNuevo(productoAlumno, MetodoPago.SIN_INDICAR);
 
 		return convertirADTO(productoAlumno);
 	}
@@ -446,7 +502,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (pagado) {
 			productoAlumno.setFechaPago(new Date());
 		}
-		productoAlumnoRepository.save(productoAlumno);
+		guardarCargoNuevo(productoAlumno, MetodoPago.SIN_INDICAR);
 
 		return convertirADTO(productoAlumno);
 	}
@@ -857,7 +913,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumno.setFechaAsignacion(fechaLicencia);
 		productoAlumno.setPagado(true);
 
-		productoAlumnoRepository.save(productoAlumno);
+		guardarCargoNuevo(productoAlumno, MetodoPago.SIN_INDICAR);
 	}
 
 
@@ -904,7 +960,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			productoAlumno.setAlumnoDeporte(deporteBase);
 		}
 
-		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, MetodoPago.SIN_INDICAR);
 
 		Date nuevaFechaLicencia = Date.from(fechaActual.atStartOfDay(ZoneId.systemDefault()).toInstant());
 		for (AlumnoDeporte alumnoDeporte : deportesActualizar) {
@@ -1152,7 +1208,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			productoAlumno.setFechaPago(new Date());
 		}
 
-		ProductoAlumno savedProductoAlumno = productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago());
 
 		return convertirADTO(savedProductoAlumno);
 	}

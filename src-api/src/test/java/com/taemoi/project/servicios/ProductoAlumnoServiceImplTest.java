@@ -75,6 +75,14 @@ class ProductoAlumnoServiceImplTest {
 	@Mock
 	private com.taemoi.project.services.TarifaSedeService tarifaSede;
 
+	/**
+	 * Pieza 6b-1: registro de cobros simulado. La transacción ejecuta la acción tal cual y «bloquear» el cargo es leerlo
+	 * del repositorio simulado, así que el flujo del cargo es el de antes; los cobros se prueban en
+	 * {@code CobrosIntegrationTest}.
+	 */
+	@Mock
+	private com.taemoi.project.services.CobroService cobros;
+
 	@InjectMocks
 	private ProductoAlumnoServiceImpl productoAlumnoService;
 
@@ -87,6 +95,10 @@ class ProductoAlumnoServiceImplTest {
 	void catalogoEnMemoria() {
 		org.mockito.Mockito.lenient().when(tarifaSede.preparar())
 				.thenReturn(com.taemoi.project.services.ResolutorCuantiaMensualidad.identidad());
+		org.mockito.Mockito.lenient().when(cobros.enTransaccion(any()))
+				.thenAnswer(invocacion -> ((java.util.function.Supplier<?>) invocacion.getArgument(0)).get());
+		org.mockito.Mockito.lenient().when(cobros.bloquearCargo(any()))
+				.thenAnswer(invocacion -> productoAlumnoRepository.findById(invocacion.getArgument(0)));
 		com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria memoria = new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria();
 		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "catalogoDisciplinas",
 				memoria.catalogo());

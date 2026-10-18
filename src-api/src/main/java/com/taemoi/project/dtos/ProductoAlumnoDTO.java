@@ -21,6 +21,21 @@ public class ProductoAlumnoDTO {
 	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
 	private Long sedeId;
 
+	/**
+	 * Pieza 6b-1, opcional y solo de entrada: método con el que se cobra al pasar el cargo a pagado. Ausente o nulo:
+	 * {@code SIN_INDICAR}; un valor que no existe, 400. No sale en las respuestas.
+	 */
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
+	private com.taemoi.project.entities.MetodoPago metodoPago;
+
+	public com.taemoi.project.entities.MetodoPago getMetodoPago() {
+		return metodoPago;
+	}
+
+	public void setMetodoPago(com.taemoi.project.entities.MetodoPago metodoPago) {
+		this.metodoPago = metodoPago;
+	}
+
 	public Long getSedeId() {
 		return sedeId;
 	}
