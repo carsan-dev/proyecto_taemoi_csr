@@ -815,7 +815,14 @@ class PreinscripcionServiceTest {
 				miercoles, "2026/2027", EstadoPreinscripcion.PENDIENTE));
 		verify(preinscripciones).saveAndFlush(primera);
 		verify(preinscripciones, never()).saveAndFlush(segunda);
-		verify(email, times(1)).sendEmail(eq("primera@example.com"), startsWith("Ya tienes plaza"), anyString());
+		// R2-P7d: el aviso de plaza se prepara aquí y sale tras el commit (PreinscripcionPromocionEmailListener).
+		org.mockito.ArgumentCaptor<com.taemoi.project.events.PreinscripcionPromocionadaEvent> aviso =
+				org.mockito.ArgumentCaptor.forClass(com.taemoi.project.events.PreinscripcionPromocionadaEvent.class);
+		verify(eventos, times(1)).publishEvent(aviso.capture());
+		assertEquals("PRE-PRIMERA", aviso.getValue().referencia());
+		assertEquals("primera@example.com", aviso.getValue().email());
+		assertEquals("Ya tienes plaza · PRE-PRIMERA", aviso.getValue().asunto());
+		verifyNoInteractions(email);
 	}
 
 	@Test

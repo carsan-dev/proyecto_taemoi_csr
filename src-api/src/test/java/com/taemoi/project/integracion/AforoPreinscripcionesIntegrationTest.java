@@ -82,6 +82,7 @@ import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AforoPreinscripcionService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.PreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
 import com.taemoi.project.services.TurnoService;
 
@@ -104,7 +105,8 @@ import jakarta.servlet.http.Cookie;
  * {@code preinscripcion_turno} (aunque eso pase del límite en alguno); una solicitud antigua solo con
  * {@code turno_id} (sin filas en {@code preinscripcion_turno}) sube con la plaza de ese turno pero no la ocupa.</li>
  * <li>Lo que hoy es un error, tal cual: una solicitud de la cola con un turno sin grupo hace fallar la promoción entera
- * (400) cuando le llega el turno, después de haber enviado los correos de las anteriores (que no se deshacen).</li>
+ * (400) cuando le llega el turno. Desde R2-P7d los avisos de plaza salen tras el commit: los de las anteriores ya no
+ * salen (antes salían aunque su promoción se deshiciera).</li>
  * </ul>
  *
  * <h2>Datos</h2>
@@ -171,6 +173,7 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	@Autowired TemporadaService temporadaService;
 	@Autowired TurnoService turnoService;
 	@Autowired AforoPreinscripcionService aforo;
+	@Autowired PreinscripcionService preinscripcionService;
 	@Autowired PreinscripcionRepository preinscripciones;
 	@Autowired PlatformTransactionManager txManager;
 
@@ -377,7 +380,7 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void turnoSinGrupoEnLaColaHaceFallarLaPromocionTrasAvisarALasAnteriores() throws Exception {
+	void turnoSinGrupoEnLaColaHaceFallarLaPromocionSinAvisarANadie() throws Exception {
 		sembrar();
 		long sinGrupo = turno(6, "T6", null, "Sábado", "10:00", "11:00");
 		preinscripcion(40, "EROTO", "EN_LISTA_ESPERA", temporada, "TAEKWONDO", "2026-09-05 10:00:00", null, sinGrupo);
@@ -385,13 +388,31 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = cancelar("P1");
 
 		// Hoy: 400 «Alguno de los turnos seleccionados no existe.», todo se deshace (P1 sigue pendiente, ET1A en espera)
-		// pero los correos de la promoción de ET1A ya habían salido; el de cancelación, no (no hay commit).
+		// y, sin commit, no sale ningún correo (R2-P7d: antes ya habían salido los de la promoción de ET1A).
 		assertEquals(400, r.getResponse().getStatus());
 		assertTrue(r.getResponse().getContentAsString(StandardCharsets.UTF_8).contains("Alguno de los turnos"));
 		Map<String, String> esperado = new TreeMap<>(estadosConCambios(Map.of()));
 		esperado.put("EROTO", "EN_LISTA_ESPERA");
 		assertEquals(esperado, estados());
-		assertEquals(List.of(plaza("ET1A"), avisoAdmin("ET1A")), correos());
+		assertEquals(List.of(), correos());
+	}
+
+	/**
+	 * R2-P7d: los avisos de plaza (familia y administración) salen tras el commit de la promoción. Una promoción que se
+	 * deshace (aquí, la transacción de quien llama) no avisa a nadie ni deja ninguna solicitud promocionada.
+	 */
+	@Test
+	void unaPromocionDeshechaNoAvisaANadie() throws Exception {
+		sembrar();
+		fijarLimiteTurno("4");
+
+		TenantContext.ejecutarCon(1L, () -> new TransactionTemplate(txManager).executeWithoutResult(s -> {
+			preinscripcionService.promocionarTodas();
+			s.setRollbackOnly();
+		}));
+
+		assertEquals(estadosConCambios(Map.of()), estados());
+		assertEquals(List.of(), correos());
 	}
 
 	// ------------------------------------------------------------------ concurrencia
@@ -422,21 +443,19 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	 * Cancelación de P2 (libera T1 y T2) y subida del límite a 4 (promoción de toda la cola) a la vez. En serie, en
 	 * cualquier orden, suben EKB, ET1A, ET1B y EM, una vez cada una, y queda T1 = 4. Tras la primera promoción sigue
 	 * habiendo plaza: una promoción que leyera la cola ANTES de bloquear sus turnos (como en la ronda 1 de R2-P3) volvería
-	 * a subir ET1A (obsoleta, aún «en espera» en su contexto) con un segundo aviso y dejaría fuera a ET1B. Los avisos de
-	 * plaza tardan 150 ms para que la promoción de la cancelación retenga los turnos mientras la otra lee.
+	 * a subir ET1A (obsoleta, aún «en espera» en su contexto) con un segundo aviso y dejaría fuera a ET1B. Para cruzarlas,
+	 * el test retiene los turnos de la cola (T1-T4) hasta que las dos esperan: la cancelación, que llega antes, promociona
+	 * mientras la otra espera. Antes de R2-P7d lo forzaba un aviso de plaza lento (150 ms) dentro de la transacción; desde
+	 * entonces los avisos salen tras el commit y ya no retienen los turnos.
 	 */
 	@Test
 	void cancelacionYPromocionDeTodaLaColaSimultaneasPromocionanUnaVez() throws Exception {
-		Mockito.doAnswer(inv -> {
-			Thread.sleep(150);
-			return null;
-		}).when(email).sendEmail(org.mockito.ArgumentMatchers.anyString(),
-				org.mockito.ArgumentMatchers.startsWith("Ya tienes plaza"), org.mockito.ArgumentMatchers.anyString());
 		for (int ronda = 0; ronda < 6; ronda++) {
 			limpiar();
 			sembrar();
-			List<Integer> estados = enParalelo(() -> cancelar("P2").getResponse().getStatus(),
-					() -> limite(4).getResponse().getStatus());
+			List<Integer> estados = enParaleloConTurnosRetenidos(
+					List.of(ids.get("turno:T1"), ids.get("turno:T2"), ids.get("turno:T3"), ids.get("turno:T4")),
+					() -> cancelar("P2").getResponse().getStatus(), () -> limite(4).getResponse().getStatus());
 			String contexto = "ronda " + ronda;
 			assertEquals(List.of(200, 200), estados, contexto);
 			assertEquals(estadosConCambios(Map.of("P2", "CANCELADA"), "EKB", "ET1A", "ET1B", "EM"), estados(), contexto);

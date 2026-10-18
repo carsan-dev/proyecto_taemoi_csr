@@ -5,8 +5,15 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import jakarta.persistence.*;
 
+/**
+ * R2-P7d: {@code @DynamicUpdate}, cada UPDATE lleva solo las columnas que cambian. El correo inicial sale tras el commit
+ * del alta y registra su seguimiento (enviado, intentos, error) con la fila bloqueada; una promoción que leyó la fila
+ * antes sin bloqueo (la cola se lee sin bloquear las solicitudes) solo escribe estado y fecha de promoción, y ya no pisa
+ * ese seguimiento con los valores que leyó.
+ */
 @Entity
 @Table(name="preinscripcion")
+@org.hibernate.annotations.DynamicUpdate
 public class Preinscripcion extends EntidadOrganizacion {
  @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
  @Column(nullable=false,unique=true,length=32) private String referencia;
