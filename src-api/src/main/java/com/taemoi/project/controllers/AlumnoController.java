@@ -168,6 +168,8 @@ public class AlumnoController {
 	 * @param nombre      Nombre del alumno para filtrar (opcional).
 	 * @param gradoId     ID del grado del alumno para filtrar (opcional).
 	 * @param categoriaId ID de la categoría del alumno para filtrar (opcional).
+	 * @param deporte     código de la disciplina (opcional, R2-P6): el filtro por deporte del listado, con el
+	 *                    criterio que aplicaba el navegador (ver {@link AlumnoService#obtenerAlumnosPorDeporte}).
 	 * @return ResponseEntity que contiene una lista paginada o filtrada de alumnos.
 	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
 	 */
@@ -178,21 +180,33 @@ public class AlumnoController {
 			@RequestParam(required = false) Integer size, @RequestParam(required = false) String nombre,
 			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId,
 			@RequestParam(required = false) Boolean incluirInactivos,
-			@RequestParam(required = false) Boolean aptoParaExamen) {
+			@RequestParam(required = false) Boolean aptoParaExamen,
+			@RequestParam(required = false) String deporte) {
 
 		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 		logger.info(
-				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}, aptoParaExamen: {}",
-				page, size, nombre, gradoId, categoriaId, aptoParaExamen);
+				"## AlumnoController :: obtenerAlumnosDTO :: Parámetros recibidos - page: {}, size: {}, nombre: {}, gradoId: {}, categoriaId: {}, aptoParaExamen: {}, deporte: {}",
+				page, size, nombre, gradoId, categoriaId, aptoParaExamen, deporte);
 
+		// R2-P6: con deporte, desempate por id para que la paginación sea estable con nombres repetidos.
+		boolean porDeporte = deporte != null && !deporte.isBlank();
+		Sort orden = porDeporte ? Sort.by("nombre").ascending().and(Sort.by("id").ascending())
+				: Sort.by("nombre").ascending();
 		Pageable pageable = (page != null && size != null)
-				? PageRequest.of(page - 1, size, Sort.by("nombre").ascending())
+				? PageRequest.of(page - 1, size, orden)
 				: Pageable.unpaged();
 		boolean isPaged = page != null && size != null;
 		boolean incluir = incluirInactivos != null ? incluirInactivos : false;
 		boolean soloAptos = aptoParaExamen != null && aptoParaExamen;
 
-		Page<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, soloAptos, pageable);
+		Page<Alumno> alumnos = porDeporte
+				? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, incluir, soloAptos, pageable)
+				: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, soloAptos, pageable);
+
+		if (porDeporte && isPaged) {
+			// Página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).
+			return ResponseEntity.ok(alumnos.map(AlumnoDTO::deAlumno).map(this::aplicarUrlImagenPublica));
+		}
 
 		if (alumnos.isEmpty()) {
 			logger.warn("## AlumnoController :: obtenerAlumnosDTO :: No hay usuarios registrados en el sistema.");

@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
-import { Subject, forkJoin, of, concat } from 'rxjs';
+import { Subject, Subscription, forkJoin, of, concat } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs/operators';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
@@ -54,7 +54,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   readonly informes = inject(InformePdfService);
   readonly catalogo = inject(CatalogoService);
   alumnos: any[] = [];
-  alumnosCompletos: any[] = []; // Full dataset for client-side filtering
+  private peticionPorDeporte?: Subscription; // R2-P6: la última petición del listado filtrado por deporte
   alumnosSeleccionables: any[] = [];
   cargandoAlumnosSeleccionables: boolean = false;
   private alumnosSeleccionablesCargados: boolean = false;
@@ -64,7 +64,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   nombreFiltro: string = '';
   mostrarInactivos: boolean = false;
   cargando: boolean = true; // Local loading state
-  usandoPaginacionCliente: boolean = false; // Track if using client-side pagination
+  usandoPaginacionCliente: boolean = false; // Filtrando por deporte (R2-P6: en el servidor; nombre conservado por el estado guardado)
   private readonly searchSubject = new Subject<string>();
   mesAnoSeleccionado: string = '';
   deporteSeleccionado: string = 'TODOS';
@@ -150,7 +150,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     // If filtering by sport, use client-side pagination; otherwise use backend pagination
     if (this.deporteFiltro !== 'TODOS') {
-      this.obtenerTodosLosAlumnosConDeportes();
+      this.obtenerAlumnosFiltradosPorDeporte();
     } else {
       this.obtenerAlumnos();
     }
@@ -212,8 +212,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       this.tamanoPagina = newPageSize;
       if (reloadData) {
         this.paginaActual = 1;
-        if (this.usandoPaginacionCliente && this.alumnosCompletos.length > 0) {
-          this.actualizarAlumnosPaginadosCliente();
+        if (this.usandoPaginacionCliente) {
+          this.obtenerAlumnosFiltradosPorDeporte();
         } else {
           this.obtenerAlumnos();
         }
@@ -323,8 +323,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   obtenerAlumnos(): void {
+    // Primero se cancela la petición por deporte pendiente: su finalize pone cargando a false.
+    this.peticionPorDeporte?.unsubscribe();
     this.cargando = true;
-    this.usandoPaginacionCliente = false; // Reset to backend pagination
+    this.usandoPaginacionCliente = false; // Sale del modo filtrado por deporte
     this.endpointsService
       .obtenerAlumnos(
         this.paginaActual,
@@ -405,36 +407,35 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Load all students with their sports data for client-side filtering
-   * OPTIMIZED: Uses batch endpoint to avoid N+1 HTTP requests problem
+   * Listado filtrado por deporte (R2-P6): el servidor filtra y pagina con el criterio que antes se aplicaba aquí
+   * sobre todos los alumnos (los de baja en ese deporte que siguen activos en otro incluidos; nombre recortado,
+   * en nombre o apellidos). Como antes, en este modo no se aplica «Solo aptos». Si llega una búsqueda nueva antes
+   * de la respuesta, la petición anterior se cancela para no pintar resultados viejos.
    */
-  obtenerTodosLosAlumnosConDeportes(): void {
+  obtenerAlumnosFiltradosPorDeporte(): void {
+    // Primero se cancela la anterior: su finalize pone cargando a false.
+    this.peticionPorDeporte?.unsubscribe();
     this.cargando = true;
     this.usandoPaginacionCliente = true;
-
-    // Use batch endpoint that returns all students with sports embedded
-    this.alumnoService
-      .obtenerAlumnosConDeportes(this.mostrarInactivos)
+    this.peticionPorDeporte = this.endpointsService
+      .obtenerAlumnos(
+        this.paginaActual,
+        this.tamanoPagina,
+        this.nombreFiltro,
+        this.mostrarInactivos,
+        false,
+        this.deporteFiltro
+      )
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
-        next: (alumnosConDeportes) => {
-          // Store complete alumnos
-          this.alumnosCompletos = alumnosConDeportes;
-
-          // Extract sports data from each alumno and store in map
-          this.deportesPorAlumno.clear();
-          alumnosConDeportes.forEach((alumno) => {
-            this.deportesPorAlumno.set(alumno.id, alumno.deportes ?? []);
-          });
-
-          // Update alumnos array with the filtered and paginated data
-          this.actualizarAlumnosPaginadosCliente();
-
-          // Save current state after successful load
+        next: (response) => {
+          this.alumnos = response.content;
+          this.totalPaginas = response.totalPages;
           this.guardarEstadoPaginacion();
+          this.cargarDeportesDeAlumnos();
         },
         error: (error) => {
-          console.error('Error loading students with sports:', error);
+          console.error('Error al cargar los alumnos del deporte:', error);
           Swal.fire({
             title: 'Error en la petición',
             text: 'No hemos podido conectar con el servidor',
@@ -442,51 +443,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           });
         },
       });
-  }
-
-  /**
-   * Update alumnos array with client-side pagination
-   */
-  actualizarAlumnosPaginadosCliente(): void {
-    // Apply filters to the complete dataset
-    let filtrados = this.alumnosCompletos;
-
-    // Filter by inactive status (use sport-based active status)
-    if (!this.mostrarInactivos) {
-      filtrados = filtrados.filter((alumno) => this.isAlumnoActivo(alumno.id));
-    }
-
-    // Filter by sport
-    if (this.deporteFiltro !== 'TODOS') {
-      filtrados = filtrados.filter((alumno) =>
-        this.practicaDeporte(alumno.id, this.deporteFiltro)
-      );
-    }
-
-    // Filter by name if needed
-    if (this.nombreFiltro && this.nombreFiltro.trim()) {
-      const searchTerm = this.nombreFiltro.toLowerCase().trim();
-      filtrados = filtrados.filter(
-        (alumno) =>
-          alumno.nombre?.toLowerCase().includes(searchTerm) ||
-          alumno.apellidos?.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    // Sort by name ascending (to match backend pagination sorting)
-    filtrados = filtrados.sort((a, b) => {
-      const nombreA = (a.nombre || '').toLowerCase();
-      const nombreB = (b.nombre || '').toLowerCase();
-      return nombreA.localeCompare(nombreB);
-    });
-
-    // Calculate total pages
-    this.totalPaginas = Math.ceil(filtrados.length / this.tamanoPagina);
-
-    // Get the current page slice
-    const startIndex = (this.paginaActual - 1) * this.tamanoPagina;
-    const endIndex = startIndex + this.tamanoPagina;
-    this.alumnos = filtrados.slice(startIndex, endIndex);
   }
 
   /**
@@ -802,16 +758,8 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       this.obtenerAlumnos();
     } else {
       // If filtering by sport, we need to load all students and paginate client-side
-      this.obtenerTodosLosAlumnosConDeportes();
+      this.obtenerAlumnosFiltradosPorDeporte();
     }
-  }
-
-  /**
-   * Check if alumno practices a specific sport
-   */
-  practicaDeporte(alumnoId: number, deporte: string): boolean {
-    const deportes = this.deportesPorAlumno.get(alumnoId) || [];
-    return deportes.some((d) => d.deporte === deporte);
   }
 
   /**
@@ -837,8 +785,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
    * Get filtered alumnos - now just returns alumnos since filtering is handled elsewhere
    */
   get alumnosFiltrados(): any[] {
-    // Filtering is now handled in actualizarAlumnosPaginadosCliente for client-side pagination
-    // or by the backend for server-side pagination
+    // Filtra el servidor (también el deporte desde R2-P6)
     return this.alumnos;
   }
 
@@ -1094,8 +1041,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     this.guardarEstadoPaginacion(); // Save state when changing pages
 
     if (this.usandoPaginacionCliente) {
-      // Use client-side pagination
-      this.actualizarAlumnosPaginadosCliente();
+      this.obtenerAlumnosFiltradosPorDeporte();
     } else {
       // Use backend pagination
       this.obtenerAlumnos();
@@ -1103,11 +1049,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   filtrarPorNombre(): void {
-    // If using client-side pagination, filter immediately
+    // Filtrando por deporte: busca al momento, como antes (cada búsqueda cancela la petición anterior)
     if (this.usandoPaginacionCliente) {
       this.paginaActual = 1;
       this.guardarEstadoPaginacion(); // Save state when filtering
-      this.actualizarAlumnosPaginadosCliente();
+      this.obtenerAlumnosFiltradosPorDeporte();
     } else {
       // Use debounced backend search (saves state in the subscription)
       this.searchSubject.next(this.nombreFiltro);
@@ -1121,7 +1067,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
     if (this.usandoPaginacionCliente) {
       // Reload all data with new inactive filter
-      this.obtenerTodosLosAlumnosConDeportes();
+      this.obtenerAlumnosFiltradosPorDeporte();
     } else {
       this.obtenerAlumnos();
     }
@@ -1247,7 +1193,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
 
   private recargarDatos(): void {
     if (this.usandoPaginacionCliente) {
-      this.obtenerTodosLosAlumnosConDeportes();
+      this.obtenerAlumnosFiltradosPorDeporte();
     } else {
       this.obtenerAlumnos();
     }
@@ -1270,7 +1216,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
             showSuccessToast('Alumno dado de baja correctamente');
             // Reload data using the current pagination mode
             if (this.usandoPaginacionCliente) {
-              this.obtenerTodosLosAlumnosConDeportes();
+              this.obtenerAlumnosFiltradosPorDeporte();
             } else {
               this.obtenerAlumnos();
             }
@@ -1333,7 +1279,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
         showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
         // Reload data using the current pagination mode
         if (this.usandoPaginacionCliente) {
-          this.obtenerTodosLosAlumnosConDeportes();
+          this.obtenerAlumnosFiltradosPorDeporte();
         } else {
           this.obtenerAlumnos();
         }
@@ -1531,7 +1477,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
           `Licencias ${this.anoLicenciaSeleccionado} asignadas a ${deporteTexto}`
         );
         if (this.usandoPaginacionCliente) {
-          this.obtenerTodosLosAlumnosConDeportes();
+          this.obtenerAlumnosFiltradosPorDeporte();
         } else {
           this.obtenerAlumnos();
         }

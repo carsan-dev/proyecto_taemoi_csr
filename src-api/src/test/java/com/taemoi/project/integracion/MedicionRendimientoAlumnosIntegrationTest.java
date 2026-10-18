@@ -239,6 +239,17 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		rutas.put("turno_ficha", "/api/turnos/" + turnoMuestra);
 		rutas.put("turnos_dto", "/api/turnos/dto");
 		rutas.put("turnos_dto_anonimo", "ANON:/api/turnos/dto");
+		// R2-P6: el listado filtrado por deporte (antes, el navegador pedía con-deportes entero y filtraba) y los turnos
+		// y grupos públicos de preinscripción de un deporte.
+		rutas.put("alumnos_deporte_kb_pagina", "/api/alumnos?page=1&size=8&incluirInactivos=false&deporte=KICKBOXING");
+		rutas.put("alumnos_deporte_kb_inactivos",
+				"/api/alumnos?page=1&size=8&incluirInactivos=true&deporte=KICKBOXING");
+		rutas.put("alumnos_deporte_kb_nombre",
+				"/api/alumnos?page=1&size=8&incluirInactivos=false&deporte=KICKBOXING&nombre=r2%20alumno%2001");
+		rutas.put("public_turnos_tkd", "/api/preinscripciones/public/turnos/TAEKWONDO");
+		rutas.put("public_turnos_kb", "/api/preinscripciones/public/turnos/KICKBOXING");
+		rutas.put("public_grupos_tkd", "ANON:/api/preinscripciones/public/grupos/TAEKWONDO");
+		rutas.put("public_grupos_kb", "ANON:/api/preinscripciones/public/grupos/KICKBOXING");
 
 		Statistics st = emf.unwrap(SessionFactory.class).getStatistics();
 		st.setStatisticsEnabled(true);

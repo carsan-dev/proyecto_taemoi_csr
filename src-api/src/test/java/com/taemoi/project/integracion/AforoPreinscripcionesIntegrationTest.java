@@ -158,7 +158,9 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	 */
 	private static final Map<String, Integer> LIMITES = Map.ofEntries(
 			// Δ medido tras R2-P3 + 2 (en 9ef8e11c: grupos TKD Δ52, KB Δ11, turnos TKD Δ15, KB Δ3, /turnos/dto Δ35).
-			Map.entry("public_grupos_tkd", 8), Map.entry("public_grupos_kb", 4), Map.entry("public_turnos_tkd", 2),
+			// R2-P6 (turnos de los grupos en una consulta): grupos TKD Δ3, KB Δ1 en local; límites 8 → 5 y KB se queda
+			// en 4 (en la CI, con los datos que dejan otras clases, KB mide Δ4).
+			Map.entry("public_grupos_tkd", 5), Map.entry("public_grupos_kb", 4), Map.entry("public_turnos_tkd", 2),
 			Map.entry("public_turnos_kb", 2), Map.entry("turnos_dto", 3), Map.entry("turnos_dto_anonimo", 3),
 			// Escrituras, absolutas: medido tras R2-P3 + margen para lo que dejen otras clases en la organización 1 (en
 			// 9ef8e11c: cancelar 52, cambiar turnos 56, baja 45, límite 3/4/5: 40/48/57, y crecían con la escuela).

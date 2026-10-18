@@ -81,7 +81,8 @@ export class EndpointsService {
     size: number,
     nombre: string = '',
     incluirInactivos: boolean = false,
-    aptoParaExamen: boolean = false
+    aptoParaExamen: boolean = false,
+    deporte: string | null = null
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -94,6 +95,11 @@ export class EndpointsService {
 
     if (aptoParaExamen) {
       params = params.set('aptoParaExamen', 'true');
+    }
+
+    // R2-P6: filtro por deporte en el servidor (mismo criterio que aplicaba el listado en el navegador).
+    if (deporte) {
+      params = params.set('deporte', deporte);
     }
 
     return this.http
