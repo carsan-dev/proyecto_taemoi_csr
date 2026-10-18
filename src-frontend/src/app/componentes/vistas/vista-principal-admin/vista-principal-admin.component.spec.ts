@@ -22,8 +22,8 @@ describe('VistaPrincipalAdminComponent', () => {
     endpointsSpy = jasmine.createSpyObj<EndpointsService>('EndpointsService', [
       'obtenerTodosLosEventos',
       'obtenerAlumnos',
-      'obtenerTodosLosGrupos',
-      'obtenerTodosLosTurnos',
+      'obtenerResumenGrupos',
+      'obtenerResumenTurnos',
       'obtenerAlumnosAptosParaExamen',
       'obtenerTesoreriaResumen',
       'obtenerDistribucionAlumnosPorDeporte',
@@ -32,8 +32,8 @@ describe('VistaPrincipalAdminComponent', () => {
     (endpointsSpy as any).eventos$ = eventos$.asObservable();
     endpointsSpy.obtenerTodosLosEventos.and.callFake(() => eventos$.next([]));
     endpointsSpy.obtenerAlumnos.and.returnValue(of({ totalElements: 5 } as any));
-    endpointsSpy.obtenerTodosLosGrupos.and.returnValue(of([{ id: 1 }] as any));
-    endpointsSpy.obtenerTodosLosTurnos.and.returnValue(of([{ id: 1 }] as any));
+    endpointsSpy.obtenerResumenGrupos.and.returnValue(of([{ id: 1 }] as any));
+    endpointsSpy.obtenerResumenTurnos.and.returnValue(of([{ id: 1 }] as any));
     endpointsSpy.obtenerAlumnosAptosParaExamen.and.returnValue(of([] as any));
     endpointsSpy.obtenerTesoreriaResumen.and.returnValue(of({ totalPendientes: 0, importePendiente: 0 } as any));
     endpointsSpy.obtenerDistribucionAlumnosPorDeporte.and.returnValue(of({} as any));

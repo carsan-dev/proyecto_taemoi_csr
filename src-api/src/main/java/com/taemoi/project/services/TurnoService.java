@@ -5,6 +5,7 @@ import org.springframework.lang.NonNull;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoPublicoDTO;
+import com.taemoi.project.dtos.response.TurnoResumenDTO;
 import com.taemoi.project.entities.Turno;
 
 public interface TurnoService {
@@ -25,4 +26,7 @@ public interface TurnoService {
 	boolean eliminarTurno(@NonNull Long turnoId);
 
 	List<TurnoDTO> listarTurnosDTOCompleto();
+
+	/** Turnos en versión ligera (sin alumnos): mismo alcance que {@link #listarTurnosDTOCompleto()}, por id. */
+	List<TurnoResumenDTO> listarTurnosResumen();
 }

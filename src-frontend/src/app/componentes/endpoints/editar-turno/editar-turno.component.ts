@@ -76,7 +76,7 @@ export class EditarTurnoComponent implements OnInit {
   }
 
   obtenerGrupos(): void {
-    this.endpointsService.obtenerTodosLosGrupos().subscribe({
+    this.endpointsService.obtenerResumenGrupos().subscribe({
       next: (response) => {
         this.grupos = response;
       },

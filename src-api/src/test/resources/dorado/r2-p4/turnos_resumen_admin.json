@@ -1,0 +1,56 @@
+[
+  {
+    "diaSemana" : "Lunes",
+    "grupoId" : "grupo:G1",
+    "grupoNombre" : "DORADOP4 Taekwondo Sede1",
+    "horaFin" : "18:00",
+    "horaInicio" : "17:00",
+    "id" : "turno:T1",
+    "tipoGrupo" : "Infantil"
+  },
+  {
+    "diaSemana" : "Miércoles",
+    "grupoId" : "grupo:G1",
+    "grupoNombre" : "DORADOP4 Taekwondo Sede1",
+    "horaFin" : "18:00",
+    "horaInicio" : "17:00",
+    "id" : "turno:T2",
+    "tipoGrupo" : "Infantil"
+  },
+  {
+    "diaSemana" : "Martes",
+    "grupoId" : "grupo:G2",
+    "grupoNombre" : "DORADOP4 Taekwondo Sede2",
+    "horaFin" : "19:00",
+    "horaInicio" : "18:00",
+    "id" : "turno:T3",
+    "tipoGrupo" : null
+  },
+  {
+    "diaSemana" : "Jueves",
+    "grupoId" : "grupo:G3",
+    "grupoNombre" : "DORADOP4 Kickboxing Sede1",
+    "horaFin" : "20:00",
+    "horaInicio" : "19:00",
+    "id" : "turno:T4",
+    "tipoGrupo" : "Kickboxing"
+  },
+  {
+    "diaSemana" : "Viernes",
+    "grupoId" : "grupo:G3",
+    "grupoNombre" : "DORADOP4 Kickboxing Sede1",
+    "horaFin" : "21:00",
+    "horaInicio" : "20:00",
+    "id" : "turno:T5",
+    "tipoGrupo" : ""
+  },
+  {
+    "diaSemana" : "Sábado",
+    "grupoId" : null,
+    "grupoNombre" : "Sin grupo",
+    "horaFin" : "11:00",
+    "horaInicio" : "10:00",
+    "id" : "turno:T6",
+    "tipoGrupo" : null
+  }
+]

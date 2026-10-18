@@ -24,6 +24,14 @@ public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecific
 
 	List<Turno> findByGrupo(Grupo grupo);
 
+	/**
+	 * R2-P4 (resumen de grupos): día y horas de los turnos de esos grupos, sin cargar entidades ni alumnos. Filas
+	 * {@code [grupoId, id, diaSemana, horaInicio, horaFin]}, por id.
+	 */
+	@Query("SELECT t.grupo.id, t.id, t.diaSemana, t.horaInicio, t.horaFin FROM Turno t WHERE t.grupo.id IN :ids "
+			+ "ORDER BY t.id")
+	List<Object[]> findResumenPorGrupos(@Param("ids") java.util.Collection<Long> ids);
+
 	/** Bloquea (FOR UPDATE) solo la fila del turno, con o sin grupo; R2-P3: sin JOIN FETCH, el grupo (EAGER) se lee aparte, sin bloqueo. */
 	@Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT t FROM Turno t WHERE t.id = :id")

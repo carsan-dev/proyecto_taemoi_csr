@@ -8,9 +8,10 @@ import { FormsModule } from '@angular/forms';
 import { GrupoAlumnosModalComponent } from '../../generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { finalize, filter, take } from 'rxjs/operators';
-import { forkJoin, of, Subscription } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
+import { GrupoResumen, TurnoDeGrupoResumen } from '../../../interfaces/grupo-resumen';
+import { TurnoResumen } from '../../../interfaces/turno-resumen';
 
 @Component({
   selector: 'app-listado-grupos',
@@ -20,7 +21,7 @@ import { SearchableSelectDirective } from '../../../directives/searchable-select
   styleUrl: './listado-grupos.component.scss',
 })
 export class ListadoGruposComponent implements OnInit, OnDestroy {
-  grupos: any[] = [];
+  grupos: GrupoResumen[] = [];
   cargando: boolean = true; // Local loading state
   cargandoConteo: boolean = true; // Loading state for alumn count
   gruposMostrar: string[] = [
@@ -36,10 +37,10 @@ export class ListadoGruposComponent implements OnInit, OnDestroy {
   cargandoAlumnosModal: boolean = false;
 
   // Turnos por grupo
-  turnosPorGrupo: Map<number, any[]> = new Map();
+  turnosPorGrupo: Map<number, TurnoDeGrupoResumen[]> = new Map();
 
   // Turnos sin grupo asignado
-  turnosSinGrupo: any[] = [];
+  turnosSinGrupo: TurnoResumen[] = [];
 
   private conteoSubscription?: Subscription;
 
@@ -70,7 +71,7 @@ export class ListadoGruposComponent implements OnInit, OnDestroy {
 
   obtenerGrupos(): void {
     this.cargando = true;
-    this.endpointsService.obtenerTodosLosGrupos()
+    this.endpointsService.obtenerResumenGrupos()
       .subscribe({
         next: (response) => {
           this.grupos = response;
@@ -87,31 +88,14 @@ export class ListadoGruposComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** Los turnos de cada grupo vienen en el propio resumen (antes, una petición por grupo con los alumnos de cada turno). */
   cargarTurnosPorGrupo(): void {
-    if (this.grupos.length === 0) {
-      this.cargarTurnosSinGrupo();
-      return;
-    }
-
-    const requests = this.grupos.map(grupo =>
-      this.endpointsService.obtenerTurnosDelGrupoPorId(grupo.id).pipe(
-        catchError(() => of([]))
-      )
-    );
-
-    forkJoin(requests)
-      .subscribe({
-        next: (results) => {
-          results.forEach((turnos, index) => {
-            this.turnosPorGrupo.set(this.grupos[index].id, turnos || []);
-          });
-          this.cargarTurnosSinGrupo();
-        },
-      });
+    this.turnosPorGrupo = new Map(this.grupos.map(grupo => [grupo.id, grupo.turnos || []]));
+    this.cargarTurnosSinGrupo();
   }
 
   cargarTurnosSinGrupo(): void {
-    this.endpointsService.obtenerTodosLosTurnos()
+    this.endpointsService.obtenerResumenTurnos()
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (turnos) => {

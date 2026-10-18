@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.dtos.response.GrupoResumenDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
@@ -57,6 +58,16 @@ public class GrupoController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
 		return grupoService.obtenerTodosLosGrupos();
+	}
+
+	/**
+	 * Grupos en versión ligera: datos del grupo, número de alumnos y turnos, sin los alumnos. Mismos permisos y mismo
+	 * alcance que {@link #obtenerTodosLosGrupos()}.
+	 */
+	@GetMapping("/resumen")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
+	public List<GrupoResumenDTO> obtenerResumenGrupos() {
+		return grupoService.obtenerResumenGrupos();
 	}
 
 	@GetMapping("/conteo-alumnos")

@@ -55,7 +55,9 @@
     "src/app/servicios/plataforma/plataforma.service.spec.ts",
     "src/app/guards/plataforma.guard.spec.ts",
     "src/app/componentes/vistas/vista-principal-admin/vista-principal-admin.component.spec.ts",
-    "src/app/componentes/endpoints/configuracion-sistema/configuracion-sistema.component.spec.ts"
+    "src/app/componentes/endpoints/configuracion-sistema/configuracion-sistema.component.spec.ts",
+    "src/app/componentes/endpoints/listado-grupos/listado-grupos.resumen.spec.ts",
+    "src/app/servicios/endpoints/endpoints.service.resumen.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

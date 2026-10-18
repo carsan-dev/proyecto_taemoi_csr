@@ -9,12 +9,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.dtos.response.TurnoPublicoDTO;
+import com.taemoi.project.dtos.response.TurnoResumenDTO;
 import com.taemoi.project.entities.Grupo;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Turno;
@@ -26,6 +29,7 @@ import com.taemoi.project.services.TurnoService;
 import com.taemoi.project.services.AforoPreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
 
+import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 
 /**
@@ -121,6 +125,29 @@ public class TurnoServiceImpl implements TurnoService {
 				.orElseGet(turnoRepository::findAll);
 		return turnos.stream().map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * R2-P4: los turnos sin sus alumnos. Mismo alcance que {@link #listarTurnosDTOCompleto()} (responsable de sede:
+	 * turnos de grupos de sus sedes; gestión: todos) y, además, por id (aquel no ordena). Una consulta, con el grupo
+	 * y su disciplina traídos en el mismo SELECT (el grupo del turno es EAGER).
+	 */
+	@Override
+	public List<TurnoResumenDTO> listarTurnosResumen() {
+		Specification<Turno> alcance = gestionPorSede.restriccion()
+				.map(com.taemoi.project.acceso.PredicadosAlcance::turnosDeSusSedes)
+				.orElseGet(Specification::unrestricted);
+		Specification<Turno> conGrupo = (raiz, consulta, cb) -> {
+			if (!Long.class.equals(consulta.getResultType())) {
+				raiz.fetch("grupo", JoinType.LEFT).fetch("disciplina", JoinType.LEFT);
+			}
+			return null;
+		};
+		return turnoRepository.findAll(conGrupo.and(alcance), Sort.by("id")).stream()
+				.map(t -> new TurnoResumenDTO(t.getId(), t.getDiaSemana(), t.getHoraInicio(), t.getHoraFin(),
+						t.getGrupo() != null ? t.getGrupo().getId() : null,
+						t.getGrupo() != null ? t.getGrupo().getNombre() : "Sin grupo", t.getTipo()))
+				.toList();
 	}
 
 	/**

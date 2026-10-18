@@ -9,6 +9,7 @@ import org.springframework.lang.NonNull;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.GrupoResumenDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.entities.Grupo;
@@ -17,6 +18,9 @@ import jakarta.validation.Valid;
 
 public interface GrupoService {
 	List<GrupoConAlumnosDTO> obtenerTodosLosGrupos();
+
+	/** Grupos en versión ligera (sin alumnos): mismo alcance y, además, por id; ver {@link GrupoResumenDTO}. */
+	List<GrupoResumenDTO> obtenerResumenGrupos();
 
 	Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@NonNull Long id);
 
