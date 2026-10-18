@@ -51,4 +51,16 @@ public interface ConsultaAccesoRecursos {
 	 * {@code sedes}. Un cargo sin sede no está en ningún alcance.
 	 */
 	boolean productoAlumnoEnSedes(Long productoAlumnoId, Set<Long> sedes);
+
+	/**
+	 * Pieza 6b-2 (D4): el alumno del cargo ({@code COALESCE(alumno, alumnoDeporte.alumno)}) es de alguno de esos
+	 * grupos. Para el cobro en efectivo del profesor.
+	 */
+	boolean productoAlumnoEnGrupos(Long productoAlumnoId, Set<Long> grupos);
+
+	/** Pieza 6b-2: el cobro (de la escuela activa) lo cobró {@code usuarioId} como profesor (origen PROFESOR). */
+	boolean cobroDelProfesor(Long cobroId, Long usuarioId);
+
+	/** Pieza 6b-2: la sede es una de {@code sedes} y existe en la escuela activa (caja de sede del responsable). */
+	boolean sedeEnSedes(Long sedeId, Set<Long> sedes);
 }

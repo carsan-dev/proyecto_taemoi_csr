@@ -474,6 +474,16 @@ public class SecurityConfiguration {
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/tarifas-sede", "/api/tarifas-sede/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza 6b-2: caja de sede. El profesor, solo sus rutas (sus grupos o sus cobros, @acceso);
+						// la caja de una sede, responsable (sus sedes, @acceso), gestor y propietario; anular, solo el
+						// propietario. Cualquier otra ruta bajo /api/caja, nadie.
+						.requestMatchers("/api/caja/profesor/**").hasAuthority(Roles.ROLE_PROFESOR.toString())
+						.requestMatchers(HttpMethod.POST, "/api/caja/entregas/*/anular", "/api/caja/movimientos/*/anular")
+						.hasAuthority(Roles.ROLE_ADMIN.toString())
+						.requestMatchers("/api/caja/sedes/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						.requestMatchers("/api/caja", "/api/caja/**").denyAll()
 						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						// Administrador de plataforma (lecturas entre escuelas); el controlador lo exige también.
 						.requestMatchers("/api/plataforma/**").hasAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA)

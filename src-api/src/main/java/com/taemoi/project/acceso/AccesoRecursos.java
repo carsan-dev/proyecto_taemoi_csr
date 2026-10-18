@@ -39,6 +39,18 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * una cuenta FAMILIA + PROFESOR o RESPONSABLE_SEDE + PROFESOR no lee por sus grupos antes de la entrega 7 (D5-2).
  * Los métodos {@link #alumno}, {@link #grupo}, {@link #turno} y {@link #preinscripcion} SÍ activan la rama de
  * profesor: quedan para la entrega 7.
+ *
+ * <p><b>Pieza 6b-2 (caja).</b> Métodos NUEVOS y específicos para las rutas nuevas de {@code /api/caja}, sin abrir ninguna
+ * ruta existente al profesor:
+ * <ul>
+ * <li>{@link #cargoDeMisGrupos}, {@link #alumnoDeMisGrupos} y {@link #cobroPropioDelProfesor}: SOLO la rama de profesor ({@code ROLE_PROFESOR}),
+ * también para escribir (cobrar en efectivo y deshacer su cobro, D4). El alcance total NO concede: la gestión cobra por
+ * el PUT del cargo y su dinero entra en caja al momento (decisión 1); una cuenta de gestión que además sea profesor no
+ * tiene grupos en el alcance ({@link AlcanceSesion#TOTAL}) y no entra por aquí. Hoy un profesor solo abre sesión con
+ * FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ cuenta (es la única forma de usarlas antes de la entrega 8);
+ * D5-2 sigue valiendo para las rutas existentes.</li>
+ * <li>{@link #cajaDeSede}: alcance total o sedes de {@code ROLE_RESPONSABLE_SEDE}; nunca la rama de profesor.</li>
+ * </ul>
  */
 @Component("acceso")
 public class AccesoRecursos {
@@ -179,6 +191,74 @@ public class AccesoRecursos {
 	/** Solo con alcance total: ni familia, ni responsable (D4), ni profesor. */
 	public boolean productoAlumno(Long productoAlumnoId, OperacionAcceso operacion) {
 		return decidir(productoAlumnoId, operacion, null, null, null);
+	}
+
+	/**
+	 * Pieza 6b-2 (D4): el alumno del cargo es de alguno de los grupos del profesor de la sesión. Solo la rama de
+	 * profesor, para cualquier operación de las rutas del profesor (ver la cabecera). Gestión → {@code false}.
+	 */
+	public boolean cargoDeMisGrupos(Long productoAlumnoId) {
+		return comoProfesor(productoAlumnoId, grupos -> consulta.productoAlumnoEnGrupos(productoAlumnoId, grupos));
+	}
+
+	/**
+	 * Pieza 6b-2: el alumno es de alguno de los grupos del profesor de la sesión (apuntar y cobrar un producto). Solo
+	 * la rama de profesor, para escribir (ver la cabecera). Gestión → {@code false}.
+	 */
+	public boolean alumnoDeMisGrupos(Long alumnoId) {
+		return comoProfesor(alumnoId, grupos -> consulta.alumnoEnGrupos(alumnoId, grupos));
+	}
+
+	/**
+	 * Pieza 6b-2 (decisión 3): el cobro lo cobró el profesor de la sesión (cobrado_por = él, origen PROFESOR). Solo
+	 * {@code ROLE_PROFESOR}; no exige que el alumno siga en sus grupos (es su propio cobro). Activo y sin entrega lo
+	 * comprueba el servicio con la fila bloqueada (409).
+	 */
+	public boolean cobroPropioDelProfesor(Long cobroId) {
+		Authentication autenticacion = sesionValida();
+		if (cobroId == null || autenticacion == null || !tieneAutoridad(autenticacion, Roles.ROLE_PROFESOR)) {
+			return false;
+		}
+		Long usuarioId = autenticacion.getPrincipal() instanceof com.taemoi.project.entities.Usuario usuario
+				? usuario.getId()
+				: null;
+		return consulta.cobroDelProfesor(cobroId, usuarioId);
+	}
+
+	/**
+	 * Pieza 6b-2: caja de la sede. Alcance total (gestor y propietario) → {@code true} sin consultar; responsable de
+	 * sede → la sede es una de las suyas (y de la escuela activa). Nunca la rama de profesor.
+	 */
+	public boolean cajaDeSede(Long sedeId) {
+		return decidir(sedeId, OperacionAcceso.EDITAR, null, sedes -> consulta.sedeEnSedes(sedeId, sedes), null);
+	}
+
+	/** Solo la rama de profesor, con su conjunto de grupos no vacío; sin mirar la operación. */
+	private boolean comoProfesor(Object id, Predicate<Set<Long>> porGrupos) {
+		Authentication autenticacion = sesionValida();
+		if (id == null || autenticacion == null || !tieneAutoridad(autenticacion, Roles.ROLE_PROFESOR)) {
+			return false;
+		}
+		AlcanceSesion alcance = alcanceActual.obtener();
+		return !alcance.total() && concede(porGrupos, alcance.grupos());
+	}
+
+	private static Authentication sesionValida() {
+		Authentication autenticacion = SecurityContextHolder.getContext().getAuthentication();
+		if (autenticacion == null || !autenticacion.isAuthenticated()
+				|| autenticacion instanceof AnonymousAuthenticationToken) {
+			return null;
+		}
+		return autenticacion;
+	}
+
+	private static boolean tieneAutoridad(Authentication autenticacion, Roles rol) {
+		for (GrantedAuthority autoridad : autenticacion.getAuthorities()) {
+			if (rol.name().equals(autoridad.getAuthority())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

@@ -258,7 +258,6 @@ class ProductoAlumnoServiceImplTest {
 		when(productoAlumnoRepository.findById(1L)).thenReturn(Optional.of(productoAlumno));
 		when(productoAlumnoRepository.save(any(ProductoAlumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
 		when(alumnoConvocatoriaRepository.findByProductoAlumnoId(1L)).thenReturn(Optional.empty());
-		when(alumnoRepository.save(any(Alumno.class))).thenAnswer(invocation -> invocation.getArgument(0));
 		SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
 				"admin@test.com",
 				null,
@@ -269,6 +268,8 @@ class ProductoAlumnoServiceImplTest {
 		assertFalse(resultado.getPagado());
 		assertNull(resultado.getFechaPago());
 		verify(productoAlumnoRepository).save(any(ProductoAlumno.class));
+		// Pieza 6b-2 (decisión del propietario): un cargo que no es de examen no toca el derecho a examen del alumno.
+		verify(alumnoRepository, never()).save(any(Alumno.class));
 	}
 
 	@Test

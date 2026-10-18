@@ -315,10 +315,38 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 	}
 
 	/**
+	 * Pieza 6b-2 (D4): las ÚNICAS rutas abiertas al profesor antes de la entrega 7, las suyas de la caja
+	 * ({@code /api/caja/profesor/**}), con el test que prueba su alcance (sus grupos o sus cobros). En ellas PROFESOR
+	 * puede ser ALCANCE ({@code @acceso} consultó) o PERMITE (el servicio filtra por sus grupos o por su cuenta).
+	 */
+	static final Map<String, String> PROFESOR_CAJA_6B2 = profesorCaja();
+
+	private static Map<String, String> profesorCaja() {
+		String caja = "integracion.CajaSedeIntegrationTest#";
+		Map<String, String> m = new LinkedHashMap<>();
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/caja/profesor/cargos-pendientes",
+					caja + "profesor_veSoloLosCargosPendientesDeSusGrupos_sinTotales");
+			m.put(metodo + " /api/caja/profesor/productos",
+					caja + "profesor_listaLosProductosQuePuedeVender_conLaMismaListaBlanca");
+			m.put(metodo + " /api/caja/profesor/cobros-pendientes-entrega",
+					caja + "profesor_misCobrosPendientesDeEntrega_soloLosSuyosConSusTotales");
+		}
+		m.put("POST /api/caja/profesor/cargos/{cargoId}/cobrar",
+				caja + "profesor_cobraEnEfectivo_conLosMismosEfectosQueElPut");
+		m.put("POST /api/caja/profesor/cobros/{cobroId}/deshacer",
+				caja + "profesor_deshaceSuCobro_noElAjeno_niElEntregado");
+		m.put("POST /api/caja/profesor/alumnos/{alumnoId}/productos/{productoId}/cobrar",
+				caja + "profesor_noApuntaProductosConEfectos_niAAlumnosAjenos");
+		return Map.copyOf(m);
+	}
+
+	/**
 	 * Invariantes de los roles nuevos (§2.2):
 	 * <ol>
 	 * <li>PROFESOR decide en cada línea lo mismo que SOLO_PLATAFORMA (una sesión autenticada sin ningún rol de
-	 * escuela), salvo en {@code /api/plataforma/**}, que le deniega: no se abre nada hasta la entrega 7.</li>
+	 * escuela), salvo en {@code /api/plataforma/**}, que le deniega: no se abre nada hasta la entrega 7. Excepción de
+	 * la pieza 6b-2: las líneas de {@link #PROFESOR_CAJA_6B2} (ALCANCE o PERMITE).</li>
 	 * <li>RESPONSABLE_SEDE solo puede ser DENIEGA, ALCANCE (el {@code @PreAuthorize} consultó {@code @acceso}) o
 	 * PERMITE en una línea de {@link #RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO} o en una ruta pública o de sesión que ya
 	 * era PERMITE para SOLO_PLATAFORMA. En {@code /api/plataforma/**}, DENIEGA.</li>
@@ -332,6 +360,7 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		List<RegistroMatrizPermisos.Linea> lineas = leerRegistro(errores);
 		int lineasDePlataforma = 0;
 		Set<String> declaradasUsadas = new LinkedHashSet<>();
+		Set<String> profesorDeclaradasUsadas = new LinkedHashSet<>();
 		for (RegistroMatrizPermisos.Linea linea : lineas) {
 			boolean plataforma = esRutaDePlataforma(linea.ruta());
 			if (plataforma) {
@@ -339,7 +368,14 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			}
 			Decision soloPlataforma = linea.decisiones().get(RolMatriz.SOLO_PLATAFORMA);
 			Decision profesorEsperado = plataforma ? Decision.DENIEGA : soloPlataforma;
-			if (linea.decisiones().get(RolMatriz.PROFESOR) != profesorEsperado) {
+			Decision profesor = linea.decisiones().get(RolMatriz.PROFESOR);
+			if (PROFESOR_CAJA_6B2.containsKey(linea.clave())) {
+				profesorDeclaradasUsadas.add(linea.clave());
+				if (profesor != Decision.ALCANCE && profesor != Decision.PERMITE) {
+					errores.add(String.format("línea %d: %s, PROFESOR: %s en una ruta declarada en PROFESOR_CAJA_6B2",
+							linea.numero(), linea.clave(), profesor));
+				}
+			} else if (profesor != profesorEsperado) {
 				errores.add(String.format("línea %d: %s, PROFESOR: %s, se esperaba %s", linea.numero(), linea.clave(),
 						linea.decisiones().get(RolMatriz.PROFESOR), profesorEsperado));
 			}
@@ -368,6 +404,15 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			if (!existeTest(entrada.getValue())) {
 				errores.add("RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO: '" + entrada.getKey() + "' cita el test "
 						+ entrada.getValue() + ", que no existe");
+			}
+		}
+		for (Map.Entry<String, String> entrada : PROFESOR_CAJA_6B2.entrySet()) {
+			if (!profesorDeclaradasUsadas.contains(entrada.getKey())) {
+				errores.add("PROFESOR_CAJA_6B2 declara '" + entrada.getKey() + "', que no está en el registro: quítala");
+			}
+			if (!existeTest(entrada.getValue())) {
+				errores.add("PROFESOR_CAJA_6B2: '" + entrada.getKey() + "' cita el test " + entrada.getValue()
+						+ ", que no existe");
 			}
 		}
 		if (lineasDePlataforma == 0) {

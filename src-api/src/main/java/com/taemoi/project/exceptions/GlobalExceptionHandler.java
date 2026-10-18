@@ -133,4 +133,20 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<Map<String,String>> handleNotFound(java.util.NoSuchElementException e) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", e.getMessage()));
 	}
+
+	/** Mensaje de los conflictos de concurrencia (pieza 6b-2). */
+	public static final String MENSAJE_CONCURRENCIA = "Otra persona ha cambiado este dato a la vez; vuelve a intentarlo";
+
+	/**
+	 * Pieza 6b-2: conflictos de concurrencia → 409 en lugar de 500. Optimista: la versión de la fila cambió
+	 * ({@code @Version} de cobro, entrega y movimiento de caja; {@code ObjectOptimisticLockingFailureException}).
+	 * Pesimista: espera de bloqueo agotada o interbloqueo elegido como víctima ({@code CannotAcquireLockException},
+	 * {@code DeadlockLoserDataAccessException}, {@code PessimisticLockingFailureException}). La transacción ya se deshizo:
+	 * no queda nada escrito y se puede repetir. Antes de la 6b-2 estos casos daban 500 en cualquier ruta.
+	 */
+	@ExceptionHandler({ org.springframework.dao.OptimisticLockingFailureException.class,
+			org.springframework.dao.PessimisticLockingFailureException.class })
+	public ResponseEntity<Map<String,String>> handleConcurrencia(org.springframework.dao.ConcurrencyFailureException e) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", MENSAJE_CONCURRENCIA));
+	}
 }

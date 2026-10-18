@@ -244,16 +244,35 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			cobros.exigirSinEntrega(alumnoConvocatoria.getProductoAlumno().getId());
 		}
 
-		alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
-		alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
-
-		if (alumnoConvocatoriaDTO.getPagado()) {
-			alumnoConvocatoria.setFechaPago(new Date());
-		} else {
-			alumnoConvocatoria.setFechaPago(null);
-		}
-
-		alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+		// Pieza 6b-2: el cambio de pago de la inscripción va ENTERO en una transacción y con el orden de bloqueo de las
+		// demás reversiones: primero el cargo (FOR UPDATE), después su cobro (registrar o anular, que bloquea el cobro)
+		// y solo entonces se guarda la inscripción. Si una entrega de caja tomó el cobro entre la comprobación previa y
+		// el bloqueo, el 409 deshace todo y la inscripción queda como estaba. La fecha de grado y el derecho a examen se
+		// actualizan después, como antes, solo si el pago se guardó.
+		ProductoAlumno cargoDelExamen = alumnoConvocatoria.getProductoAlumno();
+		cobros.enTransaccion(() -> {
+			if (cargoDelExamen != null) {
+				// Pieza 6b-1: el cargo se bloquea y se relee, y su cobro se registra (si pasa a pagado) o se anula (si
+				// pasa a no pagado). Si ya estaba pagado (p. ej. por el PUT del cargo), no hay otro cobro.
+				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoDelExamen.getId()).orElse(cargoDelExamen);
+				boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
+				productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+				productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
+				productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
+				ProductoAlumno guardado = productoAlumnoRepository.save(productoAlumno);
+				cobros.alCambiarPago(guardado, pagadoAntes, alumnoConvocatoriaDTO.getMetodoPago(),
+						OrigenCobro.CONVOCATORIA, MOTIVO_REVERSION_CONVOCATORIA);
+			}
+			alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
+			alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
+			if (alumnoConvocatoriaDTO.getPagado()) {
+				alumnoConvocatoria.setFechaPago(new Date());
+			} else {
+				alumnoConvocatoria.setFechaPago(null);
+			}
+			alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+			return null;
+		});
 
 		Alumno alumno = alumnoConvocatoria.getAlumno();
 		AlumnoDeporte alumnoDeporte = alumnoConvocatoria.getAlumnoDeporte();
@@ -270,24 +289,6 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					alumnoDeporte.getDeporte(),
 					new Date()
 			);
-		}
-
-		ProductoAlumno cargoDelExamen = alumnoConvocatoria.getProductoAlumno();
-		if (cargoDelExamen != null) {
-			// Pieza 6b-1: el cargo se bloquea y se relee, y su cobro se registra (si pasa a pagado) o se anula (si pasa a
-			// no pagado) en la misma transacción. Si ya estaba pagado (p. ej. por el PUT del cargo), no hay otro cobro.
-			Long cargoId = cargoDelExamen.getId();
-			cobros.enTransaccion(() -> {
-				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoId).orElse(cargoDelExamen);
-				boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
-				productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
-				productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
-				productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
-				ProductoAlumno guardado = productoAlumnoRepository.save(productoAlumno);
-				cobros.alCambiarPago(guardado, pagadoAntes, alumnoConvocatoriaDTO.getMetodoPago(),
-						OrigenCobro.CONVOCATORIA, MOTIVO_REVERSION_CONVOCATORIA);
-				return guardado;
-			});
 		}
 
 		if (alumno != null) {

@@ -17,6 +17,31 @@ public interface ProductoAlumnoService {
 
 	void eliminarProductoAlumno(Long id);
 
+	/**
+	 * Pieza 6b-2: cobro en efectivo del profesor de un cargo pendiente (mismas reglas y efectos que el cobro del PUT del
+	 * cargo, con origen PROFESOR). Ya pagado → 409.
+	 *
+	 * @return el cobro ACTIVO registrado
+	 */
+	com.taemoi.project.entities.Cobro cobrarEnEfectivoComoProfesor(Long cargoId);
+
+	/**
+	 * Pieza 6b-2: el profesor {@code profesorId} deshace su cobro (ACTIVO, origen PROFESOR y sin entrega): el cargo
+	 * vuelve a pendiente con los mismos efectos que la reversión del PUT. Ajeno → 403; entregado → 409.
+	 */
+	void deshacerCobroDeProfesor(Long cobroId, Long profesorId);
+
+	/**
+	 * Pieza 6b-2: el profesor apunta y cobra en efectivo un producto del catálogo (sin efectos colaterales) a un alumno:
+	 * cargo ya pagado con precio y concepto del catálogo y su cobro ACTIVO de origen PROFESOR. Producto excluido → 400.
+	 *
+	 * @return el cobro ACTIVO registrado
+	 */
+	com.taemoi.project.entities.Cobro apuntarYCobrarProductoComoProfesor(Long alumnoId, Long productoId);
+
+	/** Pieza 6b-2: productos del catálogo que el profesor puede apuntar y cobrar (la misma lista blanca). */
+	List<com.taemoi.project.entities.Producto> productosVendiblesPorProfesor();
+
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
 
 	/**

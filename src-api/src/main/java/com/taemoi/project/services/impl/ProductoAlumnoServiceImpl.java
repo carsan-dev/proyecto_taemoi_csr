@@ -10,15 +10,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,16 +32,20 @@ import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.Cobro;
+import com.taemoi.project.entities.EstadoCobro;
 import com.taemoi.project.entities.MetodoPago;
 import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
+import com.taemoi.project.exceptions.pago.CobroEntregadoException;
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
@@ -48,6 +55,7 @@ import com.taemoi.project.services.CobroService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.ProgresionGradosService;
+import com.taemoi.project.services.RegistroAccionesCaja;
 import com.taemoi.project.services.ResolutorCuantiaMensualidad;
 import com.taemoi.project.services.ResultadoGeneracionMensualidades;
 import com.taemoi.project.services.TarifaSedeService;
@@ -111,6 +119,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private CobroService cobros;
 
+	/** Pieza 6b-2: lectura del cobro que el profesor deshace (sin bloqueo; se bloquea después en la transacción). */
+	@Autowired
+	private CobroRepository cobroRepository;
+
+	/** Pieza 6b-2: registro de acciones de la caja (cobrar y deshacer del profesor). */
+	@Autowired
+	private RegistroAccionesCaja registroCaja;
+
 	/** Motivo de la anulación del cobro al revertir el pago por el PUT del cargo sin {@code motivoCambio}. */
 	private static final String MOTIVO_REVERSION = "pago revertido";
 
@@ -119,12 +135,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * transacción registra su cobro (pieza 6b-1): ese dinero se cobró al crearlo. Si no, lo guarda como siempre.
 	 */
 	private ProductoAlumno guardarCargoNuevo(ProductoAlumno cargo, MetodoPago metodo) {
+		return guardarCargoNuevo(cargo, metodo, OrigenCobro.TESORERIA);
+	}
+
+	/** Como {@link #guardarCargoNuevo(ProductoAlumno, MetodoPago)}, con el origen del cobro (6b-2: PROFESOR). */
+	private ProductoAlumno guardarCargoNuevo(ProductoAlumno cargo, MetodoPago metodo, OrigenCobro origen) {
 		if (!Boolean.TRUE.equals(cargo.getPagado())) {
 			return productoAlumnoRepository.save(cargo);
 		}
 		return cobros.enTransaccion(() -> {
 			ProductoAlumno guardado = productoAlumnoRepository.save(cargo);
-			cobros.registrar(guardado, metodo, guardado.getFechaPago(), OrigenCobro.TESORERIA);
+			cobros.registrar(guardado, metodo, guardado.getFechaPago(), origen);
 			return guardado;
 		});
 	}
@@ -160,6 +181,99 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto producto = productoRepository.findById(productoId)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+		return convertirADTO(crearCargoDeProducto(alumno, producto, detallesDTO, OrigenCobro.TESORERIA));
+	}
+
+	/**
+	 * Pieza 6b-2: el profesor apunta y cobra en efectivo un producto del catálogo a un alumno de sus grupos (permiso:
+	 * {@code @acceso.alumnoDeMisGrupos}). Misma vía que asignar un producto ({@link #crearCargoDeProducto}): precio y
+	 * concepto del catálogo, cantidad 1, cargo YA PAGADO (fecha de pago ahora) y, en la misma transacción, su cobro
+	 * ACTIVO en EFECTIVO, origen PROFESOR y cobrado por él; la sede, la del {@code @PrePersist} del cargo. Solo productos
+	 * sin efectos colaterales ({@link #exigirProductoVendiblePorProfesor}, 400 si no). Alumno o producto que no existe
+	 * en la escuela → 404. Queda en el registro de acciones.
+	 */
+	@Override
+	public Cobro apuntarYCobrarProductoComoProfesor(Long alumnoId, Long productoId) {
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+		Producto producto = productoRepository.findById(productoId)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+		exigirProductoVendiblePorProfesor(producto);
+		ProductoAlumnoDTO detalles = new ProductoAlumnoDTO();
+		detalles.setCantidad(1);
+		detalles.setPagado(true);
+		detalles.setMetodoPago(MetodoPago.EFECTIVO);
+		return cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = crearCargoDeProducto(alumno, producto, detalles, OrigenCobro.PROFESOR);
+			Cobro cobro = cobroRepository.findFirstByProductoAlumnoIdAndEstado(cargo.getId(), EstadoCobro.ACTIVO)
+					.orElseThrow(() -> new IllegalStateException("No se registró el cobro."));
+			Map<String, Long> implicados = ids("cobro", cobro.getId(), "cargo", cargo.getId());
+			implicados.put("producto", productoId);
+			implicados.put("alumno", alumnoId);
+			registroCaja.registrar(RegistroAccionesCaja.Accion.COBRO_PROFESOR_PRODUCTO,
+					"/api/caja/profesor/alumnos/" + alumnoId + "/productos/" + productoId + "/cobrar",
+					cargo.getSedeId(), implicados);
+			return cobro;
+		});
+	}
+
+	static final String PRODUCTO_NO_VENDIBLE_POR_PROFESOR = "Este producto no lo puede cobrar un profesor: solo "
+			+ "productos sin efectos (no mensualidades, licencias, matrículas, reservas de plaza, tarifas de "
+			+ "competidor, exámenes ni productos que conceden grado o derecho a examen).";
+
+	/** Palabras del concepto (sin tildes, en mayúsculas) que excluyen un producto aunque esté sin clasificar. */
+	private static final List<String> CONCEPTOS_NO_VENDIBLES_POR_PROFESOR = List.of("MENSUALIDAD", "LICENCIA",
+			"MATRICULA", "RESERVA", "COMPETIDOR", "EXAMEN", "PASE DE GRADO", "RECOMPENSA");
+
+	/**
+	 * Pieza 6b-2, lista blanca de lo que el profesor puede apuntar y cobrar: SOLO productos de tipo
+	 * {@link TipoProducto#OTRO} (material, camisetas…), sin grado enlazado, cuyo concepto no nombra nada con efectos y
+	 * que el catálogo no resuelve como concesión de grado. Fuera: MENSUALIDAD, RESERVA_PLAZA, LICENCIA, COMPETIDOR
+	 * (recurrentes o con efectos en la ficha), EXAMEN y RECOMPENSA (derecho a examen y promoción de grado), y por
+	 * concepto los de Taemoi sin clasificar por código. Ante la duda (el catálogo falla), se excluye.
+	 */
+	private void exigirProductoVendiblePorProfesor(Producto producto) {
+		if (!esVendiblePorProfesor(producto)) {
+			throw new IllegalArgumentException(PRODUCTO_NO_VENDIBLE_POR_PROFESOR);
+		}
+	}
+
+	/**
+	 * La regla ÚNICA de la lista blanca (la usan apuntar y cobrar y {@link #productosVendiblesPorProfesor}). El grado
+	 * enlazado se mira en la entidad; el catálogo solo resuelve el concedido por concepto (sin releer el producto).
+	 */
+	private boolean esVendiblePorProfesor(Producto producto) {
+		if (producto == null || producto.getTipo() != TipoProducto.OTRO || producto.getGrado() != null) {
+			return false;
+		}
+		String concepto = normalizarConcepto(producto.getConcepto());
+		if (concepto.isBlank() || CONCEPTOS_NO_VENDIBLES_POR_PROFESOR.stream().anyMatch(concepto::contains)) {
+			return false;
+		}
+		try {
+			return productosCatalogo.buscarCodigoGradoConcedido(null, producto.getConcepto()).isEmpty();
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	/** Pieza 6b-2: productos del catálogo de la escuela que el profesor puede apuntar y cobrar, por concepto. */
+	@Override
+	public List<Producto> productosVendiblesPorProfesor() {
+		return productoRepository.findAll().stream().filter(this::esVendiblePorProfesor)
+				.sorted(java.util.Comparator.comparing(Producto::getConcepto,
+						java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+						.thenComparing(Producto::getId))
+				.toList();
+	}
+
+	/**
+	 * Crea el cargo de un producto del catálogo para el alumno (la vía de «asignar producto a alumno», común desde la
+	 * 6b-2 con la venta del profesor): D6-17, matrícula con deporte, precio y concepto del catálogo, cobro si nace
+	 * pagado (con ese origen) y derecho a examen si lo da.
+	 */
+	private ProductoAlumno crearCargoDeProducto(Alumno alumno, Producto producto, ProductoAlumnoDTO detallesDTO,
+			OrigenCobro origen) {
 		exigirSedeActivaParaCargo(alumno);
 
 		if (esMatricula(producto.getConcepto())) {
@@ -181,15 +295,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			productoAlumno.setFechaPago(new Date());
 		}
 
-		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago());
+		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago(), origen);
 		if (Boolean.TRUE.equals(savedProductoAlumno.getPagado()) && daDerechoAExamen(savedProductoAlumno)) {
 			Alumno a = savedProductoAlumno.getAlumno();
 			a.setTieneDerechoExamen(true);
 			alumnoRepository.save(a);
 		}
-
-		// Convertir a DTO antes de retornar
-		return convertirADTO(savedProductoAlumno);
+		return savedProductoAlumno;
 	}
 
 	@Override
@@ -211,6 +323,111 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		// Pieza 6b-1: el cargo se bloquea y se relee, se cambia, se guarda y se registra o anula su cobro en una sola
 		// transacción. Lo demás (convocatoria, derecho a examen, promoción de grado) sigue fuera, como antes.
 		CargoActualizado cambio = cobros.enTransaccion(() -> aplicarCambiosAlCargo(id, detallesDTO));
+		aplicarEfectosDelCambioDePago(cambio);
+		return convertirADTO(cambio.cargo());
+	}
+
+	/** Motivo de la anulación del cobro cuando el profesor deshace el suyo (pieza 6b-2). */
+	static final String MOTIVO_DESHACER_PROFESOR = "cobro deshecho por el profesor";
+	static final String CARGO_YA_COBRADO = "El cargo ya está cobrado.";
+	static final String COBRO_NO_ACTIVO = "El cobro ya no está activo.";
+
+	/**
+	 * Pieza 6b-2: el profesor cobra en efectivo un cargo PENDIENTE de un alumno de sus grupos (el permiso lo da
+	 * {@code @acceso.cargoDeMisGrupos}). Misma lógica que el cobro del PUT del cargo ({@link #aplicarCambiosAlCargoBloqueado}
+	 * con el cargo bloqueado): {@code pagado = true}, {@code fecha_pago} de ahora y cobro ACTIVO en EFECTIVO con origen
+	 * PROFESOR y cobrado por él; y los mismos efectos fuera de la transacción ({@link #aplicarEfectosDelCambioDePago}).
+	 * Ya pagado → 409; sin {@code alumno_id} → 400 (el código de cobro de siempre no lo admite). Queda en el registro de
+	 * acciones.
+	 */
+	@Override
+	public Cobro cobrarEnEfectivoComoProfesor(Long cargoId) {
+		CobroDelProfesor resultado = cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = cobros.bloquearCargo(cargoId)
+					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+			if (Boolean.TRUE.equals(cargo.getPagado())) {
+				throw new IllegalStateException(CARGO_YA_COBRADO);
+			}
+			if (cargo.getAlumno() == null) {
+				throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
+			}
+			ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
+			cambios.setPagado(true);
+			cambios.setMetodoPago(MetodoPago.EFECTIVO);
+			CargoActualizado cambio = aplicarCambiosAlCargoBloqueado(cargo, cambios, OrigenCobro.PROFESOR);
+			Cobro cobro = cobroRepository.findFirstByProductoAlumnoIdAndEstado(cargoId, EstadoCobro.ACTIVO)
+					.orElseThrow(() -> new IllegalStateException("No se registró el cobro."));
+			registroCaja.registrar(RegistroAccionesCaja.Accion.COBRO_PROFESOR,
+					"/api/caja/profesor/cargos/" + cargoId + "/cobrar", cargo.getSedeId(),
+					ids("cobro", cobro.getId(), "cargo", cargoId));
+			return new CobroDelProfesor(cambio, cobro);
+		});
+		aplicarEfectosDelCambioDePago(resultado.cambio());
+		return resultado.cobro();
+	}
+
+	/**
+	 * Pieza 6b-2: el profesor deshace SU cobro (cobrado por él, origen PROFESOR, ACTIVO y sin entrega). Bloquea el
+	 * CARGO y después el COBRO (mismo orden que la reversión del PUT) y deja el cargo como no pagado con la misma lógica
+	 * que la reversión del PUT, sin exigir ROLE_ADMIN solo en este caso; mismos efectos fuera de la transacción. Ajeno o
+	 * de otro origen → 403; entregado → 409 ({@link CobroEntregadoException}); ya anulado o sin cargo → 409. Queda en el
+	 * registro de acciones.
+	 */
+	@Override
+	public void deshacerCobroDeProfesor(Long cobroId, Long profesorId) {
+		Long cargoId = cobroRepository.findById(cobroId)
+				.orElseThrow(() -> new NoSuchElementException("Cobro no encontrado."))
+				.getProductoAlumnoId();
+		if (cargoId == null) {
+			throw new IllegalStateException(COBRO_NO_ACTIVO);
+		}
+		CargoActualizado cambio = cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = cobros.bloquearCargo(cargoId)
+					.orElseThrow(() -> new IllegalStateException(COBRO_NO_ACTIVO));
+			Cobro cobro = cobros.bloquearCobro(cobroId)
+					.orElseThrow(() -> new NoSuchElementException("Cobro no encontrado."));
+			if (profesorId == null || !profesorId.equals(cobro.getCobradoPorUsuarioId())
+					|| cobro.getOrigen() != OrigenCobro.PROFESOR) {
+				throw new AccessDeniedException("Acceso denegado.");
+			}
+			if (cobro.getEntregaCajaId() != null) {
+				throw new CobroEntregadoException();
+			}
+			if (cobro.getEstado() != EstadoCobro.ACTIVO || !cargoId.equals(cobro.getProductoAlumnoId())) {
+				throw new IllegalStateException(COBRO_NO_ACTIVO);
+			}
+			ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
+			cambios.setPagado(false);
+			cambios.setMotivoCambio(MOTIVO_DESHACER_PROFESOR);
+			CargoActualizado resultado = aplicarCambiosAlCargoBloqueado(cargo, cambios, OrigenCobro.PROFESOR);
+			registroCaja.registrar(RegistroAccionesCaja.Accion.COBRO_PROFESOR_DESHECHO,
+					"/api/caja/profesor/cobros/" + cobroId + "/deshacer", cobro.getSedeId(),
+					ids("cobro", cobroId, "cargo", cargoId));
+			return resultado;
+		});
+		aplicarEfectosDelCambioDePago(cambio);
+	}
+
+	private static Map<String, Long> ids(String clave1, Long id1, String clave2, Long id2) {
+		Map<String, Long> ids = new LinkedHashMap<>();
+		ids.put(clave1, id1);
+		ids.put(clave2, id2);
+		return ids;
+	}
+
+	private record CobroDelProfesor(CargoActualizado cambio, Cobro cobro) {
+	}
+
+	/**
+	 * Fuera de la transacción del cobro, como antes de la 6b-1: sincroniza la inscripción a la convocatoria (cuantía y
+	 * pagado), el derecho a examen del alumno y, si pasa a pagado, promueve el grado que concede el producto. Común al
+	 * PUT del cargo y a las rutas del profesor (pieza 6b-2).
+	 *
+	 * <p>Desde la 6b-2 el derecho a examen SOLO lo tocan los cargos de examen ({@link #daDerechoAExamen}): antes, cobrar
+	 * o revertir cualquier cargo lo ponía a {@code esExamen && pagado}, así que pagar una mensualidad quitaba el derecho
+	 * a examen ya ganado. Cambio deliberado (decisión del propietario).
+	 */
+	private void aplicarEfectosDelCambioDePago(CargoActualizado cambio) {
 		ProductoAlumno updatedProductoAlumno = cambio.cargo();
 		boolean pagadoAntes = cambio.pagadoAntes();
 
@@ -221,16 +438,18 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					alumnoConvocatoriaRepository.save(ac);
 				});
 
-		Alumno alumno = updatedProductoAlumno.getAlumno();
-		boolean esProductoExamen = daDerechoAExamen(updatedProductoAlumno);
-		alumno.setTieneDerechoExamen(esProductoExamen && Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
-		alumnoRepository.save(alumno);
+		// Pieza 6b-2 (decisión del propietario, cambio DELIBERADO del comportamiento anterior, también en el PUT de
+		// Moiskimdo): solo un cargo de examen (daDerechoAExamen) fija alumno.tiene_derecho_examen (= pagado). Cobrar o
+		// deshacer cualquier otro cargo (una mensualidad, material…) ya no lo pone a false.
+		if (daDerechoAExamen(updatedProductoAlumno)) {
+			Alumno alumno = updatedProductoAlumno.getAlumno();
+			alumno.setTieneDerechoExamen(Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
+			alumnoRepository.save(alumno);
+		}
 
 		if (Boolean.TRUE.equals(updatedProductoAlumno.getPagado()) && !pagadoAntes) {
 			activarGradoPorRecompensaPagada(updatedProductoAlumno);
 		}
-
-		return convertirADTO(updatedProductoAlumno);
 	}
 
 	/** El cargo guardado y si estaba pagado antes del cambio (leído con la fila bloqueada). */
@@ -245,7 +464,21 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private CargoActualizado aplicarCambiosAlCargo(Long id, ProductoAlumnoDTO detallesDTO) {
 		ProductoAlumno productoAlumno = cobros.bloquearCargo(id)
 				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
-		exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
+		return aplicarCambiosAlCargoBloqueado(productoAlumno, detallesDTO, OrigenCobro.TESORERIA);
+	}
+
+	/**
+	 * Las reglas del PUT del cargo sobre un cargo YA bloqueado y releído (pieza 6b-2: común con las rutas del profesor).
+	 * Con origen {@link OrigenCobro#PROFESOR} (solo las rutas del profesor, que ya comprobaron su permiso y lo que
+	 * cambian) no se aplican las restricciones del responsable de sede ni la de revertir solo con ROLE_ADMIN: el
+	 * profesor solo cobra un cargo pendiente o deshace su propio cobro.
+	 */
+	private CargoActualizado aplicarCambiosAlCargoBloqueado(ProductoAlumno productoAlumno,
+			ProductoAlumnoDTO detallesDTO, OrigenCobro origen) {
+		boolean viaProfesor = origen == OrigenCobro.PROFESOR;
+		if (!viaProfesor) {
+			exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
+		}
 
 		if (detallesDTO.getCantidad() != null) {
 			productoAlumno.setCantidad(detallesDTO.getCantidad());
@@ -268,7 +501,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		boolean hayCambioEstadoPago = pagadoSolicitado != null && pagadoSolicitado != pagadoAntes;
 
 		if (hayCambioEstadoPago) {
-			if (pagadoAntes && !pagadoSolicitado && !usuarioActualEsAdmin()) {
+			if (pagadoAntes && !pagadoSolicitado && !viaProfesor && !usuarioActualEsAdmin()) {
 				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los administradores pueden revertir cobros pagados.");
 			}
 			productoAlumno.setPagado(pagadoSolicitado);
@@ -290,8 +523,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		String motivo = detallesDTO.getMotivoCambio() != null && !detallesDTO.getMotivoCambio().isBlank()
 				? detallesDTO.getMotivoCambio()
 				: MOTIVO_REVERSION;
-		cobros.alCambiarPago(updatedProductoAlumno, pagadoAntes, detallesDTO.getMetodoPago(), OrigenCobro.TESORERIA,
-				motivo);
+		cobros.alCambiarPago(updatedProductoAlumno, pagadoAntes, detallesDTO.getMetodoPago(), origen, motivo);
 		return new CargoActualizado(updatedProductoAlumno, pagadoAntes);
 	}
 
