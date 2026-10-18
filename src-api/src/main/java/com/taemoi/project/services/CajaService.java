@@ -128,7 +128,7 @@ public class CajaService {
 	/**
 	 * Cargos PENDIENTES (pagado falso o nulo) de los alumnos de los grupos del profesor de la sesión, de cualquier tipo.
 	 * Una consulta con los datos que se muestran (sin cargar entidades). Solo cargos con {@code alumno_id} (los que el
-	 * profesor puede cobrar). Sin grupos en el alcance (o con alcance total), lista vacía.
+	 * profesor puede cobrar) y no cancelados (pieza 6b-2c). Sin grupos en el alcance (o con alcance total), lista vacía.
 	 */
 	public List<CajaDTOs.CargoPendienteProfesor> cargosPendientesDelProfesor() {
 		Set<Long> grupos = gruposDelProfesor();
@@ -138,7 +138,7 @@ public class CajaService {
 		List<Object[]> filas = em.createQuery("""
 				SELECT pa.id, a.id, a.nombre, a.apellidos, pa.concepto, pa.precio, pa.fechaAsignacion, pa.sedeId, s.nombre
 				FROM ProductoAlumno pa JOIN pa.alumno a LEFT JOIN Sede s ON s.id = pa.sedeId
-				WHERE (pa.pagado IS NULL OR pa.pagado = FALSE)
+				WHERE (pa.pagado IS NULL OR pa.pagado = FALSE) AND pa.canceladoEn IS NULL
 				  AND EXISTS (SELECT g.id FROM Grupo g JOIN g.alumnos m WHERE m.id = a.id AND g.id IN :grupos)
 				ORDER BY a.apellidos, a.nombre, pa.fechaAsignacion, pa.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList();
@@ -158,7 +158,12 @@ public class CajaService {
 
 	/** Deshace su cobro (ver {@link ProductoAlumnoService#deshacerCobroDeProfesor}). */
 	public void deshacerCobroDelProfesor(Long cobroId) {
-		productosAlumno.deshacerCobroDeProfesor(cobroId, CobroService.usuarioActualId());
+		deshacerCobroDelProfesor(cobroId, null);
+	}
+
+	/** Pieza 6b-2c: deshace su cobro con su motivo ({@code null} = AUN_NO_PAGADO, como en la 6b-2). */
+	public void deshacerCobroDelProfesor(Long cobroId, CajaRequests.MotivoDeshacer motivo) {
+		productosAlumno.deshacerCobroDeProfesor(cobroId, CobroService.usuarioActualId(), motivo);
 	}
 
 	/** Productos que el profesor puede apuntar y cobrar (la lista blanca de {@link ProductoAlumnoService}). */

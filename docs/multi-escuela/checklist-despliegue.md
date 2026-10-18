@@ -107,6 +107,16 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       las tres `filas_*` = 0, `flyway_31_5` = 1 y las informativas a 0. Sin relleno: los cargos ya pagados no tienen
       cobro. El código anterior sigue funcionando sobre este esquema (no conoce las tablas); si se vuelve atrás, los
       cobros que se hagan con él no dejan fila en `cobro`.
+- [ ] Tras V31_6 (pieza 6b-2c, columnas `cancelado_en`, `cancelado_por_usuario_id` y `motivo_cancelacion` en
+      `producto_alumno`, todas NULL): ejecutar `docs/multi-escuela/postcheck-v31_6.sql` (solo lectura, solo recuentos)
+      y guardar el resultado: `columnas_cancelacion` = 3, `columnas_nulables` = 3, `idx_cancelado_por` = 1,
+      `fk_cancelado_por` = 1, `fk_cancelado_por_set_null` = 1, `flyway_31_6` = 1, `cargos_cancelados` = 0 y las
+      informativas a 0. Las tres columnas son INSTANT y la FK se añade sin reconstruir la tabla. El código anterior
+      sigue funcionando sobre este esquema (no conoce las columnas); si se vuelve atrás con cargos ya cancelados, ese
+      código los contaría otra vez como pendientes (reactivarlos o anotarlos antes).
+- [ ] Avisar a la gestión de Moiskimdo (cambio deliberado de la 6b-2c): borrar un cargo a mano pasa a ser solo del
+      propietario y solo si nunca se cobró; la gestión y el responsable lo **cancelan** (con motivo). El botón
+      «Borrar» de la ficha da 403 al gestor hasta que el frontend pinte «Cancelar».
 - [ ] **Antes de generar las mensualidades de enero de 2027**: crear la tarifa de la sede de Sierra Sur con
       `POST /api/tarifas-sede` (propietario o gestor de Sierra Sur). Los cargos ya generados NUNCA se recalculan
       (D6-32): si enero se genera antes, esos cargos quedan con el importe antiguo y hay que corregirlos a mano. Ejemplo

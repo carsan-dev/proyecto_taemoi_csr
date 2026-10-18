@@ -59,8 +59,9 @@ public class CajaController {
 
 	@PostMapping("/profesor/cobros/{cobroId}/deshacer")
 	@PreAuthorize("@acceso.cobroPropioDelProfesor(#cobroId)")
-	public ResponseEntity<Void> deshacer(@PathVariable Long cobroId) {
-		caja.deshacerCobroDelProfesor(cobroId);
+	public ResponseEntity<Void> deshacer(@PathVariable Long cobroId,
+			@RequestBody(required = false) CajaRequests.Deshacer peticion) {
+		caja.deshacerCobroDelProfesor(cobroId, peticion == null ? null : peticion.motivo());
 		return ResponseEntity.noContent().build();
 	}
 

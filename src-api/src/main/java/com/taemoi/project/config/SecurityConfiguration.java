@@ -83,7 +83,9 @@ public class SecurityConfiguration {
 			"/api/productos-alumno/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}",
 			"/api/productos-alumno/{alumnoId}/reservar-plaza", "/api/productos-alumno/{alumnoId}/reservar-plaza-deporte",
 			"/api/productos-alumno/{alumnoId}/renovar-licencia", "/api/productos-alumno/mensualidades/individual",
-			"/api/productos-alumno/mensualidades/individual-deporte", "/api/productos-alumno/licencias/individual" };
+			"/api/productos-alumno/mensualidades/individual-deporte", "/api/productos-alumno/licencias/individual",
+			// 6b-2c: cancelar y reactivar los cargos de sus sedes (@acceso.productoAlumnoEnSede).
+			"/api/productos-alumno/{id}/cancelar", "/api/productos-alumno/{id}/reactivar" };
 	/** tipo-tarifa y cuantia-tarifa desde la entrega 6-3 (tesorería, D6-3: solo su sede principal). */
 	private static final String[] RESPONSABLE_SEDE_PUT = {
 			"/api/alumnos/{id}", "/api/alumnos/{id}/observaciones", "/api/alumnos/{id}/fecha-alta-inicial",
@@ -119,9 +121,8 @@ public class SecurityConfiguration {
 			"/api/grupos/{id}", "/api/grupos/{grupoId}/alumnos/{alumnoId}", "/api/grupos/{grupoId}/turnos/{turnoId}",
 			"/api/turnos/{turnoId}",
 			// 6-2 (D6-8): quitar a sus alumnos de una convocatoria. Sin DELETE /api/preinscripciones/{referencia}.
-			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}",
-			// 6-3: borrar un cargo de sus sedes que no esté cobrado (el servicio deniega los cobrados).
-			"/api/productos-alumno/{id}" };
+			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}" };
+	// 6b-2c: sin DELETE /api/productos-alumno/{id}: borrar un cargo a mano es solo del propietario (lo cancela).
 
 	/**
 	 * Inyección del filtro de JWT.

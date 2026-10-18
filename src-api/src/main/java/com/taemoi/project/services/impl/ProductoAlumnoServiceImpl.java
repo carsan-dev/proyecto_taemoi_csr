@@ -127,6 +127,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private RegistroAccionesCaja registroCaja;
 
+	/** Pieza 6b-2c: registro de acciones sobre cargos (cancelar, reactivar y borrar). */
+	@Autowired
+	private com.taemoi.project.services.RegistroAccionesCargos registroCargos;
+
 	/** Motivo de la anulación del cobro al revertir el pago por el PUT del cargo sin {@code motivoCambio}. */
 	private static final String MOTIVO_REVERSION = "pago revertido";
 
@@ -288,11 +292,15 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		productoAlumno.setPrecio(producto.getPrecio());
 		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
 		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
-		productoAlumno.setFechaAsignacion(new Date());
+		Date asignadoEn = new Date();
+		productoAlumno.setFechaAsignacion(asignadoEn);
 		productoAlumno.setNotas(detallesDTO.getNotas());
 
 		if (productoAlumno.getPagado()) {
-			productoAlumno.setFechaPago(new Date());
+			// Pieza 6b-2c: en la venta del profesor la fecha de pago (y la del cobro) es el MISMO instante que la de
+			// asignación: es la marca de «nació de una venta suya» que mira el deshacer con NO_HUBO_VENTA
+			// ({@link #esVentaDelProfesor}). La gestión, como siempre.
+			productoAlumno.setFechaPago(origen == OrigenCobro.PROFESOR ? asignadoEn : new Date());
 		}
 
 		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago(), origen);
@@ -345,6 +353,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		CobroDelProfesor resultado = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(cargoId)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+			if (cargo.estaCancelado()) {
+				throw new IllegalStateException(CobroService.CARGO_CANCELADO);
+			}
 			if (Boolean.TRUE.equals(cargo.getPagado())) {
 				throw new IllegalStateException(CARGO_YA_COBRADO);
 			}
@@ -375,6 +386,26 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 */
 	@Override
 	public void deshacerCobroDeProfesor(Long cobroId, Long profesorId) {
+		deshacerCobroDeProfesor(cobroId, profesorId, null);
+	}
+
+	/** Motivo de la cancelación del cargo cuando el profesor deshace su venta con NO_HUBO_VENTA (pieza 6b-2c). */
+	static final String MOTIVO_NO_HUBO_VENTA = "no hubo venta";
+	static final String NO_ES_VENTA_DEL_PROFESOR = "Solo se puede deshacer como «no hubo venta» un producto que "
+			+ "apuntó y cobró usted mismo; si el alumno aún no ha pagado, deshaga el cobro sin ese motivo.";
+
+	/**
+	 * Pieza 6b-2c. Con {@code AUN_NO_PAGADO} (o {@code null}), lo de la 6b-2: el cargo vuelve a pendiente. Con
+	 * {@code NO_HUBO_VENTA}, además de las comprobaciones de siempre (suyo, origen PROFESOR, sin entrega, ACTIVO), el
+	 * cargo debe haber nacido de SU venta del catálogo ({@link #esVentaDelProfesor}; si no → 400): en la misma
+	 * transacción, con el cargo y el cobro bloqueados, se anula el cobro (como AUN_NO_PAGADO) y se CANCELA el cargo
+	 * (por el profesor, motivo «no hubo venta»). El estado final cumple el invariante (cancelado, no pagado, sin cobro
+	 * ACTIVO). Queda en el registro de acciones (deshacer y cancelación).
+	 */
+	@Override
+	public void deshacerCobroDeProfesor(Long cobroId, Long profesorId,
+			com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer motivo) {
+		boolean noHuboVenta = motivo == com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer.NO_HUBO_VENTA;
 		Long cargoId = cobroRepository.findById(cobroId)
 				.orElseThrow(() -> new NoSuchElementException("Cobro no encontrado."))
 				.getProductoAlumnoId();
@@ -396,16 +427,51 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			if (cobro.getEstado() != EstadoCobro.ACTIVO || !cargoId.equals(cobro.getProductoAlumnoId())) {
 				throw new IllegalStateException(COBRO_NO_ACTIVO);
 			}
+			if (noHuboVenta && !esVentaDelProfesor(cargo, cobro)) {
+				throw new IllegalArgumentException(NO_ES_VENTA_DEL_PROFESOR);
+			}
 			ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
 			cambios.setPagado(false);
-			cambios.setMotivoCambio(MOTIVO_DESHACER_PROFESOR);
+			cambios.setMotivoCambio(noHuboVenta ? MOTIVO_NO_HUBO_VENTA : MOTIVO_DESHACER_PROFESOR);
 			CargoActualizado resultado = aplicarCambiosAlCargoBloqueado(cargo, cambios, OrigenCobro.PROFESOR);
 			registroCaja.registrar(RegistroAccionesCaja.Accion.COBRO_PROFESOR_DESHECHO,
 					"/api/caja/profesor/cobros/" + cobroId + "/deshacer", cobro.getSedeId(),
 					ids("cobro", cobroId, "cargo", cargoId));
+			if (noHuboVenta) {
+				ProductoAlumno cancelado = marcarCancelado(resultado.cargo(), profesorId, MOTIVO_NO_HUBO_VENTA);
+				registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_CANCELADO,
+						"/api/caja/profesor/cobros/" + cobroId + "/deshacer", cancelado.getSedeId(), cargoId);
+				return new CargoActualizado(cancelado, resultado.pagadoAntes());
+			}
 			return resultado;
 		});
 		aplicarEfectosDelCambioDePago(cambio);
+	}
+
+	/**
+	 * Pieza 6b-2c: el cargo nació de la venta del profesor ({@link #apuntarYCobrarProductoComoProfesor}) con ESTE cobro.
+	 * Hoy no hay columna de origen del cargo; se distingue, con el cargo y el cobro bloqueados, por:
+	 * <ul>
+	 * <li>el cobro es el PRIMERO del cargo (ninguno anterior, ni anulado): el cargo nunca se cobró por otra vía;</li>
+	 * <li>la fecha del cobro es EXACTAMENTE la de asignación del cargo: la venta los fija al mismo instante (en el mismo
+	 * {@code new Date()}); cobrar un cargo pendiente ({@link #cobrarEnEfectivoComoProfesor}) lo hace en otra petición,
+	 * más tarde;</li>
+	 * <li>el producto del cargo es de los que el profesor puede vender ({@link #esVendiblePorProfesor}).</li>
+	 * </ul>
+	 * Origen PROFESOR, cobrado por él, ACTIVO y sin entrega ya lo exige el llamador. Si la gestión cambia la fecha de
+	 * asignación de la venta, deja de reconocerse (400, lado seguro).
+	 */
+	private boolean esVentaDelProfesor(ProductoAlumno cargo, Cobro cobro) {
+		List<Cobro> delCargo = cobroRepository.findByProductoAlumnoIdOrderByIdAsc(cargo.getId());
+		if (delCargo.isEmpty() || !cobro.getId().equals(delCargo.get(0).getId())) {
+			return false;
+		}
+		Date asignado = cargo.getFechaAsignacion();
+		Date cobrado = cobro.getFechaCobro();
+		if (asignado == null || cobrado == null || asignado.getTime() != cobrado.getTime()) {
+			return false;
+		}
+		return esVendiblePorProfesor(cargo.getProducto());
 	}
 
 	private static Map<String, Long> ids(String clave1, Long id1, String clave2, Long id2) {
@@ -476,6 +542,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private CargoActualizado aplicarCambiosAlCargoBloqueado(ProductoAlumno productoAlumno,
 			ProductoAlumnoDTO detallesDTO, OrigenCobro origen) {
 		boolean viaProfesor = origen == OrigenCobro.PROFESOR;
+		// Pieza 6b-2c: en un cargo cancelado solo se cambian las notas (cobrarlo, o cambiar precio, cantidad, concepto o
+		// fechas → 409; para cobrarlo, reactivarlo antes). La guarda central está en CobroService.registrar.
+		if (productoAlumno.estaCancelado() && cambiaAlgoMasQueLasNotasDeUnCancelado(productoAlumno, detallesDTO)) {
+			throw new IllegalStateException(CARGO_CANCELADO_SOLO_NOTAS);
+		}
 		if (!viaProfesor) {
 			exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
 		}
@@ -562,6 +633,24 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				|| Boolean.FALSE.equals(cambios.getPagado());
 	}
 
+	static final String CARGO_CANCELADO_SOLO_NOTAS = "El cargo está cancelado: solo se pueden cambiar las notas. "
+			+ "Reactívelo para cobrarlo o cambiarlo.";
+
+	/**
+	 * Pieza 6b-2c: como {@link #cambiaAlgoMasQueLasNotas}, para un cargo cancelado (siempre no pagado): reenviar
+	 * {@code pagado:false} no es un cambio; {@code pagado:true} sí.
+	 */
+	private static boolean cambiaAlgoMasQueLasNotasDeUnCancelado(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		return (cambios.getCantidad() != null && !cambios.getCantidad().equals(cargo.getCantidad()))
+				|| (cambios.getPrecio() != null
+						&& (cargo.getPrecio() == null || Double.compare(cambios.getPrecio(), cargo.getPrecio()) != 0))
+				|| (cambios.getConcepto() != null && !cambios.getConcepto().equals(cargo.getConcepto()))
+				|| (cambios.getFechaAsignacion() != null && !mismoInstante(cambios.getFechaAsignacion(),
+						cargo.getFechaAsignacion()))
+				|| (cambios.getFechaPago() != null && !mismoInstante(cambios.getFechaPago(), cargo.getFechaPago()))
+				|| Boolean.TRUE.equals(cambios.getPagado());
+	}
+
 	private static boolean mismoInstante(Date a, Date b) {
 		return b != null && a.getTime() == b.getTime();
 	}
@@ -626,25 +715,29 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 
+	static final String CARGO_CON_COBROS_NO_SE_BORRA = "Solo se borran cargos no pagados que nunca se cobraron. "
+			+ "Cancélelo en su lugar.";
+
+	/**
+	 * Borrado MANUAL de un cargo ({@code DELETE /api/productos-alumno/{id}}). Pieza 6b-2c (decisión del propietario,
+	 * cambio DELIBERADO también para Moiskimdo): solo el propietario ({@code ROLE_ADMIN}, en el controlador) y solo
+	 * cargos no pagados que NUNCA se cobraron (sin ninguna fila en {@code cobro}, tampoco ANULADA); si no → 409 («cancélelo
+	 * en su lugar»). Con el cargo bloqueado, en una transacción, y queda en el registro de acciones. Los borrados
+	 * AUTOMÁTICOS (quitar a un alumno de una convocatoria, borrar la convocatoria o el alumno) no pasan por aquí.
+	 */
 	@Override
 	public void eliminarProductoAlumno(Long id) {
-		// Pieza 6b-1: con el cargo bloqueado, 409 si su cobro va en una entrega de caja; si no, su cobro ACTIVO se anula
-		// («cargo borrado») y deja de apuntar al cargo, y el cargo se borra como siempre, en la misma transacción.
 		ProductoAlumno pa = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
-			// Entrega 6-3 (D6-22): borrar un cargo cobrado equivale a revertir el cobro, que el responsable de sede no
-			// puede (entrega6-plan.md §7). La gestión, como siempre.
-			if (gestionPorSede.restriccion().isPresent()) {
-				if (Boolean.TRUE.equals(cargo.getPagado())) {
-					throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
-				}
-				if (cargo.getAlumno() == null && daDerechoAExamen(cargo)) {
-					throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
-				}
+			if (Boolean.TRUE.equals(cargo.getPagado()) || !cobroRepository.findByProductoAlumnoIdOrderByIdAsc(id).isEmpty()) {
+				throw new IllegalStateException(CARGO_CON_COBROS_NO_SE_BORRA);
 			}
+			// Sin cobros: no anula nada; se mantiene como red de seguridad (409 si alguno va en una entrega).
 			cobros.alBorrarCargo(cargo);
 			productoAlumnoRepository.deleteById(id);
+			registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_BORRADO,
+					"/api/productos-alumno/" + id, cargo.getSedeId(), id);
 			return cargo;
 		});
 
@@ -653,6 +746,82 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			alumno.setTieneDerechoExamen(false);
 			alumnoRepository.save(alumno);
 		}
+	}
+
+	static final String CARGO_YA_CANCELADO = "El cargo ya está cancelado.";
+	static final String CARGO_NO_CANCELADO = "El cargo no está cancelado.";
+	static final String CARGO_PAGADO_NO_SE_CANCELA = "El cargo está cobrado: revierta antes el cobro para cancelarlo.";
+	static final String CARGO_DE_CONVOCATORIA_NO_SE_CANCELA = "Este cargo es la inscripción del alumno a una "
+			+ "convocatoria: para que no lo pague, quítelo de la convocatoria.";
+	private static final int MAX_MOTIVO_CANCELACION = 500;
+
+	/**
+	 * Pieza 6b-2c: cancela un cargo PENDIENTE. Con el cargo bloqueado (FOR UPDATE, el orden cargo → cobro de la 6b-2):
+	 * ya cancelado → 409; pagado (o con un cobro ACTIVO) → 409, se revierte antes el cobro; unido a una inscripción a
+	 * convocatoria → 400. No toca al alumno ni al derecho a examen (un cargo pendiente no lo da). Queda en el registro.
+	 */
+	@Override
+	public ProductoAlumnoDTO cancelarProductoAlumno(Long id, String motivo) {
+		String limpio = motivoDeCancelacion(motivo);
+		ProductoAlumno cancelado = cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = cobros.bloquearCargo(id)
+					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			if (cargo.estaCancelado()) {
+				throw new IllegalStateException(CARGO_YA_CANCELADO);
+			}
+			if (Boolean.TRUE.equals(cargo.getPagado())
+					|| cobroRepository.findFirstByProductoAlumnoIdAndEstado(id, EstadoCobro.ACTIVO).isPresent()) {
+				throw new IllegalStateException(CARGO_PAGADO_NO_SE_CANCELA);
+			}
+			if (alumnoConvocatoriaRepository.findByProductoAlumnoId(id).isPresent()) {
+				throw new IllegalArgumentException(CARGO_DE_CONVOCATORIA_NO_SE_CANCELA);
+			}
+			ProductoAlumno guardado = marcarCancelado(cargo, CobroService.usuarioActualId(), limpio);
+			registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_CANCELADO,
+					"/api/productos-alumno/" + id + "/cancelar", guardado.getSedeId(), id);
+			return guardado;
+		});
+		return convertirADTO(cancelado);
+	}
+
+	/** Pieza 6b-2c: deja el cargo cancelado pendiente otra vez y borra quién, cuándo y por qué. No cancelado → 409. */
+	@Override
+	public ProductoAlumnoDTO reactivarProductoAlumno(Long id) {
+		ProductoAlumno reactivado = cobros.enTransaccion(() -> {
+			ProductoAlumno cargo = cobros.bloquearCargo(id)
+					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			if (!cargo.estaCancelado()) {
+				throw new IllegalStateException(CARGO_NO_CANCELADO);
+			}
+			cargo.setCanceladoEn(null);
+			cargo.setCanceladoPorUsuarioId(null);
+			cargo.setMotivoCancelacion(null);
+			ProductoAlumno guardado = productoAlumnoRepository.save(cargo);
+			registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_REACTIVADO,
+					"/api/productos-alumno/" + id + "/reactivar", guardado.getSedeId(), id);
+			return guardado;
+		});
+		return convertirADTO(reactivado);
+	}
+
+	/** Dentro de la transacción, con el cargo bloqueado y no pagado: lo marca cancelado y lo guarda. */
+	private ProductoAlumno marcarCancelado(ProductoAlumno cargo, Long usuarioId, String motivo) {
+		cargo.setCanceladoEn(java.time.LocalDateTime.now());
+		cargo.setCanceladoPorUsuarioId(usuarioId);
+		cargo.setMotivoCancelacion(motivo);
+		return productoAlumnoRepository.save(cargo);
+	}
+
+	private static String motivoDeCancelacion(String motivo) {
+		String limpio = motivo == null ? "" : motivo.trim();
+		if (limpio.isEmpty()) {
+			throw new IllegalArgumentException("El motivo es obligatorio.");
+		}
+		if (limpio.length() > MAX_MOTIVO_CANCELACION) {
+			throw new IllegalArgumentException(
+					"El motivo no puede superar " + MAX_MOTIVO_CANCELACION + " caracteres.");
+		}
+		return limpio;
 	}
 
 	@Override
@@ -1386,6 +1555,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		dto.setFechaPago(productoAlumno.getFechaPago());
 		dto.setNotas(productoAlumno.getNotas());
 		dto.setSedeId(productoAlumno.getSedeId());
+		// Pieza 6b-2c: solo si está cancelado (NON_NULL en el DTO: un cargo vigente responde igual que antes).
+		dto.setCanceladoEn(productoAlumno.getCanceladoEn());
+		dto.setCanceladoPorUsuarioId(productoAlumno.getCanceladoPorUsuarioId());
+		dto.setMotivoCancelacion(productoAlumno.getMotivoCancelacion());
 		return dto;
 	}
 

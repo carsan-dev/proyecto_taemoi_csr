@@ -1,5 +1,6 @@
 package com.taemoi.project.entities;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -63,6 +64,26 @@ public class ProductoAlumno extends EntidadOrganizacion {
 	@JsonIgnore
 	@Column(name = "sede_id", updatable = false)
 	private Long sedeId;
+
+	/**
+	 * Pieza 6b-2c (V31_6): cuándo se canceló el cargo; NULL = vigente. Invariante: cancelado ⇒ no pagado y sin cobro
+	 * ACTIVO (solo se cancelan cargos pendientes). Un cargo cancelado no cuenta como pendiente ni como deuda en ningún
+	 * lector, pero SÍ cuenta como existente para la generación de mensualidades y licencias (no se regenera). Fuera del
+	 * JSON de la entidad (/api/admin/{id}); los DTO lo exponen solo si está cancelado.
+	 */
+	@JsonIgnore
+	@Column(name = "cancelado_en")
+	private LocalDateTime canceladoEn;
+
+	/** Pieza 6b-2c: quién lo canceló (FK a usuario, ON DELETE SET NULL). */
+	@JsonIgnore
+	@Column(name = "cancelado_por_usuario_id")
+	private Long canceladoPorUsuarioId;
+
+	/** Pieza 6b-2c: por qué se canceló (obligatorio al cancelar, hasta 500 caracteres). */
+	@JsonIgnore
+	@Column(name = "motivo_cancelacion", length = 500)
+	private String motivoCancelacion;
 
 	/**
 	 * Entrega 6-3 (D6-9): si nadie fijó la sede, la sede principal del alumno del cargo en este momento. El alumno se
@@ -167,6 +188,39 @@ public class ProductoAlumno extends EntidadOrganizacion {
 	/** Solo antes de guardarlo por primera vez (la columna no se actualiza). */
 	public void setSedeId(Long sedeId) {
 		this.sedeId = sedeId;
+	}
+
+	@JsonIgnore
+	public LocalDateTime getCanceladoEn() {
+		return canceladoEn;
+	}
+
+	public void setCanceladoEn(LocalDateTime canceladoEn) {
+		this.canceladoEn = canceladoEn;
+	}
+
+	@JsonIgnore
+	public Long getCanceladoPorUsuarioId() {
+		return canceladoPorUsuarioId;
+	}
+
+	public void setCanceladoPorUsuarioId(Long canceladoPorUsuarioId) {
+		this.canceladoPorUsuarioId = canceladoPorUsuarioId;
+	}
+
+	@JsonIgnore
+	public String getMotivoCancelacion() {
+		return motivoCancelacion;
+	}
+
+	public void setMotivoCancelacion(String motivoCancelacion) {
+		this.motivoCancelacion = motivoCancelacion;
+	}
+
+	/** Pieza 6b-2c: el cargo está cancelado ({@code cancelado_en} no nulo). */
+	@JsonIgnore
+	public boolean estaCancelado() {
+		return canceladoEn != null;
 	}
 
 	public AlumnoDeporte getAlumnoDeporte() {

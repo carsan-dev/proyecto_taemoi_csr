@@ -60,6 +60,8 @@ public class CobroService {
 	/** Nombre de la clave única de V31_5 («como mucho un cobro ACTIVO por cargo»). */
 	public static final String CLAVE_COBRO_ACTIVO = "uk_cobro_activo_por_cargo";
 	public static final String MOTIVO_CARGO_BORRADO = "cargo borrado";
+	/** Pieza 6b-2c: mensaje del 409 al intentar cobrar un cargo cancelado. */
+	public static final String CARGO_CANCELADO = "El cargo está cancelado: reactívelo antes de cobrarlo.";
 
 	private final CobroRepository cobros;
 	private final ProductoAlumnoRepository cargos;
@@ -157,6 +159,12 @@ public class CobroService {
 	 * que la tesorería suma para el cargo ({@code COALESCE(precio, 0)}); sede, alumno y concepto, copiados del cargo.
 	 */
 	public Cobro registrar(ProductoAlumno cargo, MetodoPago metodo, Date fechaCobro, OrigenCobro origen) {
+		// Pieza 6b-2c, guarda CENTRAL del invariante «cancelado ⇒ no pagado y sin cobro ACTIVO»: ninguna vía (PUT del
+		// cargo, profesor, puerta de la convocatoria, cargo que nace pagado) cobra un cargo cancelado. 409; quien llama
+		// está en la transacción del cobro, así que el cambio del cargo se deshace entero.
+		if (cargo.estaCancelado()) {
+			throw new IllegalStateException(CARGO_CANCELADO);
+		}
 		Optional<Cobro> activo = cobros.findFirstByProductoAlumnoIdAndEstado(cargo.getId(), EstadoCobro.ACTIVO);
 		if (activo.isPresent()) {
 			return activo.get();
