@@ -503,7 +503,12 @@ public class GrupoServiceImpl implements GrupoService {
 		if (grupoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
 			// Convertir los turnos del grupo a TurnoCortoDTO
-			return grupo.getTurnos().stream().map(TurnoCortoDTO::deTurno).collect(Collectors.toList());
+			List<TurnoCortoDTO> turnos = grupo.getTurnos().stream().map(TurnoCortoDTO::deTurno)
+					.collect(Collectors.toList());
+			// R2-P4s (decisión 124): para el responsable de sede, solo los alumnos de su alcance (criterio del listado
+			// de alumnos, D9), con una consulta para todos los turnos. Gestión: la respuesta de siempre, sin consultas.
+			gestionPorSede.idsAlumnosEnAlcance().ifPresent(visibles -> turnos.forEach(t -> t.soloAlumnos(visibles)));
+			return turnos;
 		}
 		return Collections.emptyList();
 	}
