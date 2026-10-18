@@ -72,6 +72,7 @@ class PreinscripcionServiceTest {
 	@Mock TutorService tutores;
 	@Mock ConsentimientoService consentimientos;
 	@Mock com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+	@Mock com.taemoi.project.repositories.PreinscripcionDocumentosRepository documentos;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -83,7 +84,7 @@ class PreinscripcionServiceTest {
 	void setUp() {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
-				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede);
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos);
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -322,7 +323,8 @@ class PreinscripcionServiceTest {
 		preinscripcion.setEmailCambioTurnosNuevoSnapshot("Horario vigente");
 		preinscripcion.setObservaciones("Peso > 45 kg <script>alert('x')</script>");
 		byte[] pdfOriginal = {9, 8, 7};
-		preinscripcion.setPdfFirmado(pdfOriginal);
+		// R2-P7c: la solicitud cargada no trae el PDF; el reenvío lo lee aparte (PreinscripcionDocumentos).
+		when(documentos.findPdfFirmadoById(preinscripcion.getId())).thenReturn(pdfOriginal);
 		when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
 
 		service.reenviar("PRE-1");
@@ -800,7 +802,7 @@ class PreinscripcionServiceTest {
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
-				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede);
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos);
 
 		servicioPromocion.promocionarTodas();
 
