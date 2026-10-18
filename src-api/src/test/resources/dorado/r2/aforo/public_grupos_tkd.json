@@ -1,0 +1,59 @@
+[
+  {
+    "completo" : true,
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:TKD-ADULTOS",
+    "nombre" : "Taekwondo",
+    "rangoEdadMax" : 99,
+    "rangoEdadMin" : 0,
+    "turnos" : [
+      {
+        "completo" : true,
+        "diaSemana" : "Martes",
+        "horaFin" : "20:00",
+        "horaInicio" : "19:00",
+        "id" : "turno:T3"
+      }
+    ]
+  },
+  {
+    "completo" : true,
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:TKD-SIN-TURNOS",
+    "nombre" : "Taekwondo",
+    "rangoEdadMax" : 99,
+    "rangoEdadMin" : 0,
+    "turnos" : [ ]
+  },
+  {
+    "completo" : false,
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:TKD-INFANTIL",
+    "nombre" : "Taekwondo",
+    "rangoEdadMax" : 12,
+    "rangoEdadMin" : 6,
+    "turnos" : [
+      {
+        "completo" : true,
+        "diaSemana" : "Lunes",
+        "horaFin" : "18:00",
+        "horaInicio" : "17:00",
+        "id" : "turno:T1"
+      },
+      {
+        "completo" : false,
+        "diaSemana" : "Lunes",
+        "horaFin" : "19:00",
+        "horaInicio" : "18:00",
+        "id" : "turno:T7"
+      },
+      {
+        "completo" : true,
+        "diaSemana" : "Miércoles",
+        "horaFin" : "18:00",
+        "horaInicio" : "17:00",
+        "id" : "turno:T2"
+      }
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "completo" : true,
+    "deporte" : "KICKBOXING",
+    "id" : "grupo:KB",
+    "nombre" : "Kickboxing",
+    "rangoEdadMax" : 99,
+    "rangoEdadMin" : 0,
+    "turnos" : [
+      {
+        "completo" : true,
+        "diaSemana" : "Jueves",
+        "horaFin" : "19:00",
+        "horaInicio" : "18:00",
+        "id" : "turno:T4"
+      }
+    ]
+  }
+]

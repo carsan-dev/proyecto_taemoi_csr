@@ -24,12 +24,19 @@ public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecific
 
 	List<Turno> findByGrupo(Grupo grupo);
 
+	/** Bloquea (FOR UPDATE) solo la fila del turno, con o sin grupo; R2-P3: sin JOIN FETCH, el grupo (EAGER) se lee aparte, sin bloqueo. */
 	@Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-	@Query("SELECT t FROM Turno t LEFT JOIN FETCH t.grupo WHERE t.id = :id")
+	@Query("SELECT t FROM Turno t WHERE t.id = :id")
 	Optional<Turno> findByIdForUpdate(@Param("id") Long id);
 
+	/**
+	 * Bloquea (FOR UPDATE) los turnos con grupo de la lista, en orden de id. R2-P3: sin {@code JOIN FETCH t.grupo}, que
+	 * bloqueaba también las filas de {@code grupo} intercaladas con las de turno (y sin orden por grupo): dos operaciones
+	 * sobre turnos solapados podían interbloquearse. Solo se bloquea {@code turno}; el grupo (EAGER) se lee aparte, sin
+	 * bloqueo. Los turnos sin grupo siguen sin devolverse, como con el JOIN.
+	 */
 	@Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-	@Query("SELECT t FROM Turno t JOIN FETCH t.grupo WHERE t.id IN :ids ORDER BY t.id")
+	@Query("SELECT t FROM Turno t WHERE t.id IN :ids AND t.grupo IS NOT NULL ORDER BY t.id")
 	List<Turno> findAllByIdForUpdate(@Param("ids") List<Long> ids);
 
 	/**
@@ -40,4 +47,14 @@ public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecific
 	 */
 	@Query("SELECT DISTINCT t FROM Turno t LEFT JOIN FETCH t.alumnos")
 	List<Turno> findAllWithAlumnos();
+
+	/**
+	 * R2-P3 (aforo por lotes): por turno, alumnos distintos que cuentan en el aforo, los de ficha activa con el deporte
+	 * del grupo del turno activo (antes, un exists por alumno). Filas {@code [turnoId, número]}; los turnos sin alumnos
+	 * que cuenten no salen.
+	 */
+	@Query("SELECT t.id, COUNT(DISTINCT a.id) FROM Turno t JOIN t.grupo g JOIN t.alumnos a WHERE t.id IN :ids "
+			+ "AND a.activo = true AND EXISTS (SELECT ad.id FROM AlumnoDeporte ad WHERE ad.alumno = a "
+			+ "AND ad.activo = true AND ad.disciplina.codigo = g.disciplina.codigo) GROUP BY t.id")
+	List<Object[]> contarAlumnosQueCuentanPorTurno(@Param("ids") List<Long> ids);
 }

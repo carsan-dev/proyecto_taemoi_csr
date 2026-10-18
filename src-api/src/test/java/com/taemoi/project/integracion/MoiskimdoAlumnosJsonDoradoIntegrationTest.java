@@ -274,8 +274,9 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 				total("grupos_conteo", "/api/grupos/conteo-alumnos", 2), // Δ0 (Δ0, Δ0)
 				deLaOrganizacion("turnos", "/api/turnos", Filtro.TURNOS, 4), // Δ2 (Δ2, Δ5)
 				caso("turno_ficha", "/api/turnos/{turno:TKD-INFANTIL/Lunes/17:00}", 9), // 7 (7, 23)
-				deLaOrganizacion("turnos_dto", "/api/turnos/dto", Filtro.TURNOS, 86), // Δ78 (Δ114, Δ116)
-				deLaOrganizacion("turnos_dto_anonimo", "ANON:/api/turnos/dto", Filtro.TURNOS, 86)); // Δ78 (Δ114, Δ116)
+				// R2-P3 (aforo por lotes): Δ2 tras el arreglo; límite 86 → 4.
+				deLaOrganizacion("turnos_dto", "/api/turnos/dto", Filtro.TURNOS, 4), // Δ2 (P2 Δ78; Δ114, Δ116)
+				deLaOrganizacion("turnos_dto_anonimo", "ANON:/api/turnos/dto", Filtro.TURNOS, 4)); // Δ2 (P2 Δ78; Δ114, Δ116)
 	}
 
 	@Autowired MockMvc mvc;
