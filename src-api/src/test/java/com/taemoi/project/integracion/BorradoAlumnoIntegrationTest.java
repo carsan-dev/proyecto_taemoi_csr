@@ -73,6 +73,10 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 			Map.entry("alumno_reto_diario_log.alumno_id", "NO ACTION"),
 			Map.entry("alumno_salud.alumno_id", "CASCADE"),
 			Map.entry("alumno_turno.alumno_id", "NO ACTION"),
+			// Pieza 6b-1 (V31_5): instantáneas de caja; al borrar el alumno el cobro o el movimiento se conservan sin
+			// alumno (y el cobro, sin cargo: fk_cobro_producto_alumno también es SET NULL). eliminarAlumno no cambia.
+			Map.entry("cobro.alumno_id", "SET NULL"),
+			Map.entry("movimiento_caja.alumno_id", "SET NULL"),
 			Map.entry("consentimiento.alumno_id", "CASCADE"),
 			Map.entry("documento.alumno_id", "NO ACTION"),
 			Map.entry("preinscripcion.alumno_id", "NO ACTION"),

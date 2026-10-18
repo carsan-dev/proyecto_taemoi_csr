@@ -17,12 +17,14 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Convocatoria;
+import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoConvocatoriaRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.CatalogoDisciplinasService;
+import com.taemoi.project.services.CobroService;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.utils.FechaUtils;
@@ -54,6 +56,12 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	/** Entrega 6-2 (D6-8): el responsable de sede ve dentro de cada convocatoria solo a sus alumnos (D9). */
 	@Autowired
 	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
+
+	/** Pieza 6b-1: registro de cobros de la segunda puerta (el pago del examen se copia a su cargo). */
+	@Autowired
+	private CobroService cobros;
+
+	private static final String MOTIVO_REVERSION_CONVOCATORIA = "pago revertido desde la convocatoria";
 
 	@Override
 	public ConvocatoriaDTO crearConvocatoria(ConvocatoriaDTO convocatoriaDTO) {
@@ -171,7 +179,13 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			if (productoAlumno != null) {
 				alumnoConvocatoria.setProductoAlumno(null);
 				alumno.getProductosAlumno().remove(productoAlumno);
-				productoAlumnoRepository.delete(productoAlumno);
+				// Pieza 6b-1: el método no es transaccional y cada borrado iba en su propia transacción; sigue igual, y
+				// en ella se anula antes el cobro ACTIVO del cargo («cargo borrado»).
+				cobros.enTransaccion(() -> {
+					cobros.alBorrarCargos(List.of(productoAlumno.getId()));
+					productoAlumnoRepository.delete(productoAlumno);
+					return null;
+				});
 			}
 			if (alumno != null) {
 				alumno.getConvocatorias().remove(alumnoConvocatoria);
@@ -225,6 +239,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	public void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+		// Pieza 6b-1: revertir el pago de un examen cuyo cobro ya va en una entrega de caja → 409 antes de cambiar nada.
+		if (alumnoConvocatoria.getProductoAlumno() != null && !Boolean.TRUE.equals(alumnoConvocatoriaDTO.getPagado())) {
+			cobros.exigirSinEntrega(alumnoConvocatoria.getProductoAlumno().getId());
+		}
 
 		alumnoConvocatoria.setCuantiaExamen(alumnoConvocatoriaDTO.getCuantiaExamen());
 		alumnoConvocatoria.setPagado(alumnoConvocatoriaDTO.getPagado());
@@ -254,12 +272,22 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			);
 		}
 
-		ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
-		if (productoAlumno != null) {
-			productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
-			productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
-			productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
-			productoAlumnoRepository.save(productoAlumno);
+		ProductoAlumno cargoDelExamen = alumnoConvocatoria.getProductoAlumno();
+		if (cargoDelExamen != null) {
+			// Pieza 6b-1: el cargo se bloquea y se relee, y su cobro se registra (si pasa a pagado) o se anula (si pasa a
+			// no pagado) en la misma transacción. Si ya estaba pagado (p. ej. por el PUT del cargo), no hay otro cobro.
+			Long cargoId = cargoDelExamen.getId();
+			cobros.enTransaccion(() -> {
+				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoId).orElse(cargoDelExamen);
+				boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
+				productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+				productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
+				productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
+				ProductoAlumno guardado = productoAlumnoRepository.save(productoAlumno);
+				cobros.alCambiarPago(guardado, pagadoAntes, alumnoConvocatoriaDTO.getMetodoPago(),
+						OrigenCobro.CONVOCATORIA, MOTIVO_REVERSION_CONVOCATORIA);
+				return guardado;
+			});
 		}
 
 		if (alumno != null) {
