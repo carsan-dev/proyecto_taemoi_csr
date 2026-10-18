@@ -109,13 +109,17 @@
     @if (seleccion.estado === 'PENDIENTE') {
       <section class="student-match">
         <h3>Ficha de alumno</h3>
-        @if (seleccion.alumnosCoincidentes?.length) {
+        @if (cargandoCoincidencias) {
+          <p><span>Buscando fichas compatibles…</span></p>
+        } @else if (errorCoincidencias) {
+          <p class="no-match"><strong>No se pudieron cargar las fichas compatibles.</strong><span>Vuelve a abrir la solicitud para intentarlo de nuevo.</span></p>
+        } @else if (seleccion.alumnosCoincidentes?.length) {
           <p><strong>{{seleccion.alumnosCoincidentes.length}} {{seleccion.alumnosCoincidentes.length === 1 ? 'ficha compatible' : 'fichas compatibles'}}</strong><span>Administración confirmará si se reutiliza una ficha o se crea otra.</span></p>
         } @else {
           <p class="no-match"><strong>No se ha encontrado una ficha compatible.</strong><span>Se propondrá crear una ficha nueva al aceptar la preinscripción.</span></p>
         }
       </section>
-      <button class="primary" (click)="abrirFinalizacion()">Revisar y finalizar alta</button>
+      <button class="primary" [disabled]="cargandoCoincidencias || errorCoincidencias" (click)="abrirFinalizacion()">Revisar y finalizar alta</button>
       <button (click)="reenviar()">Reenviar solicitud original</button>
       @if(puedeReenviarCambioTurnos){<button (click)="reenviarCambioTurnos()">Reenviar aviso de cambio</button>}
       <button class="danger" (click)="cancelar()">Cancelar solicitud</button>

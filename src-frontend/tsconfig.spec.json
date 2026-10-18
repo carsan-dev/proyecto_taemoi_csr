@@ -48,6 +48,7 @@
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.tarifas.spec.ts",
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.cancelacion.spec.ts",
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.fechas.spec.ts",
+    "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.coincidencias.spec.ts",
     "src/app/utils/fecha-api.spec.ts",
     "src/app/componentes/endpoints/auditoria-sistema/auditoria-sistema.component.spec.ts",
     "src/app/componentes/endpoints/plataforma-errores/plataforma-errores.component.spec.ts",

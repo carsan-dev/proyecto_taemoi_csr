@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import Swal, { SweetAlertOptions } from 'sweetalert2';
 import { MOTIVO_CANCELACION_MAX, MOTIVO_CANCELACION_POR_DEFECTO, PreinscripcionService } from '../../../features/preinscripcion/preinscripcion.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
@@ -18,6 +19,8 @@ import { tarifaInicialPreinscripcion } from '../../../features/catalogo/legado-t
 export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   readonly catalogo=inject(CatalogoService);
   items:any[]=[]; cargando=true; filtros={temporada:'',deporte:'',estado:'',q:''}; seleccion:any; firmaUrl?:string;
+  /** R2-P7a: las fichas compatibles (`alumnosCoincidentes`) llegan con el detalle, que se pide al abrir una fila PENDIENTE (la única que muestra la sección de finalizar). */
+  cargandoCoincidencias=false; errorCoincidencias=false; private detalleSub?:Subscription;
   mostrandoFinalizacion=false; procesandoFinalizacion=false; camposActualizar=new Set<string>();
   editandoTurnos=false; cargandoTurnos=false; procesandoTurnos=false; turnosDisponibles:any[]=[]; turnoIdsEdicion:number[]=[];
   accionAlumno:''|'CREAR_NUEVO'|'VINCULAR_EXISTENTE'=''; alumnoSeleccionado:any; discapacidadHistorica:boolean|null=null;
@@ -41,7 +44,7 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   get deportes():string[]{return this.catalogo.disciplinasActivas().map(d=>d.codigo);}
   constructor(private readonly api:PreinscripcionService,public readonly auth:AuthenticationService,private readonly route:ActivatedRoute,private readonly router:Router){}
   ngOnInit(){this.tab=this.route.snapshot.queryParamMap.get('tab')==='plantillas'?'plantillas':'solicitudes';this.buscar();if(this.tab==='plantillas')this.cargarPlantilla();}
-  ngOnDestroy(){this.liberarFirma();}
+  ngOnDestroy(){this.liberarFirma();this.detalleSub?.unsubscribe();}
 
   buscar(reiniciarPagina=false){if(reiniciarPagina)this.pagina=0;this.cargando=true;this.api.listar(this.filtros,this.pagina,this.tamanoPagina).subscribe({next:r=>{if(!r.content.length&&this.pagina>0&&r.totalElements>0){this.pagina--;this.buscar();return;}this.items=r.content;this.pagina=r.page;this.totalElementos=r.totalElements;this.totalPaginas=r.totalPages;this.cargando=false;},error:()=>{this.cargando=false;showErrorToast('No se pudieron cargar las preinscripciones.');}});}
   cambiarPagina(numeroPagina:number){const destino=numeroPagina-1;if(this.cargando||destino<0||destino>=this.totalPaginas)return;this.pagina=destino;this.cerrarDetalle();this.buscar();}
@@ -52,8 +55,12 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   get puedeReenviarCambioTurnos(){return this.seleccion?.estado==='PENDIENTE'&&Boolean(this.seleccion?.turnosModificadosEn);}
   get turnosEdicionCambiados(){const actuales=(this.seleccion?.turnosSolicitados||[]).map((t:any)=>t.id).sort((a:number,b:number)=>a-b),nuevos=[...this.turnoIdsEdicion].sort((a,b)=>a-b);return actuales.length!==nuevos.length||actuales.some((id:number,i:number)=>id!==nuevos[i]);}
 
-  seleccionar(item:any){if(this.procesandoTurnos||this.procesandoFinalizacion)return;this.cerrarFinalizacion();this.cerrarEdicionTurnos();this.liberarFirma();this.seleccion=item;this.api.firma(item.referencia).subscribe({next:firma=>this.firmaUrl=URL.createObjectURL(firma),error:()=>showErrorToast('No se pudo cargar la firma.')});}
-  cerrarDetalle(){this.cerrarFinalizacion();this.cerrarEdicionTurnos();this.liberarFirma();this.seleccion=undefined;}
+  seleccionar(item:any){if(this.procesandoTurnos||this.procesandoFinalizacion)return;this.cerrarFinalizacion();this.cerrarEdicionTurnos();this.liberarFirma();this.seleccion=item;if(item.estado==='PENDIENTE')this.cargarCoincidencias(item.referencia);else this.descartarCoincidencias();this.api.firma(item.referencia).subscribe({next:firma=>this.firmaUrl=URL.createObjectURL(firma),error:()=>showErrorToast('No se pudo cargar la firma.')});}
+  cerrarDetalle(){this.cerrarFinalizacion();this.cerrarEdicionTurnos();this.liberarFirma();this.descartarCoincidencias();this.seleccion=undefined;}
+  /** Sin petición de detalle en curso ni estado de carga/error (filas que no muestran la sección de finalizar). */
+  private descartarCoincidencias(){this.detalleSub?.unsubscribe();this.cargandoCoincidencias=false;this.errorCoincidencias=false;}
+  /** Las fichas compatibles del detalle sustituyen a las de la fila (que ya no las trae); el resto de la fila no cambia. */
+  private cargarCoincidencias(referencia:string){this.detalleSub?.unsubscribe();this.cargandoCoincidencias=true;this.errorCoincidencias=false;this.detalleSub=this.api.detalle(referencia).subscribe({next:detalle=>{if(this.seleccion?.referencia===referencia)this.seleccion={...this.seleccion,alumnosCoincidentes:detalle?.alumnosCoincidentes||[]};this.cargandoCoincidencias=false;},error:()=>{this.cargandoCoincidencias=false;this.errorCoincidencias=true;showErrorToast('No se pudieron cargar las fichas compatibles.');}});}
   descargarDocumento(){if(!this.seleccion)return;this.api.documentoFirmado(this.seleccion.referencia).subscribe({next:documento=>{const url=URL.createObjectURL(documento);const enlace=document.createElement('a');enlace.href=url;enlace.download=`solicitud-original-${this.seleccion.referencia}.pdf`;enlace.click();URL.revokeObjectURL(url);},error:()=>showErrorToast('No se pudo descargar la solicitud original firmada.')});}
   private liberarFirma(){if(this.firmaUrl)URL.revokeObjectURL(this.firmaUrl);this.firmaUrl=undefined;}
 
@@ -92,7 +99,7 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   reenviar(){if(!this.seleccion)return;this.api.reenviar(this.seleccion.referencia).subscribe({next:()=>showSuccessToast('Solicitud original reenviada correctamente.'),error:e=>showErrorToast(e?.error?.mensaje||'No se pudo reenviar la solicitud original.')});}
   reenviarCambioTurnos(){if(!this.puedeReenviarCambioTurnos)return;this.api.reenviarCambioTurnos(this.seleccion.referencia).subscribe({next:()=>{showSuccessToast('Reenvío del aviso de cambio solicitado.');this.cerrarDetalle();this.buscar();},error:(e:any)=>showErrorToast(e?.error?.mensaje||'No se pudo reenviar el aviso de cambio.')});}
   reenviarFinalizacion(){if(!this.seleccion||this.seleccion.estado!=='FINALIZADA')return;this.api.reenviarFinalizacion(this.seleccion.referencia).subscribe({next:()=>{showSuccessToast('Reenvío de confirmación solicitado.');this.cerrarDetalle();this.buscar();},error:(e:any)=>showErrorToast(e?.error?.mensaje||'No se pudo reenviar la confirmación.')});}
-  abrirFinalizacion(){if(!this.seleccion)return;this.discapacidadHistorica=this.seleccion.tieneDiscapacidad??null;this.prepararTarifa();const candidatos=this.seleccion.alumnosCoincidentes||[];if(this.seleccion.dni&&candidatos.length===1&&candidatos[0].nif?.toUpperCase()===this.seleccion.dni.toUpperCase())this.elegirAlumno(candidatos[0]);else if(candidatos.length===0)this.crearNuevaFicha();else{this.accionAlumno='';this.alumnoSeleccionado=undefined;this.camposActualizar.clear();}this.mostrandoFinalizacion=true;}
+  abrirFinalizacion(){if(!this.seleccion||this.cargandoCoincidencias||this.errorCoincidencias)return;this.discapacidadHistorica=this.seleccion.tieneDiscapacidad??null;this.prepararTarifa();const candidatos=this.seleccion.alumnosCoincidentes||[];if(this.seleccion.dni&&candidatos.length===1&&candidatos[0].nif?.toUpperCase()===this.seleccion.dni.toUpperCase())this.elegirAlumno(candidatos[0]);else if(candidatos.length===0)this.crearNuevaFicha();else{this.accionAlumno='';this.alumnoSeleccionado=undefined;this.camposActualizar.clear();}this.mostrandoFinalizacion=true;}
   cerrarFinalizacion(){if(this.procesandoFinalizacion)return;this.mostrandoFinalizacion=false;this.camposActualizar.clear();this.accionAlumno='';this.alumnoSeleccionado=undefined;this.discapacidadHistorica=null;this.decisionEmail='';}
   elegirAlumno(alumno:any){this.accionAlumno='VINCULAR_EXISTENTE';this.alumnoSeleccionado=alumno;this.decisionEmail='';this.prepararTarifa(alumno);this.camposActualizar.clear();this.camposAplicables.filter(c=>this.hayDiferencia(c)).forEach(c=>this.camposActualizar.add(c.clave));}
   crearNuevaFicha(){if(this.tieneCoincidenciaDniExacta)return;this.accionAlumno='CREAR_NUEVO';this.alumnoSeleccionado=undefined;this.decisionEmail='';this.prepararTarifa();this.camposActualizar.clear();}

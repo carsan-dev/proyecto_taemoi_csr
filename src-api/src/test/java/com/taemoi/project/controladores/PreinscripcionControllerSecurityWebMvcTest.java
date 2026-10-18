@@ -136,6 +136,31 @@ class PreinscripcionControllerSecurityWebMvcTest {
 				.andExpect(jsonPath("$.turnosSolicitados[0].id").value(21));
 	}
 
+	/** R2-P7a: las filas del listado no traen las fichas compatibles (ni las calculan); el detalle, sí. */
+	@Test
+	void listadoSinAlumnosCoincidentesYDetalleConEllas() throws Exception {
+		Preinscripcion p = new Preinscripcion();
+		p.setReferencia("PRE-1");
+		when(preinscripciones.listar(any(), any(), any(), any(), any()))
+				.thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(p)));
+		when(preinscripciones.grupoVigentePorPeticion()).thenReturn(x -> "Horario vigente");
+		when(preinscripciones.buscar("PRE-1")).thenReturn(p);
+		when(preinscripciones.alumnosCoincidentes(p)).thenReturn(List.of(Map.of("id", 7L)));
+
+		mockMvc.perform(get("/api/preinscripciones")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content[0].referencia").value("PRE-1"))
+				.andExpect(jsonPath("$.content[0].grupo").value("Horario vigente"))
+				.andExpect(jsonPath("$.content[0].alumnosCoincidentes").doesNotExist());
+		verify(preinscripciones, never()).alumnosCoincidentes(any());
+
+		mockMvc.perform(get("/api/preinscripciones/PRE-1")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.alumnosCoincidentes[0].id").value(7));
+	}
+
 	@Test
 	void anonimoNoPuedeCancelar() throws Exception {
 		mockMvc.perform(post("/api/preinscripciones/PRE-1/cancelar"))
