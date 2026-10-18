@@ -48,10 +48,9 @@ class TurnoServiceImplTest {
 		Turno miercoles = turno(12L, "Miércoles", grupo);
 		when(turnoRepository.findAllWithAlumnos()).thenReturn(List.of(lunes, miercoles));
 		when(temporadas.actual()).thenReturn("2026/2027");
-		when(aforo.ocupacionEfectiva(lunes, grupo, "2026/2027")).thenReturn(36);
-		when(aforo.ocupacionEfectiva(miercoles, grupo, "2026/2027")).thenReturn(20);
-		when(aforo.completo(lunes, "2026/2027")).thenReturn(true);
-		when(aforo.completo(miercoles, "2026/2027")).thenReturn(false);
+		// R2-P3: el aforo de todos los turnos sale de una sola ocupación por lotes (límite 36: lunes lleno, miércoles no).
+		when(aforo.ocupacion(List.of(lunes, miercoles), "2026/2027")).thenReturn(
+				new AforoPreinscripcionService.Ocupacion(36, java.util.Map.of(11L, 30, 12L, 20), java.util.Map.of(11L, 6)));
 
 		List<TurnoPublicoDTO> resultado = service.listarTurnosDTO();
 
@@ -79,6 +78,8 @@ class TurnoServiceImplTest {
 		turno.setAlumnos(new java.util.ArrayList<>(List.of(alumno)));
 		when(turnoRepository.findAllWithAlumnos()).thenReturn(List.of(turno));
 		when(temporadas.actual()).thenReturn("2026/2027");
+		when(aforo.ocupacion(List.of(turno), "2026/2027")).thenReturn(
+				new AforoPreinscripcionService.Ocupacion(36, java.util.Map.of(), java.util.Map.of()));
 		service.setReloj(java.time.Clock.fixed(java.time.Instant.parse("2026-10-16T22:30:00Z"),
 				java.time.ZoneOffset.UTC));
 

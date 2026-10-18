@@ -102,6 +102,9 @@ class PreinscripcionServiceTest {
 		miercoles = turno(12L, "Miércoles");
 		preinscripcion = solicitudPendiente();
 		lenient().when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
+		// R2-P3: actualizarTurnos lee la solicitud sin bloqueo, bloquea los turnos y después la solicitud (aforo).
+		lenient().when(preinscripciones.findByReferencia("PRE-1")).thenReturn(Optional.of(preinscripcion));
+		lenient().when(aforo.releerBloqueada(any(Preinscripcion.class))).thenAnswer(inv -> inv.getArgument(0));
 		lenient().when(aforo.bloquearTurnos(anyCollection())).thenAnswer(inv -> {
 			Collection<Long> ids = inv.getArgument(0);
 			return List.of(lunes, miercoles).stream().filter(t -> ids.contains(t.getId())).toList();
@@ -762,7 +765,22 @@ class PreinscripcionServiceTest {
 		List<Preinscripcion> cola = List.of(primera, segunda);
 		when(temporadas.actual()).thenReturn("2026/2027");
 		when(configuracion.obtenerLimiteTurno()).thenReturn(1);
-		when(alumnoDeportes.existsByAlumnoIdAndDeporteAndActivoTrue(50L, Deporte.TAEKWONDO.name())).thenReturn(true);
+		// R2-P3: los turnos de la cola se bloquean antes de leerla.
+		when(preinscripciones.findTurnoIdsSolicitados("2026/2027", EstadoPreinscripcion.EN_LISTA_ESPERA))
+				.thenReturn(List.of(11L, 12L));
+		// R2-P3: el alumno activo del lunes cuenta (consulta agregada por turno) y llena el lunes (límite 1).
+		when(turnos.contarAlumnosQueCuentanPorTurno(anyList())).thenAnswer(inv -> {
+			List<Long> ids = inv.getArgument(0);
+			return ids.contains(11L) ? List.<Object[]>of(new Object[] { 11L, 1L }) : List.<Object[]>of();
+		});
+		when(preinscripciones.contarPorTurnoTemporadaYEstado(anyCollection(), eq("2026/2027"),
+				eq(EstadoPreinscripcion.PENDIENTE))).thenAnswer(inv -> {
+					Collection<Long> ids = inv.getArgument(0);
+					return ids.stream().map(id -> new Object[] { id, cola.stream()
+							.filter(p -> p.getEstado() == EstadoPreinscripcion.PENDIENTE)
+							.filter(p -> p.getTurnos().stream().anyMatch(t -> t.getId().equals(id))).count() })
+							.toList();
+				});
 		when(preinscripciones.findByTemporadaAndEstadoOrderByCreadaEnAscIdAsc(
 				"2026/2027", EstadoPreinscripcion.EN_LISTA_ESPERA)).thenReturn(cola);
 		when(turnos.findAllByIdForUpdate(anyList())).thenAnswer(inv -> {

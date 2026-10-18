@@ -95,11 +95,13 @@ public class TurnoServiceImpl implements TurnoService {
 		String temporada = temporadaService.actual();
 		// Fecha de Madrid sea cual sea la zona del reloj (la CI corre en UTC).
 		LocalDate hoy = LocalDate.ofInstant(reloj.instant(), ValidacionRelojConfig.ZONA);
+		// R2-P3: aforo de todos los turnos por lotes (antes, por turno: un exists por alumno, un count y el límite).
+		AforoPreinscripcionService.Ocupacion ocupacion = aforoPreinscripcionService.ocupacion(turnos, temporada);
 		return turnos.stream().map(turno -> {
 			TurnoPublicoDTO dto = TurnoPublicoDTO.deTurno(turno, hoy);
 			if (turno.getGrupo() != null) {
-				dto.setOcupacionEfectiva(aforoPreinscripcionService.ocupacionEfectiva(turno, turno.getGrupo(), temporada));
-				dto.setCompleto(aforoPreinscripcionService.completo(turno, temporada));
+				dto.setOcupacionEfectiva(ocupacion.ocupacionEfectiva(turno));
+				dto.setCompleto(ocupacion.completo(turno));
 			}
 			return dto;
 		}).collect(Collectors.toList());

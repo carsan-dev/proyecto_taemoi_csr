@@ -1,0 +1,14 @@
+[
+  {
+    "completo" : true,
+    "deporte" : "KICKBOXING",
+    "diaSemana" : "Jueves",
+    "grupo" : "AFORO-R2P3 Kickboxing",
+    "grupoId" : "grupo:KB",
+    "horaFin" : "19:00",
+    "horaInicio" : "18:00",
+    "id" : "turno:T4",
+    "rangoEdadMax" : 99,
+    "rangoEdadMin" : 0
+  }
+]
