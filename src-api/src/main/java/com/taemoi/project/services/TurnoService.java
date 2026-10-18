@@ -14,6 +14,14 @@ public interface TurnoService {
 
 	Turno obtenerTurnoPorId(@NonNull Long turnoId);
 
+	/**
+	 * R2-P4s: el turno con sus alumnos; para el responsable de sede, solo los de su alcance (como
+	 * {@link #listarTurnosDTOCompleto()}).
+	 *
+	 * @throws com.taemoi.project.exceptions.turno.TurnoNoEncontradoException si no existe.
+	 */
+	TurnoDTO obtenerTurnoDTOPorId(@NonNull Long turnoId);
+
 	/** Turnos de la página pública /horarios: sin alumnos (ver {@link TurnoPublicoDTO}). */
 	List<TurnoPublicoDTO> listarTurnosDTO();
 

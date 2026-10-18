@@ -150,18 +150,18 @@ final class EscuelaConSedesDePrueba {
 		return jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE organizacion_id = ?", Long.class, org);
 	}
 
-	private void enTurno(long turno, long alumno) {
+	void enTurno(long turno, long alumno) {
 		jdbc.update("INSERT INTO alumno_turno (turno_id, alumno_id) VALUES (?, ?)", turno, alumno);
 	}
 
-	private void taekwondo(long alumno, boolean apto) {
+	void taekwondo(long alumno, boolean apto) {
 		jdbc.update("""
 				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
 				  organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id)
 				VALUES (TRUE, ?, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?)""", apto, alumno, org, disciplina);
 	}
 
-	private long cuenta(UsuarioRepository usuarios, String nombre) {
+	long cuenta(UsuarioRepository usuarios, String nombre) {
 		String email = "it-e6-" + nombre + "-" + marca + "@example.test";
 		return TenantContext.calcularCon(ORG1, () -> {
 			Usuario usuario = new Usuario();

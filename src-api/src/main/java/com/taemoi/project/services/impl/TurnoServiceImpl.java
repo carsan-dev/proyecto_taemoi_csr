@@ -123,8 +123,24 @@ public class TurnoServiceImpl implements TurnoService {
 				.map(alcance -> turnoRepository.findAll(
 						com.taemoi.project.acceso.PredicadosAlcance.turnosDeSusSedes(alcance)))
 				.orElseGet(turnoRepository::findAll);
-		return turnos.stream().map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
+		List<TurnoDTO> dtos = turnos.stream().map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
 				.collect(Collectors.toList());
+		return soloAlumnosEnAlcance(dtos);
+	}
+
+	@Override
+	public TurnoDTO obtenerTurnoDTOPorId(@NonNull Long turnoId) {
+		return soloAlumnosEnAlcance(List.of(TurnoDTO.deTurno(obtenerTurnoPorId(turnoId)))).get(0);
+	}
+
+	/**
+	 * R2-P4s (decisión 124): para el responsable de sede, solo los alumnos incrustados de su alcance, con el criterio
+	 * del listado de alumnos ({@link com.taemoi.project.acceso.GestionPorSede#idsAlumnosEnAlcance}, D9): una consulta
+	 * para toda la respuesta. Gestión: los mismos DTO, sin ninguna consulta más.
+	 */
+	private List<TurnoDTO> soloAlumnosEnAlcance(List<TurnoDTO> dtos) {
+		gestionPorSede.idsAlumnosEnAlcance().ifPresent(visibles -> dtos.forEach(dto -> dto.soloAlumnos(visibles)));
+		return dtos;
 	}
 
 	/**
@@ -248,7 +264,8 @@ public class TurnoServiceImpl implements TurnoService {
 			turno.setHoraFin(turnoDTO.getHoraFin());
 			turnoRepository.save(turno);
 
-			return TurnoDTO.deTurno(turno);
+			// Los alumnos del cuerpo no se leen: el PUT no cambia los alumnos del turno. La respuesta, filtrada.
+			return soloAlumnosEnAlcance(List.of(TurnoDTO.deTurno(turno))).get(0);
 		} else {
 			throw new TurnoNoEncontradoException("El turno con ID " + turnoId + " no existe.");
 		}

@@ -20,7 +20,6 @@ import jakarta.validation.Valid;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoPublicoDTO;
 import com.taemoi.project.dtos.response.TurnoResumenDTO;
-import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.ConfiguracionSistemaService;
 import com.taemoi.project.services.TurnoService;
@@ -84,8 +83,7 @@ public class TurnoController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.turnoEnSede(#turnoId,'LEER')")
 	public ResponseEntity<TurnoDTO> obtenerTurnoPorId(@PathVariable @NonNull Long turnoId) {
 		try {
-			Turno turno = turnoService.obtenerTurnoPorId(turnoId);
-			return ResponseEntity.ok(TurnoDTO.deTurno(turno));
+			return ResponseEntity.ok(turnoService.obtenerTurnoDTOPorId(turnoId));
 		} catch (TurnoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
 		}

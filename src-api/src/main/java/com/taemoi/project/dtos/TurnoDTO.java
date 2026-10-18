@@ -1,6 +1,7 @@
 package com.taemoi.project.dtos;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.taemoi.project.entities.Turno;
@@ -118,6 +119,17 @@ public class TurnoDTO {
 
 	public void setAlumnos(List<AlumnoDTO> alumnos) {
 		this.alumnos = alumnos;
+	}
+
+	/**
+	 * R2-P4s: deja solo los alumnos incrustados con id en {@code visibles} (el alcance del responsable de sede, ver
+	 * {@code GestionPorSede#idsAlumnosEnAlcance}), en el mismo orden. Sin lista, nada.
+	 */
+	public void soloAlumnos(Set<Long> visibles) {
+		if (alumnos != null) {
+			alumnos = alumnos.stream().filter(alumno -> visibles.contains(alumno.getId()))
+					.collect(Collectors.toList());
+		}
 	}
 
 	public static TurnoDTO deTurno(Turno turno) {

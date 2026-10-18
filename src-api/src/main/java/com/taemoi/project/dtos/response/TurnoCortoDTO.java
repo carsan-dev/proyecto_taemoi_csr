@@ -1,6 +1,7 @@
 package com.taemoi.project.dtos.response;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.taemoi.project.dtos.AlumnoDTO;
@@ -98,6 +99,14 @@ public class TurnoCortoDTO {
 	public void setOcupacionEfectiva(Integer ocupacionEfectiva) { this.ocupacionEfectiva = ocupacionEfectiva; }
 	public Boolean getCompleto() { return completo; }
 	public void setCompleto(Boolean completo) { this.completo = completo; }
+
+	/** R2-P4s: como {@link com.taemoi.project.dtos.TurnoDTO#soloAlumnos}. */
+	public void soloAlumnos(Set<Long> visibles) {
+		if (alumnos != null) {
+			alumnos = alumnos.stream().filter(alumno -> visibles.contains(alumno.getId()))
+					.collect(Collectors.toList());
+		}
+	}
 
 	public static TurnoCortoDTO deTurno(Turno turno) {
 		if (turno == null) {
