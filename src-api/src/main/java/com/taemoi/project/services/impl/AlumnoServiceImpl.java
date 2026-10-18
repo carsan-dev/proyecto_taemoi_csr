@@ -309,12 +309,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
 				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen);
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
-		if (restriccion.isEmpty()) {
-			// Gestión: la misma consulta de siempre.
-			return alumnoRepository.findAll(filtro, pageable);
+		if (restriccion.isPresent()) {
+			// Responsable de sede (entrega 6-1c): D9 por sus sedes.
+			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
 		}
-		// Responsable de sede (entrega 6-1c): D9 por sus sedes. Sin paginar, por id, como GET /api/alumnos/ids.
-		filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		// Sin paginar, por id, como GET /api/alumnos/ids (también con gestión): sin ORDER BY, MySQL devolvía el orden
+		// del índice que eligiera, y con estadísticas distintas elige uk (organizacion_id, numero_expediente).
 		if (pageable.isUnpaged()) {
 			return new org.springframework.data.domain.PageImpl<>(
 					alumnoRepository.findAll(filtro, org.springframework.data.domain.Sort.by("id")));
