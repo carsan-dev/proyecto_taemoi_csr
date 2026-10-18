@@ -26,7 +26,13 @@ public class Preinscripcion extends EntidadOrganizacion {
  @Column(name="consentimiento_fotografico",nullable=false) private Boolean consentimientoFotografico=false;
  @Column(name="aceptacion_normas",nullable=false) private Boolean aceptacionNormas;
  @Column(name="firmante_nombre",nullable=false,length=180) private String firmanteNombre;
- @Lob @Column(nullable=false,columnDefinition="MEDIUMBLOB") private byte[] firma;
+ /**
+  * R2-P7c: {@code firma}, {@code pdfFirmado} y {@code plantillaSnapshot} (NOT NULL sin valor por defecto) se escriben en el
+  * INSERT del alta, pero esta entidad NO los lee: {@code read="null"} los saca de todo SELECT (sin bytecode enhancement,
+  * {@code @Basic(fetch=LAZY)} no tendría efecto) y {@code updatable=false} los saca de todo UPDATE (antes cada guardado
+  * de la solicitud los reescribía). En una solicitud cargada valen null: se leen con {@link PreinscripcionDocumentos}.
+  */
+ @Lob @Column(nullable=false,updatable=false,columnDefinition="MEDIUMBLOB") @org.hibernate.annotations.ColumnTransformer(read="null") private byte[] firma;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="turno_id") private Turno turno;
  @Lob @Column(name="turno_snapshot",columnDefinition="LONGTEXT") private String turnoSnapshot;
  @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="grupo_id") private Grupo grupo;
@@ -35,8 +41,10 @@ public class Preinscripcion extends EntidadOrganizacion {
  @JoinTable(name="preinscripcion_turno",joinColumns=@JoinColumn(name="preinscripcion_id"),inverseJoinColumns=@JoinColumn(name="turno_id"))
  private Set<Turno> turnos=new LinkedHashSet<>();
  @ManyToOne(optional=false,fetch=FetchType.LAZY) @JoinColumn(name="plantilla_id") private PlantillaPreinscripcion plantilla;
- @Lob @Column(name="plantilla_snapshot",nullable=false,columnDefinition="LONGTEXT") private String plantillaSnapshot;
- @Lob @Column(name="pdf_firmado",nullable=false,columnDefinition="MEDIUMBLOB") private byte[] pdfFirmado;
+ /** R2-P7c: solo se escribe en el alta; se lee con {@link PreinscripcionDocumentos} (ver {@link #firma}). */
+ @Lob @Column(name="plantilla_snapshot",nullable=false,updatable=false,columnDefinition="LONGTEXT") @org.hibernate.annotations.ColumnTransformer(read="null") private String plantillaSnapshot;
+ /** R2-P7c: solo se escribe en el alta; se lee con {@link PreinscripcionDocumentos} (ver {@link #firma}). */
+ @Lob @Column(name="pdf_firmado",nullable=false,updatable=false,columnDefinition="MEDIUMBLOB") @org.hibernate.annotations.ColumnTransformer(read="null") private byte[] pdfFirmado;
  @Column(name="token_documento_hash",nullable=false,length=64) private String tokenDocumentoHash;
  @Column(name="idempotency_key_hash",length=64,unique=true) private String idempotencyKeyHash;
  @Column(name="email_enviado",nullable=false) private Boolean emailEnviado=false; @Column(name="email_intentos",nullable=false) private Integer emailIntentos=0;

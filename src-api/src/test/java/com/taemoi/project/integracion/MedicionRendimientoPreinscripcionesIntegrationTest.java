@@ -86,7 +86,8 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 	private static final String CLAVE = "Clave-Segura-123";
 	private static final int N_ALUMNOS = Integer.getInteger("r2.alumnos", 800);
 	private static final int N_PRE = Integer.getInteger("r2.preinscripciones", 500);
-	private static final int REPETICIONES = 5;
+	/** R2-P7c: {@code -Dr2.repeticiones} para medianas más estables en las peticiones cortas. */
+	private static final int REPETICIONES = Integer.getInteger("r2.repeticiones", 5);
 	private static final Path SALIDA = Path.of("target", System.getProperty("r2.salida", "r2-p7-medicion"));
 
 	@Autowired MockMvc mvc;
@@ -425,9 +426,11 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 
 		Statistics st = emf.unwrap(SessionFactory.class).getStatistics();
 		st.setStatisticsEnabled(true);
+		long s0 = bytesEnviadosMysql();
+		costeSonda = bytesEnviadosMysql() - s0;
 		StringBuilder tabla = new StringBuilder();
 		tabla.append("| endpoint | ruta | SQL | entidades cargadas | ms (mediana de ").append(REPETICIONES)
-				.append(") | bytes |\n|---|---|---|---|---|---|\n");
+				.append(") | bytes | bytes MySQL→app |\n|---|---|---|---|---|---|---|\n");
 		StringBuilder detalle = new StringBuilder();
 		for (Map.Entry<String, String> e : rutas.entrySet()) {
 			medirUna(e.getKey(), e.getValue(), st, tabla, detalle, REPETICIONES);
@@ -473,7 +476,7 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 		}
 
 		// Escrituras (una vez cada una; cambian datos).
-		tabla.append("| **escrituras** | | | | | |\n");
+		tabla.append("| **escrituras** | | | | | | |\n");
 		long turnoNuevo = turnosDe.get(gruposTkd.get(0)).get(0);
 		String pendTkd = jdbc.queryForObject("""
 				SELECT MIN(p.referencia) FROM preinscripcion p JOIN disciplina d ON d.id = p.disciplina_id
@@ -544,12 +547,14 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 	private void escritura(String nombre, Accion accion, StringBuilder tabla, StringBuilder detalle, Statistics st)
 			throws Exception {
 		st.clear();
+		long b0 = bytesEnviadosMysql();
 		long t = System.nanoTime();
 		ContadorSentencias.Conteo<MvcResult> conteo = ContadorSentencias.contar(accion::ejecutar);
 		long ms = (System.nanoTime() - t) / 1_000_000;
+		long leidos = bytesEnviadosMysql() - b0 - costeSonda;
 		MvcResult r = conteo.resultado();
-		tabla.append(String.format("| %s | HTTP %d | %d | %d | %d | %d |%n", nombre, r.getResponse().getStatus(),
-				conteo.total(), st.getEntityLoadCount(), ms, r.getResponse().getContentAsByteArray().length));
+		tabla.append(String.format("| %s | HTTP %d | %d | %d | %d | %d | %d |%n", nombre, r.getResponse().getStatus(),
+				conteo.total(), st.getEntityLoadCount(), ms, r.getResponse().getContentAsByteArray().length, leidos));
 		detalle.append("\n- ").append(nombre).append(": flushes=").append(st.getFlushCount()).append(", transacciones=")
 				.append(st.getTransactionCount()).append('\n');
 		if (r.getResponse().getStatus() >= 400) {
@@ -562,7 +567,9 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 			int repeticiones) throws Exception {
 		peticion(ruta); // calentamiento
 		st.clear();
+		long b0 = bytesEnviadosMysql();
 		ContadorSentencias.Conteo<byte[]> conteo = ContadorSentencias.contar(() -> peticion(ruta));
+		long leidos = bytesEnviadosMysql() - b0 - costeSonda;
 		long cargas = st.getEntityLoadCount();
 		formas(nombre, conteo.sentencias(), st, detalle);
 		long[] tiempos = new long[repeticiones];
@@ -576,8 +583,8 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 		if (!nombre.equals("firma") && !nombre.equals("documento_firmado")) {
 			Files.write(SALIDA.resolve(nombre + ".json"), cuerpo);
 		}
-		tabla.append(String.format("| %s | `%s` | %d | %d | %d | %d |%n", nombre, ruta, conteo.total(), cargas,
-				tiempos[repeticiones / 2], cuerpo.length));
+		tabla.append(String.format("| %s | `%s` | %d | %d | %d | %d | %d |%n", nombre, ruta, conteo.total(), cargas,
+				tiempos[repeticiones / 2], cuerpo.length, leidos));
 	}
 
 	private void formas(String nombre, List<String> sql, Statistics st, StringBuilder detalle) {
@@ -596,10 +603,25 @@ class MedicionRendimientoPreinscripcionesIntegrationTest extends MySqlIntegratio
 		detalle.append("- colecciones inicializadas: ").append(coleccion).append('\n');
 		boolean lob = sql.stream().anyMatch(s -> s.toLowerCase().contains("pdf_firmado") && s.toLowerCase().startsWith("select"));
 		detalle.append("- ¿algún SELECT trae pdf_firmado?: ").append(lob).append('\n');
+		// R2-P7c: también la firma y la plantilla congelada (los tres LOB de preinscripcion).
+		boolean firma = sql.stream().anyMatch(s -> s.toLowerCase().startsWith("select") && s.toLowerCase().matches("(?s).*\\.firma\\b.*"));
+		boolean plantilla = sql.stream().anyMatch(s -> s.toLowerCase().startsWith("select") && s.toLowerCase().contains("plantilla_snapshot"));
+		detalle.append("- ¿algún SELECT trae firma / plantilla_snapshot?: ").append(firma).append(" / ").append(plantilla).append('\n');
 		detalle.append("- formas de SQL:\n");
 		sql.stream().collect(Collectors.groupingBy(MedicionRendimientoPreinscripcionesIntegrationTest::forma,
 				LinkedHashMap::new, Collectors.counting())).forEach((k, v) -> detalle.append("  - ").append(v).append(" × ").append(k).append('\n'));
 	}
+
+	/**
+	 * R2-P7c: bytes que el servidor MySQL lleva enviados (todas las conexiones; el arnés corre en solitario). La
+	 * diferencia antes/después de una petición aproxima lo que la aplicación leyó de la base de datos.
+	 */
+	private long bytesEnviadosMysql() {
+		return Long.parseLong(String.valueOf(jdbc.queryForMap("SHOW GLOBAL STATUS LIKE 'Bytes_sent'").get("Value")));
+	}
+
+	/** Bytes que cuesta la propia sonda (una lectura de {@code Bytes_sent}), para descontarlos. */
+	private long costeSonda;
 
 	private static long len(Object o) {
 		if (o instanceof byte[] b) return b.length;
