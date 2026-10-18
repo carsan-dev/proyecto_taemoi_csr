@@ -36,6 +36,8 @@ export class PreinscripcionService {
  reenviarFinalizacion(ref:string){return this.http.post<void>(`${this.base}/${ref}/reenviar-finalizacion`,{});}
  finalizar(ref:string,data:{accionAlumno:string;alumnoId?:number;camposActualizar:string[];discapacidadHistorica:boolean|null;decisionEmail?:string;datosDeporte:any|null}){return this.http.post<void>(`${this.base}/${ref}/finalizar`,data);}
  actualizarTurnos(ref:string,turnoIds:number[]){return this.http.put<void>(`${this.base}/${ref}/turnos`,{turnoIds});}
+ /** Detalle de una solicitud, con las `alumnosCoincidentes` que el listado ya no trae (R2-P7a). */
+ detalle(ref:string){return this.http.get<any>(`${this.base}/${ref}`);}
  firma(ref:string){return this.http.get(`${this.base}/${ref}/firma`,{responseType:'blob'});}
  documentoFirmado(ref:string){return this.http.get(`${this.base}/${ref}/documento-firmado`,{responseType:'blob'});}
  plantillas(deporte:string){return this.http.get<any>(`${this.base}/plantillas/${deporte}`);}
