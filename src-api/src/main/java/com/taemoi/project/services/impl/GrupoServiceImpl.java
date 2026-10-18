@@ -14,6 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,8 @@ import com.taemoi.project.acceso.PredicadosAlcance;
 import com.taemoi.project.dtos.response.AlumnoCortoDTO;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
+import com.taemoi.project.dtos.response.GrupoResumenDTO;
+import com.taemoi.project.dtos.response.TurnoDeGrupoResumenDTO;
 import com.taemoi.project.dtos.response.TurnoCortoDTO;
 import com.taemoi.project.dtos.response.TurnoDelAlumnoEnGrupoDTO;
 import com.taemoi.project.entities.Alumno;
@@ -41,6 +45,7 @@ import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.SedeService;
 import com.taemoi.project.utils.OrdenAlfabetico;
 
+import jakarta.persistence.criteria.JoinType;
 import jakarta.transaction.Transactional;
 
 /**
@@ -100,6 +105,43 @@ public class GrupoServiceImpl implements GrupoService {
 				.map(alcance -> grupoRepository.findAll(PredicadosAlcance.gruposDeSusSedes(alcance)))
 				.orElseGet(grupoRepository::findAll);
 		return grupos.stream().map(this::convertirEntidadADTO).collect(Collectors.toList());
+	}
+
+	/**
+	 * R2-P4: los grupos sin sus alumnos. Mismo alcance que {@link #obtenerTodosLosGrupos()} (responsable de sede: los
+	 * grupos de sus sedes; gestión: todos) y, además, por id (aquel no ordena). Tres consultas, sin cargar alumnos: los
+	 * grupos (con su disciplina), el número de alumnos de todos ellos y sus turnos.
+	 */
+	@Override
+	public List<GrupoResumenDTO> obtenerResumenGrupos() {
+		Specification<Grupo> alcance = gestionPorSede.restriccion()
+				.map(PredicadosAlcance::gruposDeSusSedes)
+				.orElseGet(Specification::unrestricted);
+		Specification<Grupo> conDisciplina = (raiz, consulta, cb) -> {
+			if (!Long.class.equals(consulta.getResultType())) {
+				raiz.fetch("disciplina", JoinType.LEFT);
+			}
+			return null;
+		};
+		List<Grupo> grupos = grupoRepository.findAll(conDisciplina.and(alcance), Sort.by("id"));
+		if (grupos.isEmpty()) {
+			return List.of();
+		}
+		List<Long> ids = grupos.stream().map(Grupo::getId).toList();
+		Map<Long, Long> alumnosPorGrupo = new HashMap<>();
+		for (Object[] fila : grupoRepository.contarAlumnosPorGrupo(ids)) {
+			alumnosPorGrupo.put((Long) fila[0], (Long) fila[1]);
+		}
+		Map<Long, List<TurnoDeGrupoResumenDTO>> turnosPorGrupo = new HashMap<>();
+		for (Object[] fila : turnoRepository.findResumenPorGrupos(ids)) {
+			turnosPorGrupo.computeIfAbsent((Long) fila[0], k -> new ArrayList<>()).add(new TurnoDeGrupoResumenDTO(
+					(Long) fila[1], (String) fila[2], (String) fila[3], (String) fila[4]));
+		}
+		return grupos.stream()
+				.map(g -> new GrupoResumenDTO(g.getId(), g.getNombre(), g.getDeporte(), g.getRangoEdadMin(),
+						g.getRangoEdadMax(), alumnosPorGrupo.getOrDefault(g.getId(), 0L),
+						turnosPorGrupo.getOrDefault(g.getId(), List.of())))
+				.toList();
 	}
 
 	/**

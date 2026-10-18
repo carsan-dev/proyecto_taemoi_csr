@@ -766,7 +766,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     let huboError = false;
     forkJoin({
-      grupos: this.endpointsService.obtenerTodosLosGrupos().pipe(
+      grupos: this.endpointsService.obtenerResumenGrupos().pipe(
         catchError(() => {
           huboError = true;
           return of([]);

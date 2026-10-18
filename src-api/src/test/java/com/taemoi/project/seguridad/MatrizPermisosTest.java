@@ -302,6 +302,9 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/alumnos/aptos/convocatoria", alumnos + "aptos_soloSusAlumnos");
 			m.put(metodo + " /api/grupos", grupos + "grupos_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/turnos", grupos + "turnos_listadoSoloDeSusSedes");
+			// R2-P4: versiones ligeras de las dos listas, con el mismo filtro (ver ResumenGruposTurnosJsonDoradoIntegrationTest).
+			m.put(metodo + " /api/grupos/resumen", grupos + "grupos_listadoSoloDeSusSedes");
+			m.put(metodo + " /api/turnos/resumen", grupos + "turnos_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/informes/asistencia", grupos + "asistencia_soloTurnosDeSusSedes");
 		}
 		m.put("POST /api/alumnos/crear", alumnos + "alta_sedePrincipalObligatoriaYSuya");

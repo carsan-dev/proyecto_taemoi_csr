@@ -49,8 +49,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/aptos/convocatoria", "/api/alumnos/aptos/{id}", "/api/alumnos/{id}",
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
-			"/api/grupos", "/api/grupos/{id}",
-			"/api/turnos", "/api/turnos/{turnoId}",
+			"/api/grupos", "/api/grupos/resumen", "/api/grupos/{id}",
+			"/api/turnos", "/api/turnos/resumen", "/api/turnos/{turnoId}",
 			// 6-2: sin plantillas ni rutas públicas (sus reglas van antes).
 			"/api/preinscripciones", "/api/preinscripciones/{referencia}",
 			"/api/preinscripciones/{referencia}/documento-firmado", "/api/preinscripciones/{referencia}/firma",

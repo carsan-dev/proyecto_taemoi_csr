@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.response.TurnoPublicoDTO;
+import com.taemoi.project.dtos.response.TurnoResumenDTO;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.ConfiguracionSistemaService;
@@ -59,6 +60,16 @@ public class TurnoController {
 	public ResponseEntity<List<TurnoDTO>> obtenerTurnos() {
 		List<TurnoDTO> turnosDTO = turnoService.listarTurnosDTOCompleto();
 		return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
+	}
+
+	/**
+	 * Turnos en versión ligera (día, horas y grupo, sin alumnos). Mismos permisos y mismo alcance que
+	 * {@link #obtenerTurnos()}.
+	 */
+	@GetMapping("/resumen")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
+	public List<TurnoResumenDTO> obtenerResumenTurnos() {
+		return turnoService.listarTurnosResumen();
 	}
 
 	/**

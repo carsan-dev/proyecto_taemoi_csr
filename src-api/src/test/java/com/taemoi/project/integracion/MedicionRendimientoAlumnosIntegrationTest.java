@@ -234,6 +234,8 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		rutas.put("grupo_turnos", "/api/grupos/" + grupoMuestra + "/turnos");
 		rutas.put("grupos_conteo", "/api/grupos/conteo-alumnos");
 		rutas.put("turnos", "/api/turnos");
+		rutas.put("grupos_resumen", "/api/grupos/resumen"); // R2-P4
+		rutas.put("turnos_resumen", "/api/turnos/resumen"); // R2-P4
 		rutas.put("turno_ficha", "/api/turnos/" + turnoMuestra);
 		rutas.put("turnos_dto", "/api/turnos/dto");
 		rutas.put("turnos_dto_anonimo", "ANON:/api/turnos/dto");
@@ -285,6 +287,13 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 			sql.stream().collect(Collectors.groupingBy(MedicionRendimientoAlumnosIntegrationTest::forma, LinkedHashMap::new,
 					Collectors.counting())).forEach((k, v) -> detalle.append("  - ").append(v).append(" × ").append(k).append('\n'));
 		}
+		// R2-P4: la pantalla «Grupos y Turnos» antes (grupos + los turnos de cada grupo + turnos) y después (resúmenes).
+		List<Long> idsGrupos = new ArrayList<>();
+		json.readTree(Files.readString(SALIDA.resolve("grupos.json"))).forEach(g -> idsGrupos.add(g.get("id").asLong()));
+		List<String> antes = new ArrayList<>(List.of("/api/grupos", "/api/turnos"));
+		idsGrupos.forEach(id -> antes.add("/api/grupos/" + id + "/turnos"));
+		tabla.append(pantalla("pantalla_grupos_antes (" + antes.size() + " peticiones)", antes));
+		tabla.append(pantalla("pantalla_grupos_despues", List.of("/api/grupos/resumen", "/api/turnos/resumen")));
 		String informe = "## Medición R2 (" + N_ALUMNOS + " alumnos sintéticos)\n\n" + tabla + "\n" + detalle;
 		Files.writeString(SALIDA.resolve("medicion.md"), informe, StandardCharsets.UTF_8);
 		System.out.println(informe);
@@ -326,6 +335,29 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		Files.createDirectories(SALIDA);
 		Files.writeString(SALIDA.resolve("sonda-asignar-turno.txt"), res, StandardCharsets.UTF_8);
 		System.out.println("R2 sonda: " + res);
+	}
+
+	/** Fila de la tabla con el total (SQL, ms de una pasada, KB) de varias peticiones seguidas. */
+	private String pantalla(String nombre, List<String> rutas) throws Exception {
+		for (String r : rutas) {
+			libre(r); // calentamiento
+		}
+		int[] sql = { 0 };
+		long[] bytes = { 0 };
+		long t = System.nanoTime();
+		for (String r : rutas) {
+			ContadorSentencias.Conteo<String> c = ContadorSentencias.contar(() -> libre(r));
+			sql[0] += c.total();
+			bytes[0] += c.resultado().getBytes(StandardCharsets.UTF_8).length;
+		}
+		return String.format("| %s | (suma) | %d | - | %d | %.1f |%n", nombre, sql[0],
+				(System.nanoTime() - t) / 1_000_000, bytes[0] / 1024.0);
+	}
+
+	/** Como {@link #peticion}, sin exigir 200: el listado de turnos de un grupo sin turnos responde 404. */
+	private String libre(String ruta) throws Exception {
+		return mvc.perform(get(ruta).cookie(new Cookie("jwt", token))).andReturn().getResponse()
+				.getContentAsString(StandardCharsets.UTF_8);
 	}
 
 	private static String simple(String n) {

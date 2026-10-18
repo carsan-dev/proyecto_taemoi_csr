@@ -263,8 +263,8 @@ export class VistaPrincipalAdminComponent implements OnInit, OnDestroy {
     const sub = forkJoin({
       alumnosTotales: this.endpointsService.obtenerAlumnos(1, 1, '', true, false),
       alumnosActivos: this.endpointsService.obtenerAlumnos(1, 1, '', false, false),
-      grupos: this.endpointsService.obtenerTodosLosGrupos(),
-      turnos: this.endpointsService.obtenerTodosLosTurnos(),
+      grupos: this.endpointsService.obtenerResumenGrupos(),
+      turnos: this.endpointsService.obtenerResumenTurnos(),
       alumnosAptos: this.endpointsService.obtenerAlumnosAptosParaExamen(),
       erroresPlataforma: this.contarErroresPlataforma(),
       tesoreriaResumen: this.endpointsService.obtenerTesoreriaResumen(mesActual, anoActual, 'TODOS').pipe(

@@ -1,0 +1,55 @@
+[
+  {
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:G1",
+    "nombre" : "DORADOP4 Taekwondo Sede1",
+    "numAlumnos" : 3,
+    "rangoEdadMax" : 12,
+    "rangoEdadMin" : 6,
+    "turnos" : [
+      {
+        "diaSemana" : "Lunes",
+        "horaFin" : "18:00",
+        "horaInicio" : "17:00",
+        "id" : "turno:T1"
+      },
+      {
+        "diaSemana" : "Miércoles",
+        "horaFin" : "18:00",
+        "horaInicio" : "17:00",
+        "id" : "turno:T2"
+      }
+    ]
+  },
+  {
+    "deporte" : "KICKBOXING",
+    "id" : "grupo:G3",
+    "nombre" : "DORADOP4 Kickboxing Sede1",
+    "numAlumnos" : 2,
+    "rangoEdadMax" : null,
+    "rangoEdadMin" : null,
+    "turnos" : [
+      {
+        "diaSemana" : "Jueves",
+        "horaFin" : "20:00",
+        "horaInicio" : "19:00",
+        "id" : "turno:T4"
+      },
+      {
+        "diaSemana" : "Viernes",
+        "horaFin" : "21:00",
+        "horaInicio" : "20:00",
+        "id" : "turno:T5"
+      }
+    ]
+  },
+  {
+    "deporte" : "TAEKWONDO",
+    "id" : "grupo:G5",
+    "nombre" : "DORADOP4 Taekwondo Vacio",
+    "numAlumnos" : 0,
+    "rangoEdadMax" : 9,
+    "rangoEdadMin" : null,
+    "turnos" : [ ]
+  }
+]

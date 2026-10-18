@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { HttpContext } from '@angular/common/http';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { GrupoDTO } from '../../interfaces/grupo-dto';
+import { GrupoResumen } from '../../interfaces/grupo-resumen';
+import { TurnoResumen } from '../../interfaces/turno-resumen';
 import { environment } from '../../../environments/environment';
 import { disciplinaActual } from '../../features/catalogo/catalogo-actual';
 import { Turno } from '../../interfaces/turno';
@@ -1064,6 +1066,19 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /**
+   * Grupos en versión ligera (sin alumnos): para listados y selectores. Mismo alcance que `obtenerTodosLosGrupos`;
+   * el detalle con alumnos se pide con `obtenerGrupoPorId`.
+   */
+  obtenerResumenGrupos(): Observable<GrupoResumen[]> {
+    return this.http
+      .get<GrupoResumen[]>(`${this.urlBase}/grupos/resumen`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders
+      })
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerGrupoPorId(id: number): Observable<GrupoDTO> {
     return this.http
       .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true })
@@ -1198,8 +1213,9 @@ export class EndpointsService {
   }
 
   obtenerTurnos(): void {
+    // R2-P4: nadie lee `turnos$` con alumnos; basta el resumen (antes, todos los turnos con sus alumnos).
     this.http
-      .get<any>(`${this.urlBase}/turnos`, {
+      .get<any>(`${this.urlBase}/turnos/resumen`, {
         withCredentials: true,
         headers: this.skipLoadingHeaders
       })
@@ -1245,6 +1261,18 @@ export class EndpointsService {
 
     this.turnosDtoRequest$ = request$;
     return request$;
+  }
+
+  /**
+   * Turnos en versión ligera (sin alumnos): para listados y selectores. Mismo alcance que `obtenerTodosLosTurnos`.
+   */
+  obtenerResumenTurnos(): Observable<TurnoResumen[]> {
+    return this.http
+      .get<TurnoResumen[]>(`${this.urlBase}/turnos/resumen`, {
+        withCredentials: true,
+        headers: this.skipLoadingHeaders
+      })
+      .pipe(catchError(this.manejarError));
   }
 
   obtenerTodosLosTurnos(): Observable<any[]> {
