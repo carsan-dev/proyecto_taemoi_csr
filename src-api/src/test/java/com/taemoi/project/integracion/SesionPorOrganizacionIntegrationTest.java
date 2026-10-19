@@ -541,9 +541,10 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	// ------------------------------------------------------------------ roles sin acceso todavía (entrega 5b)
 
 	@Test
-	void soloProfesorOResponsableRecibeElMensajeDeRolSinAccesoYSuTokenNoVale() throws Exception {
-		Usuario usuario = crearUsuario("solo-profesor-" + sufijo + "@example.test", null, null);
-		dar(usuario, ORG1, RolMembresia.PROFESOR);
+	void soloResponsableRecibeElMensajeDeRolSinAccesoYSuTokenNoVale() throws Exception {
+		// Decisión 180: el profesor solo ya entra (SesionSoloProfesorIntegrationTest); el responsable solo, no.
+		Usuario usuario = crearUsuario("solo-responsable-" + sufijo + "@example.test", null, null);
+		dar(usuario, ORG1, RolMembresia.RESPONSABLE_SEDE);
 		dar(usuario, org2, RolMembresia.RESPONSABLE_SEDE);
 
 		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
@@ -552,7 +553,7 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(jsonPath("$.mensaje")
 						.value("Tu rol en esta escuela todavía no tiene acceso a la aplicación."));
 
-		// Un token ya emitido (cuando PROFESOR daba ROLE_MANAGER) deja de abrir sesión en la siguiente petición.
+		// Un token ya emitido deja de abrir sesión en la siguiente petición.
 		String emitido = jwtService.generateToken(usuario, 600_000, ORG1);
 		mvc.perform(get("/api/auth/roles").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
 		mvc.perform(get("/api/alumnos").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
@@ -576,10 +577,10 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void selectorDeEscuelaNoListaLaEscuelaDondeSoloEsProfesor() throws Exception {
-		Usuario usuario = crearUsuario("gestor-y-profesor-" + sufijo + "@example.test", null, null);
+	void selectorDeEscuelaNoListaLaEscuelaDondeSoloEsResponsable() throws Exception {
+		Usuario usuario = crearUsuario("gestor-y-responsable-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.ADMINISTRADOR);
-		dar(usuario, org2, RolMembresia.PROFESOR);
+		dar(usuario, org2, RolMembresia.RESPONSABLE_SEDE);
 
 		mvc.perform(get("/api/auth/organizaciones").cookie(jwt(login(usuario.getEmail()))))
 				.andExpect(status().isOk())

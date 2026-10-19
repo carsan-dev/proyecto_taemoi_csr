@@ -8,7 +8,7 @@
 #   PROPIETARIO      ROLE_ADMIN
 #   SOLO_PLATAFORMA  solo ROLE_ADMIN_PLATAFORMA (administrador de plataforma sin membresía)
 #   RESPONSABLE_SEDE ROLE_RESPONSABLE_SEDE (responsable de sede)
-#   PROFESOR         ROLE_PROFESOR (profesor)
+#   PROFESOR         solo ROLE_PROFESOR (sesión solo-profesor, decisión 180: su caja, sesión y lo público)
 # La decisión combina la regla de URL (SecurityConfiguration) y la de método (@PreAuthorize).
 # ALCANCE: deja pasar solo si el recurso está en el alcance o el acceso de la sesión (@acceso).
 # RUTA es el patrón del controlador tal cual; para manejadores comodín (/imagenes/**, /documentos/**)
@@ -151,12 +151,12 @@ POST     /api/auth/password/forgot                                              
 POST     /api/auth/password/reset                                                                 PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # AuthenticationController#resetearContrasena
 POST     /api/auth/register/confirm                                                               PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # AuthenticationController#confirmarRegistro
 POST     /api/auth/register/request                                                               PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # AuthenticationController#solicitarRegistro
-GET      /api/auth/roles                                                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerRoles
-HEAD     /api/auth/roles                                                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerRoles
+GET      /api/auth/roles                                                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          PERMITE  # AuthenticationController#obtenerRoles
+HEAD     /api/auth/roles                                                                          DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          PERMITE  # AuthenticationController#obtenerRoles
 POST     /api/auth/signin                                                                         PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # AuthenticationController#signin
 POST     /api/auth/signup                                                                         PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # AuthenticationController#signup
-GET      /api/auth/user                                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerUsuarioAutenticado
-HEAD     /api/auth/user                                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerUsuarioAutenticado
+GET      /api/auth/user                                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          PERMITE  # AuthenticationController#obtenerUsuarioAutenticado
+HEAD     /api/auth/user                                                                           DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          PERMITE  # AuthenticationController#obtenerUsuarioAutenticado
 GET      /api/auth/user/alumnos                                                                   DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerTodosLosAlumnosDelUsuario
 HEAD     /api/auth/user/alumnos                                                                   DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerTodosLosAlumnosDelUsuario
 GET      /api/auth/user/recordatorios-racha-email                                                 DENIEGA PERMITE PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # AuthenticationController#obtenerRecordatorioRachaEmail

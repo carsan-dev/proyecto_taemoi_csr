@@ -104,7 +104,7 @@ final class RegistroMatrizPermisos {
 				#   PROPIETARIO      ROLE_ADMIN
 				#   SOLO_PLATAFORMA  solo ROLE_ADMIN_PLATAFORMA (administrador de plataforma sin membresía)
 				#   RESPONSABLE_SEDE ROLE_RESPONSABLE_SEDE (responsable de sede)
-				#   PROFESOR         ROLE_PROFESOR (profesor)
+				#   PROFESOR         solo ROLE_PROFESOR (sesión solo-profesor, decisión 180: su caja, sesión y lo público)
 				# La decisión combina la regla de URL (SecurityConfiguration) y la de método (@PreAuthorize).
 				# ALCANCE: deja pasar solo si el recurso está en el alcance o el acceso de la sesión (@acceso).
 				# RUTA es el patrón del controlador tal cual; para manejadores comodín (/imagenes/**, /documentos/**)

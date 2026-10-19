@@ -15,7 +15,8 @@ la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y pro
 |---|---|
 | A. `cadaEndpointTieneExactamenteUnaPoliticaYNoSobraNinguna` | un manejador de `RequestMappingHandlerMapping` (método × patrón) no tiene línea, una línea no corresponde a ningún manejador, o hay líneas repetidas |
 | B. `laDecisionRealCoincideConLaDeclaradaParaCadaRol` | para alguna línea y rol, la decisión real (regla de URL **y** `@PreAuthorize`) no es la declarada |
-| `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado` | PROFESOR decide distinto de SOLO_PLATAFORMA en alguna línea (o no deniega en `/api/plataforma/**`); o RESPONSABLE_SEDE es `PERMITE` en una línea que no está en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (listados y cuerpos que filtra el servicio, cada uno con el test que lo prueba) ni era ya `PERMITE` para SOLO_PLATAFORMA; o la lista declara una línea que no es `PERMITE` o cita un test que no existe (entrega 6, entrega6-plan.md §2.2) |
+| `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado` | PROFESOR (la sesión solo-profesor, decisión 180) no es `DENIEGA` en una línea que no es de su caja (`PROFESOR_CAJA_6B2`, `ALCANCE` o `PERMITE`), ni de sesión (`PROFESOR_SESION_180`, `PERMITE`), ni pública (`PERMITE` para ANONIMO, y entonces `PERMITE`); o RESPONSABLE_SEDE es `PERMITE` en una línea que no está en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (listados y cuerpos que filtra el servicio, cada uno con el test que lo prueba) ni era ya `PERMITE` para SOLO_PLATAFORMA; o la lista declara una línea que no es `PERMITE` o cita un test que no existe (entrega 6, entrega6-plan.md §2.2) |
+| `sesionSoloProfesorLaCierraLaCapaDeUrlFueraDeSuListaBlanca` | la regla de URL (no el `@PreAuthorize`) deja pasar a PROFESOR en una ruta que no es de su lista blanca (`/api/caja/profesor/**`, `PROFESOR_SESION_180`, `/api/plataforma/**`) ni pública para el anónimo: una ruta nueva sin `@PreAuthorize` nace cerrada para esa sesión (decisión 180) |
 | `control*` | el arnés deja de reproducir casos conocidos por HTTP real (p. ej. `/api/plataforma/errores`) |
 
 ## Cómo leer el registro
@@ -33,14 +34,23 @@ GET      /api/alumnos/{alumnoId}/grupos    DENIEGA ALCANCE PERMITE PERMITE     D
 | PROPIETARIO | PROPIETARIO | `ROLE_ADMIN` |
 | SOLO_PLATAFORMA | admin. de plataforma sin membresía | solo `ROLE_ADMIN_PLATAFORMA` |
 | RESPONSABLE_SEDE | RESPONSABLE_SEDE | `ROLE_RESPONSABLE_SEDE` |
-| PROFESOR | PROFESOR | `ROLE_PROFESOR` |
+| PROFESOR | PROFESOR solo (sesión solo-profesor, decisión 180) | solo `ROLE_PROFESOR` |
 
-Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. PROFESOR sigue decidiendo lo mismo que
-SOLO_PLATAFORMA salvo en `/api/plataforma/**`, que le deniega (hasta la entrega 7). Desde la entrega 6-1,
+La matriz no modela combinaciones de roles. La sesión RESPONSABLE_SEDE + PROFESOR (decisión 184) es la misma sesión
+solo-profesor (`RolMembresia.sesionSoloProfesor`): la cubren `SesionSoloProfesorAuthorizationManagerTest` y
+`SesionSoloProfesorIntegrationTest` (por HTTP, también las rutas que tendría por su sede).
+
+Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. Hasta la pieza 6b-3b-2, PROFESOR decidía
+lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**` y su caja. Desde la decisión 180 la columna es la sesión
+solo-profesor, que ya abre sesión: `SesionSoloProfesorAuthorizationManager` (envuelve las reglas de URL) la deja
+pasar solo en su caja, en `PROFESOR_SESION_180` (`GET/HEAD /api/auth/roles`, `/api/auth/user`,
+`/api/auth/organizaciones`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
+URL. Casillas cambiadas: `GET/HEAD /api/auth/roles` y `/api/auth/user`, `DENIEGA` → `PERMITE` (su `@PreAuthorize`
+admite `ROLE_PROFESOR`); ninguna otra columna cambia. Desde la entrega 6-1,
 RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
 `grupoEnSede`, `turnoEnSede`, `alumnoComoFamiliaOSede`, que nunca activan la rama de profesor) y `PERMITE` solo en los
 25 listados y altas que filtra o comprueba el servicio (`RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO`). Lo comprueba
-`rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado`. Solos tampoco abren sesión (`RolMembresia.abreSesion`, D6-15).
+`rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado`. RESPONSABLE_SEDE solo no abre sesión (`RolMembresia.abreSesion`, D6-15).
 Las columnas nuevas van al final; la 6-1 no cambió ninguna casilla de las otras seis columnas.
 Desviación anotada del plan (§3.1): `GET /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos` solo exige
 `@acceso.alumnoComoFamiliaOSede(#alumnoId)` (no también `grupoEnSede`): por D6-16 el responsable lee todos los grupos

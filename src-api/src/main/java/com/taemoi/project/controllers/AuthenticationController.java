@@ -51,6 +51,7 @@ import com.taemoi.project.dtos.response.OrganizacionUsuarioDTO;
 import com.taemoi.project.dtos.response.RecordatorioRachaEmailResponse;
 import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.SesionVerificada;
@@ -236,12 +237,14 @@ public class AuthenticationController {
 	}
 
 	/**
-	 * Obtiene los roles del usuario autenticado.
+	 * Obtiene los roles del usuario autenticado. La sesión solo-profesor (decisiones 180 y 184) recibe
+	 * {@code ROLE_PROFESOR} y nada más: también la de responsable de sede + profesor, cuya autoridad de responsable no
+	 * abre nada en esa sesión hasta la E9 (así el frontend la lleva a «Mi caja» y no la trata como gestión).
 	 * 
 	 * @return Conjunto de cadenas que representan los roles del usuario.
 	 */
 	@GetMapping("/roles")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER') || hasRole('ROLE_PROFESOR')")
 	public ResponseEntity<?> obtenerRoles() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -254,12 +257,16 @@ public class AuthenticationController {
 		}
 
 		// Roles de la sesión: los de las membresías del usuario en la escuela activa (mismo formato de siempre).
-		return ResponseEntity.ok(autoridadesDeSesion(authentication).stream().map(Enum::name)
-				.collect(Collectors.toSet()));
+		Set<Roles> roles = autoridadesDeSesion(authentication);
+		if (RolMembresia.sesionSoloProfesor(roles)) {
+			return ResponseEntity.ok(Set.of(Roles.ROLE_PROFESOR.name()));
+		}
+		return ResponseEntity.ok(roles.stream().map(Enum::name).collect(Collectors.toSet()));
 	}
 
+	/** Quién es. La sesión solo-profesor (decisiones 180 y 184) no recibe alumno: no es familia. */
 	@GetMapping("/user")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER') || hasRole('ROLE_PROFESOR')")
 	public UsuarioConAlumnoAsociadoDTO obtenerUsuarioAutenticado() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		String email = authentication.getName();
@@ -327,7 +334,7 @@ public class AuthenticationController {
 	}
 
 	private AlumnoParaUsuarioDTO obtenerAlumnoVisibleParaUsuario(Usuario usuario, Set<Roles> autoridades) {
-		if (usuario == null) {
+		if (usuario == null || RolMembresia.sesionSoloProfesor(autoridades)) {
 			return null;
 		}
 

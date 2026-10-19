@@ -15,8 +15,9 @@ import java.util.function.BooleanSupplier;
  * <li>{@code ADMINISTRADOR} → {@code ROLE_MANAGER}</li>
  * <li>{@code FAMILIA} → {@code ROLE_USER}</li>
  * <li>{@code RESPONSABLE_SEDE} → {@code ROLE_RESPONSABLE_SEDE} y {@code PROFESOR} → {@code ROLE_PROFESOR}:
- * autoridades propias que todavía no pasan ninguna regla (fallan cerradas). Solas no abren sesión
- * ({@link #abreSesion}); con FAMILIA, la cuenta entra como familia. Sus endpoints se abren en las entregas 6 y 7.</li>
+ * autoridades propias; solo pasan las reglas que las nombran (fallan cerradas). RESPONSABLE_SEDE sola no abre sesión
+ * ({@link #abreSesion}); PROFESOR sin FAMILIA ni gestión (con o sin RESPONSABLE_SEDE) sí, limitada a su caja
+ * ({@link #sesionSoloProfesor}, decisiones 180 y 184); con FAMILIA, la cuenta entra como familia.</li>
  * </ul>
  */
 public enum RolMembresia {
@@ -73,14 +74,30 @@ public enum RolMembresia {
 	}
 
 	/**
-	 * Puerta de entrada (D5-1): una sesión de escuela solo se abre con {@code ROLE_ADMIN}, {@code ROLE_MANAGER} o
-	 * {@code ROLE_USER}. Con las autoridades de siempre equivale a «tiene alguna». Además, si
+	 * Puerta de entrada (D5-1, matizada por las decisiones 180 y 184): una sesión de escuela se abre con
+	 * {@code ROLE_ADMIN}, {@code ROLE_MANAGER} o {@code ROLE_USER}, o con {@code ROLE_PROFESOR} (sin esos tres, con o
+	 * sin RESPONSABLE_SEDE, es una sesión limitada a su caja: {@link #sesionSoloProfesor}). Con las autoridades de
+	 * siempre equivale a «tiene alguna». Solo RESPONSABLE_SEDE no abre (D6-15, hasta la E9). Además, si
 	 * {@link #requiereAlumnoActivo}, hace falta algún alumno accesible.
 	 */
 	public static boolean abreSesion(Set<Roles> autoridades) {
 		return autoridades.contains(Roles.ROLE_ADMIN)
 				|| autoridades.contains(Roles.ROLE_MANAGER)
-				|| autoridades.contains(Roles.ROLE_USER);
+				|| autoridades.contains(Roles.ROLE_USER)
+				|| autoridades.contains(Roles.ROLE_PROFESOR);
+	}
+
+	/**
+	 * Sesión solo-profesor (decisiones 180 y 184): tiene {@code ROLE_PROFESOR} y ninguno de los tres roles que abren
+	 * sesión de siempre, con o sin {@code ROLE_RESPONSABLE_SEDE}. La cadena de seguridad la limita a su caja, a lo
+	 * imprescindible de sesión y a lo público ({@code SesionSoloProfesorAuthorizationManager}): la autoridad de
+	 * responsable no abre nada en esta sesión hasta la E9.
+	 */
+	public static boolean sesionSoloProfesor(Set<Roles> autoridades) {
+		return autoridades.contains(Roles.ROLE_PROFESOR)
+				&& !autoridades.contains(Roles.ROLE_ADMIN)
+				&& !autoridades.contains(Roles.ROLE_MANAGER)
+				&& !autoridades.contains(Roles.ROLE_USER);
 	}
 
 	/**

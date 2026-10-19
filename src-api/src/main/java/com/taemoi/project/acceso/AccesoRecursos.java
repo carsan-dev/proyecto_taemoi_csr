@@ -46,9 +46,10 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * <li>{@link #cargoDeMisGrupos}, {@link #alumnoDeMisGrupos} y {@link #cobroPropioDelProfesor}: SOLO la rama de profesor ({@code ROLE_PROFESOR}),
  * también para escribir (cobrar en efectivo y deshacer su cobro, D4). El alcance total NO concede: la gestión cobra por
  * el PUT del cargo y su dinero entra en caja al momento (decisión 1); una cuenta de gestión que además sea profesor no
- * tiene grupos en el alcance ({@link AlcanceSesion#TOTAL}) y no entra por aquí. Hoy un profesor solo abre sesión con
- * FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ cuenta (es la única forma de usarlas antes de la entrega 8);
- * D5-2 sigue valiendo para las rutas existentes.</li>
+ * tiene grupos en el alcance ({@link AlcanceSesion#TOTAL}) y no entra por aquí. Abren sesión de profesor la cuenta solo
+ * profesor y la responsable de sede + profesor (decisiones 180 y 184, restringidas a su caja por
+ * {@code SesionSoloProfesorAuthorizationManager}) y la mixta FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ
+ * cuenta; D5-2 sigue valiendo para las rutas existentes.</li>
  * <li>{@link #cajaDeSede}: alcance total o sedes de {@code ROLE_RESPONSABLE_SEDE}; nunca la rama de profesor.</li>
  * </ul>
  */

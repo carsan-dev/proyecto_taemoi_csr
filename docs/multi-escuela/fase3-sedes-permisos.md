@@ -9,7 +9,10 @@ hay código ni migraciones escritas. Rutas relativas a `src-api/src/main/java/co
 **Membresías y autoridades**
 - `membresia.rol` ya admite los cinco roles (`entities/Membresia.java:36-39`, V20). Desde la entrega 5b-1,
   `RESPONSABLE_SEDE` y `PROFESOR` tienen autoridades propias (`ROLE_RESPONSABLE_SEDE`, `ROLE_PROFESOR`) que fallan
-  cerradas: no pasan ninguna regla y, solas, no abren sesión (`entities/RolMembresia.java`). Antes se traducían
+  cerradas: solo pasan las reglas que las nombran (la de profesor, su caja `/api/caja/profesor/**` desde la 6b-2;
+  la de responsable, sus sedes desde la entrega 6) y `RESPONSABLE_SEDE` sola no abre sesión
+  (`entities/RolMembresia.java`). Desde las decisiones 180 y 184 (§7), `PROFESOR` sin FAMILIA ni gestión, con o sin
+  `RESPONSABLE_SEDE`, sí abre, limitada a su caja. Antes se traducían
   a `ROLE_MANAGER` y lo veían todo.
   Ningún código ni migración los crea (`RolMembresia.desdeAutoridad` solo da
   PROPIETARIO/ADMINISTRADOR/FAMILIA).
@@ -294,6 +297,22 @@ Acceso familia = alumno **activo** con fila en `usuario_alumno` y membresía en 
 - D5 (cambia): el profesor, además de consulta, asistencia, salud y aptos, **gestiona los grados de sus
   alumnos** (exámenes); sigue sin cobros ni edición de fichas. Comprobar qué genera hoy un cambio de grado
   (productos, convocatorias) antes de abrirlo.
+- Decisión 180 (pieza 6b-3b-2, matiza la D5-1 / 60 solo para el profesor): una cuenta que **solo es profesor**
+  en una escuela inicia sesión (contraseña, Google, cambio de escuela y comprobación por petición:
+  `RolMembresia.abreSesion`, regla única), también sin grupos asignados (ve su caja vacía). Hasta la E9 solo usa
+  «Mi caja» (`/api/caja/profesor/**`: por cobrar, vender, lo que lleva encima, deshacer), lo imprescindible de
+  sesión (`GET /api/auth/roles`, que devuelve solo `ROLE_PROFESOR`; `GET /api/auth/user`, sin alumno;
+  `GET /api/auth/organizaciones`; `POST /api/auth/organizacion`; cerrar sesión) y lo público. Todo lo demás, 403
+  en la capa de URL (`SesionSoloProfesorAuthorizationManager`, que envuelve las reglas de `SecurityConfiguration`
+  con una lista blanca explícita: una ruta nueva nace cerrada para esa sesión; `MatrizPermisosTest` lo comprueba).
+  El responsable de sede solo sigue sin entrar (D6-15) con «Tu rol en esta escuela todavía no tiene acceso a la
+  aplicación.», ahora también en el login con Google. FAMILIA+PROFESOR, PROFESOR+ADMINISTRADOR y el resto de
+  combinaciones, igual que antes.
+- Decisión 184 (pieza 6b-3b-2, amplía la 180): una cuenta RESPONSABLE_SEDE + PROFESOR (sin FAMILIA, ADMINISTRADOR
+  ni PROPIETARIO) entra como profesor, con la misma sesión limitada (su caja, lo imprescindible de sesión y lo
+  público; criterio único `RolMembresia.sesionSoloProfesor`: tiene PROFESOR y no tiene ADMIN, MANAGER ni USER). Su
+  parte de responsable de sede sigue sin pantallas ni acceso hasta la E9: `ROLE_RESPONSABLE_SEDE` no abre nada en
+  esa sesión (la cierra la capa de URL) y `GET /api/auth/roles` devuelve solo `ROLE_PROFESOR`.
 
 ## 8. Entregas en orden
 
