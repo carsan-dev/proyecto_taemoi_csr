@@ -105,8 +105,8 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 				  organizacion_id, sede_id)
 				VALUES (?, 'CARGO 180', 12.0, 1, 0, NOW(), ?, ?)""", alumnoDeSuGrupo, e.org, e.sA);
 		cargo = jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class, e.org);
-		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id) VALUES ('CAMISETA 180', 9.0, "
-				+ "NULL, ?)", e.org);
+		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id, vendible_profesor) "
+				+ "VALUES ('CAMISETA 180', 9.0, NULL, ?, TRUE)", e.org);
 		producto = jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 	}
 
@@ -212,6 +212,25 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 		// Su caja sigue con su alcance: un alumno fuera de sus grupos, 403.
 		assertEquals(403, estado(post("/api/caja/profesor/alumnos/" + e.aB + "/productos/" + producto + "/cobrar"),
 				token));
+	}
+
+	/**
+	 * Integración 6b-3b: la sesión solo-profesor lista sus alumnos (solo los de sus grupos) y no puede cambiar la marca
+	 * «vendible por el profesor» de un producto (eso es de gestión).
+	 */
+	@Test
+	void sesionProfesor_listaSusAlumnos_yNoMarcaProductos() throws Exception {
+		String token = login(profesor.getEmail());
+		JsonNode lista = leer(get("/api/caja/profesor/alumnos"), token, 200);
+		Set<Long> ids = new HashSet<>();
+		lista.forEach(f -> ids.add(f.get("alumnoId").asLong()));
+		assertTrue(ids.contains(alumnoDeSuGrupo), lista.toString());
+		assertTrue(!ids.contains(e.aB), "alumno de un grupo ajeno: " + lista);
+		assertEquals(200, estado(head("/api/caja/profesor/alumnos"), token));
+		assertEquals(403, estado(put("/api/productos/" + producto).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"concepto\":\"CAMISETA 180\",\"precio\":9.0,\"vendibleProfesor\":false}"), token));
+		assertEquals(Boolean.TRUE, jdbc.queryForObject("SELECT vendible_profesor FROM producto WHERE id = ?",
+				Boolean.class, producto));
 	}
 
 	/**
