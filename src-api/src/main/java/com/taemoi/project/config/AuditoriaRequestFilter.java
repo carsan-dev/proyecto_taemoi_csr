@@ -34,7 +34,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final int MAX_ENDPOINT_CHARS = 512;
 	private static final int MAX_USER_AGENT_CHARS = 400;
 	private static final int MAX_PAYLOAD_CHARS = 12000;
-	private static final Set<String> AUDITABLE_METHODS = Set.of("GET", "POST", "PUT", "DELETE");
+	// PATCH desde la 6b-3c (marca «Lo puede vender el profesor» de /api/productos): se audita como el PUT.
+	private static final Set<String> AUDITABLE_METHODS = Set.of("GET", "POST", "PUT", "PATCH", "DELETE");
 	/**
 	 * Datos de salud: nunca se guarda el cuerpo; las lecturas correctas ya las audita AlumnoSaludService.
 	 * Se reconoce por el controlador que atendió la petición y, si no llegó a ninguno (401/403/404), por
@@ -212,7 +213,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		return switch (method) {
 		case "GET" -> AuditoriaAccion.READ;
 		case "POST" -> AuditoriaAccion.CREATE;
-		case "PUT" -> AuditoriaAccion.UPDATE;
+		case "PUT", "PATCH" -> AuditoriaAccion.UPDATE;
 		case "DELETE" -> AuditoriaAccion.DELETE;
 		default -> null;
 		};

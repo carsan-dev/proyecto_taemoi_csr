@@ -111,4 +111,32 @@ describe('EndpointsService', () => {
       done();
     });
   });
+
+  it('cambia «Mi caja» de un producto con PATCH y cuerpo vendibleProfesor', (done) => {
+    const patchSpy = jasmine.createSpy('patch').and.returnValue(of({ id: 7, vendibleProfesor: true }));
+    const service = new EndpointsService({ patch: patchSpy } as any);
+
+    service.cambiarVendibleProfesor(7, true).subscribe((producto) => {
+      const [url, cuerpo, opciones] = patchSpy.calls.mostRecent().args;
+      expect(url).toMatch(/\/productos\/7\/vendible-profesor$/);
+      expect(cuerpo).toEqual({ vendibleProfesor: true });
+      expect(opciones.withCredentials).toBeTrue();
+      expect(producto.vendibleProfesor).toBeTrue();
+      done();
+    });
+  });
+
+  it('cambia «Mi caja» en bloque con PATCH y ids', (done) => {
+    const patchSpy = jasmine.createSpy('patch').and.returnValue(of({ actualizados: 2 }));
+    const service = new EndpointsService({ patch: patchSpy } as any);
+
+    service.cambiarVendibleProfesorEnBloque([1, 2], false).subscribe((respuesta) => {
+      const [url, cuerpo, opciones] = patchSpy.calls.mostRecent().args;
+      expect(url).toMatch(/\/productos\/vendible-profesor$/);
+      expect(cuerpo).toEqual({ ids: [1, 2], vendibleProfesor: false });
+      expect(opciones.withCredentials).toBeTrue();
+      expect(respuesta.actualizados).toBe(2);
+      done();
+    });
+  });
 });

@@ -11,11 +11,22 @@
           <i class="bi bi-plus-circle"></i>
           <span>Crear producto</span>
         </button>
+        <button class="admin-btn admin-btn-dark btn-mi-caja" (click)="cambiarMiCajaSeleccionados(true)"
+          [disabled]="!hasSelectedProductos || guardandoBloque"
+          [attr.aria-label]="'Dar a Mi caja (' + numSeleccionados + ')'">
+          <i class="bi bi-toggle-on" aria-hidden="true"></i>
+          <span>Dar a Mi caja ({{ numSeleccionados }})</span>
+        </button>
+        <button class="admin-btn admin-btn-dark btn-mi-caja" (click)="cambiarMiCajaSeleccionados(false)"
+          [disabled]="!hasSelectedProductos || guardandoBloque"
+          [attr.aria-label]="'Quitar de Mi caja (' + numSeleccionados + ')'">
+          <i class="bi bi-toggle-off" aria-hidden="true"></i>
+          <span>Quitar de Mi caja ({{ numSeleccionados }})</span>
+        </button>
         <button class="admin-btn admin-btn-danger" (click)="eliminarProductosSeleccionados()"
           [disabled]="!hasSelectedProductos">
           <i class="bi bi-trash"></i>
-          <span class="d-none d-md-inline">Eliminar Seleccionados</span>
-          <span class="d-md-none">Eliminar</span>
+          <span>Eliminar Seleccionados</span>
         </button>
       </div>
     </div>
@@ -82,6 +93,7 @@
                   </span>
                 }
               </th>
+              <th class="col-mi-caja">Mi caja</th>
               <th class="col-actions">Acciones</th>
             </tr>
           </thead>
@@ -96,13 +108,18 @@
                 <td>{{ producto.id }}</td>
                 <td>
                   {{ producto.concepto }}
-                  @if (producto.vendibleProfesor) {
-                    <span class="etiqueta-mi-caja" title="Lo puede vender el profesor desde Mi caja">
-                      <i class="bi bi-wallet2" aria-hidden="true"></i> Mi caja
-                    </span>
-                  }
                 </td>
                 <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
+                <td class="col-mi-caja">
+                  <div class="form-check form-switch">
+                    <input type="checkbox" role="switch" class="form-check-input"
+                      [checked]="!!producto.vendibleProfesor"
+                      [disabled]="guardandoIds.has(producto.id)"
+                      (change)="cambiarMiCaja(producto, $event)"
+                      [attr.aria-label]="'Lo puede vender el profesor: ' + producto.concepto"
+                      [title]="'Lo puede vender el profesor: ' + producto.concepto">
+                  </div>
+                </td>
                 <td class="col-actions">
                   <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">
                     <i class="bi bi-pencil-square"></i>
@@ -117,7 +134,7 @@
             }
             @if (!cargando && (!productos || productos.length === 0)) {
               <tr>
-                <td colspan="5" class="text-center text-muted">No hay productos disponibles</td>
+                <td colspan="6" class="text-center text-muted">No hay productos disponibles</td>
               </tr>
             }
           </tbody>

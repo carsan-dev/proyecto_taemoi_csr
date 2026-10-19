@@ -88,7 +88,8 @@ RESPONSABLE_SEDE (las otras seis no cambian: `diff` vacío de las columnas 1-7 y
   `GET/HEAD /api/informes/deudas`, `/deudas/csv` (deudas de sus sedes) y `/listado-mensualidad-mensual` (alumnos de su
   sede principal), D6-13; `POST /api/tesoreria/certificados-cobros` (cada alumno de su sede principal, 403 si no).
 - Siguen en `DENIEGA`: las generaciones masivas (`mensualidades/general`, `/deporte`, `/multi-deporte`,
-  `licencias/general`, D6-10), crear, editar y borrar productos del catálogo y el resto de `/api/informes/**`.
+  `licencias/general`, D6-10), crear, editar y borrar productos del catálogo
+  (también la marca vendible por el profesor) y el resto de `/api/informes/**`.
 En el servicio, además: revertir un cobro sigue siendo solo de `ROLE_ADMIN`; el responsable no borra un cargo cobrado
 (403, D6-22) y en uno cobrado solo cambia las notas (403, D6-20); en una sede inactiva no se crean cargos (400, todos
 los roles) y los existentes se cobran (D6-17); las masivas saltan a esos alumnos e informan de cuántos (D6-23);
@@ -129,6 +130,11 @@ cambia.
 - `GET/HEAD /api/caja/profesor/alumnos`: PROFESOR `PERMITE` declarado (`hasAuthority('ROLE_PROFESOR')`, regla de URL
   `ROLE_PROFESOR` de `/api/caja/profesor/**`; el servicio devuelve solo los alumnos activos de sus grupos en la escuela
   activa, sin datos sensibles); el resto de roles, `DENIEGA` (también PROPIETARIO, GESTOR y RESPONSABLE_SEDE).
+
+Pieza 6b-3c (decisión 185): 2 líneas nuevas; ninguna casilla existente cambia.
+- `PATCH /api/productos/{id}/vendible-profesor` y `PATCH /api/productos/vendible-profesor`: PROPIETARIO y GESTOR
+  `PERMITE` (regla de URL `PATCH /api/productos/**` + `@PreAuthorize` como el PUT); el resto, `DENIEGA` (también
+  RESPONSABLE_SEDE y PROFESOR).
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

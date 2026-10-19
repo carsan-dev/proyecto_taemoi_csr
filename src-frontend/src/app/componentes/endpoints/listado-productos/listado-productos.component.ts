@@ -28,6 +28,8 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   orderBy: string = 'concepto';
   order: string = 'asc';
   cargando: boolean = true; // Local loading state
+  guardandoIds = new Set<number>();
+  guardandoBloque = false;
   private searchSubject = new Subject<string>();
   private readonly storageKey = 'listadoProductosEstado';
 
@@ -166,6 +168,85 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
         this.eliminarProductoSecuencial(productosSeleccionados);
       },
     });
+  }
+
+  get numSeleccionados(): number {
+    return this.productos.filter((producto) => producto.selected).length;
+  }
+
+  private mensajeError(error: any, porDefecto: string): string {
+    const mensaje = error?.error?.mensaje;
+    return typeof mensaje === 'string' && mensaje.trim() ? mensaje : porDefecto;
+  }
+
+  cambiarMiCaja(producto: Producto & { selected?: boolean }, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const nuevoValor = input.checked;
+    const valorAnterior = !!producto.vendibleProfesor;
+    if (this.guardandoIds.has(producto.id)) {
+      input.checked = valorAnterior;
+      return;
+    }
+    this.guardandoIds = new Set(this.guardandoIds).add(producto.id);
+    this.endpointsService.cambiarVendibleProfesor(producto.id, nuevoValor).subscribe({
+      next: (actualizado) => {
+        producto.vendibleProfesor = !!actualizado.vendibleProfesor;
+        input.checked = producto.vendibleProfesor;
+        this.terminarGuardado(producto.id);
+        showSuccessToast(
+          producto.vendibleProfesor
+            ? `«${producto.concepto}»: ya se puede vender desde Mi caja`
+            : `«${producto.concepto}»: ya no sale en Mi caja`
+        );
+      },
+      error: (error) => {
+        producto.vendibleProfesor = valorAnterior;
+        input.checked = valorAnterior;
+        this.terminarGuardado(producto.id);
+        showErrorToast(
+          this.mensajeError(error, `No se pudo cambiar «Mi caja» de «${producto.concepto}»`)
+        );
+      },
+    });
+  }
+
+  private terminarGuardado(id: number): void {
+    const restantes = new Set(this.guardandoIds);
+    restantes.delete(id);
+    this.guardandoIds = restantes;
+  }
+
+  cambiarMiCajaSeleccionados(vendibleProfesor: boolean): void {
+    const seleccionados = this.productos.filter((producto) => producto.selected);
+    if (seleccionados.length === 0 || this.guardandoBloque) {
+      return;
+    }
+    this.guardandoBloque = true;
+    this.endpointsService
+      .cambiarVendibleProfesorEnBloque(
+        seleccionados.map((producto) => producto.id),
+        vendibleProfesor
+      )
+      .pipe(finalize(() => (this.guardandoBloque = false)))
+      .subscribe({
+        next: () => {
+          const n = seleccionados.length;
+          seleccionados.forEach((producto) => {
+            producto.vendibleProfesor = vendibleProfesor;
+          });
+          this.productos.forEach((producto) => (producto.selected = false));
+          showSuccessToast(
+            vendibleProfesor
+              ? `${n} ${n === 1 ? 'producto' : 'productos'} ahora en Mi caja`
+              : `${n} ${n === 1 ? 'producto quitado' : 'productos quitados'} de Mi caja`
+          );
+        },
+        error: (error) => {
+          showErrorToast(
+            this.mensajeError(error, 'No se pudo cambiar «Mi caja» de los productos seleccionados')
+          );
+        },
+      });
   }
 
   filtrarPorConcepto(): void {
