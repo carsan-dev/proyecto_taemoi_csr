@@ -3,7 +3,7 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b), la 6c-6 (§4c) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
+> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b), la 6c-6 (§4c), la 6c-4 (§4d) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
 > partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
@@ -1014,6 +1014,96 @@ y `SolicitudController.java`; `J/dtos/request/CajaRequests.java` y `SolicitudReq
   de Moiskimdo sin tocar.
 - [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
   `feat(caja): devoluciones enlazadas al cargo (6c-6)`.
+
+---
+
+## 4d. Pieza 6c-4: pedir deshacer (detallada)
+
+Rama `feature/6c-noche` (tras la 6c-6). **Sin migración** (V31_8 ya tiene `solicitud.motivo_deshacer` y la clave única
+`cobro_pendiente_id`): se despliega con el atajo `desplegar`. Sin pantallas («Entregados recientes» y «Pedir deshacer»
+en Mi caja son de la 6c-8). Moiskimdo no ve ningún cambio (no tiene profesores ni cobros de origen PROFESOR). La
+aceptación del tipo 2 (193) ya la hace la 6c-3 (§4); la 6c-4 solo abre las dos rutas del profesor.
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Entregados recientes** (D6c-14), `CajaService.cobrosEntregadosRecientesDelProfesor()`: cobros del profesor de la
+  sesión (origen PROFESOR, cobrados por él, ACTIVOS) que van en una entrega ACTIVA con fecha en los últimos **30 días**
+  (hora de la escuela), **50** como mucho, de la entrega más reciente a la más antigua (y, dentro, del cobro más nuevo
+  al más antiguo). Una consulta JPQL (cobro ⋈ entrega, ambas con `@TenantId`) y, para toda la lista, consultas fijas:
+  nombres de alumnos, nombres de sedes, «venta» (`cobrosQueSonVentaDelProfesor`), solicitudes PENDIENTES de esos
+  cobros, devoluciones ACTIVAS de esos cobros y encargos con la devolución pendiente de sus cargos. Sin N+1.
+- **Fila** `CajaDTOs.CobroEntregadoReciente`: `cobroId`, `cargoId`, `alumnoId`, `alumnoNombre`, `alumnoApellidos`,
+  `concepto`, `importe`, `fechaCobro`, `entregaId`, `fechaEntrega`, `sedeId`, `sedeNombre`, `venta` (admite
+  NO_HUBO_VENTA), `solicitudPendienteId` (su tipo 2 PENDIENTE, para «Retirar») y `noSePuedePedir` (texto fijo si ya no
+  se puede pedir: devolución registrada, devolución pendiente, cargo no pagado, otra solicitud pendiente o el cargo ya
+  no existe; si no, `null`).
+- **Pedir** (`SolicitudService.pedirDeshacer(cobroId, PedirDeshacer{motivo, motivoDeshacer})`): valida lo mismo que la
+  6c-3 revalida al aceptar, en este orden: motivo obligatorio y hasta 500 (400, el límite de los otros tipos); el cobro
+  existe en la escuela (404); origen PROFESOR y cobrado por él (403; ya lo da antes `@acceso.cobroPropioDelProfesor`);
+  ACTIVO (409 «El cobro ya no está activo.»); en una entrega (409 «El cobro no va en una entrega: deshazlo tú mismo
+  desde lo que llevas encima.»); entrega ACTIVA (409 «La entrega ya está anulada.»); con cargo (409 «El cargo del cobro
+  ya no existe.»); sin devolución ni devolución pendiente (409 con la razón de `CobroService.razonDeDevolucion`); cargo
+  pagado (409 «El cargo ya no está pagado.»); con NO_HUBO_VENTA, que fue su venta (400 «No fue una venta suya…», como
+  A4); y ninguna solicitud PENDIENTE sobre el cobro (409 `YA_PENDIENTE`; la clave única de V31_8 es la red). Crear no
+  bloquea filas (como los tipos 1 y 3): si el estado cambia entre pedir y aceptar, la 6c-3 lo cierra `NO_APLICABLE`.
+- **`motivoDeshacer`** sin valor → `AUN_NO_PAGADO` (como el cuerpo vacío de A4); se guarda siempre.
+- **Sede de la solicitud** = `cobro.sede_id` (§6.1: «del cobro»); la entrega es de la misma sede (`registrarEntrega`
+  exige cobros de su sede). Instantáneas del cobro: alumno, concepto e importe (dos decimales).
+- **Registro:** `SOLICITUDES SOLICITUD_CREADA sede=#S solicitud=#n cobro=#c cargo=#g entrega=#e` (solo ids, nunca el
+  motivo), en la misma transacción.
+- **Retirar** su tipo 2 pendiente: la ruta de la 6c-5 (`POST /api/caja/profesor/solicitudes/{id}/retirar`) ya lo
+  cubre (`EncargoService.retirarEncargo`); ajena, 403.
+- **Listar sus solicitudes de deshacer:** `GET /api/caja/profesor/solicitudes` (6c-5) ya devuelve las suyas de tipo 2
+  (abiertas y cerradas recientes). No hace falta ruta nueva.
+- **Rutas** (nuevas; ninguna casilla existente cambia; bajo `/api/caja/profesor/**`, su lista blanca):
+  - `GET /api/caja/profesor/cobros-entregados-recientes`: `hasAuthority('ROLE_PROFESOR')`.
+  - `POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer {motivo, motivoDeshacer}`:
+    `@acceso.cobroPropioDelProfesor(#cobroId)`; 201 con la solicitud (`SolicitudDTOs.Solicitud`).
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/PedirDeshacerIntegrationTest.java` (escena de `AceptarSolicitudesIntegrationTest` con prof1
+  solo PROFESOR en gA y prof2 FAMILIA + PROFESOR en gA2; otra escuela para el aislamiento).
+- Modificar: la matriz (3 líneas: GET, HEAD y POST), `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_CAJA_6B2`),
+  `T/services/SolicitudServiceAceptarTest.java` (constructor nuevo).
+
+- [x] **Paso 1: escribir los tests que fallan:**
+  - `pedirYAceptar_dePuntaAPunta_saldoIgual`: prof1 cobra y entrega; sale en entregados recientes; pide por su ruta
+    (201, PENDIENTE, sede A, `motivoDeshacer`, `propia`); sale con `solicitudPendienteId` y en sus solicitudes; registro
+    solo con ids; P acepta por `/api/solicitudes`: saldo igual, cobro ANULADO, ERROR en la entrega y la entrega con
+    ese ERROR en `movimientosDeCobro`; el cobro sale de entregados recientes.
+  - `pedirDeshacer_noHuboVenta_soloDeSuVenta`: su venta, 201 con NO_HUBO_VENTA; un cargo de la gestión, 400.
+  - `pedirDeshacer_409PorCadaCondicion`: sin entregar; entrega anulada (el cobro vuelve a pendiente); entrega
+    ANULADA con el cobro dentro (SQL); cobro anulado; cargo borrado; devolución registrada; devolución pendiente; ya
+    pendiente (tipo 2 y tipo 1 pedido antes de entregar). Nada creado.
+  - `dosPedirALaVez_201Y409` (ronda 1 de la revisión, tres vueltas): {201, 409} con `YA_PENDIENTE`, nunca 500; una
+    sola PENDIENTE.
+  - `pedirDeshacer_motivoObligatorio`: sin cuerpo, vacío o de 501, 400; de 500, 201.
+  - `pedirDeshacer_cobroAjeno403_yAislamiento`: prof2, gestión, propietario, cobro de tesorería y de otra escuela.
+  - `retirarSuTipo2_porLaRutaDelProfesor_ajena403`: prof2 y la ruta de gestión, 403; prof1, 200 RETIRADA; puede
+    volver a pedirlo.
+  - `entregadosRecientes_30Dias_soloLosSuyos_conSuEstado`: 31 días fuera, 29 dentro, orden, otro profesor y otra
+    escuela fuera, `venta`, `noSePuedePedir` con devolución y con el cargo no pagado (ronda 1); gestión 403.
+  - `entregadosRecientes_tope50`.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='PedirDeshacerIntegrationTest,MatrizPermisosTest'
+  -DexcludedGroups=migracion`: 404/405 en las rutas nuevas y la matriz sin sus líneas.
+
+### Tarea 2: implementar
+
+**Ficheros:** `J/controllers/CajaController.java`, `J/services/CajaService.java`, `J/services/SolicitudService.java`,
+`J/dtos/request/SolicitudRequests.java` (`PedirDeshacer`), `J/dtos/response/CajaDTOs.java` (`CobroEntregadoReciente`).
+
+- [x] **Paso 1: implementar** lo de los criterios.
+- [x] **Paso 2: comprobar que pasan.** `mvn test -Dtest='PedirDeshacerIntegrationTest,EncargosIntegrationTest,
+  AceptarSolicitudesIntegrationTest,MatrizPermisosTest,SolicitudServiceAceptarTest' -DexcludedGroups=migracion`.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] **Paso 1:** nota en `matriz-endpoints.md` (3 líneas nuevas; ninguna casilla existente cambia).
+- [x] **Paso 2:** `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion`: BUILD SUCCESS, con los dorados
+  de Moiskimdo sin tocar.
+- [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(caja): pedir deshacer un cobro ya entregado (6c-4)` (lo hace el router).
 
 ---
 

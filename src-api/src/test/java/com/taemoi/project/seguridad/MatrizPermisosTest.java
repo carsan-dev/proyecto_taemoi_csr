@@ -368,6 +368,15 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		// él y que el cobro es suyo y sin entregar).
 		m.put("POST /api/caja/profesor/solicitudes/{id}/devolucion",
 				"integracion.DevolucionesIntegrationTest#devolucionDelProfesor_soloSiLlevaElDinero");
+		// Pieza 6c-4 (D6c-14, decisión 193): sus entregados recientes (el servicio filtra por su cuenta) y pedir deshacer
+		// un cobro suyo ya entregado (@acceso.cobroPropioDelProfesor; el servicio exige la entrega ACTIVA).
+		String deshacer = "integracion.PedirDeshacerIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/caja/profesor/cobros-entregados-recientes",
+					deshacer + "entregadosRecientes_30Dias_soloLosSuyos_conSuEstado");
+		}
+		m.put("POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer",
+				deshacer + "pedirDeshacer_cobroAjeno403_yAislamiento");
 		return Map.copyOf(m);
 	}
 

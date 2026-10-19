@@ -22,6 +22,7 @@ import com.taemoi.project.dtos.response.CajaDTOs;
 import com.taemoi.project.dtos.response.SolicitudDTOs;
 import com.taemoi.project.services.CajaService;
 import com.taemoi.project.services.EncargoService;
+import com.taemoi.project.services.SolicitudService;
 
 /**
  * Caja de sede (pieza 6b-2). Sin pantalla todavía (la 6b-3).
@@ -35,6 +36,9 @@ import com.taemoi.project.services.EncargoService;
  * <li>Pieza 6c-5, encargos del profesor (bajo {@code /api/caja/profesor/**}, su lista blanca): productos
  * encargables, pedir para un alumno de sus grupos ({@code @acceso.alumnoDeMisGrupos}), sus solicitudes, retirar y
  * marcar entregado (el servicio exige, con la fila bloqueada, que la pidió él).</li>
+ * <li>Pieza 6c-4, deshacer un cobro ya entregado (decisión 193, D6c-14): sus entregados recientes y pedir deshacer un
+ * cobro suyo ({@code @acceso.cobroPropioDelProfesor}; la entrega ACTIVA la exige el servicio). Lo acepta el
+ * propietario desde {@code /api/solicitudes}; lo retira él por la ruta de sus solicitudes.</li>
  * </ul>
  * Errores con el formato de {@code GlobalExceptionHandler}: 400 {@code {"mensaje"}} (datos no válidos), 404 (no existe en
  * la escuela), 409 (estado: ya cobrado, ya entregado, ya anulado, concurrencia) y 403.
@@ -45,10 +49,12 @@ public class CajaController {
 
 	private final CajaService caja;
 	private final EncargoService encargos;
+	private final SolicitudService solicitudes;
 
-	public CajaController(CajaService caja, EncargoService encargos) {
+	public CajaController(CajaService caja, EncargoService encargos, SolicitudService solicitudes) {
 		this.caja = caja;
 		this.encargos = encargos;
+		this.solicitudes = solicitudes;
 	}
 
 	// ------------------------------------------------------------------ profesor
@@ -156,6 +162,23 @@ public class CajaController {
 	public ResponseEntity<SolicitudDTOs.Solicitud> registrarDevolucion(@PathVariable Long id,
 			@RequestBody(required = false) SolicitudRequests.Devolucion peticion) {
 		return ResponseEntity.ok(encargos.registrarDevolucionProfesor(id, peticion == null ? null : peticion.nota()));
+	}
+
+	// ------------------------------------------------------------------ profesor: deshacer un cobro entregado (6c-4)
+
+	/** D6c-14: sus cobros entregados a la sede en los últimos 30 días (50 como mucho), los más recientes primero. */
+	@GetMapping("/profesor/cobros-entregados-recientes")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<List<CajaDTOs.CobroEntregadoReciente>> cobrosEntregadosRecientes() {
+		return ResponseEntity.ok(caja.cobrosEntregadosRecientesDelProfesor());
+	}
+
+	/** Decisión 193: pide al propietario deshacer un cobro suyo ya entregado (201 con la solicitud PENDIENTE). */
+	@PostMapping("/profesor/cobros/{cobroId}/pedir-deshacer")
+	@PreAuthorize("@acceso.cobroPropioDelProfesor(#cobroId)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> pedirDeshacer(@PathVariable Long cobroId,
+			@RequestBody(required = false) SolicitudRequests.PedirDeshacer peticion) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(solicitudes.pedirDeshacer(cobroId, peticion));
 	}
 
 	// ------------------------------------------------------------------ caja de sede

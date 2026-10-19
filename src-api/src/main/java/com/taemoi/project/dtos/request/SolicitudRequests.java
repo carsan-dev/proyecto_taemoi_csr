@@ -46,4 +46,12 @@ public final class SolicitudRequests {
 	 */
 	public record Devolucion(String nota) {
 	}
+
+	/**
+	 * Pieza 6c-4 (decisión 193): el profesor pide deshacer un cobro suyo ya entregado a la sede,
+	 * {@code POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer}. Motivo obligatorio, máximo 500.
+	 * {@code motivoDeshacer}, como en el deshacer de siempre (A4): sin valor, {@code AUN_NO_PAGADO}.
+	 */
+	public record PedirDeshacer(String motivo, CajaRequests.MotivoDeshacer motivoDeshacer) {
+	}
 }

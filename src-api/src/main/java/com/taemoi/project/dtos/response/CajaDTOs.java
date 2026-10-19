@@ -47,6 +47,19 @@ public final class CajaDTOs {
 	public record ProductoVendible(Long id, String concepto, BigDecimal precio) {
 	}
 
+	/**
+	 * Pieza 6c-4 (D6c-14): un cobro del profesor de la sesión ya entregado a la sede en los últimos 30 días, para
+	 * «Entregados recientes» de Mi caja. {@code venta}: admite deshacerlo como NO_HUBO_VENTA (como en {@link CobroCaja}).
+	 * {@code solicitudPendienteId}: su solicitud de deshacer PENDIENTE (para retirarla), o {@code null}.
+	 * {@code noSePuedePedir}: por qué ya no se puede pedir deshacerlo (devolución registrada o pendiente, otra solicitud
+	 * pendiente, el cargo ya no existe o ya no está pagado), o {@code null} si se puede. Sin totales.
+	 */
+	public record CobroEntregadoReciente(Long cobroId, Long cargoId, Long alumnoId, String alumnoNombre,
+			String alumnoApellidos, String concepto, BigDecimal importe, Date fechaCobro, Long entregaId,
+			LocalDateTime fechaEntrega, Long sedeId, String sedeNombre, boolean venta, Long solicitudPendienteId,
+			String noSePuedePedir) {
+	}
+
 	/** Lo que el profesor de la sesión lleva pendiente de entregar: sus cobros, cuántos y cuánto suman. */
 	public record MisCobrosPendientes(int numeroCobros, BigDecimal importe, List<CobroCaja> cobros) {
 	}

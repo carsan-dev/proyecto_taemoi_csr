@@ -103,6 +103,9 @@ public class CajaService {
 
 	private static final int MAX_TEXTO = 500;
 	private static final int TAMANO_PAGINA_MAXIMO = 100;
+	/** Pieza 6c-4 (D6c-14): «Entregados recientes» = los últimos 30 días, 50 como mucho. */
+	static final int DIAS_ENTREGADOS_RECIENTES = 30;
+	static final int MAX_ENTREGADOS_RECIENTES = 50;
 
 	static final String NOTA_OBLIGATORIA_DIFERENCIA = "Lo contado no coincide con lo declarado: la nota es obligatoria.";
 	static final String COBRO_YA_ENTREGADO = "Algún cobro ya está incluido en una entrega de caja.";
@@ -253,6 +256,94 @@ public class CajaService {
 		BigDecimal total = dosDecimales(
 				filas.stream().map(CajaDTOs.CobroCaja::importe).reduce(BigDecimal.ZERO, BigDecimal::add));
 		return new CajaDTOs.MisCobrosPendientes(filas.size(), total, filas);
+	}
+
+	/**
+	 * Pieza 6c-4 (D6c-14): sus cobros ya entregados a la sede (origen PROFESOR, cobrados por él, ACTIVOS, en una entrega
+	 * ACTIVA con fecha en los últimos {@value #DIAS_ENTREGADOS_RECIENTES} días), {@value #MAX_ENTREGADOS_RECIENTES} como
+	 * mucho, de la entrega más reciente a la más antigua. Cada fila dice si tiene su solicitud de deshacer pendiente y,
+	 * si ya no se puede pedir, por qué (la misma comprobación que {@link SolicitudService#pedirDeshacer}). Una consulta
+	 * para las filas y consultas fijas para toda la lista (sin N+1). Las dos entidades llevan {@code @TenantId}.
+	 */
+	public List<CajaDTOs.CobroEntregadoReciente> cobrosEntregadosRecientesDelProfesor() {
+		Long usuarioId = CobroService.usuarioActualId();
+		if (usuarioId == null) {
+			return List.of();
+		}
+		List<Object[]> filas = em.createQuery("""
+				SELECT c, e.fecha FROM Cobro c, EntregaCaja e
+				WHERE e.id = c.entregaCajaId AND c.cobradoPorUsuarioId = :usuario
+				  AND c.origen = com.taemoi.project.entities.OrigenCobro.PROFESOR
+				  AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO
+				  AND e.estado = com.taemoi.project.entities.EstadoEntregaCaja.ACTIVA AND e.fecha >= :desde
+				ORDER BY e.fecha DESC, c.id DESC""", Object[].class).setParameter("usuario", usuarioId)
+				.setParameter("desde", LocalDateTime.now(ZONA).minusDays(DIAS_ENTREGADOS_RECIENTES))
+				.setMaxResults(MAX_ENTREGADOS_RECIENTES).getResultList();
+		if (filas.isEmpty()) {
+			return List.of();
+		}
+		List<Cobro> lista = filas.stream().map(f -> (Cobro) f[0]).toList();
+		List<Long> cobroIds = lista.stream().map(Cobro::getId).toList();
+		List<Long> cargoIds = lista.stream().map(Cobro::getProductoAlumnoId).filter(Objects::nonNull).distinct()
+				.toList();
+		Map<Long, String[]> nombres = nombresDeAlumnos(lista.stream().map(Cobro::getAlumnoId).filter(Objects::nonNull)
+				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
+		Map<Long, String> nombresDeSedes = new HashMap<>();
+		List<Long> sedeIds = lista.stream().map(Cobro::getSedeId).filter(Objects::nonNull).distinct().toList();
+		if (!sedeIds.isEmpty()) {
+			for (Object[] f : em.createQuery("SELECT s.id, s.nombre FROM Sede s WHERE s.id IN :ids", Object[].class)
+					.setParameter("ids", sedeIds).getResultList()) {
+				nombresDeSedes.put((Long) f[0], (String) f[1]);
+			}
+		}
+		Set<Long> ventas = productosAlumno.cobrosQueSonVentaDelProfesor(lista);
+		// Solicitudes PENDIENTES de esos cobros: la suya de deshacer (para retirarla) u otra que impide pedir.
+		Map<Long, Object[]> pendientes = new HashMap<>();
+		for (Object[] f : em.createQuery("SELECT s.cobroId, s.id, s.tipo, s.solicitadoPorUsuarioId FROM Solicitud s "
+				+ "WHERE s.cobroId IN :ids AND s.estado = com.taemoi.project.entities.EstadoSolicitud.PENDIENTE",
+				Object[].class).setParameter("ids", cobroIds).getResultList()) {
+			pendientes.put((Long) f[0], f);
+		}
+		Set<Long> conDevolucion = new java.util.HashSet<>(em.createQuery("SELECT m.cobroId FROM MovimientoCaja m "
+				+ "WHERE m.cobroId IN :ids AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+				+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO", Long.class)
+				.setParameter("ids", cobroIds).getResultList());
+		Set<Long> conDevolucionPendiente = cargoIds.isEmpty() ? Set.of()
+				: new java.util.HashSet<>(em.createQuery("SELECT s.productoAlumnoId FROM Solicitud s "
+						+ "WHERE s.productoAlumnoId IN :ids AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+						+ "AND s.devolucionPendiente = TRUE", Long.class).setParameter("ids", cargoIds).getResultList());
+		Set<Long> cargosNoPagados = cargoIds.isEmpty() ? Set.of()
+				: new java.util.HashSet<>(em.createQuery("SELECT pa.id FROM ProductoAlumno pa WHERE pa.id IN :ids "
+						+ "AND (pa.pagado IS NULL OR pa.pagado = FALSE)", Long.class).setParameter("ids", cargoIds)
+						.getResultList());
+		List<CajaDTOs.CobroEntregadoReciente> resultado = new ArrayList<>(filas.size());
+		for (Object[] f : filas) {
+			Cobro c = (Cobro) f[0];
+			Object[] pendiente = pendientes.get(c.getId());
+			Long suyaPendiente = pendiente != null
+					&& pendiente[2] == com.taemoi.project.entities.TipoSolicitud.DESHACER_COBRO_ENTREGADO
+					&& usuarioId.equals(pendiente[3]) ? (Long) pendiente[1] : null;
+			String noSePuedePedir;
+			if (c.getProductoAlumnoId() == null) {
+				noSePuedePedir = SolicitudService.CARGO_DEL_COBRO_NO_EXISTE;
+			} else if (conDevolucion.contains(c.getId())) {
+				noSePuedePedir = EjecucionSolicitud.CON_DEVOLUCION;
+			} else if (conDevolucionPendiente.contains(c.getProductoAlumnoId())) {
+				noSePuedePedir = EjecucionSolicitud.DEVOLUCION_PENDIENTE;
+			} else if (cargosNoPagados.contains(c.getProductoAlumnoId())) {
+				noSePuedePedir = EjecucionSolicitud.CARGO_NO_PAGADO;
+			} else if (pendiente != null) {
+				noSePuedePedir = SolicitudService.YA_PENDIENTE;
+			} else {
+				noSePuedePedir = null;
+			}
+			String[] nombre = nombres.getOrDefault(c.getAlumnoId(), new String[2]);
+			resultado.add(new CajaDTOs.CobroEntregadoReciente(c.getId(), c.getProductoAlumnoId(), c.getAlumnoId(),
+					nombre[0], nombre[1], c.getConcepto(), dosDecimales(c.getImporte()), c.getFechaCobro(),
+					c.getEntregaCajaId(), (LocalDateTime) f[1], c.getSedeId(), nombresDeSedes.get(c.getSedeId()),
+					ventas.contains(c.getId()), suyaPendiente, noSePuedePedir));
+		}
+		return resultado;
 	}
 
 	// ------------------------------------------------------------------ caja de sede: lectura

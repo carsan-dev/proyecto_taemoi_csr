@@ -67,7 +67,7 @@ class SolicitudServiceAceptarTest {
 		when(transacciones.getTransaction(any())).thenAnswer(i -> new SimpleTransactionStatus());
 		servicio = new SolicitudService(solicitudes, mock(CobroRepository.class), mock(ProductoAlumnoRepository.class),
 				mock(EntregaCajaRepository.class), mock(MovimientoCajaRepository.class), mock(GestionPorSede.class),
-				registro, productosAlumno, mock(CajaService.class), transacciones);
+				registro, productosAlumno, mock(CajaService.class), mock(CobroService.class), transacciones);
 		EntityManager em = mock(EntityManager.class);
 		TypedQuery<Object[]> consulta = mock(TypedQuery.class);
 		when(em.createQuery(anyString(), eq(Object[].class))).thenReturn(consulta);

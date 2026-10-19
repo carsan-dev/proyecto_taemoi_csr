@@ -177,6 +177,16 @@ regla de URL. El `cobroId` opcional de `POST /api/caja/sedes/{sedeId}/movimiento
   (`hasAuthority('ROLE_PROFESOR')`; el servicio exige, con la fila bloqueada, que lo pidió él (403) y que el cobro es
   suyo y sin entregar (409)); el resto de roles, `DENIEGA`.
 
+Pieza 6c-4 (pedir deshacer un cobro ya entregado, fase3-6c-plan.md §4d): 3 líneas nuevas; ninguna casilla existente
+cambia ni la regla de URL. Van bajo `/api/caja/profesor/**` (su lista blanca, declaradas en `PROFESOR_CAJA_6B2`).
+- `GET/HEAD /api/caja/profesor/cobros-entregados-recientes`: PROFESOR `PERMITE` declarado
+  (`hasAuthority('ROLE_PROFESOR')`; el servicio devuelve solo los cobros que cobró él, D6c-14).
+- `POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer`: PROFESOR `ALCANCE` (`@acceso.cobroPropioDelProfesor`; el
+  servicio exige además la entrega ACTIVA y lo demás que la 6c-3 revalida al aceptar: 409).
+- El resto de roles, `DENIEGA` en las tres (también PROPIETARIO, GESTOR y RESPONSABLE_SEDE). La aceptación va por
+  `POST /api/solicitudes/{id}/aceptar` (6c-3) y la retirada por `POST /api/caja/profesor/solicitudes/{id}/retirar`
+  (6c-5).
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

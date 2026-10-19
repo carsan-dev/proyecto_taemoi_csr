@@ -26,6 +26,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.taemoi.project.acceso.GestionPorSede;
+import com.taemoi.project.dtos.request.CajaRequests;
 import com.taemoi.project.dtos.request.SolicitudRequests;
 import com.taemoi.project.dtos.response.SolicitudDTOs;
 import com.taemoi.project.entities.Cobro;
@@ -35,6 +36,7 @@ import com.taemoi.project.entities.EstadoEntregaCaja;
 import com.taemoi.project.entities.EstadoMovimientoCaja;
 import com.taemoi.project.entities.EstadoSolicitud;
 import com.taemoi.project.entities.MovimientoCaja;
+import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Solicitud;
@@ -98,6 +100,11 @@ public class SolicitudService {
 	public static final String RECURSO_CAMBIADO = "El recurso ha cambiado mientras se pedía: vuelve a intentarlo.";
 	/** Pieza 6c-3: 400 al aceptar un encargo (se marca encargado, 6c-5). */
 	public static final String ENCARGO_NO_SE_ACEPTA = "Un encargo no se acepta: se marca encargado.";
+	/** Pieza 6c-4: 409 al pedir deshacer un cobro que aún no va en una entrega (lo deshace él mismo, A4). */
+	public static final String COBRO_SIN_ENTREGA = "El cobro no va en una entrega: deshazlo tú mismo desde lo que "
+			+ "llevas encima.";
+	/** Pieza 6c-4: 409 al pedir deshacer un cobro cuyo cargo se borró. */
+	public static final String CARGO_DEL_COBRO_NO_EXISTE = "El cargo del cobro ya no existe.";
 	/** MySQL: entrada duplicada en una clave única. */
 	private static final int MYSQL_CLAVE_DUPLICADA = 1062;
 	/** Las resueltas que devuelve la bandeja, las más recientes. */
@@ -122,6 +129,7 @@ public class SolicitudService {
 	private final RegistroAccionesSolicitudes registro;
 	private final ProductoAlumnoService productosAlumno;
 	private final CajaService caja;
+	private final CobroService cobroService;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -130,7 +138,7 @@ public class SolicitudService {
 	public SolicitudService(SolicitudRepository solicitudes, CobroRepository cobros, ProductoAlumnoRepository cargos,
 			EntregaCajaRepository entregas, MovimientoCajaRepository movimientos, GestionPorSede gestionPorSede,
 			RegistroAccionesSolicitudes registro, ProductoAlumnoService productosAlumno, CajaService caja,
-			PlatformTransactionManager transacciones) {
+			CobroService cobroService, PlatformTransactionManager transacciones) {
 		this.solicitudes = solicitudes;
 		this.cobros = cobros;
 		this.cargos = cargos;
@@ -140,6 +148,7 @@ public class SolicitudService {
 		this.registro = registro;
 		this.productosAlumno = productosAlumno;
 		this.caja = caja;
+		this.cobroService = cobroService;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -299,6 +308,85 @@ public class SolicitudService {
 		solicitud.setSedeId(movimiento.getSedeId());
 		solicitud.setAlumnoId(movimiento.getAlumnoId());
 		solicitud.setImporte(dosDecimales(movimiento.getImporte()));
+	}
+
+	/**
+	 * Pieza 6c-4 (decisión 193, fase3-6c-plan.md §4d): el profesor de la sesión pide deshacer un cobro suyo ya entregado
+	 * a la sede (tipo 2). Valida lo mismo que la 6c-3 revalida al aceptar: motivo (400), el cobro existe (404), es suyo
+	 * con origen PROFESOR (403; ya lo exige antes {@code @acceso.cobroPropioDelProfesor}), ACTIVO, en una entrega
+	 * ACTIVA, con su cargo, sin devolución ni devolución pendiente y con el cargo pagado (409); con NO_HUBO_VENTA, que
+	 * fue su venta (400, como A4); y ninguna otra solicitud pendiente sobre el cobro (409; la clave única de V31_8 es la
+	 * red). No bloquea filas (como los tipos 1 y 3): si el estado cambia antes de aceptar, la 6c-3 la cierra
+	 * {@code NO_APLICABLE}. Sede = la del cobro (la entrega es de la misma sede). Sin {@code motivoDeshacer},
+	 * {@code AUN_NO_PAGADO}. Registro {@code SOLICITUD_CREADA} con la entrega, solo ids.
+	 */
+	public SolicitudDTOs.Solicitud pedirDeshacer(Long cobroId, SolicitudRequests.PedirDeshacer peticion) {
+		String motivo = texto(peticion == null ? null : peticion.motivo(), "El motivo");
+		if (motivo == null) {
+			throw new IllegalArgumentException("El motivo es obligatorio.");
+		}
+		CajaRequests.MotivoDeshacer motivoDeshacer = peticion.motivoDeshacer() == null
+				? CajaRequests.MotivoDeshacer.AUN_NO_PAGADO
+				: peticion.motivoDeshacer();
+		Long usuario = usuarioDeLaSesion();
+		String endpoint = "/api/caja/profesor/cobros/" + cobroId + "/pedir-deshacer";
+		try {
+			return enTransaccion(() -> {
+				Cobro cobro = (cobroId == null ? Optional.<Cobro>empty() : cobros.findById(cobroId))
+						.orElseThrow(() -> new NoSuchElementException("El cobro no existe."));
+				if (cobro.getOrigen() != OrigenCobro.PROFESOR || !usuario.equals(cobro.getCobradoPorUsuarioId())) {
+					throw new AccessDeniedException("Acceso denegado.");
+				}
+				if (cobro.getEstado() != EstadoCobro.ACTIVO) {
+					throw new IllegalStateException(EjecucionSolicitud.COBRO_NO_ACTIVO);
+				}
+				if (cobro.getEntregaCajaId() == null) {
+					throw new IllegalStateException(COBRO_SIN_ENTREGA);
+				}
+				EntregaCaja entrega = entregas.findById(cobro.getEntregaCajaId()).orElse(null);
+				if (entrega == null || entrega.getEstado() != EstadoEntregaCaja.ACTIVA) {
+					throw new IllegalStateException(EjecucionSolicitud.ENTREGA_ANULADA);
+				}
+				ProductoAlumno cargo = cobro.getProductoAlumnoId() == null ? null
+						: cargos.findById(cobro.getProductoAlumnoId()).orElse(null);
+				if (cargo == null) {
+					throw new IllegalStateException(CARGO_DEL_COBRO_NO_EXISTE);
+				}
+				cobroService.razonDeDevolucion(cobro.getId(), cargo.getId()).ifPresent(razon -> {
+					throw new IllegalStateException(razon);
+				});
+				if (!Boolean.TRUE.equals(cargo.getPagado())) {
+					throw new IllegalStateException(EjecucionSolicitud.CARGO_NO_PAGADO);
+				}
+				if (motivoDeshacer == CajaRequests.MotivoDeshacer.NO_HUBO_VENTA
+						&& !productosAlumno.cobrosQueSonVentaDelProfesor(List.of(cobro)).contains(cobro.getId())) {
+					throw new IllegalArgumentException(EjecucionSolicitud.NO_ES_VENTA);
+				}
+				if (solicitudes.existsByCobroIdAndEstado(cobro.getId(), EstadoSolicitud.PENDIENTE)) {
+					throw new IllegalStateException(YA_PENDIENTE);
+				}
+				Solicitud solicitud = new Solicitud();
+				solicitud.setTipo(TipoSolicitud.DESHACER_COBRO_ENTREGADO);
+				solicitud.setEstado(SolicitudTransiciones.estadoInicial(TipoSolicitud.DESHACER_COBRO_ENTREGADO));
+				solicitud.setSolicitadoPorUsuarioId(usuario);
+				solicitud.setSolicitadoEn(LocalDateTime.now(CajaService.ZONA));
+				solicitud.setMotivo(motivo);
+				solicitud.setMotivoDeshacer(motivoDeshacer);
+				solicitud.setCobroId(cobro.getId());
+				solicitud.setProductoAlumnoId(cargo.getId());
+				solicitud.setSedeId(cobro.getSedeId());
+				solicitud.setAlumnoId(cobro.getAlumnoId());
+				solicitud.setConcepto(cobro.getConcepto());
+				solicitud.setImporte(dosDecimales(cobro.getImporte()));
+				Solicitud guardada = solicitudes.saveAndFlush(solicitud);
+				registro.registrar(RegistroAccionesSolicitudes.Accion.SOLICITUD_CREADA, endpoint, guardada,
+						Map.of("entrega", entrega.getId()));
+				em.flush();
+				return dtos(List.of(guardada), usuario).get(0);
+			});
+		} catch (DataIntegrityViolationException error) {
+			throw traducirViolacionAlCrear(error);
+		}
 	}
 
 	// ------------------------------------------------------------------ retirar y denegar
