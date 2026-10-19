@@ -158,7 +158,7 @@
                       id="grupoId"
                       class="admin-form-control form-select"
                       aria-label="Grupo del turno">
-                      <option value="">Sin grupo asignado</option>
+                      <option value="" data-opcion-real>Sin grupo asignado</option>
                       @for (grupo of grupos; track grupo.id) {
                         <option [value]="grupo.id">{{ grupo.nombre }}</option>
                       }

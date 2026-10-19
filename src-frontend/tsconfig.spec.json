@@ -26,6 +26,7 @@
     "src/app/componentes/generales/informe-pdf-modal/informe-pdf-modal.component.spec.ts",
     "src/app/componentes/generales/pdf-viewer/pdf-viewer.component.spec.ts",
     "src/app/componentes/endpoints/listado-alumnos/informes-preview.spec.ts",
+    "src/app/directives/searchable-select.directive.spec.ts",
     "src/app/componentes/endpoints/listado-alumnos/listado-alumnos.deportes.spec.ts",
     "src/app/componentes/endpoints/listado-alumnos/listado-alumnos.filtro-deporte.spec.ts",
     "src/app/core/interceptors/error.interceptor.spec.ts",
