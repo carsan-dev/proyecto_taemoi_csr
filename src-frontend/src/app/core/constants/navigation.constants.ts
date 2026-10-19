@@ -259,6 +259,13 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     priority: 3,
   },
   {
+    label: 'Caja de sede',
+    route: '/cajaSede',
+    icon: 'bi-safe2',
+    activePrefixes: ['/cajaSede'],
+    priority: 4,
+  },
+  {
     label: 'Registro de acciones',
     route: '/auditoriaSistema',
     icon: 'bi-journal-text',

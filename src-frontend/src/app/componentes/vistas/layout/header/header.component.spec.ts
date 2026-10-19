@@ -130,6 +130,26 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 
+  it('incluye «Caja de sede» en el menú de administración, enlazada a /cajaSede', async () => {
+    const el = await renderizar(false);
+
+    const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/cajaSede"]');
+    expect(enlace?.textContent?.trim()).toBe('Caja de sede');
+    expect(enlacesMenu(el)).toContain('Tesorería y Cobros');
+  });
+
+  it('la fila de accesos rápidos lleva «Caja de sede» justo después de Tesorería', async () => {
+    const el = await renderizar(false);
+
+    const enlaces = Array.from(el.querySelectorAll<HTMLAnchorElement>('.admin-quick-nav a.quick-link'));
+    const hrefs = enlaces.map((a) => a.getAttribute('href'));
+    const posicion = hrefs.indexOf('/cajaSede');
+
+    expect(posicion).toBeGreaterThan(0);
+    expect(enlaces[posicion].getAttribute('aria-label')).toBe('Caja de sede');
+    expect(hrefs[posicion - 1]).toBe('/tesoreriaCobros');
+  });
+
   it('la oculta cuando el sondeo de plataforma es false', async () => {
     const el = await renderizar(false);
 

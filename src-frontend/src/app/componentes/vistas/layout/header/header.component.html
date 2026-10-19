@@ -479,6 +479,12 @@
         <span>Tesorería y Cobros</span>
       </a>
     </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/cajaSede']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-safe2"></i>
+        <span>Caja de sede</span>
+      </a>
+    </li>
     @if (isAdminOnly) {
     <li>
       <a class="menu-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active" (click)="closeAdminMenu()">
