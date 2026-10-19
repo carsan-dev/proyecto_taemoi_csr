@@ -76,8 +76,13 @@ import jakarta.persistence.PersistenceContext;
  * <p><b>Concurrencia</b> (READ_COMMITTED, como {@link CobroService}): registrar una entrega bloquea sus cobros con
  * SELECT ... FOR UPDATE en orden de id ANTES de validarlos; anular una entrega bloquea la entrega y después sus cobros
  * (en orden de id); la reversión de un cobro (PUT del cargo, convocatoria, deshacer del profesor) bloquea el cargo y
- * después el cobro ({@link CobroService#anular}). Ninguna vía bloquea un cobro y después un cargo o una entrega, así
- * que no hay ciclos de espera. {@code @Version} en las tres entidades como red de seguridad.
+ * después el cobro ({@link CobroService#anular}). Estas vías no bloquean un cobro y después un cargo o una entrega.
+ * Excepción: borrar un alumno o una convocatoria anula los cobros de sus cargos con un UPDATE masivo
+ * ({@link CobroService#alBorrarCargos}) ANTES de borrar los cargos (cobro → cargo); su cruce con una reversión puede
+ * producir un interbloqueo que InnoDB detecta: la víctima recibe 409 (concurrencia) y su transacción se deshace entera.
+ * {@code @Version} en las tres entidades como red de seguridad. Pieza 6c-3: aceptar una solicitud bloquea antes la fila
+ * de la solicitud y después lo de siempre (A7: entrega → cobros; A9: el movimiento); deshacer un cobro ya entregado
+ * (decisión 193) bloquea cargo → entrega → cobro.
  *
  * <p>Toda escritura queda en el registro de acciones ({@link RegistroAccionesCaja}) en su misma transacción.
  */
@@ -417,48 +422,84 @@ public class CajaService {
 			if (entrega.getEstado() == EstadoEntregaCaja.ANULADA) {
 				throw new IllegalStateException("La entrega ya está anulada.");
 			}
-			LocalDateTime ahora = LocalDateTime.now(ZONA);
-			entrega.setEstado(EstadoEntregaCaja.ANULADA);
-			entrega.setAnuladaPorUsuarioId(usuario);
-			entrega.setAnuladaEn(ahora);
-			entrega.setMotivoAnulacion(motivo);
-			entregas.save(entrega);
-			List<Long> liberados = new ArrayList<>();
-			List<Long> sinCargo = new ArrayList<>();
-			for (Cobro cobro : cobros.bloquearDeEntregaEnOrden(entregaId).stream().map(this::releer).toList()) {
-				cobro.setEntregaCajaId(null);
-				if (cobro.getProductoAlumnoId() == null && cobro.getEstado() == EstadoCobro.ACTIVO) {
-					// Su cargo se borró mientras estaba entregado (6b-1: siguió ACTIVO sin cargo). Al anular la entrega no
-					// vuelve a pendiente: se anula como los cobros no entregados de un cargo borrado.
-					cobro.setEstado(EstadoCobro.ANULADO);
-					cobro.setAnuladoPorUsuarioId(usuario);
-					cobro.setAnuladoEn(LocalDateTime.now());
-					cobro.setMotivoAnulacion(CobroService.MOTIVO_CARGO_BORRADO);
-					sinCargo.add(cobro.getId());
-				} else {
-					liberados.add(cobro.getId());
-				}
-				cobros.save(cobro);
-			}
-			List<Long> anulados = new ArrayList<>();
-			for (MovimientoCaja movimiento : movimientos.findByEntregaCajaIdInOrderByIdAsc(List.of(entregaId))) {
-				if (movimiento.getEstado() == EstadoMovimientoCaja.ACTIVO) {
-					anularMovimiento(movimiento, usuario, ahora, motivo);
-					anulados.add(movimiento.getId());
-				}
-			}
-			Map<String, Object> implicados = new LinkedHashMap<>();
-			implicados.put("entrega", entregaId);
-			implicados.put("cobros", liberados);
-			if (!sinCargo.isEmpty()) {
-				implicados.put("cobrosAnuladosSinCargo", sinCargo);
-			}
-			implicados.put("movimientos", anulados);
-			registro.registrar(RegistroAccionesCaja.Accion.ENTREGA_ANULADA,
-					"/api/caja/entregas/" + entregaId + "/anular", entrega.getSedeId(), implicados);
+			anularEntregaBloqueada(entrega, usuario, motivo, "/api/caja/entregas/" + entregaId + "/anular", null);
 			em.flush();
 			return dtosDeEntregas(List.of(entrega)).get(0);
 		});
+	}
+
+	/**
+	 * Pieza 6c-3: anula la entrega de una solicitud aceptada (tipo 3), DENTRO de la transacción de quien acepta (con la
+	 * solicitud ya bloqueada; después, entrega → cobros como A7). Revalida sin lanzar: no existe o ya está anulada →
+	 * no aplica y no toca nada. Si aplica, lo mismo que A7 con el motivo «Solicitud #n: {motivo}» y {@code solicitud=#n}
+	 * en {@code ENTREGA_ANULADA}.
+	 */
+	public EjecucionSolicitud anularEntregaPorSolicitud(Long entregaId, long solicitudId, String motivo) {
+		Long usuario = usuarioDeLaSesion();
+		return enTransaccion(() -> {
+			EntregaCaja entrega = entregaId == null ? null
+					: entregas.bloquearPorId(entregaId).map(this::releer).orElse(null);
+			if (entrega == null) {
+				return EjecucionSolicitud.noAplica(EjecucionSolicitud.ENTREGA_NO_EXISTE);
+			}
+			if (entrega.getEstado() == EstadoEntregaCaja.ANULADA) {
+				return EjecucionSolicitud.noAplica(EjecucionSolicitud.ENTREGA_ANULADA);
+			}
+			anularEntregaBloqueada(entrega, usuario, motivoDeSolicitud(solicitudId, motivo),
+					"/api/solicitudes/" + solicitudId + "/aceptar", solicitudId);
+			return EjecucionSolicitud.hecha();
+		});
+	}
+
+	/**
+	 * Cuerpo común de A7 y del tipo 3 aceptado, con la entrega ya bloqueada y ACTIVA: la anula, libera sus cobros
+	 * (bloqueados en orden de id), anula sus movimientos ACTIVOS y lo registra ({@code solicitud=#n} al final si viene
+	 * de una solicitud).
+	 */
+	private void anularEntregaBloqueada(EntregaCaja entrega, Long usuario, String motivo, String endpoint,
+			Long solicitudId) {
+		Long entregaId = entrega.getId();
+		LocalDateTime ahora = LocalDateTime.now(ZONA);
+		entrega.setEstado(EstadoEntregaCaja.ANULADA);
+		entrega.setAnuladaPorUsuarioId(usuario);
+		entrega.setAnuladaEn(ahora);
+		entrega.setMotivoAnulacion(motivo);
+		entregas.save(entrega);
+		List<Long> liberados = new ArrayList<>();
+		List<Long> sinCargo = new ArrayList<>();
+		for (Cobro cobro : cobros.bloquearDeEntregaEnOrden(entregaId).stream().map(this::releer).toList()) {
+			cobro.setEntregaCajaId(null);
+			if (cobro.getProductoAlumnoId() == null && cobro.getEstado() == EstadoCobro.ACTIVO) {
+				// Su cargo se borró mientras estaba entregado (6b-1: siguió ACTIVO sin cargo). Al anular la entrega no
+				// vuelve a pendiente: se anula como los cobros no entregados de un cargo borrado.
+				cobro.setEstado(EstadoCobro.ANULADO);
+				cobro.setAnuladoPorUsuarioId(usuario);
+				cobro.setAnuladoEn(LocalDateTime.now());
+				cobro.setMotivoAnulacion(CobroService.MOTIVO_CARGO_BORRADO);
+				sinCargo.add(cobro.getId());
+			} else {
+				liberados.add(cobro.getId());
+			}
+			cobros.save(cobro);
+		}
+		List<Long> anulados = new ArrayList<>();
+		for (MovimientoCaja movimiento : movimientos.findByEntregaCajaIdInOrderByIdAsc(List.of(entregaId))) {
+			if (movimiento.getEstado() == EstadoMovimientoCaja.ACTIVO) {
+				anularMovimiento(movimiento, usuario, ahora, motivo);
+				anulados.add(movimiento.getId());
+			}
+		}
+		Map<String, Object> implicados = new LinkedHashMap<>();
+		implicados.put("entrega", entregaId);
+		implicados.put("cobros", liberados);
+		if (!sinCargo.isEmpty()) {
+			implicados.put("cobrosAnuladosSinCargo", sinCargo);
+		}
+		implicados.put("movimientos", anulados);
+		if (solicitudId != null) {
+			implicados.put("solicitud", solicitudId);
+		}
+		registro.registrar(RegistroAccionesCaja.Accion.ENTREGA_ANULADA, endpoint, entrega.getSedeId(), implicados);
 	}
 
 	/**
@@ -562,7 +603,43 @@ public class CajaService {
 		});
 	}
 
+	/**
+	 * Pieza 6c-3: anula el movimiento de una solicitud aceptada (tipo 3), DENTRO de la transacción de quien acepta (con
+	 * la solicitud ya bloqueada; después, el movimiento como A9). Revalida sin lanzar: no existe, es el automático de una
+	 * entrega o ya está anulado → no aplica y no toca nada. Si aplica, lo mismo que A9 con el motivo «Solicitud #n:
+	 * {motivo}» y {@code solicitud=#n} en {@code MOVIMIENTO_ANULADO}.
+	 */
+	public EjecucionSolicitud anularMovimientoPorSolicitud(Long movimientoId, long solicitudId, String motivo) {
+		Long usuario = usuarioDeLaSesion();
+		return enTransaccion(() -> {
+			MovimientoCaja movimiento = movimientoId == null ? null
+					: movimientos.bloquearPorId(movimientoId).map(this::releer).orElse(null);
+			if (movimiento == null) {
+				return EjecucionSolicitud.noAplica(EjecucionSolicitud.MOVIMIENTO_NO_EXISTE);
+			}
+			if (movimiento.getEntregaCajaId() != null) {
+				return EjecucionSolicitud.noAplica(EjecucionSolicitud.razonMovimientoDeEntrega(movimiento.getTipo()));
+			}
+			if (movimiento.getEstado() == EstadoMovimientoCaja.ANULADO) {
+				return EjecucionSolicitud.noAplica(EjecucionSolicitud.MOVIMIENTO_ANULADO);
+			}
+			anularMovimiento(movimiento, usuario, LocalDateTime.now(ZONA), motivoDeSolicitud(solicitudId, motivo));
+			Map<String, Object> implicados = new LinkedHashMap<>();
+			implicados.put("movimiento", movimientoId);
+			implicados.put("solicitud", solicitudId);
+			registro.registrar(RegistroAccionesCaja.Accion.MOVIMIENTO_ANULADO,
+					"/api/solicitudes/" + solicitudId + "/aceptar", movimiento.getSedeId(), implicados);
+			return EjecucionSolicitud.hecha();
+		});
+	}
+
 	// ------------------------------------------------------------------ utilidades
+
+	/** Pieza 6c-3: «Solicitud #n: {motivo}», recortado a 500 caracteres (la columna de la anulación). */
+	private static String motivoDeSolicitud(long solicitudId, String motivo) {
+		String texto = "Solicitud #" + solicitudId + ": " + (motivo == null ? "" : motivo.trim());
+		return texto.length() > MAX_TEXTO ? texto.substring(0, MAX_TEXTO) : texto;
+	}
 
 	private void anularMovimiento(MovimientoCaja movimiento, Long usuario, LocalDateTime ahora, String motivo) {
 		movimiento.setEstado(EstadoMovimientoCaja.ANULADO);
@@ -703,7 +780,11 @@ public class CajaService {
 		}
 		Map<Long, Long> movimientoPorEntrega = new HashMap<>();
 		for (MovimientoCaja m : movimientos.findByEntregaCajaIdInOrderByIdAsc(ids)) {
-			movimientoPorEntrega.putIfAbsent(m.getEntregaCajaId(), m.getId());
+			// Solo la diferencia automática: el ERROR de un cobro deshecho ya entregado (6c-3, decisión 193) también
+			// va en la entrega, pero no es su SOBRANTE o FALTANTE.
+			if (m.getTipo() == TipoMovimientoCaja.SOBRANTE || m.getTipo() == TipoMovimientoCaja.FALTANTE) {
+				movimientoPorEntrega.putIfAbsent(m.getEntregaCajaId(), m.getId());
+			}
 		}
 		Set<Long> cuentas = new LinkedHashSet<>();
 		lista.forEach(e -> {

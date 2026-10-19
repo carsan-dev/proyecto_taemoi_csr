@@ -24,7 +24,7 @@ import com.taemoi.project.services.SolicitudService;
  * <li>Bandeja, contador, pedir y retirar: propietario, gestor y responsable de sede (regla de URL
  * {@code /api/solicitudes/**} y {@code @PreAuthorize}). El servicio filtra lo que ve cada uno, comprueba la sede del
  * recurso del responsable (403) y que solo retira quien pidió (403). El propietario no pide (400: lo hace directo).</li>
- * <li>Denegar: solo el propietario.</li>
+ * <li>Aceptar (6c-3) y denegar: solo el propietario.</li>
  * </ul>
  * Fuera de la lista blanca de la sesión solo-profesor: las rutas del profesor van bajo {@code /api/caja/profesor/**}.
  * Errores con el formato de {@code GlobalExceptionHandler}: 400, 403, 404 y 409.
@@ -65,6 +65,16 @@ public class SolicitudController {
 	@PreAuthorize(GESTION)
 	public ResponseEntity<SolicitudDTOs.Solicitud> retirar(@PathVariable Long id) {
 		return ResponseEntity.ok(solicitudes.retirar(id));
+	}
+
+	/**
+	 * Pieza 6c-3: acepta y ejecuta (solo el propietario). 200 con la solicitud ACEPTADA, o NO_APLICABLE con la razón en
+	 * {@code respuesta} si el estado cambió desde que se pidió.
+	 */
+	@PostMapping("/{id}/aceptar")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<SolicitudDTOs.Solicitud> aceptar(@PathVariable Long id) {
+		return ResponseEntity.ok(solicitudes.aceptar(id));
 	}
 
 	@PostMapping("/{id}/denegar")

@@ -39,7 +39,16 @@ public class RegistroAccionesCargos {
 
 	/** Registra la acción sobre el cargo. Debe llamarse dentro de la transacción de la acción. */
 	public void registrar(Accion accion, String endpoint, Long sedeId, Long cargoId) {
-		String resumen = "CARGO " + accion.name() + " sede=#" + sedeId + " cargo=#" + cargoId;
+		registrar(accion, endpoint, sedeId, cargoId, null);
+	}
+
+	/**
+	 * Pieza 6c-3: como {@link #registrar(Accion, String, Long, Long)}; si la acción la ejecuta una solicitud aceptada,
+	 * su id va detrás ({@code "CARGO CARGO_CANCELADO sede=#3 cargo=#12 solicitud=#7"}).
+	 */
+	public void registrar(Accion accion, String endpoint, Long sedeId, Long cargoId, Long solicitudId) {
+		String resumen = "CARGO " + accion.name() + " sede=#" + sedeId + " cargo=#" + cargoId
+				+ (solicitudId == null ? "" : " solicitud=#" + solicitudId);
 		auditoria.registrarAccesoSensible(accion.auditoria, MODULO, endpoint, cargoId, resumen);
 	}
 }

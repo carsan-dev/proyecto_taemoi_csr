@@ -30,7 +30,9 @@ public class RegistroAccionesCaja {
 		AUTOENTREGA_REGISTRADA(AuditoriaAccion.CREATE),
 		ENTREGA_ANULADA(AuditoriaAccion.UPDATE),
 		MOVIMIENTO_CREADO(AuditoriaAccion.CREATE),
-		MOVIMIENTO_ANULADO(AuditoriaAccion.UPDATE);
+		MOVIMIENTO_ANULADO(AuditoriaAccion.UPDATE),
+		/** Pieza 6c-3, decisión 193: cobro del profesor ya entregado, anulado con su ERROR +importe en la entrega. */
+		COBRO_ENTREGADO_DESHECHO(AuditoriaAccion.UPDATE);
 
 		private final AuditoriaAccion auditoria;
 

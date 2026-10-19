@@ -23,13 +23,19 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Cobro;
+import com.taemoi.project.entities.EntregaCaja;
 import com.taemoi.project.entities.EstadoCobro;
+import com.taemoi.project.entities.EstadoMovimientoCaja;
 import com.taemoi.project.entities.MetodoPago;
+import com.taemoi.project.entities.MovimientoCaja;
 import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.entities.TipoMovimientoCaja;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.pago.CobroEntregadoException;
 import com.taemoi.project.repositories.CobroRepository;
+import com.taemoi.project.repositories.EntregaCajaRepository;
+import com.taemoi.project.repositories.MovimientoCajaRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 
 import jakarta.persistence.EntityManager;
@@ -76,15 +82,19 @@ public class CobroService {
 
 	private final CobroRepository cobros;
 	private final ProductoAlumnoRepository cargos;
+	private final EntregaCajaRepository entregas;
+	private final MovimientoCajaRepository movimientos;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
 	private EntityManager em;
 
-	public CobroService(CobroRepository cobros, ProductoAlumnoRepository cargos,
-			PlatformTransactionManager transacciones) {
+	public CobroService(CobroRepository cobros, ProductoAlumnoRepository cargos, EntregaCajaRepository entregas,
+			MovimientoCajaRepository movimientos, PlatformTransactionManager transacciones) {
 		this.cobros = cobros;
 		this.cargos = cargos;
+		this.entregas = entregas;
+		this.movimientos = movimientos;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -150,6 +160,23 @@ public class CobroService {
 			return Optional.empty();
 		}
 		return cobros.bloquearPorId(cobroId).map(this::releer);
+	}
+
+	/**
+	 * Pieza 6c-3, dentro de una transacción: bloquea la entrega de caja (FOR UPDATE) y la devuelve releída. Vacío si no
+	 * existe en la escuela activa. Orden: cargo → ENTREGA → cobro (la anulación de una entrega bloquea entrega → cobros;
+	 * registrar una entrega, solo cobros), así que no hay ciclo.
+	 */
+	public Optional<EntregaCaja> bloquearEntrega(Long entregaId) {
+		if (entregaId == null) {
+			return Optional.empty();
+		}
+		return entregas.bloquearPorId(entregaId).map(entrega -> {
+			if (em != null && em.contains(entrega)) {
+				em.refresh(entrega);
+			}
+			return entrega;
+		});
 	}
 
 	/**
@@ -243,6 +270,61 @@ public class CobroService {
 	 */
 	public boolean tieneCobroActivo(Long cargoId) {
 		return cargoId != null && cobros.findFirstByProductoAlumnoIdAndEstado(cargoId, EstadoCobro.ACTIVO).isPresent();
+	}
+
+	/**
+	 * Pieza 6c-3, decisión 193 (aceptar «deshacer un cobro ya entregado»), dentro de la transacción, con el cargo, la
+	 * entrega y el cobro YA bloqueados y revalidados por quien llama (cobro ACTIVO, de esa entrega ACTIVA, sin
+	 * devolución): el cobro pasa a ANULADO como en A4 pero sin exigir que no esté entregado, y sale de la entrega
+	 * ({@code entrega_caja_id} NULL: invariante de la 6b-2, ningún cobro ANULADO en una entrega ACTIVA); en esa misma
+	 * entrega se apunta un ERROR por +importe enlazado al cobro y a su cargo (con el alumno y el método del cobro), que
+	 * deja el rastro de la entrega. La entrega no se anula. El saldo de la sede no cambia: deja de sumar el cobro y suma
+	 * el ERROR. Si después se anula la entrega, {@code anularEntrega} anula también el ERROR (anula todos sus movimientos
+	 * ACTIVOS).
+	 *
+	 * @return el ERROR apuntado
+	 */
+	public MovimientoCaja deshacerEntregado(Cobro cobro, EntregaCaja entrega, Long usuarioId, String motivo,
+			long solicitudId) {
+		cobro.setEntregaCajaId(null);
+		cobro.setEstado(EstadoCobro.ANULADO);
+		cobro.setAnuladoPorUsuarioId(usuarioId);
+		cobro.setAnuladoEn(LocalDateTime.now());
+		cobro.setMotivoAnulacion(recortar(motivo));
+		cobros.save(cobro);
+		MovimientoCaja error = new MovimientoCaja();
+		error.setSedeId(entrega.getSedeId());
+		error.setTipo(TipoMovimientoCaja.ERROR);
+		error.setImporte(cobro.getImporte().setScale(2, RoundingMode.HALF_UP));
+		error.setAlumnoId(cobro.getAlumnoId());
+		error.setEntregaCajaId(entrega.getId());
+		error.setCobroId(cobro.getId());
+		error.setProductoAlumnoId(cobro.getProductoAlumnoId());
+		error.setMetodo(cobro.getMetodo());
+		error.setNota("Cobro #" + cobro.getId() + " deshecho por la solicitud #" + solicitudId);
+		error.setCreadoPorUsuarioId(usuarioId);
+		error.setFecha(LocalDateTime.now(CajaService.ZONA));
+		error.setEstado(EstadoMovimientoCaja.ACTIVO);
+		return movimientos.save(error);
+	}
+
+	/**
+	 * Pieza 6c-3 (decisión 153, §6.3 y §6.4): por qué el cobro no se puede anular por tener devolución, o vacío. Un cobro
+	 * con una DEVOLUCION ACTIVA enlazada no se anula; el cargo de un encargo caído con la devolución pendiente tampoco
+	 * (no hay dos caminos para el mismo dinero). Lectura sin bloqueo, con el cargo y el cobro ya bloqueados por quien
+	 * llama. La 6c-6 la puede usar en las demás vías.
+	 */
+	public Optional<String> razonDeDevolucion(Long cobroId, Long cargoId) {
+		if (cobroId != null && movimientos.existsByCobroIdAndTipoAndEstado(cobroId, TipoMovimientoCaja.DEVOLUCION,
+				EstadoMovimientoCaja.ACTIVO)) {
+			return Optional.of(EjecucionSolicitud.CON_DEVOLUCION);
+		}
+		if (cargoId != null && em.createQuery("SELECT COUNT(s) FROM Solicitud s WHERE s.productoAlumnoId = :cargo "
+				+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO AND s.devolucionPendiente = TRUE",
+				Long.class).setParameter("cargo", cargoId).getSingleResult() > 0) {
+			return Optional.of(EjecucionSolicitud.DEVOLUCION_PENDIENTE);
+		}
+		return Optional.empty();
 	}
 
 	/** Comprobación previa (sin bloquear ni escribir): 409 si algún cobro del cargo va en una entrega de caja. */
