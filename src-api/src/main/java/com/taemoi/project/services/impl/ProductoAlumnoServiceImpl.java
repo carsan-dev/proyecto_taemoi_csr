@@ -558,6 +558,155 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return ventas;
 	}
 
+	// ------------------------------------------------------------------ pieza 6c-3: solicitudes aceptadas
+
+	/**
+	 * Tipo 1 (ver la interfaz). Bloqueos: el cargo y después el cobro, el orden de A1; quien llama ya tiene la fila de la
+	 * solicitud, que ninguna otra vía bloquea después de un cargo o un cobro. Revalida sin lanzar: lo que ya no aplica
+	 * vuelve como razón y no se toca nada (un error dentro de la transacción de quien acepta la marcaría para deshacer).
+	 */
+	@Override
+	public com.taemoi.project.services.EjecucionSolicitud revertirPorSolicitud(Long cargoId, Long cobroId,
+			long solicitudId, String motivo) {
+		exigirTransaccionEnCurso();
+		ProductoAlumno cargo = cargoId == null ? null : cobros.bloquearCargo(cargoId).orElse(null);
+		if (cargo == null) {
+			return com.taemoi.project.services.EjecucionSolicitud
+					.noAplica(com.taemoi.project.services.EjecucionSolicitud.CARGO_NO_EXISTE);
+		}
+		String razon;
+		if (cobroId != null) {
+			Cobro cobro = cobros.bloquearCobro(cobroId).orElse(null);
+			razon = razonCobroNoRevertible(cobro, cargoId);
+		} else {
+			// Decisión 191: el cargo se pidió sin cobro. Si ahora tiene uno, es otro pago: se pide sobre ese cobro.
+			razon = cobros.tieneCobroActivo(cargoId) ? com.taemoi.project.services.EjecucionSolicitud.CARGO_CON_COBRO
+					: cobros.razonDeDevolucion(null, cargoId).orElse(null);
+		}
+		if (razon == null && !Boolean.TRUE.equals(cargo.getPagado())) {
+			razon = com.taemoi.project.services.EjecucionSolicitud.CARGO_NO_PAGADO;
+		}
+		if (razon != null) {
+			return com.taemoi.project.services.EjecucionSolicitud.noAplica(razon);
+		}
+		ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
+		cambios.setPagado(false);
+		cambios.setMotivoCambio("Revertido por solicitud #" + solicitudId + ": " + motivo);
+		CargoActualizado resultado = aplicarCambiosAlCargoBloqueado(cargo, cambios, OrigenCobro.TESORERIA);
+		return com.taemoi.project.services.EjecucionSolicitud.hecha(resultado.cargo(), resultado.pagadoAntes());
+	}
+
+	/** Tipo 1 con cobro: la razón por la que ya no se revierte, o {@code null} si se puede. */
+	private String razonCobroNoRevertible(Cobro cobro, Long cargoId) {
+		if (cobro == null || cobro.getEstado() != EstadoCobro.ACTIVO) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_NO_ACTIVO;
+		}
+		if (!cargoId.equals(cobro.getProductoAlumnoId())) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_SIN_CARGO;
+		}
+		if (cobro.getEntregaCajaId() != null) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_ENTREGADO;
+		}
+		return cobros.razonDeDevolucion(cobro.getId(), cargoId).orElse(null);
+	}
+
+	/**
+	 * Tipo 2 (ver la interfaz). Bloqueos: cargo → entrega → cobro. La entrega del cobro se lee antes sin bloqueo para
+	 * saber cuál bloquear y se comprueba otra vez con el cobro ya bloqueado. Con la identidad de quien acepta (anulado
+	 * y, con NO_HUBO_VENTA, cancelado por él). Registro {@code CAJA COBRO_ENTREGADO_DESHECHO} con la solicitud.
+	 */
+	@Override
+	public com.taemoi.project.services.EjecucionSolicitud deshacerEntregadoPorSolicitud(Long cobroId, Long cargoId,
+			Long profesorId, com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer motivo, long solicitudId,
+			String motivoSolicitud) {
+		exigirTransaccionEnCurso();
+		boolean noHuboVenta = motivo == com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer.NO_HUBO_VENTA;
+		ProductoAlumno cargo = cargoId == null ? null : cobros.bloquearCargo(cargoId).orElse(null);
+		if (cargo == null) {
+			return com.taemoi.project.services.EjecucionSolicitud
+					.noAplica(com.taemoi.project.services.EjecucionSolicitud.CARGO_NO_EXISTE);
+		}
+		Long entregaId = cobroId == null ? null : cobroRepository.entregaDeCobro(cobroId).orElse(null);
+		com.taemoi.project.entities.EntregaCaja entrega = cobros.bloquearEntrega(entregaId).orElse(null);
+		Cobro cobro = cobroId == null ? null : cobros.bloquearCobro(cobroId).orElse(null);
+		String razon = razonEntregadoNoDeshacible(cobro, cargo, entrega, profesorId, noHuboVenta);
+		if (razon != null) {
+			return com.taemoi.project.services.EjecucionSolicitud.noAplica(razon);
+		}
+		Long usuario = CobroService.usuarioActualId();
+		String endpoint = "/api/solicitudes/" + solicitudId + "/aceptar";
+		com.taemoi.project.entities.MovimientoCaja error = cobros.deshacerEntregado(cobro, entrega, usuario,
+				"Deshecho por solicitud #" + solicitudId + ": " + motivoSolicitud, solicitudId);
+		// El cargo queda como en A4: no pagado, por el camino del PUT (su cobro ya está anulado: no hay otro que anular).
+		ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
+		cambios.setPagado(false);
+		CargoActualizado resultado = aplicarCambiosAlCargoBloqueado(cargo, cambios, OrigenCobro.PROFESOR);
+		Map<String, Long> implicados = ids("cobro", cobro.getId(), "cargo", cargoId);
+		implicados.put("entrega", entrega.getId());
+		implicados.put("movimiento", error.getId());
+		implicados.put("solicitud", solicitudId);
+		registroCaja.registrar(RegistroAccionesCaja.Accion.COBRO_ENTREGADO_DESHECHO, endpoint, cobro.getSedeId(),
+				implicados);
+		if (noHuboVenta) {
+			ProductoAlumno cancelado = marcarCancelado(resultado.cargo(), usuario,
+					MOTIVO_NO_HUBO_VENTA + " (solicitud #" + solicitudId + ")");
+			registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_CANCELADO,
+					endpoint, cancelado.getSedeId(), cargoId, solicitudId);
+			return com.taemoi.project.services.EjecucionSolicitud.hecha(cancelado, resultado.pagadoAntes());
+		}
+		return com.taemoi.project.services.EjecucionSolicitud.hecha(resultado.cargo(), resultado.pagadoAntes());
+	}
+
+	/** Tipo 2: la razón por la que ya no se deshace, o {@code null} si se puede (todo ya bloqueado). */
+	private String razonEntregadoNoDeshacible(Cobro cobro, ProductoAlumno cargo,
+			com.taemoi.project.entities.EntregaCaja entrega, Long profesorId, boolean noHuboVenta) {
+		if (cobro == null || cobro.getEstado() != EstadoCobro.ACTIVO) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_NO_ACTIVO;
+		}
+		if (!cargo.getId().equals(cobro.getProductoAlumnoId())) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_SIN_CARGO;
+		}
+		if (cobro.getOrigen() != OrigenCobro.PROFESOR || profesorId == null
+				|| !profesorId.equals(cobro.getCobradoPorUsuarioId())) {
+			return com.taemoi.project.services.EjecucionSolicitud.NO_ES_SUYO;
+		}
+		if (cobro.getEntregaCajaId() == null) {
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_NO_ENTREGADO;
+		}
+		if (entrega == null || !entrega.getId().equals(cobro.getEntregaCajaId())) {
+			// La entrega leída antes de bloquear ya no es la del cobro (pasó a otra mientras se esperaba).
+			return com.taemoi.project.services.EjecucionSolicitud.COBRO_OTRA_ENTREGA;
+		}
+		if (entrega.getEstado() != com.taemoi.project.entities.EstadoEntregaCaja.ACTIVA) {
+			return com.taemoi.project.services.EjecucionSolicitud.ENTREGA_ANULADA;
+		}
+		String devolucion = cobros.razonDeDevolucion(cobro.getId(), cargo.getId()).orElse(null);
+		if (devolucion != null) {
+			return devolucion;
+		}
+		if (!Boolean.TRUE.equals(cargo.getPagado())) {
+			return com.taemoi.project.services.EjecucionSolicitud.CARGO_NO_PAGADO;
+		}
+		if (noHuboVenta && !esVentaDelProfesor(cargo, cobro, profesorId)) {
+			return com.taemoi.project.services.EjecucionSolicitud.NO_ES_VENTA;
+		}
+		return null;
+	}
+
+	@Override
+	public void aplicarEfectosTrasSolicitud(com.taemoi.project.services.EjecucionSolicitud ejecucion) {
+		if (ejecucion != null && ejecucion.aplica() && ejecucion.cargo() != null) {
+			aplicarEfectosDelCambioDePago(new CargoActualizado(ejecucion.cargo(), ejecucion.pagadoAntes()));
+		}
+	}
+
+	/** Los métodos de las solicitudes aceptadas se ejecutan dentro de la transacción de quien acepta. */
+	private static void exigirTransaccionEnCurso() {
+		if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+			throw new IllegalStateException("Se ejecuta dentro de la transacción de la solicitud.");
+		}
+	}
+
 	private static Map<String, Long> ids(String clave1, Long id1, String clave2, Long id2) {
 		Map<String, Long> ids = new LinkedHashMap<>();
 		ids.put(clave1, id1);

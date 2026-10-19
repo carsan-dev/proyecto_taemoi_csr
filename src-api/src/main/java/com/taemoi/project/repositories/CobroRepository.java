@@ -67,6 +67,13 @@ public interface CobroRepository extends JpaRepository<Cobro, Long> {
 			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO")
 	Optional<Cobro> bloquearActivoDeCargo(@Param("cargoId") Long cargoId);
 
+	/**
+	 * Pieza 6c-3: la entrega de caja del cobro leída de la base (consulta escalar: no devuelve la instancia que la sesión
+	 * tuviera cargada). Sin bloqueo: quien la usa bloquea después la entrega y el cobro y lo vuelve a comprobar.
+	 */
+	@Query("SELECT c.entregaCajaId FROM Cobro c WHERE c.id = :id")
+	Optional<Long> entregaDeCobro(@Param("id") Long id);
+
 	/** Bloquea (FOR UPDATE) un cobro por id. */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT c FROM Cobro c WHERE c.id = :id")

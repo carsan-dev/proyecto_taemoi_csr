@@ -3,7 +3,7 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2) y la 6c-2 (§3); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
+> (§2), la 6c-2 (§3) y la 6c-3 (§4); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
 encargos del profesor y la devolución enlazada (decisiones 153, 155, 183, 188 a 195).
@@ -91,12 +91,12 @@ anota en la PR y actualiza este mapa.
 |---|---|---|---|---|---|---|---|
 | **6c-1** backend + mensajes | Bloqueos 186, 187 y 194 sin excepciones; convocatoria y ficha muestran el mensaje del backend. Sin migración | `J/services/impl/AlumnoServiceImpl.java:2208-2222`, `J/services/impl/ProductoAlumnoServiceImpl.java:627-685`, `J/services/impl/ConvocatoriaServiceImpl.java:239-275`, `J/services/CobroService.java`, `F/componentes/endpoints/listado-convocatorias/…component.ts:478-503,606-641`, `F/componentes/endpoints/editar-alumno/editar-alumno.component.ts:1960-1993`, `F/…/productos-alumno/productos-alumno.component.ts:418-422` | `CobroService.EXAMEN_PAGADO_REVIERTE_ANTES`, `PRECIO_CON_COBRO_ACTIVO`, `CUANTIA_EXAMEN_PAGADO` y `boolean tieneCobroActivo(Long cargoId)` | `CobroService.bloquearCargo`; `mensajeDeError` de `F/servicios/endpoints/caja.service.ts:36` | — | Medio (dinero y cambio visible aceptado); revisión opus | §2 de este plan |
 | **6c-2** backend | V31_8 completa (tabla `solicitud` con sus 5 columnas únicas virtuales y columnas de `movimiento_caja`); entidad, repositorio, servicio base (crear tipos 1, con o sin cobro, y 3; retirar; denegar; listar por segmento; contador); registro de acciones; rutas de gestión; matriz | `src-api/src/main/resources/db/migration/V31_8__solicitudes_y_devoluciones.sql`, `docs/multi-escuela/postcheck-v31_8.sql`, `J/entities/Solicitud.java`, `TipoSolicitud.java`, `EstadoSolicitud.java`, `J/repositories/SolicitudRepository.java`, `J/services/SolicitudService.java`, `J/services/RegistroAccionesSolicitudes.java`, `J/controllers/SolicitudController.java`, `J/config/SecurityConfiguration.java` (regla `/api/solicitudes/**`), `J/entities/MovimientoCaja.java` (mapea `cobroId`, `productoAlumnoId` y `metodo`, por defecto EFECTIVO, sin usarlos aún), matriz, `matriz-endpoints.md`, `checklist-despliegue.md` | `Optional<Solicitud> SolicitudRepository.bloquearPorId(Long)` (FOR UPDATE y relectura, como `CobroService.bloquearCobro`); `SolicitudService.crear(SolicitudRequests.Crear)`, `retirar(Long)`, `denegar(Long, String respuesta)`, `List<SolicitudDTOs.Solicitud> listar(Segmento)`, `long contador()`; `SolicitudTransiciones.exigir(Solicitud, EstadoSolicitud destino)`: la tabla §6.2 en un solo sitio, con 409 «La solicitud ya no está pendiente»; `@acceso.solicitudEnSede(Long id)` | `AccesoRecursos`, `GestionPorSede.restriccion()`, `AuditoriaService.registrarAccesoSensible` | — | Medio (migración aditiva y rutas nuevas); revisión opus | IT en MySQL con dos sedes; test de migración `@Tag("migracion")`: V31_8 dos veces y tras un fallo a medias; postcheck con la tabla vacía, `metodo` = EFECTIVO en todas las filas y el saldo por sede igual antes y después; matriz con diff solo en líneas nuevas; `solicitudSinSede_laVenYCuentanPyG_noR`; `dosPendientesMismoCobro_409` y `dosPendientesMismoCargoSinCobro_409` (191) |
-| **6c-3** backend | Aceptar tipos 1 (con y sin cobro) y 3, con revalidación y `NO_APLICABLE` (§6.5) | `SolicitudService`, `ProductoAlumnoServiceImpl` (camino interno de A1), `CajaService.anularEntrega:411` y `anularMovimiento:543` | `SolicitudDTOs.Solicitud SolicitudService.aceptar(Long id)`; el estado final es ACEPTADA o NO_APLICABLE, con la `respuesta`; `ProductoAlumnoServiceImpl.revertirPorSolicitud(Long cargoId, long solicitudId, String motivo)`, con motivo «Revertido por solicitud #n: {motivo}» | 6c-2 | 6c-2 | Alto (ejecuta reversiones y anulaciones); opus | Por tipo: el estado cambia entre pedir y aceptar y la solicitud queda `NO_APLICABLE` sin efectos; saldo de la sede igual; `aceptarYRetirarALaVez_unoGana409ElOtro`; `aceptarTrasEntregarElCobro_NO_APLICABLE_sinEfectos`; una PENDIENTE cuyo cobro se anuló al borrar el alumno o el cargo pasa a NO_APLICABLE al aceptarla (revalidación): `aceptarConCobroAnuladoPorBorrado_NO_APLICABLE_sinEfectos`; registro `SOLICITUD_ACEPTADA` y `ENTREGA_ANULADA … solicitud=#n` |
+| **6c-3** backend | Aceptar tipos 1 (con y sin cobro), 2 (193) y 3, con revalidación y `NO_APLICABLE` (§6.5). Detalle en §4 | `SolicitudService`, `ProductoAlumnoServiceImpl` (camino interno de A1 y de A4), `CobroService` (método nuevo de la 193), `CajaService.anularEntrega:411` y `anularMovimiento:543` | `SolicitudDTOs.Solicitud SolicitudService.aceptar(Long id)`; el estado final es ACEPTADA o NO_APLICABLE, con la `respuesta`; `ProductoAlumnoService.revertirPorSolicitud(…)` con motivo «Revertido por solicitud #n: {motivo}», `deshacerEntregadoPorSolicitud(…)` y `CobroService.deshacerEntregado(…)` (§4) | 6c-2 | 6c-2 | Alto (ejecuta reversiones y anulaciones); opus | Por tipo: el estado cambia entre pedir y aceptar y la solicitud queda `NO_APLICABLE` sin efectos; saldo de la sede igual; `aceptarYRetirarALaVez_unoGana409ElOtro`; `aceptarTrasEntregarElCobro_NO_APLICABLE_sinEfectos`; una PENDIENTE cuyo cobro se anuló al borrar el alumno o el cargo pasa a NO_APLICABLE al aceptarla (revalidación): `aceptarConCobroAnuladoPorBorrado_NO_APLICABLE_sinEfectos`; registro `SOLICITUD_ACEPTADA` y `ENTREGA_ANULADA … solicitud=#n` |
 | **6c-7** frontend | Contador en la cabecera, bandeja (tres segmentos), diálogo «Pedir al propietario» en tesorería, ficha y caja de sede (190, 191) | `F/core/constants/navigation.constants.ts:11-18`, `F/componentes/vistas/layout/header/header.component.html:232`, ruta nueva en `F/app.routes.ts`, servicio `F/servicios/endpoints/solicitudes.service.ts`, `tesoreria-cobros.component.ts:280`, `productos-alumno.component.html:97`, `caja-sede` | Componente de bandeja y diálogo reutilizable (D6c-8) | Rutas de 6c-2 y 6c-3 | 6c-3 | Medio (visible para Moiskimdo) | Specs registrados en las dos listas: el contador se pide al entrar y al navegar, sin `interval`; G desmarca un cargo pagado → se abre el diálogo y el checkbox vuelve a marcado; con una pendiente no deja pedir otra. Build sin aviso y capturas |
 | **6c-5** backend | Encargos: productos encargables (192), pedir con cargo y sede (D6c-9), transiciones, caída del encargo, guardas en cancelar y borrar el cargo, rutas del profesor | `SolicitudService` (o `EncargoService`), `ProductoAlumnoServiceImpl` (cargo por el código de `asignarProductoAAlumno:186` sin el `@PreAuthorize` de gestión), `cancelar:852`, `borrar:816`, `J/controllers/CajaController.java` (`/api/caja/profesor/…`) | `List<CajaDTOs.ProductoVendible> productosEncargables()`; `pedirEncargo(Long alumnoId, PedirEncargo{productoId, nota, sedeId?})`; `marcarEncargado`, `marcarRecibido`, `rechazar(id, motivo)`, `retirarEncargo`, `marcarEntregado`; constante `ENCARGO_EN_CURSO` = «Tiene un encargo en curso: recházalo desde Solicitudes»; `devolucion_pendiente` a true al caer un encargo pagado | 6c-2, `@acceso.alumnoDeMisGrupos:209` | 6c-2 | Alto (crea y cancela cargos); opus | El cargo creado tiene `vendido_por_usuario_id` NULL y aparece en «Por cobrar»; si cae sin cobrar, el cargo se cancela; si cae pagado, `devolucion_pendiente` a true; un cargo en curso da 409 al cancelar y al borrar; la sede se exige solo con varias; matriz con lista blanca |
-| **6c-4** backend | Tipo 2: `cobros-entregados-recientes` (30 días, máximo 50, D6c-14), `pedir-deshacer` y aceptación con la 193 | `CajaController`, `CajaService`, `CobroService` (método nuevo), `CajaDTOs.EntregaCaja.movimientoId` (`J/dtos/response/CajaDTOs.java:72-76`; devuelve el SOBRANTE o FALTANTE, no el ERROR) | `CobroService.deshacerEntregado(Long cobroId, CajaRequests.MotivoDeshacer, long solicitudId)`, que anula el cobro como A4 sin comprobar la entrega y crea un ERROR por +importe en esa entrega con `cobro_id` | 6c-2, 6c-3 (`aceptar`) | 6c-3 | Alto (caja); opus | El saldo es igual tras aceptar (anulado + ERROR); anular después la entrega anula también el ERROR (`CajaService.java:444-447`); el estado cambia y la solicitud queda `NO_APLICABLE`; registro `COBRO_ENTREGADO_DESHECHO` |
+| **6c-4** backend | Tipo 2: `cobros-entregados-recientes` (30 días, máximo 50, D6c-14) y `pedir-deshacer` (crear la solicitud con `motivo_deshacer`). La aceptación con la 193 la hace la 6c-3 (§4) | `CajaController`, `CajaService`, `SolicitudService` (crear el tipo 2) | — | 6c-2, 6c-3 (`aceptar` y `deshacerEntregadoPorSolicitud`) | 6c-3 | Alto (caja); opus | Pedir valida lo que la 6c-3 revalida al aceptar (cobro ACTIVO, origen PROFESOR, suyo, en una entrega ACTIVA, una pendiente por cobro); un IT de punta a punta: pedir por la ruta del profesor y aceptar deja el saldo igual. **Pendiente de la 6c-3:** tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y `CajaDTOs.EntregaCaja` no enlaza el movimiento ERROR, así que «declarado» no cuadra a la vista (el saldo sí): exponer en el DTO de la entrega los ids e importe de sus ERROR |
 | **6c-6** backend | Devolución enlazada (153): `crearMovimiento` con `cobroId`; «Registrar devolución» por la sede y por el profesor (195, D6c-10); el saldo suma solo EFECTIVO (D6c-13); «devuelto»; invariantes «no se anula» y «devolución pendiente → 409»; tesorería `devuelto` e `importeDevuelto` (D6c-12); desvincular el examen devuelto y el aviso completo de la 186 (D6c-15) | `CajaService.crearMovimiento:470`, `registrarEntrega:310`, `CobroService.anular:198` y `alBorrarCargos:254`, consultas de saldo de `CobroRepository`, tesorería, `AlumnoServiceImpl.eliminarAlumnoDeConvocatoria` | `CobroService.exigirSinDevolucion(Long cobroId)`; `registrarDevolucionEncargo(Long solicitudId, String nota)` (sede) y `registrarDevolucionProfesor(Long solicitudId, String nota)`; DTO de tesorería `devuelto` e `importeDevuelto`; `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes» | 6c-2, 6c-5 | 6c-2, 6c-5 | Alto (caja y tesorería); opus | La devolución del profesor deja el saldo a 0 y el cobro fuera de «Llevas encima»; un cobro con devolución da 409 por cada vía (A1, A2, A4, tipo 2) y `alBorrarCargos` lo salta; los totales de tesorería de Moiskimdo son idénticos; `devolverYEntregarALaVez_saldoCuadra` |
-| **6c-8** frontend | Mi caja: pestaña «Pedidos» (encargar, con sede si hace falta; retirar; marcar entregado; solicitudes de deshacer) y «Entregados recientes» en «Encima» | `F/componentes/endpoints/mi-caja/*` (patrón de pestañas y `.contador`, `mi-caja.component.html:27-41`) | — | Rutas de 6c-4 y 6c-5 | 6c-4, 6c-5 | Medio | Specs registrados, capturas en móvil, build sin aviso |
+| **6c-8** frontend | Mi caja: pestaña «Pedidos» (encargar, con sede si hace falta; retirar; marcar entregado; solicitudes de deshacer) y «Entregados recientes» en «Encima» | `F/componentes/endpoints/mi-caja/*` (patrón de pestañas y `.contador`, `mi-caja.component.html:27-41`) | — | Rutas de 6c-4 y 6c-5 | 6c-4, 6c-5 | Medio | Specs registrados, capturas en móvil, build sin aviso. Ojo: tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y su DTO no enlaza el ERROR, así que «declarado» no cuadra a la vista (el saldo sí): pintar los ERROR de la entrega que expone la 6c-4 |
 | **6c-9** frontend | «Registrar devolución» en «Pedidos» y en la bandeja; contador de devoluciones pendientes; «Devuelto» en tesorería, ficha y Mi caja; aviso completo de la 186 | Bandeja (6c-7), Mi caja (6c-8), tesorería, ficha | — | Rutas de 6c-6 | 6c-6, 6c-7, 6c-8 | Bajo | Specs registrados, capturas, build sin aviso |
 
 Pruebas mínimas de cada pieza backend (§12): IT en MySQL con dos sedes; Moiskimdo idéntico con ADMIN y MANAGER,
@@ -537,7 +537,176 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
 
 ---
 
-## 4. Auto-revisión
+## 4. Pieza 6c-3: aceptar (detallada)
+
+Rama `feature/6c3-aceptar` desde `feature/multi-escuela` (tras la 6c-2). **Sin migración**: se despliega con el atajo
+`desplegar`. Sin pantallas (la bandeja es de la 6c-7): Moiskimdo no ve ningún cambio. Acepta los tipos 1 (con y sin
+cobro, 191), 2 (193) y 3. El tipo 2 aún no se puede pedir (la ruta es de la 6c-4): sus tests insertan la solicitud por
+SQL, como la 6c-2 con los encargos.
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Ruta:** `POST /api/solicitudes/{id}/aceptar`, sin cuerpo, solo P (`hasAuthority('ROLE_ADMIN')` y el servicio lo
+  vuelve a exigir). Responde 200 con la solicitud: `ACEPTADA` (respuesta vacía) o `NO_APLICABLE` (respuesta con la
+  razón, para que P vea el aviso). 409 `NO_PENDIENTE` si ya no está pendiente; 404 si no existe en la escuela; 400 si es
+  un encargo («Un encargo no se acepta: se marca encargado.»).
+- **Orden de bloqueos:** primero la fila de la `solicitud` y después los de siempre de la acción. Tipo 1: solicitud →
+  cargo → cobro (el de A1). Tipo 2: solicitud → cargo → entrega → cobro (la anulación de una entrega bloquea entrega →
+  cobros; registrar una entrega, solo cobros). Tipo 3: solicitud → entrega → cobros (A7) o solicitud → movimiento (A9).
+  Crear, retirar y denegar no bloquean una solicitud después de esas filas. **Excepción:** borrar un cargo (quitar de
+  una convocatoria, borrar un alumno o una convocatoria) pasa por las FK ON DELETE SET NULL de `solicitud` (V31_8) y
+  bloquea sus filas después del cargo (y, al borrar un alumno o una convocatoria, el UPDATE masivo de
+  `alBorrarCargos` toma los cobros antes que los cargos). Ese cruce con aceptar puede producir un interbloqueo:
+  InnoDB lo detecta y elige una víctima, `GlobalExceptionHandler` la devuelve como 409 (concurrencia) y su
+  transacción se deshace entera. Si la víctima es aceptar, la solicitud sigue PENDIENTE y al reintentar queda
+  `NO_APLICABLE` (el cargo ya no existe). Sin efecto en el dinero.
+- **Revalidación sin excepciones:** con las filas ya bloqueadas, se comprueba todo antes de ejecutar y, si no aplica,
+  se cierra `NO_APLICABLE` con la razón y sin tocar nada más. Así los servicios de siempre no lanzan dentro de la
+  transacción (un error dentro de una transacción en curso la marca para deshacer). **Red:** si aun así la ejecución
+  lanza un error de negocio (400, 404 o 409), se deshace todo y, en otra transacción, con la fila bloqueada y si sigue
+  PENDIENTE, se cierra `NO_APLICABLE` con ese mensaje: la solicitud no se queda pendiente (§6.5).
+- **Razones** (`respuesta` de `NO_APLICABLE`, texto fijo, constantes de `EjecucionSolicitud`): «El cargo ya no
+  existe.», «El cargo ya no está pagado.», «El cobro ya no está activo.», «El cobro ya va en una entrega de caja.»,
+  «El cargo tiene ahora un cobro activo: pide revertir ese cobro.», «El cobro tiene una devolución registrada.», «El
+  encargo tiene una devolución pendiente: regístrala antes.», «El cobro ya no va en una entrega: el profesor puede
+  deshacerlo él mismo.», «El cobro ha pasado a otra entrega mientras se aceptaba: vuelve a intentarlo.», «El cobro no
+  es del profesor que lo pidió.», «No fue una venta suya: no se deshace como «no
+  hubo venta».», «La entrega ya está anulada.», «El movimiento ya está anulado.», «Es la diferencia automática de una
+  entrega: pide anular la entrega.» (SOBRANTE o FALTANTE) y «Es el ERROR de un cobro deshecho en una entrega: se anula
+  con la entrega; pide anular la entrega.» (el ERROR de la 193; mismo texto al pedirlo).
+- **Tipo 1** (`ProductoAlumnoService.revertirPorSolicitud`): el camino de A1 (`aplicarCambiosAlCargoBloqueado` con
+  `pagado:false`, el cargo ya bloqueado), motivo de la anulación «Revertido por solicitud #n: {motivo}» (500 como
+  mucho). Sin cobro (191) solo desmarca. La sincronización con la convocatoria y el derecho a examen va **después** de
+  confirmar, como en A1 (`aplicarEfectosDelCambioDePago` fuera de la transacción): así el orden de bloqueos es el de A1
+  y no se cruza con el borrado del alumno.
+- **Tipo 2** (`ProductoAlumnoService.deshacerEntregadoPorSolicitud` + `CobroService.deshacerEntregado`): revalida cobro
+  ACTIVO de su cargo, origen PROFESOR, cobrado por quien pidió, en una entrega ACTIVA, sin devolución ni devolución
+  pendiente, cargo pagado y, con `NO_HUBO_VENTA`, que fue su venta (`esVentaDelProfesor`). Ejecuta: el cobro pasa a
+  ANULADO (anulado por P, motivo «Deshecho por solicitud #n: {motivo}») y **sale de la entrega** (`entrega_caja_id`
+  NULL: la 6b-2 exige que ningún cobro ANULADO quede en una entrega ACTIVA), y en esa entrega se apunta un ERROR por
+  +importe (`cobro_id`, `producto_alumno_id`, alumno y `metodo` del cobro, nota «Cobro #c deshecho por la solicitud
+  #n», creado por P), que guarda el rastro; la entrega no se anula. El cargo queda pendiente por el camino
+  de A4 (sin cobro activo que anular) y, con `NO_HUBO_VENTA`, cancelado (por P, motivo «no hubo venta (solicitud
+  #n)»). Registro `CAJA COBRO_ENTREGADO_DESHECHO sede=#S cobro=#c cargo=#g entrega=#e movimiento=#m solicitud=#n`.
+  `CajaDTOs.EntregaCaja.movimientoId` pasa a ser solo el SOBRANTE o FALTANTE (no el ERROR).
+- **Tipo 3** (`CajaService.anularEntregaPorSolicitud` y `anularMovimientoPorSolicitud`): el mismo cuerpo que A7 y A9
+  (se extrae a un método común), motivo «Solicitud #n: {motivo}» y `solicitud=#n` en `ENTREGA_ANULADA` y
+  `MOVIMIENTO_ANULADO`.
+- **Devolución** (153): «sin devolución» = ningún movimiento DEVOLUCION ACTIVO con ese `cobro_id`; «devolución
+  pendiente» = un encargo con `devolucion_pendiente` sobre ese cargo. Hoy no existen (6c-5 y 6c-6): los tests los
+  insertan por SQL.
+- **Registro:** `SOLICITUDES SOLICITUD_ACEPTADA …` o `SOLICITUD_NO_APLICABLE …` (solo ids, en la misma transacción),
+  más el de la acción ejecutada con `solicitud=#n` (`CARGO_CANCELADO` lo gana como sufijo). A1 sigue sin registro
+  propio: lo cubre `SOLICITUD_ACEPTADA` (§8).
+- **Dinero:** el saldo de la sede tras aceptar es el que deja la acción directa de P: tipo 1, −importe si el cobro era
+  EFECTIVO fuera de pendiente de entrega (igual que A1); tipo 2, igual (anulado + ERROR); tipo 3, −contado de la entrega
+  o −importe del movimiento (igual que A7 y A9). `NO_APLICABLE`, igual.
+
+### Tarea 1: tests de aceptar (fallan)
+
+**Ficheros:**
+- Crear: `T/integracion/AceptarSolicitudesIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`,
+  `PER_CLASS`, `extends MySqlIntegrationTest`; escena de `SolicitudesIntegrationTest` copiada: escuela con sedes A y B,
+  propietario, gestor, responsable de A y profesor de gA; otra escuela para el aislamiento).
+- Modificar: `T/integracion/SolicitudesIntegrationTest.java` (`revertirCargoSinCobro_pideAceptaYSoloDesmarca`: la parte
+  de aceptar).
+- Modificar: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (una línea:
+  `POST /api/solicitudes/{id}/aceptar`, solo PROPIETARIO `PERMITE`).
+
+- [ ] **Paso 1: escribir los tests que fallan.** En cada uno, el `saldoCaja` de la sede antes y después:
+  - `revertirCargoSinCobro_pideAceptaYSoloDesmarca`: P acepta → 200 `ACEPTADA`, `resuelto_por` = P, respuesta NULL; el
+    cargo queda `pagado = 0` y `fecha_pago` NULL; ningún cobro; el saldo no cambia.
+  - `aceptarRevertirCobro_anulaElCobroYDesmarca_comoA1`: G pide sobre un cobro de tesorería (EFECTIVO); P acepta → 200
+    `ACEPTADA`; el cobro queda `ANULADO`, `anulado_por` = P y motivo «Revertido por solicitud #n: {motivo}»; el cargo,
+    no pagado; saldo = antes − 10,50 (lo que deja A1).
+  - `aceptarRevertirExamen_sincronizaConvocatoriaYDerechoAExamen`: examen pagado desde la convocatoria; tras aceptar,
+    la inscripción queda `pagado = 0` y el alumno sin derecho a examen.
+  - `aceptarTrasEntregarElCobro_NO_APLICABLE_sinEfectos`: G pide revertir un cobro del profesor sin entregar; el gestor
+    recibe la entrega; P acepta → 200 `NO_APLICABLE`, respuesta «El cobro ya va en una entrega de caja.», `resuelto_por`
+    = P; el cobro sigue ACTIVO en su entrega, el cargo pagado y el saldo igual.
+  - `aceptarTrasCambiarElEstado_NO_APLICABLE_porTipo`: tipo 1 con cobro (P revierte antes por el PUT → «El cobro ya no
+    está activo.»), tipo 1 sin cobro (P desmarca antes → «El cargo ya no está pagado.»; P desmarca y vuelve a cobrar →
+    «El cargo tiene ahora un cobro activo…»), tipo 3 entrega (P la anula antes → «La entrega ya está anulada.») y tipo 3
+    movimiento (P lo anula antes → «El movimiento ya está anulado.»). En todos, ningún efecto y el saldo igual al de
+    después del cambio.
+  - `aceptarConCobroAnuladoPorBorrado_NO_APLICABLE_sinEfectos`: G pide revertir el cobro de un alumno; P borra al alumno
+    (`DELETE /api/alumnos/{id}`: el cobro pasa a ANULADO «cargo borrado» y el cargo desaparece); P acepta → 200
+    `NO_APLICABLE` con «El cargo ya no existe.»; el cobro no cambia (sigue con el motivo «cargo borrado»).
+  - `aceptarConDevolucion_NO_APLICABLE`: una DEVOLUCION ACTIVA con ese `cobro_id` (SQL) → «El cobro tiene una devolución
+    registrada.»; un encargo con `devolucion_pendiente` sobre el cargo (SQL) → «El encargo tiene una devolución
+    pendiente: regístrala antes.». El cobro sigue ACTIVO.
+  - `aceptarDeshacerEntregado_anulaElCobroYApuntaErrorEnLaEntrega_saldoIgual` (193): el profesor cobra, el gestor recibe
+    la entrega (contado = declarado), tipo 2 por SQL con `motivo_deshacer` AUN_NO_PAGADO; P acepta → `ACEPTADA`; el
+    cobro, ANULADO y fuera de la entrega (ningún cobro ANULADO en una entrega ACTIVA); un ERROR ACTIVO de +10,50 en esa
+    entrega con `cobro_id`,
+    `producto_alumno_id` y alumno; la entrega sigue ACTIVA y su `movimientoId` en el historial es NULL (no el ERROR);
+    el cargo, pendiente; saldo igual; registro `COBRO_ENTREGADO_DESHECHO … solicitud=#n`. Si P anula después la
+    entrega, el ERROR se anula con ella y el saldo es el de antes − 10,50 (lo que deja anular una entrega sin el cobro).
+  - `aceptarDeshacerEntregado_noHuboVenta_cancelaElCargo`: venta del profesor (apuntar y cobrar), entrega, tipo 2
+    NO_HUBO_VENTA → el cargo queda cancelado y no pagado, sin cobro ACTIVO; saldo igual.
+  - `aceptarDeshacerEntregado_estadoCambiado_NO_APLICABLE`: P anula la entrega antes → «El cobro ya no va en una
+    entrega…»; NO_HUBO_VENTA sobre un cargo que no es su venta → «No fue una venta suya…». Ningún ERROR; cobro ACTIVO.
+  - `aceptarAnularEntrega_comoA7_conLaSolicitudEnElRegistro`: entrega contada 11,00 (SOBRANTE); P acepta → la entrega
+    ANULADA con motivo «Solicitud #n: {motivo}», el cobro vuelve a pendiente y el SOBRANTE se anula; saldo = antes −
+    11,00; registro `ENTREGA_ANULADA … solicitud=#n`.
+  - `aceptarAnularMovimiento_comoA9`: saldo = antes − 1,00; registro `MOVIMIENTO_ANULADO movimiento=#m solicitud=#n`.
+  - `aceptarYRetirarALaVez_unoGana409ElOtro` (punto de revisión 3): con `enParalelo`, P acepta y G retira la misma; los
+    estados son {200, 409} y el 409 trae «La solicitud ya no está pendiente»; ACEPTADA ⇒ cobro ANULADO; RETIRADA ⇒ cobro
+    ACTIVO y cargo pagado. Tres vueltas.
+  - `aceptar_soloPropietario_unaVez`: G y R, 403; sesión solo-profesor, 403; P, 200; otra vez, 409 `NO_PENDIENTE`;
+    denegada, 409; inexistente u otra escuela, 404; un encargo, 400 y sigue PEDIDO. Los rechazos no cambian nada ni
+    dejan registro.
+  - `registro_aceptadaYNoAplicable_soloIds`: `SOLICITUDES SOLICITUD_ACEPTADA sede=#A solicitud=#n cobro=#c cargo=#g` y
+    `SOLICITUD_NO_APLICABLE …`, con `usuario_id` = P; ni el motivo ni la respuesta.
+  - `T/services/SolicitudServiceAceptarTest` (unitario, la red): `ejecucionQueLanza_seDeshaceYQuedaNoAplicableConElMensaje`
+    (la ejecución lanza 409 → una transacción deshecha, otra confirmada, `NO_APLICABLE` con ese mensaje, sin efectos
+    posteriores) y `yaResuelta_409SinEjecutarNiRegistrar`.
+- [ ] **Paso 2: comprobar que fallan.**
+  `mvn test -Dtest='AceptarSolicitudesIntegrationTest,SolicitudesIntegrationTest' -DexcludedGroups=migracion`. Se espera
+  FAIL: la ruta no existe (404/405) y la matriz no tiene la línea.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Crear: `J/services/EjecucionSolicitud.java` (record `noAplicable` + cargo y `pagadoAntes` para los efectos de después,
+  y las razones).
+- Modificar: `J/services/SolicitudService.java` (`aceptar`), `J/controllers/SolicitudController.java` (la ruta).
+- Modificar: `J/services/ProductoAlumnoService.java` y `impl/ProductoAlumnoServiceImpl.java`
+  (`revertirPorSolicitud`, `deshacerEntregadoPorSolicitud`, `aplicarEfectosTrasSolicitud`).
+- Modificar: `J/services/CobroService.java` (`bloquearEntrega`, `deshacerEntregado`, `razonDeDevolucion`; recibe los
+  repositorios de entregas y movimientos), `J/services/CajaService.java` (`anularEntregaPorSolicitud`,
+  `anularMovimientoPorSolicitud` y `movimientoId` solo SOBRANTE o FALTANTE), `RegistroAccionesCaja`
+  (`COBRO_ENTREGADO_DESHECHO`), `RegistroAccionesCargos` (sufijo `solicitud=#n`), `MovimientoCajaRepository`
+  (`existsByCobroIdAndTipoAndEstado`).
+- Modificar: `T/servicios/CobroServiceTest.java` (constructor nuevo).
+
+**Interfaces:**
+- Produce: `SolicitudDTOs.Solicitud SolicitudService.aceptar(Long id)`.
+- Produce: `EjecucionSolicitud ProductoAlumnoService.revertirPorSolicitud(Long cargoId, Long cobroId, long solicitudId,
+  String motivo)`, `EjecucionSolicitud deshacerEntregadoPorSolicitud(Long cobroId, Long cargoId, Long profesorId,
+  CajaRequests.MotivoDeshacer motivo, long solicitudId, String motivoSolicitud)` y `void
+  aplicarEfectosTrasSolicitud(EjecucionSolicitud)`; las dos primeras, dentro de la transacción del llamador.
+- Produce: `MovimientoCaja CobroService.deshacerEntregado(Cobro cobro, EntregaCaja entrega, Long usuarioId, String
+  motivo, long solicitudId)` (cobro y entrega ya bloqueados y revalidados), `Optional<EntregaCaja>
+  bloquearEntrega(Long)` y `Optional<String> razonDeDevolucion(Long cobroId, Long cargoId)` (lo usa también la 6c-6).
+- Produce: `EjecucionSolicitud CajaService.anularEntregaPorSolicitud(Long entregaId, long solicitudId, String
+  motivo)` y `EjecucionSolicitud anularMovimientoPorSolicitud(Long movimientoId, long solicitudId, String motivo)`
+  (`hecha()` si se anuló; `noAplica(razón)` si no, sin tocar nada); dentro de la transacción del llamador.
+
+- [ ] **Paso 1: implementar** lo de los criterios.
+- [ ] **Paso 2: comprobar que pasan.** El comando de la tarea 1, más `CajaSedeIntegrationTest`, `CobrosIntegrationTest`,
+  `MatrizPermisosTest` y `CobroServiceTest`. Se espera PASS.
+
+### Tarea 3: matriz, documentación y batería
+
+- [ ] **Paso 1:** nota en `matriz-endpoints.md` (una línea nueva; ninguna casilla existente cambia).
+- [ ] **Paso 2:** `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion`: BUILD SUCCESS, con los dorados
+  de Moiskimdo sin tocar.
+- [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(solicitudes): aceptar las solicitudes al propietario con revalidación (6c-3)`.
+
+---
+
+## 5. Auto-revisión
 
 - **Cobertura:**
   - §3 objetivo 5 → 6c-1.

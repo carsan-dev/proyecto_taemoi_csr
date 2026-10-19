@@ -365,6 +365,7 @@ HEAD     /api/solicitudes                                                       
 POST     /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#crear
 GET      /api/solicitudes/contador                                                                DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#contador
 HEAD     /api/solicitudes/contador                                                                DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#contador
+POST     /api/solicitudes/{id}/aceptar                                                            DENIEGA DENIEGA DENIEGA PERMITE     DENIEGA         DENIEGA          DENIEGA  # SolicitudController#aceptar
 POST     /api/solicitudes/{id}/denegar                                                            DENIEGA DENIEGA DENIEGA PERMITE     DENIEGA         DENIEGA          DENIEGA  # SolicitudController#denegar
 POST     /api/solicitudes/{id}/retirar                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#retirar
 GET      /api/tarifas-sede                                                                        DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # TarifaSedeController#listar

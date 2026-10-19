@@ -150,6 +150,10 @@ lista blanca de la sesión solo-profesor.
 - `POST /api/solicitudes/{id}/denegar`: solo PROPIETARIO (`hasAuthority('ROLE_ADMIN')`).
 - FAMILIA, PROFESOR, SOLO_PLATAFORMA y ANONIMO: `DENIEGA` en las siete.
 
+Pieza 6c-3 (aceptar, fase3-6c-plan.md §4): 1 línea nueva; ninguna casilla existente cambia.
+- `POST /api/solicitudes/{id}/aceptar`: solo PROPIETARIO (`hasAuthority('ROLE_ADMIN')`; el servicio lo vuelve a
+  exigir); el resto, `DENIEGA` (también GESTOR, RESPONSABLE_SEDE y la sesión solo-profesor, fuera de su lista blanca).
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

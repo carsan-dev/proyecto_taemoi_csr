@@ -39,6 +39,7 @@ import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Solicitud;
 import com.taemoi.project.entities.TipoSolicitud;
+import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.EntregaCajaRepository;
@@ -55,8 +56,8 @@ import jakarta.persistence.criteria.Root;
 
 /**
  * Solicitudes al propietario (pieza 6c-2, docs/multi-escuela/fase3-6c-solicitudes.md y fase3-6c-plan.md §3): pedir los
- * tipos 1 (con o sin cobro, decisión 191) y 3, retirar, denegar, la bandeja por segmento y el contador. Aceptar es de la
- * 6c-3; los encargos, de la 6c-5.
+ * tipos 1 (con o sin cobro, decisión 191) y 3, retirar, denegar, la bandeja por segmento y el contador. Aceptar (tipos 1
+ * a 3) es de la 6c-3 ({@link #aceptar}, plan §4); los encargos, de la 6c-5.
  *
  * <ul>
  * <li><b>Pedir</b> no cambia nada más (el pago sigue marcado, la caja igual). Se valida el recurso: existe en la
@@ -95,6 +96,8 @@ public class SolicitudService {
 	public static final String YA_PENDIENTE = "Ya hay una solicitud pendiente sobre este recurso.";
 	/** 409 de una violación de integridad al crear que no es la clave única (el recurso cambió a la vez). */
 	public static final String RECURSO_CAMBIADO = "El recurso ha cambiado mientras se pedía: vuelve a intentarlo.";
+	/** Pieza 6c-3: 400 al aceptar un encargo (se marca encargado, 6c-5). */
+	public static final String ENCARGO_NO_SE_ACEPTA = "Un encargo no se acepta: se marca encargado.";
 	/** MySQL: entrada duplicada en una clave única. */
 	private static final int MYSQL_CLAVE_DUPLICADA = 1062;
 	/** Las resueltas que devuelve la bandeja, las más recientes. */
@@ -117,6 +120,8 @@ public class SolicitudService {
 	private final MovimientoCajaRepository movimientos;
 	private final GestionPorSede gestionPorSede;
 	private final RegistroAccionesSolicitudes registro;
+	private final ProductoAlumnoService productosAlumno;
+	private final CajaService caja;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -124,7 +129,8 @@ public class SolicitudService {
 
 	public SolicitudService(SolicitudRepository solicitudes, CobroRepository cobros, ProductoAlumnoRepository cargos,
 			EntregaCajaRepository entregas, MovimientoCajaRepository movimientos, GestionPorSede gestionPorSede,
-			RegistroAccionesSolicitudes registro, PlatformTransactionManager transacciones) {
+			RegistroAccionesSolicitudes registro, ProductoAlumnoService productosAlumno, CajaService caja,
+			PlatformTransactionManager transacciones) {
 		this.solicitudes = solicitudes;
 		this.cobros = cobros;
 		this.cargos = cargos;
@@ -132,6 +138,8 @@ public class SolicitudService {
 		this.movimientos = movimientos;
 		this.gestionPorSede = gestionPorSede;
 		this.registro = registro;
+		this.productosAlumno = productosAlumno;
+		this.caja = caja;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -282,7 +290,7 @@ public class SolicitudService {
 			throw new IllegalStateException("El movimiento ya está anulado.");
 		}
 		if (movimiento.getEntregaCajaId() != null) {
-			throw new IllegalStateException("Es la diferencia automática de una entrega: pide anular la entrega.");
+			throw new IllegalStateException(EjecucionSolicitud.razonMovimientoDeEntrega(movimiento.getTipo()));
 		}
 		if (solicitudes.existsByMovimientoCajaIdAndEstado(movimiento.getId(), EstadoSolicitud.PENDIENTE)) {
 			throw new IllegalStateException(YA_PENDIENTE);
@@ -340,6 +348,107 @@ public class SolicitudService {
 			em.flush();
 			return dtos(List.of(solicitud), usuario).get(0);
 		});
+	}
+
+	// ------------------------------------------------------------------ aceptar (6c-3)
+
+	/**
+	 * Pieza 6c-3 (decisión 189, §6.5): solo el propietario. Con la fila bloqueada y releída exige PENDIENTE (409
+	 * {@value SolicitudTransiciones#NO_PENDIENTE}; un encargo, 400) y, en la MISMA transacción, revalida y ejecuta la
+	 * acción de siempre con su identidad (tipo 1, A1; tipo 2, la 193; tipo 3, A7 o A9). Si ya no aplica, la cierra
+	 * {@code NO_APLICABLE} con la razón y no toca nada más. Registro {@code SOLICITUD_ACEPTADA} o
+	 * {@code SOLICITUD_NO_APLICABLE}, más el de la acción ejecutada con {@code solicitud=#n}.
+	 *
+	 * <p>Orden de bloqueos: la solicitud primero y después los de la acción (cargo → cobro; cargo → entrega → cobro;
+	 * entrega → cobros; movimiento). Las demás vías de solicitudes y de caja no bloquean una solicitud después de esas
+	 * filas. Excepción: borrar un cargo (quitar de una convocatoria, borrar un alumno o una convocatoria) pasa por las
+	 * FK ON DELETE SET NULL de {@code solicitud} (V31_8) y bloquea sus filas DESPUÉS del cargo. Ese cruce con aceptar
+	 * puede producir un interbloqueo: InnoDB lo detecta y elige una víctima, que {@code GlobalExceptionHandler} devuelve
+	 * como 409 (concurrencia) y cuya transacción se deshace entera. Si la víctima es aceptar, la solicitud sigue
+	 * PENDIENTE y al reintentar queda NO_APLICABLE (el cargo ya no existe). Sin efecto en el dinero.
+	 *
+	 * <p>Red: si la ejecución lanza un error de negocio pese a la revalidación, se deshace todo y, en otra transacción,
+	 * la solicitud (si sigue PENDIENTE) se cierra {@code NO_APLICABLE} con ese mensaje: no se queda pendiente. Los
+	 * efectos de un cambio de pago (convocatoria, derecho a examen) van después de confirmar, como en A1.
+	 */
+	public SolicitudDTOs.Solicitud aceptar(Long id) {
+		if (!tieneAutoridad(Roles.ROLE_ADMIN)) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		Long usuario = usuarioDeLaSesion();
+		Aceptacion aceptacion;
+		try {
+			aceptacion = enTransaccion(() -> {
+				Solicitud solicitud = bloquear(id);
+				if (solicitud.getTipo() == TipoSolicitud.ENCARGO) {
+					throw new IllegalArgumentException(ENCARGO_NO_SE_ACEPTA);
+				}
+				SolicitudTransiciones.exigir(solicitud, EstadoSolicitud.ACEPTADA);
+				EjecucionSolicitud ejecucion;
+				try {
+					ejecucion = ejecutar(solicitud);
+				} catch (IllegalStateException | IllegalArgumentException | NoSuchElementException
+						| ProductoNoEncontradoException error) {
+					throw new EjecucionRechazada(error);
+				}
+				cerrar(solicitud, ejecucion, usuario);
+				em.flush();
+				return new Aceptacion(dtos(List.of(solicitud), usuario).get(0), ejecucion);
+			});
+		} catch (EjecucionRechazada rechazo) {
+			String mensaje = rechazo.getCause().getMessage();
+			String razon = mensaje == null || mensaje.isBlank() ? EjecucionSolicitud.YA_NO_APLICA
+					: mensaje.length() > MAX_TEXTO ? mensaje.substring(0, MAX_TEXTO) : mensaje;
+			return enTransaccion(() -> {
+				Solicitud solicitud = bloquear(id);
+				SolicitudTransiciones.exigir(solicitud, EstadoSolicitud.NO_APLICABLE);
+				cerrar(solicitud, EjecucionSolicitud.noAplica(razon), usuario);
+				em.flush();
+				return dtos(List.of(solicitud), usuario).get(0);
+			});
+		}
+		productosAlumno.aplicarEfectosTrasSolicitud(aceptacion.ejecucion());
+		return aceptacion.solicitud();
+	}
+
+	/** La acción de la solicitud (bloqueada y PENDIENTE), dentro de su transacción. */
+	private EjecucionSolicitud ejecutar(Solicitud s) {
+		long solicitudId = s.getId();
+		return switch (s.getTipo()) {
+		case REVERTIR_COBRO -> productosAlumno.revertirPorSolicitud(s.getProductoAlumnoId(), s.getCobroId(),
+				solicitudId, s.getMotivo());
+		case DESHACER_COBRO_ENTREGADO -> productosAlumno.deshacerEntregadoPorSolicitud(s.getCobroId(),
+				s.getProductoAlumnoId(), s.getSolicitadoPorUsuarioId(), s.getMotivoDeshacer(), solicitudId,
+				s.getMotivo());
+		case ANULAR_ENTREGA -> caja.anularEntregaPorSolicitud(s.getEntregaCajaId(), solicitudId, s.getMotivo());
+		case ANULAR_MOVIMIENTO -> caja.anularMovimientoPorSolicitud(s.getMovimientoCajaId(), solicitudId,
+				s.getMotivo());
+		case ENCARGO -> throw new IllegalArgumentException(ENCARGO_NO_SE_ACEPTA);
+		};
+	}
+
+	/** ACEPTADA (sin respuesta) o NO_APLICABLE (con la razón), resuelta por quien acepta, y su registro. */
+	private void cerrar(Solicitud solicitud, EjecucionSolicitud ejecucion, Long usuario) {
+		String endpoint = "/api/solicitudes/" + solicitud.getId() + "/aceptar";
+		if (ejecucion.aplica()) {
+			resolver(solicitud, EstadoSolicitud.ACEPTADA, usuario, null);
+			registro.registrar(RegistroAccionesSolicitudes.Accion.SOLICITUD_ACEPTADA, endpoint, solicitud);
+		} else {
+			resolver(solicitud, EstadoSolicitud.NO_APLICABLE, usuario, ejecucion.noAplicable());
+			registro.registrar(RegistroAccionesSolicitudes.Accion.SOLICITUD_NO_APLICABLE, endpoint, solicitud);
+		}
+	}
+
+	private record Aceptacion(SolicitudDTOs.Solicitud solicitud, EjecucionSolicitud ejecucion) {
+	}
+
+	/** La ejecución falló con un error de negocio: la transacción se deshace y la solicitud se cierra NO_APLICABLE. */
+	private static final class EjecucionRechazada extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+
+		EjecucionRechazada(RuntimeException causa) {
+			super(causa.getMessage(), causa);
+		}
 	}
 
 	/**

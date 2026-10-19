@@ -11,7 +11,9 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.taemoi.project.entities.EstadoMovimientoCaja;
 import com.taemoi.project.entities.MovimientoCaja;
+import com.taemoi.project.entities.TipoMovimientoCaja;
 
 import jakarta.persistence.LockModeType;
 
@@ -22,6 +24,12 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT m FROM MovimientoCaja m WHERE m.id = :id")
 	Optional<MovimientoCaja> bloquearPorId(@Param("id") Long id);
+
+	/**
+	 * Pieza 6c-3: si hay un movimiento de ese tipo y estado enlazado al cobro (p. ej. una DEVOLUCION ACTIVA, 153: un cobro
+	 * con devolución no se anula).
+	 */
+	boolean existsByCobroIdAndTipoAndEstado(Long cobroId, TipoMovimientoCaja tipo, EstadoMovimientoCaja estado);
 
 	/** Movimientos (de cualquier estado) de esas entregas. */
 	List<MovimientoCaja> findByEntregaCajaIdInOrderByIdAsc(Collection<Long> entregaIds);

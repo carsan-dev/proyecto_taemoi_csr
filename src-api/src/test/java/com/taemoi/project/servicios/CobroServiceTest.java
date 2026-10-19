@@ -29,6 +29,8 @@ import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.exceptions.pago.CobroEntregadoException;
 import com.taemoi.project.repositories.CobroRepository;
+import com.taemoi.project.repositories.EntregaCajaRepository;
+import com.taemoi.project.repositories.MovimientoCajaRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.CobroService;
 
@@ -47,7 +49,8 @@ class CobroServiceTest {
 		cobros = mock(CobroRepository.class);
 		PlatformTransactionManager transacciones = mock(PlatformTransactionManager.class);
 		when(transacciones.getTransaction(any())).thenAnswer(i -> new SimpleTransactionStatus());
-		servicio = new CobroService(cobros, mock(ProductoAlumnoRepository.class), transacciones);
+		servicio = new CobroService(cobros, mock(ProductoAlumnoRepository.class), mock(EntregaCajaRepository.class),
+				mock(MovimientoCajaRepository.class), transacciones);
 	}
 
 	@AfterEach

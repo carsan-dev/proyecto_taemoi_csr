@@ -226,15 +226,16 @@ class SolicitudesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Decisión 191, parte de la 6c-2: pedir sobre un cargo pagado antes de la 6b-1 (sin cobro). La 6c-3 añade aquí
-	 * aceptar y comprobar que solo desmarca.
+	 * Decisión 191: pedir sobre un cargo pagado antes de la 6b-1 (sin cobro; 6c-2) y aceptar (6c-3): solo se desmarca,
+	 * sin crear ni anular cobros, y la caja no cambia.
 	 */
 	@Test
 	void revertirCargoSinCobro_pideAceptaYSoloDesmarca() throws Exception {
 		long cargo = s.cargoPagadoSinCobro(s.e.aA);
 		JsonNode creada = leer(crear("REVERTIR_COBRO", "productoAlumnoId", cargo, "Pagado dos veces en 2025"),
 				s.tGestor, 201);
-		Map<String, Object> fila = jdbc.queryForMap("SELECT * FROM solicitud WHERE id = ?", creada.get("id").asLong());
+		long id = creada.get("id").asLong();
+		Map<String, Object> fila = jdbc.queryForMap("SELECT * FROM solicitud WHERE id = ?", id);
 		assertNull(fila.get("cobro_id"));
 		assertEquals(cargo, numero(fila, "producto_alumno_id"));
 		assertEquals(s.e.sA, numero(fila, "sede_id"), "la sede del cargo");
@@ -242,6 +243,20 @@ class SolicitudesIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM cobro WHERE producto_alumno_id = ?", Long.class,
 				cargo), "pedir no crea cobros");
 		assertTrue(pagado(cargo));
+
+		BigDecimal saldo = s.saldo(s.e.sA);
+		JsonNode aceptada = leer(post("/api/solicitudes/" + id + "/aceptar"), s.tPropietario, 200);
+		assertEquals("ACEPTADA", aceptada.get("estado").asText());
+		assertTrue(aceptada.get("respuesta").isNull());
+		Map<String, Object> resuelta = jdbc.queryForMap("SELECT * FROM solicitud WHERE id = ?", id);
+		assertEquals("ACEPTADA", resuelta.get("estado"));
+		assertEquals(s.propietario, numero(resuelta, "resuelto_por_usuario_id"));
+		assertNotNull(resuelta.get("resuelto_en"));
+		assertFalse(pagado(cargo), "se desmarca como hoy");
+		assertNull(jdbc.queryForObject("SELECT fecha_pago FROM producto_alumno WHERE id = ?", Object.class, cargo));
+		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM cobro WHERE producto_alumno_id = ?", Long.class,
+				cargo), "ni crea ni anula cobros");
+		assertEquals(0, saldo.compareTo(s.saldo(s.e.sA)), "no había cobro en la caja");
 	}
 
 	@Test
@@ -643,7 +658,8 @@ class SolicitudesIntegrationTest extends MySqlIntegrationTest {
 		for (String token : tokens) {
 			for (MockHttpServletRequestBuilder ruta : List.of(get("/api/solicitudes").param("segmento", "PENDIENTES"),
 					get("/api/solicitudes/contador"), crear("REVERTIR_COBRO", "cobroId", 1L, "x"),
-					post("/api/solicitudes/" + id + "/retirar"), denegar(id, "x"))) {
+					post("/api/solicitudes/" + id + "/retirar"), denegar(id, "x"),
+					post("/api/solicitudes/" + id + "/aceptar"))) {
 				MvcResult r = peticion(ruta, token);
 				assertEquals(403, r.getResponse().getStatus(),
 						r.getRequest().getMethod() + " " + r.getRequest().getRequestURI());

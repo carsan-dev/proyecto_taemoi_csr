@@ -69,6 +69,30 @@ public interface ProductoAlumnoService {
 	 */
 	java.util.Set<Long> cobrosQueSonVentaDelProfesor(java.util.Collection<com.taemoi.project.entities.Cobro> cobros);
 
+	/**
+	 * Pieza 6c-3, tipo 1 aceptado (decisiones 189 y 191), DENTRO de la transacción de quien acepta (con la solicitud ya
+	 * bloqueada): bloquea el cargo y, si hay, el cobro; revalida (cargo existe y pagado; con cobro, ACTIVO, de ese cargo,
+	 * sin entrega y sin devolución; sin cobro, que siga sin cobro ACTIVO) y, si aplica, revierte por el camino de A1 con
+	 * el motivo «Revertido por solicitud #n: {motivo}» (sin cobro, solo desmarca). Si no aplica, no toca nada.
+	 */
+	EjecucionSolicitud revertirPorSolicitud(Long cargoId, Long cobroId, long solicitudId, String motivo);
+
+	/**
+	 * Pieza 6c-3, tipo 2 aceptado (decisión 193), DENTRO de la transacción de quien acepta: bloquea cargo → entrega →
+	 * cobro; revalida (cobro ACTIVO de ese cargo, origen PROFESOR, cobrado por {@code profesorId}, en una entrega ACTIVA,
+	 * sin devolución; cargo pagado; con NO_HUBO_VENTA, su venta) y, si aplica, anula el cobro con su ERROR +importe en la
+	 * entrega ({@link CobroService#deshacerEntregado}) y deja el cargo como A4 (pendiente o, con NO_HUBO_VENTA,
+	 * cancelado). Si no aplica, no toca nada.
+	 */
+	EjecucionSolicitud deshacerEntregadoPorSolicitud(Long cobroId, Long cargoId, Long profesorId,
+			com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer motivo, long solicitudId, String motivoSolicitud);
+
+	/**
+	 * Pieza 6c-3: tras confirmar la aceptación, los mismos efectos que A1 y A4 dejan fuera de la transacción del cobro
+	 * (inscripción a la convocatoria, derecho a examen). Sin cargo (tipo 3 o no aplicable), nada.
+	 */
+	void aplicarEfectosTrasSolicitud(EjecucionSolicitud ejecucion);
+
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
 
 	/**
