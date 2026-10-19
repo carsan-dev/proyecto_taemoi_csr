@@ -172,6 +172,11 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         icon: 'bi-cash-stack',
       },
       {
+        label: 'Caja de sede',
+        route: '/cajaSede',
+        icon: 'bi-safe2',
+      },
+      {
         label: 'Registro de acciones',
         route: '/auditoriaSistema',
         icon: 'bi-journal-text',

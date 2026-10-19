@@ -58,7 +58,12 @@
     "src/app/componentes/vistas/vista-principal-admin/vista-principal-admin.component.spec.ts",
     "src/app/componentes/endpoints/configuracion-sistema/configuracion-sistema.component.spec.ts",
     "src/app/componentes/endpoints/listado-grupos/listado-grupos.resumen.spec.ts",
-    "src/app/servicios/endpoints/endpoints.service.resumen.spec.ts"
+    "src/app/servicios/endpoints/endpoints.service.resumen.spec.ts",
+    "src/app/core/recarga-por-chunk.spec.ts",
+    "src/app/componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component.spec.ts",
+    "src/app/servicios/endpoints/caja.service.spec.ts",
+    "src/app/componentes/endpoints/caja-sede/caja-calculos.spec.ts",
+    "src/app/componentes/endpoints/caja-sede/caja-sede.component.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

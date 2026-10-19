@@ -5,6 +5,7 @@ import { Producto } from '../../../../interfaces/producto';
 import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule, formatDate, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -15,6 +16,7 @@ import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton
 import { Observable, concat, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../../directives/searchable-select.directive';
+import { fechaApi } from '../../../../utils/fecha-api';
 
 interface AsignacionPendiente {
   productoId: number;
@@ -46,16 +48,24 @@ export class ProductosAlumnoComponent implements OnInit {
   deportesAlumno: AlumnoDeporteDTO[] = [];
   selectedDeporte: string | null = null;
 
+  /** Cargos con un cancelar o reactivar en curso: su botón queda deshabilitado hasta la respuesta (sin doble clic). */
+  private readonly accionesEnCurso = new Set<number>();
+
+  /** Propietario (ROLE_ADMIN): el único que borra cargos (pieza 6b-2c). */
+  esPropietario = false;
+
   mostrarModalNotas = false;
   productoSeleccionado!: ProductoAlumnoDTO;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly endpointsService: EndpointsService,
-    private readonly location: Location
+    private readonly location: Location,
+    private readonly authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
+    this.resolverPermisos();
     this.alumnoId = +this.route.snapshot.paramMap.get('id')!;
     this.storageKey = `productosAlumnoEstado_${this.alumnoId}`;
     this.restaurarEstadoPaginacion();
@@ -153,7 +163,146 @@ export class ProductosAlumnoComponent implements OnInit {
     return /\bMATRICULA\b/.test(concepto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase());
   }
 
+  /** Pieza 6b-3: el cargo está cancelado (queda tachado en la ficha). */
+  estaCancelado(producto: ProductoAlumnoDTO): boolean {
+    return !!producto.canceladoEn;
+  }
+
+  /** Cancelar: solo pendientes (ni pagados ni ya cancelados). Gestión y propietario. */
+  puedeCancelar(producto: ProductoAlumnoDTO): boolean {
+    return !producto.pagado && !this.estaCancelado(producto) && !this.isPendingDelete(producto.id);
+  }
+
+  /** Borrar: solo el propietario y solo cargos no pagados ni cancelados (el servidor rechaza los ya cobrados). */
+  puedeEliminar(producto: ProductoAlumnoDTO): boolean {
+    return this.esPropietario && !producto.pagado && !this.estaCancelado(producto);
+  }
+
+  /** «Cancelado por <nombre> el dd/mm/aaaa · «motivo»» (sin nombre: «Cancelado el …»). */
+  textoCancelacion(producto: ProductoAlumnoDTO): string {
+    if (!producto.canceladoEn) {
+      return '';
+    }
+    // LocalDateTime: la API lo manda como [año, mes, día, hora, …] (ver fechaApi).
+    const cuando = fechaApi(producto.canceladoEn);
+    const fecha = cuando ? formatDate(cuando, 'dd/MM/yyyy', 'en-US') : '';
+    const quien = producto.canceladoPorNombre?.trim();
+    const sufijo = fecha ? ` el ${fecha}` : '';
+    const base = quien ? `Cancelado por ${quien}${sufijo}` : `Cancelado${sufijo}`;
+    const motivo = producto.motivoCancelacion?.trim();
+    return motivo ? `${base} · «${motivo}»` : base;
+  }
+
+  accionEnCurso(productoId: number): boolean {
+    return this.accionesEnCurso.has(productoId);
+  }
+
+  cancelarCargo(producto: ProductoAlumnoDTO): void {
+    if (!this.puedeCancelar(producto) || this.accionEnCurso(producto.id)) {
+      return;
+    }
+    Swal.fire({
+      title: 'Cancelar cargo',
+      text: `«${producto.concepto}». No se borra: queda tachado en la ficha y se puede reactivar.`,
+      icon: 'warning',
+      input: 'textarea',
+      inputLabel: 'Motivo',
+      inputPlaceholder: 'Por qué se cancela este cargo',
+      inputAttributes: { maxlength: '500', 'aria-label': 'Motivo de la cancelación' },
+      inputValidator: (valor: string) => {
+        const limpio = (valor ?? '').trim();
+        if (!limpio) {
+          return 'Indica el motivo de la cancelación';
+        }
+        return limpio.length > 500 ? 'El motivo admite como mucho 500 caracteres' : null;
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Cancelar cargo',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#c53030',
+    }).then((resultado) => {
+      if (!resultado.isConfirmed) {
+        return;
+      }
+      if (this.accionEnCurso(producto.id)) {
+        return;
+      }
+      const motivo = String(resultado.value ?? '').trim();
+      this.accionesEnCurso.add(producto.id);
+      this.endpointsService.cancelarProductoAlumno(producto.id, motivo)
+        .pipe(finalize(() => this.accionesEnCurso.delete(producto.id)))
+        .subscribe({
+        next: (actualizado) => {
+          this.aplicarCargoActualizado(actualizado);
+          showSuccessToast('Cargo cancelado');
+        },
+        // 400/409 con {mensaje}: los muestra el interceptor de errores.
+        error: () => undefined,
+      });
+    });
+  }
+
+  reactivarCargo(producto: ProductoAlumnoDTO): void {
+    if (!this.estaCancelado(producto) || this.accionEnCurso(producto.id)) {
+      return;
+    }
+    Swal.fire({
+      title: 'Reactivar cargo',
+      text: `«${producto.concepto}» vuelve a estar pendiente de pago.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Reactivar',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#2f855a',
+    }).then((resultado) => {
+      if (!resultado.isConfirmed) {
+        return;
+      }
+      if (this.accionEnCurso(producto.id)) {
+        return;
+      }
+      this.accionesEnCurso.add(producto.id);
+      this.endpointsService.reactivarProductoAlumno(producto.id)
+        .pipe(finalize(() => this.accionesEnCurso.delete(producto.id)))
+        .subscribe({
+        next: (actualizado) => {
+          this.aplicarCargoActualizado(actualizado);
+          showSuccessToast('Cargo reactivado');
+        },
+        error: () => undefined,
+      });
+    });
+  }
+
+  /** Cambia la fila por la respuesta del servidor sin recargar (los demás cambios pendientes se conservan). */
+  private aplicarCargoActualizado(actualizado: ProductoAlumnoDTO): void {
+    const indice = this.productosAlumno.findIndex((item) => item.id === actualizado.id);
+    if (indice < 0) {
+      return;
+    }
+    this.productosAlumno[indice] = { ...actualizado };
+    this.productosSnapshot.set(actualizado.id, this.getProductoSnapshot(this.productosAlumno[indice]));
+    this.pendingUpdates.delete(actualizado.id);
+    this.pendingDeletes.delete(actualizado.id);
+    this.cambiarPagina(this.paginaActual);
+  }
+
+  resolverPermisos(): void {
+    if (this.authService.rolesEstanCargados()) {
+      this.esPropietario = this.authService.tieneRolAdmin();
+      return;
+    }
+    this.authService.obtenerRoles().subscribe({
+      next: () => (this.esPropietario = this.authService.tieneRolAdmin()),
+      error: () => (this.esPropietario = false),
+    });
+  }
+
   marcarProductoParaEliminar(productoAlumnoId: number) {
+    const producto = this.productosAlumno.find((item) => item.id === productoAlumnoId);
+    if (!producto || !this.puedeEliminar(producto)) {
+      return;
+    }
     this.pendingDeletes.add(productoAlumnoId);
     this.pendingUpdates.delete(productoAlumnoId);
   }

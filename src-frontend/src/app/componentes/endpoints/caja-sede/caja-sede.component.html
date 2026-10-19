@@ -1,0 +1,471 @@
+<section class="tesoreria-page caja-page">
+  <header class="page-header caja-header">
+    <div>
+      <h1><i class="bi bi-safe2" aria-hidden="true"></i> Caja de sede</h1>
+      <p>El efectivo de la sede: lo que hay en caja, lo que traen los profesores y lo que se ha apuntado.</p>
+    </div>
+    <div class="caja-selectores">
+      <div class="selector-cabecera">
+        <label for="cajaSede">Sede</label>
+        <select id="cajaSede" [(ngModel)]="sedeId" (ngModelChange)="onSedeChange()"
+          [disabled]="cargandoSedes || sedes.length === 0">
+          @for (sede of sedes; track sede.id) {
+            <option [ngValue]="sede.id">{{ sede.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="selector-cabecera">
+        <label for="cajaPeriodo">Periodo</label>
+        <select id="cajaPeriodo" [(ngModel)]="periodo" (ngModelChange)="onPeriodoChange()"
+          [disabled]="sedeId === null">
+          @for (opcion of periodos; track opcion.valor) {
+            <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </header>
+
+  @if (cargandoSedes) {
+    <div class="tabla-card estado-pagina" role="status">
+      <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      Cargando sedes…
+    </div>
+  } @else if (errorSedes) {
+    <div class="tabla-card estado-pagina" role="alert">
+      <p>{{ errorSedes }}</p>
+      <button type="button" class="btn-principal" (click)="cargarSedes()">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Reintentar
+      </button>
+    </div>
+  } @else if (sedes.length === 0) {
+    <div class="tabla-card estado-pagina">
+      <i class="bi bi-building" aria-hidden="true"></i>
+      <p>No hay ninguna sede cuya caja puedas llevar.</p>
+    </div>
+  } @else {
+    @if (errorDatos) {
+      <div class="aviso-error" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span>{{ errorDatos }}</span>
+        <button type="button" class="btn-mini" (click)="recargarTodo()">Reintentar</button>
+      </div>
+    }
+
+    <section class="metricas" aria-label="Resumen de la caja" [attr.aria-busy]="cargandoResumen">
+      <article class="metrica">
+        <p class="titulo">Saldo de caja</p>
+        <p class="valor">{{ resumen ? euros(resumen.saldoCaja) : '—' }}</p>
+        <p class="detalle">Efectivo que debería haber en la sede</p>
+      </article>
+      <article class="metrica">
+        <p class="titulo">Pendiente de entregar</p>
+        <p class="valor valor-aviso">{{ resumen ? euros(resumen.pendienteDeEntregar) : '—' }}</p>
+        <p class="detalle">En mano de los profesores</p>
+      </article>
+      <article class="metrica">
+        <p class="titulo">Recibido este periodo</p>
+        <p class="valor">{{ resumen ? euros(resumen.recibidoEnPeriodo) : '—' }}</p>
+        <p class="detalle">{{ periodoActual.etiqueta }}</p>
+      </article>
+      <article class="metrica">
+        <p class="titulo">Diferencias</p>
+        <p class="valor" [ngClass]="claseDiferenciasResumen()">{{ resumen ? importeFirmado(resumen.diferenciasEnPeriodo) : '—' }}</p>
+        <p class="detalle">Sobrantes y faltantes de {{ periodoActual.etiqueta }}</p>
+      </article>
+    </section>
+
+    <!-- Efectivo en mano de los profesores -->
+    <article class="tabla-card" aria-labelledby="tituloPendientes">
+      <header class="tabla-header">
+        <div>
+          <h2 id="tituloPendientes">Efectivo en mano de los profesores</h2>
+          <p>Cobros en efectivo que aún no han entregado en la sede.</p>
+        </div>
+      </header>
+      @if (cargandoPendientes && pendientes.length === 0) {
+        <div class="sin-resultados" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <p>Cargando…</p>
+        </div>
+      } @else if (pendientes.length === 0) {
+        <div class="sin-resultados">
+          <i class="bi bi-check2-circle" aria-hidden="true"></i>
+          <p>Ningún profesor tiene efectivo pendiente de entregar.</p>
+        </div>
+      } @else {
+        <div class="tabla-responsive">
+          <table class="tabla-caja">
+            <thead>
+              <tr>
+                <th scope="col">Profesor</th>
+                <th scope="col" class="num">Cobros</th>
+                <th scope="col" class="num">Importe</th>
+                <th scope="col">Desde</th>
+                <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (profesor of pendientes; track profesor.usuarioId) {
+                <tr>
+                  <td data-label="Profesor"><strong>{{ profesor.nombre }}</strong></td>
+                  <td data-label="Cobros" class="num">{{ profesor.numeroCobros }}</td>
+                  <td data-label="Importe" class="num importe">{{ euros(profesor.importe) }}</td>
+                  <td data-label="Desde">
+                    @if (avisoEfectivo(profesor)) {
+                      <span class="estado-chip chip-aviso" [title]="'Más de ' + diasAviso + ' días con el efectivo en mano'">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i> {{ textoDesde(profesor) }}
+                      </span>
+                    } @else {
+                      {{ textoDesde(profesor) }}
+                    }
+                  </td>
+                  <td class="col-accion">
+                    <button type="button" class="btn-cobrar" (click)="abrirEntrega(profesor, $event)">
+                      <i class="bi bi-box-arrow-in-down" aria-hidden="true"></i> Recibir entrega
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+
+    <!-- Entregas -->
+    <article class="tabla-card" aria-labelledby="tituloEntregas">
+      <header class="tabla-header">
+        <div>
+          <h2 id="tituloEntregas">Entregas</h2>
+          <p>Dinero que los profesores han entregado en la sede, del más reciente al más antiguo.</p>
+        </div>
+      </header>
+      @if (cargandoEntregas && entregas.length === 0) {
+        <div class="sin-resultados" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <p>Cargando…</p>
+        </div>
+      } @else if (entregas.length === 0) {
+        <div class="sin-resultados">
+          <i class="bi bi-inbox" aria-hidden="true"></i>
+          <p>Todavía no se ha recibido ninguna entrega en esta sede.</p>
+        </div>
+      } @else {
+        <div class="tabla-responsive">
+          <table class="tabla-caja">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">De</th>
+                <th scope="col">Recibió</th>
+                <th scope="col" class="num">Contado</th>
+                <th scope="col">Diferencia</th>
+                @if (esPropietario) {
+                  <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (entrega of entregas; track entrega.id) {
+                <tr [class.fila-anulada]="entregaAnulada(entrega)">
+                  <td data-label="Fecha">{{ entrega.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td data-label="De">
+                    <span class="tachable">{{ entrega.entregadoPorNombre || '—' }}</span>
+                    @if (entrega.autoentrega) {
+                      <span class="estado-chip chip-neutro">autoentrega</span>
+                    }
+                  </td>
+                  <td data-label="Recibió"><span class="tachable">{{ entrega.recibidoPorNombre || '—' }}</span></td>
+                  <td data-label="Contado" class="num importe"><span class="tachable">{{ euros(entrega.importeContado) }}</span></td>
+                  <td data-label="Diferencia">
+                    <span class="estado-chip" [ngClass]="claseDiferencia(entrega.diferencia)">{{ textoDiferencia(entrega.diferencia) }}</span>
+                    @if (entregaAnulada(entrega)) {
+                      <span class="estado-chip chip-anulada">anulada</span>
+                      @if (entrega.motivoAnulacion) {
+                        <span class="motivo">«{{ entrega.motivoAnulacion }}»</span>
+                      }
+                    }
+                  </td>
+                  @if (esPropietario) {
+                    <td class="col-accion">
+                      @if (puedeAnularEntrega(entrega)) {
+                        <button type="button" class="btn-accion btn-anular" (click)="anularEntrega(entrega)"
+                          [attr.aria-label]="'Anular la entrega de ' + (entrega.entregadoPorNombre || 'un profesor') + ' del ' + (entrega.fecha | date: 'dd/MM/yyyy')">
+                          <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
+                        </button>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="tabla-footer">
+          <p class="tabla-meta">Mostrando {{ entregas.length }} de {{ totalEntregas }} entregas</p>
+          @if (totalPaginasEntregas > 1) {
+            <app-paginacion
+              [paginaActual]="paginaEntregas"
+              [totalPaginas]="totalPaginasEntregas"
+              [tamanoPagina]="25"
+              [deshabilitado]="cargandoEntregas"
+              (pageChange)="cambiarPaginaEntregas($event)">
+            </app-paginacion>
+          }
+        </div>
+      }
+    </article>
+
+    <!-- Movimientos -->
+    <article class="tabla-card" aria-labelledby="tituloMovimientos">
+      <header class="tabla-header">
+        <div>
+          <h2 id="tituloMovimientos">Movimientos</h2>
+          <p>Devoluciones, correcciones, sobrantes y faltantes de {{ periodoActual.etiqueta }}.</p>
+        </div>
+        <div class="tabla-actions">
+          <button type="button" class="btn-principal" (click)="abrirMovimiento($event)">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Apuntar movimiento
+          </button>
+        </div>
+      </header>
+      @if (cargandoMovimientos && movimientos.length === 0) {
+        <div class="sin-resultados" role="status">
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          <p>Cargando…</p>
+        </div>
+      } @else if (movimientos.length === 0) {
+        <div class="sin-resultados">
+          <i class="bi bi-journal" aria-hidden="true"></i>
+          <p>No hay movimientos en {{ periodoActual.etiqueta }}.</p>
+        </div>
+      } @else {
+        <div class="tabla-responsive">
+          <table class="tabla-caja">
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Alumno</th>
+                <th scope="col" class="num">Importe</th>
+                <th scope="col">Nota</th>
+                @if (esPropietario) {
+                  <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (movimiento of movimientos; track movimiento.id) {
+                <tr [class.fila-anulada]="movimientoAnulado(movimiento)">
+                  <td data-label="Fecha">{{ movimiento.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td data-label="Tipo">
+                    <span class="tachable">{{ etiquetaTipo(movimiento.tipo) }}</span>
+                    @if (movimientoAnulado(movimiento)) {
+                      <span class="estado-chip chip-anulada">anulado</span>
+                    }
+                  </td>
+                  <td data-label="Alumno">{{ nombreAlumno(movimiento.alumnoId) }}</td>
+                  <td data-label="Importe" class="num importe" [ngClass]="claseImporte(movimiento.importe)">
+                    <span class="tachable">{{ importeFirmado(movimiento.importe) }}</span>
+                  </td>
+                  <td data-label="Nota" class="nota-celda">
+                    {{ movimiento.nota || '—' }}
+                    @if (movimientoAnulado(movimiento) && movimiento.motivoAnulacion) {
+                      <span class="motivo">Anulado: «{{ movimiento.motivoAnulacion }}»</span>
+                    }
+                  </td>
+                  @if (esPropietario) {
+                    <td class="col-accion">
+                      @if (puedeAnularMovimiento(movimiento)) {
+                        <button type="button" class="btn-accion btn-anular" (click)="anularMovimiento(movimiento)"
+                          [attr.aria-label]="'Anular ' + etiquetaTipo(movimiento.tipo) + ' de ' + euros(movimiento.importe)">
+                          <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
+                        </button>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  }
+
+  <!-- Diálogo: recibir entrega -->
+  @if (dialogoEntrega; as dialogo) {
+    <div class="modal-backdrop" (click)="cerrarEntrega()"></div>
+    <section class="caja-modal" role="dialog" aria-modal="true" aria-labelledby="tituloEntrega"
+      cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <header class="caja-modal-header">
+        <div>
+          <h2 id="tituloEntrega">Recibir entrega de {{ dialogo.profesor.nombre }}</h2>
+          <p>Marca los cobros que entrega y cuenta el dinero.</p>
+        </div>
+        <button type="button" class="btn-cerrar-modal" (click)="cerrarEntrega()" [disabled]="dialogo.enviando" aria-label="Cerrar">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <form class="caja-modal-cuerpo" (ngSubmit)="recibirEntrega()" id="formEntrega">
+        <fieldset class="lista-cobros">
+          <legend class="cabecera-cobros">
+            <span>Cobros</span>
+            <input type="checkbox" class="marcar-todos" aria-label="Seleccionar todos los cobros"
+              [checked]="estadoSeleccionCobros === 'todos'" [indeterminate]="estadoSeleccionCobros === 'algunos'"
+              [disabled]="dialogo.enviando || dialogo.profesor.cobros.length === 0"
+              (change)="alternarTodos($any($event.target).checked)">
+          </legend>
+          @for (cobro of dialogo.profesor.cobros; track cobro.cobroId) {
+            <label class="cobro-item">
+              <span class="cobro-texto">
+                {{ cobro.fechaCobro | date: 'dd/MM/yyyy' }} · {{ cobro.concepto }} · {{ nombreAlumnoCobro(cobro) }}
+              </span>
+              <span class="cobro-importe">{{ euros(cobro.importe) }}</span>
+              <input type="checkbox" [checked]="dialogo.seleccionados.has(cobro.cobroId)"
+                [disabled]="dialogo.enviando"
+                (change)="alternarCobro(cobro.cobroId, $any($event.target).checked)">
+            </label>
+          }
+        </fieldset>
+
+        @if (calculoEntrega; as calculo) {
+          <p class="deberia" aria-live="polite">Debería entregar <strong>{{ euros(calculo.declarado) }}</strong></p>
+
+          <div class="campo">
+            <label for="importeContado">Has contado</label>
+            <div class="campo-importe">
+              <input id="importeContado" name="importeContado" type="text" inputmode="decimal" autocomplete="off"
+                [ngModel]="dialogo.contado" (ngModelChange)="onContadoInput($event)" [disabled]="dialogo.enviando"
+                [attr.aria-invalid]="calculo.contado === null" aria-describedby="avisoCuadre">
+              <span aria-hidden="true">€</span>
+            </div>
+          </div>
+
+          <p id="avisoCuadre" class="aviso-cuadre" aria-live="polite"
+            [class.aviso-falta]="calculo.contado !== null && calculo.estado === 'falta'"
+            [class.aviso-sobra]="calculo.contado !== null && calculo.estado === 'sobra'">
+            @if (calculo.contado === null) {
+              Escribe un importe válido, por ejemplo 45,50.
+            } @else if (calculo.estado === 'falta') {
+              Faltan {{ euros(-calculo.diferencia) }}. Se apuntará un faltante en la caja.
+            } @else if (calculo.estado === 'sobra') {
+              Sobran {{ euros(calculo.diferencia) }}. Se apuntará un sobrante en la caja.
+            }
+          </p>
+
+          <div class="campo">
+            <label for="notaEntrega">Nota @if (calculo.notaObligatoria) {<span class="obligatorio">(obligatoria)</span>}</label>
+            <textarea id="notaEntrega" name="notaEntrega" rows="2" maxlength="500"
+              [(ngModel)]="dialogo.nota" [required]="calculo.notaObligatoria" [disabled]="dialogo.enviando"
+              [placeholder]="calculo.notaObligatoria ? 'Explica la diferencia' : 'Opcional'"></textarea>
+          </div>
+        }
+
+        @if (dialogo.error) {
+          <p class="error-dialogo" role="alert">{{ dialogo.error }}</p>
+        }
+      </form>
+
+      <footer class="caja-modal-footer">
+        <button type="button" class="btn-secundario" (click)="cerrarEntrega()" [disabled]="dialogo.enviando">Cancelar</button>
+        <button type="submit" form="formEntrega" class="btn-cobrar" [disabled]="!puedeRecibir()">
+          @if (dialogo.enviando) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Recibiendo…
+          } @else {
+            Recibir {{ euros(calculoEntrega?.contado ?? 0) }}
+          }
+        </button>
+      </footer>
+    </section>
+  }
+
+  <!-- Diálogo: apuntar movimiento -->
+  @if (dialogoMovimiento; as dialogo) {
+    <div class="modal-backdrop" (click)="cerrarMovimiento()"></div>
+    <section class="caja-modal caja-modal-estrecho" role="dialog" aria-modal="true" aria-labelledby="tituloMovimiento"
+      cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+      <header class="caja-modal-header">
+        <div>
+          <h2 id="tituloMovimiento">Apuntar movimiento</h2>
+          <p>{{ sedeActual?.nombre }}</p>
+        </div>
+        <button type="button" class="btn-cerrar-modal" (click)="cerrarMovimiento()" [disabled]="dialogo.enviando" aria-label="Cerrar">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <form class="caja-modal-cuerpo" (ngSubmit)="apuntarMovimiento()" id="formMovimiento">
+        <div class="campo">
+          <label for="tipoMovimiento">Tipo</label>
+          <select id="tipoMovimiento" name="tipoMovimiento" [(ngModel)]="dialogo.tipo" (ngModelChange)="onTipoMovimientoChange()"
+            [disabled]="dialogo.enviando">
+            @for (tipo of tiposMovimiento; track tipo.valor) {
+              <option [ngValue]="tipo.valor">{{ tipo.etiqueta }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="importeMovimiento">Importe</label>
+          <div class="campo-importe">
+            <input id="importeMovimiento" name="importeMovimiento" type="text" inputmode="decimal" autocomplete="off"
+              [(ngModel)]="dialogo.importe" [disabled]="dialogo.enviando" aria-describedby="ayudaImporte"
+              [attr.aria-invalid]="importeMovimientoNoValido">
+            <span aria-hidden="true">€</span>
+          </div>
+          <p id="ayudaImporte" class="ayuda" [class.ayuda-error]="importeMovimientoNoValido" aria-live="polite">
+            @if (importeMovimientoNoValido) {
+              Escribe un importe distinto de cero con un solo signo delante, por ejemplo 12,50 o -12,50.
+            } @else if (reglaDialogoMovimiento.signo === -1) {
+              Sale de la caja.
+            } @else if (reglaDialogoMovimiento.signo === 1) {
+              Entra en la caja.
+            } @else {
+              En positivo si entra dinero en la caja; con un menos delante (-5) si sale.
+            }
+          </p>
+        </div>
+
+        @if (reglaDialogoMovimiento.alumno !== 'oculto') {
+          <div class="campo">
+            <label for="alumnoMovimiento">
+              Alumno
+              @if (reglaDialogoMovimiento.alumno === 'opcional') {<span class="opcional">(opcional)</span>}
+            </label>
+            <select appSearchableSelect id="alumnoMovimiento" name="alumnoMovimiento" [(ngModel)]="dialogo.alumnoId"
+              [disabled]="dialogo.enviando" [required]="reglaDialogoMovimiento.alumno === 'obligatorio'">
+              <option [ngValue]="null">{{ alumnos.length ? 'Elige un alumno' : 'Cargando alumnos…' }}</option>
+              @for (alumno of alumnos; track alumno.id) {
+                <option [ngValue]="alumno.id">{{ alumno.nombre }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="campo">
+          <label for="notaMovimiento">Nota</label>
+          <textarea id="notaMovimiento" name="notaMovimiento" rows="2" maxlength="500" required
+            [(ngModel)]="dialogo.nota" [disabled]="dialogo.enviando" placeholder="Qué ha pasado"></textarea>
+        </div>
+
+        @if (dialogo.error) {
+          <p class="error-dialogo" role="alert">{{ dialogo.error }}</p>
+        }
+      </form>
+
+      <footer class="caja-modal-footer">
+        <button type="button" class="btn-secundario" (click)="cerrarMovimiento()" [disabled]="dialogo.enviando">Cancelar</button>
+        <button type="submit" form="formMovimiento" class="btn-principal" [disabled]="!puedeApuntar()">
+          @if (dialogo.enviando) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Apuntando…
+          } @else {
+            Apuntar movimiento
+          }
+        </button>
+      </footer>
+    </section>
+  }
+</section>

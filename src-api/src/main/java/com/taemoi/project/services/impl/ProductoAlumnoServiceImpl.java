@@ -131,6 +131,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private com.taemoi.project.services.RegistroAccionesCargos registroCargos;
 
+	/** Pieza 6b-3: nombre de quien canceló el cargo (una consulta para toda la lista). */
+	@Autowired
+	private com.taemoi.project.repositories.UsuarioRepository usuarioRepository;
+
 	/** Motivo de la anulación del cobro al revertir el pago por el PUT del cargo sin {@code motivoCambio}. */
 	private static final String MOTIVO_REVERSION = "pago revertido";
 
@@ -327,7 +331,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.filter(pa -> pa.getSedeId() != null && suyas.get().contains(pa.getSedeId()))
 					.collect(Collectors.toList());
 		}
-		return productosAlumno.stream().map(this::convertirADTO).collect(Collectors.toList());
+		java.util.Map<Long, String> nombres = nombresDeQuienCancelo(productosAlumno);
+		return productosAlumno.stream().map(pa -> convertirADTO(pa, nombres)).collect(Collectors.toList());
 	}
 
 	@Override
@@ -1536,6 +1541,28 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
+		return convertirADTO(productoAlumno, nombresDeQuienCancelo(List.of(productoAlumno)));
+	}
+
+	/**
+	 * Pieza 6b-3: nombre visible (nombre y apellidos) de las cuentas que cancelaron esos cargos, con una sola consulta
+	 * y ninguna si no hay cancelados. Mismo formato que el {@code entregadoPorNombre} de la caja.
+	 */
+	private java.util.Map<Long, String> nombresDeQuienCancelo(java.util.Collection<ProductoAlumno> cargos) {
+		java.util.Map<Long, String> nombres = new java.util.HashMap<>();
+		List<Long> ids = cargos.stream().map(ProductoAlumno::getCanceladoPorUsuarioId)
+				.filter(java.util.Objects::nonNull).distinct().toList();
+		if (ids.isEmpty()) {
+			return nombres;
+		}
+		for (Object[] f : usuarioRepository.nombresPorIds(ids)) {
+			String nombre = ((f[1] == null ? "" : f[1]) + " " + (f[2] == null ? "" : f[2])).trim();
+			nombres.put((Long) f[0], nombre);
+		}
+		return nombres;
+	}
+
+	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno, java.util.Map<Long, String> nombres) {
 		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
 		dto.setId(productoAlumno.getId());
 		Alumno alumno = productoAlumno.alumnoEfectivo();
@@ -1560,6 +1587,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		dto.setCanceladoEn(productoAlumno.getCanceladoEn());
 		dto.setCanceladoPorUsuarioId(productoAlumno.getCanceladoPorUsuarioId());
 		dto.setMotivoCancelacion(productoAlumno.getMotivoCancelacion());
+		if (productoAlumno.getCanceladoPorUsuarioId() != null) {
+			String nombre = nombres.get(productoAlumno.getCanceladoPorUsuarioId());
+			dto.setCanceladoPorNombre(nombre == null || nombre.isEmpty() ? null : nombre);
+		}
 		return dto;
 	}
 

@@ -364,6 +364,13 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    path: 'cajaSede',
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./componentes/endpoints/caja-sede/caja-sede.component').then(m => m.CajaSedeComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'auditoriaSistema',
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),

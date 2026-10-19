@@ -1,11 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { TesoreriaCobrosComponent } from './tesoreria-cobros.component';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('TesoreriaCobrosComponent', () => {
   let component: TesoreriaCobrosComponent;
@@ -87,6 +91,9 @@ describe('TesoreriaCobrosComponent', () => {
         { provide: EndpointsService, useValue: endpointsSpy },
         { provide: AuthenticationService, useValue: authSpy },
         { provide: LoadingService, useValue: loadingSpy },
+        { provide: CatalogoService, useValue: { disciplinasActivas: () => [], etiquetaDisciplina: (codigo: string) => codigo } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: convertToParamMap({}) } },
@@ -133,5 +140,50 @@ describe('TesoreriaCobrosComponent', () => {
     component.abrirModalCertificados();
     expect(component.mostrarModalCertificados).toBeTrue();
     expect(endpointsSpy.obtenerTodosLosAlumnosSinPaginar).toHaveBeenCalledWith(false);
+  });
+
+  describe('cobro con método (decisión 148)', () => {
+    const pendiente = {
+      productoAlumnoId: 11,
+      concepto: 'MENSUALIDAD FEBRERO',
+      pagado: false,
+    } as any;
+
+    it('el diálogo ofrece el método opcional con «Sin indicar» por defecto', async () => {
+      const fire = spyOn(Swal, 'fire').and.returnValue(Promise.resolve({ isConfirmed: false } as any));
+      component.marcarComoPagado(pendiente);
+      const opciones = fire.calls.mostRecent().args[0] as any;
+      expect(opciones.title).toBe('Confirmar cobro');
+      expect(opciones.input).toBe('select');
+      expect(opciones.inputLabel).toBe('Método (opcional)');
+      expect(opciones.inputValue).toBe('');
+      expect(Array.from((opciones.inputOptions as Map<string, string>).entries())).toEqual([
+        ['', 'Sin indicar'],
+        ['EFECTIVO', 'Efectivo'],
+        ['TRANSFERENCIA', 'Transferencia'],
+        ['TARJETA', 'Tarjeta'],
+        ['BIZUM', 'Bizum'],
+      ]);
+      await fire.calls.mostRecent().returnValue;
+      expect(endpointsSpy.actualizarCobroTesoreria).not.toHaveBeenCalled();
+    });
+
+    it('envía el método elegido en el cuerpo del PUT', async () => {
+      const promesa = Promise.resolve({ isConfirmed: true, value: 'BIZUM' } as any);
+      spyOn(Swal, 'fire').and.returnValue(promesa);
+      component.marcarComoPagado(pendiente);
+      await promesa;
+      await Promise.resolve();
+      expect(endpointsSpy.actualizarCobroTesoreria).toHaveBeenCalledWith(11, { pagado: true, metodoPago: 'BIZUM' });
+    });
+
+    it('sin indicar no envía metodoPago', async () => {
+      const promesa = Promise.resolve({ isConfirmed: true, value: '' } as any);
+      spyOn(Swal, 'fire').and.returnValue(promesa);
+      component.marcarComoPagado(pendiente);
+      await promesa;
+      await Promise.resolve();
+      expect(endpointsSpy.actualizarCobroTesoreria).toHaveBeenCalledWith(11, { pagado: true });
+    });
   });
 });

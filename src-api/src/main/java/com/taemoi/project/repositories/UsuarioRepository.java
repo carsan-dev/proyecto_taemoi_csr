@@ -71,6 +71,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	List<Usuario> findConRecordatorioRachaYMembresiaActiva(@Param("organizacionId") Long organizacionId,
 			@Param("rol") RolMembresia rol);
 
+	/** Nombre y apellidos de esas cuentas en una consulta: filas {@code [id, nombre, apellidos]}. */
+	@Query("SELECT u.id, u.nombre, u.apellidos FROM Usuario u WHERE u.id IN :ids")
+	List<Object[]> nombresPorIds(@Param("ids") java.util.Collection<Long> ids);
+
 	@Modifying
 	@Query("UPDATE Usuario u SET u.ultimaOrganizacionId = :organizacionId WHERE u.id = :usuarioId")
 	int actualizarUltimaOrganizacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);

@@ -41,9 +41,14 @@
             </thead>
             <tbody>
               @for (productoAlumno of productosPaginados; track productoAlumno.id) {
-              <tr [class.pending-delete]="isPendingDelete(productoAlumno.id)">
+              <tr [class.pending-delete]="isPendingDelete(productoAlumno.id)" [class.fila-cancelada]="estaCancelado(productoAlumno)">
                 <td>
+                  @if (estaCancelado(productoAlumno)) {
+                  <s class="concepto-cancelado"><strong>{{ productoAlumno.concepto }}</strong></s>
+                  <span class="cancelacion-detalle">{{ textoCancelacion(productoAlumno) }}</span>
+                  } @else {
                   <strong>{{ productoAlumno.concepto }}</strong>
+                  }
                   @if (isPendingDelete(productoAlumno.id)) {
                   <span class="badge bg-secondary ms-2">Pendiente de eliminar</span>
                   }
@@ -52,36 +57,49 @@
                   <input #fechaAsignacion type="date" class="admin-form-control admin-form-control-sm fecha-input"
                     [value]="getFechaAsignacionInput(productoAlumno)"
                     (change)="onFechaAsignacionChange(productoAlumno, fechaAsignacion.value); fechaAsignacion.value = getFechaAsignacionInput(productoAlumno)"
-                    [disabled]="isPendingDelete(productoAlumno.id)"
+                    [disabled]="isPendingDelete(productoAlumno.id) || estaCancelado(productoAlumno)"
                     [attr.aria-label]="'Fecha de asignación de ' + productoAlumno.concepto + ' (producto ' + productoAlumno.id + ')'" />
                 </td>
                 <td>
                   <input type="number" class="admin-form-control admin-form-control-sm cantidad-input"
                     [(ngModel)]="productoAlumno.cantidad"
                     (change)="onProductoChange(productoAlumno)" min="1"
-                    [disabled]="isPendingDelete(productoAlumno.id)" title="Cantidad" />
+                    [disabled]="isPendingDelete(productoAlumno.id) || estaCancelado(productoAlumno)" title="Cantidad" />
                 </td>
                 <td>
                   <input type="number" class="admin-form-control admin-form-control-sm precio-input"
                     [(ngModel)]="productoAlumno.precio"
                     (change)="onProductoChange(productoAlumno)"
-                    min="0" step="0.01" [disabled]="isPendingDelete(productoAlumno.id)" title="Editar precio" />
+                    min="0" step="0.01" [disabled]="isPendingDelete(productoAlumno.id) || estaCancelado(productoAlumno)" title="Editar precio" />
                 </td>
                 <td>
+                  @if (estaCancelado(productoAlumno)) {
+                  <s class="total-badge total-cancelado" title="Cargo cancelado: no cuenta">
+                    {{ calcularTotal(productoAlumno.precio, productoAlumno.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
+                  </s>
+                  } @else {
                   <span class="total-badge" [ngClass]="{
                     'total-no-pagado': !productoAlumno.pagado,
                     'total-pagado': productoAlumno.pagado
                   }" [title]="!productoAlumno.pagado ? 'Este producto aún no está pagado' : 'Pagado'">
                     {{ calcularTotal(productoAlumno.precio, productoAlumno.cantidad) | currency: 'EUR':'symbol':'1.2-2' }}
                   </span>
+                  }
                 </td>
                 <td>
+                  @if (estaCancelado(productoAlumno)) {
+                  <div class="d-flex justify-content-center">
+                    <span class="chip-cancelado">cancelado</span>
+                  </div>
+                  } @else {
                   <div class="form-check d-flex justify-content-center">
                     <input type="checkbox" class="form-check-input"
                       [(ngModel)]="productoAlumno.pagado"
                       (change)="onProductoChange(productoAlumno)"
-                      [disabled]="isPendingDelete(productoAlumno.id)" />
+                      [disabled]="isPendingDelete(productoAlumno.id)"
+                      [attr.aria-label]="'Pagado: ' + productoAlumno.concepto" />
                   </div>
+                  }
                 </td>
                 <td>{{ productoAlumno.fechaPago ? (productoAlumno.fechaPago | date: 'dd/MM/yyyy') : '-' }}</td>
                 <td>
@@ -95,18 +113,40 @@
                     </button>
                   </div>
                 </td>
-                <td>
-                  @if (!isPendingDelete(productoAlumno.id)) {
-                  <button type="button" class="admin-btn admin-btn-danger admin-btn-sm"
-                    (click)="marcarProductoParaEliminar(productoAlumno.id)" title="Marcar para eliminar">
-                    <i class="bi bi-trash"></i>
+                <td class="col-acciones">
+                  <div class="acciones-cargo">
+                  @if (isPendingDelete(productoAlumno.id)) {
+                  <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
+                    (click)="deshacerEliminarProducto(productoAlumno.id)" title="Deshacer eliminacion"
+                    [attr.aria-label]="'Deshacer eliminación de ' + productoAlumno.concepto">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                   </button>
                   } @else {
-                  <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm"
-                    (click)="deshacerEliminarProducto(productoAlumno.id)" title="Deshacer eliminacion">
-                    <i class="bi bi-arrow-counterclockwise"></i>
+                  @if (puedeCancelar(productoAlumno)) {
+                  <button type="button" class="admin-btn admin-btn-outline admin-btn-sm btn-cancelar-cargo"
+                    (click)="cancelarCargo(productoAlumno)" [disabled]="cargando || accionEnCurso(productoAlumno.id)" title="Cancelar cargo"
+                    [attr.aria-label]="'Cancelar cargo ' + productoAlumno.concepto">
+                    <i class="bi bi-slash-circle" aria-hidden="true"></i>
+                    <span>Cancelar</span>
                   </button>
                   }
+                  @if (estaCancelado(productoAlumno)) {
+                  <button type="button" class="admin-btn admin-btn-outline-primary admin-btn-sm btn-reactivar-cargo"
+                    (click)="reactivarCargo(productoAlumno)" [disabled]="cargando || accionEnCurso(productoAlumno.id)" title="Reactivar cargo"
+                    [attr.aria-label]="'Reactivar cargo ' + productoAlumno.concepto">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                    <span>Reactivar</span>
+                  </button>
+                  }
+                  @if (puedeEliminar(productoAlumno)) {
+                  <button type="button" class="admin-btn admin-btn-danger admin-btn-sm"
+                    (click)="marcarProductoParaEliminar(productoAlumno.id)" title="Marcar para eliminar"
+                    [attr.aria-label]="'Marcar para eliminar ' + productoAlumno.concepto">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                  </button>
+                  }
+                  }
+                  </div>
                 </td>
               </tr>
               }
