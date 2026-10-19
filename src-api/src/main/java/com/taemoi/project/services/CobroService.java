@@ -62,6 +62,17 @@ public class CobroService {
 	public static final String MOTIVO_CARGO_BORRADO = "cargo borrado";
 	/** Pieza 6b-2c: mensaje del 409 al intentar cobrar un cargo cancelado. */
 	public static final String CARGO_CANCELADO = "El cargo está cancelado: reactívelo antes de cobrarlo.";
+	/**
+	 * Pieza 6c-1, decisión 186: 409 al quitar de una convocatoria a un alumno con el examen pagado. Texto literal del
+	 * diseño; la 6c-6 lo amplía con la devolución (D6c-15).
+	 */
+	public static final String EXAMEN_PAGADO_REVIERTE_ANTES = "El examen está pagado: revierte el cobro antes";
+	/** Pieza 6c-1, decisión 187: 409 al cambiar el precio o la cantidad de un cargo con cobro ACTIVO. */
+	public static final String PRECIO_CON_COBRO_ACTIVO = "El cargo está cobrado: no se puede cambiar el precio ni la "
+			+ "cantidad. Revierte el cobro antes.";
+	/** Pieza 6c-1, decisión 194: 409 al cambiar desde la convocatoria la cuantía de un examen pagado. */
+	public static final String CUANTIA_EXAMEN_PAGADO = "El examen está pagado: no se puede cambiar la cuantía. "
+			+ "Revierte el cobro antes.";
 
 	private final CobroRepository cobros;
 	private final ProductoAlumnoRepository cargos;
@@ -223,6 +234,15 @@ public class CobroService {
 		} else if (pagadoAntes && !pagadoAhora) {
 			anular(cargo, usuarioActualId(), motivoAnulacion);
 		}
+	}
+
+	/**
+	 * Pieza 6c-1 (decisión 187): si el cargo tiene un cobro ACTIVO (entregado o no). Lectura sin bloqueo: quien la usa ya
+	 * tiene el CARGO bloqueado ({@link #bloquearCargo}), y todo cobro de un cargo se registra o anula con esa fila
+	 * bloqueada. Null → false. Un cargo pagado antes de la 6b-1 (sin fila {@code cobro}) da false.
+	 */
+	public boolean tieneCobroActivo(Long cargoId) {
+		return cargoId != null && cobros.findFirstByProductoAlumnoIdAndEstado(cargoId, EstadoCobro.ACTIVO).isPresent();
 	}
 
 	/** Comprobación previa (sin bloquear ni escribir): 409 si algún cobro del cargo va en una entrega de caja. */

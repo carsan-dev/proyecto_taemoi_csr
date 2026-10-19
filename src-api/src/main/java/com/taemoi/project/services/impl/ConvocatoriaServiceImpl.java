@@ -61,6 +61,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	@Autowired
 	private CobroService cobros;
 
+	/** Pieza 6c-1: relectura de la inscripción tras bloquear el cargo (194). */
+	@jakarta.persistence.PersistenceContext
+	private jakarta.persistence.EntityManager em;
+
 	private static final String MOTIVO_REVERSION_CONVOCATORIA = "pago revertido desde la convocatoria";
 
 	@Override
@@ -251,12 +255,37 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		// actualizan después, como antes, solo si el pago se guardó.
 		ProductoAlumno cargoDelExamen = alumnoConvocatoria.getProductoAlumno();
 		cobros.enTransaccion(() -> {
+			if (cargoDelExamen == null) {
+				InscripcionGuardada actual = leerInscripcion(alumnoConvocatoriaId);
+				if (actual.pagado() && Boolean.TRUE.equals(alumnoConvocatoriaDTO.getPagado())
+						&& !mismaCuantia(alumnoConvocatoriaDTO.getCuantiaExamen(), actual.cuantiaExamen())) {
+					// Pieza 6c-1, decisión 194: inscripción antigua sin cargo, pagada (leída ya en la transacción).
+					throw new IllegalStateException(CobroService.CUANTIA_EXAMEN_PAGADO);
+				}
+			}
 			if (cargoDelExamen != null) {
 				// Pieza 6b-1: el cargo se bloquea y se relee, y su cobro se registra (si pasa a pagado) o se anula (si
 				// pasa a no pagado). Si ya estaba pagado (p. ej. por el PUT del cargo), no hay otro cobro.
-				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoDelExamen.getId()).orElse(cargoDelExamen);
+				// Pieza 6c-1: si el cargo ya no existe (otra petición sacó al alumno de la convocatoria mientras se esperaba
+				// el bloqueo), 400 como si la inscripción no existiera, sin escribir nada. Antes se seguía con el cargo de
+				// la sesión y el cobro fallaba por la clave ajena (500).
+				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoDelExamen.getId())
+						.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
 				boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
-				productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+				// Pieza 6c-1, decisión 194 (la 187 desde la convocatoria): con el examen pagado (con o sin cobro, también
+				// antes de la 6b-1) y una cuantía distinta de la que se ve (la de la inscripción) → 409 y no se cambia nada
+				// (la transacción se deshace entera). Con la misma cuantía, el precio del cargo pagado no se toca, aunque
+				// en el legado difiera de la cuantía. Sin pagar, o al desmarcar el pago (decisión 154), como siempre.
+				// La cuantía se relee con el cargo ya bloqueado: la leída al empezar puede ser anterior a otro PUT que
+				// confirmó mientras se esperaba (y daría un 409 de más).
+				boolean sigueComoPagado = pagadoAntes && Boolean.TRUE.equals(alumnoConvocatoriaDTO.getPagado());
+				if (sigueComoPagado && !mismaCuantia(alumnoConvocatoriaDTO.getCuantiaExamen(),
+						leerInscripcion(alumnoConvocatoriaId).cuantiaExamen())) {
+					throw new IllegalStateException(CobroService.CUANTIA_EXAMEN_PAGADO);
+				}
+				if (!sigueComoPagado) {
+					productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
+				}
 				productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
 				productoAlumno.setFechaPago(alumnoConvocatoriaDTO.getPagado() ? new Date() : null);
 				ProductoAlumno guardado = productoAlumnoRepository.save(productoAlumno);
@@ -295,6 +324,36 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 			alumno.setTieneDerechoExamen(alumnoConvocatoriaDTO.getPagado());
 			alumnoRepository.save(alumno);
 		}
+	}
+
+	/**
+	 * Pieza 6c-1 (194): misma cuantía con {@link Double#compare}; null solo coincide con null (un valor frente a null es
+	 * distinto).
+	 */
+	private record InscripcionGuardada(Double cuantiaExamen, boolean pagado) {
+	}
+
+	/**
+	 * Pieza 6c-1 (194): cuantía y pago de la inscripción como están ahora en la base (consulta escalar: no devuelve la
+	 * entidad que la sesión ya tenga cargada). Dentro de la transacción READ COMMITTED de {@link CobroService#enTransaccion}.
+	 * Si ya no existe, 400 como al empezar.
+	 */
+	private InscripcionGuardada leerInscripcion(Long alumnoConvocatoriaId) {
+		List<Object[]> filas = em.createQuery(
+				"SELECT ac.cuantiaExamen, ac.pagado FROM AlumnoConvocatoria ac WHERE ac.id = :id", Object[].class)
+				.setParameter("id", alumnoConvocatoriaId).getResultList();
+		if (filas.isEmpty()) {
+			throw new IllegalArgumentException("AlumnoConvocatoria no encontrado");
+		}
+		Object[] fila = filas.get(0);
+		return new InscripcionGuardada((Double) fila[0], Boolean.TRUE.equals(fila[1]));
+	}
+
+	private static boolean mismaCuantia(Double nueva, Double guardada) {
+		if (nueva == null || guardada == null) {
+			return nueva == null && guardada == null;
+		}
+		return Double.compare(nueva, guardada) == 0;
 	}
 
 	/**

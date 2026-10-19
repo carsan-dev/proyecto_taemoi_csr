@@ -289,6 +289,10 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(e.sA, sedeDe(cargoAPendiente), "cobrar no cambia la sede del cargo");
 		// Devolver el estado para los demás tests (la gestión revierte solo con ROLE_ADMIN: por SQL).
 		jdbc.update("UPDATE producto_alumno SET pagado = 0, fecha_pago = NULL WHERE id = ?", cargoAPendiente);
+		// Pieza 6c-1: y su cobro, anulado como al revertir (un cargo pendiente con cobro ACTIVO no cambia de precio, 187).
+		jdbc.update("""
+				UPDATE cobro SET estado = 'ANULADO', anulado_en = NOW(6), motivo_anulacion = 'reinicio del test'
+				WHERE producto_alumno_id = ? AND estado = 'ACTIVO'""", cargoAPendiente);
 	}
 
 	@Test
@@ -504,10 +508,14 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 				cargoAPagado));
 		assertTrue(pagado(cargoAPagado));
 
-		// Un cargo pendiente sí lo edita; la gestión edita también los cobrados (como hoy).
+		// Un cargo pendiente sí lo edita; la gestión edita también los cobrados (como hoy), salvo el precio y la
+		// cantidad con el cobro ACTIVO (pieza 6c-1, decisión 187: 409).
 		assertEquals(200, estado(editar(cargoAPendiente, "{\"precio\":11}"), tokenA));
-		assertEquals(200, estado(editar(cargoAPagado, "{\"precio\":26}"), tokenGestor));
-		jdbc.update("UPDATE producto_alumno SET precio = 25.0 WHERE id = ?", cargoAPagado);
+		String conceptoAntes = jdbc.queryForObject("SELECT concepto FROM producto_alumno WHERE id = ?", String.class,
+				cargoAPagado);
+		assertEquals(409, estado(editar(cargoAPagado, "{\"precio\":26}"), tokenGestor));
+		assertEquals(200, estado(editar(cargoAPagado, "{\"concepto\":\"OTRA COSA\"}"), tokenGestor));
+		jdbc.update("UPDATE producto_alumno SET precio = 25.0, concepto = ? WHERE id = ?", conceptoAntes, cargoAPagado);
 		jdbc.update("UPDATE producto_alumno SET precio = 10.0 WHERE id = ?", cargoAPendiente);
 	}
 

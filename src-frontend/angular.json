@@ -206,6 +206,7 @@
               "src/app/componentes/endpoints/listado-productos/listado-productos.component.spec.ts",
               "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/editar-alumno.component.spec.ts",
+              "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component.spec.ts",
               "src/app/componentes/vistas/horarios/horarios.component.spec.ts",
               "src/app/componentes/vistas/preinscripcion/preinscripcion.component.spec.ts",
               "src/app/componentes/vistas/layout/header/header.component.spec.ts",
@@ -259,7 +260,10 @@
               "src/app/guards/profesor.guard.spec.ts",
               "src/app/servicios/authentication/authentication.mi-caja.spec.ts",
               "src/app/componentes/endpoints/mi-caja/mi-caja.component.spec.ts",
-              "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts"
+              "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts",
+              "src/app/componentes/endpoints/listado-convocatorias/listado-convocatorias.bloqueos.spec.ts",
+              "src/app/componentes/endpoints/editar-alumno/editar-alumno.bloqueos.spec.ts",
+              "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.bloqueos.spec.ts"
             ]
           }
         }
