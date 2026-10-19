@@ -1,5 +1,6 @@
 import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy, Renderer2 } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { esOpcionMarcador } from '../utils/opcion-marcador';
 
 @Directive({
   selector: 'select[appSearchableSelect]',
@@ -618,17 +619,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     return (placeholderOption?.textContent ?? '').trim();
   }
 
-  /**
-   * Opción «sin valor»: '' , 'null' o el '0: null' que genera Angular con [ngValue].
-   * Una opción con el atributo `data-opcion-real` nunca es marcador, aunque su valor
-   * esté vacío (p. ej. «Sin grupo asignado»): se muestra como valor elegido.
-   */
   private isPlaceholderOption(option: HTMLOptionElement): boolean {
-    if (option.hasAttribute('data-opcion-real')) {
-      return false;
-    }
-    const value = option.value;
-    return value === '' || value === 'null' || /^\d+:\s*(null|undefined)$/.test(value);
+    return esOpcionMarcador(option);
   }
 
   private getListboxId(select: HTMLSelectElement): string {

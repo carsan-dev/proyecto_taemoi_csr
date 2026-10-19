@@ -1,3 +1,5 @@
+import { esOpcionMarcador } from './opcion-marcador';
+
 type SwalSelectSearchOptions = {
   selectId: string;
   inputId?: string;
@@ -59,9 +61,11 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
       .trim();
 
   const getPlaceholderText = (): string => {
-    const placeholderOption = Array.from(select.options).find(
-      (option) => option.disabled && !option.value
-    );
+    const selected = select.selectedOptions[0] ?? select.options[select.selectedIndex];
+    const placeholderOption =
+      selected && esOpcionMarcador(selected)
+        ? selected
+        : Array.from(select.options).find((option) => esOpcionMarcador(option));
     return (placeholderOption?.textContent ?? '').trim();
   };
 
@@ -90,7 +94,7 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
 
   const syncFromSelect = (): void => {
     const selected = select.selectedOptions[0] ?? select.options[select.selectedIndex];
-    if (selected && !(selected.disabled && !selected.value)) {
+    if (selected && !esOpcionMarcador(selected)) {
       input.value = (selected.textContent ?? '').trim();
     } else {
       input.value = '';
@@ -138,8 +142,8 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
     }
   };
 
-  const filterOptions = (): void => {
-    const term = normalize(input.value);
+  const filterOptions = (rawTerm: string): void => {
+    const term = normalize(rawTerm);
     let visibleCount = 0;
 
     optionEls.forEach((optionEl, index) => {
@@ -148,7 +152,7 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
         return;
       }
       const optionText = normalize(option.textContent ?? '');
-      const isPlaceholder = option.disabled && !option.value;
+      const isPlaceholder = esOpcionMarcador(option);
       let visible = !term || optionText.includes(term);
       if (term && isPlaceholder) {
         visible = false;
@@ -172,13 +176,18 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
   };
 
   const openDropdown = (resetActive: boolean, applyFilter: boolean = true): void => {
+    const wasClosed = !isOpen;
     isOpen = true;
     dropdown.classList.add('is-open');
     input.setAttribute('aria-expanded', 'true');
-    if (applyFilter) {
-      filterOptions();
-    }
-    if (resetActive && applyFilter) {
+    if (wasClosed && applyFilter) {
+      // Al abrir se muestran todas las opciones; el filtro solo lo activa escribir.
+      if (debounceHandle) {
+        window.clearTimeout(debounceHandle);
+        debounceHandle = undefined;
+      }
+      filterOptions('');
+    } else if (resetActive && applyFilter) {
       setActiveToSelected();
     }
   };
@@ -265,7 +274,7 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
     if (debounceHandle) {
       window.clearTimeout(debounceHandle);
     }
-    debounceHandle = window.setTimeout(filterOptions, debounceMs);
+    debounceHandle = window.setTimeout(() => filterOptions(input.value), debounceMs);
   };
 
   const buildOptions = (): void => {
@@ -301,7 +310,7 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
 
   buildOptions();
   syncFromSelect();
-  filterOptions();
+  filterOptions('');
 
   input.addEventListener('focus', () => {
     if (!select.disabled) {
