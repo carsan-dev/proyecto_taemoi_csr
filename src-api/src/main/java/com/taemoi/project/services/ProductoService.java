@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.TipoProducto;
 
 public interface ProductoService {
 
@@ -17,6 +18,13 @@ public interface ProductoService {
 	Optional<Producto> obtenerProductoPorId(Long id);
 
 	Page<Producto> buscarProductosPorConcepto(String concepto, Pageable pageable);
+
+	/**
+	 * Listado filtrado (pieza 6b-3d): {@code concepto} (contiene, como {@link #buscarProductosPorConcepto}), {@code tipo}
+	 * y {@code vendibleProfesor} son opcionales y se combinan con Y. Pagina y ordena en la base de datos.
+	 */
+	Page<Producto> buscarProductosFiltrados(String concepto, TipoProducto tipo, Boolean vendibleProfesor,
+			Pageable pageable);
 
 	Producto guardarProducto(Producto producto);
 

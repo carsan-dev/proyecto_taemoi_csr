@@ -508,7 +508,9 @@ export class EndpointsService {
     page: number,
     size: number,
     orderBy: string,
-    order: string
+    order: string,
+    tipo?: string | null,
+    vendibleProfesor?: boolean | null
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -518,6 +520,12 @@ export class EndpointsService {
 
     if (concepto) {
       params = params.set('concepto', concepto);
+    }
+    if (tipo) {
+      params = params.set('tipo', tipo);
+    }
+    if (vendibleProfesor !== undefined && vendibleProfesor !== null) {
+      params = params.set('vendibleProfesor', String(vendibleProfesor));
     }
 
     return this.http
