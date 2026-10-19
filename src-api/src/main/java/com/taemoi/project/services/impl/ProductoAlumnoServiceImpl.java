@@ -185,16 +185,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		Producto producto = productoRepository.findById(productoId)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
-		return convertirADTO(crearCargoDeProducto(alumno, producto, detallesDTO, OrigenCobro.TESORERIA));
+		return convertirADTO(crearCargoDeProducto(alumno, producto, detallesDTO, OrigenCobro.TESORERIA, null));
 	}
 
 	/**
 	 * Pieza 6b-2: el profesor apunta y cobra en efectivo un producto del catálogo a un alumno de sus grupos (permiso:
 	 * {@code @acceso.alumnoDeMisGrupos}). Misma vía que asignar un producto ({@link #crearCargoDeProducto}): precio y
 	 * concepto del catálogo, cantidad 1, cargo YA PAGADO (fecha de pago ahora) y, en la misma transacción, su cobro
-	 * ACTIVO en EFECTIVO, origen PROFESOR y cobrado por él; la sede, la del {@code @PrePersist} del cargo. Solo productos
-	 * sin efectos colaterales ({@link #exigirProductoVendiblePorProfesor}, 400 si no). Alumno o producto que no existe
-	 * en la escuela → 404. Queda en el registro de acciones.
+	 * ACTIVO en EFECTIVO, origen PROFESOR y cobrado por él; la sede, la del {@code @PrePersist} del cargo. El cargo guarda
+	 * quién lo vendió ({@code vendido_por_usuario_id}, decisión 172): el mismo usuario que cobra; es la ÚNICA vía que lo
+	 * fija. Solo productos sin efectos colaterales ({@link #exigirProductoVendiblePorProfesor}, 400 si no). Alumno o
+	 * producto que no existe en la escuela → 404. Queda en el registro de acciones.
 	 */
 	@Override
 	public Cobro apuntarYCobrarProductoComoProfesor(Long alumnoId, Long productoId) {
@@ -208,7 +209,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		detalles.setPagado(true);
 		detalles.setMetodoPago(MetodoPago.EFECTIVO);
 		return cobros.enTransaccion(() -> {
-			ProductoAlumno cargo = crearCargoDeProducto(alumno, producto, detalles, OrigenCobro.PROFESOR);
+			ProductoAlumno cargo = crearCargoDeProducto(alumno, producto, detalles, OrigenCobro.PROFESOR,
+					CobroService.usuarioActualId());
 			Cobro cobro = cobroRepository.findFirstByProductoAlumnoIdAndEstado(cargo.getId(), EstadoCobro.ACTIVO)
 					.orElseThrow(() -> new IllegalStateException("No se registró el cobro."));
 			Map<String, Long> implicados = ids("cobro", cobro.getId(), "cargo", cargo.getId());
@@ -274,10 +276,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	/**
 	 * Crea el cargo de un producto del catálogo para el alumno (la vía de «asignar producto a alumno», común desde la
 	 * 6b-2 con la venta del profesor): D6-17, matrícula con deporte, precio y concepto del catálogo, cobro si nace
-	 * pagado (con ese origen) y derecho a examen si lo da.
+	 * pagado (con ese origen) y derecho a examen si lo da. {@code vendidoPor}: el profesor que lo vende (decisión 172),
+	 * solo desde {@link #apuntarYCobrarProductoComoProfesor}; {@code null} en la asignación de la gestión.
 	 */
 	private ProductoAlumno crearCargoDeProducto(Alumno alumno, Producto producto, ProductoAlumnoDTO detallesDTO,
-			OrigenCobro origen) {
+			OrigenCobro origen, Long vendidoPor) {
 		exigirSedeActivaParaCargo(alumno);
 
 		if (esMatricula(producto.getConcepto())) {
@@ -295,11 +298,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Date asignadoEn = new Date();
 		productoAlumno.setFechaAsignacion(asignadoEn);
 		productoAlumno.setNotas(detallesDTO.getNotas());
+		productoAlumno.setVendidoPorUsuarioId(vendidoPor);
 
 		if (productoAlumno.getPagado()) {
 			// Pieza 6b-2c: en la venta del profesor la fecha de pago (y la del cobro) es el MISMO instante que la de
-			// asignación: es la marca de «nació de una venta suya» que mira el deshacer con NO_HUBO_VENTA
-			// ({@link #esVentaDelProfesor}). La gestión, como siempre.
+			// asignación (se apunta y se cobra a la vez). Ya no es la marca de «venta suya»: desde la decisión 172 lo es
+			// vendido_por_usuario_id ({@link #esVentaDelProfesor}). La gestión, como siempre.
 			productoAlumno.setFechaPago(origen == OrigenCobro.PROFESOR ? asignadoEn : new Date());
 		}
 
@@ -397,7 +401,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	/**
 	 * Pieza 6b-2c. Con {@code AUN_NO_PAGADO} (o {@code null}), lo de la 6b-2: el cargo vuelve a pendiente. Con
 	 * {@code NO_HUBO_VENTA}, además de las comprobaciones de siempre (suyo, origen PROFESOR, sin entrega, ACTIVO), el
-	 * cargo debe haber nacido de SU venta del catálogo ({@link #esVentaDelProfesor}; si no → 400): en la misma
+	 * cargo debe haber nacido de SU venta del catálogo (el cargo guarda que lo vendió él, decisión 172:
+	 * {@link #esVentaDelProfesor}; si no → 400): en la misma
 	 * transacción, con el cargo y el cobro bloqueados, se anula el cobro (como AUN_NO_PAGADO) y se CANCELA el cargo
 	 * (por el profesor, motivo «no hubo venta»). El estado final cumple el invariante (cancelado, no pagado, sin cobro
 	 * ACTIVO). Queda en el registro de acciones (deshacer y cancelación).
@@ -427,7 +432,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			if (cobro.getEstado() != EstadoCobro.ACTIVO || !cargoId.equals(cobro.getProductoAlumnoId())) {
 				throw new IllegalStateException(COBRO_NO_ACTIVO);
 			}
-			if (noHuboVenta && !esVentaDelProfesor(cargo, cobro)) {
+			if (noHuboVenta && !esVentaDelProfesor(cargo, cobro, profesorId)) {
 				throw new IllegalArgumentException(NO_ES_VENTA_DEL_PROFESOR);
 			}
 			ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
@@ -449,26 +454,25 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	/**
-	 * Pieza 6b-2c: el cargo nació de la venta del profesor ({@link #apuntarYCobrarProductoComoProfesor}) con ESTE cobro.
-	 * Hoy no hay columna de origen del cargo; se distingue, con el cargo y el cobro bloqueados, por:
+	 * Pieza 6b-2c: el cargo nació de la venta del profesor {@code profesorId} ({@link #apuntarYCobrarProductoComoProfesor})
+	 * con ESTE cobro. Con el cargo y el cobro bloqueados:
 	 * <ul>
-	 * <li>el cobro es el PRIMERO del cargo (ninguno anterior, ni anulado): el cargo nunca se cobró por otra vía;</li>
-	 * <li>la fecha del cobro es EXACTAMENTE la de asignación del cargo: la venta los fija al mismo instante (en el mismo
-	 * {@code new Date()}); cobrar un cargo pendiente ({@link #cobrarEnEfectivoComoProfesor}) lo hace en otra petición,
-	 * más tarde;</li>
-	 * <li>el producto del cargo es de los que el profesor puede vender ({@link #esVendiblePorProfesor}).</li>
+	 * <li>el cargo guarda que lo vendió él ({@code vendido_por_usuario_id}, decisión 172): solo esa venta lo fija, así
+	 * que un cargo de la gestión (aunque su fecha de asignación coincida con la del cobro) nunca lo es. Hasta la
+	 * decisión 172 se deducía de que la fecha del cobro fuera la de asignación al milisegundo. V31_6 rellenó las ventas
+	 * anteriores desde su fila de auditoría (COBRO_PROFESOR_PRODUCTO);</li>
+	 * <li>el cobro es el PRIMERO del cargo (ninguno anterior, ni anulado): es el cobro de la venta, no uno posterior tras
+	 * deshacerla como «aún no pagado»;</li>
+	 * <li>el producto del cargo sigue siendo de los que el profesor puede vender ({@link #esVendiblePorProfesor}).</li>
 	 * </ul>
-	 * Origen PROFESOR, cobrado por él, ACTIVO y sin entrega ya lo exige el llamador. Si la gestión cambia la fecha de
-	 * asignación de la venta, deja de reconocerse (400, lado seguro).
+	 * Origen PROFESOR, cobrado por él, ACTIVO y sin entrega ya lo exige el llamador.
 	 */
-	private boolean esVentaDelProfesor(ProductoAlumno cargo, Cobro cobro) {
-		List<Cobro> delCargo = cobroRepository.findByProductoAlumnoIdOrderByIdAsc(cargo.getId());
-		if (delCargo.isEmpty() || !cobro.getId().equals(delCargo.get(0).getId())) {
+	private boolean esVentaDelProfesor(ProductoAlumno cargo, Cobro cobro, Long profesorId) {
+		if (profesorId == null || !profesorId.equals(cargo.getVendidoPorUsuarioId())) {
 			return false;
 		}
-		Date asignado = cargo.getFechaAsignacion();
-		Date cobrado = cobro.getFechaCobro();
-		if (asignado == null || cobrado == null || asignado.getTime() != cobrado.getTime()) {
+		List<Cobro> delCargo = cobroRepository.findByProductoAlumnoIdOrderByIdAsc(cargo.getId());
+		if (delCargo.isEmpty() || !cobro.getId().equals(delCargo.get(0).getId())) {
 			return false;
 		}
 		return esVendiblePorProfesor(cargo.getProducto());

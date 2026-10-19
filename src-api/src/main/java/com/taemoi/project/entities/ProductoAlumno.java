@@ -86,6 +86,16 @@ public class ProductoAlumno extends EntidadOrganizacion {
 	private String motivoCancelacion;
 
 	/**
+	 * Decisión 172 (V31_6): el profesor que apuntó y cobró este cargo como venta del catálogo (FK a usuario, ON DELETE
+	 * SET NULL). Solo lo fija esa venta ({@code ProductoAlumnoServiceImpl#apuntarYCobrarProductoComoProfesor}); NULL en
+	 * cualquier otro cargo. Lo mira el deshacer del profesor con «no hubo venta». Fuera del JSON de la entidad y de los
+	 * DTO.
+	 */
+	@JsonIgnore
+	@Column(name = "vendido_por_usuario_id")
+	private Long vendidoPorUsuarioId;
+
+	/**
 	 * Entrega 6-3 (D6-9): si nadie fijó la sede, la sede principal del alumno del cargo en este momento. El alumno se
 	 * resuelve como en la tesorería: {@code COALESCE(alumno, alumnoDeporte.alumno)}. Sin acceso a la base de datos.
 	 */
@@ -215,6 +225,14 @@ public class ProductoAlumno extends EntidadOrganizacion {
 
 	public void setMotivoCancelacion(String motivoCancelacion) {
 		this.motivoCancelacion = motivoCancelacion;
+	}
+
+	public Long getVendidoPorUsuarioId() {
+		return vendidoPorUsuarioId;
+	}
+
+	public void setVendidoPorUsuarioId(Long vendidoPorUsuarioId) {
+		this.vendidoPorUsuarioId = vendidoPorUsuarioId;
 	}
 
 	/** Pieza 6b-2c: el cargo está cancelado ({@code cancelado_en} no nulo). */

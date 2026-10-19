@@ -110,8 +110,11 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
 - [ ] Tras V31_6 (pieza 6b-2c, columnas `cancelado_en`, `cancelado_por_usuario_id` y `motivo_cancelacion` en
       `producto_alumno`, todas NULL): ejecutar `docs/multi-escuela/postcheck-v31_6.sql` (solo lectura, solo recuentos)
       y guardar el resultado: `columnas_cancelacion` = 3, `columnas_nulables` = 3, `idx_cancelado_por` = 1,
-      `fk_cancelado_por` = 1, `fk_cancelado_por_set_null` = 1, `flyway_31_6` = 1, `cargos_cancelados` = 0 y las
-      informativas a 0. Las tres columnas son INSTANT y la FK se añade sin reconstruir la tabla. El código anterior
+      `fk_cancelado_por` = 1, `fk_cancelado_por_set_null` = 1, `flyway_31_6` = 1, `cargos_cancelados` = 0,
+      `columna_vendido_por` = 1, `idx_vendido_por` = 1, `fk_vendido_por` = 1, `fk_vendido_por_set_null` = 1 y las
+      informativas a 0; `ventas_del_profesor` (ventas del profesor desde la 6b-2 que marcó el relleno de
+      `vendido_por_usuario_id` desde la auditoría, decisión 172) igual a `ventas_auditadas` y
+      `ventas_auditadas_sin_marcar` = 0. Las columnas son INSTANT y las FK se añaden sin reconstruir la tabla. El código anterior
       sigue funcionando sobre este esquema (no conoce las columnas); si se vuelve atrás con cargos ya cancelados, ese
       código los contaría otra vez como pendientes (reactivarlos o anotarlos antes).
 - [ ] Avisar a la gestión de Moiskimdo (cambio deliberado de la 6b-2c): borrar un cargo a mano pasa a ser solo del

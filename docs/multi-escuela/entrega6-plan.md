@@ -303,7 +303,7 @@ de alumno (`AlumnoServiceImpl`, mes en curso) y la columna CUANTÍA del listado 
 | V31_3 | 6-3a | Ampliación (columna NULL, índice, FK) + relleno | El código anterior sigue funcionando |
 | V31_4 | 6-4 | Tabla nueva (`tarifa_sede`), vacía | El código anterior sigue funcionando; postcheck `postcheck-v31_4.sql` |
 | V31_5 | 6b-1 | Tablas nuevas (`cobro`, `entrega_caja`, `movimiento_caja`), vacías, sin relleno | El código anterior sigue funcionando; postcheck `postcheck-v31_5.sql` |
-| V31_6 | 6b-2c | `producto_alumno`: `cancelado_en`, `cancelado_por_usuario_id` (FK a usuario ON DELETE SET NULL) y `motivo_cancelacion`, NULL y sin relleno; índice; la FK con `foreign_key_checks = 0` (INPLACE, sin reconstruir la tabla) | El código anterior sigue funcionando; postcheck `postcheck-v31_6.sql` |
+| V31_6 | 6b-2c | `producto_alumno`: `cancelado_en`, `cancelado_por_usuario_id` (FK a usuario ON DELETE SET NULL) y `motivo_cancelacion`, NULL y sin relleno; `vendido_por_usuario_id` (FK a usuario ON DELETE SET NULL, decisión 172), rellena una vez en las ventas del profesor desde su fila de auditoría `COBRO_PROFESOR_PRODUCTO`; índices; las FK con `foreign_key_checks = 0` (INPLACE, sin reconstruir la tabla) | El código anterior sigue funcionando; postcheck `postcheck-v31_6.sql` |
 
 Ninguna pieza necesita V32 ni contraer nada. `sede_id` de grupo y de cargo y `sede_principal_id` siguen admitiendo
 NULL. Pasarlos a NOT NULL, si se decide, va con la contracción planificada (entrega 10). Siguen la convención de
@@ -453,8 +453,9 @@ que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
   reservas, pendientes del profesor). Los PDF de mensualidades (informe y listado mensual) los pintan «Cancelado» y no
   los suman. La generación los cuenta como existentes (un mes cancelado no se regenera; para recuperarlo, reactivar).
 - Profesor: `POST /api/caja/profesor/cobros/{id}/deshacer` acepta `{motivo: AUN_NO_PAGADO | NO_HUBO_VENTA}` (sin
-  cuerpo = AUN_NO_PAGADO). NO_HUBO_VENTA solo para su venta del catálogo (primer cobro del cargo, fecha del cobro =
-  fecha de asignación, producto vendible): anula el cobro y cancela el cargo en la misma transacción; si no, 400.
+  cuerpo = AUN_NO_PAGADO). NO_HUBO_VENTA solo para su venta del catálogo (el cargo guarda que lo vendió él en
+  `producto_alumno.vendido_por_usuario_id`, decisión 172; primer cobro del cargo; producto vendible): anula el cobro y
+  cancela el cargo en la misma transacción; si no, 400.
 - Borrado manual (`DELETE /api/productos-alumno/{id}`): solo el propietario y solo cargos sin ninguna fila en `cobro`
   (409 si no). Cambio deliberado también para Moiskimdo: gestor y responsable ya no borran (cancelan). Los borrados
   automáticos (quitar de una convocatoria, borrar la convocatoria o el alumno) siguen igual.

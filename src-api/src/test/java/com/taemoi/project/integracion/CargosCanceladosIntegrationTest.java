@@ -68,6 +68,7 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
 	@Autowired JdbcTemplate jdbc;
+	@Autowired javax.sql.DataSource dataSource;
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
@@ -77,8 +78,8 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
-	long propietario, prof1, producto;
-	String tGestor, tPropietario, tResp, tProf1, tGestorOtra;
+	long propietario, prof1, prof2, producto;
+	String tGestor, tPropietario, tResp, tProf1, tProf2, tGestorOtra;
 
 	@BeforeAll
 	void preparar() {
@@ -95,6 +96,12 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 		tPropietario = e.token(jwtService, usuarios, propietario);
 		tResp = e.token(jwtService, usuarios, e.respA);
 		tProf1 = e.token(jwtService, usuarios, prof1);
+		// Otro profesor del mismo grupo (decisión 172: no deshace como «no hubo venta» la venta de prof1).
+		prof2 = e.cuentaFamilia(usuarios, "prof2");
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'PROFESOR')", prof2, e.org);
+		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) "
+				+ "VALUES (?, ?, ?, 'TITULAR')", e.org, prof2, e.gA);
+		tProf2 = e.token(jwtService, usuarios, prof2);
 		tGestorOtra = otra.token(jwtService, usuarios, otra.gestor);
 		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id) VALUES ('CAMISETA 6B2C', 10.5, "
 				+ "NULL, ?)", e.org);
@@ -382,6 +389,7 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 		JsonNode venta = leer(venta(alumno), tProf1, 201);
 		long cobro = venta.get("cobroId").asLong();
 		long cargo = venta.get("cargoId").asLong();
+		assertEquals(prof1, numero(filaCargo(cargo), "vendido_por_usuario_id"), "la venta guarda quién vendió");
 
 		assertEquals(204, estado(deshacer(cobro, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tProf1));
 		Map<String, Object> fila = filaCargo(cargo);
@@ -445,6 +453,80 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 		assertNull(filaCargo(entregada.get("cargoId").asLong()).get("cancelado_en"));
 		// Un cobro ajeno, 403 (como en la 6b-2), con o sin motivo.
 		assertEquals(403, estado(deshacer(cobroEntregado, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tGestor));
+	}
+
+	/**
+	 * Decisión 172: el origen de la venta es la columna {@code vendido_por_usuario_id} (solo la fija la venta del
+	 * profesor), no la coincidencia de la fecha de asignación con la del cobro al milisegundo.
+	 */
+	@Test
+	void profesor_noHuboVenta_porElVendedorGuardado_noPorLasFechas() throws Exception {
+		long alumno = alumnoEnGrupo("E6CORIGEN", e.sA, e.gA);
+		JsonNode venta = leer(venta(alumno), tProf1, 201);
+		long cargoVenta = venta.get("cargoId").asLong();
+		long cobroVenta = venta.get("cobroId").asLong();
+		assertEquals(prof1, numero(filaCargo(cargoVenta), "vendido_por_usuario_id"));
+		assertFalse(campos(fichaDe(alumno, cargoVenta)).contains("vendidoPorUsuarioId"), "no va en los DTO");
+
+		// La gestión asigna y cobra en una sola operación: sin vendedor.
+		long asignado = leer(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + producto)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"cantidad\":1,\"pagado\":true}"), tGestor, 200)
+				.get("id").asLong();
+		assertTrue(pagado(asignado));
+		assertNull(filaCargo(asignado).get("vendido_por_usuario_id"));
+
+		// Cargo de la gestión que cobra el profesor, con la fecha de asignación IGUAL a la del cobro al milisegundo (lo
+		// que la inferencia anterior tomaba por venta suya): no tiene vendedor → 400, sin cambios.
+		long cargo = cargo(alumno);
+		long cobro = leer(post("/api/caja/profesor/cargos/" + cargo + "/cobrar"), tProf1, 201).get("cobroId").asLong();
+		jdbc.update("UPDATE producto_alumno pa JOIN cobro c ON c.producto_alumno_id = pa.id "
+				+ "SET pa.fecha_asignacion = c.fecha_cobro WHERE c.id = ?", cobro);
+		assertEquals(jdbc.queryForObject("SELECT fecha_cobro FROM cobro WHERE id = ?", java.sql.Timestamp.class, cobro),
+				jdbc.queryForObject("SELECT fecha_asignacion FROM producto_alumno WHERE id = ?",
+						java.sql.Timestamp.class, cargo));
+		assertNull(filaCargo(cargo).get("vendido_por_usuario_id"));
+		MvcResult r = peticion(deshacer(cobro, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tProf1);
+		assertEquals(400, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertTrue(pagado(cargo));
+		assertEquals("ACTIVO", jdbc.queryForObject("SELECT estado FROM cobro WHERE id = ?", String.class, cobro));
+		assertNull(filaCargo(cargo).get("cancelado_en"));
+
+		// Otro profesor del grupo no deshace la venta de prof1 (cobro ajeno → 403)…
+		assertEquals(403, estado(deshacer(cobroVenta, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tProf2));
+		// …y si el vendedor guardado no es quien deshace, no es «su venta» aunque él la cobrara → 400, sin cambios.
+		jdbc.update("UPDATE producto_alumno SET vendido_por_usuario_id = ? WHERE id = ?", prof2, cargoVenta);
+		assertEquals(400, estado(deshacer(cobroVenta, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tProf1));
+		assertTrue(pagado(cargoVenta));
+		assertNull(filaCargo(cargoVenta).get("cancelado_en"));
+		assertEquals("ACTIVO", jdbc.queryForObject("SELECT estado FROM cobro WHERE id = ?", String.class, cobroVenta));
+		// Con su vendedor de vuelta, sí.
+		jdbc.update("UPDATE producto_alumno SET vendido_por_usuario_id = ? WHERE id = ?", prof1, cargoVenta);
+		assertEquals(204, estado(deshacer(cobroVenta, "{\"motivo\":\"NO_HUBO_VENTA\"}"), tProf1));
+		assertNotNull(filaCargo(cargoVenta).get("cancelado_en"));
+	}
+
+	/**
+	 * Decisión 172: el relleno de V31_6 reconoce la fila de auditoría que escribe DE VERDAD la venta del profesor
+	 * (RegistroAccionesCaja), y no la del cobro de un cargo pendiente. Se vacía la columna y se repite V31_6 (repetible).
+	 */
+	@Test
+	void v31_6_rellenaElVendedorDesdeLaAuditoriaRealDeLaVenta() throws Exception {
+		long alumno = alumnoEnGrupo("E6CRELLENO", e.sA, e.gA);
+		long venta = leer(venta(alumno), tProf1, 201).get("cargoId").asLong();
+		long cargo = cargo(alumno);
+		leer(post("/api/caja/profesor/cargos/" + cargo + "/cobrar"), tProf1, 201);
+		jdbc.update("UPDATE producto_alumno SET vendido_por_usuario_id = NULL WHERE id = ?", venta);
+		assertNull(filaCargo(venta).get("vendido_por_usuario_id"));
+
+		try (java.sql.Connection conexion = dataSource.getConnection()) {
+			org.springframework.jdbc.datasource.init.ScriptUtils.executeSqlScript(conexion,
+					new org.springframework.core.io.support.EncodedResource(
+							new org.springframework.core.io.ClassPathResource("db/migration/V31_6__cargos_cancelados.sql"),
+							java.nio.charset.StandardCharsets.UTF_8));
+		}
+
+		assertEquals(prof1, numero(filaCargo(venta), "vendido_por_usuario_id"));
+		assertNull(filaCargo(cargo).get("vendido_por_usuario_id"), "cobrar un pendiente no es venta");
 	}
 
 	// ------------------------------------------------------------------ DELETE manual
