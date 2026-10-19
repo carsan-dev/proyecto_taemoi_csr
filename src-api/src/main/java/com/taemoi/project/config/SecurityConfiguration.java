@@ -188,6 +188,9 @@ public class SecurityConfiguration {
 				.authorizeHttpRequests(request -> request
 						// HEAD recibe la misma decisión que GET a la misma ruta (MVC lo atiende con el handler de GET).
 						.withObjectPostProcessor(HeadComoGetAuthorizationManager.postProcesador())
+						// Decisión 180: la sesión solo-profesor solo pasa en su caja, lo imprescindible de sesión y lo
+						// público; el resto, denegado aquí aunque su regla sea authenticated() (fallo cerrado).
+						.withObjectPostProcessor(SesionSoloProfesorAuthorizationManager.postProcesador())
 						// OAuth2 endpoints
 						.requestMatchers("/login/oauth2/**").permitAll()
 						.requestMatchers("/oauth2/**").permitAll()
@@ -212,7 +215,8 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
-						// alguno de estos tres roles; la de un administrador de plataforma sin membresía, no.
+						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor
+						// (decisión 180), no.
 						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
@@ -475,7 +479,8 @@ public class SecurityConfiguration {
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/tarifas-sede", "/api/tarifas-sede/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
-						// Pieza 6b-2: caja de sede. El profesor, solo sus rutas (sus grupos o sus cobros, @acceso);
+						// Pieza 6b-2: caja de sede. El profesor, solo sus rutas (sus grupos o sus cobros, @acceso; la sesión
+						// solo-profesor, además, no pasa de ellas: SesionSoloProfesorAuthorizationManager);
 						// la caja de una sede, responsable (sus sedes, @acceso), gestor y propietario; anular, solo el
 						// propietario. Cualquier otra ruta bajo /api/caja, nadie.
 						.requestMatchers("/api/caja/profesor/**").hasAuthority(Roles.ROLE_PROFESOR.toString())

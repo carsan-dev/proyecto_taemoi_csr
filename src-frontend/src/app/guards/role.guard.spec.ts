@@ -74,6 +74,30 @@ describe('roleGuard', () => {
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 
+  it('manda a «Mi caja» a una sesión solo profesor que llega a /userpage (entrada con Google)', async () => {
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
+      new BehaviorSubject(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']).asObservable()
+    );
+
+    const result = await resolveGuardResult(
+      executeGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] } } as any, { url: '/userpage' } as any)
+    );
+
+    expect(result).toBeFalse();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/mi-caja']);
+  });
+
+  it('una sesión sin roles sigue yendo a la raíz', async () => {
+    (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(new BehaviorSubject([]).asObservable());
+
+    const result = await resolveGuardResult(
+      executeGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] } } as any, { url: '/userpage' } as any)
+    );
+
+    expect(result).toBeFalse();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+  });
+
   it('deniega acceso si la ruta no declara requiredRoles', async () => {
     const result = await resolveGuardResult(executeGuard({ data: {} } as any, { url: '/alumnosListar' } as any));
 

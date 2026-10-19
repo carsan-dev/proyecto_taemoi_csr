@@ -331,6 +331,9 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 					caja + "profesor_listaLosProductosQuePuedeVender_conLaMismaListaBlanca");
 			m.put(metodo + " /api/caja/profesor/cobros-pendientes-entrega",
 					caja + "profesor_misCobrosPendientesDeEntrega_soloLosSuyosConSusTotales");
+			// Pieza 6b-3b-1: el servicio filtra por sus grupos (y la escuela activa).
+			m.put(metodo + " /api/caja/profesor/alumnos",
+					"integracion.MiCajaProfesorIntegrationTest#alumnosDeMisGrupos_cadaProfesorLosSuyos_yOtraEscuelaAislada");
 		}
 		m.put("POST /api/caja/profesor/cargos/{cargoId}/cobrar",
 				caja + "profesor_cobraEnEfectivo_conLosMismosEfectosQueElPut");
@@ -342,11 +345,28 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 	}
 
 	/**
+	 * Decisión 180 (pieza 6b-3b-2): lo imprescindible de sesión que la sesión solo-profesor puede usar además de su
+	 * caja, con el porqué. {@code SesionSoloProfesorAuthorizationManager} lo deja pasar a las reglas de siempre.
+	 */
+	static final Map<String, String> PROFESOR_SESION_180 = profesorSesion();
+
+	private static Map<String, String> profesorSesion() {
+		Map<String, String> m = new LinkedHashMap<>();
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/auth/roles", "el frontend decide qué mostrar por los roles");
+			m.put(metodo + " /api/auth/user", "el frontend sabe quién es al recargar (sin alumno)");
+			m.put(metodo + " /api/auth/organizaciones", "selector de escuela");
+		}
+		m.put("POST /api/auth/organizacion", "cambio de escuela");
+		return Map.copyOf(m);
+	}
+
+	/**
 	 * Invariantes de los roles nuevos (§2.2):
 	 * <ol>
-	 * <li>PROFESOR decide en cada línea lo mismo que SOLO_PLATAFORMA (una sesión autenticada sin ningún rol de
-	 * escuela), salvo en {@code /api/plataforma/**}, que le deniega: no se abre nada hasta la entrega 7. Excepción de
-	 * la pieza 6b-2: las líneas de {@link #PROFESOR_CAJA_6B2} (ALCANCE o PERMITE).</li>
+	 * <li>PROFESOR (la sesión solo-profesor, decisión 180) es DENIEGA en cada línea salvo: las de
+	 * {@link #PROFESOR_CAJA_6B2} (ALCANCE o PERMITE), las de {@link #PROFESOR_SESION_180} (PERMITE) y las públicas
+	 * (las que son PERMITE para ANONIMO), que son PERMITE. Una ruta nueva abierta a esa sesión hace fallar el test.</li>
 	 * <li>RESPONSABLE_SEDE solo puede ser DENIEGA, ALCANCE (el {@code @PreAuthorize} consultó {@code @acceso}) o
 	 * PERMITE en una línea de {@link #RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO} o en una ruta pública o de sesión que ya
 	 * era PERMITE para SOLO_PLATAFORMA. En {@code /api/plataforma/**}, DENIEGA.</li>
@@ -361,14 +381,19 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		int lineasDePlataforma = 0;
 		Set<String> declaradasUsadas = new LinkedHashSet<>();
 		Set<String> profesorDeclaradasUsadas = new LinkedHashSet<>();
+		Set<String> profesorSesionUsadas = new LinkedHashSet<>();
 		for (RegistroMatrizPermisos.Linea linea : lineas) {
 			boolean plataforma = esRutaDePlataforma(linea.ruta());
 			if (plataforma) {
 				lineasDePlataforma++;
 			}
 			Decision soloPlataforma = linea.decisiones().get(RolMatriz.SOLO_PLATAFORMA);
-			Decision profesorEsperado = plataforma ? Decision.DENIEGA : soloPlataforma;
+			Decision profesorEsperado = PROFESOR_SESION_180.containsKey(linea.clave())
+					|| linea.decisiones().get(RolMatriz.ANONIMO) == Decision.PERMITE ? Decision.PERMITE : Decision.DENIEGA;
 			Decision profesor = linea.decisiones().get(RolMatriz.PROFESOR);
+			if (PROFESOR_SESION_180.containsKey(linea.clave())) {
+				profesorSesionUsadas.add(linea.clave());
+			}
 			if (PROFESOR_CAJA_6B2.containsKey(linea.clave())) {
 				profesorDeclaradasUsadas.add(linea.clave());
 				if (profesor != Decision.ALCANCE && profesor != Decision.PERMITE) {
@@ -415,11 +440,56 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 						+ ", que no existe");
 			}
 		}
+		for (String clave : PROFESOR_SESION_180.keySet()) {
+			if (!profesorSesionUsadas.contains(clave)) {
+				errores.add("PROFESOR_SESION_180 declara '" + clave + "', que no está en el registro: quítala");
+			}
+		}
 		if (lineasDePlataforma == 0) {
 			errores.add("el registro no tiene ninguna línea de /api/plataforma/**: el invariante sería vacío");
 		}
 		if (!errores.isEmpty()) {
 			fail("Los roles nuevos no cumplen la política de la entrega 6:\n  " + String.join("\n  ", errores));
+		}
+	}
+
+	/**
+	 * Decisión 180: la sesión solo-profesor la cierra la CAPA DE URL, no los {@code @PreAuthorize} repartidos. Para
+	 * cada endpoint, la regla de URL solo puede dejarla pasar en su lista blanca (caja del profesor, las rutas de
+	 * {@link #PROFESOR_SESION_180} y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA) o donde deja
+	 * pasar al anónimo. Así una ruta nueva sin {@code @PreAuthorize} (que caería en {@code anyRequest().authenticated()})
+	 * queda cerrada a esa sesión.
+	 */
+	@Test
+	void sesionSoloProfesorLaCierraLaCapaDeUrlFueraDeSuListaBlanca() throws IOException {
+		assumeFalse(regenerando(), "regenerando el registro");
+		List<String> errores = new ArrayList<>();
+		List<RegistroMatrizPermisos.Linea> lineas = leerRegistro(errores);
+		int cerradasPorLaUrl = 0;
+		for (RegistroMatrizPermisos.Linea linea : lineas) {
+			String clave = claveManejador(linea);
+			if (clave == null) {
+				continue;
+			}
+			EvaluadorAutorizacion.Resultado r = evaluar(linea.metodo(), linea.ruta(), clave);
+			Decision urlProfesor = r.url().get(RolMatriz.PROFESOR);
+			boolean listaBlanca = linea.ruta().startsWith("/api/caja/profesor/")
+					|| PROFESOR_SESION_180.containsKey(linea.clave()) || esRutaDePlataforma(linea.ruta());
+			boolean publica = r.url().get(RolMatriz.ANONIMO) == Decision.PERMITE;
+			if (urlProfesor != Decision.DENIEGA && !listaBlanca && !publica) {
+				errores.add(String.format("línea %d: %s, la regla de URL deja pasar a PROFESOR (%s) fuera de su lista"
+						+ " blanca", linea.numero(), linea.clave(), urlProfesor));
+			}
+			if (urlProfesor == Decision.DENIEGA && r.url().get(RolMatriz.SOLO_PLATAFORMA) == Decision.PERMITE) {
+				cerradasPorLaUrl++;
+			}
+		}
+		if (cerradasPorLaUrl == 0) {
+			errores.add("ninguna ruta abierta a cualquier sesión queda cerrada a PROFESOR en la URL: el invariante sería"
+					+ " vacío");
+		}
+		if (!errores.isEmpty()) {
+			fail("La sesión solo-profesor no está cerrada en la capa de URL:\n  " + String.join("\n  ", errores));
 		}
 	}
 
@@ -485,6 +555,22 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		assertEquals(Decision.PERMITE, r.combinada().get(RolMatriz.GESTOR));
 		assertEquals(Decision.DENIEGA, r.combinada().get(RolMatriz.ANONIMO));
 		assertEquals(Decision.DENIEGA, r.combinada().get(RolMatriz.SOLO_PLATAFORMA));
+	}
+
+	/**
+	 * Decisión 180: {@code /api/auth/user/alumnos} solo tiene {@code anyRequest().authenticated()} en la URL (pasa
+	 * cualquier sesión, p. ej. SOLO_PLATAFORMA); a la sesión solo-profesor la deniega ya la URL. Su lista blanca, no.
+	 * SesionSoloProfesorIntegrationTest lo comprueba por HTTP.
+	 */
+	@Test
+	void controlSesionSoloProfesorCerradaEnLaUrlYAbiertaEnSuListaBlanca() {
+		EvaluadorAutorizacion.Resultado alumnos = evaluarClave("GET /api/auth/user/alumnos");
+		assertEquals(Decision.PERMITE, alumnos.url().get(RolMatriz.SOLO_PLATAFORMA));
+		assertEquals(Decision.DENIEGA, alumnos.url().get(RolMatriz.PROFESOR));
+		EvaluadorAutorizacion.Resultado roles = evaluarClave("GET /api/auth/roles");
+		assertEquals(Decision.PERMITE, roles.combinada().get(RolMatriz.PROFESOR));
+		assertEquals(Decision.DENIEGA, roles.combinada().get(RolMatriz.RESPONSABLE_SEDE));
+		assertEquals(Decision.PERMITE, evaluarClave("GET /api/eventos").combinada().get(RolMatriz.PROFESOR));
 	}
 
 	@Test

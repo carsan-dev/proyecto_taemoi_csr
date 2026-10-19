@@ -79,12 +79,15 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		Optional<Usuario> existingUser = usuarioRepository.findByEmailIgnoreCase(email);
 		if (existingUser.isPresent()) {
 			Usuario usuario = existingUser.get();
-			// Mismo criterio que el login con contraseña: alguna escuela en la que pueda entrar.
+			// Mismo criterio que el login con contraseña: alguna escuela en la que pueda entrar; y el mismo motivo
+			// propio para quien solo tiene roles sin acceso (hoy, solo responsable de sede: decisiones 180 y 184).
 			if (membresiaService.elegirOrganizacionParaLogin(usuario).isEmpty()) {
 				throw new IllegalArgumentException(
 						membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()
 								? "El usuario no tiene acceso a ninguna escuela. Contacte con el administrador."
-								: "No hay alumnos activos asociados a este email. Contacte con el administrador.");
+								: membresiaService.soloTieneRolesSinAcceso(usuario.getId())
+										? AuthenticationServiceImpl.ROL_SIN_ACCESO
+										: "No hay alumnos activos asociados a este email. Contacte con el administrador.");
 			}
 			if (usuario.getAuthProvider() != AuthProvider.GOOGLE) {
 				usuario.setAuthProvider(AuthProvider.GOOGLE);

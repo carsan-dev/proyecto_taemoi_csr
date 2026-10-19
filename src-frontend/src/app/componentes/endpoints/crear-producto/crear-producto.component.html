@@ -88,6 +88,24 @@
                     </div>
                   </div>
                 </div>
+                <!-- Venta desde «Mi caja» (6b-3b) -->
+                <div class="col-12">
+                  <div class="admin-form-check" [class.checked]="productoForm.get('vendibleProfesor')?.value">
+                    <input
+                      type="checkbox"
+                      id="vendibleProfesor"
+                      formControlName="vendibleProfesor"
+                      aria-describedby="ayudaVendibleProfesor">
+                    <label for="vendibleProfesor">
+                      <i class="bi bi-wallet2 check-icon" aria-hidden="true"></i>
+                      Lo puede vender el profesor
+                    </label>
+                  </div>
+                  <div class="admin-form-help" id="ayudaVendibleProfesor">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    <span>Aparecerá en Mi caja para que el profesor lo cobre en efectivo. Las mensualidades, licencias, exámenes, reservas y productos de grado nunca se venden desde ahí.</span>
+                  </div>
+                </div>
               </div>
             </div>
 

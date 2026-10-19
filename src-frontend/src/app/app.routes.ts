@@ -2,6 +2,7 @@
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
+import { profesorGuard } from './guards/profesor.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -398,6 +399,13 @@ export const routes: Routes = [
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-errores/plataforma-errores.component').then(m => m.PlataformaErroresComponent),
     canActivate: [plataformaGuard],
+  },
+  {
+    // «Mi caja» del profesor (6b-3b): sin catálogo ni requiredRoles; una sesión solo profesor solo puede usar su caja.
+    path: 'mi-caja',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/mi-caja/mi-caja.component').then(m => m.MiCajaComponent),
+    canActivate: [profesorGuard],
   },
   {
     path: '**',

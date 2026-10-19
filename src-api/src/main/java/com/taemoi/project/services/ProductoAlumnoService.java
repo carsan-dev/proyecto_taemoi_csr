@@ -57,8 +57,17 @@ public interface ProductoAlumnoService {
 	 */
 	com.taemoi.project.entities.Cobro apuntarYCobrarProductoComoProfesor(Long alumnoId, Long productoId);
 
-	/** Pieza 6b-2: productos del catálogo que el profesor puede apuntar y cobrar (la misma lista blanca). */
+	/**
+	 * Pieza 6b-2: productos del catálogo que el profesor puede apuntar y cobrar (la misma lista blanca; desde la 6b-3b-1,
+	 * solo los marcados por la gestión como «Lo puede vender el profesor»).
+	 */
 	List<com.taemoi.project.entities.Producto> productosVendiblesPorProfesor();
+
+	/**
+	 * Pieza 6b-3b-1: ids de los cobros de {@code cobros} que son la venta del catálogo de quien los cobró (la condición
+	 * que hace válido deshacer con NO_HUBO_VENTA, sin depender de que el producto siga marcado). Sin N+1.
+	 */
+	java.util.Set<Long> cobrosQueSonVentaDelProfesor(java.util.Collection<com.taemoi.project.entities.Cobro> cobros);
 
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
 

@@ -1,5 +1,5 @@
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthenticationService } from '../servicios/authentication/authentication.service';
+import { AuthenticationService, esSoloProfesor } from '../servicios/authentication/authentication.service';
 import { inject } from '@angular/core';
 import { catchError, map, of } from 'rxjs';
 
@@ -23,7 +23,8 @@ export const roleGuard: CanActivateFn = (route, state) => {
         if (requiredRoles.some((role) => roles.includes(role))) {
           return true;
         }
-        router.navigate(['/']);
+        // Solo profesor (p. ej. tras entrar con Google, que aterriza en /userpage): su sitio es «Mi caja».
+        router.navigate([esSoloProfesor(roles) ? '/mi-caja' : '/']);
         return false;
       }),
       catchError(() => {

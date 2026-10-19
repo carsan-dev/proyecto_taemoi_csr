@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,8 +24,13 @@ public class ProductoAlumno extends EntidadOrganizacion {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	/**
+	 * Pieza 6b-3b-1: la marca {@code vendibleProfesor} del producto solo va en {@code /api/productos}; el producto
+	 * anidado en el JSON de un cargo sigue como antes ({@code id}, {@code concepto}, {@code precio}).
+	 */
 	@ManyToOne
 	@JoinColumn(name = "producto_id")
+	@JsonIgnoreProperties({ "vendibleProfesor" })
 	private Producto producto;
 
 	// Relación con Alumno (DEPRECATED: usar alumnoDeporte)

@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 
 /**
  * Producto cobrable.
@@ -63,6 +64,19 @@ public class Producto extends EntidadOrganizacion {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "grado_id", updatable = false)
 	private Grado grado;
+
+	/**
+	 * Pieza 6b-3b-1 (decisión 182, V31_7): la gestión marca en la ficha que el profesor lo puede vender («Vender» de
+	 * «Mi caja»), en todas las sedes. Además de la marca rige la regla fija de la 6b-2 (ver
+	 * {@code ProductoAlumnoServiceImpl#esVendiblePorProfesor}). Va en el JSON de {@code /api/productos}
+	 * ({@code vendibleProfesor}), no en el del producto anidado en un cargo ({@code ProductoAlumno#producto}).
+	 *
+	 * <p>{@code null} SOLO en un producto recibido en una petición que no envía el campo: {@code PUT} y {@code POST}
+	 * con un id existente conservan entonces el valor guardado ({@code ProductoServiceImpl}); un alta sin el campo
+	 * queda {@code false} ({@link #valoresPorDefecto}). En la base nunca es nulo (NOT NULL DEFAULT FALSE).
+	 */
+	@Column(name = "vendible_profesor", nullable = false)
+	private Boolean vendibleProfesor;
 
 	@OneToMany(mappedBy = "producto")
 	@JsonIgnore
@@ -135,6 +149,22 @@ public class Producto extends EntidadOrganizacion {
 
 	public void setGrado(Grado grado) {
 		this.grado = grado;
+	}
+
+	public Boolean getVendibleProfesor() {
+		return vendibleProfesor;
+	}
+
+	public void setVendibleProfesor(Boolean vendibleProfesor) {
+		this.vendibleProfesor = vendibleProfesor;
+	}
+
+	/** Un alta sin la marca (cualquier vía: API, catálogo, servicios) queda sin marcar. */
+	@PrePersist
+	void valoresPorDefecto() {
+		if (vendibleProfesor == null) {
+			vendibleProfesor = Boolean.FALSE;
+		}
 	}
 
 	public List<ProductoAlumno> getProductosAlumno() {

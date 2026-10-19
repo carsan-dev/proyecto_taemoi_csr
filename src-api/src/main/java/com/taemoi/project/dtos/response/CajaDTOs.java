@@ -24,9 +24,21 @@ public final class CajaDTOs {
 			String concepto, BigDecimal importe, Date fechaAsignacion, Long sedeId, String sedeNombre) {
 	}
 
-	/** Un cobro (fila): del profesor, o de la lista de pendientes de entrega de una sede. */
+	/**
+	 * Un cobro (fila): del profesor, o de la lista de pendientes de entrega de una sede. {@code venta} (pieza 6b-3b-1):
+	 * el cobro es la venta del catálogo de quien lo cobró (apuntó y cobró el producto él mismo), la condición que hace
+	 * válido deshacerlo con NO_HUBO_VENTA; no depende de que el producto siga marcado como vendible.
+	 */
 	public record CobroCaja(Long cobroId, Long cargoId, Long alumnoId, String alumnoNombre, String alumnoApellidos,
-			String concepto, BigDecimal importe, Date fechaCobro, Long sedeId) {
+			String concepto, BigDecimal importe, Date fechaCobro, Long sedeId, boolean venta) {
+	}
+
+	/**
+	 * Pieza 6b-3b-1: un alumno ACTIVO de los grupos del profesor de la sesión (para «Vender» en «Mi caja»).
+	 * {@code grupos}: los nombres de SUS grupos (los del profesor) en los que está el alumno, por nombre. Sin datos
+	 * sensibles (ni salud, ni DNI, ni contacto).
+	 */
+	public record AlumnoDeMisGrupos(Long alumnoId, String nombre, String apellidos, List<String> grupos) {
 	}
 
 	/** Un producto del catálogo que el profesor puede apuntar y cobrar (lista blanca de la 6b-2). */

@@ -108,8 +108,9 @@ public class MembresiaServiceImpl implements MembresiaService {
 	@Override
 	public List<OrganizacionUsuarioDTO> organizacionesDe(Long usuarioId, Long organizacionActiva) {
 		Map<Long, Set<Roles>> porOrganizacion = autoridadesPorOrganizacion(usuarioId);
-		// Selector de escuela: fuera las escuelas cuyas autoridades no abren sesión (solo RESPONSABLE_SEDE o
-		// PROFESOR). Solo abreSesion: una familia sin alumnos activos sigue apareciendo, como siempre.
+		// Selector de escuela: fuera las escuelas cuyas autoridades no abren sesión (solo RESPONSABLE_SEDE; la de
+		// profesor, con o sin RESPONSABLE_SEDE, sí aparece, decisiones 180 y 184). Solo abreSesion: una familia sin alumnos activos
+		// sigue apareciendo, como siempre.
 		porOrganizacion.values().removeIf(autoridades -> !RolMembresia.abreSesion(autoridades));
 		Map<Long, Organizacion> datos = new HashMap<>();
 		organizaciones.findAllById(porOrganizacion.keySet()).forEach(o -> datos.put(o.getId(), o));

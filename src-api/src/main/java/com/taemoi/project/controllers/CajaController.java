@@ -65,7 +65,20 @@ public class CajaController {
 		return ResponseEntity.noContent().build();
 	}
 
-	/** Productos del catálogo que el profesor puede apuntar y cobrar (lista blanca de la 6b-2). */
+	/**
+	 * Pieza 6b-3b-1: alumnos ACTIVOS de sus grupos (para «Vender» en «Mi caja»), por apellidos y nombre, con los nombres
+	 * de sus grupos. Sin datos sensibles.
+	 */
+	@GetMapping("/profesor/alumnos")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<List<CajaDTOs.AlumnoDeMisGrupos>> alumnosDeMisGrupos() {
+		return ResponseEntity.ok(caja.alumnosDeMisGrupos());
+	}
+
+	/**
+	 * Productos del catálogo que el profesor puede apuntar y cobrar (lista blanca de la 6b-2 y, desde la 6b-3b-1, solo
+	 * los marcados por la gestión como «Lo puede vender el profesor»).
+	 */
 	@GetMapping("/profesor/productos")
 	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
 	public ResponseEntity<List<CajaDTOs.ProductoVendible>> productosVendibles() {

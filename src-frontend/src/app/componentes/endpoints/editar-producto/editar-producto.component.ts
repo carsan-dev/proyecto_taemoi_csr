@@ -28,6 +28,8 @@ export class EditarProductoComponent implements OnInit {
     this.productoForm = this.fb.group({
       concepto: ['', Validators.required],
       precio: ['', [Validators.required, Validators.min(0)]],
+      // Pieza 6b-3b: aparece en «Mi caja» para que el profesor lo venda en efectivo.
+      vendibleProfesor: [false],
       // Agrega otros campos si es necesario
     });
     this.productoId = +this.route.snapshot.params['id'];
@@ -43,7 +45,7 @@ export class EditarProductoComponent implements OnInit {
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
         next: (producto) => {
-          this.productoForm.patchValue(producto);
+          this.productoForm.patchValue({ ...producto, vendibleProfesor: !!producto?.vendibleProfesor });
         },
         error: () => {
           this.cargando = false;

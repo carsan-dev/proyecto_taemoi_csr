@@ -33,7 +33,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("31.6", actual.getVersion().getVersion());
+		assertEquals("31.7", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 

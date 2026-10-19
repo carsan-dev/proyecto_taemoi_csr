@@ -24,6 +24,8 @@ export interface CobroCaja {
   importe: number;
   fechaCobro: string | null;
   sedeId: number | null;
+  /** Venta del catálogo hecha por quien lo cobró (6b-3b-1): solo así se puede deshacer con NO_HUBO_VENTA. */
+  venta?: boolean;
 }
 
 /** CajaDTOs.ResumenCajaSede */
@@ -109,4 +111,44 @@ export interface CrearMovimientoCaja {
   importe: number;
   alumnoId: number | null;
   nota: string;
+}
+
+// ------------------------------------------------------------------ Mi caja (profesor, pieza 6b-3b)
+
+/** Por qué se deshace un cobro del profesor: sigue debiéndose, o la venta no llegó a hacerse (cancela el cargo). */
+export type MotivoDeshacerCobro = 'AUN_NO_PAGADO' | 'NO_HUBO_VENTA';
+
+/** CajaDTOs.CargoPendienteProfesor: un cargo pendiente de un alumno de los grupos del profesor. */
+export interface CargoPendienteProfesor {
+  cargoId: number;
+  alumnoId: number;
+  alumnoNombre: string | null;
+  alumnoApellidos: string | null;
+  concepto: string;
+  importe: number;
+  fechaAsignacion: string | null;
+  sedeId: number | null;
+  sedeNombre: string | null;
+}
+
+/** CajaDTOs.ProductoVendible: producto del catálogo que el profesor puede vender (precio fijo). */
+export interface ProductoVendible {
+  id: number;
+  concepto: string;
+  precio: number;
+}
+
+/** CajaDTOs.MisCobrosPendientes: lo que el profesor lleva encima sin entregar. */
+export interface MisCobrosPendientes {
+  numeroCobros: number;
+  importe: number;
+  cobros: CobroCaja[];
+}
+
+/** CajaDTOs.AlumnoDeMisGrupos: alumno activo de los grupos del profesor (sin datos sensibles). */
+export interface AlumnoDeMisGrupos {
+  alumnoId: number;
+  nombre: string | null;
+  apellidos: string | null;
+  grupos: string[];
 }

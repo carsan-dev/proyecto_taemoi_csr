@@ -161,3 +161,19 @@ app-paginacion {
   }
 }
   
+
+// Pieza 6b-3b: producto que el profesor puede vender desde «Mi caja».
+.etiqueta-mi-caja {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #e6f4ea;
+  color: #22543d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+}

@@ -1,8 +1,12 @@
 import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
-import { AuthenticationService, PortalPreferido } from '../../../../servicios/authentication/authentication.service';
+import {
+  AuthenticationService,
+  PortalPreferido,
+  esSoloProfesor,
+} from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription, of, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 import {
   ADMIN_HEADER_QUICK_LINKS,
@@ -25,6 +29,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isAdminOnly: boolean = false;
   esAdminPlataforma: boolean = false;
   isUser: boolean = false;
+  /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia o la barra de administración. */
+  tieneRolProfesor: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
   isHidden: boolean = false;
@@ -84,6 +90,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isAdminOnly = false;
           this.esAdminPlataforma = false;
           this.isUser = false;
+          this.tieneRolProfesor = false;
           this.tieneAccesoDual = false;
           this.isAuthChecked = true;
         }
@@ -238,12 +245,17 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   comprobarRoles() {
-    // Emite una vez y completa: no hace falta guardar la suscripción.
-    this.authService.esAdminPlataforma().subscribe((esAdmin) => (this.esAdminPlataforma = esAdmin));
+    // Emite una vez y completa: no hace falta guardar la suscripción. Una sesión solo profesor no sondea la
+    // plataforma: el servidor solo le deja su caja (se esperan los roles; la petición de /roles se comparte).
+    this.authService
+      .resolverRolesDisponibles()
+      .pipe(switchMap((roles) => (esSoloProfesor(roles) ? of(false) : this.authService.esAdminPlataforma())))
+      .subscribe((esAdmin) => (this.esAdminPlataforma = esAdmin));
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
+      this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       this.isAuthChecked = true;
     });
