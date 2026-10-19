@@ -52,8 +52,17 @@ public class ProductoServiceImpl implements ProductoService {
 		return productoRepository.findByConceptoContaining(concepto, pageable);
 	}
 
+	/**
+	 * Alta (o, con el id de uno existente, sobrescritura por merge, como siempre). Pieza 6b-3b-1: si la petición no trae
+	 * {@code vendibleProfesor} (cliente anterior), un producto existente conserva su marca y uno nuevo queda sin marcar
+	 * ({@code Producto#valoresPorDefecto}).
+	 */
 	@Override
 	public Producto guardarProducto(Producto producto) {
+		if (producto.getVendibleProfesor() == null && producto.getId() != null) {
+			productoRepository.findById(producto.getId())
+					.ifPresent(actual -> producto.setVendibleProfesor(actual.getVendibleProfesor()));
+		}
 		return productoRepository.save(producto);
 	}
 
@@ -67,6 +76,10 @@ public class ProductoServiceImpl implements ProductoService {
 			// Actualiza los campos necesarios
 			producto.setConcepto(productoDetalles.getConcepto());
 			producto.setPrecio(productoDetalles.getPrecio());
+			// Pieza 6b-3b-1: sin el campo (cliente anterior) se conserva la marca; solo un valor explícito la cambia.
+			if (productoDetalles.getVendibleProfesor() != null) {
+				producto.setVendibleProfesor(productoDetalles.getVendibleProfesor());
+			}
 
 			return productoRepository.save(producto);
 		} else {

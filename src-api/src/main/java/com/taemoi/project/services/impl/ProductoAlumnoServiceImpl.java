@@ -235,24 +235,47 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private static final List<String> CONCEPTOS_NO_VENDIBLES_POR_PROFESOR = List.of("MENSUALIDAD", "LICENCIA",
 			"MATRICULA", "RESERVA", "COMPETIDOR", "EXAMEN", "PASE DE GRADO", "RECOMPENSA");
 
+	static final String PRODUCTO_NO_MARCADO_PARA_PROFESOR = "Este producto no lo puede vender un profesor: la gestión "
+			+ "no lo ha marcado en su ficha como «Lo puede vender el profesor».";
+
 	/**
 	 * Pieza 6b-2, lista blanca de lo que el profesor puede apuntar y cobrar: SOLO productos de tipo
 	 * {@link TipoProducto#OTRO} (material, camisetas…), sin grado enlazado, cuyo concepto no nombra nada con efectos y
 	 * que el catálogo no resuelve como concesión de grado. Fuera: MENSUALIDAD, RESERVA_PLAZA, LICENCIA, COMPETIDOR
 	 * (recurrentes o con efectos en la ficha), EXAMEN y RECOMPENSA (derecho a examen y promoción de grado), y por
-	 * concepto los de Taemoi sin clasificar por código. Ante la duda (el catálogo falla), se excluye.
+	 * concepto los de Taemoi sin clasificar por código. Ante la duda (el catálogo falla), se excluye. Pieza 6b-3b-1
+	 * (decisión 182): además, la gestión lo ha marcado ({@code vendibleProfesor}). Fuera de la regla fija → 400 con
+	 * {@link #PRODUCTO_NO_VENDIBLE_POR_PROFESOR}; dentro pero sin marcar → 400 con
+	 * {@link #PRODUCTO_NO_MARCADO_PARA_PROFESOR}.
 	 */
 	private void exigirProductoVendiblePorProfesor(Producto producto) {
-		if (!esVendiblePorProfesor(producto)) {
+		if (!cumpleReglaFijaDeVentaDelProfesor(producto)) {
 			throw new IllegalArgumentException(PRODUCTO_NO_VENDIBLE_POR_PROFESOR);
+		}
+		if (!esVendiblePorProfesor(producto)) {
+			throw new IllegalArgumentException(PRODUCTO_NO_MARCADO_PARA_PROFESOR);
 		}
 	}
 
 	/**
-	 * La regla ÚNICA de la lista blanca (la usan apuntar y cobrar y {@link #productosVendiblesPorProfesor}). El grado
-	 * enlazado se mira en la entidad; el catálogo solo resuelve el concedido por concepto (sin releer el producto).
+	 * «Se puede vender AHORA»: la regla ÚNICA de la lista blanca, la que usan apuntar y cobrar
+	 * ({@link #exigirProductoVendiblePorProfesor}) y {@link #productosVendiblesPorProfesor}. Pieza 6b-3b-1 (decisión
+	 * 182): la marca de la gestión ({@code vendibleProfesor}) Y la regla fija de la 6b-2
+	 * ({@link #cumpleReglaFijaDeVentaDelProfesor}).
+	 *
+	 * <p>NO decide si un cobro ya hecho «fue una venta del profesor» ({@link #esVentaDelProfesor}): desmarcar el
+	 * producto después no impide deshacer esa venta con NO_HUBO_VENTA ni le quita {@code venta} a su fila de caja.
 	 */
 	private boolean esVendiblePorProfesor(Producto producto) {
+		return producto != null && Boolean.TRUE.equals(producto.getVendibleProfesor())
+				&& cumpleReglaFijaDeVentaDelProfesor(producto);
+	}
+
+	/**
+	 * La regla fija de la 6b-2 (sin la marca de la gestión). El grado enlazado se mira en la entidad; el catálogo solo
+	 * resuelve el concedido por concepto (sin releer el producto).
+	 */
+	private boolean cumpleReglaFijaDeVentaDelProfesor(Producto producto) {
 		if (producto == null || producto.getTipo() != TipoProducto.OTRO || producto.getGrado() != null) {
 			return false;
 		}
@@ -469,8 +492,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * anteriores desde su fila de auditoría (COBRO_PROFESOR_PRODUCTO);</li>
 	 * <li>el cobro es el PRIMERO del cargo (ninguno anterior, ni anulado): es el cobro de la venta, no uno posterior tras
 	 * deshacerla como «aún no pagado»;</li>
-	 * <li>el producto del cargo sigue siendo de los que el profesor puede vender ({@link #esVendiblePorProfesor}).</li>
+	 * <li>el producto del cargo cumple la regla fija de la 6b-2 ({@link #cumpleReglaFijaDeVentaDelProfesor}).</li>
 	 * </ul>
+	 * Pieza 6b-3b-1 (decisión 182): «FUE una venta del profesor», separado de «se puede vender ahora»
+	 * ({@link #esVendiblePorProfesor}): NO mira la marca {@code vendibleProfesor}, así que si la gestión desmarca el
+	 * producto después de la venta, el profesor puede seguir deshaciéndola como «no hubo venta». La misma condición da
+	 * {@code venta} en las filas de caja ({@link #cobrosQueSonVentaDelProfesor}).
 	 * Origen PROFESOR, cobrado por él, ACTIVO y sin entrega ya lo exige el llamador.
 	 */
 	private boolean esVentaDelProfesor(ProductoAlumno cargo, Cobro cobro, Long profesorId) {
@@ -481,7 +508,54 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (delCargo.isEmpty() || !cobro.getId().equals(delCargo.get(0).getId())) {
 			return false;
 		}
-		return esVendiblePorProfesor(cargo.getProducto());
+		return cumpleReglaFijaDeVentaDelProfesor(cargo.getProducto());
+	}
+
+	/**
+	 * Pieza 6b-3b-1: de {@code cobros}, los que son la venta del catálogo de quien los cobró, con la MISMA condición que
+	 * hace válido NO_HUBO_VENTA ({@link #esVentaDelProfesor}, sin la marca del producto): origen PROFESOR, el cargo lo
+	 * vendió quien cobró ({@code vendido_por_usuario_id = cobrado_por_usuario_id}), es el primer cobro del cargo y el
+	 * producto cumple la regla fija. No mira el estado del cobro ni la entrega (eso lo exige el deshacer). Dos consultas
+	 * fijas (cargos vendidos con su producto y primer cobro de cada cargo) y la regla fija una vez por producto distinto.
+	 */
+	@Override
+	public Set<Long> cobrosQueSonVentaDelProfesor(java.util.Collection<Cobro> cobros) {
+		List<Cobro> candidatos = cobros.stream()
+				.filter(c -> c != null && c.getId() != null && c.getProductoAlumnoId() != null
+						&& c.getOrigen() == OrigenCobro.PROFESOR && c.getCobradoPorUsuarioId() != null)
+				.toList();
+		if (candidatos.isEmpty()) {
+			return Set.of();
+		}
+		Set<Long> cargoIds = candidatos.stream().map(Cobro::getProductoAlumnoId)
+				.collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+		Map<Long, Long> vendedor = new java.util.HashMap<>();
+		Map<Long, Producto> productoDe = new java.util.HashMap<>();
+		for (Object[] fila : productoAlumnoRepository.cargosVendidosPorProfesorConProducto(cargoIds)) {
+			vendedor.put((Long) fila[0], (Long) fila[1]);
+			productoDe.put((Long) fila[0], (Producto) fila[2]);
+		}
+		if (vendedor.isEmpty()) {
+			return Set.of();
+		}
+		Map<Long, Long> primerCobro = new java.util.HashMap<>();
+		for (Object[] fila : cobroRepository.primerCobroPorCargo(vendedor.keySet())) {
+			primerCobro.put((Long) fila[0], (Long) fila[1]);
+		}
+		Map<Long, Boolean> reglaPorProducto = new java.util.HashMap<>();
+		Set<Long> ventas = new java.util.LinkedHashSet<>();
+		for (Cobro cobro : candidatos) {
+			Long cargoId = cobro.getProductoAlumnoId();
+			Producto producto = productoDe.get(cargoId);
+			if (producto == null || !cobro.getCobradoPorUsuarioId().equals(vendedor.get(cargoId))
+					|| !cobro.getId().equals(primerCobro.get(cargoId))) {
+				continue;
+			}
+			if (reglaPorProducto.computeIfAbsent(producto.getId(), id -> cumpleReglaFijaDeVentaDelProfesor(producto))) {
+				ventas.add(cobro.getId());
+			}
+		}
+		return ventas;
 	}
 
 	private static Map<String, Long> ids(String clave1, Long id1, String clave2, Long id2) {

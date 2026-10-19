@@ -99,8 +99,9 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 			tResp = e.token(jwtService, usuarios, e.respA);
 			tProf1 = e.token(jwtService, usuarios, prof1);
 			tProf2 = e.token(jwtService, usuarios, prof2);
-			jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id) VALUES ('CAMISETA 6B2', 10.5, "
-					+ "NULL, ?)", e.org);
+			// Marcado por la gestión como «Lo puede vender el profesor» (decisión 182, V31_7).
+			jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id, vendible_profesor) VALUES "
+					+ "('CAMISETA 6B2', 10.5, NULL, ?, TRUE)", e.org);
 			producto = jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 			jdbc.update("UPDATE alumno_deporte SET fecha_grado = '2024-01-01' WHERE organizacion_id = ?", e.org);
 		}
@@ -247,7 +248,7 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(201, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		JsonNode respuesta = json.readTree(r.getResponse().getContentAsString());
 		assertEquals(Set.of("cobroId", "cargoId", "alumnoId", "alumnoNombre", "alumnoApellidos", "concepto", "importe",
-				"fechaCobro", "sedeId"), campos(respuesta), "solo la fila, sin totales");
+				"fechaCobro", "sedeId", "venta"), campos(respuesta), "solo la fila, sin totales");
 		assertEquals(200, estado(pago(cargoPut, "{\"pagado\":true,\"metodoPago\":\"EFECTIVO\"}"), s.tGestor));
 
 		Map<String, Object> cobro = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?",
@@ -347,7 +348,7 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(c1, c2), new ArrayList<>(idsEnOrden(lista, "cobroId")));
 		assertFalse(ids(lista, "cobroId").contains(ajeno));
 		assertEquals(Set.of("cobroId", "cargoId", "alumnoId", "alumnoNombre", "alumnoApellidos", "concepto", "importe",
-				"fechaCobro", "sedeId"), campos(lista.get(0)));
+				"fechaCobro", "sedeId", "venta"), campos(lista.get(0)));
 		assertEquals(201, estado(entrega(s.e.sA, prof, List.of(c1), "10.50", null), s.tGestor));
 		JsonNode despues = leer(get("/api/caja/profesor/cobros-pendientes-entrega"), token, 200);
 		assertEquals(List.of(c2), new ArrayList<>(idsEnOrden(despues.get("cobros"), "cobroId")));
@@ -1132,10 +1133,13 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		return post("/api/caja/profesor/alumnos/" + alumno + "/productos/" + producto + "/cobrar");
 	}
 
-	/** Producto del catálogo de la escuela; {@code tipo} y {@code codigo} solo se fijan al crearlo. */
+	/**
+	 * Producto del catálogo de la escuela; {@code tipo} y {@code codigo} solo se fijan al crearlo. Marcado como «Lo
+	 * puede vender el profesor» (decisión 182): la marca no salta la regla fija de la 6b-2.
+	 */
 	private long producto(Escena x, String concepto, String tipo, String codigo) {
-		jdbc.update("INSERT INTO producto (concepto, precio, codigo, tipo, organizacion_id) VALUES (?, 15.0, ?, ?, ?)",
-				concepto, codigo, tipo, x.e.org);
+		jdbc.update("INSERT INTO producto (concepto, precio, codigo, tipo, organizacion_id, vendible_profesor) "
+				+ "VALUES (?, 15.0, ?, ?, ?, TRUE)", concepto, codigo, tipo, x.e.org);
 		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, x.e.org);
 	}
 

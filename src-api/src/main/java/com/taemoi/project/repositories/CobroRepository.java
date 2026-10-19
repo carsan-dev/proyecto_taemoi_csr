@@ -29,6 +29,14 @@ public interface CobroRepository extends JpaRepository<Cobro, Long> {
 	List<Cobro> findByProductoAlumnoIdOrderByIdAsc(Long productoAlumnoId);
 
 	/**
+	 * Pieza 6b-3b-1: el primer cobro (menor id, en cualquier estado) de cada cargo: filas {@code [cargoId, cobroId]}.
+	 * Una consulta para la marca {@code venta} de las filas de caja.
+	 */
+	@Query("SELECT c.productoAlumnoId, MIN(c.id) FROM Cobro c WHERE c.productoAlumnoId IN :cargoIds "
+			+ "GROUP BY c.productoAlumnoId")
+	List<Object[]> primerCobroPorCargo(@Param("cargoIds") Collection<Long> cargoIds);
+
+	/**
 	 * Antes de borrar cargos por caminos que no son el DELETE del cargo (borrar un alumno, sacarlo de una convocatoria,
 	 * borrar una convocatoria): sus cobros ACTIVOS que no van en una entrega pasan a ANULADO con el motivo dado y dejan
 	 * de apuntar al cargo. Los que van en una entrega no se tocan (la FK ON DELETE SET NULL los desvincula). Sin cargar

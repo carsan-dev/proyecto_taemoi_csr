@@ -61,6 +61,14 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	boolean existsByIdAndSedeIdIn(Long id, java.util.Collection<Long> sedeIds);
 
 	/**
+	 * Pieza 6b-3b-1: de esos cargos, los vendidos por un profesor ({@code vendido_por_usuario_id}), con su producto:
+	 * filas {@code [cargoId, vendidoPorUsuarioId, Producto]}. Sin cargar los cargos (ni sus relaciones EAGER).
+	 */
+	@Query("SELECT pa.id, pa.vendidoPorUsuarioId, p FROM ProductoAlumno pa JOIN pa.producto p "
+			+ "WHERE pa.id IN :ids AND pa.vendidoPorUsuarioId IS NOT NULL")
+	List<Object[]> cargosVendidosPorProfesorConProducto(@Param("ids") Collection<Long> ids);
+
+	/**
 	 * Pieza 6b-2: cuántos cargos con ese id (0 o 1) son de un alumno ({@code COALESCE(alumno, alumnoDeporte.alumno)},
 	 * como la tesorería) que está en alguno de esos grupos ({@code @acceso.cargoDeMisGrupos}).
 	 */

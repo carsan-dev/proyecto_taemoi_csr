@@ -114,6 +114,12 @@ Pieza 6b-2c (cargos cancelados): 2 líneas nuevas y 2 casillas cambiadas.
   RESPONSABLE_SEDE `ALCANCE` → `DENIEGA`. El servicio, además, solo borra cargos sin ninguna fila en `cobro` (409).
 - `POST /api/caja/profesor/cobros/{cobroId}/deshacer`: misma casilla; acepta un cuerpo opcional `{motivo}`.
 
+Pieza 6b-3b-1 («Mi caja» del profesor, decisiones 180 a 182): 2 líneas nuevas; ninguna casilla de las rutas existentes
+cambia.
+- `GET/HEAD /api/caja/profesor/alumnos`: PROFESOR `PERMITE` declarado (`hasAuthority('ROLE_PROFESOR')`, regla de URL
+  `ROLE_PROFESOR` de `/api/caja/profesor/**`; el servicio devuelve solo los alumnos activos de sus grupos en la escuela
+  activa, sin datos sensibles); el resto de roles, `DENIEGA` (también PROPIETARIO, GESTOR y RESPONSABLE_SEDE).
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

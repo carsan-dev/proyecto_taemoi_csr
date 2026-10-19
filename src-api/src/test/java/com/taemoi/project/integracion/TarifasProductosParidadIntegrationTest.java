@@ -441,7 +441,10 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		Long id = TenantContext.calcularCon(ORG_TAEMOI, () -> idLegado("MENSUALIDAD"));
 		Producto actual = TenantContext.calcularCon(ORG_TAEMOI, () -> productoRepository.findById(id).orElseThrow());
 		Map<?, ?> json = objectMapper.readValue(objectMapper.writeValueAsString(actual), Map.class);
-		assertEquals(Set.of("id", "concepto", "precio"), json.keySet());
+		// Pieza 6b-3b-1 (decisión 182): /api/productos expone además la marca vendibleProfesor (aditivo, lo edita la
+		// gestión en la ficha). La clasificación (codigo, tipo, disciplina, grado) sigue fuera del JSON.
+		assertEquals(Set.of("id", "concepto", "precio", "vendibleProfesor"), json.keySet());
+		assertEquals(Boolean.FALSE, json.get("vendibleProfesor"), "V31_7 no marca ningún producto");
 
 		// POST /api/productos con el id de un producto clasificado (merge): no pisa la clasificación.
 		Producto recibido = objectMapper.readValue("{\"id\":" + id + ",\"concepto\":\"MENSUALIDAD\",\"precio\":"

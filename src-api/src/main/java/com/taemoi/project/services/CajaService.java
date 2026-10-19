@@ -150,6 +150,36 @@ public class CajaService {
 		return resultado;
 	}
 
+	/**
+	 * Pieza 6b-3b-1: alumnos ACTIVOS de los grupos del profesor de la sesión en la escuela activa (el filtro por escuela
+	 * lo pone {@code @TenantId} en Grupo y Alumno), sin duplicados, por apellidos, nombre e id; cada uno con los nombres
+	 * de SUS grupos (los del profesor) en los que está, por nombre. Una consulta con los datos que se muestran (sin
+	 * cargar entidades). Sin grupos en el alcance (o con alcance total), lista vacía.
+	 */
+	public List<CajaDTOs.AlumnoDeMisGrupos> alumnosDeMisGrupos() {
+		Set<Long> grupos = gruposDelProfesor();
+		if (grupos.isEmpty()) {
+			return List.of();
+		}
+		List<Object[]> filas = em.createQuery("""
+				SELECT a.id, a.nombre, a.apellidos, g.nombre
+				FROM Grupo g JOIN g.alumnos a
+				WHERE g.id IN :grupos AND a.activo = TRUE
+				ORDER BY a.apellidos, a.nombre, a.id, g.nombre, g.id""", Object[].class)
+				.setParameter("grupos", grupos).getResultList();
+		Map<Long, CajaDTOs.AlumnoDeMisGrupos> porAlumno = new LinkedHashMap<>();
+		for (Object[] f : filas) {
+			CajaDTOs.AlumnoDeMisGrupos alumno = porAlumno.computeIfAbsent((Long) f[0],
+					id -> new CajaDTOs.AlumnoDeMisGrupos(id, (String) f[1], (String) f[2], new ArrayList<>()));
+			String grupo = (String) f[3];
+			if (grupo != null && !alumno.grupos().contains(grupo)) {
+				alumno.grupos().add(grupo);
+			}
+		}
+		return porAlumno.values().stream().map(a -> new CajaDTOs.AlumnoDeMisGrupos(a.alumnoId(), a.nombre(),
+				a.apellidos(), List.copyOf(a.grupos()))).toList();
+	}
+
 	/** Cobra en efectivo un cargo de sus grupos (ver {@link ProductoAlumnoService#cobrarEnEfectivoComoProfesor}). */
 	public CajaDTOs.CobroCaja cobrarComoProfesor(Long cargoId) {
 		Cobro cobro = productosAlumno.cobrarEnEfectivoComoProfesor(cargoId);
@@ -622,11 +652,14 @@ public class CajaService {
 		Map<Long, String[]> nombres = nombresDeAlumnos(
 				lista.stream().map(Cobro::getAlumnoId).filter(Objects::nonNull).collect(
 						java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
+		// Pieza 6b-3b-1: qué cobros son venta del profesor que los cobró (consultas fijas, sin N+1).
+		Set<Long> ventas = productosAlumno.cobrosQueSonVentaDelProfesor(lista);
 		List<CajaDTOs.CobroCaja> filas = new ArrayList<>(lista.size());
 		for (Cobro c : lista) {
 			String[] nombre = nombres.getOrDefault(c.getAlumnoId(), new String[2]);
 			filas.add(new CajaDTOs.CobroCaja(c.getId(), c.getProductoAlumnoId(), c.getAlumnoId(), nombre[0], nombre[1],
-					c.getConcepto(), dosDecimales(c.getImporte()), c.getFechaCobro(), c.getSedeId()));
+					c.getConcepto(), dosDecimales(c.getImporte()), c.getFechaCobro(), c.getSedeId(),
+					ventas.contains(c.getId())));
 		}
 		return filas;
 	}

@@ -331,6 +331,9 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 					caja + "profesor_listaLosProductosQuePuedeVender_conLaMismaListaBlanca");
 			m.put(metodo + " /api/caja/profesor/cobros-pendientes-entrega",
 					caja + "profesor_misCobrosPendientesDeEntrega_soloLosSuyosConSusTotales");
+			// Pieza 6b-3b-1: el servicio filtra por sus grupos (y la escuela activa).
+			m.put(metodo + " /api/caja/profesor/alumnos",
+					"integracion.MiCajaProfesorIntegrationTest#alumnosDeMisGrupos_cadaProfesorLosSuyos_yOtraEscuelaAislada");
 		}
 		m.put("POST /api/caja/profesor/cargos/{cargoId}/cobrar",
 				caja + "profesor_cobraEnEfectivo_conLosMismosEfectosQueElPut");

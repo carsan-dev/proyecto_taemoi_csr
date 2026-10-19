@@ -103,8 +103,9 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 				+ "VALUES (?, ?, ?, 'TITULAR')", e.org, prof2, e.gA);
 		tProf2 = e.token(jwtService, usuarios, prof2);
 		tGestorOtra = otra.token(jwtService, usuarios, otra.gestor);
-		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id) VALUES ('CAMISETA 6B2C', 10.5, "
-				+ "NULL, ?)", e.org);
+		// Marcado por la gestión como «Lo puede vender el profesor» (decisión 182, V31_7).
+		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id, vendible_profesor) VALUES "
+				+ "('CAMISETA 6B2C', 10.5, NULL, ?, TRUE)", e.org);
 		producto = jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 	}
 
