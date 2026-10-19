@@ -104,10 +104,22 @@ public class ProductoAlumno extends EntidadOrganizacion {
 		if (sedeId != null) {
 			return;
 		}
-		Alumno delCargo = alumno != null ? alumno : (alumnoDeporte != null ? alumnoDeporte.getAlumno() : null);
+		Alumno delCargo = alumnoEfectivo();
 		if (delCargo != null) {
 			sedeId = delCargo.getSedePrincipalId();
 		}
+	}
+
+	/**
+	 * Pieza 6b-2d: el alumno del cargo como lo resuelve la tesorería, {@code COALESCE(alumno, alumnoDeporte.alumno)}.
+	 * Los cargos antiguos pueden no tener {@code alumno_id} y llegar al alumno solo por la inscripción. {@code null} si
+	 * no tiene ninguno de los dos. No es un getter: fuera del JSON de la entidad.
+	 */
+	public Alumno alumnoEfectivo() {
+		if (alumno != null) {
+			return alumno;
+		}
+		return alumnoDeporte != null ? alumnoDeporte.getAlumno() : null;
 	}
 
 	public Long getId() {

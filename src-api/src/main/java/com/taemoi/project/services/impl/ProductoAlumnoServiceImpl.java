@@ -349,7 +349,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * {@code @acceso.cargoDeMisGrupos}). Misma lógica que el cobro del PUT del cargo ({@link #aplicarCambiosAlCargoBloqueado}
 	 * con el cargo bloqueado): {@code pagado = true}, {@code fecha_pago} de ahora y cobro ACTIVO en EFECTIVO con origen
 	 * PROFESOR y cobrado por él; y los mismos efectos fuera de la transacción ({@link #aplicarEfectosDelCambioDePago}).
-	 * Ya pagado → 409; sin {@code alumno_id} → 400 (el código de cobro de siempre no lo admite). Queda en el registro de
+	 * Ya pagado → 409; sin alumno resoluble (ni {@code alumno_id} ni inscripción, {@link ProductoAlumno#alumnoEfectivo})
+	 * → 400 (pieza 6b-2d: un cargo antiguo con el alumno solo en la inscripción sí se cobra). Queda en el registro de
 	 * acciones.
 	 */
 	@Override
@@ -363,7 +364,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			if (Boolean.TRUE.equals(cargo.getPagado())) {
 				throw new IllegalStateException(CARGO_YA_COBRADO);
 			}
-			if (cargo.getAlumno() == null) {
+			if (cargo.alumnoEfectivo() == null) {
 				throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
 			}
 			ProductoAlumnoDTO cambios = new ProductoAlumnoDTO();
@@ -511,8 +512,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		// Pieza 6b-2 (decisión del propietario, cambio DELIBERADO del comportamiento anterior, también en el PUT de
 		// Moiskimdo): solo un cargo de examen (daDerechoAExamen) fija alumno.tiene_derecho_examen (= pagado). Cobrar o
 		// deshacer cualquier otro cargo (una mensualidad, material…) ya no lo pone a false.
-		if (daDerechoAExamen(updatedProductoAlumno)) {
-			Alumno alumno = updatedProductoAlumno.getAlumno();
+		// Pieza 6b-2d: el alumno resuelto como en la tesorería (los cargos antiguos sin alumno_id lo tienen en la
+		// inscripción). Sin alumno resoluble no hay a quién darle o quitarle el derecho: no se toca a nadie.
+		Alumno alumno = updatedProductoAlumno.alumnoEfectivo();
+		if (alumno != null && daDerechoAExamen(updatedProductoAlumno)) {
 			alumno.setTieneDerechoExamen(Boolean.TRUE.equals(updatedProductoAlumno.getPagado()));
 			alumnoRepository.save(alumno);
 		}
@@ -602,7 +605,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return new CargoActualizado(updatedProductoAlumno, pagadoAntes);
 	}
 
-	/** Cargo de una inscripción sin {@code alumno_id}: el código de cobro de siempre no lo admite (ver D6-20). */
+	/** Cargo sin alumno resoluble (ni {@code alumno_id} ni inscripción, pieza 6b-2d; ver D6-20). */
 	private static final String CARGO_SIN_ALUMNO = "El cargo no tiene alumno asociado: lo gestiona la administración.";
 
 	/**
@@ -610,8 +613,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * <ul>
 	 * <li>D6-20: en un cargo YA COBRADO solo puede cambiar las notas; cualquier otro campo que llegue con un valor
 	 * distinto del guardado (precio, cantidad, concepto, fechas o deshacer el pago) → 403.</li>
-	 * <li>Un cargo sin {@code alumno_id} (solo inscripción) → 400 antes de guardar nada: el resto del método no lo
-	 * admite (NullPointerException al sincronizar el derecho a examen, comportamiento anterior a la entrega 6).</li>
+	 * <li>Un cargo sin alumno resoluble (ni {@code alumno_id} ni inscripción, {@link ProductoAlumno#alumnoEfectivo}) →
+	 * 400 antes de guardar nada. Pieza 6b-2d: un cargo antiguo con el alumno solo en la inscripción ya se edita (antes
+	 * daba 400 porque el derecho a examen fallaba sin {@code alumno_id}).</li>
 	 * </ul>
 	 */
 	private void exigirEdicionPermitidaAlResponsable(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
@@ -621,7 +625,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (Boolean.TRUE.equals(cargo.getPagado()) && cambiaAlgoMasQueLasNotas(cargo, cambios)) {
 			throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
 		}
-		if (cargo.getAlumno() == null) {
+		if (cargo.alumnoEfectivo() == null) {
 			throw new IllegalArgumentException(CARGO_SIN_ALUMNO);
 		}
 	}
@@ -745,8 +749,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			return cargo;
 		});
 
-		if (daDerechoAExamen(pa)) {
-			Alumno alumno = pa.getAlumno();
+		// Pieza 6b-2d: alumno resuelto como en la tesorería; sin alumno resoluble no se toca a nadie (el cargo ya se borró).
+		Alumno alumno = pa.alumnoEfectivo();
+		if (alumno != null && daDerechoAExamen(pa)) {
 			alumno.setTieneDerechoExamen(false);
 			alumnoRepository.save(alumno);
 		}
@@ -1526,22 +1531,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	private Long obtenerAlumnoIdProducto(ProductoAlumno productoAlumno) {
-		if (productoAlumno.getAlumno() != null) {
-			return productoAlumno.getAlumno().getId();
-		}
-		if (productoAlumno.getAlumnoDeporte() != null && productoAlumno.getAlumnoDeporte().getAlumno() != null) {
-			return productoAlumno.getAlumnoDeporte().getAlumno().getId();
-		}
-		return null;
+		Alumno alumno = productoAlumno.alumnoEfectivo();
+		return alumno != null ? alumno.getId() : null;
 	}
 
 	private ProductoAlumnoDTO convertirADTO(ProductoAlumno productoAlumno) {
 		ProductoAlumnoDTO dto = new ProductoAlumnoDTO();
 		dto.setId(productoAlumno.getId());
-		Alumno alumno = productoAlumno.getAlumno();
-		if (alumno == null && productoAlumno.getAlumnoDeporte() != null) {
-			alumno = productoAlumno.getAlumnoDeporte().getAlumno();
-		}
+		Alumno alumno = productoAlumno.alumnoEfectivo();
 		if (alumno != null) {
 			dto.setAlumnoId(alumno.getId());
 		}

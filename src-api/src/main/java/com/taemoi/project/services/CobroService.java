@@ -275,8 +275,7 @@ public class CobroService {
 
 	/** El alumno del cargo como lo resuelve la tesorería: {@code COALESCE(alumno, alumnoDeporte.alumno)}. */
 	static Long alumnoDe(ProductoAlumno cargo) {
-		Alumno alumno = cargo.getAlumno() != null ? cargo.getAlumno()
-				: (cargo.getAlumnoDeporte() != null ? cargo.getAlumnoDeporte().getAlumno() : null);
+		Alumno alumno = cargo.alumnoEfectivo();
 		return alumno != null ? alumno.getId() : null;
 	}
 
