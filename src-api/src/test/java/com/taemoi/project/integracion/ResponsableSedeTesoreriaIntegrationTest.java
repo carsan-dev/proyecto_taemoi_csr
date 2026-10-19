@@ -280,7 +280,7 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(403, estado(cobro(cargoAPagado, false), tokenA), "revertir un cobro: solo el propietario");
 		assertTrue(pagado(cargoAPagado));
 		assertEquals(403, estado(delete("/api/productos-alumno/" + cargoAPagado), tokenA),
-				"borrar un cargo cobrado equivale a revertirlo");
+				"6b-2c: borrar a mano es solo del propietario");
 		assertEquals(403, estado(delete("/api/productos-alumno/" + cargoB), tokenA));
 
 		MvcResult cobrado = peticion(cobro(cargoAPendiente, true), tokenA);
@@ -525,7 +525,8 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 				inscripcion);
 		assertEquals(400, estado(cobro(cargo, true), tokenA), "no 500");
 		assertFalse(pagado(cargo));
-		assertEquals(400, estado(delete("/api/productos-alumno/" + cargo), tokenA), "no 500");
+		// 6b-2c: el responsable ya no borra cargos (solo el propietario): 403 antes de llegar al servicio.
+		assertEquals(403, estado(delete("/api/productos-alumno/" + cargo), tokenA), "no 500");
 		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Long.class, cargo));
 		jdbc.update("DELETE FROM producto_alumno WHERE id = ?", cargo);
 	}

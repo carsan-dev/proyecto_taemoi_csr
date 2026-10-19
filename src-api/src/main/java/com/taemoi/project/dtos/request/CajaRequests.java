@@ -33,4 +33,21 @@ public final class CajaRequests {
 	/** Anular una entrega o un movimiento (solo el propietario); motivo obligatorio. */
 	public record Anulacion(String motivo) {
 	}
+
+	/**
+	 * Pieza 6b-2c: por qué el profesor deshace su cobro ({@code POST /api/caja/profesor/cobros/{cobroId}/deshacer}).
+	 * <ul>
+	 * <li>{@link #AUN_NO_PAGADO}: el alumno aún no ha pagado; el cargo vuelve a pendiente (el comportamiento de la 6b-2,
+	 * también sin cuerpo).</li>
+	 * <li>{@link #NO_HUBO_VENTA}: solo para un cargo nacido de SU venta del catálogo; anula el cobro y cancela el cargo
+	 * (motivo «no hubo venta») en la misma transacción.</li>
+	 * </ul>
+	 */
+	public enum MotivoDeshacer {
+		AUN_NO_PAGADO, NO_HUBO_VENTA
+	}
+
+	/** Cuerpo opcional del deshacer del profesor; sin cuerpo o sin motivo, {@link MotivoDeshacer#AUN_NO_PAGADO}. */
+	public record Deshacer(MotivoDeshacer motivo) {
+	}
 }

@@ -30,8 +30,9 @@ import com.taemoi.project.services.ResultadoGeneracionMensualidades;
 
 /**
  * Cargos y cobros. Entrega 6-3 (D4, entrega6-plan.md §3.4): el responsable de sede crea cargos sueltos, ve y cobra los
- * de los alumnos de SU sede principal ({@code alumnoEnSede EDITAR}, D6-3) y cobra o borra los cargos de sus sedes
- * ({@code productoAlumnoEnSede}, por la sede del cargo). Las generaciones masivas siguen siendo solo de gestión
+ * de los alumnos de SU sede principal ({@code alumnoEnSede EDITAR}, D6-3) y cobra, cancela o reactiva los cargos de sus
+ * sedes ({@code productoAlumnoEnSede}, por la sede del cargo). Desde la 6b-2c, borrar un cargo a mano es solo del
+ * propietario (y solo si nunca se cobró). Las generaciones masivas siguen siendo solo de gestión
  * (D6-10). En una sede inactiva no se crean cargos (400, D6-17), pero se cobran los existentes.
  */
 @RestController
@@ -67,11 +68,34 @@ public class ProductoAlumnoController {
 		return ResponseEntity.ok(actualizado);
 	}
 
+	/**
+	 * Pieza 6b-2c (decisión del propietario, cambio deliberado): borrar un cargo a mano es solo del propietario y solo
+	 * si nunca se cobró (409 si no; el servicio). La gestión y el responsable cancelan ({@code POST .../cancelar}).
+	 */
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	public ResponseEntity<Void> eliminarProductoAlumno(@PathVariable Long id) {
 		productoAlumnoService.eliminarProductoAlumno(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	/**
+	 * Pieza 6b-2c: cancela un cargo pendiente ({@code {"motivo"}} obligatorio). Propietario, gestor y responsable de la
+	 * sede del cargo. Pagado o ya cancelado → 409; cargo de una inscripción a convocatoria → 400.
+	 */
+	@PostMapping("/{id}/cancelar")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
+	public ResponseEntity<ProductoAlumnoDTO> cancelarProductoAlumno(@PathVariable Long id,
+			@RequestBody(required = false) com.taemoi.project.dtos.request.CancelarCargoRequest peticion) {
+		return ResponseEntity.ok(productoAlumnoService.cancelarProductoAlumno(id,
+				peticion == null ? null : peticion.motivo()));
+	}
+
+	/** Pieza 6b-2c: reactiva un cargo cancelado (vuelve a pendiente). Mismos permisos que cancelar. No cancelado → 409. */
+	@PostMapping("/{id}/reactivar")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
+	public ResponseEntity<ProductoAlumnoDTO> reactivarProductoAlumno(@PathVariable Long id) {
+		return ResponseEntity.ok(productoAlumnoService.reactivarProductoAlumno(id));
 	}
 
 	@PostMapping("/{alumnoId}/reservar-plaza")

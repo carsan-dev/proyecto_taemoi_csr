@@ -323,22 +323,27 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(cobros(cargo(e.aA)).isEmpty());
 	}
 
+	/**
+	 * Pieza 6b-2c (cambio deliberado): el borrado manual es solo del propietario y solo de cargos que nunca se cobraron.
+	 * Antes, la gestión borraba un cargo cobrado y su cobro quedaba ANULADO («cargo borrado») y sin cargo; ahora 403 para
+	 * la gestión y 409 para el propietario, sin cambios (se cancela en su lugar).
+	 */
 	@Test
-	void borrarCargoCobrado_anulaSuCobroYLoDesvincula() throws Exception {
+	void borrarCargoCobrado_409SinCambios_yLaGestionYaNoBorra() throws Exception {
 		long cargo = cargo(e.aA);
 		assertEquals(200, estado(pago(cargo, "{\"pagado\":true}"), tokenGestor));
-		long cobro = numero(cobros(cargo).get(0), "id");
-		assertEquals(204, estado(delete("/api/productos-alumno/" + cargo), tokenGestor));
-		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Long.class, cargo));
-		Map<String, Object> fila = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
-		assertEquals("ANULADO", fila.get("estado"));
-		assertEquals("cargo borrado", fila.get("motivo_anulacion"));
-		assertEquals(e.gestor, numero(fila, "anulado_por_usuario_id"));
-		assertNull(fila.get("producto_alumno_id"));
+		List<Map<String, Object>> cobrosAntes = cobros(cargo);
+		Map<String, Object> cargoAntes = filaCargo(cargo);
+		assertEquals(403, estado(delete("/api/productos-alumno/" + cargo), tokenGestor));
+		assertEquals(409, estado(delete("/api/productos-alumno/" + cargo), tokenPropietario));
+		assertEquals(cargoAntes, filaCargo(cargo));
+		assertEquals(cobrosAntes, cobros(cargo));
+		assertEquals("ACTIVO", cobrosAntes.get(0).get("estado"));
 
-		// Un cargo pendiente se borra como siempre.
+		// Un cargo pendiente que nunca se cobró: solo el propietario lo borra.
 		long pendiente = cargo(e.aA);
-		assertEquals(204, estado(delete("/api/productos-alumno/" + pendiente), tokenGestor));
+		assertEquals(403, estado(delete("/api/productos-alumno/" + pendiente), tokenGestor));
+		assertEquals(204, estado(delete("/api/productos-alumno/" + pendiente), tokenPropietario));
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Long.class,
 				pendiente));
 	}

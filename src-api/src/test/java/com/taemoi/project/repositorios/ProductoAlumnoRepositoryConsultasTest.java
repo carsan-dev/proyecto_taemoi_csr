@@ -20,6 +20,7 @@ import com.taemoi.project.repositories.ProductoAlumnoRepository;
 class ProductoAlumnoRepositoryConsultasTest {
 
 	private static final String FILTRO_SEDE = "AND (:todasLasSedes = true OR pa.sedeId IN :sedes)";
+	private static final String FILTRO_CANCELADOS = "pa.canceladoEn IS NULL";
 
 	private static final List<String> CON_FILTRO = List.of("findMovimientosTesoreriaPaginados",
 			"findMovimientosTesoreriaFiltrados", "findMovimientosTesoreriaPeriodoBase", "contarMovimientosTesoreria",
@@ -34,6 +35,28 @@ class ProductoAlumnoRepositoryConsultasTest {
 			if (!query.countQuery().isEmpty()) {
 				assertEquals(1, ocurrencias(query.countQuery(), FILTRO_SEDE), nombre + " (countQuery)");
 			}
+		}
+	}
+
+	/**
+	 * Pieza 6b-2c: los cargos cancelados no cuentan como pendientes ni como deuda. Las consultas de la tesorería (también
+	 * la countQuery), las deudas y las reservas los excluyen UNA vez; las de los informes de mensualidades NO (los pintan
+	 * «Cancelado» y no los suman, en Java).
+	 */
+	@Test
+	void lasConsultasDePendientesYDeudas_excluyenLosCanceladosUnaSolaVez() {
+		List<String> conFiltro = new java.util.ArrayList<>(CON_FILTRO);
+		conFiltro.addAll(List.of("findAllUnpaidWithAlumno", "findReservasPlazaByTemporada"));
+		for (String nombre : conFiltro) {
+			Query query = query(nombre);
+			assertEquals(1, ocurrencias(query.value(), FILTRO_CANCELADOS), nombre);
+			if (!query.countQuery().isEmpty()) {
+				assertEquals(1, ocurrencias(query.countQuery(), FILTRO_CANCELADOS), nombre + " (countQuery)");
+			}
+		}
+		for (String nombre : List.of("findAllMensualidadesYTarifasCompetidorWithAlumno",
+				"findMensualidadesYTarifasCompetidorByDeporteOrConcepto", "findMensualidadesYTarifasCompetidorByMes")) {
+			assertEquals(0, ocurrencias(query(nombre).value(), "canceladoEn"), nombre);
 		}
 	}
 

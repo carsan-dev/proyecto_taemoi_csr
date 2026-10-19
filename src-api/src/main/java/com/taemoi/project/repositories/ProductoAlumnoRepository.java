@@ -47,6 +47,14 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 		Long getAlumnosConPendientes();
 	}
 
+	/*
+	 * Pieza 6b-2c, cargos cancelados (cancelado_en no nulo): NO cuentan como pendientes ni como deuda. Las consultas de
+	 * la tesorería (con su countQuery), las deudas y las reservas llevan «pa.canceladoEn IS NULL» (una vez; lo comprueba
+	 * ProductoAlumnoRepositoryConsultasTest). Las de los informes de mensualidades NO: el PDF los pinta «Cancelado» y no
+	 * los suma. Las que usa la GENERACIÓN para no duplicar (findByAlumnoId, existsByConcepto, findAll) tampoco, a
+	 * propósito: un mes cancelado cuenta como existente y no se regenera. No añadir el filtro ahí.
+	 */
+
 	List<ProductoAlumno> findByAlumnoId(Long alumnoId);
 
 	/** Entrega 6-3: el cargo (de la escuela activa) es de una de esas sedes ({@code @acceso.productoAlumnoEnSede}). */
@@ -65,7 +73,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 
 	boolean existsByConcepto(String concepto);
 
-	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumno a WHERE pa.pagado = false ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion")
+	@Query("SELECT pa FROM ProductoAlumno pa JOIN FETCH pa.alumno a WHERE pa.pagado = false AND pa.canceladoEn IS NULL ORDER BY a.nombre, a.apellidos, pa.fechaAsignacion")
 	List<ProductoAlumno> findAllUnpaidWithAlumno();
 
 	@Query("SELECT pa FROM ProductoAlumno pa LEFT JOIN FETCH pa.alumnoDeporte ad LEFT JOIN FETCH pa.alumno a " +
@@ -83,6 +91,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"LEFT JOIN FETCH pa.alumno a " +
 			"WHERE UPPER(pa.concepto) LIKE '%RESERVA DE PLAZA%' " +
 			"AND pa.concepto LIKE CONCAT('%', :temporada, '%') " +
+			"AND pa.canceladoEn IS NULL " +
 			"AND (:soloActivos = false OR (" +
 			"COALESCE(COALESCE(adAlumno.activo, a.activo), false) = true " +
 			"AND (ad IS NULL OR COALESCE(ad.activo, false) = true))) " +
@@ -160,7 +169,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 					"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
 					"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-					"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
+					"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL " +
 					"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC",
 			countQuery = "SELECT COUNT(pa) FROM ProductoAlumno pa " +
 					"LEFT JOIN pa.alumnoDeporte ad " +
@@ -196,7 +205,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 					"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 					"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
 					"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-					"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+					"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL")
 	Page<ProductoAlumno> findMovimientosTesoreriaPaginados(
 			@Param("deporte") String deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -246,7 +255,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 			"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL " +
 			"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC")
 	List<ProductoAlumno> findMovimientosTesoreriaFiltrados(
 			@Param("deporte") String deporte,
@@ -299,7 +308,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"UPPER(COALESCE(adAlumno.apellidos, '')) LIKE :texto OR " +
 			"UPPER(CONCAT(COALESCE(adAlumno.nombre, ''), ' ', COALESCE(adAlumno.apellidos, ''))) LIKE :texto) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL " +
 			"ORDER BY COALESCE(pa.fechaAsignacion, pa.fechaPago) DESC, pa.id DESC")
 	List<TesoreriaPeriodoBaseProjection> findMovimientosTesoreriaPeriodoBase(
 			@Param("deporte") String deporte,
@@ -348,7 +357,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL")
 	Long contarMovimientosTesoreria(
 			@Param("deporte") String deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -388,7 +397,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL")
 	Double sumarImporteMovimientosTesoreria(
 			@Param("deporte") String deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -426,7 +435,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL")
 	Long contarAlumnosConPendientesTesoreria(
 			@Param("deporte") String deporte,
 			@Param("deporteNombre") String deporteNombre,
@@ -477,7 +486,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL " +
 			"GROUP BY pa.sedeId")
 	List<TesoreriaResumenPorSedeProjection> resumirMovimientosTesoreriaPorSede(
 			@Param("deporte") String deporte,
@@ -520,7 +529,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
 			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
 			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
-			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL " +
 			"GROUP BY pa.sedeId")
 	List<TesoreriaAlumnosPendientesPorSedeProjection> contarAlumnosConPendientesTesoreriaPorSede(
 			@Param("deporte") String deporte,

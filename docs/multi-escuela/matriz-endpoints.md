@@ -69,7 +69,8 @@ RESPONSABLE_SEDE (las otras seis no cambian: `diff` vacío de las columnas 1-7 y
   /api/productos-alumno/alumno/{alumnoId}` y en los cargos sueltos (`POST …/alumno/{alumnoId}/producto/{productoId}`
   y `/deporte/{deporte}`, `…/{alumnoId}/reservar-plaza`, `-deporte`, `…/{alumnoId}/renovar-licencia`,
   `…/mensualidades/individual`, `-deporte` y `…/licencias/individual`, con `alumnoId` como parámetro);
-  `@acceso.productoAlumnoEnSede(#id,'EDITAR')` (sede del cargo, D6-9) en `PUT/DELETE /api/productos-alumno/{id}`;
+  `@acceso.productoAlumnoEnSede(#id,'EDITAR')` (sede del cargo, D6-9) en `PUT/DELETE /api/productos-alumno/{id}` (el
+  `DELETE`, solo del propietario desde la 6b-2c);
   `@acceso.alumnoEnSede(#id,'EDITAR')` en `PUT /api/alumnos/{id}/deportes/{deporte}/tipo-tarifa` y `cuantia-tarifa`.
 - `PERMITE` declarado (25): `GET/HEAD /api/tesoreria/resumen`, `/movimientos`, `/export/csv`, `/export/pdf` (el
   servicio filtra por la sede del cargo; `sedeId` de otra sede → 403) y `/anios-disponibles` (solo años);
@@ -103,6 +104,15 @@ existentes cambia (la puerta de convocatoria y el `PUT` del cargo siguen igual p
   el resto, `DENIEGA`.
 - `POST /api/caja/entregas/{entregaId}/anular` y `/api/caja/movimientos/{movimientoId}/anular`: solo PROPIETARIO.
 - Cualquier otra ruta bajo `/api/caja` queda en `denyAll` en la regla de URL.
+
+Pieza 6b-2c (cargos cancelados): 2 líneas nuevas y 2 casillas cambiadas.
+- `POST /api/productos-alumno/{id}/cancelar` y `/{id}/reactivar`: PROPIETARIO y GESTOR `PERMITE`; RESPONSABLE_SEDE
+  `ALCANCE` (`@acceso.productoAlumnoEnSede(#id,'EDITAR')`, la sede del cargo; en la regla de URL del responsable); el
+  resto, `DENIEGA` (también el profesor, que solo cancela su venta al deshacer su cobro con NO_HUBO_VENTA).
+- `DELETE /api/productos-alumno/{id}` (cambio DELIBERADO, decisión del propietario): solo PROPIETARIO
+  (`hasAuthority('ROLE_ADMIN')`; fuera de la regla de URL del responsable). GESTOR `PERMITE` → `DENIEGA` y
+  RESPONSABLE_SEDE `ALCANCE` → `DENIEGA`. El servicio, además, solo borra cargos sin ninguna fila en `cobro` (409).
+- `POST /api/caja/profesor/cobros/{cobroId}/deshacer`: misma casilla; acepta un cuerpo opcional `{motivo}`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

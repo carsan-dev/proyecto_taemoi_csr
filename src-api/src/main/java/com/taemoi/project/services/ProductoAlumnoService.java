@@ -32,6 +32,24 @@ public interface ProductoAlumnoService {
 	void deshacerCobroDeProfesor(Long cobroId, Long profesorId);
 
 	/**
+	 * Pieza 6b-2c: como {@link #deshacerCobroDeProfesor(Long, Long)} con el motivo del profesor. {@code NO_HUBO_VENTA},
+	 * solo para un cargo nacido de su venta del catálogo: anula el cobro y CANCELA el cargo (motivo «no hubo venta») en la
+	 * misma transacción; si el cargo no es una venta suya → 400. {@code null} = {@code AUN_NO_PAGADO}.
+	 */
+	void deshacerCobroDeProfesor(Long cobroId, Long profesorId,
+			com.taemoi.project.dtos.request.CajaRequests.MotivoDeshacer motivo);
+
+	/**
+	 * Pieza 6b-2c: cancela un cargo PENDIENTE (motivo obligatorio, hasta 500 caracteres). Pagado o ya cancelado → 409;
+	 * cargo de examen unido a una inscripción a convocatoria → 400 (se quita al alumno de la convocatoria). Queda en el
+	 * registro de acciones.
+	 */
+	ProductoAlumnoDTO cancelarProductoAlumno(Long id, String motivo);
+
+	/** Pieza 6b-2c: deja pendiente un cargo cancelado y borra los datos de la cancelación. No cancelado → 409. */
+	ProductoAlumnoDTO reactivarProductoAlumno(Long id);
+
+	/**
 	 * Pieza 6b-2: el profesor apunta y cobra en efectivo un producto del catálogo (sin efectos colaterales) a un alumno:
 	 * cargo ya pagado con precio y concepto del catálogo y su cobro ACTIVO de origen PROFESOR. Producto excluido → 400.
 	 *

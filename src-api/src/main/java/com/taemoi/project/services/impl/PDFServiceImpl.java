@@ -2186,6 +2186,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("}");
 		html.append(".status-pagado { background: #d4edda; color: #155724; }");
 		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
+		html.append(".status-cancelado { background: #e2e3e5; color: #383d41; }");
 		html.append(".alumno-section {");
 		html.append("  page-break-inside: avoid;");
 		html.append("  margin-bottom: 8mm;");
@@ -2242,7 +2243,8 @@ public class PDFServiceImpl implements PDFService {
 		html.append(generarCabeceraConLogo(titulo, colorPrincipal));
 
 		int totalAlumnos = mensualidadesPorAlumno.size();
-		int totalMensualidades = todasMensualidades.size();
+		// Pieza 6b-2c: un cargo cancelado sigue saliendo (fila «CANCELADO») pero no suma en ningún total.
+		int totalMensualidades = (int) todasMensualidades.stream().filter(m -> !m.estaCancelado()).count();
 		int totalPagadas = 0;
 		int totalPendientes = 0;
 		double totalImportePagado = 0.0;
@@ -2280,11 +2282,13 @@ public class PDFServiceImpl implements PDFService {
 				String deporte = group.deporte;
 				List<com.taemoi.project.entities.ProductoAlumno> mensualidades = group.mensualidades;
 
-				int pagas = (int) mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
-				int pendientes = mensualidades.size() - pagas;
-				double importePagado = mensualidades.stream().filter(m -> Boolean.TRUE.equals(m.getPagado()))
+				List<com.taemoi.project.entities.ProductoAlumno> vigentes = mensualidades.stream()
+						.filter(m -> !m.estaCancelado()).collect(Collectors.toList());
+				int pagas = (int) vigentes.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
+				int pendientes = vigentes.size() - pagas;
+				double importePagado = vigentes.stream().filter(m -> Boolean.TRUE.equals(m.getPagado()))
 						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
-				double importePendiente = mensualidades.stream().filter(m -> !Boolean.TRUE.equals(m.getPagado()))
+				double importePendiente = vigentes.stream().filter(m -> !Boolean.TRUE.equals(m.getPagado()))
 						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
 
 				totalPagadas += pagas;
@@ -2318,7 +2322,7 @@ public class PDFServiceImpl implements PDFService {
 
 				html.append("<div class='resumen-alumno' style='border-left: 4px solid ").append(colorAlumno)
 						.append(";'>");
-				html.append("<strong>Total mensualidades:</strong> ").append(mensualidades.size());
+				html.append("<strong>Total mensualidades:</strong> ").append(vigentes.size());
 				html.append(" | <strong style='color: #28a745;'>Pagadas:</strong> ").append(pagas);
 				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
 				html.append(" | <strong style='color: #dc3545;'>Pendientes:</strong> ").append(pendientes);
@@ -2354,8 +2358,9 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<td>").append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
 							.append(" €</td>");
 
-					String estadoClass = pagado ? "status-pagado" : "status-pendiente";
-					String estadoTexto = pagado ? "PAGADO" : "PENDIENTE";
+					boolean cancelado = pa.estaCancelado();
+					String estadoClass = cancelado ? "status-cancelado" : (pagado ? "status-pagado" : "status-pendiente");
+					String estadoTexto = cancelado ? "CANCELADO" : (pagado ? "PAGADO" : "PENDIENTE");
 					html.append("<td><span class='status-badge ").append(estadoClass).append("'>").append(estadoTexto)
 							.append("</span></td>");
 
@@ -2412,6 +2417,15 @@ public class PDFServiceImpl implements PDFService {
 		return outputStream.toByteArray();
 	}
 
+	/** Pieza 6b-2c: los cargos no cancelados de la lista (vacía si es nula). */
+	private static List<com.taemoi.project.entities.ProductoAlumno> vigentes(
+			List<com.taemoi.project.entities.ProductoAlumno> cargos) {
+		if (cargos == null) {
+			return List.of();
+		}
+		return cargos.stream().filter(pa -> !pa.estaCancelado()).collect(Collectors.toList());
+	}
+
 	@Override
 	public byte[] generarListadoMensualidadMensual(String mesAno, boolean soloActivos) {
 		// Parse mesAno format "YYYY-MM" (e.g., "2025-12")
@@ -2458,7 +2472,8 @@ public class PDFServiceImpl implements PDFService {
 		java.time.YearMonth mesListado = java.time.YearMonth.of(anio, mes);
 
 		// Group products by alumno+deporte, collecting all products (mensualidad +
-		// tarifa competidor)
+		// tarifa competidor). Pieza 6b-2c: los cancelados se agrupan también (para pintar «Cancelado» si el alumno no
+		// tiene ningún cargo vigente del mes) pero no suman a la cuantía ni cuentan para la fecha de pago.
 		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> productosPorAlumnoDeporte = productosDelMes
 				.stream().filter(pa -> pa.getAlumno() != null && pa.getAlumnoDeporte() != null).collect(Collectors
 						.groupingBy(pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte()));
@@ -2600,10 +2615,12 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
-					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
-							.get(mapKey);
+					List<com.taemoi.project.entities.ProductoAlumno> delMes = productosPorAlumnoDeporte.get(mapKey);
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = vigentes(delMes);
 					String cuantia = "-";
-					if (productosAlumno != null && !productosAlumno.isEmpty()) {
+					if (productosAlumno.isEmpty() && delMes != null && !delMes.isEmpty()) {
+						cuantia = "Cancelado";
+					} else if (!productosAlumno.isEmpty()) {
 						double totalCuantia = productosAlumno.stream().filter(p -> p.getPrecio() != null)
 								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
 						cuantia = String.format("%.2f EUR", totalCuantia);
@@ -2621,8 +2638,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td class='comp-cell'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
-					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
-							.get(mapKey);
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = vigentes(
+							productosPorAlumnoDeporte.get(mapKey));
 					String comp = "-";
 					if (productosAlumno != null && !productosAlumno.isEmpty()) {
 						double competidorCuantia = productosAlumno.stream().filter(p -> {
@@ -2656,8 +2673,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<td>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
-					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = productosPorAlumnoDeporte
-							.get(mapKey);
+					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = vigentes(
+							productosPorAlumnoDeporte.get(mapKey));
 					String fechaPago = "";
 					if (productosAlumno != null && !productosAlumno.isEmpty()) {
 						boolean todosPagados = productosAlumno.stream()

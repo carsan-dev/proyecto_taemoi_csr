@@ -303,6 +303,7 @@ de alumno (`AlumnoServiceImpl`, mes en curso) y la columna CUANTÍA del listado 
 | V31_3 | 6-3a | Ampliación (columna NULL, índice, FK) + relleno | El código anterior sigue funcionando |
 | V31_4 | 6-4 | Tabla nueva (`tarifa_sede`), vacía | El código anterior sigue funcionando; postcheck `postcheck-v31_4.sql` |
 | V31_5 | 6b-1 | Tablas nuevas (`cobro`, `entrega_caja`, `movimiento_caja`), vacías, sin relleno | El código anterior sigue funcionando; postcheck `postcheck-v31_5.sql` |
+| V31_6 | 6b-2c | `producto_alumno`: `cancelado_en`, `cancelado_por_usuario_id` (FK a usuario ON DELETE SET NULL) y `motivo_cancelacion`, NULL y sin relleno; índice; la FK con `foreign_key_checks = 0` (INPLACE, sin reconstruir la tabla) | El código anterior sigue funcionando; postcheck `postcheck-v31_6.sql` |
 
 Ninguna pieza necesita V32 ni contraer nada. `sede_id` de grupo y de cargo y `sede_principal_id` siguen admitiendo
 NULL. Pasarlos a NOT NULL, si se decide, va con la contracción planificada (entrega 10). Siguen la convención de
@@ -438,6 +439,25 @@ Una fila es a la vez el cargo y su cobro.
 
 La E6 no debe: añadir significado nuevo a `pagado`, calcular «caja» a partir solo de `fecha_pago` en código nuevo
 que la 6b tenga que deshacer, ni dar al responsable la reversión de cobros.
+
+**Cargos cancelados (pieza 6b-2c, V31_6; decisiones del propietario).**
+- Modelo: `cancelado_en` (NULL = vigente), `cancelado_por_usuario_id` y `motivo_cancelacion`. Invariante: cancelado ⇒
+  no pagado y sin cobro ACTIVO. Solo se cancelan cargos pendientes (pagado → 409); cobrar un cancelado → 409 por
+  cualquier vía (guarda central en `CobroService.registrar`, más el `PUT` del cargo —que en un cancelado solo cambia
+  las notas— y el cobro del profesor, con el cargo bloqueado). Un cargo unido a una inscripción a convocatoria no se
+  cancela (400: se quita al alumno de la convocatoria).
+- Rutas: `POST /api/productos-alumno/{id}/cancelar {motivo}` y `POST …/{id}/reactivar` (propietario, gestor y
+  responsable de la sede del cargo); reactivar lo deja pendiente y borra los datos de la cancelación. Ambas al registro
+  de acciones (módulo `productos-alumno`, solo ids).
+- Lectores: los cancelados no cuentan como pendientes ni deuda (9 consultas de tesorería con su `countQuery`, deudas,
+  reservas, pendientes del profesor). Los PDF de mensualidades (informe y listado mensual) los pintan «Cancelado» y no
+  los suman. La generación los cuenta como existentes (un mes cancelado no se regenera; para recuperarlo, reactivar).
+- Profesor: `POST /api/caja/profesor/cobros/{id}/deshacer` acepta `{motivo: AUN_NO_PAGADO | NO_HUBO_VENTA}` (sin
+  cuerpo = AUN_NO_PAGADO). NO_HUBO_VENTA solo para su venta del catálogo (primer cobro del cargo, fecha del cobro =
+  fecha de asignación, producto vendible): anula el cobro y cancela el cargo en la misma transacción; si no, 400.
+- Borrado manual (`DELETE /api/productos-alumno/{id}`): solo el propietario y solo cargos sin ninguna fila en `cobro`
+  (409 si no). Cambio deliberado también para Moiskimdo: gestor y responsable ya no borran (cancelan). Los borrados
+  automáticos (quitar de una convocatoria, borrar la convocatoria o el alumno) siguen igual.
 
 ---
 

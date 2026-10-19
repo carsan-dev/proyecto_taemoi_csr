@@ -28,6 +28,47 @@ public class ProductoAlumnoDTO {
 	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
 	private com.taemoi.project.entities.MetodoPago metodoPago;
 
+	/**
+	 * Pieza 6b-2c, aditivos y solo de salida: cuándo, quién (id de la cuenta) y por qué se canceló el cargo. Solo salen
+	 * si está cancelado ({@code NON_NULL}): la respuesta de un cargo vigente no cambia. Se ignoran si llegan en una
+	 * petición (se cancela y reactiva por sus rutas).
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private java.time.LocalDateTime canceladoEn;
+
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private Long canceladoPorUsuarioId;
+
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private String motivoCancelacion;
+
+	public java.time.LocalDateTime getCanceladoEn() {
+		return canceladoEn;
+	}
+
+	public void setCanceladoEn(java.time.LocalDateTime canceladoEn) {
+		this.canceladoEn = canceladoEn;
+	}
+
+	public Long getCanceladoPorUsuarioId() {
+		return canceladoPorUsuarioId;
+	}
+
+	public void setCanceladoPorUsuarioId(Long canceladoPorUsuarioId) {
+		this.canceladoPorUsuarioId = canceladoPorUsuarioId;
+	}
+
+	public String getMotivoCancelacion() {
+		return motivoCancelacion;
+	}
+
+	public void setMotivoCancelacion(String motivoCancelacion) {
+		this.motivoCancelacion = motivoCancelacion;
+	}
+
 	public com.taemoi.project.entities.MetodoPago getMetodoPago() {
 		return metodoPago;
 	}
