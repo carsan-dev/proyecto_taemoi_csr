@@ -2,8 +2,8 @@
 
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
-> 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla solo la
-> 6c-1; las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
+> 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
+> (§2) y la 6c-2 (§3); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
 encargos del profesor y la devolución enlazada (decisiones 153, 155, 183, 188 a 195).
@@ -91,7 +91,7 @@ anota en la PR y actualiza este mapa.
 |---|---|---|---|---|---|---|---|
 | **6c-1** backend + mensajes | Bloqueos 186, 187 y 194 sin excepciones; convocatoria y ficha muestran el mensaje del backend. Sin migración | `J/services/impl/AlumnoServiceImpl.java:2208-2222`, `J/services/impl/ProductoAlumnoServiceImpl.java:627-685`, `J/services/impl/ConvocatoriaServiceImpl.java:239-275`, `J/services/CobroService.java`, `F/componentes/endpoints/listado-convocatorias/…component.ts:478-503,606-641`, `F/componentes/endpoints/editar-alumno/editar-alumno.component.ts:1960-1993`, `F/…/productos-alumno/productos-alumno.component.ts:418-422` | `CobroService.EXAMEN_PAGADO_REVIERTE_ANTES`, `PRECIO_CON_COBRO_ACTIVO`, `CUANTIA_EXAMEN_PAGADO` y `boolean tieneCobroActivo(Long cargoId)` | `CobroService.bloquearCargo`; `mensajeDeError` de `F/servicios/endpoints/caja.service.ts:36` | — | Medio (dinero y cambio visible aceptado); revisión opus | §2 de este plan |
 | **6c-2** backend | V31_8 completa (tabla `solicitud` con sus 5 columnas únicas virtuales y columnas de `movimiento_caja`); entidad, repositorio, servicio base (crear tipos 1, con o sin cobro, y 3; retirar; denegar; listar por segmento; contador); registro de acciones; rutas de gestión; matriz | `src-api/src/main/resources/db/migration/V31_8__solicitudes_y_devoluciones.sql`, `docs/multi-escuela/postcheck-v31_8.sql`, `J/entities/Solicitud.java`, `TipoSolicitud.java`, `EstadoSolicitud.java`, `J/repositories/SolicitudRepository.java`, `J/services/SolicitudService.java`, `J/services/RegistroAccionesSolicitudes.java`, `J/controllers/SolicitudController.java`, `J/config/SecurityConfiguration.java` (regla `/api/solicitudes/**`), `J/entities/MovimientoCaja.java` (mapea `cobroId`, `productoAlumnoId` y `metodo`, por defecto EFECTIVO, sin usarlos aún), matriz, `matriz-endpoints.md`, `checklist-despliegue.md` | `Optional<Solicitud> SolicitudRepository.bloquearPorId(Long)` (FOR UPDATE y relectura, como `CobroService.bloquearCobro`); `SolicitudService.crear(SolicitudRequests.Crear)`, `retirar(Long)`, `denegar(Long, String respuesta)`, `List<SolicitudDTOs.Solicitud> listar(Segmento)`, `long contador()`; `SolicitudTransiciones.exigir(Solicitud, EstadoSolicitud destino)`: la tabla §6.2 en un solo sitio, con 409 «La solicitud ya no está pendiente»; `@acceso.solicitudEnSede(Long id)` | `AccesoRecursos`, `GestionPorSede.restriccion()`, `AuditoriaService.registrarAccesoSensible` | — | Medio (migración aditiva y rutas nuevas); revisión opus | IT en MySQL con dos sedes; test de migración `@Tag("migracion")`: V31_8 dos veces y tras un fallo a medias; postcheck con la tabla vacía, `metodo` = EFECTIVO en todas las filas y el saldo por sede igual antes y después; matriz con diff solo en líneas nuevas; `solicitudSinSede_laVenYCuentanPyG_noR`; `dosPendientesMismoCobro_409` y `dosPendientesMismoCargoSinCobro_409` (191) |
-| **6c-3** backend | Aceptar tipos 1 (con y sin cobro) y 3, con revalidación y `NO_APLICABLE` (§6.5) | `SolicitudService`, `ProductoAlumnoServiceImpl` (camino interno de A1), `CajaService.anularEntrega:411` y `anularMovimiento:543` | `SolicitudDTOs.Solicitud SolicitudService.aceptar(Long id)`; el estado final es ACEPTADA o NO_APLICABLE, con la `respuesta`; `ProductoAlumnoServiceImpl.revertirPorSolicitud(Long cargoId, long solicitudId, String motivo)`, con motivo «Revertido por solicitud #n: {motivo}» | 6c-2 | 6c-2 | Alto (ejecuta reversiones y anulaciones); opus | Por tipo: el estado cambia entre pedir y aceptar y la solicitud queda `NO_APLICABLE` sin efectos; saldo de la sede igual; `aceptarYRetirarALaVez_unoGana409ElOtro`; `aceptarTrasEntregarElCobro_NO_APLICABLE_sinEfectos`; registro `SOLICITUD_ACEPTADA` y `ENTREGA_ANULADA … solicitud=#n` |
+| **6c-3** backend | Aceptar tipos 1 (con y sin cobro) y 3, con revalidación y `NO_APLICABLE` (§6.5) | `SolicitudService`, `ProductoAlumnoServiceImpl` (camino interno de A1), `CajaService.anularEntrega:411` y `anularMovimiento:543` | `SolicitudDTOs.Solicitud SolicitudService.aceptar(Long id)`; el estado final es ACEPTADA o NO_APLICABLE, con la `respuesta`; `ProductoAlumnoServiceImpl.revertirPorSolicitud(Long cargoId, long solicitudId, String motivo)`, con motivo «Revertido por solicitud #n: {motivo}» | 6c-2 | 6c-2 | Alto (ejecuta reversiones y anulaciones); opus | Por tipo: el estado cambia entre pedir y aceptar y la solicitud queda `NO_APLICABLE` sin efectos; saldo de la sede igual; `aceptarYRetirarALaVez_unoGana409ElOtro`; `aceptarTrasEntregarElCobro_NO_APLICABLE_sinEfectos`; una PENDIENTE cuyo cobro se anuló al borrar el alumno o el cargo pasa a NO_APLICABLE al aceptarla (revalidación): `aceptarConCobroAnuladoPorBorrado_NO_APLICABLE_sinEfectos`; registro `SOLICITUD_ACEPTADA` y `ENTREGA_ANULADA … solicitud=#n` |
 | **6c-7** frontend | Contador en la cabecera, bandeja (tres segmentos), diálogo «Pedir al propietario» en tesorería, ficha y caja de sede (190, 191) | `F/core/constants/navigation.constants.ts:11-18`, `F/componentes/vistas/layout/header/header.component.html:232`, ruta nueva en `F/app.routes.ts`, servicio `F/servicios/endpoints/solicitudes.service.ts`, `tesoreria-cobros.component.ts:280`, `productos-alumno.component.html:97`, `caja-sede` | Componente de bandeja y diálogo reutilizable (D6c-8) | Rutas de 6c-2 y 6c-3 | 6c-3 | Medio (visible para Moiskimdo) | Specs registrados en las dos listas: el contador se pide al entrar y al navegar, sin `interval`; G desmarca un cargo pagado → se abre el diálogo y el checkbox vuelve a marcado; con una pendiente no deja pedir otra. Build sin aviso y capturas |
 | **6c-5** backend | Encargos: productos encargables (192), pedir con cargo y sede (D6c-9), transiciones, caída del encargo, guardas en cancelar y borrar el cargo, rutas del profesor | `SolicitudService` (o `EncargoService`), `ProductoAlumnoServiceImpl` (cargo por el código de `asignarProductoAAlumno:186` sin el `@PreAuthorize` de gestión), `cancelar:852`, `borrar:816`, `J/controllers/CajaController.java` (`/api/caja/profesor/…`) | `List<CajaDTOs.ProductoVendible> productosEncargables()`; `pedirEncargo(Long alumnoId, PedirEncargo{productoId, nota, sedeId?})`; `marcarEncargado`, `marcarRecibido`, `rechazar(id, motivo)`, `retirarEncargo`, `marcarEntregado`; constante `ENCARGO_EN_CURSO` = «Tiene un encargo en curso: recházalo desde Solicitudes»; `devolucion_pendiente` a true al caer un encargo pagado | 6c-2, `@acceso.alumnoDeMisGrupos:209` | 6c-2 | Alto (crea y cancela cargos); opus | El cargo creado tiene `vendido_por_usuario_id` NULL y aparece en «Por cobrar»; si cae sin cobrar, el cargo se cancela; si cae pagado, `devolucion_pendiente` a true; un cargo en curso da 409 al cancelar y al borrar; la sede se exige solo con varias; matriz con lista blanca |
 | **6c-4** backend | Tipo 2: `cobros-entregados-recientes` (30 días, máximo 50, D6c-14), `pedir-deshacer` y aceptación con la 193 | `CajaController`, `CajaService`, `CobroService` (método nuevo), `CajaDTOs.EntregaCaja.movimientoId` (`J/dtos/response/CajaDTOs.java:72-76`; devuelve el SOBRANTE o FALTANTE, no el ERROR) | `CobroService.deshacerEntregado(Long cobroId, CajaRequests.MotivoDeshacer, long solicitudId)`, que anula el cobro como A4 sin comprobar la entrega y crea un ERROR por +importe en esa entrega con `cobro_id` | 6c-2, 6c-3 (`aceptar`) | 6c-3 | Alto (caja); opus | El saldo es igual tras aceptar (anulado + ERROR); anular después la entrega anula también el ERROR (`CajaService.java:444-447`); el estado cambia y la solicitud queda `NO_APLICABLE`; registro `COBRO_ENTREGADO_DESHECHO` |
@@ -307,7 +307,237 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
 
 ---
 
-## 3. Auto-revisión
+## 3. Pieza 6c-2: solicitudes base (detallada)
+
+Rama `feature/6c2-solicitudes-base` desde `feature/multi-escuela`. **Con migración** (V31_8): se despliega con el atajo
+`desplegar_migrar`. Sin pantallas: Moiskimdo no ve ningún cambio hasta la 6c-7. No acepta solicitudes (6c-3), no crea
+encargos (6c-5) ni devoluciones (6c-6).
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Pedir por el cargo.** `POST /api/solicitudes` de tipo 1 admite `cobroId` **o** `productoAlumnoId` (uno solo). Con
+  `productoAlumnoId`, si el cargo tiene cobro ACTIVO la solicitud enlaza ese cobro (como si llegara `cobroId`); si no lo
+  tiene, es la 191 (cargo pagado sin cobro). Así la ficha y la tesorería, que conocen el cargo, no necesitan el cobro.
+- **Qué se valida al pedir** (al aceptar se revalida, §6.5): tipo 1 con cobro, cobro ACTIVO, sin entrega y con su cargo;
+  tipo 1 sin cobro, cargo pagado; entrega ACTIVA; movimiento ACTIVO y no automático. Si no, 409 y no se crea nada.
+- **Orden de los errores:** 400 (datos), 404 (no existe en la escuela), 403 (R fuera de sus sedes, o retirar la ajena),
+  409 (estado o una pendiente ya abierta).
+- **El propietario no pide:** `POST /api/solicitudes` con `ROLE_ADMIN` da 400 «El propietario lo hace directamente: no
+  necesita pedirlo.».
+- **Retirar en la gestión** vale para los tipos 1 a 3. Un encargo se retira por la ruta del profesor (6c-5): aquí, 400.
+- **Denegar** es solo de P (`hasAuthority('ROLE_ADMIN')`) y solo desde PENDIENTE. Un encargo no se deniega, se
+  rechaza (6c-5): denegarlo por esta ruta da 400, como retirarlo.
+- **Red de la clave única al crear:** una violación de integridad al insertar nunca da 500. La clave única (por su
+  nombre o por el error 1062 de MySQL) da 409 «Ya hay una solicitud pendiente sobre este recurso.»; cualquier otra
+  (p. ej. la FK de un cargo borrado a la vez), 409 «El recurso ha cambiado mientras se pedía: vuelve a intentarlo.».
+  El manejador global no cambia.
+- **Bandeja** (`GET /api/solicitudes?segmento=`):
+  - `PENDIENTES`: tipos 1–3 en PENDIENTE; P las ve todas, G y R solo las suyas.
+  - `ENCARGOS`: encargos PEDIDO, ENCARGADO o RECIBIDO, o caídos con `devolucion_pendiente`; P y G todos, R los de
+    sus sedes (sin sede, no).
+  - `RESUELTAS`: el resto (tipos 1–3 no pendientes y encargos cerrados), con la misma visibilidad, las 200 más
+    recientes por fecha de resolución.
+  - Pendientes y encargos, de la más antigua a la más nueva. Segmento desconocido o vacío: 400.
+- **Contador** (`GET /api/solicitudes/contador` → `{"total": n}`), dos `COUNT` por índice como mucho:
+  - P: tipos 1–3 PENDIENTES + encargos PEDIDO o ENCARGADO.
+  - G: encargos PEDIDO o ENCARGADO.
+  - R: lo mismo que G, de sus sedes.
+  - El término «encargos con devolución pendiente que le tocan a la sede» (§5.1) depende de dónde está el dinero y lo
+    añade la 6c-6.
+- **Registro:** módulo `solicitudes`, resumen `SOLICITUDES <ACCION> sede=#S solicitud=#N cobro=#C cargo=#G …` (solo
+  ids; `sede=-` si la solicitud no tiene sede). Ni el motivo ni la respuesta.
+- **FK de `solicitud`:** a cobro, entrega y movimiento, sin acción (esas filas no se borran); a usuario, alumno,
+  cargo y producto, ON DELETE SET NULL (borrar un producto del catálogo o un cargo no falla); a sede, SET NULL como en
+  `cobro`. `movimiento_caja.producto_alumno_id` se guarda (no se deduce del cobro): la 153 pide el enlace al cargo y
+  `cobro.producto_alumno_id` pasa a NULL si el cargo se borra.
+
+### Tarea 1: V31_8, postcheck y tests de migración
+
+**Ficheros:**
+- Crear: `src-api/src/main/resources/db/migration/V31_8__solicitudes_y_devoluciones.sql`.
+  - `CREATE TABLE IF NOT EXISTS solicitud` con las columnas de §6.1, sus cuatro columnas VIRTUAL con clave única
+    (`uk_solicitud_cobro_pendiente`, `uk_solicitud_entrega_pendiente`, `uk_solicitud_movimiento_pendiente`,
+    `uk_solicitud_cargo_pendiente`), los índices de §6.1 y 13 FK.
+  - En `movimiento_caja`, con guarda en `information_schema` y una sentencia por cambio (patrón de V31_6), cuatro
+    columnas al final: `cobro_id`, `producto_alumno_id`, `metodo` (`VARCHAR(20) NOT NULL DEFAULT 'EFECTIVO'`) y
+    `cobro_devuelto_activo_id` (VIRTUAL). Después, los índices `idx_movimiento_caja_cobro`,
+    `idx_movimiento_caja_producto_alumno` y `uk_movimiento_caja_cobro_devuelto_activo`, y las FK
+    `fk_movimiento_caja_cobro` (sin acción) y `fk_movimiento_caja_producto_alumno` (SET NULL), con
+    `foreign_key_checks = 0` solo si no hay huérfanos.
+- Crear: `docs/multi-escuela/postcheck-v31_8.sql` (solo lectura, solo recuentos; ver la tarea).
+- Crear: `T/integracion/SolicitudesV31_8MigracionIntegrationTest.java` (`@Tag("migracion")`, esquema
+  `taemoi_v31_8_it`, base en V31_7 con cobros, entregas y movimientos de dos sedes y dos escuelas).
+- Modificar: `T/integracion/MySqlSmokeIntegrationTest.java` y `T/integracion/MembresiaMigracionIntegrationTest.java`
+  («hasta la última» → `31.8`); `T/integracion/BorradoAlumnoIntegrationTest.java` (inventario de FK hacia `alumno`:
+  `solicitud.alumno_id` SET NULL; `eliminarAlumno` no cambia).
+
+- [ ] **Paso 1: escribir los tests que fallan** en `SolicitudesV31_8MigracionIntegrationTest`:
+  - `llegaAV31_8`: la última versión aplicada es `31.8`.
+  - `creaSolicitudVacia_conClavesVirtualesYFk`: 0 filas; columnas exactas en orden; las cuatro `*_pendiente_id` son
+    `VIRTUAL GENERATED` y tienen su clave única; las 13 FK con su regla (SET NULL las de usuario, alumno, cargo,
+    producto y sede; NO ACTION las de cobro, entrega y movimiento); `utf8mb4_0900_ai_ci`.
+  - `movimientoCaja_cuatroColumnasAlFinal_metodoEfectivo_yNadaMasCambia`: columnas = las de antes + las cuatro
+    nuevas; `metodo` = `EFECTIVO` en todas las filas; el resto de cada fila, igual que antes.
+  - `saldoPorSede_igualAntesYDespues`: Σ cobros (fórmula de `CajaService`) + Σ movimientos ACTIVOS por sede, igual antes
+    y después; y también con solo los movimientos EFECTIVO (D6c-13).
+  - `postcheck_tablaVaciaColumnasYVersion`: los valores de la tarea, con `movimientos_no_efectivo` = 0.
+  - `clavesUnicas_unaPendientePorRecurso_ylasResueltasNoCuentan`: dos PENDIENTE del mismo cobro, entrega,
+    movimiento o (tipo 1) cargo sin cobro → `DuplicateKeyException`; con la primera RETIRADA, la segunda entra; dos
+    ENCARGO del mismo producto entran; dos DEVOLUCION ACTIVAS del mismo cobro → `DuplicateKeyException`, una ANULADA
+    y otra ACTIVA conviven.
+  - `insertarMovimientoSinLasColumnas_quedaEfectivo`: el INSERT del código anterior deja `metodo` = `EFECTIVO`.
+  - `borrarCargoOCuenta_dejaLasReferenciasANull`: borrar el cargo pone a NULL `solicitud.producto_alumno_id` y
+    `movimiento_caja.producto_alumno_id`; borrar la cuenta, `solicitado_por_usuario_id`.
+  - `repetirla_tambienTrasUnFalloAMedias_noCambiaNada`: dos ejecuciones más no cambian filas ni esquema. Fallo a
+    medias: sin `solicitud` y sin las FK, índices y columnas nuevas de `movimiento_caja`; las cuatro columnas se
+    vuelven a añadir con `ALGORITHM=INSTANT` (prueba de coste) y dos ejecuciones dejan el esquema completo y el
+    postcheck limpio.
+- [ ] **Paso 2: comprobar que fallan.** `mvn test -Dtest=SolicitudesV31_8MigracionIntegrationTest -Dgroups=migracion`.
+  Se espera FAIL: no existe V31_8.
+- [ ] **Paso 3: implementar** V31_8 y el postcheck. Recuentos del postcheck:
+  - `tabla_solicitud` 1, `filas_solicitud` 0, `columnas_virtuales_solicitud` 4, `uk_solicitud` 4, `fk_solicitud` 13
+    (`fk_solicitud_set_null` 8, `fk_solicitud_sin_accion` 5);
+  - `columnas_movimiento_caja` 4, `metodo_no_nulo_efectivo` 1, `uk_cobro_devuelto_activo` 1, `fk_movimiento_caja` 8
+    (`fk_movimiento_caja_set_null` 4, `fk_movimiento_caja_sin_accion` 4);
+  - `flyway_31_8` 1, `movimientos_no_efectivo` 0, `sedes_con_saldo_distinto_solo_efectivo` 0;
+  - informativas: `movimientos_con_cobro` 0 y `solicitudes_pendientes` 0 hasta la 6c-6 y la 6c-7.
+- [ ] **Paso 4: comprobar que pasan**, más `MySqlSmokeIntegrationTest`, `MembresiaMigracionIntegrationTest` y
+  `BorradoAlumnoIntegrationTest`. Se espera PASS.
+
+### Tarea 2: entidades, repositorio, transiciones y `MovimientoCaja`
+
+**Ficheros:**
+- Crear: `J/entities/Solicitud.java` (`extends EntidadOrganizacion`, ids simples, `@Version`, sin mapear las columnas
+  virtuales), `J/entities/TipoSolicitud.java`, `J/entities/EstadoSolicitud.java`.
+- Crear: `J/repositories/SolicitudRepository.java` (`JpaRepository` + `JpaSpecificationExecutor`).
+- Crear: `J/services/SolicitudTransiciones.java` (la tabla §6.2 en un solo sitio).
+- Modificar: `J/entities/MovimientoCaja.java`: `cobroId`, `productoAlumnoId` y `metodo` (`MetodoPago`, por defecto
+  `EFECTIVO`). Ni `CajaService` ni los DTO los usan aún.
+- Crear: `T/services/SolicitudTransicionesTest.java` (unitario).
+
+**Interfaces:**
+- Produce: `Optional<Solicitud> SolicitudRepository.bloquearPorId(Long id)` (`@Lock(PESSIMISTIC_WRITE)`; la relectura la
+  hace el servicio, como `CobroService.bloquearCobro`).
+- Produce: `SolicitudTransiciones.exigir(Solicitud s, EstadoSolicitud destino)` (409 `NO_PENDIENTE` = «La solicitud ya
+  no está pendiente»), `boolean permitida(TipoSolicitud, EstadoSolicitud desde, EstadoSolicitud destino)` y
+  `EstadoSolicitud estadoInicial(TipoSolicitud)` (PENDIENTE o PEDIDO).
+
+- [ ] **Paso 1: escribir los tests que fallan** en `SolicitudTransicionesTest`:
+  - `tipos1a3_desdePendiente_aRetiradaDenegadaAceptadaONoAplicable`: para cada tipo de 1 a 3 y cada par de estados,
+    `permitida` es cierto solo en esas cuatro.
+  - `encargo_tablaDeLa6_2`: PEDIDO → RETIRADA, ENCARGADO o RECHAZADO; ENCARGADO → RECIBIDO o RECHAZADO; RECIBIDO →
+    ENTREGADO o RECHAZADO; nada más.
+  - `exigir_fueraDeLaTabla_409NoPendiente_sinCambiarElEstado`: `IllegalStateException` con `NO_PENDIENTE` y el estado
+    sigue igual; dentro de la tabla no lanza.
+  - `estadoInicial_pendienteOPedido`.
+- [ ] **Paso 2: comprobar que fallan.** `mvn test -Dtest=SolicitudTransicionesTest`. Se espera error de compilación.
+- [ ] **Paso 3: implementar** enums, entidad, repositorio, transiciones y el mapeo de `MovimientoCaja`.
+- [ ] **Paso 4: comprobar que pasan**, más `CajaSedeIntegrationTest` (el mapeo nuevo no cambia la caja). Se espera
+  PASS; el arranque con `ddl-auto=validate` comprueba el mapeo contra V31_8.
+
+### Tarea 3: servicio, registro, rutas de gestión y seguridad
+
+**Ficheros:**
+- Crear: `J/dtos/request/SolicitudRequests.java` (`Crear{tipo, cobroId, productoAlumnoId, entregaId, movimientoId,
+  motivo}`, `Denegar{respuesta}`), `J/dtos/response/SolicitudDTOs.java` (`Solicitud`, `Contador`).
+- Crear: `J/services/SolicitudService.java`, `J/services/RegistroAccionesSolicitudes.java` (módulo `solicitudes`,
+  copia de `RegistroAccionesCaja`, acciones de §8), `J/controllers/SolicitudController.java`.
+- Modificar: `J/config/SecurityConfiguration.java`: `/api/solicitudes` y `/api/solicitudes/**` para ADMIN, MANAGER y
+  RESPONSABLE_SEDE, antes de `/api/admin/**`. Fuera de la lista blanca de la sesión solo-profesor (no se toca).
+- Crear: `T/integracion/SolicitudesIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`; dos escuelas `EscuelaConSedesDePrueba` con sedes A y B, propietario, gestor,
+  responsable de A, profesor de gA; ayudas de `CajaSedeIntegrationTest`).
+
+**Interfaces:**
+- Produce: `SolicitudDTOs.Solicitud SolicitudService.crear(SolicitudRequests.Crear)`, `retirar(Long id)`,
+  `denegar(Long id, String respuesta)`, `List<SolicitudDTOs.Solicitud> listar(SolicitudService.Segmento)`,
+  `long contador()`, y `Solicitud bloquear(Long id)` (bloquea y relee; 404 si no existe).
+- Rutas: `GET /api/solicitudes?segmento=`, `GET /api/solicitudes/contador`, `POST /api/solicitudes`,
+  `POST /api/solicitudes/{id}/retirar` (P, G y R; el servicio filtra o comprueba) y `POST /api/solicitudes/{id}/denegar`
+  (solo P).
+- Consume: `GestionPorSede.restriccion()` y `exigirSedePropia`, `AuditoriaService.registrarAccesoSensible`,
+  `CobroService.usuarioActualId`, `alumnoDe` e `importeDe`.
+
+- [ ] **Paso 1: escribir los tests que fallan** en `SolicitudesIntegrationTest`:
+  - `gestor_pideRevertirUnCobro_pendienteConInstantanea_sinTocarElCobroNiLaCaja`: G pide sobre un cobro de tesorería
+    (201). La fila queda PENDIENTE, REVERTIR_COBRO, con la sede, el alumno, el concepto, el importe y el cargo del cobro
+    y `solicitado_por` = G. El cobro sigue ACTIVO, el cargo pagado y el `saldoCaja` de la sede no cambia.
+  - `pedirPorElCargoConCobroActivo_enlazaElCobro`.
+  - `revertirCargoSinCobro_pideAceptaYSoloDesmarca` (parte de la 6c-2: pedir; la 6c-3 añade aceptar): un cargo pagado
+    por SQL sin cobro, pedido por `productoAlumnoId`, da 201 con `cobro_id` NULL y `producto_alumno_id` = el cargo.
+    No se crea ningún cobro y el cargo sigue pagado.
+  - `dosPendientesMismoCobro_409`: la segunda (por `cobroId` o por el cargo) da 409 y no se crea; tras retirar la
+    primera, se puede pedir otra vez.
+  - `dosCrearALaVezMismoCobro_201Y409_unaSolaPendiente` (con `enParalelo`) y
+    `claveUnicaComoUltimaRed_insertEnCurso_409`: otra transacción tiene un INSERT sin confirmar del mismo cobro; la
+    petición espera a la clave y, al confirmar la otra, da 409 sin registro. `SolicitudServiceErroresTest` (unitario):
+    clave por nombre, por el 1062 o `DuplicateKeyException` → «ya pendiente»; otra violación → «el recurso ha cambiado».
+  - `dosPendientesMismoCargoSinCobro_409` (191).
+  - `pedirAnularEntregaOMovimiento_tipo3`: entrega ACTIVA (importe = el declarado) y movimiento suelto ACTIVO dan 201;
+    la segunda pendiente, 409; el movimiento automático de una entrega, 409; una entrega anulada, 409.
+  - `crear_validaciones`: P da 400; motivo vacío o de 501 caracteres, 400; tipo 2 o encargo, 400; sin recurso o con
+    dos, 400; cobro inexistente o de otra escuela, 404; cobro anulado o entregado, 409; cargo no pagado, 409.
+  - `responsable_soloPideSobreRecursosDeSusSedes`: R de A pide sobre A (201); sobre B o un cargo sin sede, 403.
+  - `retirar_soloLaSuya_403ParaOtros`: otro (G o P) da 403; quien pidió, 200 (RETIRADA, `resuelto_por` = él); otra
+    vez, 409 «La solicitud ya no está pendiente»; inexistente, 404.
+  - `denegar_soloPropietario_conRespuesta`: G y R, 403; P sin respuesta, 400; P, 200 (DENEGADA, con `respuesta` y
+    `resuelto_por`); otra vez, 409; retirarla después, 409; un encargo, 400 y sigue PEDIDO.
+  - `denegarYRetirarALaVez_unoGana409ElOtro`: con `enParalelo`, resultados {200, 409} y un solo estado final.
+  - `listarPorSegmento_propietarioTodo_gestorLasSuyas`: segmentos y orden; RESUELTAS con la respuesta; segmento
+    desconocido, 400.
+  - `responsable_veYCuentaSoloLoSuyoYLosEncargosDeSusSedes`: encargos insertados por SQL (la 6c-5 aún no existe) en
+    A, en B y sin sede.
+  - `contador_propietarioPendientesYEncargos_gestorEncargos`: valores exactos.
+  - `solicitudSinSede_laVenYCuentanPyG_noR`: tipo 1 sobre un cargo sin sede (G) y encargo PEDIDO sin sede. P las ve y
+    cuenta las dos; G ve las dos y cuenta el encargo; R no ve ninguna y cuenta 0.
+  - `sesionSoloProfesorNoEntraEnSolicitudes`: solo PROFESOR, RESPONSABLE_SEDE + PROFESOR, FAMILIA + PROFESOR y FAMILIA
+    reciben 403 en las cinco rutas.
+  - `registroDeAcciones_soloIds_sinMotivo`: `SOLICITUDES SOLICITUD_CREADA sede=#A solicitud=#n cobro=#c cargo=#g`,
+    `SOLICITUD_RETIRADA` y `SOLICITUD_DENEGADA`, con quién y `recurso_id`. Ni el motivo ni la respuesta; un intento
+    fallido no deja registro.
+  - `aislamientoDeEscuela`: la gestión de otra escuela no la ve (lista y contador) y recibe 404 al retirarla o
+    denegarla.
+  - `movimientoNuevo_quedaEfectivoSinCobroNiCargo_yLaRespuestaNoCambia`.
+- [ ] **Paso 2: comprobar que fallan.** `mvn test -Dtest=SolicitudesIntegrationTest -DexcludedGroups=migracion`. Se
+  espera error de compilación o 404 en las rutas.
+- [ ] **Paso 3: implementar.** Cada escritura va en una `TransactionTemplate` READ_COMMITTED, con su registro en la
+  misma transacción. Retirar y denegar bloquean la fila (`bloquear`) antes de `SolicitudTransiciones.exigir`. La
+  clave única es la última red: un `DataIntegrityViolationException` al crear da 409 «Ya hay una solicitud pendiente
+  sobre este recurso.».
+- [ ] **Paso 4: comprobar que pasan.** Mismo comando. Se espera PASS.
+
+### Tarea 4: `@acceso.solicitudEnSede`
+
+**Ficheros:** `J/acceso/AccesoRecursos.java`, `ConsultaAccesoRecursos.java`, `ConsultaAccesoRecursosJpa.java`,
+`T/seguridad/RegistradorConsultaAcceso.java`, `T/acceso/AccesoRecursosTest.java`.
+
+**Interfaces:**
+- Produce: `boolean AccesoRecursos.solicitudEnSede(Long id)`: alcance total → `true` sin consultar; R → la sede de la
+  solicitud es una de las suyas (sin sede, `false`); nunca la rama de profesor ni la de familia. Puerto
+  `solicitudEnSedes(Long solicitudId, Set<Long> sedes)`. Ninguna ruta de la 6c-2 lo usa: lo consumen la 6c-5 y la 6c-6.
+
+- [ ] **Paso 1: escribir los tests que fallan:**
+  - `AccesoRecursosTest.solicitudEnSede_gestionSinConsultar_responsablePorSusSedes_profesorYFamiliaNunca`.
+  - `SolicitudesIntegrationTest.consultaJpa_solicitudEnSedes_porLaSedeDeLaSolicitud`: por la sede, otra escuela
+    `false`, sin sede `false`.
+- [ ] **Paso 2: comprobar que fallan** (compilación) e **implementar**.
+- [ ] **Paso 3: comprobar que pasan.**
+
+### Tarea 5: matriz, documentación y batería completa
+
+- [ ] **Paso 1:** añadir a `matriz-permisos.txt` las siete líneas nuevas (GET y HEAD de la lista y del contador, POST de
+  crear, retirar y denegar), con la decisión que sugiere `MatrizPermisosTest`. PROFESOR, FAMILIA, ANONIMO y
+  SOLO_PLATAFORMA dan DENIEGA; denegar, solo PROPIETARIO. Las de R con PERMITE van en
+  `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` con su test. Ninguna casilla existente cambia: el diff solo añade líneas.
+- [ ] **Paso 2:** nota en `matriz-endpoints.md` y línea de V31_8 en `checklist-despliegue.md` (atajo
+  `desplegar_migrar`).
+- [ ] **Paso 3:** `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion`. Se espera BUILD SUCCESS en las
+  dos, con los dorados de Moiskimdo sin tocar.
+- [ ] **Paso 4:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(solicitudes): tabla, rutas de gestión y registro de las solicitudes al propietario (6c-2)`.
+
+---
+
+## 4. Auto-revisión
 
 - **Cobertura:**
   - §3 objetivo 5 → 6c-1.

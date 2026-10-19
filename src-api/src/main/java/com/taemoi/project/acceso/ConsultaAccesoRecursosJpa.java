@@ -18,6 +18,7 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.SedeRepository;
+import com.taemoi.project.repositories.SolicitudRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
@@ -44,11 +45,12 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 	private final ProductoAlumnoRepository productosAlumno;
 	private final CobroRepository cobros;
 	private final SedeRepository sedes;
+	private final SolicitudRepository solicitudes;
 
 	public ConsultaAccesoRecursosJpa(AccesoFamiliaService accesoFamilia, UsuarioRepository usuarios,
 			AlumnoRepository alumnos, GrupoRepository grupos, TurnoRepository turnos,
 			PreinscripcionRepository preinscripciones, ProductoAlumnoRepository productosAlumno,
-			CobroRepository cobros, SedeRepository sedes) {
+			CobroRepository cobros, SedeRepository sedes, SolicitudRepository solicitudes) {
 		this.accesoFamilia = accesoFamilia;
 		this.usuarios = usuarios;
 		this.alumnos = alumnos;
@@ -58,6 +60,7 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 		this.productosAlumno = productosAlumno;
 		this.cobros = cobros;
 		this.sedes = sedes;
+		this.solicitudes = solicitudes;
 	}
 
 	@Override
@@ -159,6 +162,14 @@ public class ConsultaAccesoRecursosJpa implements ConsultaAccesoRecursos {
 			return false;
 		}
 		return sedes.buscarEnEscuelaActiva(sedeId).isPresent();
+	}
+
+	@Override
+	public boolean solicitudEnSedes(Long solicitudId, Set<Long> conjunto) {
+		if (solicitudId == null || conjunto == null || conjunto.isEmpty() || TenantContext.get() == null) {
+			return false;
+		}
+		return solicitudes.existsByIdAndSedeIdIn(solicitudId, conjunto);
 	}
 
 	/** El alumno de la inscripción {@code alumnoConvocatoriaId} (de la escuela activa) cumple el predicado. */

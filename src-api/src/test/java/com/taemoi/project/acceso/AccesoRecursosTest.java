@@ -682,6 +682,28 @@ class AccesoRecursosTest {
 		assertFalse(acceso.cajaDeSede(3L));
 	}
 
+	@Test
+	void solicitudEnSede_gestionSinConsultar_responsablePorSusSedes_profesorYFamiliaNunca() {
+		sesion(token("ROLE_ADMIN"));
+		assertTrue(acceso.solicitudEnSede(7L));
+		sesion(token("ROLE_MANAGER"));
+		assertTrue(acceso.solicitudEnSede(7L));
+		assertFalse(acceso.solicitudEnSede(null));
+		verifyNoInteractions(consulta);
+
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), "ROLE_RESPONSABLE_SEDE"));
+		when(consulta.solicitudEnSedes(7L, SEDES)).thenReturn(true);
+		when(consulta.solicitudEnSedes(8L, SEDES)).thenReturn(false);
+		assertTrue(acceso.solicitudEnSede(7L));
+		assertFalse(acceso.solicitudEnSede(8L));
+
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"));
+		assertFalse(acceso.solicitudEnSede(7L));
+		sesion(token("ROLE_USER"));
+		assertFalse(acceso.solicitudEnSede(7L));
+		verify(consulta, never()).solicitudEnSedes(anyLong(), org.mockito.ArgumentMatchers.eq(GRUPOS));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private static void sesion(Authentication autenticacion) {

@@ -82,6 +82,9 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 			Map.entry("preinscripcion.alumno_id", "NO ACTION"),
 			Map.entry("producto_alumno.alumno_id", "NO ACTION"),
 			Map.entry("registro_pendiente.alumno_id", "NO ACTION"),
+			// Pieza 6c-2 (V31_8): instantánea de la solicitud; al borrar el alumno la solicitud se conserva sin alumno.
+			// eliminarAlumno no cambia.
+			Map.entry("solicitud.alumno_id", "SET NULL"),
 			Map.entry("tutor.alumno_id", "CASCADE"),
 			Map.entry("usuario.alumno_id", "NO ACTION"),
 			Map.entry("usuario_alumno.alumno_id", "CASCADE"));

@@ -307,6 +307,16 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/turnos/resumen", grupos + "turnos_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/informes/asistencia", grupos + "asistencia_soloTurnosDeSusSedes");
 		}
+		// Pieza 6c-2: bandeja y contador de solicitudes (las suyas y los encargos de sus sedes), pedir sobre recursos
+		// de sus sedes (403 si no) y retirar solo las suyas (403 si no).
+		String solicitudes = "integracion.SolicitudesIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/solicitudes", solicitudes + "responsable_veYCuentaSoloLoSuyoYLosEncargosDeSusSedes");
+			m.put(metodo + " /api/solicitudes/contador",
+					solicitudes + "responsable_veYCuentaSoloLoSuyoYLosEncargosDeSusSedes");
+		}
+		m.put("POST /api/solicitudes", solicitudes + "responsable_soloPideSobreRecursosDeSusSedes");
+		m.put("POST /api/solicitudes/{id}/retirar", solicitudes + "retirar_soloLaSuya_403ParaOtros");
 		m.put("POST /api/alumnos/crear", alumnos + "alta_sedePrincipalObligatoriaYSuya");
 		m.put("POST /api/grupos", grupos + "grupos_altaEnSuSede");
 		m.put("POST /api/turnos/crear-asignando-grupo", grupos + "turnos_altaConGrupoDeSuSede");

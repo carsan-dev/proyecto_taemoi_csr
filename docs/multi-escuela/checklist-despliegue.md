@@ -117,6 +117,18 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       `ventas_auditadas_sin_marcar` = 0. Las columnas son INSTANT y las FK se añaden sin reconstruir la tabla. El código anterior
       sigue funcionando sobre este esquema (no conoce las columnas); si se vuelve atrás con cargos ya cancelados, ese
       código los contaría otra vez como pendientes (reactivarlos o anotarlos antes).
+- [ ] Tras V31_8 (pieza 6c-2, tabla nueva `solicitud`, vacía, y columnas `cobro_id`, `producto_alumno_id`, `metodo` y
+      `cobro_devuelto_activo_id` al final de `movimiento_caja`; despliegue **con migración**, atajo
+      `desplegar_migrar`): ejecutar `docs/multi-escuela/postcheck-v31_8.sql` (solo lectura, solo recuentos) y guardar
+      el resultado: `tabla_solicitud` = 1, `filas_solicitud` = 0, `columnas_virtuales_solicitud` = 4,
+      `uk_solicitud` = 4, `fk_solicitud` = 13 (`fk_solicitud_set_null` = 8, `fk_solicitud_sin_accion` = 5),
+      `columnas_movimiento_caja` = 4, `metodo_no_nulo_efectivo` = 1, `uk_cobro_devuelto_activo` = 1,
+      `fk_movimiento_caja` = 8 (`fk_movimiento_caja_set_null` = 4, `fk_movimiento_caja_sin_accion` = 4),
+      `flyway_31_8` = 1, `movimientos_no_efectivo` = 0,
+      `sedes_con_saldo_distinto_solo_efectivo` = 0 (el saldo de caja de cada sede no cambia) y las informativas a 0.
+      Las columnas son INSTANT y las FK se añaden sin reconstruir la tabla. Sin pantallas: Moiskimdo no ve nada nuevo
+      hasta la 6c-7. El código anterior sigue funcionando sobre este esquema (no conoce la tabla; sus movimientos nuevos
+      quedan EFECTIVO por el DEFAULT); si se vuelve atrás, las solicitudes ya pedidas se quedan sin pantalla.
 - [ ] Avisar a la gestión de Moiskimdo (cambio deliberado de la 6b-2c): borrar un cargo a mano pasa a ser solo del
       propietario y solo si nunca se cobró; la gestión y el responsable lo **cancelan** (con motivo). El botón
       «Borrar» de la ficha da 403 al gestor hasta que el frontend pinte «Cancelar».

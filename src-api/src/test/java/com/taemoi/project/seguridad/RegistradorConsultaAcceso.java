@@ -110,4 +110,9 @@ final class RegistradorConsultaAcceso implements ConsultaAccesoRecursos {
 	public boolean sedeEnSedes(Long sedeId, Set<Long> sedes) {
 		return registrar();
 	}
+
+	@Override
+	public boolean solicitudEnSedes(Long solicitudId, Set<Long> sedes) {
+		return registrar();
+	}
 }

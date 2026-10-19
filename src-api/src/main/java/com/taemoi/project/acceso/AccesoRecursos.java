@@ -234,6 +234,17 @@ public class AccesoRecursos {
 		return decidir(sedeId, OperacionAcceso.EDITAR, null, sedes -> consulta.sedeEnSedes(sedeId, sedes), null);
 	}
 
+	/**
+	 * Pieza 6c-2 (fase3-6c-solicitudes.md §7.2): la solicitud es de una de las sedes del responsable. Alcance total
+	 * (gestor y propietario) → {@code true} sin consultar; responsable de sede → la sede de la solicitud es una de las
+	 * suyas (sin sede, nunca). Nunca la rama de profesor ni la de familia. Lo usan las rutas de encargos y devoluciones
+	 * de la bandeja (6c-5 y 6c-6).
+	 */
+	public boolean solicitudEnSede(Long solicitudId) {
+		return decidir(solicitudId, OperacionAcceso.EDITAR, null, sedes -> consulta.solicitudEnSedes(solicitudId, sedes),
+				null);
+	}
+
 	/** Solo la rama de profesor, con su conjunto de grupos no vacío; sin mirar la operación. */
 	private boolean comoProfesor(Object id, Predicate<Set<Long>> porGrupos) {
 		Authentication autenticacion = sesionValida();

@@ -69,7 +69,8 @@ class AccesoRecursosFamiliaTest {
 		acceso = new AccesoRecursos(new AlcanceActual(),
 				new ConsultaAccesoRecursosJpa(accesoFamilia, usuarios, alumnos, grupos, turnos, preinscripciones,
 						productosAlumno, org.mockito.Mockito.mock(com.taemoi.project.repositories.CobroRepository.class),
-						org.mockito.Mockito.mock(com.taemoi.project.repositories.SedeRepository.class)));
+						org.mockito.Mockito.mock(com.taemoi.project.repositories.SedeRepository.class),
+						org.mockito.Mockito.mock(com.taemoi.project.repositories.SolicitudRepository.class)));
 	}
 
 	@AfterEach
