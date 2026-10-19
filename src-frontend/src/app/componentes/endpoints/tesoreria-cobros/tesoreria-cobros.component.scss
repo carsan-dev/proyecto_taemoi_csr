@@ -292,6 +292,20 @@ tbody td {
   background: #9b2c2c;
 }
 
+// Pieza 6c-7: la gestión pide al propietario lo que no puede hacer (decisión 190).
+.btn-pedir {
+  background: #284747;
+}
+
+.btn-pedir:hover {
+  background: #1b2b2e;
+}
+
+.btn-pedir:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .accion-hecha {
   color: #2f855a;
   font-weight: 700;

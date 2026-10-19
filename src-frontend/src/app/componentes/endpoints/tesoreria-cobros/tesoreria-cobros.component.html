@@ -238,6 +238,14 @@
                             (click)="revertirCobro(movimiento)">
                             <i class="bi bi-arrow-counterclockwise"></i> Revertir
                           </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="btn-accion btn-pedir"
+                            [disabled]="estaProcesandoCobro(movimiento)"
+                            (click)="pedirRevertirCobro(movimiento)">
+                            <i class="bi bi-send"></i> Pedir al propietario
+                          </button>
                         }
                       }
 

@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { Injector, inject } from '@angular/core';
 import { map as mapInforme } from 'rxjs/operators';
 import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
@@ -22,6 +22,8 @@ import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { PaginatedResponse } from '../../../interfaces/paginated-response';
 import { MetodoPago, ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDTO } from '../../../interfaces/alumno-dto';
+import { SolicitudesService } from '../../../servicios/endpoints/solicitudes.service';
+import { euros, pedirAlPropietario } from '../../generales/pedir-al-propietario/pedir-al-propietario';
 
 type EstadoFiltro = 'TODOS' | 'PENDIENTES' | 'PAGADOS';
 
@@ -66,6 +68,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
   ];
 
   readonly catalogo = inject(CatalogoService);
+  private readonly injector = inject(Injector);
 
   /** `TODOS` más las disciplinas activas del catálogo, por orden. */
   get deportes(): Array<{ value: string; label: string }> {
@@ -310,6 +313,31 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
         'Cobro revertido a pendiente',
         'No se pudo revertir el cobro'
       );
+    });
+  }
+
+  /**
+   * Decisión 190: la gestión no revierte (403); pide al propietario que lo haga. Por el cargo, que sirve con cobro y
+   * sin él (cargos pagados antes de la 6b-1, decisión 191).
+   */
+  pedirRevertirCobro(movimiento: TesoreriaMovimiento): Promise<unknown> {
+    if (this.isAdmin || !movimiento.pagado || movimiento.productoAlumnoId === null || movimiento.productoAlumnoId === undefined) {
+      return Promise.resolve(null);
+    }
+    const fechaPago = movimiento.fechaPago ? new Date(movimiento.fechaPago) : null;
+    return pedirAlPropietario(this.injector.get(SolicitudesService), {
+      titulo: 'Pedir al propietario que revierta este cobro',
+      datos: [
+        { etiqueta: 'Alumno', valor: movimiento.alumnoNombreCompleto },
+        { etiqueta: 'Concepto', valor: movimiento.concepto },
+        { etiqueta: 'Importe', valor: euros(movimiento.precio) },
+        {
+          etiqueta: 'Fecha de pago',
+          valor: fechaPago && !Number.isNaN(fechaPago.getTime()) ? fechaPago.toLocaleDateString('es-ES') : '',
+        },
+      ],
+      nota: 'Mientras tanto el pago sigue marcado.',
+      peticion: { tipo: 'REVERTIR_COBRO', productoAlumnoId: movimiento.productoAlumnoId },
     });
   }
 

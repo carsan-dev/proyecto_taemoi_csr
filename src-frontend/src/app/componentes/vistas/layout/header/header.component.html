@@ -236,9 +236,12 @@
           [attr.data-priority]="item.priority ?? 99"
           [routerLink]="[item.route]"
           [class.active]="isAdminQuickRouteActive(item)"
-          [title]="item.label"
-          [attr.aria-label]="item.label">
+          [title]="etiquetaAccesoRapido(item)"
+          [attr.aria-label]="etiquetaAccesoRapido(item)">
           <i class="bi {{ item.icon }}"></i>
+          @if (item.contador === 'solicitudes' && contadorSolicitudes > 0) {
+            <span class="contador-aviso" aria-hidden="true">{{ textoContador(contadorSolicitudes) }}</span>
+          }
         </a>
       }
     </nav>
@@ -483,6 +486,16 @@
       <a class="menu-link" [routerLink]="['/cajaSede']" routerLinkActive="active" (click)="closeAdminMenu()">
         <i class="bi bi-safe2"></i>
         <span>Caja de sede</span>
+      </a>
+    </li>
+    <li>
+      <a class="menu-link" [routerLink]="['/solicitudes']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-inbox"></i>
+        <span>Solicitudes</span>
+        @if (contadorSolicitudes > 0) {
+          <span class="contador-aviso">{{ textoContador(contadorSolicitudes) }}</span>
+          <span class="visually-hidden">por atender</span>
+        }
       </a>
     </li>
     @if (tieneRolProfesor) {

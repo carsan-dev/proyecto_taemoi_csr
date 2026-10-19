@@ -1,0 +1,146 @@
+<div class="admin-page-container bandeja">
+  <div class="container">
+    <header class="admin-action-bar bandeja-cabecera">
+      <div>
+        <h2><i class="bi bi-inbox" aria-hidden="true"></i> Solicitudes</h2>
+        <p class="bandeja-intro">
+          @if (esPropietario) {
+            Lo que la gestión te pide revertir o anular, y los encargos de material.
+          } @else {
+            Lo que has pedido al propietario y los encargos de material.
+          }
+        </p>
+      </div>
+      <div class="action-buttons">
+        <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="recargar()"
+          [disabled]="estado[segmento].cargando" aria-label="Actualizar las solicitudes">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="segmentos" role="tablist" aria-label="Solicitudes" (keydown)="moverSegmento($event)">
+      @for (opcion of segmentos; track opcion) {
+        <button type="button" role="tab" [id]="'segmento-' + opcion" [attr.aria-controls]="'panel-' + opcion"
+          [attr.aria-selected]="segmento === opcion" [attr.tabindex]="segmento === opcion ? 0 : -1"
+          [class.activo]="segmento === opcion" (click)="elegirSegmento(opcion)">
+          {{ etiquetaSegmento(opcion) }}
+        </button>
+      }
+    </div>
+
+    @for (opcion of segmentos; track opcion) {
+      <section class="panel" role="tabpanel" [id]="'panel-' + opcion" [attr.aria-labelledby]="'segmento-' + opcion"
+        [hidden]="segmento !== opcion" [attr.aria-busy]="estado[opcion].cargando">
+        @if (segmento === opcion) {
+          @if (estado[opcion].error; as error) {
+            <div class="aviso-error" role="alert">
+              <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+              <span>{{ error }}</span>
+              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="cargar(opcion)">Reintentar</button>
+            </div>
+          } @else if (estado[opcion].lista === null) {
+            <div class="sin-resultados" role="status">
+              <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              <p>Cargando…</p>
+            </div>
+          } @else if (estado[opcion].lista!.length === 0) {
+            <div class="sin-resultados">
+              <i class="bi bi-inbox" aria-hidden="true"></i>
+              @switch (opcion) {
+                @case ('PENDIENTES') {
+                  <p>No hay solicitudes pendientes.</p>
+                  <p class="sin-resultados-detalle">
+                    @if (esPropietario) {
+                      Cuando la gestión pida revertir un cobro o anular algo de la caja, aparecerá aquí.
+                    } @else {
+                      Lo que pidas al propietario desde la tesorería, la ficha o la caja de sede aparecerá aquí.
+                    }
+                  </p>
+                }
+                @case ('ENCARGOS') {
+                  <p>No hay encargos en curso.</p>
+                }
+                @default {
+                  <p>Todavía no hay solicitudes resueltas.</p>
+                }
+              }
+            </div>
+          } @else {
+            <div class="lista-cabecera" aria-hidden="true">
+              <span>Solicitud</span>
+              <span>Sobre qué</span>
+              <span>{{ opcion === 'ENCARGOS' ? 'Nota' : 'Motivo' }}</span>
+              <span></span>
+            </div>
+            <ul class="lista-solicitudes">
+              @for (s of estado[opcion].lista; track s.id) {
+                <li class="fila-solicitud">
+                  <div class="col-quien">
+                    <div class="chips">
+                      <span class="chip-tipo" [attr.data-tipo]="s.tipo">{{ etiquetaTipo(s.tipo) }}</span>
+                      @if (opcion !== 'PENDIENTES') {
+                        <span class="chip-estado" [ngClass]="claseEstado(s.estado)">{{ etiquetaEstado(s.estado) }}</span>
+                      }
+                      @if (s.devolucionPendiente) {
+                        <span class="chip-estado estado-aviso">Devolución pendiente</span>
+                      }
+                    </div>
+                    <p class="quien">{{ s.solicitadoPorNombre || 'Cuenta borrada' }}</p>
+                    <p class="detalle">
+                      @if (s.solicitadoEn) {
+                        <time [attr.datetime]="s.solicitadoEn">{{ s.solicitadoEn | date: 'dd/MM/yyyy HH:mm' }}</time>
+                      }
+                    </p>
+                    <p class="detalle sede"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ s.sedeNombre || 'Sin sede' }}</p>
+                  </div>
+
+                  <div class="col-sobre">
+                    <p class="sobre">{{ sobreQue(s) }}</p>
+                    @if (s.concepto) {
+                      <p class="detalle">{{ s.concepto }}</p>
+                    }
+                    @if (s.importe !== null) {
+                      <p class="importe">{{ euros(s.importe) }}</p>
+                    }
+                  </div>
+
+                  <div class="col-motivo">
+                    <blockquote class="motivo">«{{ s.motivo }}»</blockquote>
+                    @if (opcion === 'RESUELTAS' && (s.resueltoPorNombre || s.resueltoEn)) {
+                      <p class="detalle resolucion">
+                        {{ s.estado === 'RETIRADA' ? 'Retirada' : 'Resuelta' }}
+                        @if (s.resueltoPorNombre) { por {{ s.resueltoPorNombre }} }
+                        @if (s.resueltoEn) { el {{ s.resueltoEn | date: 'dd/MM/yyyy HH:mm' }} }
+                      </p>
+                    }
+                    @if (s.respuesta) {
+                      <p class="respuesta" [class.respuesta-aviso]="s.estado === 'NO_APLICABLE'">
+                        <span class="respuesta-etiqueta">{{ s.estado === 'NO_APLICABLE' ? 'Por qué no se aplicó:' : 'Respuesta:' }}</span>
+                        {{ s.respuesta }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="col-acciones">
+                    @if (puedeResolver(s)) {
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="aceptar(s)">{{ verboAceptar(s) }}</button>
+                      <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="denegar(s)">Denegar…</button>
+                    }
+                    @if (puedeRetirar(s)) {
+                      <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="retirar(s)">Retirar</button>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </section>
+    }
+  </div>
+</div>

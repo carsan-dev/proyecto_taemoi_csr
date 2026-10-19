@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Injector, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
 import { mensajeDeError } from '../../../../servicios/endpoints/caja.service';
@@ -18,6 +18,8 @@ import { Observable, concat, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../../directives/searchable-select.directive';
 import { fechaApi } from '../../../../utils/fecha-api';
+import { SolicitudesService } from '../../../../servicios/endpoints/solicitudes.service';
+import { euros, pedirAlPropietario } from '../../../generales/pedir-al-propietario/pedir-al-propietario';
 
 interface AsignacionPendiente {
   productoId: number;
@@ -62,7 +64,8 @@ export class ProductosAlumnoComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly endpointsService: EndpointsService,
     private readonly location: Location,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly injector: Injector
   ) {}
 
   ngOnInit(): void {
@@ -367,6 +370,44 @@ export class ProductosAlumnoComponent implements OnInit {
     }
     producto.fechaAsignacion = fecha;
     this.onProductoChange(producto);
+  }
+
+  /**
+   * Checkbox «Pagado». Decisiones 190 y 191: la gestión no revierte un cargo pagado (403); al desmarcarlo, el checkbox
+   * vuelve a marcado y se abre «Pedir al propietario». El propietario desmarca como siempre.
+   */
+  onPagadoChange(productoAlumno: ProductoAlumnoDTO, evento?: Event): Promise<unknown> {
+    if (!this.esPropietario && !productoAlumno.pagado && this.pagadoGuardado(productoAlumno)) {
+      productoAlumno.pagado = true;
+      // ngModel no vuelve a pintar un valor que no ha cambiado entre dos detecciones: se remarca a mano.
+      if (evento?.target instanceof HTMLInputElement) {
+        evento.target.checked = true;
+      }
+      this.onProductoChange(productoAlumno);
+      const fechaPago = fechaApi(productoAlumno.fechaPago);
+      return pedirAlPropietario(this.injector.get(SolicitudesService), {
+        titulo: 'Pedir al propietario que revierta este cobro',
+        datos: [
+          { etiqueta: 'Concepto', valor: productoAlumno.concepto },
+          { etiqueta: 'Importe', valor: euros(this.calcularTotal(productoAlumno.precio, productoAlumno.cantidad)) },
+          { etiqueta: 'Fecha de pago', valor: fechaPago ? fechaPago.toLocaleDateString('es-ES') : '' },
+        ],
+        nota: 'Mientras tanto el pago sigue marcado.',
+        peticion: { tipo: 'REVERTIR_COBRO', productoAlumnoId: productoAlumno.id },
+      });
+    }
+    this.onProductoChange(productoAlumno);
+    return Promise.resolve(null);
+  }
+
+  /** Estaba pagado al cargar (no un cambio de esta sesión sin guardar). */
+  private pagadoGuardado(productoAlumno: ProductoAlumnoDTO): boolean {
+    const snapshot = this.productosSnapshot.get(productoAlumno.id);
+    try {
+      return !!snapshot && JSON.parse(snapshot).pagado === true;
+    } catch {
+      return false;
+    }
   }
 
   onProductoChange(productoAlumno: ProductoAlumnoDTO): void {

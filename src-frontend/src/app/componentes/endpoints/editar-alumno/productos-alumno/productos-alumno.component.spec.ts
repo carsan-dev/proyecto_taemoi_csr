@@ -1,4 +1,5 @@
 import { formatDate, Location } from '@angular/common';
+import { Injector } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import type { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
 import { TestBed } from '@angular/core/testing';
@@ -172,7 +173,7 @@ describe('ProductosAlumnoComponent: matrícula por deporte', () => {
     endpoints = jasmine.createSpyObj<EndpointsService>('EndpointsService', [
       'asignarProductoAAlumno', 'asignarProductoAAlumnoDeporte', 'obtenerProductosDelAlumno',
     ]);
-    component = new ProductosAlumnoComponent({} as ActivatedRoute, endpoints, {} as Location, authFalso(false) as AuthenticationService);
+    component = new ProductosAlumnoComponent({} as ActivatedRoute, endpoints, {} as Location, authFalso(false) as AuthenticationService, Injector.create({ providers: [] }));
     component.alumnoId = 10;
     component.products = [{
       id: 20, concepto: 'Matrícula anual', precio: 25,

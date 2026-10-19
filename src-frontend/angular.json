@@ -263,7 +263,14 @@
               "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts",
               "src/app/componentes/endpoints/listado-convocatorias/listado-convocatorias.bloqueos.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/editar-alumno.bloqueos.spec.ts",
-              "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.bloqueos.spec.ts"
+              "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.bloqueos.spec.ts",
+              "src/app/servicios/endpoints/solicitudes.service.spec.ts",
+              "src/app/componentes/vistas/layout/header/header.solicitudes.spec.ts",
+              "src/app/componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.component.spec.ts",
+              "src/app/componentes/generales/pedir-al-propietario/pedir-al-propietario.spec.ts",
+              "src/app/componentes/endpoints/tesoreria-cobros/tesoreria-cobros.solicitudes.spec.ts",
+              "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.solicitudes.spec.ts",
+              "src/app/componentes/endpoints/caja-sede/caja-sede.solicitudes.spec.ts"
             ]
           }
         }

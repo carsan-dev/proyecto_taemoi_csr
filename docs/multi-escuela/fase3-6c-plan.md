@@ -3,7 +3,7 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2), la 6c-2 (§3) y la 6c-3 (§4); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
+> (§2), la 6c-2 (§3), la 6c-3 (§4) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
 encargos del profesor y la devolución enlazada (decisiones 153, 155, 183, 188 a 195).
@@ -706,7 +706,97 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
 
 ---
 
-## 5. Auto-revisión
+## 5. Pieza 6c-7: bandeja, contador y «Pedir al propietario» (detallada)
+
+Rama `feature/6c7-bandeja` desde `feature/multi-escuela` (tras la 6c-3). **Sin migración y sin cambios de backend**:
+consume las rutas de la 6c-2 y la 6c-3 tal cual. Se despliega con el atajo `desplegar`. Moiskimdo la ve (190 y D6c-4,
+aceptadas).
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Contador:** `GET /api/solicitudes/contador` al resolver los roles y en cada `NavigationEnd`, nunca con `interval`
+  ni temporizador. Lo piden las sesiones con ADMIN, MANAGER o RESPONSABLE_SEDE; la familia y la sesión solo-profesor
+  no. Un error deja el último valor y no abre el diálogo global (`ERROR_HANDLED_LOCALLY`). Vive en un servicio mínimo
+  (`SolicitudesContadorService`, con una `signal`) para no pesar en el paquete inicial; la bandeja y los diálogos usan
+  `SolicitudesService`, que solo cargan las rutas perezosas.
+- **Dónde se pinta:** acceso «Solicitudes» en `ADMIN_HEADER_QUICK_LINKS` (campo nuevo `contador: 'solicitudes'`) y en
+  la barra lateral `#admin-sidebar`, con un distintivo rojo con el número; con 0, sin distintivo.
+- **Bandeja** (`/solicitudes`, perezosa, `roleGuard` con ADMIN y MANAGER): segmentos «Pendientes (n)», «Encargos en
+  curso (n)» y «Resueltas». Al entrar se piden Pendientes y Encargos (para los dos números); Resueltas, al elegirla.
+  Los encargos solo se listan (sus acciones son de la 6c-5 y la 6c-9).
+- **Aceptar:** confirmación previa con el dato del recurso; `ACEPTADA` → aviso breve; `NO_APLICABLE` → diálogo de aviso
+  con la `respuesta` de la API. Tras aceptar, denegar o retirar se recargan los segmentos y el contador.
+- **Denegar:** diálogo con respuesta obligatoria (500 como máximo). **Retirar:** solo en las propias (`propia`) y
+  pendientes.
+- **Diálogo «Pedir al propietario»** (función reutilizable sobre SweetAlert2, como el resto de diálogos de la gestión):
+  datos del recurso, motivo obligatorio (500), la nota «Mientras tanto … sigue …», Cancelar / Enviar solicitud. Un 409
+  (ya hay una pendiente) o cualquier error muestra el `mensaje` del servidor.
+  - Tesorería: G ve «Pedir al propietario» donde P ve «Revertir» (pide por `productoAlumnoId`, sirve con y sin cobro,
+    191).
+  - Ficha: G desmarca un cargo pagado → el checkbox vuelve a marcado y se abre el diálogo (por `productoAlumnoId`).
+  - Caja de sede: G ve «Pedir anulación» donde P ve «Anular», en entregas y movimientos sueltos.
+  - Los datos que no trae la pantalla (método, quién cobró) no se muestran: la tesorería y la ficha no los tienen.
+
+### Tarea 1: servicios y contador en la cabecera
+
+**Ficheros:**
+- Crear: `F/interfaces/solicitud.ts`, `F/servicios/endpoints/solicitudes.service.ts` (`SolicitudesService`) y
+  `F/servicios/endpoints/solicitudes-contador.service.ts` (`SolicitudesContadorService`).
+- Modificar: `F/core/constants/navigation.constants.ts`, `F/componentes/vistas/layout/header/header.component.{ts,html,scss}`
+  y su spec (proveer el contador simulado).
+- Crear: `F/servicios/endpoints/solicitudes.service.spec.ts` y `F/componentes/vistas/layout/header/header.solicitudes.spec.ts`.
+
+**Interfaces:**
+- Produce: `SolicitudesContadorService.total: Signal<number>`, `refrescar(): void`, `reiniciar(): void`.
+- Produce: `SolicitudesService.listar(segmento)`, `crear(peticion)`, `retirar(id)`, `aceptar(id)`, `denegar(id,
+  respuesta)` (fechas normalizadas con `fechaApi`, importes a número, errores locales).
+
+- [ ] **Paso 1: specs que fallan.**
+  - `solicitudes.service.spec.ts`: «listar pide el segmento y normaliza fechas e importes»; «crear, retirar, aceptar
+    y denegar llaman a sus rutas»; «el contador pide una vez por refresco y nunca solo» (`jasmine.clock().tick(600000)`
+    sin peticiones nuevas); «un error del contador deja el último valor».
+  - `header.solicitudes.spec.ts`: «gestión pide el contador al entrar y en cada NavigationEnd»; «familia y sesión
+    solo-profesor no lo piden»; «con 3 pinta el distintivo en el acceso rápido y en la barra lateral; con 0, sin
+    distintivo»; «al cerrar sesión vuelve a 0».
+- [ ] **Paso 2:** `npm test -- --watch=false --browsers=ChromeHeadless`: fallan (no existen).
+- [ ] **Paso 3:** implementar y registrar los specs en `tsconfig.spec.json` y `angular.json`.
+
+### Tarea 2: bandeja
+
+**Ficheros:** crear `F/componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.component.{ts,html,scss,spec.ts}`;
+modificar `F/app.routes.ts` (ruta `solicitudes`).
+
+- [ ] **Paso 1: specs que fallan:** «al entrar pide Pendientes y Encargos y pinta los dos números»; «Resueltas se
+  pide al elegirla»; «la fila muestra tipo, quién, sede, alumno, concepto, importe y motivo»; «P ve Aceptar y
+  revertir / deshacer / anular y Denegar…; G no»; «Retirar solo en las propias»; «aceptar NO_APLICABLE muestra la
+  razón de la API»; «denegar exige respuesta»; «tras resolver se recarga y se refresca el contador»; «los encargos
+  no tienen acciones».
+- [ ] **Paso 2:** fallan. **Paso 3:** implementar. **Paso 4:** pasan.
+
+### Tarea 3: diálogo «Pedir al propietario» y puntos de entrada
+
+**Ficheros:** crear `F/componentes/generales/pedir-al-propietario/pedir-al-propietario.ts` y su spec; modificar
+tesorería, ficha (`productos-alumno`) y caja de sede (ts y html), y `src/styles.scss` (estilos del diálogo, que
+SweetAlert2 pinta fuera de los componentes). Crear `tesoreria-cobros.solicitudes.spec.ts`,
+`productos-alumno.solicitudes.spec.ts` y `caja-sede.solicitudes.spec.ts`.
+
+- [ ] **Paso 1: specs que fallan:** diálogo: «muestra los datos, la nota y exige motivo»; «envía la petición con el
+  motivo»; «un 409 muestra el mensaje del servidor». Ficha: «G desmarca un cargo pagado → se abre el diálogo y el
+  checkbox vuelve a marcado»; «P desmarca como hoy». Tesorería: «G ve Pedir al propietario y no Revertir».
+  Caja: «G pide anular una entrega y un movimiento suelto; no el automático».
+- [ ] **Paso 2:** fallan. **Paso 3:** implementar. **Paso 4:** pasan.
+
+### Tarea 4: verificación
+
+- [ ] `npm test -- --watch=false --browsers=ChromeHeadless` (0 fallos, el total sube) y `npm run build:production`
+  sin aviso de presupuesto.
+- [ ] Capturas a 1280 y 375 (cabecera con contador, cada segmento con datos de ejemplo y el diálogo) con un mock de la
+  API; `impeccable detect` sobre lo cambiado.
+- [ ] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(solicitudes): bandeja, contador y «Pedir al propietario» en la gestión (6c-7)`.
+
+---
+
+## 6. Auto-revisión
 
 - **Cobertura:**
   - §3 objetivo 5 → 6c-1.

@@ -15,6 +15,7 @@ import {
 import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
+import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 @Component({
   selector: 'app-header',
@@ -46,6 +47,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private documentScrollHandler?: (event: Event) => void;
   private resizeHandler?: () => void;
   private mobileMenuScrollRelease?: ScrollLockRelease;
+  /** La sesión tiene cabecera de gestión y pide el contador de solicitudes (ADMIN o MANAGER; D6c-4). */
+  private pideContadorSolicitudes = false;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -73,8 +76,24 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly router: Router,
     private readonly zone: NgZone,
     private readonly pageScroll: PageScrollService,
-    private readonly scrollLock: ScrollLockService
+    private readonly scrollLock: ScrollLockService,
+    private readonly solicitudesContador: SolicitudesContadorService
   ) {}
+
+  /** Lo que espera acción de la sesión en la bandeja de solicitudes (0: sin distintivo). */
+  get contadorSolicitudes(): number {
+    return this.solicitudesContador.total();
+  }
+
+  /** Nombre accesible del acceso rápido: con el número si lo hay. */
+  etiquetaAccesoRapido(item: AdminQuickNavigationItem): string {
+    const total = item.contador === 'solicitudes' ? this.contadorSolicitudes : 0;
+    return total > 0 ? `${item.label}: ${total} por atender` : item.label;
+  }
+
+  textoContador(total: number): string {
+    return total > 99 ? '99+' : String(total);
+  }
 
   ngOnInit(): void {
     this.actualizarContextoRuta(this.router.url);
@@ -92,6 +111,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isUser = false;
           this.tieneRolProfesor = false;
           this.tieneAccesoDual = false;
+          this.pideContadorSolicitudes = false;
+          this.solicitudesContador.reiniciar();
           this.isAuthChecked = true;
         }
       })
@@ -127,6 +148,10 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.lastScrollTop = 0;
           this.isHidden = false;
           this.actualizarContextoRuta(event.urlAfterRedirects || event.url);
+          // D6c-4: el contador se refresca al navegar, nunca por temporizador.
+          if (this.usuarioLogueado && this.pideContadorSolicitudes) {
+            this.solicitudesContador.refrescar();
+          }
         }
       })
     );
@@ -257,6 +282,14 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
+      // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
+      // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.
+      this.pideContadorSolicitudes = this.isAdmin;
+      if (this.pideContadorSolicitudes) {
+        this.solicitudesContador.refrescar();
+      } else {
+        this.solicitudesContador.reiniciar();
+      }
       this.isAuthChecked = true;
     });
   }
