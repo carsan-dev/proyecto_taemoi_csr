@@ -32,7 +32,11 @@ public class RegistroAccionesCaja {
 		MOVIMIENTO_CREADO(AuditoriaAccion.CREATE),
 		MOVIMIENTO_ANULADO(AuditoriaAccion.UPDATE),
 		/** Pieza 6c-3, decisión 193: cobro del profesor ya entregado, anulado con su ERROR +importe en la entrega. */
-		COBRO_ENTREGADO_DESHECHO(AuditoriaAccion.UPDATE);
+		COBRO_ENTREGADO_DESHECHO(AuditoriaAccion.UPDATE),
+		/** Pieza 6c-6 (153, 195): devolución enlazada al cobro de un encargo, registrada por la sede. */
+		DEVOLUCION_CREADA(AuditoriaAccion.CREATE),
+		/** Pieza 6c-6 (D6c-10): devolución del profesor que lleva el dinero encima (entrega con contado 0). */
+		DEVOLUCION_PROFESOR(AuditoriaAccion.CREATE);
 
 		private final AuditoriaAccion auditoria;
 

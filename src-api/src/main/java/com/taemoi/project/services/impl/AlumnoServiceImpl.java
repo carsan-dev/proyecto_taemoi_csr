@@ -1711,6 +1711,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Transactional
 	public boolean eliminarAlumno(@NonNull Long id) {
 		return alumnoRepository.findById(id).map(alumno -> {
+			// Pieza 6c-6: con un encargo suyo con la devolución pendiente, 409 antes de tocar nada (su foto incluida):
+			// borrar el cargo dejaría ese dinero sin camino (alBorrarCargos lo vuelve a comprobar).
+			List<Long> cargosDelAlumno = new ArrayList<>();
+			alumno.getProductosAlumno().forEach(pa -> cargosDelAlumno.add(pa.getId()));
+			cobros.exigirSinDevolucionPendiente(alumno.getId(), cargosDelAlumno);
 			// Primero sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos, que se
 			// borran en cascada con el alumno), tutores y salud. Es la supresión completa del alumno.
 			consentimientoRepository.borrarDelAlumno(alumno.getId());
@@ -2209,6 +2214,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * el cargo del examen, bloqueado y releído, tiene {@code pagado = true}; sin cargo, la inscripción. READ COMMITTED,
 	 * como las demás vías que bloquean el cargo: tras esperar al bloqueo se relee el pago confirmado por otro (con
 	 * REPEATABLE READ se leería la foto de antes de esperar y se borraría un examen recién pagado).
+	 *
+	 * <p>Pieza 6c-6 (D6c-15): con el examen pagado y DEVUELTO (su cobro ACTIVO tiene una DEVOLUCION ACTIVA, bloqueada tras
+	 * el cargo), la inscripción se borra y el cargo se DESVINCULA, no se borra: el cargo, su cobro y la devolución quedan
+	 * en el historial (153). Sin dinero que mover.
 	 */
 	@Override
 	@Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
@@ -2227,6 +2236,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		boolean examenPagado = productoAlumno != null ? Boolean.TRUE.equals(productoAlumno.getPagado())
 				: Boolean.TRUE.equals(alumnoConvocatoria.getPagado());
 		if (examenPagado) {
+			if (productoAlumno != null && cobros.bloquearDevolucionDeCargo(productoAlumno.getId()).isPresent()) {
+				alumnoConvocatoria.setProductoAlumno(null);
+				alumnoConvocatoriaRepository.save(alumnoConvocatoria);
+				alumnoConvocatoriaRepository.delete(alumnoConvocatoria);
+				return;
+			}
 			throw new IllegalStateException(com.taemoi.project.services.CobroService.EXAMEN_PAGADO_REVIERTE_ANTES);
 		}
 

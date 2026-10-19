@@ -38,4 +38,12 @@ public final class SolicitudRequests {
 	/** Pieza 6c-5: rechazar un encargo, {@code POST /api/solicitudes/{id}/rechazar}; motivo obligatorio (D6c-1). */
 	public record Rechazar(String motivo) {
 	}
+
+	/**
+	 * Pieza 6c-6: registrar la devolución de un encargo caído y pagado, {@code POST /api/solicitudes/{id}/devolucion}
+	 * (la sede) o {@code POST /api/caja/profesor/solicitudes/{id}/devolucion} (el profesor). Nota opcional, máximo 500
+	 * (va a la nota del movimiento, nunca al registro de acciones).
+	 */
+	public record Devolucion(String nota) {
+	}
 }

@@ -3,7 +3,7 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
+> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b), la 6c-6 (§4c) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
 > partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
@@ -96,7 +96,7 @@ anota en la PR y actualiza este mapa.
 | **6c-7** frontend | Contador en la cabecera, bandeja (tres segmentos), diálogo «Pedir al propietario» en tesorería, ficha y caja de sede (190, 191) | `F/core/constants/navigation.constants.ts:11-18`, `F/componentes/vistas/layout/header/header.component.html:232`, ruta nueva en `F/app.routes.ts`, servicio `F/servicios/endpoints/solicitudes.service.ts`, `tesoreria-cobros.component.ts:280`, `productos-alumno.component.html:97`, `caja-sede` | Componente de bandeja y diálogo reutilizable (D6c-8) | Rutas de 6c-2 y 6c-3 | 6c-3 | Medio (visible para Moiskimdo) | Specs registrados en las dos listas: el contador se pide al entrar y al navegar, sin `interval`; G desmarca un cargo pagado → se abre el diálogo y el checkbox vuelve a marcado; con una pendiente no deja pedir otra. Build sin aviso y capturas |
 | **6c-5** backend | Encargos: productos encargables (192), pedir con cargo y sede (D6c-9), transiciones, caída del encargo, guardas en cancelar y borrar el cargo, rutas del profesor | `SolicitudService` (o `EncargoService`), `ProductoAlumnoServiceImpl` (cargo por el código de `asignarProductoAAlumno:186` sin el `@PreAuthorize` de gestión), `cancelar:852`, `borrar:816`, `J/controllers/CajaController.java` (`/api/caja/profesor/…`) | `List<CajaDTOs.ProductoVendible> productosEncargables()`; `pedirEncargo(Long alumnoId, PedirEncargo{productoId, nota, sedeId?})`; `marcarEncargado`, `marcarRecibido`, `rechazar(id, motivo)`, `retirarEncargo`, `marcarEntregado`; constante `ENCARGO_EN_CURSO` = «Tiene un encargo en curso: recházalo desde Solicitudes»; `devolucion_pendiente` a true al caer un encargo pagado | 6c-2, `@acceso.alumnoDeMisGrupos:209` | 6c-2 | Alto (crea y cancela cargos); opus | El cargo creado tiene `vendido_por_usuario_id` NULL y aparece en «Por cobrar»; si cae sin cobrar, el cargo se cancela; si cae pagado, `devolucion_pendiente` a true; un cargo en curso da 409 al cancelar y al borrar; la sede se exige solo con varias; matriz con lista blanca |
 | **6c-4** backend | Tipo 2: `cobros-entregados-recientes` (30 días, máximo 50, D6c-14) y `pedir-deshacer` (crear la solicitud con `motivo_deshacer`). La aceptación con la 193 la hace la 6c-3 (§4) | `CajaController`, `CajaService`, `SolicitudService` (crear el tipo 2) | — | 6c-2, 6c-3 (`aceptar` y `deshacerEntregadoPorSolicitud`) | 6c-3 | Alto (caja); opus | Pedir valida lo que la 6c-3 revalida al aceptar (cobro ACTIVO, origen PROFESOR, suyo, en una entrega ACTIVA, una pendiente por cobro); un IT de punta a punta: pedir por la ruta del profesor y aceptar deja el saldo igual. **Pendiente de la 6c-3:** tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y `CajaDTOs.EntregaCaja` no enlaza el movimiento ERROR, así que «declarado» no cuadra a la vista (el saldo sí): exponer en el DTO de la entrega los ids e importe de sus ERROR |
-| **6c-6** backend | Devolución enlazada (153): `crearMovimiento` con `cobroId`; «Registrar devolución» por la sede y por el profesor (195, D6c-10); el saldo suma solo EFECTIVO (D6c-13); «devuelto»; invariantes «no se anula» y «devolución pendiente → 409»; tesorería `devuelto` e `importeDevuelto` (D6c-12); desvincular el examen devuelto y el aviso completo de la 186 (D6c-15) | `CajaService.crearMovimiento:470`, `registrarEntrega:310`, `CobroService.anular:198` y `alBorrarCargos:254`, consultas de saldo de `CobroRepository`, tesorería, `AlumnoServiceImpl.eliminarAlumnoDeConvocatoria` | `CobroService.exigirSinDevolucion(Long cobroId)`; `registrarDevolucionEncargo(Long solicitudId, String nota)` (sede) y `registrarDevolucionProfesor(Long solicitudId, String nota)`; DTO de tesorería `devuelto` e `importeDevuelto`; `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes» | 6c-2, 6c-5 | 6c-2, 6c-5 | Alto (caja y tesorería); opus | La devolución del profesor deja el saldo a 0 y el cobro fuera de «Llevas encima»; un cobro con devolución da 409 por cada vía (A1, A2, A4, tipo 2) y `alBorrarCargos` lo salta; los totales de tesorería de Moiskimdo son idénticos; `devolverYEntregarALaVez_saldoCuadra`. **Notas de la 6c-5:** (F2) el cargo de un encargo y su cobro van a la sede principal del alumno y la solicitud a la sede D6c-9: la devolución «de la sede» mira `cobro.sede_id`, no `solicitud.sede_id`; (F3) con `devolucion_pendiente`, A1 y A2 aún revierten el cobro: la 6c-6 debe bloquearlos (409) y los encargos no salen a producción sin ella |
+| **6c-6** backend | Devolución enlazada (153): `crearMovimiento` con `cobroId`; «Registrar devolución» por la sede y por el profesor (195, D6c-10); el saldo suma solo EFECTIVO (D6c-13); «devuelto»; invariantes «no se anula» y «devolución pendiente → 409»; tesorería `devuelto` e `importeDevuelto` (D6c-12); desvincular el examen devuelto y el aviso completo de la 186 (D6c-15) | `CajaService.crearMovimiento:470`, `registrarEntrega:310`, `CobroService.anular:198` y `alBorrarCargos:254`, consultas de saldo de `CobroRepository`, tesorería, `AlumnoServiceImpl.eliminarAlumnoDeConvocatoria` | `CobroService.razonDeDevolucion(Long cobroId, Long cargoId)` (de la 6c-3; ver §4c); `registrarDevolucionEncargo(Long solicitudId, String nota)` (sede) y `registrarDevolucionProfesor(Long solicitudId, String nota)`; DTO de tesorería `devuelto` e `importeDevuelto`; `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes» | 6c-2, 6c-5 | 6c-2, 6c-5 | Alto (caja y tesorería); opus | La devolución del profesor deja el saldo a 0 y el cobro fuera de «Llevas encima»; un cobro con devolución da 409 por cada vía (A1, A2, A4, tipo 2) y `alBorrarCargos` lo salta; los totales de tesorería de Moiskimdo son idénticos; `devolverYEntregarALaVez_saldoCuadra`. **Notas de la 6c-5:** (F2) el cargo de un encargo y su cobro van a la sede principal del alumno y la solicitud a la sede D6c-9: la devolución «de la sede» mira `cobro.sede_id`, no `solicitud.sede_id`; (F3) con `devolucion_pendiente`, A1 y A2 aún revierten el cobro: la 6c-6 debe bloquearlos (409) y los encargos no salen a producción sin ella |
 | **6c-8** frontend | Mi caja: pestaña «Pedidos» (encargar, con sede si hace falta; retirar; marcar entregado; solicitudes de deshacer) y «Entregados recientes» en «Encima» | `F/componentes/endpoints/mi-caja/*` (patrón de pestañas y `.contador`, `mi-caja.component.html:27-41`) | — | Rutas de 6c-4 y 6c-5 | 6c-4, 6c-5 | Medio | Specs registrados, capturas en móvil, build sin aviso. Ojo: tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y su DTO no enlaza el ERROR, así que «declarado» no cuadra a la vista (el saldo sí): pintar los ERROR de la entrega que expone la 6c-4 |
 | **6c-9** frontend | «Registrar devolución» en «Pedidos» y en la bandeja; contador de devoluciones pendientes; «Devuelto» en tesorería, ficha y Mi caja; aviso completo de la 186 | Bandeja (6c-7), Mi caja (6c-8), tesorería, ficha | — | Rutas de 6c-6 | 6c-6, 6c-7, 6c-8 | Bajo | Specs registrados, capturas, build sin aviso |
 
@@ -870,6 +870,150 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
   de Moiskimdo sin tocar.
 - [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
   `feat(solicitudes): encargos del profesor con su cargo y su recorrido (6c-5)`.
+
+---
+
+## 4c. Pieza 6c-6: devoluciones (detallada)
+
+Rama `feature/6c-noche` (tras la 6c-5). **Sin migración** (V31_8 ya tiene `movimiento_caja.cobro_id`,
+`producto_alumno_id`, `metodo` y la clave única `cobro_devuelto_activo_id`): se despliega con el atajo `desplegar`. Sin
+pantallas («Registrar devolución», «Devuelto» y el aviso completo de la 186 en el frontend son de la 6c-9). Moiskimdo
+solo ve el texto nuevo del aviso de la 186 (D6c-15); sus totales de tesorería y su saldo de caja no cambian (todas sus
+filas de `movimiento_caja` son EFECTIVO y no tiene devoluciones enlazadas).
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Devolución enlazada** (153, §6.4): un `movimiento_caja` DEVOLUCION ACTIVO por −`cobro.importe`, con `cobro_id`,
+  `producto_alumno_id` (el del cobro), el alumno y el `metodo` del cobro; el cobro NO se anula ni se revierte. El cargo
+  sigue `pagado` y se ve como «devuelto» (su cobro ACTIVO tiene una DEVOLUCION ACTIVA). Una sola activa por cobro
+  (D6c-11): se comprueba con el cobro bloqueado y la clave única es la red (409, no 500).
+- **Quién la registra** (195, D6c-10), sobre un encargo RETIRADA o RECHAZADO con `devolucion_pendiente`:
+  - `EncargoService.registrarDevolucionEncargo(Long solicitudId, String nota)` (la sede):
+    `POST /api/solicitudes/{id}/devolucion {nota?}`, `@acceso.solicitudEnSede(#id)` (P y G PERMITE, R ALCANCE). El
+    servicio exige que el dinero esté en la sede (cobro de origen distinto de PROFESOR, o ya entregado; si no, 409
+    «El profesor aún lleva el dinero encima: la devolución la registra él desde Mi caja.») y, para R, que la sede del
+    **cobro** sea suya (nota F2: `cobro.sede_id`, no `solicitud.sede_id`; 403). La devolución sale en la caja de la
+    sede del cobro.
+  - `EncargoService.registrarDevolucionProfesor(Long solicitudId, String nota)` (el profesor):
+    `POST /api/caja/profesor/solicitudes/{id}/devolucion {nota?}`, `hasAuthority('ROLE_PROFESOR')` (bajo su lista
+    blanca); solicitante = él (403). Exige que el cobro sea suyo (origen PROFESOR, cobrado por él), ACTIVO, EFECTIVO y
+    sin entregar (si no, 409 «No llevas encima el dinero de este encargo: la devolución la registra la sede.»). D6c-10:
+    una entrega de ese único cobro con quien entrega = quien recibe = el profesor, declarado = importe, contado = 0, y
+    su movimiento automático es la DEVOLUCION (con `entrega_caja_id`) en lugar del FALTANTE. Saldo de la sede igual
+    (+importe −importe) y el cobro sale de «Llevas encima».
+  - Las dos, en una transacción: `devolucion_pendiente = false` y `movimiento_devolucion_id` = la devolución. Sin
+    devolución pendiente, 409 «El encargo no tiene una devolución pendiente.»; no es un encargo, 400; no existe en la
+    escuela, 404. Nota opcional (hasta 500, 400 si más); sin nota, «Devolución del encargo (solicitud #n)».
+- **Orden de bloqueos:** solicitud → cargo → cobro (el de la 6c-3 y la 6c-5). Registrar una entrega bloquea solo
+  cobros: devolver y entregar a la vez se ordenan por el cobro y el saldo cuadra.
+- **`crearMovimiento` con `cobroId` opcional** (§6.4, la API de la caja de sede): solo DEVOLUCION (400), cobro de la
+  escuela (404), ACTIVO (409), de esa sede (400), dinero en la sede (409, como arriba), sin otra devolución activa
+  (409), sin un encargo en curso sobre su cargo (409 `ENCARGO_EN_CURSO`: su devolución se registra desde el encargo
+  cuando cae) y sin un encargo con la devolución pendiente (409 «El cobro es de un encargo con la devolución
+  pendiente: regístrala desde el encargo.»). Importe y alumno opcionales: si llegan, los del cobro (400 si no). Bloquea
+  el cargo y después el cobro (orden cargo → cobro: un encargo que cae a la vez se ordena por el cargo). Registro
+  `MOVIMIENTO_CREADO … cobro=#c cargo=#g`.
+- **Caer un encargo ya devuelto** (`EncargoService.caer`, con el cargo bloqueado): si su cobro ya tiene una DEVOLUCION
+  ACTIVA (un dato anterior), no queda `devolucion_pendiente`: el encargo enlaza esa devolución en
+  `movimiento_devolucion_id` y no se queda atascado en la bandeja ni en el contador.
+- **Saldo** (D6c-13): `Σ movimientos ACTIVOS` pasa a `Σ movimientos ACTIVOS con metodo EFECTIVO`. Los cobros ya solo
+  sumaban EFECTIVO. Hoy todas las filas son EFECTIVO: el saldo no cambia.
+- **«No se anula»** (§6.4) y **«devolución pendiente → 409»** (§6.3, nota F3): `CobroService.anular` (A1 PUT del
+  cargo, A2 convocatoria, A4 deshacer del profesor y el borrado de un cargo) bloquea el cobro y, si tiene una
+  DEVOLUCION ACTIVA o su cargo un encargo con `devolucion_pendiente`, 409 con la razón de `razonDeDevolucion`
+  («El cobro tiene una devolución registrada.» / «El encargo tiene una devolución pendiente: regístrala antes.») sin
+  cambiar nada. Los tipos 1 y 2 ya lo revalidan al aceptar (NO_APLICABLE, 6c-3). La comprobación por id la da
+  `razonDeDevolucion(cobroId, cargoId)` (de la 6c-3), que la 6c-4 reutiliza al pedir el tipo 2. `alBorrarCargos` (borrar un alumno o una convocatoria) salta los cobros con devolución
+  activa (siguen ACTIVOS, como los entregados) y, si algún cargo tiene la devolución pendiente, 409 (no hay dos caminos
+  para ese dinero); borrar un alumno lo comprueba antes de tocar nada (su foto incluida).
+- **Anular la devolución** (A7 anula la entrega del profesor con su DEVOLUCION; A9 o el tipo 3 anulan una devolución de
+  la sede): el encargo que la tenía como `movimiento_devolucion_id` vuelve a `devolucion_pendiente = true` (y
+  `movimiento_devolucion_id` NULL), en la misma transacción. Bloquea la solicitud después de la entrega o del
+  movimiento: su cruce con registrar la devolución del mismo encargo puede acabar en un interbloqueo que InnoDB resuelve
+  (409, sin efecto en el dinero), como el borrado documentado en la 6c-3.
+- **Entrega** (tipo 2, decisión 193; D6c-10): `CajaDTOs.EntregaCaja.movimientoId` sigue siendo solo el SOBRANTE o
+  FALTANTE; la entrega gana `movimientosDeCobro`: sus ERROR (193) y DEVOLUCION (D6c-10) con id, tipo, importe, cobro y
+  estado, para que «declarado» cuadre a la vista.
+- **Tesorería** (D6c-12): las filas de movimientos ganan `devuelto` y el resumen `importeDevuelto` (Σ de lo devuelto de
+  los cargos del filtro; una consulta de agregado nueva). Los totales de siempre no cambian.
+- **Bandeja y contador** (195): el DTO de la solicitud gana `movimientoDevolucionId` y `devolucionEnSede` (con la
+  devolución pendiente: `true` si la registra la sede, `false` si el profesor aún lleva el dinero; si no, `null`). El
+  contador suma, para P, G y R, los encargos visibles con la devolución pendiente que le tocan a la sede.
+  **Limitación conocida (para la 6c-9):** el contador y la bandeja del responsable miran la sede de la solicitud, y la
+  devolución va por la sede del cobro (F2). Si son distintas, R puede ver una devolución pendiente y recibir 403 al
+  registrarla; la registran P o G.
+- **D6c-15:** quitar de la convocatoria a un alumno con el examen pagado y **devuelto** (cobro ACTIVO con DEVOLUCION
+  ACTIVA, bloqueada) desvincula el cargo (no lo borra ni anula el cobro) y borra la inscripción, 204. El resto, como
+  la 6c-1. `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes».
+- **Registro** (solo ids, nunca la nota): `CAJA DEVOLUCION_CREADA sede=#S movimiento=#m cobro=#c cargo=#g
+  solicitud=#n`, `CAJA DEVOLUCION_PROFESOR sede=#S entrega=#e movimiento=#m cobro=#c cargo=#g solicitud=#n` y
+  `SOLICITUDES ENCARGO_DEVOLUCION_REGISTRADA … devolucion=#m`.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/DevolucionesIntegrationTest.java` (escena de `EncargosIntegrationTest`: escuela con sedes A y B,
+  propietario, gestor, responsable de A, prof1 en gA, gB y gSin; otra escuela para el aislamiento).
+- Modificar: `T/integracion/BloqueosCargoCobradoIntegrationTest.java` (el texto nuevo de la 186), la matriz (2 líneas) y
+  `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_CAJA_6B2`: la ruta del profesor con su test).
+
+- [x] **Paso 1: escribir los tests que fallan** (en cada uno, el `saldoCaja` de las sedes antes y después):
+  - `devolucionDelProfesor_saldoIgualYFueraDeLlevasEncima`: prof1 cobra el encargo y lo retira; la devolución por su
+    ruta deja la entrega (contado 0, autoentrega) con su DEVOLUCION −25,00 enlazada, el cobro ACTIVO y fuera de «Llevas
+    encima», `devolucion_pendiente` false, `movimiento_devolucion_id`; saldo igual. Otra vez, 409. Registros solo con ids.
+  - `devolucionDelProfesor_soloSiLlevaElDinero`: otro profesor, 403; gestión, 403; entregado a la sede, 409; cobrado
+    en tesorería, 409; sin devolución pendiente, 409.
+  - `devolucionDeLaSede_trasEntregar_saldoBajaYCargoDevuelto`: entregado y caído; la sede registra (P y G): DEVOLUCION
+    −25,00 en la caja del cobro, saldo − 25,00, tesorería `devuelto` e `importeDevuelto`; el profesor, 409.
+  - `devolucionDeLaSede_miraLaSedeDelCobro` (F2): solicitud en A y cobro en B (alumno con la sede principal B); R de B
+    recibe 403 en la ruta (la solicitud no es de su sede) y R de A, 403 en el servicio (el cobro no es de su sede); la
+    gestión, 200 y la devolución sale en la caja de B.
+  - `conDevolucionOPendiente_noSeAnulaPorNingunaVia_409`: A1 (PUT `pagado:false`) y A4 (deshacer del profesor), con la
+    devolución pendiente y con la devolución hecha (del profesor y de la sede); el cobro sigue ACTIVO. A2 va en el test
+    de la D6c-15; los tipos 1 y 2 ya los cubre `aceptarConDevolucion_NO_APLICABLE` de la 6c-3.
+  - `quitarDeConvocatoriaExamenDevuelto_desvincula_yAvisoCompleto` (D6c-15): con el examen pagado y sin devolución, 409
+    con el texto nuevo; con la devolución enlazada (API de movimientos), 204, la inscripción fuera, el cargo y el cobro
+    siguen; A2 sobre el examen devuelto, 409.
+  - `borrarAlumno_conDevolucionPendiente409_conDevolucionHechaSaltaElCobro`.
+  - `crearMovimientoConCobro_reglas`: tipo, sede, importe, alumno, otra devolución, profesor con el dinero encima y
+    encargo con la devolución pendiente.
+  - `devolucionEnlazadaSobreEncargoEnCurso_409` (ronda 1 de la revisión): cobro de un encargo PEDIDO, 409
+    `ENCARGO_EN_CURSO` y ninguna devolución; al caer, se registra desde el encargo.
+  - `caerConDevolucionYaRegistrada_noQuedaPendiente` (ronda 1): con una DEVOLUCION ACTIVA previa, rechazar deja
+    `devolucion_pendiente` false, enlaza la devolución, no suma al contador y pasa a resueltas.
+  - `saldoSumaSoloEfectivo` (D6c-13): una devolución enlazada de un cobro por TRANSFERENCIA no mueve el saldo.
+  - `anularLaEntregaDelProfesor_vuelveLaDevolucionPendiente`: saldo y estado como antes de devolver; y anular la
+    devolución de la sede (A9), igual.
+  - `entregaExponeSusMovimientosDeCobro` (193 y D6c-10): `movimientoId` NULL y `movimientosDeCobro` con el ERROR o la
+    DEVOLUCION.
+  - `devolverYEntregarALaVez_saldoCuadra` (punto de revisión 3, tres vueltas): el profesor devuelve y el gestor recibe
+    la entrega del mismo cobro a la vez; uno gana; nunca dos entregas con el cobro ni dos devoluciones; saldo = antes +
+    (importe si la entrega del gestor ganó).
+  - `bandejaYContador_devolucionPendienteDeLaSede`: `devolucionEnSede` y el contador de P y G suben solo cuando el dinero
+    está en la sede.
+  - `aislamientoDeEscuela`: P de otra escuela, 404.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='DevolucionesIntegrationTest,BloqueosCargoCobradoIntegrationTest,MatrizPermisosTest'
+  -DexcludedGroups=migracion`: error de compilación o 404/405 en las rutas nuevas.
+
+### Tarea 2: implementar
+
+**Ficheros:** `J/services/EncargoService.java`, `CajaService.java`, `CobroService.java`, `SolicitudService.java`,
+`RegistroAccionesCaja.java`, `impl/AlumnoServiceImpl.java`, `impl/TesoreriaServiceImpl.java`; `J/controllers/CajaController.java`
+y `SolicitudController.java`; `J/dtos/request/CajaRequests.java` y `SolicitudRequests.java`;
+`J/dtos/response/CajaDTOs.java`, `SolicitudDTOs.java`, `TesoreriaMovimientoDTO.java` y `TesoreriaResumenDTO.java`;
+`J/repositories/MovimientoCajaRepository.java` y `ProductoAlumnoRepository.java`.
+
+- [x] **Paso 1: implementar** lo de los criterios.
+- [x] **Paso 2: comprobar que pasan.** `mvn test -Dtest='DevolucionesIntegrationTest,EncargosIntegrationTest,
+  AceptarSolicitudesIntegrationTest,BloqueosCargoCobradoIntegrationTest,CajaSedeIntegrationTest,MatrizPermisosTest,
+  CobroServiceTest' -DexcludedGroups=migracion`. Se espera PASS.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] **Paso 1:** nota en `matriz-endpoints.md` (2 líneas nuevas; ninguna casilla existente cambia).
+- [x] **Paso 2:** `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion`: BUILD SUCCESS, con los dorados
+  de Moiskimdo sin tocar.
+- [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(caja): devoluciones enlazadas al cargo (6c-6)`.
 
 ---
 

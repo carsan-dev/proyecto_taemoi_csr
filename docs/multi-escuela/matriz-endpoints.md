@@ -167,6 +167,16 @@ regla de URL. Las del profesor van bajo `/api/caja/profesor/**` (su lista blanca
   `ALCANCE` (`@acceso.solicitudEnSede`, la sede del encargo; el servicio lo vuelve a exigir); FAMILIA, PROFESOR,
   SOLO_PLATAFORMA y ANONIMO, `DENIEGA`.
 
+Pieza 6c-6 (devoluciones enlazadas, fase3-6c-plan.md §4c): 2 líneas nuevas; ninguna casilla existente cambia ni la
+regla de URL. El `cobroId` opcional de `POST /api/caja/sedes/{sedeId}/movimientos` no cambia quién puede llamar.
+- `POST /api/solicitudes/{id}/devolucion`: PROPIETARIO y GESTOR `PERMITE`; RESPONSABLE_SEDE `ALCANCE`
+  (`@acceso.solicitudEnSede`, la sede del encargo; el servicio exige además que el cobro sea de sus sedes, porque la
+  devolución sale en la caja del cobro: 403); FAMILIA, PROFESOR (fuera de su lista blanca), SOLO_PLATAFORMA y
+  ANONIMO, `DENIEGA`.
+- `POST /api/caja/profesor/solicitudes/{id}/devolucion`: PROFESOR `PERMITE` declarado en `PROFESOR_CAJA_6B2`
+  (`hasAuthority('ROLE_PROFESOR')`; el servicio exige, con la fila bloqueada, que lo pidió él (403) y que el cobro es
+  suyo y sin entregar (409)); el resto de roles, `DENIEGA`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

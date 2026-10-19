@@ -511,13 +511,16 @@ public class SolicitudService {
 	/**
 	 * Lo que espera acción de la sesión (§5.1, D6c-4), con un {@code COUNT} por índice (dos para el propietario): P,
 	 * tipos 1 a 3 PENDIENTES + encargos PEDIDO o ENCARGADO; G, los encargos; R, los encargos de sus sedes. Lo que uno
-	 * pidió no cuenta. Los encargos con devolución pendiente que le tocan a la sede los añade la 6c-6.
+	 * pidió no cuenta. Pieza 6c-6 (195): más los encargos visibles con la devolución pendiente que le tocan a la sede
+	 * (el dinero ya está en su caja); los que aún lleva el profesor le tocan a él (Mi caja).
 	 */
 	public long contador() {
 		usuarioDeLaSesion();
 		Optional<AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		long total = solicitudes
 				.count(encargo().and(encargosVisibles(restriccion)).and(enEstados(ENCARGO_ESPERA_ACCION)));
+		total += solicitudes.count(encargo().and(encargosVisibles(restriccion)).and(devolucionPendiente(true))
+				.and(devolucionEnLaSede()));
 		if (tieneAutoridad(Roles.ROLE_ADMIN)) {
 			total += solicitudes.count(noEncargo().and(enEstados(Set.of(EstadoSolicitud.PENDIENTE))));
 		}
@@ -546,6 +549,22 @@ public class SolicitudService {
 
 	private static Specification<Solicitud> devolucionPendiente(boolean valor) {
 		return (root, query, cb) -> cb.equal(root.get("devolucionPendiente"), valor);
+	}
+
+	/**
+	 * Pieza 6c-6: el cobro ACTIVO del cargo del encargo ya está en la caja de la sede (origen distinto de PROFESOR, o
+	 * entregado): la devolución la registra la sede (195).
+	 */
+	private static Specification<Solicitud> devolucionEnLaSede() {
+		return (root, query, cb) -> {
+			jakarta.persistence.criteria.Subquery<Long> cobro = query.subquery(Long.class);
+			Root<Cobro> c = cobro.from(Cobro.class);
+			cobro.select(c.get("id")).where(cb.equal(c.get("productoAlumnoId"), root.get("productoAlumnoId")),
+					cb.equal(c.get("estado"), EstadoCobro.ACTIVO),
+					cb.or(cb.notEqual(c.get("origen"), com.taemoi.project.entities.OrigenCobro.PROFESOR),
+							cb.isNotNull(c.get("entregaCajaId"))));
+			return cb.exists(cobro);
+		};
 	}
 
 	/** Gestión (alcance total): todos los encargos; responsable: los de sus sedes (sin sede, ninguno). */
@@ -589,6 +608,13 @@ public class SolicitudService {
 				lista.stream().map(Solicitud::getSedeId).toList())) {
 			sedes.put((Long) f[0], (String) f[1]);
 		}
+		// Pieza 6c-6: con la devolución pendiente, si el dinero ya está en la sede (una consulta para la lista).
+		Map<Long, Boolean> enSede = new HashMap<>();
+		for (Object[] f : filas("SELECT c.productoAlumnoId, c.origen, c.entregaCajaId FROM Cobro c "
+				+ "WHERE c.productoAlumnoId IN :ids AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO",
+				lista.stream().filter(Solicitud::isDevolucionPendiente).map(Solicitud::getProductoAlumnoId).toList())) {
+			enSede.put((Long) f[0], f[1] != com.taemoi.project.entities.OrigenCobro.PROFESOR || f[2] != null);
+		}
 		List<SolicitudDTOs.Solicitud> dtos = new ArrayList<>(lista.size());
 		for (Solicitud s : lista) {
 			String[] alumno = alumnos.getOrDefault(s.getAlumnoId(), new String[2]);
@@ -600,7 +626,8 @@ public class SolicitudService {
 					s.getAlumnoId(), alumno[0], alumno[1], s.getConcepto(),
 					s.getImporte() == null ? null : dosDecimales(s.getImporte()), s.getMotivoDeshacer(),
 					s.getEncargadoEn(), s.getRecibidoEn(), s.getEntregadoEn(), s.isDevolucionPendiente(),
-					usuario != null && usuario.equals(s.getSolicitadoPorUsuarioId())));
+					usuario != null && usuario.equals(s.getSolicitadoPorUsuarioId()), s.getMovimientoDevolucionId(),
+					s.isDevolucionPendiente() ? enSede.get(s.getProductoAlumnoId()) : null));
 		}
 		return dtos;
 	}

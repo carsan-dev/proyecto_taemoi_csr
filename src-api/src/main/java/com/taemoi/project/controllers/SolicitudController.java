@@ -109,4 +109,18 @@ public class SolicitudController {
 			@RequestBody(required = false) SolicitudRequests.Rechazar peticion) {
 		return ResponseEntity.ok(encargos.rechazar(id, peticion == null ? null : peticion.motivo()));
 	}
+
+	// ------------------------------------------------------------------ devoluciones (6c-6)
+
+	/**
+	 * Decisión 195: la sede registra la devolución de un encargo caído con el dinero ya en su caja. Propietario y
+	 * gestor; el responsable, si la solicitud es de sus sedes ({@code @acceso.solicitudEnSede}) y el cobro también (lo
+	 * exige el servicio: la devolución sale en la caja del cobro).
+	 */
+	@PostMapping("/{id}/devolucion")
+	@PreAuthorize("@acceso.solicitudEnSede(#id)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> registrarDevolucion(@PathVariable Long id,
+			@RequestBody(required = false) SolicitudRequests.Devolucion peticion) {
+		return ResponseEntity.ok(encargos.registrarDevolucionEncargo(id, peticion == null ? null : peticion.nota()));
+	}
 }

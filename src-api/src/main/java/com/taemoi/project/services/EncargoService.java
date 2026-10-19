@@ -42,7 +42,11 @@ import jakarta.persistence.PersistenceContext;
  * de la solicitud). <b>Retirar</b> (en PEDIDO) y <b>entregado</b> (en RECIBIDO): solo el profesor que lo pidió.</li>
  * <li><b>Cae el encargo</b> (retirado o rechazado): con el cargo pendiente, se cancela
  * ({@link ProductoAlumnoService#caerCargoDeEncargo}); con el cargo pagado, no se toca y queda
- * {@code devolucion_pendiente} (la devolución es de la 6c-6).</li>
+ * {@code devolucion_pendiente}.</li>
+ * <li><b>Registrar la devolución</b> (pieza 6c-6, 195, D6c-10) de un encargo caído y pagado: quien tiene el dinero.
+ * La sede ({@link #registrarDevolucionEncargo}) si ya está en su caja; el profesor que lo pidió
+ * ({@link #registrarDevolucionProfesor}) si aún lo lleva encima. Deja {@code devolucion_pendiente = false} y
+ * {@code movimiento_devolucion_id}.</li>
  * </ul>
  *
  * <p>Orden de bloqueos (el de la 6c-3): cada transición bloquea y relee la fila de la solicitud
@@ -64,6 +68,12 @@ public class EncargoService {
 	static final String SEDE_OBLIGATORIA = "El alumno está en grupos suyos de varias sedes: indica la sede del encargo.";
 	static final String SEDE_NO_VALIDA = "La sede no es la de un grupo suyo en el que esté el alumno.";
 	static final String NO_SE_RETIRA_AQUI = "Esta solicitud no se retira desde Mi caja.";
+	/** Pieza 6c-6: 409 al registrar la devolución de un encargo que no la tiene pendiente (o ya registrada). */
+	public static final String SIN_DEVOLUCION_PENDIENTE = "El encargo no tiene una devolución pendiente.";
+	/** Pieza 6c-6 (D6c-10): 409 si el profesor ya no lleva encima el dinero del encargo (o nunca lo cobró él). */
+	public static final String NO_LLEVAS_EL_DINERO = "No llevas encima el dinero de este encargo: la devolución la "
+			+ "registra la sede.";
+	static final String SIN_COBRO_QUE_DEVOLVER = "El cargo del encargo no tiene un cobro activo que devolver.";
 	/** Las cerradas que devuelve «Mis solicitudes», las más recientes (las abiertas, todas). */
 	static final int MAX_CERRADAS = 200;
 
@@ -83,6 +93,8 @@ public class EncargoService {
 	private final RegistroAccionesSolicitudes registro;
 	private final GestionPorSede gestionPorSede;
 	private final AlcanceActual alcanceActual;
+	private final CajaService caja;
+	private final CobroService cobros;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -90,13 +102,16 @@ public class EncargoService {
 
 	public EncargoService(SolicitudRepository solicitudes, SolicitudService solicitudService,
 			ProductoAlumnoService productosAlumno, RegistroAccionesSolicitudes registro, GestionPorSede gestionPorSede,
-			AlcanceActual alcanceActual, PlatformTransactionManager transacciones) {
+			AlcanceActual alcanceActual, CajaService caja, CobroService cobros,
+			PlatformTransactionManager transacciones) {
 		this.solicitudes = solicitudes;
 		this.solicitudService = solicitudService;
 		this.productosAlumno = productosAlumno;
 		this.registro = registro;
 		this.gestionPorSede = gestionPorSede;
 		this.alcanceActual = alcanceActual;
+		this.caja = caja;
+		this.cobros = cobros;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -308,16 +323,111 @@ public class EncargoService {
 		});
 	}
 
+	// ------------------------------------------------------------------ devolución (6c-6)
+
+	/**
+	 * Pieza 6c-6 (195): la sede registra la devolución de un encargo caído con el dinero ya en su caja (cobro de origen
+	 * distinto de PROFESOR, o entregado). Propietario y gestor; el responsable, si la solicitud
+	 * ({@code @acceso.solicitudEnSede}) y el COBRO son de sus sedes (nota F2: la devolución sale en la caja del cobro;
+	 * 403). Bloqueos: solicitud → cargo → cobro. No existe en la escuela, 404; no es un encargo, 400; sin devolución
+	 * pendiente, 409; el profesor aún lleva el dinero, 409 ({@link CajaService#DINERO_LO_LLEVA_EL_PROFESOR}).
+	 */
+	public SolicitudDTOs.Solicitud registrarDevolucionEncargo(Long solicitudId, String nota) {
+		String limpia = texto(nota, "La nota");
+		Long usuario = usuarioDeLaSesion();
+		String endpoint = "/api/solicitudes/" + solicitudId + "/devolucion";
+		return CajaService.conClaveDeDevolucion(() -> enTransaccion(() -> {
+			Solicitud solicitud = bloquearConDevolucionPendiente(solicitudId, null);
+			com.taemoi.project.entities.Cobro cobro = bloquearCobroDelEncargo(solicitud);
+			gestionPorSede.exigirSedePropia(cobro.getSedeId());
+			com.taemoi.project.entities.MovimientoCaja devolucion = caja.devolverEnSede(cobro, usuario,
+					notaDeDevolucion(limpia, solicitudId), solicitudId, endpoint);
+			return cerrarDevolucion(solicitud, devolucion, usuario, endpoint);
+		}));
+	}
+
+	/**
+	 * Pieza 6c-6 (195, D6c-10): el profesor que pidió el encargo caído registra su devolución si aún lleva el dinero
+	 * encima: el cobro es suyo (origen PROFESOR, cobrado por él), ACTIVO, EFECTIVO y sin entregar (si no, 409
+	 * {@link #NO_LLEVAS_EL_DINERO}). Ver {@link CajaService#devolverDelProfesor}: saldo de la sede igual y el cobro fuera
+	 * de «Llevas encima». Otro profesor, 403; no existe en la escuela, 404; no es un encargo, 400; sin devolución
+	 * pendiente, 409. Bloqueos: solicitud → cargo → cobro (registrar una entrega bloquea solo cobros).
+	 */
+	public SolicitudDTOs.Solicitud registrarDevolucionProfesor(Long solicitudId, String nota) {
+		String limpia = texto(nota, "La nota");
+		Long usuario = usuarioDeLaSesion();
+		String endpoint = "/api/caja/profesor/solicitudes/" + solicitudId + "/devolucion";
+		return CajaService.conClaveDeDevolucion(() -> enTransaccion(() -> {
+			Solicitud solicitud = bloquearConDevolucionPendiente(solicitudId, usuario);
+			com.taemoi.project.entities.Cobro cobro = bloquearCobroDelEncargo(solicitud);
+			if (cobro.getOrigen() != com.taemoi.project.entities.OrigenCobro.PROFESOR
+					|| !usuario.equals(cobro.getCobradoPorUsuarioId()) || cobro.getEntregaCajaId() != null
+					|| cobro.getMetodo() != com.taemoi.project.entities.MetodoPago.EFECTIVO) {
+				throw new IllegalStateException(NO_LLEVAS_EL_DINERO);
+			}
+			com.taemoi.project.entities.MovimientoCaja devolucion = caja.devolverDelProfesor(cobro, usuario,
+					notaDeDevolucion(limpia, solicitudId), solicitudId, endpoint);
+			return cerrarDevolucion(solicitud, devolucion, usuario, endpoint);
+		}));
+	}
+
+	/**
+	 * Bloquea el encargo y exige que tenga la devolución pendiente (404, 400 si no es un encargo, 409). Con
+	 * {@code solicitante}, solo quien lo pidió (403, antes de mirar el estado).
+	 */
+	private Solicitud bloquearConDevolucionPendiente(Long id, Long solicitante) {
+		Solicitud solicitud = solicitudService.bloquear(id);
+		if (solicitante != null) {
+			exigirSolicitante(solicitud, solicitante);
+		}
+		exigirEncargo(solicitud);
+		if (!solicitud.isDevolucionPendiente()) {
+			throw new IllegalStateException(SIN_DEVOLUCION_PENDIENTE);
+		}
+		return solicitud;
+	}
+
+	/** Con la solicitud bloqueada: bloquea el cargo y su cobro ACTIVO (orden cargo → cobro). Sin ellos, 409. */
+	private com.taemoi.project.entities.Cobro bloquearCobroDelEncargo(Solicitud solicitud) {
+		ProductoAlumno cargo = cobros.bloquearCargo(solicitud.getProductoAlumnoId())
+				.orElseThrow(() -> new IllegalStateException(SIN_COBRO_QUE_DEVOLVER));
+		return cobros.bloquearActivoDeCargo(cargo.getId())
+				.orElseThrow(() -> new IllegalStateException(SIN_COBRO_QUE_DEVOLVER));
+	}
+
+	/** Cierra la devolución pendiente con la devolución apuntada y lo registra (solo ids, nunca la nota). */
+	private SolicitudDTOs.Solicitud cerrarDevolucion(Solicitud solicitud,
+			com.taemoi.project.entities.MovimientoCaja devolucion, Long usuario, String endpoint) {
+		solicitud.setDevolucionPendiente(false);
+		solicitud.setMovimientoDevolucionId(devolucion.getId());
+		solicitudes.save(solicitud);
+		registro.registrar(RegistroAccionesSolicitudes.Accion.ENCARGO_DEVOLUCION_REGISTRADA, endpoint, solicitud,
+				java.util.Map.of("devolucion", devolucion.getId()));
+		em.flush();
+		return dto(solicitud, usuario);
+	}
+
+	private static String notaDeDevolucion(String nota, Long solicitudId) {
+		return nota != null ? nota : "Devolución del encargo (solicitud #" + solicitudId + ")";
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	/**
 	 * Cae el encargo (§6.3), con la solicitud bloqueada y ya cerrada: el cargo pendiente se cancela; el pagado deja la
-	 * devolución pendiente (195). Sin cargo (se borró con el alumno), nada más.
+	 * devolución pendiente (195). Sin cargo (se borró con el alumno), nada más. Pieza 6c-6: si el cobro del cargo (ya
+	 * bloqueado) ya tiene una DEVOLUCION ACTIVA, no queda nada pendiente: el encargo enlaza esa devolución.
 	 */
 	private void caer(Solicitud solicitud, Long usuario, String motivo, String endpoint) {
 		if (productosAlumno.caerCargoDeEncargo(solicitud.getProductoAlumnoId(), usuario, motivo, solicitud.getId(),
 				endpoint)) {
-			solicitud.setDevolucionPendiente(true);
+			java.util.Optional<com.taemoi.project.entities.MovimientoCaja> devuelto = cobros
+					.bloquearDevolucionDeCargo(solicitud.getProductoAlumnoId());
+			if (devuelto.isPresent()) {
+				solicitud.setMovimientoDevolucionId(devuelto.get().getId());
+			} else {
+				solicitud.setDevolucionPendiente(true);
+			}
 			solicitudes.save(solicitud);
 		}
 	}

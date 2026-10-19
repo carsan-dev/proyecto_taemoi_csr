@@ -70,9 +70,10 @@ public class CobroService {
 	public static final String CARGO_CANCELADO = "El cargo está cancelado: reactívelo antes de cobrarlo.";
 	/**
 	 * Pieza 6c-1, decisión 186: 409 al quitar de una convocatoria a un alumno con el examen pagado. Texto literal del
-	 * diseño; la 6c-6 lo amplía con la devolución (D6c-15).
+	 * diseño; desde la 6c-6, el completo con la devolución (D6c-15: un examen devuelto se desvincula).
 	 */
-	public static final String EXAMEN_PAGADO_REVIERTE_ANTES = "El examen está pagado: revierte el cobro antes";
+	public static final String EXAMEN_PAGADO_REVIERTE_ANTES = "El examen está pagado: haz la devolución o revierte el "
+			+ "cobro antes";
 	/** Pieza 6c-1, decisión 187: 409 al cambiar el precio o la cantidad de un cargo con cobro ACTIVO. */
 	public static final String PRECIO_CON_COBRO_ACTIVO = "El cargo está cobrado: no se puede cambiar el precio ni la "
 			+ "cantidad. Revierte el cobro antes.";
@@ -237,6 +238,12 @@ public class CobroService {
 		Optional<Cobro> activo = cobros.bloquearActivoDeCargo(cargo.getId()).map(this::releer)
 				.filter(cobro -> cobro.getEstado() == EstadoCobro.ACTIVO);
 		activo.ifPresent(cobro -> {
+			// Pieza 6c-6 (153, §6.3 y §6.4): un cobro con devolución, o con la devolución de su encargo pendiente, no se
+			// anula por ninguna vía (A1, A2, A4, borrar el cargo): 409 sin cambiar nada. Con el cobro ya bloqueado: una
+			// devolución que se registra a la vez bloquea el mismo cobro antes de escribir.
+			razonDeDevolucion(cobro.getId(), cargo.getId()).ifPresent(razon -> {
+				throw new IllegalStateException(razon);
+			});
 			if (cobro.getEntregaCajaId() != null) {
 				throw new CobroEntregadoException();
 			}
@@ -312,19 +319,68 @@ public class CobroService {
 	 * Pieza 6c-3 (decisión 153, §6.3 y §6.4): por qué el cobro no se puede anular por tener devolución, o vacío. Un cobro
 	 * con una DEVOLUCION ACTIVA enlazada no se anula; el cargo de un encargo caído con la devolución pendiente tampoco
 	 * (no hay dos caminos para el mismo dinero). Lectura sin bloqueo, con el cargo y el cobro ya bloqueados por quien
-	 * llama. La 6c-6 la puede usar en las demás vías.
+	 * llama. La 6c-6 la usa en las demás vías ({@link #anular}); la 6c-4 la reutiliza al pedir el tipo 2.
 	 */
 	public Optional<String> razonDeDevolucion(Long cobroId, Long cargoId) {
 		if (cobroId != null && movimientos.existsByCobroIdAndTipoAndEstado(cobroId, TipoMovimientoCaja.DEVOLUCION,
 				EstadoMovimientoCaja.ACTIVO)) {
 			return Optional.of(EjecucionSolicitud.CON_DEVOLUCION);
 		}
-		if (cargoId != null && em.createQuery("SELECT COUNT(s) FROM Solicitud s WHERE s.productoAlumnoId = :cargo "
-				+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO AND s.devolucionPendiente = TRUE",
-				Long.class).setParameter("cargo", cargoId).getSingleResult() > 0) {
+		if (cargoId != null && em != null && em.createQuery("SELECT COUNT(s) FROM Solicitud s WHERE "
+				+ "s.productoAlumnoId = :cargo AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+				+ "AND s.devolucionPendiente = TRUE", Long.class).setParameter("cargo", cargoId).getSingleResult() > 0) {
 			return Optional.of(EjecucionSolicitud.DEVOLUCION_PENDIENTE);
 		}
 		return Optional.empty();
+	}
+
+	/**
+	 * Pieza 6c-6, dentro de una transacción y con el cargo ya bloqueado: bloquea (FOR UPDATE) el cobro ACTIVO del cargo y
+	 * lo devuelve releído. Vacío si no tiene. Orden cargo → cobro, el de {@link #anular}.
+	 */
+	public Optional<Cobro> bloquearActivoDeCargo(Long cargoId) {
+		if (cargoId == null) {
+			return Optional.empty();
+		}
+		return cobros.bloquearActivoDeCargo(cargoId).map(this::releer)
+				.filter(cobro -> cobro.getEstado() == EstadoCobro.ACTIVO);
+	}
+
+	/**
+	 * Pieza 6c-6 (D6c-15), dentro de una transacción y con el cargo (y, si hace falta, el cobro) ya bloqueados: bloquea
+	 * (FOR UPDATE) la DEVOLUCION ACTIVA del cobro ACTIVO del cargo y la devuelve releída: el cargo está «devuelto».
+	 * Vacío si no lo está. Anular esa devolución (A9) bloquea solo el movimiento: no hay ciclo.
+	 */
+	public Optional<MovimientoCaja> bloquearDevolucionDeCargo(Long cargoId) {
+		Optional<Cobro> activo = cargoId == null ? Optional.empty()
+				: cobros.findFirstByProductoAlumnoIdAndEstado(cargoId, EstadoCobro.ACTIVO);
+		return activo.flatMap(cobro -> movimientos.bloquearDevolucionActivaDeCobro(cobro.getId())).map(devolucion -> {
+			if (em != null && em.contains(devolucion)) {
+				em.refresh(devolucion);
+			}
+			return devolucion;
+		}).filter(devolucion -> devolucion.getEstado() == EstadoMovimientoCaja.ACTIVO);
+	}
+
+	/**
+	 * Pieza 6c-6: 409 {@link EjecucionSolicitud#DEVOLUCION_PENDIENTE} si algún encargo del alumno, o de esos cargos,
+	 * tiene la devolución pendiente (no hay dos caminos para ese dinero). Comprobación previa al borrado del alumno,
+	 * antes de tocar nada; {@link #alBorrarCargos} lo vuelve a mirar en su transacción.
+	 */
+	public void exigirSinDevolucionPendiente(Long alumnoId, Collection<Long> cargoIds) {
+		List<Long> ids = cargoIds == null ? List.of()
+				: cargoIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+		if (em == null || (alumnoId == null && ids.isEmpty())) {
+			return;
+		}
+		Long pendientes = em.createQuery("SELECT COUNT(s) FROM Solicitud s WHERE "
+				+ "s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO AND s.devolucionPendiente = TRUE "
+				+ "AND (s.alumnoId = :alumno OR s.productoAlumnoId IN :cargos)", Long.class)
+				.setParameter("alumno", alumnoId == null ? -1L : alumnoId)
+				.setParameter("cargos", ids.isEmpty() ? List.of(-1L) : ids).getSingleResult();
+		if (pendientes > 0) {
+			throw new IllegalStateException(EjecucionSolicitud.DEVOLUCION_PENDIENTE);
+		}
 	}
 
 	/** Comprobación previa (sin bloquear ni escribir): 409 si algún cobro del cargo va en una entrega de caja. */
@@ -352,6 +408,11 @@ public class CobroService {
 	 * borrado», usuario autenticado) y dejan de apuntar al cargo, con un solo UPDATE. Los que ya van en una entrega de
 	 * caja NO bloquean el borrado ni se anulan (ese dinero ya está en una entrega cuadrada): siguen ACTIVOS y la FK ON
 	 * DELETE SET NULL los desvincula; se avisa en el registro. Lista vacía: nada (sin sentencias).
+	 *
+	 * <p>Pieza 6c-6 (153): los cobros con una DEVOLUCION ACTIVA tampoco se anulan (el cobro y su devolución quedan en el
+	 * historial; siguen ACTIVOS y la FK los desvincula, como los entregados). Si algún cargo es de un encargo con la
+	 * devolución pendiente, 409 {@link EjecucionSolicitud#DEVOLUCION_PENDIENTE} sin borrar nada (no hay dos caminos para
+	 * ese dinero).
 	 */
 	public void alBorrarCargos(Collection<Long> cargoIds) {
 		List<Long> ids = cargoIds == null ? List.of()
@@ -359,10 +420,16 @@ public class CobroService {
 		if (ids.isEmpty()) {
 			return;
 		}
+		exigirSinDevolucionPendiente(null, ids);
 		List<Long> entregados = cobros.idsActivosEntregadosDeCargos(ids);
 		if (!entregados.isEmpty()) {
 			LOG.warn("Se borran cargos con cobros ya entregados en caja; esos cobros siguen activos sin cargo: {}",
 					entregados);
+		}
+		List<Long> devueltos = cobros.idsActivosDevueltosDeCargos(ids);
+		if (!devueltos.isEmpty()) {
+			LOG.info("Se borran cargos con cobros devueltos; esos cobros y su devolución siguen activos sin cargo: {}",
+					devueltos);
 		}
 		cobros.anularDeCargosBorrados(ids, usuarioActualId(), LocalDateTime.now(), MOTIVO_CARGO_BORRADO);
 	}

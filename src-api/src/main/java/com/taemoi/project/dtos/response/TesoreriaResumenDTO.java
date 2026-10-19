@@ -14,6 +14,19 @@ public class TesoreriaResumenDTO {
 	private Long alumnosConPendientes;
 	/** Entrega 6-3 (D6-12), aditivo: los mismos totales por sede del cargo (ver {@link TesoreriaResumenSedeDTO}). */
 	private java.util.List<TesoreriaResumenSedeDTO> porSede = new java.util.ArrayList<>();
+	/**
+	 * Pieza 6c-6 (D6c-12), aditivo: Σ de lo devuelto de los cargos del filtro (devoluciones enlazadas activas). Los
+	 * totales de siempre no cambian: un cargo devuelto sigue sumando como pagado (decisión 153).
+	 */
+	private Double importeDevuelto = 0.0;
+
+	public Double getImporteDevuelto() {
+		return importeDevuelto;
+	}
+
+	public void setImporteDevuelto(Double importeDevuelto) {
+		this.importeDevuelto = importeDevuelto;
+	}
 
 	public java.util.List<TesoreriaResumenSedeDTO> getPorSede() {
 		return porSede;

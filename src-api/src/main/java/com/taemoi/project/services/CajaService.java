@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +50,7 @@ import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.EntregaCajaRepository;
 import com.taemoi.project.repositories.MovimientoCajaRepository;
 import com.taemoi.project.repositories.SedeRepository;
+import com.taemoi.project.repositories.SolicitudRepository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -67,7 +69,7 @@ import jakarta.persistence.PersistenceContext;
  *
  * <pre>
  * saldo = Σ cobro.importe  [ACTIVO, metodo EFECTIVO, sede, y (origen ≠ PROFESOR o entrega_caja_id NOT NULL)]
- *       + Σ movimiento.importe [ACTIVO, sede, cualquier tipo]
+ *       + Σ movimiento.importe [ACTIVO, metodo EFECTIVO, sede, cualquier tipo]
  * </pre>
  *
  * Una entrega ANULADA libera sus cobros (vuelven a pendientes, dejan de sumar) y anula su movimiento automático (deja
@@ -84,6 +86,13 @@ import jakarta.persistence.PersistenceContext;
  * de la solicitud y después lo de siempre (A7: entrega → cobros; A9: el movimiento); deshacer un cobro ya entregado
  * (decisión 193) bloquea cargo → entrega → cobro.
  *
+ * <p><b>Devolución enlazada</b> (pieza 6c-6, decisión 153): un movimiento DEVOLUCION por −importe del cobro, con
+ * {@code cobro_id}, el cargo, el alumno y el método del cobro; el cobro no se anula. La registra quien tiene el dinero
+ * (195): la sede ({@link #devolverEnSede}, o {@link #crearMovimiento} con {@code cobroId}) si ya está en su caja; el
+ * profesor que aún lo lleva encima ({@link #devolverDelProfesor}, D6c-10), con una entrega de ese cobro con contado 0
+ * cuya diferencia es la DEVOLUCION (saldo igual). El saldo suma solo los movimientos EFECTIVO (D6c-13). Si se anula
+ * una devolución de un encargo (con su entrega, A7, o suelta, A9), el encargo vuelve a tenerla pendiente.
+ *
  * <p>Toda escritura queda en el registro de acciones ({@link RegistroAccionesCaja}) en su misma transacción.
  */
 @Service
@@ -98,6 +107,22 @@ public class CajaService {
 	static final String NOTA_OBLIGATORIA_DIFERENCIA = "Lo contado no coincide con lo declarado: la nota es obligatoria.";
 	static final String COBRO_YA_ENTREGADO = "Algún cobro ya está incluido en una entrega de caja.";
 	static final String COBRO_NO_ACTIVO = "Algún cobro ya no está activo.";
+	/** Pieza 6c-6: la devolución de un cobro que aún lleva el profesor encima la registra él (D6c-10). */
+	public static final String DINERO_LO_LLEVA_EL_PROFESOR = "El profesor aún lleva el dinero encima: la devolución la "
+			+ "registra él desde Mi caja.";
+	static final String SOLO_DEVOLUCION_ENLAZADA = "Solo una devolución se enlaza a un cobro.";
+	static final String DEVOLUCION_IMPORTE_ENTERO = "Una devolución enlazada es por el importe entero del cobro.";
+	static final String DEVOLUCION_OTRO_ALUMNO = "El alumno no es el del cobro.";
+	static final String DEVOLUCION_COBRO_OTRA_SEDE = "El cobro no es de esta sede.";
+	static final String DEVOLUCION_COBRO_NO_ACTIVO = "El cobro ya no está activo.";
+	static final String DEVOLUCION_COBRO_SIN_SEDE = "El cobro no tiene sede: no hay caja en la que apuntar la "
+			+ "devolución.";
+	static final String DEVOLUCION_COBRO_CAMBIADO = "El cobro ha cambiado mientras se registraba la devolución: "
+			+ "vuelve a intentarlo.";
+	static final String DEVOLUCION_DESDE_EL_ENCARGO = "El cobro es de un encargo con la devolución pendiente: "
+			+ "regístrala desde el encargo.";
+	/** Nombre de la clave única de V31_8 («una DEVOLUCION ACTIVA por cobro», D6c-11). */
+	static final String CLAVE_DEVOLUCION_ACTIVA = "uk_movimiento_caja_cobro_devuelto_activo";
 
 	private final CobroRepository cobros;
 	private final EntregaCajaRepository entregas;
@@ -107,6 +132,8 @@ public class CajaService {
 	private final AlcanceActual alcanceActual;
 	private final ProductoAlumnoService productosAlumno;
 	private final RegistroAccionesCaja registro;
+	private final SolicitudRepository solicitudes;
+	private final CobroService cobroService;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -114,8 +141,8 @@ public class CajaService {
 
 	public CajaService(CobroRepository cobros, EntregaCajaRepository entregas, MovimientoCajaRepository movimientos,
 			SedeRepository sedes, AlumnoRepository alumnos, AlcanceActual alcanceActual,
-			ProductoAlumnoService productosAlumno, RegistroAccionesCaja registro,
-			PlatformTransactionManager transacciones) {
+			ProductoAlumnoService productosAlumno, RegistroAccionesCaja registro, SolicitudRepository solicitudes,
+			CobroService cobroService, PlatformTransactionManager transacciones) {
 		this.cobros = cobros;
 		this.entregas = entregas;
 		this.movimientos = movimientos;
@@ -124,6 +151,8 @@ public class CajaService {
 		this.alcanceActual = alcanceActual;
 		this.productosAlumno = productosAlumno;
 		this.registro = registro;
+		this.solicitudes = solicitudes;
+		this.cobroService = cobroService;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -483,12 +512,19 @@ public class CajaService {
 			cobros.save(cobro);
 		}
 		List<Long> anulados = new ArrayList<>();
+		List<Long> devoluciones = new ArrayList<>();
 		for (MovimientoCaja movimiento : movimientos.findByEntregaCajaIdInOrderByIdAsc(List.of(entregaId))) {
 			if (movimiento.getEstado() == EstadoMovimientoCaja.ACTIVO) {
 				anularMovimiento(movimiento, usuario, ahora, motivo);
 				anulados.add(movimiento.getId());
+				if (esDevolucionEnlazada(movimiento)) {
+					devoluciones.add(movimiento.getId());
+				}
 			}
 		}
+		// Pieza 6c-6: la entrega de la devolución del profesor (D6c-10) vuelve atrás entera: el cobro, a «Llevas
+		// encima»; la devolución, anulada; y su encargo, con la devolución pendiente otra vez.
+		devolucionAnulada(devoluciones);
 		Map<String, Object> implicados = new LinkedHashMap<>();
 		implicados.put("entrega", entregaId);
 		implicados.put("cobros", liberados);
@@ -506,7 +542,8 @@ public class CajaService {
 	 * Apunta un movimiento de caja en la sede (decisión 5): importe distinto de cero con dos decimales y nota
 	 * obligatoria. DEVOLUCION: negativo y con alumno; SOBRANTE: positivo y sin alumno; FALTANTE: negativo y sin alumno;
 	 * ERROR y OTRO: cualquier signo, alumno opcional. El alumno, si lo hay, debe ser de esa sede (D9: sede principal o
-	 * grupo de la sede), que para el responsable es una de las suyas.
+	 * grupo de la sede), que para el responsable es una de las suyas. Pieza 6c-6: con {@code cobroId}, la devolución
+	 * enlazada a ese cobro ({@link #crearDevolucionEnlazada}).
 	 */
 	public CajaDTOs.MovimientoCaja crearMovimiento(Long sedeId, CajaRequests.CrearMovimiento peticion) {
 		if (peticion == null || peticion.tipo() == null) {
@@ -514,6 +551,9 @@ public class CajaService {
 		}
 		exigirSede(sedeId);
 		Long usuario = usuarioDeLaSesion();
+		if (peticion.cobroId() != null) {
+			return crearDevolucionEnlazada(sedeId, peticion, usuario);
+		}
 		BigDecimal importe = importeValido(peticion.importe(), "El importe");
 		String nota = texto(peticion.nota(), "La nota");
 		if (nota == null) {
@@ -577,6 +617,213 @@ public class CajaService {
 		});
 	}
 
+	// ------------------------------------------------------------------ pieza 6c-6: devolución enlazada (153)
+
+	/**
+	 * La devolución enlazada de la API de la caja de sede (§6.4): solo DEVOLUCION (400); el cobro, de la escuela (404),
+	 * de esa sede (400), ACTIVO (409), con el dinero en la sede (409: si el profesor aún lo lleva encima, devuelve él),
+	 * sin otra devolución activa (409) y sin un encargo en curso o con la devolución pendiente sobre su cargo (409: la
+	 * devolución de un encargo se registra desde el encargo cuando cae, que la cierra). Importe y alumno, los del cobro
+	 * (si llegan distintos, 400). Nota obligatoria. Bloquea el cargo y después el cobro (el orden de A1 y de los
+	 * encargos: un encargo que cae a la vez se ordena con esta devolución por el cargo); registro
+	 * {@code MOVIMIENTO_CREADO} con el cobro y el cargo.
+	 */
+	private CajaDTOs.MovimientoCaja crearDevolucionEnlazada(Long sedeId, CajaRequests.CrearMovimiento peticion,
+			Long usuario) {
+		if (peticion.tipo() != TipoMovimientoCaja.DEVOLUCION) {
+			throw new IllegalArgumentException(SOLO_DEVOLUCION_ENLAZADA);
+		}
+		BigDecimal importe = peticion.importe() == null ? null : importeValido(peticion.importe(), "El importe");
+		String nota = texto(peticion.nota(), "La nota");
+		if (nota == null) {
+			throw new IllegalArgumentException("La nota es obligatoria.");
+		}
+		Long cobroId = peticion.cobroId();
+		Long alumnoId = peticion.alumnoId();
+		String endpoint = "/api/caja/sedes/" + sedeId + "/movimientos";
+		return conClaveDeDevolucion(() -> enTransaccion(() -> {
+			// Orden cargo → cobro: el cargo del cobro se lee sin bloqueo, se bloquea y se comprueba con el cobro bloqueado.
+			Long cargoId = em.createQuery("SELECT c.productoAlumnoId FROM Cobro c WHERE c.id = :id", Long.class)
+					.setParameter("id", cobroId).getResultStream().filter(Objects::nonNull).findFirst().orElse(null);
+			if (cargoId != null) {
+				cobroService.bloquearCargo(cargoId);
+			}
+			Cobro cobro = cobros.bloquearPorId(cobroId).map(this::releer)
+					.orElseThrow(() -> new NoSuchElementException("El cobro no existe."));
+			if (!Objects.equals(cargoId, cobro.getProductoAlumnoId())) {
+				throw new IllegalStateException(DEVOLUCION_COBRO_CAMBIADO);
+			}
+			if (!sedeId.equals(cobro.getSedeId())) {
+				throw new IllegalArgumentException(DEVOLUCION_COBRO_OTRA_SEDE);
+			}
+			if (importe != null && importe.compareTo(dosDecimales(cobro.getImporte()).negate()) != 0) {
+				throw new IllegalArgumentException(DEVOLUCION_IMPORTE_ENTERO);
+			}
+			if (alumnoId != null && !alumnoId.equals(cobro.getAlumnoId())) {
+				throw new IllegalArgumentException(DEVOLUCION_OTRO_ALUMNO);
+			}
+			exigirDineroEnLaSede(cobro);
+			if (cargoId != null && solicitudes.existeEncargoEnCursoDeCargo(cargoId)) {
+				throw new IllegalStateException(EncargoService.ENCARGO_EN_CURSO);
+			}
+			if (cargoId != null && solicitudes.existeDevolucionPendienteDeCargo(cargoId)) {
+				throw new IllegalStateException(DEVOLUCION_DESDE_EL_ENCARGO);
+			}
+			MovimientoCaja devolucion = devolucionDelCobroBloqueado(cobro, usuario, nota, null);
+			Map<String, Object> implicados = new LinkedHashMap<>();
+			implicados.put("movimiento", devolucion.getId());
+			if (devolucion.getAlumnoId() != null) {
+				implicados.put("alumno", devolucion.getAlumnoId());
+			}
+			implicados.put("cobro", cobro.getId());
+			if (cobro.getProductoAlumnoId() != null) {
+				implicados.put("cargo", cobro.getProductoAlumnoId());
+			}
+			registro.registrar(RegistroAccionesCaja.Accion.MOVIMIENTO_CREADO, endpoint, sedeId, implicados);
+			em.flush();
+			return dto(devolucion);
+		}));
+	}
+
+	/**
+	 * Pieza 6c-6 (195): la sede registra la devolución del cobro de un encargo, DENTRO de la transacción de quien llama
+	 * (con la solicitud, el cargo y el cobro ya bloqueados, en ese orden). El dinero debe estar en la sede (si no,
+	 * 409 {@link #DINERO_LO_LLEVA_EL_PROFESOR}); sale de la caja de la sede del COBRO (nota F2 de la 6c-5). Registro
+	 * {@code CAJA DEVOLUCION_CREADA} con el cobro, el cargo y la solicitud (solo ids).
+	 *
+	 * @return la DEVOLUCION apuntada
+	 */
+	public MovimientoCaja devolverEnSede(Cobro cobro, Long usuario, String nota, long solicitudId, String endpoint) {
+		exigirDineroEnLaSede(cobro);
+		MovimientoCaja devolucion = devolucionDelCobroBloqueado(cobro, usuario, nota, null);
+		Map<String, Object> implicados = new LinkedHashMap<>();
+		implicados.put("movimiento", devolucion.getId());
+		implicados.put("cobro", cobro.getId());
+		if (cobro.getProductoAlumnoId() != null) {
+			implicados.put("cargo", cobro.getProductoAlumnoId());
+		}
+		implicados.put("solicitud", solicitudId);
+		registro.registrar(RegistroAccionesCaja.Accion.DEVOLUCION_CREADA, endpoint, cobro.getSedeId(), implicados);
+		return devolucion;
+	}
+
+	/**
+	 * Pieza 6c-6 (D6c-10): el profesor que aún lleva encima el cobro de su encargo caído lo devuelve, DENTRO de la
+	 * transacción de quien llama (solicitud, cargo y cobro ya bloqueados; quien llama ya comprobó que el cobro es suyo,
+	 * de origen PROFESOR, EFECTIVO, ACTIVO y sin entrega). Una entrega de ese único cobro con quien entrega = quien
+	 * recibe = el profesor, declarado = importe y contado = 0, cuyo movimiento automático es la DEVOLUCION (−importe,
+	 * con la entrega) en vez del FALTANTE: el saldo de la sede no cambia (+importe −importe) y el cobro sale de «Llevas
+	 * encima». Si el propietario anula esa entrega, cobro y devolución vuelven atrás juntos. Registro
+	 * {@code CAJA DEVOLUCION_PROFESOR}.
+	 *
+	 * @return la DEVOLUCION apuntada
+	 */
+	public MovimientoCaja devolverDelProfesor(Cobro cobro, Long profesor, String nota, long solicitudId,
+			String endpoint) {
+		if (cobro.getSedeId() == null) {
+			throw new IllegalStateException(DEVOLUCION_COBRO_SIN_SEDE);
+		}
+		EntregaCaja entrega = new EntregaCaja();
+		entrega.setSedeId(cobro.getSedeId());
+		entrega.setEntregadoPorUsuarioId(profesor);
+		entrega.setRecibidoPorUsuarioId(profesor);
+		entrega.setImporteDeclarado(dosDecimales(cobro.getImporte()));
+		entrega.setImporteContado(dosDecimales(BigDecimal.ZERO));
+		entrega.setFecha(LocalDateTime.now(ZONA));
+		entrega.setNota(nota);
+		entrega.setEstado(EstadoEntregaCaja.ACTIVA);
+		EntregaCaja guardada = entregas.save(entrega);
+		cobro.setEntregaCajaId(guardada.getId());
+		cobros.save(cobro);
+		MovimientoCaja devolucion = devolucionDelCobroBloqueado(cobro, profesor, nota, guardada.getId());
+		Map<String, Object> implicados = new LinkedHashMap<>();
+		implicados.put("entrega", guardada.getId());
+		implicados.put("movimiento", devolucion.getId());
+		implicados.put("cobro", cobro.getId());
+		if (cobro.getProductoAlumnoId() != null) {
+			implicados.put("cargo", cobro.getProductoAlumnoId());
+		}
+		implicados.put("solicitud", solicitudId);
+		registro.registrar(RegistroAccionesCaja.Accion.DEVOLUCION_PROFESOR, endpoint, cobro.getSedeId(), implicados);
+		return devolucion;
+	}
+
+	/**
+	 * Pieza 6c-6: la DEVOLUCION del cobro ya bloqueado (153): ACTIVO (409), con sede (409) y sin otra devolución activa
+	 * (409, D6c-11; la clave única de V31_8 es la red). Importe −importe del cobro; alumno, cargo y método, los del
+	 * cobro. {@code entregaId}: la entrega de la devolución del profesor (D6c-10), o {@code null}.
+	 */
+	private MovimientoCaja devolucionDelCobroBloqueado(Cobro cobro, Long usuario, String nota, Long entregaId) {
+		if (cobro.getEstado() != EstadoCobro.ACTIVO) {
+			throw new IllegalStateException(DEVOLUCION_COBRO_NO_ACTIVO);
+		}
+		if (cobro.getSedeId() == null) {
+			throw new IllegalStateException(DEVOLUCION_COBRO_SIN_SEDE);
+		}
+		if (movimientos.existsByCobroIdAndTipoAndEstado(cobro.getId(), TipoMovimientoCaja.DEVOLUCION,
+				EstadoMovimientoCaja.ACTIVO)) {
+			throw new IllegalStateException(EjecucionSolicitud.CON_DEVOLUCION);
+		}
+		MovimientoCaja devolucion = new MovimientoCaja();
+		devolucion.setSedeId(cobro.getSedeId());
+		devolucion.setTipo(TipoMovimientoCaja.DEVOLUCION);
+		devolucion.setImporte(dosDecimales(cobro.getImporte()).negate());
+		devolucion.setAlumnoId(cobro.getAlumnoId());
+		devolucion.setEntregaCajaId(entregaId);
+		devolucion.setCobroId(cobro.getId());
+		devolucion.setProductoAlumnoId(cobro.getProductoAlumnoId());
+		devolucion.setMetodo(cobro.getMetodo() != null ? cobro.getMetodo() : MetodoPago.SIN_INDICAR);
+		devolucion.setNota(nota);
+		devolucion.setCreadoPorUsuarioId(usuario);
+		devolucion.setFecha(LocalDateTime.now(ZONA));
+		devolucion.setEstado(EstadoMovimientoCaja.ACTIVO);
+		return movimientos.save(devolucion);
+	}
+
+	/** Pieza 6c-6: el dinero del cobro está en la caja de la sede (origen distinto de PROFESOR, o ya entregado). */
+	private static void exigirDineroEnLaSede(Cobro cobro) {
+		if (cobro.getOrigen() == OrigenCobro.PROFESOR && cobro.getEntregaCajaId() == null) {
+			throw new IllegalStateException(DINERO_LO_LLEVA_EL_PROFESOR);
+		}
+	}
+
+	/**
+	 * Pieza 6c-6: si dos devoluciones del mismo cobro se cuelan a la vez, la clave única de V31_8 salta al confirmar:
+	 * 409 {@link EjecucionSolicitud#CON_DEVOLUCION} en lugar de un 500. Otras violaciones suben tal cual.
+	 */
+	public static <T> T conClaveDeDevolucion(Supplier<T> accion) {
+		try {
+			return accion.get();
+		} catch (DataIntegrityViolationException | jakarta.persistence.PersistenceException error) {
+			for (Throwable causa = error; causa != null; causa = causa.getCause()) {
+				if (causa.getMessage() != null && causa.getMessage().contains(CLAVE_DEVOLUCION_ACTIVA)) {
+					throw new IllegalStateException(EjecucionSolicitud.CON_DEVOLUCION, error);
+				}
+				if (causa.getCause() == causa) {
+					break;
+				}
+			}
+			throw error;
+		}
+	}
+
+	/** Pieza 6c-6: DEVOLUCION enlazada a un cobro (la de un encargo, la de la API de movimientos o la del profesor). */
+	private static boolean esDevolucionEnlazada(MovimientoCaja movimiento) {
+		return movimiento.getTipo() == TipoMovimientoCaja.DEVOLUCION && movimiento.getCobroId() != null;
+	}
+
+	/**
+	 * Pieza 6c-6: se anularon esas devoluciones; el encargo que las tenía como {@code movimiento_devolucion_id} vuelve a
+	 * tener la devolución pendiente (195), en la misma transacción. Bloquea su fila después de la entrega o del
+	 * movimiento: el cruce con registrar la devolución del mismo encargo puede acabar en un interbloqueo que InnoDB
+	 * resuelve (409, se deshace entero).
+	 */
+	private void devolucionAnulada(List<Long> devoluciones) {
+		if (!devoluciones.isEmpty()) {
+			solicitudes.devolucionAnulada(devoluciones);
+		}
+	}
+
 	/**
 	 * Solo el propietario: anula un movimiento suelto (motivo obligatorio). El automático de una entrega no se anula
 	 * suelto (409: se anula la entrega). Ya anulado → 409; no existe en la escuela → 404.
@@ -595,6 +842,9 @@ public class CajaService {
 				throw new IllegalStateException("El movimiento ya está anulado.");
 			}
 			anularMovimiento(movimiento, usuario, LocalDateTime.now(ZONA), motivo);
+			if (esDevolucionEnlazada(movimiento)) {
+				devolucionAnulada(List.of(movimientoId));
+			}
 			registro.registrar(RegistroAccionesCaja.Accion.MOVIMIENTO_ANULADO,
 					"/api/caja/movimientos/" + movimientoId + "/anular", movimiento.getSedeId(),
 					Map.of("movimiento", movimientoId));
@@ -624,6 +874,9 @@ public class CajaService {
 				return EjecucionSolicitud.noAplica(EjecucionSolicitud.MOVIMIENTO_ANULADO);
 			}
 			anularMovimiento(movimiento, usuario, LocalDateTime.now(ZONA), motivoDeSolicitud(solicitudId, motivo));
+			if (esDevolucionEnlazada(movimiento)) {
+				devolucionAnulada(List.of(movimientoId));
+			}
 			Map<String, Object> implicados = new LinkedHashMap<>();
 			implicados.put("movimiento", movimientoId);
 			implicados.put("solicitud", solicitudId);
@@ -779,11 +1032,17 @@ public class CajaService {
 			cobrosPorEntrega.computeIfAbsent(c.getEntregaCajaId(), k -> new ArrayList<>()).add(c.getId());
 		}
 		Map<Long, Long> movimientoPorEntrega = new HashMap<>();
+		Map<Long, List<CajaDTOs.MovimientoDeEntrega>> deCobroPorEntrega = new HashMap<>();
 		for (MovimientoCaja m : movimientos.findByEntregaCajaIdInOrderByIdAsc(ids)) {
 			// Solo la diferencia automática: el ERROR de un cobro deshecho ya entregado (6c-3, decisión 193) también
 			// va en la entrega, pero no es su SOBRANTE o FALTANTE.
 			if (m.getTipo() == TipoMovimientoCaja.SOBRANTE || m.getTipo() == TipoMovimientoCaja.FALTANTE) {
 				movimientoPorEntrega.putIfAbsent(m.getEntregaCajaId(), m.getId());
+			} else if (m.getCobroId() != null) {
+				// Pieza 6c-6: el ERROR de la 193 y la DEVOLUCION de la D6c-10, para que «declarado» cuadre a la vista.
+				deCobroPorEntrega.computeIfAbsent(m.getEntregaCajaId(), k -> new ArrayList<>())
+						.add(new CajaDTOs.MovimientoDeEntrega(m.getId(), m.getTipo().name(),
+								dosDecimales(m.getImporte()), m.getCobroId(), m.getEstado().name()));
 			}
 		}
 		Set<Long> cuentas = new LinkedHashSet<>();
@@ -801,7 +1060,8 @@ public class CajaService {
 					e.getEstado().name(), cobrosPorEntrega.getOrDefault(e.getId(), List.of()),
 					movimientoPorEntrega.get(e.getId()), e.getAnuladaPorUsuarioId(), e.getAnuladaEn(),
 					e.getMotivoAnulacion(), e.getEntregadoPorUsuarioId() != null
-							&& e.getEntregadoPorUsuarioId().equals(e.getRecibidoPorUsuarioId())));
+							&& e.getEntregadoPorUsuarioId().equals(e.getRecibidoPorUsuarioId()),
+					deCobroPorEntrega.getOrDefault(e.getId(), List.of())));
 		}
 		return dtos;
 	}
@@ -809,6 +1069,8 @@ public class CajaService {
 	private static CajaDTOs.MovimientoCaja dto(MovimientoCaja m) {
 		return new CajaDTOs.MovimientoCaja(m.getId(), m.getSedeId(), m.getTipo().name(), dosDecimales(m.getImporte()),
 				m.getAlumnoId(), m.getEntregaCajaId(), m.getNota(), m.getCreadoPorUsuarioId(), m.getFecha(),
-				m.getEstado().name(), m.getAnuladoPorUsuarioId(), m.getAnuladoEn(), m.getMotivoAnulacion());
+				m.getEstado().name(), m.getAnuladoPorUsuarioId(), m.getAnuladoEn(), m.getMotivoAnulacion(),
+				m.getCobroId(), m.getProductoAlumnoId(),
+				m.getCobroId() == null || m.getMetodo() == null ? null : m.getMetodo().name());
 	}
 }

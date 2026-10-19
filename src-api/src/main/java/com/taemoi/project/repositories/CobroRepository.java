@@ -39,17 +39,27 @@ public interface CobroRepository extends JpaRepository<Cobro, Long> {
 	/**
 	 * Antes de borrar cargos por caminos que no son el DELETE del cargo (borrar un alumno, sacarlo de una convocatoria,
 	 * borrar una convocatoria): sus cobros ACTIVOS que no van en una entrega pasan a ANULADO con el motivo dado y dejan
-	 * de apuntar al cargo. Los que van en una entrega no se tocan (la FK ON DELETE SET NULL los desvincula). Sin cargar
-	 * entidades; sube la versión como lo haría Hibernate.
+	 * de apuntar al cargo. Los que van en una entrega no se tocan (la FK ON DELETE SET NULL los desvincula). Pieza 6c-6
+	 * (153): los que tienen una DEVOLUCION ACTIVA tampoco (un cobro devuelto no se anula). Sin cargar entidades; sube la
+	 * versión como lo haría Hibernate.
 	 */
 	@Modifying
 	@Query("UPDATE Cobro c SET c.estado = com.taemoi.project.entities.EstadoCobro.ANULADO, c.anuladoEn = :ahora, "
 			+ "c.anuladoPorUsuarioId = :usuarioId, c.motivoAnulacion = :motivo, c.productoAlumnoId = NULL, "
 			+ "c.version = c.version + 1 "
 			+ "WHERE c.productoAlumnoId IN :ids AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO "
-			+ "AND c.entregaCajaId IS NULL")
+			+ "AND c.entregaCajaId IS NULL AND NOT EXISTS (SELECT m.id FROM MovimientoCaja m WHERE m.cobroId = c.id "
+			+ "AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO)")
 	int anularDeCargosBorrados(@Param("ids") Collection<Long> ids, @Param("usuarioId") Long usuarioId,
 			@Param("ahora") LocalDateTime ahora, @Param("motivo") String motivo);
+
+	/** Pieza 6c-6: ids de los cobros ACTIVOS de esos cargos con una DEVOLUCION ACTIVA enlazada. */
+	@Query("SELECT c.id FROM Cobro c WHERE c.productoAlumnoId IN :ids "
+			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO AND EXISTS (SELECT m.id FROM MovimientoCaja m "
+			+ "WHERE m.cobroId = c.id AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO)")
+	List<Long> idsActivosDevueltosDeCargos(@Param("ids") Collection<Long> ids);
 
 	/** Ids de los cobros ACTIVOS de esos cargos que ya van en una entrega de caja. */
 	@Query("SELECT c.id FROM Cobro c WHERE c.productoAlumnoId IN :ids "

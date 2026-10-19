@@ -18,6 +18,19 @@ public class TesoreriaMovimientoDTO {
 	private Boolean alumnoActivo;
 	/** Entrega 6-3 (D6-9), aditivo: sede del cargo (NULL si no tiene). */
 	private Long sedeId;
+	/**
+	 * Pieza 6c-6 (D6c-12), aditivo: el cargo está devuelto (su cobro ACTIVO tiene una DEVOLUCION ACTIVA enlazada). Sigue
+	 * pagado (decisión 153).
+	 */
+	private boolean devuelto;
+
+	public boolean isDevuelto() {
+		return devuelto;
+	}
+
+	public void setDevuelto(boolean devuelto) {
+		this.devuelto = devuelto;
+	}
 
 	public Long getSedeId() {
 		return sedeId;

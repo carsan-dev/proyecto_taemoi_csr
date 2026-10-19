@@ -147,6 +147,17 @@ public class CajaController {
 		return ResponseEntity.ok(encargos.marcarEntregado(id));
 	}
 
+	/**
+	 * Pieza 6c-6 (195, D6c-10): devuelve el dinero de su encargo caído si aún lo lleva encima (el servicio exige, con la
+	 * fila bloqueada, que lo pidió él y que el cobro es suyo y sin entregar).
+	 */
+	@PostMapping("/profesor/solicitudes/{id}/devolucion")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<SolicitudDTOs.Solicitud> registrarDevolucion(@PathVariable Long id,
+			@RequestBody(required = false) SolicitudRequests.Devolucion peticion) {
+		return ResponseEntity.ok(encargos.registrarDevolucionProfesor(id, peticion == null ? null : peticion.nota()));
+	}
+
 	// ------------------------------------------------------------------ caja de sede
 
 	@GetMapping("/sedes/{sedeId}/resumen")

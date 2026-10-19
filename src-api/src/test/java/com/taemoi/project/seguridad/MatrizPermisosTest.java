@@ -364,6 +364,10 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		m.put("POST /api/caja/profesor/solicitudes/{id}/retirar", encargos + "retirar_enPedido_cancelaElCargo");
 		m.put("POST /api/caja/profesor/solicitudes/{id}/entregado",
 				encargos + "entregado_soloElSolicitanteYEnRecibido_sinExigirCobro");
+		// Pieza 6c-6 (D6c-10): la devolución de su encargo caído si aún lleva el dinero (el servicio exige que la pidió
+		// él y que el cobro es suyo y sin entregar).
+		m.put("POST /api/caja/profesor/solicitudes/{id}/devolucion",
+				"integracion.DevolucionesIntegrationTest#devolucionDelProfesor_soloSiLlevaElDinero");
 		return Map.copyOf(m);
 	}
 

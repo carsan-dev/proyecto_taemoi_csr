@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Respuestas de la API de caja (pieza 6b-2, {@code /api/caja}). Importes con dos decimales.
  *
@@ -73,18 +75,34 @@ public final class CajaDTOs {
 	 * Una entrega de caja. {@code diferencia} = contado − declarado. {@code cobroIds}: los cobros que la componen
 	 * (vacía si está ANULADA: sus cobros volvieron a pendientes). {@code movimientoId}: su SOBRANTE o FALTANTE
 	 * automático, si lo tiene. {@code autoentrega}: quien entrega es quien recibe (responsable de la sede que además es
-	 * profesor; permitido por decisión del propietario).
+	 * profesor; permitido por decisión del propietario). Pieza 6c-6: {@code movimientosDeCobro}, los demás movimientos
+	 * de la entrega enlazados a un cobro (el ERROR +importe de un cobro deshecho ya entregado, decisión 193, y la
+	 * DEVOLUCION de la devolución del profesor, D6c-10), en cualquier estado, para que «declarado» cuadre a la vista.
+	 * Solo sale en el JSON si hay alguno: la respuesta de una entrega de siempre no cambia.
 	 */
 	public record EntregaCaja(Long id, Long sedeId, Long entregadoPorUsuarioId, String entregadoPorNombre,
 			Long recibidoPorUsuarioId, String recibidoPorNombre, BigDecimal importeDeclarado, BigDecimal importeContado,
 			BigDecimal diferencia, LocalDateTime fecha, String nota, String estado, List<Long> cobroIds,
 			Long movimientoId, Long anuladaPorUsuarioId, LocalDateTime anuladaEn, String motivoAnulacion,
-			boolean autoentrega) {
+			boolean autoentrega,
+			@JsonInclude(JsonInclude.Include.NON_EMPTY) List<MovimientoDeEntrega> movimientosDeCobro) {
 	}
 
-	/** Un movimiento de caja (importe con signo). {@code entregaCajaId}: si es el automático de una entrega. */
+	/** Pieza 6c-6: un movimiento de una entrega enlazado a un cobro (ERROR de la 193 o DEVOLUCION de la D6c-10). */
+	public record MovimientoDeEntrega(Long id, String tipo, BigDecimal importe, Long cobroId, String estado) {
+	}
+
+	/**
+	 * Un movimiento de caja (importe con signo). {@code entregaCajaId}: si es el automático de una entrega. Pieza 6c-6:
+	 * {@code cobroId} y {@code productoAlumnoId}, el cobro y el cargo de una devolución enlazada (153) o del ERROR de la
+	 * 193; {@code metodo}, el del cobro (D6c-13: el saldo suma solo los EFECTIVO). Los tres solo salen en el JSON en un
+	 * movimiento enlazado a un cobro: la respuesta de un movimiento de siempre no cambia.
+	 */
 	public record MovimientoCaja(Long id, Long sedeId, String tipo, BigDecimal importe, Long alumnoId,
 			Long entregaCajaId, String nota, Long creadoPorUsuarioId, LocalDateTime fecha, String estado,
-			Long anuladoPorUsuarioId, LocalDateTime anuladoEn, String motivoAnulacion) {
+			Long anuladoPorUsuarioId, LocalDateTime anuladoEn, String motivoAnulacion,
+			@JsonInclude(JsonInclude.Include.NON_NULL) Long cobroId,
+			@JsonInclude(JsonInclude.Include.NON_NULL) Long productoAlumnoId,
+			@JsonInclude(JsonInclude.Include.NON_NULL) String metodo) {
 	}
 }
