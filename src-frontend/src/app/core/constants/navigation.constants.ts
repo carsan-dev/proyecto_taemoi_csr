@@ -75,127 +75,6 @@ export const MAIN_NAV_ITEMS: NavigationMenuItem[] = [
 ];
 
 /**
- * Admin sidebar navigation items
- */
-export const ADMIN_SIDEBAR_SECTIONS = [
-  {
-    title: 'ACCIONES',
-    items: [
-      {
-        label: 'Página principal',
-        route: '/adminpage',
-        icon: 'bi-house-fill',
-      },
-    ],
-  },
-  {
-    title: 'ALUMNOS',
-    items: [
-      {
-        label: 'Listado de alumnos',
-        route: '/alumnosListar',
-        icon: 'bi-people',
-      },
-      {
-        label: 'Modificar alumnos',
-        route: '/alumnosEditar',
-        icon: 'bi-person-gear',
-      },
-      {
-        label: 'Añadir alumnos',
-        route: '/alumnosCrear',
-        icon: 'bi-person-add',
-      },
-      {
-        label: 'Eliminar alumnos',
-        route: '/alumnosEliminar',
-        icon: 'bi-person-x',
-      },
-    ],
-  },
-  {
-    title: 'GRUPOS Y TURNOS',
-    items: [
-      {
-        label: 'Gestión de grupos y turnos',
-        route: '/gruposListar',
-        icon: 'bi-people-fill',
-      },
-      {
-        label: 'Crear turno',
-        route: '/turnosCrear',
-        icon: 'bi-calendar-plus',
-      },
-      {
-        label: 'Crear grupo',
-        route: '/gruposCrear',
-        icon: 'bi-collection',
-      },
-    ],
-  },
-  {
-    title: 'EVENTOS',
-    items: [
-      {
-        label: 'Consultar eventos',
-        route: '/eventosListar',
-        icon: 'bi-calendar-check-fill',
-      },
-      {
-        label: 'Añadir eventos',
-        route: '/eventosCrear',
-        icon: 'bi-calendar-plus-fill',
-      },
-    ],
-  },
-  {
-    title: 'PRODUCTOS',
-    items: [
-      {
-        label: 'Consultar productos',
-        route: '/productosListar',
-        icon: 'bi-box-seam-fill',
-      },
-      {
-        label: 'Añadir productos',
-        route: '/productosCrear',
-        icon: 'bi-plus-square-fill',
-      },
-    ],
-  },
-  {
-    title: 'TESORERÍA',
-    items: [
-      {
-        label: 'Cobros y deudas',
-        route: '/tesoreriaCobros',
-        icon: 'bi-cash-stack',
-      },
-      {
-        label: 'Caja de sede',
-        route: '/cajaSede',
-        icon: 'bi-safe2',
-      },
-      {
-        label: 'Registro de acciones',
-        route: '/auditoriaSistema',
-        icon: 'bi-journal-text',
-      },
-    ],
-  },
-  {
-    title: 'CONVOCATORIAS',
-    items: [
-      {
-        label: 'Consultar convocatorias',
-        route: '/convocatoriasListar',
-        icon: 'bi-clipboard-check-fill',
-      },
-    ],
-  },
-];
-
-/**
  * Admin header quick-access items.
  * Uses "listado" routes as canonical destinations for each module.
  */
@@ -257,6 +136,13 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-cash-stack',
     activePrefixes: ['/tesoreriaCobros'],
     priority: 3,
+  },
+  {
+    label: 'Caja de sede',
+    route: '/cajaSede',
+    icon: 'bi-safe2',
+    activePrefixes: ['/cajaSede'],
+    priority: 4,
   },
   {
     label: 'Registro de acciones',
