@@ -1,3 +1,4 @@
+import { HttpParams } from '@angular/common/http';
 import { of } from 'rxjs';
 
 import { EndpointsService } from './endpoints.service';
@@ -137,6 +138,61 @@ describe('EndpointsService', () => {
       expect(opciones.withCredentials).toBeTrue();
       expect(respuesta.actualizados).toBe(2);
       done();
+    });
+  });
+
+  describe('obtenerTodosLosProductosPaginado', () => {
+    function paramsDe(llamar: (service: EndpointsService) => void): { url: string; params: HttpParams } {
+      const getSpy = jasmine.createSpy('get').and.returnValue(of({ content: [] }));
+      llamar(createService(getSpy));
+      const [url, opciones] = getSpy.calls.mostRecent().args;
+      return { url, params: opciones.params as HttpParams };
+    }
+
+    it('sin filtros nuevos envía solo los parámetros de siempre', () => {
+      const { url, params } = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('', 1, 10, 'concepto', 'asc').subscribe()
+      );
+      expect(url).toMatch(/\/productos$/);
+      expect(params.keys().sort()).toEqual(['order', 'orderBy', 'page', 'size']);
+    });
+
+    it('vacío, undefined y null no envían tipo ni vendibleProfesor', () => {
+      const { params } = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('', 1, 10, 'concepto', 'asc', '', null).subscribe()
+      );
+      expect(params.has('tipo')).toBeFalse();
+      expect(params.has('vendibleProfesor')).toBeFalse();
+      const otro = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('', 1, 10, 'concepto', 'asc', undefined, undefined).subscribe()
+      );
+      expect(otro.params.keys().sort()).toEqual(['order', 'orderBy', 'page', 'size']);
+    });
+
+    it('envía solo los filtros activos', () => {
+      const tipo = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('', 2, 10, 'concepto', 'asc', 'OTRO', null).subscribe()
+      ).params;
+      expect(tipo.get('tipo')).toBe('OTRO');
+      expect(tipo.has('vendibleProfesor')).toBeFalse();
+      expect(tipo.has('concepto')).toBeFalse();
+      expect(tipo.get('page')).toBe('2');
+
+      const caja = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('dobok', 1, 10, 'concepto', 'asc', undefined, false).subscribe()
+      ).params;
+      expect(caja.get('vendibleProfesor')).toBe('false');
+      expect(caja.get('concepto')).toBe('dobok');
+      expect(caja.has('tipo')).toBeFalse();
+    });
+
+    it('envía vendibleProfesor=true y los tres filtros combinados', () => {
+      const { params } = paramsDe((s) =>
+        s.obtenerTodosLosProductosPaginado('dobok', 1, 10, 'concepto', 'asc', 'EXAMEN', true).subscribe()
+      );
+      expect(params.get('vendibleProfesor')).toBe('true');
+      expect(params.get('tipo')).toBe('EXAMEN');
+      expect(params.get('concepto')).toBe('dobok');
     });
   });
 });

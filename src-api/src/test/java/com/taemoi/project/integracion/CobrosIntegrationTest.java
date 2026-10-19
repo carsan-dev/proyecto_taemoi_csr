@@ -376,26 +376,33 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		assertNotNull(entregado.get("entrega_caja_id"));
 	}
 
+	/**
+	 * Pieza 6c-1, decisión 186 (cambio deliberado): sacar de una convocatoria a un alumno con el examen pagado da 409 y no
+	 * cambia nada, con el cobro entregado o no. Antes daba 204, anulaba el cobro («cargo borrado») o, si ya iba en una
+	 * entrega, lo dejaba ACTIVO sin cargo. La anulación «cargo borrado» de {@code alBorrarCargos} sigue cubierta por
+	 * {@code borrarAlumno_…} y {@code borrarConvocatoria_…}, que no cambian.
+	 */
 	@Test
-	void sacarAlumnoDeConvocatoria_anulaElCobroDelExamen() throws Exception {
+	void sacarAlumnoDeConvocatoria_conExamenPagado_409_yElCobroSigueActivo() throws Exception {
 		long inscripcion = inscripcionConCargo(e.aA);
 		long cargo = cargoDe(inscripcion);
 		assertEquals(200, estado(pagoConvocatoria(inscripcion, "{\"cuantiaExamen\":20.0,\"pagado\":true}"),
 				tokenGestor));
 		long cobro = idCobro(cargo);
-		assertEquals(204, estado(delete("/api/alumnos/" + convocatoriaDe(inscripcion) + "/alumno/" + e.aA),
+		assertEquals(409, estado(delete("/api/alumnos/" + convocatoriaDe(inscripcion) + "/alumno/" + e.aA),
 				tokenGestor));
-		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Long.class, cargo));
-		assertAnuladoPorBorrado(cobro);
+		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Long.class, cargo));
+		assertActivoConSuCargo(cobro, cargo);
 
-		// Con el cobro ya entregado: el borrado no falla y el cobro sigue activo, sin cargo.
+		// Con el cobro ya entregado: también 409, y el cobro sigue activo con su cargo.
 		long otra = inscripcionConCargo(e.aA);
 		long cargoOtra = cargoDe(otra);
 		assertEquals(200, estado(pagoConvocatoria(otra, "{\"cuantiaExamen\":20.0,\"pagado\":true}"), tokenGestor));
 		long cobroEntregado = idCobro(cargoOtra);
 		meterEnEntrega(cobroEntregado);
-		assertEquals(204, estado(delete("/api/alumnos/" + convocatoriaDe(otra) + "/alumno/" + e.aA), tokenGestor));
-		assertActivoSinCargo(cobroEntregado);
+		assertEquals(409, estado(delete("/api/alumnos/" + convocatoriaDe(otra) + "/alumno/" + e.aA), tokenGestor));
+		assertActivoConSuCargo(cobroEntregado, cargoOtra);
+		assertNotNull(jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobroEntregado).get("entrega_caja_id"));
 	}
 
 	@Test
@@ -578,6 +585,13 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("ACTIVO", fila.get("estado"));
 		assertNull(fila.get("producto_alumno_id"));
 		assertNotNull(fila.get("entrega_caja_id"));
+		assertNull(fila.get("anulado_en"));
+	}
+
+	private void assertActivoConSuCargo(long cobro, long cargo) {
+		Map<String, Object> fila = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
+		assertEquals("ACTIVO", fila.get("estado"));
+		assertEquals(cargo, numero(fila, "producto_alumno_id"));
 		assertNull(fila.get("anulado_en"));
 	}
 

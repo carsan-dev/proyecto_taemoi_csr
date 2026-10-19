@@ -2203,14 +2203,33 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return convertirAAlumnoConvocatoriaDTO(alumnoConvocatoria);
 	}
 
+	/**
+	 * Pieza 6c-1, decisión 186: con el examen pagado → 409 {@link com.taemoi.project.services.CobroService#EXAMEN_PAGADO_REVIERTE_ANTES}
+	 * sin cambiar nada (también si el cobro ya va en una entrega o si se pagó antes de la 6b-1, sin fila cobro). «Pagado»:
+	 * el cargo del examen, bloqueado y releído, tiene {@code pagado = true}; sin cargo, la inscripción. READ COMMITTED,
+	 * como las demás vías que bloquean el cargo: tras esperar al bloqueo se relee el pago confirmado por otro (con
+	 * REPEATABLE READ se leería la foto de antes de esperar y se borraría un examen recién pagado).
+	 */
 	@Override
-	@Transactional
+	@Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
 	public void eliminarAlumnoDeConvocatoria(Long alumnoId, Long convocatoriaId) {
 		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository
 				.findByConvocatoriaIdAndAlumnoId(convocatoriaId, alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
 
 		ProductoAlumno productoAlumno = alumnoConvocatoria.getProductoAlumno();
+		if (productoAlumno != null) {
+			// Orden de bloqueo de siempre: primero el cargo. Si desapareció mientras se esperaba (otra petición sacó al
+			// alumno o lo borró), 400 «no inscrito», como el PUT de la inscripción: nada se decide con el pago desfasado.
+			productoAlumno = cobros.bloquearCargo(productoAlumno.getId())
+					.orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
+		}
+		boolean examenPagado = productoAlumno != null ? Boolean.TRUE.equals(productoAlumno.getPagado())
+				: Boolean.TRUE.equals(alumnoConvocatoria.getPagado());
+		if (examenPagado) {
+			throw new IllegalStateException(com.taemoi.project.services.CobroService.EXAMEN_PAGADO_REVIERTE_ANTES);
+		}
+
 		if (productoAlumno != null) {
 			// Pieza 6b-1: su cobro ACTIVO se anula («cargo borrado») en esta transacción, antes de borrar el cargo.
 			cobros.alBorrarCargos(List.of(productoAlumno.getId()));

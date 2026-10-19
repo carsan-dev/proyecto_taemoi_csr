@@ -31,6 +31,7 @@ import { SearchableSelectDirective } from '../../../directives/searchable-select
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
+import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 
 /** Outcome of requesting an alumno from the route (loaded, or the request failed) */
 interface ResultadoCargaAlumno {
@@ -1982,10 +1983,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
               this.cargarConvocatoriasDelAlumno(this.alumnoId!);
               this.obtenerProductosAlumno(this.alumnoId!);
             },
-            error: () => {
+            error: (e) => {
               Swal.fire({
                 title: 'Error',
-                text: 'No se pudo eliminar al alumno de la convocatoria.',
+                text: mensajeDeError(e) ?? 'No se pudo eliminar al alumno de la convocatoria.',
                 icon: 'error',
               });
             },

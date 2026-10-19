@@ -26,6 +26,7 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.request.VendibleProfesorRequests;
 import com.taemoi.project.entities.Producto;
+import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.services.ProductoService;
 
 @RestController
@@ -37,7 +38,8 @@ public class ProductoController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<Page<Producto>> obtenerProductos(@RequestParam(required = false) String concepto,
+	public ResponseEntity<?> obtenerProductos(@RequestParam(required = false) String concepto,
+			@RequestParam(required = false) String tipo, @RequestParam(required = false) Boolean vendibleProfesor,
 			@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size,
 			@RequestParam(defaultValue = "id") String orderBy, @RequestParam(defaultValue = "asc") String order) {
 
@@ -49,8 +51,21 @@ public class ProductoController {
 		}
 		PageRequest pageRequest = PageRequest.of(pageIndex, size, sort);
 
+		// Pieza 6b-3d: tipo y vendibleProfesor son opcionales; sin ellos, el comportamiento de siempre.
+		TipoProducto tipoFiltro = null;
+		if (tipo != null && !tipo.isBlank()) {
+			try {
+				tipoFiltro = TipoProducto.valueOf(tipo.trim().toUpperCase(java.util.Locale.ROOT));
+			} catch (IllegalArgumentException e) {
+				return ResponseEntity.badRequest().body(Map.of("mensaje", "El tipo de producto «" + tipo
+						+ "» no es válido. Los tipos son: " + java.util.Arrays.toString(TipoProducto.values()) + "."));
+			}
+		}
+
 		Page<Producto> productos;
-		if (concepto != null && !concepto.isEmpty()) {
+		if (tipoFiltro != null || vendibleProfesor != null) {
+			productos = productoService.buscarProductosFiltrados(concepto, tipoFiltro, vendibleProfesor, pageRequest);
+		} else if (concepto != null && !concepto.isEmpty()) {
 			productos = productoService.buscarProductosPorConcepto(concepto, pageRequest);
 		} else {
 			productos = productoService.obtenerProductosPaginados(pageRequest);

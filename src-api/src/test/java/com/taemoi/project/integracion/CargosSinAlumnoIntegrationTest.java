@@ -104,7 +104,9 @@ class CargosSinAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, cobros.size());
 		assertEquals(alumno, numero(cobros.get(0), "alumno_id"), "el cobro copia el alumno resuelto");
 
-		assertEquals(200, estado(pago(cargo, "{\"precio\":16}"), tGestor), "otro campo");
+		// Pieza 6c-1 (decisión 187): con el cobro ACTIVO el precio ya no cambia (409); otro campo, sí.
+		assertEquals(409, estado(pago(cargo, "{\"precio\":16}"), tGestor), "precio con cobro activo");
+		assertEquals(200, estado(pago(cargo, "{\"notas\":\"otro campo\"}"), tGestor), "otro campo");
 		assertEquals(200, estado(pago(cargo, "{\"pagado\":false}"), tPropietario), "revertir (propietario)");
 		assertFalse(pagado(cargo));
 		assertFalse(derechoExamen(alumno), "revertido: pierde el derecho a examen");

@@ -636,6 +636,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (!viaProfesor) {
 			exigirEdicionPermitidaAlResponsable(productoAlumno, detallesDTO);
 		}
+		// Pieza 6c-1, decisión 187, sin excepciones (también vía profesor): con un cobro ACTIVO (entregado o no) no se
+		// cambian ni el precio ni la cantidad → 409 antes de aplicar nada; tampoco si a la vez se pide revertir (primero
+		// se revierte y después se cambia). Concepto, fechas y notas, sí. Sin cobro ACTIVO (pagado antes de la 6b-1), como
+		// antes. El cargo ya está bloqueado: ningún cobro suyo puede aparecer o anularse mientras tanto.
+		if (cambiaPrecioOCantidad(productoAlumno, detallesDTO) && cobros.tieneCobroActivo(productoAlumno.getId())) {
+			throw new IllegalStateException(CobroService.PRECIO_CON_COBRO_ACTIVO);
+		}
 
 		if (detallesDTO.getCantidad() != null) {
 			productoAlumno.setCantidad(detallesDTO.getCantidad());
@@ -718,6 +725,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 						cargo.getFechaAsignacion()))
 				|| (cambios.getFechaPago() != null && !mismoInstante(cambios.getFechaPago(), cargo.getFechaPago()))
 				|| Boolean.FALSE.equals(cambios.getPagado());
+	}
+
+	/** Pieza 6c-1 (187): la cantidad llega distinta, o el precio llega distinto (con el guardado null, distinto). */
+	private static boolean cambiaPrecioOCantidad(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		return (cambios.getCantidad() != null && !cambios.getCantidad().equals(cargo.getCantidad()))
+				|| (cambios.getPrecio() != null
+						&& (cargo.getPrecio() == null || Double.compare(cambios.getPrecio(), cargo.getPrecio()) != 0));
 	}
 
 	static final String CARGO_CANCELADO_SOLO_NOTAS = "El cargo está cancelado: solo se pueden cambiar las notas. "

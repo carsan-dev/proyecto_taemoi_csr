@@ -33,12 +33,57 @@
 
     <!-- Filter Bar -->
     <div class="admin-filter-bar">
-      <div class="filter-row">
+      <div class="filter-row filtros-productos">
+        <div class="filter-item filtro-concepto">
+          <label for="filtro-concepto" class="form-label fw-semibold">Concepto</label>
+          <input id="filtro-concepto" type="search" class="admin-form-control" placeholder="Buscar por concepto"
+            autocomplete="off" [(ngModel)]="conceptoFiltro" (ngModelChange)="filtrarPorConcepto()" />
+        </div>
         <div class="filter-item">
-          <input type="text" class="admin-form-control" placeholder="🔍 Filtrar por concepto..."
-            [(ngModel)]="conceptoFiltro" (ngModelChange)="filtrarPorConcepto()" />
+          <label for="filtro-tipo" class="form-label fw-semibold">Tipo</label>
+          <select id="filtro-tipo" class="admin-form-control form-select" [(ngModel)]="tipoFiltro"
+            (ngModelChange)="alCambiarFiltro()">
+            <option value="">Todos</option>
+            @for (tipo of tiposProducto; track tipo.valor) {
+              <option [value]="tipo.valor">{{ tipo.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filtro-mi-caja" class="form-label fw-semibold">Mi caja</label>
+          <select id="filtro-mi-caja" class="admin-form-control form-select" [(ngModel)]="miCajaFiltro"
+            (ngModelChange)="alCambiarFiltro()">
+            <option value="">Todos</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button type="button" class="admin-btn admin-btn-outline" (click)="limpiarFiltros()"
+            [disabled]="!hayFiltros">
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
+            <span>Limpiar</span>
+          </button>
         </div>
       </div>
+      <div class="filtros-resumen" role="status" aria-live="polite">
+        @if (!cargando) {
+          <span class="filtros-total">{{ textoTotal }}</span>
+        }
+      </div>
+      @if (hayFiltros) {
+        <ul class="filtros-chips" aria-label="Filtros activos">
+          @for (filtro of filtrosActivos; track filtro.clave) {
+            <li class="filtro-chip">
+              <span>{{ filtro.texto }}</span>
+              <button type="button" class="filtro-chip-quitar" (click)="quitarFiltro(filtro.clave)"
+                [attr.aria-label]="'Quitar filtro ' + filtro.texto">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </div>
 
     <!-- Skeleton Loading -->
@@ -134,7 +179,9 @@
             }
             @if (!cargando && (!productos || productos.length === 0)) {
               <tr>
-                <td colspan="6" class="text-center text-muted">No hay productos disponibles</td>
+                <td colspan="6" class="text-center text-muted">
+                  {{ hayFiltros ? 'Ningún producto coincide con los filtros' : 'No hay productos disponibles' }}
+                </td>
               </tr>
             }
           </tbody>

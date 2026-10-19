@@ -20,6 +20,7 @@ import { finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 import { LoadingService } from '../../../servicios/generales/loading.service';
+import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 
 // Register Spanish locale
 registerLocaleData(localeEs, 'es');
@@ -493,12 +494,14 @@ export class ListadoConvocatoriasComponent implements OnInit {
           });
           this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
         },
-        error: () => {
+        error: (e) => {
           Swal.fire({
             title: 'Error',
-            text: 'No se pudo actualizar el alumno.',
+            text: mensajeDeError(e) ?? 'No se pudo actualizar el alumno.',
             icon: 'error',
           });
+          // Pieza 6c-1 (194): la cuantía y el pago vuelven a lo guardado.
+          this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
         },
       });
   }
@@ -632,10 +635,10 @@ export class ListadoConvocatoriasComponent implements OnInit {
               });
               this.seleccionarConvocatoria(this.convocatoriaSeleccionada);
             },
-            error: () => {
+            error: (e) => {
               Swal.fire({
                 title: 'Error',
-                text: 'No se pudo eliminar al alumno.',
+                text: mensajeDeError(e) ?? 'No se pudo eliminar al alumno.',
                 icon: 'error',
               });
             },

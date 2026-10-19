@@ -72,7 +72,10 @@
     "src/app/guards/profesor.guard.spec.ts",
     "src/app/servicios/authentication/authentication.mi-caja.spec.ts",
     "src/app/componentes/endpoints/mi-caja/mi-caja.component.spec.ts",
-    "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts"
+    "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts",
+    "src/app/componentes/endpoints/listado-convocatorias/listado-convocatorias.bloqueos.spec.ts",
+    "src/app/componentes/endpoints/editar-alumno/editar-alumno.bloqueos.spec.ts",
+    "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.bloqueos.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
+import { mensajeDeError } from '../../../../servicios/endpoints/caja.service';
 import { Producto } from '../../../../interfaces/producto';
 import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 
@@ -416,9 +417,9 @@ export class ProductosAlumnoComponent implements OnInit {
       }
       operaciones.push(
         this.endpointsService.actualizarProductoAlumno(producto.id, producto).pipe(
-          catchError(() => {
+          catchError((e) => {
             hasErrors = true;
-            showErrorToast('No se pudo actualizar un producto');
+            showErrorToast(mensajeDeError(e) ?? 'No se pudo actualizar un producto');
             return of(null);
           })
         )

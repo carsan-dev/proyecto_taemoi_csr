@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { debounceTime, finalize } from 'rxjs/operators';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 @Component({
@@ -21,6 +21,19 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 export class ListadoProductosComponent implements OnInit, OnDestroy {
   productos: Array<Producto & { selected?: boolean }> = [];
   conceptoFiltro: string = '';
+  /** Filtro «Tipo»: nombre del enum del backend, o '' para todos. */
+  tipoFiltro: string = '';
+  /** Filtro «Mi caja»: 'true' (sí), 'false' (no) o '' para todos. */
+  miCajaFiltro: '' | 'true' | 'false' = '';
+  readonly tiposProducto: ReadonlyArray<{ valor: string; etiqueta: string }> = [
+    { valor: 'MENSUALIDAD', etiqueta: 'Mensualidad' },
+    { valor: 'RESERVA_PLAZA', etiqueta: 'Reserva de plaza' },
+    { valor: 'LICENCIA', etiqueta: 'Licencia' },
+    { valor: 'COMPETIDOR', etiqueta: 'Competidor' },
+    { valor: 'EXAMEN', etiqueta: 'Examen' },
+    { valor: 'RECOMPENSA', etiqueta: 'Recompensa' },
+    { valor: 'OTRO', etiqueta: 'Otro' },
+  ];
   paginaActual: number = 1;
   tamanoPagina: number = 10;
   totalPaginas: number = 0;
@@ -31,22 +44,26 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
   guardandoIds = new Set<number>();
   guardandoBloque = false;
   private searchSubject = new Subject<string>();
+  /** Concepto con el que se cargó la lista por última vez (para no repetir la petición al teclear lo mismo). */
+  private conceptoAplicado = '';
   private readonly storageKey = 'listadoProductosEstado';
 
   constructor(private readonly endpointsService: EndpointsService) {}
 
   ngOnInit(): void {
     this.restaurarEstadoPaginacion();
+    this.conceptoAplicado = this.conceptoFiltro;
     this.obtenerProductos();
 
     // Setup debounced search
     this.searchSubject.pipe(
-      debounceTime(500), // Wait 500ms after user stops typing
-      distinctUntilChanged() // Only trigger if value actually changed
+      debounceTime(500) // Wait 500ms after user stops typing
     ).subscribe(() => {
-      this.paginaActual = 1;
-      this.guardarEstadoPaginacion();
-      this.obtenerProductos();
+      // Solo recarga si el concepto cambió de verdad respecto a la última carga
+      if (this.conceptoFiltro === this.conceptoAplicado) {
+        return;
+      }
+      this.recargarDesdeLaPrimeraPagina();
     });
   }
 
@@ -62,7 +79,9 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
         this.paginaActual,
         this.tamanoPagina,
         this.orderBy,
-        this.order
+        this.order,
+        this.tipoFiltro || undefined,
+        this.miCajaFiltro === '' ? null : this.miCajaFiltro === 'true'
       )
       .pipe(finalize(() => (this.cargando = false)))
       .subscribe({
@@ -253,6 +272,60 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
     this.searchSubject.next(this.conceptoFiltro);
   }
 
+  /** Cambia un desplegable: recarga desde la página 1. */
+  alCambiarFiltro(): void {
+    this.recargarDesdeLaPrimeraPagina();
+  }
+
+  limpiarFiltros(): void {
+    this.conceptoFiltro = '';
+    this.tipoFiltro = '';
+    this.miCajaFiltro = '';
+    this.recargarDesdeLaPrimeraPagina();
+  }
+
+  quitarFiltro(filtro: 'concepto' | 'tipo' | 'miCaja'): void {
+    if (filtro === 'concepto') {
+      this.conceptoFiltro = '';
+    } else if (filtro === 'tipo') {
+      this.tipoFiltro = '';
+    } else {
+      this.miCajaFiltro = '';
+    }
+    this.recargarDesdeLaPrimeraPagina();
+  }
+
+  get hayFiltros(): boolean {
+    return this.filtrosActivos.length > 0;
+  }
+
+  get filtrosActivos(): Array<{ clave: 'concepto' | 'tipo' | 'miCaja'; texto: string }> {
+    const activos: Array<{ clave: 'concepto' | 'tipo' | 'miCaja'; texto: string }> = [];
+    const concepto = this.conceptoFiltro.trim();
+    if (concepto) {
+      activos.push({ clave: 'concepto', texto: `"${concepto}"` });
+    }
+    if (this.tipoFiltro) {
+      const tipo = this.tiposProducto.find((t) => t.valor === this.tipoFiltro);
+      activos.push({ clave: 'tipo', texto: `Tipo: ${tipo ? tipo.etiqueta : this.tipoFiltro}` });
+    }
+    if (this.miCajaFiltro) {
+      activos.push({ clave: 'miCaja', texto: `Mi caja: ${this.miCajaFiltro === 'true' ? 'Sí' : 'No'}` });
+    }
+    return activos;
+  }
+
+  get textoTotal(): string {
+    return `${this.totalElementos} ${this.totalElementos === 1 ? 'producto' : 'productos'}`;
+  }
+
+  private recargarDesdeLaPrimeraPagina(): void {
+    this.conceptoAplicado = this.conceptoFiltro;
+    this.paginaActual = 1;
+    this.guardarEstadoPaginacion();
+    this.obtenerProductos();
+  }
+
   cambiarPagina(pagina: number): void {
     if (this.cargando || pagina === this.paginaActual) {
       return;
@@ -294,6 +367,8 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       paginaActual: this.paginaActual,
       tamanoPagina: this.tamanoPagina,
       conceptoFiltro: this.conceptoFiltro,
+      tipoFiltro: this.tipoFiltro,
+      miCajaFiltro: this.miCajaFiltro,
       orderBy: this.orderBy,
       order: this.order,
     };
@@ -310,6 +385,8 @@ export class ListadoProductosComponent implements OnInit, OnDestroy {
       this.paginaActual = estado.paginaActual || 1;
       this.tamanoPagina = estado.tamanoPagina || this.tamanoPagina;
       this.conceptoFiltro = estado.conceptoFiltro || '';
+      this.tipoFiltro = this.tiposProducto.some((t) => t.valor === estado.tipoFiltro) ? estado.tipoFiltro : '';
+      this.miCajaFiltro = estado.miCajaFiltro === 'true' || estado.miCajaFiltro === 'false' ? estado.miCajaFiltro : '';
       this.orderBy = estado.orderBy || 'concepto';
       this.order = estado.order || 'asc';
     } catch (error) {
