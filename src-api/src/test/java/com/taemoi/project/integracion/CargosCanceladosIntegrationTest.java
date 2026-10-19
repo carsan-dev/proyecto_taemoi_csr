@@ -124,19 +124,22 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(camposVigente.contains("canceladoEn"), camposVigente.toString());
 		assertFalse(camposVigente.contains("motivoCancelacion"));
 		assertFalse(camposVigente.contains("canceladoPorUsuarioId"));
+		assertFalse(camposVigente.contains("canceladoPorNombre"));
 
 		JsonNode cancelado = leer(cancelar(cargo, "  se dio de baja antes de empezar  "), tGestor, 200);
 		assertNotNull(cancelado.get("canceladoEn"));
 		assertEquals("se dio de baja antes de empezar", cancelado.get("motivoCancelacion").asText(), "sin espacios");
 		assertEquals(e.gestor, cancelado.get("canceladoPorUsuarioId").asLong());
+		assertEquals(nombreDeCuenta(e.gestor), cancelado.get("canceladoPorNombre").asText(), "nombre de quien cancela");
 		assertFalse(cancelado.get("pagado").asBoolean());
 		Map<String, Object> fila = filaCargo(cargo);
 		assertNotNull(fila.get("cancelado_en"));
 		assertEquals(e.gestor, numero(fila, "cancelado_por_usuario_id"));
 		JsonNode enFicha = fichaDe(alumno, cargo);
 		Set<String> camposCancelado = new HashSet<>(camposVigente);
-		camposCancelado.addAll(Set.of("canceladoEn", "canceladoPorUsuarioId", "motivoCancelacion"));
-		assertEquals(camposCancelado, campos(enFicha), "solo se añaden los tres campos");
+		camposCancelado.addAll(Set.of("canceladoEn", "canceladoPorUsuarioId", "canceladoPorNombre", "motivoCancelacion"));
+		assertEquals(camposCancelado, campos(enFicha), "solo se añaden los cuatro campos");
+		assertEquals(nombreDeCuenta(e.gestor), enFicha.get("canceladoPorNombre").asText(), "también en la ficha (lista)");
 		assertEquals("CARGO CARGO_CANCELADO sede=#" + e.sA + " cargo=#" + cargo, registro("CARGO_CANCELADO", cargo));
 
 		assertEquals(409, estado(cancelar(cargo, "otra vez"), tGestor), "ya cancelado");
@@ -145,6 +148,7 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(reactivado.has("canceladoEn"));
 		assertFalse(reactivado.has("motivoCancelacion"));
 		assertFalse(reactivado.has("canceladoPorUsuarioId"));
+		assertFalse(reactivado.has("canceladoPorNombre"));
 		fila = filaCargo(cargo);
 		assertNull(fila.get("cancelado_en"));
 		assertNull(fila.get("cancelado_por_usuario_id"));
@@ -617,6 +621,13 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 				alumno, convocatoria, e.org, cargo);
 		return jdbc.queryForObject("SELECT id FROM alumno_convocatoria WHERE alumno_id = ? AND convocatoria_id = ?",
 				Long.class, alumno, convocatoria);
+	}
+
+	/** Nombre visible de una cuenta (nombre y apellidos), como lo pinta la caja. */
+	private String nombreDeCuenta(long usuarioId) {
+		Map<String, Object> fila = jdbc.queryForMap("SELECT nombre, apellidos FROM usuario WHERE id = ?", usuarioId);
+		return ((fila.get("nombre") == null ? "" : fila.get("nombre")) + " "
+				+ (fila.get("apellidos") == null ? "" : fila.get("apellidos"))).trim();
 	}
 
 	private void meterEnEntrega(long cobro) {

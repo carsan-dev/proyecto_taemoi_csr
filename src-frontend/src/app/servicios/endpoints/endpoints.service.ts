@@ -654,6 +654,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /** Pieza 6b-2c: cancela un cargo pendiente (motivo obligatorio). Errores 400/409 con {mensaje}: los pinta el interceptor. */
+  cancelarProductoAlumno(id: number, motivo: string): Observable<ProductoAlumnoDTO> {
+    return this.http
+      .post<ProductoAlumnoDTO>(`${this.urlBase}/productos-alumno/${id}/cancelar`, { motivo }, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
+  /** Pieza 6b-2c: reactiva un cargo cancelado (vuelve a pendiente). */
+  reactivarProductoAlumno(id: number): Observable<ProductoAlumnoDTO> {
+    return this.http
+      .post<ProductoAlumnoDTO>(`${this.urlBase}/productos-alumno/${id}/reactivar`, null, { withCredentials: true })
+      .pipe(catchError(this.manejarError));
+  }
+
   eliminarProductoAlumno(id: number): Observable<any> {
     return this.http
       .delete<void>(`${this.urlBase}/productos-alumno/${id}`, {

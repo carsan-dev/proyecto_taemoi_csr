@@ -1,0 +1,699 @@
+@use '../tesoreria-base';
+
+// Caja de sede (pieza 6b-3): mismo mundo que Cobros y deudas.
+
+.caja-header {
+  align-items: flex-end;
+}
+
+.caja-selectores {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.selector-cabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 12rem;
+
+  label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  select {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: #ffffff;
+    color: #1a202c;
+  }
+
+  select:disabled {
+    background: #edf2f7;
+    color: #4a5568;
+  }
+}
+
+// Foco visible de teclado en toda la pantalla y los diálogos.
+:is(button, select, input, textarea, a):focus-visible {
+  outline: 2px solid #2b6cb0;
+  outline-offset: 2px;
+}
+
+.page-header :is(select, button):focus-visible {
+  outline-color: #ffffff;
+}
+
+.estado-pagina {
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  color: #4a5568;
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+
+  i {
+    font-size: 1.6rem;
+    color: #4a5568;
+  }
+}
+
+.aviso-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #feb2b2;
+  background: #fff5f5;
+  color: #822727;
+  font-weight: 600;
+
+  span {
+    flex: 1;
+  }
+}
+
+// ---------------------------------------------------------------- métricas
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.metrica {
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d9e2ec;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(44, 82, 130, 0.07);
+
+  .titulo {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #4a5568;
+    font-weight: 700;
+  }
+
+  .valor {
+    margin: 0.4rem 0 0.3rem;
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #1a202c;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .valor-aviso {
+    color: #9c4221;
+  }
+
+  .valor-negativo {
+    color: #c53030;
+  }
+
+  .valor-positivo {
+    color: #276749;
+  }
+
+  .detalle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #4a5568;
+  }
+}
+
+// ---------------------------------------------------------------- tablas
+
+.tabla-caja {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    text-align: left;
+    font-size: 0.8rem;
+    color: #4a5568;
+    background: #f7fafc;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
+  }
+
+  thead th.num {
+    text-align: right;
+  }
+
+  tbody td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 0.9rem;
+    color: #1a202c;
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .importe {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  // Movimientos: color por signo (el signo también va escrito). Con `tbody td` delante para ganar a la regla
+  // general de las celdas (el encapsulado de Angular suma un atributo por elemento).
+  tbody td.importe-negativo {
+    color: #822727;
+  }
+
+  tbody td.importe-positivo {
+    color: #22543d;
+  }
+
+  // Anulados: tachados y apagados, sin color de signo.
+  tbody tr.fila-anulada td:is(.importe-negativo, .importe-positivo) {
+    color: #4a5568;
+  }
+}
+
+.col-accion {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.nota-celda {
+  max-width: 28rem;
+}
+
+.motivo {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.fila-anulada {
+  background: #f7f8fa;
+
+  .tachable {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    color: #4a5568;
+  }
+
+  // Anulados: tachados y apagados, sin color de signo.
+  .importe-negativo,
+  .importe-positivo,
+  .importe-negativo .tachable,
+  .importe-positivo .tachable {
+    color: #4a5568;
+  }
+}
+
+.estado-chip {
+  margin-right: 0.25rem;
+  white-space: nowrap;
+
+  i {
+    margin-right: 0.15rem;
+  }
+}
+
+.chip-cuadra {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.chip-falta {
+  background: #fed7d7;
+  color: #822727;
+}
+
+.chip-sobra {
+  background: #e6fffa;
+  color: #234e52;
+}
+
+.chip-aviso {
+  background: #feebc8;
+  color: #7b341e;
+}
+
+.chip-neutro,
+.chip-anulada {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.btn-cobrar {
+  background: #2f855a;
+  color: #ffffff;
+  min-height: 2.25rem;
+}
+
+.btn-cobrar:hover:not(:disabled) {
+  background: #276749;
+}
+
+.btn-principal {
+  min-height: 2.25rem;
+}
+
+.btn-accion {
+  color: #ffffff;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  min-height: 2rem;
+}
+
+.btn-anular {
+  background: #c53030;
+}
+
+.btn-anular:hover {
+  background: #9b2c2c;
+}
+
+.spinner-border-sm {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+// ---------------------------------------------------------------- diálogos
+
+.caja-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(640px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.caja-modal-estrecho {
+  width: min(520px, calc(100vw - 2rem));
+}
+
+.caja-modal-header {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.12rem;
+    color: #1a202c;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #4a5568;
+    font-size: 0.9rem;
+  }
+}
+
+.caja-modal-cuerpo {
+  padding: 1rem 1.1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.caja-modal-footer {
+  padding: 0.9rem 1.1rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.lista-cobros {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  max-height: 16rem;
+  overflow-y: auto;
+  // En un cuerpo flex en columna no debe encogerse por debajo de su contenido (se montaba sobre el total).
+  flex-shrink: 0;
+
+  legend {
+    float: left;
+    width: 100%;
+    margin: 0;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #4a5568;
+    background: #f7fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  // «Cobros» a la izquierda y la casilla de todos a la derecha, en la columna de las casillas de cada fila.
+  .cabecera-cobros {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
+  input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #2f855a;
+    cursor: pointer;
+  }
+}
+
+.cobro-item {
+  clear: both;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #edf2f7;
+  cursor: pointer;
+  color: #1a202c;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:hover {
+    background: #f7fafc;
+  }
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: #2f855a;
+  }
+}
+
+.cobro-texto {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.cobro-importe {
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.deberia {
+  margin: 0;
+  font-size: 1rem;
+  color: #2d3748;
+
+  strong {
+    font-size: 1.15rem;
+    color: #1a202c;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #2d3748;
+  }
+
+  select,
+  textarea,
+  input {
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.95rem;
+    background: #ffffff;
+    color: #1a202c;
+    width: 100%;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  :is(select, textarea, input):focus {
+    border-color: #2b6cb0;
+  }
+
+  input[aria-invalid='true'] {
+    border-color: #c53030;
+  }
+}
+
+// Grupo de entrada: el «€» va dentro del mismo recuadro, nunca fuera del ancho del diálogo.
+.campo .campo-importe {
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 12rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+
+  &:focus-within {
+    border-color: #2b6cb0;
+    outline: 2px solid #2b6cb0;
+    outline-offset: 2px;
+  }
+
+  &:has(input[aria-invalid='true']) {
+    border-color: #c53030;
+  }
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    border: 0;
+    border-radius: 0;
+    text-align: right;
+    font-weight: 700;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input:focus-visible {
+    outline: none;
+  }
+
+  span {
+    display: flex;
+    align-items: center;
+    padding: 0 0.7rem;
+    background: #f7fafc;
+    border-left: 1px solid #e2e8f0;
+    font-weight: 700;
+    color: #4a5568;
+  }
+}
+
+.obligatorio,
+.opcional {
+  font-weight: 600;
+  color: #4a5568;
+  margin-left: 0.25rem;
+}
+
+.obligatorio {
+  color: #9b2c2c;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #4a5568;
+}
+
+.ayuda-error {
+  color: #9b2c2c;
+  font-weight: 600;
+}
+
+.aviso-cuadre {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4a5568;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.aviso-falta {
+  color: #c53030;
+}
+
+.aviso-sobra {
+  color: #276749;
+}
+
+.error-dialogo {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  color: #822727;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+// ---------------------------------------------------------------- responsive
+
+@media (max-width: 1100px) {
+  .metricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .caja-header {
+    align-items: stretch;
+  }
+
+  .caja-selectores,
+  .selector-cabecera {
+    width: 100%;
+  }
+
+  .selector-cabecera {
+    min-width: 0;
+  }
+
+  // Tablas como filas apiladas: cada celda con su etiqueta.
+  .tabla-caja {
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      display: block;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    tbody tr:last-child {
+      border-bottom: 0;
+    }
+
+    tbody td {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.25rem 0;
+      border: 0;
+      text-align: right;
+    }
+
+    tbody td[data-label]::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #4a5568;
+      text-align: left;
+    }
+
+    tbody td:first-child {
+      font-size: 0.95rem;
+    }
+
+    .col-accion {
+      width: auto;
+      display: block;
+      padding-top: 0.5rem;
+      text-align: left;
+
+      button {
+        width: 100%;
+      }
+    }
+
+    .nota-celda {
+      max-width: none;
+      flex-wrap: wrap;
+    }
+  }
+
+  .caja-modal {
+    top: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: 100vw;
+    max-height: 92dvh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .caja-modal-footer {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .campo .campo-importe {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .metricas {
+    grid-template-columns: 1fr;
+  }
+}

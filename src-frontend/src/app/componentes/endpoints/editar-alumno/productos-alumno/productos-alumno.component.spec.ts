@@ -3,11 +3,20 @@ import type { ComponentFixture } from '@angular/core/testing';
 import type { ProductoAlumnoDTO } from '../../../../interfaces/producto-alumno-dto';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
 import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { ProductosAlumnoComponent } from './productos-alumno.component';
+
+function authFalso(admin: boolean): Partial<AuthenticationService> {
+  return {
+    rolesEstanCargados: () => true,
+    tieneRolAdmin: () => admin,
+    obtenerRoles: () => of(admin ? ['ROLE_ADMIN'] : ['ROLE_MANAGER']),
+  };
+}
 
 describe('ProductosAlumnoComponent: fecha de asignación', () => {
   let fixture: ComponentFixture<ProductosAlumnoComponent>;
@@ -38,6 +47,7 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
         { provide: ActivatedRoute, useValue: {} },
         { provide: EndpointsService, useValue: endpoints },
         { provide: Location, useValue: {} },
+        { provide: AuthenticationService, useValue: authFalso(false) },
       ],
     }).compileComponents();
     spyOn(ProductosAlumnoComponent.prototype, 'ngOnInit').and.stub();
@@ -113,6 +123,9 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
     expect(input().value).toBe(formatDate(original, 'yyyy-MM-dd', 'en-US'));
     expect(component.hasPendingChanges()).toBeFalse();
     expect(endpoints.actualizarProductoAlumno).not.toHaveBeenCalled();
+    // Pieza 6b-2c: solo el propietario borra, y solo cargos sin pagar.
+    component.esPropietario = true;
+    component.productosAlumno[0].pagado = false;
     component.marcarProductoParaEliminar(1);
     fixture.detectChanges();
     expect(input().disabled).toBeTrue();
@@ -159,7 +172,7 @@ describe('ProductosAlumnoComponent: matrícula por deporte', () => {
     endpoints = jasmine.createSpyObj<EndpointsService>('EndpointsService', [
       'asignarProductoAAlumno', 'asignarProductoAAlumnoDeporte', 'obtenerProductosDelAlumno',
     ]);
-    component = new ProductosAlumnoComponent({} as ActivatedRoute, endpoints, {} as Location);
+    component = new ProductosAlumnoComponent({} as ActivatedRoute, endpoints, {} as Location, authFalso(false) as AuthenticationService);
     component.alumnoId = 10;
     component.products = [{
       id: 20, concepto: 'Matrícula anual', precio: 25,
@@ -183,6 +196,7 @@ describe('ProductosAlumnoComponent: matrícula por deporte', () => {
         { provide: ActivatedRoute, useValue: {} },
         { provide: EndpointsService, useValue: endpoints },
         { provide: Location, useValue: {} },
+        { provide: AuthenticationService, useValue: authFalso(false) },
       ],
     }).compileComponents();
     spyOn(ProductosAlumnoComponent.prototype, 'ngOnInit').and.stub();
@@ -273,5 +287,150 @@ describe('ProductosAlumnoComponent: matrícula por deporte', () => {
     component.confirmarCambiosPendientes();
     expect(endpoints.asignarProductoAAlumno).toHaveBeenCalledWith(10, 20, jasmine.objectContaining({ cantidad: 1 }));
     expect(endpoints.asignarProductoAAlumnoDeporte).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('ProductosAlumnoComponent: cargos cancelados (6b-3)', () => {
+  let fixture: ComponentFixture<ProductosAlumnoComponent>;
+  let component: ProductosAlumnoComponent;
+  let endpoints: jasmine.SpyObj<EndpointsService>;
+  let fire: jasmine.Spy;
+
+  const pendiente: ProductoAlumnoDTO = {
+    id: 1, productoId: 20, alumnoId: 10, concepto: 'MENSUALIDAD MARZO', fechaAsignacion: '2026-03-01T10:00:00Z' as unknown as Date,
+    fechaPago: null, cantidad: 1, precio: 30, pagado: false, notas: '',
+  };
+  const pagado: ProductoAlumnoDTO = { ...pendiente, id: 2, concepto: 'DOBOK', pagado: true };
+  const cancelado: ProductoAlumnoDTO = {
+    ...pendiente, id: 3, concepto: 'LICENCIA', canceladoEn: [2026, 3, 4, 12, 0, 0, 0], canceladoPorUsuarioId: 7,
+    canceladoPorNombre: 'Gestora Prueba', motivoCancelacion: 'se dio de baja',
+  };
+
+  async function montar(admin: boolean): Promise<void> {
+    endpoints = jasmine.createSpyObj<EndpointsService>('EndpointsService', [
+      'obtenerProductosDelAlumno', 'actualizarProductoAlumno', 'cancelarProductoAlumno', 'reactivarProductoAlumno',
+    ]);
+    endpoints.obtenerProductosDelAlumno.and.callFake(() => of([{ ...cancelado }, { ...pagado }, { ...pendiente }]));
+    await TestBed.configureTestingModule({
+      imports: [ProductosAlumnoComponent],
+      providers: [
+        { provide: ActivatedRoute, useValue: {} },
+        { provide: EndpointsService, useValue: endpoints },
+        { provide: Location, useValue: {} },
+        { provide: AuthenticationService, useValue: authFalso(admin) },
+      ],
+    }).compileComponents();
+    spyOn(ProductosAlumnoComponent.prototype, 'ngOnInit').and.callFake(function (this: ProductosAlumnoComponent) {
+      this.resolverPermisos();
+    });
+    fire = spyOn(Swal, 'fire').and.returnValue(Promise.resolve({ isConfirmed: false } as any));
+    fixture = TestBed.createComponent(ProductosAlumnoComponent);
+    component = fixture.componentInstance;
+    component.alumnoId = 10;
+    fixture.detectChanges();
+    component.obtenerProductosAlumno(10);
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
+
+  afterEach(() => fixture?.destroy());
+
+  function fila(concepto: string): HTMLTableRowElement {
+    const filas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLTableRowElement>('tbody tr'));
+    const encontrada = filas.find((tr) => tr.textContent?.includes(concepto));
+    if (!encontrada) { throw new Error('Sin fila ' + concepto); }
+    return encontrada;
+  }
+
+  function botones(tr: HTMLElement): string[] {
+    return Array.from(tr.querySelectorAll<HTMLButtonElement>('td.col-acciones button'))
+      .map((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim());
+  }
+
+  it('gestor: cancela pendientes y reactiva cancelados, pero no ve la papelera', async () => {
+    await montar(false);
+    expect(botones(fila('MENSUALIDAD MARZO'))).toEqual(['Cancelar cargo MENSUALIDAD MARZO']);
+    expect(botones(fila('DOBOK'))).toEqual([]);
+    expect(botones(fila('LICENCIA'))).toEqual(['Reactivar cargo LICENCIA']);
+  });
+
+  it('propietario: además ve la papelera solo en pendientes no cancelados', async () => {
+    await montar(true);
+    expect(botones(fila('MENSUALIDAD MARZO'))).toEqual(['Cancelar cargo MENSUALIDAD MARZO', 'Marcar para eliminar MENSUALIDAD MARZO']);
+    expect(botones(fila('DOBOK'))).toEqual([]);
+    expect(botones(fila('LICENCIA'))).toEqual(['Reactivar cargo LICENCIA']);
+  });
+
+  it('el cancelado sale tachado, con quién, cuándo y motivo, chip «cancelado» y campos deshabilitados', async () => {
+    await montar(false);
+    const tr = fila('LICENCIA');
+    expect(tr.classList).toContain('fila-cancelada');
+    expect(tr.textContent).toContain('Cancelado por Gestora Prueba el 04/03/2026 · «se dio de baja»');
+    expect(tr.querySelector('.chip-cancelado')?.textContent?.trim()).toBe('cancelado');
+    const controles = Array.from(tr.querySelectorAll<HTMLInputElement>('input'));
+    expect(controles.length).toBeGreaterThan(0);
+    expect(controles.every((c) => c.disabled)).toBeTrue();
+  });
+
+  it('sin nombre: «Cancelado el …»', async () => {
+    await montar(false);
+    expect(component.textoCancelacion({ ...cancelado, canceladoPorNombre: null, motivoCancelacion: null }))
+      .toBe('Cancelado el 04/03/2026');
+  });
+
+  it('cancelar pide motivo obligatorio (máx. 500) y aplica la respuesta sin recargar', async () => {
+    await montar(false);
+    const respuesta = { ...pendiente, canceladoEn: '2026-03-05T09:00:00', canceladoPorNombre: 'Gestora Prueba', motivoCancelacion: 'error' };
+    endpoints.cancelarProductoAlumno.and.returnValue(of(respuesta));
+    const confirmado = Promise.resolve({ isConfirmed: true, value: '  error  ' } as any);
+    fire.and.returnValue(confirmado);
+    component.cancelarCargo(component.productosAlumno.find((p) => p.id === 1)!);
+    const opciones = fire.calls.mostRecent().args[0] as any;
+    expect(opciones.input).toBe('textarea');
+    expect(opciones.inputLabel).toBe('Motivo');
+    expect(opciones.inputAttributes.maxlength).toBe('500');
+    expect(opciones.text).toContain('No se borra: queda tachado en la ficha y se puede reactivar.');
+    expect(opciones.inputValidator('   ')).toBeTruthy();
+    expect(opciones.inputValidator('ok')).toBeFalsy();
+    await confirmado;
+    await Promise.resolve();
+    expect(endpoints.cancelarProductoAlumno).toHaveBeenCalledWith(1, 'error');
+    expect(component.estaCancelado(component.productosAlumno.find((p) => p.id === 1)!)).toBeTrue();
+    expect(endpoints.obtenerProductosDelAlumno).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin doble clic: mientras cancela, el botón se deshabilita y no se envía otra vez', async () => {
+    await montar(false);
+    const pendienteRespuesta = new Subject<ProductoAlumnoDTO>();
+    endpoints.cancelarProductoAlumno.and.returnValue(pendienteRespuesta.asObservable());
+    const confirmado = Promise.resolve({ isConfirmed: true, value: 'error' } as any);
+    fire.and.returnValue(confirmado);
+    const cargo = component.productosAlumno.find((p) => p.id === 1)!;
+    component.cancelarCargo(cargo);
+    await confirmado;
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(component.accionEnCurso(1)).toBeTrue();
+    expect(fila('MENSUALIDAD MARZO').querySelector<HTMLButtonElement>('.btn-cancelar-cargo')!.disabled).toBeTrue();
+    const llamadasSwal = fire.calls.count();
+    component.cancelarCargo(cargo);
+    expect(fire.calls.count()).toBe(llamadasSwal);
+    expect(endpoints.cancelarProductoAlumno).toHaveBeenCalledTimes(1);
+    pendienteRespuesta.next({ ...pendiente, canceladoEn: [2026, 3, 5, 9, 0] });
+    pendienteRespuesta.complete();
+    expect(component.accionEnCurso(1)).toBeFalse();
+  });
+
+  it('reactivar confirma y aplica la respuesta', async () => {
+    await montar(false);
+    endpoints.reactivarProductoAlumno.and.returnValue(of({ ...pendiente, id: 3, concepto: 'LICENCIA' }));
+    const confirmado = Promise.resolve({ isConfirmed: true } as any);
+    fire.and.returnValue(confirmado);
+    component.reactivarCargo(component.productosAlumno.find((p) => p.id === 3)!);
+    await confirmado;
+    await Promise.resolve();
+    expect(endpoints.reactivarProductoAlumno).toHaveBeenCalledWith(3);
+    expect(component.estaCancelado(component.productosAlumno.find((p) => p.id === 3)!)).toBeFalse();
   });
 });

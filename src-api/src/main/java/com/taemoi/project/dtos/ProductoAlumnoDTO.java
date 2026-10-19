@@ -45,6 +45,22 @@ public class ProductoAlumnoDTO {
 	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
 	private String motivoCancelacion;
 
+	/**
+	 * Pieza 6b-3, solo de salida: nombre visible (nombre y apellidos) de la cuenta que canceló el cargo, como el
+	 * {@code entregadoPorNombre} de la caja. Solo sale si está cancelado ({@code NON_NULL}).
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private String canceladoPorNombre;
+
+	public String getCanceladoPorNombre() {
+		return canceladoPorNombre;
+	}
+
+	public void setCanceladoPorNombre(String canceladoPorNombre) {
+		this.canceladoPorNombre = canceladoPorNombre;
+	}
+
 	public java.time.LocalDateTime getCanceladoEn() {
 		return canceladoEn;
 	}
