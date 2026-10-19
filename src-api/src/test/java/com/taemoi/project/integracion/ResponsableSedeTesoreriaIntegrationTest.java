@@ -514,15 +514,14 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	@Order(18)
 	void cargoSinAlumno_elResponsableRecibe400SinCambiarNada() throws Exception {
-		long inscripcion = jdbc.queryForObject("SELECT MIN(id) FROM alumno_deporte WHERE alumno_id = ?", Long.class,
-				e.aA);
+		// Pieza 6b-2d: sin alumno resoluble (ni alumno_id ni inscripción) → 400. Un cargo antiguo con el alumno solo en
+		// la inscripción ya se cobra (CargosSinAlumnoIntegrationTest).
 		jdbc.update("""
 				INSERT INTO producto_alumno (alumno_id, alumno_deporte_id, concepto, precio, cantidad, pagado,
 				  fecha_asignacion, organizacion_id, sede_id)
-				VALUES (NULL, ?, 'DERECHO A EXAMEN AZUL - TAEKWONDO', 15.0, 1, 0, NOW(), ?, ?)""", inscripcion, e.org,
-				e.sA);
-		long cargo = jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE alumno_deporte_id = ?", Long.class,
-				inscripcion);
+				VALUES (NULL, NULL, 'DERECHO A EXAMEN AZUL - TAEKWONDO', 15.0, 1, 0, NOW(), ?, ?)""", e.org, e.sA);
+		long cargo = jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class,
+				e.org);
 		assertEquals(400, estado(cobro(cargo, true), tokenA), "no 500");
 		assertFalse(pagado(cargo));
 		// 6b-2c: el responsable ya no borra cargos (solo el propietario): 403 antes de llegar al servicio.
