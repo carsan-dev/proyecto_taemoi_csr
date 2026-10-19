@@ -44,4 +44,25 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long>, Jpa
 
 	/** Puerto de {@code @acceso.solicitudEnSede}: la solicitud (de la escuela activa) es de una de esas sedes. */
 	boolean existsByIdAndSedeIdIn(Long id, Collection<Long> sedes);
+
+	/**
+	 * Pieza 6c-5: el cargo es el de un encargo en curso (PEDIDO, ENCARGADO o RECIBIDO). Lectura sin bloqueo: quien la usa
+	 * ya tiene el cargo bloqueado y no bloquea una solicitud después de un cargo (orden solicitud → cargo).
+	 */
+	@Query("SELECT COUNT(s) > 0 FROM Solicitud s WHERE s.productoAlumnoId = :cargoId "
+			+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+			+ "AND s.estado IN (com.taemoi.project.entities.EstadoSolicitud.PEDIDO, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.ENCARGADO, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.RECIBIDO)")
+	boolean existeEncargoEnCursoDeCargo(@Param("cargoId") Long cargoId);
+
+	/**
+	 * Pieza 6c-5: el cargo es el de un encargo caído (RETIRADA o RECHAZADO): su cargo cancelado no se reactiva. Lectura
+	 * sin bloqueo, como {@link #existeEncargoEnCursoDeCargo}.
+	 */
+	@Query("SELECT COUNT(s) > 0 FROM Solicitud s WHERE s.productoAlumnoId = :cargoId "
+			+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+			+ "AND s.estado IN (com.taemoi.project.entities.EstadoSolicitud.RETIRADA, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.RECHAZADO)")
+	boolean existeEncargoCaidoDeCargo(@Param("cargoId") Long cargoId);
 }

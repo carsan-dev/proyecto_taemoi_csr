@@ -17,8 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.CajaRequests;
+import com.taemoi.project.dtos.request.SolicitudRequests;
 import com.taemoi.project.dtos.response.CajaDTOs;
+import com.taemoi.project.dtos.response.SolicitudDTOs;
 import com.taemoi.project.services.CajaService;
+import com.taemoi.project.services.EncargoService;
 
 /**
  * Caja de sede (pieza 6b-2). Sin pantalla todavía (la 6b-3).
@@ -29,6 +32,9 @@ import com.taemoi.project.services.CajaService;
  * Filas y solo SUS propios totales (decisión 69).</li>
  * <li>{@code /api/caja/sedes/{sedeId}/**}: responsable de esa sede, gestor y propietario ({@code @acceso.cajaDeSede}).</li>
  * <li>Anular una entrega o un movimiento: solo el propietario ({@code ROLE_ADMIN}).</li>
+ * <li>Pieza 6c-5, encargos del profesor (bajo {@code /api/caja/profesor/**}, su lista blanca): productos
+ * encargables, pedir para un alumno de sus grupos ({@code @acceso.alumnoDeMisGrupos}), sus solicitudes, retirar y
+ * marcar entregado (el servicio exige, con la fila bloqueada, que la pidió él).</li>
  * </ul>
  * Errores con el formato de {@code GlobalExceptionHandler}: 400 {@code {"mensaje"}} (datos no válidos), 404 (no existe en
  * la escuela), 409 (estado: ya cobrado, ya entregado, ya anulado, concurrencia) y 403.
@@ -38,9 +44,11 @@ import com.taemoi.project.services.CajaService;
 public class CajaController {
 
 	private final CajaService caja;
+	private final EncargoService encargos;
 
-	public CajaController(CajaService caja) {
+	public CajaController(CajaService caja, EncargoService encargos) {
 		this.caja = caja;
+		this.encargos = encargos;
 	}
 
 	// ------------------------------------------------------------------ profesor
@@ -101,6 +109,42 @@ public class CajaController {
 	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
 	public ResponseEntity<CajaDTOs.MisCobrosPendientes> cobrosPendientesDeEntrega() {
 		return ResponseEntity.ok(caja.cobrosPendientesDeEntregaDelProfesor());
+	}
+
+	// ------------------------------------------------------------------ profesor: encargos (6c-5)
+
+	/** Decisión 192: productos del catálogo que el profesor puede encargar (OTRO sin grado), aunque no estén marcados. */
+	@GetMapping("/profesor/productos-encargables")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<List<CajaDTOs.ProductoVendible>> productosEncargables() {
+		return ResponseEntity.ok(encargos.productosEncargables());
+	}
+
+	/** Encarga un producto para un alumno de sus grupos: crea el cargo pendiente y el encargo PEDIDO (201). */
+	@PostMapping("/profesor/alumnos/{alumnoId}/encargos")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> pedirEncargo(@PathVariable Long alumnoId,
+			@RequestBody(required = false) SolicitudRequests.PedirEncargo peticion) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(encargos.pedirEncargo(alumnoId, peticion));
+	}
+
+	/** Lo que pidió él: encargos y solicitudes de deshacer (abiertas y las cerradas más recientes). */
+	@GetMapping("/profesor/solicitudes")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<List<SolicitudDTOs.Solicitud>> misSolicitudes() {
+		return ResponseEntity.ok(encargos.misSolicitudes());
+	}
+
+	@PostMapping("/profesor/solicitudes/{id}/retirar")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<SolicitudDTOs.Solicitud> retirarSolicitud(@PathVariable Long id) {
+		return ResponseEntity.ok(encargos.retirarEncargo(id));
+	}
+
+	@PostMapping("/profesor/solicitudes/{id}/entregado")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
+	public ResponseEntity<SolicitudDTOs.Solicitud> marcarEntregado(@PathVariable Long id) {
+		return ResponseEntity.ok(encargos.marcarEntregado(id));
 	}
 
 	// ------------------------------------------------------------------ caja de sede

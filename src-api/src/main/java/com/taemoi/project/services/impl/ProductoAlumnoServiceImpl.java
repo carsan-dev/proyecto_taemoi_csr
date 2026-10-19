@@ -135,6 +135,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	@Autowired
 	private com.taemoi.project.repositories.UsuarioRepository usuarioRepository;
 
+	/** Pieza 6c-5: si el cargo es el de un encargo en curso (guardas de cancelar y borrar). Solo lectura. */
+	@Autowired
+	private com.taemoi.project.repositories.SolicitudRepository solicitudRepository;
+
 	/** Motivo de la anulación del cobro al revertir el pago por el PUT del cargo sin {@code motivoCambio}. */
 	private static final String MOTIVO_REVERSION = "pago revertido";
 
@@ -700,6 +704,74 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		}
 	}
 
+	// ------------------------------------------------------------------ pieza 6c-5: encargos
+
+	static final String PRODUCTO_NO_ENCARGABLE = "Este producto no se puede encargar: solo material y ropa (productos "
+			+ "sin efectos: no mensualidades, licencias, matrículas, reservas de plaza, tarifas de competidor, exámenes ni "
+			+ "productos que conceden grado o derecho a examen).";
+
+	/** Decisión 192: la regla fija de la venta del profesor, sin la marca de «Mi caja». Por concepto e id. */
+	@Override
+	public List<Producto> productosEncargables() {
+		return productoRepository.findAll().stream().filter(this::cumpleReglaFijaDeVentaDelProfesor)
+				.sorted(java.util.Comparator.comparing(Producto::getConcepto,
+						java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+						.thenComparing(Producto::getId))
+				.toList();
+	}
+
+	/**
+	 * Ver la interfaz. La vía de asignar un producto ({@link #crearCargoDeProducto}, sin el {@code @PreAuthorize} de la
+	 * gestión): D6-17 (sede activa), precio y concepto del catálogo; la sede del cargo, la de siempre
+	 * ({@code @PrePersist}: la principal del alumno). No nace pagado: no registra cobro ni toca el derecho a examen.
+	 */
+	@Override
+	public ProductoAlumno crearCargoDeEncargo(Long alumnoId, Long productoId, String nota) {
+		exigirTransaccionEnCurso();
+		Alumno alumno = alumnoRepository.findById(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado"));
+		Producto producto = productoRepository.findById(productoId)
+				.orElseThrow(() -> new ProductoNoEncontradoException("Producto no encontrado"));
+		if (!cumpleReglaFijaDeVentaDelProfesor(producto)) {
+			throw new IllegalArgumentException(PRODUCTO_NO_ENCARGABLE);
+		}
+		ProductoAlumnoDTO detalles = new ProductoAlumnoDTO();
+		detalles.setCantidad(1);
+		detalles.setPagado(false);
+		detalles.setNotas(nota);
+		return crearCargoDeProducto(alumno, producto, detalles, OrigenCobro.TESORERIA, null);
+	}
+
+	/**
+	 * Ver la interfaz. Orden de bloqueos: la solicitud (quien llama) → el cargo; el cobro solo se lee. Ninguna vía
+	 * bloquea una solicitud después de un cargo, salvo el borrado de un cargo por sus FK (documentado en la 6c-3).
+	 */
+	@Override
+	public boolean caerCargoDeEncargo(Long cargoId, Long usuarioId, String motivo, long solicitudId, String endpoint) {
+		exigirTransaccionEnCurso();
+		ProductoAlumno cargo = cargoId == null ? null : cobros.bloquearCargo(cargoId).orElse(null);
+		if (cargo == null) {
+			return false;
+		}
+		if (Boolean.TRUE.equals(cargo.getPagado()) || cobros.tieneCobroActivo(cargoId)) {
+			return true;
+		}
+		if (cargo.estaCancelado()) {
+			return false;
+		}
+		ProductoAlumno cancelado = marcarCancelado(cargo, usuarioId, motivo);
+		registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_CANCELADO, endpoint,
+				cancelado.getSedeId(), cargoId, solicitudId);
+		return false;
+	}
+
+	/** Pieza 6c-5: con el cargo ya bloqueado, 409 si es el de un encargo en curso (§6.3; ver la interfaz). */
+	private void exigirSinEncargoEnCurso(Long cargoId) {
+		if (solicitudRepository.existeEncargoEnCursoDeCargo(cargoId)) {
+			throw new IllegalStateException(com.taemoi.project.services.EncargoService.ENCARGO_EN_CURSO);
+		}
+	}
+
 	/** Los métodos de las solicitudes aceptadas se ejecutan dentro de la transacción de quien acepta. */
 	private static void exigirTransaccionEnCurso() {
 		if (!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -973,13 +1045,15 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * cambio DELIBERADO también para Moiskimdo): solo el propietario ({@code ROLE_ADMIN}, en el controlador) y solo
 	 * cargos no pagados que NUNCA se cobraron (sin ninguna fila en {@code cobro}, tampoco ANULADA); si no → 409 («cancélelo
 	 * en su lugar»). Con el cargo bloqueado, en una transacción, y queda en el registro de acciones. Los borrados
-	 * AUTOMÁTICOS (quitar a un alumno de una convocatoria, borrar la convocatoria o el alumno) no pasan por aquí.
+	 * AUTOMÁTICOS (quitar a un alumno de una convocatoria, borrar la convocatoria o el alumno) no pasan por aquí. Pieza
+	 * 6c-5: el cargo de un encargo en curso → 409 {@code ENCARGO_EN_CURSO} (se rechaza el encargo desde Solicitudes).
 	 */
 	@Override
 	public void eliminarProductoAlumno(Long id) {
 		ProductoAlumno pa = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			exigirSinEncargoEnCurso(id);
 			if (Boolean.TRUE.equals(cargo.getPagado()) || !cobroRepository.findByProductoAlumnoIdOrderByIdAsc(id).isEmpty()) {
 				throw new IllegalStateException(CARGO_CON_COBROS_NO_SE_BORRA);
 			}
@@ -1010,6 +1084,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * Pieza 6b-2c: cancela un cargo PENDIENTE. Con el cargo bloqueado (FOR UPDATE, el orden cargo → cobro de la 6b-2):
 	 * ya cancelado → 409; pagado (o con un cobro ACTIVO) → 409, se revierte antes el cobro; unido a una inscripción a
 	 * convocatoria → 400. No toca al alumno ni al derecho a examen (un cargo pendiente no lo da). Queda en el registro.
+	 * Pieza 6c-5: el cargo de un encargo en curso → 409 {@code ENCARGO_EN_CURSO}, antes que las demás comprobaciones.
 	 */
 	@Override
 	public ProductoAlumnoDTO cancelarProductoAlumno(Long id, String motivo) {
@@ -1017,6 +1092,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno cancelado = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			exigirSinEncargoEnCurso(id);
 			if (cargo.estaCancelado()) {
 				throw new IllegalStateException(CARGO_YA_CANCELADO);
 			}
@@ -1035,7 +1111,13 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return convertirADTO(cancelado);
 	}
 
-	/** Pieza 6b-2c: deja el cargo cancelado pendiente otra vez y borra quién, cuándo y por qué. No cancelado → 409. */
+	static final String CARGO_DE_ENCARGO_CAIDO = "El cargo es de un encargo retirado o rechazado: no se reactiva. Si "
+			+ "el alumno aún lo quiere, el profesor lo vuelve a encargar.";
+
+	/**
+	 * Pieza 6b-2c: deja el cargo cancelado pendiente otra vez y borra quién, cuándo y por qué. No cancelado → 409. Pieza
+	 * 6c-5: el cargo de un encargo retirado o rechazado → 409 {@link #CARGO_DE_ENCARGO_CAIDO}.
+	 */
 	@Override
 	public ProductoAlumnoDTO reactivarProductoAlumno(Long id) {
 		ProductoAlumno reactivado = cobros.enTransaccion(() -> {
@@ -1043,6 +1125,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
 			if (!cargo.estaCancelado()) {
 				throw new IllegalStateException(CARGO_NO_CANCELADO);
+			}
+			// Pieza 6c-5: el cargo de un encargo retirado o rechazado sigue cancelado (el encargo ya cayó).
+			if (solicitudRepository.existeEncargoCaidoDeCargo(id)) {
+				throw new IllegalStateException(CARGO_DE_ENCARGO_CAIDO);
 			}
 			cargo.setCanceladoEn(null);
 			cargo.setCanceladoPorUsuarioId(null);

@@ -351,6 +351,19 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 				caja + "profesor_deshaceSuCobro_noElAjeno_niElEntregado");
 		m.put("POST /api/caja/profesor/alumnos/{alumnoId}/productos/{productoId}/cobrar",
 				caja + "profesor_noApuntaProductosConEfectos_niAAlumnosAjenos");
+		// Pieza 6c-5: encargos. Productos encargables (los de la escuela), sus solicitudes (el servicio filtra por su
+		// cuenta), pedir para un alumno de sus grupos (@acceso) y retirar o marcar entregado solo los suyos (servicio).
+		String encargos = "integracion.EncargosIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/caja/profesor/productos-encargables",
+					encargos + "productosEncargables_otroSinGradoAunqueNoEsteMarcado");
+			m.put(metodo + " /api/caja/profesor/solicitudes", encargos + "misSolicitudes_soloLasSuyas");
+		}
+		m.put("POST /api/caja/profesor/alumnos/{alumnoId}/encargos",
+				encargos + "pedirEncargo_soloElProfesorParaAlumnosDeSusGrupos");
+		m.put("POST /api/caja/profesor/solicitudes/{id}/retirar", encargos + "retirar_enPedido_cancelaElCargo");
+		m.put("POST /api/caja/profesor/solicitudes/{id}/entregado",
+				encargos + "entregado_soloElSolicitanteYEnRecibido_sinExigirCobro");
 		return Map.copyOf(m);
 	}
 

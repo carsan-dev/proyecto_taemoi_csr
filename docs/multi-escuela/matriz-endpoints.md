@@ -154,6 +154,19 @@ Pieza 6c-3 (aceptar, fase3-6c-plan.md §4): 1 línea nueva; ninguna casilla exis
 - `POST /api/solicitudes/{id}/aceptar`: solo PROPIETARIO (`hasAuthority('ROLE_ADMIN')`; el servicio lo vuelve a
   exigir); el resto, `DENIEGA` (también GESTOR, RESPONSABLE_SEDE y la sesión solo-profesor, fuera de su lista blanca).
 
+Pieza 6c-5 (encargos del profesor, fase3-6c-plan.md §4b): 10 líneas nuevas; ninguna casilla existente cambia ni la
+regla de URL. Las del profesor van bajo `/api/caja/profesor/**` (su lista blanca, declaradas en `PROFESOR_CAJA_6B2`).
+- `GET/HEAD /api/caja/profesor/productos-encargables` y `GET/HEAD /api/caja/profesor/solicitudes`: PROFESOR `PERMITE`
+  declarado (`hasAuthority('ROLE_PROFESOR')`; el catálogo de la escuela activa y, en sus solicitudes, solo las que pidió
+  él).
+- `POST /api/caja/profesor/alumnos/{alumnoId}/encargos`: PROFESOR `ALCANCE` (`@acceso.alumnoDeMisGrupos`).
+- `POST /api/caja/profesor/solicitudes/{id}/retirar` y `/entregado`: PROFESOR `PERMITE` declarado
+  (`hasAuthority('ROLE_PROFESOR')`; el servicio exige, con la fila bloqueada, que la pidió él: 403).
+- El resto de roles, `DENIEGA` en esas siete (también PROPIETARIO, GESTOR y RESPONSABLE_SEDE).
+- `POST /api/solicitudes/{id}/encargado`, `/recibido` y `/rechazar`: PROPIETARIO y GESTOR `PERMITE`; RESPONSABLE_SEDE
+  `ALCANCE` (`@acceso.solicitudEnSede`, la sede del encargo; el servicio lo vuelve a exigir); FAMILIA, PROFESOR,
+  SOLO_PLATAFORMA y ANONIMO, `DENIEGA`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

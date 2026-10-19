@@ -3,7 +3,8 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2), la 6c-2 (§3), la 6c-3 (§4) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a partir del mapa (§1).
+> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
+> partir del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
 encargos del profesor y la devolución enlazada (decisiones 153, 155, 183, 188 a 195).
@@ -95,7 +96,7 @@ anota en la PR y actualiza este mapa.
 | **6c-7** frontend | Contador en la cabecera, bandeja (tres segmentos), diálogo «Pedir al propietario» en tesorería, ficha y caja de sede (190, 191) | `F/core/constants/navigation.constants.ts:11-18`, `F/componentes/vistas/layout/header/header.component.html:232`, ruta nueva en `F/app.routes.ts`, servicio `F/servicios/endpoints/solicitudes.service.ts`, `tesoreria-cobros.component.ts:280`, `productos-alumno.component.html:97`, `caja-sede` | Componente de bandeja y diálogo reutilizable (D6c-8) | Rutas de 6c-2 y 6c-3 | 6c-3 | Medio (visible para Moiskimdo) | Specs registrados en las dos listas: el contador se pide al entrar y al navegar, sin `interval`; G desmarca un cargo pagado → se abre el diálogo y el checkbox vuelve a marcado; con una pendiente no deja pedir otra. Build sin aviso y capturas |
 | **6c-5** backend | Encargos: productos encargables (192), pedir con cargo y sede (D6c-9), transiciones, caída del encargo, guardas en cancelar y borrar el cargo, rutas del profesor | `SolicitudService` (o `EncargoService`), `ProductoAlumnoServiceImpl` (cargo por el código de `asignarProductoAAlumno:186` sin el `@PreAuthorize` de gestión), `cancelar:852`, `borrar:816`, `J/controllers/CajaController.java` (`/api/caja/profesor/…`) | `List<CajaDTOs.ProductoVendible> productosEncargables()`; `pedirEncargo(Long alumnoId, PedirEncargo{productoId, nota, sedeId?})`; `marcarEncargado`, `marcarRecibido`, `rechazar(id, motivo)`, `retirarEncargo`, `marcarEntregado`; constante `ENCARGO_EN_CURSO` = «Tiene un encargo en curso: recházalo desde Solicitudes»; `devolucion_pendiente` a true al caer un encargo pagado | 6c-2, `@acceso.alumnoDeMisGrupos:209` | 6c-2 | Alto (crea y cancela cargos); opus | El cargo creado tiene `vendido_por_usuario_id` NULL y aparece en «Por cobrar»; si cae sin cobrar, el cargo se cancela; si cae pagado, `devolucion_pendiente` a true; un cargo en curso da 409 al cancelar y al borrar; la sede se exige solo con varias; matriz con lista blanca |
 | **6c-4** backend | Tipo 2: `cobros-entregados-recientes` (30 días, máximo 50, D6c-14) y `pedir-deshacer` (crear la solicitud con `motivo_deshacer`). La aceptación con la 193 la hace la 6c-3 (§4) | `CajaController`, `CajaService`, `SolicitudService` (crear el tipo 2) | — | 6c-2, 6c-3 (`aceptar` y `deshacerEntregadoPorSolicitud`) | 6c-3 | Alto (caja); opus | Pedir valida lo que la 6c-3 revalida al aceptar (cobro ACTIVO, origen PROFESOR, suyo, en una entrega ACTIVA, una pendiente por cobro); un IT de punta a punta: pedir por la ruta del profesor y aceptar deja el saldo igual. **Pendiente de la 6c-3:** tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y `CajaDTOs.EntregaCaja` no enlaza el movimiento ERROR, así que «declarado» no cuadra a la vista (el saldo sí): exponer en el DTO de la entrega los ids e importe de sus ERROR |
-| **6c-6** backend | Devolución enlazada (153): `crearMovimiento` con `cobroId`; «Registrar devolución» por la sede y por el profesor (195, D6c-10); el saldo suma solo EFECTIVO (D6c-13); «devuelto»; invariantes «no se anula» y «devolución pendiente → 409»; tesorería `devuelto` e `importeDevuelto` (D6c-12); desvincular el examen devuelto y el aviso completo de la 186 (D6c-15) | `CajaService.crearMovimiento:470`, `registrarEntrega:310`, `CobroService.anular:198` y `alBorrarCargos:254`, consultas de saldo de `CobroRepository`, tesorería, `AlumnoServiceImpl.eliminarAlumnoDeConvocatoria` | `CobroService.exigirSinDevolucion(Long cobroId)`; `registrarDevolucionEncargo(Long solicitudId, String nota)` (sede) y `registrarDevolucionProfesor(Long solicitudId, String nota)`; DTO de tesorería `devuelto` e `importeDevuelto`; `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes» | 6c-2, 6c-5 | 6c-2, 6c-5 | Alto (caja y tesorería); opus | La devolución del profesor deja el saldo a 0 y el cobro fuera de «Llevas encima»; un cobro con devolución da 409 por cada vía (A1, A2, A4, tipo 2) y `alBorrarCargos` lo salta; los totales de tesorería de Moiskimdo son idénticos; `devolverYEntregarALaVez_saldoCuadra` |
+| **6c-6** backend | Devolución enlazada (153): `crearMovimiento` con `cobroId`; «Registrar devolución» por la sede y por el profesor (195, D6c-10); el saldo suma solo EFECTIVO (D6c-13); «devuelto»; invariantes «no se anula» y «devolución pendiente → 409»; tesorería `devuelto` e `importeDevuelto` (D6c-12); desvincular el examen devuelto y el aviso completo de la 186 (D6c-15) | `CajaService.crearMovimiento:470`, `registrarEntrega:310`, `CobroService.anular:198` y `alBorrarCargos:254`, consultas de saldo de `CobroRepository`, tesorería, `AlumnoServiceImpl.eliminarAlumnoDeConvocatoria` | `CobroService.exigirSinDevolucion(Long cobroId)`; `registrarDevolucionEncargo(Long solicitudId, String nota)` (sede) y `registrarDevolucionProfesor(Long solicitudId, String nota)`; DTO de tesorería `devuelto` e `importeDevuelto`; `EXAMEN_PAGADO_REVIERTE_ANTES` pasa a «El examen está pagado: haz la devolución o revierte el cobro antes» | 6c-2, 6c-5 | 6c-2, 6c-5 | Alto (caja y tesorería); opus | La devolución del profesor deja el saldo a 0 y el cobro fuera de «Llevas encima»; un cobro con devolución da 409 por cada vía (A1, A2, A4, tipo 2) y `alBorrarCargos` lo salta; los totales de tesorería de Moiskimdo son idénticos; `devolverYEntregarALaVez_saldoCuadra`. **Notas de la 6c-5:** (F2) el cargo de un encargo y su cobro van a la sede principal del alumno y la solicitud a la sede D6c-9: la devolución «de la sede» mira `cobro.sede_id`, no `solicitud.sede_id`; (F3) con `devolucion_pendiente`, A1 y A2 aún revierten el cobro: la 6c-6 debe bloquearlos (409) y los encargos no salen a producción sin ella |
 | **6c-8** frontend | Mi caja: pestaña «Pedidos» (encargar, con sede si hace falta; retirar; marcar entregado; solicitudes de deshacer) y «Entregados recientes» en «Encima» | `F/componentes/endpoints/mi-caja/*` (patrón de pestañas y `.contador`, `mi-caja.component.html:27-41`) | — | Rutas de 6c-4 y 6c-5 | 6c-4, 6c-5 | Medio | Specs registrados, capturas en móvil, build sin aviso. Ojo: tras deshacer un cobro entregado (tipo 2), la entrega pierde ese cobro en `cobroIds` y su DTO no enlaza el ERROR, así que «declarado» no cuadra a la vista (el saldo sí): pintar los ERROR de la entrega que expone la 6c-4 |
 | **6c-9** frontend | «Registrar devolución» en «Pedidos» y en la bandeja; contador de devoluciones pendientes; «Devuelto» en tesorería, ficha y Mi caja; aviso completo de la 186 | Bandeja (6c-7), Mi caja (6c-8), tesorería, ficha | — | Rutas de 6c-6 | 6c-6, 6c-7, 6c-8 | Bajo | Specs registrados, capturas, build sin aviso |
 
@@ -703,6 +704,172 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
   de Moiskimdo sin tocar.
 - [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
   `feat(solicitudes): aceptar las solicitudes al propietario con revalidación (6c-3)`.
+
+---
+
+## 4b. Pieza 6c-5: encargos (detallada)
+
+Rama `feature/6c5-encargos` desde `feature/multi-escuela` (tras la 6c-3). **Sin migración** (V31_8 ya tiene las
+columnas del encargo): se despliega con el atajo `desplegar`, pero **no sale a producción sin la 6c-6** (§10). Sin
+pantallas (Mi caja «Pedidos» es de la 6c-8; la bandeja, de la 6c-7): Moiskimdo no ve ningún cambio (no tiene
+profesores y las guardas nuevas solo afectan a cargos de encargos).
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Servicio aparte:** `EncargoService` (paquete `services`), sobre la misma tabla y las mismas piezas de la 6c-2
+  (`SolicitudService.bloquear`, `SolicitudTransiciones.exigir`, `RegistroAccionesSolicitudes` y los DTO de
+  `SolicitudService`, que pasan a ser de paquete). El cargo lo crea y lo cancela `ProductoAlumnoServiceImpl` dentro de la
+  transacción del encargo.
+- **Encargable (192):** la regla fija de la 6b-2 (`cumpleReglaFijaDeVentaDelProfesor`: tipo OTRO, sin grado, concepto sin
+  nada con efectos y sin grado concedido en el catálogo), **sin** la marca `vendibleProfesor`. Fuera → 400.
+- **Nota:** obligatoria (la columna `motivo` es NOT NULL y D6c-1 pide motivo al pedir), hasta **255**: va a
+  `solicitud.motivo` (VARCHAR(500)) y a `producto_alumno.notas` (VARCHAR(255)), así que manda el menor. Más larga → 400
+  «La nota admite como máximo 255 caracteres.» (nunca el «Data too long» del INSERT).
+- **Sede (D6c-9):** las sedes distintas, no nulas, de los grupos del profesor en los que está el alumno. Ninguna → sin
+  sede (grupos sin sede, V31). Una → esa; si llega `sedeId` y no es esa, 400. Varias → `sedeId` obligatorio y una de
+  ellas (400 si falta o no está). El **cargo** conserva la sede de siempre (la principal del alumno, `@PrePersist`): es
+  «el mismo código que la gestión» (§6.3) y su cobro va a esa caja.
+- **Pedir:** en una transacción, cargo pendiente (precio y concepto del catálogo, cantidad 1, `vendido_por_usuario_id`
+  NULL, notas = nota) y solicitud ENCARGO en PEDIDO con `producto_alumno_id`, `producto_id`, `alumno_id`, concepto e
+  importe (precio del catálogo, dos decimales). Registro `SOLICITUDES ENCARGO_PEDIDO`. Orden de errores: 400 (datos),
+  404 (producto que no existe en la escuela), 400 (no encargable o sede), 403 lo da antes `@acceso.alumnoDeMisGrupos`.
+  Una violación de integridad al crear (p. ej. el alumno se borra a la vez) → 409 `RECURSO_CAMBIADO`.
+- **Transiciones** (§6.2, con la fila bloqueada y `SolicitudTransiciones.exigir`; fuera de la tabla, 409 `NO_PENDIENTE`;
+  si no es un encargo, 400 «No es un encargo.»):
+  - encargado (PEDIDO → ENCARGADO) y recibido (ENCARGADO → RECIBIDO): P, G y R de la sede de la solicitud
+    (`@acceso.solicitudEnSede`; el servicio lo vuelve a exigir con `exigirSedePropia`); guardan quién y cuándo.
+  - rechazar (PEDIDO, ENCARGADO o RECIBIDO → RECHAZADO): igual, con motivo obligatorio (400), que va a `respuesta`;
+    `resuelto_por` = quien rechaza. Cae el encargo.
+  - retirar (PEDIDO → RETIRADA): solo el profesor que lo pidió (403 si no). Cae el encargo. Registro
+    `SOLICITUD_RETIRADA` (§8 no tiene `ENCARGO_RETIRADO`). La misma ruta del profesor retira también su tipo 2
+    pendiente (la 6c-4), como `SolicitudService.retirar`; ajena, 403; sus tipos 1 y 3, 400.
+  - entregado (RECIBIDO → ENTREGADO): solo el profesor que lo pidió; no exige el cargo cobrado. Guarda `entregado_en`
+    (sin `resuelto_*`: la bandeja ordena las resueltas por `resuelto_en`, `entregado_en` o `solicitado_en`).
+- **Cae el encargo** (§6.3), en la misma transacción, tras bloquear la solicitud: se bloquea el cargo
+  (`CobroService.bloquearCargo`). Sin cargo (se borró con el alumno), nada más. Pagado (o con cobro ACTIVO) → no se toca
+  y `devolucion_pendiente = true`. Ya cancelado → nada. Pendiente → cancelado por quien hace caer el encargo, motivo
+  «Encargo retirado (solicitud #n)» o «Encargo rechazado (solicitud #n)», registro `CARGO CARGO_CANCELADO … solicitud=#n`.
+- **Guardas** (`ENCARGO_EN_CURSO` = «Tiene un encargo en curso: recházalo desde Solicitudes»): `cancelarProductoAlumno`
+  y `eliminarProductoAlumno`, justo después de bloquear el cargo, 409 si hay un encargo PEDIDO, ENCARGADO o RECIBIDO
+  con ese cargo. La consulta es una lectura sin bloqueo (no se bloquea una solicitud después de un cargo). Los borrados
+  automáticos (alumno, convocatoria) no pasan por aquí: un encargo cuyo cargo se borra con el alumno queda sin cargo y
+  al caer no cancela nada. `reactivarProductoAlumno`: el cargo de un encargo RETIRADA o RECHAZADO sigue cancelado, 409
+  «El cargo es de un encargo retirado o rechazado: no se reactiva. Si el alumno aún lo quiere, el profesor lo vuelve a
+  encargar.».
+- **Orden de bloqueos:** solicitud → cargo (→ cobro, solo lectura), el de la 6c-3. Cobrar el cargo (cargo → cobro),
+  cancelarlo o borrarlo (cargo, y la solicitud solo se lee) no bloquean una solicitud después del cargo. Excepción ya
+  documentada en la 6c-3: borrar un alumno o una convocatoria pasa por las FK ON DELETE SET NULL de `solicitud`
+  después del cargo; su cruce con rechazar o retirar puede acabar en un interbloqueo que InnoDB resuelve (409, sin
+  efecto en el dinero).
+- **Lo que queda para la 6c-6:** registrar la devolución, el término «devolución pendiente» del contador y el 409 de
+  A1, A2 y A4 con devolución pendiente (los tipos 1 y 2 ya lo revalidan al aceptar con `razonDeDevolucion`). Dos notas
+  de la revisión de la 6c-5:
+  - **(F2)** el cargo y su cobro van a la sede principal del alumno; la solicitud, a la sede D6c-9 (la del grupo).
+    Pueden ser distintas: la devolución «de la sede» (quién la registra y en qué caja sale) mira `cobro.sede_id`, no
+    `solicitud.sede_id`.
+  - **(F3)** con `devolucion_pendiente`, A1 (PUT del cargo) y A2 (convocatoria) aún revierten el cobro directamente: la
+    6c-6 los bloquea (409) junto con A4. Por eso los encargos no salen a producción sin la 6c-6.
+- **Rutas** (todas nuevas; ninguna casilla existente cambia):
+  - `GET /api/caja/profesor/productos-encargables` y `GET /api/caja/profesor/solicitudes` (las suyas: abiertas, y las
+    200 cerradas más recientes): `hasAuthority('ROLE_PROFESOR')`.
+  - `POST /api/caja/profesor/alumnos/{alumnoId}/encargos {productoId, nota, sedeId?}`: `@acceso.alumnoDeMisGrupos`.
+  - `POST /api/caja/profesor/solicitudes/{id}/retirar` y `/entregado`: `hasAuthority('ROLE_PROFESOR')`; solicitante =
+    él, con la fila bloqueada.
+  - `POST /api/solicitudes/{id}/encargado`, `/recibido` y `/rechazar {motivo}`: `@acceso.solicitudEnSede(#id)` (P y G
+    PERMITE, R ALCANCE).
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/EncargosIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`; escena de `AceptarSolicitudesIntegrationTest` más: prof1 también en gB y en gSin,
+  prof2 en gA2, un alumno solo en gSin, productos DOBOK (OTRO, sin marcar, 25,00), CAMISETA (OTRO, marcada, 10,50),
+  MENSUALIDAD (tipo MENSUALIDAD) y LICENCIA (OTRO, concepto con efectos); otra escuela para el aislamiento).
+- Modificar: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (10 líneas nuevas),
+  `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_CAJA_6B2`: las 7 líneas del profesor con su test).
+
+**Interfaces (las produce la tarea 2):**
+- `EncargoService`: `List<CajaDTOs.ProductoVendible> productosEncargables()`, `SolicitudDTOs.Solicitud
+  pedirEncargo(Long alumnoId, SolicitudRequests.PedirEncargo)`, `marcarEncargado(Long)`, `marcarRecibido(Long)`,
+  `rechazar(Long, String motivo)`, `retirarEncargo(Long)`, `marcarEntregado(Long)`, `List<SolicitudDTOs.Solicitud>
+  misSolicitudes()`; `public static final String ENCARGO_EN_CURSO`.
+- `SolicitudRequests.PedirEncargo(Long productoId, String nota, Long sedeId)` y `SolicitudRequests.Rechazar(String
+  motivo)`.
+- `ProductoAlumnoService`: `List<Producto> productosEncargables()`, `ProductoAlumno crearCargoDeEncargo(Long alumnoId,
+  Long productoId, String nota)` y `boolean caerCargoDeEncargo(Long cargoId, Long usuarioId, String motivo, long
+  solicitudId, String endpoint)` (cierto = estaba pagado: devolución pendiente), las dos últimas dentro de la
+  transacción del llamador.
+- `SolicitudRepository.existeEncargoEnCursoDeCargo(Long cargoId)`.
+
+- [ ] **Paso 1: escribir los tests que fallan** en `EncargosIntegrationTest` (en cada uno que mueve un encargo, el
+  `saldoCaja` de las sedes A y B igual antes y después):
+  - `productosEncargables_otroSinGradoAunqueNoEsteMarcado`: DOBOK y CAMISETA salen (con precio de dos decimales);
+    MENSUALIDAD, LICENCIA y los productos de otra escuela no.
+  - `pedirEncargo_creaElCargoPendienteConPrecioDeCatalogo_yQuedaPedido`: 201, `estado` PEDIDO, `tipo` ENCARGO, `sedeId`
+    = A, `importe` 25.00, `concepto`, `motivo` = la nota, `propia` true. En la base: cargo `pagado` 0, `precio` 25,
+    `cantidad` 1, `notas` = la nota, `vendido_por_usuario_id` NULL, sin cancelar, `sede_id` = la del alumno; ningún
+    cobro; la solicitud enlaza cargo, producto y alumno. El cargo sale en `GET /api/caja/profesor/cargos-pendientes`.
+    Registro `SOLICITUDES ENCARGO_PEDIDO sede=#A solicitud=#n cargo=#c producto=#p` (sin la nota).
+  - `pedirEncargo_sedeSoloSeExigeConVarias`: alumno en gA y gB → sin `sedeId`, 400; con C, 400; con B, 201 y sede B.
+    Alumno solo en gA → sin `sedeId`, A; con B, 400. Alumno solo en gSin → sin sede (`sede_id` NULL).
+  - `pedirEncargo_validaciones_sinCrearNada`: sin producto, 400; nota vacía, 400; nota de 300 caracteres, 400 con
+    «La nota admite como máximo 255 caracteres.»; de 501, 400; producto inexistente o de otra escuela, 404; MENSUALIDAD
+    y LICENCIA, 400. No se crea ningún cargo ni solicitud. Con 255 justos, 201 y el cargo guarda la nota entera.
+  - `pedirEncargo_soloElProfesorParaAlumnosDeSusGrupos`: alumno ajeno, 403; FAMILIA sola, gestor y propietario, 403;
+    alumno de otra escuela, 403. Nada creado.
+  - `encargadoYRecibido_porGestionYResponsableDeLaSede`: P marca encargado (200, `encargado_por` = P, `encargadoEn`),
+    otra vez 409 `NO_PENDIENTE`; recibido desde PEDIDO, 409; G marca recibido (200, `recibido_por` = G). R de A
+    marca uno de A (200) y recibe 403 en uno de B. Una solicitud de tipo 1, 400; inexistente, 404; la sesión
+    solo-profesor, 403. Registros `ENCARGO_ENCARGADO` y `ENCARGO_RECIBIDO`.
+  - `entregado_soloElSolicitanteYEnRecibido_sinExigirCobro`: prof2, 403; prof1 en PEDIDO, 409; en RECIBIDO, 200
+    ENTREGADO con `entregadoEn`; el cargo sigue pendiente y sin cancelar; sale en RESUELTAS; otra vez, 409. Registro
+    `ENCARGO_ENTREGADO`.
+  - `retirar_enPedido_cancelaElCargo`: prof2, 403; prof1, 200 RETIRADA con `resuelto_por` = prof1; el cargo cancelado
+    por prof1 con motivo «Encargo retirado (solicitud #n)», sin cobro y fuera de los cargos pendientes; registros
+    `SOLICITUD_RETIRADA` y `CARGO CARGO_CANCELADO … solicitud=#n`. Encargado, 409 y nada cambia.
+  - `retirarPorLaRutaDelProfesor_suTipo2Pendiente`: un tipo 2 por SQL de prof1 → 200 RETIRADA y el cargo sigue
+    pagado; un tipo 1 de G, 403; uno suyo, 400.
+  - `rechazar_sinCobrar_cancelaElCargo`: sin motivo, 400 y sigue; G rechaza en ENCARGADO → 200 RECHAZADO, `respuesta` =
+    el motivo, `resuelto_por` = G; cargo cancelado por G con «Encargo rechazado (solicitud #n)»;
+    `devolucion_pendiente` false; sale en RESUELTAS; otra vez, 409. R de A sobre uno de B, 403.
+  - `caerPagado_dejaDevolucionPendiente_sinTocarCargoNiCobroNiCaja`: prof1 cobra el cargo; P rechaza → RECHAZADO con
+    `devolucion_pendiente` true; el cargo sigue pagado y sin cancelar, el cobro ACTIVO; sale en ENCARGOS y no en
+    RESUELTAS. Igual al retirar uno cobrado en PEDIDO.
+  - `cargoDeEncargoEnCurso_409AlCancelarYAlBorrar`: P cancela → 409 `ENCARGO_EN_CURSO`; P borra → 409; el cargo sigue.
+    Tras retirarlo (cargo cancelado, nunca cobrado), P lo borra (204) y `solicitud.producto_alumno_id` queda NULL.
+  - `reactivarElCargoDeUnEncargoCaido_409`: retirado y rechazado; P y G reciben 409 con el mensaje y el cargo sigue
+    cancelado.
+  - `rechazarYCobrarALaVez_nuncaCanceladoConCobroActivo` (tres vueltas, `enParalelo`): {200, 201} con
+    `devolucion_pendiente` true y el cargo pagado sin cancelar, o {200, 409} con el cargo cancelado y sin cobro. Siempre:
+    ningún cargo cancelado con cobro ACTIVO y `devolucion_pendiente` = cargo pagado.
+  - `rechazarYRetirarALaVez_unoGana409ElOtro` (tres vueltas): {200, 409} y el 409 con `NO_PENDIENTE`; un solo estado
+    final y el cargo cancelado una vez (un registro `CARGO_CANCELADO`).
+  - `misSolicitudes_soloLasSuyas`: prof1 ve sus encargos (abiertos y cerrados) y no los de prof2, ni los de otra escuela.
+  - `aislamientoDeEscuela`: P de otra escuela recibe 404 al marcar, rechazar o ver el encargo; su contador no lo cuenta.
+- [ ] **Paso 2: comprobar que fallan.** `mvn test -Dtest=EncargosIntegrationTest -DexcludedGroups=migracion`: error de
+  compilación o 404/405 en las rutas nuevas.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Crear: `J/services/EncargoService.java`.
+- Modificar: `J/dtos/request/SolicitudRequests.java` (`PedirEncargo`, `Rechazar`), `J/services/SolicitudService.java`
+  (`dtos` de paquete), `J/repositories/SolicitudRepository.java` (`existeEncargoEnCursoDeCargo`),
+  `J/services/ProductoAlumnoService.java` e `impl/ProductoAlumnoServiceImpl.java`
+  (los tres métodos y las dos guardas), `J/controllers/CajaController.java` (rutas del profesor),
+  `J/controllers/SolicitudController.java` (encargado, recibido, rechazar).
+
+- [ ] **Paso 1: implementar** lo de los criterios.
+- [ ] **Paso 2: comprobar que pasan.** `mvn test -Dtest='EncargosIntegrationTest,MatrizPermisosTest,
+  SolicitudesIntegrationTest,AceptarSolicitudesIntegrationTest,CajaSedeIntegrationTest,MiCajaProfesorIntegrationTest'
+  -DexcludedGroups=migracion`. Se espera PASS.
+
+### Tarea 3: matriz, documentación y batería
+
+- [ ] **Paso 1:** nota en `matriz-endpoints.md` (10 líneas nuevas; ninguna casilla existente cambia).
+- [ ] **Paso 2:** `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion`: BUILD SUCCESS, con los dorados
+  de Moiskimdo sin tocar.
+- [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
+  `feat(solicitudes): encargos del profesor con su cargo y su recorrido (6c-5)`.
 
 ---
 

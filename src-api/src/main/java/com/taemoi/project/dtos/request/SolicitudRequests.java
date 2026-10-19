@@ -25,4 +25,17 @@ public final class SolicitudRequests {
 	/** Denegar (solo el propietario): {@code POST /api/solicitudes/{id}/denegar}; respuesta obligatoria (D6c-1). */
 	public record Denegar(String respuesta) {
 	}
+
+	/**
+	 * Pieza 6c-5: el profesor encarga un producto para un alumno de sus grupos,
+	 * {@code POST /api/caja/profesor/alumnos/{alumnoId}/encargos}. Nota obligatoria (la talla…), máximo 255
+	 * (va también a las notas del cargo).
+	 * {@code sedeId}, solo si el alumno está con él en grupos de varias sedes (D6c-9).
+	 */
+	public record PedirEncargo(Long productoId, String nota, Long sedeId) {
+	}
+
+	/** Pieza 6c-5: rechazar un encargo, {@code POST /api/solicitudes/{id}/rechazar}; motivo obligatorio (D6c-1). */
+	public record Rechazar(String motivo) {
+	}
 }

@@ -57,7 +57,7 @@ import jakarta.persistence.criteria.Root;
 /**
  * Solicitudes al propietario (pieza 6c-2, docs/multi-escuela/fase3-6c-solicitudes.md y fase3-6c-plan.md §3): pedir los
  * tipos 1 (con o sin cobro, decisión 191) y 3, retirar, denegar, la bandeja por segmento y el contador. Aceptar (tipos 1
- * a 3) es de la 6c-3 ({@link #aceptar}, plan §4); los encargos, de la 6c-5.
+ * a 3) es de la 6c-3 ({@link #aceptar}, plan §4); los encargos, de la 6c-5 ({@link EncargoService}, plan §4b).
  *
  * <ul>
  * <li><b>Pedir</b> no cambia nada más (el pago sigue marcado, la caja igual). Se valida el recurso: existe en la
@@ -562,8 +562,11 @@ public class SolicitudService {
 
 	// ------------------------------------------------------------------ utilidades
 
-	/** DTOs con los nombres de cuentas, alumnos y sedes en tres consultas para toda la lista. */
-	private List<SolicitudDTOs.Solicitud> dtos(List<Solicitud> lista, Long usuario) {
+	/**
+	 * DTOs con los nombres de cuentas, alumnos y sedes en tres consultas para toda la lista. De paquete: también los
+	 * usa {@link EncargoService} (6c-5).
+	 */
+	List<SolicitudDTOs.Solicitud> dtos(List<Solicitud> lista, Long usuario) {
 		if (lista.isEmpty()) {
 			return List.of();
 		}
