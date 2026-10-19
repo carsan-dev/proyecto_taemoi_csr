@@ -24,6 +24,8 @@ export class CrearProductoComponent {
     this.productoForm = this.fb.group({
       concepto: ['', Validators.required],
       precio: ['', [Validators.required, Validators.min(0)]],
+      // Pieza 6b-3b: aparece en «Mi caja» para que el profesor lo venda en efectivo.
+      vendibleProfesor: [false],
     });
   }
 

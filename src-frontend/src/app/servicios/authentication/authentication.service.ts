@@ -7,6 +7,19 @@ import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 
 export type PortalPreferido = 'admin' | 'user';
 
+/**
+ * Sesión «solo profesor» (pieza 6b-3b): ROLE_PROFESOR sin gestión ni familia (puede ser también responsable de
+ * sede). El servidor solo le deja «Mi caja» y lo imprescindible de la sesión: nada de gestión ni del portal familiar.
+ */
+export function esSoloProfesor(roles: readonly string[]): boolean {
+  return (
+    roles.includes('ROLE_PROFESOR') &&
+    !roles.includes('ROLE_ADMIN') &&
+    !roles.includes('ROLE_MANAGER') &&
+    !roles.includes('ROLE_USER')
+  );
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -50,6 +63,8 @@ export class AuthenticationService {
     this.alumnoIdSubject.asObservable();
 
   private rolesCargados: boolean = false;
+  /** Petición de /roles en curso: la comparten quienes la piden a la vez (login, cabecera, guards). */
+  private rolesPeticion$: Observable<string[]> | null = null;
   private alumnosAsociadosCache: any[] | null = null;
   private alumnosAsociadosRequest$: Observable<any[]> | null = null;
   private sondeoPlataforma$: Observable<boolean> | null = null;
@@ -93,6 +108,7 @@ export class AuthenticationService {
 
   login(credenciales: LoginInterface): Observable<string[]> {
     this.rolesCargados = false;
+    this.rolesPeticion$ = null;
     // Cambiar de usuario sin cerrar sesión no debe reutilizar el sondeo del anterior.
     this.sondeoPlataforma$ = null;
     return this.http
@@ -171,6 +187,7 @@ export class AuthenticationService {
     this.isManagerSubject.next(false);
     this.isUserSubject.next(false);
     this.rolesCargados = false;
+    this.rolesPeticion$ = null;
     this.alumnosAsociadosCache = null;
     this.alumnosAsociadosRequest$ = null;
 
@@ -212,7 +229,10 @@ export class AuthenticationService {
   }
 
   obtenerRoles(): Observable<string[]> {
-    return this.http
+    if (this.rolesPeticion$) {
+      return this.rolesPeticion$;
+    }
+    const peticion$: Observable<string[]> = this.http
       .get<string[]>(`${this.urlBase}/roles`, { withCredentials: true })
       .pipe(
         tap((roles) => {
@@ -223,8 +243,16 @@ export class AuthenticationService {
           this.rolesSubject.next([]);
           this.rolesCargados = false;
           return of([]);
-        })
+        }),
+        finalize(() => {
+          if (this.rolesPeticion$ === peticion$) {
+            this.rolesPeticion$ = null;
+          }
+        }),
+        shareReplay(1)
       );
+    this.rolesPeticion$ = peticion$;
+    return peticion$;
   }
 
   getRoles(): Observable<string[]> {
@@ -302,6 +330,15 @@ export class AuthenticationService {
     return this.tieneAccesoAdmin(roles) && this.tieneAccesoUser(roles);
   }
 
+  tieneRolProfesor(roles: string[] = this.rolesSubject.value): boolean {
+    return roles.includes('ROLE_PROFESOR');
+  }
+
+  /** Ver {@link esSoloProfesor}. */
+  esSoloProfesor(roles: string[] = this.rolesSubject.value): boolean {
+    return esSoloProfesor(roles);
+  }
+
   guardarVistaPreferida(portal: PortalPreferido): void {
     const storage = this.obtenerLocalStorage();
     storage?.setItem(this.vistaPreferidaStorageKey, portal);
@@ -336,6 +373,9 @@ export class AuthenticationService {
     }
     if (tieneAccesoUser) {
       return '/userpage';
+    }
+    if (this.tieneRolProfesor(roles)) {
+      return '/mi-caja';
     }
     return '/';
   }

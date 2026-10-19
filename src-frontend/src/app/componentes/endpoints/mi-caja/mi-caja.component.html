@@ -1,0 +1,303 @@
+<section class="mi-caja">
+  <header class="cabecera">
+    <h1>Mi caja</h1>
+    @if (soloProfesor) {
+      <button type="button" class="btn-salir" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión
+      </button>
+    }
+  </header>
+
+  <section class="encima-resumen" aria-labelledby="tituloEncimaResumen" [attr.aria-busy]="cargandoEncima">
+    <h2 id="tituloEncimaResumen">Llevas encima</h2>
+    @if (encima) {
+      <p class="encima-importe">{{ euros(encima.importe) }}</p>
+      <p class="encima-detalle">
+        {{ encima.numeroCobros === 1 ? '1 cobro sin entregar' : encima.numeroCobros + ' cobros sin entregar' }}
+      </p>
+    } @else if (errorEncima) {
+      <p class="encima-importe">—</p>
+      <p class="encima-detalle">No se ha podido leer</p>
+    } @else {
+      <p class="encima-importe esqueleto-texto" aria-hidden="true">00,00 €</p>
+      <p class="encima-detalle">Cargando…</p>
+    }
+  </section>
+
+  <div class="pestanas" role="tablist" aria-label="Mi caja" (keydown)="moverPestana($event)">
+    <button type="button" role="tab" id="pestana-cobrar" aria-controls="panel-cobrar"
+      [attr.aria-selected]="pestana === 'cobrar'" [attr.tabindex]="pestana === 'cobrar' ? 0 : -1"
+      [class.activa]="pestana === 'cobrar'" (click)="elegirPestana('cobrar')">
+      Por cobrar <span class="contador">{{ numeroPorCobrar }}</span>
+    </button>
+    <button type="button" role="tab" id="pestana-vender" aria-controls="panel-vender"
+      [attr.aria-selected]="pestana === 'vender'" [attr.tabindex]="pestana === 'vender' ? 0 : -1"
+      [class.activa]="pestana === 'vender'" (click)="elegirPestana('vender')">
+      Vender
+    </button>
+    <button type="button" role="tab" id="pestana-encima" aria-controls="panel-encima"
+      [attr.aria-selected]="pestana === 'encima'" [attr.tabindex]="pestana === 'encima' ? 0 : -1"
+      [class.activa]="pestana === 'encima'" (click)="elegirPestana('encima')">
+      Encima <span class="contador">{{ numeroEncima }}</span>
+    </button>
+  </div>
+
+  <!-- ============================================================ Por cobrar -->
+  <section class="panel" id="panel-cobrar" role="tabpanel" aria-labelledby="pestana-cobrar" [hidden]="pestana !== 'cobrar'">
+    @if (pestana === 'cobrar') {
+      <label class="buscador">
+        <span class="visually-hidden">Buscar alumno</span>
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" id="buscarCargos" placeholder="Buscar alumno" autocomplete="off"
+          [(ngModel)]="busquedaCargos" (ngModelChange)="filtrarCargos()" />
+      </label>
+
+      @if (errorCargos) {
+        <div class="estado estado-error" role="alert">
+          <p>{{ errorCargos }}</p>
+          <button type="button" class="btn-secundario" (click)="cargarCargos()">Reintentar</button>
+        </div>
+      } @else if (cargandoCargos && cargos.length === 0) {
+        <div class="esqueleto" role="status" aria-label="Cargando cobros pendientes">
+          <span></span><span></span><span></span>
+        </div>
+      } @else if (cargos.length === 0) {
+        <div class="estado">
+          <i class="bi bi-check2-circle" aria-hidden="true"></i>
+          <p><strong>Nada pendiente</strong></p>
+          <p>Tus alumnos están al día. Si alguien te paga otra cosa, apúntalo en «Vender».</p>
+        </div>
+      } @else if (grupos.length === 0) {
+        <div class="estado">
+          <p>Ningún alumno con cargos pendientes se llama «{{ busquedaCargos }}».</p>
+        </div>
+      } @else {
+        <ul class="lista-alumnos">
+          @for (grupo of grupos; track grupo.alumnoId) {
+            <li class="alumno">
+              <h3 class="alumno-nombre">{{ grupo.nombre }}</h3>
+              <ul class="filas">
+                @for (cargo of grupo.cargos; track cargo.cargoId) {
+                  <li class="fila">
+                    <div class="fila-texto">
+                      <span class="concepto">{{ cargo.concepto }}</span>
+                      <span class="meta">desde {{ diaMes(cargo.fechaAsignacion) }}</span>
+                    </div>
+                    <span class="importe">{{ euros(cargo.importe) }}</span>
+                    <button type="button" class="btn-cobrar" (click)="abrirCobro(cargo, $event)"
+                      [attr.aria-label]="'Cobrar ' + cargo.concepto + ' a ' + grupo.nombre">
+                      Cobrar
+                    </button>
+                  </li>
+                }
+              </ul>
+            </li>
+          }
+        </ul>
+      }
+      <p class="nota">Solo alumnos de tus grupos. No cambias importes.</p>
+    }
+  </section>
+
+  <!-- ============================================================ Vender -->
+  <section class="panel" id="panel-vender" role="tabpanel" aria-labelledby="pestana-vender" [hidden]="pestana !== 'vender'">
+    @if (pestana === 'vender') {
+      @if (errorVender) {
+        <div class="estado estado-error" role="alert">
+          <p>{{ errorVender }}</p>
+          <button type="button" class="btn-secundario" (click)="cargarVender()">Reintentar</button>
+        </div>
+      } @else if (cargandoVender) {
+        <div class="esqueleto" role="status" aria-label="Cargando el catálogo">
+          <span></span><span></span><span></span>
+        </div>
+      } @else {
+        <h2 class="titulo-bloque" id="tituloAlumnoVenta">Alumno de tus grupos</h2>
+        @if (alumnoVenta) {
+          <div class="alumno-elegido">
+            <div>
+              <strong>{{ nombreAlumno(alumnoVenta) }}</strong>
+              @if (alumnoVenta.grupos.length) {
+                <span class="meta">{{ alumnoVenta.grupos.join(', ') }}</span>
+              }
+            </div>
+            <button type="button" class="btn-secundario" (click)="cambiarAlumno()">Cambiar</button>
+          </div>
+        } @else if (alumnos.length === 0) {
+          <div class="estado">
+            <p>No tienes alumnos activos en tus grupos.</p>
+          </div>
+        } @else {
+          <label class="buscador">
+            <span class="visually-hidden">Buscar alumno de tus grupos</span>
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="buscarAlumnoVenta" placeholder="Buscar alumno" autocomplete="off"
+              [(ngModel)]="busquedaAlumno" />
+          </label>
+          <ul class="lista-eleccion" aria-labelledby="tituloAlumnoVenta">
+            @for (alumno of alumnosFiltrados; track alumno.alumnoId) {
+              <li>
+                <button type="button" class="eleccion" (click)="elegirAlumno(alumno)">
+                  <strong>{{ nombreAlumno(alumno) }}</strong>
+                  @if (alumno.grupos.length) {
+                    <span class="meta">{{ alumno.grupos.join(', ') }}</span>
+                  }
+                </button>
+              </li>
+            } @empty {
+              <li class="sin-coincidencias">Ningún alumno de tus grupos se llama «{{ busquedaAlumno }}».</li>
+            }
+          </ul>
+        }
+
+        <h2 class="titulo-bloque">Catálogo (precio fijo)</h2>
+        @if (productos.length === 0) {
+          <div class="estado">
+            <i class="bi bi-bag" aria-hidden="true"></i>
+            <p><strong>Aún no hay nada que vender</strong></p>
+            <p>La gestión de la escuela todavía no ha marcado productos para vender desde Mi caja.</p>
+          </div>
+        } @else {
+          @if (!alumnoVenta) {
+            <p class="pista">Elige primero el alumno.</p>
+          }
+          <ul class="filas filas-catalogo">
+            @for (producto of productos; track producto.id) {
+              <li class="fila">
+                <div class="fila-texto">
+                  <span class="concepto">{{ producto.concepto }}</span>
+                </div>
+                <span class="importe">{{ euros(producto.precio) }}</span>
+                <button type="button" class="btn-cobrar" [disabled]="!alumnoVenta"
+                  (click)="abrirVenta(producto, $event)" [attr.aria-label]="'Vender ' + producto.concepto">
+                  Vender
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        <p class="nota">Sin mensualidades, licencias, exámenes, reservas ni productos de grado.</p>
+      }
+    }
+  </section>
+
+  <!-- ============================================================ Encima -->
+  <section class="panel" id="panel-encima" role="tabpanel" aria-labelledby="pestana-encima" [hidden]="pestana !== 'encima'">
+    @if (pestana === 'encima') {
+      @if (errorEncima) {
+        <div class="estado estado-error" role="alert">
+          <p>{{ errorEncima }}</p>
+          <button type="button" class="btn-secundario" (click)="cargarEncima()">Reintentar</button>
+        </div>
+      } @else if (!encima) {
+        <div class="esqueleto" role="status" aria-label="Cargando lo que llevas encima">
+          <span></span><span></span>
+        </div>
+      } @else if (encima.cobros.length === 0) {
+        <div class="estado">
+          <i class="bi bi-wallet2" aria-hidden="true"></i>
+          <p><strong>No llevas nada encima</strong></p>
+          <p>Lo que cobres en efectivo aparecerá aquí hasta que lo entregues en la sede.</p>
+        </div>
+      } @else {
+        <div class="sin-entregar">
+          <h2 class="titulo-bloque">Sin entregar</h2>
+          <span class="importe">{{ euros(encima.importe) }}</span>
+        </div>
+        <ul class="filas">
+          @for (cobro of encima.cobros; track cobro.cobroId) {
+            <li class="fila fila-encima">
+              <strong class="fila-nombre">{{ nombreCobro(cobro) }}</strong>
+              <span class="meta">{{ cobro.concepto }}@if (cobro.venta) { · venta } · {{ cuandoCobro(cobro) }}</span>
+              <span class="importe">{{ euros(cobro.importe) }}</span>
+              <button type="button" class="btn-deshacer" (click)="abrirDeshacer(cobro, $event)"
+                [attr.aria-label]="'Deshacer el cobro de ' + cobro.concepto + ' a ' + nombreCobro(cobro)">
+                Deshacer
+              </button>
+            </li>
+          }
+        </ul>
+      }
+      <p class="nota">Lo ya entregado no se deshace aquí.</p>
+    }
+  </section>
+</section>
+
+<!-- ============================================================ Hoja: cobrar / vender -->
+@if (hoja) {
+  <div class="hoja-fondo" (click)="cerrarHoja()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloHoja" aria-describedby="detalleHoja"
+    cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloHoja">{{ hoja.titulo }}</h2>
+    <p class="hoja-importe">{{ euros(hoja.importe) }}</p>
+    <p class="hoja-detalle" id="detalleHoja">{{ hoja.alumno }} · {{ hoja.concepto }}</p>
+    <p class="hoja-nota">Queda en tu efectivo hasta que lo entregues en la sede.</p>
+    @if (hoja.error) {
+      <p class="hoja-error" role="alert">{{ hoja.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" class="btn-principal-grande" [disabled]="hoja.enviando"
+        (click)="confirmarHoja()">
+        @if (hoja.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        {{ hoja.verbo }} {{ euros(hoja.importe) }}
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="hoja.enviando" (click)="cerrarHoja()">Cancelar</button>
+    </div>
+  </section>
+}
+
+<!-- ============================================================ Hoja: deshacer -->
+@if (hojaDeshacer) {
+  <div class="hoja-fondo" (click)="cerrarDeshacer()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloDeshacer"
+    cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloDeshacer">Deshacer el cobro</h2>
+    <p class="hoja-detalle">
+      {{ nombreCobro(hojaDeshacer.cobro) }} · {{ hojaDeshacer.cobro.concepto }} ·
+      <span class="cifra">{{ euros(hojaDeshacer.cobro.importe) }}</span>
+    </p>
+    <fieldset class="motivos">
+      <legend class="visually-hidden">Qué ha pasado</legend>
+      <label class="motivo" [class.elegido]="hojaDeshacer.motivo === 'AUN_NO_PAGADO'">
+        <input type="radio" name="motivoDeshacer" value="AUN_NO_PAGADO" [(ngModel)]="hojaDeshacer.motivo"
+          [disabled]="hojaDeshacer.enviando" />
+        <span>Aún no ha pagado <span class="meta">(queda pendiente)</span></span>
+      </label>
+      @if (hojaDeshacer.cobro.venta) {
+        <label class="motivo" [class.elegido]="hojaDeshacer.motivo === 'NO_HUBO_VENTA'">
+          <input type="radio" name="motivoDeshacer" value="NO_HUBO_VENTA" [(ngModel)]="hojaDeshacer.motivo"
+            [disabled]="hojaDeshacer.enviando" />
+          <span>No hubo venta <span class="meta">(se cancela el cargo)</span></span>
+        </label>
+      }
+    </fieldset>
+    @if (hojaDeshacer.error) {
+      <p class="hoja-error" role="alert">{{ hojaDeshacer.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" class="btn-peligro-grande" [disabled]="hojaDeshacer.enviando" (click)="confirmarDeshacer()">
+        @if (hojaDeshacer.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        Deshacer cobro
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="hojaDeshacer.enviando" (click)="cerrarDeshacer()">
+        Cancelar
+      </button>
+    </div>
+  </section>
+}
+
+<!-- ============================================================ Aviso con deshacer -->
+<div class="aviso-zona" role="status" aria-live="polite">
+  @if (aviso) {
+    <div class="aviso">
+      <span class="aviso-texto">{{ aviso.texto }}</span>
+      <button type="button" class="aviso-deshacer" [disabled]="aviso.deshaciendo" (click)="deshacerDesdeAviso()">
+        {{ aviso.deshaciendo ? 'Deshaciendo…' : 'Deshacer' }}
+      </button>
+    </div>
+  }
+</div>

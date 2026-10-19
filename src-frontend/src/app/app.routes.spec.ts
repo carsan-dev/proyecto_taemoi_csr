@@ -1,6 +1,7 @@
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
+import { profesorGuard } from './guards/profesor.guard';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 
@@ -31,6 +32,16 @@ describe('app routes', () => {
     expect(plataformaRoute?.resolve?.['catalogo']).toBeUndefined();
     expect(plataformaIndex).toBeLessThan(routes.findIndex((route) => route.path === '**'));
     expect(resolverPortalContexto('/plataformaErrores')).not.toBe('user');
+  });
+
+  it('«Mi caja» es lazy, con su guard de profesor y sin catálogo (una sesión solo profesor recibiría 403)', () => {
+    const indice = routes.findIndex((route) => route.path === 'mi-caja');
+    const ruta = routes[indice];
+
+    expect(ruta?.canActivate).toEqual([profesorGuard]);
+    expect(typeof ruta?.loadComponent).toBe('function');
+    expect(ruta?.resolve).toBeUndefined();
+    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
   });
 
   it('mantiene el portal user accesible para cuentas duales y usuarios finales', () => {

@@ -94,7 +94,14 @@
                   </div>
                 </td>
                 <td>{{ producto.id }}</td>
-                <td>{{ producto.concepto }}</td>
+                <td>
+                  {{ producto.concepto }}
+                  @if (producto.vendibleProfesor) {
+                    <span class="etiqueta-mi-caja" title="Lo puede vender el profesor desde Mi caja">
+                      <i class="bi bi-wallet2" aria-hidden="true"></i> Mi caja
+                    </span>
+                  }
+                </td>
                 <td>{{ producto.precio | currency: 'EUR':'symbol':'1.2-2' }}</td>
                 <td class="col-actions">
                   <button class="admin-btn admin-btn-primary admin-btn-sm me-2" [routerLink]="['/productosEditar', producto.id]">

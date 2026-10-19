@@ -88,13 +88,14 @@ describe('HeaderComponent', () => {
 });
 
 describe('HeaderComponent: menú lateral de administración', () => {
-  async function renderizar(esAdminPlataforma: boolean): Promise<HTMLElement> {
+  async function renderizar(esAdminPlataforma: boolean, roles: string[] = ['ROLE_ADMIN']): Promise<HTMLElement> {
     const authServiceMock = {
       usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
       usernameCambio: new BehaviorSubject<string | null>('admin'),
-      rolesCambio: new BehaviorSubject<string[]>(['ROLE_ADMIN']),
+      rolesCambio: new BehaviorSubject<string[]>(roles),
       comprobarLogueado: () => true,
-      getRoles: () => of(['ROLE_ADMIN']),
+      getRoles: () => of(roles),
+      resolverRolesDisponibles: () => of(roles),
       esAdminPlataforma: () => of(esAdminPlataforma),
       marcarVistaPreferidaSegunRuta: () => undefined,
       tieneAccesoAdmin: () => true,
@@ -150,6 +151,14 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(hrefs[posicion - 1]).toBe('/tesoreriaCobros');
   });
 
+  it('«Mi caja» aparece en la barra solo si la sesión de gestión es también profesor', async () => {
+    let el = await renderizar(false);
+    expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')).toBeNull();
+
+    el = await renderizar(false, ['ROLE_MANAGER', 'ROLE_PROFESOR']);
+    expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
+  });
+
   it('la oculta cuando el sondeo de plataforma es false', async () => {
     const el = await renderizar(false);
 
@@ -169,6 +178,7 @@ describe('HeaderComponent: cabecera móvil', () => {
       rolesCambio: new BehaviorSubject<string[]>(roles),
       comprobarLogueado: () => logueado,
       getRoles: () => of(roles),
+      resolverRolesDisponibles: () => of(roles),
       esAdminPlataforma: () => of(false),
       marcarVistaPreferidaSegunRuta: () => undefined,
       tieneAccesoAdmin: () => false,
@@ -313,5 +323,73 @@ describe('HeaderComponent: cabecera móvil', () => {
       lineas.forEach((l) => expect(getComputedStyle(l).whiteSpace).withContext(rol).toBe('nowrap'));
       expect(getComputedStyle(titulo?.parentElement as Element).display).withContext(rol).not.toBe('none');
     }
+  });
+});
+
+describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
+  async function renderizar(roles: string[]) {
+    const esAdminPlataforma = jasmine.createSpy('esAdminPlataforma').and.returnValue(of(false));
+    const authServiceMock = {
+      usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
+      usernameCambio: new BehaviorSubject<string | null>('profe'),
+      rolesCambio: new BehaviorSubject<string[]>(roles),
+      comprobarLogueado: () => true,
+      getRoles: () => of(roles),
+      resolverRolesDisponibles: () => of(roles),
+      esAdminPlataforma,
+      marcarVistaPreferidaSegunRuta: () => undefined,
+      tieneAccesoAdmin: (r: string[]) => r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER'),
+      tieneAccesoUser: (r: string[]) => r.includes('ROLE_USER'),
+      tieneAccesoDual: () => false,
+      logout: () => undefined,
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceMock },
+        { provide: PageScrollService, useValue: { scrollTop: 0 } },
+        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    return { fixture, esAdminPlataforma };
+  }
+
+  it('solo profesor: sin cabecera de gestión ni de familia y sin sondear la plataforma', async () => {
+    const { fixture, esAdminPlataforma } = await renderizar(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.mostrarHeaderAdmin).toBeFalse();
+    expect(fixture.componentInstance.mostrarHeaderUser).toBeFalse();
+    expect(el.querySelector('#admin-sidebar')).toBeNull();
+    expect(el.querySelector('a[href="/userpage"]')).toBeNull();
+    expect(esAdminPlataforma).not.toHaveBeenCalled();
+  });
+
+  it('familia + profesor: «Mi caja» en el menú de cuenta de escritorio y móvil', async () => {
+    const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR']);
+    const componente = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+
+    componente.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('.user-desktop-menu-panel a[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
+
+    componente.closeDesktopUserMenu();
+    componente.toggleMobileUserQuickMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('.mobile-user-quick-menu-panel a[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
+  });
+
+  it('familia sin profesor: no ve «Mi caja»', async () => {
+    const { fixture } = await renderizar(['ROLE_USER']);
+    fixture.componentInstance.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();
   });
 });

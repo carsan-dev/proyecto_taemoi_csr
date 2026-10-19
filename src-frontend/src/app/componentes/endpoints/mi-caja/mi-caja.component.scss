@@ -1,0 +1,786 @@
+// «Mi caja» del profesor (pieza 6b-3b). Mismo mundo que la Caja de sede, pensado para una mano y la puerta del
+// tatami: una columna, objetivos de 44 px, cifras tabulares y una sola pieza con peso (lo que llevas encima).
+
+$azul: #2b6cb0;
+$azul-hondo: #1f4d86;
+$verde: #2f855a;
+$verde-hondo: #276749;
+$rojo: #c53030;
+$rojo-hondo: #9b2c2c;
+$tinta: #1a202c;
+$gris: #4a5568;
+$linea: #e2e8f0;
+$fondo: #f4f7fa;
+$tactil: 2.75rem; // 44 px
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: $fondo;
+  color: $tinta;
+  font-variant-numeric: tabular-nums;
+}
+
+.mi-caja {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+:is(button, input, a):focus-visible {
+  outline: 2px solid $azul;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba($azul, 0.22);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------- cabecera y «Llevas encima»
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: $tactil;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+}
+
+.btn-salir {
+  min-height: $tactil;
+  padding: 0 0.9rem;
+  border: 1px solid $linea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: $gris;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+
+  &:hover {
+    color: $tinta;
+    border-color: #cbd5e0;
+  }
+}
+
+.encima-resumen {
+  border-radius: 12px;
+  padding: 1rem 1.15rem 1.1rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, $azul-hondo 0%, $azul 100%);
+  box-shadow: 0 10px 24px rgba(31, 77, 134, 0.22);
+
+  h2 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .encima-importe {
+    margin: 0.2rem 0 0.1rem;
+    font-size: clamp(2.1rem, 9vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .encima-detalle {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #e6efff;
+  }
+
+  .esqueleto-texto {
+    color: transparent;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    width: 9rem;
+  }
+}
+
+// ---------------------------------------------------------------- pestañas
+
+.pestanas {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: #e8eef5;
+
+  button {
+    min-height: $tactil;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: $gris;
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  button.activa {
+    background: #ffffff;
+    color: $azul-hondo;
+    box-shadow: 0 2px 6px rgba(26, 32, 44, 0.1);
+  }
+
+  .contador {
+    min-width: 1.4rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: #d5dde8;
+    color: $tinta;
+    font-size: 0.78rem;
+  }
+
+  button.activa .contador {
+    background: $azul;
+    color: #ffffff;
+  }
+}
+
+// ---------------------------------------------------------------- paneles y listas
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+// Los tres paneles existen siempre (destino de `aria-controls`); el inactivo se oculta.
+.panel[hidden] {
+  display: none;
+}
+
+.buscador {
+  position: relative;
+  display: block;
+  margin: 0;
+
+  i {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $gris;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    min-height: $tactil;
+    padding: 0.55rem 0.9rem 0.55rem 2.4rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: $tinta;
+    font-size: 1rem; // 16 px: iOS no hace zoom al enfocar
+  }
+
+  input::placeholder {
+    color: #5f6b7a;
+  }
+}
+
+.titulo-bloque {
+  margin: 0.35rem 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.lista-alumnos,
+.filas,
+.lista-eleccion {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lista-alumnos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alumno,
+.filas-catalogo,
+.panel > .filas {
+  background: #ffffff;
+  border: 1px solid $linea;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.alumno-nombre {
+  margin: 0;
+  padding: 0.75rem 1rem 0.2rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem 0.6rem 1rem;
+  border-top: 1px solid #edf2f7;
+}
+
+.alumno .fila:first-child {
+  border-top: 0;
+}
+
+.panel > .filas .fila:first-child,
+.filas-catalogo .fila:first-child {
+  border-top: 0;
+}
+
+// Encima: el nombre ocupa la fila entera; debajo, concepto y cuándo, importe y «Deshacer».
+.fila-encima {
+  grid-template-areas:
+    'nombre nombre nombre'
+    'meta importe accion';
+  row-gap: 0.1rem;
+
+  .fila-nombre {
+    grid-area: nombre;
+    overflow-wrap: anywhere;
+  }
+
+  .meta {
+    grid-area: meta;
+    min-width: 0;
+  }
+
+  .importe {
+    grid-area: importe;
+  }
+
+  .btn-deshacer {
+    grid-area: accion;
+  }
+}
+
+.fila-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .concepto {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.meta {
+  font-size: 0.85rem;
+  color: $gris;
+  font-weight: 500;
+}
+
+.importe {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.btn-cobrar,
+.btn-deshacer,
+.btn-secundario {
+  min-height: $tactil;
+  padding: 0 0.95rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-cobrar {
+  border: 0;
+  background: $verde;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $verde-hondo;
+  }
+
+  &:disabled {
+    background: #c3ccd7;
+    color: #3c4655;
+    cursor: not-allowed;
+  }
+}
+
+.btn-deshacer {
+  border: 1px solid #feb2b2;
+  background: #ffffff;
+  color: $rojo-hondo;
+
+  &:hover {
+    background: #fff5f5;
+  }
+}
+
+.btn-secundario {
+  border: 1px solid #cbd5e0;
+  background: #ffffff;
+  color: $tinta;
+
+  &:hover {
+    background: #f7fafc;
+  }
+}
+
+.nota,
+.pista {
+  margin: 0;
+  font-size: 0.85rem;
+  color: $gris;
+}
+
+.pista {
+  font-weight: 600;
+}
+
+.sin-entregar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.25rem;
+
+  .titulo-bloque {
+    margin: 0;
+  }
+
+  .importe {
+    font-size: 1.15rem;
+  }
+}
+
+// Vender: alumno elegido y lista para elegirlo.
+.alumno-elegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem 0.7rem 1rem;
+  border: 1px solid #9ec5ea;
+  border-radius: 12px;
+  background: #ebf4ff;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+}
+
+.lista-eleccion {
+  max-height: 16.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #ffffff;
+  border: 1px solid $linea;
+  border-radius: 12px;
+
+  li + li {
+    border-top: 1px solid #edf2f7;
+  }
+}
+
+.eleccion {
+  width: 100%;
+  min-height: $tactil;
+  padding: 0.6rem 1rem;
+  border: 0;
+  background: transparent;
+  color: $tinta;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+
+  &:hover {
+    background: #f7fafc;
+  }
+}
+
+.sin-coincidencias {
+  padding: 0.75rem 1rem;
+  color: $gris;
+  font-size: 0.9rem;
+}
+
+// ---------------------------------------------------------------- estados
+
+.estado {
+  padding: 1.5rem 1rem;
+  border: 1px dashed #cbd5e0;
+  border-radius: 12px;
+  background: #ffffff;
+  text-align: center;
+  color: $gris;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+
+  p {
+    margin: 0;
+    max-width: 34ch;
+  }
+
+  strong {
+    color: $tinta;
+  }
+
+  i {
+    font-size: 1.5rem;
+    color: $verde;
+  }
+}
+
+.estado-error {
+  border: 1px solid #feb2b2;
+  background: #fff5f5;
+  color: #822727;
+  font-weight: 600;
+  gap: 0.75rem;
+}
+
+.esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  span {
+    display: block;
+    height: 3.5rem;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #e8eef5 0%, #f4f7fa 50%, #e8eef5 100%);
+    background-size: 200% 100%;
+    animation: brillo 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes brillo {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+// ---------------------------------------------------------------- hoja de confirmación
+
+.hoja-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(15, 23, 42, 0.45);
+  animation: aparecer 160ms ease-out;
+}
+
+.hoja {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1041;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.25rem 1.15rem calc(1.15rem + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  animation: subir 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: $gris;
+  }
+}
+
+.hoja-importe {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.hoja-detalle {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cifra {
+  white-space: nowrap;
+}
+
+.hoja-nota {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: $gris;
+}
+
+.hoja-error {
+  margin: 0.35rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #feb2b2;
+  background: #fff5f5;
+  color: #822727;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.hoja-acciones {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-principal-grande,
+.btn-peligro-grande,
+.btn-cancelar {
+  min-height: 3.1rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 1.02rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.btn-principal-grande {
+  border: 0;
+  background: $verde;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $verde-hondo;
+  }
+}
+
+.btn-peligro-grande {
+  border: 0;
+  background: $rojo;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $rojo-hondo;
+  }
+}
+
+.btn-cancelar {
+  border: 0;
+  background: transparent;
+  color: $gris;
+  font-weight: 700;
+
+  &:hover:not(:disabled) {
+    color: $tinta;
+    background: #f7fafc;
+  }
+}
+
+:is(.btn-principal-grande, .btn-peligro-grande, .btn-cancelar):disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.motivos {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.motivo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: $rojo;
+  }
+
+  &.elegido {
+    border-color: $rojo;
+    background: #fff5f5;
+  }
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+// ---------------------------------------------------------------- aviso con deshacer
+
+.aviso-zona {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 1030;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem;
+  pointer-events: none;
+}
+
+.aviso {
+  pointer-events: auto;
+  width: min(100%, 26rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.4rem 0.35rem 1rem;
+  border-radius: 12px;
+  background: $tinta;
+  color: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.3);
+  animation: subir 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aviso-texto {
+  font-weight: 700;
+}
+
+.aviso-deshacer {
+  min-height: $tactil;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #90cdf4;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:focus-visible {
+    outline-color: #90cdf4;
+  }
+}
+
+@keyframes subir {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// ---------------------------------------------------------------- escritorio
+
+@media (min-width: 768px) {
+  .mi-caja {
+    padding-top: 1.75rem;
+  }
+
+  .hoja {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    width: min(26rem, calc(100vw - 2rem));
+    transform: translate(-50%, -50%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    animation: aparecer 160ms ease-out;
+  }
+
+  .hoja-acciones {
+    flex-direction: row-reverse;
+
+    > * {
+      flex: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hoja,
+  .hoja-fondo,
+  .aviso,
+  .esqueleto span {
+    animation: none;
+  }
+}
