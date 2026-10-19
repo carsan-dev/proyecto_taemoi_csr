@@ -1,0 +1,376 @@
+@use '../../../componentes/admin-theme' as *;
+
+// Bandeja de solicitudes (pieza 6c-7): tema de la gestión (cabecera oscura, admin-btn, superficie blanca con la franja
+// oscura de admin-table). Una sola superficie con filas, no tarjetas sueltas.
+
+$tinta: #1b2b2e;
+$tinta-suave: #4a5b5d;
+$linea: #e3e9e8;
+
+.bandeja-cabecera {
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+// admin-btn-outline no trae el flex de los demás admin-btn: icono y texto separados.
+.bandeja-cabecera .admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.bandeja-intro {
+  margin: 0.4rem 0 0;
+  color: $tinta-suave;
+  max-width: 60ch;
+}
+
+// ---------------------------------------------------------------- segmentos
+
+.segmentos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: $shadow-sm;
+
+  button {
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: $tinta-suave;
+    font-weight: 600;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      color: $tinta;
+      background: #eef3f2;
+    }
+
+    &.activo {
+      background: linear-gradient(135deg, $dark-bg, $dark-accent);
+      color: #ffffff;
+    }
+  }
+}
+
+:is(button, a):focus-visible {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// ---------------------------------------------------------------- lista
+
+.panel {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: $shadow-md;
+  overflow: hidden;
+}
+
+.lista-cabecera,
+.fila-solicitud {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1.1fr) minmax(14rem, 1.6fr) minmax(11rem, auto);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.lista-cabecera {
+  padding: 0.9rem 1.5rem;
+  background: linear-gradient(135deg, $dark-bg, $dark-accent);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lista-solicitudes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fila-solicitud {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid $linea;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  :where(p) {
+    margin: 0;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.chip-tipo,
+.chip-estado {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+// Tipo: cobros en ámbar, caja en rojo apagado, encargos en verde azulado.
+.chip-tipo {
+  background: #fdf0d5;
+  color: #7a4a00;
+
+  &[data-tipo='DESHACER_COBRO_ENTREGADO'] {
+    background: #fde4cf;
+    color: #7c2d12;
+  }
+
+  &[data-tipo='ANULAR_ENTREGA'],
+  &[data-tipo='ANULAR_MOVIMIENTO'] {
+    background: #f9dede;
+    color: #7f1d1d;
+  }
+
+  &[data-tipo='ENCARGO'] {
+    background: #d8efec;
+    color: #134e4a;
+  }
+}
+
+.chip-estado {
+  &.estado-hecho {
+    background: #d7f0dc;
+    color: #1e5631;
+  }
+
+  &.estado-no {
+    background: #f9dede;
+    color: #7f1d1d;
+  }
+
+  &.estado-aviso {
+    background: #fdf0d5;
+    color: #7a4a00;
+  }
+
+  &.estado-neutro {
+    background: #e8ecec;
+    color: #374748;
+  }
+
+  &.estado-curso {
+    background: #dde8f5;
+    color: #1e3a5f;
+  }
+}
+
+.quien,
+.sobre {
+  color: $tinta;
+  font-weight: 700;
+}
+
+.detalle {
+  color: $tinta-suave;
+  font-size: 0.88rem;
+  margin-top: 0.15rem;
+}
+
+.sede i {
+  margin-right: 0.15rem;
+}
+
+.importe {
+  margin-top: 0.25rem;
+  color: $tinta;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.motivo {
+  margin: 0;
+  color: $tinta;
+  font-style: italic;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.resolucion {
+  margin-top: 0.5rem;
+}
+
+.respuesta {
+  margin-top: 0.4rem;
+  color: $tinta;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+
+  &.respuesta-aviso {
+    color: #7a4a00;
+  }
+}
+
+.respuesta-etiqueta {
+  font-weight: 700;
+}
+
+.col-acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+
+  .admin-btn {
+    white-space: nowrap;
+  }
+}
+
+// ---------------------------------------------------------------- estados de la página
+
+.sin-resultados {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: $tinta-suave;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+
+  p {
+    margin: 0;
+    font-weight: 600;
+    color: $tinta;
+  }
+
+  .sin-resultados-detalle {
+    font-weight: 400;
+    color: $tinta-suave;
+    max-width: 52ch;
+  }
+
+  i {
+    font-size: 1.8rem;
+    color: #7a8a8c;
+  }
+}
+
+.aviso-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #f3c2c2;
+  background: #fdf3f3;
+  color: #7f1d1d;
+  font-weight: 600;
+
+  span {
+    flex: 1;
+  }
+}
+
+// ---------------------------------------------------------------- móvil
+
+@media (max-width: 991.98px) {
+  .lista-cabecera {
+    display: none;
+  }
+
+  .fila-solicitud {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem 1.25rem;
+  }
+
+  .col-motivo,
+  .col-acciones {
+    grid-column: 1 / -1;
+  }
+
+  .col-acciones:empty {
+    display: none;
+  }
+
+  .col-acciones {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .bandeja-cabecera {
+    flex-direction: column;
+    padding: 1.25rem;
+
+    h2 {
+      font-size: 1.4rem;
+    }
+  }
+}
+
+// El tema móvil (admin-mobile-forms, ≤767 px) deja los botones de la barra solo con icono y a todo el ancho:
+// aquí, botón con texto y a su medida.
+@media (max-width: 767.98px) {
+  .bandeja-cabecera {
+    .action-buttons {
+      width: auto;
+      align-self: flex-start;
+
+      .admin-btn {
+        width: auto;
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        color: $tinta;
+
+        span {
+          display: inline;
+        }
+
+        i {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 575.98px) {
+  // Los tres segmentos en una fila: el texto largo parte en dos líneas.
+  .segmentos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    button {
+      padding: 0.35rem 0.4rem;
+      font-size: 0.85rem;
+      line-height: 1.2;
+      white-space: normal;
+    }
+  }
+
+  .fila-solicitud {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .col-acciones .admin-btn {
+    flex: 1 1 auto;
+  }
+}

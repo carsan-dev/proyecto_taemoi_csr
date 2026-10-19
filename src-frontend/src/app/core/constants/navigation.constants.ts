@@ -15,6 +15,8 @@ export interface AdminQuickNavigationItem extends NavigationItem {
   adminOnly?: boolean;
   /** Solo para la sesión administradora de plataforma (se detecta con PlataformaService). */
   plataformaOnly?: boolean;
+  /** Lleva el distintivo con el número de lo que espera acción (pieza 6c-7: solicitudes al propietario). */
+  contador?: 'solicitudes';
 }
 
 export interface NavigationDropdownItem {
@@ -143,6 +145,14 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-safe2',
     activePrefixes: ['/cajaSede'],
     priority: 4,
+  },
+  {
+    label: 'Solicitudes',
+    route: '/solicitudes',
+    icon: 'bi-inbox',
+    activePrefixes: ['/solicitudes'],
+    priority: 2,
+    contador: 'solicitudes',
   },
   {
     label: 'Registro de acciones',

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostListener, Injector, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
 import { Observable, Subject, forkJoin, of, takeUntil } from 'rxjs';
@@ -20,6 +20,8 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { CajaService, PeriodoCaja, mensajeDeError, periodoDeMes } from '../../../servicios/endpoints/caja.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
+import { SolicitudesService } from '../../../servicios/endpoints/solicitudes.service';
+import { pedirAlPropietario } from '../../generales/pedir-al-propietario/pedir-al-propietario';
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import {
@@ -87,6 +89,7 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
   private readonly caja = inject(CajaService);
   private readonly auth = inject(AuthenticationService);
   private readonly endpoints = inject(EndpointsService);
+  private readonly injector = inject(Injector);
   private readonly destroy$ = new Subject<void>();
   /** Cada recarga completa (cambio de sede, entrega recibida) invalida las respuestas de pendientes y entregas. */
   private recarga$ = new Subject<void>();
@@ -401,6 +404,16 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
     return this.esPropietario && !this.entregaAnulada(entrega);
   }
 
+  /** D6c-8: la gestión pide al propietario anular lo que él anularía (una entrega activa). */
+  puedePedirAnularEntrega(entrega: EntregaCaja): boolean {
+    return !this.esPropietario && !this.entregaAnulada(entrega);
+  }
+
+  /** D6c-8: ídem con los movimientos sueltos; el automático de una entrega se pide anulando la entrega. */
+  puedePedirAnularMovimiento(movimiento: MovimientoCaja): boolean {
+    return !this.esPropietario && !this.movimientoAnulado(movimiento) && movimiento.entregaCajaId === null;
+  }
+
   claseDiferenciasResumen(): string {
     const cent = Math.round((this.resumen?.diferenciasEnPeriodo ?? 0) * 100);
     return cent < 0 ? 'valor-negativo' : cent > 0 ? 'valor-positivo' : '';
@@ -650,6 +663,47 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
         error: (error) => this.errorDeAccion(error, 'No se ha podido anular el movimiento.'),
       });
     });
+  }
+
+  // ------------------------------------------------------------------ pedir anulación (gestión, D6c-8)
+
+  pedirAnularEntrega(entrega: EntregaCaja): Promise<unknown> {
+    if (!this.puedePedirAnularEntrega(entrega)) {
+      return Promise.resolve(null);
+    }
+    return pedirAlPropietario(this.injector.get(SolicitudesService), {
+      titulo: 'Pedir al propietario que anule esta entrega',
+      datos: [
+        { etiqueta: 'Entregó', valor: entrega.entregadoPorNombre ?? '' },
+        { etiqueta: 'Recibió', valor: entrega.recibidoPorNombre ?? '' },
+        { etiqueta: 'Contado', valor: this.euros(entrega.importeContado) },
+        { etiqueta: 'Fecha', valor: this.fechaCorta(entrega.fecha) },
+      ],
+      nota: 'Mientras tanto la entrega sigue contando en la caja.',
+      peticion: { tipo: 'ANULAR_ENTREGA', entregaId: entrega.id },
+    });
+  }
+
+  pedirAnularMovimiento(movimiento: MovimientoCaja): Promise<unknown> {
+    if (!this.puedePedirAnularMovimiento(movimiento)) {
+      return Promise.resolve(null);
+    }
+    return pedirAlPropietario(this.injector.get(SolicitudesService), {
+      titulo: 'Pedir al propietario que anule este movimiento',
+      datos: [
+        { etiqueta: 'Tipo', valor: this.etiquetaTipo(movimiento.tipo) },
+        { etiqueta: 'Importe', valor: this.importeFirmado(movimiento.importe) },
+        { etiqueta: 'Fecha', valor: this.fechaCorta(movimiento.fecha) },
+        { etiqueta: 'Nota', valor: movimiento.nota ?? '' },
+      ],
+      nota: 'Mientras tanto el movimiento sigue contando en la caja.',
+      peticion: { tipo: 'ANULAR_MOVIMIENTO', movimientoId: movimiento.id },
+    });
+  }
+
+  private fechaCorta(valor: string | null | undefined): string {
+    const fecha = valor ? new Date(valor) : null;
+    return fecha && !Number.isNaN(fecha.getTime()) ? fecha.toLocaleDateString('es-ES') : '';
   }
 
   /** La API exige motivo para anular. Devuelve el motivo o `null` si se cancela. */

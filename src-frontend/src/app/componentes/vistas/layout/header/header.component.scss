@@ -2025,9 +2025,30 @@ header.fixed-header {
       border: 1px solid transparent;
       transition: $transition-fast;
       flex: 0 0 auto;
+      position: relative;
 
       i {
         font-size: 1rem;
+      }
+
+      // Solicitudes que esperan acción (pieza 6c-7): número en rojo sobre la esquina del icono.
+      .contador-aviso {
+        position: absolute;
+        top: -4px;
+        right: -6px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        border: 2px solid #1f2d3a;
+        background: #dc2626;
+        color: #ffffff;
+        font-size: 0.66rem;
+        font-weight: 700;
+        line-height: 14px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        pointer-events: none;
       }
 
       &:hover {
@@ -2166,6 +2187,20 @@ header.fixed-header {
         font-weight: 500;
         transition: transform 0.3s ease;
         flex: 1;
+      }
+
+      // Solicitudes que esperan acción (pieza 6c-7), al final de la fila.
+      .contador-aviso {
+        flex: 0 0 auto;
+        min-width: 1.5rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: #dc2626;
+        color: #ffffff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
       }
 
       &::before {

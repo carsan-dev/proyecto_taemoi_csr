@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { Injector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 
@@ -18,7 +19,7 @@ describe('ProductosAlumnoComponent: bloqueos del cargo cobrado', () => {
   function crear(): ProductosAlumnoComponent {
     TestBed.resetTestingModule();
     const component = TestBed.runInInjectionContext(
-      () => new ProductosAlumnoComponent({} as any, endpoints, {} as any, {} as any)
+      () => new ProductosAlumnoComponent({} as any, endpoints, {} as any, {} as any, TestBed.inject(Injector))
     );
     component.alumnoId = 10;
     component.obtenerProductosAlumno(10);

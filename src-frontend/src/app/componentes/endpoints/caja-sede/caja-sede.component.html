@@ -161,9 +161,7 @@
                 <th scope="col">Recibió</th>
                 <th scope="col" class="num">Contado</th>
                 <th scope="col">Diferencia</th>
-                @if (esPropietario) {
-                  <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
-                }
+                <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
@@ -187,16 +185,19 @@
                       }
                     }
                   </td>
-                  @if (esPropietario) {
-                    <td class="col-accion">
-                      @if (puedeAnularEntrega(entrega)) {
-                        <button type="button" class="btn-accion btn-anular" (click)="anularEntrega(entrega)"
-                          [attr.aria-label]="'Anular la entrega de ' + (entrega.entregadoPorNombre || 'un profesor') + ' del ' + (entrega.fecha | date: 'dd/MM/yyyy')">
-                          <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
-                        </button>
-                      }
-                    </td>
-                  }
+                  <td class="col-accion">
+                    @if (puedeAnularEntrega(entrega)) {
+                      <button type="button" class="btn-accion btn-anular" (click)="anularEntrega(entrega)"
+                        [attr.aria-label]="'Anular la entrega de ' + (entrega.entregadoPorNombre || 'un profesor') + ' del ' + (entrega.fecha | date: 'dd/MM/yyyy')">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
+                      </button>
+                    } @else if (puedePedirAnularEntrega(entrega)) {
+                      <button type="button" class="btn-accion btn-pedir" (click)="pedirAnularEntrega(entrega)"
+                        [attr.aria-label]="'Pedir al propietario que anule la entrega de ' + (entrega.entregadoPorNombre || 'un profesor') + ' del ' + (entrega.fecha | date: 'dd/MM/yyyy')">
+                        <i class="bi bi-send" aria-hidden="true"></i> Pedir anulación
+                      </button>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>
@@ -250,9 +251,7 @@
                 <th scope="col">Alumno</th>
                 <th scope="col" class="num">Importe</th>
                 <th scope="col">Nota</th>
-                @if (esPropietario) {
-                  <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
-                }
+                <th scope="col" class="col-accion"><span class="visually-hidden">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
@@ -275,16 +274,19 @@
                       <span class="motivo">Anulado: «{{ movimiento.motivoAnulacion }}»</span>
                     }
                   </td>
-                  @if (esPropietario) {
-                    <td class="col-accion">
-                      @if (puedeAnularMovimiento(movimiento)) {
-                        <button type="button" class="btn-accion btn-anular" (click)="anularMovimiento(movimiento)"
-                          [attr.aria-label]="'Anular ' + etiquetaTipo(movimiento.tipo) + ' de ' + euros(movimiento.importe)">
-                          <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
-                        </button>
-                      }
-                    </td>
-                  }
+                  <td class="col-accion">
+                    @if (puedeAnularMovimiento(movimiento)) {
+                      <button type="button" class="btn-accion btn-anular" (click)="anularMovimiento(movimiento)"
+                        [attr.aria-label]="'Anular ' + etiquetaTipo(movimiento.tipo) + ' de ' + euros(movimiento.importe)">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> Anular
+                      </button>
+                    } @else if (puedePedirAnularMovimiento(movimiento)) {
+                      <button type="button" class="btn-accion btn-pedir" (click)="pedirAnularMovimiento(movimiento)"
+                        [attr.aria-label]="'Pedir al propietario que anule ' + etiquetaTipo(movimiento.tipo) + ' de ' + euros(movimiento.importe)">
+                        <i class="bi bi-send" aria-hidden="true"></i> Pedir anulación
+                      </button>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

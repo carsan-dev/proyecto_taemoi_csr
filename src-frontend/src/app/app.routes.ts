@@ -372,6 +372,14 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Bandeja de solicitudes al propietario (6c-7).
+    path: 'solicitudes',
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.component').then(m => m.SolicitudesBandejaComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'auditoriaSistema',
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),

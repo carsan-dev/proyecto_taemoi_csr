@@ -6,6 +6,10 @@ import { BehaviorSubject, of, Subject } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
+import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
+
+/** El contador de solicitudes (6c-7) sin HTTP: lo prueba header.solicitudes.spec.ts. */
+const contadorSolicitudesSimulado = { total: () => 0, refrescar: () => undefined, reiniciar: () => undefined };
 
 describe('HeaderComponent', () => {
   function createComponent(): HeaderComponent {
@@ -33,7 +37,8 @@ describe('HeaderComponent', () => {
       routerMock as any,
       new NgZone({}),
       pageScroll as any,
-      scrollLock as any
+      scrollLock as any,
+      contadorSolicitudesSimulado as any
     );
   }
 
@@ -111,6 +116,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
       ],
     }).compileComponents();
 
@@ -195,6 +201,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
       ],
     }).compileComponents();
 
@@ -352,6 +359,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
       ],
     }).compileComponents();
 
