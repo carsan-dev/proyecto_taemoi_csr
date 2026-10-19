@@ -43,9 +43,38 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
   dropdown.id = listboxId;
   dropdown.setAttribute('role', 'listbox');
 
+  // El buscador es un campo de texto y se ve como los demas .swal2-input del dialogo: conserva su
+  // tipografia y alto. Del select solo se heredan los estilos en linea (p. ej. padding), y la
+  // caja (ancho y margenes) pasa al contenedor para que el desplegable (left:0; right:0) quede
+  // alineado con el campo.
+  input.style.cssText = select.style.cssText;
+  const tieneAncho = select.style.width !== '';
+  if (tieneAncho) {
+    // Con ancho en linea el contenedor se coloca como el select (inline-block, margen 0 salvo el
+    // que traiga): el text-align del padre lo deja a la izquierda o lo centra.
+    wrapper.style.display = 'inline-block';
+    wrapper.style.margin = '0';
+  }
+  // Sin ancho en linea manda la hoja de estilos: bloque con los margenes de .swal2-input.
+  (['width', 'minWidth', 'maxWidth', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft'] as const).forEach(
+    (prop) => {
+      if (select.style[prop]) {
+        wrapper.style[prop] = select.style[prop];
+      }
+      input.style[prop] = '';
+    }
+  );
+  input.style.display = '';
+  // El hueco de la flecha lo fija la hoja de estilos (.swal2-select-input).
+  input.style.paddingRight = '';
+
   wrapper.appendChild(input);
   wrapper.appendChild(dropdown);
   parent.insertBefore(wrapper, select);
+
+  // .swal2-html-container recorta con overflow:auto; sin esto el desplegable (absolute) queda
+  // cortado a la altura del contenido y el dialogo gana barras de desplazamiento.
+  parent.closest('.swal2-html-container')?.classList.add('swal2-html-container--con-buscador');
 
   select.style.display = 'none';
   const label = parent.querySelector(`label[for="${options.selectId}"]`) as HTMLLabelElement | null;
@@ -175,10 +204,23 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
     }
   };
 
+  // Abre el desplegable hacia abajo; si debajo no cabe y arriba hay mas sitio, hacia arriba.
+  // Limita su alto al espacio disponible para que no se salga de la ventana.
+  const colocarDesplegable = (): void => {
+    const caja = wrapper.getBoundingClientRect();
+    const debajo = window.innerHeight - caja.bottom - 12;
+    const arriba = caja.top - 12;
+    const haciaArriba = debajo < 220 && arriba > debajo;
+    const disponible = haciaArriba ? arriba : debajo;
+    dropdown.classList.toggle('is-above', haciaArriba);
+    dropdown.style.maxHeight = `${Math.max(80, Math.min(220, disponible))}px`;
+  };
+
   const openDropdown = (resetActive: boolean, applyFilter: boolean = true): void => {
     const wasClosed = !isOpen;
     isOpen = true;
     dropdown.classList.add('is-open');
+    colocarDesplegable();
     input.setAttribute('aria-expanded', 'true');
     if (wasClosed && applyFilter) {
       // Al abrir se muestran todas las opciones; el filtro solo lo activa escribir.
@@ -200,7 +242,8 @@ export const attachSwalSelectSearch = (options: SwalSelectSearchOptions): void =
       return;
     }
     isOpen = false;
-    dropdown.classList.remove('is-open');
+    dropdown.classList.remove('is-open', 'is-above');
+    dropdown.style.maxHeight = '';
     input.setAttribute('aria-expanded', 'false');
     if (restoreValue) {
       syncFromSelect();
