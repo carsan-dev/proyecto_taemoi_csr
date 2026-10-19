@@ -1,6 +1,7 @@
 package com.taemoi.project.controllers;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
+import com.taemoi.project.dtos.request.VendibleProfesorRequests;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.services.ProductoService;
 
@@ -90,6 +94,39 @@ public class ProductoController {
 			return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of("mensaje", e.getReason()));
 		} catch (RuntimeException e) {
 			return ResponseEntity.notFound().build();
+		}
+	}
+
+	/**
+	 * Pieza 6b-3c (decisión 185): marca o desmarca «Lo puede vender el profesor» sin reenviar la ficha. Devuelve el
+	 * producto como {@code GET /api/productos/{id}}. 400 sin marca; 404 si no es de la escuela activa.
+	 */
+	@PatchMapping("/{id}/vendible-profesor")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> marcarVendibleProfesor(@PathVariable Long id,
+			@RequestBody(required = false) VendibleProfesorRequests.Uno peticion) {
+		try {
+			return ResponseEntity.ok(productoService.marcarVendibleProfesor(id,
+					peticion == null ? null : peticion.vendibleProfesor()));
+		} catch (ResponseStatusException e) {
+			return ResponseEntity.status(e.getStatusCode()).body(Map.of("mensaje", e.getReason()));
+		}
+	}
+
+	/**
+	 * Pieza 6b-3c (decisión 185): la misma marca a varios productos, todo o nada. Devuelve {@code {"actualizados": n}}
+	 * (n = ids distintos). 400 por ids o marca no válidos; 404 si alguno no es de la escuela activa.
+	 */
+	@PatchMapping("/vendible-profesor")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	public ResponseEntity<?> marcarVendibleProfesorEnBloque(
+			@RequestBody(required = false) VendibleProfesorRequests.Bloque peticion) {
+		try {
+			int actualizados = productoService.marcarVendibleProfesor(peticion == null ? null : peticion.ids(),
+					peticion == null ? null : peticion.vendibleProfesor());
+			return ResponseEntity.ok(Map.of("actualizados", actualizados));
+		} catch (ResponseStatusException e) {
+			return ResponseEntity.status(e.getStatusCode()).body(Map.of("mensaje", e.getReason()));
 		}
 	}
 

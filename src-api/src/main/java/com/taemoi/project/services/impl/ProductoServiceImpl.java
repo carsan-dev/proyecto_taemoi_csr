@@ -1,8 +1,11 @@
 package com.taemoi.project.services.impl;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -85,6 +88,63 @@ public class ProductoServiceImpl implements ProductoService {
 		} else {
 			// Maneja el caso cuando el producto no existe
 			throw new RuntimeException("Producto no encontrado con id " + id);
+		}
+	}
+
+	/**
+	 * Pieza 6b-3c (decisión 185): solo la marca; el resto de la ficha no se toca. El producto se carga por id con la
+	 * sesión de Hibernate, así que rige el aislamiento por escuela de {@code @TenantId} (el de otra escuela no se
+	 * encuentra: 404, como el inexistente).
+	 */
+	@Override
+	@Transactional
+	public Producto marcarVendibleProfesor(Long id, Boolean vendibleProfesor) {
+		exigirMarca(vendibleProfesor);
+		Producto producto = productoRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+						"Producto no encontrado con id " + id));
+		producto.setVendibleProfesor(vendibleProfesor);
+		return productoRepository.save(producto);
+	}
+
+	/**
+	 * Pieza 6b-3c (decisión 185): todo o nada. Se cargan las entidades (consulta JPQL, filtrada por la escuela de la
+	 * sesión por {@code @TenantId}) y se guardan una a una; NO un UPDATE en bloque, para no depender de que el filtro
+	 * de organización alcance a las sentencias masivas. Si falta alguna (no existe o es de otra escuela), 404 antes de
+	 * cambiar nada.
+	 */
+	@Override
+	@Transactional
+	public int marcarVendibleProfesor(List<Long> ids, Boolean vendibleProfesor) {
+		exigirMarca(vendibleProfesor);
+		if (ids == null || ids.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica al menos un producto.");
+		}
+		if (ids.contains(null)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La lista de productos tiene un valor vacío.");
+		}
+		Set<Long> distintos = new LinkedHashSet<>(ids);
+		if (distintos.size() > MAX_IDS_VENDIBLE_PROFESOR) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Como máximo " + MAX_IDS_VENDIBLE_PROFESOR + " productos a la vez.");
+		}
+		List<Producto> productos = productoRepository.findAllById(distintos);
+		if (productos.size() != distintos.size()) {
+			Set<Long> faltan = new LinkedHashSet<>(distintos);
+			productos.forEach(p -> faltan.remove(p.getId()));
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+					"Productos no encontrados: " + faltan.stream().map(String::valueOf).collect(Collectors.joining(", "))
+							+ ". No se ha cambiado ninguno.");
+		}
+		productos.forEach(p -> p.setVendibleProfesor(vendibleProfesor));
+		productoRepository.saveAll(productos);
+		return distintos.size();
+	}
+
+	private static void exigirMarca(Boolean vendibleProfesor) {
+		if (vendibleProfesor == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Indica si el profesor lo puede vender (vendibleProfesor).");
 		}
 	}
 

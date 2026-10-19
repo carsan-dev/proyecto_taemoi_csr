@@ -37,7 +37,8 @@ public class WebConfig implements WebMvcConfigurer {
 		// API endpoints CORS
 		registry.addMapping("/api/**")
 				.allowedOrigins(allowedOrigin)
-				.allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS")
+				// PATCH desde la 6b-3c (marca «Lo puede vender el profesor» de /api/productos).
+				.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS")
 				.allowedHeaders("*")
 				.allowCredentials(true);
 

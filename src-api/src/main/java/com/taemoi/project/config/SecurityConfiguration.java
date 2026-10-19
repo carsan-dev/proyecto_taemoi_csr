@@ -428,6 +428,9 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.PUT, "/api/productos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// 6b-3c: marca «Lo puede vender el profesor» desde el listado (uno y en bloque).
+						.requestMatchers(HttpMethod.PATCH, "/api/productos/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/productos/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/productos-alumno/**")
