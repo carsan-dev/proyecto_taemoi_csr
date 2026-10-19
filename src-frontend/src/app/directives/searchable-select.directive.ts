@@ -270,7 +270,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   }
 
   private watchSelectValue(select: HTMLSelectElement): void {
-    this.lastSelectValue = select.value;
+    this.lastSelectValue = `${select.selectedIndex}|${select.value}`;
     this.stableSub = this.zone.onStable.subscribe(() => {
       if (!this.inputEl) {
         return;
@@ -278,7 +278,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       if (this.isOpen || document.activeElement === this.inputEl) {
         return;
       }
-      if (select.value !== this.lastSelectValue) {
+      if (`${select.selectedIndex}|${select.value}` !== this.lastSelectValue) {
         this.syncFromSelect();
       }
     });
@@ -334,7 +334,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     const selected = select.selectedOptions[0] ?? select.options[select.selectedIndex];
     const placeholderText = this.getPlaceholderText(select);
 
-    if (selected && !(selected.disabled && !selected.value)) {
+    if (selected && !this.isPlaceholderOption(selected)) {
       this.inputEl.value = (selected.textContent ?? '').trim();
     } else {
       this.inputEl.value = '';
@@ -342,7 +342,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     }
 
     this.syncSelectedClasses();
-    this.lastSelectValue = select.value;
+    this.lastSelectValue = `${select.selectedIndex}|${select.value}`;
   }
 
   private syncSelectedClasses(): void {
@@ -371,15 +371,15 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       window.clearTimeout(this.debounceHandle);
     }
     this.debounceHandle = window.setTimeout(() => {
-      this.filterOptions();
+      this.filterOptions(this.inputEl?.value ?? '');
     }, this.debounceMs);
   }
 
-  private filterOptions(): void {
+  private filterOptions(rawTerm: string): void {
     if (!this.inputEl || !this.dropdownEl) {
       return;
     }
-    const term = this.normalize(this.inputEl.value);
+    const term = this.normalize(rawTerm);
     const select = this.elRef.nativeElement;
     let visibleCount = 0;
 
@@ -389,7 +389,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
         return;
       }
       const optionText = this.normalize(option.textContent ?? '');
-      const isPlaceholder = option.disabled && !option.value;
+      const isPlaceholder = this.isPlaceholderOption(option);
       let visible = !term || optionText.includes(term);
       if (term && isPlaceholder) {
         visible = false;
@@ -544,10 +544,14 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       this.renderer.addClass(this.cardEl, 'admin-select-card-open');
     }
     this.renderer.setAttribute(this.inputEl, 'aria-expanded', 'true');
-    if (applyFilter) {
-      this.filterOptions();
-    }
-    if (resetActive && applyFilter) {
+    if (wasClosed && applyFilter) {
+      // Al abrir se muestran todas las opciones; el filtro solo lo activa escribir.
+      if (this.debounceHandle) {
+        window.clearTimeout(this.debounceHandle);
+        this.debounceHandle = undefined;
+      }
+      this.filterOptions('');
+    } else if (resetActive && applyFilter) {
       this.setActiveToSelected();
     }
     if (wasClosed) {
@@ -606,10 +610,25 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   }
 
   private getPlaceholderText(select: HTMLSelectElement): string {
-    const placeholderOption = Array.from(select.options).find(
-      (option) => option.disabled && !option.value
-    );
+    const selected = select.selectedOptions[0] ?? select.options[select.selectedIndex];
+    const placeholderOption =
+      selected && this.isPlaceholderOption(selected)
+        ? selected
+        : Array.from(select.options).find((option) => this.isPlaceholderOption(option));
     return (placeholderOption?.textContent ?? '').trim();
+  }
+
+  /**
+   * Opción «sin valor»: '' , 'null' o el '0: null' que genera Angular con [ngValue].
+   * Una opción con el atributo `data-opcion-real` nunca es marcador, aunque su valor
+   * esté vacío (p. ej. «Sin grupo asignado»): se muestra como valor elegido.
+   */
+  private isPlaceholderOption(option: HTMLOptionElement): boolean {
+    if (option.hasAttribute('data-opcion-real')) {
+      return false;
+    }
+    const value = option.value;
+    return value === '' || value === 'null' || /^\d+:\s*(null|undefined)$/.test(value);
   }
 
   private getListboxId(select: HTMLSelectElement): string {
