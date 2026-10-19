@@ -14,6 +14,7 @@
     "src/app/servicios/generales/route-scroll-coordinator.service.spec.ts",
     "src/app/servicios/generales/scroll-lock.service.spec.ts",
     "src/app/servicios/endpoints/endpoints.service.spec.ts",
+    "src/app/componentes/endpoints/listado-productos/listado-productos.component.spec.ts",
     "src/app/componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/editar-alumno.component.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component.spec.ts",

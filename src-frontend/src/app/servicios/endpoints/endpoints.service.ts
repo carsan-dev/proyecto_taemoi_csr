@@ -561,6 +561,29 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  cambiarVendibleProfesor(id: number, vendibleProfesor: boolean): Observable<Producto> {
+    return this.http
+      .patch<Producto>(
+        `${this.urlBase}/productos/${id}/vendible-profesor`,
+        { vendibleProfesor },
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
+  cambiarVendibleProfesorEnBloque(
+    ids: number[],
+    vendibleProfesor: boolean
+  ): Observable<{ actualizados: number }> {
+    return this.http
+      .patch<{ actualizados: number }>(
+        `${this.urlBase}/productos/vendible-profesor`,
+        { ids, vendibleProfesor },
+        { withCredentials: true }
+      )
+      .pipe(catchError(this.manejarError));
+  }
+
   obtenerProductosDelAlumno(alumnoId: number): Observable<ProductoAlumnoDTO[]> {
     return this.http
       .get<ProductoAlumnoDTO[]>(
