@@ -493,6 +493,12 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/caja", "/api/caja/**").denyAll()
+						// Pieza 6c-2: solicitudes al propietario (bandeja de gestión). Propietario, gestor y responsable
+						// de sede; @PreAuthorize por ruta y el servicio filtra. Fuera de la lista blanca de la sesión
+						// solo-profesor: las rutas del profesor van bajo /api/caja/profesor/**.
+						.requestMatchers("/api/solicitudes", "/api/solicitudes/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						// Administrador de plataforma (lecturas entre escuelas); el controlador lo exige también.
 						.requestMatchers("/api/plataforma/**").hasAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA)

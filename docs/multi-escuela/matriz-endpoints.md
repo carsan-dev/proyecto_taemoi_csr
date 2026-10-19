@@ -136,6 +136,20 @@ Pieza 6b-3c (decisión 185): 2 líneas nuevas; ninguna casilla existente cambia.
   `PERMITE` (regla de URL `PATCH /api/productos/**` + `@PreAuthorize` como el PUT); el resto, `DENIEGA` (también
   RESPONSABLE_SEDE y PROFESOR).
 
+Pieza 6c-2 (solicitudes al propietario, fase3-6c-solicitudes.md §7.2): 7 líneas nuevas bajo `/api/solicitudes`; ninguna
+casilla existente cambia. Regla de URL nueva `/api/solicitudes/**` para ADMIN, MANAGER y RESPONSABLE_SEDE, fuera de la
+lista blanca de la sesión solo-profesor.
+- `GET/HEAD /api/solicitudes?segmento=` y `GET/HEAD /api/solicitudes/contador`: PROPIETARIO y GESTOR `PERMITE`;
+  RESPONSABLE_SEDE `PERMITE` declarado en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (el servicio le da las suyas y los
+  encargos de sus sedes).
+- `POST /api/solicitudes`: GESTOR `PERMITE`; RESPONSABLE_SEDE `PERMITE` declarado (el servicio exige que el cobro, el
+  cargo, la entrega o el movimiento sea de sus sedes: 403); PROPIETARIO `PERMITE` en la seguridad, pero el servicio
+  responde 400 (lo hace directo).
+- `POST /api/solicitudes/{id}/retirar`: PROPIETARIO, GESTOR y RESPONSABLE_SEDE `PERMITE` (declarado para R); el
+  servicio solo deja retirar a quien la pidió (403).
+- `POST /api/solicitudes/{id}/denegar`: solo PROPIETARIO (`hasAuthority('ROLE_ADMIN')`).
+- FAMILIA, PROFESOR, SOLO_PLATAFORMA y ANONIMO: `DENIEGA` en las siete.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

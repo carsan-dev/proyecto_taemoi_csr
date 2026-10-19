@@ -63,4 +63,7 @@ public interface ConsultaAccesoRecursos {
 
 	/** Pieza 6b-2: la sede es una de {@code sedes} y existe en la escuela activa (caja de sede del responsable). */
 	boolean sedeEnSedes(Long sedeId, Set<Long> sedes);
+
+	/** Pieza 6c-2: la solicitud (de la escuela activa) es de una de {@code sedes}. Sin sede no está en ningún alcance. */
+	boolean solicitudEnSedes(Long solicitudId, Set<Long> sedes);
 }

@@ -74,6 +74,25 @@ public class MovimientoCaja extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Long version;
 
+	/**
+	 * Pieza 6c-2 (V31_8): cobro devuelto (DEVOLUCION, decisión 153) o deshecho (ERROR de la 193). Lo usan la 6c-4 y la
+	 * 6c-6; hasta entonces siempre NULL. La clave única de V31_8 deja una DEVOLUCION ACTIVA por cobro (D6c-11).
+	 */
+	@Column(name = "cobro_id")
+	private Long cobroId;
+
+	/** Pieza 6c-2 (V31_8): el cargo de ese cobro (153: «enlazado al cargo»). Hasta la 6c-6, siempre NULL. */
+	@Column(name = "producto_alumno_id")
+	private Long productoAlumnoId;
+
+	/**
+	 * Pieza 6c-2 (V31_8, D6c-13): método del dinero que se mueve. Todas las filas son EFECTIVO; la 6c-6 hace que el
+	 * saldo de caja sume solo los EFECTIVO y que una devolución tome el método de su cobro.
+	 */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private MetodoPago metodo = MetodoPago.EFECTIVO;
+
 	public Long getId() {
 		return id;
 	}
@@ -180,5 +199,29 @@ public class MovimientoCaja extends EntidadOrganizacion {
 
 	public Long getVersion() {
 		return version;
+	}
+
+	public Long getCobroId() {
+		return cobroId;
+	}
+
+	public void setCobroId(Long cobroId) {
+		this.cobroId = cobroId;
+	}
+
+	public Long getProductoAlumnoId() {
+		return productoAlumnoId;
+	}
+
+	public void setProductoAlumnoId(Long productoAlumnoId) {
+		this.productoAlumnoId = productoAlumnoId;
+	}
+
+	public MetodoPago getMetodo() {
+		return metodo;
+	}
+
+	public void setMetodo(MetodoPago metodo) {
+		this.metodo = metodo;
 	}
 }
