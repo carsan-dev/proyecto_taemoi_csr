@@ -126,14 +126,14 @@ profesores, que seguirían viendo solo «Mi caja») y el resto después.
 
 | Pieza | Estado | Commit | Migración | Notas |
 |---|---|---|---|---|
-| E7-1 | Pendiente | — | No | |
-| E7-2 | Pendiente | — | No | |
-| E7-3 | Pendiente | — | No | |
-| E7-4 | Pendiente | — | No | |
-| E7-5 | Pendiente | — | No | |
-| E7-6 | Pendiente | — | No | |
-| E7-7a | Hecha en `feature/e7-7a` (sin commit) | — | No | §6 |
-| E7-7b | Pendiente | — | No | |
+| E7-1 | Hecha | `2487c809` | No | |
+| E7-2 | Hecha | `0644594a` | No | |
+| E7-3 | Hecha | `cb2c6ac6` | No | |
+| E7-4 | Hecha | `42953901` | No | |
+| E7-5 | Hecha | `3be4b8f5` | No | |
+| E7-6 | Hecha | `0190f77e` | No | |
+| E7-7a | Hecha | `bfafd147` | No | §6 |
+| E7-7b | Hecha | `9042a3bb` | No | |
 
 ---
 
@@ -621,3 +621,11 @@ Sección «Profesores» en la ficha del grupo de gestión (`gruposEditar/:id`, `
 **Verificación.** Specs nuevos (en `tsconfig.spec.json` y `angular.json`): `grupo-profesores.service.spec.ts` y
 `editar-grupo.profesores.spec.ts`. Karma en verde, `build:production` sin aviso de presupuesto y capturas a 375 y
 1280 px (dos profesores, vacía, error 404) con la API simulada y datos ficticios.
+
+## 9. Pieza E7-7b (detallada)
+
+- Pantalla `/plataformaLogos` (`plataformaGuard`, perezosa) y enlace en la cabecera junto a «Errores», solo para la sesión de plataforma.
+- `LogoEscuelaService` (frontend): GET escuelas, PUT/DELETE/GET `{id}/logo` (multipart `archivo`, blob).
+- Miniaturas por blob URL; se revocan al sustituir, quitar, recargar y al destruir; un GET en vuelo no resucita un logo quitado.
+- Más de 1 MB se rechaza en local sin enviar; 400/404/409 muestran el `mensaje` del backend en la fila; quitar con SweetAlert2.
+- Escuelas con marca heredada: «Logo de siempre», sin acciones ni GET del logo.
