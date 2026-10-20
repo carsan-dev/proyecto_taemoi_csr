@@ -288,3 +288,85 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 - [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
   dorados de Moiskimdo sin tocar.
 - [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.
+
+---
+
+## 4. Pieza E7-3: apto, fecha de grado y pases del profesor (detallada)
+
+Rama `feature/e7-3` desde `feature/e7-2`. Sin migración: atajo `desplegar`. Escrituras: el apto, la fecha de grado y
+el cargo pendiente del pase (dinero); el grado **no** cambia aquí (sube al cobrar el cargo, camino E).
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Comprobaciones en el servicio, por este orden**, además de `@acceso.alumnoDeMisGrupos(#alumnoId)`: el alumno
+  comparte algún grupo con el profesor (`alcance.grupos()`; si no, **403** sin revelar existencia), está activo (**404**,
+  D7-13) y el deporte es el código de la disciplina de alguno de esos grupos compartidos (**403**; el mismo criterio que
+  `deMisGrupos` de la ficha, §11 pregunta 2). Un código de deporte desconocido también da 403. Nunca por sede.
+- **Mismos servicios que gestión** (D7-16): `AlumnoDeporteService.actualizarAptoParaExamen` y `actualizarFechaGrado`;
+  los pases van por `AlumnoServiceImpl.pasarGradoInterno` (el de `pasarGradoConDerechoExamen` /
+  `pasarGradoPorRecompensa`) a través de un método nuevo `AlumnoService.crearCargoDePase`, que devuelve el
+  `ProductoAlumno` creado en vez del `AlumnoDeporte` (gestión sigue llamando a los dos de siempre, sin cambios). Mismas
+  validaciones y mensajes (400): sin apto, sin grado, sin siguiente grado, sede principal inactiva, producto de grado
+  inexistente. El cuerpo de error del profesor es `{"mensaje": ...}` (el `GlobalExceptionHandler`, como el resto de
+  `/api/profesor` y de Mi caja); gestión responde el mismo texto en plano.
+- **Cuerpos**: `PUT .../apto` `{"aptoParaExamen": true|false}` (sin el campo, 400 «El campo aptoParaExamen es
+  requerido», como gestión); `PUT .../fecha-grado` `{"fechaGrado": "yyyy-MM-dd"}` (el nombre de gestión y de §6.2; sin
+  el campo, 400 «La fecha de grado es requerida»; con otro formato, 400 «La fecha de grado no es válida», donde gestión
+  daba 500); `POST .../pase-examen` y `.../pase-recompensa` con cuerpo opcional `{"rojoBordado": true|false}` (§11
+  pregunta 3; el servicio de gestión solo lo usa cuando el siguiente grado es `ROJO`).
+- **Respuestas**: apto y fecha devuelven `ProfesorDTOs.DeporteDelAlumno` (el de la ficha, recalculado: apto, fecha,
+  `admitePases`, `siguienteGrado`, `pideRojoBordado`); los pases, `ProfesorDTOs.PaseCreado` = `{deporte:
+  DeporteDelAlumno, cargo: {id, concepto, importe}}` (el grado sigue siendo el de antes; el cargo es el que sale en
+  «Por cobrar» de Mi caja).
+- **D7-17, doble pase**: la transacción del pase es `READ_COMMITTED` y bloquea primero la fila de `alumno_deporte`
+  (`AlumnoDeporteRepository.bloquearPorId`, `SELECT ... FOR UPDATE` por id, sin joins); con la fila bloqueada busca un
+  cargo de pase pendiente del mismo `alumno_deporte_id` (`(pagado IS NULL OR pagado = FALSE) AND cancelado_en IS NULL`
+  y su producto concede grado según `ProductosCatalogoService.buscarCodigoGradoConcedido`): si lo hay, **409**
+  `ProfesorService.PASE_PENDIENTE` = «Ya hay un pase pendiente de cobro para este deporte» y no crea nada. La segunda
+  petición simultánea espera al bloqueo y, con READ COMMITTED, ve el cargo ya confirmado. Un cargo pendiente que no
+  concede grado o un pase cancelado no bloquean. Gestión no cambia (dos pulsaciones siguen creando dos cargos).
+- **Registro** (D7-18, §7): `RegistroAccionesProfesor` (módulo `profesor`, copia de `RegistroAccionesCaja`, misma
+  transacción, sin capturar errores). El resumen solo admite ids (`#n`), enumeraciones y sí/no; cualquier otro valor
+  es un error de programación (nunca texto libre). `APTO_CAMBIADO alumno=#a alumnoDeporte=#ad apto=SI|NO`;
+  `FECHA_GRADO_CAMBIADA alumno=#a alumnoDeporte=#ad apto=SI|NO` (el apto que recalcula gestión; **sin la fecha**:
+  solo ids y enumeraciones); `PASE_EXAMEN` y `PASE_RECOMPENSA alumno=#a alumnoDeporte=#ad gradoActual=#g
+  gradoSiguiente=#g2 cargo=#c` (ids de `grado`; el siguiente es el que concede el producto del cargo). El enum deja
+  sitio a las acciones de asignación de la E7-4 (§7), que las añade al usarlas.
+- **Sin «Cambiar grado»** (207): no hay `PUT /api/profesor/.../grado` (404/405); el de gestión sigue en 403.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/ProfesorGradosIntegrationTest.java` (patrón `ProfesorGruposIntegrationTest`; escuelas
+  `"it-e7-3"` (con `comportamiento_legado_taemoi` y un sistema de grados propio Blanco, Amarillo, Rojo, Negro; productos
+  de examen y recompensa a Rojo, normal y bordado) y `"it-e7-3-otra"`; datos inventados; un alumno nuevo por test).
+- Modificar: `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_E7`), `src-api/src/test/resources/seguridad/matriz-permisos.txt`
+  (4 líneas nuevas).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT: `paseCreaCargoYNoSubeGrado`, `paseSinApto_400_comoGestion`, `dosPasesSeguidos_409_unSoloCargo`,
+    `dosPasesALaVez_unSoloCargo` (con la fila bloqueada desde otra conexión y en carrera libre),
+    `soloBloqueaUnPasePendiente` (cargo pendiente sin grado y pase cancelado no bloquean), `paseRegistraAccionConIds`,
+    `aptoYFechaRegistranAccion`, `paseEnDisciplinaNoCompartida_403`, `alumnoQuitadoDelGrupo_403` (seguimiento de la
+    E7-1; restaura en `finally`), `alumnoDeOtroGrupoOEscuela_403_yDeBaja_404`, `cobrarElPaseEnMiCajaSubeElGrado`,
+    `deshacerElCobroNoRevierteElGrado` (comportamiento actual), `pasePorRecompensaConRojoBordado`,
+    `gestionSigueCreandoDosCargos`, `cambiarGradoDirectoNoExisteParaElProfesor`, `gestionNoUsaLasRutasDelProfesor_403`
+    (ADMIN, MANAGER y ADMINISTRADOR + PROFESOR), `sesionSoloProfesorAlcanzaLasRutas` y `cuerposInvalidos_400`.
+  - Matriz: `PUT .../apto`, `PUT .../fecha-grado`, `POST .../pase-examen`, `POST .../pase-recompensa` (PROFESOR
+    `ALCANCE`; resto `DENIEGA`), declaradas en `PROFESOR_E7`.
+- [x] **Paso 2: comprobar que fallan**: no compila hasta crear `RegistroAccionesProfesor` y `PASE_PENDIENTE`; con los
+  esqueletos, las rutas dan 404.
+
+### Tarea 2: implementar
+
+- [x] `AlumnoDeporteRepository.bloquearPorId`; `AlumnoService.crearCargoDePase` (lo que hacía `pasarGradoInterno`,
+  ahora devolviendo el cargo; los dos métodos de gestión devuelven su `AlumnoDeporte` como antes).
+- [x] `RegistroAccionesProfesor`; `ProfesorService.actualizarApto`, `actualizarFechaGrado`, `pasarGrado`;
+  `ProfesorRequests` (`Apto`, `FechaGrado`, `Pase`) y `ProfesorDTOs.PaseCreado` / `CargoDelPase`; las cuatro rutas en
+  `ProfesorController` con `@acceso.alumnoDeMisGrupos(#alumnoId)`.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 4 líneas y recuento de la cabecera.
+- [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.

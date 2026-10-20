@@ -1,5 +1,6 @@
 package com.taemoi.project.dtos.response;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -76,5 +77,16 @@ public final class ProfesorDTOs {
 	public record DeporteDelAlumno(String deporte, String deporteNombre, Grado grado,
 			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fechaGrado, boolean apto,
 			boolean deMisGrupos, boolean admitePases, Grado siguienteGrado, boolean pideRojoBordado) {
+	}
+
+	/**
+	 * Respuesta de un pase (pieza E7-3): el deporte como queda (el grado NO cambia hasta cobrar el cargo) y el cargo
+	 * pendiente creado, el que sale en «Por cobrar» de Mi caja.
+	 */
+	public record PaseCreado(DeporteDelAlumno deporte, CargoDelPase cargo) {
+	}
+
+	/** Cargo pendiente creado por el pase: id, concepto (el del producto con el deporte) e importe. */
+	public record CargoDelPase(Long id, String concepto, BigDecimal importe) {
 	}
 }

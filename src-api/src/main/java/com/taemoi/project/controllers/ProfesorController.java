@@ -10,16 +10,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.request.ProfesorRequests;
 import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
 import com.taemoi.project.services.ProfesorService;
 
 /**
- * Rutas propias del profesor (entrega 7, fase3-e7-profesor.md §6.2; pieza E7-1: solo lectura).
+ * Rutas propias del profesor (entrega 7, fase3-e7-profesor.md §6.2; E7-1 y E7-2: lectura; E7-3: apto, fecha de grado
+ * y pases).
  *
  * <p>Tres capas (§6.3): la lista blanca de la sesión solo-profesor ({@code SesionSoloProfesorAuthorizationManager},
  * {@code /api/profesor/**}), la regla de URL ({@code /api/profesor/**} → {@code ROLE_PROFESOR}) y el
@@ -81,5 +86,46 @@ public class ProfesorController {
 		String fichero = "Asistencia-grupo-%d-%d-%02d.pdf".formatted(grupoId, year, month);
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fichero + "\"").body(pdf);
+	}
+
+	// ------------------------------------------------------------------ grados (E7-3, decisión 207)
+	// Solo apto, fecha de grado y pases, en las disciplinas de los grupos que comparte con el alumno; sin «Cambiar
+	// grado» (no hay PUT .../grado). Fuera de sus grupos o de esas disciplinas: 403; de baja: 404; validaciones de
+	// gestión: 400 con su mensaje; segundo pase pendiente: 409 (D7-17).
+
+	/** Marca o quita el apto (D7-16). Devuelve el deporte como lo pinta la ficha. */
+	@PutMapping("/alumnos/{alumnoId}/deportes/{deporte}/apto")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<ProfesorDTOs.DeporteDelAlumno> actualizarApto(@PathVariable Long alumnoId,
+			@PathVariable String deporte, @RequestBody ProfesorRequests.Apto peticion) {
+		return ResponseEntity.ok(profesor.actualizarApto(alumnoId, deporte, peticion.aptoParaExamen()));
+	}
+
+	/** Corrige la fecha de grado ({@code yyyy-MM-dd}); recalcula el apto como gestión. */
+	@PutMapping("/alumnos/{alumnoId}/deportes/{deporte}/fecha-grado")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<ProfesorDTOs.DeporteDelAlumno> actualizarFechaGrado(@PathVariable Long alumnoId,
+			@PathVariable String deporte, @RequestBody ProfesorRequests.FechaGrado peticion) {
+		return ResponseEntity.ok(profesor.actualizarFechaGrado(alumnoId, deporte, peticion.fechaGrado()));
+	}
+
+	/** Pase con derecho de examen: crea el cargo pendiente; el grado sube al cobrarlo en Mi caja (D7-6). */
+	@PostMapping("/alumnos/{alumnoId}/deportes/{deporte}/pase-examen")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<ProfesorDTOs.PaseCreado> paseExamen(@PathVariable Long alumnoId, @PathVariable String deporte,
+			@RequestBody(required = false) ProfesorRequests.Pase peticion) {
+		return ResponseEntity.ok(profesor.pasarGrado(alumnoId, deporte, rojoBordado(peticion), false));
+	}
+
+	/** Pase por recompensa: crea el cargo pendiente; el grado sube al cobrarlo en Mi caja (D7-6). */
+	@PostMapping("/alumnos/{alumnoId}/deportes/{deporte}/pase-recompensa")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<ProfesorDTOs.PaseCreado> paseRecompensa(@PathVariable Long alumnoId,
+			@PathVariable String deporte, @RequestBody(required = false) ProfesorRequests.Pase peticion) {
+		return ResponseEntity.ok(profesor.pasarGrado(alumnoId, deporte, rojoBordado(peticion), true));
+	}
+
+	private static boolean rojoBordado(ProfesorRequests.Pase peticion) {
+		return peticion != null && Boolean.TRUE.equals(peticion.rojoBordado());
 	}
 }

@@ -1,7 +1,10 @@
 package com.taemoi.project.services;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -17,17 +20,21 @@ import java.util.Set;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.RolAsignacionProfesor;
 import com.taemoi.project.entities.Tutor;
 import com.taemoi.project.organizacion.AlcanceActual;
 import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AsignacionProfesorRepository;
 import com.taemoi.project.repositories.TutorRepository;
 
@@ -52,6 +59,9 @@ public class ProfesorService {
 
 	private static final String GRADO_ROJO = CatalogoLegadoTaemoi.GRADO_ROJO;
 
+	/** D7-17: 409 en la ruta del profesor si el deporte ya tiene un cargo de pase sin pagar ni cancelar. */
+	public static final String PASE_PENDIENTE = "Ya hay un pase pendiente de cobro para este deporte";
+
 	private final EntityManager em;
 	private final AlcanceActual alcanceActual;
 	private final AsignacionProfesorRepository asignaciones;
@@ -61,11 +71,18 @@ public class ProfesorService {
 	private final ComportamientoLegadoService comportamientoLegado;
 	private final AlumnoSaludService alumnoSalud;
 	private final PDFService pdf;
+	private final AlumnoDeporteService alumnoDeportes;
+	private final AlumnoService alumnos;
+	private final AlumnoDeporteRepository inscripciones;
+	private final ProductosCatalogoService productosCatalogo;
+	private final RegistroAccionesProfesor registro;
 
 	public ProfesorService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
 			TutorRepository tutores, ProgresionGradosService progresionGrados,
 			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado,
-			AlumnoSaludService alumnoSalud, PDFService pdf) {
+			AlumnoSaludService alumnoSalud, PDFService pdf, AlumnoDeporteService alumnoDeportes, AlumnoService alumnos,
+			AlumnoDeporteRepository inscripciones, ProductosCatalogoService productosCatalogo,
+			RegistroAccionesProfesor registro) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
@@ -75,6 +92,11 @@ public class ProfesorService {
 		this.comportamientoLegado = comportamientoLegado;
 		this.alumnoSalud = alumnoSalud;
 		this.pdf = pdf;
+		this.alumnoDeportes = alumnoDeportes;
+		this.alumnos = alumnos;
+		this.inscripciones = inscripciones;
+		this.productosCatalogo = productosCatalogo;
+		this.registro = registro;
 	}
 
 	/** Sus grupos (§5.1), por nombre: sede, su rol, disciplina y nº de alumnos activos. Sin grupos, lista vacía. */
@@ -249,6 +271,163 @@ public class ProfesorService {
 		List<Long> turnos = em.createQuery("SELECT t.id FROM Turno t WHERE t.grupo.id = :grupo ORDER BY t.id", Long.class)
 				.setParameter("grupo", grupoId).getResultList();
 		return pdf.generarListadoAsistenciaPorTurnos(year, month, turnos);
+	}
+
+	// ------------------------------------------------------------------ grados (pieza E7-3)
+
+	/**
+	 * Marca o quita el apto de un alumno de sus grupos en un deporte de sus grupos (D7-16): el servicio de gestión
+	 * ({@link AlumnoDeporteService#actualizarAptoParaExamen}), con su registro {@code APTO_CAMBIADO}. Ver
+	 * {@link #exigirDeporteDeMisGrupos} para el 403/404.
+	 */
+	@Transactional
+	public ProfesorDTOs.DeporteDelAlumno actualizarApto(Long alumnoId, String deporte, Boolean aptoParaExamen) {
+		exigirDeporteDeMisGrupos(alumnoId, deporte);
+		if (aptoParaExamen == null) {
+			throw new IllegalArgumentException("El campo aptoParaExamen es requerido");
+		}
+		AlumnoDeporte inscripcion = alumnoDeportes.actualizarAptoParaExamen(alumnoId, deporte, aptoParaExamen);
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("alumno", alumnoId);
+		valores.put("alumnoDeporte", inscripcion.getId());
+		valores.put("apto", Boolean.TRUE.equals(inscripcion.getAptoParaExamen()));
+		registro.registrar(RegistroAccionesProfesor.Accion.APTO_CAMBIADO, ruta(alumnoId, deporte, "apto"), valores);
+		return deporteDelAlumno(inscripcion);
+	}
+
+	/**
+	 * Corrige la fecha de grado ({@code yyyy-MM-dd}) con el servicio de gestión
+	 * ({@link AlumnoDeporteService#actualizarFechaGrado}, que recalcula el apto), con su registro
+	 * {@code FECHA_GRADO_CAMBIADA} (sin la fecha: solo ids y el apto resultante).
+	 */
+	@Transactional
+	public ProfesorDTOs.DeporteDelAlumno actualizarFechaGrado(Long alumnoId, String deporte, String fechaGrado) {
+		exigirDeporteDeMisGrupos(alumnoId, deporte);
+		if (fechaGrado == null) {
+			throw new IllegalArgumentException("La fecha de grado es requerida");
+		}
+		LocalDate fecha;
+		try {
+			fecha = LocalDate.parse(fechaGrado.strip());
+		} catch (DateTimeParseException ex) {
+			throw new IllegalArgumentException("La fecha de grado no es válida");
+		}
+		AlumnoDeporte inscripcion = alumnoDeportes.actualizarFechaGrado(alumnoId, deporte, java.sql.Date.valueOf(fecha));
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("alumno", alumnoId);
+		valores.put("alumnoDeporte", inscripcion.getId());
+		valores.put("apto", Boolean.TRUE.equals(inscripcion.getAptoParaExamen()));
+		registro.registrar(RegistroAccionesProfesor.Accion.FECHA_GRADO_CAMBIADA, ruta(alumnoId, deporte, "fecha-grado"),
+				valores);
+		return deporteDelAlumno(inscripcion);
+	}
+
+	/**
+	 * Pase con derecho de examen o por recompensa (D7-16, D7-17): crea el cargo pendiente con el mismo código que
+	 * gestión ({@link AlumnoService#crearCargoDePase}) y NO cambia el grado (sube al cobrar el cargo).
+	 *
+	 * <p>Doble pase: READ COMMITTED y, antes de nada más, la fila de {@code alumno_deporte} bloqueada
+	 * ({@link AlumnoDeporteRepository#bloquearPorId}); con ella bloqueada, si el deporte ya tiene un cargo de pase sin
+	 * pagar ni cancelar → 409 {@link #PASE_PENDIENTE} y no se crea nada. Una segunda petición simultánea espera al
+	 * bloqueo y ve el cargo ya confirmado (con REPEATABLE READ vería la foto de antes de esperar). La inscripción no se
+	 * carga en esta sesión antes del bloqueo (las comprobaciones son consultas escalares), así que su estado es el
+	 * confirmado. Registro {@code PASE_EXAMEN} / {@code PASE_RECOMPENSA} con el cargo creado.
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public ProfesorDTOs.PaseCreado pasarGrado(Long alumnoId, String deporte, boolean rojoBordado, boolean porRecompensa) {
+		exigirDeporteDeMisGrupos(alumnoId, deporte);
+		List<Long> ids = em.createQuery(
+				"SELECT ad.id FROM AlumnoDeporte ad WHERE ad.alumno.id = :alumno AND ad.disciplina.codigo = :deporte",
+				Long.class).setParameter("alumno", alumnoId).setParameter("deporte", deporte).getResultList();
+		if (!ids.isEmpty()) {
+			inscripciones.bloquearPorId(ids.get(0));
+			if (tienePasePendiente(ids.get(0))) {
+				throw new IllegalStateException(PASE_PENDIENTE);
+			}
+		}
+		// Sin inscripción en el deporte, el servicio de gestión da su 400 («El alumno no tiene asignado el deporte»).
+		ProductoAlumno cargo = alumnos.crearCargoDePase(alumnoId, deporte, rojoBordado, porRecompensa);
+		AlumnoDeporte inscripcion = cargo.getAlumnoDeporte();
+		Long productoId = cargo.getProducto() == null ? null : cargo.getProducto().getId();
+		Long gradoSiguiente = productosCatalogo.buscarCodigoGradoConcedido(productoId, cargo.getConcepto())
+				.flatMap(codigo -> progresionGrados.buscarGrado(deporte, codigo)).map(Grado::getId).orElse(null);
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("alumno", alumnoId);
+		valores.put("alumnoDeporte", inscripcion.getId());
+		valores.put("gradoActual", inscripcion.getGrado() == null ? null : inscripcion.getGrado().getId());
+		valores.put("gradoSiguiente", gradoSiguiente);
+		valores.put("cargo", cargo.getId());
+		registro.registrar(porRecompensa ? RegistroAccionesProfesor.Accion.PASE_RECOMPENSA
+				: RegistroAccionesProfesor.Accion.PASE_EXAMEN,
+				ruta(alumnoId, deporte, porRecompensa ? "pase-recompensa" : "pase-examen"), valores);
+		BigDecimal importe = cargo.getPrecio() == null ? null
+				: BigDecimal.valueOf(cargo.getPrecio())
+						.multiply(BigDecimal.valueOf(cargo.getCantidad() == null ? 1 : cargo.getCantidad()))
+						.setScale(2, RoundingMode.HALF_UP);
+		return new ProfesorDTOs.PaseCreado(deporteDelAlumno(inscripcion),
+				new ProfesorDTOs.CargoDelPase(cargo.getId(), cargo.getConcepto(), importe));
+	}
+
+	/**
+	 * Comprobación de las rutas de grados, además del {@code @acceso.alumnoDeMisGrupos} del controlador, por este orden:
+	 * el alumno está en alguno de sus grupos (403, sin revelar si existe), está activo (404, D7-13) y el deporte es el de
+	 * la disciplina de alguno de esos grupos compartidos (403; el criterio de {@code deMisGrupos} en la ficha, §11
+	 * pregunta 2). Solo {@code alcance.grupos()}: nunca por sede.
+	 */
+	private void exigirDeporteDeMisGrupos(Long alumnoId, String deporte) {
+		Set<Long> grupos = gruposDelProfesor();
+		if (alumnoId == null || grupos.isEmpty()) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		List<Object[]> compartidos = em.createQuery("""
+				SELECT g.id, d.codigo FROM Grupo g JOIN g.alumnos a LEFT JOIN g.disciplina d
+				WHERE a.id = :alumno AND g.id IN :grupos""", Object[].class)
+				.setParameter("alumno", alumnoId).setParameter("grupos", grupos).getResultList();
+		if (compartidos.isEmpty()) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		List<Boolean> activo = em.createQuery("SELECT a.activo FROM Alumno a WHERE a.id = :alumno", Boolean.class)
+				.setParameter("alumno", alumnoId).getResultList();
+		if (activo.isEmpty() || !Boolean.TRUE.equals(activo.get(0))) {
+			throw new NoSuchElementException("El alumno no existe o está de baja.");
+		}
+		boolean deSusGrupos = deporte != null && compartidos.stream().anyMatch(f -> deporte.equals(f[1]));
+		if (!deSusGrupos) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+	}
+
+	/**
+	 * D7-17: cargo de pase pendiente de esa inscripción = {@code producto_alumno} del mismo {@code alumno_deporte_id}, sin
+	 * pagar ni cancelar (el criterio de «Por cobrar»), cuyo producto concede grado
+	 * ({@link ProductosCatalogoService#buscarCodigoGradoConcedido}, lo que mira el cobro para subir el grado).
+	 */
+	private boolean tienePasePendiente(Long alumnoDeporteId) {
+		for (Object[] f : em.createQuery("""
+				SELECT p.id, pa.concepto FROM ProductoAlumno pa LEFT JOIN pa.producto p
+				WHERE pa.alumnoDeporte.id = :inscripcion AND (pa.pagado IS NULL OR pa.pagado = FALSE)
+				AND pa.canceladoEn IS NULL""", Object[].class)
+				.setParameter("inscripcion", alumnoDeporteId).getResultList()) {
+			if (productosCatalogo.buscarCodigoGradoConcedido((Long) f[0], (String) f[1]).isPresent()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** El deporte como lo pinta la ficha, recalculado tras el cambio (el deporte es de sus grupos: ya comprobado). */
+	private ProfesorDTOs.DeporteDelAlumno deporteDelAlumno(AlumnoDeporte inscripcion) {
+		FilaDeporte d = new FilaDeporte(inscripcion.getAlumno().getId(), inscripcion.getDisciplina().getCodigo(),
+				inscripcion.getDisciplina().getNombre(), inscripcion.getGrado(), aLocalDate(inscripcion.getFechaGrado()),
+				Boolean.TRUE.equals(inscripcion.getAptoParaExamen()));
+		Grado siguiente = siguienteGrado(d, inscripcion.getAlumno().getFechaNacimiento());
+		return new ProfesorDTOs.DeporteDelAlumno(d.codigo(), d.nombre(), grado(d.grado()), d.fechaGrado(), d.apto(), true,
+				siguiente != null, grado(siguiente),
+				pideRojoBordado(comportamientoLegado.activo(), siguiente == null ? null : siguiente.getCodigo()));
+	}
+
+	private static String ruta(Long alumnoId, String deporte, String accion) {
+		return "/api/profesor/alumnos/" + alumnoId + "/deportes/" + deporte + "/" + accion;
 	}
 
 	/**

@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.taemoi.project.entities.AlumnoDeporte;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * Inscripciones por disciplina. Desde V28 el «deporte» de los parámetros es el código de la disciplina
@@ -27,6 +30,14 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	 */
 	@Query("SELECT ad FROM AlumnoDeporte ad WHERE ad.alumno.id = :alumnoId AND ad.disciplina.codigo = :deporte")
 	Optional<AlumnoDeporte> findByAlumnoIdAndDeporte(@Param("alumnoId") Long alumnoId, @Param("deporte") String deporte);
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la inscripción por id, sin joins (no bloquea la disciplina ni el alumno). Solo en
+	 * transacción; pieza E7-3 (D7-17): el pase del profesor la bloquea antes de buscar un pase pendiente.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT ad FROM AlumnoDeporte ad WHERE ad.id = :id")
+	Optional<AlumnoDeporte> bloquearPorId(@Param("id") Long id);
 
 	/**
 	 * Encuentra todos los alumnos que practican un deporte específico

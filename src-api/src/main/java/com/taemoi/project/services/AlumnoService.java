@@ -179,6 +179,15 @@ public interface AlumnoService {
 			String deporte, boolean rojoBordado);
 
 	/**
+	 * El mismo pase que {@link #pasarGradoPorRecompensa} ({@code porRecompensa}) o {@link #pasarGradoConDerechoExamen}:
+	 * mismas validaciones y mensajes, crea el cargo pendiente y no cambia el grado. Devuelve el cargo creado (su
+	 * {@code alumnoDeporte} es la inscripción del pase). Pieza E7-3: lo usa la ruta del profesor; gestión sigue con los
+	 * dos de arriba.
+	 */
+	com.taemoi.project.entities.ProductoAlumno crearCargoDePase(Long alumnoId, String deporte, boolean rojoBordado,
+			boolean porRecompensa);
+
+	/**
 	 * Actualiza la fecha de alta inicial del alumno
 	 * Esta fecha afecta el cálculo de antigüedad para todos los deportes
 	 *

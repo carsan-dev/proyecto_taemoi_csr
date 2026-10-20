@@ -401,6 +401,13 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/profesor/alumnos/{alumnoId}/salud", saludAsistencia + "saludDeAlumnoDeOtroGrupo_403");
 			m.put(metodo + " /api/profesor/grupos/{grupoId}/asistencia", saludAsistencia + "pdfAsistenciaGrupoAjeno_403");
 		}
+		// E7-3: apto, fecha de grado y pases de un alumno de sus grupos, solo en las disciplinas de los grupos compartidos.
+		String grados = "integracion.ProfesorGradosIntegrationTest#";
+		String deporte = " /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/";
+		m.put("PUT" + deporte + "apto", grados + "alumnoDeOtroGrupoOEscuela_403_yDeBaja_404");
+		m.put("PUT" + deporte + "fecha-grado", grados + "paseEnDisciplinaNoCompartida_403");
+		m.put("POST" + deporte + "pase-examen", grados + "paseEnDisciplinaNoCompartida_403");
+		m.put("POST" + deporte + "pase-recompensa", grados + "alumnoQuitadoDelGrupo_403");
 		return Map.copyOf(m);
 	}
 

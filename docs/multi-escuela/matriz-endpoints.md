@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (432 líneas; 143 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (436 líneas; 143 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -236,6 +236,18 @@ en `PROFESOR_E7`; lo prueba `ProfesorSaludAsistenciaIntegrationTest`.
 - `GET/HEAD /api/profesor/grupos/{grupoId}/asistencia?year&month`: PROFESOR `ALCANCE` (`@acceso.grupoDeMisGrupos`;
   grupo ajeno, 403; año o mes no válidos, 400). El PDF de siempre con los turnos de ese grupo por id y solo sus alumnos
   activos; sin datos de salud. El PDF de gestión (`/api/informes/asistencia`) no cambia.
+- El resto de roles, `DENIEGA` en las cuatro (PROPIETARIO y GESTOR usan las de gestión, D7-10).
+
+Pieza E7-3 (apto, fecha de grado y pases del profesor, fase3-e7-profesor.md decisión 207, D7-16 a D7-18): 4 líneas
+nuevas bajo `/api/profesor/alumnos/{alumnoId}/deportes/{deporte}/`, ninguna `GET` (sin `HEAD`); ninguna casilla
+existente cambia ni la regla de URL. Declaradas en `PROFESOR_E7`; lo prueba `ProfesorGradosIntegrationTest`.
+- `PUT .../apto`, `PUT .../fecha-grado`, `POST .../pase-examen` y `POST .../pase-recompensa`: PROFESOR `ALCANCE`
+  (`@acceso.alumnoDeMisGrupos`; además, en el servicio, el deporte debe ser de la disciplina de un grupo que comparte
+  con el alumno: si no, 403; de baja, 404). Llaman a los mismos servicios que gestión (mismos 400 y mensajes); el pase
+  crea el cargo pendiente sin cambiar el grado y da 409 si ya hay un pase pendiente de cobro en ese deporte (D7-17,
+  con la fila de `alumno_deporte` bloqueada). Cada acción queda en el registro (módulo `profesor`, solo ids).
+- No hay `PUT /api/profesor/.../grado` (decisión 207): el cambio de grado directo sigue siendo solo de gestión y
+  `DENIEGA` para PROFESOR.
 - El resto de roles, `DENIEGA` en las cuatro (PROPIETARIO y GESTOR usan las de gestión, D7-10).
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
