@@ -59,4 +59,20 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			""")
 	List<Usuario> findUsuariosDeOrganizacion(@Param("organizacionId") Long organizacionId,
 			@Param("incluirSinMembresia") boolean incluirSinMembresia);
+
+	/**
+	 * Pieza E8-3 (D8-9, D8-19, decisión 221): las membresías PROPIETARIO activas de la escuela, bloqueadas
+	 * ({@code SELECT ... FOR UPDATE}, por id), antes de quitar un propietario. Dos quitas a la vez se ordenan y la segunda
+	 * ve la primera confirmada (en {@code READ_COMMITTED}). Llamarla antes de leer ninguna membresía de la escuela en la
+	 * transacción, para que las entidades lleguen con el estado ya confirmado.
+	 */
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+			SELECT m FROM Membresia m
+			WHERE m.organizacionId = :organizacionId
+			  AND m.rol = com.taemoi.project.entities.RolMembresia.PROPIETARIO
+			  AND m.activa = true
+			ORDER BY m.id
+			""")
+	List<Membresia> bloquearPropietariosActivos(@Param("organizacionId") Long organizacionId);
 }

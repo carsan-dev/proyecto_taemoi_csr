@@ -85,4 +85,30 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	@Modifying
 	@Query("UPDATE Usuario u SET u.ultimaOrganizacionId = :organizacionId WHERE u.id = :usuarioId")
 	int actualizarUltimaOrganizacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
+
+	/**
+	 * Pieza E8-4: token nuevo de una invitación que SIGUE pendiente (LOCAL o sin proveedor y sin contraseña) y la escuela
+	 * que la reenvía; 0 si ya no lo está (otra petición la aceptó entre medias). Solo el hash del token.
+	 */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			UPDATE Usuario u SET u.resetTokenHash = :hash, u.resetTokenExpiresAt = :caduca,
+			       u.ultimaOrganizacionId = :organizacionId
+			WHERE u.id = :usuarioId AND u.contrasena IS NULL
+			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
+	int renovarInvitacion(@Param("usuarioId") Long usuarioId, @Param("hash") String hash,
+			@Param("caduca") java.time.LocalDateTime caduca, @Param("organizacionId") Long organizacionId);
+
+	/**
+	 * Pieza E8-4: acepta la invitación (un solo uso): guarda la contraseña y borra el token solo si el hash es el de la
+	 * cuenta, sigue pendiente y no ha caducado. 1 si la aceptó; 0 si no (de dos usos a la vez, uno gana).
+	 */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			UPDATE Usuario u SET u.contrasena = :contrasena, u.resetTokenHash = NULL, u.resetTokenExpiresAt = NULL
+			WHERE u.id = :usuarioId AND u.resetTokenHash = :hash AND u.resetTokenExpiresAt > :ahora
+			  AND u.contrasena IS NULL
+			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
+	int aceptarInvitacion(@Param("usuarioId") Long usuarioId, @Param("hash") String hash,
+			@Param("contrasena") String contrasena, @Param("ahora") java.time.LocalDateTime ahora);
 }

@@ -139,6 +139,21 @@
                     <option value="TITULAR">Titular</option>
                     <option value="AYUDANTE">Ayudante</option>
                   </select>
+                  @if (p.invitacionPendiente) {
+                  <span class="profesor-pendiente">
+                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                    Invitación pendiente
+                  </span>
+                  <button
+                    type="button"
+                    class="profesor-reenviar"
+                    [disabled]="usuarioEnCurso !== null"
+                    (click)="reenviarInvitacion(p)"
+                    [attr.aria-label]="'Reenviar la invitación a ' + p.nombre">
+                    <i class="bi bi-envelope-arrow-up" aria-hidden="true"></i>
+                    <span>Reenviar</span>
+                  </button>
+                  }
                   <button
                     type="button"
                     class="profesor-quitar"
@@ -154,18 +169,20 @@
             </ul>
             }
 
-            <form class="profesor-alta" (ngSubmit)="anadirProfesor()" method="post">
+            <h5 class="profesor-alta-titulo" id="tituloAltaProfesor">Añadir profesor</h5>
+            <form class="profesor-alta" (ngSubmit)="anadirProfesor()" method="post" aria-labelledby="tituloAltaProfesor">
               <div class="admin-form-field profesor-alta-email">
-                <label for="emailProfesor">Email de la cuenta</label>
+                <label for="emailProfesor">Email</label>
                 <input
                   type="email"
                   id="emailProfesor"
                   name="emailProfesor"
                   class="admin-form-control"
                   [(ngModel)]="nuevoEmail"
+                  (ngModelChange)="emailCambiado()"
                   autocomplete="off"
                   placeholder="profesor@ejemplo.com"
-                  [attr.aria-describedby]="errorAlta ? 'errorProfesor' : null">
+                  [attr.aria-describedby]="errorAlta ? 'errorProfesor' : (modoAlta !== 'normal' ? 'avisoAltaProfesor' : null)">
               </div>
               <div class="admin-form-field profesor-alta-rol">
                 <label for="rolProfesor">Rol</label>
@@ -174,12 +191,66 @@
                   <option value="AYUDANTE">Ayudante</option>
                 </select>
               </div>
+              @if (otrosGrupos.length > 0) {
+              <fieldset class="grupos-chips">
+                <legend>También en estos grupos</legend>
+                <div class="grupos-chips-lista">
+                  @for (g of otrosGrupos; track g.id) {
+                  <button
+                    type="button"
+                    class="grupo-chip"
+                    [class.marcado]="estaMarcado(g.id)"
+                    [attr.aria-pressed]="estaMarcado(g.id)"
+                    [disabled]="enviandoAlta"
+                    (click)="alternarGrupo(g.id)">
+                    <i class="bi" [class.bi-check-lg]="estaMarcado(g.id)" [class.bi-plus-lg]="!estaMarcado(g.id)" aria-hidden="true"></i>
+                    <span>{{ g.nombre }}</span>
+                  </button>
+                  }
+                </div>
+              </fieldset>
+              }
+              @if (modoAlta === 'sinCuenta') {
+              <div class="profesor-alta-aviso" id="avisoAltaProfesor" role="status">
+                <i class="bi bi-envelope-plus" aria-hidden="true"></i>
+                <span>No hay ninguna cuenta con ese email. Te pedimos su nombre para invitarle.</span>
+              </div>
+              <div class="admin-form-field profesor-alta-nombre">
+                <label for="nombreProfesor">Nombre</label>
+                <input
+                  type="text"
+                  id="nombreProfesor"
+                  name="nombreProfesor"
+                  class="admin-form-control"
+                  [(ngModel)]="nuevoNombre"
+                  maxlength="50"
+                  autocomplete="off"
+                  required>
+              </div>
+              <div class="admin-form-field profesor-alta-nombre">
+                <label for="apellidosProfesor">Apellidos</label>
+                <input
+                  type="text"
+                  id="apellidosProfesor"
+                  name="apellidosProfesor"
+                  class="admin-form-control"
+                  [(ngModel)]="nuevosApellidos"
+                  maxlength="50"
+                  autocomplete="off"
+                  required>
+              </div>
+              } @else if (modoAlta === 'desactivado') {
+              <div class="profesor-alta-aviso aviso-desactivado" id="avisoAltaProfesor" role="status">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                <span>Tiene el rol de profesor desactivado en esta escuela.</span>
+              </div>
+              }
               <button
                 type="submit"
                 class="admin-btn admin-btn-primary profesor-alta-boton"
-                [disabled]="enviandoAlta || !nuevoEmail.trim()">
-                <i class="bi bi-person-plus"></i>
-                <span>Añadir</span>
+                [disabled]="!puedeEnviarAlta">
+                <i class="bi" [class.bi-person-plus]="modoAlta === 'normal'" [class.bi-send]="modoAlta === 'sinCuenta'" [class.bi-arrow-counterclockwise]="modoAlta === 'desactivado'" aria-hidden="true"></i>
+                <span>{{ textoBotonAlta }}</span>
               </button>
             </form>
             @if (errorAlta) {

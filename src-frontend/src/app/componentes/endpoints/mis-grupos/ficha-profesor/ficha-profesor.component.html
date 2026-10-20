@@ -226,7 +226,11 @@
         <strong>Cargo creado</strong>
         <span>{{ aviso.cargo.concepto }} · <span class="cifra">{{ euros(aviso.cargo.importe) }}</span></span>
       </span>
-      <a class="aviso-enlace" [routerLink]="['/mi-caja']">Ir a Mi caja</a>
+      @if (esGestion) {
+        <a class="aviso-enlace" [routerLink]="['/tesoreriaCobros']">Ir a tesorería</a>
+      } @else {
+        <a class="aviso-enlace" [routerLink]="['/mi-caja']">Ir a Mi caja</a>
+      }
       <button type="button" class="aviso-cerrar" aria-label="Cerrar aviso" (click)="cerrarAviso()">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>

@@ -285,6 +285,89 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 			return new Caso(tPropietario, propietario, quitar, 204, List.of("PROFESOR ASIGNACION_QUITADA"), quitar,
 					404);
 		});
+		// Pieza E8-2: sedes (módulo sedes). Cada caso con su sede de nombre único en la escuela de prueba.
+		casos.put(EscrituraConRegistroPropio.SEDE_CREAR, () -> {
+			String cuerpo = json.writeValueAsString(Map.of("nombre", "IT E8-2 alta " + e.marca));
+			Peticion alta = () -> conCuerpo(post("/api/sedes"), cuerpo);
+			// El mismo nombre otra vez: 409.
+			return new Caso(tPropietario, propietario, alta, 201, List.of("SEDES SEDE_CREADA"), alta, 409);
+		});
+		casos.put(EscrituraConRegistroPropio.SEDE_EDITAR, () -> {
+			long sede = sedeDePrueba("IT E8-2 editar " + e.marca);
+			String cuerpo = json.writeValueAsString(Map.of("nombre", "IT E8-2 editada " + e.marca));
+			// Sin nombre: 400.
+			return new Caso(tPropietario, propietario, () -> conCuerpo(put("/api/sedes/" + sede), cuerpo), 200,
+					List.of("SEDES SEDE_EDITADA"), () -> conCuerpo(put("/api/sedes/" + sede), "{\"nombre\":\" \"}"),
+					400);
+		});
+		casos.put(EscrituraConRegistroPropio.SEDE_ACTIVA, () -> {
+			// Se desactiva una sede extra: A y B siguen activas, como al empezar.
+			long sede = sedeDePrueba("IT E8-2 activa " + e.marca);
+			// Sin «activa»: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{\"activa\":false}"), 200,
+					List.of("SEDES SEDE_DESACTIVADA"), () -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{}"),
+					400);
+		});
+		// Pieza E8-3: miembros (módulo miembros). Cada caso con su cuenta nueva en la escuela de prueba.
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ALTA, () -> {
+			long cuenta = e.cuenta(usuarios, "alta-miembro-" + UUID.randomUUID().toString().substring(0, 6));
+			String email = jdbc.queryForObject("SELECT email FROM usuario WHERE id = ?", String.class, cuenta);
+			String alta = json.writeValueAsString(Map.of("email", email, "rol", "PROFESOR"));
+			String sinCuenta = json.writeValueAsString(
+					Map.of("email", "nadie-" + e.marca + "-" + cuenta + "@example.test", "rol", "PROFESOR"));
+			// Sin cuenta con ese email: 404.
+			return new Caso(tPropietario, propietario, () -> conCuerpo(post("/api/miembros"), alta), 200,
+					List.of("MIEMBROS ROL_DADO"), () -> conCuerpo(post("/api/miembros"), sinCuenta), 404);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR, () -> {
+			long cuenta = e.cuenta(usuarios, "dar-rol-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "FAMILIA");
+			// FAMILIA no se da por esta API: 400.
+			return new Caso(tPropietario, propietario, () -> put("/api/miembros/" + cuenta + "/roles/PROFESOR"), 200,
+					List.of("MIEMBROS ROL_DADO"), () -> put("/api/miembros/" + cuenta + "/roles/FAMILIA"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_QUITAR, () -> {
+			long cuenta = e.cuenta(usuarios, "quitar-rol-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "PROFESOR");
+			// Sin el rol de responsable: 404.
+			return new Caso(tPropietario, propietario, () -> delete("/api/miembros/" + cuenta + "/roles/PROFESOR"),
+					200, List.of("MIEMBROS ROL_QUITADO"),
+					() -> delete("/api/miembros/" + cuenta + "/roles/RESPONSABLE_SEDE"), 404);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_SEDES, () -> {
+			long cuenta = e.cuenta(usuarios, "sedes-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "RESPONSABLE_SEDE");
+			String sedes = "{\"sedeIds\":[" + e.sB + "]}";
+			// Lista vacía: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/sedes"), sedes), 200,
+					List.of("MIEMBROS SEDES_CAMBIADAS"),
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/sedes"), "{\"sedeIds\":[]}"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, () -> {
+			long cuenta = e.cuenta(usuarios, "grupos-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "PROFESOR");
+			String grupos = "{\"asignaciones\":[{\"grupoId\":" + e.gB + ",\"rol\":\"AYUDANTE\"}]}";
+			// Grupo inexistente: 404.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/grupos"), grupos), 200,
+					List.of("PROFESOR ASIGNACION_CREADA"),
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/grupos"),
+							"{\"asignaciones\":[{\"grupoId\":999999999,\"rol\":\"AYUDANTE\"}]}"), 404);
+		});
+		// Pieza E8-4: reenviar una invitación pendiente (cuenta LOCAL sin contraseña).
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_INVITACION, () -> {
+			long pendiente = e.cuenta(usuarios, "invitacion-" + UUID.randomUUID().toString().substring(0, 6));
+			jdbc.update("UPDATE usuario SET contrasena = NULL WHERE id = ?", pendiente);
+			membresia(e.org, pendiente, "PROFESOR");
+			long aceptada = e.cuenta(usuarios, "aceptada-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, aceptada, "PROFESOR");
+			// Ya tiene contraseña: 409.
+			return new Caso(tPropietario, propietario, () -> post("/api/miembros/" + pendiente + "/invitacion"), 200,
+					List.of("MIEMBROS INVITACION_REENVIADA"), () -> post("/api/miembros/" + aceptada + "/invitacion"),
+					409);
+		});
 		return casos;
 	}
 
@@ -391,6 +474,13 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id, vendible_profesor, tipo) "
 				+ "VALUES (?, ?, NULL, ?, ?, 'OTRO')", concepto, new BigDecimal(precio), e.org, vendible);
 		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	/** Sede activa de la escuela de prueba, creada por SQL (datos inventados). */
+	private long sedeDePrueba(String nombre) {
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa) VALUES (?, ?, TRUE)", e.org, nombre);
+		return jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = ? AND nombre = ?", Long.class, e.org,
+				nombre);
 	}
 
 	private void membresia(long organizacion, long usuario, String rol) {

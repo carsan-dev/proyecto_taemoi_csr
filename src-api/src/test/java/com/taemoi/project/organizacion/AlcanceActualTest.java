@@ -56,6 +56,20 @@ class AlcanceActualTest {
 		assertSame(AlcanceSesion.TOTAL, alcanceActual.obtener());
 	}
 
+	/** E8-1 (D8-15): P o G con PROFESOR guardan un alcance total con sus grupos; las rutas del profesor los leen. */
+	@Test
+	void gestionConAlcanceTotalGuardadoConservaSusGrupos() {
+		AlcanceSesion totalConGrupos = new AlcanceSesion(true, Set.of(), Set.of(4L));
+		autenticar(new AutenticacionEscuela(new Usuario(),
+				List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_PROFESOR")),
+				totalConGrupos));
+		assertEquals(totalConGrupos, alcanceActual.obtener());
+		// Un alcance guardado no total en una sesión de gestión sigue dando el TOTAL de siempre.
+		autenticar(new AutenticacionEscuela(new Usuario(), List.of(new SimpleGrantedAuthority("ROLE_MANAGER")),
+				AlcanceSesion.limitado(Set.of(3L), Set.of(4L))));
+		assertSame(AlcanceSesion.TOTAL, alcanceActual.obtener());
+	}
+
 	@Test
 	void autenticacionEscuelaSinGestionDevuelveSuAlcance() {
 		AlcanceSesion limitado = AlcanceSesion.limitado(Set.of(3L), Set.of(4L));

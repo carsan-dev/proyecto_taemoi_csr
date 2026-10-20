@@ -38,6 +38,7 @@ import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
+import com.taemoi.project.services.InvitacionService;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
@@ -103,6 +104,10 @@ class SecurityAuthorizationWebMvcTest {
 
 	@MockitoBean
 	private AccesoFamiliaService accesoFamiliaService;
+
+	/** Pieza E8-4: crear la contraseña de una invitación ({@code POST /api/auth/invitacion/aceptar}). */
+	@MockitoBean
+	private InvitacionService invitacionService;
 
 	@Test
 	void anonymousCannotReadAuthRoles() throws Exception {

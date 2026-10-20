@@ -1,0 +1,23 @@
+// Estilos base: los de «Nueva contraseña» (reset-password.component.scss). Aquí solo lo propio de la invitación.
+
+.auth-header {
+  .invitacion-saludo {
+    color: #212529;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .invitacion-meta {
+    overflow-wrap: anywhere;
+  }
+}
+
+.invitacion-error-envio {
+  margin-bottom: 0;
+}
+
+.invitacion-reintentar {
+  display: block;
+  margin: 0 auto;
+}

@@ -4,7 +4,6 @@ import {
   AuthenticationService,
   PortalPreferido,
   esSoloProfesor,
-  veMisGrupos,
 } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import { Subscription, of, switchMap } from 'rxjs';
@@ -16,6 +15,7 @@ import {
 import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
+import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 @Component({
@@ -33,10 +33,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isUser: boolean = false;
   /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia o la barra de administración. */
   tieneRolProfesor: boolean = false;
-  /**
-   * «Mis grupos» (E7-5): ROLE_PROFESOR sin ADMIN ni MANAGER, porque `/api/profesor/**` deniega a la gestión (D7-10).
-   * Gestión + profesor solo ve «Mi caja».
-   */
+  /** «Mis grupos» (E8-5, decisión 217): la sesión tiene la capacidad MIS_GRUPOS de `GET /api/auth/permisos`. */
   veMisGrupos: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
@@ -55,6 +52,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   private mobileMenuScrollRelease?: ScrollLockRelease;
   /** La sesión tiene cabecera de gestión y pide el contador de solicitudes (ADMIN o MANAGER; D6c-4). */
   private pideContadorSolicitudes = false;
+  private permisosSuscripcion?: Subscription;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -83,7 +81,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly zone: NgZone,
     private readonly pageScroll: PageScrollService,
     private readonly scrollLock: ScrollLockService,
-    private readonly solicitudesContador: SolicitudesContadorService
+    private readonly solicitudesContador: SolicitudesContadorService,
+    private readonly permisos: PermisosSesionService
   ) {}
 
   /** Lo que espera acción de la sesión en la bandeja de solicitudes (0: sin distintivo). */
@@ -116,7 +115,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.esAdminPlataforma = false;
           this.isUser = false;
           this.tieneRolProfesor = false;
-          this.veMisGrupos = false;
+          this.actualizarMisGrupos(false);
           this.tieneAccesoDual = false;
           this.pideContadorSolicitudes = false;
           this.solicitudesContador.reiniciar();
@@ -205,6 +204,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+    this.permisosSuscripcion?.unsubscribe();
     this.setBodyScrollLock(false);
 
     // Clean up document scroll listener
@@ -288,7 +288,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
-      this.veMisGrupos = veMisGrupos(roles);
+      this.actualizarMisGrupos(this.tieneRolProfesor);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
       // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.
@@ -300,6 +300,19 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       this.isAuthChecked = true;
     });
+  }
+
+  /** Solo con ROLE_PROFESOR hay MIS_GRUPOS: las demás sesiones no piden permisos. Si fallan, sin enlace. */
+  private actualizarMisGrupos(tieneRolProfesor: boolean): void {
+    this.permisosSuscripcion?.unsubscribe();
+    this.permisosSuscripcion = undefined;
+    this.veMisGrupos = false;
+    if (!tieneRolProfesor) {
+      return;
+    }
+    this.permisosSuscripcion = this.permisos
+      .capacidades()
+      .subscribe((capacidades) => (this.veMisGrupos = capacidades.includes('MIS_GRUPOS')));
   }
 
   get mostrarHeaderAdmin(): boolean {

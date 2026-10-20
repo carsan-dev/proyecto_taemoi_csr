@@ -47,6 +47,28 @@ public class EmailServiceImpl implements EmailService {
 		}
 	}
 
+	@Async
+	@Override
+	public void sendEmailConImagen(@NonNull String to, @NonNull String subject, @NonNull String htmlContent, String cid,
+			byte[] imagen, String tipoImagen, String nombreRemitente) {
+		try {
+			MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			helper.setTo(to);
+			helper.setSubject(subject);
+			helper.setText(htmlContent, true);
+			helper.setFrom(fromAddress, remitente(nombreRemitente));
+			helper.setReplyTo(fromAddress);
+			if (cid != null && imagen != null && imagen.length > 0) {
+				helper.addInline(cid, new ByteArrayResource(imagen), tipoImagen == null ? "image/png" : tipoImagen);
+			}
+			javaMailSender.send(mimeMessage);
+		} catch (MessagingException | UnsupportedEncodingException | RuntimeException e) {
+			// Sin el cuerpo ni el mensaje del error: el correo puede llevar un enlace con un token (invitaciones).
+			logger.error("Error al enviar el correo electrónico a {}: {}", to, e.getClass().getSimpleName());
+		}
+	}
+
 	@Override
 	public void sendEmailSync(@NonNull String to, @NonNull String subject, @NonNull String htmlContent) {
 		sendEmailSync(to, subject, htmlContent, null);

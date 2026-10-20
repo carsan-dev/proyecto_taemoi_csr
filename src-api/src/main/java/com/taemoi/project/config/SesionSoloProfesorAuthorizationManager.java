@@ -145,6 +145,9 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				// Si además es administrador de plataforma: el frontend lo pregunta aquí en vez de sondear
 				// /api/plataforma/errores. Solo GET (HEAD cuenta como GET); solo lee la autoridad de la sesión.
 				rutas.matcher(HttpMethod.GET, "/api/auth/plataforma"),
+				// Pieza E8-1 (D8-14): sus permisos para menús y guards (roles [PROFESOR], MIS_GRUPOS y MI_CAJA, sin las
+				// sedes del responsable). Solo GET (HEAD cuenta como GET); solo lee la sesión y las sedes de la escuela.
+				rutas.matcher(HttpMethod.GET, "/api/auth/permisos"),
 				// Administrador de plataforma que además es profesor: su regla exige ROLE_ADMIN_PLATAFORMA.
 				rutas.matcher("/api/plataforma/**"));
 	}

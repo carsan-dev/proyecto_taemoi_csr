@@ -172,7 +172,7 @@ class AsignacionProfesoresIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(401, estado(get("/api/profesor/grupos"), token));
 
 		JsonNode profesor = leer(alta(e.gA, email(cuenta), "TITULAR"), tPropietario, 200);
-		assertEquals(Set.of("usuarioId", "nombre", "apellidos", "email", "rol"), campos(profesor));
+		assertEquals(Set.of("usuarioId", "nombre", "apellidos", "email", "rol", "invitacionPendiente"), campos(profesor));
 		assertEquals(cuenta, profesor.get("usuarioId").asLong());
 		assertEquals(email(cuenta), profesor.get("email").asText());
 		assertEquals("TITULAR", profesor.get("rol").asText());

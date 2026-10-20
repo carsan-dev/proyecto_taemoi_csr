@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
@@ -49,6 +50,7 @@ describe('HeaderComponent: contador de solicitudes', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contador },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
       ],
     }).compileComponents();
 

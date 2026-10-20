@@ -1,26 +1,31 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 
-import { AuthenticationService, veMisGrupos } from '../servicios/authentication/authentication.service';
+import { AuthenticationService } from '../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../servicios/authentication/permisos-sesion.service';
 
 /**
- * «Mis grupos» (E7): ROLE_PROFESOR sin gestión (solo profesor, o familia + profesor). El servidor deniega
- * `/api/profesor/**` a ADMIN y MANAGER (D7-10), así que una cuenta gestión + profesor va a su panel y cualquier otra
- * sin ROLE_PROFESOR (o si fallan los roles) a la raíz. Misma condición que el enlace de la cabecera.
+ * «Mis grupos» (E7, E8-5): pasa quien tiene la capacidad MIS_GRUPOS (decisión 217): el solo profesor, la familia +
+ * profesor y la gestión + profesor con grupos asignados. Sin ella, la gestión va a su panel y cualquier otra sesión a
+ * la raíz; si no se pueden leer los permisos, también a la raíz. Misma condición que el enlace de la cabecera.
  * Se aplica en la ruta padre; las hijas son perezosas y solo se alcanzan a través de ella.
  */
 export const misGruposGuard: CanActivateFn = () => {
   const auth = inject(AuthenticationService);
+  const permisos = inject(PermisosSesionService);
   const router = inject(Router);
 
-  return auth.resolverRolesDisponibles().pipe(
-    map((roles) => {
-      if (veMisGrupos(roles)) {
-        return true;
+  return permisos.obtener().pipe(
+    switchMap((p) => {
+      if (p.capacidades?.includes('MIS_GRUPOS')) {
+        return of(true);
       }
-      const esGestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
-      return router.createUrlTree([roles.includes('ROLE_PROFESOR') && esGestion ? '/adminpage' : '/']);
+      return auth.resolverRolesDisponibles().pipe(
+        map((roles) =>
+          router.createUrlTree([roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER') ? '/adminpage' : '/'])
+        )
+      );
     }),
     catchError(() => of(router.createUrlTree(['/'])))
   );

@@ -1,0 +1,94 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Crea tu contraseña</h1>
+      @if (estado === 'listo' && datos) {
+        <p class="invitacion-saludo">Hola, {{ datos.nombre }}.</p>
+        <p class="invitacion-meta">{{ datos.email }} · {{ datos.escuela }}</p>
+      } @else if (estado === 'cargando') {
+        <p role="status">Comprobando el enlace…</p>
+      }
+    </div>
+
+    @if (estado === 'caducado') {
+      <div class="auth-error" role="alert">{{ enlaceNoVale }}</div>
+    } @else if (estado === 'sinComprobar') {
+      <div class="auth-error" role="alert">No se pudo comprobar el enlace. Inténtalo de nuevo.</div>
+      <button type="button" class="link-button invitacion-reintentar" (click)="comprobarEnlace()">Reintentar</button>
+    } @else if (estado === 'sinSesion') {
+      <div class="auth-error" role="alert">{{ mensajeSinSesion }}</div>
+    } @else if (estado === 'listo') {
+      <form class="auth-form" (ngSubmit)="crearContrasena()">
+        <label for="nuevaContrasena">Contraseña nueva</label>
+        <div class="password-row">
+          <input
+            id="nuevaContrasena"
+            name="nuevaContrasena"
+            type="password"
+            [type]="tipoContrasena"
+            [(ngModel)]="nuevaContrasena"
+            required
+            autocomplete="new-password">
+          <button
+            type="button"
+            class="toggle-btn"
+            (click)="toggleMostrarContrasena()"
+            [attr.aria-label]="mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-pressed]="mostrarContrasena">
+            <i class="bi" [ngClass]="mostrarContrasena ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="password-rules">
+          <p>Requisitos:</p>
+          <ul>
+            <li [class.ok]="tieneMinimo" [class.bad]="!tieneMinimo">
+              <i class="bi" [ngClass]="tieneMinimo ? 'bi-check-circle-fill' : 'bi-x-circle'" aria-hidden="true"></i>
+              Mínimo 8 caracteres
+            </li>
+            <li [class.ok]="tieneMayuscula" [class.bad]="!tieneMayuscula">
+              <i class="bi" [ngClass]="tieneMayuscula ? 'bi-check-circle-fill' : 'bi-x-circle'" aria-hidden="true"></i>
+              Al menos 1 mayúscula
+            </li>
+            <li [class.ok]="tieneMinuscula" [class.bad]="!tieneMinuscula">
+              <i class="bi" [ngClass]="tieneMinuscula ? 'bi-check-circle-fill' : 'bi-x-circle'" aria-hidden="true"></i>
+              Al menos 1 minúscula
+            </li>
+            <li [class.ok]="tieneNumero" [class.bad]="!tieneNumero">
+              <i class="bi" [ngClass]="tieneNumero ? 'bi-check-circle-fill' : 'bi-x-circle'" aria-hidden="true"></i>
+              Al menos 1 número
+            </li>
+            <li [class.ok]="contrasenasCoinciden" [class.bad]="!contrasenasCoinciden && confirmarContrasena.length">
+              <i class="bi" [ngClass]="contrasenasCoinciden ? 'bi-check-circle-fill' : 'bi-x-circle'" aria-hidden="true"></i>
+              Coinciden
+            </li>
+          </ul>
+        </div>
+
+        <label for="confirmarContrasena">Repítela</label>
+        <input
+          id="confirmarContrasena"
+          name="confirmarContrasena"
+          type="password"
+          [type]="tipoContrasena"
+          [(ngModel)]="confirmarContrasena"
+          required
+          autocomplete="new-password">
+
+        @if (errorEnvio) {
+          <div class="auth-error invitacion-error-envio" role="alert">{{ errorEnvio }}</div>
+        }
+
+        <button type="submit" [disabled]="!puedeEnviar">
+          {{ enviando ? 'Creando…' : 'Crear contraseña y entrar' }}
+        </button>
+      </form>
+    }
+
+    <div class="auth-footer">
+      <button type="button" class="link-button" (click)="irAlLogin()">
+        {{ estado === 'sinSesion' ? 'Iniciar sesión' : 'Volver al login' }}
+      </button>
+    </div>
+  </div>
+</div>

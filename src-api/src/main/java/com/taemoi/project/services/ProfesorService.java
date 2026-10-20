@@ -32,7 +32,6 @@ import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.RolAsignacionProfesor;
 import com.taemoi.project.entities.Tutor;
 import com.taemoi.project.organizacion.AlcanceActual;
-import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AsignacionProfesorRepository;
@@ -46,8 +45,9 @@ import jakarta.persistence.EntityManager;
  * <p><b>Filtro único: {@code alcance.grupos()}</b> (D7-11), como {@code CajaService.alumnosDeMisGrupos}. Nunca
  * {@code GestionPorSede.restriccion()} (no restringe al profesor), {@code PredicadosAlcance.alumnos(alcance)} ni
  * {@code AccesoRecursos.alumno/grupo(id, 'LEER')}, que también conceden por las sedes del responsable: en la sesión
- * R+Pr (decisión 184) las sedes no abren nada aquí. Con alcance total (gestión, también con asignación) no hay grupos:
- * lista vacía o 403. El {@code @PreAuthorize} del controlador ya filtra; el servicio lo vuelve a comprobar.
+ * R+Pr (decisión 184) las sedes no abren nada aquí. Pieza E8-1 (decisión 217, D8-15): P o G con PROFESOR tienen alcance
+ * total y sus grupos; aquí cuentan solo los grupos (sin asignaciones, lista vacía o 403), nunca el total. El
+ * {@code @PreAuthorize} del controlador ya filtra; el servicio lo vuelve a comprobar.
  *
  * <p>Escuela: Grupo, Alumno, AlumnoDeporte, Tutor y Sede se acotan por {@code @TenantId};
  * {@code asignacion_profesor} no es {@code EntidadOrganizacion} y se consulta con {@code organizacion_id} explícito.
@@ -369,10 +369,10 @@ public class ProfesorService {
 	}
 
 	/**
-	 * Comprobación de las rutas de grados, además del {@code @acceso.alumnoDeMisGrupos} del controlador, por este orden:
-	 * el alumno está en alguno de sus grupos (403, sin revelar si existe), está activo (404, D7-13) y el deporte es el de
-	 * la disciplina de alguno de esos grupos compartidos (403; el criterio de {@code deMisGrupos} en la ficha, §11
-	 * pregunta 2). Solo {@code alcance.grupos()}: nunca por sede.
+	 * Comprobación de las rutas de grados, además del {@code @acceso.alumnoDeMisGruposAsignados} del controlador, por
+	 * este orden: el alumno está en alguno de sus grupos (403, sin revelar si existe), está activo (404, D7-13) y el
+	 * deporte es el de la disciplina de alguno de esos grupos compartidos (403; el criterio de {@code deMisGrupos} en la
+	 * ficha, §11 pregunta 2). Solo {@code alcance.grupos()}: nunca por sede ni por el alcance total.
 	 */
 	private void exigirDeporteDeMisGrupos(Long alumnoId, String deporte) {
 		Set<Long> grupos = gruposDelProfesor();
@@ -499,9 +499,9 @@ public class ProfesorService {
 		return roles;
 	}
 
+	/** Solo {@code alcance.grupos()}, también con alcance total (P o G con PROFESOR, E8-1): nunca un atajo por total. */
 	private Set<Long> gruposDelProfesor() {
-		AlcanceSesion alcance = alcanceActual.obtener();
-		return alcance.total() ? Set.of() : alcance.grupos();
+		return alcanceActual.obtener().grupos();
 	}
 
 	private static ProfesorDTOs.Sede sede(Long id, String nombre) {

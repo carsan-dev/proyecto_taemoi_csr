@@ -121,7 +121,12 @@ class AlcanceSesionIntegrationTest extends MySqlIntegrationTest {
 		membresia(gestor, a.org, "PROFESOR");
 		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) VALUES (?, ?, ?, 'TITULAR')",
 				a.org, gestor, a.grupo);
-		assertSame(AlcanceSesion.TOTAL, sesion(gestor, a.org).alcance());
+		// E8-1 (decisión 217, D8-15): propietario + profesor, total con sus grupos (para «Mis grupos»).
+		assertEquals(new AlcanceSesion(true, Set.of(), Set.of(a.grupo)), sesion(gestor, a.org).alcance());
+
+		long propietario = crearUsuario();
+		membresia(propietario, a.org, "PROPIETARIO");
+		assertSame(AlcanceSesion.TOTAL, sesion(propietario, a.org).alcance(), "sin PROFESOR, el TOTAL de siempre");
 
 		long profesorFamilia = crearUsuario();
 		membresia(profesorFamilia, a.org, "FAMILIA");

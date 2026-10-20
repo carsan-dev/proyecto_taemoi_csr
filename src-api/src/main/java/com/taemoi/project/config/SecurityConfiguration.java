@@ -213,6 +213,15 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						// Pieza E8-2 (D8-1, D8-2): sedes de la escuela, solo P y G (R DENIEGA hasta la E9). Antes de
+						// toda regla del responsable de sede para que ningún patrón suyo las abra; fuera de la lista
+						// blanca de la sesión solo-profesor.
+						.requestMatchers("/api/sedes", "/api/sedes/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza E8-3 (D8-1, D8-8): miembros de la escuela, solo P y G (la D8 sobre propietario y gestor, en
+						// el servicio). Misma posición y motivo que /api/sedes; fuera de la lista blanca solo-profesor.
+						.requestMatchers("/api/miembros", "/api/miembros/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor
@@ -241,6 +250,10 @@ public class SecurityConfiguration {
 								"/api/auth/signup",
 								"/api/auth/password/forgot",
 								"/api/auth/password/reset",
+								// Pieza E8-4: datos de la página y crear la contraseña de una invitación (el token del
+								// correo, siempre en el cuerpo).
+								"/api/auth/invitacion/datos",
+								"/api/auth/invitacion/aceptar",
 								"/api/auth/register/request",
 								"/api/auth/register/confirm",
 								"/api/auth/logout",
@@ -497,9 +510,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/caja", "/api/caja/**").denyAll()
-						// Entrega 7 (D7-9, D7-10): rutas propias del profesor, solo ROLE_PROFESOR (cuentas mixtas F+Pr y
-						// R+Pr incluidas); cada @PreAuthorize excluye la gestión y el servicio filtra por sus grupos. En la
-						// lista blanca de la sesión solo-profesor. Ninguna ruta de gestión se abre al profesor.
+						// Entrega 7 (D7-9): rutas propias del profesor, solo ROLE_PROFESOR (cuentas mixtas F+Pr y R+Pr
+						// incluidas; P+Pr y G+Pr desde la E8-1, decisión 217); cada @PreAuthorize y el servicio filtran
+						// solo por sus grupos. En la lista blanca de la sesión solo-profesor. Ninguna ruta de gestión se
+						// abre al profesor.
 						.requestMatchers("/api/profesor/**").hasAuthority(Roles.ROLE_PROFESOR.toString())
 						// Pieza 6c-2: solicitudes al propietario (bandeja de gestión). Propietario, gestor y responsable
 						// de sede; @PreAuthorize por ruta y el servicio filtra. Fuera de la lista blanca de la sesión

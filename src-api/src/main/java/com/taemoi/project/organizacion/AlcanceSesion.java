@@ -12,7 +12,8 @@ import com.taemoi.project.repositories.AlcanceRepository;
  * {@link IdentificadorSesionJwt} una vez por petición y lo lee {@link AlcanceActual}. Todavía no lo usa ningún
  * listado ni endpoint (entregas 5c, 6 y 7).
  *
- * @param total  {@code ROLE_ADMIN} o {@code ROLE_MANAGER}: ve toda la escuela.
+ * @param total  {@code ROLE_ADMIN} o {@code ROLE_MANAGER}: ve toda la escuela. Con {@code ROLE_PROFESOR}, además lleva
+ *               sus {@code grupos} (pieza E8-1, D8-15), que solo leen las rutas del profesor.
  * @param sedes  sedes de sus membresías RESPONSABLE_SEDE activas (gestión por sede).
  * @param grupos grupos de {@code asignacion_profesor} con membresía PROFESOR activa (lectura por grupo).
  *               Se guardan por separado: la operación decide qué conjunto vale.

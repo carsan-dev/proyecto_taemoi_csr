@@ -241,6 +241,6 @@ public class AsignacionProfesorService {
 
 	private static GrupoProfesoresDTOs.Profesor profesor(Usuario cuenta, RolAsignacionProfesor rol) {
 		return new GrupoProfesoresDTOs.Profesor(cuenta.getId(), cuenta.getNombre(), cuenta.getApellidos(),
-				cuenta.getEmail(), rol);
+				cuenta.getEmail(), rol, cuenta.invitacionPendiente());
 	}
 }

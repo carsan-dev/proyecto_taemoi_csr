@@ -96,7 +96,27 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** SolicitudService#pedirDeshacer (SOLICITUDES SOLICITUD_CREADA). */
 		CAJA_PROFESOR_PEDIR_DESHACER("POST", "/api/caja/profesor/cobros/[^/]+/pedir-deshacer"),
 		/** AsignacionProfesorService#quitar (PROFESOR ASIGNACION_QUITADA). */
-		GRUPO_QUITAR_PROFESOR("DELETE", "/api/grupos/[^/]+/profesores/[^/]+");
+		GRUPO_QUITAR_PROFESOR("DELETE", "/api/grupos/[^/]+/profesores/[^/]+"),
+		// Pieza E8-2 (D8-16): sedes. Todo 2xx registra, también el que no cambia nada (con sinCambios=SI).
+		/** GestionSedesService#crear (SEDES SEDE_CREADA). */
+		SEDE_CREAR("POST", "/api/sedes"),
+		/** GestionSedesService#editar (SEDES SEDE_EDITADA). */
+		SEDE_EDITAR("PUT", "/api/sedes/[^/]+"),
+		/** GestionSedesService#cambiarActiva (SEDES SEDE_ACTIVADA o SEDE_DESACTIVADA). */
+		SEDE_ACTIVA("PUT", "/api/sedes/[^/]+/activa"),
+		// Pieza E8-3 (D8-16): miembros. Todo 2xx registra, también el que no cambia nada (con sinCambios=SI).
+		/** GestionMiembrosService#alta (MIEMBROS ROL_*, CARGO_CAMBIADO, SEDES_CAMBIADAS; PROFESOR ASIGNACION_*). */
+		MIEMBRO_ALTA("POST", "/api/miembros"),
+		/** GestionMiembrosService#darRol (MIEMBROS ROL_DADO, ROL_REACTIVADO, CARGO_CAMBIADO, SEDES_CAMBIADAS). */
+		MIEMBRO_ROL_DAR("PUT", "/api/miembros/[^/]+/roles/[^/]+"),
+		/** GestionMiembrosService#quitarRol (MIEMBROS ROL_QUITADO). */
+		MIEMBRO_ROL_QUITAR("DELETE", "/api/miembros/[^/]+/roles/[^/]+"),
+		/** GestionMiembrosService#reemplazarSedes (MIEMBROS SEDES_CAMBIADAS). */
+		MIEMBRO_SEDES("PUT", "/api/miembros/[^/]+/sedes"),
+		/** GestionMiembrosService#reemplazarGrupos (PROFESOR ASIGNACION_*; sin cambios, MIEMBROS GRUPOS_CAMBIADOS). */
+		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos"),
+		/** Pieza E8-4: GestionMiembrosService#reenviarInvitacion (MIEMBROS INVITACION_REENVIADA). */
+		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion");
 
 		private final String metodo;
 		private final Pattern ruta;
@@ -119,7 +139,22 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
 			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
-			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"));
+			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"),
+			// Pieza E8-2 (D8-16): alta y edición de una sede (los 4xx; el 2xx no guarda cuerpo, tiene registro propio).
+			Pattern.compile("^/api/sedes(/[^/]+)?/?$"), Set.of("nombre", "direccion", "localidad", "codigoPostal",
+					"telefono", "email", "codigoClubFederacion"),
+			// Pieza E8-3 (D8-16): email, cargo, nombre y apellidos del alta de un miembro (los dos últimos, de la E8-4);
+			// el cargo al dar un rol.
+			Pattern.compile("^/api/miembros/?$"), Set.of("email", "cargo", "nombre", "apellidos"),
+			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"));
+
+	/**
+	 * Parámetros de la URL que no se guardan en la auditoría para una ruta. Pieza E8-3: la búsqueda de miembros
+	 * ({@code q}: un email o un nombre). Solo esta ruta; las demás guardan sus parámetros como siempre.
+	 */
+	private static final Map<Pattern, Set<String>> PARAMETROS_REDACTADOS_POR_RUTA = Map.of(
+			Pattern.compile("^/api/miembros/?$"), Set.of("q"));
+	static final String VALOR_REDACTADO = "[redactado]";
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
@@ -193,7 +228,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		}
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
-		String queryParamsJson = auditoriaPayloadSanitizer.serializarQueryParams(request.getParameterMap());
+		String queryParamsJson = auditoriaPayloadSanitizer
+				.serializarQueryParams(parametrosAuditables(endpoint, request.getParameterMap()));
 		String ipCliente = obtenerIpCliente(request);
 		String userAgent = truncar(request.getHeader("User-Agent"), MAX_USER_AGENT_CHARS);
 
@@ -207,6 +243,27 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 				status,
 				ipCliente,
 				userAgent);
+	}
+
+	/**
+	 * Los parámetros de la URL que se guardan: copia con los de {@link #PARAMETROS_REDACTADOS_POR_RUTA} cambiados por
+	 * {@value #VALOR_REDACTADO}; en las demás rutas, el mapa tal cual.
+	 */
+	static Map<String, String[]> parametrosAuditables(String endpoint, Map<String, String[]> parametros) {
+		if (parametros == null || parametros.isEmpty()) {
+			return parametros;
+		}
+		String ruta = normalizarParaComparar(endpoint);
+		for (Map.Entry<Pattern, Set<String>> regla : PARAMETROS_REDACTADOS_POR_RUTA.entrySet()) {
+			if (regla.getKey().matcher(ruta).matches()) {
+				Map<String, String[]> copia = new java.util.LinkedHashMap<>(parametros);
+				for (String clave : regla.getValue()) {
+					copia.computeIfPresent(clave, (k, v) -> new String[] { VALOR_REDACTADO });
+				}
+				return copia;
+			}
+		}
+		return parametros;
 	}
 
 	/** Claves del cuerpo que no se guardan en la auditoría para una ruta (p. ej. la referencia cifrada a un DNI). */

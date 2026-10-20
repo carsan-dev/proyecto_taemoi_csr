@@ -187,6 +187,17 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       atajo `desplegar`. Prueba manual: asignar un profesor ficticio a un grupo en la escuela de pruebas, entrar como él
       (Mis grupos, ficha, salud, pase y cobro en Mi caja), y subir un logo como superadmin a una escuela que no sea
       Moiskimdo y generar un PDF.
+- [ ] E8 (miembros, sedes, permisos de la sesión e invitaciones por correo): **con migración V31_9** (pieza E8-4,
+      decisión 223: `usuario.contrasena` pasa a admitir NULL; ninguna fila cambia) → atajo `desplegar_migrar`.
+      Comprobar después (solo lectura): Flyway en `31.9`
+      (`SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1`), la columna
+      con `IS_NULLABLE = 'YES'` y el mismo `COLUMN_TYPE`, `CHARACTER_SET_NAME` y `COLLATION_NAME` que antes, y
+      `SELECT COUNT(*) FROM usuario WHERE contrasena IS NULL` = solo las invitaciones pendientes (0 justo tras migrar).
+      El código anterior funciona sobre este esquema; volver a NOT NULL exige antes dar contraseña a las invitaciones
+      pendientes o borrarlas. El enlace de los correos usa `app.frontend.base-url` (el mismo que restablecer
+      contraseña; pendiente conocido del dominio único). Prueba manual en la escuela de pruebas con un email ficticio
+      propio: invitar desde «Profesores», que llegue el correo con la marca de esa escuela, crear la contraseña con el
+      enlace (entra en esa escuela) y que el enlace ya no sirva una segunda vez.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

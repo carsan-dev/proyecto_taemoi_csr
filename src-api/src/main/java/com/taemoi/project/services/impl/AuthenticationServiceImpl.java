@@ -143,6 +143,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		}
 	}
 
+	@Override
+	public JwtAuthenticationResponse iniciarSesionTrasInvitacion(Usuario user) {
+		Long organizacionId = membresiaService.elegirOrganizacionParaLogin(user).orElse(null);
+		if (organizacionId == null) {
+			throw new DisabledException(motivoRechazo(user));
+		}
+		loginAttemptService.loginSucceeded(EmailUtils.normalizeEmail(user.getEmail()));
+		membresiaService.registrarUltimaOrganizacion(user, organizacionId);
+		return new JwtAuthenticationResponse(jwtService.generateToken(user, DURACION_SESION_MILLIS, organizacionId));
+	}
+
 	/** Motivo del rechazo cuando ninguna escuela abre sesión: SIN_ESCUELA, ROL_SIN_ACCESO o SIN_ALUMNOS_ACTIVOS. */
 	private String motivoRechazo(Usuario user) {
 		if (membresiaService.organizacionesConMembresiaActiva(user.getId()).isEmpty()) {

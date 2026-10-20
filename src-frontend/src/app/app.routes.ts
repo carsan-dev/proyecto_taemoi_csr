@@ -185,6 +185,12 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
   },
   {
+    // Enlace del correo de invitación (pieza E8-6): pública, como restablecer la contraseña.
+    path: 'crear-contrasena',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/crear-contrasena/crear-contrasena.component').then(m => m.CrearContrasenaComponent)
+  },
+  {
     path: 'registro-confirmar',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
@@ -424,7 +430,7 @@ export const routes: Routes = [
     canActivate: [profesorGuard],
   },
   {
-    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Guard propio (solo profesor sin gestión: el servidor deniega /api/profesor/** a ADMIN y MANAGER), sin catálogo.
+    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Guard propio (capacidad MIS_GRUPOS, E8-5: con grupos asignados), sin catálogo.
     path: 'mis-grupos',
     data: { seo: SEO_ROUTES.noIndex },
     loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.response.OrganizacionUsuarioDTO;
@@ -30,6 +31,9 @@ import com.taemoi.project.services.MembresiaService;
 
 @Service
 public class MembresiaServiceImpl implements MembresiaService {
+
+	/** Pieza E8-3 (D8-9, decisión 221): mismo mensaje que la API de miembros. */
+	static final String SIN_PROPIETARIO = "La escuela se quedaría sin propietario.";
 
 	private final MembresiaRepository membresias;
 	private final OrganizacionRepository organizaciones;
@@ -125,8 +129,16 @@ public class MembresiaServiceImpl implements MembresiaService {
 		return resultado;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>Pieza E8-3 (D8-9, D8-19, decisión 221): bloquea la fila de la cuenta y, después, las filas PROPIETARIO activas
+	 * de la escuela antes de leer sus membresías ({@code READ_COMMITTED}, el mismo orden que
+	 * {@code GestionMiembrosService}); si el conjunto pedido desactiva la última PROPIETARIO activa, 409
+	 * {@link #SIN_PROPIETARIO} sin cambiar nada. Una escuela que ya no tiene propietario activo no se bloquea por esto.
+	 */
 	@Override
-	@Transactional
+	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public Set<Roles> reemplazarAutoridades(Long usuarioId, Long organizacionId, Set<Roles> autoridades) {
 		Set<Roles> deseadas = autoridades == null || autoridades.isEmpty()
 				? EnumSet.noneOf(Roles.class)
@@ -135,6 +147,12 @@ public class MembresiaServiceImpl implements MembresiaService {
 			if (!RolMembresia.asignableDesdeApiDeRoles(autoridad)) {
 				throw new IllegalArgumentException("El rol " + autoridad + " no se asigna desde la gestión de roles.");
 			}
+		}
+		usuarios.bloquearPorId(usuarioId);
+		List<Membresia> propietarios = membresias.bloquearPropietariosActivos(organizacionId);
+		if (!deseadas.contains(Roles.ROLE_ADMIN) && propietarios != null && propietarios.size() <= 1
+				&& propietarios.stream().anyMatch(p -> Objects.equals(p.getUsuarioId(), usuarioId))) {
+			throw new IllegalStateException(SIN_PROPIETARIO);
 		}
 		List<Membresia> actuales = new ArrayList<>(
 				membresias.findByUsuarioIdAndOrganizacionId(usuarioId, organizacionId));

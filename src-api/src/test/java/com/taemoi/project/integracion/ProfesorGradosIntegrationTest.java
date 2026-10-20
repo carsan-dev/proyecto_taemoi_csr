@@ -523,7 +523,9 @@ class ProfesorGradosIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void gestionNoUsaLasRutasDelProfesor_403() throws Exception {
 		long a = alumno("E73NOGESTION", e.gA, e.sA, gAmarillo, true);
-		for (String token : List.of(tGestor, tPropietario, tGestorProf)) {
+		// P y G sin PROFESOR. ADMINISTRADOR + PROFESOR usa estas rutas con sus grupos (E8-1, decisión 217): ver
+		// MisGruposGestionIntegrationTest.
+		for (String token : List.of(tGestor, tPropietario)) {
 			assertEquals(403, estado(pase(a, "TAEKWONDO", "pase-examen", null), token));
 			assertEquals(403, estado(pase(a, "TAEKWONDO", "pase-recompensa", null), token));
 			assertEquals(403, estado(put(base(a, "TAEKWONDO") + "/apto").contentType(MediaType.APPLICATION_JSON)
