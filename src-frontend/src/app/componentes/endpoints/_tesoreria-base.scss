@@ -156,6 +156,13 @@
   color: #822727;
 }
 
+// Pieza 6c-9 (D6c-12): cargo pagado cuyo cobro se devolvió.
+.estado-chip.devuelto {
+  background: #e2ebf8;
+  color: #1e3a5f;
+  margin-left: 0.25rem;
+}
+
 .sin-resultados {
   padding: 2rem 1rem;
   text-align: center;

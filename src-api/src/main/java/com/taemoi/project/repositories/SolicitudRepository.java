@@ -44,4 +44,44 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long>, Jpa
 
 	/** Puerto de {@code @acceso.solicitudEnSede}: la solicitud (de la escuela activa) es de una de esas sedes. */
 	boolean existsByIdAndSedeIdIn(Long id, Collection<Long> sedes);
+
+	/**
+	 * Pieza 6c-5: el cargo es el de un encargo en curso (PEDIDO, ENCARGADO o RECIBIDO). Lectura sin bloqueo: quien la usa
+	 * ya tiene el cargo bloqueado y no bloquea una solicitud después de un cargo (orden solicitud → cargo).
+	 */
+	@Query("SELECT COUNT(s) > 0 FROM Solicitud s WHERE s.productoAlumnoId = :cargoId "
+			+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+			+ "AND s.estado IN (com.taemoi.project.entities.EstadoSolicitud.PEDIDO, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.ENCARGADO, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.RECIBIDO)")
+	boolean existeEncargoEnCursoDeCargo(@Param("cargoId") Long cargoId);
+
+	/**
+	 * Pieza 6c-5: el cargo es el de un encargo caído (RETIRADA o RECHAZADO): su cargo cancelado no se reactiva. Lectura
+	 * sin bloqueo, como {@link #existeEncargoEnCursoDeCargo}.
+	 */
+	@Query("SELECT COUNT(s) > 0 FROM Solicitud s WHERE s.productoAlumnoId = :cargoId "
+			+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO "
+			+ "AND s.estado IN (com.taemoi.project.entities.EstadoSolicitud.RETIRADA, "
+			+ "com.taemoi.project.entities.EstadoSolicitud.RECHAZADO)")
+	boolean existeEncargoCaidoDeCargo(@Param("cargoId") Long cargoId);
+
+	/**
+	 * Pieza 6c-6: el cargo es el de un encargo con la devolución pendiente (195). Lectura sin bloqueo, como
+	 * {@link #existeEncargoEnCursoDeCargo}.
+	 */
+	@Query("SELECT COUNT(s) > 0 FROM Solicitud s WHERE s.productoAlumnoId = :cargoId "
+			+ "AND s.tipo = com.taemoi.project.entities.TipoSolicitud.ENCARGO AND s.devolucionPendiente = TRUE")
+	boolean existeDevolucionPendienteDeCargo(@Param("cargoId") Long cargoId);
+
+	/**
+	 * Pieza 6c-6: se anuló la devolución de un encargo (la entrega del profesor o el movimiento de la sede): el encargo
+	 * vuelve a tener la devolución pendiente. Sin cargar entidades; sube la versión como lo haría Hibernate.
+	 *
+	 * @return cuántos encargos vuelven a la devolución pendiente
+	 */
+	@org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = false)
+	@Query("UPDATE Solicitud s SET s.devolucionPendiente = TRUE, s.movimientoDevolucionId = NULL, "
+			+ "s.version = s.version + 1 WHERE s.movimientoDevolucionId IN :movimientoIds")
+	int devolucionAnulada(@Param("movimientoIds") Collection<Long> movimientoIds);
 }

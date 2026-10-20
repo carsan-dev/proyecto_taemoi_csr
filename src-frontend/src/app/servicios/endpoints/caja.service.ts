@@ -72,6 +72,7 @@ function entrega(e: EntregaCaja): EntregaCaja {
     anuladaEn: fecha(e.anuladaEn),
     cobroIds: e.cobroIds ?? [],
     autoentrega: !!e.autoentrega,
+    movimientosDeCobro: (e.movimientosDeCobro ?? []).map((m) => ({ ...m, importe: numero(m.importe) })),
   };
 }
 

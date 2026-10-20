@@ -69,6 +69,21 @@ export interface EntregaCaja {
   anuladaEn: string | null;
   motivoAnulacion: string | null;
   autoentrega: boolean;
+  /**
+   * 6c-6: los demás movimientos de la entrega enlazados a un cobro (el ERROR +importe de un cobro deshecho ya entregado,
+   * decisión 193, y la DEVOLUCION de la devolución del profesor, D6c-10), para que lo declarado cuadre a la vista. La API
+   * solo lo manda si hay alguno; el servicio lo deja en `[]`.
+   */
+  movimientosDeCobro?: MovimientoDeEntrega[];
+}
+
+/** CajaDTOs.MovimientoDeEntrega (importe con signo). */
+export interface MovimientoDeEntrega {
+  id: number;
+  tipo: TipoMovimientoCaja;
+  importe: number;
+  cobroId: number | null;
+  estado: EstadoMovimientoCaja;
 }
 
 /** CajaDTOs.MovimientoCaja (importe con signo: positivo entra en caja, negativo sale). */
@@ -151,4 +166,47 @@ export interface AlumnoDeMisGrupos {
   nombre: string | null;
   apellidos: string | null;
   grupos: string[];
+  /** 6c-8 (D6c-9): sedes distintas de sus grupos en los que está el alumno; no viene si no hay ninguna. */
+  sedes?: SedeMiCaja[];
+}
+
+/** CajaDTOs.SedeDeGrupo: una sede de los grupos del profesor en los que está el alumno. */
+export interface SedeMiCaja {
+  id: number;
+  nombre: string;
+}
+
+/**
+ * CajaDTOs.CobroEntregadoReciente (6c-4, D6c-14): cobro suyo ya entregado a la sede en los últimos 30 días.
+ * `solicitudPendienteId`: su solicitud de deshacer PENDIENTE; `noSePuedePedir`: por qué ya no se puede pedir.
+ */
+export interface CobroEntregadoReciente {
+  cobroId: number;
+  cargoId: number | null;
+  alumnoId: number | null;
+  alumnoNombre: string | null;
+  alumnoApellidos: string | null;
+  concepto: string;
+  importe: number;
+  fechaCobro: string | null;
+  entregaId: number;
+  fechaEntrega: string | null;
+  sedeId: number | null;
+  sedeNombre: string | null;
+  venta: boolean;
+  solicitudPendienteId: number | null;
+  noSePuedePedir: string | null;
+}
+
+/** SolicitudRequests.PedirEncargo: `sedeId` solo si el alumno está con él en grupos de varias sedes (D6c-9). */
+export interface PedirEncargo {
+  productoId: number;
+  nota: string;
+  sedeId?: number;
+}
+
+/** SolicitudRequests.PedirDeshacer (decisión 193). */
+export interface PedirDeshacer {
+  motivo: string;
+  motivoDeshacer: MotivoDeshacerCobro;
 }

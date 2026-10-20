@@ -91,6 +91,10 @@
                   <div class="d-flex justify-content-center">
                     <span class="chip-cancelado">cancelado</span>
                   </div>
+                  } @else if (productoAlumno.devuelto) {
+                  <div class="d-flex justify-content-center">
+                    <span class="chip-devuelto" title="Pagado y devuelto: su cobro tiene una devolución registrada">devuelto</span>
+                  </div>
                   } @else {
                   <div class="form-check d-flex justify-content-center">
                     <input type="checkbox" class="form-check-input"

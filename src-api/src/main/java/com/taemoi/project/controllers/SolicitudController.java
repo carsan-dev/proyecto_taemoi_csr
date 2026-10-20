@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.SolicitudRequests;
 import com.taemoi.project.dtos.response.SolicitudDTOs;
+import com.taemoi.project.services.EncargoService;
 import com.taemoi.project.services.SolicitudService;
 
 /**
@@ -25,6 +26,8 @@ import com.taemoi.project.services.SolicitudService;
  * {@code /api/solicitudes/**} y {@code @PreAuthorize}). El servicio filtra lo que ve cada uno, comprueba la sede del
  * recurso del responsable (403) y que solo retira quien pidió (403). El propietario no pide (400: lo hace directo).</li>
  * <li>Aceptar (6c-3) y denegar: solo el propietario.</li>
+ * <li>Pieza 6c-5, encargos: marcar encargado o recibido y rechazar (con motivo). Propietario y gestor; el responsable,
+ * solo los de sus sedes ({@code @acceso.solicitudEnSede}; el servicio lo vuelve a exigir).</li>
  * </ul>
  * Fuera de la lista blanca de la sesión solo-profesor: las rutas del profesor van bajo {@code /api/caja/profesor/**}.
  * Errores con el formato de {@code GlobalExceptionHandler}: 400, 403, 404 y 409.
@@ -36,9 +39,11 @@ public class SolicitudController {
 	private static final String GESTION = "hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE')";
 
 	private final SolicitudService solicitudes;
+	private final EncargoService encargos;
 
-	public SolicitudController(SolicitudService solicitudes) {
+	public SolicitudController(SolicitudService solicitudes, EncargoService encargos) {
 		this.solicitudes = solicitudes;
+		this.encargos = encargos;
 	}
 
 	/** Bandeja por segmento: {@code PENDIENTES}, {@code ENCARGOS} o {@code RESUELTAS}. */
@@ -82,5 +87,40 @@ public class SolicitudController {
 	public ResponseEntity<SolicitudDTOs.Solicitud> denegar(@PathVariable Long id,
 			@RequestBody(required = false) SolicitudRequests.Denegar peticion) {
 		return ResponseEntity.ok(solicitudes.denegar(id, peticion == null ? null : peticion.respuesta()));
+	}
+
+	// ------------------------------------------------------------------ encargos (6c-5)
+
+	@PostMapping("/{id}/encargado")
+	@PreAuthorize("@acceso.solicitudEnSede(#id)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> marcarEncargado(@PathVariable Long id) {
+		return ResponseEntity.ok(encargos.marcarEncargado(id));
+	}
+
+	@PostMapping("/{id}/recibido")
+	@PreAuthorize("@acceso.solicitudEnSede(#id)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> marcarRecibido(@PathVariable Long id) {
+		return ResponseEntity.ok(encargos.marcarRecibido(id));
+	}
+
+	@PostMapping("/{id}/rechazar")
+	@PreAuthorize("@acceso.solicitudEnSede(#id)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> rechazar(@PathVariable Long id,
+			@RequestBody(required = false) SolicitudRequests.Rechazar peticion) {
+		return ResponseEntity.ok(encargos.rechazar(id, peticion == null ? null : peticion.motivo()));
+	}
+
+	// ------------------------------------------------------------------ devoluciones (6c-6)
+
+	/**
+	 * Decisión 195: la sede registra la devolución de un encargo caído con el dinero ya en su caja. Propietario y
+	 * gestor; el responsable, si la solicitud es de sus sedes ({@code @acceso.solicitudEnSede}) y el cobro también (lo
+	 * exige el servicio: la devolución sale en la caja del cobro).
+	 */
+	@PostMapping("/{id}/devolucion")
+	@PreAuthorize("@acceso.solicitudEnSede(#id)")
+	public ResponseEntity<SolicitudDTOs.Solicitud> registrarDevolucion(@PathVariable Long id,
+			@RequestBody(required = false) SolicitudRequests.Devolucion peticion) {
+		return ResponseEntity.ok(encargos.registrarDevolucionEncargo(id, peticion == null ? null : peticion.nota()));
 	}
 }

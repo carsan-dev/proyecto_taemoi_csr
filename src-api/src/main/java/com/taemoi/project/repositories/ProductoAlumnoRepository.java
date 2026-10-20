@@ -419,6 +419,51 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			@Param("todasLasSedes") Boolean todasLasSedes,
 			@Param("sedes") Collection<Long> sedes);
 
+	/**
+	 * Pieza 6c-6 (D6c-12): Σ de lo devuelto (−importe de la DEVOLUCION ACTIVA enlazada a su cobro ACTIVO) de los cargos
+	 * que cuenta {@link #sumarImporteMovimientosTesoreria} con los mismos filtros (sin el de pagado). Aditivo: los
+	 * totales de siempre no cambian (el cargo devuelto sigue sumando como pagado, decisión 153).
+	 */
+	@Query("SELECT COALESCE(SUM(-m.importe), 0) " +
+			"FROM ProductoAlumno pa " +
+			"JOIN Cobro c ON c.productoAlumnoId = pa.id AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO " +
+			"JOIN MovimientoCaja m ON m.cobroId = c.id " +
+			"AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION " +
+			"AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO " +
+			"LEFT JOIN pa.alumnoDeporte ad " +
+			"LEFT JOIN ad.disciplina adDisc " +
+			"LEFT JOIN ad.alumno adAlumno " +
+			"LEFT JOIN pa.alumno a " +
+			"LEFT JOIN pa.producto p " +
+			"WHERE (:deporte IS NULL OR adDisc.codigo = :deporte OR UPPER(pa.concepto) LIKE CONCAT('%', :deporteNombre, '%')) " +
+			"AND (:ano IS NULL OR " +
+			"FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :ano OR " +
+			"(:anoTexto IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo IS NOT NULL AND (:legado = false OR p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING')))) " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :anoTexto, '%'))))) " +
+			"AND (:mes IS NULL OR " +
+			"FUNCTION('MONTH', COALESCE(pa.fechaAsignacion, pa.fechaPago)) = :mes OR " +
+			"(:mesNombre IS NOT NULL AND (" +
+			"((UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo IS NOT NULL AND (:legado = false OR p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING')))) " +
+			"AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%')) OR " +
+			"(COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NULL AND UPPER(pa.concepto) LIKE CONCAT('%', :mesNombre, '%'))))) " +
+			"AND (:soloActivos = false OR COALESCE(a.activo, false) = true OR COALESCE(adAlumno.activo, false) = true) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) AND pa.canceladoEn IS NULL")
+	java.math.BigDecimal sumarImporteDevueltoTesoreria(
+			@Param("deporte") String deporte,
+			@Param("deporteNombre") String deporteNombre,
+			@Param("soloActivos") Boolean soloActivos,
+			@Param("ano") Integer ano,
+			@Param("anoTexto") String anoTexto,
+			@Param("mes") Integer mes,
+			@Param("mesNombre") String mesNombre,
+			@Param("legado") Boolean legado,
+			@Param("todasLasSedes") Boolean todasLasSedes,
+			@Param("sedes") Collection<Long> sedes);
+
 	@Query("SELECT COUNT(DISTINCT COALESCE(a.id, adAlumno.id)) " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumno a " +

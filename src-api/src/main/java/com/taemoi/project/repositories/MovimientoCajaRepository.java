@@ -40,10 +40,38 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
 	List<MovimientoCaja> deSedeEnPeriodo(@Param("sedeId") Long sedeId, @Param("desde") LocalDateTime desde,
 			@Param("hasta") LocalDateTime hasta);
 
-	/** Σ de los movimientos ACTIVOS de la sede (todos los tipos, cualquier fecha): parte del saldo de caja. */
+	/**
+	 * Σ de los movimientos ACTIVOS de la sede (todos los tipos, cualquier fecha): parte del saldo de caja. Pieza 6c-6
+	 * (D6c-13): solo los EFECTIVO (una devolución de un cobro por transferencia o Bizum no sale de la caja física). Las
+	 * filas anteriores a la 6c-6 son todas EFECTIVO (DEFAULT de V31_8): el saldo de siempre no cambia.
+	 */
 	@Query("SELECT COALESCE(SUM(m.importe), 0) FROM MovimientoCaja m WHERE m.sedeId = :sedeId "
-			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO")
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO "
+			+ "AND m.metodo = com.taemoi.project.entities.MetodoPago.EFECTIVO")
 	BigDecimal sumarActivos(@Param("sedeId") Long sedeId);
+
+	// ------------------------------------------------------------------ pieza 6c-6: devoluciones enlazadas (153)
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la DEVOLUCION ACTIVA del cobro, si la tiene (como mucho una: clave única de V31_8).
+	 * Solo en transacción; quien la usa la relee.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT m FROM MovimientoCaja m WHERE m.cobroId = :cobroId "
+			+ "AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO")
+	Optional<MovimientoCaja> bloquearDevolucionActivaDeCobro(@Param("cobroId") Long cobroId);
+
+	/**
+	 * De esos cargos, los devueltos (D6c-12): su cobro ACTIVO tiene una DEVOLUCION ACTIVA enlazada. Filas
+	 * {@code [cargoId, Σ −importe]}.
+	 */
+	@Query("SELECT c.productoAlumnoId, SUM(-m.importe) FROM MovimientoCaja m, Cobro c WHERE m.cobroId = c.id "
+			+ "AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO "
+			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO AND c.productoAlumnoId IN :cargoIds "
+			+ "GROUP BY c.productoAlumnoId")
+	List<Object[]> devueltoDeCargos(@Param("cargoIds") Collection<Long> cargoIds);
 
 	/** Σ de los SOBRANTE y FALTANTE ACTIVOS de la sede con fecha en [desde, hasta). */
 	@Query("SELECT COALESCE(SUM(m.importe), 0) FROM MovimientoCaja m WHERE m.sedeId = :sedeId "

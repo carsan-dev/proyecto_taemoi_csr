@@ -93,6 +93,28 @@ public interface ProductoAlumnoService {
 	 */
 	void aplicarEfectosTrasSolicitud(EjecucionSolicitud ejecucion);
 
+	/**
+	 * Pieza 6c-5 (decisión 192): productos del catálogo de la escuela que el profesor puede encargar, por concepto. La
+	 * regla fija de la venta del profesor (tipo OTRO, sin grado, sin efectos), aunque la gestión no los haya marcado
+	 * para «Mi caja».
+	 */
+	List<com.taemoi.project.entities.Producto> productosEncargables();
+
+	/**
+	 * Pieza 6c-5, DENTRO de la transacción del encargo: crea el cargo PENDIENTE del encargo por la vía de asignar un
+	 * producto (precio y concepto del catálogo, cantidad 1, la nota en {@code notas}, sin {@code vendido_por}: no es su
+	 * venta). Alumno o producto que no existe en la escuela → 404; producto no encargable → 400.
+	 */
+	com.taemoi.project.entities.ProductoAlumno crearCargoDeEncargo(Long alumnoId, Long productoId, String nota);
+
+	/**
+	 * Pieza 6c-5, DENTRO de la transacción que hace caer el encargo (con la solicitud ya bloqueada): bloquea el cargo y,
+	 * si está pendiente, lo cancela por {@code usuarioId} con {@code motivo} (registro {@code CARGO_CANCELADO} con la
+	 * solicitud). Pagado (o con cobro ACTIVO): no lo toca y devuelve {@code true} (devolución pendiente). Ya cancelado o
+	 * borrado: nada, {@code false}.
+	 */
+	boolean caerCargoDeEncargo(Long cargoId, Long usuarioId, String motivo, long solicitudId, String endpoint);
+
 	ProductoAlumnoDTO reservarPlaza(Long alumnoId, String concepto, boolean pagado, boolean forzar);
 
 	/**

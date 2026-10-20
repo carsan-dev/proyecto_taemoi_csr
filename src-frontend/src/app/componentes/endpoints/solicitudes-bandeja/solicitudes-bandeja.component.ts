@@ -1,16 +1,25 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { EstadoSolicitud, SegmentoSolicitudes, Solicitud, TipoSolicitud } from '../../../interfaces/solicitud';
+import { EstadoCobroCargo, EstadoSolicitud, SegmentoSolicitudes, Solicitud, TipoSolicitud } from '../../../interfaces/solicitud';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 import { SolicitudesContadorService } from '../../../servicios/endpoints/solicitudes-contador.service';
 import { SolicitudesService } from '../../../servicios/endpoints/solicitudes.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
-import { euros } from '../../generales/pedir-al-propietario/pedir-al-propietario';
+import { escaparHtml, euros } from '../../generales/pedir-al-propietario/pedir-al-propietario';
+import {
+  ETIQUETA_COBRO,
+  MAX_MOTIVO,
+  PASOS_ENCARGO,
+  encargoCaido,
+  estadoCobroEncargo,
+  indicePasoEncargo,
+} from '../mi-caja/mi-caja-pedidos';
 
 interface EstadoSegmento {
   lista: Solicitud[] | null;
@@ -69,10 +78,32 @@ const ACEPTAR: Record<Exclude<TipoSolicitud, 'ENCARGO'>, { verbo: string; titulo
 
 const SEGMENTOS: SegmentoSolicitudes[] = ['PENDIENTES', 'ENCARGOS', 'RESUELTAS'];
 
+/** 403 al registrar la devolución: el cobro es de otra sede (nota F2 de la 6c-5; la caja es la del cobro). */
+export const DEVOLUCION_OTRA_SEDE =
+  'El cobro de este encargo es de otra sede: la devolución la registra la gestión o el propietario.';
+
+/** Avanzar un encargo: título, qué pasa, verbo y aviso, por el estado al que pasa (§6.2). */
+const AVANCE: Record<'ENCARGADO' | 'RECIBIDO', { titulo: string; efecto: string; verbo: string; hecho: string }> = {
+  ENCARGADO: {
+    titulo: 'Marcar como encargado',
+    efecto: 'Ya se ha pedido al proveedor.',
+    verbo: 'Marcar encargado',
+    hecho: 'Encargo marcado como encargado',
+  },
+  RECIBIDO: {
+    titulo: 'Marcar como recibido',
+    efecto: 'Ha llegado y se le da al profesor, que lo marcará entregado al dárselo al alumno.',
+    verbo: 'Marcar recibido',
+    hecho: 'Encargo marcado como recibido',
+  },
+};
+
 /**
  * Bandeja de solicitudes al propietario (pieza 6c-7, fase3-6c-solicitudes.md §5.1): pendientes, encargos en curso y
  * resueltas. El propietario acepta (la API ejecuta y puede cerrarla como NO_APLICABLE) o deniega con respuesta; quien
- * pidió retira la suya mientras está pendiente. Los encargos solo se listan hasta la 6c-5.
+ * pidió retira la suya mientras está pendiente. Pieza 6c-9: quien atiende los encargos (propietario, gestión y
+ * responsable de la sede) los marca encargados o recibidos, los rechaza con motivo y registra la devolución de los que
+ * cayeron pagados con el dinero ya en la sede (195).
  */
 @Component({
   selector: 'app-solicitudes-bandeja',
@@ -88,6 +119,7 @@ export class SolicitudesBandejaComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly segmentos = SEGMENTOS;
+  readonly pasosEncargo = PASOS_ENCARGO;
   segmento: SegmentoSolicitudes = 'PENDIENTES';
   esPropietario = false;
 
@@ -234,6 +266,50 @@ export class SolicitudesBandejaComponent implements OnInit {
     return this.enCurso.has(s.id);
   }
 
+  // ------------------------------------------------------------------ encargos (6c-9)
+
+  esEncargo(s: Solicitud): boolean {
+    return s.tipo === 'ENCARGO';
+  }
+
+  encargoCaido(s: Solicitud): boolean {
+    return encargoCaido(s);
+  }
+
+  indicePaso(s: Solicitud): number {
+    return indicePasoEncargo(s);
+  }
+
+  estadoCobro(s: Solicitud): EstadoCobroCargo | null {
+    return estadoCobroEncargo(s);
+  }
+
+  etiquetaCobro(estado: EstadoCobroCargo): string {
+    return ETIQUETA_COBRO[estado];
+  }
+
+  puedeMarcarEncargado(s: Solicitud): boolean {
+    return this.esEncargo(s) && s.estado === 'PEDIDO';
+  }
+
+  puedeMarcarRecibido(s: Solicitud): boolean {
+    return this.esEncargo(s) && s.estado === 'ENCARGADO';
+  }
+
+  puedeRechazar(s: Solicitud): boolean {
+    return this.esEncargo(s) && (s.estado === 'PEDIDO' || s.estado === 'ENCARGADO' || s.estado === 'RECIBIDO');
+  }
+
+  /** Cayó pagado y el dinero ya está en la sede: la devolución la registra quien atiende (195). */
+  puedeRegistrarDevolucion(s: Solicitud): boolean {
+    return this.esEncargo(s) && s.devolucionPendiente && s.devolucionEnSede === true;
+  }
+
+  /** Cayó pagado y el profesor aún lleva el dinero: la registra él desde Mi caja. */
+  devolucionDelProfesor(s: Solicitud): boolean {
+    return this.esEncargo(s) && s.devolucionPendiente && s.devolucionEnSede === false;
+  }
+
   // ------------------------------------------------------------------ acciones
 
   async aceptar(s: Solicitud): Promise<void> {
@@ -304,6 +380,128 @@ export class SolicitudesBandejaComponent implements OnInit {
       await firstValueFrom(this.solicitudes.retirar(s.id));
       showSuccessToast('Solicitud retirada');
     }, 'No se ha podido retirar la solicitud.');
+  }
+
+  marcarEncargado(s: Solicitud): Promise<void> {
+    return this.avanzar(s, 'ENCARGADO');
+  }
+
+  marcarRecibido(s: Solicitud): Promise<void> {
+    return this.avanzar(s, 'RECIBIDO');
+  }
+
+  private async avanzar(s: Solicitud, destino: 'ENCARGADO' | 'RECIBIDO'): Promise<void> {
+    const puede = destino === 'ENCARGADO' ? this.puedeMarcarEncargado(s) : this.puedeMarcarRecibido(s);
+    if (!puede || this.ocupada(s)) {
+      return;
+    }
+    const textos = AVANCE[destino];
+    const confirmacion = await Swal.fire({
+      title: textos.titulo,
+      text: `${this.descripcion(s)}. ${textos.efecto}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: textos.verbo,
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#284747',
+    });
+    if (!confirmacion.isConfirmed) {
+      return;
+    }
+    await this.ejecutar(s, async () => {
+      await firstValueFrom(
+        destino === 'ENCARGADO' ? this.solicitudes.marcarEncargado(s.id) : this.solicitudes.marcarRecibido(s.id)
+      );
+      showSuccessToast(textos.hecho);
+    }, 'No se ha podido actualizar el encargo.');
+  }
+
+  /** Rechazar con motivo obligatorio (D6c-1), con el diálogo de «Denegar…». Cae el encargo (§6.3). */
+  async rechazar(s: Solicitud): Promise<void> {
+    if (!this.puedeRechazar(s) || this.ocupada(s)) {
+      return;
+    }
+    const efecto = this.estadoCobro(s) === 'COBRADO'
+      ? 'El cargo ya está cobrado: quedará una devolución pendiente.'
+      : 'El cargo del alumno se cancelará.';
+    const resultado = await Swal.fire({
+      title: 'Rechazar el encargo',
+      text: `${this.descripcion(s)}. ${efecto}`,
+      input: 'textarea',
+      inputLabel: 'Motivo',
+      inputPlaceholder: 'Por qué no se puede atender; el profesor lo verá',
+      inputAttributes: { maxlength: String(MAX_MOTIVO), 'aria-label': 'Motivo del rechazo' },
+      inputValidator: (valor: string) => ((valor ?? '').trim() ? null : 'Escribe el motivo para el profesor'),
+      showCancelButton: true,
+      confirmButtonText: 'Rechazar',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#c53030',
+    });
+    if (!resultado.isConfirmed) {
+      return;
+    }
+    const motivo = String(resultado.value ?? '').trim();
+    await this.ejecutar(s, async () => {
+      await firstValueFrom(this.solicitudes.rechazar(s.id, motivo));
+      showSuccessToast('Encargo rechazado');
+    }, 'No se ha podido rechazar el encargo.');
+  }
+
+  /**
+   * «Registrar devolución» (195, D6c-11): confirma alumno, concepto e importe (el cobro entero; no se pide) y una nota
+   * opcional. Un 403 es la nota F2 de la 6c-5: el cobro es de otra sede, así que se explica quién la registra.
+   */
+  async registrarDevolucion(s: Solicitud): Promise<void> {
+    if (!this.puedeRegistrarDevolucion(s) || this.ocupada(s)) {
+      return;
+    }
+    const datos: Array<[string, string]> = [
+      ['Alumno', this.sobreQue(s)],
+      ['Concepto', s.concepto?.trim() ?? ''],
+      ['Importe', this.euros(s.importe)],
+    ];
+    const filas = datos
+      .filter(([, valor]) => valor)
+      .map(([etiqueta, valor]) => `<dt>${escaparHtml(etiqueta)}</dt><dd>${escaparHtml(valor)}</dd>`)
+      .join('');
+    const resultado = await Swal.fire({
+      title: 'Registrar devolución',
+      html:
+        `<dl class="solicitud-datos">${filas}</dl>` +
+        '<p class="solicitud-nota"><i class="bi bi-info-circle" aria-hidden="true"></i> ' +
+        'Se devuelve el cobro entero y sale de la caja de la sede.</p>',
+      input: 'textarea',
+      inputLabel: 'Nota (opcional)',
+      inputPlaceholder: 'A quién y cómo se ha devuelto',
+      inputAttributes: { maxlength: String(MAX_MOTIVO), 'aria-label': 'Nota de la devolución' },
+      showCancelButton: true,
+      confirmButtonText: 'Registrar devolución',
+      cancelButtonText: 'Volver',
+      confirmButtonColor: '#284747',
+      customClass: { popup: 'swal-solicitud' },
+    });
+    if (!resultado.isConfirmed) {
+      return;
+    }
+    const nota = String(resultado.value ?? '').trim() || null;
+    await this.ejecutar(s, async () => {
+      try {
+        await firstValueFrom(this.solicitudes.registrarDevolucion(s.id, nota));
+      } catch (error) {
+        if (error instanceof HttpErrorResponse && error.status === 403) {
+          await Swal.fire({
+            icon: 'info',
+            title: 'No puedes registrarla',
+            text: DEVOLUCION_OTRA_SEDE,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#284747',
+          });
+          return;
+        }
+        throw error;
+      }
+      showSuccessToast('Devolución registrada');
+    }, 'No se ha podido registrar la devolución.');
   }
 
   private async ejecutar(s: Solicitud, accion: () => Promise<void>, porDefecto: string): Promise<void> {

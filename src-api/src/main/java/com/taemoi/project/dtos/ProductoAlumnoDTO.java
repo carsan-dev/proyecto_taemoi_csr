@@ -53,6 +53,23 @@ public class ProductoAlumnoDTO {
 	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
 	private String canceladoPorNombre;
 
+	/**
+	 * Pieza 6c-9 (decisión 153), aditivo y solo de salida: el cargo está devuelto (su cobro ACTIVO tiene una DEVOLUCION
+	 * ACTIVA enlazada). Sigue {@code pagado}. Solo sale en la ficha y solo si es cierto ({@code NON_NULL}): la respuesta
+	 * de un cargo de siempre no cambia. Se ignora si llega en una petición.
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private Boolean devuelto;
+
+	public Boolean getDevuelto() {
+		return devuelto;
+	}
+
+	public void setDevuelto(Boolean devuelto) {
+		this.devuelto = devuelto;
+	}
+
 	public String getCanceladoPorNombre() {
 		return canceladoPorNombre;
 	}

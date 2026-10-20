@@ -140,6 +140,12 @@
 
 .resumen-card.pagados {
   border-left: 5px solid #2f855a;
+
+  // Pieza 6c-9 (D6c-12): lo devuelto va aparte; el importe cobrado lo sigue incluyendo.
+  .detalle-devuelto {
+    margin-top: 0.15rem;
+    color: #1e3a5f;
+  }
 }
 
 .resumen-card.total {

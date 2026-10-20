@@ -351,6 +351,32 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 				caja + "profesor_deshaceSuCobro_noElAjeno_niElEntregado");
 		m.put("POST /api/caja/profesor/alumnos/{alumnoId}/productos/{productoId}/cobrar",
 				caja + "profesor_noApuntaProductosConEfectos_niAAlumnosAjenos");
+		// Pieza 6c-5: encargos. Productos encargables (los de la escuela), sus solicitudes (el servicio filtra por su
+		// cuenta), pedir para un alumno de sus grupos (@acceso) y retirar o marcar entregado solo los suyos (servicio).
+		String encargos = "integracion.EncargosIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/caja/profesor/productos-encargables",
+					encargos + "productosEncargables_otroSinGradoAunqueNoEsteMarcado");
+			m.put(metodo + " /api/caja/profesor/solicitudes", encargos + "misSolicitudes_soloLasSuyas");
+		}
+		m.put("POST /api/caja/profesor/alumnos/{alumnoId}/encargos",
+				encargos + "pedirEncargo_soloElProfesorParaAlumnosDeSusGrupos");
+		m.put("POST /api/caja/profesor/solicitudes/{id}/retirar", encargos + "retirar_enPedido_cancelaElCargo");
+		m.put("POST /api/caja/profesor/solicitudes/{id}/entregado",
+				encargos + "entregado_soloElSolicitanteYEnRecibido_sinExigirCobro");
+		// Pieza 6c-6 (D6c-10): la devolución de su encargo caído si aún lleva el dinero (el servicio exige que la pidió
+		// él y que el cobro es suyo y sin entregar).
+		m.put("POST /api/caja/profesor/solicitudes/{id}/devolucion",
+				"integracion.DevolucionesIntegrationTest#devolucionDelProfesor_soloSiLlevaElDinero");
+		// Pieza 6c-4 (D6c-14, decisión 193): sus entregados recientes (el servicio filtra por su cuenta) y pedir deshacer
+		// un cobro suyo ya entregado (@acceso.cobroPropioDelProfesor; el servicio exige la entrega ACTIVA).
+		String deshacer = "integracion.PedirDeshacerIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/caja/profesor/cobros-entregados-recientes",
+					deshacer + "entregadosRecientes_30Dias_soloLosSuyos_conSuEstado");
+		}
+		m.put("POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer",
+				deshacer + "pedirDeshacer_cobroAjeno403_yAislamiento");
 		return Map.copyOf(m);
 	}
 

@@ -93,6 +93,9 @@
         <p class="titulo">Importe cobrado</p>
         <p class="valor">{{ resumen.importePagado | number:'1.2-2' }} EUR</p>
         <p class="detalle">{{ resumen.totalPagados }} cobros pagados</p>
+        @if (resumen.importeDevuelto) {
+          <p class="detalle detalle-devuelto">De ello, {{ resumen.importeDevuelto | number:'1.2-2' }} EUR devueltos</p>
+        }
       </article>
 
       <article class="resumen-card total">
@@ -196,6 +199,9 @@
                   <td>
                     @if (movimiento.pagado) {
                       <span class="estado-chip pagado">Pagado</span>
+                      @if (movimiento.devuelto) {
+                        <span class="estado-chip devuelto" title="Su cobro tiene una devolución registrada">Devuelto</span>
+                      }
                     } @else {
                       <span class="estado-chip pendiente">Pendiente</span>
                     }
@@ -230,7 +236,9 @@
                           <i class="bi bi-calendar-event"></i> Fecha
                         </button>
 
-                        @if (isAdmin) {
+                        @if (movimiento.devuelto) {
+                          <!-- 6c-9: un cobro devuelto no se revierte (153); no se ofrece. -->
+                        } @else if (isAdmin) {
                           <button
                             type="button"
                             class="btn-accion btn-revertir"

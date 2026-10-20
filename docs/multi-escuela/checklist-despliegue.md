@@ -129,6 +129,25 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       Las columnas son INSTANT y las FK se añaden sin reconstruir la tabla. Sin pantallas: Moiskimdo no ve nada nuevo
       hasta la 6c-7. El código anterior sigue funcionando sobre este esquema (no conoce la tabla; sus movimientos nuevos
       quedan EFECTIVO por el DEFAULT); si se vuelve atrás, las solicitudes ya pedidas se quedan sin pantalla.
+- [ ] Resto de la entrega 6c (6c-3 a 6c-9) **sin migración nueva**: V31_8 ya está en producción; atajo `desplegar`.
+      Los encargos (6c-5 y 6c-8) no salen sin la 6c-6 (ya incluida). Moiskimdo solo nota lo decidido: el aviso
+      completo de la 186 («El examen está pagado: haz la devolución o revierte el cobro antes»), la bandeja con su
+      contador y, si algún día hay devoluciones enlazadas, la marca «Devuelto» en tesorería y ficha (hoy no tiene
+      ninguna: el resumen de tesorería no enseña la línea de lo devuelto y sus totales no cambian).
+- [ ] Prueba manual de la 6c-9 tras desplegar, en Sierra Sur y con datos ficticios o un alumno de prueba (nunca
+      datos reales en capturas ni notas):
+      1. el profesor encarga un producto desde Mi caja («Pedidos»); en la bandeja de gestión («Encargos en curso»)
+         sale con su línea de estados y «Sin cobrar», y el contador de la cabecera sube;
+      2. «Marcar encargado» y «Marcar recibido» lo avanzan; el profesor lo ve en Mi caja y lo marca entregado;
+      3. otro encargo cobrado por el profesor y rechazado desde la bandeja con motivo: sale «Devolución pendiente: la
+         registra el profesor» (sin botón); el profesor la registra desde Mi caja y su cobro sale de «Llevas encima»;
+      4. otro encargo cobrado, **entregado a la sede** y retirado: en la bandeja, «Registrar devolución» (confirma
+         alumno, concepto e importe); tras registrarla, la tesorería marca la fila «Devuelto» y el resumen dice
+         «De ello, … EUR devueltos»; la ficha del alumno enseña «devuelto» en lugar de la casilla de pagado; la caja de
+         sede baja ese importe;
+      5. en la caja de sede, la entrega de la devolución del profesor (paso 3) dice «cuadra» con «Devolución −…» y,
+         si se aceptó un «deshacer cobro entregado» (tipo 2), su entrega enseña «Cobro deshecho +…»;
+      6. el contador vuelve a bajar tras cada acción, sin recargar la página.
 - [ ] Avisar a la gestión de Moiskimdo (cambio deliberado de la 6b-2c): borrar un cargo a mano pasa a ser solo del
       propietario y solo si nunca se cobró; la gestión y el responsable lo **cancelan** (con motivo). El botón
       «Borrar» de la ficha da 403 al gestor hasta que el frontend pinte «Cancelar».

@@ -115,7 +115,8 @@ class BloqueosCargoCobradoIntegrationTest extends MySqlIntegrationTest {
 
 			MvcResult r = peticion(quitar(inscripcion, e.aA), token);
 			assertEquals(409, r.getResponse().getStatus(), r.getResponse().getContentAsString());
-			assertEquals("El examen está pagado: revierte el cobro antes", mensaje(r));
+			// Pieza 6c-6 (D6c-15): el texto completo de la 186.
+			assertEquals("El examen está pagado: haz la devolución o revierte el cobro antes", mensaje(r));
 			assertEquals(CobroService.EXAMEN_PAGADO_REVIERTE_ANTES, mensaje(r));
 
 			assertTrue(pagado(cargo), "el cargo sigue y pagado");

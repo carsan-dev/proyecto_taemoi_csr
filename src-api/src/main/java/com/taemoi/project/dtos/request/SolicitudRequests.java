@@ -25,4 +25,33 @@ public final class SolicitudRequests {
 	/** Denegar (solo el propietario): {@code POST /api/solicitudes/{id}/denegar}; respuesta obligatoria (D6c-1). */
 	public record Denegar(String respuesta) {
 	}
+
+	/**
+	 * Pieza 6c-5: el profesor encarga un producto para un alumno de sus grupos,
+	 * {@code POST /api/caja/profesor/alumnos/{alumnoId}/encargos}. Nota obligatoria (la talla…), máximo 255
+	 * (va también a las notas del cargo).
+	 * {@code sedeId}, solo si el alumno está con él en grupos de varias sedes (D6c-9).
+	 */
+	public record PedirEncargo(Long productoId, String nota, Long sedeId) {
+	}
+
+	/** Pieza 6c-5: rechazar un encargo, {@code POST /api/solicitudes/{id}/rechazar}; motivo obligatorio (D6c-1). */
+	public record Rechazar(String motivo) {
+	}
+
+	/**
+	 * Pieza 6c-6: registrar la devolución de un encargo caído y pagado, {@code POST /api/solicitudes/{id}/devolucion}
+	 * (la sede) o {@code POST /api/caja/profesor/solicitudes/{id}/devolucion} (el profesor). Nota opcional, máximo 500
+	 * (va a la nota del movimiento, nunca al registro de acciones).
+	 */
+	public record Devolucion(String nota) {
+	}
+
+	/**
+	 * Pieza 6c-4 (decisión 193): el profesor pide deshacer un cobro suyo ya entregado a la sede,
+	 * {@code POST /api/caja/profesor/cobros/{cobroId}/pedir-deshacer}. Motivo obligatorio, máximo 500.
+	 * {@code motivoDeshacer}, como en el deshacer de siempre (A4): sin valor, {@code AUN_NO_PAGADO}.
+	 */
+	public record PedirDeshacer(String motivo, CajaRequests.MotivoDeshacer motivoDeshacer) {
+	}
 }

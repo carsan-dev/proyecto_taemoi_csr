@@ -96,6 +96,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	@Autowired
 	private SedeRepository sedeRepository;
 
+	/** Pieza 6c-6 (D6c-12): lo devuelto de los cargos (devoluciones enlazadas activas). */
+	@Autowired
+	private com.taemoi.project.repositories.MovimientoCajaRepository movimientoCajaRepository;
+
 	@Override
 	public TesoreriaResumenDTO obtenerResumen(Integer mes, Integer ano, String deporte, Boolean soloActivos,
 			Long sedeId) {
@@ -199,6 +203,18 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					importePendiente,
 					alumnosConPendientes);
 			resumen.setPorSede(porSedeDesdeConsultas(filtro, soloActivosNormalizado, anoTexto, mesNombre, sedes));
+			java.math.BigDecimal devuelto = productoAlumnoRepository.sumarImporteDevueltoTesoreria(
+					filtro.deporte,
+					filtro.deporteNombre,
+					soloActivosNormalizado,
+					filtro.ano,
+					anoTexto,
+					filtro.mes,
+					mesNombre,
+					legado(),
+					sedes.todas(),
+					sedes.parametro());
+			resumen.setImporteDevuelto(devuelto == null ? 0.0 : devuelto.doubleValue());
 			return resumen;
 		}
 
@@ -238,6 +254,9 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				importePendiente,
 				alumnosConPendientes);
 		resumen.setPorSede(porSedeDesdeMovimientos(movimientos, sedes));
+		resumen.setImporteDevuelto(devueltoDeCargos(movimientos.stream()
+				.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getId).toList()).values().stream()
+				.mapToDouble(java.math.BigDecimal::doubleValue).sum());
 		return resumen;
 	}
 
@@ -261,14 +280,14 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		Boolean soloActivosNormalizado = normalizarSoloActivos(soloActivos);
 
 		if (!filtro.tieneFiltroPeriodo()) {
-			return obtenerPaginaMovimientosFiltrados(
+			return marcarDevueltos(obtenerPaginaMovimientosFiltrados(
 					filtro,
 					pagado,
 					textoNormalizado,
 					soloActivosNormalizado,
 					pageable,
 					sedes)
-					.map(conversorAMovimientoDTO());
+					.map(conversorAMovimientoDTO()));
 		}
 
 		List<ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection> movimientosBase =
@@ -290,7 +309,34 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				pageable,
 				idsFiltrados.size());
 
-		return pagina.map(conversorAMovimientoDTO());
+		return marcarDevueltos(pagina.map(conversorAMovimientoDTO()));
+	}
+
+	/** Pieza 6c-6 (D6c-12): marca las filas devueltas de la página (una consulta). */
+	private Page<TesoreriaMovimientoDTO> marcarDevueltos(Page<TesoreriaMovimientoDTO> pagina) {
+		Map<Long, java.math.BigDecimal> devueltos = devueltoDeCargos(pagina.getContent().stream()
+				.map(TesoreriaMovimientoDTO::getProductoAlumnoId).toList());
+		pagina.getContent().forEach(fila -> fila.setDevuelto(devueltos.containsKey(fila.getProductoAlumnoId())));
+		return pagina;
+	}
+
+	/**
+	 * Pieza 6c-6 (D6c-12): lo devuelto de cada cargo devuelto de la lista (cargo → Σ −importe de su devolución activa),
+	 * en tandas de 1000 ids. Sin repositorio (pruebas unitarias), nada.
+	 */
+	private Map<Long, java.math.BigDecimal> devueltoDeCargos(List<Long> cargoIds) {
+		Map<Long, java.math.BigDecimal> devueltos = new HashMap<>();
+		List<Long> ids = cargoIds.stream().filter(Objects::nonNull).distinct().toList();
+		if (movimientoCajaRepository == null || ids.isEmpty()) {
+			return devueltos;
+		}
+		for (int i = 0; i < ids.size(); i += 1000) {
+			for (Object[] fila : movimientoCajaRepository.devueltoDeCargos(ids.subList(i, Math.min(i + 1000,
+					ids.size())))) {
+				devueltos.put((Long) fila[0], (java.math.BigDecimal) fila[1]);
+			}
+		}
+		return devueltos;
 	}
 
 	@Override

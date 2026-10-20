@@ -209,6 +209,29 @@
   color: #4a5568;
 }
 
+// Pieza 6c-9: ERROR (193) y DEVOLUCION (D6c-10) de una entrega, bajo su diferencia.
+.movs-cobro {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: #4a5568;
+
+  li + li {
+    margin-top: 0.1rem;
+  }
+
+  [data-tipo='ERROR'] {
+    color: #7b341e;
+  }
+
+  .mov-anulado {
+    text-decoration: line-through;
+    color: #718096;
+  }
+}
+
 .fila-anulada {
   background: #f7f8fa;
 

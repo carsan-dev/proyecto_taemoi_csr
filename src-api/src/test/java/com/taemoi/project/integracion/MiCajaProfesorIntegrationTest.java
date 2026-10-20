@@ -122,7 +122,10 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(idsEnOrden(lista, "alumnoId").contains(deBaja));
 		assertFalse(idsEnOrden(lista, "alumnoId").contains(soloAjeno));
 		JsonNode bea = fila(lista, "alumnoId", alonsoBea);
-		assertEquals(Set.of("alumnoId", "nombre", "apellidos", "grupos"), campos(bea), "sin datos sensibles");
+		// 6c-8: «sedes» (las de sus grupos, D6c-9) solo sale si alguno de esos grupos tiene sede.
+		Set<String> permitidos = Set.of("alumnoId", "nombre", "apellidos", "grupos", "sedes");
+		assertTrue(permitidos.containsAll(campos(bea)) && campos(bea).containsAll(
+				Set.of("alumnoId", "nombre", "apellidos", "grupos")), "sin datos sensibles: " + campos(bea));
 		assertEquals("BEA", bea.get("nombre").asText());
 		assertEquals("ALONSO", bea.get("apellidos").asText());
 		assertEquals(List.of("IT 6B3B1 Grupo Dos " + e.marca, "IT 6B3B1 Grupo Uno " + e.marca), textos(bea.get("grupos")),

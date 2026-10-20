@@ -25,9 +25,16 @@ public final class CajaRequests {
 
 	/**
 	 * Apuntar un movimiento de caja: {@code POST /api/caja/sedes/{sedeId}/movimientos}. Reglas de signo y alumno por
-	 * tipo en {@link TipoMovimientoCaja}; nota obligatoria.
+	 * tipo en {@link TipoMovimientoCaja}; nota obligatoria. Pieza 6c-6 (153, §6.4): {@code cobroId} opcional, solo en
+	 * una DEVOLUCION, la enlaza a ese cobro (importe y alumno, los del cobro: si llegan, deben coincidir).
 	 */
-	public record CrearMovimiento(TipoMovimientoCaja tipo, BigDecimal importe, Long alumnoId, String nota) {
+	public record CrearMovimiento(TipoMovimientoCaja tipo, BigDecimal importe, Long alumnoId, String nota,
+			Long cobroId) {
+
+		/** Sin cobro enlazado (el movimiento de siempre). */
+		public CrearMovimiento(TipoMovimientoCaja tipo, BigDecimal importe, Long alumnoId, String nota) {
+			this(tipo, importe, alumnoId, nota, null);
+		}
 	}
 
 	/** Anular una entrega o un movimiento (solo el propietario); motivo obligatorio. */

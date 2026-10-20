@@ -26,6 +26,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.taemoi.project.acceso.GestionPorSede;
+import com.taemoi.project.dtos.request.CajaRequests;
 import com.taemoi.project.dtos.request.SolicitudRequests;
 import com.taemoi.project.dtos.response.SolicitudDTOs;
 import com.taemoi.project.entities.Cobro;
@@ -35,6 +36,7 @@ import com.taemoi.project.entities.EstadoEntregaCaja;
 import com.taemoi.project.entities.EstadoMovimientoCaja;
 import com.taemoi.project.entities.EstadoSolicitud;
 import com.taemoi.project.entities.MovimientoCaja;
+import com.taemoi.project.entities.OrigenCobro;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Solicitud;
@@ -57,7 +59,7 @@ import jakarta.persistence.criteria.Root;
 /**
  * Solicitudes al propietario (pieza 6c-2, docs/multi-escuela/fase3-6c-solicitudes.md y fase3-6c-plan.md §3): pedir los
  * tipos 1 (con o sin cobro, decisión 191) y 3, retirar, denegar, la bandeja por segmento y el contador. Aceptar (tipos 1
- * a 3) es de la 6c-3 ({@link #aceptar}, plan §4); los encargos, de la 6c-5.
+ * a 3) es de la 6c-3 ({@link #aceptar}, plan §4); los encargos, de la 6c-5 ({@link EncargoService}, plan §4b).
  *
  * <ul>
  * <li><b>Pedir</b> no cambia nada más (el pago sigue marcado, la caja igual). Se valida el recurso: existe en la
@@ -98,6 +100,11 @@ public class SolicitudService {
 	public static final String RECURSO_CAMBIADO = "El recurso ha cambiado mientras se pedía: vuelve a intentarlo.";
 	/** Pieza 6c-3: 400 al aceptar un encargo (se marca encargado, 6c-5). */
 	public static final String ENCARGO_NO_SE_ACEPTA = "Un encargo no se acepta: se marca encargado.";
+	/** Pieza 6c-4: 409 al pedir deshacer un cobro que aún no va en una entrega (lo deshace él mismo, A4). */
+	public static final String COBRO_SIN_ENTREGA = "El cobro no va en una entrega: deshazlo tú mismo desde lo que "
+			+ "llevas encima.";
+	/** Pieza 6c-4: 409 al pedir deshacer un cobro cuyo cargo se borró. */
+	public static final String CARGO_DEL_COBRO_NO_EXISTE = "El cargo del cobro ya no existe.";
 	/** MySQL: entrada duplicada en una clave única. */
 	private static final int MYSQL_CLAVE_DUPLICADA = 1062;
 	/** Las resueltas que devuelve la bandeja, las más recientes. */
@@ -122,6 +129,7 @@ public class SolicitudService {
 	private final RegistroAccionesSolicitudes registro;
 	private final ProductoAlumnoService productosAlumno;
 	private final CajaService caja;
+	private final CobroService cobroService;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -130,7 +138,7 @@ public class SolicitudService {
 	public SolicitudService(SolicitudRepository solicitudes, CobroRepository cobros, ProductoAlumnoRepository cargos,
 			EntregaCajaRepository entregas, MovimientoCajaRepository movimientos, GestionPorSede gestionPorSede,
 			RegistroAccionesSolicitudes registro, ProductoAlumnoService productosAlumno, CajaService caja,
-			PlatformTransactionManager transacciones) {
+			CobroService cobroService, PlatformTransactionManager transacciones) {
 		this.solicitudes = solicitudes;
 		this.cobros = cobros;
 		this.cargos = cargos;
@@ -140,6 +148,7 @@ public class SolicitudService {
 		this.registro = registro;
 		this.productosAlumno = productosAlumno;
 		this.caja = caja;
+		this.cobroService = cobroService;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -239,6 +248,10 @@ public class SolicitudService {
 			if (cobro.getProductoAlumnoId() == null) {
 				throw new IllegalStateException("El cargo del cobro ya no existe.");
 			}
+			// Ronda 1 de la 6c-9: con la devolución hecha o pendiente no se revierte (153); 409 ya al pedir.
+			cobroService.razonDeDevolucion(cobro.getId(), cobro.getProductoAlumnoId()).ifPresent(razon -> {
+				throw new IllegalStateException(razon);
+			});
 			if (solicitudes.existsByCobroIdAndEstado(cobro.getId(), EstadoSolicitud.PENDIENTE)
 					|| solicitudes.existeRevertirPendienteDeCargo(cobro.getProductoAlumnoId())) {
 				throw new IllegalStateException(YA_PENDIENTE);
@@ -299,6 +312,85 @@ public class SolicitudService {
 		solicitud.setSedeId(movimiento.getSedeId());
 		solicitud.setAlumnoId(movimiento.getAlumnoId());
 		solicitud.setImporte(dosDecimales(movimiento.getImporte()));
+	}
+
+	/**
+	 * Pieza 6c-4 (decisión 193, fase3-6c-plan.md §4d): el profesor de la sesión pide deshacer un cobro suyo ya entregado
+	 * a la sede (tipo 2). Valida lo mismo que la 6c-3 revalida al aceptar: motivo (400), el cobro existe (404), es suyo
+	 * con origen PROFESOR (403; ya lo exige antes {@code @acceso.cobroPropioDelProfesor}), ACTIVO, en una entrega
+	 * ACTIVA, con su cargo, sin devolución ni devolución pendiente y con el cargo pagado (409); con NO_HUBO_VENTA, que
+	 * fue su venta (400, como A4); y ninguna otra solicitud pendiente sobre el cobro (409; la clave única de V31_8 es la
+	 * red). No bloquea filas (como los tipos 1 y 3): si el estado cambia antes de aceptar, la 6c-3 la cierra
+	 * {@code NO_APLICABLE}. Sede = la del cobro (la entrega es de la misma sede). Sin {@code motivoDeshacer},
+	 * {@code AUN_NO_PAGADO}. Registro {@code SOLICITUD_CREADA} con la entrega, solo ids.
+	 */
+	public SolicitudDTOs.Solicitud pedirDeshacer(Long cobroId, SolicitudRequests.PedirDeshacer peticion) {
+		String motivo = texto(peticion == null ? null : peticion.motivo(), "El motivo");
+		if (motivo == null) {
+			throw new IllegalArgumentException("El motivo es obligatorio.");
+		}
+		CajaRequests.MotivoDeshacer motivoDeshacer = peticion.motivoDeshacer() == null
+				? CajaRequests.MotivoDeshacer.AUN_NO_PAGADO
+				: peticion.motivoDeshacer();
+		Long usuario = usuarioDeLaSesion();
+		String endpoint = "/api/caja/profesor/cobros/" + cobroId + "/pedir-deshacer";
+		try {
+			return enTransaccion(() -> {
+				Cobro cobro = (cobroId == null ? Optional.<Cobro>empty() : cobros.findById(cobroId))
+						.orElseThrow(() -> new NoSuchElementException("El cobro no existe."));
+				if (cobro.getOrigen() != OrigenCobro.PROFESOR || !usuario.equals(cobro.getCobradoPorUsuarioId())) {
+					throw new AccessDeniedException("Acceso denegado.");
+				}
+				if (cobro.getEstado() != EstadoCobro.ACTIVO) {
+					throw new IllegalStateException(EjecucionSolicitud.COBRO_NO_ACTIVO);
+				}
+				if (cobro.getEntregaCajaId() == null) {
+					throw new IllegalStateException(COBRO_SIN_ENTREGA);
+				}
+				EntregaCaja entrega = entregas.findById(cobro.getEntregaCajaId()).orElse(null);
+				if (entrega == null || entrega.getEstado() != EstadoEntregaCaja.ACTIVA) {
+					throw new IllegalStateException(EjecucionSolicitud.ENTREGA_ANULADA);
+				}
+				ProductoAlumno cargo = cobro.getProductoAlumnoId() == null ? null
+						: cargos.findById(cobro.getProductoAlumnoId()).orElse(null);
+				if (cargo == null) {
+					throw new IllegalStateException(CARGO_DEL_COBRO_NO_EXISTE);
+				}
+				cobroService.razonDeDevolucion(cobro.getId(), cargo.getId()).ifPresent(razon -> {
+					throw new IllegalStateException(razon);
+				});
+				if (!Boolean.TRUE.equals(cargo.getPagado())) {
+					throw new IllegalStateException(EjecucionSolicitud.CARGO_NO_PAGADO);
+				}
+				if (motivoDeshacer == CajaRequests.MotivoDeshacer.NO_HUBO_VENTA
+						&& !productosAlumno.cobrosQueSonVentaDelProfesor(List.of(cobro)).contains(cobro.getId())) {
+					throw new IllegalArgumentException(EjecucionSolicitud.NO_ES_VENTA);
+				}
+				if (solicitudes.existsByCobroIdAndEstado(cobro.getId(), EstadoSolicitud.PENDIENTE)) {
+					throw new IllegalStateException(YA_PENDIENTE);
+				}
+				Solicitud solicitud = new Solicitud();
+				solicitud.setTipo(TipoSolicitud.DESHACER_COBRO_ENTREGADO);
+				solicitud.setEstado(SolicitudTransiciones.estadoInicial(TipoSolicitud.DESHACER_COBRO_ENTREGADO));
+				solicitud.setSolicitadoPorUsuarioId(usuario);
+				solicitud.setSolicitadoEn(LocalDateTime.now(CajaService.ZONA));
+				solicitud.setMotivo(motivo);
+				solicitud.setMotivoDeshacer(motivoDeshacer);
+				solicitud.setCobroId(cobro.getId());
+				solicitud.setProductoAlumnoId(cargo.getId());
+				solicitud.setSedeId(cobro.getSedeId());
+				solicitud.setAlumnoId(cobro.getAlumnoId());
+				solicitud.setConcepto(cobro.getConcepto());
+				solicitud.setImporte(dosDecimales(cobro.getImporte()));
+				Solicitud guardada = solicitudes.saveAndFlush(solicitud);
+				registro.registrar(RegistroAccionesSolicitudes.Accion.SOLICITUD_CREADA, endpoint, guardada,
+						Map.of("entrega", entrega.getId()));
+				em.flush();
+				return dtos(List.of(guardada), usuario).get(0);
+			});
+		} catch (DataIntegrityViolationException error) {
+			throw traducirViolacionAlCrear(error);
+		}
 	}
 
 	// ------------------------------------------------------------------ retirar y denegar
@@ -511,13 +603,16 @@ public class SolicitudService {
 	/**
 	 * Lo que espera acción de la sesión (§5.1, D6c-4), con un {@code COUNT} por índice (dos para el propietario): P,
 	 * tipos 1 a 3 PENDIENTES + encargos PEDIDO o ENCARGADO; G, los encargos; R, los encargos de sus sedes. Lo que uno
-	 * pidió no cuenta. Los encargos con devolución pendiente que le tocan a la sede los añade la 6c-6.
+	 * pidió no cuenta. Pieza 6c-6 (195): más los encargos visibles con la devolución pendiente que le tocan a la sede
+	 * (el dinero ya está en su caja); los que aún lleva el profesor le tocan a él (Mi caja).
 	 */
 	public long contador() {
 		usuarioDeLaSesion();
 		Optional<AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		long total = solicitudes
 				.count(encargo().and(encargosVisibles(restriccion)).and(enEstados(ENCARGO_ESPERA_ACCION)));
+		total += solicitudes.count(encargo().and(encargosVisibles(restriccion)).and(devolucionPendiente(true))
+				.and(devolucionEnLaSede()));
 		if (tieneAutoridad(Roles.ROLE_ADMIN)) {
 			total += solicitudes.count(noEncargo().and(enEstados(Set.of(EstadoSolicitud.PENDIENTE))));
 		}
@@ -548,6 +643,22 @@ public class SolicitudService {
 		return (root, query, cb) -> cb.equal(root.get("devolucionPendiente"), valor);
 	}
 
+	/**
+	 * Pieza 6c-6: el cobro ACTIVO del cargo del encargo ya está en la caja de la sede (origen distinto de PROFESOR, o
+	 * entregado): la devolución la registra la sede (195).
+	 */
+	private static Specification<Solicitud> devolucionEnLaSede() {
+		return (root, query, cb) -> {
+			jakarta.persistence.criteria.Subquery<Long> cobro = query.subquery(Long.class);
+			Root<Cobro> c = cobro.from(Cobro.class);
+			cobro.select(c.get("id")).where(cb.equal(c.get("productoAlumnoId"), root.get("productoAlumnoId")),
+					cb.equal(c.get("estado"), EstadoCobro.ACTIVO),
+					cb.or(cb.notEqual(c.get("origen"), com.taemoi.project.entities.OrigenCobro.PROFESOR),
+							cb.isNotNull(c.get("entregaCajaId"))));
+			return cb.exists(cobro);
+		};
+	}
+
 	/** Gestión (alcance total): todos los encargos; responsable: los de sus sedes (sin sede, ninguno). */
 	private static Specification<Solicitud> encargosVisibles(Optional<AlcanceSesion> restriccion) {
 		if (restriccion.isEmpty()) {
@@ -562,8 +673,11 @@ public class SolicitudService {
 
 	// ------------------------------------------------------------------ utilidades
 
-	/** DTOs con los nombres de cuentas, alumnos y sedes en tres consultas para toda la lista. */
-	private List<SolicitudDTOs.Solicitud> dtos(List<Solicitud> lista, Long usuario) {
+	/**
+	 * DTOs con los nombres de cuentas, alumnos y sedes en tres consultas para toda la lista. De paquete: también los
+	 * usa {@link EncargoService} (6c-5).
+	 */
+	List<SolicitudDTOs.Solicitud> dtos(List<Solicitud> lista, Long usuario) {
 		if (lista.isEmpty()) {
 			return List.of();
 		}
@@ -586,6 +700,30 @@ public class SolicitudService {
 				lista.stream().map(Solicitud::getSedeId).toList())) {
 			sedes.put((Long) f[0], (String) f[1]);
 		}
+		// Pieza 6c-6: con la devolución pendiente, si el dinero ya está en la sede (una consulta para la lista).
+		Map<Long, Boolean> enSede = new HashMap<>();
+		for (Object[] f : filas("SELECT c.productoAlumnoId, c.origen, c.entregaCajaId FROM Cobro c "
+				+ "WHERE c.productoAlumnoId IN :ids AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO",
+				lista.stream().filter(Solicitud::isDevolucionPendiente).map(Solicitud::getProductoAlumnoId).toList())) {
+			enSede.put((Long) f[0], f[1] != com.taemoi.project.entities.OrigenCobro.PROFESOR || f[2] != null);
+		}
+		// Pieza 6c-8: cómo está el cargo de cada encargo (dos consultas para la lista).
+		List<Long> cargosDeEncargos = lista.stream().filter(s -> s.getTipo() == TipoSolicitud.ENCARGO)
+				.map(Solicitud::getProductoAlumnoId).toList();
+		Map<Long, SolicitudDTOs.EstadoCobroEncargo> cobroDelCargo = new HashMap<>();
+		for (Object[] f : filas("SELECT pa.id, pa.pagado, pa.canceladoEn FROM ProductoAlumno pa WHERE pa.id IN :ids",
+				cargosDeEncargos)) {
+			cobroDelCargo.put((Long) f[0], f[2] != null ? SolicitudDTOs.EstadoCobroEncargo.CANCELADO
+					: Boolean.TRUE.equals(f[1]) ? SolicitudDTOs.EstadoCobroEncargo.COBRADO
+							: SolicitudDTOs.EstadoCobroEncargo.PENDIENTE);
+		}
+		// Pieza 6c-9: la devolución cuenta solo si es del cobro ACTIVO del cargo, como en CobroRepository.
+		for (Object[] f : filas("SELECT m.productoAlumnoId, m.id FROM MovimientoCaja m, Cobro c WHERE m.cobroId = c.id "
+				+ "AND m.productoAlumnoId IN :ids AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO "
+				+ "AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+				+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO", cargosDeEncargos)) {
+			cobroDelCargo.put((Long) f[0], SolicitudDTOs.EstadoCobroEncargo.DEVUELTO);
+		}
 		List<SolicitudDTOs.Solicitud> dtos = new ArrayList<>(lista.size());
 		for (Solicitud s : lista) {
 			String[] alumno = alumnos.getOrDefault(s.getAlumnoId(), new String[2]);
@@ -597,7 +735,9 @@ public class SolicitudService {
 					s.getAlumnoId(), alumno[0], alumno[1], s.getConcepto(),
 					s.getImporte() == null ? null : dosDecimales(s.getImporte()), s.getMotivoDeshacer(),
 					s.getEncargadoEn(), s.getRecibidoEn(), s.getEntregadoEn(), s.isDevolucionPendiente(),
-					usuario != null && usuario.equals(s.getSolicitadoPorUsuarioId())));
+					usuario != null && usuario.equals(s.getSolicitadoPorUsuarioId()), s.getMovimientoDevolucionId(),
+					s.isDevolucionPendiente() ? enSede.get(s.getProductoAlumnoId()) : null,
+					s.getTipo() == TipoSolicitud.ENCARGO ? cobroDelCargo.get(s.getProductoAlumnoId()) : null));
 		}
 		return dtos;
 	}
