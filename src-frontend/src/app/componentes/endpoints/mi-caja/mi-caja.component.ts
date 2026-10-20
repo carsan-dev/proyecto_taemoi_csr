@@ -10,17 +10,40 @@ import {
   AlumnoDeMisGrupos,
   CargoPendienteProfesor,
   CobroCaja,
+  CobroEntregadoReciente,
   MisCobrosPendientes,
   MotivoDeshacerCobro,
+  PedirEncargo,
   ProductoVendible,
+  SedeMiCaja,
 } from '../../../interfaces/caja';
+import { EstadoCobroCargo, Solicitud } from '../../../interfaces/solicitud';
 import { AuthenticationService, esSoloProfesor } from '../../../servicios/authentication/authentication.service';
 import { CajaProfesorService } from '../../../servicios/endpoints/caja-profesor.service';
 import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 import { showErrorToast } from '../../../utils/toast.util';
 import { diasDesde, formatearEuros, textoRelativo } from '../caja-sede/caja-calculos';
+import {
+  ETIQUETA_COBRO,
+  MAX_MOTIVO,
+  MAX_NOTA_ENCARGO,
+  PASOS_ENCARGO,
+  devolucionEnLaSede,
+  encargoCaido,
+  encargoEnCurso,
+  esDeshacer,
+  esEncargo,
+  estadoCobroEncargo,
+  etiquetaDeshacer,
+  indicePasoEncargo,
+  pideSede,
+  puedeMarcarEntregado,
+  puedeRegistrarDevolucion,
+  puedeRetirar,
+  requiereAccion,
+} from './mi-caja-pedidos';
 
-export type PestanaMiCaja = 'cobrar' | 'vender' | 'encima';
+export type PestanaMiCaja = 'cobrar' | 'vender' | 'encima' | 'pedidos';
 
 /** Cuánto dura el aviso «Cobrado … · Deshacer» antes de cerrarse solo. */
 export const DURACION_AVISO_MS = 6000;
@@ -55,9 +78,55 @@ interface HojaDeshacer {
 
 interface AvisoCobro {
   texto: string;
-  cobroId: number;
+  /** Sin cobro (p. ej. «Encargo enviado»), el aviso no ofrece «Deshacer». */
+  cobroId: number | null;
   motivo: MotivoDeshacerCobro;
   deshaciendo: boolean;
+}
+
+/** Hoja «Encargar un producto» (6c-8): alumno, producto encargable, nota y, si hace falta, la sede (D6c-9). */
+interface HojaEncargo {
+  alumno: AlumnoDeMisGrupos | null;
+  busqueda: string;
+  productoId: number | null;
+  nota: string;
+  sedeId: number | null;
+  /** La sede se pide solo si el alumno está con él en grupos de varias sedes. */
+  pedirSede: boolean;
+  intentado: boolean;
+  enviando: boolean;
+  error: string | null;
+}
+
+/** Confirmación de una acción sobre un pedido: retirar o marcar entregado. */
+interface HojaAccion {
+  titulo: string;
+  detalle: string;
+  nota: string;
+  verbo: string;
+  peligro: boolean;
+  hecho: string;
+  ejecutar: () => Observable<Solicitud>;
+  enviando: boolean;
+  error: string | null;
+}
+
+/** «Registrar devolución» de un encargo caído y pagado (195): el cobro entero (D6c-11) y una nota opcional. */
+interface HojaDevolucion {
+  solicitud: Solicitud;
+  nota: string;
+  enviando: boolean;
+  error: string | null;
+}
+
+/** «Pedir deshacer» un cobro ya entregado (193): motivo obligatorio y qué ha pasado (MotivoDeshacer, como en A4). */
+interface HojaPedirDeshacer {
+  cobro: CobroEntregadoReciente;
+  motivo: string;
+  motivoDeshacer: MotivoDeshacerCobro;
+  intentado: boolean;
+  enviando: boolean;
+  error: string | null;
 }
 
 /** Texto sin tildes y en minúsculas, para buscar «lucia» y encontrar «Lucía». */
@@ -93,6 +162,11 @@ export function agruparPorAlumno(cargos: CargoPendienteProfesor[], busqueda: str
   return Array.from(grupos.values())
     .map((g) => ({ ...g, cargos: [...g.cargos].sort((a, b) => porFecha(a) - porFecha(b)) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+
+/** Más reciente primero, por fecha de la solicitud. */
+function masReciente(a: Solicitud, b: Solicitud): number {
+  return (b.solicitadoEn ?? '').localeCompare(a.solicitadoEn ?? '');
 }
 
 /** «01/10» de una fecha ISO (o «—»). */
@@ -153,8 +227,40 @@ export class MiCajaComponent implements OnInit, OnDestroy {
   busquedaAlumno = '';
   alumnoVenta: AlumnoDeMisGrupos | null = null;
 
+  // Pedidos (6c-8)
+  solicitudes: Solicitud[] = [];
+  cargandoSolicitudes = false;
+  errorSolicitudes: string | null = null;
+  solicitudesCargadas = false;
+  productosEncargables: ProductoVendible[] = [];
+  cargandoEncargo = false;
+  errorCargaEncargo: string | null = null;
+  private alumnosCargados = false;
+  private encargablesCargados = false;
+
+  // Entregados recientes (6c-8, D6c-14)
+  entregadosAbierto = false;
+  entregados: CobroEntregadoReciente[] | null = null;
+  cargandoEntregados = false;
+  errorEntregados: string | null = null;
+
+  readonly pasosEncargo = PASOS_ENCARGO;
+  readonly maxNotaEncargo = MAX_NOTA_ENCARGO;
+  readonly maxMotivo = MAX_MOTIVO;
+  readonly puedeRetirar = puedeRetirar;
+  readonly puedeMarcarEntregado = puedeMarcarEntregado;
+  readonly puedeRegistrarDevolucion = puedeRegistrarDevolucion;
+  readonly devolucionEnLaSede = devolucionEnLaSede;
+  readonly encargoCaido = encargoCaido;
+  readonly indicePasoEncargo = indicePasoEncargo;
+  readonly etiquetaDeshacer = etiquetaDeshacer;
+
   hoja: HojaCobro | null = null;
   hojaDeshacer: HojaDeshacer | null = null;
+  hojaEncargo: HojaEncargo | null = null;
+  hojaAccion: HojaAccion | null = null;
+  hojaDevolucion: HojaDevolucion | null = null;
+  hojaPedirDeshacer: HojaPedirDeshacer | null = null;
   aviso: AvisoCobro | null = null;
   private temporizadorAviso: ReturnType<typeof setTimeout> | null = null;
   private focoAntesDeLaHoja: HTMLElement | null = null;
@@ -163,6 +269,7 @@ export class MiCajaComponent implements OnInit, OnDestroy {
     this.soloProfesor = esSoloProfesor(this.auth.getRolesActuales());
     this.cargarCargos();
     this.cargarEncima();
+    this.cargarSolicitudes();
   }
 
   ngOnDestroy(): void {
@@ -225,10 +332,7 @@ export class MiCajaComponent implements OnInit, OnDestroy {
       .alumnos()
       .pipe(takeUntil(this.destroy$), finalize(terminar))
       .subscribe({
-        next: (alumnos) =>
-          (this.alumnos = [...alumnos].sort((a, b) =>
-            nombreCompleto(a.nombre, a.apellidos).localeCompare(nombreCompleto(b.nombre, b.apellidos), 'es')
-          )),
+        next: (alumnos) => this.guardarAlumnos(alumnos),
         error: fallo,
       });
     this.caja
@@ -245,7 +349,7 @@ export class MiCajaComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ pestañas
 
-  readonly pestanas: PestanaMiCaja[] = ['cobrar', 'vender', 'encima'];
+  readonly pestanas: PestanaMiCaja[] = ['cobrar', 'vender', 'encima', 'pedidos'];
 
   elegirPestana(pestana: PestanaMiCaja): void {
     this.pestana = pestana;
@@ -383,7 +487,7 @@ export class MiCajaComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ aviso con deshacer
 
-  private mostrarAviso(texto: string, cobroId: number, motivo: MotivoDeshacerCobro): void {
+  private mostrarAviso(texto: string, cobroId: number | null = null, motivo: MotivoDeshacerCobro = 'AUN_NO_PAGADO'): void {
     this.limpiarTemporizador();
     this.aviso = { texto, cobroId, motivo, deshaciendo: false };
     this.temporizadorAviso = setTimeout(() => this.cerrarAviso(), DURACION_AVISO_MS);
@@ -399,7 +503,7 @@ export class MiCajaComponent implements OnInit, OnDestroy {
 
   deshacerDesdeAviso(): void {
     const aviso = this.aviso;
-    if (!aviso || aviso.deshaciendo) {
+    if (!aviso || aviso.deshaciendo || aviso.cobroId === null) {
       return;
     }
     aviso.deshaciendo = true;
@@ -475,6 +579,467 @@ export class MiCajaComponent implements OnInit, OnDestroy {
     this.restaurarFoco();
   }
 
+  // ------------------------------------------------------------------ pedidos (6c-8)
+
+  cargarSolicitudes(): void {
+    this.cargandoSolicitudes = true;
+    this.errorSolicitudes = null;
+    this.caja
+      .misSolicitudes()
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.cargandoSolicitudes = false))
+      )
+      .subscribe({
+        next: (lista) => {
+          this.solicitudes = lista;
+          this.solicitudesCargadas = true;
+        },
+        error: (e) => (this.errorSolicitudes = mensajeDeError(e) ?? 'No se pudieron cargar tus pedidos.'),
+      });
+  }
+
+  /** Lo que espera su acción: marcar entregado o registrar la devolución que lleva encima. */
+  get numeroPedidos(): number {
+    return this.solicitudes.filter(requiereAccion).length;
+  }
+
+  /** En curso: primero lo que espera su acción y, dentro, lo más reciente. */
+  get encargosEnCurso(): Solicitud[] {
+    return this.solicitudes
+      .filter(encargoEnCurso)
+      .sort((a, b) => Number(requiereAccion(b)) - Number(requiereAccion(a)) || masReciente(a, b));
+  }
+
+  get encargosTerminados(): Solicitud[] {
+    return this.solicitudes.filter((s) => esEncargo(s) && !encargoEnCurso(s)).sort(masReciente);
+  }
+
+  /** Sus solicitudes de deshacer, también las pendientes cuyo cobro ya no sale en «Entregados recientes». */
+  get solicitudesDeshacer(): Solicitud[] {
+    return this.solicitudes
+      .filter(esDeshacer)
+      .sort((a, b) => Number(b.estado === 'PENDIENTE') - Number(a.estado === 'PENDIENTE') || masReciente(a, b));
+  }
+
+  estadoCobro(s: Solicitud): EstadoCobroCargo | null {
+    return estadoCobroEncargo(s);
+  }
+
+  etiquetaCobro(estado: EstadoCobroCargo): string {
+    return ETIQUETA_COBRO[estado];
+  }
+
+  nombreSolicitud(s: Solicitud): string {
+    return nombreCompleto(s.alumnoNombre, s.alumnoApellidos);
+  }
+
+  // -------------------------------------------------- encargar
+
+  abrirEncargo(evento?: Event): void {
+    this.recordarFoco(evento);
+    this.hojaEncargo = {
+      alumno: null,
+      busqueda: '',
+      productoId: null,
+      nota: '',
+      sedeId: null,
+      pedirSede: false,
+      intentado: false,
+      enviando: false,
+      error: null,
+    };
+    this.cargarDatosEncargo();
+  }
+
+  /** Alumnos de sus grupos y productos encargables, una sola vez por visita. */
+  cargarDatosEncargo(): void {
+    if (this.alumnosCargados && this.encargablesCargados) {
+      return;
+    }
+    this.cargandoEncargo = true;
+    this.errorCargaEncargo = null;
+    let pendientes = 0;
+    const terminar = () => {
+      pendientes -= 1;
+      if (pendientes <= 0) {
+        this.cargandoEncargo = false;
+      }
+    };
+    const fallo = (e: unknown) =>
+      (this.errorCargaEncargo = mensajeDeError(e) ?? 'No se pudieron cargar tus alumnos ni los productos.');
+    if (!this.alumnosCargados) {
+      pendientes += 1;
+      this.caja
+        .alumnos()
+        .pipe(takeUntil(this.destroy$), finalize(terminar))
+        .subscribe({ next: (alumnos) => this.guardarAlumnos(alumnos), error: fallo });
+    }
+    if (!this.encargablesCargados) {
+      pendientes += 1;
+      this.caja
+        .productosEncargables()
+        .pipe(takeUntil(this.destroy$), finalize(terminar))
+        .subscribe({
+          next: (productos) => {
+            this.productosEncargables = productos;
+            this.encargablesCargados = true;
+          },
+          error: fallo,
+        });
+    }
+  }
+
+  private guardarAlumnos(alumnos: AlumnoDeMisGrupos[]): void {
+    this.alumnos = [...alumnos].sort((a, b) =>
+      nombreCompleto(a.nombre, a.apellidos).localeCompare(nombreCompleto(b.nombre, b.apellidos), 'es')
+    );
+    this.alumnosCargados = true;
+  }
+
+  get alumnosEncargoFiltrados(): AlumnoDeMisGrupos[] {
+    const filtro = normalizarBusqueda(this.hojaEncargo?.busqueda);
+    if (!filtro) {
+      return this.alumnos;
+    }
+    return this.alumnos.filter((a) => normalizarBusqueda(nombreCompleto(a.nombre, a.apellidos)).includes(filtro));
+  }
+
+  elegirAlumnoEncargo(alumno: AlumnoDeMisGrupos): void {
+    const hoja = this.hojaEncargo;
+    if (!hoja) {
+      return;
+    }
+    hoja.alumno = alumno;
+    hoja.busqueda = '';
+    hoja.sedeId = null;
+    hoja.pedirSede = (alumno.sedes?.length ?? 0) > 1;
+    hoja.error = null;
+  }
+
+  cambiarAlumnoEncargo(): void {
+    const hoja = this.hojaEncargo;
+    if (!hoja || hoja.enviando) {
+      return;
+    }
+    hoja.alumno = null;
+    hoja.pedirSede = false;
+    hoja.sedeId = null;
+    hoja.error = null;
+    setTimeout(() => document.getElementById('buscarAlumnoEncargo')?.focus());
+  }
+
+  /** D6c-9: las sedes de sus grupos con el alumno; se elige entre ellas solo si son dos o más. */
+  get opcionesSede(): SedeMiCaja[] {
+    const propias = this.hojaEncargo?.alumno?.sedes ?? [];
+    return propias.length > 1 ? [...propias].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')) : [];
+  }
+
+  get productoEncargo(): ProductoVendible | null {
+    const id = this.hojaEncargo?.productoId;
+    return this.productosEncargables.find((p) => p.id === id) ?? null;
+  }
+
+  /** El primer campo que falta o no vale, para señalarlo. */
+  get campoEncargoConError(): 'alumno' | 'producto' | 'nota' | 'sede' | null {
+    const hoja = this.hojaEncargo;
+    if (!hoja) {
+      return null;
+    }
+    if (!hoja.alumno) {
+      return 'alumno';
+    }
+    if (hoja.productoId === null) {
+      return 'producto';
+    }
+    const nota = hoja.nota.trim();
+    if (!nota || nota.length > MAX_NOTA_ENCARGO) {
+      return 'nota';
+    }
+    if (hoja.pedirSede && hoja.sedeId === null) {
+      return 'sede';
+    }
+    return null;
+  }
+
+  get errorEncargo(): string | null {
+    switch (this.campoEncargoConError) {
+      case 'alumno':
+        return 'Elige el alumno.';
+      case 'producto':
+        return 'Elige el producto.';
+      case 'nota':
+        return this.hojaEncargo!.nota.trim()
+          ? `La nota admite como máximo ${MAX_NOTA_ENCARGO} caracteres.`
+          : 'Escribe la nota (talla, color…).';
+      case 'sede':
+        return 'Elige la sede.';
+      default:
+        return null;
+    }
+  }
+
+  confirmarEncargo(): void {
+    const hoja = this.hojaEncargo;
+    if (!hoja || hoja.enviando) {
+      return;
+    }
+    hoja.intentado = true;
+    if (this.campoEncargoConError) {
+      return;
+    }
+    const peticion: PedirEncargo = { productoId: hoja.productoId!, nota: hoja.nota.trim() };
+    if (hoja.pedirSede && hoja.sedeId !== null) {
+      peticion.sedeId = Number(hoja.sedeId);
+    }
+    hoja.enviando = true;
+    hoja.error = null;
+    this.caja
+      .pedirEncargo(hoja.alumno!.alumnoId, peticion)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.hojaEncargo = null;
+          this.restaurarFoco();
+          this.mostrarAviso('Encargo enviado');
+          this.cargarSolicitudes();
+          this.cargarCargos();
+        },
+        error: (e) => {
+          hoja.enviando = false;
+          const mensaje = mensajeDeError(e);
+          if (pideSede(mensaje) && !hoja.pedirSede) {
+            // D6c-9: el alumno está con él en grupos de varias sedes; ahora se le pide elegirla. El campo nuevo ya
+            // lo explica, así que no se repite el mensaje como error.
+            hoja.pedirSede = true;
+            hoja.intentado = false;
+            hoja.error = null;
+            setTimeout(() => document.getElementById('sedeEncargo')?.focus());
+            return;
+          }
+          hoja.error = mensaje ?? 'No se pudo enviar el encargo. Inténtalo de nuevo.';
+        },
+      });
+  }
+
+  cerrarEncargo(): void {
+    if (this.hojaEncargo?.enviando) {
+      return;
+    }
+    this.hojaEncargo = null;
+    this.restaurarFoco();
+  }
+
+  // -------------------------------------------------- retirar y marcar entregado
+
+  abrirRetirar(s: Solicitud, evento?: Event): void {
+    this.recordarFoco(evento);
+    const encargo = esEncargo(s);
+    this.hojaAccion = {
+      titulo: encargo ? 'Retirar el encargo' : 'Retirar la solicitud',
+      detalle: this.detalleSolicitud(s),
+      nota: encargo
+        ? 'Si el alumno aún no lo ha pagado, se cancela su cargo; si ya lo pagó, quedará la devolución pendiente.'
+        : 'El cobro sigue como está y puedes volver a pedirlo.',
+      verbo: encargo ? 'Retirar encargo' : 'Retirar solicitud',
+      peligro: true,
+      hecho: encargo ? 'Encargo retirado' : 'Solicitud retirada',
+      ejecutar: () => this.caja.retirarSolicitud(s.id),
+      enviando: false,
+      error: null,
+    };
+  }
+
+  abrirEntregado(s: Solicitud, evento?: Event): void {
+    this.recordarFoco(evento);
+    const sinCobrar = this.estadoCobro(s) === 'PENDIENTE';
+    this.hojaAccion = {
+      titulo: 'Marcar entregado al alumno',
+      detalle: this.detalleSolicitud(s),
+      nota: sinCobrar
+        ? 'Confirma que el alumno ya lo tiene. El cargo sigue en «Por cobrar» hasta que lo pague.'
+        : 'Confirma que el alumno ya lo tiene. No se puede deshacer.',
+      verbo: 'Marcar entregado',
+      peligro: false,
+      hecho: 'Encargo entregado',
+      ejecutar: () => this.caja.marcarEntregado(s.id),
+      enviando: false,
+      error: null,
+    };
+  }
+
+  confirmarAccion(): void {
+    const hoja = this.hojaAccion;
+    if (!hoja || hoja.enviando) {
+      return;
+    }
+    hoja.enviando = true;
+    hoja.error = null;
+    hoja
+      .ejecutar()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.hojaAccion = null;
+          this.restaurarFoco();
+          this.mostrarAviso(hoja.hecho);
+          this.cargarSolicitudes();
+          this.cargarCargos();
+        },
+        error: (e) => {
+          hoja.enviando = false;
+          hoja.error = mensajeDeError(e) ?? 'No se pudo completar. Inténtalo de nuevo.';
+          this.cargarSolicitudes();
+        },
+      });
+  }
+
+  cerrarAccion(): void {
+    if (this.hojaAccion?.enviando) {
+      return;
+    }
+    this.hojaAccion = null;
+    this.restaurarFoco();
+  }
+
+  private detalleSolicitud(s: Solicitud): string {
+    return [this.nombreSolicitud(s), s.concepto].filter(Boolean).join(' · ');
+  }
+
+  // -------------------------------------------------- registrar devolución (195)
+
+  abrirDevolucion(s: Solicitud, evento?: Event): void {
+    this.recordarFoco(evento);
+    this.hojaDevolucion = { solicitud: s, nota: '', enviando: false, error: null };
+  }
+
+  confirmarDevolucion(): void {
+    const hoja = this.hojaDevolucion;
+    if (!hoja || hoja.enviando) {
+      return;
+    }
+    const nota = hoja.nota.trim();
+    if (nota.length > MAX_MOTIVO) {
+      hoja.error = `La nota admite como máximo ${MAX_MOTIVO} caracteres.`;
+      return;
+    }
+    hoja.enviando = true;
+    hoja.error = null;
+    this.caja
+      .registrarDevolucion(hoja.solicitud.id, nota || null)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.hojaDevolucion = null;
+          this.restaurarFoco();
+          this.mostrarAviso(`Devolución registrada ${formatearEuros(hoja.solicitud.importe ?? 0)}`);
+          this.cargarSolicitudes();
+          this.cargarEncima();
+        },
+        error: (e) => {
+          hoja.enviando = false;
+          hoja.error = mensajeDeError(e) ?? 'No se pudo registrar la devolución. Inténtalo de nuevo.';
+          this.cargarSolicitudes();
+        },
+      });
+  }
+
+  cerrarDevolucion(): void {
+    if (this.hojaDevolucion?.enviando) {
+      return;
+    }
+    this.hojaDevolucion = null;
+    this.restaurarFoco();
+  }
+
+  // -------------------------------------------------- entregados recientes y pedir deshacer (193, D6c-14)
+
+  alternarEntregados(): void {
+    this.entregadosAbierto = !this.entregadosAbierto;
+    if (this.entregadosAbierto && this.entregados === null && !this.cargandoEntregados) {
+      this.cargarEntregados();
+    }
+  }
+
+  cargarEntregados(): void {
+    this.cargandoEntregados = true;
+    this.errorEntregados = null;
+    this.caja
+      .cobrosEntregadosRecientes()
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => (this.cargandoEntregados = false))
+      )
+      .subscribe({
+        next: (lista) => (this.entregados = lista),
+        error: (e) => (this.errorEntregados = mensajeDeError(e) ?? 'No se pudieron cargar los cobros entregados.'),
+      });
+  }
+
+  nombreEntregado(c: CobroEntregadoReciente): string {
+    return nombreCompleto(c.alumnoNombre, c.alumnoApellidos);
+  }
+
+  abrirPedirDeshacer(cobro: CobroEntregadoReciente, evento?: Event): void {
+    this.recordarFoco(evento);
+    this.hojaPedirDeshacer = {
+      cobro,
+      motivo: '',
+      motivoDeshacer: 'AUN_NO_PAGADO',
+      intentado: false,
+      enviando: false,
+      error: null,
+    };
+  }
+
+  get errorPedirDeshacer(): string | null {
+    const motivo = this.hojaPedirDeshacer?.motivo.trim() ?? '';
+    if (!motivo) {
+      return 'Escribe el motivo.';
+    }
+    return motivo.length > MAX_MOTIVO ? `El motivo admite como máximo ${MAX_MOTIVO} caracteres.` : null;
+  }
+
+  confirmarPedirDeshacer(): void {
+    const hoja = this.hojaPedirDeshacer;
+    if (!hoja || hoja.enviando) {
+      return;
+    }
+    hoja.intentado = true;
+    if (this.errorPedirDeshacer) {
+      return;
+    }
+    // «No hubo venta» solo vale para una venta suya del catálogo (como en A4).
+    const motivoDeshacer: MotivoDeshacerCobro = hoja.cobro.venta ? hoja.motivoDeshacer : 'AUN_NO_PAGADO';
+    hoja.enviando = true;
+    hoja.error = null;
+    this.caja
+      .pedirDeshacer(hoja.cobro.cobroId, { motivo: hoja.motivo.trim(), motivoDeshacer })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.hojaPedirDeshacer = null;
+          this.restaurarFoco();
+          this.mostrarAviso('Solicitud enviada al propietario');
+          this.cargarEntregados();
+          this.cargarSolicitudes();
+        },
+        error: (e) => {
+          hoja.enviando = false;
+          hoja.error = mensajeDeError(e) ?? 'No se pudo enviar la solicitud. Inténtalo de nuevo.';
+          this.cargarEntregados();
+        },
+      });
+  }
+
+  cerrarPedirDeshacer(): void {
+    if (this.hojaPedirDeshacer?.enviando) {
+      return;
+    }
+    this.hojaPedirDeshacer = null;
+    this.restaurarFoco();
+  }
+
   // ------------------------------------------------------------------ sesión, teclado y foco
 
   cerrarSesion(): void {
@@ -487,6 +1052,14 @@ export class MiCajaComponent implements OnInit, OnDestroy {
       this.cerrarHoja();
     } else if (this.hojaDeshacer) {
       this.cerrarDeshacer();
+    } else if (this.hojaEncargo) {
+      this.cerrarEncargo();
+    } else if (this.hojaAccion) {
+      this.cerrarAccion();
+    } else if (this.hojaDevolucion) {
+      this.cerrarDevolucion();
+    } else if (this.hojaPedirDeshacer) {
+      this.cerrarPedirDeshacer();
     }
   }
 

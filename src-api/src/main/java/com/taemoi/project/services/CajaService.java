@@ -198,13 +198,15 @@ public class CajaService {
 		if (grupos.isEmpty()) {
 			return List.of();
 		}
+		// Pieza 6c-8: en la misma consulta, la sede de cada grupo (D6c-9: las distintas y no nulas, como al pedir).
 		List<Object[]> filas = em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos, g.nombre
-				FROM Grupo g JOIN g.alumnos a
+				SELECT a.id, a.nombre, a.apellidos, g.nombre, g.sedeId, s.nombre
+				FROM Grupo g JOIN g.alumnos a LEFT JOIN Sede s ON s.id = g.sedeId
 				WHERE g.id IN :grupos AND a.activo = TRUE
 				ORDER BY a.apellidos, a.nombre, a.id, g.nombre, g.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList();
 		Map<Long, CajaDTOs.AlumnoDeMisGrupos> porAlumno = new LinkedHashMap<>();
+		Map<Long, Map<Long, String>> sedesPorAlumno = new HashMap<>();
 		for (Object[] f : filas) {
 			CajaDTOs.AlumnoDeMisGrupos alumno = porAlumno.computeIfAbsent((Long) f[0],
 					id -> new CajaDTOs.AlumnoDeMisGrupos(id, (String) f[1], (String) f[2], new ArrayList<>()));
@@ -212,9 +214,18 @@ public class CajaService {
 			if (grupo != null && !alumno.grupos().contains(grupo)) {
 				alumno.grupos().add(grupo);
 			}
+			Long sede = (Long) f[4];
+			if (sede != null) {
+				sedesPorAlumno.computeIfAbsent(alumno.alumnoId(), id -> new HashMap<>()).putIfAbsent(sede,
+						f[5] == null ? "Sede " + sede : (String) f[5]);
+			}
 		}
 		return porAlumno.values().stream().map(a -> new CajaDTOs.AlumnoDeMisGrupos(a.alumnoId(), a.nombre(),
-				a.apellidos(), List.copyOf(a.grupos()))).toList();
+				a.apellidos(), List.copyOf(a.grupos()), sedesPorAlumno.getOrDefault(a.alumnoId(), Map.of()).entrySet()
+						.stream().map(e -> new CajaDTOs.SedeDeGrupo(e.getKey(), e.getValue()))
+						.sorted(Comparator.comparing(CajaDTOs.SedeDeGrupo::nombre)
+								.thenComparing(CajaDTOs.SedeDeGrupo::id))
+						.toList())).toList();
 	}
 
 	/** Cobra en efectivo un cargo de sus grupos (ver {@link ProductoAlumnoService#cobrarEnEfectivoComoProfesor}). */

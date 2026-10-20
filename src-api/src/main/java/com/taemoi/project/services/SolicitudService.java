@@ -703,6 +703,21 @@ public class SolicitudService {
 				lista.stream().filter(Solicitud::isDevolucionPendiente).map(Solicitud::getProductoAlumnoId).toList())) {
 			enSede.put((Long) f[0], f[1] != com.taemoi.project.entities.OrigenCobro.PROFESOR || f[2] != null);
 		}
+		// Pieza 6c-8: cómo está el cargo de cada encargo (dos consultas para la lista).
+		List<Long> cargosDeEncargos = lista.stream().filter(s -> s.getTipo() == TipoSolicitud.ENCARGO)
+				.map(Solicitud::getProductoAlumnoId).toList();
+		Map<Long, SolicitudDTOs.EstadoCobroEncargo> cobroDelCargo = new HashMap<>();
+		for (Object[] f : filas("SELECT pa.id, pa.pagado, pa.canceladoEn FROM ProductoAlumno pa WHERE pa.id IN :ids",
+				cargosDeEncargos)) {
+			cobroDelCargo.put((Long) f[0], f[2] != null ? SolicitudDTOs.EstadoCobroEncargo.CANCELADO
+					: Boolean.TRUE.equals(f[1]) ? SolicitudDTOs.EstadoCobroEncargo.COBRADO
+							: SolicitudDTOs.EstadoCobroEncargo.PENDIENTE);
+		}
+		for (Object[] f : filas("SELECT m.productoAlumnoId, m.id FROM MovimientoCaja m WHERE m.productoAlumnoId IN :ids "
+				+ "AND m.cobroId IS NOT NULL AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+				+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO", cargosDeEncargos)) {
+			cobroDelCargo.put((Long) f[0], SolicitudDTOs.EstadoCobroEncargo.DEVUELTO);
+		}
 		List<SolicitudDTOs.Solicitud> dtos = new ArrayList<>(lista.size());
 		for (Solicitud s : lista) {
 			String[] alumno = alumnos.getOrDefault(s.getAlumnoId(), new String[2]);
@@ -715,7 +730,8 @@ public class SolicitudService {
 					s.getImporte() == null ? null : dosDecimales(s.getImporte()), s.getMotivoDeshacer(),
 					s.getEncargadoEn(), s.getRecibidoEn(), s.getEntregadoEn(), s.isDevolucionPendiente(),
 					usuario != null && usuario.equals(s.getSolicitadoPorUsuarioId()), s.getMovimientoDevolucionId(),
-					s.isDevolucionPendiente() ? enSede.get(s.getProductoAlumnoId()) : null));
+					s.isDevolucionPendiente() ? enSede.get(s.getProductoAlumnoId()) : null,
+					s.getTipo() == TipoSolicitud.ENCARGO ? cobroDelCargo.get(s.getProductoAlumnoId()) : null));
 		}
 		return dtos;
 	}

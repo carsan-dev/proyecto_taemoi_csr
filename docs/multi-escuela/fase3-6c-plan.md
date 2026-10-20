@@ -1107,6 +1107,103 @@ Criterios del plan. El diseño no los fija y se anotan en la PR:
 
 ---
 
+## 4e. Pieza 6c-8: Mi caja (detallada)
+
+Rama `feature/6c-noche` (tras la 6c-4). **Sin migración**; en la API, solo dos campos aditivos de lectura (ronda 1):
+se despliega con el atajo `desplegar`. Moiskimdo no ve ningún cambio: Mi caja es solo del profesor (`profesorGuard`) y usa solo
+`/api/caja/profesor/**`. Adelanta de la 6c-9 «Registrar devolución» en «Pedidos» y «Devuelto» en Mi caja (195); la
+bandeja, la tesorería, la ficha y el aviso completo de la 186 siguen en la 6c-9.
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Pestaña «Pedidos»** (D6c-6), la 4.ª, con el patrón de pestañas de siempre. Su `.contador` cuenta lo que espera su
+  acción: encargos RECIBIDO («Marcar entregado al alumno») y encargos caídos con `devolucionPendiente` y
+  `devolucionEnSede === false` («Registrar devolución»). En ámbar mientras haya alguno. Se pide al entrar en Mi caja
+  (`GET /api/caja/profesor/solicitudes`) y tras cada acción; sin `interval`.
+- **Listas:** «En curso» (PEDIDO, ENCARGADO, RECIBIDO y caídos con la devolución pendiente; primero lo que espera su
+  acción), «Terminados» y «Deshacer cobros entregados» (sus tipo 2, también las PENDIENTES cuyo cobro ya no sale en
+  «Entregados recientes», para poder retirarlas). Cada encargo: alumno, concepto, importe, nota, la línea de estados
+  (pedido → encargado → recibido → entregado, `aria-current="step"`) o, si cayó, «Rechazado: respuesta» / «Retirado».
+- **Estado del cobro del cargo** (ronda 1): `SolicitudDTOs.Solicitud.estadoCobro` (`EstadoCobroEncargo`: PENDIENTE,
+  COBRADO, DEVUELTO, CANCELADO), solo en los encargos con cargo (`@JsonInclude(NON_NULL)`: el JSON de los demás tipos no
+  cambia). En `SolicitudService.dtos`, dos consultas fijas para toda la lista: el cargo (`pagado`, `canceladoEn`) y sus
+  DEVOLUCION ACTIVAS enlazadas. Orden: devolución activa → DEVUELTO; cargo cancelado → CANCELADO; pagado → COBRADO; si
+  no, PENDIENTE. Lo ven Mi caja y la bandeja. Mi caja lo pinta tal cual («Sin cobrar», «Cobrado», «Devuelto», «Cargo
+  cancelado»).
+- **Sedes del alumno** (ronda 1, D6c-9): `CajaDTOs.AlumnoDeMisGrupos.sedes` (`SedeDeGrupo{id, nombre}`, por nombre,
+  `@JsonInclude(NON_EMPTY)`): las sedes distintas y no nulas de los grupos del profesor en los que está el alumno, la
+  regla de `EncargoService.sedeDelEncargo`. Sale de la misma consulta de `alumnosDeMisGrupos` (se añaden `g.sedeId` y
+  el nombre de la sede): sin N+1 ni consultas nuevas.
+- **Encargar** (192, D6c-9): hoja con alumno de sus grupos (buscador), producto encargable (radios con precio), nota
+  obligatoria (hasta 255, con contador) y la sede **solo** si el alumno trae dos o más (selector con esas sedes, nada
+  más). Si aun así la API responde «varias sedes», se pide la sede sin repetir el error y, sin sedes que ofrecer, se
+  explica que lo pida a la gestión.
+- **Retirar** (encargo PEDIDO o tipo 2 PENDIENTE) y **Marcar entregado al alumno** (RECIBIDO): hoja de confirmación;
+  dos clics, una sola llamada.
+- **Registrar devolución** (195, D6c-11): confirma alumno, concepto e importe (el del cobro entero) y nota opcional
+  (hasta 500); no pide importe ni tipo. Con el dinero ya en la sede: «Devolución pendiente en la sede», sin botón.
+  Tras registrarla se recargan «Pedidos» y «Llevas encima».
+- **Entregados recientes** (D6c-7, D6c-14): sección plegable en «Encima» (`aria-expanded`), cargada al desplegarla la
+  primera vez. Cada cobro: «Pedir deshacer» (en móvil, bajo el concepto; desde 768 px, en la línea del importe); con `solicitudPendienteId`, «Esperando al propietario»; con
+  `noSePuedePedir`, el motivo sin botón. La hoja pide el motivo (obligatorio, hasta 500) y qué ha pasado (A4: «No hubo
+  venta» solo si `venta`), con la nota «Mientras tanto el cobro sigue entregado en la sede».
+- **ERROR de la 193 en lo declarado:** Mi caja no enseña entregas ni su declarado, así que no aplica aquí (la caja de
+  sede es otra pantalla).
+- **Errores** con `mensajeDeError` en la propia hoja (409, 400, 403); estados vacío, de carga y de error con
+  «Reintentar»; hojas con `cdkTrapFocus`, Escape y foco devuelto al botón.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:** crear `F/servicios/endpoints/caja-profesor.pedidos.spec.ts` y
+`F/componentes/endpoints/mi-caja/mi-caja.pedidos.spec.ts`, registrados en `tsconfig.spec.json` y en `angular.json`.
+
+- [x] **Paso 1: escribir los tests que fallan:**
+  - servicio: `productosEncargables`, `misSolicitudes` (normaliza fechas, importe, `devolucionEnSede`), `pedirEncargo`
+    con y sin sede, `retirarSolicitud`, `marcarEntregado`, `registrarDevolucion` (nota o `null`, sin importe),
+    `cobrosEntregadosRecientes` (normaliza) y `pedirDeshacer`; todos con credenciales y errores locales.
+  - reglas: paso de la línea de estados, estado del cobro, qué requiere su acción y sedes conocidas.
+  - componente: 4.ª pestaña y su contador; encargos por estado con sus botones; tipo 2 pendiente y resuelto; vacío y
+    error con reintentar; encargar sin sede y con sede (la pide la API o la trae el alumno); retirar (una llamada y 409
+    en la hoja); marcar entregado; registrar devolución (sin importe; 409); entregados recientes (carga una vez,
+    estados de cada fila, vacío y error); pedir deshacer (motivo obligatorio, «no hubo venta» solo en una venta, 409).
+- [x] **Paso 2: comprobar que fallan.** `npm test -- --watch=false --browsers=ChromeHeadless`: error de compilación
+  (faltan `mi-caja-pedidos.ts` y los métodos del servicio).
+
+### Tarea 2: implementar
+
+**Ficheros:** crear `F/componentes/endpoints/mi-caja/mi-caja-pedidos.ts`; modificar `F/interfaces/caja.ts`
+(`CobroEntregadoReciente`, `PedirEncargo`, `PedirDeshacer`, `SedeMiCaja`, `AlumnoDeMisGrupos.sedes?`),
+`F/interfaces/solicitud.ts` (`movimientoDevolucionId`, `devolucionEnSede`), `F/servicios/endpoints/caja-profesor.service.ts`
+y `F/componentes/endpoints/mi-caja/mi-caja.component.{ts,html,scss}` (y el espía de `mi-caja.component.spec.ts`).
+
+- [x] **Paso 1: implementar** lo de los criterios.
+- [x] **Paso 2: comprobar que pasan.** Karma: 1008 de 1008 (antes 982).
+
+### Tarea 2b (ronda 1): los dos campos de la API
+
+**Ficheros:** `J/dtos/response/CajaDTOs.java` (`AlumnoDeMisGrupos.sedes`, `SedeDeGrupo`), `J/services/CajaService.java`
+(`alumnosDeMisGrupos`), `J/dtos/response/SolicitudDTOs.java` (`estadoCobro`, `EstadoCobroEncargo`; constructor sin él
+para los demás usos), `J/services/SolicitudService.java` (`dtos`), `T/integracion/EncargosIntegrationTest.java`,
+`T/integracion/MiCajaProfesorIntegrationTest.java` (la lista blanca de campos admite `sedes`). Sin rutas nuevas: la
+matriz no cambia.
+
+- [x] **Paso 1: tests que fallan:** `alumnosDeMisGrupos_traenLasSedesDeSusGrupos_conLaReglaDePedir` (dos sedes, una y
+  ninguna; con dos, pedir sin sede da 400) y `misSolicitudes_estadoCobroDelEncargo` (PENDIENTE, COBRADO con la
+  devolución pendiente, CANCELADO, DEVUELTO; en la bandeja también; un tipo 1 sin el campo). Fallaban sin los campos.
+- [x] **Paso 2: implementar y comprobar:** `EncargosIntegrationTest`, `MiCajaProfesorIntegrationTest` (con su conteo de
+  sentencias) y `MatrizPermisosTest` en verde; `mvn test -DexcludedGroups=migracion` (1417, 0 fallos) y
+  `mvn test -Dgroups=migracion` (191, 0 fallos). Front: Karma 1009 de 1009.
+
+### Tarea 3: verificación
+
+- [x] **Paso 1:** `npm run build:production` sin aviso de presupuesto (inicial 1,49 MB; Mi caja va en su chunk diferido).
+- [x] **Paso 2:** capturas a 375 y 1280 px con la API simulada (Playwright, datos ficticios), revisadas con impeccable.
+- [x] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. El commit lo hace el router.
+
+Los dos puntos abiertos de la primera entrega (sedes del alumno y estado del cobro) se cerraron en la ronda 1. Pasa a la
+6c-9: la caja de sede pinta `movimientosDeCobro` de la entrega.
+
+---
+
 ## 5. Pieza 6c-7: bandeja, contador y «Pedir al propietario» (detallada)
 
 Rama `feature/6c7-bandeja` desde `feature/multi-escuela` (tras la 6c-3). **Sin migración y sin cambios de backend**:

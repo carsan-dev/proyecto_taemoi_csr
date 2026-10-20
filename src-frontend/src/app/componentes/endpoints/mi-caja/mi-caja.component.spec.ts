@@ -42,7 +42,9 @@ describe('MiCajaComponent', () => {
   function crear(cargos = CARGOS, encima = ENCIMA): void {
     caja = jasmine.createSpyObj<CajaProfesorService>('CajaProfesorService', [
       'cargosPendientes', 'cobrarCargo', 'deshacerCobro', 'productos', 'venderProducto', 'cobrosPendientesEntrega', 'alumnos',
+      'misSolicitudes',
     ]);
+    caja.misSolicitudes.and.returnValue(of([]));
     caja.cargosPendientes.and.returnValue(of(cargos));
     caja.cobrosPendientesEntrega.and.returnValue(of(encima));
     caja.productos.and.returnValue(of([{ id: 4, concepto: 'Camiseta', precio: 12.5 }]));

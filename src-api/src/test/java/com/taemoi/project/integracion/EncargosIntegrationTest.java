@@ -639,6 +639,65 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 				.get("estado").asText());
 	}
 
+	// ------------------------------------------------------------------ 6c-8: sedes del alumno y estado del cobro
+
+	/** D6c-9 en Mi caja: las sedes distintas y no nulas de sus grupos con el alumno, con la regla de pedir. */
+	@Test
+	void alumnosDeMisGrupos_traenLasSedesDeSusGrupos_conLaReglaDePedir() throws Exception {
+		Map<Long, JsonNode> porId = new HashMap<>();
+		leer(get("/api/caja/profesor/alumnos"), s.tProf1, 200).forEach(a -> porId.put(a.get("alumnoId").asLong(), a));
+
+		JsonNode dos = porId.get(s.e.aGrupoA);
+		assertNotNull(dos, porId.keySet().toString());
+		Set<Long> sedesDos = new HashSet<>();
+		dos.get("sedes").forEach(sede -> {
+			sedesDos.add(sede.get("id").asLong());
+			assertFalse(sede.get("nombre").asText().isBlank(), dos.toString());
+		});
+		assertEquals(Set.of(s.e.sA, s.e.sB), sedesDos, "gA (A) y gB (B): dos sedes");
+		assertEquals(400, s.pedir(s.tProf1, s.e.aGrupoA, s.dobok, NOTA, null).getResponse().getStatus(),
+				"con dos sedes, pedir exige la sede");
+
+		JsonNode una = porId.get(s.aProfA);
+		assertEquals(1, una.get("sedes").size(), una.toString());
+		assertEquals(s.e.sA, una.get("sedes").get(0).get("id").asLong());
+
+		JsonNode sinSede = porId.get(s.aSoloSin);
+		assertNotNull(sinSede);
+		assertNull(sinSede.get("sedes"), "solo en un grupo sin sede: el campo no sale");
+	}
+
+	/** El estado del cobro del cargo de cada encargo, en sus solicitudes y en la bandeja; los otros tipos no lo llevan. */
+	@Test
+	void misSolicitudes_estadoCobroDelEncargo() throws Exception {
+		long pendiente = s.encargo();
+		long cobrado = s.encargo();
+		assertEquals(201, estado(post("/api/caja/profesor/cargos/" + cargoDe(cobrado) + "/cobrar"), s.tProf1));
+		long cancelado = s.encargo();
+		leer(post("/api/caja/profesor/solicitudes/" + cancelado + "/retirar"), s.tProf1, 200);
+		long devuelto = s.encargo();
+		assertEquals(201, estado(post("/api/caja/profesor/cargos/" + cargoDe(devuelto) + "/cobrar"), s.tProf1));
+		JsonNode caido = leer(post("/api/caja/profesor/solicitudes/" + devuelto + "/retirar"), s.tProf1, 200);
+		assertEquals("COBRADO", caido.get("estadoCobro").asText(), "con la devolución pendiente sigue cobrado");
+		JsonNode cerrado = leer(post("/api/caja/profesor/solicitudes/" + devuelto + "/devolucion"), s.tProf1, 200);
+		assertEquals("DEVUELTO", cerrado.get("estadoCobro").asText());
+		long tipo1 = tipo1DelGestor();
+
+		Map<Long, JsonNode> suyas = new HashMap<>();
+		leer(get("/api/caja/profesor/solicitudes"), s.tProf1, 200).forEach(x -> suyas.put(x.get("id").asLong(), x));
+		assertEquals("PENDIENTE", suyas.get(pendiente).get("estadoCobro").asText());
+		assertEquals("COBRADO", suyas.get(cobrado).get("estadoCobro").asText());
+		assertEquals("CANCELADO", suyas.get(cancelado).get("estadoCobro").asText());
+		assertEquals("DEVUELTO", suyas.get(devuelto).get("estadoCobro").asText());
+
+		Map<Long, JsonNode> bandeja = new HashMap<>();
+		s.segmento("ENCARGOS").forEach(x -> bandeja.put(x.get("id").asLong(), x));
+		assertEquals("COBRADO", bandeja.get(cobrado).get("estadoCobro").asText());
+		Map<Long, JsonNode> pendientes = new HashMap<>();
+		s.segmento("PENDIENTES").forEach(x -> pendientes.put(x.get("id").asLong(), x));
+		assertNull(pendientes.get(tipo1).get("estadoCobro"), "un tipo 1 no lleva el campo");
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	/** Un tipo 1 pendiente del gestor sobre un cargo pagado sin cobro (decisión 191). */

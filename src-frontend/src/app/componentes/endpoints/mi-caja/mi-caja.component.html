@@ -40,6 +40,14 @@
       [class.activa]="pestana === 'encima'" (click)="elegirPestana('encima')">
       Encima <span class="contador">{{ numeroEncima }}</span>
     </button>
+    <button type="button" role="tab" id="pestana-pedidos" aria-controls="panel-pedidos"
+      [attr.aria-selected]="pestana === 'pedidos'" [attr.tabindex]="pestana === 'pedidos' ? 0 : -1"
+      [class.activa]="pestana === 'pedidos'" (click)="elegirPestana('pedidos')">
+      Pedidos
+      @if (solicitudesCargadas) {
+        <span class="contador" [class.contador-aviso]="numeroPedidos > 0">{{ numeroPedidos }}</span>
+      }
+    </button>
   </div>
 
   <!-- ============================================================ Por cobrar -->
@@ -218,10 +226,194 @@
           }
         </ul>
       }
-      <p class="nota">Lo ya entregado no se deshace aquí.</p>
+
+      <section class="entregados" aria-labelledby="tituloEntregados">
+        <h2 class="titulo-plegable" id="tituloEntregados">
+          <button type="button" class="btn-plegable" [attr.aria-expanded]="entregadosAbierto"
+            aria-controls="listaEntregados" (click)="alternarEntregados()">
+            <span class="plegable-texto">
+              <span class="plegable-titulo">Entregados recientes</span>
+              <span class="meta">Últimos 30 días</span>
+            </span>
+            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+          </button>
+        </h2>
+        <div id="listaEntregados" class="entregados-cuerpo" [hidden]="!entregadosAbierto"
+          [attr.aria-busy]="cargandoEntregados">
+          @if (entregadosAbierto) {
+            @if (errorEntregados) {
+              <div class="estado estado-error" role="alert">
+                <p>{{ errorEntregados }}</p>
+                <button type="button" class="btn-secundario" (click)="cargarEntregados()">Reintentar</button>
+              </div>
+            } @else if (entregados === null) {
+              <div class="esqueleto" role="status" aria-label="Cargando los cobros entregados">
+                <span></span><span></span>
+              </div>
+            } @else if (entregados.length === 0) {
+              <div class="estado">
+                <p><strong>Nada entregado en los últimos 30 días</strong></p>
+                <p>Lo más antiguo lo revisa la sede.</p>
+              </div>
+            } @else {
+              <ul class="filas">
+                @for (c of entregados; track c.cobroId) {
+                  <li class="fila fila-encima fila-entregado">
+                    <strong class="fila-nombre">{{ nombreEntregado(c) }}</strong>
+                    <span class="meta">{{ c.concepto }} · entregado el {{ diaMes(c.fechaEntrega) }}@if (c.sedeNombre) { · {{ c.sedeNombre }}}</span>
+                    <span class="importe">{{ euros(c.importe) }}</span>
+                    @if (c.solicitudPendienteId) {
+                      <span class="chip-solicitud fila-accion" data-estado="PENDIENTE">Esperando al propietario</span>
+                    } @else if (!c.noSePuedePedir) {
+                      <button type="button" class="btn-pedir-deshacer fila-accion" (click)="abrirPedirDeshacer(c, $event)"
+                        [attr.aria-label]="'Pedir deshacer el cobro de ' + c.concepto + ' a ' + nombreEntregado(c)">
+                        Pedir deshacer
+                      </button>
+                    } @else {
+                      <p class="fila-aviso"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ c.noSePuedePedir }}</p>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </div>
+      </section>
+      <p class="nota">Lo ya entregado está en la caja de la sede: deshacerlo se pide al propietario.</p>
+    }
+  </section>
+
+  <!-- ============================================================ Pedidos (6c-8) -->
+  <section class="panel" id="panel-pedidos" role="tabpanel" aria-labelledby="pestana-pedidos"
+    [hidden]="pestana !== 'pedidos'" [attr.aria-busy]="cargandoSolicitudes">
+    @if (pestana === 'pedidos') {
+      <button type="button" class="btn-encargar" (click)="abrirEncargo($event)">
+        <i class="bi bi-bag-plus" aria-hidden="true"></i> Encargar un producto
+      </button>
+
+      @if (errorSolicitudes) {
+        <div class="estado estado-error" role="alert">
+          <p>{{ errorSolicitudes }}</p>
+          <button type="button" class="btn-secundario" (click)="cargarSolicitudes()">Reintentar</button>
+        </div>
+      } @else if (!solicitudesCargadas) {
+        <div class="esqueleto" role="status" aria-label="Cargando tus pedidos">
+          <span></span><span></span><span></span>
+        </div>
+      } @else if (encargosEnCurso.length + encargosTerminados.length + solicitudesDeshacer.length === 0) {
+        <div class="estado">
+          <i class="bi bi-box-seam" aria-hidden="true"></i>
+          <p><strong>Aún no has encargado nada</strong></p>
+          <p>Encarga material o ropa del catálogo para un alumno: la escuela lo pide y te lo da al recibirlo.</p>
+        </div>
+      } @else {
+        @if (encargosEnCurso.length) {
+          <h2 class="titulo-bloque">En curso</h2>
+          <ul class="encargos">
+            @for (s of encargosEnCurso; track s.id) {
+              <ng-container *ngTemplateOutlet="tplEncargo; context: { $implicit: s }"></ng-container>
+            }
+          </ul>
+        }
+        @if (encargosTerminados.length) {
+          <h2 class="titulo-bloque">Terminados</h2>
+          <ul class="encargos">
+            @for (s of encargosTerminados; track s.id) {
+              <ng-container *ngTemplateOutlet="tplEncargo; context: { $implicit: s }"></ng-container>
+            }
+          </ul>
+        }
+        @if (solicitudesDeshacer.length) {
+          <h2 class="titulo-bloque">Deshacer cobros entregados</h2>
+          <ul class="encargos">
+            @for (s of solicitudesDeshacer; track s.id) {
+              <li class="encargo" [attr.data-solicitud]="s.id">
+                <div class="encargo-cabeza">
+                  <strong class="encargo-alumno">{{ nombreSolicitud(s) }}</strong>
+                  @if (s.importe !== null) {
+                    <span class="importe">{{ euros(s.importe) }}</span>
+                  }
+                </div>
+                <p class="encargo-concepto">{{ s.concepto }} <span class="meta">· pedido el {{ diaMes(s.solicitadoEn) }}</span></p>
+                <p class="encargo-nota"><span class="visually-hidden">Motivo: </span>{{ s.motivo }}</p>
+                <div class="encargo-pie">
+                  <span class="chip-solicitud" [attr.data-estado]="s.estado">{{ etiquetaDeshacer(s.estado) }}</span>
+                  @if (puedeRetirar(s)) {
+                    <button type="button" class="btn-retirar" (click)="abrirRetirar(s, $event)"
+                      [attr.aria-label]="'Retirar la solicitud de deshacer ' + s.concepto + ' de ' + nombreSolicitud(s)">
+                      Retirar
+                    </button>
+                  }
+                </div>
+                @if (s.respuesta) {
+                  <p class="respuesta">
+                    <span class="respuesta-etiqueta">{{ s.estado === 'NO_APLICABLE' ? 'Por qué:' : 'Respuesta:' }}</span>
+                    {{ s.respuesta }}
+                  </p>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+      <p class="nota">Solo material y ropa del catálogo. El cargo se apunta al alumno al encargar y lo cobras desde «Por cobrar».</p>
     }
   </section>
 </section>
+
+<!-- Un encargo: línea de estados, estado del cobro y lo que puede hacer el profesor. -->
+<ng-template #tplEncargo let-s>
+  <li class="encargo" [attr.data-solicitud]="s.id"
+    [class.encargo-accion]="puedeMarcarEntregado(s) || puedeRegistrarDevolucion(s)">
+    <div class="encargo-cabeza">
+      <strong class="encargo-alumno">{{ nombreSolicitud(s) }}</strong>
+      @if (s.importe !== null) {
+        <span class="importe">{{ euros(s.importe) }}</span>
+      }
+    </div>
+    <p class="encargo-concepto">{{ s.concepto }} <span class="meta">· pedido el {{ diaMes(s.solicitadoEn) }}</span></p>
+    @if (s.motivo) {
+      <p class="encargo-nota"><span class="visually-hidden">Nota: </span>{{ s.motivo }}</p>
+    }
+    @if (encargoCaido(s)) {
+      <p class="caida" [attr.data-estado]="s.estado">
+        <i class="bi bi-x-circle" aria-hidden="true"></i>
+        <span><strong>{{ s.estado === 'RECHAZADO' ? 'Rechazado' : 'Retirado' }}</strong>@if (s.respuesta) {: {{ s.respuesta }}}</span>
+      </p>
+    } @else {
+      <ol class="pasos" aria-label="Recorrido del encargo">
+        @for (paso of pasosEncargo; track paso.estado; let i = $index) {
+          <li class="paso" [class.hecho]="i < indicePasoEncargo(s)" [class.actual]="i === indicePasoEncargo(s)"
+            [attr.aria-current]="i === indicePasoEncargo(s) ? 'step' : null">{{ paso.etiqueta }}</li>
+        }
+      </ol>
+    }
+    <div class="encargo-pie">
+      @if (estadoCobro(s); as cobro) {
+        <span class="chip-cobro" [attr.data-cobro]="cobro">{{ etiquetaCobro(cobro) }}</span>
+      }
+      @if (puedeRetirar(s)) {
+        <button type="button" class="btn-retirar" (click)="abrirRetirar(s, $event)"
+          [attr.aria-label]="'Retirar el encargo de ' + s.concepto + ' para ' + nombreSolicitud(s)">
+          Retirar
+        </button>
+      }
+      @if (puedeMarcarEntregado(s)) {
+        <button type="button" class="btn-entregado" (click)="abrirEntregado(s, $event)">Marcar entregado al alumno</button>
+      }
+    </div>
+    @if (puedeRegistrarDevolucion(s)) {
+      <div class="devolucion">
+        <p><strong>Devolución pendiente.</strong> Llevas encima su cobro: devuélvelo a la familia y regístralo.</p>
+        <button type="button" class="btn-devolucion" (click)="abrirDevolucion(s, $event)">Registrar devolución</button>
+      </div>
+    } @else if (devolucionEnLaSede(s)) {
+      <p class="devolucion devolucion-sede">
+        <i class="bi bi-building" aria-hidden="true"></i> Devolución pendiente en la sede
+      </p>
+    }
+  </li>
+</ng-template>
 
 <!-- ============================================================ Hoja: cobrar / vender -->
 @if (hoja) {
@@ -290,14 +482,250 @@
   </section>
 }
 
+<!-- ============================================================ Hoja: encargar un producto (6c-8) -->
+@if (hojaEncargo; as h) {
+  <div class="hoja-fondo" (click)="cerrarEncargo()" aria-hidden="true"></div>
+  <section class="hoja hoja-formulario" role="dialog" aria-modal="true" aria-labelledby="tituloEncargo"
+    cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloEncargo">Encargar un producto</h2>
+    @if (errorCargaEncargo) {
+      <div class="estado estado-error" role="alert">
+        <p>{{ errorCargaEncargo }}</p>
+        <button type="button" class="btn-secundario" (click)="cargarDatosEncargo()">Reintentar</button>
+      </div>
+      <div class="hoja-acciones">
+        <button type="button" class="btn-cancelar" (click)="cerrarEncargo()">Cancelar</button>
+      </div>
+    } @else if (cargandoEncargo) {
+      <div class="esqueleto" role="status" aria-label="Cargando tus alumnos y el catálogo">
+        <span></span><span></span>
+      </div>
+    } @else {
+      <fieldset class="campo">
+        <legend class="campo-etiqueta">Alumno</legend>
+        @if (h.alumno) {
+          <div class="alumno-elegido">
+            <div>
+              <strong>{{ nombreAlumno(h.alumno) }}</strong>
+              @if (h.alumno.grupos.length) {
+                <span class="meta">{{ h.alumno.grupos.join(', ') }}</span>
+              }
+            </div>
+            <button type="button" class="btn-secundario" [disabled]="h.enviando" (click)="cambiarAlumnoEncargo()">Cambiar</button>
+          </div>
+        } @else if (alumnos.length === 0) {
+          <p class="campo-ayuda">No tienes alumnos activos en tus grupos.</p>
+        } @else {
+          <label class="buscador">
+            <span class="visually-hidden">Buscar alumno de tus grupos</span>
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="buscarAlumnoEncargo" placeholder="Buscar alumno" autocomplete="off"
+              [(ngModel)]="h.busqueda" />
+          </label>
+          <ul class="lista-eleccion lista-eleccion-corta" aria-label="Alumnos de tus grupos">
+            @for (alumno of alumnosEncargoFiltrados; track alumno.alumnoId) {
+              <li>
+                <button type="button" class="eleccion" (click)="elegirAlumnoEncargo(alumno)">
+                  <strong>{{ nombreAlumno(alumno) }}</strong>
+                  @if (alumno.grupos.length) {
+                    <span class="meta">{{ alumno.grupos.join(', ') }}</span>
+                  }
+                </button>
+              </li>
+            } @empty {
+              <li class="sin-coincidencias">Ningún alumno de tus grupos se llama «{{ h.busqueda }}».</li>
+            }
+          </ul>
+        }
+        @if (h.intentado && campoEncargoConError === 'alumno') {
+          <p class="campo-error" role="alert">{{ errorEncargo }}</p>
+        }
+      </fieldset>
+
+      <fieldset class="campo">
+        <legend class="campo-etiqueta">Producto</legend>
+        @if (productosEncargables.length === 0) {
+          <p class="campo-ayuda">El catálogo no tiene material ni ropa para encargar.</p>
+        } @else {
+          <div class="opciones">
+            @for (producto of productosEncargables; track producto.id) {
+              <label class="opcion" [class.elegida]="h.productoId === producto.id">
+                <input type="radio" name="productoEncargo" [value]="producto.id" [(ngModel)]="h.productoId"
+                  [disabled]="h.enviando" />
+                <span class="opcion-texto">{{ producto.concepto }}</span>
+                <span class="importe">{{ euros(producto.precio) }}</span>
+              </label>
+            }
+          </div>
+        }
+        @if (h.intentado && campoEncargoConError === 'producto') {
+          <p class="campo-error" role="alert">{{ errorEncargo }}</p>
+        }
+      </fieldset>
+
+      <div class="campo">
+        <label class="campo-etiqueta" for="notaEncargo">Nota</label>
+        <textarea id="notaEncargo" rows="2" [maxlength]="maxNotaEncargo" placeholder="Talla, color…"
+          [(ngModel)]="h.nota" [disabled]="h.enviando" aria-describedby="ayudaNotaEncargo"
+          [attr.aria-invalid]="h.intentado && campoEncargoConError === 'nota'"></textarea>
+        <p class="campo-ayuda" id="ayudaNotaEncargo">Va con el encargo y en el cargo del alumno · {{ h.nota.length }}/{{ maxNotaEncargo }}</p>
+        @if (h.intentado && campoEncargoConError === 'nota') {
+          <p class="campo-error" role="alert">{{ errorEncargo }}</p>
+        }
+      </div>
+
+      @if (h.pedirSede) {
+        <div class="campo">
+          <label class="campo-etiqueta" for="sedeEncargo">Sede</label>
+          @if (opcionesSede.length) {
+            <select id="sedeEncargo" [(ngModel)]="h.sedeId" [disabled]="h.enviando" aria-describedby="ayudaSedeEncargo"
+              [attr.aria-invalid]="h.intentado && campoEncargoConError === 'sede'">
+              <option [ngValue]="null" disabled>Elige la sede</option>
+              @for (sede of opcionesSede; track sede.id) {
+                <option [ngValue]="sede.id">{{ sede.nombre }}</option>
+              }
+            </select>
+            <p class="campo-ayuda" id="ayudaSedeEncargo">El alumno está en grupos tuyos de varias sedes: lo atiende la que elijas.</p>
+          } @else {
+            <p class="campo-ayuda" id="ayudaSedeEncargo">No se puede elegir la sede desde aquí: pide este encargo a la gestión.</p>
+          }
+          @if (h.intentado && campoEncargoConError === 'sede') {
+            <p class="campo-error" role="alert">{{ errorEncargo }}</p>
+          }
+        </div>
+      }
+
+      <p class="hoja-nota">
+        Se apunta al alumno al precio del catálogo@if (productoEncargo) { ({{ euros(productoEncargo.precio) }})}. Lo cobras desde «Por cobrar».
+      </p>
+      @if (h.error) {
+        <p class="hoja-error" role="alert">{{ h.error }}</p>
+      }
+      <div class="hoja-acciones">
+        <button type="button" class="btn-azul-grande" [disabled]="h.enviando" (click)="confirmarEncargo()">
+          @if (h.enviando) {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+          }
+          Encargar
+        </button>
+        <button type="button" class="btn-cancelar" [disabled]="h.enviando" (click)="cerrarEncargo()">Cancelar</button>
+      </div>
+    }
+  </section>
+}
+
+<!-- ============================================================ Hoja: retirar / marcar entregado -->
+@if (hojaAccion; as h) {
+  <div class="hoja-fondo" (click)="cerrarAccion()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloAccion" aria-describedby="notaAccion"
+    cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloAccion">{{ h.titulo }}</h2>
+    <p class="hoja-detalle">{{ h.detalle }}</p>
+    <p class="hoja-nota" id="notaAccion">{{ h.nota }}</p>
+    @if (h.error) {
+      <p class="hoja-error" role="alert">{{ h.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" [class.btn-peligro-grande]="h.peligro" [class.btn-azul-grande]="!h.peligro"
+        [disabled]="h.enviando" (click)="confirmarAccion()">
+        @if (h.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        {{ h.verbo }}
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="h.enviando" (click)="cerrarAccion()">Cancelar</button>
+    </div>
+  </section>
+}
+
+<!-- ============================================================ Hoja: registrar devolución (195) -->
+@if (hojaDevolucion; as h) {
+  <div class="hoja-fondo" (click)="cerrarDevolucion()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloDevolucion"
+    aria-describedby="detalleDevolucion" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloDevolucion">Registrar devolución</h2>
+    <p class="hoja-importe">{{ euros(h.solicitud.importe ?? 0) }}</p>
+    <p class="hoja-detalle" id="detalleDevolucion">{{ nombreSolicitud(h.solicitud) }} · {{ h.solicitud.concepto }}</p>
+    <p class="hoja-nota">Se devuelve el cobro entero y sale de lo que llevas encima. Da el dinero a la familia.</p>
+    <div class="campo">
+      <label class="campo-etiqueta" for="notaDevolucion">Nota <span class="meta">(opcional)</span></label>
+      <textarea id="notaDevolucion" rows="2" [maxlength]="maxMotivo" [(ngModel)]="h.nota" [disabled]="h.enviando"
+        placeholder="Por ejemplo, a quién se lo diste"></textarea>
+    </div>
+    @if (h.error) {
+      <p class="hoja-error" role="alert">{{ h.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" class="btn-peligro-grande" [disabled]="h.enviando" (click)="confirmarDevolucion()">
+        @if (h.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        Devolver {{ euros(h.solicitud.importe ?? 0) }}
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="h.enviando" (click)="cerrarDevolucion()">Cancelar</button>
+    </div>
+  </section>
+}
+
+<!-- ============================================================ Hoja: pedir deshacer un cobro entregado (193) -->
+@if (hojaPedirDeshacer; as h) {
+  <div class="hoja-fondo" (click)="cerrarPedirDeshacer()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloPedirDeshacer"
+    aria-describedby="detallePedirDeshacer" cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloPedirDeshacer">Pedir al propietario que deshaga este cobro</h2>
+    <p class="hoja-importe">{{ euros(h.cobro.importe) }}</p>
+    <p class="hoja-detalle" id="detallePedirDeshacer">{{ nombreEntregado(h.cobro) }} · {{ h.cobro.concepto }}</p>
+    <p class="meta">Entregado el {{ diaMes(h.cobro.fechaEntrega) }}@if (h.cobro.sedeNombre) { en {{ h.cobro.sedeNombre }}}</p>
+    <fieldset class="motivos motivos-azul">
+      <legend class="campo-etiqueta">Qué ha pasado</legend>
+      <label class="motivo" [class.elegido]="h.motivoDeshacer === 'AUN_NO_PAGADO'">
+        <input type="radio" name="queHaPasado" value="AUN_NO_PAGADO" [(ngModel)]="h.motivoDeshacer"
+          [disabled]="h.enviando" />
+        <span>Aún no ha pagado <span class="meta">(queda pendiente)</span></span>
+      </label>
+      @if (h.cobro.venta) {
+        <label class="motivo" [class.elegido]="h.motivoDeshacer === 'NO_HUBO_VENTA'">
+          <input type="radio" name="queHaPasado" value="NO_HUBO_VENTA" [(ngModel)]="h.motivoDeshacer"
+            [disabled]="h.enviando" />
+          <span>No hubo venta <span class="meta">(se cancela el cargo)</span></span>
+        </label>
+      }
+    </fieldset>
+    <div class="campo">
+      <label class="campo-etiqueta" for="motivoPedirDeshacer">Motivo</label>
+      <textarea id="motivoPedirDeshacer" rows="3" [maxlength]="maxMotivo" [(ngModel)]="h.motivo"
+        [disabled]="h.enviando" placeholder="Qué pasó, para que el propietario lo entienda"
+        [attr.aria-invalid]="h.intentado && !!errorPedirDeshacer"></textarea>
+      @if (h.intentado && errorPedirDeshacer) {
+        <p class="campo-error" role="alert">{{ errorPedirDeshacer }}</p>
+      }
+    </div>
+    <p class="hoja-nota">Mientras tanto el cobro sigue entregado en la sede.</p>
+    @if (h.error) {
+      <p class="hoja-error" role="alert">{{ h.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" class="btn-azul-grande" [disabled]="h.enviando" (click)="confirmarPedirDeshacer()">
+        @if (h.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        Enviar solicitud
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="h.enviando" (click)="cerrarPedirDeshacer()">Cancelar</button>
+    </div>
+  </section>
+}
+
 <!-- ============================================================ Aviso con deshacer -->
 <div class="aviso-zona" role="status" aria-live="polite">
   @if (aviso) {
     <div class="aviso">
       <span class="aviso-texto">{{ aviso.texto }}</span>
-      <button type="button" class="aviso-deshacer" [disabled]="aviso.deshaciendo" (click)="deshacerDesdeAviso()">
-        {{ aviso.deshaciendo ? 'Deshaciendo…' : 'Deshacer' }}
-      </button>
+      @if (aviso.cobroId !== null) {
+        <button type="button" class="aviso-deshacer" [disabled]="aviso.deshaciendo" (click)="deshacerDesdeAviso()">
+          {{ aviso.deshaciendo ? 'Deshaciendo…' : 'Deshacer' }}
+        </button>
+      }
     </div>
   }
 </div>

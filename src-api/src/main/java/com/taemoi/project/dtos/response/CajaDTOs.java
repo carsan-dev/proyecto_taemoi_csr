@@ -38,9 +38,23 @@ public final class CajaDTOs {
 	/**
 	 * Pieza 6b-3b-1: un alumno ACTIVO de los grupos del profesor de la sesión (para «Vender» en «Mi caja»).
 	 * {@code grupos}: los nombres de SUS grupos (los del profesor) en los que está el alumno, por nombre. Sin datos
-	 * sensibles (ni salud, ni DNI, ni contacto).
+	 * sensibles (ni salud, ni DNI, ni contacto). Pieza 6c-8: {@code sedes}, las sedes distintas y no nulas de esos
+	 * grupos, por nombre (no sale en el JSON si no hay ninguna).
 	 */
-	public record AlumnoDeMisGrupos(Long alumnoId, String nombre, String apellidos, List<String> grupos) {
+	public record AlumnoDeMisGrupos(Long alumnoId, String nombre, String apellidos, List<String> grupos,
+			@JsonInclude(JsonInclude.Include.NON_EMPTY) List<SedeDeGrupo> sedes) {
+
+		/** Sin sedes (todos sus grupos con él son sin sede). */
+		public AlumnoDeMisGrupos(Long alumnoId, String nombre, String apellidos, List<String> grupos) {
+			this(alumnoId, nombre, apellidos, grupos, List.of());
+		}
+	}
+
+	/**
+	 * Pieza 6c-8 (D6c-9): una sede de los grupos del profesor en los que está el alumno. Con dos o más, al encargar hay
+	 * que elegir una (la regla de {@code EncargoService} al pedir).
+	 */
+	public record SedeDeGrupo(Long id, String nombre) {
 	}
 
 	/** Un producto del catálogo que el profesor puede apuntar y cobrar (lista blanca de la 6b-2). */

@@ -53,7 +53,16 @@ export interface Solicitud {
   devolucionPendiente: boolean;
   /** La pidió la sesión: puede retirarla mientras esté pendiente. */
   propia: boolean;
+  /** 6c-6: la devolución que cerró el encargo caído (195). */
+  movimientoDevolucionId?: number | null;
+  /** 6c-6: con la devolución pendiente, `true` la registra la sede y `false` el profesor; si no, `null`. */
+  devolucionEnSede?: boolean | null;
+  /** 6c-8: solo en un encargo con cargo, cómo está ese cargo. */
+  estadoCobro?: EstadoCobroCargo | null;
 }
+
+/** SolicitudDTOs.EstadoCobroEncargo. */
+export type EstadoCobroCargo = 'PENDIENTE' | 'COBRADO' | 'DEVUELTO' | 'CANCELADO';
 
 /** `POST /api/solicitudes`: un solo recurso, el de su tipo. */
 export interface CrearSolicitud {

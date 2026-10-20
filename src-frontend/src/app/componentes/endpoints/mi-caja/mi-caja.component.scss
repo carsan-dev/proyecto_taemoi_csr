@@ -11,6 +11,10 @@ $tinta: #1a202c;
 $gris: #4a5568;
 $linea: #e2e8f0;
 $fondo: #f4f7fa;
+$ambar: #8a5300; // texto sobre $ambar-claro (7:1)
+$ambar-claro: #fffaf0;
+$ambar-borde: #f6c77a;
+$tenue: #64748b; // gris de lo que aún no ha pasado (4,8:1 sobre blanco)
 $tactil: 2.75rem; // 44 px
 
 :host {
@@ -30,7 +34,7 @@ $tactil: 2.75rem; // 44 px
   gap: 1rem;
 }
 
-:is(button, input, a):focus-visible {
+:is(button, input, a, textarea, select):focus-visible {
   outline: 2px solid $azul;
   outline-offset: 2px;
 }
@@ -130,7 +134,7 @@ $tactil: 2.75rem; // 44 px
   top: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.25rem;
   padding: 0.25rem;
   border-radius: 12px;
@@ -167,9 +171,26 @@ $tactil: 2.75rem; // 44 px
     font-size: 0.78rem;
   }
 
+  // Pedidos: lo que espera su acción se distingue en ámbar.
+  .contador-aviso {
+    background: $ambar-borde;
+  }
+
   button.activa .contador {
     background: $azul;
     color: #ffffff;
+  }
+}
+
+// Cuatro pestañas en un móvil: el contador baja bajo la etiqueta.
+@media (max-width: 32rem) {
+  .pestanas button {
+    flex-direction: column;
+    justify-content: flex-start; // las etiquetas en la misma línea, con contador o sin él
+    gap: 0.1rem;
+    min-height: 3.25rem;
+    padding: 0.45rem 0.15rem 0.3rem;
+    font-size: 0.84rem;
   }
 }
 
@@ -181,7 +202,7 @@ $tactil: 2.75rem; // 44 px
   gap: 0.85rem;
 }
 
-// Los tres paneles existen siempre (destino de `aria-controls`); el inactivo se oculta.
+// Los paneles existen siempre (destino de `aria-controls`); el inactivo se oculta.
 .panel[hidden] {
   display: none;
 }
@@ -238,7 +259,8 @@ $tactil: 2.75rem; // 44 px
 
 .alumno,
 .filas-catalogo,
-.panel > .filas {
+.panel > .filas,
+.entregados .filas {
   background: #ffffff;
   border: 1px solid $linea;
   border-radius: 12px;
@@ -266,6 +288,7 @@ $tactil: 2.75rem; // 44 px
 }
 
 .panel > .filas .fila:first-child,
+.entregados .filas .fila:first-child,
 .filas-catalogo .fila:first-child {
   border-top: 0;
 }
@@ -587,6 +610,7 @@ $tactil: 2.75rem; // 44 px
 
 .btn-principal-grande,
 .btn-peligro-grande,
+.btn-azul-grande,
 .btn-cancelar {
   min-height: 3.1rem;
   border-radius: 10px;
@@ -631,7 +655,17 @@ $tactil: 2.75rem; // 44 px
   }
 }
 
-:is(.btn-principal-grande, .btn-peligro-grande, .btn-cancelar):disabled {
+.btn-azul-grande {
+  border: 0;
+  background: $azul;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: $azul-hondo;
+  }
+}
+
+:is(.btn-principal-grande, .btn-peligro-grande, .btn-azul-grande, .btn-cancelar):disabled {
   opacity: 0.75;
   cursor: progress;
 }
@@ -747,6 +781,552 @@ $tactil: 2.75rem; // 44 px
   }
 }
 
+// ---------------------------------------------------------------- pedidos (6c-8)
+
+.btn-encargar {
+  min-height: 3.1rem;
+  border: 0;
+  border-radius: 10px;
+  background: $azul;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    background: $azul-hondo;
+  }
+}
+
+.encargos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.encargo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.85rem 0.85rem 1rem;
+  background: #ffffff;
+  border: 1px solid $linea;
+  border-radius: 12px;
+}
+
+// Espera su acción: el borde entero en ámbar (sin franja lateral).
+.encargo-accion {
+  border-color: $ambar-borde;
+  box-shadow: 0 4px 14px rgba(138, 83, 0, 0.08);
+}
+
+.encargo-cabeza {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.encargo-alumno {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.encargo-concepto,
+.encargo-nota,
+.respuesta {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.encargo-concepto {
+  font-weight: 600;
+}
+
+.encargo-nota {
+  font-size: 0.88rem;
+  color: $gris;
+
+  &::before {
+    content: '«';
+  }
+
+  &::after {
+    content: '»';
+  }
+}
+
+// Línea de estados: pedido → encargado → recibido → entregado.
+.pasos {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.paso {
+  position: relative;
+  padding-top: 1.15rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $tenue;
+
+  // El punto del paso.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0.1rem;
+    left: 50%;
+    z-index: 1;
+    box-sizing: border-box;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-left: -0.375rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 50%;
+    background: #ffffff;
+  }
+
+  // El tramo que lo une con el anterior.
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0.42rem;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: #cbd5e0;
+  }
+
+  &:first-child::after {
+    display: none;
+  }
+
+  &.hecho {
+    color: $gris;
+
+    &::before {
+      border-color: $azul;
+      background: $azul;
+    }
+
+    &::after {
+      background: $azul;
+    }
+  }
+
+  &.actual {
+    color: $azul-hondo;
+    font-weight: 800;
+
+    &::before {
+      border-color: $azul;
+      box-shadow: 0 0 0 3px rgba($azul, 0.22);
+    }
+
+    &::after {
+      background: $azul;
+    }
+  }
+}
+
+.caida {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: $gris;
+  overflow-wrap: anywhere;
+
+  i {
+    margin-top: 0.1rem;
+  }
+
+  &[data-estado='RECHAZADO'] {
+    color: #822727;
+  }
+}
+
+.encargo-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+
+  > button {
+    margin-left: auto;
+  }
+}
+
+.chip-cobro,
+.chip-solicitud {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip-cobro {
+  &[data-cobro='pendiente'] {
+    background: #edf2f7;
+    color: $gris;
+  }
+
+  &[data-cobro='cobrado'] {
+    background: #e6f4ea;
+    color: $verde-hondo;
+  }
+
+  &[data-cobro='devuelto'] {
+    background: #ebf4ff;
+    color: $azul-hondo;
+  }
+
+  &[data-cobro='cancelado'] {
+    border-color: $linea;
+    background: #ffffff;
+    color: $tenue;
+  }
+}
+
+.chip-solicitud {
+  background: #edf2f7;
+  color: $gris;
+
+  &[data-estado='PENDIENTE'],
+  &[data-estado='NO_APLICABLE'] {
+    border-color: $ambar-borde;
+    background: $ambar-claro;
+    color: $ambar;
+  }
+
+  &[data-estado='ACEPTADA'] {
+    background: #e6f4ea;
+    color: $verde-hondo;
+  }
+
+  &[data-estado='DENEGADA'] {
+    background: #fff5f5;
+    color: $rojo-hondo;
+  }
+}
+
+.respuesta {
+  font-size: 0.88rem;
+  color: $gris;
+}
+
+.respuesta-etiqueta {
+  font-weight: 700;
+  color: $tinta;
+}
+
+.btn-retirar,
+.btn-entregado,
+.btn-devolucion,
+.btn-pedir-deshacer {
+  min-height: $tactil;
+  padding: 0 0.95rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-retirar {
+  border: 1px solid #feb2b2;
+  background: #ffffff;
+  color: $rojo-hondo;
+
+  &:hover {
+    background: #fff5f5;
+  }
+}
+
+.btn-entregado {
+  border: 0;
+  background: $azul;
+  color: #ffffff;
+
+  &:hover {
+    background: $azul-hondo;
+  }
+}
+
+.btn-pedir-deshacer {
+  border: 1px solid #9ec5ea;
+  background: #ffffff;
+  color: $azul-hondo;
+
+  &:hover {
+    background: #ebf4ff;
+  }
+}
+
+.btn-devolucion {
+  align-self: flex-start;
+  border: 0;
+  background: $rojo;
+  color: #ffffff;
+
+  &:hover {
+    background: $rojo-hondo;
+  }
+}
+
+.devolucion {
+  margin: 0.1rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid $ambar-borde;
+  border-radius: 10px;
+  background: $ambar-claro;
+  color: $ambar;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+.devolucion-sede {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+}
+
+// «Entregados recientes» (plegable) en «Encima».
+.entregados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.titulo-plegable {
+  margin: 0;
+  font-size: inherit;
+}
+
+.btn-plegable {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.55rem 0.9rem 0.55rem 1rem;
+  border: 1px solid $linea;
+  border-radius: 12px;
+  background: #ffffff;
+  color: $tinta;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+
+  i {
+    color: $gris;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &[aria-expanded='true'] i {
+    transform: rotate(180deg);
+  }
+
+  &:hover {
+    background: #f7fafc;
+  }
+}
+
+.plegable-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.15rem 0;
+}
+
+.plegable-titulo {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.entregados-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// Nombre e importe arriba; el concepto con su entrega, entero; debajo, lo que se puede hacer.
+.fila-entregado {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'nombre importe'
+    'meta meta'
+    'pie pie';
+
+  .fila-accion {
+    grid-area: pie;
+    justify-self: end;
+    margin-top: 0.35rem;
+  }
+
+  .chip-solicitud {
+    grid-area: pie;
+    justify-self: start;
+    margin-top: 0.3rem;
+  }
+
+  .fila-aviso {
+    grid-area: pie;
+    margin: 0.2rem 0 0;
+    display: flex;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: $gris;
+  }
+}
+
+// Formularios dentro de las hojas.
+.hoja-formulario {
+  gap: 0.25rem;
+}
+
+.campo {
+  min-width: 0;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+
+  textarea,
+  select {
+    width: 100%;
+    min-height: $tactil;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: $tinta;
+    font: inherit;
+    font-size: 1rem; // 16 px: iOS no hace zoom al enfocar
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  textarea::placeholder {
+    color: #5f6b7a;
+  }
+
+  [aria-invalid='true'] {
+    border-color: $rojo;
+  }
+}
+
+.campo-etiqueta {
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $tinta;
+}
+
+.campo-ayuda {
+  margin: 0;
+  font-size: 0.82rem;
+  color: $gris;
+}
+
+.campo-error {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $rojo-hondo;
+}
+
+.lista-eleccion-corta {
+  max-height: 12rem;
+}
+
+.opciones {
+  max-height: 14rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.opcion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    accent-color: $azul;
+  }
+
+  &.elegida {
+    border-color: $azul;
+    background: #ebf4ff;
+  }
+}
+
+.opcion-texto {
+  overflow-wrap: anywhere;
+}
+
+.motivos-azul {
+  legend {
+    margin-bottom: 0.1rem;
+  }
+
+  .motivo input {
+    accent-color: $azul;
+  }
+
+  .motivo.elegido {
+    border-color: $azul;
+    background: #ebf4ff;
+  }
+}
+
 // ---------------------------------------------------------------- escritorio
 
 @media (min-width: 768px) {
@@ -767,6 +1347,24 @@ $tactil: 2.75rem; // 44 px
     animation: aparecer 160ms ease-out;
   }
 
+  .hoja-formulario {
+    width: min(30rem, calc(100vw - 2rem));
+  }
+
+  // Con sitio, «Pedir deshacer» va en la línea del importe.
+  .fila-entregado {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'nombre importe accion'
+      'meta meta meta'
+      'pie pie pie';
+
+    .fila-accion {
+      grid-area: accion;
+      margin-top: 0;
+    }
+  }
+
   .hoja-acciones {
     flex-direction: row-reverse;
 
@@ -782,5 +1380,9 @@ $tactil: 2.75rem; // 44 px
   .aviso,
   .esqueleto span {
     animation: none;
+  }
+
+  .btn-plegable i {
+    transition: none;
   }
 }
