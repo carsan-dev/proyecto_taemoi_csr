@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (428 líneas; 141 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (432 líneas; 143 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -225,6 +225,18 @@ gestión se abre al profesor. Lo prueba `ProfesorGruposIntegrationTest`.
 - El resto de roles, `DENIEGA` en las seis (también PROPIETARIO y GESTOR, que tienen las de gestión, D7-10, y
   RESPONSABLE_SEDE). Las cuentas mixtas F+Pr y R+Pr las usan limitadas a sus grupos: las sedes del responsable no abren
   nada aquí (D7-11).
+
+Pieza E7-2 (salud a petición y hoja de asistencia, fase3-e7-profesor.md D7-14 y D7-15): 4 líneas nuevas bajo
+`/api/profesor`; ninguna casilla existente cambia ni la regla de URL (la de `/api/profesor/**` de la E7-1). Declaradas
+en `PROFESOR_E7`; lo prueba `ProfesorSaludAsistenciaIntegrationTest`.
+- `GET/HEAD /api/profesor/alumnos/{alumnoId}/salud`: PROFESOR `ALCANCE` (`@acceso.alumnoDeMisGrupos`; fuera de sus
+  grupos, de otra escuela o inexistente, 403; de baja, 404). Mismo DTO que la salud de gestión, `Cache-Control:
+  no-store`; cada lectura deja un evento en `auditoria_evento` (módulo `salud`, recurso = alumno, usuario = el profesor,
+  ruta del profesor) en la misma transacción, y el filtro HTTP no la duplica. Sin `PUT`.
+- `GET/HEAD /api/profesor/grupos/{grupoId}/asistencia?year&month`: PROFESOR `ALCANCE` (`@acceso.grupoDeMisGrupos`;
+  grupo ajeno, 403; año o mes no válidos, 400). El PDF de siempre con los turnos de ese grupo por id y solo sus alumnos
+  activos; sin datos de salud. El PDF de gestión (`/api/informes/asistencia`) no cambia.
+- El resto de roles, `DENIEGA` en las cuatro (PROPIETARIO y GESTOR usan las de gestión, D7-10).
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

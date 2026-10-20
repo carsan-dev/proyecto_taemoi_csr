@@ -390,12 +390,16 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 
 	private static Map<String, String> profesorE7() {
 		String grupos = "integracion.ProfesorGruposIntegrationTest#";
+		String saludAsistencia = "integracion.ProfesorSaludAsistenciaIntegrationTest#";
 		Map<String, String> m = new LinkedHashMap<>();
 		for (String metodo : List.of("GET", "HEAD")) {
 			// E7-1: mis grupos (filtro del servicio), alumnos de un grupo suyo y ficha reducida de un alumno de sus grupos.
 			m.put(metodo + " /api/profesor/grupos", grupos + "misGrupos_soloLosSuyos_conSedeRolDisciplinaYAlumnosActivos");
 			m.put(metodo + " /api/profesor/grupos/{grupoId}/alumnos", grupos + "grupoDeOtroProfesor_403");
 			m.put(metodo + " /api/profesor/alumnos/{alumnoId}", grupos + "alumnoDeOtroGrupo_403");
+			// E7-2: salud de un alumno de sus grupos (registrada, no-store) y hoja de asistencia de un grupo suyo.
+			m.put(metodo + " /api/profesor/alumnos/{alumnoId}/salud", saludAsistencia + "saludDeAlumnoDeOtroGrupo_403");
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/asistencia", saludAsistencia + "pdfAsistenciaGrupoAjeno_403");
 		}
 		return Map.copyOf(m);
 	}

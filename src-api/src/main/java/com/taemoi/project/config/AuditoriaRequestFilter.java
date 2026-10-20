@@ -39,9 +39,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	/**
 	 * Datos de salud: nunca se guarda el cuerpo; las lecturas correctas ya las audita AlumnoSaludService.
 	 * Se reconoce por el controlador que atendió la petición y, si no llegó a ninguno (401/403/404), por
-	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta).
+	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta). Pieza E7-2: también
+	 * la lectura del profesor ({@code /api/profesor/alumnos/{id}/salud}), que registra AlumnoSaludService#obtenerComoProfesor.
 	 */
-	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/alumnos/[^/]+/salud/?$");
+	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"));

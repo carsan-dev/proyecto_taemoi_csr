@@ -224,3 +224,67 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 - [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 **Nota de la revisión (20/10/2026).** `grupo.disciplina_id` es NOT NULL desde V26, así que los «grupos sin disciplina» de §11.2 no pueden darse: E7-3 no los reimplementa. Queda para E7-3 un caso de un alumno que estuvo en un grupo del profesor y se le quitó (sin fila en `alumno_grupo`): 403.
+
+---
+
+## 3. Pieza E7-2: salud a petición y hoja de asistencia del grupo (detallada)
+
+Rama `feature/e7-2` desde `feature/e7-1`. Sin migración: atajo `desplegar`. Solo lectura; ninguna escritura salvo el
+evento de la lectura de salud.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Salud** (D7-14): `ProfesorService.salud` vuelve a comprobar `alcance.grupos()` (403) y que el alumno está activo
+  (404, como E7-1) **antes** de leer, y llama a `AlumnoSaludService.obtenerComoProfesor`, que es `obtener` con la ruta
+  del profesor en el `endpoint` del evento y el resumen «Lectura de datos de salud del alumno #id (profesor)» (solo el
+  id y un texto fijo). Mismo módulo (`salud`), misma transacción, mismo DTO (`AlumnoSaludDTO`, sin campos de más:
+  `origen` y `actualizadoEn` no son datos de salud) y `Cache-Control: no-store`. El método del servicio del profesor es
+  `@Transactional` de escritura (una transacción `readOnly` no admitiría el evento). Un 403/404 no deja evento de salud.
+- **El filtro HTTP no duplica la lectura**: `AuditoriaRequestFilter.RUTA_SALUD` reconoce también
+  `/api/profesor/alumnos/{id}/salud` (como la de gestión: las lecturas 2xx no se registran dos veces y nunca se guarda
+  el cuerpo). Es la regla de §7 («las lecturas 2xx de salud no se duplican»).
+- **Asistencia** (D7-15): `ProfesorService.asistencia` comprueba el grupo (403), valida `year` (1900-2999) y `month`
+  (1-12) con 400 (gestión no los valida: un mes 13 le da 500; no se cambia) y resuelve los turnos **de ese grupo por
+  id**. `PDFService.generarListadoAsistenciaPorTurnos(int, int, List<Long>)` pinta, por cada turno (por día de la semana
+  y hora), los alumnos **activos** del turno que además están en el grupo del turno (`alumno_grupo`), con su inscripción
+  activa en la disciplina del grupo: la misma página que gestión (el PDF de siempre, D7-5). La firma por `String` no
+  cambia: su HTML sale de los mismos métodos extraídos, idéntico. El generador no lee `alumno_salud`.
+- **Nombre del fichero** del PDF del profesor: `Asistencia-grupo-<id>-<yyyy>-<MM>.pdf` (sin el nombre del grupo, que
+  podría llevar comillas o acentos en la cabecera). `Content-Type: application/pdf` y `attachment`, como gestión.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/ProfesorSaludAsistenciaIntegrationTest.java` (patrón `ProfesorGruposIntegrationTest`; escuelas
+  `"it-e7-2"` y `"it-e7-2-otra"`; grupo homónimo de `gA` en la sede B con turno el mismo lunes; datos inventados).
+- Modificar: `T/services/AlumnoSaludServiceTest.java`, `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_E7`),
+  `src-api/src/test/resources/seguridad/matriz-permisos.txt` (4 líneas nuevas).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT: `lecturaSaludRegistraEvento_yNoStore` (evento `READ`, módulo `salud`, recurso = alumno, usuario = el profesor,
+    endpoint del profesor; uno solo; `Cache-Control: no-store`), `saludDeAlumnoDeOtroGrupo_403`,
+    `saludDeAlumnoDeOtraEscuela_403`, `saludAlumnoDeBaja_404` (sin evento de salud en los tres),
+    `saludResponsableMasProfesorNoVeSusSedes`, `gestionNoUsaSaludDelProfesor_403` (ADMIN, MANAGER y ADMINISTRADOR +
+    PROFESOR con asignación, en las dos rutas), `saludNoSaleEnListadosNiFicha`, `pdfAsistenciaSoloAlumnosDelGrupo`
+    (grupo homónimo en otra sede el mismo lunes, alumno del turno sin `alumno_grupo`, alumno de baja; sin salud en el
+    texto), `pdfAsistenciaGrupoAjeno_403`, `pdfAsistenciaMesInvalido_400` y `pdfAsistenciaGestionNoCambia` (texto
+    exacto del PDF de gestión, fijado antes del cambio).
+  - `AlumnoSaludServiceTest`: `comoProfesor_siNoSePuedeAuditarNoSeLee` y `comoProfesor_registraLaRutaDelProfesor`.
+  - Matriz: `GET`/`HEAD` de las dos rutas (PROFESOR `ALCANCE`; resto `DENIEGA`), declaradas en `PROFESOR_E7`.
+- [x] **Paso 2: comprobar que fallan.** `pdfAsistenciaGestionNoCambia` pasa antes del cambio (fija el contenido); el
+  resto da 403/404 o no compila hasta crear las rutas.
+
+### Tarea 2: implementar
+
+- [x] `AlumnoSaludService.obtenerComoProfesor(Long)` (comparte la lectura auditada con `obtener`, que no cambia).
+- [x] `ProfesorService.salud(Long)` y `asistencia(Long, int, int)`; rutas en `ProfesorController` con
+  `@acceso.alumnoDeMisGrupos` / `@acceso.grupoDeMisGrupos`.
+- [x] `PDFService.generarListadoAsistenciaPorTurnos` y extracción en `PDFServiceImpl` de la cabecera HTML, la página
+  de un turno, las fechas del mes y el render (los usa también la firma por `String`).
+- [x] `AuditoriaRequestFilter.RUTA_SALUD` con la ruta del profesor.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 4 líneas y recuento de la cabecera.
+- [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.

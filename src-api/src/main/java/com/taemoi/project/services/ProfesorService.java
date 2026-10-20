@@ -1,5 +1,6 @@
 package com.taemoi.project.services;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -18,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
 import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.Grado;
@@ -57,10 +59,13 @@ public class ProfesorService {
 	private final ProgresionGradosService progresionGrados;
 	private final CatalogoDisciplinasService catalogoDisciplinas;
 	private final ComportamientoLegadoService comportamientoLegado;
+	private final AlumnoSaludService alumnoSalud;
+	private final PDFService pdf;
 
 	public ProfesorService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
 			TutorRepository tutores, ProgresionGradosService progresionGrados,
-			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado) {
+			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado,
+			AlumnoSaludService alumnoSalud, PDFService pdf) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
@@ -68,6 +73,8 @@ public class ProfesorService {
 		this.progresionGrados = progresionGrados;
 		this.catalogoDisciplinas = catalogoDisciplinas;
 		this.comportamientoLegado = comportamientoLegado;
+		this.alumnoSalud = alumnoSalud;
+		this.pdf = pdf;
 	}
 
 	/** Sus grupos (§5.1), por nombre: sede, su rol, disciplina y nº de alumnos activos. Sin grupos, lista vacía. */
@@ -194,6 +201,54 @@ public class ProfesorService {
 		}
 		return new ProfesorDTOs.Ficha(alumnoId, nombre, apellidos, edad(aLocalDate(nacimiento)), List.copyOf(compartidos),
 				List.copyOf(contacto), List.copyOf(deportes));
+	}
+
+	/**
+	 * Salud de un alumno de sus grupos, a petición (pieza E7-2, D7-14). Se comprueba antes de leer que el alumno está en
+	 * alguno de sus grupos (403) y activo (404, D7-13); la lectura la registra {@link AlumnoSaludService#obtenerComoProfesor}
+	 * en esta misma transacción (de escritura: el evento se inserta aquí; si no se puede registrar, no se lee). Un 403/404
+	 * no deja evento de salud.
+	 */
+	@Transactional
+	public AlumnoSaludDTO salud(Long alumnoId) {
+		Set<Long> grupos = gruposDelProfesor();
+		if (alumnoId == null || grupos.isEmpty()) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		Long compartidos = em.createQuery(
+				"SELECT COUNT(g.id) FROM Grupo g JOIN g.alumnos a WHERE a.id = :alumno AND g.id IN :grupos", Long.class)
+				.setParameter("alumno", alumnoId).setParameter("grupos", grupos).getSingleResult();
+		if (compartidos == null || compartidos == 0) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		List<Boolean> activo = em.createQuery("SELECT a.activo FROM Alumno a WHERE a.id = :alumno", Boolean.class)
+				.setParameter("alumno", alumnoId).getResultList();
+		if (activo.isEmpty() || !Boolean.TRUE.equals(activo.get(0))) {
+			throw new NoSuchElementException("El alumno no existe o está de baja.");
+		}
+		return alumnoSalud.obtenerComoProfesor(alumnoId);
+	}
+
+	/** Años admitidos en la hoja de asistencia (400 fuera de ellos). */
+	static final int ANIO_MINIMO = 1900;
+	static final int ANIO_MAXIMO = 2999;
+
+	/**
+	 * Hoja de asistencia de un grupo suyo para un mes (pieza E7-2, D7-15): los turnos de ESE grupo por id (nunca por
+	 * nombre ni por día) y solo sus alumnos activos ({@link PDFService#generarListadoAsistenciaPorTurnos}). Grupo que no es
+	 * suyo → 403; año o mes fuera de rango → 400. Sin datos de salud.
+	 */
+	@Transactional(readOnly = true)
+	public byte[] asistencia(Long grupoId, int year, int month) throws IOException {
+		if (grupoId == null || !gruposDelProfesor().contains(grupoId)) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		if (year < ANIO_MINIMO || year > ANIO_MAXIMO || month < 1 || month > 12) {
+			throw new IllegalArgumentException("El año o el mes no son válidos.");
+		}
+		List<Long> turnos = em.createQuery("SELECT t.id FROM Turno t WHERE t.grupo.id = :grupo ORDER BY t.id", Long.class)
+				.setParameter("grupo", grupoId).getResultList();
+		return pdf.generarListadoAsistenciaPorTurnos(year, month, turnos);
 	}
 
 	/**

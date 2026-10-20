@@ -1,14 +1,20 @@
 package com.taemoi.project.controllers;
 
+import java.io.IOException;
 import java.util.List;
 
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
 import com.taemoi.project.services.ProfesorService;
 
@@ -51,5 +57,29 @@ public class ProfesorController {
 	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.Ficha> ficha(@PathVariable Long alumnoId) {
 		return ResponseEntity.ok(profesor.ficha(alumnoId));
+	}
+
+	/**
+	 * Salud de un alumno de sus grupos, a petición (E7-2, D7-14): mismo DTO que gestión, sin caché ({@code no-store});
+	 * cada lectura queda registrada (módulo {@code salud}). Fuera de sus grupos: 403; de baja: 404. Sin edición.
+	 */
+	@GetMapping("/alumnos/{alumnoId}/salud")
+	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	public ResponseEntity<AlumnoSaludDTO> salud(@PathVariable Long alumnoId) {
+		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(profesor.salud(alumnoId));
+	}
+
+	/**
+	 * Hoja de asistencia de un grupo suyo para un mes (E7-2, D7-15): el PDF de siempre, solo con los turnos y los alumnos
+	 * activos de ese grupo. Grupo ajeno: 403; año o mes no válidos: 400. Como el PDF de gestión, en adjunto.
+	 */
+	@GetMapping("/grupos/{grupoId}/asistencia")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<byte[]> asistencia(@PathVariable Long grupoId, @RequestParam int year,
+			@RequestParam int month) throws IOException {
+		byte[] pdf = profesor.asistencia(grupoId, year, month);
+		String fichero = "Asistencia-grupo-%d-%d-%02d.pdf".formatted(grupoId, year, month);
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fichero + "\"").body(pdf);
 	}
 }

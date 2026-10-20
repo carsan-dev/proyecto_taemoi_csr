@@ -48,6 +48,12 @@ public interface PDFService {
 
 	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte) throws IOException;
 
+	/**
+	 * Pieza E7-2 (D7-15): hoja de asistencia del mes con esos turnos (por id), solo con los alumnos activos del turno
+	 * que están en su grupo. La usa el profesor para su grupo; la firma por {@code String} no cambia.
+	 */
+	byte[] generarListadoAsistenciaPorTurnos(int year, int month, List<Long> turnoIds) throws IOException;
+
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 
 	byte[] generarInformeCompetidores();

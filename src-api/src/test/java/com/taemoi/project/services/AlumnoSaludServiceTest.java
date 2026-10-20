@@ -63,4 +63,28 @@ class AlumnoSaludServiceTest {
 		assertThrows(AlumnoNoEncontradoException.class, () -> service.obtener(9L));
 		verifyNoInteractions(auditoria, salud, cifrador);
 	}
+
+	/** Pieza E7-2 (D7-14): la lectura del profesor también falla si no se puede registrar. */
+	@Test
+	void comoProfesor_siNoSePuedeAuditarNoSeLee() {
+		AlumnoSaludService service = new AlumnoSaludService(salud, alumnos, auditoria, cifrador);
+		when(alumnos.buscarPorIdEnOrganizacionActiva(7L)).thenReturn(Optional.of(new Alumno()));
+		doThrow(new IllegalStateException("auditoría caída")).when(auditoria)
+				.registrarAccesoSensible(any(), anyString(), anyString(), anyLong(), anyString());
+
+		assertThrows(IllegalStateException.class, () -> service.obtenerComoProfesor(7L));
+		verify(salud, never()).findById(any());
+	}
+
+	/** Mismo módulo; la ruta del profesor en el evento y un resumen solo con el id. */
+	@Test
+	void comoProfesor_registraLaRutaDelProfesor() {
+		AlumnoSaludService service = new AlumnoSaludService(salud, alumnos, auditoria, cifrador);
+		when(alumnos.buscarPorIdEnOrganizacionActiva(7L)).thenReturn(Optional.of(new Alumno()));
+		when(salud.findById(7L)).thenReturn(Optional.empty());
+
+		service.obtenerComoProfesor(7L);
+		verify(auditoria).registrarAccesoSensible(eq(AuditoriaAccion.READ), eq("salud"),
+				eq("/api/profesor/alumnos/7/salud"), eq(7L), eq("Lectura de datos de salud del alumno #7 (profesor)"));
+	}
 }
