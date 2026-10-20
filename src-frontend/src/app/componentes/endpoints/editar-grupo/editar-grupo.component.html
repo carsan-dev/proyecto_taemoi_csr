@@ -101,6 +101,96 @@
             </div>
           </form>
         </div>
+
+        <!-- Profesores del grupo -->
+        @if (puedeGestionarProfesores) {
+        <div class="admin-card admin-card-large profesores-card" id="seccionProfesores">
+          <div class="admin-form-section">
+            <div class="section-title">
+              <i class="bi bi-person-badge"></i>
+              <h4>Profesores</h4>
+            </div>
+
+            @if (profesoresError) {
+            <div class="profesores-aviso" role="alert">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span>{{ profesoresError }}</span>
+              <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" (click)="cargarProfesores()">Reintentar</button>
+            </div>
+            } @else if (profesoresCargando && profesores.length === 0) {
+            <div class="skeleton-line" style="width: 100%; height: 48px;"></div>
+            } @else if (profesores.length === 0) {
+            <p class="profesores-vacio">Este grupo aún no tiene profesores.</p>
+            } @else {
+            <ul class="profesores-lista">
+              @for (p of profesores; track p.usuarioId) {
+              <li class="profesor-fila">
+                <div class="profesor-datos">
+                  <strong class="profesor-nombre">{{ p.nombre }} {{ p.apellidos }}</strong>
+                  <span class="profesor-email">{{ p.email }}</span>
+                </div>
+                <div class="profesor-acciones">
+                  <select
+                    class="admin-form-control form-select profesor-rol"
+                    [value]="p.rol"
+                    [disabled]="usuarioEnCurso !== null"
+                    (change)="cambiarRol(p, $any($event.target))"
+                    [attr.aria-label]="'Rol de ' + p.nombre + ' en este grupo'">
+                    <option value="TITULAR">Titular</option>
+                    <option value="AYUDANTE">Ayudante</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="profesor-quitar"
+                    [disabled]="usuarioEnCurso !== null"
+                    (click)="quitarProfesor(p)"
+                    [attr.aria-label]="'Quitar a ' + p.nombre + ' de este grupo'">
+                    <i class="bi bi-person-dash"></i>
+                    <span>Quitar</span>
+                  </button>
+                </div>
+              </li>
+              }
+            </ul>
+            }
+
+            <form class="profesor-alta" (ngSubmit)="anadirProfesor()" method="post">
+              <div class="admin-form-field profesor-alta-email">
+                <label for="emailProfesor">Email de la cuenta</label>
+                <input
+                  type="email"
+                  id="emailProfesor"
+                  name="emailProfesor"
+                  class="admin-form-control"
+                  [(ngModel)]="nuevoEmail"
+                  autocomplete="off"
+                  placeholder="profesor@ejemplo.com"
+                  [attr.aria-describedby]="errorAlta ? 'errorProfesor' : null">
+              </div>
+              <div class="admin-form-field profesor-alta-rol">
+                <label for="rolProfesor">Rol</label>
+                <select id="rolProfesor" name="rolProfesor" class="admin-form-control form-select" [(ngModel)]="nuevoRol">
+                  <option value="TITULAR">Titular</option>
+                  <option value="AYUDANTE">Ayudante</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                class="admin-btn admin-btn-primary profesor-alta-boton"
+                [disabled]="enviandoAlta || !nuevoEmail.trim()">
+                <i class="bi bi-person-plus"></i>
+                <span>Añadir</span>
+              </button>
+            </form>
+            @if (errorAlta) {
+            <div class="invalid-feedback profesor-error" id="errorProfesor" role="alert">
+              <i class="bi bi-exclamation-circle"></i>
+              <span>{{ errorAlta }}</span>
+            </div>
+            }
+          </div>
+        </div>
+        }
       </div>
     </div>
     }
