@@ -218,6 +218,10 @@ public class SecurityConfiguration {
 						// blanca de la sesión solo-profesor.
 						.requestMatchers("/api/sedes", "/api/sedes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza E8-3 (D8-1, D8-8): miembros de la escuela, solo P y G (la D8 sobre propietario y gestor, en
+						// el servicio). Misma posición y motivo que /api/sedes; fuera de la lista blanca solo-profesor.
+						.requestMatchers("/api/miembros", "/api/miembros/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor

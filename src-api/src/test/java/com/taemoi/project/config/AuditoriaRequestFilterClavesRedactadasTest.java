@@ -1,8 +1,12 @@
 package com.taemoi.project.config;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,54 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 	void sedes_activa_noRedacta() {
 		assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas("/api/sedes/5/activa"));
 		assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas("/api/sedes-otra"));
+	}
+
+	/** Pieza E8-3: email, cargo, nombre y apellidos del alta de un miembro; el cargo al dar un rol. */
+	@Test
+	void miembros_altaYRoles_redactanEmailYCargo() {
+		for (String ruta : List.of("/api/miembros", "/api/miembros/", "/API/MIEMBROS", "/api//miembros")) {
+			assertEquals(Set.of("email", "cargo", "nombre", "apellidos"), AuditoriaRequestFilter.clavesRedactadas(ruta),
+					ruta);
+		}
+		for (String ruta : List.of("/api/miembros/21/roles/PROFESOR", "/api/miembros/21/roles/profesor/",
+				"/api/%6Diembros/21/roles/PROFESOR")) {
+			assertEquals(Set.of("cargo"), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+	}
+
+	@Test
+	void miembros_resto_noRedacta() {
+		for (String ruta : List.of("/api/miembros/21", "/api/miembros/21/sedes", "/api/miembros/21/grupos",
+				"/api/miembros/21/roles", "/api/miembros-otra")) {
+			assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+	}
+
+	/** Pieza E8-3: la búsqueda de miembros ({@code q}) no se guarda; los demás parámetros y rutas, como siempre. */
+	@Test
+	void miembros_q_redactada() {
+		for (String ruta : List.of("/api/miembros", "/api/miembros/", "/API/MIEMBROS/", "/api//miembros")) {
+			Map<String, String[]> guardados = AuditoriaRequestFilter.parametrosAuditables(ruta,
+					parametros("q", "alguien@example.test", "page", "2", "size", "10"));
+			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("q"), ruta);
+			assertArrayEquals(new String[] { "2" }, guardados.get("page"), ruta);
+			assertArrayEquals(new String[] { "10" }, guardados.get("size"), ruta);
+		}
+		Map<String, String[]> sinQ = parametros("rol", "PROFESOR");
+		assertArrayEquals(new String[] { "PROFESOR" },
+				AuditoriaRequestFilter.parametrosAuditables("/api/miembros", sinQ).get("rol"));
+		for (String ruta : List.of("/api/miembros/21", "/api/alumnos", "/api/preinscripciones", "/api/miembros-otra")) {
+			Map<String, String[]> originales = parametros("q", "Ana", "nombre", "Ana");
+			assertSame(originales, AuditoriaRequestFilter.parametrosAuditables(ruta, originales), ruta);
+		}
+	}
+
+	private static Map<String, String[]> parametros(String... claveValor) {
+		Map<String, String[]> mapa = new LinkedHashMap<>();
+		for (int i = 0; i < claveValor.length; i += 2) {
+			mapa.put(claveValor[i], new String[] { claveValor[i + 1] });
+		}
+		return mapa;
 	}
 
 	@Test

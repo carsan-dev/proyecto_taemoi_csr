@@ -398,15 +398,173 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 
 ---
 
-## 4. Pieza E8-3 (la detalla su implementador con TDD antes de empezar)
+## 4. Pieza E8-3: API de miembros con roles, cargo, sedes y grupos (detallada)
 
-Rama `feature/e8-3`. Alcance:
-- `GET /api/miembros` (paginado, búsqueda en servidor, sin familias por defecto) y `GET /api/miembros/{usuarioId}`.
-- `POST /api/miembros` para cuentas existentes (sin cuenta: 404 hasta E8-4), con grupos o sedes, todo o nada.
-- `PUT/DELETE /api/miembros/{usuarioId}/roles/{rol}` con cargo, D8-8 y D8-9 (bloqueo de las filas PROPIETARIO).
-- `PUT /api/miembros/{usuarioId}/sedes` y `PUT /api/miembros/{usuarioId}/grupos`.
-- Registro módulo `miembros` y acciones existentes del módulo `profesor`; `CLAVES_REDACTADAS_POR_RUTA`.
-- Puntos de revisión 5-8 y 10; matriz y nota.
+Rama `feature/e8-3` desde `feature/e8-2`. Sin migración: atajo `desplegar`. Siete rutas nuevas bajo `/api/miembros`
+(dos lecturas y cinco escrituras) y un cambio en una ruta de hoy: `PUT /api/admin/users/{userId}/roles` da 409 si deja
+la escuela sin propietario activo (decisión 221). Sin invitaciones (E8-4): sin cuenta, 404.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Rutas y permisos** (D8-1). `MiembroController` en `/api/miembros`: `GET`, `GET /{usuarioId}`, `POST`,
+  `PUT /{usuarioId}/roles/{rol}`, `DELETE /{usuarioId}/roles/{rol}`, `PUT /{usuarioId}/sedes` y
+  `PUT /{usuarioId}/grupos`. Regla de URL `/api/miembros`, `/api/miembros/**` con
+  `hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')` junto a la de `/api/sedes` y el mismo `@PreAuthorize` en cada método.
+  Fuera de la lista blanca de la sesión solo-profesor. R, Pr, F, SOLO_PLATAFORMA y ANONIMO `DENIEGA`. Errores
+  `{"mensaje"}` (D8-20).
+- **Quién es miembro.** Igual que `MembresiaService.usuariosDeOrganizacion`/`esUsuarioDeOrganizacion`: cuenta con alguna
+  membresía (activa o no) en la escuela activa y, solo en la escuela por defecto, también la cuenta legado sin ninguna
+  membresía (sale sin roles, solo con `incluirFamilias=true`, y su ficha responde). Nunca una cuenta que solo es de
+  otra escuela: ficha, roles, sedes y grupos dan 404 «La cuenta no es miembro de esta escuela.».
+- **Lista** (D8-4). `GET /api/miembros?q&rol&incluirFamilias=false&page=0&size=20`, paginada en el servidor
+  (`page` desde 0; `size` de 1 a 100, si no 400), orden apellidos, nombre, id. Por defecto solo personal (alguna
+  membresía no FAMILIA en la escuela, activa o no); `incluirFamilias=true` añade familias y legado. `rol` filtra por
+  tener una membresía de ese rol (activa o no; se combina con lo anterior: `rol=FAMILIA` sin `incluirFamilias` da el
+  personal que también es familia); `rol` no válido, 400. `q` (recortada, ≤100) busca sin distinguir mayúsculas en
+  nombre, apellidos, «nombre apellidos» y email, con `%` y `_` literales. Respuesta
+  `{contenido[], pagina, tamano, total, totalPaginas}`; fila `{usuarioId, nombre, apellidos, email, authProvider,
+  roles[{rol, activa, cargo}] (orden del enum), sedes[{id, nombre}] (las de su RESPONSABLE_SEDE, por id),
+  numeroGrupos}` (asignaciones en la escuela, también con PROFESOR desactivado). Sin `invitacionPendiente` (E8-4).
+  Sin N+1: página + recuento, membresías de la página, sedes de sus responsables y número de grupos: cinco consultas
+  por página, sea cual sea su tamaño.
+- **Ficha** (D8-5). `GET /api/miembros/{usuarioId}`: la fila más `grupos[{grupoId, nombre, sedeId, rol}]` (por nombre e
+  id del grupo). También la devuelven las escrituras (200).
+- **Alta de cuenta existente** (D8-6). `POST /api/miembros {email, rol, cargo?, sedeIds?, grupos?[{grupoId, rol}],
+  reactivar?}`, `READ_COMMITTED`, una transacción. Orden: cuerpo (email vacío, rol que no es PROPIETARIO, ADMINISTRADOR,
+  RESPONSABLE_SEDE ni PROFESOR, `sedeIds` sin RESPONSABLE_SEDE, `grupos` sin PROFESOR, repetidos o nulos, cargo >100:
+  400; FAMILIA: 400 «La familia se vincula desde la ficha del alumno.»), D8-8 (403), cuenta por email global como la
+  E7-4 (sin cuenta: 404 «No hay ninguna cuenta con ese email.»), bloqueo de la fila de la cuenta, sedes de la escuela
+  (400 «La sede no existe en la escuela.»), grupos de la escuela (404 «El grupo no existe.»), y luego la membresía del
+  rol: falta, se crea activa; desactivada, 409 «La cuenta tiene el rol de {propietario | gestor | responsable de sede |
+  profesor} desactivado en esta escuela.» salvo `reactivar=true`; activa, se conserva. RESPONSABLE_SEDE: el rol que nace
+  o se reactiva necesita sedes, las de `sedeIds` o las que ya tenía guardadas (si no, 400 «Indica al menos una sede.»);
+  `sedeIds`, si llega, no vacío y reemplaza sus sedes. PROFESOR: `grupos` **añade** asignaciones (en un grupo ya
+  asignado cambia el rol). Dos altas a la vez del mismo email: la segunda espera el bloqueo y ve la primera (200 y 200,
+  una membresía; nunca 500).
+- **Cargo.** Texto libre de la fila del rol, ≤100 caracteres, recortado. Campo ausente o `null`: se conserva; en blanco
+  (`""`): se borra. Mismo criterio en `POST` y en `PUT …/roles/{rol}`. Nunca en el registro.
+- **Dar o reactivar** (D8-7). `PUT /api/miembros/{usuarioId}/roles/{rol} {cargo?, sedeIds?}` (cuerpo opcional): falta,
+  se crea; desactivada, se reactiva; activa, solo el cargo. `sedeIds` solo con RESPONSABLE_SEDE (si no, 400) y
+  reemplaza sus sedes; dar o reactivar RESPONSABLE_SEDE sin sedes guardadas ni `sedeIds`, 400 «Indica al menos una
+  sede.» (así se da el rol a un miembro sin pasar por `POST`). Reactivar PROFESOR recupera sus asignaciones.
+- **Quitar** (D8-7). `DELETE /api/miembros/{usuarioId}/roles/{rol}`: `activa=false`, nunca borra la fila; conserva
+  asignaciones y sedes (el alcance exige membresía activa). Sin esa membresía, 404 «La cuenta no tiene ese rol en esta
+  escuela.». FAMILIA en `PUT` o `DELETE`: 400; `{rol}` desconocido: 400.
+- **D8-8.** Con `ROLE_MANAGER` y sin `ROLE_ADMIN` (ADMIN gana): `POST` con PROPIETARIO o ADMINISTRADOR, `DELETE` de
+  esos roles y `PUT` que los da o reactiva → 403 «Solo el propietario da o quita los roles de propietario y gestor.»
+  (sin tocar nada). El `PUT` sobre esos roles ya activos que solo cambia el cargo sí lo hace el gestor (el cargo es de
+  cualquiera, §6.1). El gestor gestiona RESPONSABLE_SEDE, PROFESOR, sedes y grupos de cualquiera.
+- **Último propietario** (D8-9, D8-19, decisión 221). Quitar PROPIETARIO bloquea antes las filas PROPIETARIO activas de
+  la escuela (`MembresiaRepository.bloquearPropietariosActivos`, `organizacion_id` explícito, `FOR UPDATE`, por id;
+  `READ_COMMITTED`) y cuenta: si es la última, 409 «La escuela se quedaría sin propietario.». Dos quitas a la vez de dos
+  propietarios distintos se ordenan y la segunda ve la primera confirmada: queda uno. `PUT
+  /api/admin/users/{id}/roles` (`MembresiaServiceImpl.reemplazarAutoridades`, ahora `READ_COMMITTED`) bloquea igual al
+  empezar y da el mismo 409, sin cambiar nada, si el conjunto pedido desactiva la última PROPIETARIO activa; una escuela
+  que ya no tiene propietario no se bloquea por eso (el 409 es para quien la deja sin él). Todo lo demás de esa ruta,
+  igual que hoy (también su fila genérica de auditoría).
+- **Sedes del responsable** (D8-10). `PUT /api/miembros/{usuarioId}/sedes {sedeIds}`: exige membresía RESPONSABLE_SEDE
+  (activa o no; si no, 409 «La cuenta no es responsable de sede en esta escuela.»); lista vacía o ausente, 400 «Indica
+  al menos una sede.»; repetidas o nulas, 400; cada sede, de la escuela activa (consulta sobre `Sede`, `@TenantId` y
+  además `organizacion_id`), si no 400 «La sede no existe en la escuela.». Reemplaza las filas de `membresia_sede`
+  (borrado acotado por la membresía de esa escuela).
+- **Grupos del profesor** (D8-11). `PUT /api/miembros/{usuarioId}/grupos {asignaciones[{grupoId, rol}]}` reemplaza el
+  conjunto en esta escuela, todo o nada: exige PROFESOR activa (409 «La cuenta no tiene el rol de profesor activo en
+  esta escuela.»); grupo ajeno o inexistente, 404 «El grupo no existe.»; grupo repetido, 400 «Hay grupos repetidos.»;
+  rol distinto de TITULAR o AYUDANTE, 400. Lista vacía: quita todas (la membresía queda, D7-21). Toda consulta y
+  borrado de `asignacion_profesor` con `organizacion_id`.
+- **Registro** (D8-16, §7). `RegistroAccionesMiembros` (módulo `miembros`), copia de `RegistroAccionesSedes`: misma
+  transacción, solo ids (también listas de ids, `sedes=#3,#4`), enumeraciones y sí/no; otro tipo,
+  `IllegalStateException`. `ROL_DADO` (CREATE), `ROL_REACTIVADO`, `ROL_QUITADO`, `CARGO_CAMBIADO`, `SEDES_CAMBIADAS`
+  y `GRUPOS_CAMBIADOS` (UPDATE), con `usuario=#id rol=ROL` (`SEDES_CAMBIADAS`: `usuario=#id sedes=#…`).
+  Asignaciones con las acciones del módulo `profesor` (`ASIGNACION_CREADA`, `ASIGNACION_ROL_CAMBIADO`,
+  `ASIGNACION_QUITADA`). Un `POST` o `PUT …/roles`
+  que no cambia nada registra `ROL_DADO … sinCambios=SI`; un `DELETE` de un rol ya desactivado, `ROL_QUITADO …
+  sinCambios=SI`; un `PUT …/sedes` igual, `SEDES_CAMBIADAS … sinCambios=SI`; un `PUT …/grupos` con el mismo conjunto,
+  `GRUPOS_CAMBIADOS usuario=#id sinCambios=SI`. Así las cinco escrituras entran en `EscrituraConRegistroPropio`
+  (`MIEMBRO_ALTA`, `MIEMBRO_ROL_DAR`, `MIEMBRO_ROL_QUITAR`, `MIEMBRO_SEDES`, `MIEMBRO_GRUPOS`): una fila por escritura
+  (decisión 214), sin la genérica en el 2xx.
+- **Cuerpos y parámetros redactados.** `CLAVES_REDACTADAS_POR_RUTA`: `/api/miembros` (`email`, `cargo`, y ya `nombre` y
+  `apellidos` para la E8-4) y `/api/miembros/{id}/roles/{rol}` (`cargo`). `PARAMETROS_REDACTADOS_POR_RUTA` (nuevo, solo
+  esta ruta): `q` de `GET /api/miembros` se guarda como `[redactado]` en `query_params_json` (también en los 400). Las
+  búsquedas de otras rutas (`GET /api/alumnos?nombre`, `GET /api/preinscripciones?q`) siguen como hoy: deuda aparte.
+- **Página.** `page × size` por encima de `Integer.MAX_VALUE`: 400 «La página no es válida.» (antes de llegar a la
+  base).
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/MiembrosApiIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`). Escuelas `EscuelaConSedesDePrueba.crear(…, "it-e8-3")` y `"it-e8-3-otra"`; escuelas
+  mínimas por SQL con sus propietarios para el último propietario y la concurrencia. Cuentas nuevas por test con la
+  marca en el email, datos inventados; nada en Moiskimdo.
+- Crear: `T/services/RegistroAccionesMiembrosTest.java` (sin Spring).
+- Modificar: `T/config/AuditoriaRequestFilterRegistroPropioTest.java` (cinco entradas y rutas vecinas fuera),
+  `T/config/AuditoriaRequestFilterClavesRedactadasTest.java`, `T/integracion/RegistroUnicoProfesorIntegrationTest.java`
+  (un caso por entrada) y `src-api/src/test/resources/seguridad/matriz-permisos.txt` (9 líneas nuevas).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT `MiembrosApiIntegrationTest`: `listaPorDefectoSinFamilias`, `listaConFamilias`, `filtroPorRol`,
+    `busquedaYPaginacionEnServidor` (y el número de sentencias por página no crece con el tamaño),
+    `miembrosNoSeVenEntreEscuelas`, `fichaDeCuentaDeOtraEscuela_404`, `fichaConGruposYSedes`,
+    `altaCuentaExistente_profesorConVariosGrupos_todoONada`, `altaConUnGrupoAjeno_noCreaNada`,
+    `altaResponsableConSedes`, `altaSinCuenta_404`, `darFamilia_400`, `validaciones_400`,
+    `rolDesactivadoSinReactivar_409`, `reactivar_ok`, `dosAltasALaVezMismoEmail_sin500`, `gestorDaPropietario_403`,
+    `gestorQuitaAdministrador_403`, `gestorDaProfesorYResponsable`, `gestorCambiaCargoDeUnGestorActivo`,
+    `darRolPorPut_yCargo`, `responsableSinSedesPorPut_400`, `quitarUltimoPropietario_409`,
+    `dosQuitasALaVez_quedaUnPropietario`, `endpointViejo_dejarSinPropietario_409`,
+    `endpointViejo_conOtroPropietario_comoHoy`, `sedeDeOtraEscuela_400`, `sedesVacias_400`,
+    `sedesSinRolDeResponsable_409`, `grupoDeOtraEscuela_404`, `reemplazarGrupos_todoONada`,
+    `grupos_sinProfesorActivo_409`, `desactivarProfesorConservaAsignaciones_yReactivarLasRecupera`,
+    `cargoNoApareceEnElRegistro`, `registroSoloConIds`, `unaFilaPorEscritura`, `busquedaNoQuedaEnElRegistro`,
+    `clavesRedactadas_4xx`,
+    `responsableProfesorFamiliaYPlataforma_403`.
+  - `RegistroAccionesMiembrosTest`: `resumenSoloConIds`, `listaDeIds`, `sinCambiosComoSiNo`,
+    `textoLibre_IllegalStateException`.
+  - `AuditoriaRequestFilterRegistroPropioTest`: ejemplos `POST /api/miembros`, `PUT /api/miembros/21/roles/PROFESOR`,
+    `DELETE /api/miembros/21/roles/PROFESOR`, `PUT /api/miembros/21/sedes`, `PUT /api/miembros/21/grupos`; fuera:
+    `GET /api/miembros`, `GET /api/miembros/21`, `POST /api/miembros/21/grupos`, `POST /api/miembros/21`,
+    `PUT /api/miembros/21/roles`.
+  - `AuditoriaRequestFilterClavesRedactadasTest`: `miembros_altaYRoles_redactanEmailYCargo`, `miembros_resto_noRedacta`,
+    `miembros_q_redactada`.
+  - `RegistroUnicoProfesorIntegrationTest`: `MIEMBRO_ALTA` (200 / sin cuenta 404), `MIEMBRO_ROL_DAR` (200 / FAMILIA
+    400), `MIEMBRO_ROL_QUITAR` (200 / sin el rol 404), `MIEMBRO_SEDES` (200 / lista vacía 400), `MIEMBRO_GRUPOS` (200
+    / grupo inexistente 404).
+  - Matriz: `GET`/`HEAD /api/miembros`, `POST /api/miembros`, `GET`/`HEAD /api/miembros/{usuarioId}`,
+    `PUT /api/miembros/{usuarioId}/grupos`, `PUT` y `DELETE /api/miembros/{usuarioId}/roles/{rol}`,
+    `PUT /api/miembros/{usuarioId}/sedes`: GESTOR y PROPIETARIO `PERMITE`, resto `DENIEGA`.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='MiembrosApiIntegrationTest,RegistroAccionesMiembrosTest,AuditoriaRequestFilterClavesRedactadasTest,AuditoriaRequestFilterRegistroPropioTest,RegistroUnicoProfesorIntegrationTest,MatrizPermisosTest' -DexcludedGroups=migracion`:
+  no compila hasta crear `RegistroAccionesMiembros` y las entradas del enum; con los esqueletos, las rutas dan 404/403.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Crear: `J/controllers/MiembroController.java`, `J/services/GestionMiembrosService.java`,
+  `J/services/RegistroAccionesMiembros.java`, `J/repositories/MiembrosRepository.java`,
+  `J/dtos/request/MiembrosRequests.java`, `J/dtos/response/MiembrosDTOs.java`.
+- Modificar: `J/repositories/MembresiaRepository.java` (`bloquearPropietariosActivos`),
+  `J/services/impl/MembresiaServiceImpl.java` (`reemplazarAutoridades`: bloqueo, 409 y `READ_COMMITTED`),
+  `J/config/SecurityConfiguration.java` (regla de `/api/miembros/**`), `J/config/AuditoriaRequestFilter.java` (cinco
+  entradas, `CLAVES_REDACTADAS_POR_RUTA` y `PARAMETROS_REDACTADOS_POR_RUTA`).
+
+**Interfaces:**
+- Produce: `/api/miembros/**` (contrato de la pantalla Miembros de la E9 y del retoque de E8-6), `MiembrosDTOs`, módulo
+  de registro `miembros`. E8-4 añade el alta sin cuenta e `invitacionPendiente`.
+- Consume: `MembresiaRepository`, `MembresiaSedeRepository`, `AsignacionProfesorRepository`,
+  `UsuarioRepository#bloquearPorId`, `MembresiaService#esUsuarioDeOrganizacion`,
+  `RegistroAccionesProfesor`, `TenantContext`.
+
+- [x] **Paso 1:** `RegistroAccionesMiembros` y sus tests en verde.
+- [x] **Paso 2:** servicio, controlador y regla de URL; IT de miembros en verde.
+- [x] **Paso 3:** último propietario en `reemplazarAutoridades`; `SesionPorOrganizacionIntegrationTest`,
+  `AdminControllerTest` y `MembresiaServiceImplTest` sin cambios y en verde.
+- [x] **Paso 4:** `EscrituraConRegistroPropio`, `CLAVES_REDACTADAS_POR_RUTA` y matriz; sus tests en verde.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 9 líneas y recuento de la cabecera.
+- [x] `MatrizPermisosTest`, `AuditoriaRequestFilterRegistroPropioTest`, `RegistroUnicoProfesorIntegrationTest`,
+  `AsignacionProfesoresIntegrationTest`, `SecurityAuthorizationWebMvcTest` y `mvn test -DexcludedGroups=migracion` en
+  `src-api`, en primer plano, en verde; dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 ---
 

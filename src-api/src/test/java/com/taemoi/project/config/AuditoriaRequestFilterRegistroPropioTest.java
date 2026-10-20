@@ -73,7 +73,14 @@ class AuditoriaRequestFilterRegistroPropioTest {
 					new Ejemplo("DELETE", "/api/grupos/3/profesores/21")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_CREAR, new Ejemplo("POST", "/api/sedes")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_EDITAR, new Ejemplo("PUT", "/api/sedes/5")),
-			Map.entry(EscrituraConRegistroPropio.SEDE_ACTIVA, new Ejemplo("PUT", "/api/sedes/5/activa"))));
+			Map.entry(EscrituraConRegistroPropio.SEDE_ACTIVA, new Ejemplo("PUT", "/api/sedes/5/activa")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ALTA, new Ejemplo("POST", "/api/miembros")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR,
+					new Ejemplo("PUT", "/api/miembros/21/roles/PROFESOR")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ROL_QUITAR,
+					new Ejemplo("DELETE", "/api/miembros/21/roles/PROFESOR")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_SEDES, new Ejemplo("PUT", "/api/miembros/21/sedes")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -109,6 +116,15 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("PUT", "/api/sedes"),
 			new Ejemplo("PUT", "/api/sedes/5/activa/otra"),
 			new Ejemplo("DELETE", "/api/sedes/5"),
+			// Pieza E8-3: las lecturas de miembros y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/miembros"),
+			new Ejemplo("GET", "/api/miembros/21"),
+			new Ejemplo("POST", "/api/miembros/21/grupos"),
+			new Ejemplo("PUT", "/api/miembros/21/grupos/3"),
+			new Ejemplo("POST", "/api/miembros/21"),
+			new Ejemplo("PUT", "/api/miembros/21/roles"),
+			new Ejemplo("PUT", "/api/miembros/21/roles/PROFESOR/otra"),
+			new Ejemplo("POST", "/api/miembros/21/sedes"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");

@@ -309,6 +309,53 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					List.of("SEDES SEDE_DESACTIVADA"), () -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{}"),
 					400);
 		});
+		// Pieza E8-3: miembros (módulo miembros). Cada caso con su cuenta nueva en la escuela de prueba.
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ALTA, () -> {
+			long cuenta = e.cuenta(usuarios, "alta-miembro-" + UUID.randomUUID().toString().substring(0, 6));
+			String email = jdbc.queryForObject("SELECT email FROM usuario WHERE id = ?", String.class, cuenta);
+			String alta = json.writeValueAsString(Map.of("email", email, "rol", "PROFESOR"));
+			String sinCuenta = json.writeValueAsString(
+					Map.of("email", "nadie-" + e.marca + "-" + cuenta + "@example.test", "rol", "PROFESOR"));
+			// Sin cuenta con ese email: 404.
+			return new Caso(tPropietario, propietario, () -> conCuerpo(post("/api/miembros"), alta), 200,
+					List.of("MIEMBROS ROL_DADO"), () -> conCuerpo(post("/api/miembros"), sinCuenta), 404);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR, () -> {
+			long cuenta = e.cuenta(usuarios, "dar-rol-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "FAMILIA");
+			// FAMILIA no se da por esta API: 400.
+			return new Caso(tPropietario, propietario, () -> put("/api/miembros/" + cuenta + "/roles/PROFESOR"), 200,
+					List.of("MIEMBROS ROL_DADO"), () -> put("/api/miembros/" + cuenta + "/roles/FAMILIA"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_QUITAR, () -> {
+			long cuenta = e.cuenta(usuarios, "quitar-rol-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "PROFESOR");
+			// Sin el rol de responsable: 404.
+			return new Caso(tPropietario, propietario, () -> delete("/api/miembros/" + cuenta + "/roles/PROFESOR"),
+					200, List.of("MIEMBROS ROL_QUITADO"),
+					() -> delete("/api/miembros/" + cuenta + "/roles/RESPONSABLE_SEDE"), 404);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_SEDES, () -> {
+			long cuenta = e.cuenta(usuarios, "sedes-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "RESPONSABLE_SEDE");
+			String sedes = "{\"sedeIds\":[" + e.sB + "]}";
+			// Lista vacía: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/sedes"), sedes), 200,
+					List.of("MIEMBROS SEDES_CAMBIADAS"),
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/sedes"), "{\"sedeIds\":[]}"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, () -> {
+			long cuenta = e.cuenta(usuarios, "grupos-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "PROFESOR");
+			String grupos = "{\"asignaciones\":[{\"grupoId\":" + e.gB + ",\"rol\":\"AYUDANTE\"}]}";
+			// Grupo inexistente: 404.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/grupos"), grupos), 200,
+					List.of("PROFESOR ASIGNACION_CREADA"),
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/grupos"),
+							"{\"asignaciones\":[{\"grupoId\":999999999,\"rol\":\"AYUDANTE\"}]}"), 404);
+		});
 		return casos;
 	}
 

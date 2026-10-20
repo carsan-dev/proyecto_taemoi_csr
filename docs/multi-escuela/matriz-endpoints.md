@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (453 líneas; 148 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (462 líneas; 150 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -302,6 +302,22 @@ sede) y el mismo `@PreAuthorize` en cada método. Sin `DELETE`. Sede de otra esc
 escuela y desactivar la última activa: 409. Las tres escrituras registran (módulo `sedes`, solo ids; también el `PUT`
 que no cambia nada, con `sinCambios=SI`) y están en `EscrituraConRegistroPropio`; el alta y la edición, en
 `CLAVES_REDACTADAS_POR_RUTA`. Lo prueban `SedesApiIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Pieza E8-3 (API de miembros, fase3-e8-miembros.md D8-1 y D8-4 a D8-11): 9 líneas nuevas bajo `/api/miembros`
+(`MiembroController`): `GET`/`HEAD /api/miembros`, `POST /api/miembros`, `GET`/`HEAD /api/miembros/{usuarioId}`,
+`PUT` y `DELETE /api/miembros/{usuarioId}/roles/{rol}`, `PUT /api/miembros/{usuarioId}/sedes` y
+`PUT /api/miembros/{usuarioId}/grupos`; ninguna casilla existente cambia. GESTOR y PROPIETARIO `PERMITE`; el resto
+`DENIEGA`: RESPONSABLE_SEDE hasta la E9, PROFESOR (fuera de su lista blanca), FAMILIA, SOLO_PLATAFORMA y ANONIMO. Regla
+de URL propia `/api/miembros`, `/api/miembros/**` (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`, junto a la de
+`/api/sedes`) y el mismo `@PreAuthorize` en cada método. La D8 (solo el propietario da o quita PROPIETARIO y
+ADMINISTRADOR, 403 al gestor) y el último propietario (409) los aplica el servicio, no la URL: `PERMITE` en GESTOR solo
+dice que la petición llega. Cuenta de otra escuela: 404; sedes y grupos de otra escuela: 400 y 404. Registro explícito
+(módulo `miembros` y, las asignaciones, `profesor`; solo ids; sin cambios, con `sinCambios=SI`): las cinco escrituras
+en `EscrituraConRegistroPropio`, una fila por escritura. `/api/miembros` (`email`, `cargo`, `nombre`, `apellidos`) y
+`/api/miembros/{id}/roles/{rol}` (`cargo`), en `CLAVES_REDACTADAS_POR_RUTA`; el parámetro `q` de `GET /api/miembros`,
+en `PARAMETROS_REDACTADOS_POR_RUTA` (la búsqueda no queda en `query_params_json`). Decisión 221: la línea de `PUT /api/admin/users/{userId}/roles` no cambia (solo
+PROPIETARIO `PERMITE`), pero responde 409 si deja la escuela sin propietario activo. Lo prueban
+`MiembrosApiIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
