@@ -61,7 +61,8 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "POST", "/api/auth/roles" }, { "GET", "/api/auth/organizacion" }, { "DELETE", "/api/auth/user" },
 				{ "POST", "/api/auth/plataforma" }, { "GET", "/api/auth/plataforma/otra" },
 				{ "GET", "/api/ruta-nueva-sin-preautorize" },
-				{ "GET", "/api/caja/profesorx" }, { "GET", "/imagenes/alumnos/1.jpg" } }) {
+				{ "GET", "/api/caja/profesorx" }, { "GET", "/imagenes/alumnos/1.jpg" }, { "GET", "/api/profesorx" },
+				{ "GET", "/api/profesores/1" } }) {
 			assertFalse(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 		}
 	}
@@ -73,7 +74,11 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "POST", "/api/caja/profesor/cobros/1/deshacer" }, { "GET", "/api/caja/profesor/alumnos" },
 				{ "GET", "/api/auth/roles" }, { "HEAD", "/api/auth/roles" }, { "GET", "/api/auth/user" },
 				{ "GET", "/api/auth/organizaciones" }, { "POST", "/api/auth/organizacion" },
-				{ "GET", "/api/auth/plataforma" }, { "HEAD", "/api/auth/plataforma" } }) {
+				{ "GET", "/api/auth/plataforma" }, { "HEAD", "/api/auth/plataforma" },
+				// Pieza E7-1 (D7-9): sus rutas propias, cualquier método (deciden la regla de URL y el @PreAuthorize).
+				{ "GET", "/api/profesor/grupos" }, { "HEAD", "/api/profesor/grupos" },
+				{ "GET", "/api/profesor/grupos/1/alumnos" }, { "GET", "/api/profesor/alumnos/1" },
+				{ "PUT", "/api/profesor/alumnos/1/deportes/TAEKWONDO/apto" } }) {
 			llamadas.clear();
 			assertTrue(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 			assertEquals(List.of("sesion " + ruta[0] + " " + ruta[1]), llamadas, "decide la regla de siempre");

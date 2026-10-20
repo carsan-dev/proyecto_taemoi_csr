@@ -211,6 +211,16 @@ public class AccesoRecursos {
 	}
 
 	/**
+	 * Pieza E7-1 (D7-11): el grupo es uno de los del profesor de la sesión (rutas {@code /api/profesor/**}). Copia de
+	 * {@link #alumnoDeMisGrupos}: solo la rama de profesor; ni el alcance total (gestión, también con asignación, D7-10)
+	 * ni las sedes del responsable (sesión 184) conceden. Un grupo de otra escuela o inexistente no está nunca en sus
+	 * grupos: {@code false} (403, sin revelar si existe).
+	 */
+	public boolean grupoDeMisGrupos(Long grupoId) {
+		return comoProfesor(grupoId, grupos -> consulta.grupoEnGrupos(grupoId, grupos));
+	}
+
+	/**
 	 * Pieza 6b-2 (decisión 3): el cobro lo cobró el profesor de la sesión (cobrado_por = él, origen PROFESOR). Solo
 	 * {@code ROLE_PROFESOR}; no exige que el alumno siga en sus grupos (es su propio cobro). Activo y sin entrega lo
 	 * comprueba el servicio con la fila bloqueada (409).

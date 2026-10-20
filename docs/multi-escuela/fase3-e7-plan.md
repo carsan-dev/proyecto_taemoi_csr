@@ -129,3 +129,98 @@ profesores, que seguirían viendo solo «Mi caja») y el resto después.
 | E7-4 | Pendiente | — | No | |
 | E7-5 | Pendiente | — | No | |
 | E7-6 | Pendiente | — | No | |
+
+---
+
+## 2. Pieza E7-1: base `/api/profesor/**` y lectura (detallada)
+
+Rama `feature/e7-1` desde `feature/e7-diseno`. Sin migración: atajo `desplegar`. Solo lectura; ninguna escritura.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **403 sin revelar existencia.** Un grupo que no está en `alcance.grupos()` (de otro profesor, de otra escuela o
+  inexistente) da **403** en `@acceso.grupoDeMisGrupos`, igual que un alumno fuera de sus grupos en
+  `@acceso.alumnoDeMisGrupos`. El 404 de otra escuela no se puede dar sin consultar fuera del alcance, y el 403
+  uniforme no distingue «existe pero no es tuyo» de «no existe». El test se llama `grupoDeOtraEscuela_403`.
+- **Alumno de baja** (D7-13): si sigue en un grupo suyo pasa `@acceso.alumnoDeMisGrupos` y el servicio responde
+  **404**; no sale en el listado del grupo ni cuenta en «nº de alumnos activos».
+- **Defensa en el servicio.** `ProfesorService` vuelve a filtrar por `alcance.grupos()` (403 si el grupo no es suyo; la
+  ficha solo con los grupos que comparte, 403 si no comparte ninguno), aunque el `@PreAuthorize` ya lo haya hecho.
+- **DTO en `J/dtos/response/ProfesorDTOs.java`** (junto a `CajaDTOs`), no en `J/dtos/`. Records: `Grupo`, `Sede`,
+  `Disciplina`, `Grado`, `AlumnoDeGrupo`, `DeporteEnLista`, `Ficha`, `GrupoCompartido`, `Contacto`, `DeporteDelAlumno`.
+- **Contacto** (D7-2): una fila por teléfono no vacío: el alumno (`telefono` y `telefono2`, `tipo` = `ALUMNO`) y cada
+  tutor con teléfono (`tipo` = `TUTOR`, nombre, apellidos y parentesco), por `orden`. Un tutor sin teléfono no sale.
+- **Deportes**: solo los `alumno_deporte` activos. En la lista del grupo, `delGrupo` marca el deporte de la disciplina
+  del grupo (para el filtro y la línea por deporte de §5.2). En la ficha, `deMisGrupos` marca las disciplinas de los
+  grupos que comparte (§11, pregunta 2, cerrada con la recomendación) y `admitePases` = `deMisGrupos` y disciplina con
+  grados y grado actual y siguiente grado. El apto va aparte (`apto`); los pases solo salen con los dos (§5.3).
+  `siguienteGrado` (código y nombre) sirve para la confirmación «Amarillo → Naranja». `pideRojoBordado` = escuela con
+  `comportamiento_legado_taemoi` y siguiente grado `ROJO`, la misma regla que gestión (`esSiguienteGradoRojo`). El
+  siguiente grado se calcula como `AlumnoServiceImpl.pasarGradoInterno` (grupo de edad por
+  `CatalogoDisciplinasService.esMenorPorAnioNatural` y `ProgresionGradosService.obtenerSiguienteGrado`).
+- **Edad** en años cumplidos a hoy; nunca la fecha de nacimiento.
+- **P+Pr y G+Pr** (D7-10): `GET /api/profesor/grupos` exige `ROLE_PROFESOR` **sin** `ROLE_ADMIN` ni `ROLE_MANAGER`;
+  las dos rutas con id van por `@acceso.*DeMisGrupos`, que ya exige `!alcance.total()`.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/ProfesorGruposIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`; escuelas `EscuelaConSedesDePrueba.crear(…, "it-e7-1")` y `"it-e7-1-otra"`, datos
+  inventados). Cuentas: `profA` (solo profesor; `gA` titular y `gSin` ayudante), `profB` (solo profesor; `gB`), `profRP`
+  (responsable de la sede A + profesor de `gB`, sesión 184), `profFP` (familia + profesor de `gA2`), `gestorProf`
+  (ADMINISTRADOR + PROFESOR asignado a `gA`), `profOtra` (otra escuela, su `gA`), gestor y propietario. `aGrupoA` está
+  en `gA` y `gB` (alumno compartido). Sistema de grados propio de la escuela (Blanco, Amarillo, Rojo, Negro) y
+  `comportamiento_legado_taemoi` a TRUE solo en esa escuela sintética.
+- Modificar: `T/acceso/AccesoRecursosTest.java`, `T/config/SesionSoloProfesorAuthorizationManagerTest.java`,
+  `T/seguridad/MatrizPermisosTest.java` (mapa `PROFESOR_E7` y prefijo en `listaBlanca`),
+  `src-api/src/test/resources/seguridad/matriz-permisos.txt` (6 líneas nuevas).
+- Crear: `T/services/ProfesorServiceTest.java` (regla de `pideRojoBordado`, sin Spring).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT: `misGrupos_soloLosSuyos_conSedeRolDisciplinaYAlumnosActivos`, `misGrupos_sinGrupos_listaVacia`,
+    `alumnosDelGrupo_activosConDeportesGradoYApto_sinDatosSensibles`, `grupoDeOtroProfesor_403`,
+    `grupoDeOtraEscuela_403`, `ficha_reducidaConEdadGruposCompartidosContactoYDeportes`, `fichaSinNifEmailDireccion`
+    (claves exactas del JSON en cada nivel y ningún valor sensible en el cuerpo), `alumnoDeOtroGrupo_403`,
+    `alumnoDeOtraEscuela_403`, `alumnoDeBaja_404_yFueraDeLaLista`, `responsableMasProfesorNoVeSusSedes`,
+    `familiaMasProfesorUsaSusGrupos`, `sesionSoloProfesorFueraDeListaBlanca_403`,
+    `profesorNoEntraEnRutasDeGestion_403` (listado de alumnos, ficha, tutores, salud, PDF de asistencia y
+    `PUT .../grado`, con las tres clases de cuenta de profesor), `gestionNoUsaLasRutasDelProfesor_403` (ADMIN, MANAGER y
+    ADMINISTRADOR + PROFESOR con asignación).
+  - `AccesoRecursosTest`: `grupoDeMisGrupos_soloLaRamaDeProfesor`, `grupoDeMisGrupos_niGestionNiResponsableNiFamilia`,
+    `grupoDeMisGrupos_profesorSinGrupos_noConsulta`.
+  - `SesionSoloProfesorAuthorizationManagerTest`: las rutas `/api/profesor/...` pasan a la regla de siempre en
+    `soloProfesorPasaPorLasReglasDeSiempreEnSuListaBlanca`; `/api/profesorx` no pasa.
+  - `ProfesorServiceTest`: `pideRojoBordado_soloConLegadoYSiguienteRojo`.
+  - Matriz: las 6 líneas (`GET`/`HEAD` de las tres rutas: PROFESOR `PERMITE` en `/grupos`, `ALCANCE` en las otras dos;
+    resto `DENIEGA`), declaradas en `PROFESOR_E7` con su test.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='ProfesorGruposIntegrationTest,AccesoRecursosTest,SesionSoloProfesorAuthorizationManagerTest,MatrizPermisosTest,ProfesorServiceTest' -DexcludedGroups=migracion`:
+  no compila hasta crear `grupoDeMisGrupos`, `ProfesorService` y los DTO; con los esqueletos, las rutas dan 403/404.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Modificar: `J/acceso/AccesoRecursos.java` (`grupoDeMisGrupos(Long)`, copia de `alumnoDeMisGrupos`).
+- Modificar: `J/config/SesionSoloProfesorAuthorizationManager.java` (`rutas.matcher("/api/profesor/**")`).
+- Modificar: `J/config/SecurityConfiguration.java` (`/api/profesor/**` → `ROLE_PROFESOR`, tras el bloque de `/api/caja`).
+- Crear: `J/controllers/ProfesorController.java`, `J/services/ProfesorService.java`, `J/dtos/response/ProfesorDTOs.java`.
+
+**Interfaces:**
+- Produce: `GET /api/profesor/grupos`, `GET /api/profesor/grupos/{grupoId}/alumnos`, `GET /api/profesor/alumnos/{alumnoId}`;
+  `@acceso.grupoDeMisGrupos(Long grupoId)`; `ProfesorService.misGrupos()`, `alumnosDelGrupo(Long)`, `ficha(Long)`.
+- Consume: `AlcanceActual.obtener().grupos()`, `AsignacionProfesorRepository.findByUsuarioIdAndOrganizacionId`
+  (con `TenantContext.get()`), `TutorRepository.findByAlumnoIdOrderByOrdenAscIdAsc`, `ProgresionGradosService`,
+  `CatalogoDisciplinasService.esMenorPorAnioNatural`, `ComportamientoLegadoService.activo()`.
+
+- [x] **Paso 1:** las tres capas (lista blanca, regla de URL, `@PreAuthorize`) y `grupoDeMisGrupos`.
+- [x] **Paso 2:** servicio y DTO; consultas JPQL acotadas por `@TenantId` (Grupo, Alumno, AlumnoDeporte, Tutor, Sede) y
+  `asignacion_profesor` con `organizacion_id` explícito. Sin N+1 en la lista del grupo (dos consultas).
+- [x] **Paso 3:** los tests de la tarea 1 en verde.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 6 líneas y recuento de la cabecera.
+- [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
+
+**Nota de la revisión (20/10/2026).** `grupo.disciplina_id` es NOT NULL desde V26, así que los «grupos sin disciplina» de §11.2 no pueden darse: E7-3 no los reimplementa. Queda para E7-3 un caso de un alumno que estuvo en un grupo del profesor y se le quitó (sin fila en `alumno_grupo`): 403.

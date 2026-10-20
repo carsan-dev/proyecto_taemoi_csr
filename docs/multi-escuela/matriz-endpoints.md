@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (360 líneas; 120 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (428 líneas; 141 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -15,8 +15,8 @@ la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y pro
 |---|---|
 | A. `cadaEndpointTieneExactamenteUnaPoliticaYNoSobraNinguna` | un manejador de `RequestMappingHandlerMapping` (método × patrón) no tiene línea, una línea no corresponde a ningún manejador, o hay líneas repetidas |
 | B. `laDecisionRealCoincideConLaDeclaradaParaCadaRol` | para alguna línea y rol, la decisión real (regla de URL **y** `@PreAuthorize`) no es la declarada |
-| `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado` | PROFESOR (la sesión solo-profesor, decisión 180) no es `DENIEGA` en una línea que no es de su caja (`PROFESOR_CAJA_6B2`, `ALCANCE` o `PERMITE`), ni de sesión (`PROFESOR_SESION_180`, `PERMITE`), ni pública (`PERMITE` para ANONIMO, y entonces `PERMITE`); o RESPONSABLE_SEDE es `PERMITE` en una línea que no está en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (listados y cuerpos que filtra el servicio, cada uno con el test que lo prueba) ni era ya `PERMITE` para SOLO_PLATAFORMA; o la lista declara una línea que no es `PERMITE` o cita un test que no existe (entrega 6, entrega6-plan.md §2.2) |
-| `sesionSoloProfesorLaCierraLaCapaDeUrlFueraDeSuListaBlanca` | la regla de URL (no el `@PreAuthorize`) deja pasar a PROFESOR en una ruta que no es de su lista blanca (`/api/caja/profesor/**`, `PROFESOR_SESION_180`, `/api/plataforma/**`) ni pública para el anónimo: una ruta nueva sin `@PreAuthorize` nace cerrada para esa sesión (decisión 180) |
+| `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado` | PROFESOR (la sesión solo-profesor, decisión 180) no es `DENIEGA` en una línea que no es de su caja ni de sus rutas propias (`PROFESOR_CAJA_6B2` y `PROFESOR_E7`, `ALCANCE` o `PERMITE`), ni de sesión (`PROFESOR_SESION_180`, `PERMITE`), ni pública (`PERMITE` para ANONIMO, y entonces `PERMITE`); o RESPONSABLE_SEDE es `PERMITE` en una línea que no está en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (listados y cuerpos que filtra el servicio, cada uno con el test que lo prueba) ni era ya `PERMITE` para SOLO_PLATAFORMA; o la lista declara una línea que no es `PERMITE` o cita un test que no existe (entrega 6, entrega6-plan.md §2.2) |
+| `sesionSoloProfesorLaCierraLaCapaDeUrlFueraDeSuListaBlanca` | la regla de URL (no el `@PreAuthorize`) deja pasar a PROFESOR en una ruta que no es de su lista blanca (`/api/caja/profesor/**`, `/api/profesor/**`, `PROFESOR_SESION_180`, `/api/plataforma/**`) ni pública para el anónimo: una ruta nueva sin `@PreAuthorize` nace cerrada para esa sesión (decisión 180) |
 | `control*` | el arnés deja de reproducir casos conocidos por HTTP real (p. ej. `/api/plataforma/errores`) |
 
 ## Cómo leer el registro
@@ -207,6 +207,24 @@ que dejaba un 403 en el registro (y en «Errores de plataforma») por cada carga
 la sesión solo-profesor (solo `GET`; HEAD cuenta como GET) y en `PROFESOR_SESION_180`. Solo lee la sesión: sin
 consultas ni datos de escuela. `/api/auth/user` no servía: SOLO_PLATAFORMA recibe 403 allí (anomalía 12). Lo prueba
 `SesionAdminPlataformaIntegrationTest`.
+
+Pieza E7-1 (el profesor con sus grupos, fase3-e7-profesor.md §6.2, D7-9 a D7-13): 6 líneas nuevas bajo
+`/api/profesor`; ninguna casilla existente cambia. Regla de URL nueva `/api/profesor/**` → `ROLE_PROFESOR` (tras el
+bloque de `/api/caja`) y una entrada `/api/profesor/**` en la lista blanca de la sesión solo-profesor; las líneas se
+declaran en `PROFESOR_E7` de `MatrizPermisosTest` y la condición `listaBlanca` acepta el prefijo. Ninguna ruta de
+gestión se abre al profesor. Lo prueba `ProfesorGruposIntegrationTest`.
+- `GET/HEAD /api/profesor/grupos`: PROFESOR `PERMITE` declarado (`hasAuthority('ROLE_PROFESOR') and
+  !hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')`; el servicio devuelve solo sus grupos, `alcance.grupos()`, con sede,
+  su rol, disciplina y nº de alumnos activos).
+- `GET/HEAD /api/profesor/grupos/{grupoId}/alumnos`: PROFESOR `ALCANCE` (`@acceso.grupoDeMisGrupos`, solo la rama de
+  profesor; un grupo ajeno, de otra escuela o inexistente da 403). Alumnos activos con sus deportes, grado, fecha de
+  grado y apto.
+- `GET/HEAD /api/profesor/alumnos/{alumnoId}`: PROFESOR `ALCANCE` (`@acceso.alumnoDeMisGrupos`; fuera de sus grupos,
+  403; de baja, 404). Ficha reducida: edad, grupos que comparte, teléfonos del alumno y de los tutores, deportes con
+  grado, fecha, apto, `admitePases` y `pideRojoBordado`; nunca NIF, email, dirección, observaciones, tarifa ni cobros.
+- El resto de roles, `DENIEGA` en las seis (también PROPIETARIO y GESTOR, que tienen las de gestión, D7-10, y
+  RESPONSABLE_SEDE). Las cuentas mixtas F+Pr y R+Pr las usan limitadas a sus grupos: las sedes del responsable no abren
+  nada aquí (D7-11).
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
