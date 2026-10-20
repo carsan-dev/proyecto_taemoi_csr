@@ -23,6 +23,7 @@ class PDFServiceImplTest {
 
     PDFServiceImplTest() {
         ReflectionTestUtils.setField(service, "alumnoDeporteRepository", repository);
+        ReflectionTestUtils.setField(service, "marcaEscuela", MarcaEscuelaPruebas.soloMoiskimdo());
     }
 
     @Test

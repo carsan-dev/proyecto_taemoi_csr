@@ -409,10 +409,24 @@ export const routes: Routes = [
     canActivate: [plataformaGuard],
   },
   {
+    // Logo de cada escuela (E7-7b): misma sesión de plataforma y mismo guard que los errores.
+    path: 'plataformaLogos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/plataforma-logos/plataforma-logos.component').then(m => m.PlataformaLogosComponent),
+    canActivate: [plataformaGuard],
+  },
+  {
     // «Mi caja» del profesor (6b-3b): sin catálogo ni requiredRoles; una sesión solo profesor solo puede usar su caja.
     path: 'mi-caja',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/mi-caja/mi-caja.component').then(m => m.MiCajaComponent),
+    canActivate: [profesorGuard],
+  },
+  {
+    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Mismo guard que «Mi caja», sin catálogo.
+    path: 'mis-grupos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),
     canActivate: [profesorGuard],
   },
   {

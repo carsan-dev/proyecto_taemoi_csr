@@ -2,7 +2,6 @@ package com.taemoi.project.services.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -34,7 +33,6 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -53,6 +51,8 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
@@ -76,6 +76,20 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			"ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
 			"JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
 	};
+	/** Hueco de un dato legal que la escuela no tiene en {@code organizacion} (certificado de otra escuela). */
+	private static final String DATO_LEGAL_VACIO = "________";
+
+	/**
+	 * Pieza E7-7a (decisión 211): logo y datos legales del certificado de la escuela activa. Moiskimdo, los de siempre
+	 * (las constantes de arriba); otra escuela, los suyos de {@code organizacion} o un hueco, nunca los de Moiskimdo.
+	 */
+	@Autowired
+	private MarcaEscuelaService marcaEscuela;
+
+	/** Textos legales del certificado de cobros. */
+	private record DatosCertificado(String nombreLegal, String cif, String responsable, String responsableNif,
+			String cargo, String clubFirma, String localidad) {
+	}
 
 	@Autowired
 	private com.taemoi.project.services.ComportamientoLegadoService comportamientoLegado;
@@ -562,9 +576,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			acroForm.setNeedAppearances(false);
 			document.getDocumentCatalog().setAcroForm(acroForm);
 
+			MarcaEscuela marca = marcaEscuela.deActiva();
 			try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-				dibujarLogo(document, content);
-				dibujarTextoCertificado(content, acroForm, page, certificado);
+				dibujarLogo(document, content, marca);
+				dibujarTextoCertificado(content, acroForm, page, certificado, datosCertificado(marca));
 			}
 
 			acroForm.refreshAppearances();
@@ -575,26 +590,47 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		}
 	}
 
-	private void dibujarLogo(PDDocument document, PDPageContentStream content) throws IOException {
-		ClassPathResource logoResource = new ClassPathResource("static/Logo_nuevo_sin_vectorizar.jpeg");
-		if (!logoResource.exists()) {
+	/** Logo de la escuela (Moiskimdo: Logo_nuevo_sin_vectorizar.jpeg, como siempre); sin logo, nada. */
+	private void dibujarLogo(PDDocument document, PDPageContentStream content, MarcaEscuela marca) throws IOException {
+		byte[] logoBytes = marca.logoCertificado();
+		if (logoBytes == null) {
 			return;
 		}
-		byte[] logoBytes;
-		try (InputStream inputStream = logoResource.getInputStream()) {
-			logoBytes = inputStream.readAllBytes();
-		}
-		PDImageXObject logo = PDImageXObject.createFromByteArray(document, logoBytes, "Logo_nuevo_sin_vectorizar.jpeg");
+		PDImageXObject logo = PDImageXObject.createFromByteArray(document, logoBytes,
+				marca.legado() ? "Logo_nuevo_sin_vectorizar.jpeg" : "logo.png");
 		content.drawImage(logo, 458, 718, 92, 92);
+	}
+
+	private static DatosCertificado datosCertificado(MarcaEscuela marca) {
+		if (marca.legado()) {
+			return new DatosCertificado(CLUB_NOMBRE_LEGAL, CLUB_CIF, RESPONSABLE_NOMBRE, RESPONSABLE_DNI, "Presidenta",
+					"C.D. MOI'S KIMDO TAEKWONDO", "Umbrete");
+		}
+		MarcaEscuela.DatosLegales legal = marca.legal();
+		String nombreLegal = lleno(legal.nombreLegal()) ? legal.nombreLegal().trim() : marca.nombre();
+		return new DatosCertificado(nombreLegal, datoLegal(legal.cif()), datoLegal(legal.firmanteNombre()),
+				datoLegal(legal.firmanteNif()), datoLegal(legal.firmanteCargo()),
+				nombreLegal.toUpperCase(new Locale("es", "ES")), lleno(legal.localidad()) ? legal.localidad().trim() : null);
+	}
+
+	private static boolean lleno(String valor) {
+		return valor != null && !valor.isBlank();
+	}
+
+	private static String datoLegal(String valor) {
+		return lleno(valor) ? valor.trim() : DATO_LEGAL_VACIO;
 	}
 
 	private void dibujarTextoCertificado(
 			PDPageContentStream content,
 			PDAcroForm acroForm,
 			PDPage page,
-			CertificadoCobrosData certificado) throws IOException {
+			CertificadoCobrosData certificado,
+			DatosCertificado legal) throws IOException {
 		String alumnoNombre = obtenerNombreCompletoAlumno(certificado.alumno);
-		String fechaGeneracion = "En Umbrete, a " + FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now()) + ".";
+		String fecha = FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now());
+		String fechaGeneracion = legal.localidad() != null ? "En " + legal.localidad() + ", a " + fecha + "."
+				: "A " + fecha + ".";
 
 		content.setNonStrokingColor(245, 248, 252);
 		content.addRect(52, 729, 380, 42);
@@ -604,11 +640,11 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		content.fill();
 		content.setNonStrokingColor(0, 0, 0);
 		escribirTexto(content, 72, 751, "CERTIFICADO DE COBROS", 13, true);
-		escribirTexto(content, 72, 735, "Ejercicio " + certificado.ano + " - " + CLUB_NOMBRE_LEGAL, 9, false);
+		escribirTexto(content, 72, 735, "Ejercicio " + certificado.ano + " - " + legal.nombreLegal(), 9, false);
 
-		escribirTexto(content, 72, 655, RESPONSABLE_NOMBRE + ", CON DNI " + RESPONSABLE_DNI
-				+ ", en calidad de Presidenta del", 10, false);
-		escribirTexto(content, 72, 634, CLUB_NOMBRE_LEGAL + " con C.I.F.: " + CLUB_CIF
+		escribirTexto(content, 72, 655, legal.responsable() + ", CON DNI " + legal.responsableNif()
+				+ ", en calidad de " + legal.cargo() + " del", 10, false);
+		escribirTexto(content, 72, 634, legal.nombreLegal() + " con C.I.F.: " + legal.cif()
 				+ ", hago constar que ha recibido de", 10, false);
 		escribirTexto(content, 72, 613, "D/Dña.", 10, false);
 		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 607, 235, 17);
@@ -636,10 +672,10 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 240, 250, 17);
 		escribirTexto(content, 72, 185, "Firmado:", 10, true);
-		escribirTexto(content, 72, 164, RESPONSABLE_NOMBRE, 10, false);
-		escribirTexto(content, 72, 109, "PRESIDENTA", 10, false);
-		escribirTexto(content, 72, 88, "C.D. MOI'S KIMDO TAEKWONDO", 10, false);
-		escribirTexto(content, 72, 67, "C.I.F.: " + CLUB_CIF, 10, false);
+		escribirTexto(content, 72, 164, legal.responsable(), 10, false);
+		escribirTexto(content, 72, 109, legal.cargo().toUpperCase(new Locale("es", "ES")), 10, false);
+		escribirTexto(content, 72, 88, legal.clubFirma(), 10, false);
+		escribirTexto(content, 72, 67, "C.I.F.: " + legal.cif(), 10, false);
 	}
 
 	private void dibujarTablaMeses(PDPageContentStream content) throws IOException {

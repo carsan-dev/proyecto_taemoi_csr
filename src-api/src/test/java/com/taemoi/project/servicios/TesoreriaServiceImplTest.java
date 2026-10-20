@@ -72,6 +72,9 @@ class TesoreriaServiceImplTest {
 		org.mockito.Mockito.lenient().when(comportamientoLegado.activo()).thenReturn(true);
 		org.springframework.test.util.ReflectionTestUtils.setField(tesoreriaService, "catalogoDisciplinas",
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().catalogo());
+		// Pieza E7-7a: marca de Moiskimdo (sin logos) para el certificado.
+		org.springframework.test.util.ReflectionTestUtils.setField(tesoreriaService, "marcaEscuela",
+				com.taemoi.project.services.MarcaEscuelaPruebas.soloMoiskimdo());
 	}
 
 	@Test

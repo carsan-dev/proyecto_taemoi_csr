@@ -24,11 +24,14 @@ public class PreinscripcionCancelacionEmailService {
 
 	private final PreinscripcionRepository preinscripciones;
 	private final EmailService emailService;
+	/** Pieza E7-7a: firma con el nombre de la escuela de la solicitud (no la del hilo: el aviso sale tras el commit). */
+	private final MarcaEscuelaService marcaEscuela;
 
 	public PreinscripcionCancelacionEmailService(PreinscripcionRepository preinscripciones,
-			EmailService emailService) {
+			EmailService emailService, MarcaEscuelaService marcaEscuela) {
 		this.preinscripciones = preinscripciones;
 		this.emailService = emailService;
+		this.marcaEscuela = marcaEscuela;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -44,8 +47,9 @@ public class PreinscripcionCancelacionEmailService {
 			if (blank(preinscripcion.getEmail())) {
 				throw new IllegalStateException("La solicitud no tiene correo electrónico.");
 			}
-			emailService.sendEmailSync(preinscripcion.getEmail().trim(),
-					"Tu preinscripción " + preinscripcion.getReferencia() + " ha sido cancelada", html(preinscripcion));
+			EmailService.enviarSync(emailService, preinscripcion.getEmail().trim(),
+					"Tu preinscripción " + preinscripcion.getReferencia() + " ha sido cancelada", html(preinscripcion),
+					marcaEscuela.deEntidadOActiva(preinscripcion.getOrganizacionId()).remitente());
 			preinscripcion.setEstadoEmailCancelacion(EstadoEmailCancelacion.ENVIADO);
 			preinscripcion.setEmailCancelacionEnviadoEn(Instant.now());
 		} catch (Exception ex) {
@@ -69,7 +73,8 @@ public class PreinscripcionCancelacionEmailService {
 				+ "<p style='padding:12px;background:#f4f6f6;border-left:4px solid #547078;white-space:pre-wrap'>"
 				+ esc(motivo) + "</p>"
 				+ "<p>Si tienes cualquier duda, puedes responder a este correo o ponerte en contacto con la escuela.</p>"
-				+ "<p>Un saludo,<br><strong>Moi's Kim Do</strong></p></div>";
+				+ "<p>Un saludo,<br><strong>" + marcaEscuela.deEntidadOActiva(p.getOrganizacionId()).firmaCorreoHtml()
+				+ "</strong></p></div>";
 	}
 
 	private String nombreCompleto(Preinscripcion p) {

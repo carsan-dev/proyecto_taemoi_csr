@@ -74,9 +74,11 @@ describe('HeaderComponent', () => {
     component.isAdminOnly = true;
     component.esAdminPlataforma = false;
     expect(component.visibleAdminQuickLinks.map((item) => item.route)).not.toContain('/plataformaErrores');
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).not.toContain('/plataformaLogos');
 
     component.esAdminPlataforma = true;
     expect(component.visibleAdminQuickLinks.map((item) => item.route)).toContain('/plataformaErrores');
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).toContain('/plataformaLogos');
   });
 
   it('detecta el portal user usando metadata de rutas', () => {
@@ -134,6 +136,8 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('#admin-sidebar')?.textContent).toContain('Superadmin');
     const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaErrores"]');
     expect(enlace?.textContent?.trim()).toBe('Errores de plataforma');
+    const enlaceLogos = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaLogos"]');
+    expect(enlaceLogos?.textContent?.trim()).toBe('Logo de la escuela');
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 
@@ -165,11 +169,21 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
   });
 
+  it('gestión + profesor no ve «Mis grupos» (la API del profesor deniega a ADMIN y MANAGER, D7-10)', async () => {
+    let el = await renderizar(false, ['ROLE_ADMIN', 'ROLE_PROFESOR']);
+    expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+    expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')).not.toBeNull();
+
+    el = await renderizar(false, ['ROLE_MANAGER', 'ROLE_PROFESOR']);
+    expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+
   it('la oculta cuando el sondeo de plataforma es false', async () => {
     const el = await renderizar(false);
 
     expect(el.querySelector('#admin-sidebar')?.textContent).not.toContain('Superadmin');
     expect(el.querySelector('#admin-sidebar a[href="/plataformaErrores"]')).toBeNull();
+    expect(el.querySelector('#admin-sidebar a[href="/plataformaLogos"]')).toBeNull();
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 });
@@ -394,10 +408,45 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     expect(el.querySelector('.mobile-user-quick-menu-panel a[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
   });
 
+  it('familia + profesor: «Mis grupos» en el menú de cuenta y en el menú móvil (D7-7)', async () => {
+    const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR']);
+    const componente = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+
+    componente.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('.user-desktop-menu-panel a[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
+
+    componente.closeDesktopUserMenu();
+    componente.toggleMobileUserQuickMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('.mobile-user-quick-menu-panel a[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
+
+    componente.closeMobileUserQuickMenu();
+    componente.toggleMobileMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('.mobile-header-link[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
+  });
+
+  it('gestión + familia + profesor: ni el menú de cuenta ni el móvil ofrecen «Mis grupos»', async () => {
+    const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_USER', 'ROLE_PROFESOR']);
+    const componente = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    expect(componente.veMisGrupos).toBeFalse();
+    componente.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+    componente.closeDesktopUserMenu();
+    componente.toggleMobileMenu();
+    fixture.detectChanges();
+    expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+
   it('familia sin profesor: no ve «Mi caja»', async () => {
     const { fixture } = await renderizar(['ROLE_USER']);
     fixture.componentInstance.toggleDesktopUserMenu();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mis-grupos"]')).toBeNull();
   });
 });

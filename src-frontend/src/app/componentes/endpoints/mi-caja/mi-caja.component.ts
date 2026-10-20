@@ -42,6 +42,7 @@ import {
   puedeRetirar,
   requiereAccion,
 } from './mi-caja-pedidos';
+import { NavegacionProfesorComponent } from '../mis-grupos/navegacion-profesor/navegacion-profesor.component';
 
 export type PestanaMiCaja = 'cobrar' | 'vender' | 'encima' | 'pedidos';
 
@@ -189,7 +190,7 @@ export function diaMes(fecha: string | null | undefined): string {
 @Component({
   selector: 'app-mi-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule, A11yModule],
+  imports: [CommonModule, FormsModule, A11yModule, NavegacionProfesorComponent],
   templateUrl: './mi-caja.component.html',
   styleUrl: './mi-caja.component.scss',
 })

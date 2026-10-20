@@ -7,5 +7,11 @@ package com.taemoi.project.events;
  * interno configurado.
  */
 public record PreinscripcionPromocionadaEvent(String referencia, String email, String asunto, String html,
-		String adminEmail, String asuntoAdmin, String htmlAdmin) {
+		String adminEmail, String asuntoAdmin, String htmlAdmin, String remitente) {
+
+	/** Sin remitente propio (Moiskimdo): el nombre de siempre. {@code remitente}: pieza E7-7a. */
+	public PreinscripcionPromocionadaEvent(String referencia, String email, String asunto, String html,
+			String adminEmail, String asuntoAdmin, String htmlAdmin) {
+		this(referencia, email, asunto, html, adminEmail, asuntoAdmin, htmlAdmin, null);
+	}
 }

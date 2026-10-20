@@ -23,13 +23,13 @@ public class PreinscripcionPromocionEmailService {
 
 	public void enviar(PreinscripcionPromocionadaEvent event) {
 		try {
-			emailService.sendEmail(event.email(), event.asunto(), event.html());
+			EmailService.enviar(emailService, event.email(), event.asunto(), event.html(), event.remitente());
 		} catch (Exception e) {
 			log.warn("No se pudo avisar de promoción {}: {}", event.referencia(), e.getMessage());
 		}
 		if (event.adminEmail() == null) return;
 		try {
-			emailService.sendEmail(event.adminEmail(), event.asuntoAdmin(), event.htmlAdmin());
+			EmailService.enviar(emailService, event.adminEmail(), event.asuntoAdmin(), event.htmlAdmin(), event.remitente());
 		} catch (Exception e) {
 			log.warn("No se pudo avisar al admin de promoción {}: {}", event.referencia(), e.getMessage());
 		}

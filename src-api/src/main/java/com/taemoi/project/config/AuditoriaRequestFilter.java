@@ -39,12 +39,20 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	/**
 	 * Datos de salud: nunca se guarda el cuerpo; las lecturas correctas ya las audita AlumnoSaludService.
 	 * Se reconoce por el controlador que atendió la petición y, si no llegó a ninguno (401/403/404), por
-	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta).
+	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta). Pieza E7-2: también
+	 * la lectura del profesor ({@code /api/profesor/alumnos/{id}/salud}), que registra AlumnoSaludService#obtenerComoProfesor.
 	 */
-	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/alumnos/[^/]+/salud/?$");
+	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
+	/**
+	 * Pieza E7-7a: logo de una escuela (superadmin). El cambio correcto lo registra LogoEscuelaService en la escuela
+	 * DESTINO; aquí no se apunta (iría a la escuela activa del superadmin, cuyo propietario lo vería). Los errores, sí.
+	 */
+	private static final Pattern RUTA_LOGO_ESCUELA = Pattern.compile("^/api/plataforma/escuelas/[^/]+/logo/?$");
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
-			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"));
+			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
+			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
+			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"));
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;
@@ -99,6 +107,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
+		if (esCambioCorrectoDeLogo(method, status, endpoint)) {
+			return;
+		}
+
 		boolean rutaSalud = esPeticionDeSalud(request, endpoint);
 		if (rutaSalud && accion == AuditoriaAccion.READ && status >= 200 && status < 300) {
 			return;
@@ -139,6 +151,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			}
 		}
 		return Set.of();
+	}
+
+	/** PUT o DELETE 2xx del logo de una escuela: ya lo registra la escuela destino (pieza E7-7a). */
+	static boolean esCambioCorrectoDeLogo(String metodo, int estado, String endpoint) {
+		return estado >= 200 && estado < 300 && ("PUT".equals(metodo) || "DELETE".equals(metodo))
+				&& RUTA_LOGO_ESCUELA.matcher(normalizarParaComparar(endpoint)).matches();
 	}
 
 	static boolean esPeticionDeSalud(HttpServletRequest request, String endpoint) {

@@ -48,7 +48,8 @@ class PreinscripcionFinalizacionEmailServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new PreinscripcionFinalizacionEmailService(preinscripciones, usuarios, email);
+		service = new PreinscripcionFinalizacionEmailService(preinscripciones, usuarios, email,
+				MarcaEscuelaPruebas.soloMoiskimdo());
 		ReflectionTestUtils.setField(service, "frontendBaseUrl", "https://portal.example.com/");
 		preinscripcion = preinscripcionFinalizada();
 		when(preinscripciones.findByReferenciaForUpdate("PRE-2026-ABC")).thenReturn(Optional.of(preinscripcion));

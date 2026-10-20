@@ -27,6 +27,8 @@ public final class RutasArchivos {
 	public static final String CARPETA_ALUMNOS = "alumnos";
 	public static final String CARPETA_EVENTOS = "eventos";
 	public static final String CARPETA_MATERIALES = "materiales";
+	/** Pieza E7-7a: logo de la escuela (PNG que sube el superadmin). */
+	public static final String CARPETA_LOGO = "logo";
 	/** Carpetas heredadas (sin prefijo de escuela). */
 	public static final String CARPETA_DOCUMENTOS_ALUMNOS_LEGADO = "Documentos_Alumnos_Moiskimdo";
 	public static final String CARPETA_DOCUMENTOS_EVENTOS_LEGADO = "Documentos_Eventos";

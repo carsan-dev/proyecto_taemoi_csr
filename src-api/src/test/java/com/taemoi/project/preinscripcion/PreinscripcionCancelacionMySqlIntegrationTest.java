@@ -79,6 +79,9 @@ import com.taemoi.project.services.TutorService;
 		com.taemoi.project.services.impl.CatalogoDisciplinasServiceImpl.class,
 		com.taemoi.project.services.impl.TarifasServiceImpl.class,
 		com.taemoi.project.services.impl.ProgresionGradosServiceImpl.class,
+		// Pieza E7-7a: la marca de la escuela de los correos (la real, con su lectura en transacción propia).
+		com.taemoi.project.services.MarcaEscuelaService.class, com.taemoi.project.organizacion.TransaccionEnEscuela.class,
+		com.taemoi.project.services.impl.ImagenServiceImpl.class,
 		OrganizacionHibernateConfig.class, PreinscripcionCancelacionMySqlIntegrationTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PreinscripcionCancelacionMySqlIntegrationTest extends MySqlIntegrationTest {

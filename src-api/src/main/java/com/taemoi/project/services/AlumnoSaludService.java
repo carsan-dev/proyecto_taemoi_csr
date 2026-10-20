@@ -45,9 +45,23 @@ public class AlumnoSaludService {
 
 	@Transactional
 	public AlumnoSaludDTO obtener(Long alumnoId) {
+		return leerRegistrando(alumnoId, ruta(alumnoId), "Lectura de datos de salud del alumno #" + alumnoId);
+	}
+
+	/**
+	 * Pieza E7-2 (D7-14): la lectura del profesor por {@code /api/profesor/alumnos/{id}/salud}. La misma que
+	 * {@link #obtener} (mismo módulo, misma transacción; si no se puede registrar, no se lee) con la ruta del profesor en
+	 * el evento y un resumen solo con el id. Quien llama ya comprobó que el alumno está activo en sus grupos.
+	 */
+	@Transactional
+	public AlumnoSaludDTO obtenerComoProfesor(Long alumnoId) {
+		return leerRegistrando(alumnoId, "/api/profesor/alumnos/" + alumnoId + "/salud",
+				"Lectura de datos de salud del alumno #" + alumnoId + " (profesor)");
+	}
+
+	private AlumnoSaludDTO leerRegistrando(Long alumnoId, String endpoint, String resumen) {
 		comprobarAlumno(alumnoId);
-		auditoria.registrarAccesoSensible(AuditoriaAccion.READ, MODULO_AUDITORIA, ruta(alumnoId), alumnoId,
-				"Lectura de datos de salud del alumno #" + alumnoId);
+		auditoria.registrarAccesoSensible(AuditoriaAccion.READ, MODULO_AUDITORIA, endpoint, alumnoId, resumen);
 		return salud.findById(alumnoId).map(this::aDto).orElseGet(() -> AlumnoSaludDTO.vacio(alumnoId));
 	}
 

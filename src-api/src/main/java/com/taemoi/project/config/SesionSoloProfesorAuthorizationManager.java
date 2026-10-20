@@ -28,7 +28,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * caja hasta la E9; su autoridad de responsable, si la tiene, no abre nada más. Envuelve el {@link AuthorizationManager} de las reglas de URL de
  * {@code SecurityConfiguration} y, para esa sesión, deja decidir a las reglas de siempre SOLO en:
  * <ul>
- * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), lo imprescindible de sesión (roles, quién es,
+ * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), sus rutas de la entrega 7
+ * ({@code /api/profesor/**}), lo imprescindible de sesión (roles, quién es,
  * si es de plataforma, selector y cambio de escuela) y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
  * de plataforma que también es profesor no la pierde);</li>
  * <li>lo público: lo que esas mismas reglas conceden a un anónimo.</li>
@@ -134,6 +135,8 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 		return List.of(
 				// Su caja: cargos por cobrar, vender, lo que lleva encima, deshacer (y lo que se añada bajo ella).
 				rutas.matcher("/api/caja/profesor/**"),
+				// Entrega 7 (D7-9): sus rutas propias (grupos, alumnos y ficha reducida; filtro por sus grupos).
+				rutas.matcher("/api/profesor/**"),
 				// Sesión: quién es y sus roles (el frontend redirige con ellos), selector y cambio de escuela.
 				rutas.matcher(HttpMethod.GET, "/api/auth/roles"),
 				rutas.matcher(HttpMethod.GET, "/api/auth/user"),

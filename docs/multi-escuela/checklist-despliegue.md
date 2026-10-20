@@ -175,6 +175,10 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       `tarifa_id = NULL` donde `tipo_tarifa` es NULL no se limita a una organización y borraría las tarifas
       con código propio de otras escuelas (que no escriben `tipo_tarifa`). Ninguna migración posterior a V27
       lo incluye (un test lo comprueba).
+- [ ] E7 (profesor con sus grupos; asignación de profesores; marca por escuela en PDF y correos): sin migración →
+      atajo `desplegar`. Prueba manual: asignar un profesor ficticio a un grupo en la escuela de pruebas, entrar como él
+      (Mis grupos, ficha, salud, pase y cobro en Mi caja), y subir un logo como superadmin a una escuela que no sea
+      Moiskimdo y generar un PDF.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

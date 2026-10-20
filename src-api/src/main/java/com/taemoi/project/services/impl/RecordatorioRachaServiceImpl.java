@@ -22,6 +22,8 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.RecordatorioRachaService;
 
 @Service
@@ -33,6 +35,8 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 	private final UsuarioRepository usuarioRepository;
 	private final AccesoFamiliaService accesoFamilia;
 	private final EmailService emailService;
+	/** Pieza E7-7a: el recordatorio sale con el nombre de la escuela del job. */
+	private final MarcaEscuelaService marcaEscuela;
 
 	@Value("${streak.reminder.enabled:true}")
 	private boolean streakReminderEnabled;
@@ -47,10 +51,12 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 
 	public RecordatorioRachaServiceImpl(UsuarioRepository usuarioRepository,
 			AccesoFamiliaService accesoFamilia,
-			EmailService emailService) {
+			EmailService emailService,
+			MarcaEscuelaService marcaEscuela) {
 		this.usuarioRepository = usuarioRepository;
 		this.accesoFamilia = accesoFamilia;
 		this.emailService = emailService;
+		this.marcaEscuela = marcaEscuela;
 	}
 
 	@Override
@@ -110,8 +116,9 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 				String asunto = alumnosEnRiesgo.size() == 1
 						? "Tu racha diaria está a punto de perderse"
 						: "Hay rachas diarias a punto de perderse";
-				String htmlContent = construirHtmlRecordatorio(usuario, alumnosEnRiesgo, ventanaHoras);
-				emailService.sendEmail(usuario.getEmail(), asunto, htmlContent);
+				MarcaEscuela marca = marcaEscuela.de(organizacionId);
+				String htmlContent = construirHtmlRecordatorio(usuario, alumnosEnRiesgo, ventanaHoras, marca);
+				EmailService.enviar(emailService, usuario.getEmail(), asunto, htmlContent, marca.remitente());
 
 				usuario.setUltimoRecordatorioRachaReset(objetivoReset);
 				usuarioRepository.save(usuario);
@@ -174,7 +181,8 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 		return fecha.toInstant().atZone(RETO_DIARIO_ZONE_ID).toLocalDate();
 	}
 
-	private String construirHtmlRecordatorio(Usuario usuario, List<AlumnoRachaEnRiesgo> alumnosEnRiesgo, int ventanaHoras) {
+	private String construirHtmlRecordatorio(Usuario usuario, List<AlumnoRachaEnRiesgo> alumnosEnRiesgo, int ventanaHoras,
+			MarcaEscuela marca) {
 		String saludoNombre = (usuario.getNombre() == null || usuario.getNombre().isBlank()) ? ""
 				: " " + escapeHtml(usuario.getNombre());
 		String saludo = "Hola" + saludoNombre + ",";
@@ -201,7 +209,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 				        <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
 				          <tr>
 				            <td style="background:#1b2b2e;color:#ffffff;padding:24px 28px;">
-				              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">Club Moiskimdo Taekwondo</div>
+				              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">%s</div>
 				              <h1 style="margin:10px 0 0;font-size:22px;font-weight:700;">Recordatorio de racha diaria</h1>
 				            </td>
 				          </tr>
@@ -226,7 +234,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 				  </table>
 				</body>
 				</html>
-				""".formatted(saludo, horasTexto, filasAlumnos, ctaUrl);
+				""".formatted(marca.clubCorreoCuentaHtml(), saludo, horasTexto, filasAlumnos, ctaUrl);
 	}
 
 	private String construirUrlUserPage() {

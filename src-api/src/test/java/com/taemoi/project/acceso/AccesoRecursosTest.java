@@ -650,6 +650,40 @@ class AccesoRecursosTest {
 		assertFalse(acceso.alumnoDeMisGrupos(7L));
 	}
 
+	/** Pieza E7-1 (D7-11): el grupo es uno de los suyos; solo la rama de profesor, nunca por sede ni por gestión. */
+	@Test
+	void grupoDeMisGrupos_soloLaRamaDeProfesor() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.grupoEnGrupos(7L, GRUPOS)).thenReturn(true);
+		assertTrue(acceso.grupoDeMisGrupos(7L));
+		assertFalse(acceso.grupoDeMisGrupos(8L));
+		assertFalse(acceso.grupoDeMisGrupos(null));
+		// Sesión 184 (R+Pr): sus sedes no abren un grupo que no es suyo.
+		sesion(escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.grupoEnSedes(8L, SEDES)).thenReturn(true);
+		assertTrue(acceso.grupoDeMisGrupos(7L));
+		assertFalse(acceso.grupoDeMisGrupos(8L), "un grupo de su sede que no es suyo");
+		verify(consulta, never()).grupoEnSedes(anyLong(), anySet());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER", "ROLE_RESPONSABLE_SEDE", "ROLE_USER" })
+	void grupoDeMisGrupos_niGestionNiResponsableNiFamilia(String autoridad) {
+		sesion(escuela(AlcanceSesion.limitado(SEDES, Set.of()), autoridad));
+		assertFalse(acceso.grupoDeMisGrupos(7L));
+		// Gestión que además es profesor (D7-10): alcance total, sin grupos → no entra por las rutas del profesor.
+		sesion(escuela(AlcanceSesion.TOTAL, autoridad, "ROLE_PROFESOR"));
+		assertFalse(acceso.grupoDeMisGrupos(7L));
+		verify(consulta, never()).grupoEnGrupos(anyLong(), anySet());
+	}
+
+	@Test
+	void grupoDeMisGrupos_profesorSinGrupos_noConsulta() {
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_PROFESOR"));
+		assertFalse(acceso.grupoDeMisGrupos(7L));
+		verifyNoInteractions(consulta);
+	}
+
 	@Test
 	void cargoDeMisGrupos_profesorSinGrupos_noConsulta() {
 		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_PROFESOR"));

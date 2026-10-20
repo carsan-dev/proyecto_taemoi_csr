@@ -38,7 +38,8 @@ class PreinscripcionCancelacionEmailServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new PreinscripcionCancelacionEmailService(preinscripciones, email);
+		service = new PreinscripcionCancelacionEmailService(preinscripciones, email,
+				MarcaEscuelaPruebas.soloMoiskimdo());
 		preinscripcion = solicitudCancelada();
 		lenient().when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
 	}

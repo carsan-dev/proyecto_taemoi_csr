@@ -2259,19 +2259,26 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	@Transactional
 	public AlumnoDeporte pasarGradoPorRecompensa(Long alumnoId, String deporte, boolean rojoBordado) {
-		return pasarGradoInterno(alumnoId, deporte, rojoBordado, true);
+		return pasarGradoInterno(alumnoId, deporte, rojoBordado, true).getAlumnoDeporte();
 	}
 
 	@Override
 	@Transactional
 	public AlumnoDeporte pasarGradoConDerechoExamen(Long alumnoId, String deporte, boolean rojoBordado) {
-		return pasarGradoInterno(alumnoId, deporte, rojoBordado, false);
+		return pasarGradoInterno(alumnoId, deporte, rojoBordado, false).getAlumnoDeporte();
+	}
+
+	@Override
+	@Transactional
+	public ProductoAlumno crearCargoDePase(Long alumnoId, String deporte, boolean rojoBordado, boolean porRecompensa) {
+		return pasarGradoInterno(alumnoId, deporte, rojoBordado, porRecompensa);
 	}
 
 	/**
-	 * Método interno para pasar de grado (por recompensa o derecho de examen)
+	 * Método interno para pasar de grado (por recompensa o derecho de examen). Devuelve el cargo creado (pieza E7-3);
+	 * los métodos de gestión devuelven su {@code alumnoDeporte}, como siempre.
 	 */
-	private AlumnoDeporte pasarGradoInterno(Long alumnoId, String deporte, boolean rojoBordado, boolean porRecompensa) {
+	private ProductoAlumno pasarGradoInterno(Long alumnoId, String deporte, boolean rojoBordado, boolean porRecompensa) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
 
@@ -2324,7 +2331,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		productoAlumnoRepository.save(productoAlumno);
 
 		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
-		return alumnoDeporte;
+		return productoAlumno;
 	}
 
 	/**

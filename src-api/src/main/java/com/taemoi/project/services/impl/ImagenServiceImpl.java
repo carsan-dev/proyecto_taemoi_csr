@@ -86,6 +86,20 @@ public class ImagenServiceImpl implements ImagenService {
 	}
 
 	@Override
+	public Imagen guardarLogoEscuela(Long organizacionId, byte[] png) throws IOException {
+		if (png == null || png.length == 0) {
+			throw new IllegalArgumentException("El logo está vacío.");
+		}
+		String carpetaRelativa = RutasArchivos.carpetaOrganizacion(organizacionId) + "/" + RutasArchivos.CARPETA_LOGO;
+		Path directorio = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
+		Files.createDirectories(directorio);
+		String nombre = UUID.randomUUID() + "_logo.png";
+		Path fichero = RutasArchivos.resolverDentroDe(directorio, nombre);
+		Files.write(fichero, png, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+		return crearImagen(nombre, "image/png", carpetaRelativa);
+	}
+
+	@Override
 	public void eliminarImagenDeSistema(Imagen imagen) {
 		if (imagen == null || imagen.getRuta() == null) {
 			throw new IllegalArgumentException("La imagen o su ruta no es valida.");

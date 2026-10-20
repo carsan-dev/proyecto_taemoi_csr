@@ -1,0 +1,210 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Subject, of, throwError } from 'rxjs';
+import Swal from 'sweetalert2';
+
+import { EscuelaLogo } from '../../../interfaces/escuela-logo';
+import { LogoEscuelaService } from '../../../servicios/plataforma/logo-escuela.service';
+import { LOGO_MAX_BYTES, PlataformaLogosComponent } from './plataforma-logos.component';
+
+describe('PlataformaLogosComponent', () => {
+  let fixture: ComponentFixture<PlataformaLogosComponent>;
+  let componente: PlataformaLogosComponent;
+  let servicio: jasmine.SpyObj<LogoEscuelaService>;
+  let creadas: string[];
+  let revocadas: string[];
+
+  const con: EscuelaLogo = { id: 2, nombre: 'Escuela Norte', tieneLogo: true, marcaHeredada: false };
+  const sin: EscuelaLogo = { id: 3, nombre: 'Escuela Sur', tieneLogo: false, marcaHeredada: false };
+  const heredada: EscuelaLogo = { id: 1, nombre: 'Moiskimdo', tieneLogo: true, marcaHeredada: true };
+
+  const texto = (): string => fixture.nativeElement.textContent.replace(/\s+/g, ' ');
+  const filas = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll('li.escuela'));
+  const boton = (fila: HTMLElement, etiqueta: string): HTMLButtonElement | undefined =>
+    Array.from(fila.querySelectorAll('button')).find((b) => b.textContent!.includes(etiqueta)) as HTMLButtonElement | undefined;
+
+  function elegir(fila: HTMLElement, archivo: File): void {
+    const entrada = fila.querySelector('input[type=file]') as HTMLInputElement;
+    const lista = new DataTransfer();
+    lista.items.add(archivo);
+    entrada.files = lista.files;
+    entrada.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
+
+  const png = (bytes = 10) => new File([new Uint8Array(bytes)], 'logo.png', { type: 'image/png' });
+
+  beforeEach(async () => {
+    creadas = [];
+    revocadas = [];
+    let n = 0;
+    spyOn(URL, 'createObjectURL').and.callFake(() => {
+      const url = `blob:prueba/${++n}`;
+      creadas.push(url);
+      return url;
+    });
+    spyOn(URL, 'revokeObjectURL').and.callFake((url: string) => {
+      revocadas.push(url);
+    });
+
+    servicio = jasmine.createSpyObj<LogoEscuelaService>('LogoEscuelaService', ['escuelas', 'subir', 'quitar', 'logo']);
+    servicio.escuelas.and.returnValue(of([heredada, con, sin]));
+    servicio.logo.and.callFake(() => of(new Blob(['x'], { type: 'image/png' })));
+
+    await TestBed.configureTestingModule({
+      imports: [PlataformaLogosComponent],
+      providers: [{ provide: LogoEscuelaService, useValue: servicio }],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PlataformaLogosComponent);
+    componente = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('lista las escuelas, con miniatura la que tiene logo y «Sin logo» la que no', () => {
+    expect(filas().length).toBe(3);
+    expect(servicio.logo).toHaveBeenCalledWith(2);
+    expect(servicio.logo).not.toHaveBeenCalledWith(1);
+    expect(servicio.logo).not.toHaveBeenCalledWith(3);
+    expect(filas()[1].querySelector('img')).not.toBeNull();
+    expect(filas()[2].querySelector('img')).toBeNull();
+    expect(filas()[2].textContent).toContain('Sin logo');
+    expect(texto()).toContain('PNG, JPG o SVG, hasta 1 MB');
+  });
+
+  it('la escuela con marca heredada no tiene acciones y lo explica', () => {
+    const fila = filas()[0];
+    expect(fila.textContent).toContain('Marca de la plataforma: no se cambia aquí');
+    expect(fila.querySelectorAll('button').length).toBe(0);
+    expect(fila.querySelector('input[type=file]')).toBeNull();
+    expect(fila.querySelector('img')).toBeNull();
+    expect(fila.querySelector('.miniatura')!.textContent).toContain('Logo de siempre');
+  });
+
+  it('el selector admite PNG, JPG y SVG', () => {
+    const accept = filas()[1].querySelector('input[type=file]')!.getAttribute('accept')!;
+    expect(accept).toBe('.png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml');
+  });
+
+  it('sube el archivo, desactiva el botón mientras tanto y refresca la miniatura revocando la anterior', () => {
+    const envio = new Subject<EscuelaLogo>();
+    servicio.subir.and.returnValue(envio);
+
+    const antes = creadas.length;
+    const anterior = componente.filas[1].miniatura!;
+    const archivo = png();
+    elegir(filas()[1], archivo);
+
+    expect(servicio.subir).toHaveBeenCalledWith(2, archivo);
+    expect(boton(filas()[1], 'Cambiar logo')!.disabled).toBeTrue();
+    expect(filas()[1].textContent).toContain('Guardando');
+
+    envio.next(con);
+    envio.complete();
+    fixture.detectChanges();
+
+    expect(boton(filas()[1], 'Cambiar logo')!.disabled).toBeFalse();
+    expect(creadas.length).toBe(antes + 1);
+    expect(revocadas).toContain(anterior);
+    expect(componente.filas[1].miniatura).toBe(creadas[creadas.length - 1]);
+  });
+
+  it('subir a una escuela sin logo muestra la miniatura nueva', () => {
+    servicio.subir.and.returnValue(of({ ...sin, tieneLogo: true }));
+    elegir(filas()[2], png());
+    expect(servicio.logo).toHaveBeenCalledWith(3);
+    expect(filas()[2].querySelector('img')).not.toBeNull();
+    expect(boton(filas()[2], 'Quitar logo')).toBeDefined();
+  });
+
+  it('un 400 muestra el mensaje del backend en la fila y no toca el logo', () => {
+    servicio.subir.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 400, error: { mensaje: 'El SVG contiene contenido no permitido' } }))
+    );
+    elegir(filas()[2], png());
+    expect(filas()[2].querySelector('[role=alert]')!.textContent).toContain('El SVG contiene contenido no permitido');
+    expect(boton(filas()[2], 'Subir logo')!.disabled).toBeFalse();
+    expect(filas()[2].querySelector('img')).toBeNull();
+  });
+
+  it('un 409 muestra el mensaje del backend', () => {
+    servicio.subir.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { mensaje: 'Esta escuela tiene la marca de la plataforma' } }))
+    );
+    elegir(filas()[1], png());
+    expect(filas()[1].querySelector('[role=alert]')!.textContent).toContain('Esta escuela tiene la marca de la plataforma');
+  });
+
+  it('un 404 sin cuerpo usa un texto por defecto', () => {
+    servicio.subir.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    elegir(filas()[1], png());
+    expect(filas()[1].querySelector('[role=alert]')!.textContent).toContain('No se pudo subir el logo');
+  });
+
+  it('un archivo de más de 1 MB no se envía y avisa', () => {
+    elegir(filas()[2], png(LOGO_MAX_BYTES + 1));
+    expect(servicio.subir).not.toHaveBeenCalled();
+    expect(filas()[2].querySelector('[role=alert]')!.textContent).toContain('más de 1 MB');
+  });
+
+  it('quitar pide confirmación y, si se acepta, llama a DELETE y retira la miniatura', async () => {
+    const aviso = spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as any);
+    servicio.quitar.and.returnValue(of({ ...con, tieneLogo: false }));
+    const anterior = componente.filas[1].miniatura!;
+
+    boton(filas()[1], 'Quitar logo')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const opciones = aviso.calls.mostRecent().args[0] as any;
+    expect(opciones.title).toBe('¿Quitar el logo de Escuela Norte?');
+    expect(opciones.text).toBe('Sus PDF y correos saldrán solo con el nombre.');
+    expect(servicio.quitar).toHaveBeenCalledWith(2);
+    expect(revocadas).toContain(anterior);
+    expect(filas()[1].querySelector('img')).toBeNull();
+    expect(filas()[1].textContent).toContain('Sin logo');
+  });
+
+  it('si se quita el logo con la descarga en vuelo, la miniatura no reaparece', async () => {
+    const descarga = new Subject<Blob>();
+    servicio.logo.and.returnValue(descarga);
+    servicio.escuelas.and.returnValue(of([con]));
+    componente.cargar();
+    fixture.detectChanges();
+    spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as any);
+    servicio.quitar.and.returnValue(of({ ...con, tieneLogo: false }));
+
+    boton(filas()[0], 'Quitar logo')!.click();
+    await fixture.whenStable();
+    descarga.next(new Blob(['x'], { type: 'image/png' }));
+    fixture.detectChanges();
+
+    expect(componente.filas[0].miniatura).toBeNull();
+    expect(filas()[0].querySelector('img')).toBeNull();
+  });
+
+  it('si se cancela la confirmación no se borra nada', async () => {
+    spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: false } as any);
+    boton(filas()[1], 'Quitar logo')!.click();
+    await fixture.whenStable();
+    expect(servicio.quitar).not.toHaveBeenCalled();
+  });
+
+  it('al destruirse revoca todas las URL de objeto', () => {
+    const vivas = creadas.filter((url) => !revocadas.includes(url));
+    expect(vivas.length).toBe(1);
+    fixture.destroy();
+    vivas.forEach((url) => expect(revocadas).toContain(url));
+  });
+
+  it('si falla la lista permite reintentar', () => {
+    servicio.escuelas.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    componente.cargar();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role=alert]')!.textContent).toContain('No se pudo cargar la lista');
+    servicio.escuelas.and.returnValue(of([sin]));
+    boton(fixture.nativeElement, 'Reintentar')!.click();
+    fixture.detectChanges();
+    expect(filas().length).toBe(1);
+  });
+});
