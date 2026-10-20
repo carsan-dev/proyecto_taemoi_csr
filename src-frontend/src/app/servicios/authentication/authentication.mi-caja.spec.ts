@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { AuthenticationService, esSoloProfesor } from './authentication.service';
+import { AuthenticationService, esSoloProfesor, veMisGrupos } from './authentication.service';
 import { environment } from '../../../environments/environment';
 
 describe('AuthenticationService: entrada de «Mi caja»', () => {
@@ -44,6 +44,14 @@ describe('AuthenticationService: entrada de «Mi caja»', () => {
     expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_USER'])).toBeFalse();
     expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_ADMIN'])).toBeFalse();
     expect(esSoloProfesor(['ROLE_RESPONSABLE_SEDE'])).toBeFalse();
+  });
+
+  it('veMisGrupos excluye a la gestión pero admite familia', () => {
+    expect(veMisGrupos(['ROLE_PROFESOR'])).toBeTrue();
+    expect(veMisGrupos(['ROLE_USER', 'ROLE_PROFESOR'])).toBeTrue();
+    expect(veMisGrupos(['ROLE_ADMIN', 'ROLE_PROFESOR'])).toBeFalse();
+    expect(veMisGrupos(['ROLE_MANAGER', 'ROLE_PROFESOR'])).toBeFalse();
+    expect(veMisGrupos(['ROLE_USER'])).toBeFalse();
   });
 
   it('las peticiones de roles simultáneas comparten una sola llamada a /roles', () => {

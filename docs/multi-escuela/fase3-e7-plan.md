@@ -135,6 +135,7 @@ profesores, que seguirían viendo solo «Mi caja») y el resto después.
 | E7-7a | Hecha | `bfafd147` | No | §6 |
 | E7-7b | Hecha | `9042a3bb` | No | |
 | E7-8 | Backend hecho (sin commit) | — | No | §10. Decisión 213: logo de Moiskimdo |
+| E7-9 | Hecha (sin commit) | — | No | §11. Decisión 214: una sola fila de auditoría por escritura del profesor |
 
 ---
 
@@ -652,3 +653,55 @@ Decisión 213 (fase3-e7-profesor.md §4.1): el superadmin también cambia el log
   subido es el de siempre (GET 200).
 - **Despliegue.** Comprobar antes que Moiskimdo no tiene logo apuntado (`SELECT logo_imagen_id FROM organizacion
   WHERE id = 1` → NULL); si lo tuviera, sus documentos pasarían a llevarlo.
+
+## 11. Pieza E7-9 (detallada)
+
+Decisión 214 (fase3-e7-profesor.md §4.1): cada escritura correcta del profesor dejaba dos filas en `auditoria_evento`,
+la explícita (con ids, en la misma transacción) y la genérica de `AuditoriaRequestFilter` (ruta y payload). Queda la
+explícita: el filtro no apunta el 2xx de las rutas que registran SIEMPRE explícitamente; sus 4xx/5xx, sí. Sin
+migración. El mecanismo de auditoría no toca el frontend; la pieza incluye además el guard de `/mis-grupos` para
+cuentas de gestión con rol de profesor (commit propio, 9da9b3a9 en feature/e7-9).
+
+**Mecanismo.** `AuditoriaRequestFilter.EscrituraConRegistroPropio`: lista cerrada de método + ruta exacta (regex sobre
+`normalizarParaComparar`, sin prefijos comodín: una ruta nueva se sigue apuntando hasta que se añada a propósito).
+Generaliza `esCambioCorrectoDeLogo` de la E7-7a (sus dos entradas, PUT y DELETE del logo, siguen con su motivo:
+escuela destino). La lectura 2xx de salud sigue aparte (`RUTA_SALUD`).
+
+**Inventario** (escrituras bajo `/api/profesor/**`, `/api/caja/profesor/**` y `/api/grupos/{grupoId}/profesores[/**]`;
+¿todo camino 2xx registra en la misma transacción?):
+
+| Método y ruta | Servicio | Registro explícito | ¿Siempre en 2xx? | Lista |
+|---|---|---|---|---|
+| `PUT /api/profesor/alumnos/{id}/deportes/{d}/apto` | `ProfesorService#actualizarApto` | `PROFESOR APTO_CAMBIADO` (también si no cambia) | Sí | Sí |
+| `PUT …/fecha-grado` | `ProfesorService#actualizarFechaGrado` | `PROFESOR FECHA_GRADO_CAMBIADA` | Sí | Sí |
+| `POST …/pase-examen` | `ProfesorService#pasarGrado` | `PROFESOR PASE_EXAMEN` | Sí | Sí |
+| `POST …/pase-recompensa` | `ProfesorService#pasarGrado` | `PROFESOR PASE_RECOMPENSA` | Sí | Sí |
+| `POST /api/caja/profesor/cargos/{id}/cobrar` | `ProductoAlumnoServiceImpl#cobrarEnEfectivoComoProfesor` | `CAJA COBRO_PROFESOR` | Sí | Sí |
+| `POST /api/caja/profesor/cobros/{id}/deshacer` | `ProductoAlumnoServiceImpl#deshacerCobroDeProfesor` | `CAJA COBRO_PROFESOR_DESHECHO` (+ `CARGO CARGO_CANCELADO` con «no hubo venta») | Sí | Sí |
+| `POST /api/caja/profesor/alumnos/{a}/productos/{p}/cobrar` | `ProductoAlumnoServiceImpl#apuntarYCobrarProductoComoProfesor` | `CAJA COBRO_PROFESOR_PRODUCTO` | Sí | Sí |
+| `POST /api/caja/profesor/alumnos/{a}/encargos` | `EncargoService#pedirEncargo` | `SOLICITUDES ENCARGO_PEDIDO` | Sí | Sí |
+| `POST /api/caja/profesor/solicitudes/{id}/retirar` | `EncargoService#retirarEncargo` | `SOLICITUDES SOLICITUD_RETIRADA` (+ `CARGO CARGO_CANCELADO` si cae el cargo) | Sí | Sí |
+| `POST /api/caja/profesor/solicitudes/{id}/entregado` | `EncargoService#marcarEntregado` | `SOLICITUDES ENCARGO_ENTREGADO` | Sí | Sí |
+| `POST /api/caja/profesor/solicitudes/{id}/devolucion` | `EncargoService#registrarDevolucionProfesor` | `CAJA DEVOLUCION_PROFESOR` + `SOLICITUDES ENCARGO_DEVOLUCION_REGISTRADA` | Sí | Sí |
+| `POST /api/caja/profesor/cobros/{id}/pedir-deshacer` | `SolicitudService#pedirDeshacer` | `SOLICITUDES SOLICITUD_CREADA` | Sí | Sí |
+| `DELETE /api/grupos/{g}/profesores/{u}` | `AsignacionProfesorService#quitar` | `PROFESOR ASIGNACION_QUITADA` | Sí (sin fila, 404) | Sí |
+| `POST /api/grupos/{g}/profesores` | `AsignacionProfesorService#asignar` | `MEMBRESIA_PROFESOR_CREADA` / `ASIGNACION_CREADA` / `ASIGNACION_ROL_CAMBIADO` | **No**: con el mismo rol (y la membresía ya creada) responde 200 sin registrar | **No** |
+
+**Exclusión y motivo.** El alta con el mismo rol queda fuera de la lista (lo prudente): registrar un «sin cambios»
+sería un tipo de acción nuevo sin decisión, y sin la genérica esa petición no dejaría rastro. Su 2xx sigue con la fila
+genérica (email redactado). Las lecturas (`GET`) de estas rutas no cambian.
+
+**Vista del propietario.** Las filas explícitas cumplen el filtro de D2 (con sesión, `estado_http` 200, acción
+CREATE/UPDATE/DELETE): salen en su registro de acciones y en sus módulos, con su resumen de ids. Diferencias con la
+genérica que deja de salir: el módulo es el del registro (`solicitudes` para encargos, retirar, entregado, devolución
+y pedir deshacer, antes `caja`; `profesor` para quitar un profesor, antes `grupos`), la acción es la real (deshacer y
+retirar son «Cambio», antes «Alta» por ser POST) y el payload de la petición (nota, motivo) ya no queda en la
+auditoría (el propietario nunca lo veía; la nota y el motivo siguen en la solicitud).
+
+**Tests.** `AuditoriaRequestFilterRegistroPropioTest` (unitario): cada entrada tiene su ejemplo (falla si se añade
+una sin él), 2xx saltado y 4xx/5xx no, solo su método, sin solapes, la normalización de siempre, rutas fuera de la
+lista (gestión, lecturas, alta de profesor, vecinas sin comodín) apuntadas, y el filtro completo con el servicio
+simulado. `RegistroUnicoProfesorIntegrationTest` (MySQL, cadena completa): por cada entrada, el 2xx deja exactamente
+sus filas explícitas (sin genérica) y el propietario las ve; el 4xx deja exactamente la genérica; falla si una entrada
+no tiene caso (el logo lo cubre `LogoEscuelaIntegrationTest`). También: el alta con el mismo rol sigue con la
+genérica, las lecturas y la gestión sin cambios, y la gestión de Moiskimdo sigue con su fila genérica.

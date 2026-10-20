@@ -4,6 +4,7 @@ import {
   AuthenticationService,
   PortalPreferido,
   esSoloProfesor,
+  veMisGrupos,
 } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
 import { Subscription, of, switchMap } from 'rxjs';
@@ -287,8 +288,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
-      this.veMisGrupos =
-        this.tieneRolProfesor && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
+      this.veMisGrupos = veMisGrupos(roles);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
       // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.

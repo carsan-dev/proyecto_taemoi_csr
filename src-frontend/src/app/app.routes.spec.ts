@@ -2,6 +2,7 @@ import { adminOnlyGuard } from './guards/admin-only.guard';
 import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
+import { misGruposGuard } from './guards/mis-grupos.guard';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
@@ -57,11 +58,11 @@ describe('app routes', () => {
     expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
   });
 
-  it('«Mis grupos» es lazy, con el guard de profesor y sin catálogo; sus hijas tampoco lo piden', async () => {
+  it('«Mis grupos» es lazy, con el guard de solo profesor y sin catálogo; sus hijas tampoco lo piden', async () => {
     const indice = routes.findIndex((route) => route.path === 'mis-grupos');
     const ruta = routes[indice];
 
-    expect(ruta?.canActivate).toEqual([profesorGuard]);
+    expect(ruta?.canActivate).toEqual([misGruposGuard]);
     expect(typeof ruta?.loadChildren).toBe('function');
     expect(ruta?.resolve).toBeUndefined();
     expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));

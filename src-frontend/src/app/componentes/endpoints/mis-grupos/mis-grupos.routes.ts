@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
 /**
- * Pantallas del profesor (E7-5), hijas de `/mis-grupos` (perezosa, con `profesorGuard` en la ruta padre). Sin catálogo:
+ * Pantallas del profesor (E7-5), hijas de `/mis-grupos` (perezosa, con `misGruposGuard` en la ruta padre). Sin catálogo:
  * las respuestas de `/api/profesor/**` ya traen los nombres de grado.
  */
 export const MIS_GRUPOS_ROUTES: Routes = [
