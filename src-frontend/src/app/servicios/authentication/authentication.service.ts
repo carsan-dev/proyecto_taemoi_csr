@@ -20,6 +20,14 @@ export function esSoloProfesor(roles: readonly string[]): boolean {
   );
 }
 
+/**
+ * «Mis grupos» (E7): ROLE_PROFESOR sin gestión (ni ADMIN ni MANAGER). El servidor deniega `/api/profesor/**` a la
+ * gestión (D7-10), así que una cuenta gestión + profesor no debe ver esa pantalla. Sí puede ser también familia.
+ */
+export function veMisGrupos(roles: readonly string[]): boolean {
+  return roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
+}
+
 @Injectable({
   providedIn: 'root',
 })

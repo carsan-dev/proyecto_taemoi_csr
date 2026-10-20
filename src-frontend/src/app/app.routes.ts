@@ -3,6 +3,7 @@ import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
+import { misGruposGuard } from './guards/mis-grupos.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -423,11 +424,11 @@ export const routes: Routes = [
     canActivate: [profesorGuard],
   },
   {
-    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Mismo guard que «Mi caja», sin catálogo.
+    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Guard propio (solo profesor sin gestión: el servidor deniega /api/profesor/** a ADMIN y MANAGER), sin catálogo.
     path: 'mis-grupos',
     data: { seo: SEO_ROUTES.noIndex },
     loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),
-    canActivate: [profesorGuard],
+    canActivate: [misGruposGuard],
   },
   {
     path: '**',
