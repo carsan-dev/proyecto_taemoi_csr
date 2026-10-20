@@ -45,10 +45,77 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 	/**
-	 * Pieza E7-7a: logo de una escuela (superadmin). El cambio correcto lo registra LogoEscuelaService en la escuela
-	 * DESTINO; aquí no se apunta (iría a la escuela activa del superadmin, cuyo propietario lo vería). Los errores, sí.
+	 * Escrituras cuyo 2xx NO apunta este filtro porque ya deja su propio registro, más detallado, en la misma transacción
+	 * (método + ruta EXACTA tras {@link #normalizarParaComparar}). Los 4xx/5xx de estas rutas sí se apuntan aquí.
+	 *
+	 * <p>Lista cerrada, sin prefijos comodín: una ruta nueva bajo los mismos prefijos se sigue apuntando hasta que se
+	 * añada aquí a propósito. Una ruta solo entra si TODOS sus caminos 2xx registran una acción explícita (un camino «sin
+	 * cambios» que responde 2xx sin registrar la deja fuera: p. ej. {@code POST /api/grupos/{grupoId}/profesores} con el
+	 * mismo rol). Cada entrada tiene su ejemplo en {@code AuditoriaRequestFilterRegistroPropioTest} y su caso contra
+	 * MySQL en {@code RegistroUnicoProfesorIntegrationTest} (que falla si falta); inventario en fase3-e7-plan.md §11.
+	 *
+	 * <p>Pública solo para esos tests (otro paquete).
 	 */
-	private static final Pattern RUTA_LOGO_ESCUELA = Pattern.compile("^/api/plataforma/escuelas/[^/]+/logo/?$");
+	public enum EscrituraConRegistroPropio {
+		/**
+		 * Pieza E7-7a: logo de una escuela (superadmin). El cambio correcto lo registra LogoEscuelaService en la escuela
+		 * DESTINO; aquí no se apunta (iría a la escuela activa del superadmin, cuyo propietario lo vería). Quitar sin logo
+		 * no cambia nada ni se registra (decisión de la E7-7a). Caso en LogoEscuelaIntegrationTest.
+		 */
+		LOGO_ESCUELA_CAMBIAR("PUT", "/api/plataforma/escuelas/[^/]+/logo"),
+		LOGO_ESCUELA_QUITAR("DELETE", "/api/plataforma/escuelas/[^/]+/logo"),
+		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
+		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
+		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),
+		/** ProfesorService#actualizarFechaGrado (PROFESOR FECHA_GRADO_CAMBIADA). */
+		PROFESOR_FECHA_GRADO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/fecha-grado"),
+		/** ProfesorService#pasarGrado (PROFESOR PASE_EXAMEN). */
+		PROFESOR_PASE_EXAMEN("POST", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/pase-examen"),
+		/** ProfesorService#pasarGrado (PROFESOR PASE_RECOMPENSA). */
+		PROFESOR_PASE_RECOMPENSA("POST", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/pase-recompensa"),
+		/** ProductoAlumnoServiceImpl#cobrarEnEfectivoComoProfesor (CAJA COBRO_PROFESOR). */
+		CAJA_PROFESOR_COBRAR_CARGO("POST", "/api/caja/profesor/cargos/[^/]+/cobrar"),
+		/**
+		 * ProductoAlumnoServiceImpl#deshacerCobroDeProfesor (CAJA COBRO_PROFESOR_DESHECHO; con «no hubo venta», también
+		 * CARGO CARGO_CANCELADO).
+		 */
+		CAJA_PROFESOR_DESHACER_COBRO("POST", "/api/caja/profesor/cobros/[^/]+/deshacer"),
+		/** ProductoAlumnoServiceImpl#apuntarYCobrarProductoComoProfesor (CAJA COBRO_PROFESOR_PRODUCTO). */
+		CAJA_PROFESOR_VENDER_PRODUCTO("POST", "/api/caja/profesor/alumnos/[^/]+/productos/[^/]+/cobrar"),
+		/** EncargoService#pedirEncargo (SOLICITUDES ENCARGO_PEDIDO). */
+		CAJA_PROFESOR_PEDIR_ENCARGO("POST", "/api/caja/profesor/alumnos/[^/]+/encargos"),
+		/** EncargoService#retirarEncargo (SOLICITUDES SOLICITUD_RETIRADA; si cae el cargo, CARGO CARGO_CANCELADO). */
+		CAJA_PROFESOR_RETIRAR_SOLICITUD("POST", "/api/caja/profesor/solicitudes/[^/]+/retirar"),
+		/** EncargoService#marcarEntregado (SOLICITUDES ENCARGO_ENTREGADO). */
+		CAJA_PROFESOR_ENCARGO_ENTREGADO("POST", "/api/caja/profesor/solicitudes/[^/]+/entregado"),
+		/**
+		 * EncargoService#registrarDevolucionProfesor (CAJA DEVOLUCION_PROFESOR y SOLICITUDES
+		 * ENCARGO_DEVOLUCION_REGISTRADA).
+		 */
+		CAJA_PROFESOR_DEVOLUCION("POST", "/api/caja/profesor/solicitudes/[^/]+/devolucion"),
+		/** SolicitudService#pedirDeshacer (SOLICITUDES SOLICITUD_CREADA). */
+		CAJA_PROFESOR_PEDIR_DESHACER("POST", "/api/caja/profesor/cobros/[^/]+/pedir-deshacer"),
+		/** AsignacionProfesorService#quitar (PROFESOR ASIGNACION_QUITADA). */
+		GRUPO_QUITAR_PROFESOR("DELETE", "/api/grupos/[^/]+/profesores/[^/]+");
+
+		private final String metodo;
+		private final Pattern ruta;
+
+		EscrituraConRegistroPropio(String metodo, String ruta) {
+			this.metodo = metodo;
+			this.ruta = Pattern.compile("^" + ruta + "/?$");
+		}
+
+		/** {@code rutaNormalizada}: ya pasada por {@link AuditoriaRequestFilter#normalizarParaComparar}. */
+		public boolean reconoce(String metodoHttp, String rutaNormalizada) {
+			return metodo.equals(metodoHttp) && rutaNormalizada != null && ruta.matcher(rutaNormalizada).matches();
+		}
+
+		public String metodo() {
+			return metodo;
+		}
+	}
+
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
 			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
@@ -107,7 +174,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		if (esCambioCorrectoDeLogo(method, status, endpoint)) {
+		if (tieneRegistroPropio(method, status, endpoint)) {
 			return;
 		}
 
@@ -153,10 +220,21 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		return Set.of();
 	}
 
-	/** PUT o DELETE 2xx del logo de una escuela: ya lo registra la escuela destino (pieza E7-7a). */
-	static boolean esCambioCorrectoDeLogo(String metodo, int estado, String endpoint) {
-		return estado >= 200 && estado < 300 && ("PUT".equals(metodo) || "DELETE".equals(metodo))
-				&& RUTA_LOGO_ESCUELA.matcher(normalizarParaComparar(endpoint)).matches();
+	/**
+	 * 2xx de una escritura de {@link EscrituraConRegistroPropio}: ya tiene su registro explícito (E7-7a, E7-9). Cualquier
+	 * otro estado o ruta, {@code false}: se apunta como siempre.
+	 */
+	static boolean tieneRegistroPropio(String metodo, int estado, String endpoint) {
+		if (estado < 200 || estado >= 300 || metodo == null || endpoint == null) {
+			return false;
+		}
+		String ruta = normalizarParaComparar(endpoint);
+		for (EscrituraConRegistroPropio escritura : EscrituraConRegistroPropio.values()) {
+			if (escritura.reconoce(metodo, ruta)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	static boolean esPeticionDeSalud(HttpServletRequest request, String endpoint) {

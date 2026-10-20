@@ -134,6 +134,8 @@ concreto) y se cobra dos veces.
   (D3).
 - **Decisión 213 (20/10/2026, pieza E7-8).** El superadmin también puede cambiar el logo de Moiskimdo para sus PDF y
   correos; sin logo subido, sale el de siempre. Su nombre y el resto de textos y datos no cambian.
+- **Decisión 214 (20/10/2026, pieza E7-9).** Una escritura del profesor deja UNA fila de auditoría, la detallada (con
+  ids): el filtro HTTP no apunta el 2xx de las rutas que ya registran explícitamente; sus 4xx/5xx, sí (§7).
 - **Siguen vigentes:** D5 (sin cobros nuevos fuera de Mi caja, sin editar fichas); 180 y 184 (sesión solo-profesor
   con lista blanca en `SesionSoloProfesorAuthorizationManager`); D2 (el registro de acciones del propietario muestra
   altas, cambios y bajas 2xx y las lecturas de salud).
@@ -361,7 +363,11 @@ lleva además su línea `HEAD` igual.
 ## 7. Registro de acciones
 
 - **Automático:** `config/AuditoriaRequestFilter` ya registra todas las peticiones `/api/**` con usuario, endpoint y
-  payload saneado; las lecturas 2xx de salud no se duplican.
+  payload saneado; las lecturas 2xx de salud no se duplican. Decisión 214 (E7-9): tampoco el 2xx de las escrituras que
+  ya dejan su registro explícito en la misma transacción (lista cerrada `EscrituraConRegistroPropio` del filtro;
+  inventario en fase3-e7-plan.md §11), así que cada escritura correcta del profesor deja una sola fila, la detallada.
+  Los 4xx/5xx de esas rutas siguen con su fila genérica. El alta de un profesor a un grupo (`POST
+  /api/grupos/{grupoId}/profesores`) queda fuera: con el mismo rol responde 200 sin registro explícito.
 - **Salud:** cada lectura la registra `AlumnoSaludService.obtener` (módulo `salud`) y la ve el propietario en
   «Consultas de salud» (D2). Sin cambios.
 - **Explícito, `RegistroAccionesProfesor`** (módulo `profesor`, copia de `RegistroAccionesCaja`, sobre
