@@ -1,0 +1,68 @@
+<section class="plataforma-page">
+  <header class="page-header">
+    <h1><i class="bi bi-image" aria-hidden="true"></i> Logo de la escuela</h1>
+    <p>El logo sale en los PDF y correos de la escuela. PNG, JPG o SVG, hasta 1 MB.</p>
+  </header>
+
+  @if (cargando) {
+    <app-skeleton-card [type]="'table'" [count]="3"></app-skeleton-card>
+  } @else if (errorCarga) {
+    <div class="aviso" role="alert">
+      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+      <span>No se pudo cargar la lista de escuelas.</span>
+      <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (filas.length === 0) {
+    <div class="sin-resultados">
+      <p class="sin-resultados-titulo">No hay escuelas</p>
+    </div>
+  } @else {
+    <ul class="lista-escuelas">
+      @for (fila of filas; track trackById($index, fila)) {
+        <li class="escuela" [class.ocupada]="fila.ocupada">
+          <div class="miniatura" [class.vacia]="!fila.miniatura">
+            @if (fila.miniatura) {
+              <img [src]="fila.miniatura" [alt]="'Logo de ' + fila.escuela.nombre" />
+            } @else {
+              <span>{{ fila.escuela.marcaHeredada ? 'Logo de siempre' : fila.escuela.tieneLogo ? 'Cargando' : 'Sin logo' }}</span>
+            }
+          </div>
+
+          <div class="datos">
+            <h2>{{ fila.escuela.nombre }}</h2>
+            @if (fila.escuela.marcaHeredada) {
+              <p class="nota">Marca de la plataforma: no se cambia aquí</p>
+            } @else if (fila.ocupada) {
+              <p class="nota" role="status"><span class="girando" aria-hidden="true"></span> Guardando…</p>
+            }
+          </div>
+
+          @if (!fila.escuela.marcaHeredada) {
+            <div class="acciones">
+              <input
+                #selector
+                type="file"
+                hidden
+                [accept]="formatos"
+                [attr.aria-label]="'Archivo del logo de ' + fila.escuela.nombre"
+                (change)="elegido(fila, $event)" />
+              <button type="button" class="btn-principal" [disabled]="fila.ocupada" (click)="selector.click()">
+                <i class="bi bi-upload" aria-hidden="true"></i>
+                {{ fila.escuela.tieneLogo ? 'Cambiar logo' : 'Subir logo' }}
+              </button>
+              @if (fila.escuela.tieneLogo) {
+                <button type="button" class="btn-secundario" [disabled]="fila.ocupada" (click)="quitar(fila)">
+                  <i class="bi bi-trash" aria-hidden="true"></i> Quitar logo
+                </button>
+              }
+            </div>
+          }
+
+          @if (fila.error) {
+            <p class="error-fila" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ fila.error }}</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

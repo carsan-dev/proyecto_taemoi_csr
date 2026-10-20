@@ -74,9 +74,11 @@ describe('HeaderComponent', () => {
     component.isAdminOnly = true;
     component.esAdminPlataforma = false;
     expect(component.visibleAdminQuickLinks.map((item) => item.route)).not.toContain('/plataformaErrores');
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).not.toContain('/plataformaLogos');
 
     component.esAdminPlataforma = true;
     expect(component.visibleAdminQuickLinks.map((item) => item.route)).toContain('/plataformaErrores');
+    expect(component.visibleAdminQuickLinks.map((item) => item.route)).toContain('/plataformaLogos');
   });
 
   it('detecta el portal user usando metadata de rutas', () => {
@@ -134,6 +136,8 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('#admin-sidebar')?.textContent).toContain('Superadmin');
     const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaErrores"]');
     expect(enlace?.textContent?.trim()).toBe('Errores de plataforma');
+    const enlaceLogos = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaLogos"]');
+    expect(enlaceLogos?.textContent?.trim()).toBe('Logo de la escuela');
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 
@@ -179,6 +183,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
 
     expect(el.querySelector('#admin-sidebar')?.textContent).not.toContain('Superadmin');
     expect(el.querySelector('#admin-sidebar a[href="/plataformaErrores"]')).toBeNull();
+    expect(el.querySelector('#admin-sidebar a[href="/plataformaLogos"]')).toBeNull();
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 });

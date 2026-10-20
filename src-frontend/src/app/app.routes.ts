@@ -409,6 +409,13 @@ export const routes: Routes = [
     canActivate: [plataformaGuard],
   },
   {
+    // Logo de cada escuela (E7-7b): misma sesión de plataforma y mismo guard que los errores.
+    path: 'plataformaLogos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/plataforma-logos/plataforma-logos.component').then(m => m.PlataformaLogosComponent),
+    canActivate: [plataformaGuard],
+  },
+  {
     // «Mi caja» del profesor (6b-3b): sin catálogo ni requiredRoles; una sesión solo profesor solo puede usar su caja.
     path: 'mi-caja',
     data: { seo: SEO_ROUTES.noIndex },
