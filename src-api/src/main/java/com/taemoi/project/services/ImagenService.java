@@ -12,6 +12,13 @@ public interface ImagenService {
 
 	Imagen guardarImagenEvento(MultipartFile archivo) throws IOException;
 
+	/**
+	 * Pieza E7-7a: escribe el PNG ya validado del logo de una escuela EXPLÍCITA (no la activa: lo sube el superadmin)
+	 * en {@code org-<id>/logo/<uuid>_logo.png}. Devuelve la imagen sin guardar en base de datos; el nombre del fichero
+	 * subido no se usa.
+	 */
+	Imagen guardarLogoEscuela(Long organizacionId, byte[] png) throws IOException;
+
 	void eliminarImagenDeSistema(Imagen imagen);
 
 	/**

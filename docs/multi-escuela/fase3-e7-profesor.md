@@ -126,6 +126,12 @@ concreto) y se cobra dos veces.
   profesores y pueden añadir una cuenta existente (por email) como titular o ayudante, o quitarla. Si la cuenta no
   tiene membresía PROFESOR en la escuela, se le crea. Quitar la asignación **no** borra la membresía.
 - **Decisión 209 (20/10/2026).** Boceto aprobado (§5) con las decisiones del diseñador (§4.2).
+- **Decisión 211 (20/10/2026, pieza E7-7a).** Todos los PDF y los correos salen con el nombre y el logo de la escuela
+  activa (`organizacion.nombre`, `organizacion.logo_imagen_id`); sin logo, solo el nombre, nunca el de Moiskimdo.
+  Moiskimdo sale idéntico. La cabecera del panel no entra (E8b).
+- **Decisión 212 (20/10/2026, pieza E7-7a).** El logo lo sube el superadmin desde plataforma (elige escuela; PNG, JPG
+  o SVG). Es su única escritura en una escuela, acotada a la marca, y queda en el registro de acciones de esa escuela
+  (D3).
 - **Siguen vigentes:** D5 (sin cobros nuevos fuera de Mi caja, sin editar fichas); 180 y 184 (sesión solo-profesor
   con lista blanca en `SesionSoloProfesorAuthorizationManager`); D2 (el registro de acciones del propietario muestra
   altas, cambios y bajas 2xx y las lecturas de salud).

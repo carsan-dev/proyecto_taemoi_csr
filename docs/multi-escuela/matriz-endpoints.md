@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (440 líneas; 144 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (444 líneas; 145 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -263,6 +263,19 @@ mapa de `MatrizPermisosTest`: PROFESOR y RESPONSABLE_SEDE son `DENIEGA`. Lo prue
   `profesor`, solo ids).
 - El resto de roles, `DENIEGA` en las cuatro: RESPONSABLE_SEDE hasta la E9, PROFESOR (fuera de su lista blanca) y
   FAMILIA.
+
+Pieza E7-7a (logo de la escuela, fase3-e7-profesor.md decisiones 211 y 212): 4 líneas nuevas bajo
+`/api/plataforma/escuelas/{organizacionId}/logo` (`PlataformaController`); ninguna casilla existente cambia. Caen en
+la regla `/api/plataforma/**` (`ROLE_ADMIN_PLATAFORMA`) y el controlador lleva el mismo `@PreAuthorize` a nivel de
+clase; fuera de la lista blanca de la sesión solo-profesor. Lo prueba `LogoEscuelaIntegrationTest`.
+- `GET/HEAD` (el PNG subido, para previsualizar), `PUT` (multipart `archivo`: PNG, JPG o SVG validado por contenido,
+  hasta 1 MB) y `DELETE`: SOLO_PLATAFORMA `PERMITE`. Es la única escritura del superadmin dentro de una escuela: se
+  hace con la escuela destino explícita (transacción y sesión propias) y queda en el registro de acciones de ESA
+  escuela (módulo `plataforma`, imagen y escuela por id, sin el nombre del fichero; D3). Moiskimdo (marca heredada):
+  409.
+- El resto de roles, `DENIEGA` en las cuatro, también el propietario de la escuela.
+- `GET /api/plataforma/escuelas` (línea existente, sin cambio de permisos) devuelve además `tieneLogo` y
+  `marcaHeredada`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

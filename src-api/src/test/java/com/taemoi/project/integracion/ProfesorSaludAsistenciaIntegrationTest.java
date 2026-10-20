@@ -343,7 +343,11 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	/** Texto de una página del PDF de asistencia de gestión (septiembre de 2026, lunes, taekwondo). */
 	private String pagina(List<Fila> filas) {
-		StringBuilder s = new StringBuilder("CLUBMOI'SKIMDOTaeKwonDoLISTADODEASISTENCIA-SEPTIEMBRE2026TAEKWONDO");
+		// Pieza E7-7a (decisión 211): la escuela sale con su nombre (en mayúsculas, sin el «Tae Kwon Do» de Moiskimdo);
+		// el resto de la página, igual que se fijó antes de la E7-2.
+		String escuela = jdbc.queryForObject("SELECT nombre FROM organizacion WHERE id = ?", String.class, e.org)
+				.toUpperCase(java.util.Locale.of("es", "ES")).replaceAll("\\s+", "");
+		StringBuilder s = new StringBuilder(escuela + "LISTADODEASISTENCIA-SEPTIEMBRE2026TAEKWONDO");
 		s.append("Total:").append(filas.size()).append("alumnosLUNES-Turnode18:00a19:00");
 		s.append("APTOGRADOLIC.FEDEDADNOMBREYAPELLIDOSNºEXP."); // cabecera en mayúsculas (CSS)
 		for (Fila f : filas) {

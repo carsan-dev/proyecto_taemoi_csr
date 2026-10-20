@@ -48,6 +48,10 @@ class RecordatorioRachaServiceImplTest {
 	@Mock
 	private EmailService emailService;
 
+	/** Pieza E7-7a: el recordatorio sale con la marca de la escuela del job (aquí, la de Moiskimdo). */
+	@Mock
+	private com.taemoi.project.services.MarcaEscuelaService marcaEscuela;
+
 	@InjectMocks
 	private RecordatorioRachaServiceImpl recordatorioRachaService;
 
@@ -64,6 +68,8 @@ class RecordatorioRachaServiceImplTest {
 	void setUp() {
 		// El job fija la organización (EjecutorPorOrganizacion); aquí se simula.
 		TenantContext.set(ORGANIZACION);
+		org.mockito.Mockito.lenient().when(marcaEscuela.de(ORGANIZACION))
+				.thenReturn(com.taemoi.project.services.MarcaEscuelaPruebas.moiskimdoSinLogos());
 		zoneId = ZoneId.of("Europe/Madrid");
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderEnabled", true);
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderWindowHours", 3);

@@ -28,6 +28,8 @@ import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.RegistroPendienteRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.VinculoFamiliaService;
@@ -44,6 +46,8 @@ public class RegistroServiceImpl implements RegistroService {
 	private final EmailService emailService;
 	private final MembresiaService membresiaService;
 	private final VinculoFamiliaService vinculoFamiliaService;
+	/** Pieza E7-7a: el correo sale con el nombre de la escuela del alumno. */
+	private final MarcaEscuelaService marcaEscuela;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Value("${app.frontend.base-url:https://moiskimdo.es}")
@@ -58,7 +62,8 @@ public class RegistroServiceImpl implements RegistroService {
 			PasswordEncoder passwordEncoder,
 			EmailService emailService,
 			MembresiaService membresiaService,
-			VinculoFamiliaService vinculoFamiliaService) {
+			VinculoFamiliaService vinculoFamiliaService,
+			MarcaEscuelaService marcaEscuela) {
 		this.registroPendienteRepository = registroPendienteRepository;
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
@@ -66,6 +71,7 @@ public class RegistroServiceImpl implements RegistroService {
 		this.emailService = emailService;
 		this.membresiaService = membresiaService;
 		this.vinculoFamiliaService = vinculoFamiliaService;
+		this.marcaEscuela = marcaEscuela;
 	}
 
 	@Override
@@ -108,8 +114,9 @@ public class RegistroServiceImpl implements RegistroService {
 		registroPendienteRepository.save(registro);
 
 		String urlConfirmacion = frontendBaseUrl + "/registro-confirmar?token=" + token;
-		String contenido = buildRegistroEmailHtml(alumno.getNombre(), urlConfirmacion, tokenHours);
-		emailService.sendEmail(normalizedEmail, "Confirmar registro", contenido);
+		MarcaEscuela marca = marcaEscuela.deEntidadOActiva(alumno.getOrganizacionId());
+		String contenido = buildRegistroEmailHtml(alumno.getNombre(), urlConfirmacion, tokenHours, marca);
+		EmailService.enviar(emailService, normalizedEmail, "Confirmar registro", contenido, marca.remitente());
 	}
 
 	/**
@@ -230,7 +237,7 @@ public class RegistroServiceImpl implements RegistroService {
 		}
 	}
 
-	private String buildRegistroEmailHtml(String nombre, String urlConfirmacion, long horas) {
+	private String buildRegistroEmailHtml(String nombre, String urlConfirmacion, long horas, MarcaEscuela marca) {
 		String saludo = (nombre == null || nombre.isBlank()) ? "Hola," : "Hola " + nombre + ",";
 		String template = """
 			<!doctype html>
@@ -246,7 +253,7 @@ public class RegistroServiceImpl implements RegistroService {
 			        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
 			          <tr>
 			            <td style="background:#1b2b2e;color:#ffffff;padding:24px 28px;">
-			              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">Club Moiskimdo Taekwondo</div>
+			              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">{{CLUB}}</div>
 			              <h1 style="margin:10px 0 0;font-size:22px;font-weight:700;">Confirma tu registro</h1>
 			            </td>
 			          </tr>
@@ -272,7 +279,7 @@ public class RegistroServiceImpl implements RegistroService {
 			          </tr>
 			        </table>
 			        <div style="font-size:11px;color:#9aa2a9;margin-top:16px;">
-			          © Club Moiskimdo Taekwondo
+			          © {{CLUB}}
 			        </div>
 			      </td>
 			    </tr>
@@ -281,6 +288,7 @@ public class RegistroServiceImpl implements RegistroService {
 			</html>
 			""";
 		return template
+				.replace("{{CLUB}}", marca.clubCorreoCuentaHtml())
 				.replace("{{SALUDO}}", saludo)
 				.replace("{{URL_CONFIRMACION}}", urlConfirmacion)
 				.replace("{{HORAS}}", Long.toString(horas));

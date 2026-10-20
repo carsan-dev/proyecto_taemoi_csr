@@ -4,7 +4,6 @@ package com.taemoi.project.services.impl;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,11 +27,7 @@ import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.batik.transcoder.TranscoderInput;
-import org.apache.batik.transcoder.TranscoderOutput;
-import org.apache.batik.transcoder.image.PNGTranscoder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +42,8 @@ import com.taemoi.project.entities.PlantillaPreinscripcion;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.PDFService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.ColoresGrado;
@@ -120,13 +117,16 @@ public class PDFServiceImpl implements PDFService {
 		return grado == null ? null : grado.getCodigo();
 	}
 
-	// Cache for the PNG logo to avoid repeated conversion
-	private String logoPngBase64Cache = null;
-	private String logoPreinscripcionBase64Cache = null;
+	/**
+	 * Pieza E7-7a (decisión 211): nombre y logo de la escuela en las cabeceras (la activa; la solicitud firmada, la de su
+	 * preinscripción). Moiskimdo, como siempre; antes había una sola caché de logo para todas las escuelas.
+	 */
+	@Autowired
+	private MarcaEscuelaService marcaEscuela;
 
 	@Override public byte[] generarPreviewPreinscripcion(String deporte,String contenido,String instrucciones){
 		com.taemoi.project.entities.Disciplina disciplina=catalogoDisciplinas.obtenerPorCodigo(deporte);PlantillaPreinscripcion plantilla=new PlantillaPreinscripcion();plantilla.setDisciplina(disciplina);plantilla.setVersion(0);plantilla.setContenido(contenido);plantilla.setInstrucciones(instrucciones);
-		Preinscripcion p=new Preinscripcion();p.setDisciplina(disciplina);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setTelefono2("611 111 111");p.setEmail("maria@example.org");p.setTieneDiscapacidad(false);p.setDireccion("Calle Ejemplo, 1, Umbrete");p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
+		Preinscripcion p=new Preinscripcion();p.setDisciplina(disciplina);p.setPlantilla(plantilla);p.setTemporada("2026/2027");p.setReferencia("PREVIEW");p.setNombre("María");p.setApellidos("García López");p.setDni("12345678Z");p.setFechaNacimiento(LocalDate.of(2000,1,15));p.setTelefono("600 000 000");p.setTelefono2("611 111 111");p.setEmail("maria@example.org");p.setTieneDiscapacidad(false);p.setDireccion(marcaEscuela.deActiva().legado()?"Calle Ejemplo, 1, Umbrete":"Calle Ejemplo, 1");/* E7-7a: la localidad de Moiskimdo, solo en Moiskimdo */p.setGrupoSnapshot("Grupo de ejemplo · lunes y miércoles 18:00–19:00");p.setConsentimientoFotografico(true);p.setFirmanteNombre("María García López");p.setFirma(firmaPreview());return generarPreinscripcionFirmada(p);
 	}
 	private byte[] firmaPreview(){try{java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(360,90,java.awt.image.BufferedImage.TYPE_INT_RGB);java.awt.Graphics2D g=image.createGraphics();g.setColor(java.awt.Color.WHITE);g.fillRect(0,0,360,90);g.setColor(java.awt.Color.DARK_GRAY);g.drawString("Firma de previsualización",80,48);g.dispose();ByteArrayOutputStream out=new ByteArrayOutputStream();javax.imageio.ImageIO.write(image,"png",out);return out.toByteArray();}catch(Exception e){throw new IllegalStateException(e);}}
 
@@ -136,7 +136,9 @@ public class PDFServiceImpl implements PDFService {
 		String nombreDeporte = p.getDeporte().replace('_', ' ');
 		boolean conNormas = true;
 		JsonNode contenidoPlantilla = parsearContenidoPlantilla(p.getPlantilla().getContenido());
-		String cabecera=campoPlantilla(contenidoPlantilla,"cabecera","Escuela Moi Kim Do");
+		MarcaEscuela marca = marcaEscuela.deEntidadOActiva(p.getOrganizacionId());
+		String logoSolicitud = marca.logoSolicitud();
+		String cabecera=campoPlantilla(contenidoPlantilla,"cabecera",marca.cabeceraSolicitudPorDefecto());
 		String contacto=campoPlantilla(contenidoPlantilla,"contacto","");
 		String titulo=campoPlantilla(contenidoPlantilla,"titulo","Solicitud de preinscripción");
 		String consentimiento=campoPlantilla(contenidoPlantilla,"consentimiento","");
@@ -144,7 +146,7 @@ public class PDFServiceImpl implements PDFService {
 		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
 				+ "@page{size:A4;margin:10mm 12mm 11mm}body{font-family:Arial,sans-serif;color:#172126;font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
 				+ ".head{border-bottom:2px solid #b7272d;padding-bottom:6px;margin-bottom:9px}.head-table{width:100%;border-collapse:collapse}.head-table td{padding:0;vertical-align:middle}.logo-cell{width:24mm}.head img{display:block;width:19mm}.title-cell{padding:0 4mm!important}h1{font-size:15pt;margin:0 0 2px;text-transform:uppercase;line-height:1.08}h2{font-size:10pt;color:#b7272d;margin:0}.ref-cell{width:34mm;text-align:right;font-weight:bold;white-space:nowrap}.section{margin:9px 0}.keep{page-break-inside:avoid}.section h3{font-size:10pt;margin:7px 0 4px;border-bottom:1px solid #aeb6b9;padding-bottom:3px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:4px;text-align:left}.label{font-size:7pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:3px solid #b7272d;padding:6px}.signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:#59666b;margin-top:6px}"
-				+ "</style></head><body><div class='head'><table class='head-table'><tr><td class='logo-cell'>" + (!getLogoPreinscripcionBase64().isEmpty()?"<img src='"+getLogoPreinscripcionBase64()+"'/>":"")
+				+ "</style></head><body><div class='head'><table class='head-table'><tr><td class='logo-cell'>" + (!logoSolicitud.isEmpty()?"<img src='"+logoSolicitud+"'/>":"")
 				+ "</td><td class='title-cell'><h1>"+esc(titulo)+"</h1><h2>"+esc(cabecera)+" · "+esc(contacto)+" · Temporada "+esc(p.getTemporada())+"</h2></td><td class='ref-cell'>"+esc(p.getReferencia())+"</td></tr></table></div>"
 				+ "<div class='notice'><strong>Preinscripción recibida.</strong> "+(p.getEstado()==com.taemoi.project.entities.EstadoPreinscripcion.EN_LISTA_ESPERA?"Solicitud incorporada a la lista de espera. Se notificará la asignación automática cuando exista aforo.":"Plaza asignada; esta solicitud ya cuenta en el aforo del grupo.")+"</div>"
 				+ "<div class='section'><h3>Datos de la persona solicitante</h3><table class='grid'><tr><td><span class='label'>Nombre y apellidos</span><br/>"+esc(p.getNombre()+" "+p.getApellidos())+"</td><td><span class='label'>DNI/NIE</span><br/>"+esc(p.getDni()==null||p.getDni().isBlank()?"No facilitado":p.getDni())+"</td></tr>"
@@ -197,60 +199,6 @@ public class PDFServiceImpl implements PDFService {
 		return value.replace('\r', ' ').replace('\n', ' ').replace("\\n", " ");
 	}
 
-	private String getLogoPreinscripcionBase64() {
-		if (logoPreinscripcionBase64Cache != null) return logoPreinscripcionBase64Cache;
-		try (InputStream input = new ClassPathResource("static/logo_tkd_kick.jpeg").getInputStream()) {
-			logoPreinscripcionBase64Cache = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(input.readAllBytes());
-			return logoPreinscripcionBase64Cache;
-		} catch (Exception e) {
-			return "";
-		}
-	}
-
-	/**
-	 * Converts the school logo SVG to PNG and returns it as a base64 data URI. This
-	 * provides full compatibility with OpenHTML to PDF. The result is cached to
-	 * avoid repeated conversions.
-	 *
-	 * @return Base64-encoded PNG logo as a data URI
-	 */
-	private String getLogoPngBase64() {
-		if (logoPngBase64Cache != null) {
-			return logoPngBase64Cache;
-		}
-
-		try {
-			ClassPathResource resource = new ClassPathResource("static/logo_escuela.svg");
-			InputStream svgInputStream = resource.getInputStream();
-
-			// Convert SVG to PNG using Apache Batik
-			PNGTranscoder transcoder = new PNGTranscoder();
-			transcoder.addTranscodingHint(PNGTranscoder.KEY_WIDTH, 300f);
-			transcoder.addTranscodingHint(PNGTranscoder.KEY_HEIGHT, 300f);
-
-			TranscoderInput input = new TranscoderInput(svgInputStream);
-			ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-			TranscoderOutput output = new TranscoderOutput(pngOutputStream);
-
-			transcoder.transcode(input, output);
-			svgInputStream.close();
-			pngOutputStream.flush();
-
-			// Convert PNG bytes to base64
-			byte[] pngBytes = pngOutputStream.toByteArray();
-			String base64 = Base64.getEncoder().encodeToString(pngBytes);
-			logoPngBase64Cache = "data:image/png;base64," + base64;
-
-			pngOutputStream.close();
-			return logoPngBase64Cache;
-		} catch (Exception e) {
-			System.err.println("Error converting logo SVG to PNG: " + e.getMessage());
-			e.printStackTrace();
-			// Return empty string if conversion fails
-			return "";
-		}
-	}
-
 	/**
 	 * Generates a standard header section with logo for PDF reports. The logo is
 	 * converted to PNG and embedded as base64 for full compatibility.
@@ -270,7 +218,8 @@ public class PDFServiceImpl implements PDFService {
 	 * @return HTML string with header section
 	 */
 	private String generarCabeceraConLogo(String titulo, String borderColor) {
-		String logoPng = getLogoPngBase64();
+		MarcaEscuela marca = marcaEscuela.deActiva();
+		String logoPng = marca.logoInformes();
 		StringBuilder header = new StringBuilder();
 
 		header.append("<div class='pdf-header' style='border-bottom-color: ").append(borderColor).append(";'>");
@@ -282,7 +231,7 @@ public class PDFServiceImpl implements PDFService {
 		}
 
 		header.append("<div class='header-content'>");
-		header.append("<h1 class='club-name'>Moi's Kim Do Taekwondo</h1>");
+		header.append("<h1 class='club-name'>").append(marca.cabeceraInformesHtml()).append("</h1>");
 		if (titulo != null && !titulo.isEmpty()) {
 			header.append("<h2 class='report-title'>").append(titulo).append("</h2>");
 		}
@@ -1231,7 +1180,7 @@ public class PDFServiceImpl implements PDFService {
 			}
 		}
 
-		String logoPng = getLogoPngBase64();
+		MarcaEscuela marca = marcaEscuela.deActiva();
 		StringBuilder html = new StringBuilder();
 
 		// HTML Header with styles
@@ -1310,7 +1259,7 @@ public class PDFServiceImpl implements PDFService {
 					}
 					firstPage = false;
 
-					paginaAsistencia(html, logoPng, year, month, deporteActual, grupo, twa.turno, twa.alumnos, fechas);
+					paginaAsistencia(html, marca, year, month, deporteActual, grupo, twa.turno, twa.alumnos, fechas);
 				}
 			}
 		}
@@ -1348,7 +1297,7 @@ public class PDFServiceImpl implements PDFService {
 				.thenComparing(com.taemoi.project.entities.Turno::getId));
 
 		Map<String, List<AlumnoDeporte>> activosPorDeporte = new java.util.HashMap<>();
-		String logoPng = getLogoPngBase64();
+		MarcaEscuela marca = marcaEscuela.deActiva();
 		StringBuilder html = new StringBuilder();
 		abrirHtmlAsistencia(html);
 		boolean firstPage = true;
@@ -1370,7 +1319,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='page-break'></div>");
 			}
 			firstPage = false;
-			paginaAsistencia(html, logoPng, year, month, deporte, turno.getDiaSemana(), turno, alumnos,
+			paginaAsistencia(html, marca, year, month, deporte, turno.getDiaSemana(), turno, alumnos,
 					fechasDelMes(year, month, diaDeLaSemana(turno)));
 		}
 		html.append("</body></html>");
@@ -1479,7 +1428,7 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/** Una página del listado de asistencia: un turno y una disciplina (el de gestión y el del profesor, E7-2). */
-	private void paginaAsistencia(StringBuilder html, String logoPng, int year, int month, String deporte, String dia,
+	private void paginaAsistencia(StringBuilder html, MarcaEscuela marca, int year, int month, String deporte, String dia,
 			com.taemoi.project.entities.Turno turno, List<AlumnoDeporte> alumnos, List<LocalDate> fechas) {
 		// Sort alumnos by nombre
 		alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
@@ -1489,13 +1438,15 @@ public class PDFServiceImpl implements PDFService {
 
 		// Header
 		html.append("<div class='header-section'>");
-		if (!logoPng.isEmpty()) {
-			html.append("<div class='logo-container'><img src='").append(logoPng)
+		if (!marca.logoInformes().isEmpty()) {
+			html.append("<div class='logo-container'><img src='").append(marca.logoInformes())
 					.append("' alt='Logo' /></div>");
 		}
 		html.append("<div class='header-titles'>");
-		html.append("<p class='main'>CLUB MOI'S KIM DO</p>");
-		html.append("<p class='sub'>Tae Kwon Do</p>");
+		html.append("<p class='main'>").append(marca.asistenciaPrincipalHtml()).append("</p>");
+		if (marca.asistenciaSubtituloHtml() != null) {
+			html.append("<p class='sub'>").append(marca.asistenciaSubtituloHtml()).append("</p>");
+		}
 		html.append("</div>");
 		html.append("<h2>LISTADO DE ASISTENCIA - ")
 				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())

@@ -6,15 +6,21 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -25,6 +31,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 	private final UsuarioRepository usuarioRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final EmailService emailService;
+	/** Pieza E7-7a: el correo sale con el nombre de la escuela de la cuenta ({@link #escuelaDeLaCuenta}). */
+	private final MarcaEscuelaService marcaEscuela;
+	private final MembresiaRepository membresias;
+	private final ResolutorOrganizacion resolutor;
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Value("${app.frontend.base-url:https://moiskimdo.es}")
@@ -35,7 +45,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
 	public PasswordResetServiceImpl(UsuarioRepository usuarioRepository,
 			PasswordEncoder passwordEncoder,
-			EmailService emailService) {
+			EmailService emailService,
+			MarcaEscuelaService marcaEscuela,
+			MembresiaRepository membresias,
+			ResolutorOrganizacion resolutor) {
+		this.marcaEscuela = marcaEscuela;
+		this.membresias = membresias;
+		this.resolutor = resolutor;
 		this.usuarioRepository = usuarioRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.emailService = emailService;
@@ -62,8 +78,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 		usuarioRepository.save(usuario);
 
 		String resetUrl = frontendBaseUrl + "/reset-password?token=" + token;
-		String htmlContent = buildResetEmailHtml(usuario.getNombre(), resetUrl, resetTokenHours);
-		emailService.sendEmail(usuario.getEmail(), "Restablecer contraseña", htmlContent);
+		MarcaEscuela marca = marcaEscuela.de(escuelaDeLaCuenta(usuario));
+		String htmlContent = buildResetEmailHtml(usuario.getNombre(), resetUrl, resetTokenHours, marca);
+		EmailService.enviar(emailService, usuario.getEmail(), "Restablecer contraseña", htmlContent, marca.remitente());
 	}
 
 	@Override
@@ -110,7 +127,22 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 		}
 	}
 
-	private String buildResetEmailHtml(String nombre, String resetUrl, long tokenHours) {
+	/**
+	 * Escuela con la que firma el correo de una cuenta (la cuenta es de plataforma, sin escuela en la petición): la
+	 * última en la que entró si sigue siendo suya (o si no tiene ninguna activa), si no la primera de sus membresías
+	 * activas; sin ninguna, la escuela por defecto (lo de antes de la E7-7a).
+	 */
+	Long escuelaDeLaCuenta(Usuario usuario) {
+		List<Long> escuelas = membresias.findActivasDeUsuario(usuario.getId()).stream()
+				.map(Membresia::getOrganizacionId).distinct().sorted().toList();
+		Long ultima = usuario.getUltimaOrganizacionId();
+		if (ultima != null && (escuelas.isEmpty() || escuelas.contains(ultima))) {
+			return ultima;
+		}
+		return escuelas.isEmpty() ? resolutor.getOrganizacionPorDefecto() : escuelas.get(0);
+	}
+
+	private String buildResetEmailHtml(String nombre, String resetUrl, long tokenHours, MarcaEscuela marca) {
 		String saludo = (nombre == null || nombre.isBlank()) ? "Hola," : "Hola " + nombre + ",";
 		String template = """
 			<!doctype html>
@@ -126,7 +158,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.08);">
 			          <tr>
 			            <td style="background:#1b2b2e;color:#ffffff;padding:24px 28px;">
-			              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">Club Moiskimdo Taekwondo</div>
+			              <div style="font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:#b7c4c8;">{{CLUB}}</div>
 			              <h1 style="margin:10px 0 0;font-size:22px;font-weight:700;">Restablecer contraseña</h1>
 			            </td>
 			          </tr>
@@ -152,7 +184,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			          </tr>
 			        </table>
 			        <div style="font-size:11px;color:#9aa2a9;margin-top:16px;">
-			          © Club Moiskimdo Taekwondo
+			          © {{CLUB}}
 			        </div>
 			      </td>
 			    </tr>
@@ -161,6 +193,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			</html>
 			""";
 		return template
+				.replace("{{CLUB}}", marca.clubCorreoCuentaHtml())
 				.replace("{{SALUDO}}", saludo)
 				.replace("{{RESET_URL}}", resetUrl)
 				.replace("{{HORAS}}", Long.toString(tokenHours));

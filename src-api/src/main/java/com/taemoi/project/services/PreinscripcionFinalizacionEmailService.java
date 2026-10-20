@@ -32,15 +32,18 @@ public class PreinscripcionFinalizacionEmailService {
 	private final PreinscripcionRepository preinscripciones;
 	private final UsuarioRepository usuarios;
 	private final EmailService emailService;
+	/** Pieza E7-7a: firma con el nombre de la escuela de la solicitud (no la del hilo: el aviso sale tras el commit). */
+	private final MarcaEscuelaService marcaEscuela;
 
 	@Value("${app.frontend.base-url:http://localhost:4200}")
 	private String frontendBaseUrl;
 
 	public PreinscripcionFinalizacionEmailService(PreinscripcionRepository preinscripciones,
-			UsuarioRepository usuarios, EmailService emailService) {
+			UsuarioRepository usuarios, EmailService emailService, MarcaEscuelaService marcaEscuela) {
 		this.preinscripciones = preinscripciones;
 		this.usuarios = usuarios;
 		this.emailService = emailService;
+		this.marcaEscuela = marcaEscuela;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -55,8 +58,9 @@ public class PreinscripcionFinalizacionEmailService {
 		try {
 			String destinatario = emailDefinitivo(preinscripcion);
 			Usuario cuenta = usuarios.findByEmailIgnoreCase(destinatario).orElse(null);
-			emailService.sendEmailSync(destinatario, "Inscripción confirmada · " + preinscripcion.getReferencia(),
-					html(preinscripcion, destinatario, cuenta));
+			EmailService.enviarSync(emailService, destinatario, "Inscripción confirmada · " + preinscripcion.getReferencia(),
+					html(preinscripcion, destinatario, cuenta),
+					marcaEscuela.deEntidadOActiva(preinscripcion.getOrganizacionId()).remitente());
 			preinscripcion.setEstadoEmailFinalizacion(EstadoEmailFinalizacion.ENVIADO);
 			preinscripcion.setEmailFinalizacionEnviadoEn(Instant.now());
 		} catch (Exception ex) {
@@ -118,7 +122,8 @@ public class PreinscripcionFinalizacionEmailService {
 				+ "' style='display:inline-block;padding:12px 20px;background:#a52229;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold'>"
 				+ ctaTexto + "</a></p>"
 				+ "<p>Conserva la referencia <strong>" + esc(p.getReferencia()) + "</strong> para cualquier consulta.</p>"
-				+ "<p>Un saludo,<br><strong>Moi's Kim Do</strong></p></div>";
+				+ "<p>Un saludo,<br><strong>" + marcaEscuela.deEntidadOActiva(p.getOrganizacionId()).firmaCorreoHtml()
+				+ "</strong></p></div>";
 	}
 
 	private String emailDefinitivo(Preinscripcion p) {

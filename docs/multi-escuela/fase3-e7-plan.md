@@ -96,7 +96,8 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
 ## 1. Mapa de piezas
 
 Orden: **E7-1 → E7-2 → E7-3** (comparten controlador, regla de URL y matriz). **E7-4** puede ir tras E7-1, en
-paralelo con E7-2 y E7-3. **E7-5** tras E7-3. **E7-6** tras E7-4.
+paralelo con E7-2 y E7-3. **E7-5** tras E7-3. **E7-6** tras E7-4. **E7-7a** (marca de la escuela en PDF y correos,
+decisiones 211 y 212) no depende de las demás; **E7-7b** tras E7-7a.
 
 Los nombres de esta tabla fijan los contratos entre piezas. Quien construye puede renombrarlos, pero entonces lo
 anota en la PR y actualiza este mapa.
@@ -109,6 +110,8 @@ anota en la PR y actualiza este mapa.
 | **E7-4** backend | Asignación de profesores (208) + registro | `J/controllers/GrupoController.java` (o `GrupoProfesoresController` nuevo bajo `/api/grupos/{grupoId}/profesores`), `J/services/AsignacionProfesorService.java` (nuevo), `J/repositories/AsignacionProfesorRepository.java` (`findByGrupoIdAndOrganizacionId` ya existe), `J/repositories/MembresiaRepository.java`, `J/repositories/UsuarioRepository.java` (`findByEmailIgnoreCase`), `RegistroAccionesProfesor` (de E7-3, o lo crea E7-4 si va antes), matriz | `GET`, `POST {email, rol}` y `DELETE /{usuarioId}`; `AsignacionProfesorService.listar(Long grupoId)`, `asignar(Long grupoId, String email, RolAsignacionProfesor)`, `quitar(Long grupoId, Long usuarioId)`; DTO con id de usuario, nombre, email y rol; mensaje `EMAIL_SIN_CUENTA` = «No hay ninguna cuenta con ese email. Que se registre primero.» | `GrupoRepository` (acotado por `@TenantId`) | E7-1 | Alto (permisos, tablas sin `@TenantId`); `savvy-careful`, revisión opus | Punto de revisión 8; IT con dos escuelas; la membresía creada abre la sesión solo-profesor; R da 403 |
 | **E7-5** frontend | Vistas del profesor: Mis grupos, grupo (filtro Todos/Aptos, hoja de asistencia con mes), ficha (contacto, fecha de grado, apto, pases con confirmación, salud plegada); pestañas «Mis grupos \| Mi caja»; aterrizaje tras el login en «Mis grupos»; enlaces de las cuentas mixtas | `F/app.routes.ts` (rutas con `profesorGuard`, junto a `mi-caja` l. 413-416), `F/componentes/endpoints/mis-grupos/*` (nuevo), `F/servicios/endpoints/profesor.service.ts` (nuevo), `F/interfaces/profesor.ts` (nuevo), `F/componentes/endpoints/mi-caja/mi-caja.component.html` (pestañas superiores), `F/servicios/authentication.service.ts:378`, `F/componentes/vistas/layout/header/header.component.html:501-506, 604-606, 733-736, 830-832` | — | Rutas de E7-1, E7-2 y E7-3 | E7-3 | Medio; `savvy-medium` en opus | Specs registrados en las dos listas: la salud solo se pide al abrir la sección; el botón del pase se desactiva durante la petición; el 409 y los 400 muestran el mensaje del backend; el solo-profesor aterriza en «Mis grupos». Build sin aviso y capturas a 375 y 1280 px |
 | **E7-6** frontend | Sección «Profesores» en la ficha del grupo (lista, alta por email y rol, quitar con confirmación) | `gruposEditar/:id` (§11.1): `F/componentes/endpoints/editar-grupo/`, `F/servicios/endpoints/` (servicio de asignación) | — | Rutas de E7-4 | E7-4 | Medio (visible para Moiskimdo); `savvy-medium` | Specs registrados: lista vacía, alta, cambio de rol, quitar con confirmación, email sin cuenta con el mensaje del backend. Build sin aviso y capturas |
+| **E7-7a** backend | Nombre y logo de la escuela activa en todos los PDF y correos (211); subida del logo por el superadmin (212) con registro (D3) | `J/services/MarcaEscuela.java` y `J/services/MarcaEscuelaService.java` (nuevos), `J/organizacion/TransaccionEnEscuela.java` (nuevo), `J/services/impl/PDFServiceImpl.java` (cabeceras), `J/services/impl/TesoreriaServiceImpl.java` (certificado), `J/services/Preinscripcion*EmailService.java`, `J/services/PreinscripcionService.java`, `J/services/impl/{Registro,PasswordReset,RecordatorioRacha}ServiceImpl.java`, `J/plataforma/{LogoEscuelaProcesador,LogoEscuelaService,PlataformaController}.java`, `J/services/impl/ImagenServiceImpl.java` (`guardarLogoEscuela`), matriz | `PUT`/`DELETE`/`GET /api/plataforma/escuelas/{organizacionId}/logo` y `GET /api/plataforma/escuelas` con `tieneLogo` y `marcaHeredada` (§6) | `organizacion.nombre`, `organizacion.logo_imagen_id` (V18), `comportamiento_legado_taemoi` (V28) | — | Alto (todos los PDF y correos de Moiskimdo; escritura del superadmin; SVG con Batik); `savvy-careful` | Dorados de Moiskimdo (PDF píxel a píxel y correos byte a byte) fijados antes del cambio; SVG con XXE/SSRF rechazado sin peticiones; IT de permisos y registro |
+| **E7-7b** frontend | Pantalla de plataforma «Logo de la escuela»: elegir escuela, ver, subir y quitar su logo | `F/componentes/endpoints/plataforma-*` (junto a `plataforma-errores`), `F/servicios/plataforma/plataforma.service.ts` | — | Rutas de E7-7a (§6) | E7-7a | Medio; `savvy-medium` | Specs: lista con `tieneLogo`; con `marcaHeredada`, sin subir (409); el 400 con el mensaje del backend; quitar con confirmación. Build sin aviso y capturas |
 
 Pruebas mínimas de cada pieza backend: IT en MySQL con dos profesores, dos sedes y una segunda escuela; un alumno
 compartido por dos grupos; una cuenta F+Pr y otra R+Pr; Moiskimdo idéntico con ADMIN y MANAGER; matriz con diff solo
@@ -129,6 +132,8 @@ profesores, que seguirían viendo solo «Mi caja») y el resto después.
 | E7-4 | Pendiente | — | No | |
 | E7-5 | Pendiente | — | No | |
 | E7-6 | Pendiente | — | No | |
+| E7-7a | Hecha en `feature/e7-7a` (sin commit) | — | No | §6 |
+| E7-7b | Pendiente | — | No | |
 
 ---
 
@@ -436,6 +441,123 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
   `MEMBRESIA_PROFESOR_CREADA`.
 - [x] `AsignacionProfesorService` (`listar`, `asignar`, `quitar`, `EMAIL_SIN_CUENTA`, `PROFESOR_DESACTIVADO`),
   `GrupoProfesoresDTOs`, `AsignarProfesorRequest` y `GrupoProfesoresController`; regla de URL explícita.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 4 líneas y recuento de la cabecera.
+- [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.
+
+---
+
+## 6. Pieza E7-7a: nombre y logo de la escuela en PDF y correos (detallada)
+
+Rama `feature/e7-7a` desde `feature/e7-4`. Sin migración (`organizacion.nombre` y `organizacion.logo_imagen_id`
+existen desde V18): atajo `desplegar`. Decisiones 211 y 212 (fase3-e7-profesor.md §4.1).
+
+**Regla (`MarcaEscuelaService`).** Escuela con `comportamiento_legado_taemoi` (Moiskimdo) → EXACTAMENTE lo de antes:
+los mismos textos y los mismos logos de classpath convertidos igual, aunque tenga un logo apuntado. Otra escuela →
+`organizacion.nombre` (escapado en HTML) y su logo PNG si lo tiene; sin logo, solo el nombre, sin imagen. La escuela
+es siempre explícita: la activa en las peticiones (`deActiva`, falla cerrado sin ninguna); la de la entidad en los
+correos que salen tras el commit (`de(preinscripcion.organizacion_id)`). Si el hilo no tiene esa escuela, la lectura
+va en una transacción nueva con ella fijada (`TransaccionEnEscuela`, que además desliga el `EntityManager` de
+open-in-view de la petición: `REQUIRES_NEW` sin transacción previa lo reutilizaría con la escuela de la petición).
+Caché por escuela (30 s; el nombre solo cambia por SQL), invalidada al subir o quitar un logo.
+
+**Inventario de cadenas fijas de la escuela en `src-api/src/main`.**
+
+| Dónde | Cadena de Moiskimdo | E7-7a |
+|---|---|---|
+| `PDFServiceImpl.generarCabeceraConLogo` (13 llamadas: por grado, licencias, a promocionar infantiles y adultos y por deporte, deudas, productos, reservas, mensualidades por deporte, listado de mensualidad, D.P.F., competidores, convocatoria) | «Moi's Kim Do Taekwondo» y `static/logo_escuela.svg` → PNG 300×300 (una caché para todas las escuelas) | Marca de la escuela activa |
+| `PDFServiceImpl.paginaAsistencia` (gestión y profesor) | «CLUB MOI'S KIM DO» / «Tae Kwon Do» y el mismo logo | Marca; otra escuela: su nombre en mayúsculas, sin subtítulo |
+| `PDFServiceImpl.generarPreinscripcionFirmada` (y la previsualización) | `static/logo_tkd_kick.jpeg` (otra caché) y «Escuela Moi Kim Do» si la plantilla no trae `cabecera` | Marca de la escuela de la preinscripción. La `cabecera` y el `contacto` de cada plantilla (V3: «Escuela Moi Kim Do», «Umbrete (Sevilla)») son datos de la escuela: no se tocan |
+| `TesoreriaServiceImpl` (certificado de cobros) | `static/Logo_nuevo_sin_vectorizar.jpeg`, «Club Deportivo Moi's Kim do Taekwondo», CIF, presidenta y su DNI, «PRESIDENTA», «C.D. MOI'S KIMDO TAEKWONDO», «En Umbrete» | Moiskimdo igual. Otra escuela: su logo, `nombre_legal` (o `nombre`), `cif`, `firmante_nombre`, `firmante_nif`, `firmante_cargo` y `localidad` de `organizacion`; lo que falte, «________» (nunca los datos de Moiskimdo) |
+| `PreinscripcionService` (alta y copia de la solicitud original), `PreinscripcionCambioTurnosEmailService`, `PreinscripcionCancelacionEmailService`, `PreinscripcionFinalizacionEmailService` | Firma «Un saludo, Moi's Kim Do» | Escuela de la preinscripción |
+| `RegistroServiceImpl`, `PasswordResetServiceImpl`, `RecordatorioRachaServiceImpl` | «Club Moiskimdo Taekwondo» (cabecera y pie) | Registro: escuela del alumno. Contraseña: la última escuela de la cuenta si sigue siendo suya, si no su primera membresía activa; sin ninguna, la escuela por defecto (lo de antes). Racha: la escuela del job |
+| Aviso de promoción y avisos internos de preinscripción | Sin marca en el cuerpo | Solo el remitente (fila siguiente) |
+| `EmailServiceImpl` (todos los correos) | Nombre visible del remitente `app.mail.from-name` = «Moi's Kim Do» | Ronda 1: sobrecargas con `nombreRemitente`; `MarcaEscuela.remitente()` = `null` en Moiskimdo (el de siempre, mismo método) y, en otra escuela, `organizacion.email_remitente_nombre` si está lleno o si no su nombre. En todos los correos de preinscripción (también promoción y avisos internos), registro, contraseña y racha. La dirección (`spring.mail.from`) no cambia |
+| `PDFServiceImpl.generarPreviewPreinscripcion` | Dirección de ejemplo «Calle Ejemplo, 1, Umbrete» | Ronda 1: «Umbrete» solo en Moiskimdo; en el resto, «Calle Ejemplo, 1» |
+
+Recuento: 4 caminos de cabecera de PDF (los 13 informes de la cabecera común, la hoja de asistencia, la solicitud
+firmada y el certificado) y 9 plantillas de correo (alta, copia de la solicitud, cambio de turnos, cancelación,
+finalización, registro, contraseña y racha; el alta en sus dos estados).
+
+**Pendientes, sin cambiar (fuera de alcance):**
+- Dirección del remitente: `spring.mail.from` = `noreplymoiskimdo@gmail.com` (una cuenta de correo para todas las
+  escuelas; el nombre visible ya es el de cada escuela).
+- URLs: `app.frontend.base-url` y `app.base.url` = `https://moiskimdo.es` (enlaces de registro, contraseña, racha y
+  finalización; también el valor por defecto de `RecordatorioRachaServiceImpl`). Motivo: hoy es el host ÚNICO del
+  frontend para todas las escuelas; cambiarlo es de despliegue (dominio por escuela), no de marca.
+- `EmailController` (formulario de contacto de la web pública): logo remoto de Moiskimdo, pie «Club Moiskimdo
+  Taekwondo» y destinatario `moiskimdotaekwondo@gmail.com`. Motivo: es la web pública de Moiskimdo; ninguna otra
+  escuela tiene web en la aplicación.
+- La cabecera del panel (E8b).
+
+**Rutas (contrato para la E7-7b).** Todas solo `ROLE_ADMIN_PLATAFORMA` (regla de URL y `@PreAuthorize` de clase);
+errores con `{"mensaje": ...}`.
+- `GET /api/plataforma/escuelas` → `[{id, nombre, tieneLogo, marcaHeredada}]` por nombre.
+- `PUT /api/plataforma/escuelas/{organizacionId}/logo`, multipart con el campo `archivo` → 200 `{id, nombre,
+  tieneLogo: true, marcaHeredada: false}`; 400 (vacío, tipo que no es PNG/JPG/SVG por contenido, más de 1 MB, lados
+  fuera de 16-4096 px, SVG con DOCTYPE, entidades, scripts, enlaces o recursos externos); 404 (escuela inexistente);
+  409 (marca heredada).
+- `DELETE /api/plataforma/escuelas/{organizacionId}/logo` → 200 con la escuela (`tieneLogo: false`); sin logo, 200 sin
+  cambios; 404; 409.
+- `GET /api/plataforma/escuelas/{organizacionId}/logo` → 200 `image/png` (`Cache-Control: no-store`); 404 sin logo.
+
+**Criterios del constructor (no previstos en el encargo):**
+- **Se guarda solo un PNG** (hasta 600 px por lado, con transparencia) en `org-<id>/logo/<uuid>_logo.png`, como
+  `Imagen` de la escuela destino; el nombre del fichero subido no se guarda ni se registra. El SVG se rasteriza con
+  Batik con los recursos externos y los scripts desactivados, tras rechazar en un parser sin DOCTYPE todo lo que
+  podría cargar algo.
+- **El logo anterior se borra** (la fila en la misma transacción y el fichero tras confirmar): sin huérfanos. Si la
+  transacción se deshace, se borra el fichero recién escrito. La escuela se bloquea (`findByIdParaActualizar`) para
+  ordenar dos subidas a la vez.
+- **Moiskimdo no admite logo (409)**: con la marca heredada sus documentos salen siempre como antes; subirle uno no
+  tendría efecto.
+- **Registro (D3)**: `auditoria_evento` en la escuela destino, módulo `plataforma`, `UPDATE` o `DELETE`, recurso = la
+  imagen, resumen «Superadmin: logo de la escuela N cambiado (imagen M[, sustituye a la imagen K])» o «… quitado
+  (imagen M)»; lo ve el propietario en su registro. Ronda 1: el filtro HTTP (`AuditoriaRequestFilter`) ya no apunta
+  el PUT/DELETE 2xx de esa ruta en la escuela activa del superadmin (su propietario veía la acción sobre otra escuela,
+  con el nombre y el email del superadmin); los 4xx/5xx sí.
+- **SVG complejo (ronda 1)**: como mucho 100 `<use>`, 40 niveles y 10 000 elementos, y ningún `<use>` que apunte a
+  un elemento con otro `<use>` (sin cadenas que se multipliquen al dibujar); si no, 400 «El SVG es demasiado
+  complejo».
+- **Logos de classpath de Moiskimdo (ronda 1)**: un fallo al cargarlos no se guarda en caché; se reintenta en el
+  siguiente documento, como antes.
+- **Certificado de otra escuela**: además del nombre y el logo, sus datos legales de `organizacion` o un hueco; antes
+  salían los de Moiskimdo (CIF, presidenta y su DNI) en cualquier escuela.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/services/MarcaEscuelaPdfTest.java`, `T/services/MarcaEscuelaCorreosTest.java` (con
+  `T/services/MarcaEscuelaCorreosDatos.java` y `T/services/MarcaEscuelaPruebas.java`),
+  `T/resources/dorado/marca/*.html` (11 correos volcados con el código de antes),
+  `T/plataforma/LogoEscuelaProcesadorTest.java`, `T/integracion/LogoEscuelaIntegrationTest.java`.
+- Modificar: los tests unitarios que construyen los servicios cambiados (marca de Moiskimdo simulada),
+  `PlataformaYAuditoriaPropietarioIntegrationTest` (campos de `GET /api/plataforma/escuelas`) y
+  `matriz-permisos.txt` (4 líneas nuevas: `GET`/`HEAD`/`PUT`/`DELETE .../logo`, SOLO_PLATAFORMA `PERMITE`).
+
+- [x] **Paso 1: fijar a Moiskimdo antes de cambiar nada**: `moiskimdoPdfsIdenticos` (los cuatro caminos de cabecera:
+  texto y logo píxel a píxel contra los ficheros de classpath) en verde con el código de antes, y los 11 dorados de
+  correos volcados con el código de antes.
+- [x] **Paso 2: escribir los tests**: `moiskimdoCorreosIdenticos`, `escuelaSinLogoSoloNombre_sinRastroDeMoiskimdo`
+  (PDF y correos), `escuelaConLogoLoIncrusta`, `cachePorEscuela`, `correoAsincronoUsaLaEscuelaDeLaPreinscripcion`,
+  `subirLogoSoloSuperadmin_403ParaElResto`, `subirSvgConEntidadExterna_noLaResuelve` (y
+  `batikNoCargaRecursosExternosAunqueLlegaran`, con un servidor HTTP local que cuenta peticiones),
+  `subirTipoNoPermitido_400`, `subirDemasiadoGrande_400`, `subirLogoRegistraAccionConIds`,
+  `quitarLogoVuelveASoloNombre` y `moiskimdoNoAdmiteLogoYEscuelaInexistente404`.
+- [x] **Paso 3: comprobar que fallan**: sin `MarcaEscuelaService` ni las rutas, no compilan o dan 404.
+
+### Tarea 2: implementar
+
+- [x] `MarcaEscuela`, `MarcaEscuelaService` y `TransaccionEnEscuela`.
+- [x] Cabeceras de `PDFServiceImpl` (sin las dos cachés globales) y certificado de `TesoreriaServiceImpl`.
+- [x] Firma de los correos de preinscripción y nombre de los de cuenta.
+- [x] `LogoEscuelaProcesador`, `LogoEscuelaService`, `ImagenService.guardarLogoEscuela`,
+  `OrganizacionRepository.findByIdParaActualizar`, rutas en `PlataformaController` y `EscuelaPlataformaDTO` con
+  `tieneLogo` y `marcaHeredada`.
 
 ### Tarea 3: matriz, documentación y batería
 

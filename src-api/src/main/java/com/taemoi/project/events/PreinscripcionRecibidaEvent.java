@@ -6,5 +6,11 @@ package com.taemoi.project.events;
  * ({@code PreinscripcionAltaEmailListener}). {@code adminEmail} es null si no hay buzón interno configurado.
  */
 public record PreinscripcionRecibidaEvent(String referencia, String asunto, String html, String adminEmail,
-		String asuntoAdmin, String htmlAdmin) {
+		String asuntoAdmin, String htmlAdmin, String remitente) {
+
+	/** Sin remitente propio (Moiskimdo): el nombre de siempre. {@code remitente}: pieza E7-7a. */
+	public PreinscripcionRecibidaEvent(String referencia, String asunto, String html, String adminEmail,
+			String asuntoAdmin, String htmlAdmin) {
+		this(referencia, asunto, html, adminEmail, asuntoAdmin, htmlAdmin, null);
+	}
 }

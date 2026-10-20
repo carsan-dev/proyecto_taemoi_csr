@@ -42,8 +42,8 @@ public class PreinscripcionAltaEmailService {
 		byte[] pdf = documentos.findPdfFirmadoById(preinscripcion.getId());
 		preinscripcion.setEmailIntentos(preinscripcion.getEmailIntentos() + 1);
 		try {
-			emailService.sendEmailConAdjunto(preinscripcion.getEmail(), event.asunto(), event.html(),
-					"preinscripcion-" + preinscripcion.getReferencia() + ".pdf", pdf);
+			EmailService.enviarConAdjunto(emailService, preinscripcion.getEmail(), event.asunto(), event.html(),
+					"preinscripcion-" + preinscripcion.getReferencia() + ".pdf", pdf, event.remitente());
 			preinscripcion.setEmailEnviado(true);
 			preinscripcion.setEmailUltimoError(null);
 		} catch (Exception ex) {
@@ -57,7 +57,7 @@ public class PreinscripcionAltaEmailService {
 	public void avisarAdmin(PreinscripcionRecibidaEvent event) {
 		if (event.adminEmail() == null) return;
 		try {
-			emailService.sendEmail(event.adminEmail(), event.asuntoAdmin(), event.htmlAdmin());
+			EmailService.enviar(emailService, event.adminEmail(), event.asuntoAdmin(), event.htmlAdmin(), event.remitente());
 		} catch (Exception e) {
 			log.warn("No se pudo enviar aviso interno de preinscripción {}: {}", event.referencia(), e.getMessage());
 		}

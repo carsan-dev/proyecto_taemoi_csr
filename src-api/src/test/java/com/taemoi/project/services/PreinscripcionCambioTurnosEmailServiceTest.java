@@ -36,7 +36,8 @@ class PreinscripcionCambioTurnosEmailServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new PreinscripcionCambioTurnosEmailService(preinscripciones, email);
+		service = new PreinscripcionCambioTurnosEmailService(preinscripciones, email,
+				MarcaEscuelaPruebas.soloMoiskimdo());
 		preinscripcion = solicitudConCambio();
 		lenient().when(preinscripciones.findByReferenciaForUpdate("PRE-1")).thenReturn(Optional.of(preinscripcion));
 	}

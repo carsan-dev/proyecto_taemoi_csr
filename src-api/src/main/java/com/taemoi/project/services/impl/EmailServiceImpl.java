@@ -33,8 +33,15 @@ public class EmailServiceImpl implements EmailService {
 	@Async
 	@Override
 	public void sendEmail(@NonNull String to, @NonNull String subject, @NonNull String htmlContent) {
+		sendEmail(to, subject, htmlContent, null);
+	}
+
+	@Async
+	@Override
+	public void sendEmail(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
+			String nombreRemitente) {
 		try {
-			sendEmailSync(to, subject, htmlContent);
+			sendEmailSync(to, subject, htmlContent, nombreRemitente);
 		} catch (RuntimeException e) {
 			logger.error("Error al enviar el correo electrónico a {}: {}", to, e.getMessage());
 		}
@@ -42,13 +49,19 @@ public class EmailServiceImpl implements EmailService {
 
 	@Override
 	public void sendEmailSync(@NonNull String to, @NonNull String subject, @NonNull String htmlContent) {
+		sendEmailSync(to, subject, htmlContent, null);
+	}
+
+	@Override
+	public void sendEmailSync(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
+			String nombreRemitente) {
 		MimeMessage mimeMessage = javaMailSender.createMimeMessage();
 		try {
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 			helper.setTo(to);
 			helper.setSubject(subject);
 			helper.setText(htmlContent, true);
-			helper.setFrom(fromAddress, fromName);
+			helper.setFrom(fromAddress, remitente(nombreRemitente));
 			helper.setReplyTo(fromAddress);
 			javaMailSender.send(mimeMessage);
 		} catch (MessagingException | UnsupportedEncodingException e) {
@@ -59,14 +72,25 @@ public class EmailServiceImpl implements EmailService {
 	@Override
 	public void sendEmailConAdjunto(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
 			@NonNull String nombreAdjunto, @NonNull byte[] adjunto) {
+		sendEmailConAdjunto(to, subject, htmlContent, nombreAdjunto, adjunto, null);
+	}
+
+	@Override
+	public void sendEmailConAdjunto(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
+			@NonNull String nombreAdjunto, @NonNull byte[] adjunto, String nombreRemitente) {
 		MimeMessage message=javaMailSender.createMimeMessage();
 		try {
 			MimeMessageHelper helper=new MimeMessageHelper(message,true,"UTF-8");
 			helper.setTo(to); helper.setSubject(subject); helper.setText(htmlContent,true);
-			helper.setFrom(fromAddress,fromName);
+			helper.setFrom(fromAddress,remitente(nombreRemitente));
 			helper.setReplyTo(fromAddress);
 			helper.addAttachment(nombreAdjunto,new ByteArrayResource(adjunto));
 			javaMailSender.send(message);
 		} catch(Exception e){ throw new IllegalStateException("No se pudo enviar el correo",e); }
+	}
+
+	/** Pieza E7-7a: el nombre visible de la escuela si lo hay; si no, el de siempre. */
+	private String remitente(String nombreRemitente) {
+		return nombreRemitente != null && !nombreRemitente.isBlank() ? nombreRemitente.trim() : fromName;
 	}
 }

@@ -19,11 +19,14 @@ public class PreinscripcionCambioTurnosEmailService {
 
 	private final PreinscripcionRepository preinscripciones;
 	private final EmailService emailService;
+	/** Pieza E7-7a: firma con el nombre de la escuela de la solicitud (no la del hilo: el aviso sale tras el commit). */
+	private final MarcaEscuelaService marcaEscuela;
 
 	public PreinscripcionCambioTurnosEmailService(PreinscripcionRepository preinscripciones,
-			EmailService emailService) {
+			EmailService emailService, MarcaEscuelaService marcaEscuela) {
 		this.preinscripciones = preinscripciones;
 		this.emailService = emailService;
+		this.marcaEscuela = marcaEscuela;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -37,8 +40,9 @@ public class PreinscripcionCambioTurnosEmailService {
 
 		try {
 			validarSnapshots(preinscripcion);
-			emailService.sendEmailSync(preinscripcion.getEmail(),
-					"Horarios actualizados · " + preinscripcion.getReferencia(), html(preinscripcion));
+			EmailService.enviarSync(emailService, preinscripcion.getEmail(),
+					"Horarios actualizados · " + preinscripcion.getReferencia(), html(preinscripcion),
+					marcaEscuela.deEntidadOActiva(preinscripcion.getOrganizacionId()).remitente());
 			preinscripcion.setEstadoEmailCambioTurnos(EstadoEmailCambioTurnos.ENVIADO);
 			preinscripcion.setEmailCambioTurnosEnviadoEn(Instant.now());
 		} catch (Exception ex) {
@@ -60,7 +64,8 @@ public class PreinscripcionCambioTurnosEmailService {
 				+ bloqueObservaciones(p)
 				+ "<p>Conserva la referencia <strong>" + esc(p.getReferencia())
 				+ "</strong> para cualquier consulta.</p>"
-				+ "<p>Un saludo,<br><strong>Moi's Kim Do</strong></p></div>";
+				+ "<p>Un saludo,<br><strong>" + marcaEscuela.deEntidadOActiva(p.getOrganizacionId()).firmaCorreoHtml()
+				+ "</strong></p></div>";
 	}
 
 	private void validarSnapshots(Preinscripcion p) {
