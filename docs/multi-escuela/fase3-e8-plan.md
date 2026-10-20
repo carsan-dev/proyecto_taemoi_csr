@@ -261,14 +261,140 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 
 ---
 
-## 3. Pieza E8-2 (la detalla su implementador con TDD antes de empezar)
+## 3. Pieza E8-2: API de sedes con registro (detallada)
 
-Rama `feature/e8-2`. Alcance:
-- Controlador y servicio de sedes (D8-2); regla de URL `/api/sedes/**`.
-- 409 por nombre repetido y por última sede activa; longitudes de las columnas; sin `DELETE`.
-- Registro módulo `sedes`; `EscrituraConRegistroPropio` y `CLAVES_REDACTADAS_POR_RUTA` donde toque.
-- D8-3: test que fija el comportamiento actual con dos sedes activas y nota en la PR.
-- Punto de revisión 4; matriz y nota.
+Rama `feature/e8-2` desde `feature/e8-1`. Sin migración: atajo `desplegar`. Cinco rutas nuevas bajo `/api/sedes`
+(dos lecturas y tres escrituras); ningún cambio en las rutas de hoy.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Rutas y permisos** (D8-1, D8-2). `SedeController` en `/api/sedes`: `GET`, `GET /{id}`, `POST` (201), `PUT /{id}` y
+  `PUT /{id}/activa {activa}`. Regla de URL `/api/sedes`, `/api/sedes/**` con
+  `hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')` justo después de `OPTIONS /api/**` (antes de toda regla del
+  responsable de sede) y el mismo `@PreAuthorize` en cada método. Fuera de la lista blanca de la sesión solo-profesor.
+  R, Pr, F, SOLO_PLATAFORMA y ANONIMO `DENIEGA`.
+- **Lecturas.** La lista: todas las sedes de la escuela activa, activas e inactivas, por id (`findAllByOrderByIdAsc`,
+  `@TenantId`). La ficha: `SedeRepository.buscarEnEscuelaActiva`; de otra escuela o inexistente, 404 «La sede no
+  existe.». DTO `SedeDTO {id, nombre, direccion, localidad, codigoPostal, telefono, email, codigoClubFederacion,
+  aforoTurno, activa}` (`aforoTurno` `null` = límite de la escuela). Sin contadores.
+- **Alta y edición.** Cuerpo `SedeRequest` con los campos editables menos `activa` (la sede nueva nace activa). `PUT`
+  es un reemplazo: lo que no llega queda `null`. Cadenas recortadas; las opcionales en blanco pasan a `null`.
+  Longitudes en caracteres (puntos de código, como `VARCHAR` en utf8mb4): nombre obligatorio ≤100, dirección ≤255,
+  localidad ≤100, código postal ≤10, teléfono ≤20, email ≤180 y con formato válido, código de club ≤40; `aforoTurno`
+  `null` o ≥1. Fallo: 400 `{"mensaje"}`.
+- **Nombre repetido** (UNIQUE `organizacion_id, nombre`): 409 «Ya hay una sede con ese nombre.». Se compara en la
+  base (`existsByNombre` / `existsByNombreAndIdNot`, con la colación de la columna: sin distinguir mayúsculas ni
+  tildes, igual que la clave única); renombrar una sede a su propio nombre con otras mayúsculas vale. Dos altas a la
+  vez con el mismo nombre: la clave única decide y el `DataIntegrityViolationException` de
+  `uk_sede_organizacion_nombre` se convierte en el mismo 409 (nunca 500); otro fallo de integridad se propaga.
+- **Activar y desactivar.** `@Transactional(isolation = READ_COMMITTED)`. Primero se bloquean TODAS las sedes de la
+  escuela (`SedeRepository.bloquearDeLaEscuela`, `PESSIMISTIC_WRITE`, filtrada por `@TenantId`, por id); con las filas
+  bloqueadas se busca la sede (404 si no está) y se cuentan las activas. Desactivar la última activa: 409 «La escuela
+  se quedaría sin sedes activas.». Dos desactivaciones a la vez esperan una a la otra y la segunda ve la primera ya
+  confirmada: queda una activa. Desactivar no toca `membresia_sede` (D5-5): el responsable conserva la sede en su
+  alcance. Sin `DELETE` (FK RESTRICT desde grupo, tarifa_sede, entrega_caja y movimiento_caja; el historial queda).
+- **Registro** (D8-16, §7). `RegistroAccionesSedes` (módulo `sedes`), copia de `RegistroAccionesProfesor`: misma
+  transacción (`registrarAccesoSensible` es `MANDATORY`), resumen solo con ids, enumeraciones y sí/no; cualquier otro
+  tipo, `IllegalStateException`. Acciones `SEDE_CREADA` (CREATE), `SEDE_EDITADA`, `SEDE_DESACTIVADA` y
+  `SEDE_ACTIVADA` (UPDATE), con `sede=#id`. Nunca nombre, dirección, teléfono ni email.
+- **Una fila por escritura.** Todo 2xx de las tres escrituras registra: un `PUT` que no cambia nada (mismos datos, o
+  `activa` igual a la actual) responde 200 y registra su acción con `sinCambios=SI`
+  (`SEDES SEDE_DESACTIVADA sede=#5 sinCambios=SI`). Así las tres entran en `EscrituraConRegistroPropio`
+  (`SEDE_CREAR`, `SEDE_EDITAR`, `SEDE_ACTIVA`) y sus 4xx los apunta el filtro genérico como siempre.
+- **Cuerpos redactados.** `CLAVES_REDACTADAS_POR_RUTA` para `/api/sedes` y `/api/sedes/{id}`: `nombre`, `direccion`,
+  `localidad`, `codigoPostal`, `telefono`, `email` y `codigoClubFederacion` (las filas 4xx del filtro genérico no los
+  guardan).
+- **D8-3: dos sedes activas.** No se cambia. Un IT fija lo de hoy en una escuela sintética propia y el resultado va
+  en la PR (alta de grupo y de alumno sin sede por la gestión).
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/SedesApiIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`). Escuelas `EscuelaConSedesDePrueba.crear(…, "it-e8-2")` (A y B activas, C
+  inactiva), `"it-e8-2-otra"` y `"it-e8-2-d83"` (solo para D8-3: B se cierra al empezar, queda A); escuelas mínimas
+  por SQL con una o dos sedes para la última activa y la concurrencia. Cuentas nuevas, datos inventados, nombres con
+  la marca de la escuela; nada en Moiskimdo.
+- Crear: `T/services/RegistroAccionesSedesTest.java` (sin Spring).
+- Crear: `T/config/AuditoriaRequestFilterClavesRedactadasTest.java`.
+- Modificar: `T/config/AuditoriaRequestFilterRegistroPropioTest.java` (ejemplos de las tres entradas y rutas vecinas
+  fuera de la lista), `T/integracion/RegistroUnicoProfesorIntegrationTest.java` (un caso por entrada) y
+  `src-api/src/test/resources/seguridad/matriz-permisos.txt` (7 líneas nuevas).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT `SedesApiIntegrationTest`:
+    - `listarSedes_soloDeSuEscuela` (A, B y C de la escuela, también la inactiva con `activa=false`; ninguna de la
+      otra; orden por id; claves exactas del DTO).
+    - `sedeDeOtraEscuela_404` (sede de la otra escuela e id inexistente: 404 «La sede no existe.» en `GET`, `PUT` y
+      `PUT …/activa`; la de la otra escuela no cambia).
+    - `crearSede_valida_201_yRegistra` (201, campos recortados, opcionales en blanco a `null`, `activa=true`, fila en
+      la escuela activa; una sola fila de auditoría `SEDES SEDE_CREADA sede=#id`, módulo `sedes`, del propietario y
+      sin la genérica).
+    - `nombreRepetidoEnLaEscuela_409` (alta con el nombre de A con otras mayúsculas y espacios, y renombrar B como A:
+      409 con el mensaje; renombrar A con otras mayúsculas: 200).
+    - `mismoNombreEnOtraEscuela_ok`.
+    - `validaciones_400` (cada campo por encima de su límite, email sin formato, aforo 0, nombre vacío o ausente; en
+      `POST` y en `PUT`; nada se crea ni cambia).
+    - `editarSede_registraUnaFila` (200, datos cambiados, una fila `SEDES SEDE_EDITADA sede=#id`; repetir el mismo
+      cuerpo: 200 y una fila con `sinCambios=SI`).
+    - `desactivarUltimaSedeActiva_409` (escuela con una activa: 409 con el mensaje, sigue activa, sin fila
+      explícita).
+    - `desactivarConOtraActiva_ok_yRegistra` (200, `activa=false`, una fila `SEDE_DESACTIVADA`; repetir: 200 con
+      `sinCambios=SI`).
+    - `reactivar_ok` (`SEDE_ACTIVADA`).
+    - `dosDesactivacionesALaVez_quedaUnaActiva` (escuela con dos activas, las dos desactivaciones a la vez, varias
+      rondas: estados `[200, 409]` y siempre una activa).
+    - `dosAltasALaVezMismoNombre_sin500` (`[201, 409]`, una sola sede con ese nombre).
+    - `desactivarSedeConservaResponsables` (la fila de `membresia_sede` sigue y `GET /api/auth/permisos` del
+      responsable la sigue listando, con `activa=false`).
+    - `responsableYProfesorYFamilia_403` (también SOLO_PLATAFORMA; anónimo 401; nada se crea).
+    - `gestorPuede` (las cinco rutas; la fila lleva al gestor).
+    - `registroSoloConIds` (ninguna fila de la escuela posterior al test contiene nombre, dirección, teléfono ni
+      email de la sede).
+    - `clavesRedactadas_4xx` (la fila genérica de un 400 de `POST` y de `PUT` guarda `[redactado]` en esas claves y
+      no los valores).
+    - `dosSedesActivas_altaDeGrupo_comportamientoActual` y `dosSedesActivas_altaDeAlumno_comportamientoActual` (D8-3:
+      con una activa, el grupo y el alumno sin sede reciben esa sede; tras crear otra por la API, la gestión sigue
+      dando de alta sin sede, 201, con `sede_id` / `sede_principal_id` NULL; con sede explícita, la pedida; al
+      desactivar la nueva, vuelve la sede por defecto).
+  - `RegistroAccionesSedesTest`: `resumenSoloConIds` (`SEDES SEDE_CREADA sede=#5`, recurso 5, acción CREATE),
+    `sinCambiosComoSiNo`, `textoLibre_IllegalStateException` (un `String` no se registra).
+  - `AuditoriaRequestFilterClavesRedactadasTest`: `sedes_altaYEdicion_redactanSusDatos` (también con barra final y
+    mayúsculas), `sedes_activa_noRedacta`, `rutasDeSiempre_igual`.
+  - `AuditoriaRequestFilterRegistroPropioTest`: ejemplos `POST /api/sedes`, `PUT /api/sedes/5`,
+    `PUT /api/sedes/5/activa`; fuera: `GET /api/sedes`, `GET /api/sedes/5`, `POST /api/sedes/5`,
+    `PUT /api/sedes/5/activa/otra`, `DELETE /api/sedes/5`.
+  - `RegistroUnicoProfesorIntegrationTest`: casos `SEDE_CREAR` (201 / nombre repetido 409), `SEDE_EDITAR` (200 / sin
+    nombre 400) y `SEDE_ACTIVA` (200 / sin `activa` 400).
+  - Matriz: `GET`/`HEAD /api/sedes`, `GET`/`HEAD /api/sedes/{id}`, `POST /api/sedes`, `PUT /api/sedes/{id}` y
+    `PUT /api/sedes/{id}/activa`: GESTOR y PROPIETARIO `PERMITE`, resto `DENIEGA`.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='SedesApiIntegrationTest,RegistroAccionesSedesTest,AuditoriaRequestFilterClavesRedactadasTest,AuditoriaRequestFilterRegistroPropioTest,RegistroUnicoProfesorIntegrationTest,MatrizPermisosTest' -DexcludedGroups=migracion`:
+  no compila hasta crear `RegistroAccionesSedes` y las entradas del enum; con los esqueletos, las rutas dan 404/403.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Crear: `J/controllers/SedeController.java`, `J/services/GestionSedesService.java`,
+  `J/services/RegistroAccionesSedes.java`, `J/dtos/request/SedeRequest.java`, `J/dtos/request/SedeActivaRequest.java`,
+  `J/dtos/response/SedeDTO.java`.
+- Modificar: `J/repositories/SedeRepository.java` (`bloquearDeLaEscuela`, `existsByNombre`, `existsByNombreAndIdNot`),
+  `J/config/SecurityConfiguration.java` (regla de `/api/sedes/**`), `J/config/AuditoriaRequestFilter.java` (tres
+  entradas y `CLAVES_REDACTADAS_POR_RUTA`).
+
+**Interfaces:**
+- Produce: `/api/sedes/**` (contrato de la pantalla Sedes de la E9), `SedeDTO`, módulo de registro `sedes`.
+- Consume: `SedeRepository`, `AuditoriaService#registrarAccesoSensible`, `TenantContext`.
+
+- [x] **Paso 1:** `RegistroAccionesSedes` y sus tests en verde.
+- [x] **Paso 2:** servicio, controlador y regla de URL; IT de sedes en verde.
+- [x] **Paso 3:** `EscrituraConRegistroPropio`, `CLAVES_REDACTADAS_POR_RUTA` y matriz; sus tests en verde.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 7 líneas y recuento de la cabecera.
+- [x] `MatrizPermisosTest`, `AuditoriaRequestFilterRegistroPropioTest`, `RegistroUnicoProfesorIntegrationTest`,
+  `SecurityAuthorizationWebMvcTest` y `mvn test -DexcludedGroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 ---
 

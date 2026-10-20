@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (446 líneas; 146 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (453 líneas; 148 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -292,6 +292,16 @@ en `PROFESOR_SESION_180`. Devuelve `{roles, esAdminPlataforma, sedes[{id, nombre
 capacidades}`: en la sesión solo-profesor (también R+Pr) roles `[PROFESOR]`, sin las sedes del responsable, con
 `MIS_GRUPOS` y `MI_CAJA`; SOLO_PLATAFORMA, roles, sedes y capacidades vacíos. Como todo `/api/auth/**`, no se audita.
 Lo prueba `PermisosSesionIntegrationTest`.
+
+Pieza E8-2 (API de sedes, fase3-e8-miembros.md D8-1 y D8-2): 7 líneas nuevas bajo `/api/sedes` (`SedeController`):
+`GET`/`HEAD /api/sedes`, `POST /api/sedes`, `GET`/`HEAD /api/sedes/{id}`, `PUT /api/sedes/{id}` y
+`PUT /api/sedes/{id}/activa`; ninguna casilla existente cambia. GESTOR y PROPIETARIO `PERMITE`; el resto `DENIEGA`:
+RESPONSABLE_SEDE hasta la E9, PROFESOR (fuera de su lista blanca), FAMILIA, SOLO_PLATAFORMA y ANONIMO. Regla de URL
+propia `/api/sedes`, `/api/sedes/**` (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`, antes de las del responsable de
+sede) y el mismo `@PreAuthorize` en cada método. Sin `DELETE`. Sede de otra escuela: 404; nombre repetido en la
+escuela y desactivar la última activa: 409. Las tres escrituras registran (módulo `sedes`, solo ids; también el `PUT`
+que no cambia nada, con `sinCambios=SI`) y están en `EscrituraConRegistroPropio`; el alta y la edición, en
+`CLAVES_REDACTADAS_POR_RUTA`. Lo prueban `SedesApiIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

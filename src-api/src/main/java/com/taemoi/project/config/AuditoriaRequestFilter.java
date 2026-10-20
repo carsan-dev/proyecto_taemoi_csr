@@ -96,7 +96,14 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** SolicitudService#pedirDeshacer (SOLICITUDES SOLICITUD_CREADA). */
 		CAJA_PROFESOR_PEDIR_DESHACER("POST", "/api/caja/profesor/cobros/[^/]+/pedir-deshacer"),
 		/** AsignacionProfesorService#quitar (PROFESOR ASIGNACION_QUITADA). */
-		GRUPO_QUITAR_PROFESOR("DELETE", "/api/grupos/[^/]+/profesores/[^/]+");
+		GRUPO_QUITAR_PROFESOR("DELETE", "/api/grupos/[^/]+/profesores/[^/]+"),
+		// Pieza E8-2 (D8-16): sedes. Todo 2xx registra, también el que no cambia nada (con sinCambios=SI).
+		/** GestionSedesService#crear (SEDES SEDE_CREADA). */
+		SEDE_CREAR("POST", "/api/sedes"),
+		/** GestionSedesService#editar (SEDES SEDE_EDITADA). */
+		SEDE_EDITAR("PUT", "/api/sedes/[^/]+"),
+		/** GestionSedesService#cambiarActiva (SEDES SEDE_ACTIVADA o SEDE_DESACTIVADA). */
+		SEDE_ACTIVA("PUT", "/api/sedes/[^/]+/activa");
 
 		private final String metodo;
 		private final Pattern ruta;
@@ -119,7 +126,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
 			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
-			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"));
+			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"),
+			// Pieza E8-2 (D8-16): alta y edición de una sede (los 4xx; el 2xx no guarda cuerpo, tiene registro propio).
+			Pattern.compile("^/api/sedes(/[^/]+)?/?$"), Set.of("nombre", "direccion", "localidad", "codigoPostal",
+					"telefono", "email", "codigoClubFederacion"));
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;

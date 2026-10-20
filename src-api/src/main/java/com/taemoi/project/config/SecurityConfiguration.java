@@ -213,6 +213,11 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+						// Pieza E8-2 (D8-1, D8-2): sedes de la escuela, solo P y G (R DENIEGA hasta la E9). Antes de
+						// toda regla del responsable de sede para que ningún patrón suyo las abra; fuera de la lista
+						// blanca de la sesión solo-profesor.
+						.requestMatchers("/api/sedes", "/api/sedes/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor

@@ -285,6 +285,30 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 			return new Caso(tPropietario, propietario, quitar, 204, List.of("PROFESOR ASIGNACION_QUITADA"), quitar,
 					404);
 		});
+		// Pieza E8-2: sedes (módulo sedes). Cada caso con su sede de nombre único en la escuela de prueba.
+		casos.put(EscrituraConRegistroPropio.SEDE_CREAR, () -> {
+			String cuerpo = json.writeValueAsString(Map.of("nombre", "IT E8-2 alta " + e.marca));
+			Peticion alta = () -> conCuerpo(post("/api/sedes"), cuerpo);
+			// El mismo nombre otra vez: 409.
+			return new Caso(tPropietario, propietario, alta, 201, List.of("SEDES SEDE_CREADA"), alta, 409);
+		});
+		casos.put(EscrituraConRegistroPropio.SEDE_EDITAR, () -> {
+			long sede = sedeDePrueba("IT E8-2 editar " + e.marca);
+			String cuerpo = json.writeValueAsString(Map.of("nombre", "IT E8-2 editada " + e.marca));
+			// Sin nombre: 400.
+			return new Caso(tPropietario, propietario, () -> conCuerpo(put("/api/sedes/" + sede), cuerpo), 200,
+					List.of("SEDES SEDE_EDITADA"), () -> conCuerpo(put("/api/sedes/" + sede), "{\"nombre\":\" \"}"),
+					400);
+		});
+		casos.put(EscrituraConRegistroPropio.SEDE_ACTIVA, () -> {
+			// Se desactiva una sede extra: A y B siguen activas, como al empezar.
+			long sede = sedeDePrueba("IT E8-2 activa " + e.marca);
+			// Sin «activa»: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{\"activa\":false}"), 200,
+					List.of("SEDES SEDE_DESACTIVADA"), () -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{}"),
+					400);
+		});
 		return casos;
 	}
 
@@ -391,6 +415,13 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("INSERT INTO producto (concepto, precio, codigo, organizacion_id, vendible_profesor, tipo) "
 				+ "VALUES (?, ?, NULL, ?, ?, 'OTRO')", concepto, new BigDecimal(precio), e.org, vendible);
 		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	/** Sede activa de la escuela de prueba, creada por SQL (datos inventados). */
+	private long sedeDePrueba(String nombre) {
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa) VALUES (?, ?, TRUE)", e.org, nombre);
+		return jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = ? AND nombre = ?", Long.class, e.org,
+				nombre);
 	}
 
 	private void membresia(long organizacion, long usuario, String rol) {

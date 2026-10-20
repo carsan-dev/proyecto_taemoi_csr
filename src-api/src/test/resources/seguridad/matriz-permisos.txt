@@ -397,6 +397,13 @@ GET      /api/profesor/grupos/{grupoId}/alumnos                                 
 HEAD     /api/profesor/grupos/{grupoId}/alumnos                                                   DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#alumnosDelGrupo
 GET      /api/profesor/grupos/{grupoId}/asistencia                                                DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#asistencia
 HEAD     /api/profesor/grupos/{grupoId}/asistencia                                                DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#asistencia
+GET      /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
+HEAD     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
+POST     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#crear
+GET      /api/sedes/{id}                                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#ver
+HEAD     /api/sedes/{id}                                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#ver
+PUT      /api/sedes/{id}                                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#editar
+PUT      /api/sedes/{id}/activa                                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#cambiarActiva
 GET      /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#listar
 HEAD     /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#listar
 POST     /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#crear

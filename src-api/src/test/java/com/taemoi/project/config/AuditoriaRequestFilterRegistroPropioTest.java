@@ -70,7 +70,10 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.CAJA_PROFESOR_PEDIR_DESHACER,
 					new Ejemplo("POST", "/api/caja/profesor/cobros/91/pedir-deshacer")),
 			Map.entry(EscrituraConRegistroPropio.GRUPO_QUITAR_PROFESOR,
-					new Ejemplo("DELETE", "/api/grupos/3/profesores/21"))));
+					new Ejemplo("DELETE", "/api/grupos/3/profesores/21")),
+			Map.entry(EscrituraConRegistroPropio.SEDE_CREAR, new Ejemplo("POST", "/api/sedes")),
+			Map.entry(EscrituraConRegistroPropio.SEDE_EDITAR, new Ejemplo("PUT", "/api/sedes/5")),
+			Map.entry(EscrituraConRegistroPropio.SEDE_ACTIVA, new Ejemplo("PUT", "/api/sedes/5/activa"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -99,6 +102,13 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("POST", "/api/caja/profesor/cargos/88/cobrar/extra"),
 			new Ejemplo("POST", "/api/caja/profesor/nueva-ruta"),
 			new Ejemplo("DELETE", "/api/grupos/3/profesores/21/otra"),
+			// Pieza E8-2: las lecturas de sedes y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/sedes"),
+			new Ejemplo("GET", "/api/sedes/5"),
+			new Ejemplo("POST", "/api/sedes/5"),
+			new Ejemplo("PUT", "/api/sedes"),
+			new Ejemplo("PUT", "/api/sedes/5/activa/otra"),
+			new Ejemplo("DELETE", "/api/sedes/5"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");
