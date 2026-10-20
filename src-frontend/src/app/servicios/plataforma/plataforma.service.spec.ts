@@ -12,7 +12,7 @@ describe('PlataformaService', () => {
   let auth: AuthenticationService;
   let http: HttpTestingController;
 
-  const esSondeo = (url: string) => url.endsWith('/plataforma/errores');
+  const esErrores = (url: string) => url.endsWith('/plataforma/errores');
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -27,79 +27,23 @@ describe('PlataformaService', () => {
 
   afterEach(() => http.verify());
 
-  it('el sondeo devuelve true cuando la API responde 200', async () => {
+  it('esAdminPlataforma() delega en AuthenticationService: pregunta a /auth/plataforma, no sondea los errores', async () => {
     const resultado = firstValueFrom(service.esAdminPlataforma());
 
-    const req = http.expectOne((r) => esSondeo(r.url));
-    expect(req.request.params.get('size')).toBe('1');
+    const req = http.expectOne((r) => r.url.endsWith('/auth/plataforma'));
     expect(req.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
-    req.flush({ content: [], totalElements: 0, totalPages: 0, size: 1, number: 0 });
+    req.flush({ adminPlataforma: true });
+    http.expectNone((r) => esErrores(r.url));
 
     expect(await resultado).toBeTrue();
-  });
-
-  it('el sondeo devuelve false con 403 y con 401', async () => {
-    const r403 = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush(null, { status: 403, statusText: 'Forbidden' });
-    expect(await r403).toBeFalse();
-
-    auth.actualizarEstadoLogueado(true);
-    const r401 = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush(null, { status: 401, statusText: 'Unauthorized' });
-    expect(await r401).toBeFalse();
-  });
-
-  it('guarda el resultado en caché durante la sesión', async () => {
-    const primero = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush({ content: [] });
-    expect(await primero).toBeTrue();
-
-    expect(await firstValueFrom(service.esAdminPlataforma())).toBeTrue();
-    http.expectNone((r) => esSondeo(r.url));
-  });
-
-  it('vuelve a sondear tras cambiar la sesión (login o logout)', async () => {
-    auth.actualizarEstadoLogueado(true);
-    const primero = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush({ content: [] });
-    await primero;
-
-    auth.limpiarEstadoLocal();
-
-    const segundo = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush(null, { status: 403, statusText: 'Forbidden' });
-    expect(await segundo).toBeFalse();
-  });
-
-  it('un login nuevo (sin logout previo) vuelve a sondear', async () => {
-    auth.actualizarEstadoLogueado(true);
-    const primero = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush({ content: [] });
-    expect(await primero).toBeTrue();
-
-    // Otro usuario inicia sesión mientras el estado sigue "logueado": el login falla aquí, da igual.
-    auth.login({ email: 'otra@test.com', password: 'x' } as any).subscribe({ error: () => undefined });
-    http.expectOne((r) => r.url.endsWith('/auth/signin')).flush(null, { status: 401, statusText: 'Unauthorized' });
-
-    const segundo = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush(null, { status: 403, statusText: 'Forbidden' });
-    expect(await segundo).toBeFalse();
-  });
-
-  it('no guarda en caché un fallo que no sea de permisos', async () => {
-    const primero = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush(null, { status: 500, statusText: 'Error' });
-    expect(await primero).toBeFalse();
-
-    const segundo = firstValueFrom(service.esAdminPlataforma());
-    http.expectOne((r) => esSondeo(r.url)).flush({ content: [] });
-    expect(await segundo).toBeTrue();
+    // Comparte la consulta cacheada del servicio de sesión.
+    expect(await firstValueFrom(auth.esAdminPlataforma())).toBeTrue();
   });
 
   it('errores() envía solo los filtros informados', () => {
     service.errores({ organizacionId: 3, estado: '5xx', desde: '2026-10-10', hasta: '2026-10-16', page: 2, size: 25 }).subscribe();
 
-    const req = http.expectOne((r) => esSondeo(r.url));
+    const req = http.expectOne((r) => esErrores(r.url));
     expect(req.request.params.get('organizacionId')).toBe('3');
     expect(req.request.params.get('estado')).toBe('5xx');
     expect(req.request.params.get('desde')).toBe('2026-10-10');
@@ -109,7 +53,7 @@ describe('PlataformaService', () => {
     req.flush({ content: [] });
 
     service.errores({}).subscribe();
-    const vacia = http.expectOne((r) => esSondeo(r.url));
+    const vacia = http.expectOne((r) => esErrores(r.url));
     expect(vacia.request.params.keys()).toEqual(['page', 'size']);
     vacia.flush({ content: [] });
   });

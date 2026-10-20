@@ -44,7 +44,7 @@ Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. Hasta 
 lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**` y su caja. Desde la decisión 180 la columna es la sesión
 solo-profesor, que ya abre sesión: `SesionSoloProfesorAuthorizationManager` (envuelve las reglas de URL) la deja
 pasar solo en su caja, en `PROFESOR_SESION_180` (`GET/HEAD /api/auth/roles`, `/api/auth/user`,
-`/api/auth/organizaciones`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
+`/api/auth/organizaciones`, `/api/auth/plataforma`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
 URL. Casillas cambiadas: `GET/HEAD /api/auth/roles` y `/api/auth/user`, `DENIEGA` → `PERMITE` (su `@PreAuthorize`
 admite `ROLE_PROFESOR`); ninguna otra columna cambia. Desde la entrega 6-1,
 RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
@@ -199,6 +199,14 @@ con el registro.
 - Bajo `/api/caja/profesor` (11): `GET`/`HEAD` `productos-encargables` y `solicitudes`, `POST alumnos/{alumnoId}/encargos`
   y `POST solicitudes/{id}/` `retirar` y `entregado` (6c-5); `POST solicitudes/{id}/devolucion` (6c-6); `GET`/`HEAD`
   `cobros-entregados-recientes` y `POST cobros/{cobroId}/pedir-deshacer` (6c-4).
+
+Arreglos tras la 6c: 2 líneas nuevas, `GET`/`HEAD /api/auth/plataforma` (D/P/P/P/P/P/P), ninguna casilla existente
+cambia. Dice `{ "adminPlataforma": true|false }` a cualquier sesión, con la autoridad que exige `/api/plataforma/**`
+(`ROLE_ADMIN_PLATAFORMA`); sin sesión, 401. El frontend lo pregunta aquí en vez de sondear `/api/plataforma/errores`,
+que dejaba un 403 en el registro (y en «Errores de plataforma») por cada carga de la gestión. Va en la lista blanca de
+la sesión solo-profesor (solo `GET`; HEAD cuenta como GET) y en `PROFESOR_SESION_180`. Solo lee la sesión: sin
+consultas ni datos de escuela. `/api/auth/user` no servía: SOLO_PLATAFORMA recibe 403 allí (anomalía 12). Lo prueba
+`SesionAdminPlataformaIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
@@ -370,6 +378,7 @@ El riesgo general está en editar una sola de las dos capas.
 12. **SOLO_PLATAFORMA no puede leer `GET /api/auth/user`, `/api/auth/roles`, `/api/auth/user/alumnos` ni
     `…/recordatorios-racha-email` (D/P/P/P/D).** La URL lo deja pasar y el método exige rol de escuela. Puede
     ser intencionado, pero `/api/auth/user` es el propio perfil: conviene confirmarlo con el frontend.
+    Si es de plataforma lo sabe por `GET /api/auth/plataforma`, que sí le responde (200).
 
 ### Públicos por diseño con guarda en el controlador (para revisar, no son fallos)
 
