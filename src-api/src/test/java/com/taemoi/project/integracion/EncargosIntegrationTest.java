@@ -711,13 +711,21 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 		JsonNode cerrado = leer(post("/api/caja/profesor/solicitudes/" + devuelto + "/devolucion"), s.tProf1, 200);
 		assertEquals("DEVUELTO", cerrado.get("estadoCobro").asText());
 
-		jdbc.update("UPDATE cobro SET estado = 'ANULADO' WHERE producto_alumno_id = ? AND estado = 'ACTIVO'",
-				cargoDe(devuelto));
-
-		Map<Long, JsonNode> suyas = new HashMap<>();
-		leer(get("/api/caja/profesor/solicitudes"), s.tProf1, 200).forEach(x -> suyas.put(x.get("id").asLong(), x));
-		assertEquals("COBRADO", suyas.get(devuelto).get("estadoCobro").asText(),
-				"la devolución de un cobro anulado no cuenta: el cargo sigue pagado");
+		// El dato incoherente se fabrica por SQL: el cobro está en la entrega ACTIVA de la devolución del profesor, así
+		// que anularlo deja un cobro ANULADO en una entrega ACTIVA. El MySQL es compartido por todas las clases de la
+		// JVM y CajaSedeIntegrationTest comprueba que eso no exista en ninguna escuela: se deshace al terminar.
+		long cobro = jdbc.queryForObject("SELECT id FROM cobro WHERE producto_alumno_id = ? AND estado = 'ACTIVO'",
+				Long.class, cargoDe(devuelto));
+		jdbc.update("UPDATE cobro SET estado = 'ANULADO' WHERE id = ?", cobro);
+		try {
+			Map<Long, JsonNode> suyas = new HashMap<>();
+			leer(get("/api/caja/profesor/solicitudes"), s.tProf1, 200)
+					.forEach(x -> suyas.put(x.get("id").asLong(), x));
+			assertEquals("COBRADO", suyas.get(devuelto).get("estadoCobro").asText(),
+					"la devolución de un cobro anulado no cuenta: el cargo sigue pagado");
+		} finally {
+			jdbc.update("UPDATE cobro SET estado = 'ACTIVO' WHERE id = ?", cobro);
+		}
 	}
 
 	// ------------------------------------------------------------------ utilidades

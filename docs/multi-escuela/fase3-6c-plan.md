@@ -1029,6 +1029,14 @@ y `SolicitudController.java`; `J/dtos/request/CajaRequests.java` y `SolicitudReq
 - [ ] **Paso 3:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. Commit
   `feat(caja): devoluciones enlazadas al cargo (6c-6)`.
 
+**Nota (CI de 3770148c, 2026-10-20).** `CajaSedeIntegrationTest` falló en el CI en
+`assertNingunCobroAnuladoEnEntregaActiva` (los dos tests de revertir, «expected 0 but was 1»). No era una carrera del
+código: el test `EncargosIntegrationTest.estadoCobro_devueltoExigeElCobroActivo` (6c-9) anula por SQL el cobro que
+`devolverDelProfesor` acaba de meter en su entrega ACTIVA, y deja esa fila. El MySQL de Testcontainers es uno por JVM;
+en Linux, Encargos corre antes que CajaSede (en Windows, después, por orden alfabético) y esa comprobación mira todas
+las escuelas. Se reproduce siempre con `-Dsurefire.runOrder=reversealphabetical`. Arreglo: el test de Encargos
+devuelve el cobro a ACTIVO en un `finally`. El código de producción no cambia.
+
 ---
 
 ## 4d. Pieza 6c-4: pedir deshacer (detallada)
