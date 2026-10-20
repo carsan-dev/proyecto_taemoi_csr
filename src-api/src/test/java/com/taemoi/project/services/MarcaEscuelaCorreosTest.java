@@ -1,5 +1,6 @@
 package com.taemoi.project.services;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -13,18 +14,27 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.imageio.ImageIO;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -32,6 +42,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.EstadoPreinscripcion;
+import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.Preinscripcion;
 import com.taemoi.project.entities.Usuario;
@@ -72,6 +83,67 @@ class MarcaEscuelaCorreosTest {
 		for (Map.Entry<String, String> correo : correos.entrySet()) {
 			assertEquals(dorado(correo.getKey()), correo.getValue(), correo.getKey());
 		}
+	}
+
+	// ------------------------------------------------------------------ E7-8 (decisión 213): logo de Moiskimdo
+
+	@Test
+	void moiskimdoSinLogoSubidoIdentico() throws Exception {
+		Organizacion moiskimdo = MarcaEscuelaPruebas.moiskimdo();
+		assertNull(moiskimdo.getLogoImagenId());
+		Map<String, String> correos = correos(1L, MarcaEscuelaPruebas.real(moiskimdo));
+		assertEquals(11, correos.size());
+		for (Map.Entry<String, String> correo : correos.entrySet()) {
+			assertEquals(dorado(correo.getKey()), correo.getValue(), correo.getKey());
+		}
+	}
+
+	/**
+	 * Los correos no llevan imagen: con su logo subido, Moiskimdo sigue dando los mismos bytes (su nombre de siempre)
+	 * y el remitente de siempre; el logo nuevo va en la marca para sus PDF (también la solicitud que se adjunta).
+	 */
+	@Test
+	void moiskimdoConLogoSubidoLoUsa(@TempDir Path carpeta) throws Exception {
+		Organizacion moiskimdo = MarcaEscuelaPruebas.moiskimdo();
+		moiskimdo.setLogoImagenId(601L);
+		byte[] png = pngFicticio();
+		Path fichero = Files.write(carpeta.resolve("logo-601.png"), png);
+		Imagen imagen = new Imagen("logo.png", "image/png", "/imagenes/org-1/logo/logo.png", "org-1/logo/logo.png");
+		imagen.setId(601L);
+		ReflectionTestUtils.setField(imagen, "organizacionId", 1L);
+		ImagenRepository imagenes = mock(ImagenRepository.class);
+		ImagenService imagenService = mock(ImagenService.class);
+		when(imagenes.findById(601L)).thenReturn(Optional.of(imagen));
+		when(imagenService.resolverRutaArchivo(imagen)).thenReturn(fichero);
+		MarcaEscuelaService conLogo = MarcaEscuelaPruebas.real(mock(OrganizacionRepository.class), imagenes,
+				imagenService, moiskimdo);
+
+		MarcaEscuela marcaMoiskimdo = conLogo.de(1L);
+		String dataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(png);
+		assertTrue(marcaMoiskimdo.legado());
+		assertEquals(dataUri, marcaMoiskimdo.logoInformes());
+		assertEquals(dataUri, marcaMoiskimdo.logoSolicitud());
+		assertArrayEquals(png, marcaMoiskimdo.logoCertificado());
+		assertNull(marcaMoiskimdo.remitente());
+		assertEquals("Moi's Kim Do Taekwondo", marcaMoiskimdo.cabeceraInformesHtml());
+		assertEquals("Club Moiskimdo Taekwondo", marcaMoiskimdo.clubCorreoCuentaHtml());
+
+		Map<String, String> correos = correos(1L, conLogo);
+		assertEquals(11, correos.size());
+		for (Map.Entry<String, String> correo : correos.entrySet()) {
+			assertEquals(dorado(correo.getKey()), correo.getValue(), correo.getKey());
+		}
+	}
+
+	private static byte[] pngFicticio() throws IOException {
+		BufferedImage imagen = new BufferedImage(40, 20, BufferedImage.TYPE_INT_RGB);
+		var g = imagen.createGraphics();
+		g.setColor(Color.ORANGE);
+		g.fillRect(0, 0, 40, 20);
+		g.dispose();
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ImageIO.write(imagen, "png", out);
+		return out.toByteArray();
 	}
 
 	@Test
@@ -151,6 +223,10 @@ class MarcaEscuelaCorreosTest {
 
 	/** Los once correos con nombre de escuela, para la escuela dada (en el orden de los dorados). */
 	private Map<String, String> correos(long escuela) throws Exception {
+		return correos(escuela, marca);
+	}
+
+	private Map<String, String> correos(long escuela, MarcaEscuelaService marca) throws Exception {
 		Map<String, String> correos = new LinkedHashMap<>();
 		Preinscripcion p = preinscripcion(escuela);
 

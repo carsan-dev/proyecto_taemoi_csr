@@ -59,7 +59,7 @@ public class PlataformaController {
 	/**
 	 * Pieza E7-7a (decisión 212): sube o sustituye el logo de una escuela (campo multipart {@code archivo}: PNG, JPG o
 	 * SVG de hasta 1 MB, validado por contenido). 200 con la escuela; 400 si el fichero no vale; 404 si la escuela no
-	 * existe; 409 si usa la marca heredada (Moiskimdo).
+	 * existe. También la escuela con la marca heredada (Moiskimdo, E7-8): solo cambia el logo de sus documentos.
 	 */
 	@PutMapping(value = "/escuelas/{organizacionId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<EscuelaPlataformaDTO> subirLogo(@PathVariable Long organizacionId,
@@ -67,14 +67,15 @@ public class PlataformaController {
 		return ResponseEntity.ok(logos.subir(organizacionId, archivo));
 	}
 
-	/** Quita el logo de una escuela (vuelve a salir solo con su nombre). 200 con la escuela; 404; 409 (heredada). */
+	/** Quita el logo de una escuela (sale solo con su nombre; Moiskimdo, con el de siempre). 200 con la escuela; 404. */
 	@DeleteMapping("/escuelas/{organizacionId}/logo")
 	public ResponseEntity<EscuelaPlataformaDTO> quitarLogo(@PathVariable Long organizacionId) {
 		return ResponseEntity.ok(logos.quitar(organizacionId));
 	}
 
 	/**
-	 * El logo subido (PNG) para previsualizarlo; 404 (JSON con {@code mensaje}) si la escuela no existe o no tiene logo.
+	 * El logo subido (PNG) para previsualizarlo; Moiskimdo sin logo subido, su logo de siempre (E7-8); 404 (JSON con
+	 * {@code mensaje}) si la escuela no existe o no tiene logo.
 	 * Sin {@code produces}: así el error sale como JSON aunque la petición acepte solo imágenes.
 	 */
 	@GetMapping("/escuelas/{organizacionId}/logo")

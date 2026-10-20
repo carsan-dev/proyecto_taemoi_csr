@@ -5,8 +5,8 @@ import java.util.Locale;
 /**
  * Pieza E7-7a (decisión 211): nombre y logo con los que sale una escuela en sus PDF y correos. La escuela con el
  * comportamiento heredado de Taemoi (Moiskimdo) sale EXACTAMENTE como antes: los textos fijos de siempre y los logos
- * de classpath. El resto, con {@code organizacion.nombre} y su logo si lo tiene (sin logo, solo el nombre); nunca con
- * el nombre ni el logo de Moiskimdo. Los métodos {@code …Html} devuelven texto listo para HTML (el de Moiskimdo, el
+ * de classpath (con logo subido, ese; E7-8, decisión 213). El resto, con {@code organizacion.nombre} y su logo si lo
+ * tiene (sin logo, solo el nombre); nunca con el nombre ni el logo de Moiskimdo. Los métodos {@code …Html} devuelven texto listo para HTML (el de Moiskimdo, el
  * literal de siempre; el de otra escuela, escapado).
  *
  * @param organizacionId   escuela

@@ -312,17 +312,118 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, ficherosDeLogo(escuela));
 	}
 
-	@Test
-	void moiskimdoNoAdmiteLogoYEscuelaInexistente404() throws Exception {
-		Long antes = logoImagenId(ORG1);
-		byte[] logo = png(logoFicticio(Color.RED, 32, 32));
-		mvc.perform(subida(ORG1, logo, "a.png", "image/png").cookie(cookieSuperadmin)).andExpect(status().isConflict());
-		mvc.perform(delete("/api/plataforma/escuelas/" + ORG1 + "/logo").cookie(cookieSuperadmin))
-				.andExpect(status().isConflict());
-		assertEquals(antes, logoImagenId(ORG1));
-		assertEquals(0, ficherosDeLogo(ORG1));
-		assertTrue(marcaEscuela.de(ORG1).legado());
+	// ------------------------------------------------------------------ E7-8 (decisión 213): logo de Moiskimdo
 
+	/** Antes 409: la escuela legado admite logo, con el mismo registro; el nombre y los textos no cambian. */
+	@Test
+	void subirLogoMoiskimdoPermitido_200() throws Exception {
+		assertNull(logoImagenId(ORG1), "Moiskimdo empieza sin logo subido");
+		vaciarCarpetaDeLogos(ORG1); // restos de una ejecución anterior interrumpida (target/it-files no se vacía)
+		String ruta = "/api/plataforma/escuelas/" + ORG1 + "/logo";
+		MarcaEscuela deSiempre = marcaEscuela.de(ORG1); // caché caliente
+		int registrosAntes = registrosCorrectos(ruta);
+		try {
+			JsonNode respuesta = subir(ORG1, png(logoFicticio(Color.MAGENTA, 90, 60)), NOMBRE_FICHERO, "image/png");
+			assertEquals(ORG1, respuesta.get("id").asLong());
+			assertTrue(respuesta.get("tieneLogo").asBoolean());
+			assertTrue(respuesta.get("marcaHeredada").asBoolean());
+
+			Long imagenId = logoImagenId(ORG1);
+			assertNotNull(imagenId);
+			String rutaFichero = jdbc.queryForObject("SELECT ruta FROM imagen WHERE id = ? AND organizacion_id = ?",
+					String.class, imagenId, ORG1);
+			assertTrue(rutaFichero.matches("org-1/logo/[0-9a-f-]{36}_logo\\.png"), rutaFichero);
+			Path fichero = Path.of(raizImagenes).resolve(rutaFichero);
+			assertEquals(1, ficherosDeLogo(ORG1));
+
+			// Registro en Moiskimdo con ids, y solo ese (ningún apunte genérico del filtro).
+			assertEquals("Superadmin: logo de la escuela " + ORG1 + " cambiado (imagen " + imagenId + ")",
+					jdbc.queryForObject("SELECT resumen FROM auditoria_evento WHERE organizacion_id = ? AND modulo = "
+							+ "'plataforma' AND accion = 'UPDATE' AND recurso_id = ?", String.class, ORG1, imagenId));
+			assertEquals(registrosAntes + 1, registrosCorrectos(ruta));
+			assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE CONCAT_WS('|', endpoint, "
+					+ "resumen, payload_json, query_params_json) LIKE ?", Integer.class, "%nombre-privado%"));
+
+			// Caché invalidada: el siguiente documento lleva el logo nuevo; el nombre y el resto, los de siempre.
+			MarcaEscuela conLogo = marcaEscuela.de(ORG1);
+			String dataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(Files.readAllBytes(fichero));
+			assertEquals(dataUri, conLogo.logoInformes());
+			assertEquals(dataUri, conLogo.logoSolicitud());
+			assertArrayEquals(Files.readAllBytes(fichero), conLogo.logoCertificado());
+			assertTrue(conLogo.legado());
+			assertEquals(deSiempre.nombre(), conLogo.nombre());
+			assertEquals("Moi's Kim Do Taekwondo", conLogo.cabeceraInformesHtml());
+			assertNull(conLogo.remitente());
+			byte[] informe = TenantContext.calcularCon(ORG1, () -> pdfService.generarInformeAlumnasDpf(true));
+			assertTrue(texto(informe).contains("MOI'S KIM DO TAEKWONDO"));
+			assertEquals(1, imagenesDelPdf(informe));
+
+			// Previsualización: el subido.
+			MvcResult vista = mvc.perform(get(ruta).cookie(cookieSuperadmin)).andExpect(status().isOk()).andReturn();
+			assertArrayEquals(Files.readAllBytes(fichero), vista.getResponse().getContentAsByteArray());
+
+			// En la lista de escuelas.
+			for (JsonNode e : json.readTree(mvc.perform(get("/api/plataforma/escuelas").cookie(cookieSuperadmin))
+					.andExpect(status().isOk()).andReturn().getResponse().getContentAsString())) {
+				if (e.get("id").asLong() == ORG1) {
+					assertTrue(e.get("tieneLogo").asBoolean());
+					assertTrue(e.get("marcaHeredada").asBoolean());
+				}
+			}
+		} finally {
+			quitarLogoDeMoiskimdo();
+		}
+	}
+
+	@Test
+	void quitarLogoMoiskimdoVuelveAlDeSiempre() throws Exception {
+		assertNull(logoImagenId(ORG1), "Moiskimdo empieza sin logo subido");
+		vaciarCarpetaDeLogos(ORG1); // restos de una ejecución anterior interrumpida (target/it-files no se vacía)
+		String ruta = "/api/plataforma/escuelas/" + ORG1 + "/logo";
+		MarcaEscuela deSiempre = marcaEscuela.de(ORG1);
+		byte[] pngDeSiempre = Base64.getDecoder()
+				.decode(deSiempre.logoInformes().substring("data:image/png;base64,".length()));
+
+		// Sin logo subido, la previsualización es el logo de siempre (PNG de los informes).
+		MvcResult vistaAntes = mvc.perform(get(ruta).cookie(cookieSuperadmin)).andExpect(status().isOk()).andReturn();
+		assertEquals(MediaType.IMAGE_PNG_VALUE, vistaAntes.getResponse().getContentType());
+		assertArrayEquals(pngDeSiempre, vistaAntes.getResponse().getContentAsByteArray());
+
+		try {
+			subir(ORG1, png(logoFicticio(Color.GREEN, 64, 64)), "a.png", "image/png");
+			Long imagenId = logoImagenId(ORG1);
+			Path fichero = Path.of(raizImagenes)
+					.resolve(jdbc.queryForObject("SELECT ruta FROM imagen WHERE id = ?", String.class, imagenId));
+			assertNotEquals(deSiempre.logoInformes(), marcaEscuela.de(ORG1).logoInformes());
+
+			JsonNode respuesta = json.readTree(mvc.perform(delete(ruta).cookie(cookieSuperadmin))
+					.andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+			assertFalse(respuesta.get("tieneLogo").asBoolean());
+			assertTrue(respuesta.get("marcaHeredada").asBoolean());
+			assertNull(logoImagenId(ORG1));
+			assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM imagen WHERE id = ?", Integer.class, imagenId));
+			assertFalse(Files.exists(fichero), "sin huérfanos");
+			assertEquals(0, ficherosDeLogo(ORG1));
+			assertEquals("Superadmin: logo de la escuela " + ORG1 + " quitado (imagen " + imagenId + ")",
+					jdbc.queryForObject("SELECT resumen FROM auditoria_evento WHERE organizacion_id = ? AND modulo = "
+							+ "'plataforma' AND accion = 'DELETE' AND recurso_id = ?", String.class, ORG1, imagenId));
+
+			// Caché invalidada: vuelve exactamente la marca de siempre.
+			MarcaEscuela despues = marcaEscuela.de(ORG1);
+			assertEquals(deSiempre.logoInformes(), despues.logoInformes());
+			assertEquals(deSiempre.logoSolicitud(), despues.logoSolicitud());
+			assertArrayEquals(deSiempre.logoCertificado(), despues.logoCertificado());
+			assertEquals(deSiempre.nombre(), despues.nombre());
+			MvcResult vista = mvc.perform(get(ruta).cookie(cookieSuperadmin)).andExpect(status().isOk()).andReturn();
+			assertArrayEquals(pngDeSiempre, vista.getResponse().getContentAsByteArray());
+		} finally {
+			quitarLogoDeMoiskimdo();
+		}
+	}
+
+	@Test
+	void escuelaInexistente404() throws Exception {
+		byte[] logo = png(logoFicticio(Color.RED, 32, 32));
 		long inexistente = 9_000_000_000L + Math.abs(sufijo.hashCode() % 1000);
 		mvc.perform(subida(inexistente, logo, "a.png", "image/png").cookie(cookieSuperadmin))
 				.andExpect(status().isNotFound());
@@ -361,6 +462,27 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 				"/api/plataforma/escuelas/" + escuela + "/logo", escuela));
 	}
 
+	/**
+	 * Deja a Moiskimdo como estaba (sin logo subido) para el resto de tests, pase lo que pase en el test. Sin asserts:
+	 * va en un {@code finally} y no debe tapar el fallo original (los tests de Moiskimdo empiezan comprobando que no
+	 * tiene logo).
+	 */
+	private void quitarLogoDeMoiskimdo() throws Exception {
+		if (logoImagenId(ORG1) != null) {
+			mvc.perform(delete("/api/plataforma/escuelas/" + ORG1 + "/logo").cookie(cookieSuperadmin));
+		}
+		if (logoImagenId(ORG1) != null) {
+			jdbc.update("UPDATE organizacion SET logo_imagen_id = NULL WHERE id = ?", ORG1);
+			marcaEscuela.invalidar(ORG1);
+		}
+	}
+
+	/** Eventos 2xx de PUT/DELETE de una ruta en cualquier escuela. */
+	private int registrosCorrectos(String ruta) {
+		return jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE endpoint = ? AND metodo_http IN "
+				+ "('PUT', 'DELETE') AND estado_http BETWEEN 200 AND 299", Integer.class, ruta);
+	}
+
 	private Long logoImagenId(long escuela) {
 		return jdbc.queryForObject("SELECT logo_imagen_id FROM organizacion WHERE id = ?", Long.class, escuela);
 	}
@@ -386,7 +508,12 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 			org.setNombre(nombre);
 			return organizaciones.save(org).getId();
 		});
-		Path carpeta = Path.of(raizImagenes).resolve("org-" + id).resolve("logo");
+		vaciarCarpetaDeLogos(id);
+		return id;
+	}
+
+	private void vaciarCarpetaDeLogos(long escuela) throws Exception {
+		Path carpeta = Path.of(raizImagenes).resolve("org-" + escuela).resolve("logo");
 		if (Files.isDirectory(carpeta)) {
 			try (Stream<Path> ficheros = Files.list(carpeta)) {
 				for (Path fichero : ficheros.toList()) {
@@ -394,7 +521,6 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 				}
 			}
 		}
-		return id;
 	}
 
 	private Usuario crearUsuario(String email) {

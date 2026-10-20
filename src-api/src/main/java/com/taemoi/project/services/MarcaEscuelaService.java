@@ -30,8 +30,9 @@ import com.taemoi.project.repositories.OrganizacionRepository;
 /**
  * Pieza E7-7a (decisión 211): la {@link MarcaEscuela} de cada escuela para sus PDF y correos.
  *
- * <p>Escuela con {@code comportamiento_legado_taemoi} (Moiskimdo) → lo de siempre, aunque tenga un logo subido: los
- * mismos textos y los mismos logos de classpath convertidos igual que antes. Otra escuela → {@code organizacion.nombre}
+ * <p>Escuela con {@code comportamiento_legado_taemoi} (Moiskimdo) → los mismos textos de siempre y, sin logo subido (o
+ * si el apuntado no existe o no es suyo), los mismos logos de classpath convertidos igual que antes; con logo subido
+ * (E7-8, decisión 213), ese PNG en los tres huecos, como en otra escuela. Otra escuela → {@code organizacion.nombre}
  * y su logo ({@code organizacion.logo_imagen_id}, PNG en {@code org-<id>/logo}); sin logo, solo el nombre.
  *
  * <p>La escuela es SIEMPRE explícita: {@link #deActiva()} lee la del hilo y falla cerrado si no hay ninguna (nunca cae
@@ -133,19 +134,34 @@ public class MarcaEscuelaService {
 	private MarcaEscuela leer(Long organizacionId) {
 		Organizacion organizacion = organizaciones.findById(organizacionId)
 				.orElseThrow(() -> new IllegalStateException("Escuela no encontrada: " + organizacionId));
+		byte[] logo = logoSubido(organizacion);
+		String dataUri = logo == null ? "" : "data:image/png;base64," + Base64.getEncoder().encodeToString(logo);
 		if (Boolean.TRUE.equals(organizacion.getComportamientoLegadoTaemoi())) {
+			// E7-8 (decisión 213): con logo subido, ese en sus tres huecos (como en otra escuela); sin él, los de siempre.
+			if (logo != null) {
+				return new MarcaEscuela(organizacionId, true, organizacion.getNombre(), dataUri, dataUri, logo, null,
+						null);
+			}
 			LogosLegado logos = logosLegado();
 			return new MarcaEscuela(organizacionId, true, organizacion.getNombre(), logos.informes(), logos.solicitud(),
 					logos.certificado(), null, null);
 		}
-		byte[] logo = logoSubido(organizacion);
-		String dataUri = logo == null ? "" : "data:image/png;base64," + Base64.getEncoder().encodeToString(logo);
 		return new MarcaEscuela(organizacionId, false, organizacion.getNombre(), dataUri, dataUri, logo,
 				new MarcaEscuela.DatosLegales(organizacion.getNombreLegal(), organizacion.getCif(),
 						organizacion.getLocalidad(), organizacion.getFirmanteNombre(), organizacion.getFirmanteNif(),
 						organizacion.getFirmanteCargo()),
 				// Remitente: organizacion.email_remitente_nombre si está lleno; si no, su nombre.
 				organizacion.getEmailRemitenteNombre());
+	}
+
+	/**
+	 * PNG del logo de siempre de Moiskimdo (el de la cabecera de los informes), para previsualizarlo cuando no tiene
+	 * otro subido; {@code null} si no se pudo cargar.
+	 */
+	public byte[] logoDeSiemprePng() {
+		String dataUri = logosLegado().informes();
+		int coma = dataUri.indexOf(',');
+		return coma < 0 ? null : Base64.getDecoder().decode(dataUri.substring(coma + 1));
 	}
 
 	/** PNG del logo de la escuela, solo si la imagen es de ESA escuela y el fichero existe; si no, {@code null}. */
@@ -156,7 +172,7 @@ public class MarcaEscuelaService {
 		}
 		Imagen imagen = imagenes.findById(imagenId).orElse(null);
 		if (imagen == null || !organizacion.getId().equals(imagen.getOrganizacionId())) {
-			log.warn("Logo {} de la escuela {} no encontrado en esa escuela: sale sin logo", imagenId,
+			log.warn("Logo {} de la escuela {} no encontrado en esa escuela: se ignora", imagenId,
 					organizacion.getId());
 			return null;
 		}
@@ -164,7 +180,7 @@ public class MarcaEscuelaService {
 		try {
 			return fichero == null ? null : Files.readAllBytes(fichero);
 		} catch (IOException e) {
-			log.warn("No se pudo leer el logo {} de la escuela {}: sale sin logo", imagenId, organizacion.getId());
+			log.warn("No se pudo leer el logo {} de la escuela {}: se ignora", imagenId, organizacion.getId());
 			return null;
 		}
 	}

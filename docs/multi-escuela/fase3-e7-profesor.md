@@ -132,6 +132,8 @@ concreto) y se cobra dos veces.
 - **Decisión 212 (20/10/2026, pieza E7-7a).** El logo lo sube el superadmin desde plataforma (elige escuela; PNG, JPG
   o SVG). Es su única escritura en una escuela, acotada a la marca, y queda en el registro de acciones de esa escuela
   (D3).
+- **Decisión 213 (20/10/2026, pieza E7-8).** El superadmin también puede cambiar el logo de Moiskimdo para sus PDF y
+  correos; sin logo subido, sale el de siempre. Su nombre y el resto de textos y datos no cambian.
 - **Siguen vigentes:** D5 (sin cobros nuevos fuera de Mi caja, sin editar fichas); 180 y 184 (sesión solo-profesor
   con lista blanca en `SesionSoloProfesorAuthorizationManager`); D2 (el registro de acciones del propietario muestra
   altas, cambios y bajas 2xx y las lecturas de salud).
