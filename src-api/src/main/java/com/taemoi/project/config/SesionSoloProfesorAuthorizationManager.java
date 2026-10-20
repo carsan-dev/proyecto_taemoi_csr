@@ -29,7 +29,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * {@code SecurityConfiguration} y, para esa sesión, deja decidir a las reglas de siempre SOLO en:
  * <ul>
  * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), lo imprescindible de sesión (roles, quién es,
- * selector y cambio de escuela) y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
+ * si es de plataforma, selector y cambio de escuela) y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
  * de plataforma que también es profesor no la pierde);</li>
  * <li>lo público: lo que esas mismas reglas conceden a un anónimo.</li>
  * </ul>
@@ -139,6 +139,9 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				rutas.matcher(HttpMethod.GET, "/api/auth/user"),
 				rutas.matcher(HttpMethod.GET, "/api/auth/organizaciones"),
 				rutas.matcher(HttpMethod.POST, "/api/auth/organizacion"),
+				// Si además es administrador de plataforma: el frontend lo pregunta aquí en vez de sondear
+				// /api/plataforma/errores. Solo GET (HEAD cuenta como GET); solo lee la autoridad de la sesión.
+				rutas.matcher(HttpMethod.GET, "/api/auth/plataforma"),
 				// Administrador de plataforma que además es profesor: su regla exige ROLE_ADMIN_PLATAFORMA.
 				rutas.matcher("/api/plataforma/**"));
 	}

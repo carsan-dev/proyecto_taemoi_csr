@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, catchError, finalize, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 
 export type PortalPreferido = 'admin' | 'user';
@@ -75,20 +75,20 @@ export class AuthenticationService {
 
   /**
    * true si la sesión es administradora de plataforma. Esa autoridad no sale en /roles (una sesión solo de
-   * plataforma recibe 403 allí), así que se sondea el endpoint protegido. Vive aquí, y no en PlataformaService,
-   * para que la cabecera y el guard no añadan un módulo al bundle inicial.
+   * plataforma recibe 403 allí), así que se pregunta a /auth/plataforma, que responde 200 a toda sesión y no deja
+   * un 403 en el registro. Vive aquí, y no en PlataformaService, para que la cabecera y el guard no añadan un módulo
+   * al bundle inicial.
    */
   esAdminPlataforma(): Observable<boolean> {
     if (!this.sondeoPlataforma$) {
       this.sondeoPlataforma$ = this.http
-        .get(`${environment.apiUrl}/plataforma/errores`, {
-          // size=1 basta (page=1 es el valor por defecto); withCredentials lo añade credentialsInterceptor.
-          params: { size: 1 },
+        .get<{ adminPlataforma?: boolean } | null>(`${this.urlBase}/plataforma`, {
+          // withCredentials lo añade credentialsInterceptor.
           headers: { 'X-Skip-Loading': 'true' },
           context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
         })
         .pipe(
-          switchMap(() => of(true)),
+          map((respuesta) => respuesta?.adminPlataforma === true),
           catchError((error: HttpErrorResponse) => {
             // Solo 401/403 es definitivo; un fallo de red o 5xx se reintenta en la próxima llamada.
             if (error.status !== 401 && error.status !== 403) {

@@ -56,6 +56,7 @@ import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.plataforma.AutoridadPlataforma;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
@@ -282,6 +283,22 @@ public class AuthenticationController {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Si la sesión es administradora de plataforma: la misma autoridad que exige {@code /api/plataforma/**}
+	 * ({@link AutoridadPlataforma#ADMIN_PLATAFORMA}), que {@code /roles} no lista. Responde 200 a cualquier sesión,
+	 * también a la solo de plataforma (403 en {@code /roles} y {@code /user}) y a la solo-profesor (lista blanca), para
+	 * que el frontend lo sepa sin sondear {@code /api/plataforma/errores} y dejar un 403 en el registro. Solo lee la
+	 * sesión: sin consultas ni datos de ninguna escuela.
+	 */
+	@GetMapping("/plataforma")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Map<String, Boolean>> esAdminPlataforma(Authentication authentication) {
+		boolean adminPlataforma = authentication != null && authentication.getAuthorities() != null
+				&& authentication.getAuthorities().stream()
+						.anyMatch(autoridad -> AutoridadPlataforma.ADMIN_PLATAFORMA.equals(autoridad.getAuthority()));
+		return ResponseEntity.ok(Map.of("adminPlataforma", adminPlataforma));
 	}
 
 	@GetMapping("/user/recordatorios-racha-email")

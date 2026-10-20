@@ -59,6 +59,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "PUT", "/api/auth/user/recordatorios-racha-email" }, { "GET", "/api/admin/auditoria/eventos" },
 				{ "GET", "/api/informes/deudas" }, { "GET", "/api/caja/sedes/1/entregas" }, { "GET", "/api/caja" },
 				{ "POST", "/api/auth/roles" }, { "GET", "/api/auth/organizacion" }, { "DELETE", "/api/auth/user" },
+				{ "POST", "/api/auth/plataforma" }, { "GET", "/api/auth/plataforma/otra" },
 				{ "GET", "/api/ruta-nueva-sin-preautorize" },
 				{ "GET", "/api/caja/profesorx" }, { "GET", "/imagenes/alumnos/1.jpg" } }) {
 			assertFalse(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
@@ -71,7 +72,8 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "HEAD", "/api/caja/profesor/cargos-pendientes" }, { "POST", "/api/caja/profesor/cargos/1/cobrar" },
 				{ "POST", "/api/caja/profesor/cobros/1/deshacer" }, { "GET", "/api/caja/profesor/alumnos" },
 				{ "GET", "/api/auth/roles" }, { "HEAD", "/api/auth/roles" }, { "GET", "/api/auth/user" },
-				{ "GET", "/api/auth/organizaciones" }, { "POST", "/api/auth/organizacion" } }) {
+				{ "GET", "/api/auth/organizaciones" }, { "POST", "/api/auth/organizacion" },
+				{ "GET", "/api/auth/plataforma" }, { "HEAD", "/api/auth/plataforma" } }) {
 			llamadas.clear();
 			assertTrue(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 			assertEquals(List.of("sesion " + ruta[0] + " " + ruta[1]), llamadas, "decide la regla de siempre");
