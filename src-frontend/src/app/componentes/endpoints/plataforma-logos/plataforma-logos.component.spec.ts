@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Subject, of, throwError } from 'rxjs';
+import { Subject, defer, of, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { EscuelaLogo } from '../../../interfaces/escuela-logo';
@@ -294,5 +294,117 @@ describe('PlataformaLogosComponent', () => {
     boton(fixture.nativeElement, 'Reintentar')!.click();
     fixture.detectChanges();
     expect(filas().length).toBe(1);
+  });
+
+  describe('miniatura tras subir', () => {
+    const blob = () => new Blob(['x'], { type: 'image/png' });
+    const caida = (estado: number) => new HttpErrorResponse({ status: estado });
+    /** Cada suscripción consume un resultado: Error falla, Blob responde. */
+    const secuencia = (...pasos: Array<number | Blob>) => {
+      let i = 0;
+      return defer(() => {
+        const paso = pasos[Math.min(i++, pasos.length - 1)];
+        return paso instanceof Blob ? of(paso) : throwError(() => caida(paso));
+      });
+    };
+    /** Texto del aviso de arriba (toast) si hay uno visible. */
+    const aviso = (): string => (Swal.isVisible() ? Swal.getTitle()?.textContent ?? '' : '');
+    const subirEn2 = async (): Promise<void> => {
+      servicio.subir.and.returnValue(of(con));
+      await elegir(filas()[1], png());
+    };
+
+    const limpiarAvisos = (): void => {
+      Swal.close();
+      document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+    };
+    /** Reloj simulado: la espera del reintento se salta con tick, sin esperar de verdad. */
+    const tick = (ms = 1500): void => {
+      jasmine.clock().tick(ms);
+      fixture.detectChanges();
+    };
+    beforeEach(() => {
+      limpiarAvisos();
+      jasmine.clock().install();
+    });
+    afterEach(() => {
+      jasmine.clock().uninstall();
+      limpiarAvisos();
+    });
+
+    it('una caída de red (estado 0) en la miniatura se reintenta sola y no avisa de error', async () => {
+      let suscripciones = 0;
+      const base = secuencia(0, blob());
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return base; }));
+      await subirEn2();
+      expect(suscripciones).toBe(1); // sin tick no hay segunda petición
+      tick(1499);
+      expect(suscripciones).toBe(1);
+      tick(1);
+      expect(suscripciones).toBe(2);
+      expect(aviso()).not.toContain('No se pudo');
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+      expect(texto()).not.toContain('no se pudo mostrar la vista previa');
+    });
+
+    it('si falla dos veces, la fila dice que el logo está guardado, sin aviso de arriba, y «Reintentar» pinta la miniatura', async () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      await subirEn2();
+      tick();
+      expect(aviso()).not.toContain('No se pudo');
+      expect(filas()[1].textContent).toContain('Logo guardado; no se pudo mostrar la vista previa');
+      expect(filas()[1].querySelector('img')).toBeNull();
+
+      servicio.logo.and.returnValue(secuencia(blob()));
+      boton(filas()[1], 'Reintentar')!.click();
+      fixture.detectChanges();
+      tick();
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+      expect(filas()[1].textContent).not.toContain('no se pudo mostrar la vista previa');
+      expect(boton(filas()[1], 'Reintentar')).toBeUndefined();
+    });
+
+    it('si la fila está sin vista previa y falla otra subida, ambos avisos existen a la vez', async () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      await subirEn2();
+      tick();
+      servicio.subir.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { mensaje: 'Formato no permitido' } })));
+      await elegir(filas()[1], png());
+      expect(filas()[1].querySelector('.vista-previa-fila')).not.toBeNull();
+      expect(filas()[1].querySelector('.error-fila')).not.toBeNull();
+    });
+
+    it('si se destruye durante la espera del reintento no se hace la segunda petición', async () => {
+      let suscripciones = 0;
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return throwError(() => caida(0)); }));
+      await subirEn2();
+      expect(suscripciones).toBe(1);
+      fixture.destroy();
+      tick(1500);
+      expect(suscripciones).toBe(1);
+    });
+
+    it('un 5xx también se reintenta una vez', async () => {
+      servicio.logo.and.returnValue(secuencia(503, blob()));
+      await subirEn2();
+      tick();
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+    });
+
+    it('un 4xx no se reintenta', async () => {
+      let suscripciones = 0;
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return throwError(() => caida(403)); }));
+      await subirEn2();
+      expect(suscripciones).toBe(1);
+    });
+
+    it('en la carga inicial, si falla dos veces conserva el aviso de arriba', () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      componente.cargar();
+      fixture.detectChanges();
+      tick();
+      expect(aviso()).toBe('No se pudo cargar el logo de Escuela Norte');
+      expect(texto()).not.toContain('Logo guardado');
+    });
   });
 });

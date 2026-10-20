@@ -1,5 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Observable, Subscription, throwError, timer } from 'rxjs';
+import { retry } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 import { EscuelaLogo } from '../../../interfaces/escuela-logo';
@@ -9,6 +11,8 @@ import { SUBIDA_LOGO, prepararFicheroParaSubida, reiniciarSelectorArchivo } from
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 export const LOGO_MAX_BYTES = 1024 * 1024;
+/** Espera antes de repetir la miniatura: en una red móvil cortada, repetir al instante suele fallar otra vez. */
+export const ESPERA_REINTENTO_MS = 1500;
 
 export interface FilaLogo {
   escuela: EscuelaLogo;
@@ -20,6 +24,10 @@ export interface FilaLogo {
   /** Contador de cargas de la miniatura: una respuesta con otro número es obsoleta y se descarta. */
   peticion: number;
   error: string | null;
+  /** Descarga de la miniatura en curso (incluida la espera del reintento); se cancela al repetir, quitar o destruir. */
+  descarga: Subscription | null;
+  /** El logo se guardó pero su miniatura no llegó tras subirlo: se avisa en la fila, con «Reintentar». */
+  sinVistaPrevia: boolean;
 }
 
 @Component({
@@ -45,7 +53,10 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destruido = true;
-    this.filas.forEach((fila) => this.soltarMiniatura(fila));
+    this.filas.forEach((fila) => {
+      this.cancelarDescarga(fila);
+      this.soltarMiniatura(fila);
+    });
   }
 
   cargar(): void {
@@ -53,8 +64,11 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
     this.errorCarga = false;
     this.logos.escuelas().subscribe({
       next: (escuelas) => {
-        this.filas.forEach((fila) => this.soltarMiniatura(fila));
-        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, cargandoMiniatura: false, peticion: 0, error: null }));
+        this.filas.forEach((fila) => {
+          this.cancelarDescarga(fila);
+          this.soltarMiniatura(fila);
+        });
+        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, cargandoMiniatura: false, peticion: 0, error: null, descarga: null, sinVistaPrevia: false }));
         this.cargando = false;
         this.filas.forEach((fila) => this.cargarMiniatura(fila));
       },
@@ -92,7 +106,7 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
       next: (escuela) => {
         fila.escuela = escuela;
         fila.ocupada = false;
-        this.cargarMiniatura(fila);
+        this.cargarMiniatura(fila, true);
       },
       error: (error: HttpErrorResponse) => {
         fila.ocupada = false;
@@ -127,7 +141,9 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
         fila.escuela = escuela;
         fila.ocupada = false;
         fila.peticion++;
+        this.cancelarDescarga(fila);
         fila.cargandoMiniatura = false;
+        fila.sinVistaPrevia = false;
         this.soltarMiniatura(fila);
         // La escuela heredada, sin logo subido, vuelve a mostrar el de siempre.
         if (escuela.marcaHeredada) {
@@ -141,16 +157,23 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
     });
   }
 
-  private cargarMiniatura(fila: FilaLogo): void {
+  /** Reintenta la miniatura desde la fila cuando el logo ya estaba guardado. */
+  reintentarMiniatura(fila: FilaLogo): void {
+    this.cargarMiniatura(fila, true);
+  }
+
+  private cargarMiniatura(fila: FilaLogo, trasSubir = false): void {
     // La heredada siempre tiene miniatura: sin logo subido, el backend sirve el de siempre.
     const peticion = ++fila.peticion;
+    this.cancelarDescarga(fila);
     if (!fila.escuela.tieneLogo && !fila.escuela.marcaHeredada) {
       fila.cargandoMiniatura = false;
       this.soltarMiniatura(fila);
       return;
     }
     fila.cargandoMiniatura = true;
-    this.logos.logo(fila.escuela.id).subscribe({
+    fila.sinVistaPrevia = false;
+    fila.descarga = this.conReintento(this.logos.logo(fila.escuela.id)).subscribe({
       next: (blob) => {
         // Una respuesta de una carga anterior (p. ej. con el logo ya quitado) no pinta nada.
         if (this.destruido || peticion !== fila.peticion) {
@@ -165,6 +188,12 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
           return;
         }
         fila.cargandoMiniatura = false;
+        // Recién subido, el logo ya está guardado: el fallo es solo de la vista previa y se dice en la fila.
+        if (trasSubir) {
+          this.soltarMiniatura(fila); // la anterior ya no es la del logo guardado
+          fila.sinVistaPrevia = true;
+          return;
+        }
         // 404 en la heredada: no hay logo que servir, queda el marcador «Logo de siempre».
         if (fila.escuela.marcaHeredada && error?.status === 404) {
           return;
@@ -172,6 +201,21 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
         showErrorToast(`No se pudo cargar el logo de ${fila.escuela.nombre}`);
       },
     });
+  }
+
+  /** Un reintento automático ante corte de red (estado 0) o error del servidor (5xx); el resto falla de inmediato. */
+  private conReintento(descarga: Observable<Blob>): Observable<Blob> {
+    return descarga.pipe(
+      retry({
+        count: 1,
+        delay: (error: HttpErrorResponse) => (error?.status === 0 || error?.status >= 500 ? timer(ESPERA_REINTENTO_MS) : throwError(() => error)),
+      })
+    );
+  }
+
+  private cancelarDescarga(fila: FilaLogo): void {
+    fila.descarga?.unsubscribe();
+    fila.descarga = null;
   }
 
   private soltarMiniatura(fila: FilaLogo): void {
