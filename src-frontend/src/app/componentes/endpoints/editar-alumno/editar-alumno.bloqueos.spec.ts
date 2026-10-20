@@ -10,7 +10,7 @@ import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fix
 
 /** Pieza 6c-1: la ficha muestra el mensaje del 409 del backend al quitar de una convocatoria (decisión 186). */
 describe('EditarAlumnoComponent: bloqueos del examen pagado', () => {
-  const EXAMEN_PAGADO = 'El examen está pagado: revierte el cobro antes';
+  const EXAMEN_PAGADO = 'El examen está pagado: haz la devolución o revierte el cobro antes';
 
   let endpoints: jasmine.SpyObj<any>;
   let swal: jasmine.Spy;

@@ -206,14 +206,14 @@ describe('SolicitudesBandejaComponent', () => {
     expect(contador.refrescar).toHaveBeenCalled();
   });
 
-  it('los encargos solo se listan, sin acciones', async () => {
+  it('los encargos llevan sus acciones (6c-9), no las de los tipos 1 a 3', async () => {
     const el = await crear(['ROLE_ADMIN']);
     fixture.componentInstance.elegirSegmento('ENCARGOS');
     fixture.detectChanges();
 
     expect(el.querySelector('[role="tabpanel"]:not([hidden]) .chip-tipo')?.textContent?.trim()).toBe('Encargo');
     expect(el.textContent).toContain('Pedido');
-    expect(botones(el)).toEqual([]);
+    expect(botones(el)).toEqual(['Marcar encargado', 'Rechazar…']);
   });
 
   it('sin solicitudes, un estado vacío que lo dice', async () => {

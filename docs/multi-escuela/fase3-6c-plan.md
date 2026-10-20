@@ -3,8 +3,8 @@
 > **Ejecutores:** agentes savvy-* orquestados por el router. Cada pieza 6c-n es un agente en su propio worktree, con
 > revisión independiente (`savvy-reviewer`) antes de la PR. Las piezas de dinero, permisos o migración (6c-1, 6c-2,
 > 6c-3, 6c-4, 6c-5, 6c-6) llevan la revisión en opus. Los pasos usan casillas (`- [ ]`). Este plan detalla la 6c-1
-> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b), la 6c-6 (§4c), la 6c-4 (§4d) y la 6c-7 (§5); las demás se detallan justo antes de lanzarlas, a
-> partir del mapa (§1).
+> (§2), la 6c-2 (§3), la 6c-3 (§4), la 6c-5 (§4b), la 6c-6 (§4c), la 6c-4 (§4d), la 6c-8 (§4e), la 6c-9 (§4f) y la
+> 6c-7 (§5). La entrega está cerrada: estado final de cada pieza al pie del mapa (§1).
 
 **Objetivo:** cerrar los agujeros A3 y A13 (decisiones 186, 187 y 194) y montar las solicitudes al propietario, los
 encargos del profesor y la devolución enlazada (decisiones 153, 155, 183, 188 a 195).
@@ -102,6 +102,20 @@ anota en la PR y actualiza este mapa.
 
 Pruebas mínimas de cada pieza backend (§12): IT en MySQL con dos sedes; Moiskimdo idéntico con ADMIN y MANAGER,
 salvo 186, 187 y 194; saldo de la sede igual antes y después en cada ejecución que no mueve dinero real.
+
+**Estado final (20/10/2026).** Todas las piezas hechas, sin migraciones después de V31_8 (ya en producción).
+
+| Pieza | Estado | Commit | Migración | Notas |
+|---|---|---|---|---|
+| 6c-1 | Hecha | `45f76998` | No | Bloqueos 186, 187 y 194 |
+| 6c-2 | Hecha y desplegada | `baffaa10` | V31_8 | Tabla `solicitud` y columnas de `movimiento_caja` |
+| 6c-3 | Hecha | `673fc663` | No | Aceptar con revalidación (`NO_APLICABLE`) |
+| 6c-7 | Hecha | `6425b55c` | No | Bandeja, contador y «Pedir al propietario» |
+| 6c-5 | Hecha | `fbc31ac7` | No | Encargos; no sale a producción sin la 6c-6 |
+| 6c-6 | Hecha | `5e6fa8e7` | No | Devoluciones enlazadas, «devuelto» y texto completo de la 186 |
+| 6c-4 | Hecha | `7262395a` | No | Pedir deshacer un cobro ya entregado |
+| 6c-8 | Hecha | `1eaabbff` | No | Mi caja: «Pedidos» y «Entregados recientes» |
+| 6c-9 | Hecha, pendiente de commit | — | No | Acciones de encargo y devolución en la bandeja, «Devuelto» en tesorería y ficha, ERROR y DEVOLUCION en las entregas (§4f) |
 
 ---
 
@@ -1204,6 +1218,85 @@ Los dos puntos abiertos de la primera entrega (sedes del alumno y estado del cob
 
 ---
 
+## 4f. Pieza 6c-9 (detallada)
+
+Rama `feature/6c-noche` (tras la 6c-8). **Sin migración**; en la API, un campo aditivo de lectura (`devuelto` de los
+cargos de la ficha) y una corrección de lectura (`estadoCobro` DEVUELTO exige el cobro ACTIVO): se despliega con el atajo
+`desplegar`. Sin rutas nuevas: la matriz no cambia. Moiskimdo solo nota lo decidido: el aviso completo de la 186, la
+bandeja con las acciones de los encargos (no tiene encargos: no los verá) y «Devuelto» si algún día hay devoluciones
+(hoy, ninguna).
+
+Criterios del plan. El diseño no los fija y se anotan en la PR:
+- **Bandeja, encargos** (§5.1, §6.2, 195): para quien entra en la bandeja (propietario y gestión; el responsable no
+  entra en la app hasta la E9 y la API ya lo admite), «Marcar encargado» (PEDIDO), «Marcar recibido» (ENCARGADO) y
+  «Rechazar…» (PEDIDO, ENCARGADO o RECIBIDO) con motivo obligatorio (500) en el diálogo de «Denegar…». Marcar pide una
+  confirmación breve (no se vuelve atrás). Cada fila de encargo enseña su `estadoCobro` («Sin cobrar», «Cobrado»,
+  «Devuelto», «Cargo cancelado», los textos de Mi caja) y, mientras sigue, la línea de estados (`aria-current="step"`);
+  la caída enseña «Motivo del rechazo».
+- **Registrar devolución** (195, D6c-11): con `devolucionEnSede === true`, diálogo con alumno, concepto e importe (el
+  cobro entero; no se pide), la nota «Se devuelve el cobro entero y sale de la caja de la sede» y nota opcional (500).
+  Con `devolucionEnSede === false`, «Devolución pendiente: la registra el profesor», sin botón. Un 403 (nota F2: el cobro
+  es de otra sede que la del encargo) se explica en un aviso propio; los demás errores, con `mensajeDeError`.
+- **Contador:** cada acción recarga los segmentos y llama a `SolicitudesContadorService.refrescar()`, como la 6c-7; sin
+  `interval`. La cabecera ya suma las devoluciones pendientes (6c-6).
+- **«Devuelto»:** tesorería, chip «Devuelto» junto a «Pagado» y sin «Revertir» ni «Pedir al propietario» en esa fila (un
+  cobro devuelto no se anula, 153) y, en «Importe cobrado», «De ello, n EUR devueltos» solo si `importeDevuelto` > 0. Ficha
+  (productos-alumno): `ProductoAlumnoDTO.devuelto` (`Boolean`, `@JsonInclude(NON_NULL)`, solo de salida, solo `true`), con
+  una consulta para toda la ficha (`CobroRepository.cargosDevueltos`, ninguna si no hay cargos pagados); el cargo
+  devuelto enseña «devuelto» en lugar de la casilla de pagado. Mi caja ya lo tenía (6c-8); se corrige el color de sus
+  chips de cobro (los selectores comparaban en minúsculas).
+- **Caja de sede:** `EntregaCaja.movimientosDeCobro` en la interfaz y normalizado (lista vacía si no llega). Bajo la
+  diferencia de cada entrega, «Cobro deshecho +n €» (ERROR, 193) y «Devolución −n €» (DEVOLUCION, D6c-10), tachados si
+  están anulados. La diferencia enseñada descuenta la DEVOLUCION de la entrega: la devolución del profesor (contado 0)
+  «cuadra» en vez de «falta».
+- **Aviso de la 186:** el frontend no lo tenía copiado; solo los specs de la convocatoria y la ficha simulaban el texto
+  viejo y pasan al nuevo.
+- **Menores de la revisión de la 6c-8:** `restaurarFoco` de Mi caja, si el botón ya no existe, lleva el foco a
+  «Encargar un producto» (en «Pedidos») o a la pestaña del panel; `estadoCobro` DEVUELTO exige el cobro ACTIVO (une con
+  `Cobro`, como `CobroRepository`); la nota «Lo ya entregado está en la caja de la sede…» solo sale con entregados
+  recientes en la lista.
+
+### Tarea 1: tests
+
+**Ficheros:** crear `F/componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.encargos.spec.ts`,
+`F/componentes/endpoints/tesoreria-cobros/tesoreria-cobros.devuelto.spec.ts` y
+`F/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.devuelto.spec.ts` (registrados en
+`tsconfig.spec.json` y `angular.json`); ampliar `solicitudes.service.spec.ts`, `solicitudes-bandeja.component.spec.ts`,
+`caja.service.spec.ts`, `caja-sede.component.spec.ts`, `mi-caja.pedidos.spec.ts` y los `*.bloqueos.spec.ts` (texto de la
+186); en la API, `DevolucionesIntegrationTest.fichaDelAlumno_marcaElCargoDevuelto_sinCambiarLosDemas` y
+`EncargosIntegrationTest.estadoCobro_devueltoExigeElCobroActivo`.
+
+- [x] **Paso 1:** servicio (encargado, recibido, rechazar y devolución con sus rutas, credenciales y errores locales);
+  bandeja (botones por estado para propietario y gestión, línea de estados y cobro, confirmar y cancelar, motivo
+  obligatorio, devolución sin importe con nota opcional, 403 con su aviso, 409 con el mensaje, sin botón si el dinero
+  lo lleva el profesor); tesorería (marca y botones de la fila devuelta, línea del resumen solo con importe); ficha
+  (chip en lugar de la casilla); caja de sede (ERROR, DEVOLUCION que cuadra, anulado); Mi caja (foco y nota).
+
+### Tarea 2: implementar
+
+**Ficheros:** `F/servicios/endpoints/solicitudes.service.ts`, `F/componentes/endpoints/solicitudes-bandeja/*`,
+`F/interfaces/{caja,tesoreria-movimiento,tesoreria-resumen,producto-alumno-dto}.ts`, `F/servicios/endpoints/caja.service.ts`,
+`F/componentes/endpoints/caja-sede/*`, `F/componentes/endpoints/tesoreria-cobros/*` y `_tesoreria-base.scss`,
+`F/componentes/endpoints/editar-alumno/productos-alumno/*`, `F/componentes/endpoints/mi-caja/*`;
+`J/dtos/ProductoAlumnoDTO.java`, `J/repositories/CobroRepository.java`, `J/services/impl/ProductoAlumnoServiceImpl.java`
+y `J/services/SolicitudService.java`.
+
+- [x] **Paso 1: implementar** lo de los criterios.
+- [x] **Paso 2: comprobar:** Karma 1026 de 1026 (antes 1009); `mvn test -DexcludedGroups=migracion` (1419, 0 fallos) y
+  `mvn test -Dgroups=migracion` (191, 0 fallos), con los dorados de Moiskimdo sin tocar.
+
+### Tarea 3: verificación y cierre
+
+- [x] **Paso 1:** `npm run build:production` sin aviso de presupuesto (inicial 1,49 MB).
+- [x] **Paso 2:** capturas a 375 y 1280 px con la API simulada (Playwright, datos ficticios), revisadas con impeccable:
+  bandeja con encargos en varios estados, rechazar, registrar devolución, tesorería con una fila devuelta y caja de sede
+  con una entrega con ERROR y otra con DEVOLUCION.
+- [x] **Paso 3:** `matriz-endpoints.md` (cierre: las 23 rutas de la 6c cotejadas con `matriz-permisos.txt`),
+  `checklist-despliegue.md` (sin migración nueva y prueba manual) y este plan (mapa y §6).
+- [x] **Paso 4:** `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`. El commit lo hace el router.
+
+---
+
 ## 5. Pieza 6c-7: bandeja, contador y «Pedir al propietario» (detallada)
 
 Rama `feature/6c7-bandeja` desde `feature/multi-escuela` (tras la 6c-3). **Sin migración y sin cambios de backend**:
@@ -1301,6 +1394,8 @@ SweetAlert2 pinta fuera de los componentes). Crear `tesoreria-cobros.solicitudes
   - Objetivos 1 y 2 → 6c-2, 6c-3, 6c-4 y 6c-7.
   - Objetivo 3 → 6c-5 y 6c-8.
   - Objetivo 4 → 6c-6 y 6c-9.
+  - §5.1 (cabecera y bandeja) → 6c-7 (contador, tipos 1 a 3) y 6c-9 (encargos y «Registrar devolución» de la sede).
+  - §5.3 (Mi caja) → 6c-8.
   - §8 (registro de acciones) → 6c-2, 6c-3, 6c-4 y 6c-6.
   - §9 → los dorados de la tarea 5 y la fila 2b en la tarea 3.
   - §11, postcheck y checklist → 6c-2.
@@ -1308,3 +1403,9 @@ SweetAlert2 pinta fuera de los componentes). Crear `tesoreria-cobros.solicitudes
   lo usa la 6c-1. `SolicitudRepository.bloquearPorId` y `SolicitudTransiciones.exigir` son de la 6c-2 y los consumen
   la 6c-3, la 6c-4 y la 6c-5.
 - **Proporción:** el mapa son 9 filas; la 6c-1 son 5 tareas con nombres de test, valores y firmas, sin cuerpos.
+- **Cierre (20/10/2026):** las 9 piezas hechas (tabla al pie del mapa). Sin migraciones después de V31_8. Las 23 rutas
+  nuevas de la 6c tienen su línea en `matriz-permisos.txt` y su nota en `matriz-endpoints.md`; la 6c-7, la 6c-8 y la 6c-9
+  no añaden rutas. Queda abierta la limitación de la 6c-6: el contador y la bandeja del responsable miran la sede de la
+  solicitud y la devolución va por la del cobro (F2); si difieren, el responsable ve la devolución y recibe 403 al
+  registrarla (la pantalla lo explica) y la registran propietario o gestión. El responsable no entra en la app hasta la
+  E9.

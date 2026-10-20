@@ -549,6 +549,17 @@ app-paginacion {
   color: #4a5568;
 }
 
+// Pieza 6c-9 (153): pagado y devuelto; no se desmarca.
+.chip-devuelto {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-block;
+  background: #e2ebf8;
+  color: #1e3a5f;
+}
+
 .acciones-cargo {
   display: flex;
   flex-wrap: nowrap;

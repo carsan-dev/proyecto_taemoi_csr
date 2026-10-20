@@ -10,7 +10,7 @@ import { InformePdfService } from '../../../servicios/generales/informe-pdf.serv
 
 /** Pieza 6c-1: la convocatoria muestra el mensaje del 409 del backend (decisiones 186 y 194). */
 describe('ListadoConvocatoriasComponent: bloqueos del examen pagado', () => {
-  const EXAMEN_PAGADO = 'El examen está pagado: revierte el cobro antes';
+  const EXAMEN_PAGADO = 'El examen está pagado: haz la devolución o revierte el cobro antes';
   const CUANTIA_EXAMEN_PAGADO = 'El examen está pagado: no se puede cambiar la cuantía. Revierte el cobro antes.';
 
   let endpoints: jasmine.SpyObj<any>;

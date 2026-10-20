@@ -54,6 +54,16 @@ public interface CobroRepository extends JpaRepository<Cobro, Long> {
 	int anularDeCargosBorrados(@Param("ids") Collection<Long> ids, @Param("usuarioId") Long usuarioId,
 			@Param("ahora") LocalDateTime ahora, @Param("motivo") String motivo);
 
+	/**
+	 * Pieza 6c-9 (153): de esos cargos, los devueltos (su cobro ACTIVO tiene una DEVOLUCION ACTIVA enlazada). Una
+	 * consulta para toda la ficha del alumno.
+	 */
+	@Query("SELECT DISTINCT c.productoAlumnoId FROM Cobro c WHERE c.productoAlumnoId IN :ids "
+			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO AND EXISTS (SELECT m.id FROM MovimientoCaja m "
+			+ "WHERE m.cobroId = c.id AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+			+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO)")
+	List<Long> cargosDevueltos(@Param("ids") Collection<Long> ids);
+
 	/** Pieza 6c-6: ids de los cobros ACTIVOS de esos cargos con una DEVOLUCION ACTIVA enlazada. */
 	@Query("SELECT c.id FROM Cobro c WHERE c.productoAlumnoId IN :ids "
 			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO AND EXISTS (SELECT m.id FROM MovimientoCaja m "

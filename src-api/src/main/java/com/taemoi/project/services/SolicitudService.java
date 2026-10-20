@@ -248,6 +248,10 @@ public class SolicitudService {
 			if (cobro.getProductoAlumnoId() == null) {
 				throw new IllegalStateException("El cargo del cobro ya no existe.");
 			}
+			// Ronda 1 de la 6c-9: con la devolución hecha o pendiente no se revierte (153); 409 ya al pedir.
+			cobroService.razonDeDevolucion(cobro.getId(), cobro.getProductoAlumnoId()).ifPresent(razon -> {
+				throw new IllegalStateException(razon);
+			});
 			if (solicitudes.existsByCobroIdAndEstado(cobro.getId(), EstadoSolicitud.PENDIENTE)
 					|| solicitudes.existeRevertirPendienteDeCargo(cobro.getProductoAlumnoId())) {
 				throw new IllegalStateException(YA_PENDIENTE);
@@ -713,8 +717,10 @@ public class SolicitudService {
 					: Boolean.TRUE.equals(f[1]) ? SolicitudDTOs.EstadoCobroEncargo.COBRADO
 							: SolicitudDTOs.EstadoCobroEncargo.PENDIENTE);
 		}
-		for (Object[] f : filas("SELECT m.productoAlumnoId, m.id FROM MovimientoCaja m WHERE m.productoAlumnoId IN :ids "
-				+ "AND m.cobroId IS NOT NULL AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
+		// Pieza 6c-9: la devolución cuenta solo si es del cobro ACTIVO del cargo, como en CobroRepository.
+		for (Object[] f : filas("SELECT m.productoAlumnoId, m.id FROM MovimientoCaja m, Cobro c WHERE m.cobroId = c.id "
+				+ "AND m.productoAlumnoId IN :ids AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO "
+				+ "AND m.tipo = com.taemoi.project.entities.TipoMovimientoCaja.DEVOLUCION "
 				+ "AND m.estado = com.taemoi.project.entities.EstadoMovimientoCaja.ACTIVO", cargosDeEncargos)) {
 			cobroDelCargo.put((Long) f[0], SolicitudDTOs.EstadoCobroEncargo.DEVUELTO);
 		}

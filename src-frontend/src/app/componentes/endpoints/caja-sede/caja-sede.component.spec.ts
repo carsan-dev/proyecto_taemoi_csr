@@ -81,6 +81,40 @@ describe('CajaSedeComponent', () => {
     expect(texto()).toContain('Faltante');
   });
 
+  it('6c-9: pinta los movimientos de cobro de cada entrega (ERROR de la 193 y DEVOLUCION de la D6c-10)', async () => {
+    await montar(false);
+    const conError: EntregaCaja = {
+      ...entrega, id: 8, diferencia: 0, importeDeclarado: 30, importeContado: 30, movimientoId: null, cobroIds: [6],
+      movimientosDeCobro: [{ id: 40, tipo: 'ERROR', importe: 12, cobroId: 9, estado: 'ACTIVO' }],
+    };
+    const devolucion: EntregaCaja = {
+      ...entrega, id: 9, diferencia: -25, importeDeclarado: 25, importeContado: 0, movimientoId: null, autoentrega: true,
+      movimientosDeCobro: [{ id: 41, tipo: 'DEVOLUCION', importe: -25, cobroId: 10, estado: 'ACTIVO' }],
+    };
+    const anulada: EntregaCaja = {
+      ...devolucion, id: 10, estado: 'ANULADA',
+      movimientosDeCobro: [{ id: 42, tipo: 'DEVOLUCION', importe: -25, cobroId: 11, estado: 'ANULADO' }],
+    };
+    component.entregas = [entrega, conError, devolucion, anulada];
+    fixture.detectChanges();
+
+    const filas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.tabla-caja tbody tr'))
+      .filter((tr) => tr.querySelector('[data-label="Diferencia"]'));
+    const celda = (i: number) => filas[i].querySelector('[data-label="Diferencia"]')!.textContent!.replace(/\s+/g, ' ');
+    expect(filas[0].querySelector('.movs-cobro')).toBeNull();
+    expect(celda(1)).toContain('cuadra');
+    expect(celda(1)).toContain('Cobro deshecho +12,00 €');
+    // La devolución del profesor va en lugar del faltante: la entrega cuadra.
+    expect(celda(2)).toContain('cuadra');
+    expect(celda(2)).not.toContain('falta');
+    expect(celda(2)).toContain('Devolución −25,00 €');
+    expect(filas[3].querySelector('.mov-anulado')?.textContent).toContain('(anulado)');
+    // Una DEVOLUCION anulada no se descuenta: la diferencia es la de la entrega tal cual.
+    expect(component.diferenciaVista(anulada)).toBe(-25);
+    expect(celda(3)).toContain('falta 25,00 €');
+    expect(component.diferenciaVista(devolucion)).toBe(0);
+  });
+
   it('el gestor no ve «Anular»; el propietario sí, salvo en el faltante automático de una entrega', async () => {
     await montar(false);
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('.btn-anular').length).toBe(0);

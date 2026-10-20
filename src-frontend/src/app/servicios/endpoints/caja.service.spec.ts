@@ -76,9 +76,15 @@ describe('CajaService', () => {
     expect(peticion.request.params.get('page')).toBe('2');
     expect(peticion.request.params.get('size')).toBe('25');
     peticion.flush({
-      content: [{ id: 1, importeDeclarado: '10.00', importeContado: '9.50', diferencia: '-0.50', estado: 'ACTIVA', cobroIds: [1], autoentrega: false, fecha: [2026, 10, 19, 10, 43, 29, 732386000] }],
+      content: [
+        { id: 1, importeDeclarado: '10.00', importeContado: '9.50', diferencia: '-0.50', estado: 'ACTIVA', cobroIds: [1], autoentrega: false, fecha: [2026, 10, 19, 10, 43, 29, 732386000] },
+        { id: 2, importeDeclarado: '25.00', importeContado: '0.00', diferencia: '-25.00', estado: 'ACTIVA', cobroIds: [3], autoentrega: true, fecha: [2026, 10, 19, 11, 0], movimientosDeCobro: [{ id: 8, tipo: 'DEVOLUCION', importe: '-25.00', cobroId: 3, estado: 'ACTIVO' }] },
+      ],
       totalPages: 3, totalElements: 51, number: 1, size: 25,
     });
+    // 6c-9: los movimientos de cobro de la entrega, con su importe a número; sin ellos, lista vacía.
+    expect(pagina.content[0].movimientosDeCobro).toEqual([]);
+    expect(pagina.content[1].movimientosDeCobro).toEqual([{ id: 8, tipo: 'DEVOLUCION', importe: -25, cobroId: 3, estado: 'ACTIVO' }]);
     expect(pagina.content[0].diferencia).toBe(-0.5);
     expect(pagina.content[0].importeContado).toBe(9.5);
     expect(pagina.totalPages).toBe(3);

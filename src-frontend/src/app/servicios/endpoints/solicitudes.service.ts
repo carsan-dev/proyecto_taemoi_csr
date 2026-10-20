@@ -74,4 +74,33 @@ export class SolicitudesService {
       .post<Solicitud>(`${this.url}/${id}/denegar`, { respuesta }, this.opciones())
       .pipe(map(normalizarSolicitud));
   }
+
+  // ------------------------------------------------------------------ encargos (6c-5) y devolución (6c-6)
+
+  /** PEDIDO → ENCARGADO. Propietario, gestión y responsable de la sede de la solicitud. */
+  marcarEncargado(id: number): Observable<Solicitud> {
+    return this.http.post<Solicitud>(`${this.url}/${id}/encargado`, null, this.opciones()).pipe(map(normalizarSolicitud));
+  }
+
+  /** ENCARGADO → RECIBIDO. */
+  marcarRecibido(id: number): Observable<Solicitud> {
+    return this.http.post<Solicitud>(`${this.url}/${id}/recibido`, null, this.opciones()).pipe(map(normalizarSolicitud));
+  }
+
+  /** PEDIDO, ENCARGADO o RECIBIDO → RECHAZADO, con motivo obligatorio (D6c-1). Cae el encargo (§6.3). */
+  rechazar(id: number, motivo: string): Observable<Solicitud> {
+    return this.http
+      .post<Solicitud>(`${this.url}/${id}/rechazar`, { motivo }, this.opciones())
+      .pipe(map(normalizarSolicitud));
+  }
+
+  /**
+   * Decisión 195: la sede registra la devolución de un encargo caído con el dinero ya en su caja. Sin importe: es el
+   * del cobro entero (D6c-11). Nota opcional (500).
+   */
+  registrarDevolucion(id: number, nota: string | null): Observable<Solicitud> {
+    return this.http
+      .post<Solicitud>(`${this.url}/${id}/devolucion`, { nota }, this.opciones())
+      .pipe(map(normalizarSolicitud));
+  }
 }

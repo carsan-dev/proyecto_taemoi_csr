@@ -698,6 +698,28 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 		assertNull(pendientes.get(tipo1).get("estadoCobro"), "un tipo 1 no lleva el campo");
 	}
 
+	/**
+	 * Pieza 6c-9 (revisión de la 6c-8): DEVUELTO exige que la devolución sea del cobro ACTIVO, como
+	 * {@code CobroRepository}. Una DEVOLUCION activa de un cobro ya anulado (dato anterior o incoherente) no hace
+	 * devuelto el cargo.
+	 */
+	@Test
+	void estadoCobro_devueltoExigeElCobroActivo() throws Exception {
+		long devuelto = s.encargo();
+		assertEquals(201, estado(post("/api/caja/profesor/cargos/" + cargoDe(devuelto) + "/cobrar"), s.tProf1));
+		leer(post("/api/caja/profesor/solicitudes/" + devuelto + "/retirar"), s.tProf1, 200);
+		JsonNode cerrado = leer(post("/api/caja/profesor/solicitudes/" + devuelto + "/devolucion"), s.tProf1, 200);
+		assertEquals("DEVUELTO", cerrado.get("estadoCobro").asText());
+
+		jdbc.update("UPDATE cobro SET estado = 'ANULADO' WHERE producto_alumno_id = ? AND estado = 'ACTIVO'",
+				cargoDe(devuelto));
+
+		Map<Long, JsonNode> suyas = new HashMap<>();
+		leer(get("/api/caja/profesor/solicitudes"), s.tProf1, 200).forEach(x -> suyas.put(x.get("id").asLong(), x));
+		assertEquals("COBRADO", suyas.get(devuelto).get("estadoCobro").asText(),
+				"la devolución de un cobro anulado no cuenta: el cargo sigue pagado");
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	/** Un tipo 1 pendiente del gestor sobre un cargo pagado sin cobro (decisión 191). */

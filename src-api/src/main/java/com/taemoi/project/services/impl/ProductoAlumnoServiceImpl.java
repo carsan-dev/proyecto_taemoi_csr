@@ -359,7 +359,17 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 					.collect(Collectors.toList());
 		}
 		java.util.Map<Long, String> nombres = nombresDeQuienCancelo(productosAlumno);
-		return productosAlumno.stream().map(pa -> convertirADTO(pa, nombres)).collect(Collectors.toList());
+		// Pieza 6c-9 (153): los cargos devueltos, con una consulta para toda la ficha (ninguna si no hay pagados).
+		List<Long> pagados = productosAlumno.stream().filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
+				.map(ProductoAlumno::getId).toList();
+		Set<Long> devueltos = pagados.isEmpty() ? Set.of() : new java.util.HashSet<>(cobroRepository.cargosDevueltos(pagados));
+		return productosAlumno.stream().map(pa -> {
+			ProductoAlumnoDTO dto = convertirADTO(pa, nombres);
+			if (devueltos.contains(pa.getId())) {
+				dto.setDevuelto(Boolean.TRUE);
+			}
+			return dto;
+		}).collect(Collectors.toList());
 	}
 
 	@Override

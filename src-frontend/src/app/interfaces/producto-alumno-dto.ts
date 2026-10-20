@@ -21,4 +21,6 @@ export interface ProductoAlumnoDTO {
     canceladoPorUsuarioId?: number | null;
     canceladoPorNombre?: string | null;
     motivoCancelacion?: string | null;
+    /** Pieza 6c-9 (153), solo de salida: su cobro activo tiene una devolución enlazada. Sigue pagado. */
+    devuelto?: boolean;
   }

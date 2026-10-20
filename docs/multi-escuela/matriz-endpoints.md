@@ -187,6 +187,19 @@ cambia ni la regla de URL. Van bajo `/api/caja/profesor/**` (su lista blanca, de
   `POST /api/solicitudes/{id}/aceptar` (6c-3) y la retirada por `POST /api/caja/profesor/solicitudes/{id}/retirar`
   (6c-5).
 
+Piezas 6c-7, 6c-8 y 6c-9 (pantallas): sin rutas nuevas; la matriz no cambia. La 6c-8 y la 6c-9 solo añaden campos de
+lectura a respuestas que ya existían (`estadoCobro` de la solicitud, `sedes` del alumno de sus grupos y `devuelto` de los
+cargos de la ficha, `GET /api/productos-alumno/alumno/{alumnoId}`, este solo si es cierto).
+
+Cierre de la entrega 6c (20/10/2026): 23 líneas nuevas en `matriz-permisos.txt`, todas con su nota arriba y cotejadas
+con el registro.
+- Bajo `/api/solicitudes` (12): `GET`/`HEAD /api/solicitudes`, `POST /api/solicitudes`, `GET`/`HEAD
+  /api/solicitudes/contador` y `POST /api/solicitudes/{id}/` `retirar` y `denegar` (6c-2); `aceptar` (6c-3);
+  `encargado`, `recibido` y `rechazar` (6c-5); `devolucion` (6c-6).
+- Bajo `/api/caja/profesor` (11): `GET`/`HEAD` `productos-encargables` y `solicitudes`, `POST alumnos/{alumnoId}/encargos`
+  y `POST solicitudes/{id}/` `retirar` y `entregado` (6c-5); `POST solicitudes/{id}/devolucion` (6c-6); `GET`/`HEAD`
+  `cobros-entregados-recientes` y `POST cobros/{cobroId}/pedir-deshacer` (6c-4).
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

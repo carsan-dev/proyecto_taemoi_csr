@@ -84,7 +84,10 @@
     "src/app/componentes/generales/pedir-al-propietario/pedir-al-propietario.spec.ts",
     "src/app/componentes/endpoints/tesoreria-cobros/tesoreria-cobros.solicitudes.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.solicitudes.spec.ts",
-    "src/app/componentes/endpoints/caja-sede/caja-sede.solicitudes.spec.ts"
+    "src/app/componentes/endpoints/caja-sede/caja-sede.solicitudes.spec.ts",
+    "src/app/componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.encargos.spec.ts",
+    "src/app/componentes/endpoints/tesoreria-cobros/tesoreria-cobros.devuelto.spec.ts",
+    "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.devuelto.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

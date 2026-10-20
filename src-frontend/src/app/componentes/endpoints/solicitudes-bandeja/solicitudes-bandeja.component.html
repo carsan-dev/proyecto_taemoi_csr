@@ -104,10 +104,21 @@
                     @if (s.importe !== null) {
                       <p class="importe">{{ euros(s.importe) }}</p>
                     }
+                    @if (estadoCobro(s); as cobro) {
+                      <span class="chip-cobro" [attr.data-cobro]="cobro">{{ etiquetaCobro(cobro) }}</span>
+                    }
                   </div>
 
                   <div class="col-motivo">
                     <blockquote class="motivo">«{{ s.motivo }}»</blockquote>
+                    @if (esEncargo(s) && !encargoCaido(s) && indicePaso(s) >= 0) {
+                      <ol class="pasos" aria-label="Recorrido del encargo">
+                        @for (paso of pasosEncargo; track paso.estado; let i = $index) {
+                          <li class="paso" [class.hecho]="i < indicePaso(s)" [class.actual]="i === indicePaso(s)"
+                            [attr.aria-current]="i === indicePaso(s) ? 'step' : null">{{ paso.etiqueta }}</li>
+                        }
+                      </ol>
+                    }
                     @if (opcion === 'RESUELTAS' && (s.resueltoPorNombre || s.resueltoEn)) {
                       <p class="detalle resolucion">
                         {{ s.estado === 'RETIRADA' ? 'Retirada' : 'Resuelta' }}
@@ -117,7 +128,7 @@
                     }
                     @if (s.respuesta) {
                       <p class="respuesta" [class.respuesta-aviso]="s.estado === 'NO_APLICABLE'">
-                        <span class="respuesta-etiqueta">{{ s.estado === 'NO_APLICABLE' ? 'Por qué no se aplicó:' : 'Respuesta:' }}</span>
+                        <span class="respuesta-etiqueta">{{ s.estado === 'NO_APLICABLE' ? 'Por qué no se aplicó:' : s.estado === 'RECHAZADO' ? 'Motivo del rechazo:' : 'Respuesta:' }}</span>
                         {{ s.respuesta }}
                       </p>
                     }
@@ -133,6 +144,27 @@
                     @if (puedeRetirar(s)) {
                       <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" [disabled]="ocupada(s)"
                         (click)="retirar(s)">Retirar</button>
+                    }
+                    @if (puedeMarcarEncargado(s)) {
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="marcarEncargado(s)">Marcar encargado</button>
+                    }
+                    @if (puedeMarcarRecibido(s)) {
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="marcarRecibido(s)">Marcar recibido</button>
+                    }
+                    @if (puedeRechazar(s)) {
+                      <button type="button" class="admin-btn admin-btn-outline admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="rechazar(s)">Rechazar…</button>
+                    }
+                    @if (puedeRegistrarDevolucion(s)) {
+                      <button type="button" class="admin-btn admin-btn-success admin-btn-sm" [disabled]="ocupada(s)"
+                        (click)="registrarDevolucion(s)">Registrar devolución</button>
+                    } @else if (devolucionDelProfesor(s)) {
+                      <p class="devolucion-profesor">
+                        <i class="bi bi-person-badge" aria-hidden="true"></i>
+                        <span>Devolución pendiente: la registra el profesor</span>
+                      </p>
                     }
                   </div>
                 </li>

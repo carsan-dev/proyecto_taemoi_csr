@@ -303,6 +303,33 @@ describe('MiCajaComponent (pedidos, 6c-8)', () => {
     expect(texto('.hoja .hoja-error')).toBe('La solicitud ya no está pendiente.');
   }));
 
+  it('6c-9: si el botón que abrió la hoja ya no existe, el foco va a «Encargar un producto»', fakeAsync(() => {
+    crear();
+    irAPedidos();
+    caja.retirarSolicitud.and.returnValue(of(solicitud(1, { estado: 'RETIRADA' })));
+    caja.misSolicitudes.and.returnValue(of(SOLICITUDES.filter((s) => s.id !== 1)));
+    (fila(1).querySelector('.btn-retirar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    componente.confirmarAccion();
+    fixture.detectChanges();
+    tick();
+    expect(el().querySelector('[data-solicitud="1"]')).toBeNull();
+    expect(document.activeElement).toBe(el().querySelector('#panel-pedidos .btn-encargar'));
+    tick(6000);
+  }));
+
+  it('6c-9: si sigue, el foco vuelve al botón que abrió la hoja', fakeAsync(() => {
+    crear();
+    irAPedidos();
+    const boton = fila(2).querySelector('.btn-entregado') as HTMLButtonElement;
+    boton.click();
+    fixture.detectChanges();
+    componente.cerrarAccion();
+    fixture.detectChanges();
+    tick();
+    expect(document.activeElement).toBe(boton);
+  }));
+
   it('marcar entregado al alumno: confirma y llama a su ruta', fakeAsync(() => {
     crear();
     irAPedidos();
@@ -371,6 +398,8 @@ describe('MiCajaComponent (pedidos, 6c-8)', () => {
       expect(filas[1].querySelector('.btn-pedir-deshacer')).toBeNull();
       expect(filas[2].textContent).toContain('El cobro tiene una devolución registrada.');
       expect(filas[2].querySelector('.btn-pedir-deshacer')).toBeNull();
+      // 6c-9: la nota de lo ya entregado solo sale con datos.
+      expect(texto('#panel-encima .nota')).toContain('Lo ya entregado está en la caja de la sede');
 
       componente.alternarEntregados();
       componente.alternarEntregados();
@@ -422,6 +451,7 @@ describe('MiCajaComponent (pedidos, 6c-8)', () => {
       crear();
       abrir([]);
       expect(texto('.entregados .estado')).toContain('Nada entregado en los últimos 30 días');
+      expect(el().querySelector('#panel-encima .nota')).toBeNull();
 
       caja.cobrosEntregadosRecientes.and.returnValue(throwError(() => error(403, 'Acceso denegado')));
       componente.cargarEntregados();

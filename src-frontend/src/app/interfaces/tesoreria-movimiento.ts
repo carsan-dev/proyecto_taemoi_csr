@@ -11,4 +11,6 @@ export interface TesoreriaMovimiento {
   precio: number;
   notas: string | null;
   alumnoActivo?: boolean;
+  /** 6c-6 (D6c-12): el cargo está devuelto (su cobro activo tiene una devolución enlazada). Sigue pagado (153). */
+  devuelto?: boolean;
 }

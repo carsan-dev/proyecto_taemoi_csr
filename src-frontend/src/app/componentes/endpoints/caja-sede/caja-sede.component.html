@@ -177,12 +177,21 @@
                   <td data-label="Recibió"><span class="tachable">{{ entrega.recibidoPorNombre || '—' }}</span></td>
                   <td data-label="Contado" class="num importe"><span class="tachable">{{ euros(entrega.importeContado) }}</span></td>
                   <td data-label="Diferencia">
-                    <span class="estado-chip" [ngClass]="claseDiferencia(entrega.diferencia)">{{ textoDiferencia(entrega.diferencia) }}</span>
+                    <span class="estado-chip" [ngClass]="claseDiferencia(diferenciaVista(entrega))">{{ textoDiferencia(diferenciaVista(entrega)) }}</span>
                     @if (entregaAnulada(entrega)) {
                       <span class="estado-chip chip-anulada">anulada</span>
                       @if (entrega.motivoAnulacion) {
                         <span class="motivo">«{{ entrega.motivoAnulacion }}»</span>
                       }
+                    }
+                    @if (movimientosDeCobro(entrega).length) {
+                      <ul class="movs-cobro" aria-label="Correcciones de la entrega">
+                        @for (m of movimientosDeCobro(entrega); track m.id) {
+                          <li [class.mov-anulado]="m.estado === 'ANULADO'" [attr.data-tipo]="m.tipo">
+                            {{ textoMovimientoDeCobro(m) }}@if (m.estado === 'ANULADO') { <span class="visually-hidden">(anulado)</span>}
+                          </li>
+                        }
+                      </ul>
                     }
                   </td>
                   <td class="col-accion">

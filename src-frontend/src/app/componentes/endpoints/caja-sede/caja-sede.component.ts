@@ -11,6 +11,7 @@ import {
   CobroCaja,
   EntregaCaja,
   MovimientoCaja,
+  MovimientoDeEntrega,
   PendienteCobrador,
   ResumenCajaSede,
   SedeCaja,
@@ -385,6 +386,35 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
   claseDiferencia(diferencia: number): string {
     const cent = Math.round(diferencia * 100);
     return cent === 0 ? 'chip-cuadra' : cent < 0 ? 'chip-falta' : 'chip-sobra';
+  }
+
+  /**
+   * Diferencia que se enseña: contado − declarado, descontando la DEVOLUCION ACTIVA de la entrega (la devolución del profesor,
+   * D6c-10, va en lugar del FALTANTE: entrega 25, cuenta 0 y devuelve 25, así que cuadra).
+   */
+  diferenciaVista(entrega: EntregaCaja): number {
+    const devuelto = (entrega.movimientosDeCobro ?? [])
+      .filter((m) => m.tipo === 'DEVOLUCION' && m.estado === 'ACTIVO')
+      .reduce((total, m) => total + m.importe, 0);
+    return entrega.diferencia - devuelto;
+  }
+
+  /** 6c-9: los ERROR (193) y la DEVOLUCION (D6c-10) de la entrega, para que lo declarado cuadre a la vista. */
+  movimientosDeCobro(entrega: EntregaCaja): MovimientoDeEntrega[] {
+    return entrega.movimientosDeCobro ?? [];
+  }
+
+  textoMovimientoDeCobro(m: MovimientoDeEntrega): string {
+    const signo = m.importe > 0 ? '+' : m.importe < 0 ? '−' : '';
+    const importe = `${signo}${this.euros(Math.abs(m.importe))}`;
+    switch (m.tipo) {
+      case 'ERROR':
+        return `Cobro deshecho ${importe}`;
+      case 'DEVOLUCION':
+        return `Devolución ${importe}`;
+      default:
+        return `${this.etiquetaTipo(m.tipo)} ${importe}`;
+    }
   }
 
   entregaAnulada(entrega: EntregaCaja): boolean {

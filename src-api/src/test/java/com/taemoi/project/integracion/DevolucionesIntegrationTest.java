@@ -364,6 +364,35 @@ class DevolucionesIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(400, estado(devolucionSede(tipo1(), null), s.tPropietario), "no es un encargo");
 	}
 
+	/**
+	 * Pieza 6c-9 (153): la ficha del alumno ({@code GET /api/productos-alumno/alumno/{id}}) marca el cargo devuelto con
+	 * {@code devuelto: true}; los demás cargos no llevan el campo (la respuesta de siempre no cambia).
+	 */
+	@Test
+	void fichaDelAlumno_marcaElCargoDevuelto_sinCambiarLosDemas() throws Exception {
+		Caido c = s.caido(s.aProfA, null);
+		s.entregar(s.e.sA, c.cobro());
+		Caido otro = s.caido(s.aProfA, null);
+		assertNull(cargoEnLaFicha(c.cargo()).get("devuelto"), "con la devolución pendiente aún no está devuelto");
+
+		leer(devolucionSede(c.solicitud(), null), s.tPropietario, 200);
+
+		JsonNode devuelto = cargoEnLaFicha(c.cargo());
+		assertTrue(devuelto.get("devuelto").asBoolean());
+		assertTrue(devuelto.get("pagado").asBoolean(), "sigue pagado (153)");
+		assertNull(cargoEnLaFicha(otro.cargo()).get("devuelto"), "un cargo pagado sin devolver no lleva el campo");
+		// Los demás tests de la clase comparten el alumno: solo se miran estos dos cargos.
+	}
+
+	private JsonNode cargoEnLaFicha(long cargo) throws Exception {
+		for (JsonNode fila : leer(get("/api/productos-alumno/alumno/" + s.aProfA), s.tPropietario, 200)) {
+			if (fila.get("id").asLong() == cargo) {
+				return fila;
+			}
+		}
+		throw new AssertionError("El cargo " + cargo + " no sale en la ficha");
+	}
+
 	@Test
 	void devolucionDeLaSede_miraLaSedeDelCobro() throws Exception {
 		// e.aGrupoA: sede principal B (el cargo y su cobro van a B), encargo pedido en la sede A (D6c-9).
@@ -481,6 +510,30 @@ class DevolucionesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	// ------------------------------------------------------------------ API de movimientos con cobro (§6.4)
+
+	/**
+	 * Ronda 1 de la 6c-9: pedir revertir (tipo 1) un cobro sin entregar con la devolución hecha o pendiente da 409 al
+	 * crear, con la razón de {@code CobroService.razonDeDevolucion} (antes se creaba y acababa en NO_APLICABLE).
+	 */
+	@Test
+	void crearRevertirSobreCobroDevuelto_409() throws Exception {
+		long devuelto = s.cobradoEnTesoreria(s.aProfA, "EFECTIVO");
+		leer(devolucionEnlazada(s.e.sA, devuelto, null), s.tGestor, 201);
+		Caido pendiente = s.caido(s.aProfA, null);
+		long antes = jdbc.queryForObject("SELECT COUNT(*) FROM solicitud WHERE organizacion_id = ?", Long.class, s.e.org);
+
+		for (Object[] caso : new Object[][] { { "cobroId", devuelto, CON_DEVOLUCION },
+				{ "productoAlumnoId", cargoDeCobro(devuelto), CON_DEVOLUCION },
+				{ "cobroId", pendiente.cobro(), DEVOLUCION_PENDIENTE } }) {
+			MvcResult r = peticion(post("/api/solicitudes").contentType(MediaType.APPLICATION_JSON)
+					.content("{\"tipo\":\"REVERTIR_COBRO\",\"" + caso[0] + "\":" + caso[1] + ",\"motivo\":\"x\"}"),
+					s.tGestor);
+			assertEquals(409, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+			assertEquals(caso[2], mensaje(r));
+		}
+		assertEquals(antes, jdbc.queryForObject("SELECT COUNT(*) FROM solicitud WHERE organizacion_id = ?", Long.class,
+				s.e.org), "no se crea ninguna solicitud");
+	}
 
 	@Test
 	void crearMovimientoConCobro_reglas() throws Exception {

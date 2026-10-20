@@ -9,4 +9,6 @@ export interface TesoreriaResumen {
   importePagado: number;
   importePendiente: number;
   alumnosConPendientes: number;
+  /** 6c-6 (D6c-12): lo devuelto de los cargos del filtro. Va aparte: el importe cobrado lo sigue incluyendo. */
+  importeDevuelto?: number;
 }

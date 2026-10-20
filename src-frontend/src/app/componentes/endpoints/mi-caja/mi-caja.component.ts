@@ -1068,11 +1068,24 @@ export class MiCajaComponent implements OnInit, OnDestroy {
     this.focoAntesDeLaHoja = destino instanceof HTMLElement ? destino : null;
   }
 
+  /**
+   * Devuelve el foco al botón que abrió la hoja. Si ya no existe (la fila se fue tras la acción), a «Encargar un
+   * producto» en «Pedidos» o a la pestaña del panel en las demás, para no dejarlo perdido en el documento (6c-9).
+   */
   private restaurarFoco(): void {
     const foco = this.focoAntesDeLaHoja;
     this.focoAntesDeLaHoja = null;
-    if (foco?.isConnected) {
-      setTimeout(() => foco.focus());
+    setTimeout(() => {
+      const destino = foco?.isConnected ? foco : this.focoDeRespaldo();
+      destino?.focus();
+    });
+  }
+
+  private focoDeRespaldo(): HTMLElement | null {
+    if (typeof document === 'undefined') {
+      return null;
     }
+    const encargar = this.pestana === 'pedidos' ? document.querySelector<HTMLElement>('#panel-pedidos .btn-encargar') : null;
+    return encargar ?? document.getElementById(`pestana-${this.pestana}`);
   }
 }

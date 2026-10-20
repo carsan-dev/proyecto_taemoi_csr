@@ -983,22 +983,22 @@ $tactil: 2.75rem; // 44 px
 }
 
 .chip-cobro {
-  &[data-cobro='pendiente'] {
+  &[data-cobro='PENDIENTE'] {
     background: #edf2f7;
     color: $gris;
   }
 
-  &[data-cobro='cobrado'] {
+  &[data-cobro='COBRADO'] {
     background: #e6f4ea;
     color: $verde-hondo;
   }
 
-  &[data-cobro='devuelto'] {
+  &[data-cobro='DEVUELTO'] {
     background: #ebf4ff;
     color: $azul-hondo;
   }
 
-  &[data-cobro='cancelado'] {
+  &[data-cobro='CANCELADO'] {
     border-color: $linea;
     background: #ffffff;
     color: $tenue;

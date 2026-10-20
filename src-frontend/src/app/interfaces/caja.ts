@@ -69,6 +69,21 @@ export interface EntregaCaja {
   anuladaEn: string | null;
   motivoAnulacion: string | null;
   autoentrega: boolean;
+  /**
+   * 6c-6: los demás movimientos de la entrega enlazados a un cobro (el ERROR +importe de un cobro deshecho ya entregado,
+   * decisión 193, y la DEVOLUCION de la devolución del profesor, D6c-10), para que lo declarado cuadre a la vista. La API
+   * solo lo manda si hay alguno; el servicio lo deja en `[]`.
+   */
+  movimientosDeCobro?: MovimientoDeEntrega[];
+}
+
+/** CajaDTOs.MovimientoDeEntrega (importe con signo). */
+export interface MovimientoDeEntrega {
+  id: number;
+  tipo: TipoMovimientoCaja;
+  importe: number;
+  cobroId: number | null;
+  estado: EstadoMovimientoCaja;
 }
 
 /** CajaDTOs.MovimientoCaja (importe con signo: positivo entra en caja, negativo sale). */

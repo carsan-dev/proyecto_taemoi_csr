@@ -58,6 +58,37 @@ describe('SolicitudesService', () => {
     expect(denegar.request.body).toEqual({ respuesta: 'no procede' });
     denegar.flush({ id: 3 });
   });
+
+  it('6c-9: encargado, recibido, rechazar y registrar devolución llaman a sus rutas', () => {
+    let resultado: Solicitud | null = null;
+    servicio.marcarEncargado(4).subscribe((s) => (resultado = s));
+    const encargado = http.expectOne(`${api}/4/encargado`);
+    expect(encargado.request.method).toBe('POST');
+    expect(encargado.request.withCredentials).toBeTrue();
+    expect(encargado.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    encargado.flush({ id: 4, estado: 'ENCARGADO', importe: '25.00', encargadoEn: [2026, 10, 20, 10, 0] });
+    expect(resultado!.importe).toBe(25);
+    expect(resultado!.encargadoEn).toBe(new Date(2026, 9, 20, 10, 0).toISOString());
+
+    servicio.marcarRecibido(4).subscribe();
+    const recibido = http.expectOne(`${api}/4/recibido`);
+    expect(recibido.request.method).toBe('POST');
+    recibido.flush({ id: 4, estado: 'RECIBIDO' });
+
+    servicio.rechazar(5, 'No hay talla').subscribe();
+    const rechazar = http.expectOne(`${api}/5/rechazar`);
+    expect(rechazar.request.body).toEqual({ motivo: 'No hay talla' });
+    rechazar.flush({ id: 5 });
+
+    servicio.registrarDevolucion(6, null).subscribe();
+    const devolucion = http.expectOne(`${api}/6/devolucion`);
+    expect(devolucion.request.method).toBe('POST');
+    expect(devolucion.request.body).toEqual({ nota: null });
+    devolucion.flush({ id: 6 });
+
+    servicio.registrarDevolucion(7, 'En mano a la madre').subscribe();
+    expect(http.expectOne(`${api}/7/devolucion`).request.body).toEqual({ nota: 'En mano a la madre' });
+  });
 });
 
 describe('SolicitudesContadorService', () => {
