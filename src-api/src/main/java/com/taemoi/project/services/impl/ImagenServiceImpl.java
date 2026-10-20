@@ -3,13 +3,16 @@ package com.taemoi.project.services.impl;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.UUID;
 
+import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -25,7 +28,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.FileUtils;
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.services.ImagenService;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 @Service
 public class ImagenServiceImpl implements ImagenService {
@@ -47,6 +52,7 @@ public class ImagenServiceImpl implements ImagenService {
 
 	@Override
 	public Imagen guardarImagen(MultipartFile archivo) throws IOException {
+		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
 		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_ALUMNOS);
 		Path rutaImagenesAlumnos = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
@@ -54,10 +60,7 @@ public class ImagenServiceImpl implements ImagenService {
 			Files.createDirectories(rutaImagenesAlumnos);
 		}
 
-		BufferedImage original = ImageIO.read(archivo.getInputStream());
-		if (original == null) {
-			throw new IOException("No se pudo leer la imagen del alumno.");
-		}
+		BufferedImage original = leerImagen(archivo, "No se pudo leer la imagen del alumno.");
 
 		BufferedImage redimensionada = redimensionarImagen(original, MAX_ALUMNO_WIDTH, MAX_ALUMNO_HEIGHT);
 		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
@@ -67,6 +70,7 @@ public class ImagenServiceImpl implements ImagenService {
 
 	@Override
 	public Imagen guardarImagenEvento(MultipartFile archivo) throws IOException {
+		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
 		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_EVENTOS);
 		Path rutaImagenesEventos = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
@@ -74,10 +78,7 @@ public class ImagenServiceImpl implements ImagenService {
 			Files.createDirectories(rutaImagenesEventos);
 		}
 
-		BufferedImage original = ImageIO.read(archivo.getInputStream());
-		if (original == null) {
-			throw new IOException("No se pudo leer la imagen del evento.");
-		}
+		BufferedImage original = leerImagen(archivo, "No se pudo leer la imagen del evento.");
 
 		BufferedImage redimensionada = redimensionarParaEvento(original);
 		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
@@ -155,6 +156,42 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		return Path.of(directorioImagenes).toAbsolutePath().normalize();
+	}
+
+	/**
+	 * Decodifica la imagen subida. Si el contenido no es una imagen legible (otro tipo de fichero, imagen dañada,
+	 * truncada o formato sin lector), es un fallo de validación: {@link ArchivoNoValidoException} (400). Un fallo de
+	 * E/S del servidor (no se puede leer el temporal, ni crear la caché de ImageIO) sigue siendo {@link IOException}.
+	 */
+	private BufferedImage leerImagen(MultipartFile archivo, String mensajeIlegible) throws IOException {
+		BufferedImage original;
+		try {
+			original = decodificar(archivo.getInputStream());
+		} catch (IIOException e) {
+			if (esErrorDeEntradaSalidaDelServidor(e)) {
+				throw e;
+			}
+			throw new ArchivoNoValidoException(mensajeIlegible);
+		}
+		if (original == null) {
+			throw new ArchivoNoValidoException(mensajeIlegible);
+		}
+		return original;
+	}
+
+	/**
+	 * ImageIO envuelve en {@link IIOException} tanto el contenido dañado (sin causa, o con otra {@code IIOException}
+	 * o un {@link EOFException} si el fichero está truncado) como los fallos de E/S de verdad (causa
+	 * {@link IOException} de otro tipo, p. ej. al crear su fichero de caché).
+	 */
+	private static boolean esErrorDeEntradaSalidaDelServidor(IIOException e) {
+		Throwable causa = e.getCause();
+		return causa instanceof IOException && !(causa instanceof IIOException) && !(causa instanceof EOFException);
+	}
+
+	/** Decodificación con ImageIO; separada para poder simular sus fallos en los tests. */
+	protected BufferedImage decodificar(InputStream entrada) throws IOException {
+		return ImageIO.read(entrada);
 	}
 
 	private BufferedImage redimensionarParaEvento(BufferedImage original) {
