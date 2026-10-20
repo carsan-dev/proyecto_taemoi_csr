@@ -51,7 +51,8 @@ import jakarta.servlet.http.Cookie;
  * {@code no-store}. Fuera de sus grupos o de otra escuela, 403; de baja, 404; sin evento de salud en esos casos.</li>
  * <li>Asistencia (D7-15): el PDF de siempre con los turnos de ESE grupo por id: un grupo homónimo de otra sede con
  * turno el mismo lunes no se mezcla; solo alumnos activos que están en el grupo. El PDF de gestión no cambia.</li>
- * <li>Cuentas mixtas: R+Pr no ve sus sedes por aquí; P/G (también con asignación) no usan estas rutas (D7-10).</li>
+ * <li>Cuentas mixtas: R+Pr no ve sus sedes por aquí; P/G sin PROFESOR no usan estas rutas (con
+ * PROFESOR, solo sus grupos: E8-1, decisión 217).</li>
  * </ul>
  * Escuela sintética ({@link EscuelaConSedesDePrueba}) y otra para el aislamiento. Datos inventados; todo vive en esas
  * dos escuelas nuevas, como el resto de la batería.
@@ -241,7 +242,9 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void gestionNoUsaSaludDelProfesor_403() throws Exception {
-		for (String token : List.of(tGestor, tPropietario, tGestorProf)) {
+		// P y G sin PROFESOR. ADMINISTRADOR + PROFESOR usa estas rutas con sus grupos (E8-1, decisión 217): ver
+		// MisGruposGestionIntegrationTest.
+		for (String token : List.of(tGestor, tPropietario)) {
 			assertEquals(403, estado(get("/api/profesor/alumnos/" + tutelado + "/salud"), token));
 			assertEquals(403, estado(get("/api/profesor/grupos/" + e.gA + "/asistencia?year=2026&month=9"), token));
 		}

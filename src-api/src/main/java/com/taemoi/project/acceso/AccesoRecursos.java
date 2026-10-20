@@ -45,9 +45,9 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * <ul>
  * <li>{@link #cargoDeMisGrupos}, {@link #alumnoDeMisGrupos} y {@link #cobroPropioDelProfesor}: SOLO la rama de profesor ({@code ROLE_PROFESOR}),
  * también para escribir (cobrar en efectivo y deshacer su cobro, D4). El alcance total NO concede: la gestión cobra por
- * el PUT del cargo y su dinero entra en caja al momento (decisión 1); una cuenta de gestión que además sea profesor no
- * tiene grupos en el alcance ({@link AlcanceSesion#TOTAL}) y no entra por aquí. Abren sesión de profesor la cuenta solo
- * profesor y la responsable de sede + profesor (decisiones 180 y 184, restringidas a su caja por
+ * el PUT del cargo y su dinero entra en caja al momento (decisión 1); una cuenta de gestión que además sea profesor
+ * tiene alcance total (desde la E8-1, con sus grupos para «Mis grupos») y no entra por aquí. Abren sesión de profesor
+ * la cuenta solo profesor y la responsable de sede + profesor (decisiones 180 y 184, restringidas a su caja por
  * {@code SesionSoloProfesorAuthorizationManager}) y la mixta FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ
  * cuenta; D5-2 sigue valiendo para las rutas existentes.</li>
  * <li>{@link #cajaDeSede}: alcance total o sedes de {@code ROLE_RESPONSABLE_SEDE}; nunca la rama de profesor.</li>
@@ -211,13 +211,24 @@ public class AccesoRecursos {
 	}
 
 	/**
-	 * Pieza E7-1 (D7-11): el grupo es uno de los del profesor de la sesión (rutas {@code /api/profesor/**}). Copia de
-	 * {@link #alumnoDeMisGrupos}: solo la rama de profesor; ni el alcance total (gestión, también con asignación, D7-10)
-	 * ni las sedes del responsable (sesión 184) conceden. Un grupo de otra escuela o inexistente no está nunca en sus
-	 * grupos: {@code false} (403, sin revelar si existe).
+	 * Pieza E7-1 (D7-11): el grupo es uno de los del profesor de la sesión (rutas {@code /api/profesor/**}). Solo la rama
+	 * de profesor, por {@code alcance.grupos()}; ni el alcance total ni las sedes del responsable (sesión 184) conceden.
+	 * Pieza E8-1 (decisión 217, D8-15): P o G con PROFESOR entran con SUS grupos (el total guardado los lleva), nunca por
+	 * el total. Un grupo de otra escuela o inexistente no está nunca en sus grupos: {@code false} (403, sin revelar si
+	 * existe).
 	 */
 	public boolean grupoDeMisGrupos(Long grupoId) {
-		return comoProfesor(grupoId, grupos -> consulta.grupoEnGrupos(grupoId, grupos));
+		return soloPorMisGrupos(grupoId, grupos -> consulta.grupoEnGrupos(grupoId, grupos));
+	}
+
+	/**
+	 * Pieza E8-1 (D8-15): el alumno es de alguno de los grupos del profesor de la sesión, para las rutas
+	 * {@code /api/profesor/**}. Como {@link #grupoDeMisGrupos}: solo {@code ROLE_PROFESOR} y {@code alcance.grupos()},
+	 * también para P o G con PROFESOR; nunca por el total ni por sede. La caja del profesor sigue con
+	 * {@link #alumnoDeMisGrupos}, que no admite gestión (Mi caja no cambia).
+	 */
+	public boolean alumnoDeMisGruposAsignados(Long alumnoId) {
+		return soloPorMisGrupos(alumnoId, grupos -> consulta.alumnoEnGrupos(alumnoId, grupos));
 	}
 
 	/**
@@ -255,7 +266,22 @@ public class AccesoRecursos {
 				null);
 	}
 
-	/** Solo la rama de profesor, con su conjunto de grupos no vacío; sin mirar la operación. */
+	/**
+	 * Rutas {@code /api/profesor/**} (E8-1): solo {@code ROLE_PROFESOR} y sus grupos, haya o no alcance total. El total
+	 * no concede nada aquí: sin grupos, {@code false} sin consultar.
+	 */
+	private boolean soloPorMisGrupos(Object id, Predicate<Set<Long>> porGrupos) {
+		Authentication autenticacion = sesionValida();
+		if (id == null || autenticacion == null || !tieneAutoridad(autenticacion, Roles.ROLE_PROFESOR)) {
+			return false;
+		}
+		return concede(porGrupos, alcanceActual.obtener().grupos());
+	}
+
+	/**
+	 * Caja del profesor (6b-2): solo la rama de profesor, con su conjunto de grupos no vacío y SIN alcance total; sin
+	 * mirar la operación. Con E8-1 un total puede llevar grupos (P o G con PROFESOR): siguen sin entrar por la caja.
+	 */
 	private boolean comoProfesor(Object id, Predicate<Set<Long>> porGrupos) {
 		Authentication autenticacion = sesionValida();
 		if (id == null || autenticacion == null || !tieneAutoridad(autenticacion, Roles.ROLE_PROFESOR)) {

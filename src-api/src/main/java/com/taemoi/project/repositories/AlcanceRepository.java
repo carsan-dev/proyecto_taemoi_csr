@@ -10,7 +10,8 @@ import com.taemoi.project.entities.Membresia;
 
 /**
  * Alcance por sede y grupo de una cuenta en una escuela (entrega 5b-2, docs/multi-escuela/entrega5-plan.md §3.3).
- * Solo lo usa {@code IdentificadorSesionJwt}, y solo para sesiones con RESPONSABLE_SEDE o PROFESOR y sin gestión.
+ * Solo lo usa {@code IdentificadorSesionJwt}, y solo para sesiones con RESPONSABLE_SEDE o PROFESOR y sin gestión, o
+ * con gestión y PROFESOR (pieza E8-1, D8-15: de ellas solo se guardan los grupos).
  *
  * <p>Es la SEGUNDA excepción al filtro de escuela, después de {@link AlumnoRepository#ACCESO_FAMILIA}: se ejecuta al
  * verificar el JWT, antes de fijar la escuela, así que es nativa y NO depende de {@code @TenantId}. Filtra

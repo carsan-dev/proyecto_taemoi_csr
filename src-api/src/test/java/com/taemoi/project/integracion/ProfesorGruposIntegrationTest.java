@@ -46,8 +46,9 @@ import jakarta.servlet.http.Cookie;
  * <li>Solo sus grupos ({@code alcance.grupos()}), por id y en listados; un grupo o alumno ajeno (otro profesor, otra
  * escuela o inexistente) da 403 sin revelar si existe; un alumno de baja de su grupo, 404 (D7-13).</li>
  * <li>DTO reducidos: nunca NIF, email, dirección, observaciones, tarifa ni cobros (D7-12).</li>
- * <li>Cuentas mixtas: R+Pr (sesión 184) no ve sus sedes por estas rutas; F+Pr usa sus grupos; P/G (también con
- * asignación) no usa estas rutas (D7-10). La sesión solo-profesor sigue cerrada fuera de su lista blanca.</li>
+ * <li>Cuentas mixtas: R+Pr (sesión 184) no ve sus sedes por estas rutas; F+Pr usa sus grupos; P/G sin PROFESOR no
+ * usa estas rutas (con PROFESOR, solo sus grupos: E8-1, decisión 217). La sesión solo-profesor sigue cerrada fuera de
+ * su lista blanca.</li>
  * </ul>
  * Escuela sintética ({@link EscuelaConSedesDePrueba}, con un sistema de grados propio y
  * {@code comportamiento_legado_taemoi} solo en ella) y otra escuela para el aislamiento. Datos inventados; todo vive
@@ -399,11 +400,16 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void gestionNoUsaLasRutasDelProfesor_403() throws Exception {
-		for (String token : List.of(tGestor, tPropietario, tGestorProf)) {
+		for (String token : List.of(tGestor, tPropietario)) {
 			assertEquals(403, estado(get("/api/profesor/grupos"), token));
 			assertEquals(403, estado(get("/api/profesor/grupos/" + e.gA + "/alumnos"), token));
 			assertEquals(403, estado(get("/api/profesor/alumnos/" + tutelado), token));
 		}
+		// E8-1 (decisión 217, corrige D7-10): ADMINISTRADOR + PROFESOR usa estas rutas, solo con sus grupos (gA).
+		// Más casos en MisGruposGestionIntegrationTest.
+		assertEquals(Set.of(e.gA), ids(leer(get("/api/profesor/grupos"), tGestorProf, 200), "id"));
+		assertEquals(403, estado(get("/api/profesor/grupos/" + e.gB + "/alumnos"), tGestorProf));
+		assertEquals(403, estado(get("/api/profesor/alumnos/" + e.aB), tGestorProf));
 	}
 
 	// ------------------------------------------------------------------ utilidades

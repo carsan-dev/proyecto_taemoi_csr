@@ -14,7 +14,8 @@ import com.taemoi.project.entities.Roles;
  *
  * <ol>
  * <li>Autenticación con {@code ROLE_ADMIN} o {@code ROLE_MANAGER} → {@link AlcanceSesion#TOTAL}, sea cual sea el
- * tipo de token (así los tests WebMvc con usuarios simulados siguen con alcance total).</li>
+ * tipo de token (así los tests WebMvc con usuarios simulados siguen con alcance total). Si es una
+ * {@link AutenticacionEscuela} con alcance total guardado, ese (pieza E8-1: lleva los grupos de P o G con PROFESOR).</li>
  * <li>Si no, una {@link AutenticacionEscuela} → su alcance.</li>
  * <li>En cualquier otro caso → {@link AlcanceSesion#NINGUNO} (falla cerrado).</li>
  * </ol>
@@ -28,6 +29,10 @@ public class AlcanceActual {
 			return AlcanceSesion.NINGUNO;
 		}
 		if (tieneGestion(autenticacion)) {
+			// Pieza E8-1 (D8-15): P o G con PROFESOR guardan un total con sus grupos; cualquier otro, TOTAL.
+			if (autenticacion instanceof AutenticacionEscuela escuela && escuela.alcance().total()) {
+				return escuela.alcance();
+			}
 			return AlcanceSesion.TOTAL;
 		}
 		if (autenticacion instanceof AutenticacionEscuela escuela) {

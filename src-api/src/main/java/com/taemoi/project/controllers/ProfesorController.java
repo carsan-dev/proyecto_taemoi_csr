@@ -28,10 +28,12 @@ import com.taemoi.project.services.ProfesorService;
  *
  * <p>Tres capas (§6.3): la lista blanca de la sesión solo-profesor ({@code SesionSoloProfesorAuthorizationManager},
  * {@code /api/profesor/**}), la regla de URL ({@code /api/profesor/**} → {@code ROLE_PROFESOR}) y el
- * {@code @PreAuthorize} de cada método, que nunca admite la gestión (D7-10): {@code ROLE_PROFESOR} sin
- * {@code ROLE_ADMIN} ni {@code ROLE_MANAGER}, o {@code @acceso.*DeMisGrupos} (solo la rama de profesor, que ya exige
- * alcance no total). El servicio filtra por {@code alcance.grupos()} y nada más (D7-11). Ninguna ruta de gestión se
- * abre al profesor (D7-9).
+ * {@code @PreAuthorize} de cada método: {@code ROLE_PROFESOR}, o {@code @acceso.grupoDeMisGrupos} /
+ * {@code @acceso.alumnoDeMisGruposAsignados} (solo la rama de profesor, por sus grupos). El servicio filtra por
+ * {@code alcance.grupos()} y nada más (D7-11). Ninguna ruta de gestión se abre al profesor (D7-9).
+ *
+ * <p>Pieza E8-1 (decisión 217, D8-15, corrige D7-10): propietario y gestor que además son profesores también entran,
+ * con SUS grupos de {@code asignacion_profesor}: su alcance total no abre nada aquí. Sin {@code ROLE_PROFESOR}, 403.
  */
 @RestController
 @RequestMapping("/api/profesor")
@@ -45,7 +47,7 @@ public class ProfesorController {
 
 	/** Sus grupos (§5.1). */
 	@GetMapping("/grupos")
-	@PreAuthorize("hasAuthority('ROLE_PROFESOR') and !hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')")
+	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
 	public ResponseEntity<List<ProfesorDTOs.Grupo>> misGrupos() {
 		return ResponseEntity.ok(profesor.misGrupos());
 	}
@@ -59,7 +61,7 @@ public class ProfesorController {
 
 	/** Ficha reducida de un alumno de sus grupos (§5.3). Fuera de sus grupos: 403; de baja: 404 (D7-13). */
 	@GetMapping("/alumnos/{alumnoId}")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.Ficha> ficha(@PathVariable Long alumnoId) {
 		return ResponseEntity.ok(profesor.ficha(alumnoId));
 	}
@@ -69,7 +71,7 @@ public class ProfesorController {
 	 * cada lectura queda registrada (módulo {@code salud}). Fuera de sus grupos: 403; de baja: 404. Sin edición.
 	 */
 	@GetMapping("/alumnos/{alumnoId}/salud")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<AlumnoSaludDTO> salud(@PathVariable Long alumnoId) {
 		return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(profesor.salud(alumnoId));
 	}
@@ -95,7 +97,7 @@ public class ProfesorController {
 
 	/** Marca o quita el apto (D7-16). Devuelve el deporte como lo pinta la ficha. */
 	@PutMapping("/alumnos/{alumnoId}/deportes/{deporte}/apto")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.DeporteDelAlumno> actualizarApto(@PathVariable Long alumnoId,
 			@PathVariable String deporte, @RequestBody ProfesorRequests.Apto peticion) {
 		return ResponseEntity.ok(profesor.actualizarApto(alumnoId, deporte, peticion.aptoParaExamen()));
@@ -103,7 +105,7 @@ public class ProfesorController {
 
 	/** Corrige la fecha de grado ({@code yyyy-MM-dd}); recalcula el apto como gestión. */
 	@PutMapping("/alumnos/{alumnoId}/deportes/{deporte}/fecha-grado")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.DeporteDelAlumno> actualizarFechaGrado(@PathVariable Long alumnoId,
 			@PathVariable String deporte, @RequestBody ProfesorRequests.FechaGrado peticion) {
 		return ResponseEntity.ok(profesor.actualizarFechaGrado(alumnoId, deporte, peticion.fechaGrado()));
@@ -111,7 +113,7 @@ public class ProfesorController {
 
 	/** Pase con derecho de examen: crea el cargo pendiente; el grado sube al cobrarlo en Mi caja (D7-6). */
 	@PostMapping("/alumnos/{alumnoId}/deportes/{deporte}/pase-examen")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.PaseCreado> paseExamen(@PathVariable Long alumnoId, @PathVariable String deporte,
 			@RequestBody(required = false) ProfesorRequests.Pase peticion) {
 		return ResponseEntity.ok(profesor.pasarGrado(alumnoId, deporte, rojoBordado(peticion), false));
@@ -119,7 +121,7 @@ public class ProfesorController {
 
 	/** Pase por recompensa: crea el cargo pendiente; el grado sube al cobrarlo en Mi caja (D7-6). */
 	@PostMapping("/alumnos/{alumnoId}/deportes/{deporte}/pase-recompensa")
-	@PreAuthorize("@acceso.alumnoDeMisGrupos(#alumnoId)")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.PaseCreado> paseRecompensa(@PathVariable Long alumnoId,
 			@PathVariable String deporte, @RequestBody(required = false) ProfesorRequests.Pase peticion) {
 		return ResponseEntity.ok(profesor.pasarGrado(alumnoId, deporte, rojoBordado(peticion), true));

@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (444 líneas; 145 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (446 líneas; 146 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -44,7 +44,7 @@ Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. Hasta 
 lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**` y su caja. Desde la decisión 180 la columna es la sesión
 solo-profesor, que ya abre sesión: `SesionSoloProfesorAuthorizationManager` (envuelve las reglas de URL) la deja
 pasar solo en su caja, en `PROFESOR_SESION_180` (`GET/HEAD /api/auth/roles`, `/api/auth/user`,
-`/api/auth/organizaciones`, `/api/auth/plataforma`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
+`/api/auth/organizaciones`, `/api/auth/plataforma`, `/api/auth/permisos`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
 URL. Casillas cambiadas: `GET/HEAD /api/auth/roles` y `/api/auth/user`, `DENIEGA` → `PERMITE` (su `@PreAuthorize`
 admite `ROLE_PROFESOR`); ninguna otra columna cambia. Desde la entrega 6-1,
 RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
@@ -213,9 +213,9 @@ Pieza E7-1 (el profesor con sus grupos, fase3-e7-profesor.md §6.2, D7-9 a D7-13
 bloque de `/api/caja`) y una entrada `/api/profesor/**` en la lista blanca de la sesión solo-profesor; las líneas se
 declaran en `PROFESOR_E7` de `MatrizPermisosTest` y la condición `listaBlanca` acepta el prefijo. Ninguna ruta de
 gestión se abre al profesor. Lo prueba `ProfesorGruposIntegrationTest`.
-- `GET/HEAD /api/profesor/grupos`: PROFESOR `PERMITE` declarado (`hasAuthority('ROLE_PROFESOR') and
-  !hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')`; el servicio devuelve solo sus grupos, `alcance.grupos()`, con sede,
-  su rol, disciplina y nº de alumnos activos).
+- `GET/HEAD /api/profesor/grupos`: PROFESOR `PERMITE` declarado (`hasAuthority('ROLE_PROFESOR')`; hasta la E8-1,
+  además `and !hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')`; el servicio devuelve solo sus grupos, `alcance.grupos()`,
+  con sede, su rol, disciplina y nº de alumnos activos).
 - `GET/HEAD /api/profesor/grupos/{grupoId}/alumnos`: PROFESOR `ALCANCE` (`@acceso.grupoDeMisGrupos`, solo la rama de
   profesor; un grupo ajeno, de otra escuela o inexistente da 403). Alumnos activos con sus deportes, grado, fecha de
   grado y apto.
@@ -225,6 +225,12 @@ gestión se abre al profesor. Lo prueba `ProfesorGruposIntegrationTest`.
 - El resto de roles, `DENIEGA` en las seis (también PROPIETARIO y GESTOR, que tienen las de gestión, D7-10, y
   RESPONSABLE_SEDE). Las cuentas mixtas F+Pr y R+Pr las usan limitadas a sus grupos: las sedes del responsable no abren
   nada aquí (D7-11).
+- Desde la E8-1 (decisión 217, D8-15, corrige D7-10) también las usan P+Pr y G+Pr, limitadas a sus grupos de
+  `asignacion_profesor`: su alcance total no abre ningún otro grupo ni alumno, y sin asignaciones ven la lista vacía.
+  La matriz no cambia: las columnas PROPIETARIO y GESTOR son sesiones sin `ROLE_PROFESOR` y siguen `DENIEGA` en todas
+  las rutas del profesor. Las rutas con alumno de `/api/profesor/**` pasan de `@acceso.alumnoDeMisGrupos` (que sigue en
+  la caja del profesor, sin cambios) a `@acceso.alumnoDeMisGruposAsignados`. Lo prueba
+  `MisGruposGestionIntegrationTest`.
 
 Pieza E7-2 (salud a petición y hoja de asistencia, fase3-e7-profesor.md D7-14 y D7-15): 4 líneas nuevas bajo
 `/api/profesor`; ninguna casilla existente cambia ni la regla de URL (la de `/api/profesor/**` de la E7-1). Declaradas
@@ -276,6 +282,16 @@ clase; fuera de la lista blanca de la sesión solo-profesor. Lo prueba `LogoEscu
 - El resto de roles, `DENIEGA` en las cuatro, también el propietario de la escuela.
 - `GET /api/plataforma/escuelas` (línea existente, sin cambio de permisos) devuelve además `tieneLogo` y
   `marcaHeredada`.
+
+Pieza E8-1 (permisos de la sesión, fase3-e8-miembros.md D8-14): 2 líneas nuevas, `GET`/`HEAD /api/auth/permisos`
+(`PermisosSesionController`), ninguna casilla existente cambia. ANONIMO `DENIEGA` (401) y RESPONSABLE_SEDE `DENIEGA`
+(como `/api/auth/roles`: el responsable solo no abre sesión); FAMILIA, GESTOR, PROPIETARIO, SOLO_PLATAFORMA y
+PROFESOR `PERMITE` (`@PreAuthorize` de `/api/auth/roles` más `hasAuthority('ROLE_ADMIN_PLATAFORMA')`). Sin regla de URL
+propia (cae en `authenticated()`); en la lista blanca de la sesión solo-profesor (solo `GET`; HEAD cuenta como GET) y
+en `PROFESOR_SESION_180`. Devuelve `{roles, esAdminPlataforma, sedes[{id, nombre, activa}], variasSedes, tieneGrupos,
+capacidades}`: en la sesión solo-profesor (también R+Pr) roles `[PROFESOR]`, sin las sedes del responsable, con
+`MIS_GRUPOS` y `MI_CAJA`; SOLO_PLATAFORMA, roles, sedes y capacidades vacíos. Como todo `/api/auth/**`, no se audita.
+Lo prueba `PermisosSesionIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

@@ -142,10 +142,18 @@ public class IdentificadorSesionJwt implements IdentificadorSesion {
 	/**
 	 * Alcance de una sesión que ya pasó la puerta (entrega5-plan.md §3.3): ADMIN o MANAGER → {@code TOTAL} sin
 	 * consulta (Taemoi: coste cero); RESPONSABLE_SEDE o PROFESOR → UNA consulta; el resto (familia) → {@code NINGUNO}.
+	 *
+	 * <p>Pieza E8-1 (decisión 217, D8-15): ADMIN o MANAGER que además tienen PROFESOR → la misma consulta y alcance
+	 * total CON sus grupos de {@code asignacion_profesor} («Mis grupos» filtra solo por ellos). Sus sedes de responsable
+	 * no se guardan: el total ya lo ve todo. Sin PROFESOR, nada cambia (ni consulta).
 	 */
 	private AlcanceSesion alcanceDe(Long usuarioId, Long organizacionId, Set<Roles> autoridades) {
 		if (autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER)) {
-			return AlcanceSesion.TOTAL;
+			if (!autoridades.contains(Roles.ROLE_PROFESOR)) {
+				return AlcanceSesion.TOTAL;
+			}
+			Set<Long> grupos = AlcanceSesion.desde(alcances.filasDeAlcance(usuarioId, organizacionId)).grupos();
+			return grupos.isEmpty() ? AlcanceSesion.TOTAL : new AlcanceSesion(true, Set.of(), grupos);
 		}
 		if (autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE) || autoridades.contains(Roles.ROLE_PROFESOR)) {
 			return AlcanceSesion.desde(alcances.filasDeAlcance(usuarioId, organizacionId));

@@ -140,16 +140,124 @@ Roles»): 409 si deja la escuela sin propietario activo. Lo hace E8-3, con su te
 
 ---
 
-## 2. Pieza E8-1 (la detalla su implementador con TDD antes de empezar)
+## 2. Pieza E8-1: `GET /api/auth/permisos` y «Mis grupos» para P y G (detallada)
 
-Rama `feature/e8-1`. Alcance:
-- `GET /api/auth/permisos` (D8-14): DTO, capacidades, sedes visibles (todas con alcance total; las suyas para R).
-- Lista blanca de la sesión solo-profesor y `PROFESOR_SESION_180`; SOLO_PLATAFORMA con roles vacíos; línea en la
-  matriz y nota en `matriz-endpoints.md`.
-- `IdentificadorSesionJwt.alcanceDe`: grupos para P y G con `ROLE_PROFESOR` (una consulta solo para ellos).
-- `/api/profesor/**` y `@acceso.*DeMisGrupos` sin la exclusión de ADMIN/MANAGER, filtrando solo por
-  `alcance.grupos()` (D8-15).
-- Tests de P+Pr y G+Pr; puntos de revisión 1-3.
+Rama `feature/e8-1` desde `feature/e8-docs`. Sin migración: atajo `desplegar`. Una ruta nueva de solo lectura
+(`GET /api/auth/permisos`) y un cambio de alcance; ninguna escritura nueva.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Alcance de P y G con `ROLE_PROFESOR`** (D8-15). `IdentificadorSesionJwt.alcanceDe`: con `ROLE_ADMIN` o
+  `ROLE_MANAGER` y además `ROLE_PROFESOR`, la consulta de siempre (`AlcanceRepository.filasDeAlcance`, con
+  `organizacion_id` explícito y membresía PROFESOR activa) y `AlcanceSesion(total = true, sedes = ∅, grupos = sus
+  grupos)`: las sedes de un P+R no se guardan (el total ya lo ve todo). Gestión sin `ROLE_PROFESOR`: `TOTAL` sin
+  consulta, como hoy. `AlcanceActual` devuelve el alcance guardado de una `AutenticacionEscuela` de gestión solo si es
+  total (así lleva sus grupos); si no, `TOTAL` como hoy.
+- **Un total con grupos no da más que un total.** Toda comprobación que concede con `total()` (`AccesoRecursos.decidir`,
+  `GestionPorSede.restriccion`, `PredicadosAlcance`) concede igual que antes; las que miran solo grupos de la caja
+  (`AccesoRecursos.cargoDeMisGrupos` y `alumnoDeMisGrupos`, `CajaService` y `EncargoService.gruposDelProfesor`) siguen
+  exigiendo alcance no total: **Mi caja no cambia para nadie** (P+Pr y G+Pr siguen con la caja vacía y 403 al cobrar).
+- **Rutas del profesor solo por `alcance.grupos()`.** `@acceso.grupoDeMisGrupos` deja de exigir `!total()` y mira solo
+  los grupos. Como `@acceso.alumnoDeMisGrupos` lo comparten la caja y `/api/profesor/**`, las rutas del profesor pasan a
+  `@acceso.alumnoDeMisGruposAsignados` (nuevo, solo grupos) y la caja conserva el suyo sin cambios. `GET
+  /api/profesor/grupos` exige solo `ROLE_PROFESOR`; `ProfesorService.gruposDelProfesor()` devuelve `alcance.grupos()`
+  sin atajo por total. R+Pr sigue filtrado solo por grupos.
+- **Salud y pases de P/G por estas rutas**: los mismos servicios que el profesor (`AlumnoSaludService.obtenerComoProfesor`
+  y `RegistroAccionesProfesor`, una fila por escritura, decisión 214; `EscrituraConRegistroPropio` sin cambios).
+- **`GET /api/auth/permisos`** (D8-14): `PermisosSesionController` + `PermisosSesionService`, DTO
+  `PermisosSesionDTO {roles, esAdminPlataforma, sedes[{id, nombre, activa}], variasSedes, tieneGrupos, capacidades}`.
+  Roles: los `RolMembresia` de las autoridades de la sesión (sin consulta), por el orden del enum; en la sesión
+  solo-profesor (también R+Pr), solo `PROFESOR`. Sedes: alcance total → todas las de la escuela, también inactivas
+  (`SedeRepository.findAllByOrderByIdAsc`, `@TenantId`); `ROLE_RESPONSABLE_SEDE` fuera de la sesión solo-profesor → las
+  suyas (`alcance.sedes()`); resto, ninguna. `variasSedes` = más de una sede activa en la escuela (de la lista ya
+  cargada con total; si no, un `COUNT`). `tieneGrupos` = `alcance.grupos()` no vacío. Capacidades: `MIEMBROS`,
+  `SEDES`, `ASIGNAR_PROFESORES` con `ROLE_ADMIN` o `ROLE_MANAGER`; `DAR_GESTION` con `ROLE_ADMIN`; `MIS_GRUPOS` en la
+  sesión solo-profesor siempre y, fuera de ella, con `ROLE_PROFESOR` y grupos; `MI_CAJA` con `ROLE_PROFESOR`. Sesión
+  solo-plataforma (sin autoridades de escuela): 200 con roles, sedes y capacidades vacíos, `esAdminPlataforma` y sin
+  consultar la escuela. `@PreAuthorize` como `/api/auth/roles` más `ROLE_ADMIN_PLATAFORMA`; sin regla de URL nueva (cae
+  en `authenticated()`); `/api/auth/**` no se audita. Sin N+1: reutiliza el alcance de la petición; como mucho dos
+  consultas de sedes.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/MisGruposGestionIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`; escuelas `EscuelaConSedesDePrueba.crear(…, "it-e8-1")` y `"it-e8-1-otra"`, datos
+  inventados, sistema de grados y productos de grado propios). Cuentas: `propProf` (PROPIETARIO + PROFESOR de `gA`),
+  `gestorProf` (ADMINISTRADOR + PROFESOR de `gB`), `gestorProfSinGrupos` (ADMINISTRADOR + PROFESOR sin asignaciones),
+  propietario y gestor sin PROFESOR, `profOtra` (otra escuela).
+- Crear: `T/integracion/PermisosSesionIntegrationTest.java` (mismas escuelas sintéticas, `"it-e8-1p"` y
+  `"it-e8-1p-otra"`, esta con una sola sede activa).
+- Crear: `T/services/PermisosSesionServiceTest.java` (reglas de capacidades, sin Spring).
+- Modificar: `T/organizacion/IdentificadorSesionJwtTest.java`, `T/organizacion/AlcanceActualTest.java`,
+  `T/acceso/AccesoRecursosTest.java`, `T/config/SesionSoloProfesorAuthorizationManagerTest.java`,
+  `T/seguridad/MatrizPermisosTest.java` (`PROFESOR_SESION_180`), `src-api/src/test/resources/seguridad/matriz-permisos.txt`
+  (2 líneas nuevas), y los tres IT de la E7 que daban 403 a G+Pr (`ProfesorGruposIntegrationTest`,
+  `ProfesorGradosIntegrationTest`, `ProfesorSaludAsistenciaIntegrationTest`: G+Pr sale de los bucles de
+  «gestión no usa las rutas del profesor»; P y G sin PROFESOR siguen en 403) y `AlcanceSesionIntegrationTest`
+  (`identificarDejaElAlcanceEnLaSesion`: P+Pr pasa de `TOTAL` a total con su grupo; P sin PROFESOR, `TOTAL`).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT `MisGruposGestionIntegrationTest`: `propietarioProfesor_soloSusGrupos` (lista = `gA`; alumnos, ficha y PDF de
+    `gA` 200; `gB` y sus alumnos 403), `gestorProfesor_alumnoDeOtroGrupo_403` (alumno de otro grupo, sin grupo, de otra
+    escuela o inexistente: 403; grupo de otra escuela: 403), `gestionProfesorSinAsignaciones_listaVacia` (lista vacía y
+    403 en un grupo y en un alumno), `gestionProfesor_saludRegistradaIgual` (un evento `salud` con la ruta, el resumen
+    «(profesor)» y su usuario; 403 sin evento), `gestionProfesor_paseRegistraUnaFila` (200, una sola fila
+    `PROFESOR PASE_EXAMEN` con su usuario y sin la genérica; el grado no cambia), `gestionSinProfesor_sigueDenegada`
+    (P y G sin PROFESOR: 403 en las rutas del profesor), `cajaProfesorSinCambios_gestionConProfesor` (P+Pr con grupos:
+    alumnos y cargos de Mi caja vacíos, cobrar a un alumno de su grupo 403).
+  - IT `PermisosSesionIntegrationTest`: `permisos_propietario` (todos los roles de la escuela, todas las sedes también
+    la inactiva, `variasSedes`, MIEMBROS/DAR_GESTION/SEDES/ASIGNAR_PROFESORES), `permisos_gestor` (sin DAR_GESTION),
+    `permisos_familia` (FAMILIA, sin sedes ni capacidades), `permisos_familiaResponsable_susSedes`,
+    `permisos_familiaProfesor_misGruposYMiCaja`, `permisos_sesionSoloProfesor_soloProfesorYMisGrupos` (con y sin
+    grupos: roles `[PROFESOR]`, MIS_GRUPOS y MI_CAJA, sin sedes), `permisos_responsableMasProfesor_sinSedes`,
+    `permisos_propietarioProfesorConGrupos_misGrupos`, `permisos_gestorProfesorSinGrupos_sinMisGrupos`,
+    `permisos_soloPlataforma_rolesVacios`, `permisos_anonimo_401`, `permisos_unaSedeActiva_variasSedesFalse`,
+    `permisos_noCruzaEscuelas`, `permisos_noSeAudita`.
+  - `IdentificadorSesionJwtTest`: `alcanceDeGestionSinProfesor_noConsulta` (sustituye a
+    `gestionTieneAlcanceTotalSinConsultarElAlcance` sin el caso G+Pr+R), `alcanceDeGestionConProfesor_totalYSusGrupos`
+    (una consulta; sin sedes), `alcanceDeGestionConProfesorSinAsignaciones_totalSinGrupos`.
+  - `AlcanceActualTest`: `gestionConAlcanceTotalGuardadoConservaSusGrupos`.
+  - `AccesoRecursosTest`: `grupoDeMisGrupos_gestionConProfesor_soloSusGrupos`,
+    `alumnoDeMisGruposAsignados_soloSusGrupos_nuncaPorTotalNiPorSede`, `cajaDelProfesor_totalConGrupos_noConcede`,
+    `decidir_totalConGrupos_igualQueTotal`.
+  - `PermisosSesionServiceTest`: `capacidades_porRol`, `capacidades_sesionSoloProfesorSiempreMisGrupos`.
+  - `SesionSoloProfesorAuthorizationManagerTest`: `GET`/`HEAD /api/auth/permisos` pasan a la regla de siempre;
+    `POST /api/auth/permisos` no pasa.
+  - Matriz: `GET`/`HEAD /api/auth/permisos` (ANONIMO y RESPONSABLE_SEDE `DENIEGA`, resto `PERMITE`), en
+    `PROFESOR_SESION_180` con su porqué.
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='MisGruposGestionIntegrationTest,PermisosSesionIntegrationTest,PermisosSesionServiceTest,IdentificadorSesionJwtTest,AlcanceActualTest,AccesoRecursosTest,SesionSoloProfesorAuthorizationManagerTest,MatrizPermisosTest' -DexcludedGroups=migracion`:
+  no compila hasta crear el servicio, el DTO y `alumnoDeMisGruposAsignados`; con los esqueletos, las rutas dan 403/404.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Modificar: `J/organizacion/IdentificadorSesionJwt.java` (`alcanceDe`), `J/organizacion/AlcanceActual.java`.
+- Modificar: `J/acceso/AccesoRecursos.java` (`grupoDeMisGrupos` y `alumnoDeMisGruposAsignados` por `soloPorMisGrupos`;
+  `comoProfesor` de la caja sin cambios).
+- Modificar: `J/controllers/ProfesorController.java` (`@PreAuthorize` sin la exclusión; `alumnoDeMisGruposAsignados`),
+  `J/services/ProfesorService.java` (`gruposDelProfesor`).
+- Modificar: `J/config/SesionSoloProfesorAuthorizationManager.java` (`GET /api/auth/permisos`),
+  `J/config/SecurityConfiguration.java` (solo el comentario de `/api/profesor/**`).
+- Crear: `J/controllers/PermisosSesionController.java`, `J/services/PermisosSesionService.java`,
+  `J/dtos/response/PermisosSesionDTO.java`. Modificar: `J/repositories/SedeRepository.java` (`countByActivaTrue`).
+
+**Interfaces:**
+- Produce: `GET /api/auth/permisos` → `PermisosSesionDTO`; capacidades `MIEMBROS`, `DAR_GESTION`, `SEDES`,
+  `ASIGNAR_PROFESORES`, `MIS_GRUPOS`, `MI_CAJA` (contrato de E8-5); `@acceso.alumnoDeMisGruposAsignados(Long)`.
+- Consume: `AlcanceActual.obtener()`, `RolMembresia.sesionSoloProfesor`, `SedeRepository`.
+
+- [x] **Paso 1:** alcance de P/G con PROFESOR y `AlcanceActual`; tests de unidad en verde.
+- [x] **Paso 2:** `@acceso`, controlador y servicio del profesor; IT de P+Pr y G+Pr en verde y los de la E7 ajustados.
+- [x] **Paso 3:** `GET /api/auth/permisos`, lista blanca y matriz; sus tests en verde.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 2 líneas, recuento de la cabecera y la línea de P+Pr/G+Pr en
+  la sección del profesor.
+- [x] Los IT de la E7, `AuditoriaRequestFilterRegistroPropioTest`, `RegistroUnicoProfesorIntegrationTest`,
+  `SecurityAuthorizationWebMvcTest` y `mvn test -DexcludedGroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 ---
 

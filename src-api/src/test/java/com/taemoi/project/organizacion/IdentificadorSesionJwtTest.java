@@ -2,6 +2,7 @@ package com.taemoi.project.organizacion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -181,16 +182,48 @@ class IdentificadorSesionJwtTest {
 	// ------------------------------------------------------------------ alcance de la sesión (entrega 5b-2)
 
 	@Test
-	void gestionTieneAlcanceTotalSinConsultarElAlcance() {
-		// Invariante de Taemoi: propietario y gestor no añaden ninguna consulta por petición.
+	void alcanceDeGestionSinProfesor_noConsulta() {
+		// Invariante de Taemoi: propietario y gestor sin PROFESOR no añaden ninguna consulta por petición.
 		for (Set<Roles> autoridades : List.of(Set.of(Roles.ROLE_ADMIN), Set.of(Roles.ROLE_MANAGER),
-				Set.of(Roles.ROLE_MANAGER, Roles.ROLE_PROFESOR, Roles.ROLE_RESPONSABLE_SEDE),
-				Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER))) {
+				Set.of(Roles.ROLE_MANAGER, Roles.ROLE_RESPONSABLE_SEDE), Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER),
+				Set.of(Roles.ROLE_ADMIN, Roles.ROLE_MANAGER, Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER))) {
 			cuentaConAutoridades(autoridades);
-			assertEquals(AlcanceSesion.TOTAL, identificador.identificar(peticion()).orElseThrow().alcance(),
+			assertSame(AlcanceSesion.TOTAL, identificador.identificar(peticion()).orElseThrow().alcance(),
 					autoridades.toString());
 		}
 		verifyNoInteractions(alcances);
+	}
+
+	/**
+	 * E8-1 (decisión 217, D8-15): P o G con PROFESOR siguen con alcance total y además llevan sus grupos, en UNA
+	 * consulta. Las sedes de un responsable no se guardan: el total ya lo ve todo.
+	 */
+	@Test
+	void alcanceDeGestionConProfesor_totalYSusGrupos() {
+		for (Set<Roles> autoridades : List.of(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_PROFESOR),
+				Set.of(Roles.ROLE_MANAGER, Roles.ROLE_PROFESOR, Roles.ROLE_RESPONSABLE_SEDE),
+				Set.of(Roles.ROLE_ADMIN, Roles.ROLE_PROFESOR, Roles.ROLE_USER))) {
+			org.mockito.Mockito.reset(alcances);
+			cuentaConAutoridades(autoridades);
+			when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of(fila(AlcanceRepository.TIPO_SEDE, 7L),
+					fila(AlcanceRepository.TIPO_GRUPO, 40L), fila(AlcanceRepository.TIPO_GRUPO, 41L)));
+
+			AlcanceSesion alcance = identificador.identificar(peticion()).orElseThrow().alcance();
+
+			assertEquals(new AlcanceSesion(true, Set.of(), Set.of(40L, 41L)), alcance, autoridades.toString());
+			verify(alcances, times(1)).filasDeAlcance(5L, 1L);
+		}
+	}
+
+	@Test
+	void alcanceDeGestionConProfesorSinAsignaciones_totalSinGrupos() {
+		cuentaConAutoridades(Set.of(Roles.ROLE_MANAGER, Roles.ROLE_PROFESOR));
+		when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of());
+
+		AlcanceSesion alcance = identificador.identificar(peticion()).orElseThrow().alcance();
+
+		assertEquals(AlcanceSesion.TOTAL, alcance);
+		verify(alcances, times(1)).filasDeAlcance(5L, 1L);
 	}
 
 	@Test

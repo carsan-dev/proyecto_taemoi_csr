@@ -497,9 +497,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/caja", "/api/caja/**").denyAll()
-						// Entrega 7 (D7-9, D7-10): rutas propias del profesor, solo ROLE_PROFESOR (cuentas mixtas F+Pr y
-						// R+Pr incluidas); cada @PreAuthorize excluye la gestión y el servicio filtra por sus grupos. En la
-						// lista blanca de la sesión solo-profesor. Ninguna ruta de gestión se abre al profesor.
+						// Entrega 7 (D7-9): rutas propias del profesor, solo ROLE_PROFESOR (cuentas mixtas F+Pr y R+Pr
+						// incluidas; P+Pr y G+Pr desde la E8-1, decisión 217); cada @PreAuthorize y el servicio filtran
+						// solo por sus grupos. En la lista blanca de la sesión solo-profesor. Ninguna ruta de gestión se
+						// abre al profesor.
 						.requestMatchers("/api/profesor/**").hasAuthority(Roles.ROLE_PROFESOR.toString())
 						// Pieza 6c-2: solicitudes al propietario (bandeja de gestión). Propietario, gestor y responsable
 						// de sede; @PreAuthorize por ruta y el servicio filtra. Fuera de la lista blanca de la sesión

@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -681,6 +682,75 @@ class AccesoRecursosTest {
 	void grupoDeMisGrupos_profesorSinGrupos_noConsulta() {
 		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_PROFESOR"));
 		assertFalse(acceso.grupoDeMisGrupos(7L));
+		verifyNoInteractions(consulta);
+	}
+
+	// ------------------------------------------------------------------ pieza E8-1 (decisión 217, D8-15)
+
+	/** P o G con PROFESOR: alcance total con sus grupos; las rutas del profesor conceden solo por esos grupos. */
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER" })
+	void grupoDeMisGrupos_gestionConProfesor_soloSusGrupos(String gestion) {
+		sesion(escuela(new AlcanceSesion(true, Set.of(), GRUPOS), gestion, "ROLE_PROFESOR"));
+		org.mockito.Mockito.lenient().when(consulta.grupoEnGrupos(7L, GRUPOS)).thenReturn(true);
+		assertTrue(acceso.grupoDeMisGrupos(7L));
+		assertFalse(acceso.grupoDeMisGrupos(8L), "el total no abre un grupo que no es suyo");
+		assertFalse(acceso.grupoDeMisGrupos(null));
+		// Sin ROLE_PROFESOR, ni con grupos guardados.
+		sesion(escuela(new AlcanceSesion(true, Set.of(), GRUPOS), gestion));
+		assertFalse(acceso.grupoDeMisGrupos(7L));
+		// Con PROFESOR y sin asignaciones: nada, sin consultar.
+		sesion(escuela(AlcanceSesion.TOTAL, gestion, "ROLE_PROFESOR"));
+		assertFalse(acceso.grupoDeMisGrupos(7L));
+		verify(consulta, times(2)).grupoEnGrupos(anyLong(), anySet());
+	}
+
+	@Test
+	void alumnoDeMisGruposAsignados_soloSusGrupos_nuncaPorTotalNiPorSede() {
+		org.mockito.Mockito.lenient().when(consulta.alumnoEnGrupos(7L, GRUPOS)).thenReturn(true);
+		org.mockito.Mockito.lenient().when(consulta.alumnoEnSedes(8L, SEDES)).thenReturn(true);
+		// Solo profesor, F+Pr, R+Pr (sesión 184) y P/G+Pr: solo sus grupos.
+		for (Authentication sesion : List.of(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"),
+				escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"),
+				escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"),
+				escuela(new AlcanceSesion(true, Set.of(), GRUPOS), "ROLE_ADMIN", "ROLE_PROFESOR"),
+				escuela(new AlcanceSesion(true, Set.of(), GRUPOS), "ROLE_MANAGER", "ROLE_PROFESOR"))) {
+			sesion(sesion);
+			assertTrue(acceso.alumnoDeMisGruposAsignados(7L), sesion.getAuthorities().toString());
+			assertFalse(acceso.alumnoDeMisGruposAsignados(8L), "ni por su sede ni por el total");
+			assertFalse(acceso.alumnoDeMisGruposAsignados(null));
+		}
+		for (String autoridad : List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_RESPONSABLE_SEDE", "ROLE_USER")) {
+			sesion(escuela(new AlcanceSesion(autoridad.equals("ROLE_ADMIN") || autoridad.equals("ROLE_MANAGER"),
+					SEDES, GRUPOS), autoridad));
+			assertFalse(acceso.alumnoDeMisGruposAsignados(7L), autoridad + " sin PROFESOR");
+		}
+		sesion(escuela(AlcanceSesion.limitado(Set.of(), Set.of()), "ROLE_PROFESOR"));
+		assertFalse(acceso.alumnoDeMisGruposAsignados(7L));
+		verify(consulta, never()).alumnoEnSedes(anyLong(), anySet());
+	}
+
+	/** Mi caja no cambia (E8-1): un total con grupos sigue sin entrar por las rutas de la caja del profesor. */
+	@ParameterizedTest
+	@ValueSource(strings = { "ROLE_ADMIN", "ROLE_MANAGER" })
+	void cajaDelProfesor_totalConGrupos_noConcede(String gestion) {
+		sesion(escuela(new AlcanceSesion(true, Set.of(), GRUPOS), gestion, "ROLE_PROFESOR"));
+		assertFalse(acceso.alumnoDeMisGrupos(7L));
+		assertFalse(acceso.cargoDeMisGrupos(7L));
+		verifyNoInteractions(consulta);
+	}
+
+	/** Las comprobaciones que conceden con alcance total no cambian si además lleva grupos. */
+	@Test
+	void decidir_totalConGrupos_igualQueTotal() {
+		sesion(escuela(new AlcanceSesion(true, Set.of(), GRUPOS), "ROLE_MANAGER", "ROLE_PROFESOR"));
+		for (OperacionAcceso op : OperacionAcceso.values()) {
+			assertTrue(acceso.alumno(5L, op));
+			assertTrue(acceso.grupo(5L, op));
+			assertTrue(acceso.alumnoEnSede(5L, op.name()));
+			assertTrue(acceso.productoAlumno(5L, op));
+			assertTrue(acceso.cajaDeSede(5L));
+		}
 		verifyNoInteractions(consulta);
 	}
 

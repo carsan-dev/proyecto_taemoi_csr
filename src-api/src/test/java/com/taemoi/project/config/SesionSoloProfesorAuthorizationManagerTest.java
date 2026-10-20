@@ -60,6 +60,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "GET", "/api/informes/deudas" }, { "GET", "/api/caja/sedes/1/entregas" }, { "GET", "/api/caja" },
 				{ "POST", "/api/auth/roles" }, { "GET", "/api/auth/organizacion" }, { "DELETE", "/api/auth/user" },
 				{ "POST", "/api/auth/plataforma" }, { "GET", "/api/auth/plataforma/otra" },
+				{ "POST", "/api/auth/permisos" }, { "GET", "/api/auth/permisos/otra" },
 				{ "GET", "/api/ruta-nueva-sin-preautorize" },
 				{ "GET", "/api/caja/profesorx" }, { "GET", "/imagenes/alumnos/1.jpg" }, { "GET", "/api/profesorx" },
 				{ "GET", "/api/profesores/1" } }) {
@@ -75,6 +76,8 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "GET", "/api/auth/roles" }, { "HEAD", "/api/auth/roles" }, { "GET", "/api/auth/user" },
 				{ "GET", "/api/auth/organizaciones" }, { "POST", "/api/auth/organizacion" },
 				{ "GET", "/api/auth/plataforma" }, { "HEAD", "/api/auth/plataforma" },
+				// Pieza E8-1 (D8-14): sus permisos (roles [PROFESOR], MIS_GRUPOS y MI_CAJA). Solo GET (HEAD como GET).
+				{ "GET", "/api/auth/permisos" }, { "HEAD", "/api/auth/permisos" },
 				// Pieza E7-1 (D7-9): sus rutas propias, cualquier método (deciden la regla de URL y el @PreAuthorize).
 				{ "GET", "/api/profesor/grupos" }, { "HEAD", "/api/profesor/grupos" },
 				{ "GET", "/api/profesor/grupos/1/alumnos" }, { "GET", "/api/profesor/alumnos/1" },
