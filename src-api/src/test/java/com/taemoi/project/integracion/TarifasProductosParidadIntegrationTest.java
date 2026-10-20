@@ -491,7 +491,9 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 	 * Desde V27 escribe las dos a la vez; el resync (incluido en V27) no cambia nada.
 	 */
 	void cambiarTipoTarifaPorElServicio_escribeTarifaIdALaVez_yElResyncNoLaCambia() throws Exception {
-		int expediente = 900000 + (int) (System.nanoTime() % 90000);
+		// Siguiente expediente libre de la escuela 1 (un número aleatorio chocaba con los de otros IT).
+		int expediente = jdbc.queryForObject(
+				"SELECT COALESCE(MAX(numero_expediente), 0) + 1 FROM alumno WHERE organizacion_id = 1", Integer.class);
 		jdbc.update("""
 				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
 				  numero_expediente, telefono, tiene_derecho_examen, organizacion_id)
