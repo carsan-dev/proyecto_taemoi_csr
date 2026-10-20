@@ -2,6 +2,14 @@
 
 Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-produccion.md](../operacion/procedimiento-produccion.md).
 
+## CI tras fusionar (decisión 215)
+- En el push a `develop`/`main`, el job `ya-probado` salta `backend-tests`, `frontend-tests` y `e2e` si el commit es
+  un merge de dos padres y un run de PR en verde de su misma cabeza (los tres jobs en `success`) probó el MISMO árbol
+  (artefacto `arbol-<hash>` que sube `huella-pr` en cada PR). Entonces `publish-images` arranca directamente.
+- Cualquier otro caso (push directo, merge squash o rebase, base que avanzó tras el run de la PR, run anterior a la
+  huella, error de la API) prueba todo. El resumen del job `ya-probado` dice por qué y qué run reutiliza.
+- Forzar todo: Actions → CI → «Run workflow» en `develop`/`main` con `forzar_tests` marcado (por defecto); publica imágenes.
+
 ## Antes
 - [ ] Copia de seguridad de la base de datos y de las carpetas de documentos e imágenes.
 - [x] Contar usuarios sin rol (no podrán iniciar sesión tras V20); decidir su rol si hay alguno.

@@ -9,13 +9,117 @@ on:
       - main
       - develop
   pull_request:
+  workflow_dispatch:
+    inputs:
+      forzar_tests:
+        description: Ejecutar todos los tests aunque el commit ya se probara en su PR
+        type: boolean
+        default: true
 
 permissions:
   contents: read
   packages: write
 
 jobs:
+  # En cada PR deja constancia del árbol (contenido exacto) del merge ref que se prueba.
+  # El nombre del artefacto lleva el hash del árbol: ya-probado lo busca por nombre.
+  huella-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Record tested tree
+        id: arbol
+        run: |
+          arbol="$(git rev-parse 'HEAD^{tree}')"
+          echo "$arbol" > arbol.txt
+          echo "arbol=$arbol" >> "$GITHUB_OUTPUT"
+
+      - name: Upload tree fingerprint
+        uses: actions/upload-artifact@v7
+        with:
+          name: arbol-${{ steps.arbol.outputs.arbol }}
+          path: arbol.txt
+          retention-days: 30
+
+  # Decisión 215: si el commit pusheado es el merge de una PR cuyo run de PR pasó en verde
+  # (los tres jobs de tests) probando exactamente el mismo árbol, no se repiten los tests.
+  # Cualquier duda o error de la API da 'false' y se prueba todo.
+  ya-probado:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.forzar_tests)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      probado: ${{ steps.decidir.outputs.probado }}
+    steps:
+      - name: Check whether this merge was already tested in its PR
+        id: decidir
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          resultado=false
+          motivo=""
+          reutiliza=""
+          decidir() {
+            local datos arbol npadres p2 runs run njobs nhuellas
+            if ! datos="$(gh api "repos/$REPO/commits/$SHA" --jq '[.commit.tree.sha, (.parents | length), (.parents[1].sha // "")] | @tsv')"; then
+              motivo="no se pudo leer el commit $SHA"; return
+            fi
+            IFS=$'\t' read -r arbol npadres p2 <<< "$datos"
+            if [ "$npadres" != "2" ]; then
+              motivo="el commit $SHA tiene $npadres padre(s): no es un merge de PR"; return
+            fi
+            if ! [[ "$arbol" =~ ^[0-9a-f]{40}$ && "$p2" =~ ^[0-9a-f]{40}$ ]]; then
+              motivo="datos inesperados del commit $SHA"; return
+            fi
+            if ! runs="$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=pull_request&head_sha=$p2&status=success&per_page=100" \
+                --jq '.workflow_runs[] | select(.conclusion == "success" and .path == ".github/workflows/ci.yml") | .id')"; then
+              motivo="error de la API al buscar runs de PR de la cabeza $p2"; return
+            fi
+            if [ -z "$runs" ]; then
+              motivo="no hay ningún run de PR en verde con la cabeza $p2"; return
+            fi
+            for run in $runs; do
+              njobs="$(gh api "repos/$REPO/actions/runs/$run/jobs?filter=latest&per_page=100" \
+                --jq '[.jobs[] | select(.name == "backend-tests" or .name == "frontend-tests" or .name == "e2e") | select(.conclusion == "success") | .name] | unique | length')" || continue
+              [ "$njobs" = "3" ] || continue
+              nhuellas="$(gh api "repos/$REPO/actions/runs/$run/artifacts?name=arbol-$arbol" --jq '.total_count')" || continue
+              [ "$nhuellas" -ge 1 ] 2>/dev/null || continue
+              resultado=true
+              reutiliza="$run"
+              motivo="el run de PR $run (cabeza $p2) pasó backend-tests, frontend-tests y e2e sobre el mismo árbol $arbol"
+              return
+            done
+            motivo="ningún run de PR en verde de la cabeza $p2 dejó huella del árbol $arbol (base distinta o run anterior a la huella)"
+          }
+          decidir
+          echo "probado=$resultado" >> "$GITHUB_OUTPUT"
+          {
+            echo "### ¿Ya probado en su PR? $resultado"
+            echo ""
+            echo "$motivo"
+            if [ "$resultado" = "true" ]; then
+              echo ""
+              echo "Se saltan los tests; se reutiliza el run https://github.com/$REPO/actions/runs/$reutiliza"
+            else
+              echo ""
+              echo "Se ejecutan todos los tests."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "probado=$resultado: $motivo"
+
   backend-tests:
+    needs: ya-probado
+    if: ${{ !cancelled() && needs.ya-probado.outputs.probado != 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,6 +140,8 @@ jobs:
         run: mvn --batch-mode --no-transfer-progress test
 
   frontend-tests:
+    needs: ya-probado
+    if: ${{ !cancelled() && needs.ya-probado.outputs.probado != 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -74,6 +180,8 @@ jobs:
         run: npm run build:production
 
   e2e:
+    needs: ya-probado
+    if: ${{ !cancelled() && needs.ya-probado.outputs.probado != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -145,10 +253,21 @@ jobs:
 
   publish-images:
     needs:
+      - ya-probado
       - backend-tests
       - frontend-tests
       - e2e
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    # Publica solo en push o dispatch a main/develop, sin fallos, y con los tests en verde
+    # o saltados porque ya-probado confirmó el mismo árbol probado en la PR.
+    if: >-
+      ${{ !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+      && (needs.ya-probado.outputs.probado == 'true'
+          || (needs.backend-tests.result == 'success'
+              && needs.frontend-tests.result == 'success'
+              && needs.e2e.result == 'success')) }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
