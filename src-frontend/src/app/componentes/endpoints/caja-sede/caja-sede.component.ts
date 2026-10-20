@@ -48,6 +48,8 @@ const MESES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 const MESES_EN_SELECTOR = 24;
+/** Última sede elegida en este navegador (decisión 206). El periodo no se recuerda. */
+export const CLAVE_ULTIMA_SEDE = 'taemoi.cajaSede.ultimaSede';
 
 interface OpcionPeriodo {
   valor: string;
@@ -182,7 +184,8 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (sedes) => {
           this.sedes = sedes;
-          this.sedeId = sedes[0]?.id ?? null;
+          const guardada = this.leerSedeGuardada();
+          this.sedeId = sedes.find((s) => s.id === guardada)?.id ?? sedes[0]?.id ?? null;
           if (this.sedeId !== null) {
             this.recargarTodo();
           }
@@ -194,12 +197,34 @@ export class CajaSedeComponent implements OnInit, OnDestroy {
   }
 
   onSedeChange(): void {
+    this.guardarSede();
     this.paginaEntregas = 1;
     this.recargarTodo();
   }
 
   onPeriodoChange(): void {
     this.cargarPeriodo();
+  }
+
+  private leerSedeGuardada(): number | null {
+    try {
+      const valor = globalThis.localStorage?.getItem(CLAVE_ULTIMA_SEDE);
+      const id = valor === null || valor === undefined ? NaN : Number(valor);
+      return Number.isInteger(id) ? id : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private guardarSede(): void {
+    if (this.sedeId === null) {
+      return;
+    }
+    try {
+      globalThis.localStorage?.setItem(CLAVE_ULTIMA_SEDE, String(this.sedeId));
+    } catch {
+      // Sin almacenamiento la pantalla funciona igual.
+    }
   }
 
   recargarTodo(): void {

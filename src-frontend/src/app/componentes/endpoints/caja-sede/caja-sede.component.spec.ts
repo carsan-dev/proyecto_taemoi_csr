@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { CajaSedeComponent, construirPeriodos } from './caja-sede.component';
+import { CLAVE_ULTIMA_SEDE, CajaSedeComponent, construirPeriodos } from './caja-sede.component';
 import { CajaService } from '../../../servicios/endpoints/caja.service';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
@@ -38,12 +38,12 @@ describe('CajaSedeComponent', () => {
   let component: CajaSedeComponent;
   let caja: jasmine.SpyObj<CajaService>;
 
-  async function montar(admin: boolean): Promise<void> {
+  async function montar(admin: boolean, sedes = [{ id: 5, nombre: 'Sede Prueba' }]): Promise<void> {
     caja = jasmine.createSpyObj<CajaService>('CajaService', [
       'sedesGestionables', 'resumen', 'pendienteEntrega', 'entregas', 'movimientos', 'registrarEntrega',
       'crearMovimiento', 'anularEntrega', 'anularMovimiento',
     ]);
-    caja.sedesGestionables.and.returnValue(of([{ id: 5, nombre: 'Sede Prueba' }]));
+    caja.sedesGestionables.and.returnValue(of(sedes));
     caja.resumen.and.returnValue(of({ sedeId: 5, desde: '2026-10-01', hasta: '2026-10-31', pendienteDeEntregar: 45, recibidoEnPeriodo: 19, diferenciasEnPeriodo: -1, saldoCaja: 28 }));
     caja.pendienteEntrega.and.returnValue(of([profesor]));
     caja.entregas.and.returnValue(of({ content: [entrega], totalPages: 1, totalElements: 1, number: 0, size: 25 }));
@@ -65,7 +65,13 @@ describe('CajaSedeComponent', () => {
     fixture.detectChanges();
   }
 
-  afterEach(() => fixture?.destroy());
+  beforeEach(() => localStorage.removeItem(CLAVE_ULTIMA_SEDE));
+  afterEach(() => {
+    fixture?.destroy();
+    localStorage.removeItem(CLAVE_ULTIMA_SEDE);
+  });
+
+  const dosSedes = [{ id: 3, nombre: 'Norte' }, { id: 8, nombre: 'Sur' }];
 
   const texto = () => (fixture.nativeElement as HTMLElement).textContent?.replace(/ | /g, ' ') ?? '';
 
@@ -298,6 +304,40 @@ describe('CajaSedeComponent', () => {
     expect(component.entregas[0].id).toBe(102);
     expect(component.paginaEntregas).toBe(2);
     expect(component.cargandoEntregas).toBeFalse();
+  });
+
+  it('206: sin preferencia guardada abre con la primera sede', async () => {
+    await montar(false, dosSedes);
+    expect(component.sedeId).toBe(3);
+  });
+
+  it('206: con preferencia válida abre con esa sede', async () => {
+    localStorage.setItem(CLAVE_ULTIMA_SEDE, '8');
+    await montar(false, dosSedes);
+    expect(component.sedeId).toBe(8);
+    expect(caja.resumen).toHaveBeenCalledWith(8, jasmine.anything());
+  });
+
+  it('206: con preferencia de una sede que ya no existe abre con la primera', async () => {
+    localStorage.setItem(CLAVE_ULTIMA_SEDE, '99');
+    await montar(false, dosSedes);
+    expect(component.sedeId).toBe(3);
+  });
+
+  it('206: al cambiar de sede la guarda', async () => {
+    await montar(false, dosSedes);
+    component.sedeId = 8;
+    component.onSedeChange();
+    expect(localStorage.getItem(CLAVE_ULTIMA_SEDE)).toBe('8');
+  });
+
+  it('206: con localStorage que lanza no rompe', async () => {
+    spyOn(Storage.prototype, 'getItem').and.throwError('bloqueado');
+    spyOn(Storage.prototype, 'setItem').and.throwError('bloqueado');
+    await montar(false, dosSedes);
+    expect(component.sedeId).toBe(3);
+    component.sedeId = 8;
+    expect(() => component.onSedeChange()).not.toThrow();
   });
 
   it('periodos: del mes actual hacia atrás', () => {
