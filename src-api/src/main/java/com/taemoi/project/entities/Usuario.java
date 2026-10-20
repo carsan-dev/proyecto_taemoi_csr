@@ -50,10 +50,15 @@ public class Usuario implements UserDetails {
 	@NotBlank(message = "El correo electrónico no puede estar en blanco")
 	private String email;
 
-	@NotBlank(message = "La contraseña no puede estar en blanco")
+	/**
+	 * Hash de la contraseña. NULL solo en una invitación pendiente (pieza E8-4, V31_9, decisión 223): cuenta LOCAL que
+	 * aún no ha creado su contraseña; el login la rechaza como una contraseña incorrecta. Una cadena vacía sigue sin
+	 * poder guardarse ({@code @Size}); las reglas de la contraseña nueva están en los DTO de signup, registro y
+	 * restablecer.
+	 */
 	@Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
 	@JsonIgnore
-private String contrasena;
+	private String contrasena;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "auth_provider")
@@ -139,6 +144,14 @@ private String contrasena;
 	@JsonIgnore
 	public String getPassword() {
 		return contrasena;
+	}
+
+	/**
+	 * Invitación pendiente (pieza E8-4, D8-13): cuenta LOCAL (o sin proveedor, como las antiguas) sin contraseña. No es
+	 * una propiedad JSON.
+	 */
+	public boolean invitacionPendiente() {
+		return contrasena == null && getAuthProvider() == AuthProvider.LOCAL;
 	}
 
 	public String getNombre() {

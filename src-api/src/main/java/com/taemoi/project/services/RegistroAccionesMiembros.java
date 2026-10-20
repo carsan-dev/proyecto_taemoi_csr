@@ -37,7 +37,11 @@ public class RegistroAccionesMiembros {
 		CARGO_CAMBIADO(AuditoriaAccion.UPDATE),
 		SEDES_CAMBIADAS(AuditoriaAccion.UPDATE),
 		/** Reemplazar los grupos del profesor sin cambiar nada ({@code usuario=#id sinCambios=SI}). */
-		GRUPOS_CAMBIADOS(AuditoriaAccion.UPDATE);
+		GRUPOS_CAMBIADOS(AuditoriaAccion.UPDATE),
+		/** Pieza E8-4: cuenta pendiente creada por una invitación ({@code usuario=#id rol=ROL}; nunca el token). */
+		MIEMBRO_INVITADO(AuditoriaAccion.CREATE),
+		/** Pieza E8-4: invitación reenviada con un token nuevo ({@code usuario=#id}). */
+		INVITACION_REENVIADA(AuditoriaAccion.UPDATE);
 
 		private final AuditoriaAccion auditoria;
 

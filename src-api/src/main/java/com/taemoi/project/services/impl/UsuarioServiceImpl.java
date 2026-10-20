@@ -146,6 +146,12 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	public Usuario actualizarContrasena(Long userId, String nuevaContrasena) {
 		Usuario usuario = usuarioRepository.findById(userId)
 				.orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con ID: " + userId));
+		// Pieza E8-4: una invitación pendiente que recibe contraseña aquí deja de estarlo y su enlace deja de servir (mismo
+		// guardado). Una cuenta con contraseña conserva su token de restablecer, como siempre.
+		if (usuario.invitacionPendiente()) {
+			usuario.setResetTokenHash(null);
+			usuario.setResetTokenExpiresAt(null);
+		}
 		usuario.setContrasena(passwordEncoder.encode(nuevaContrasena));
 		return usuarioRepository.save(usuario);
 	}

@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.dtos.request.MiembrosRequests;
 import com.taemoi.project.dtos.response.MiembrosDTOs;
 import com.taemoi.project.entities.AsignacionProfesor;
+import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.MembresiaSede;
 import com.taemoi.project.entities.RolAsignacionProfesor;
@@ -82,6 +83,8 @@ public class GestionMiembrosService {
 	static final String TAMANO_NO_VALIDO = "El tamaño de página debe estar entre 1 y 100.";
 	static final String PAGINA_NO_VALIDA = "La página no es válida.";
 	static final String BUSQUEDA_LARGA = "La búsqueda no puede pasar de 100 caracteres.";
+	static final String YA_ACEPTADA = "La invitación ya se aceptó.";
+	static final String SIN_ROL_ACTIVO = "La cuenta no tiene ningún rol activo en esta escuela.";
 
 	static final int TAMANO_POR_DEFECTO = 20;
 	static final int TAMANO_MAXIMO = 100;
@@ -98,12 +101,13 @@ public class GestionMiembrosService {
 	private final ResolutorOrganizacion resolutor;
 	private final RegistroAccionesMiembros registro;
 	private final RegistroAccionesProfesor registroProfesor;
+	private final InvitacionService invitaciones;
 
 	public GestionMiembrosService(UsuarioRepository usuarios, MembresiaRepository membresias,
 			MiembrosRepository consultas, MembresiaSedeRepository membresiaSedes,
 			AsignacionProfesorRepository asignaciones, MembresiaService membresiaService,
 			ResolutorOrganizacion resolutor, RegistroAccionesMiembros registro,
-			RegistroAccionesProfesor registroProfesor) {
+			RegistroAccionesProfesor registroProfesor, InvitacionService invitaciones) {
 		this.usuarios = usuarios;
 		this.membresias = membresias;
 		this.consultas = consultas;
@@ -113,6 +117,7 @@ public class GestionMiembrosService {
 		this.resolutor = resolutor;
 		this.registro = registro;
 		this.registroProfesor = registroProfesor;
+		this.invitaciones = invitaciones;
 	}
 
 	// ------------------------------------------------------------------ lecturas
@@ -152,7 +157,7 @@ public class GestionMiembrosService {
 		Datos datos = datosDe(organizacion, ids);
 		List<MiembrosDTOs.Miembro> contenido = filas.getContent().stream()
 				.map(f -> new MiembrosDTOs.Miembro(f.getId(), f.getNombre(), f.getApellidos(), f.getEmail(),
-						f.getAuthProvider(), datos.roles(f.getId()), datos.sedes(f.getId()),
+						f.getAuthProvider(), pendiente(f), datos.roles(f.getId()), datos.sedes(f.getId()),
 						datos.numeroGrupos(f.getId())))
 				.toList();
 		return new MiembrosDTOs.Pagina(contenido, numero, porPagina, filas.getTotalElements(), filas.getTotalPages());
@@ -173,9 +178,15 @@ public class GestionMiembrosService {
 	 * nace o se reactiva sin sedes guardadas; si llegan, reemplazan); PROFESOR, añade asignaciones (en un grupo ya
 	 * asignado cambia el rol). Todo o nada.
 	 *
+	 * <p>Pieza E8-4 (D8-13): sin cuenta con ese email y con {@code nombre} y {@code apellidos}, la invitación: en esta
+	 * misma transacción, cuenta pendiente (LOCAL sin contraseña, {@link InvitacionService#crearCuentaPendiente}) con su
+	 * fila {@code MIEMBRO_INVITADO} y lo de siempre; el correo, tras el commit. Con cuenta, {@code nombre} y
+	 * {@code apellidos} se ignoran: ni token, ni contraseña, ni correo. Dos invitaciones a la vez del mismo email: la
+	 * clave única hace fallar la segunda y {@link AltaDeMiembro} la repite (entonces ya hay cuenta).
+	 *
 	 * @throws IllegalArgumentException (400) cuerpo no válido o FAMILIA
 	 * @throws SecurityException        (403) D8-8
-	 * @throws NoSuchElementException   (404) sin cuenta con ese email o grupo ajeno
+	 * @throws NoSuchElementException   (404) sin cuenta con ese email (ni nombre y apellidos) o grupo ajeno
 	 * @throws IllegalStateException    (409) rol desactivado sin {@code reactivar}
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
@@ -201,21 +212,33 @@ public class GestionMiembrosService {
 		exigirPropietarioPara(rol);
 
 		Long organizacion = organizacionActiva();
-		Usuario cuenta = usuarios.findByEmailIgnoreCase(email).orElseThrow(() -> new NoSuchElementException(SIN_CUENTA));
-		usuarios.bloquearPorId(cuenta.getId()).orElseThrow(() -> new NoSuchElementException(SIN_CUENTA));
+		Usuario cuenta = usuarios.findByEmailIgnoreCase(email).orElse(null);
+		// Sin cuenta: la invitación (E8-4) si llegan nombre y apellidos; si no, el 404 de siempre.
+		InvitacionService.Invitado invitado = cuenta != null ? null
+				: InvitacionService.invitadoDe(solicitud.nombre(), solicitud.apellidos())
+						.orElseThrow(() -> new NoSuchElementException(SIN_CUENTA));
+		if (cuenta != null) {
+			usuarios.bloquearPorId(cuenta.getId()).orElseThrow(() -> new NoSuchElementException(SIN_CUENTA));
+		}
 		if (sedesPedidas != null) {
 			exigirSedesDeLaEscuela(sedesPedidas, organizacion);
 		}
 		exigirGruposDeLaEscuela(gruposPedidos.keySet(), organizacion);
 
-		Membresia membresia = membresiaDe(cuenta.getId(), organizacion, rol).orElse(null);
+		Membresia membresia = cuenta == null ? null : membresiaDe(cuenta.getId(), organizacion, rol).orElse(null);
 		if (membresia != null && !membresia.isActiva() && !Boolean.TRUE.equals(solicitud.reactivar())) {
 			throw new IllegalStateException(
 					"La cuenta tiene el rol de " + enPantalla(rol) + " desactivado en esta escuela.");
 		}
 		exigirSedesSiNace(rol, membresia, sedesPedidas, organizacion);
 
+		if (cuenta == null) {
+			cuenta = invitaciones.crearCuentaPendiente(email, invitado, organizacion, rol);
+		}
 		Cambios cambios = new Cambios(cuenta.getId(), RUTA);
+		if (invitado != null) {
+			cambios.rol(RegistroAccionesMiembros.Accion.MIEMBRO_INVITADO, rol);
+		}
 		membresia = asegurarActiva(membresia, cuenta.getId(), organizacion, rol, cambios);
 		fijarCargo(membresia, cargo, cambios);
 		if (sedesPedidas != null) {
@@ -226,6 +249,52 @@ public class GestionMiembrosService {
 		}
 		cambios.sinCambiosSiHaceFalta(RegistroAccionesMiembros.Accion.ROL_DADO, rol);
 		return ficha(cuenta, organizacion);
+	}
+
+	// ------------------------------------------------------------------ invitación
+
+	/**
+	 * Reenvía la invitación (pieza E8-4, D8-13): token nuevo (el anterior deja de valer) y correo tras el commit, con la
+	 * marca de esta escuela, que pasa a ser la de la invitación. Fila {@code MIEMBROS INVITACION_REENVIADA usuario=#id}.
+	 * Exige algún rol ACTIVO en esta escuela (sin ninguno, la invitación no daría acceso a nada: 409); el texto del correo
+	 * usa solo los activos. D8-8: una cuenta cuyos roles activos en esta escuela son solo PROPIETARIO o ADMINISTRADOR
+	 * solo pudo invitarla el propietario: el gestor no la reenvía (403).
+	 *
+	 * @throws NoSuchElementException (404) no es miembro de la escuela activa
+	 * @throws SecurityException      (403) D8-8
+	 * @throws IllegalStateException  (409) {@value #SIN_ROL_ACTIVO} o {@value #YA_ACEPTADA}
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public MiembrosDTOs.Ficha reenviarInvitacion(Long usuarioId) {
+		Long organizacion = organizacionActiva();
+		Usuario cuenta = exigirMiembro(usuarioId, organizacion);
+		usuarios.bloquearPorId(cuenta.getId()).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
+		List<Membresia> activas = membresias.findByUsuarioIdAndOrganizacionId(cuenta.getId(), organizacion).stream()
+				.filter(Membresia::isActiva).toList();
+		if (activas.isEmpty()) {
+			throw new IllegalStateException(SIN_ROL_ACTIVO);
+		}
+		boolean soloGestion = activas.stream()
+				.allMatch(m -> m.getRol() == RolMembresia.PROPIETARIO || m.getRol() == RolMembresia.ADMINISTRADOR);
+		if (soloGestion && !sesionDePropietario()) {
+			throw new SecurityException(SOLO_PROPIETARIO);
+		}
+		// Comprobación rápida y, al escribir, un UPDATE condicionado (si otra petición la aceptó entre medias, 409).
+		if (!cuenta.invitacionPendiente()
+				|| !invitaciones.renovarToken(cuenta, organizacion, rolDeLaInvitacion(activas))) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("usuario", cuenta.getId());
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_REENVIADA,
+				RUTA + "/" + cuenta.getId() + "/invitacion", valores);
+		return ficha(cuenta, organizacion);
+	}
+
+	/** El rol del texto del correo: el primero (orden del enum) de sus roles activos de personal; si no, FAMILIA. */
+	private static RolMembresia rolDeLaInvitacion(List<Membresia> activas) {
+		return activas.stream().map(Membresia::getRol).filter(rol -> rol != RolMembresia.FAMILIA).sorted().findFirst()
+				.orElse(RolMembresia.FAMILIA);
 	}
 
 	// ------------------------------------------------------------------ roles
@@ -654,8 +723,14 @@ public class GestionMiembrosService {
 				.map(f -> new MiembrosDTOs.Grupo((Long) f[0], (String) f[1], (Long) f[2], (RolAsignacionProfesor) f[3]))
 				.toList();
 		return new MiembrosDTOs.Ficha(cuenta.getId(), cuenta.getNombre(), cuenta.getApellidos(), cuenta.getEmail(),
-				cuenta.getAuthProvider(), datos.roles(cuenta.getId()), datos.sedes(cuenta.getId()), grupos.size(),
-				grupos);
+				cuenta.getAuthProvider(), cuenta.invitacionPendiente(), datos.roles(cuenta.getId()),
+				datos.sedes(cuenta.getId()), grupos.size(), grupos);
+	}
+
+	/** Invitación pendiente de una fila de la lista (LOCAL o sin proveedor y sin contraseña), sin consulta nueva. */
+	private static boolean pendiente(MiembrosRepository.FilaCuenta fila) {
+		return Boolean.TRUE.equals(fila.getSinContrasena())
+				&& (fila.getAuthProvider() == null || fila.getAuthProvider() == AuthProvider.LOCAL);
 	}
 
 	/** Membresías, sedes y número de grupos de esas cuentas: tres consultas, sean cuantas sean. */

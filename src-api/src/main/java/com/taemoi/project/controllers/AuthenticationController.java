@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.CambioOrganizacionRequest;
+import com.taemoi.project.dtos.request.InvitacionTokenRequest;
 import com.taemoi.project.dtos.request.LoginRequest;
 import com.taemoi.project.dtos.request.PasswordResetEmailRequest;
 import com.taemoi.project.dtos.request.PasswordResetUpdateRequest;
@@ -60,6 +61,7 @@ import com.taemoi.project.plataforma.AutoridadPlataforma;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
+import com.taemoi.project.services.InvitacionService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
@@ -115,6 +117,9 @@ public class AuthenticationController {
 
 	@Autowired
 	private MembresiaService membresiaService;
+
+	@Autowired
+	private InvitacionService invitacionService;
 
 	/**
 	 * Registra un nuevo usuario en el sistema.
@@ -190,6 +195,39 @@ public class AuthenticationController {
 			@Valid @RequestBody PasswordResetUpdateRequest request) {
 		passwordResetService.resetearContrasena(request.getToken(), request.getNuevaContrasena());
 		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Pieza E8-4: lo que la página «Crea tu contraseña» enseña antes de escribirla ({@code {email, nombre, escuela}}),
+	 * con el token en el cuerpo (nunca en la URL). Token vacío, desconocido, caducado o ya usado: 400 «El enlace ha
+	 * caducado o ya se usó. Pide que te lo reenvíen.». Ruta pública; como todo {@code /api/auth/**}, no se audita.
+	 */
+	@PostMapping("/invitacion/datos")
+	public ResponseEntity<InvitacionService.DatosInvitacion> datosInvitacion(
+			@RequestBody(required = false) InvitacionTokenRequest request) {
+		return ResponseEntity.ok(invitacionService.datos(request == null ? null : request.token()));
+	}
+
+	/**
+	 * Pieza E8-4 (D8-13): la página «Crea tu contraseña» de una invitación. Mismas reglas de contraseña que restablecer
+	 * ({@link PasswordResetUpdateRequest}; si no, 400). Token vacío, desconocido, caducado o ya usado: 400 «El enlace ha
+	 * caducado o ya se usó. Pide que te lo reenvíen.». Si vale, la cuenta deja de estar pendiente y abre sesión como
+	 * {@link #signin} (cookie {@code jwt} sin «recordarme» y su respuesta) en la escuela de la invitación; si ninguna
+	 * escuela abre sesión, la contraseña queda creada y responde 403 con el motivo del login. Ruta pública
+	 * ({@code permitAll}); como todo {@code /api/auth/**}, no se audita.
+	 */
+	@PostMapping("/invitacion/aceptar")
+	public ResponseEntity<?> aceptarInvitacion(@Valid @RequestBody PasswordResetUpdateRequest request,
+			HttpServletResponse response) {
+		Usuario cuenta = invitacionService.aceptar(request.getToken(), request.getNuevaContrasena());
+		JwtAuthenticationResponse sesion;
+		try {
+			sesion = authenticationService.iniciarSesionTrasInvitacion(cuenta);
+		} catch (DisabledException e) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", mensajeDeRechazo(e)));
+		}
+		escribirCookieSesion(response, sesion.getToken(), null);
+		return ResponseEntity.ok(sesion);
 	}
 
 	@PostMapping("/register/request")

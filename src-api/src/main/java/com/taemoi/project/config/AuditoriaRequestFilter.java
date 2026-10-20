@@ -114,7 +114,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** GestionMiembrosService#reemplazarSedes (MIEMBROS SEDES_CAMBIADAS). */
 		MIEMBRO_SEDES("PUT", "/api/miembros/[^/]+/sedes"),
 		/** GestionMiembrosService#reemplazarGrupos (PROFESOR ASIGNACION_*; sin cambios, MIEMBROS GRUPOS_CAMBIADOS). */
-		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos");
+		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos"),
+		/** Pieza E8-4: GestionMiembrosService#reenviarInvitacion (MIEMBROS INVITACION_REENVIADA). */
+		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion");
 
 		private final String metodo;
 		private final Pattern ruta;

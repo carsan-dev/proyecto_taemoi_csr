@@ -130,7 +130,8 @@ Pruebas mínimas de cada pieza backend: IT en MySQL con dos escuelas (cada una c
 gestor; una cuenta P+Pr y otra G+Pr con asignaciones; cuentas nuevas por test con datos inventados; Moiskimdo idéntico;
 matriz con diff solo en líneas nuevas.
 
-**Migración:** ninguna prevista (V31_9 solo si E8-4 la necesita).
+**Migración:** V31_9 (E8-4, decisión 223: `usuario.contrasena` admite NULL); el despliegue de la E8 va con
+`desplegar_migrar`.
 
 **Despliegue (lo decide el propietario al aprobar el plan).** Propuesta: una sola PR al final, como la E7, con su
 línea en `checklist-despliegue.md` (con o sin migración según E8-4).
@@ -568,21 +569,206 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 
 ---
 
-## 5. Pieza E8-4 (la detalla su implementador con TDD antes de empezar)
+## 5. Pieza E8-4: invitaciones por correo (detallada)
 
-Rama `feature/e8-4`. Alcance:
-- Comprobar primero si `usuario.contrasena` admite NULL y si el login rechaza una cuenta sin contraseña; si no, V31_9
-  aditiva y parar a preguntar.
-- Alta sin cuenta en `POST /api/miembros` (con nombre y apellidos): cuenta LOCAL pendiente + membresía + asignaciones
-  + invitación.
-- Token de un solo uso, 7 días (mecanismo de restablecer contraseña o uno propio; al constructor), fuera del registro y
-  de los logs.
-- Correo con `MarcaEscuelaService` y texto según el rol; `POST /api/miembros/{usuarioId}/invitacion` para reenviar.
-- `invitacionPendiente` en la respuesta de `GET /api/grupos/{grupoId}/profesores` (campo añadido; el resto del JSON
-  igual), para el chip de E8-6.
-- Crear la contraseña inicia sesión en esa escuela; comportamiento con Google comprobado y anotado.
-- Ruta pública nueva solo si hace falta (`permitAll`, ANONIMO PERMITE).
-- Puntos de revisión 9 y 10; matriz y nota.
+Rama `feature/e8-4` desde `feature/e8-3`. **Con migración: V31_9** (decisión 223, 20/10/2026), aditiva: solo
+`usuario.contrasena` pasa a admitir NULL. Despliegue con el atajo `desplegar_migrar` (línea en
+`checklist-despliegue.md`). Tres rutas nuevas (`POST /api/miembros/{usuarioId}/invitacion`,
+`POST /api/auth/invitacion/datos` y `POST /api/auth/invitacion/aceptar`) y cambios en tres respuestas
+(`invitacionPendiente`).
+
+Comprobación previa (paso 0, antes de escribir nada):
+- `usuario.contrasena` es `VARCHAR(255) NOT NULL` desde `V1__baseline_schema.sql:432` (ninguna migración posterior la
+  cambia) y la entidad lleva `@NotBlank`; con `spring-boot-starter-validation`, Hibernate rechaza un NULL al guardar.
+  «Pendiente = LOCAL y sin contraseña» (D8-13) necesita, por tanto, V31_9 y quitar el `@NotBlank`.
+- Login LOCAL con contraseña NULL: el codificador es `BCryptPasswordEncoder`; `matches(raw, null)` devuelve `false`
+  (con un aviso «Empty encoded password»), `DaoAuthenticationProvider` lanza `BadCredentialsException` y `signin`
+  responde 401 «Credenciales invalidas.» contando el intento fallido. Sin NPE ni 500.
+- Google con una cuenta LOCAL existente (`OAuth2UserServiceImpl.processOAuth2Login`): con el email verificado y alguna
+  escuela en la que pueda entrar, pasa la cuenta a GOOGLE y entra sin tocar la contraseña. Con la definición de D8-13,
+  eso ya acepta la invitación; faltaba borrar el token (decisión 223: se borra).
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **V31_9** (`V31_9__usuario_contrasena_opcional.sql`). Lee de `information_schema` el tipo, el juego de caracteres y
+  la colación actuales de `usuario.contrasena` y la redefine igual pero `NULL` (si ya admite NULL, no hace nada:
+  repetible). Ninguna fila cambia. MySQL la hace INPLACE con escrituras concurrentes (`usuario` es pequeña). El código
+  anterior funciona sobre este esquema (siempre escribe la contraseña); volver atrás con invitaciones pendientes exige
+  antes ponerles una contraseña o borrarlas para restaurar el NOT NULL.
+- **Entidad.** `Usuario.contrasena` sin `@NotBlank`; conserva `@Size(min = 8)` (una cadena vacía sigue sin poder
+  guardarse). Las reglas de contraseña de signup, registro y restablecer siguen en sus DTO (`@NotBlank`, `@Size`,
+  `@Pattern`): un test fija que siguen rechazando la contraseña en blanco. `Usuario#invitacionPendiente()` = LOCAL (o
+  sin proveedor) y contraseña NULL; no es una propiedad JSON.
+- **Token: el de restablecer contraseña.** Mismas columnas (`reset_token_hash`, SHA-256 en hex, y
+  `reset_token_expires_at`) y mismo generador (32 bytes aleatorios en Base64 URL): solo se guarda el hash. Caduca a los
+  **7 días**. Un solo token vivo por cuenta: reenviar lo reemplaza (el anterior deja de valer) y un «olvidé mi
+  contraseña» sobre una cuenta pendiente también (enlace de 1 hora: quien lo usa demuestra igual el email). El token en
+  claro solo existe en memoria hasta el correo: el evento que lo lleva no lo imprime (`toString` sin él) y nunca va en
+  una respuesta, una fila del registro ni un log.
+- **Alta sin cuenta** (D8-6, D8-13). `POST /api/miembros` con un email sin cuenta: sin `nombre` ni `apellidos`, 404
+  «No hay ninguna cuenta con ese email.» (como hoy); con uno solo, en blanco tras recortar o de más de 50 caracteres
+  (las columnas), 400; email sin formato válido, 400. Si no, en la MISMA transacción que la E8-3 (`READ_COMMITTED`):
+  sedes y grupos validados antes de escribir, cuenta LOCAL sin contraseña con nombre y apellidos recortados,
+  `ultima_organizacion_id` = la escuela activa (la de la invitación) y el token; fila `MIEMBROS MIEMBRO_INVITADO
+  usuario=#id rol=ROL`; después, lo de siempre (membresía, cargo, sedes, grupos, con sus filas). Todo o nada: un grupo
+  ajeno deshace también la cuenta y no sale correo. D8-8 igual que la E8-3 (el gestor no invita propietarios ni
+  gestores, 403). La respuesta es la ficha (200) con `invitacionPendiente=true`.
+- **Cuenta existente** (anti-objetivo 1): `nombre` y `apellidos` se ignoran; ni token, ni contraseña, ni nombre, ni
+  correo: exactamente la E8-3.
+- **Dos invitaciones a la vez del mismo email.** La clave única del email decide: la segunda espera en el índice y
+  falla al confirmar la primera; `AltaDeMiembro` (sin transacción) repite el alta UNA vez ante un
+  `DataIntegrityViolationException`, que entonces encuentra la cuenta y sigue el camino de la cuenta existente (200,
+  sin segundo correo). Otro fallo de integridad se repite igual y se propaga como antes.
+- **Correo tras el commit** (`InvitacionCorreoListener`, `@TransactionalEventListener(AFTER_COMMIT)`, como los de
+  preinscripción). Una transacción deshecha no envía nada; un fallo del correo nunca deshace la cuenta ni da 500: se
+  apunta en el log con el id de la cuenta y el tipo del error (sin token ni mensaje) y se puede reenviar. Envío por
+  `EmailService` con su remitente de la escuela (`EmailService.enviarConImagen`, nueva sobrecarga asíncrona con una
+  imagen en línea `cid:`: el logo como adjunto en línea, que Gmail sí muestra). Texto (`InvitacionCorreo`): cabecera
+  con el logo (`MarcaEscuela.logoInformes`: el de siempre de Moiskimdo salvo que el superadmin suba otro; sin logo, solo
+  el nombre, decisión 211) y el nombre de correo de cuenta de la escuela (`clubCorreoCuentaHtml`), «Hola, {nombre}.»,
+  «Te han dado acceso como {propietario | gestor | responsable de sede | profesor} en {escuela}.», botón «Crear mi
+  contraseña», «El enlace caduca en 7 días.» y el enlace en texto. Todo lo que viene del alta, escapado. Enlace:
+  `app.frontend.base-url` (la misma base que restablecer contraseña; pendiente conocido del dominio único, riesgo 12)
+  + `/crear-contrasena?token=…` (ruta de la página de la E8-6).
+- **Reenviar** (`POST /api/miembros/{usuarioId}/invitacion`, sin cuerpo). Regla de URL de `/api/miembros/**` y el
+  mismo `@PreAuthorize`. Orden: no es miembro de la escuela activa, 404 «La cuenta no es miembro de esta escuela.»;
+  gestor (sin `ROLE_ADMIN`) y la cuenta solo tiene en esta escuela membresías PROPIETARIO o ADMINISTRADOR, 403 «Solo el
+  propietario da o quita los roles de propietario y gestor.» (D8-8: esa invitación solo pudo salir del propietario);
+  ya no pendiente, 409 «La invitación ya se aceptó.». El token nuevo se escribe con un `UPDATE` condicionado a que siga
+  pendiente (si otro la aceptó entre medias, 409 igual), junto con `ultima_organizacion_id` = la escuela que reenvía
+  (el correo lleva su marca). Fila `MIEMBROS INVITACION_REENVIADA usuario=#id`; correo tras el commit. Responde la
+  ficha (200). Todo 2xx registra: entra en `EscrituraConRegistroPropio` (`MIEMBRO_INVITACION`).
+- **Aceptar** (`POST /api/auth/invitacion/aceptar {token, nuevaContrasena}`, ruta pública nueva). No se reutiliza
+  `POST /api/auth/password/reset`: hacer que inicie sesión cambiaría el restablecimiento de todas las cuentas
+  (Moiskimdo incluido) y su enlace es de 1 hora. Cuerpo `PasswordResetUpdateRequest` (las mismas reglas: obligatoria, 8
+  o más, mayúsculas, minúsculas y números; si no, 400). Token vacío, desconocido, caducado, de una cuenta ya no
+  pendiente o ya usado: 400 «El enlace ha caducado o ya se usó. Pide que te lo reenvíen.». Un solo uso garantizado por un
+  `UPDATE` condicionado (hash, pendiente y sin caducar): de dos usos a la vez, uno gana. Después: la cuenta deja de
+  estar pendiente, el token se borra y se abre sesión con la cookie `jwt` de siempre (sesión sin «recordarme») y la
+  respuesta de `signin`, en la escuela de la invitación (`ultima_organizacion_id`, vía
+  `MembresiaService.elegirOrganizacionParaLogin`). Si ninguna escuela abre sesión (p. ej. invitado solo como
+  responsable de sede, que no entra hasta la E9, o el rol ya quitado), la contraseña queda creada y responde 403 con el
+  motivo de `signin`. `permitAll` en `SecurityConfiguration`; ANONIMO PERMITE en la matriz (y por ser pública, el resto
+  de columnas también, sin tocar la lista blanca de la sesión solo-profesor). Bajo `/api/auth/**`: no se audita, como
+  hoy (D8-14); el registro no gana nada y el cuerpo lleva token y contraseña.
+- **Datos de la página** (`POST /api/auth/invitacion/datos {token}`, ronda 1 de la revisión): lo que «Crea tu
+  contraseña» enseña antes de escribirla, `{email, nombre, escuela}` (la escuela de la invitación, con el nombre del
+  correo); token en el cuerpo, nunca en la URL. Vacío, desconocido, caducado, usado o de una cuenta ya no pendiente:
+  400 con el mismo mensaje. Pública (`permitAll`, todas las columnas `PERMITE`), no se audita.
+- **Contraseña puesta por el propietario** (`PUT /api/admin/users/{id}/password`, ronda 1): si la cuenta estaba
+  pendiente, en el mismo guardado se borra su token (el enlace deja de servir); una cuenta con contraseña conserva su
+  token de restablecer, como siempre.
+- **Google** (decisión 223). En `processOAuth2Login`, una cuenta pendiente que entra con Google pasa a GOOGLE (como
+  hoy) y además pierde el token: deja de estar pendiente y el enlace ya no sirve. Una cuenta LOCAL con contraseña, como
+  hoy (su token de restablecer no se toca).
+- **`invitacionPendiente`** (boolean, aditivo): fila de `GET /api/miembros` (tras `authProvider`, D8-4; sin consulta
+  nueva: va en la de la página), ficha `GET /api/miembros/{usuarioId}` (y la respuesta de las escrituras) y
+  `GrupoProfesoresDTOs.Profesor` de `GET /api/grupos/{grupoId}/profesores` (al final; el resto del JSON igual).
+- **Registro** (D8-16, §7): `MIEMBRO_INVITADO` (CREATE) e `INVITACION_REENVIADA` (UPDATE) en `RegistroAccionesMiembros`,
+  solo ids y enumeraciones. `CLAVES_REDACTADAS_POR_RUTA` de `/api/miembros` ya redacta `nombre` y `apellidos` (E8-3);
+  `token` y las claves de contraseña ya las redacta siempre `AuditoriaPayloadSanitizer`.
+- **Reenviar exige un rol activo** (ronda 2): sin ningún rol activo en la escuela, 409 «La cuenta no tiene ningún rol
+  activo en esta escuela.»; el texto del correo y la regla D8-8 del reenvío miran solo los roles activos.
+
+Notas para la PR (comportamiento conocido, sin cambiar):
+- **Escuela tras aceptar.** La sesión se abre donde la abriría el login (`elegirOrganizacionParaLogin`): con varias
+  escuelas válidas, la de la invitación (es la última). Si el rol de la escuela de la invitación no abre sesión (p. ej.
+  solo responsable de sede, hasta la E9) pero el de otra escuela sí, entra en esa otra.
+- **«Olvidé mi contraseña» sobre una cuenta pendiente** (`POST /api/auth/password/forgot`, pública): sustituye el token
+  de la invitación por uno de restablecer (1 hora) que va al mismo email; el enlace de la invitación deja de servir. No
+  es una toma de cuenta: solo quien lee ese buzón la usa. Basta con reenviar la invitación.
+- **Logs en DEBUG.** El volcado de entidades de Hibernate (`EntityPrinter`, solo en DEBUG) imprime `reset_token_hash`
+  al guardar, como los hashes de las contraseñas (ya pasaba antes de la E8-4). El token en claro nunca sale; a partir de
+  INFO, nada. Se deja así.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/InvitacionesIntegrationTest.java` (`@SpringBootTest`, `@AutoConfigureMockMvc`, `PER_CLASS`,
+  `extends MySqlIntegrationTest`, `@MockitoBean EmailService` para leer el correo sin enviar nada). Escuelas
+  `EscuelaConSedesDePrueba.crear(…, "it-e8-4")` y `"it-e8-4-otra"`, cuentas y emails nuevos por test con la marca de la
+  escuela, datos inventados; nada en Moiskimdo.
+- Crear: `T/integracion/UsuarioContrasenaV31_9MigracionIntegrationTest.java` (`@Tag("migracion")`, esquema propio).
+- Crear: `T/services/InvitacionCorreoTest.java` (sin Spring).
+- Modificar: `T/services/RegistroAccionesMiembrosTest.java`, `T/servicios/OAuth2UserServiceImplTest.java`,
+  `T/config/AuditoriaRequestFilterRegistroPropioTest.java`, `T/integracion/RegistroUnicoProfesorIntegrationTest.java`
+  (caso `MIEMBRO_INVITACION`), `T/integracion/MiembrosApiIntegrationTest.java` (claves de la fila y la ficha),
+  `T/integracion/MySqlSmokeIntegrationTest.java` y `T/integracion/MembresiaMigracionIntegrationTest.java` (última
+  versión 31.9) y `src-api/src/test/resources/seguridad/matriz-permisos.txt` (3 líneas nuevas).
+
+- [x] **Paso 1: escribir los tests**:
+  - IT `InvitacionesIntegrationTest`: `altaSinCuenta_conNombre_creaCuentaPendienteMembresiaYEnviaCorreoTrasCommit`
+    (cuenta LOCAL sin contraseña, hash de 64 y caducidad a 7 días, membresía, asignación y cargo; filas
+    `MIEMBRO_INVITADO`, `ROL_DADO` y `ASIGNACION_CREADA` sin la genérica; correo al email con el texto del rol;
+    dentro de la transacción aún no ha salido; con la transacción deshecha, ni cuenta ni correo),
+    `altaSinCuenta_sinNombre_404`, `altaSinCuenta_nombreNoValido_400` (solo uno, en blanco, 51 caracteres, email sin
+    formato; nada creado), `altaSinCuenta_grupoAjeno_noCreaNada`, `gestorInvitaPropietario_403`,
+    `invitarEmailConCuenta_noTocaContrasenaNiEnviaCorreo`, `cuentaPendienteNoEntraConContrasena` (401, también con
+    contraseña vacía; nunca 500), `tokenDeInvitacionNoApareceEnAuditoriaNiLogs` (alta, reenvío y aceptación con la
+    salida capturada y todas las filas de auditoría de la escuela), `reenviarInvalidaElTokenAnterior`,
+    `reenviarSinPendiente_409` (también tras aceptar), `reenviarSinRolActivo_409_yElCorreoUsaSoloLosActivos`,
+    `dosAceptacionesALaVezMismoToken_unaGana`, `reenviarOtraEscuela_404`, `gestorReenviaPropietario_403` (y
+    sí reenvía la de un profesor), `tokenCaducadoOUsado_rechazado` (caducado, usado, desconocido, vacío; contraseña
+    débil 400 y sigue pendiente), `crearContrasenaIniciaSesionEnLaEscuela` (cookie `jwt` con la escuela de la
+    invitación, roles de esa escuela, ya no pendiente y entra con la contraseña nueva),
+    `aceptarSinEscuelaQueAbraSesion_403ConContrasenaCreada`, `fallaElCorreo_noDeshaceLaCuenta` (alta y reenvío),
+    `dosInvitacionesALaVezMismoEmail_sin500` (varias rondas: `[200, 200]`, una cuenta, una fila `MIEMBRO_INVITADO`, un
+    correo), `correoConMarcaDeLaEscuela` (nombre y remitente de la escuela 2, sin logo, sin nada de Moiskimdo),
+    `invitacionPendienteEnLasTresRespuestas`, `aceptarNoSeAudita`, `datosDeLaInvitacion` (vigente, caducada, usada,
+    desconocida, cuenta aceptada), `adminPoneContrasenaAPendiente_borraElToken`, `contrasenaEnBlancoSigueRechazada` (signup,
+    registro y restablecer, 400; la entidad no guarda una cadena vacía).
+  - `UsuarioContrasenaV31_9MigracionIntegrationTest`: sobre una base en V31_8 con cuentas: llega a 31.9, la columna
+    admite NULL con el mismo tipo, juego de caracteres y colación, las demás columnas y todas las filas sin cambios, un
+    INSERT con contraseña NULL funciona y repetirla no hace nada.
+  - `InvitacionCorreoTest`: `moiskimdo_suNombreYSuLogoDeSiempre`, `otraEscuela_suNombreEscapadoYSuLogo`,
+    `sinLogo_soloElNombre`, `textoSegunElRol`, `escapaElNombre`.
+  - `RegistroAccionesMiembrosTest`: `invitacion_resumenSoloConIds`.
+  - `OAuth2UserServiceImplTest`: `cuentaPendienteEntraConGoogle_dejaDeEstarPendiente`,
+    `cuentaLocalConContrasenaEntraConGoogle_conservaSuToken`.
+  - `AuditoriaRequestFilterRegistroPropioTest`: ejemplo `POST /api/miembros/21/invitacion`; fuera
+    `GET /api/miembros/21/invitacion`, `POST /api/miembros/21/invitacion/otra`, `PUT /api/miembros/21/invitacion`.
+  - `RegistroUnicoProfesorIntegrationTest`: `MIEMBRO_INVITACION` (200 / cuenta con contraseña 409).
+  - Matriz: `POST /api/miembros/{usuarioId}/invitacion` (GESTOR y PROPIETARIO `PERMITE`, resto `DENIEGA`),
+    `POST /api/auth/invitacion/datos` y `POST /api/auth/invitacion/aceptar` (todas `PERMITE`).
+- [x] **Paso 2: comprobar que fallan.** `mvn test -Dtest='InvitacionesIntegrationTest,InvitacionCorreoTest,RegistroAccionesMiembrosTest,OAuth2UserServiceImplTest,AuditoriaRequestFilterRegistroPropioTest,RegistroUnicoProfesorIntegrationTest,MatrizPermisosTest' -DexcludedGroups=migracion`
+  y `mvn test -Dtest=UsuarioContrasenaV31_9MigracionIntegrationTest -Dgroups=migracion`: no compila hasta crear
+  `InvitacionCorreo`, las acciones y la entrada del enum; la migración no existe.
+
+### Tarea 2: implementar
+
+**Ficheros:**
+- Crear: `src-api/src/main/resources/db/migration/V31_9__usuario_contrasena_opcional.sql`.
+- Crear: `J/services/InvitacionService.java` (crear la cuenta pendiente, reenviar, aceptar), `J/services/AltaDeMiembro.java`
+  (repite el alta una vez ante la clave única), `J/services/InvitacionCorreo.java`,
+  `J/services/InvitacionCorreoListener.java`, `J/events/InvitacionEnviableEvent.java`.
+- Modificar: `J/entities/Usuario.java`, `J/repositories/UsuarioRepository.java` (dos `UPDATE` condicionados),
+  `J/repositories/MiembrosRepository.java` (`sinContrasena` en la fila), `J/services/GestionMiembrosService.java`,
+  `J/services/RegistroAccionesMiembros.java`, `J/services/AsignacionProfesorService.java`,
+  `J/services/EmailService.java` y `J/services/impl/EmailServiceImpl.java` (`enviarConImagen`),
+  `J/services/impl/OAuth2UserServiceImpl.java`, `J/controllers/MiembroController.java`,
+  `J/controllers/AuthenticationController.java`, `J/dtos/request/MiembrosRequests.java` (`nombre`, `apellidos`),
+  `J/dtos/response/MiembrosDTOs.java`, `J/dtos/response/GrupoProfesoresDTOs.java`,
+  `J/config/SecurityConfiguration.java` (`permitAll`), `J/config/AuditoriaRequestFilter.java` (`MIEMBRO_INVITACION`).
+
+**Interfaces:**
+- Produce: `POST /api/miembros` sin cuenta (con `nombre`, `apellidos`), `POST /api/miembros/{usuarioId}/invitacion`,
+  `POST /api/auth/invitacion/aceptar {token, nuevaContrasena}` → cookie `jwt` y `{token}` como `signin`;
+  `invitacionPendiente` en las tres respuestas; enlace `/crear-contrasena?token=…` (contrato de la página de la E8-6).
+- Consume: `GestionMiembrosService` (E8-3), `MarcaEscuelaService#de`, `EmailService`, `MembresiaService`,
+  `JwtService`, `RegistroAccionesMiembros`.
+
+- [x] **Paso 1:** V31_9 y la entidad; test de migración en verde.
+- [x] **Paso 2:** alta sin cuenta, correo tras el commit y reintento; sus IT en verde.
+- [x] **Paso 3:** reenviar y aceptar con la sesión; Google; `invitacionPendiente`.
+- [x] **Paso 4:** `EscrituraConRegistroPropio`, matriz y `permitAll`; sus tests en verde.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 3 líneas y recuento de la cabecera.
+- [x] `docs/multi-escuela/checklist-despliegue.md`: línea de la E8 con V31_9 (`desplegar_migrar`) y su comprobación.
+- [x] Tests de miembros, auth, restablecer contraseña y OAuth, `MatrizPermisosTest`, los del filtro de auditoría,
+  `RegistroUnicoProfesorIntegrationTest`, `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en
+  `src-api`, en primer plano, en verde; dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 ---
 

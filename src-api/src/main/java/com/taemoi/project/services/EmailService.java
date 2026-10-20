@@ -24,6 +24,15 @@ public interface EmailService {
 	void sendEmailConAdjunto(@NonNull String to, @NonNull String subject, @NonNull String htmlContent,
 			@NonNull String nombreAdjunto, @NonNull byte[] adjunto, String nombreRemitente);
 
+	/**
+	 * Pieza E8-4: correo HTML con una imagen en línea ({@code <img src="cid:{cid}">}, p. ej. el logo de la escuela) y el
+	 * nombre visible del remitente ({@code null}, el de siempre). Asíncrono como {@link #sendEmail(String, String,
+	 * String)}: un fallo del envío se apunta en el log y no llega a quien lo pide. Sin imagen ({@code imagen} nula o
+	 * vacía), el HTML solo.
+	 */
+	void sendEmailConImagen(@NonNull String to, @NonNull String subject, @NonNull String htmlContent, String cid,
+			byte[] imagen, String tipoImagen, String nombreRemitente);
+
 	// Pieza E7-7a: sin remitente propio (Moiskimdo, {@code MarcaEscuela#remitente()} nulo) se llama al método de
 	// siempre; con él, a la sobrecarga. Así los correos de Moiskimdo salen por el mismo camino que antes.
 

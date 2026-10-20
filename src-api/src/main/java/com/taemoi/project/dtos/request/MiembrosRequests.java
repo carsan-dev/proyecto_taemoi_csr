@@ -15,9 +15,12 @@ public final class MiembrosRequests {
 	public record Asignacion(Long grupoId, String rol) {
 	}
 
-	/** {@code POST /api/miembros}: cuenta existente por email. */
+	/**
+	 * {@code POST /api/miembros}: cuenta existente por email; sin cuenta, con {@code nombre} y {@code apellidos}, la
+	 * invitación (pieza E8-4). Con cuenta, {@code nombre} y {@code apellidos} se ignoran.
+	 */
 	public record Alta(String email, String rol, String cargo, List<Long> sedeIds, List<Asignacion> grupos,
-			Boolean reactivar) {
+			Boolean reactivar, String nombre, String apellidos) {
 	}
 
 	/** {@code PUT /api/miembros/{usuarioId}/roles/{rol}} (cuerpo opcional; {@code sedeIds} solo para el responsable). */

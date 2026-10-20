@@ -92,10 +92,11 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 	private static final String SIN_SEDES = "Indica al menos una sede.";
 	private static final String NO_RESPONSABLE = "La cuenta no es responsable de sede en esta escuela.";
 	private static final String SIN_PROFESOR_ACTIVO = "La cuenta no tiene el rol de profesor activo en esta escuela.";
+	/** E8-4 añade {@code invitacionPendiente}. */
 	private static final Set<String> CLAVES_FILA = Set.of("usuarioId", "nombre", "apellidos", "email", "authProvider",
-			"roles", "sedes", "numeroGrupos");
+			"invitacionPendiente", "roles", "sedes", "numeroGrupos");
 	private static final Set<String> CLAVES_FICHA = Set.of("usuarioId", "nombre", "apellidos", "email", "authProvider",
-			"roles", "sedes", "numeroGrupos", "grupos");
+			"invitacionPendiente", "roles", "sedes", "numeroGrupos", "grupos");
 	/** Resumen de la fila genérica del filtro HTTP ({@code AuditoriaServiceImpl#construirResumen}). */
 	private static final String RESUMEN_GENERICO = "^(CREATE|UPDATE|DELETE|READ|OPERACION) \\S+( #\\d+)? -> \\d+$";
 
@@ -1026,9 +1027,10 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 		String email = "redactado-" + e.marca + "@example.test";
 		String cargo = "CargoRedactado" + e.marca;
 		long antes = ultimoEvento();
+		// E8-4: con nombre y apellidos y sin cuenta es una invitación; un grupo de otra escuela la deja en 404.
 		assertEquals(404, estado(conCuerpo(post(RUTA), cuerpo(Map.of("email", email, "rol", "PROFESOR", "cargo", cargo,
-				"grupos", List.of(asig(e.gA, "TITULAR")), "nombre", "NombreRedactado", "apellidos",
-				"ApellidoRedactado"))), tPropietario));
+				"grupos", List.of(asig(e.gA, "TITULAR"), asig(otra.gA, "AYUDANTE")), "nombre", "NombreRedactado",
+				"apellidos", "ApellidoRedactado"))), tPropietario));
 		long cuenta = cuenta("redactar");
 		membresia(e.org, cuenta, "FAMILIA");
 		assertEquals(400, estado(conCuerpo(put(RUTA + "/" + cuenta + "/roles/FAMILIA"), cuerpo(Map.of("cargo", cargo))),

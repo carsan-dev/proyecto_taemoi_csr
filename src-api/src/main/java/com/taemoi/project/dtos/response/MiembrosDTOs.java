@@ -8,7 +8,7 @@ import com.taemoi.project.entities.RolMembresia;
 
 /**
  * Respuestas de la API de miembros (pieza E8-3; D8-4, D8-5). Solo datos de la escuela activa. E8-4 añade
- * {@code invitacionPendiente}.
+ * {@code invitacionPendiente} (cuenta LOCAL que aún no ha creado su contraseña).
  */
 public final class MiembrosDTOs {
 
@@ -29,12 +29,12 @@ public final class MiembrosDTOs {
 
 	/** Fila de la lista: roles en el orden del enum, sedes por id, número de grupos asignados en la escuela. */
 	public record Miembro(Long usuarioId, String nombre, String apellidos, String email, AuthProvider authProvider,
-			List<Rol> roles, List<Sede> sedes, int numeroGrupos) {
+			boolean invitacionPendiente, List<Rol> roles, List<Sede> sedes, int numeroGrupos) {
 	}
 
 	/** Ficha: la fila más sus grupos (por nombre e id del grupo). */
 	public record Ficha(Long usuarioId, String nombre, String apellidos, String email, AuthProvider authProvider,
-			List<Rol> roles, List<Sede> sedes, int numeroGrupos, List<Grupo> grupos) {
+			boolean invitacionPendiente, List<Rol> roles, List<Sede> sedes, int numeroGrupos, List<Grupo> grupos) {
 	}
 
 	/** Una página de la lista ({@code pagina} desde 0). */

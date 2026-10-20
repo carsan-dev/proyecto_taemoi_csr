@@ -90,6 +90,12 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 										: "No hay alumnos activos asociados a este email. Contacte con el administrador.");
 			}
 			if (usuario.getAuthProvider() != AuthProvider.GOOGLE) {
+				// Pieza E8-4 (decisión 223): una invitación pendiente que entra con Google (email verificado) queda
+				// aceptada: pasa a GOOGLE y su enlace deja de servir. Una cuenta con contraseña conserva su token.
+				if (usuario.invitacionPendiente()) {
+					usuario.setResetTokenHash(null);
+					usuario.setResetTokenExpiresAt(null);
+				}
 				usuario.setAuthProvider(AuthProvider.GOOGLE);
 				usuarioRepository.save(usuario);
 			}

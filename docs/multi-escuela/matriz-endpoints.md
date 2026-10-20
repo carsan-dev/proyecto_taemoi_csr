@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (462 líneas; 150 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (465 líneas; 150 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -318,6 +318,24 @@ en `EscrituraConRegistroPropio`, una fila por escritura. `/api/miembros` (`email
 en `PARAMETROS_REDACTADOS_POR_RUTA` (la búsqueda no queda en `query_params_json`). Decisión 221: la línea de `PUT /api/admin/users/{userId}/roles` no cambia (solo
 PROPIETARIO `PERMITE`), pero responde 409 si deja la escuela sin propietario activo. Lo prueban
 `MiembrosApiIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Pieza E8-4 (invitaciones por correo, fase3-e8-miembros.md D8-13): 3 líneas nuevas; ninguna casilla existente cambia.
+- `POST /api/miembros/{usuarioId}/invitacion` (`MiembroController#reenviarInvitacion`): como el resto de
+  `/api/miembros/**`, GESTOR y PROPIETARIO `PERMITE` y el resto `DENIEGA` (misma regla de URL y `@PreAuthorize`). En el
+  servicio: cuenta que no es de la escuela, 404; ya no pendiente, 409; un gestor con una invitación cuyos roles en la
+  escuela son solo PROPIETARIO o ADMINISTRADOR, 403 (D8-8). Todo 2xx registra `MIEMBROS INVITACION_REENVIADA` y está en
+  `EscrituraConRegistroPropio` (`MIEMBRO_INVITACION`).
+- `POST /api/auth/invitacion/aceptar` (`AuthenticationController#aceptarInvitacion`): ruta pública (`permitAll`, junto a
+  `/api/auth/password/reset`), todas las columnas `PERMITE` (la sesión solo-profesor la pasa por pública, sin entrar en
+  su lista blanca). Token y contraseña en el cuerpo; 400 con el enlace caducado o usado; si vale, abre sesión con la
+  cookie `jwt`. Como todo `/api/auth/**`, no se audita.
+- `POST /api/auth/invitacion/datos` (`AuthenticationController#datosInvitacion`): igual de pública (todas las columnas
+  `PERMITE`, no se audita); el token va en el cuerpo, nunca en la URL. Devuelve solo `{email, nombre, escuela}` de una
+  invitación vigente; caducada, usada o desconocida, 400.
+- `POST /api/miembros` (línea existente, sin cambio de permisos): sin cuenta y con `nombre` y `apellidos`, crea la
+  invitación (registro `MIEMBROS MIEMBRO_INVITADO`). `GET /api/miembros`, `GET /api/miembros/{usuarioId}` y
+  `GET`/`POST /api/grupos/{grupoId}/profesores` (líneas existentes) devuelven además `invitacionPendiente`.
+Lo prueban `InvitacionesIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

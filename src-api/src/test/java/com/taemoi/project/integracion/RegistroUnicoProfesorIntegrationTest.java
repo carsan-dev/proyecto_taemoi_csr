@@ -356,6 +356,18 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					() -> conCuerpo(put("/api/miembros/" + cuenta + "/grupos"),
 							"{\"asignaciones\":[{\"grupoId\":999999999,\"rol\":\"AYUDANTE\"}]}"), 404);
 		});
+		// Pieza E8-4: reenviar una invitación pendiente (cuenta LOCAL sin contraseña).
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_INVITACION, () -> {
+			long pendiente = e.cuenta(usuarios, "invitacion-" + UUID.randomUUID().toString().substring(0, 6));
+			jdbc.update("UPDATE usuario SET contrasena = NULL WHERE id = ?", pendiente);
+			membresia(e.org, pendiente, "PROFESOR");
+			long aceptada = e.cuenta(usuarios, "aceptada-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, aceptada, "PROFESOR");
+			// Ya tiene contraseña: 409.
+			return new Caso(tPropietario, propietario, () -> post("/api/miembros/" + pendiente + "/invitacion"), 200,
+					List.of("MIEMBROS INVITACION_REENVIADA"), () -> post("/api/miembros/" + aceptada + "/invitacion"),
+					409);
+		});
 		return casos;
 	}
 

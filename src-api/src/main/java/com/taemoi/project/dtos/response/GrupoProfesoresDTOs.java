@@ -11,7 +11,11 @@ public final class GrupoProfesoresDTOs {
 	private GrupoProfesoresDTOs() {
 	}
 
-	/** Un profesor asignado al grupo: la cuenta (id, nombre, apellidos y email) y su rol en el grupo. */
-	public record Profesor(Long usuarioId, String nombre, String apellidos, String email, RolAsignacionProfesor rol) {
+	/**
+	 * Un profesor asignado al grupo: la cuenta (id, nombre, apellidos y email), su rol en el grupo y (pieza E8-4) si su
+	 * invitación sigue pendiente (cuenta LOCAL sin contraseña), para el chip «Invitación pendiente».
+	 */
+	public record Profesor(Long usuarioId, String nombre, String apellidos, String email, RolAsignacionProfesor rol,
+			boolean invitacionPendiente) {
 	}
 }

@@ -80,7 +80,9 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ROL_QUITAR,
 					new Ejemplo("DELETE", "/api/miembros/21/roles/PROFESOR")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_SEDES, new Ejemplo("PUT", "/api/miembros/21/sedes")),
-			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos"))));
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION,
+					new Ejemplo("POST", "/api/miembros/21/invitacion"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -125,6 +127,12 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("PUT", "/api/miembros/21/roles"),
 			new Ejemplo("PUT", "/api/miembros/21/roles/PROFESOR/otra"),
 			new Ejemplo("POST", "/api/miembros/21/sedes"),
+			// Pieza E8-4: reenviar la invitación solo por POST y en su ruta exacta.
+			new Ejemplo("GET", "/api/miembros/21/invitacion"),
+			new Ejemplo("PUT", "/api/miembros/21/invitacion"),
+			new Ejemplo("DELETE", "/api/miembros/21/invitacion"),
+			new Ejemplo("POST", "/api/miembros/21/invitacion/otra"),
+			new Ejemplo("POST", "/api/miembros/invitacion"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");

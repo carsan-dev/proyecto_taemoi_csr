@@ -76,6 +76,22 @@ class RegistroAccionesMiembrosTest {
 		assertEquals("NINGUNO", RegistroAccionesMiembros.formatear("x", null));
 	}
 
+	/** Pieza E8-4: invitar y reenviar, solo con el id de la cuenta y el rol (nunca el email, el nombre ni el token). */
+	@Test
+	void invitacion_resumenSoloConIds() {
+		registro.registrar(RegistroAccionesMiembros.Accion.MIEMBRO_INVITADO, "/api/miembros",
+				valores("usuario", 21L, "rol", RolMembresia.PROFESOR));
+		verify(auditoria).registrarAccesoSensible(AuditoriaAccion.CREATE, "miembros", "/api/miembros", 21L,
+				"MIEMBROS MIEMBRO_INVITADO usuario=#21 rol=PROFESOR");
+
+		Map<String, Object> reenvio = new LinkedHashMap<>();
+		reenvio.put("usuario", 21L);
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_REENVIADA, "/api/miembros/21/invitacion",
+				reenvio);
+		verify(auditoria).registrarAccesoSensible(AuditoriaAccion.UPDATE, "miembros", "/api/miembros/21/invitacion",
+				21L, "MIEMBROS INVITACION_REENVIADA usuario=#21");
+	}
+
 	@Test
 	void textoLibre_IllegalStateException() {
 		Map<String, Object> conCargo = valores("usuario", 8L, "cargo", "Director técnico");

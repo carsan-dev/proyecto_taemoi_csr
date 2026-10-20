@@ -187,6 +187,48 @@ class OAuth2UserServiceImplTest {
 		verify(alumnos, never()).findAllByEmailIgnoreCaseAndActivoTrue(any());
 	}
 
+	/**
+	 * Pieza E8-4 (decisión 223): una invitación pendiente (LOCAL sin contraseña) que entra con Google pasa a GOOGLE, como
+	 * cualquier cuenta LOCAL, y además pierde el token: deja de estar pendiente y el enlace ya no sirve.
+	 */
+	@Test
+	void cuentaPendienteEntraConGoogle_dejaDeEstarPendiente() {
+		Usuario x = new Usuario();
+		x.setId(3L);
+		x.setEmail(EMAIL_X);
+		x.setAuthProvider(AuthProvider.LOCAL);
+		x.setResetTokenHash("a".repeat(64));
+		x.setResetTokenExpiresAt(java.time.LocalDateTime.now().plusDays(7));
+		assertTrue(x.invitacionPendiente());
+		when(usuarios.findByEmailIgnoreCase(EMAIL_X)).thenReturn(Optional.of(x));
+		when(membresias.elegirOrganizacionParaLogin(x)).thenReturn(Optional.of(5L));
+
+		assertSame(x, servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
+		assertEquals(AuthProvider.GOOGLE, x.getAuthProvider());
+		assertEquals(null, x.getResetTokenHash());
+		assertEquals(null, x.getResetTokenExpiresAt());
+		assertEquals(false, x.invitacionPendiente());
+		verify(usuarios).save(x);
+	}
+
+	/** Una cuenta LOCAL con contraseña sigue como hoy: pasa a GOOGLE y conserva su token de restablecer. */
+	@Test
+	void cuentaLocalConContrasenaEntraConGoogle_conservaSuToken() {
+		Usuario x = new Usuario();
+		x.setId(3L);
+		x.setEmail(EMAIL_X);
+		x.setContrasena("hash-de-una-contrasena");
+		x.setAuthProvider(AuthProvider.LOCAL);
+		x.setResetTokenHash("b".repeat(64));
+		when(usuarios.findByEmailIgnoreCase(EMAIL_X)).thenReturn(Optional.of(x));
+		when(membresias.elegirOrganizacionParaLogin(x)).thenReturn(Optional.of(5L));
+
+		assertSame(x, servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
+		assertEquals(AuthProvider.GOOGLE, x.getAuthProvider());
+		assertEquals("b".repeat(64), x.getResetTokenHash());
+		assertEquals("hash-de-una-contrasena", x.getPassword());
+	}
+
 	@ParameterizedTest
 	@NullSource
 	@ValueSource(strings = { "false", "" })

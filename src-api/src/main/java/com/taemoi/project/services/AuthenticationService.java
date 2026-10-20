@@ -18,4 +18,14 @@ public interface AuthenticationService {
 	 */
 	java.util.Optional<JwtAuthenticationResponse> cambiarOrganizacion(com.taemoi.project.entities.Usuario usuario,
 			Long organizacionId, java.util.Date expiraEn);
+
+	/**
+	 * Pieza E8-4: abre sesión (sin «recordarme») a una cuenta que acaba de crear su contraseña con una invitación, en la
+	 * escuela que elegiría el login ({@code MembresiaService#elegirOrganizacionParaLogin}: con varias, la de la
+	 * invitación, que es su última).
+	 *
+	 * @throws org.springframework.security.authentication.DisabledException con el mismo motivo que {@link #signin} si
+	 *         ninguna escuela abre sesión
+	 */
+	JwtAuthenticationResponse iniciarSesionTrasInvitacion(com.taemoi.project.entities.Usuario usuario);
 }

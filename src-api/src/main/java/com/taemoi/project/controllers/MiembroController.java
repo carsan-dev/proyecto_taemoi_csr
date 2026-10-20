@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.MiembrosRequests;
 import com.taemoi.project.dtos.response.MiembrosDTOs;
+import com.taemoi.project.services.AltaDeMiembro;
 import com.taemoi.project.services.GestionMiembrosService;
 
 /**
  * Miembros de la escuela activa (pieza E8-3; D8-1, D8-4 a D8-11): propietario y gestor listan el personal (y, si se
  * pide, las familias), ven una ficha, dan de alta cuentas existentes con un rol, dan, reactivan y quitan roles con su
- * cargo, y fijan las sedes de un responsable y los grupos de un profesor. Sin invitaciones (E8-4).
+ * cargo, y fijan las sedes de un responsable y los grupos de un profesor. Pieza E8-4: el alta de un email sin cuenta
+ * (con nombre y apellidos) es una invitación por correo, que se puede reenviar.
  *
  * <p>Solo {@code ROLE_ADMIN} y {@code ROLE_MANAGER}: la regla de URL explícita de {@code SecurityConfiguration} (junto
  * a la de {@code /api/sedes}) y el {@code @PreAuthorize} de cada método; la D8 sobre PROPIETARIO y ADMINISTRADOR la
@@ -32,9 +34,11 @@ import com.taemoi.project.services.GestionMiembrosService;
 public class MiembroController {
 
 	private final GestionMiembrosService miembros;
+	private final AltaDeMiembro altas;
 
-	public MiembroController(GestionMiembrosService miembros) {
+	public MiembroController(GestionMiembrosService miembros, AltaDeMiembro altas) {
 		this.miembros = miembros;
+		this.altas = altas;
 	}
 
 	/** Una página del personal (con {@code incluirFamilias}, también las familias); {@code page} desde 0. */
@@ -53,11 +57,21 @@ public class MiembroController {
 		return ResponseEntity.ok(miembros.ficha(usuarioId));
 	}
 
-	/** Alta de una cuenta existente (por email) con un rol; sin cuenta, 404 (las invitaciones son de la E8-4). */
+	/**
+	 * Alta de una cuenta existente (por email) con un rol; sin cuenta, con {@code nombre} y {@code apellidos}, la
+	 * invitación (E8-4); sin ellos, 404.
+	 */
 	@PostMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
 	public ResponseEntity<MiembrosDTOs.Ficha> alta(@RequestBody MiembrosRequests.Alta solicitud) {
-		return ResponseEntity.ok(miembros.alta(solicitud));
+		return ResponseEntity.ok(altas.alta(solicitud));
+	}
+
+	/** Reenvía la invitación pendiente (token nuevo; el anterior deja de valer). Sin cuerpo. */
+	@PostMapping("/{usuarioId}/invitacion")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<MiembrosDTOs.Ficha> reenviarInvitacion(@PathVariable Long usuarioId) {
+		return ResponseEntity.ok(miembros.reenviarInvitacion(usuarioId));
 	}
 
 	/** Da o reactiva el rol y fija su cargo ({@code {cargo?, sedeIds?}}, cuerpo opcional). */

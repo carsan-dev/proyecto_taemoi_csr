@@ -33,6 +33,9 @@ public interface MiembrosRepository extends Repository<Membresia, Long> {
 		String getEmail();
 
 		AuthProvider getAuthProvider();
+
+		/** Pieza E8-4: sin contraseña (con LOCAL, invitación pendiente). */
+		Boolean getSinContrasena();
 	}
 
 	/**
@@ -44,7 +47,8 @@ public interface MiembrosRepository extends Repository<Membresia, Long> {
 	 */
 	@Query(value = """
 			SELECT u.id AS id, u.nombre AS nombre, u.apellidos AS apellidos, u.email AS email,
-			       u.authProvider AS authProvider
+			       u.authProvider AS authProvider,
+			       CASE WHEN u.contrasena IS NULL THEN true ELSE false END AS sinContrasena
 			FROM Usuario u
 			WHERE (EXISTS (SELECT 1 FROM Membresia m WHERE m.usuarioId = u.id AND m.organizacionId = :organizacionId)
 			       OR (:porDefecto = true AND NOT EXISTS (SELECT 1 FROM Membresia m2 WHERE m2.usuarioId = u.id)))

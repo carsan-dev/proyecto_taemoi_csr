@@ -250,6 +250,10 @@ public class SecurityConfiguration {
 								"/api/auth/signup",
 								"/api/auth/password/forgot",
 								"/api/auth/password/reset",
+								// Pieza E8-4: datos de la página y crear la contraseña de una invitación (el token del
+								// correo, siempre en el cuerpo).
+								"/api/auth/invitacion/datos",
+								"/api/auth/invitacion/aceptar",
 								"/api/auth/register/request",
 								"/api/auth/register/confirm",
 								"/api/auth/logout",
