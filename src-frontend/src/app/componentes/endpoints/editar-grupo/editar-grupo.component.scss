@@ -1,6 +1,9 @@
 // Import shared admin styles
 @use '../../../componentes/admin-theme' as *;
 
+// #f44336 de $danger-color no llega a AA (4,5:1) sobre blanco: este rojo es para texto y bordes de acciones destructivas.
+$danger-texto: #c62828;
+
 // Component-specific styles (if any additional customization needed)
 .form-group {
   position: relative;
@@ -74,4 +77,161 @@
   height: 36px;
   width: 80px;
   border-radius: 4px;
+}
+
+// ========================================
+// PROFESORES DEL GRUPO
+// ========================================
+
+.profesores-card {
+  margin-top: 1.5rem;
+}
+
+.profesores-vacio {
+  margin: 0 0 1.25rem;
+  color: $text-muted;
+}
+
+.profesores-aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: $danger-texto;
+
+  span {
+    flex: 1 1 12rem;
+  }
+}
+
+.profesores-lista {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.profesor-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba($primary-color, 0.1);
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+.profesor-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.profesor-nombre,
+.profesor-email {
+  overflow-wrap: anywhere;
+}
+
+.profesor-email {
+  color: $text-muted;
+  font-size: 0.9rem;
+}
+
+.profesor-acciones {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profesor-rol {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  max-width: 14rem;
+  padding-left: 0.75rem;
+  padding-right: 2.25rem;
+  background-position: right 0.75rem center;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.profesor-alta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+
+  .admin-form-field {
+    margin-bottom: 0;
+  }
+}
+
+.profesor-alta-email {
+  flex: 1 1 100%;
+}
+
+.profesor-alta-rol {
+  flex: 1 1 10rem;
+}
+
+.profesor-alta-boton {
+  flex: 0 0 auto;
+}
+
+.profesor-quitar {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: $danger-texto;
+  background: $text-light;
+  border: 2px solid $danger-texto;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover:not(:disabled) {
+    color: $text-light;
+    background: $danger-texto;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($danger-texto, 0.35);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.profesor-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 575.98px) {
+  .profesor-quitar i {
+    display: none;
+  }
+
+  .profesor-alta-email,
+  .profesor-alta-rol,
+  .profesor-alta-boton {
+    flex: 1 1 100%;
+  }
 }

@@ -600,3 +600,24 @@ MANAGER, porque `/api/profesor/**` deniega a la gestión, D7-10; gestión + prof
 `app.routes.spec.ts`, `header.component.spec.ts`, `mi-caja.component.spec.ts`, `role.guard.spec.ts` y
 `authentication.mi-caja.spec.ts`. Karma en verde, `build:production` sin aviso de presupuesto y capturas a 375 y
 1280 px con la API simulada y datos ficticios.
+
+## 8. Pieza E7-6 (detallada)
+
+Sección «Profesores» en la ficha del grupo de gestión (`gruposEditar/:id`, `editar-grupo`), sobre la API de E7-4.
+
+- Servicio `grupo-profesores.service.ts` (listar, asignar o cambiar de rol con el mismo POST, quitar) e interfaz
+  `ProfesorDeGrupo`; errores tratados en la pantalla (`ERROR_HANDLED_LOCALLY`).
+- Segunda tarjeta bajo el formulario del grupo, solo con `tieneAccesoAdmin()` (propietario o gestor). Petición
+  independiente: Moiskimdo la ve vacía («Este grupo aún no tiene profesores.») y, si falla, el aviso con «Reintentar» es
+  local a la sección y no bloquea el formulario ni el guardado del grupo.
+- Fila por profesor: nombre, email, selector Titular/Ayudante (POST con el rol nuevo; al fallar se recarga la lista) y
+  «Quitar» con SweetAlert2 («¿Quitar a {nombre} de este grupo?», «Seguirá teniendo el rol de profesor en la escuela.»).
+  Mientras va una petición de fila se desactivan los controles de las filas.
+- Alta: email (`type=email`, `autocomplete=off`) y rol (Titular por defecto) con «Añadir», desactivado sin email o
+  durante la petición; 400, 404 y 409 muestran el `{mensaje}` junto al formulario y conservan el email; al añadir se
+  refresca la lista y se vacía el campo.
+- Va en el chunk perezoso de la ruta: el bundle inicial no cambia (1.495.583 bytes).
+
+**Verificación.** Specs nuevos (en `tsconfig.spec.json` y `angular.json`): `grupo-profesores.service.spec.ts` y
+`editar-grupo.profesores.spec.ts`. Karma en verde, `build:production` sin aviso de presupuesto y capturas a 375 y
+1280 px (dos profesores, vacía, error 404) con la API simulada y datos ficticios.
