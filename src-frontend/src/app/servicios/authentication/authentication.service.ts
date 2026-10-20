@@ -4,6 +4,7 @@ import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { PermisosSesionService } from './permisos-sesion.service';
 
 export type PortalPreferido = 'admin' | 'user';
 
@@ -18,14 +19,6 @@ export function esSoloProfesor(roles: readonly string[]): boolean {
     !roles.includes('ROLE_MANAGER') &&
     !roles.includes('ROLE_USER')
   );
-}
-
-/**
- * «Mis grupos» (E7): ROLE_PROFESOR sin gestión (ni ADMIN ni MANAGER). El servidor deniega `/api/profesor/**` a la
- * gestión (D7-10), así que una cuenta gestión + profesor no debe ver esa pantalla. Sí puede ser también familia.
- */
-export function veMisGrupos(roles: readonly string[]): boolean {
-  return roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
 }
 
 @Injectable({
@@ -77,7 +70,10 @@ export class AuthenticationService {
   private alumnosAsociadosRequest$: Observable<any[]> | null = null;
   private sondeoPlataforma$: Observable<boolean> | null = null;
 
-  constructor(private readonly http: HttpClient) {
+  constructor(
+    private readonly http: HttpClient,
+    private readonly permisos: PermisosSesionService
+  ) {
     this.verificarEstadoAutenticacion();
   }
 
@@ -117,6 +113,7 @@ export class AuthenticationService {
   login(credenciales: LoginInterface): Observable<string[]> {
     this.rolesCargados = false;
     this.rolesPeticion$ = null;
+    this.permisos.reiniciar();
     // Cambiar de usuario sin cerrar sesión no debe reutilizar el sondeo del anterior.
     this.sondeoPlataforma$ = null;
     return this.http
@@ -196,6 +193,7 @@ export class AuthenticationService {
     this.isUserSubject.next(false);
     this.rolesCargados = false;
     this.rolesPeticion$ = null;
+    this.permisos.reiniciar();
     this.alumnosAsociadosCache = null;
     this.alumnosAsociadosRequest$ = null;
 

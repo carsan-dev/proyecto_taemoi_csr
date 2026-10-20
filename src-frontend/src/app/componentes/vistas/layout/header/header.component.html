@@ -506,6 +506,14 @@
       </a>
     </li>
     }
+    @if (veMisGrupos) {
+    <li>
+      <a class="menu-link" [routerLink]="['/mis-grupos']" routerLinkActive="active" (click)="closeAdminMenu()">
+        <i class="bi bi-people"></i>
+        <span>Mis grupos</span>
+      </a>
+    </li>
+    }
     @if (isAdminOnly) {
     <li>
       <a class="menu-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active" (click)="closeAdminMenu()">

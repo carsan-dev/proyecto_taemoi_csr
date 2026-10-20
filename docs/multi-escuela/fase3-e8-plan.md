@@ -772,14 +772,53 @@ Notas para la PR (comportamiento conocido, sin cambiar):
 
 ---
 
-## 6. Pieza E8-5 (la detalla su implementador con TDD antes de empezar)
+## 6. Pieza E8-5: menú y guard de «Mis grupos» con la capacidad `MIS_GRUPOS` (detallada)
 
-Rama `feature/e8-5`. Alcance:
-- Servicio de permisos en el frontend (`GET /api/auth/permisos`), pedido una vez y compartido.
-- `veMisGrupos` = capacidad `MIS_GRUPOS`; enlace «Mis grupos» bajo «Mi caja» en el menú de gestión y en el menú de
-  cuenta móvil (§5.1).
-- `misGruposGuard`: gestión con `MIS_GRUPOS` pasa; sin ella, `/adminpage`.
-- Specs en las dos listas de Karma; punto de revisión 11; build sin aviso y capturas a 375 y 1280 px.
+Rama `feature/e8-5` desde `feature/e8-4`. Solo frontend, sin migración: atajo `desplegar`. Contrato del backend (E8-1,
+`PermisosSesionDTO`): `GET /api/auth/permisos` → `{roles, esAdminPlataforma, sedes[{id, nombre, activa}], variasSedes,
+tieneGrupos, capacidades}`.
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **`PermisosSesionService`** (`servicios/authentication/permisos-sesion.service.ts`, `providedIn: 'root'`). `obtener()`
+  pide `GET /api/auth/permisos` una vez y comparte la petición con `shareReplay(1)`, como `obtenerRoles()`; un error no
+  se guarda (la siguiente llamada vuelve a pedir). `capacidades()` envuelve a `obtener()` y ante un error devuelve `[]`
+  (falla cerrado) sin romper la cabecera. `reiniciar()` descarta la petición guardada.
+- **Cuándo se refresca**: `AuthenticationService` llama a `reiniciar()` en `login()` y en `limpiarEstadoLocal()`
+  (logout y sesión caducada), justo donde ya reinicia los roles. El frontend no tiene hoy ninguna llamada a `POST
+  /api/auth/organizacion` (la selección de escuela es del backend), así que no hay otro punto: quien la añada
+  (E9/E10) llama a `reiniciar()` junto a los roles.
+- **`veMisGrupos` desaparece como función de roles**: la cabecera lo toma de la capacidad `MIS_GRUPOS`. Solo pide
+  permisos si la sesión tiene `ROLE_PROFESOR` (sin él no hay `MIS_GRUPOS`): las cuentas de familia o gestión sin
+  profesor no hacen petición extra.
+- **Menús**: en la barra de gestión, «Mis grupos» va justo debajo de «Mi caja»; en los menús de cuenta (familia,
+  escritorio y móvil) conserva su sitio actual, encima de «Mi caja», porque ya estaba ahí para solo-profesor y F+Pr.
+  «Mi caja» no cambia (cualquier `ROLE_PROFESOR`).
+- **`misGruposGuard`**: `MIS_GRUPOS` → pasa; si no, gestión (`ROLE_ADMIN` o `ROLE_MANAGER`) → `/adminpage`; si no, `/`.
+  Error al pedir permisos → `/`. Usa `obtener()` (no `capacidades()`) para distinguir el error.
+- **Copia del pase (D7-6)**: `FichaProfesorComponent.notaPase` es «Crea el cargo; el grado sube al cobrarlo en
+  tesorería.» con `ROLE_ADMIN` o `ROLE_MANAGER` en la sesión (su Mi caja no cobra, decisión 1) y la de siempre («…en Mi
+  caja.») para el resto. El enlace del aviso posterior pasa a «Ir a tesorería» (`/tesoreriaCobros`) para ADMIN o
+  MANAGER (ronda 1); el resto conserva «Ir a Mi caja». Nota para la PR: F+Pr sin grupos asignados deja de ver «Mis
+  grupos» (D8-14: MIS_GRUPOS exige grupos salvo en la sesión solo-profesor).
+
+### Tarea 1: specs que fallan
+
+**Ficheros** (cada spec nuevo, en `tsconfig.spec.json` «files» **y** `angular.json` test «include»):
+- Crear: `servicios/authentication/permisos-sesion.service.spec.ts`: una sola petición con dos suscriptores; segunda
+  llamada desde la caché sin petición; `reiniciar()` (y `login()` / `limpiarEstadoLocal()` del
+  `AuthenticationService`) fuerza una petición nueva; un error no se guarda y `capacidades()` da `[]`.
+- Modificar: `guards/mis-grupos.guard.spec.ts` (MIS_GRUPOS pasa; gestión sin ella → `/adminpage`; familia → `/`; error →
+  `/`), `componentes/vistas/layout/header/header.component.spec.ts` (P+Pr con `MIS_GRUPOS` ve «Mis grupos» justo debajo
+  de «Mi caja» en la barra de gestión; P+Pr sin ella no; solo-profesor y F+Pr sin cambios; error de permisos no rompe
+  la cabecera), `servicios/authentication/authentication.mi-caja.spec.ts` (se quita `veMisGrupos`),
+  `componentes/endpoints/mis-grupos/ficha-profesor/ficha-profesor.component.spec.ts` (nota de tesorería para gestión,
+  la de Mi caja para el profesor).
+
+- [ ] **Paso 1: escribir los specs y verlos fallar**: `npm test -- --watch=false --browsers=ChromeHeadless`.
+- [ ] **Paso 2: implementar** hasta verde; `npm run build:production` sin aviso de presupuesto (inicial ~1,50 MB).
+- [ ] Capturas a 375 y 1280 px (menú de gestión y menú móvil con y sin asignaciones; confirmación del pase como
+  gestión), con datos inventados y las respuestas de la API simuladas.
+- [ ] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.
 
 ---
 

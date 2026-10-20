@@ -6,6 +6,7 @@ import { BehaviorSubject, of, Subject } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
+import { Capacidad, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 /** El contador de solicitudes (6c-7) sin HTTP: lo prueba header.solicitudes.spec.ts. */
@@ -38,7 +39,8 @@ describe('HeaderComponent', () => {
       new NgZone({}),
       pageScroll as any,
       scrollLock as any,
-      contadorSolicitudesSimulado as any
+      contadorSolicitudesSimulado as any,
+      { capacidades: () => of([]) } as any
     );
   }
 
@@ -119,6 +121,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
       ],
     }).compileComponents();
 
@@ -169,7 +172,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
   });
 
-  it('gestión + profesor no ve «Mis grupos» (la API del profesor deniega a ADMIN y MANAGER, D7-10)', async () => {
+  it('gestión + profesor sin MIS_GRUPOS (sin asignaciones) no ve «Mis grupos»', async () => {
     let el = await renderizar(false, ['ROLE_ADMIN', 'ROLE_PROFESOR']);
     expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')).not.toBeNull();
@@ -216,6 +219,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
       ],
     }).compileComponents();
 
@@ -348,7 +352,15 @@ describe('HeaderComponent: cabecera móvil', () => {
 });
 
 describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
-  async function renderizar(roles: string[]) {
+  /** Por defecto, la capacidad que el servidor da según la sesión (E8-1): solo-profesor y F+Pr, MIS_GRUPOS. */
+  async function renderizar(roles: string[], capacidades?: Capacidad[] | 'error') {
+    const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    const porDefecto: Capacidad[] = roles.includes('ROLE_PROFESOR') ? (gestion ? ['MI_CAJA'] : ['MI_CAJA', 'MIS_GRUPOS']) : [];
+    const permisos = {
+      capacidades: jasmine
+        .createSpy('capacidades')
+        .and.callFake(() => of(capacidades === 'error' ? [] : (capacidades ?? porDefecto))),
+    };
     const esAdminPlataforma = jasmine.createSpy('esAdminPlataforma').and.returnValue(of(false));
     const authServiceMock = {
       usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
@@ -374,12 +386,13 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
+        { provide: PermisosSesionService, useValue: permisos },
       ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(HeaderComponent);
     fixture.detectChanges();
-    return { fixture, esAdminPlataforma };
+    return { fixture, esAdminPlataforma, permisos };
   }
 
   it('solo profesor: sin cabecera de gestión ni de familia y sin sondear la plataforma', async () => {
@@ -428,7 +441,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     expect(el.querySelector('.mobile-header-link[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
   });
 
-  it('gestión + familia + profesor: ni el menú de cuenta ni el móvil ofrecen «Mis grupos»', async () => {
+  it('gestión + familia + profesor sin MIS_GRUPOS: ni el menú de cuenta ni el móvil ofrecen «Mis grupos»', async () => {
     const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_USER', 'ROLE_PROFESOR']);
     const componente = fixture.componentInstance;
     const el = fixture.nativeElement as HTMLElement;
@@ -440,6 +453,60 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     componente.toggleMobileMenu();
     fixture.detectChanges();
     expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+
+  describe('barra de gestión (E8-5, decisión 217)', () => {
+    const enlaces = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLAnchorElement>('.admin-sidebar a.menu-link')).map((a) => a.getAttribute('href'));
+
+    it('propietario + profesor con MIS_GRUPOS: «Mis grupos» justo debajo de «Mi caja»', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
+      const el = fixture.nativeElement as HTMLElement;
+      const hrefs = enlaces(el);
+      const caja = hrefs.indexOf('/mi-caja');
+
+      expect(caja).toBeGreaterThan(-1);
+      expect(hrefs[caja + 1]).toBe('/mis-grupos');
+      expect(el.querySelector('.admin-sidebar a[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
+      expect(fixture.componentInstance.veMisGrupos).toBeTrue();
+    });
+
+    it('gestor + profesor con MIS_GRUPOS lo ve igual', async () => {
+      const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
+      expect(enlaces(fixture.nativeElement)).toContain('/mis-grupos');
+    });
+
+    it('propietario + profesor sin asignaciones: «Mi caja» sí, «Mis grupos» no', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
+      const hrefs = enlaces(fixture.nativeElement);
+      expect(hrefs).toContain('/mi-caja');
+      expect(hrefs).not.toContain('/mis-grupos');
+      expect(fixture.componentInstance.veMisGrupos).toBeFalse();
+    });
+
+    it('gestión sin ROLE_PROFESOR: ni «Mi caja» ni «Mis grupos», y no pide permisos', async () => {
+      const { fixture, permisos } = await renderizar(['ROLE_ADMIN']);
+      const hrefs = enlaces(fixture.nativeElement);
+      expect(hrefs).not.toContain('/mi-caja');
+      expect(hrefs).not.toContain('/mis-grupos');
+      expect(permisos.capacidades).not.toHaveBeenCalled();
+    });
+
+    it('si los permisos fallan, la cabecera sigue y no ofrece «Mis grupos»', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], 'error');
+      const hrefs = enlaces(fixture.nativeElement);
+      expect(hrefs).toContain('/mi-caja');
+      expect(hrefs).not.toContain('/mis-grupos');
+    });
+
+    it('propietario + familia + profesor con MIS_GRUPOS: «Mis grupos» también en el menú de cuenta', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_USER', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
+      const componente = fixture.componentInstance;
+      componente.isUserRoute = true;
+      componente.toggleDesktopUserMenu();
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('.user-desktop-menu-panel a[href="/mis-grupos"]')).not.toBeNull();
+    });
   });
 
   it('familia sin profesor: no ve «Mi caja»', async () => {

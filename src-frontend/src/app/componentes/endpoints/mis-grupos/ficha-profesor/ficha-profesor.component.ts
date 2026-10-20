@@ -12,6 +12,7 @@ import {
   SaludAlumno,
   TipoPase,
 } from '../../../../interfaces/profesor';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { ProfesorService } from '../../../../servicios/endpoints/profesor.service';
 import { showErrorToast } from '../../../../utils/toast.util';
 import { NavegacionProfesorComponent } from '../navegacion-profesor/navegacion-profesor.component';
@@ -27,6 +28,9 @@ import {
 
 /** Texto de la confirmación de un pase (D7-6). */
 export const NOTA_PASE = 'Crea el cargo; el grado sube al cobrarlo en Mi caja.';
+
+/** La gestión (ADMIN o MANAGER) no cobra en Mi caja (decisión 1): el grado sube al cobrarlo en tesorería. */
+export const NOTA_PASE_GESTION = 'Crea el cargo; el grado sube al cobrarlo en tesorería.';
 
 const TITULO_PASE: Record<TipoPase, string> = {
   examen: 'Pase con derecho de examen',
@@ -73,7 +77,17 @@ export class FichaProfesorComponent implements OnInit, OnDestroy {
   private readonly ruta = inject(ActivatedRoute);
   private readonly destroy$ = new Subject<void>();
 
-  readonly notaPase = NOTA_PASE;
+  private readonly auth = inject(AuthenticationService);
+
+  /** ADMIN o MANAGER: su Mi caja no cobra, así que los pases se cobran en tesorería. */
+  get esGestion(): boolean {
+    const roles = this.auth.getRolesActuales();
+    return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+  }
+
+  get notaPase(): string {
+    return this.esGestion ? NOTA_PASE_GESTION : NOTA_PASE;
+  }
   readonly fechaCorta = fechaCorta;
   readonly euros = formatearEuros;
   readonly enlaceTelefono = enlaceTelefono;

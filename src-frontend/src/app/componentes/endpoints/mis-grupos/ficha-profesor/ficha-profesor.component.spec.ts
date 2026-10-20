@@ -3,8 +3,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
-import { FichaProfesorComponent, NOTA_PASE } from './ficha-profesor.component';
+import { FichaProfesorComponent, NOTA_PASE, NOTA_PASE_GESTION } from './ficha-profesor.component';
 import { DeporteDelAlumno, FichaAlumnoProfesor, PaseCreado, SaludAlumno } from '../../../../interfaces/profesor';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { ProfesorService } from '../../../../servicios/endpoints/profesor.service';
 
 function deporte(cambios: Partial<DeporteDelAlumno> = {}): DeporteDelAlumno {
@@ -41,7 +42,7 @@ describe('FichaProfesorComponent', () => {
   const boton = (texto: string) =>
     Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === texto);
 
-  function crear(datos = ficha(), query: Record<string, string> = { grupo: '4' }): void {
+  function crear(datos = ficha(), query: Record<string, string> = { grupo: '4' }, roles: string[] = ['ROLE_PROFESOR']): void {
     profesor = jasmine.createSpyObj<ProfesorService>('ProfesorService', [
       'ficha', 'salud', 'actualizarApto', 'actualizarFechaGrado', 'pasarGrado',
     ]);
@@ -51,6 +52,7 @@ describe('FichaProfesorComponent', () => {
       providers: [
         provideRouter([]),
         { provide: ProfesorService, useValue: profesor },
+        { provide: AuthenticationService, useValue: { getRolesActuales: () => roles } },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: convertToParamMap({ alumnoId: '3' }), queryParamMap: convertToParamMap(query) } },
@@ -161,6 +163,44 @@ describe('FichaProfesorComponent', () => {
       expect(texto('.aviso')).toMatch(/25,00\s€/);
       expect(el().querySelector('.aviso a')?.getAttribute('href')).toBe('/mi-caja');
     });
+
+    for (const roles of [['ROLE_ADMIN', 'ROLE_PROFESOR'], ['ROLE_MANAGER', 'ROLE_USER', 'ROLE_PROFESOR']]) {
+      it(`la confirmación de ${roles.join(' + ')} dice que el grado sube al cobrarlo en tesorería (D7-6)`, () => {
+        crear(ficha(), { grupo: '4' }, roles);
+        for (const [nombre, titulo] of [['Pase con derecho de examen', 'Pase con derecho de examen'], ['Pase por recompensa', 'Pase por recompensa']]) {
+          boton(nombre)!.click();
+          fixture.detectChanges();
+          expect(texto('.hoja h2')).toBe(titulo);
+          expect(texto('.hoja-nota')).toBe('Crea el cargo; el grado sube al cobrarlo en tesorería.');
+          expect(texto('.hoja-nota')).toBe(NOTA_PASE_GESTION);
+          boton('Cancelar')!.click();
+          fixture.detectChanges();
+        }
+      });
+    }
+
+    it('el profesor y la familia + profesor siguen leyendo «Mi caja» en la confirmación', () => {
+      crear(ficha(), { grupo: '4' }, ['ROLE_USER', 'ROLE_PROFESOR']);
+      boton('Pase por recompensa')!.click();
+      fixture.detectChanges();
+      expect(texto('.hoja-nota')).toBe('Crea el cargo; el grado sube al cobrarlo en Mi caja.');
+    });
+
+    for (const roles of [['ROLE_ADMIN', 'ROLE_PROFESOR'], ['ROLE_MANAGER', 'ROLE_PROFESOR']]) {
+      it(`tras crear el cargo, ${roles[0]} ve «Ir a tesorería» y no «Ir a Mi caja»`, () => {
+        crear(ficha(), { grupo: '4' }, roles);
+        profesor.pasarGrado.and.returnValue(
+          of({ deporte: deporte(), cargo: { id: 9, concepto: 'Pase a Naranja (Taekwondo)', importe: 25 } })
+        );
+        boton('Pase con derecho de examen')!.click();
+        fixture.detectChanges();
+        boton('Crear cargo')!.click();
+        fixture.detectChanges();
+        const enlace = el().querySelector('.aviso a');
+        expect(enlace?.getAttribute('href')).toBe('/tesoreriaCobros');
+        expect(enlace?.textContent?.trim()).toBe('Ir a tesorería');
+      });
+    }
 
     it('el 409 muestra el mensaje del backend y vuelve a activar el botón', () => {
       crear();

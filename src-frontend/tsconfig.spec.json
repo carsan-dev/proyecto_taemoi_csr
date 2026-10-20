@@ -76,6 +76,7 @@
     "src/app/guards/profesor.guard.spec.ts",
     "src/app/guards/mis-grupos.guard.spec.ts",
     "src/app/servicios/authentication/authentication.mi-caja.spec.ts",
+    "src/app/servicios/authentication/permisos-sesion.service.spec.ts",
     "src/app/servicios/authentication/authentication.plataforma.spec.ts",
     "src/app/componentes/endpoints/mi-caja/mi-caja.component.spec.ts",
     "src/app/componentes/endpoints/mi-caja/mi-caja.pedidos.spec.ts",
