@@ -45,7 +45,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
-			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"));
+			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
+			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
+			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"));
 
 	private final AuditoriaService auditoriaService;
 	private final AuditoriaPayloadSanitizer auditoriaPayloadSanitizer;

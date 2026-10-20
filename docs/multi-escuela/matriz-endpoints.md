@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (436 líneas; 143 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (440 líneas; 144 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -249,6 +249,20 @@ existente cambia ni la regla de URL. Declaradas en `PROFESOR_E7`; lo prueba `Pro
 - No hay `PUT /api/profesor/.../grado` (decisión 207): el cambio de grado directo sigue siendo solo de gestión y
   `DENIEGA` para PROFESOR.
 - El resto de roles, `DENIEGA` en las cuatro (PROPIETARIO y GESTOR usan las de gestión, D7-10).
+
+Pieza E7-4 (asignación de profesores, fase3-e7-profesor.md decisión 208, D7-19 a D7-21): 4 líneas nuevas de gestión
+bajo `/api/grupos/{grupoId}/profesores` (`GrupoProfesoresController`); ninguna casilla existente cambia. Ya caían en la
+regla `/api/grupos/**` (ADMIN y MANAGER) y ningún patrón del responsable las alcanza; aun así llevan una regla de URL
+explícita antes de las del responsable de sede, para que un patrón suyo futuro no las abra. No se declaran en ningún
+mapa de `MatrizPermisosTest`: PROFESOR y RESPONSABLE_SEDE son `DENIEGA`. Lo prueba `AsignacionProfesoresIntegrationTest`.
+- `GET/HEAD /api/grupos/{grupoId}/profesores`, `POST /api/grupos/{grupoId}/profesores` `{email, rol}` y
+  `DELETE /api/grupos/{grupoId}/profesores/{usuarioId}`: GESTOR y PROPIETARIO `PERMITE`
+  (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`). El grupo se lee acotado por escuela (de otra escuela o inexistente,
+  404) y `asignacion_profesor` y `membresia` se consultan y escriben con `organizacion_id` explícito. El alta crea la
+  membresía PROFESOR si falta (desactivada: 409); quitar no la borra. Cada cambio queda en el registro (módulo
+  `profesor`, solo ids).
+- El resto de roles, `DENIEGA` en las cuatro: RESPONSABLE_SEDE hasta la E9, PROFESOR (fuera de su lista blanca) y
+  FAMILIA.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

@@ -319,6 +319,10 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza E7-4 (decisión 208, D7-19): profesores de un grupo, solo P y G (R DENIEGA hasta la E9).
+						// Antes de las reglas del responsable de sede para que ningún patrón suyo las abra.
+						.requestMatchers("/api/grupos/{grupoId}/profesores", "/api/grupos/{grupoId}/profesores/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())

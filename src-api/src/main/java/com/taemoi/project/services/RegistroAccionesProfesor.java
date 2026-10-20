@@ -24,15 +24,19 @@ public class RegistroAccionesProfesor {
 	public static final String MODULO = "profesor";
 
 	/**
-	 * Tipo de acción registrada y su acción de auditoría. Pieza E7-3: grados; las de asignación de profesores (§7:
-	 * {@code ASIGNACION_CREADA}, {@code ASIGNACION_ROL_CAMBIADO}, {@code ASIGNACION_QUITADA},
-	 * {@code MEMBRESIA_PROFESOR_CREADA}) las añade la E7-4 al usarlas.
+	 * Tipo de acción registrada y su acción de auditoría. Pieza E7-3: grados. Pieza E7-4: asignación de profesores a un
+	 * grupo por propietario y gestor (§7; {@code grupo=#g usuario=#u rol=...}) y la membresía PROFESOR que se crea al
+	 * asignar ({@code usuario=#u}).
 	 */
 	public enum Accion {
 		APTO_CAMBIADO(AuditoriaAccion.UPDATE),
 		FECHA_GRADO_CAMBIADA(AuditoriaAccion.UPDATE),
 		PASE_EXAMEN(AuditoriaAccion.CREATE),
-		PASE_RECOMPENSA(AuditoriaAccion.CREATE);
+		PASE_RECOMPENSA(AuditoriaAccion.CREATE),
+		ASIGNACION_CREADA(AuditoriaAccion.CREATE),
+		ASIGNACION_ROL_CAMBIADO(AuditoriaAccion.UPDATE),
+		ASIGNACION_QUITADA(AuditoriaAccion.DELETE),
+		MEMBRESIA_PROFESOR_CREADA(AuditoriaAccion.CREATE);
 
 		private final AuditoriaAccion auditoria;
 

@@ -370,3 +370,76 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 - [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
   dorados de Moiskimdo sin tocar.
 - [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.
+
+---
+
+## 5. Pieza E7-4: asignación de profesores (detallada)
+
+Rama `feature/e7-4` desde `feature/e7-3`. Sin migración: atajo `desplegar`. Escrituras: `asignacion_profesor` y, si
+falta, la membresía PROFESOR; ninguna de las dos tablas es `@TenantId`, así que cada consulta y cada escritura lleva
+`organizacion_id` explícito (la escuela activa, `TenantContext`).
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **Rutas y códigos.** `GET /api/grupos/{grupoId}/profesores` → 200 con la lista (`[]` si no hay ninguno);
+  `POST /api/grupos/{grupoId}/profesores` `{"email", "rol": "TITULAR"|"AYUDANTE"}` → 200 con el profesor asignado
+  (alta y cambio de rol responden igual); `DELETE /api/grupos/{grupoId}/profesores/{usuarioId}` → 204. Errores con el
+  cuerpo `{"mensaje": ...}` del `GlobalExceptionHandler`: email vacío o rol que no es TITULAR/AYUDANTE → 400 (antes de
+  leer nada); grupo de otra escuela o inexistente → 404 (leído con `GrupoRepository`, acotado por `@TenantId`, y la
+  organización del grupo comprobada otra vez); email sin cuenta → 404 `EMAIL_SIN_CUENTA`; membresía PROFESOR
+  desactivada en la escuela → 409 `PROFESOR_DESACTIVADO` = «La cuenta tiene el rol de profesor desactivado en esta
+  escuela» (§11.4; reactivar es de la E8) sin escribir nada; quitar a quien no está asignado → 404.
+- **DTO** `GrupoProfesoresDTOs.Profesor` = `{usuarioId, nombre, apellidos, email, rol}` (nombre y apellidos por separado,
+  como el resto de DTO; la UI los junta). Lista ordenada por rol (titulares primero), apellidos, nombre e id.
+- **Membresía.** Solo se mira la PROFESOR de la escuela activa: si no existe, se crea activa (`new Membresia(...)`,
+  porque `RolMembresia.desdeAutoridad` rechaza PROFESOR); si está desactivada, 409. Las demás membresías (FAMILIA,
+  gestión, responsable) no se tocan, ni las de otras escuelas. Quitar la asignación no toca la membresía (D7-21).
+- **Concurrencia.** `asignar` y `quitar` corren en `READ_COMMITTED` y `asignar` bloquea primero la fila de la cuenta
+  (`UsuarioRepository.bloquearPorId`, `SELECT ... FOR UPDATE` por id). Dos altas a la vez de la misma cuenta se ordenan:
+  la segunda ve la membresía (y, en el mismo grupo, la asignación) ya confirmadas y no choca con
+  `uk_membresia_usuario_organizacion_rol` ni con la PK. Quitar borra con `DELETE ... WHERE usuario_id, grupo_id,
+  organizacion_id` y, si no borra nada (otra petición se adelantó), 404.
+- **Regla de URL.** Las tres rutas ya caían en `/api/grupos/**` (solo ADMIN y MANAGER) y ningún patrón del responsable
+  las alcanza (`/api/grupos/{id}` es de un solo segmento). Aun así se añade una regla explícita
+  `/api/grupos/{grupoId}/profesores` y `/api/grupos/{grupoId}/profesores/**` → `ROLE_ADMIN`/`ROLE_MANAGER` antes de las
+  del responsable, para que un patrón suyo futuro no las abra. Cada método lleva además su `@PreAuthorize`
+  `hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`. Fuera de la lista blanca de la sesión solo-profesor (no se toca).
+- **Registro** (§7, `RegistroAccionesProfesor`, misma transacción): `MEMBRESIA_PROFESOR_CREADA usuario=#u` cuando se
+  crea; `ASIGNACION_CREADA`, `ASIGNACION_ROL_CAMBIADO` y `ASIGNACION_QUITADA grupo=#g usuario=#u rol=TITULAR|AYUDANTE`
+  (en el cambio, el rol nuevo; al quitar, el que tenía). Nunca el email ni el nombre. Un alta repetida con el mismo
+  rol no cambia nada ni registra acción.
+- **Alcance del profesor.** No se cachea: `IdentificadorSesionJwt` lo recalcula en cada petición (`AlcanceRepository`),
+  así que la asignación vale en la siguiente petición y quitarla la cierra en la siguiente.
+
+### Tarea 1: tests que fallan
+
+**Ficheros:**
+- Crear: `T/integracion/AsignacionProfesoresIntegrationTest.java` (patrón `ProfesorGruposIntegrationTest`; escuelas
+  `"it-e7-4"` y `"it-e7-4-otra"`, cada una con su propietario; cuentas nuevas por test; datos inventados).
+- Modificar: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (4 líneas nuevas: `GET`/`HEAD`/`POST`
+  `.../profesores` y `DELETE .../profesores/{usuarioId}`; GESTOR y PROPIETARIO `PERMITE`, resto `DENIEGA`, también
+  RESPONSABLE_SEDE y PROFESOR). No hace falta declararlas en ningún mapa de `MatrizPermisosTest`: PROFESOR y
+  RESPONSABLE_SEDE son `DENIEGA`.
+
+- [x] **Paso 1: escribir los tests**: `asignarEnOtraEscuela_404`, `emailSinCuenta_404_conMensaje`,
+  `asignarCreaMembresiaProfesor` (y la sesión solo-profesor de esa cuenta entra en `/api/profesor/grupos` y ve el
+  grupo), `asignarDosVecesCambiaRol`, `asignarConMembresiaProfesorDesactivada_409`, `asignarNoTocaOtrasMembresias`,
+  `quitarAsignacionConservaMembresia`, `quitarAsignacionCierraElAccesoEnLaSiguientePeticion`,
+  `responsableDeSedeNoAsigna_403`, `profesorYFamiliaNoAsignan_403`, `gestorAsigna`, `asignacionesNoSeVenEntreEscuelas`,
+  `dosAltasALaVezMismaCuenta_sin500`, `registroConIdsSinEmail` y `cuerposInvalidos_400`.
+- [x] **Paso 2: comprobar que fallan**: sin el controlador, las rutas dan 404 de Spring y los tests fallan.
+
+### Tarea 2: implementar
+
+- [x] `AsignacionProfesorRepository.findByUsuarioIdAndGrupoIdAndOrganizacionId` y `borrar(usuario, grupo,
+  organizacion)`; `UsuarioRepository.bloquearPorId`.
+- [x] `RegistroAccionesProfesor.Accion`: `ASIGNACION_CREADA`, `ASIGNACION_ROL_CAMBIADO`, `ASIGNACION_QUITADA` y
+  `MEMBRESIA_PROFESOR_CREADA`.
+- [x] `AsignacionProfesorService` (`listar`, `asignar`, `quitar`, `EMAIL_SIN_CUENTA`, `PROFESOR_DESACTIVADO`),
+  `GrupoProfesoresDTOs`, `AsignarProfesorRequest` y `GrupoProfesoresController`; regla de URL explícita.
+
+### Tarea 3: matriz, documentación y batería
+
+- [x] `docs/multi-escuela/matriz-endpoints.md`: nota de las 4 líneas y recuento de la cabecera.
+- [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
+  dorados de Moiskimdo sin tocar.
+- [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.

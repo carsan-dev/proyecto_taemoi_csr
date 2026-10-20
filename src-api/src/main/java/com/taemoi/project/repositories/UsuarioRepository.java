@@ -75,6 +75,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	@Query("SELECT u.id, u.nombre, u.apellidos FROM Usuario u WHERE u.id IN :ids")
 	List<Object[]> nombresPorIds(@Param("ids") java.util.Collection<Long> ids);
 
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la fila de la cuenta por id, sin joins. Solo en transacción; pieza E7-4: asignar un
+	 * profesor la bloquea antes de leer y crear su membresía PROFESOR, para que dos altas a la vez se ordenen.
+	 */
+	@Query(value = "SELECT u.id FROM usuario u WHERE u.id = :id FOR UPDATE", nativeQuery = true)
+	Optional<Long> bloquearPorId(@Param("id") Long id);
+
 	@Modifying
 	@Query("UPDATE Usuario u SET u.ultimaOrganizacionId = :organizacionId WHERE u.id = :usuarioId")
 	int actualizarUltimaOrganizacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
