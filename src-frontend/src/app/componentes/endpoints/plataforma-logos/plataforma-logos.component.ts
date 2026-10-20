@@ -14,6 +14,10 @@ export interface FilaLogo {
   /** URL de objeto de la miniatura; null si no hay logo o aún no ha llegado. */
   miniatura: string | null;
   ocupada: boolean;
+  /** Miniatura pidiéndose al servidor. */
+  cargandoMiniatura: boolean;
+  /** Contador de cargas de la miniatura: una respuesta con otro número es obsoleta y se descarta. */
+  peticion: number;
   error: string | null;
 }
 
@@ -49,7 +53,7 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
     this.logos.escuelas().subscribe({
       next: (escuelas) => {
         this.filas.forEach((fila) => this.soltarMiniatura(fila));
-        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, error: null }));
+        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, cargandoMiniatura: false, peticion: 0, error: null }));
         this.cargando = false;
         this.filas.forEach((fila) => this.cargarMiniatura(fila));
       },
@@ -94,12 +98,15 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
     if (fila.ocupada) {
       return;
     }
+    const heredada = fila.escuela.marcaHeredada;
     const respuesta = await Swal.fire({
-      title: `¿Quitar el logo de ${fila.escuela.nombre}?`,
-      text: 'Sus PDF y correos saldrán solo con el nombre.',
+      title: heredada ? `¿Volver al logo de siempre de ${fila.escuela.nombre}?` : `¿Quitar el logo de ${fila.escuela.nombre}?`,
+      text: heredada
+        ? 'Sus PDF y correos llevarán el logo anterior.'
+        : 'Sus PDF y correos saldrán solo con el nombre.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Quitar logo',
+      confirmButtonText: heredada ? 'Volver al de siempre' : 'Quitar logo',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#c53030',
     });
@@ -112,7 +119,13 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
       next: (escuela) => {
         fila.escuela = escuela;
         fila.ocupada = false;
+        fila.peticion++;
+        fila.cargandoMiniatura = false;
         this.soltarMiniatura(fila);
+        // La escuela heredada, sin logo subido, vuelve a mostrar el de siempre.
+        if (escuela.marcaHeredada) {
+          this.cargarMiniatura(fila);
+        }
       },
       error: (error: HttpErrorResponse) => {
         fila.ocupada = false;
@@ -122,21 +135,35 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
   }
 
   private cargarMiniatura(fila: FilaLogo): void {
-    // La marca heredada no se sirve por GET: sus PDF y correos llevan su logo de siempre.
-    if (!fila.escuela.tieneLogo || fila.escuela.marcaHeredada) {
+    // La heredada siempre tiene miniatura: sin logo subido, el backend sirve el de siempre.
+    const peticion = ++fila.peticion;
+    if (!fila.escuela.tieneLogo && !fila.escuela.marcaHeredada) {
+      fila.cargandoMiniatura = false;
       this.soltarMiniatura(fila);
       return;
     }
+    fila.cargandoMiniatura = true;
     this.logos.logo(fila.escuela.id).subscribe({
       next: (blob) => {
-        // Si se quitó el logo con el GET en vuelo, la miniatura no reaparece.
-        if (this.destruido || !fila.escuela.tieneLogo) {
+        // Una respuesta de una carga anterior (p. ej. con el logo ya quitado) no pinta nada.
+        if (this.destruido || peticion !== fila.peticion) {
           return;
         }
+        fila.cargandoMiniatura = false;
         this.soltarMiniatura(fila);
         fila.miniatura = URL.createObjectURL(blob);
       },
-      error: () => showErrorToast(`No se pudo cargar el logo de ${fila.escuela.nombre}`),
+      error: (error: HttpErrorResponse) => {
+        if (this.destruido || peticion !== fila.peticion) {
+          return;
+        }
+        fila.cargandoMiniatura = false;
+        // 404 en la heredada: no hay logo que servir, queda el marcador «Logo de siempre».
+        if (fila.escuela.marcaHeredada && error?.status === 404) {
+          return;
+        }
+        showErrorToast(`No se pudo cargar el logo de ${fila.escuela.nombre}`);
+      },
     });
   }
 

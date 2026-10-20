@@ -16,7 +16,8 @@ describe('PlataformaLogosComponent', () => {
 
   const con: EscuelaLogo = { id: 2, nombre: 'Escuela Norte', tieneLogo: true, marcaHeredada: false };
   const sin: EscuelaLogo = { id: 3, nombre: 'Escuela Sur', tieneLogo: false, marcaHeredada: false };
-  const heredada: EscuelaLogo = { id: 1, nombre: 'Moiskimdo', tieneLogo: true, marcaHeredada: true };
+  const heredada: EscuelaLogo = { id: 1, nombre: 'Moiskimdo', tieneLogo: false, marcaHeredada: true };
+  const heredadaConLogo: EscuelaLogo = { ...heredada, tieneLogo: true };
 
   const texto = (): string => fixture.nativeElement.textContent.replace(/\s+/g, ' ');
   const filas = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll('li.escuela'));
@@ -64,7 +65,7 @@ describe('PlataformaLogosComponent', () => {
   it('lista las escuelas, con miniatura la que tiene logo y «Sin logo» la que no', () => {
     expect(filas().length).toBe(3);
     expect(servicio.logo).toHaveBeenCalledWith(2);
-    expect(servicio.logo).not.toHaveBeenCalledWith(1);
+    expect(servicio.logo).toHaveBeenCalledWith(1);
     expect(servicio.logo).not.toHaveBeenCalledWith(3);
     expect(filas()[1].querySelector('img')).not.toBeNull();
     expect(filas()[2].querySelector('img')).toBeNull();
@@ -72,13 +73,83 @@ describe('PlataformaLogosComponent', () => {
     expect(texto()).toContain('PNG, JPG o SVG, hasta 1 MB');
   });
 
-  it('la escuela con marca heredada no tiene acciones y lo explica', () => {
+  it('la heredada sin logo subido pide su miniatura, ofrece «Cambiar logo» y no «Volver al de siempre»', () => {
     const fila = filas()[0];
-    expect(fila.textContent).toContain('Marca de la plataforma: no se cambia aquí');
-    expect(fila.querySelectorAll('button').length).toBe(0);
-    expect(fila.querySelector('input[type=file]')).toBeNull();
+    expect(fila.textContent).toContain('Sin logo subido, sale el de siempre');
+    expect(servicio.logo).toHaveBeenCalledWith(1);
+    expect(fila.querySelector('img')).not.toBeNull();
+    expect(boton(fila, 'Cambiar logo')).toBeDefined();
+    expect(boton(fila, 'Volver al de siempre')).toBeUndefined();
+    expect(boton(fila, 'Quitar logo')).toBeUndefined();
+    expect(fila.querySelector('input[type=file]')).not.toBeNull();
+  });
+
+  it('si el GET de la heredada da 404, muestra el marcador «Logo de siempre» sin aviso', () => {
+    servicio.logo.and.callFake((id: number) =>
+      id === 1 ? throwError(() => new HttpErrorResponse({ status: 404 })) : of(new Blob(['x'], { type: 'image/png' }))
+    );
+    componente.cargar();
+    fixture.detectChanges();
+    const fila = filas()[0];
     expect(fila.querySelector('img')).toBeNull();
     expect(fila.querySelector('.miniatura')!.textContent).toContain('Logo de siempre');
+  });
+
+  it('la heredada muestra «Cargando…» mientras llega la miniatura y el marcador solo tras el 404', () => {
+    const descarga = new Subject<Blob>();
+    servicio.logo.and.returnValue(descarga);
+    servicio.escuelas.and.returnValue(of([heredada]));
+    componente.cargar();
+    fixture.detectChanges();
+    expect(filas()[0].querySelector('.miniatura')!.textContent).toContain('Cargando…');
+    expect(filas()[0].querySelector('.miniatura')!.textContent).not.toContain('Logo de siempre');
+    descarga.error(new HttpErrorResponse({ status: 404 }));
+    fixture.detectChanges();
+    expect(filas()[0].querySelector('.miniatura')!.textContent).toContain('Logo de siempre');
+  });
+
+  it('en la heredada, un GET obsoleto del logo subido no pisa al de siempre tras «Volver al de siempre»', async () => {
+    const viejo = new Subject<Blob>();
+    const nuevo = new Subject<Blob>();
+    servicio.logo.and.returnValues(viejo, nuevo);
+    servicio.escuelas.and.returnValue(of([heredadaConLogo]));
+    componente.cargar();
+    fixture.detectChanges();
+    spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as any);
+    servicio.quitar.and.returnValue(of(heredada));
+
+    boton(filas()[0], 'Volver al de siempre')!.click();
+    await fixture.whenStable();
+    viejo.next(new Blob(['viejo'], { type: 'image/png' }));
+    fixture.detectChanges();
+    expect(componente.filas[0].miniatura).toBeNull();
+
+    nuevo.next(new Blob(['siempre'], { type: 'image/png' }));
+    fixture.detectChanges();
+    expect(componente.filas[0].miniatura).toBe(creadas[creadas.length - 1]);
+    expect(creadas.length).toBe(2 + 1);
+  });
+
+  it('la heredada con logo subido ofrece «Volver al de siempre»; confirma, hace DELETE y recupera la miniatura de siempre', async () => {
+    servicio.escuelas.and.returnValue(of([heredadaConLogo]));
+    componente.cargar();
+    fixture.detectChanges();
+    const aviso = spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as any);
+    servicio.quitar.and.returnValue(of(heredada));
+    servicio.logo.calls.reset();
+
+    expect(filas()[0].textContent).not.toContain('Sin logo subido');
+    boton(filas()[0], 'Volver al de siempre')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const opciones = aviso.calls.mostRecent().args[0] as any;
+    expect(opciones.title).toBe('¿Volver al logo de siempre de Moiskimdo?');
+    expect(opciones.text).toBe('Sus PDF y correos llevarán el logo anterior.');
+    expect(servicio.quitar).toHaveBeenCalledWith(1);
+    expect(servicio.logo).toHaveBeenCalledWith(1);
+    expect(boton(filas()[0], 'Volver al de siempre')).toBeUndefined();
+    expect(filas()[0].textContent).toContain('Sin logo subido, sale el de siempre');
   });
 
   it('el selector admite PNG, JPG y SVG', () => {
@@ -192,7 +263,7 @@ describe('PlataformaLogosComponent', () => {
 
   it('al destruirse revoca todas las URL de objeto', () => {
     const vivas = creadas.filter((url) => !revocadas.includes(url));
-    expect(vivas.length).toBe(1);
+    expect(vivas.length).toBe(2);
     fixture.destroy();
     vivas.forEach((url) => expect(revocadas).toContain(url));
   });

@@ -134,6 +134,7 @@ profesores, que seguirían viendo solo «Mi caja») y el resto después.
 | E7-6 | Hecha | `0190f77e` | No | |
 | E7-7a | Hecha | `bfafd147` | No | §6 |
 | E7-7b | Hecha | `9042a3bb` | No | |
+| E7-8 | Backend hecho (sin commit) | — | No | §10. Decisión 213: logo de Moiskimdo |
 
 ---
 
@@ -629,3 +630,25 @@ Sección «Profesores» en la ficha del grupo de gestión (`gruposEditar/:id`, `
 - Miniaturas por blob URL; se revocan al sustituir, quitar, recargar y al destruir; un GET en vuelo no resucita un logo quitado.
 - Más de 1 MB se rechaza en local sin enviar; 400/404/409 muestran el `mensaje` del backend en la fila; quitar con SweetAlert2.
 - Escuelas con marca heredada: «Logo de siempre», sin acciones ni GET del logo.
+
+## 10. Pieza E7-8 (detallada)
+
+Decisión 213 (fase3-e7-profesor.md §4.1): el superadmin también cambia el logo de Moiskimdo. Sin migración.
+
+- **E7-8a (backend).** `MarcaEscuelaService`: la escuela legado con logo subido (imagen suya y fichero legible) lo
+  lleva en sus tres huecos (cabecera de informes y asistencia, solicitud y certificado), igual que otra escuela: el
+  PNG guardado (hasta 600 px) en las mismas cajas que los logos de classpath. Sin logo subido, o si el apuntado no
+  existe o no es suyo, los de classpath como antes. Nombre, textos, datos legales y remitente de Moiskimdo intactos.
+  Los correos no llevan imagen: siguen idénticos.
+- `LogoEscuelaService`: sin el 409. PUT y DELETE iguales que en otra escuela (bloqueo, registro en la escuela destino
+  con ids, sin huérfanos, `invalidar` de la caché); DELETE devuelve a Moiskimdo su logo de siempre.
+- **Contrato.** `GET /api/plataforma/escuelas/{id}/logo` de la escuela legado sin logo subido: 200 `image/png` con su
+  logo de siempre (`logo_escuela.svg` a 300×300, el de los informes); el resto sin logo, 404 como antes. PUT/DELETE de
+  la legado: 200 (antes 409) con `marcaHeredada: true` y `tieneLogo` según haya logo subido. `GET /escuelas` sin cambios.
+- **Tests.** `moiskimdoSinLogoSubidoIdentico` y `moiskimdoConLogoSubidoLoUsa` (PDF y correos),
+  `quitarLogoMoiskimdoVuelveAlDeSiempre` (unitario e IT), `subirLogoMoiskimdoPermitido_200` (sustituye al test del
+  409; comprueba también la caché invalidada). Dorados sin tocar.
+- **E7-8b (frontend, otro agente).** La pantalla de logos trata a la legado como a las demás; la miniatura sin logo
+  subido es el de siempre (GET 200).
+- **Despliegue.** Comprobar antes que Moiskimdo no tiene logo apuntado (`SELECT logo_imagen_id FROM organizacion
+  WHERE id = 1` → NULL); si lo tuviera, sus documentos pasarían a llevarlo.

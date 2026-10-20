@@ -31,7 +31,8 @@ import com.taemoi.project.services.MarcaEscuelaService;
  * {@code organizacion_id}. La escuela se bloquea mientras tanto (dos subidas a la vez se ordenan).
  *
  * <p>El logo anterior se BORRA (fila y fichero; el fichero, tras confirmar): no quedan huérfanos. Moiskimdo (marca
- * heredada) no admite logo: 409, sus documentos salen siempre como antes.
+ * heredada) también admite logo desde la E7-8 (decisión 213): solo cambia el logo de sus documentos; quitarlo lo
+ * devuelve al de siempre.
  */
 @Service
 public class LogoEscuelaService {
@@ -39,8 +40,6 @@ public class LogoEscuelaService {
 	private static final Logger log = LoggerFactory.getLogger(LogoEscuelaService.class);
 
 	static final String MODULO_AUDITORIA = "plataforma";
-	static final String MARCA_HEREDADA = "La escuela usa la marca heredada de Moiskimdo: sus documentos salen siempre "
-			+ "con su logo de siempre y no admite otro.";
 
 	private final OrganizacionRepository organizaciones;
 	private final ImagenRepository imagenes;
@@ -71,7 +70,6 @@ public class LogoEscuelaService {
 	 *
 	 * @throws IllegalArgumentException archivo vacío, de otro tipo, demasiado grande o con dimensiones fuera de rango
 	 * @throws NoSuchElementException   la escuela no existe
-	 * @throws IllegalStateException    la escuela usa la marca heredada
 	 */
 	public EscuelaPlataformaDTO subir(Long organizacionId, MultipartFile archivo) {
 		if (archivo == null || archivo.isEmpty()) {
@@ -122,7 +120,10 @@ public class LogoEscuelaService {
 		return cambio.escuela();
 	}
 
-	/** Quita el logo (la escuela vuelve a salir solo con su nombre). Sin logo, no cambia nada ni se registra. */
+	/**
+	 * Quita el logo (la escuela vuelve a salir solo con su nombre; Moiskimdo, con el de siempre). Sin logo, no cambia
+	 * nada ni se registra.
+	 */
 	public EscuelaPlataformaDTO quitar(Long organizacionId) {
 		Cambio cambio = enLaEscuela(organizacionId, () -> {
 			Organizacion escuela = bloquear(organizacionId);
@@ -144,7 +145,7 @@ public class LogoEscuelaService {
 	}
 
 	/**
-	 * PNG del logo subido (para previsualizarlo).
+	 * PNG del logo subido (para previsualizarlo); Moiskimdo sin logo subido, el PNG de su logo de siempre.
 	 *
 	 * @throws NoSuchElementException la escuela no existe o no tiene logo
 	 */
@@ -160,7 +161,13 @@ public class LogoEscuelaService {
 							.filter(i -> organizacionId.equals(i.getOrganizacionId())).orElse(null);
 			Path fichero = imagen == null ? null : imagenService.resolverRutaArchivo(imagen);
 			if (fichero == null || !Files.isRegularFile(fichero)) {
-				throw new NoSuchElementException("La escuela no tiene logo.");
+				// Moiskimdo sin logo subido: el de siempre (el que llevan sus documentos), para la miniatura.
+				byte[] deSiempre = Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi())
+						? marcaEscuela.logoDeSiemprePng() : null;
+				if (deSiempre == null) {
+					throw new NoSuchElementException("La escuela no tiene logo.");
+				}
+				return deSiempre;
 			}
 			try {
 				return Files.readAllBytes(fichero);
@@ -180,12 +187,8 @@ public class LogoEscuelaService {
 	}
 
 	private Organizacion bloquear(Long organizacionId) {
-		Organizacion escuela = organizaciones.findByIdParaActualizar(organizacionId)
+		return organizaciones.findByIdParaActualizar(organizacionId)
 				.orElseThrow(() -> new NoSuchElementException("Escuela no encontrada."));
-		if (Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi())) {
-			throw new IllegalStateException(MARCA_HEREDADA);
-		}
-		return escuela;
 	}
 
 	/** Borra la fila de la imagen anterior (solo si es de esta escuela); devuelve su fichero para borrarlo después. */
