@@ -602,6 +602,13 @@
               <span>Mis Clases</span>
             </a>
             @if (tieneRolProfesor) {
+            @if (veMisGrupos) {
+            <a class="mobile-user-quick-menu-item" [routerLink]="['/mis-grupos']" routerLinkActive="active"
+              (click)="closeMobileUserQuickMenu()">
+              <i class="bi bi-people"></i>
+              <span>Mis grupos</span>
+            </a>
+            }
             <a class="mobile-user-quick-menu-item" [routerLink]="['/mi-caja']" routerLinkActive="active"
               (click)="closeMobileUserQuickMenu()">
               <i class="bi bi-wallet2"></i>
@@ -731,6 +738,12 @@
                   <span>Mis Clases</span>
                 </a>
                 @if (tieneRolProfesor) {
+                @if (veMisGrupos) {
+                <a class="user-desktop-menu-item" [routerLink]="['/mis-grupos']" (click)="closeDesktopUserMenu()">
+                  <i class="bi bi-people"></i>
+                  <span>Mis grupos</span>
+                </a>
+                }
                 <a class="user-desktop-menu-item" [routerLink]="['/mi-caja']" (click)="closeDesktopUserMenu()">
                   <i class="bi bi-wallet2"></i>
                   <span>Mi caja</span>
@@ -828,6 +841,12 @@
         <span>Mis Clases</span>
       </a>
       @if (tieneRolProfesor) {
+      @if (veMisGrupos) {
+      <a class="mobile-header-link" [routerLink]="['/mis-grupos']" routerLinkActive="active" (click)="closeMobileMenu()">
+        <i class="bi bi-people" aria-hidden="true"></i>
+        <span>Mis grupos</span>
+      </a>
+      }
       <a class="mobile-header-link" [routerLink]="['/mi-caja']" routerLinkActive="active" (click)="closeMobileMenu()">
         <i class="bi bi-wallet2" aria-hidden="true"></i>
         <span>Mi caja</span>

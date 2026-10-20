@@ -1,0 +1,235 @@
+<div class="pantalla">
+  <app-navegacion-profesor actual="grupos" />
+
+  <a class="volver" [routerLink]="volver">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Volver
+  </a>
+
+  @if (error) {
+    <div class="estado estado-error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando && !ficha) {
+    <div class="esqueleto" role="status" aria-label="Cargando la ficha">
+      <span></span><span></span><span></span>
+    </div>
+  } @else if (ficha) {
+    <header>
+      <h1>{{ nombre }}</h1>
+      <p class="subtitulo">
+        @if (ficha.edad !== null && ficha.edad !== undefined) {
+          {{ ficha.edad === 1 ? '1 año' : ficha.edad + ' años' }}
+          @if (gruposCompartidos) { · }
+        }
+        {{ gruposCompartidos }}
+      </p>
+    </header>
+
+    <!-- ============================================================ Contacto -->
+    <section class="bloque" aria-labelledby="tituloContacto">
+      <h2 id="tituloContacto" class="titulo-bloque">Contacto</h2>
+      @if (ficha.contacto.length === 0) {
+        <p class="vacio">Sin teléfonos de contacto.</p>
+      } @else {
+        <ul class="contactos">
+          @for (c of ficha.contacto; track $index) {
+            <li class="contacto">
+              <span class="contacto-texto">
+                <span class="contacto-nombre">{{ nombreContacto(c) }}</span>
+                <span class="contacto-meta">
+                  <span class="contacto-quien">{{ etiquetaContacto(c) }}</span> ·
+                  <span class="telefono">{{ c.telefono || 'Sin teléfono' }}</span>
+                </span>
+              </span>
+              @if (c.telefono) {
+                <a class="btn-llamar" [href]="enlaceTelefono(c.telefono)"
+                  [attr.aria-label]="'Llamar a ' + nombreContacto(c)">
+                  <i class="bi bi-telephone" aria-hidden="true"></i> Llamar
+                </a>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ============================================================ Deportes -->
+    @for (d of ficha.deportes; track d.deporte) {
+      <section class="bloque deporte" [attr.aria-labelledby]="'deporte-' + d.deporte">
+        <div class="deporte-cabeza">
+          <h2 class="titulo-bloque" [id]="'deporte-' + d.deporte">{{ d.deporteNombre }}</h2>
+          @if (!d.deMisGrupos) {
+            <span class="chip-lectura">Solo lectura</span>
+          }
+        </div>
+
+        <div class="grado">
+          <p class="grado-nombre">{{ d.grado?.nombre ?? 'Sin grado' }}</p>
+          @if (ediciones.get(d.deporte); as edicion) {
+            <form class="fecha-editor" (ngSubmit)="guardarFecha(d)">
+              <label class="fecha-campo" [for]="'fecha-' + d.deporte">
+                <span>Fecha de grado</span>
+                <input type="date" [id]="'fecha-' + d.deporte" [name]="'fecha-' + d.deporte" [max]="hoy"
+                  [(ngModel)]="edicion.valor" [disabled]="edicion.guardando" required />
+              </label>
+              <div class="fecha-acciones">
+                <button type="submit" class="btn-guardar" [disabled]="edicion.guardando">
+                  @if (edicion.guardando) {
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                  }
+                  Guardar
+                </button>
+                <button type="button" class="btn-secundario" [disabled]="edicion.guardando" (click)="cancelarFecha(d)">
+                  Cancelar
+                </button>
+              </div>
+              @if (edicion.error) {
+                <p class="error-campo" role="alert">{{ edicion.error }}</p>
+              }
+            </form>
+          } @else {
+            <p class="grado-desde">
+              <span>{{ d.fechaGrado ? 'desde ' + fechaCorta(d.fechaGrado) : 'Sin fecha de grado' }}</span>
+              @if (d.deMisGrupos) {
+                <button type="button" class="btn-fecha" (click)="editarFecha(d)"
+                  [attr.aria-label]="'Cambiar la fecha de grado de ' + d.deporteNombre">
+                  <i class="bi bi-pencil" aria-hidden="true"></i> Cambiar
+                </button>
+              }
+            </p>
+          }
+        </div>
+
+        @if (d.deMisGrupos) {
+          <button type="button" class="apto" role="switch" [attr.aria-checked]="d.apto"
+            [class.encendido]="d.apto" [disabled]="cambiandoApto.has(d.deporte)" (click)="conmutarApto(d)">
+            <span class="apto-texto">Apto para examen</span>
+            <span class="interruptor" aria-hidden="true"><span></span></span>
+          </button>
+
+          @if (d.admitePases && d.apto) {
+            <div class="pases">
+              <button type="button" class="btn-pase" [disabled]="hojaPase?.enviando"
+                (click)="abrirPase(d, 'examen', $event)">
+                Pase con derecho de examen
+              </button>
+              <button type="button" class="btn-pase" [disabled]="hojaPase?.enviando"
+                (click)="abrirPase(d, 'recompensa', $event)">
+                Pase por recompensa
+              </button>
+            </div>
+          } @else if (d.admitePases) {
+            <p class="pista">Marca «Apto para examen» para poder hacer un pase.</p>
+          } @else if (!d.grado) {
+            <p class="pista">Sin grado: no se puede hacer un pase en este deporte.</p>
+          } @else {
+            <p class="pista">No hay un grado siguiente al actual.</p>
+          }
+        } @else {
+          @if (d.apto) {
+            <p><span class="chip-apto"><i class="bi bi-check2" aria-hidden="true"></i>apto</span></p>
+          }
+          <p class="pista">Este deporte no es de tus grupos.</p>
+        }
+      </section>
+    }
+
+    <!-- ============================================================ Salud (D7-3) -->
+    <section class="bloque salud" aria-labelledby="botonSalud">
+      <button type="button" id="botonSalud" class="salud-boton" aria-controls="panelSalud"
+        [attr.aria-expanded]="saludAbierta" (click)="conmutarSalud()">
+        <span class="salud-texto">
+          <span class="salud-titulo">{{ saludAbierta ? 'Ocultar datos de salud' : 'Ver datos de salud' }}</span>
+          <span class="salud-nota"><i class="bi bi-eye" aria-hidden="true"></i> Tu consulta queda registrada</span>
+        </span>
+        <i class="bi bi-chevron-down salud-flecha" aria-hidden="true"></i>
+      </button>
+      <div id="panelSalud" class="salud-panel" [hidden]="!saludAbierta" [attr.aria-busy]="cargandoSalud">
+        @if (saludAbierta) {
+          @if (cargandoSalud) {
+            <p class="vacio" role="status">Cargando…</p>
+          } @else if (errorSalud) {
+            <div class="salud-error" role="alert">
+              <p>{{ errorSalud }}</p>
+              <button type="button" class="btn-secundario" (click)="pedirSalud()">Reintentar</button>
+            </div>
+          } @else if (salud && !salud.registrado) {
+            <p class="vacio">Sin datos de salud registrados.</p>
+          } @else if (salud) {
+            <dl class="salud-datos">
+              <div>
+                <dt>Lesión o enfermedad</dt>
+                <dd>{{ salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="salud-detalle">{{ salud.descripcion }}</span>}</dd>
+              </div>
+              <div>
+                <dt>Le impide alguna actividad</dt>
+                <dd>{{ salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="salud-detalle">{{ salud.impideDetalle }}</span>}</dd>
+              </div>
+              <div>
+                <dt>Alergias</dt>
+                <dd>{{ salud.alergias || 'Ninguna indicada' }}</dd>
+              </div>
+            </dl>
+          }
+        }
+      </div>
+    </section>
+  }
+</div>
+
+@if (hojaPase) {
+  <div class="hoja-fondo" (click)="cerrarPase()" aria-hidden="true"></div>
+  <section class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloPase" aria-describedby="notaPase"
+    cdkTrapFocus [cdkTrapFocusAutoCapture]="true">
+    <h2 id="tituloPase">{{ hojaPase.titulo }}</h2>
+    <p class="hoja-detalle">
+      {{ hojaPase.deporte.deporteNombre }}: {{ hojaPase.deporte.grado?.nombre }}
+      <i class="bi bi-arrow-right" aria-hidden="true"></i><span class="visually-hidden">pasa a</span>
+      <strong>{{ destinoPase(hojaPase) }}</strong>
+    </p>
+    @if (hojaPase.deporte.pideRojoBordado) {
+      <fieldset class="opciones" [disabled]="hojaPase.enviando">
+        <legend>Grado al que pasa</legend>
+        <div class="opciones-fila">
+          <label class="opcion" [class.elegida]="!hojaPase.rojoBordado">
+            <input type="radio" name="rojoBordado" [value]="false" [(ngModel)]="hojaPase.rojoBordado" />
+            <span>Rojo</span>
+          </label>
+          <label class="opcion" [class.elegida]="hojaPase.rojoBordado">
+            <input type="radio" name="rojoBordado" [value]="true" [(ngModel)]="hojaPase.rojoBordado" />
+            <span>Rojo bordado</span>
+          </label>
+        </div>
+      </fieldset>
+    }
+    <p class="hoja-nota" id="notaPase">{{ notaPase }}</p>
+    @if (hojaPase.error) {
+      <p class="hoja-error" role="alert">{{ hojaPase.error }}</p>
+    }
+    <div class="hoja-acciones">
+      <button type="button" class="btn-crear" [disabled]="hojaPase.enviando" (click)="confirmarPase()">
+        @if (hojaPase.enviando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        Crear cargo
+      </button>
+      <button type="button" class="btn-cancelar" [disabled]="hojaPase.enviando" (click)="cerrarPase()">Cancelar</button>
+    </div>
+  </section>
+}
+
+<div class="aviso-zona" aria-live="polite">
+  @if (aviso) {
+    <div class="aviso" role="status">
+      <span class="aviso-texto">
+        <strong>Cargo creado</strong>
+        <span>{{ aviso.cargo.concepto }} · <span class="cifra">{{ euros(aviso.cargo.importe) }}</span></span>
+      </span>
+      <a class="aviso-enlace" [routerLink]="['/mi-caja']">Ir a Mi caja</a>
+      <button type="button" class="aviso-cerrar" aria-label="Cerrar aviso" (click)="cerrarAviso()">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+  }
+</div>

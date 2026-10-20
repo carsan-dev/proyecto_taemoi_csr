@@ -32,6 +32,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isUser: boolean = false;
   /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia o la barra de administración. */
   tieneRolProfesor: boolean = false;
+  /**
+   * «Mis grupos» (E7-5): ROLE_PROFESOR sin ADMIN ni MANAGER, porque `/api/profesor/**` deniega a la gestión (D7-10).
+   * Gestión + profesor solo ve «Mi caja».
+   */
+  veMisGrupos: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
   isHidden: boolean = false;
@@ -110,6 +115,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.esAdminPlataforma = false;
           this.isUser = false;
           this.tieneRolProfesor = false;
+          this.veMisGrupos = false;
           this.tieneAccesoDual = false;
           this.pideContadorSolicitudes = false;
           this.solicitudesContador.reiniciar();
@@ -281,6 +287,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
+      this.veMisGrupos =
+        this.tieneRolProfesor && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
       // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.

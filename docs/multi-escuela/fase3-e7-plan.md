@@ -443,3 +443,40 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 - [x] `mvn test -DexcludedGroups=migracion` y `mvn test -Dgroups=migracion` en `src-api`, en primer plano, en verde;
   dorados de Moiskimdo sin tocar.
 - [x] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`; ficheros nuevos en LF.
+
+---
+
+## 7. Pieza E7-5 (detallada)
+
+Frontend de las pantallas del profesor (§5.1-§5.3, D7-1..D7-8, decisión 207). Sin cambios en `src-api`.
+
+**Rutas.** `/mis-grupos` (perezosa, `loadChildren`, `profesorGuard`, sin catálogo) con tres hijas: `''` (Mis grupos),
+`:grupoId` (un grupo) y `alumnos/:alumnoId?grupo=<id>` (ficha; el `grupo` solo sirve para «Volver»). Una sola entrada
+en `app.routes.ts` para no sumar bytes al inicial.
+
+**Ficheros.** `F/interfaces/profesor.ts`, `F/servicios/endpoints/profesor.service.ts`,
+`F/componentes/endpoints/mis-grupos/` (`mis-grupos.routes.ts`, `mis-grupos.component.*`, `grupo-profesor/`,
+`ficha-profesor/`, `navegacion-profesor/`, `profesor-textos.ts`, `_profesor.scss` con los tokens de Mi caja). Cambian:
+`app.routes.ts`, `authentication.service.ts` y `role.guard.ts` (el solo-profesor aterriza en `/mis-grupos`),
+`header.component.{ts,html}` («Mis grupos» junto a «Mi caja» solo con `veMisGrupos`: ROLE_PROFESOR sin ADMIN ni
+MANAGER, porque `/api/profesor/**` deniega a la gestión, D7-10; gestión + profesor ve solo «Mi caja»), `mi-caja.component.{ts,html}` (pestañas superiores).
+
+**Decisiones de construcción.**
+- Pestañas «Mis grupos | Mi caja» como `<nav>` con enlaces y `aria-current` (son navegación entre pantallas), con
+  subrayado para no confundirlas con las pestañas internas de Mi caja (`role="tablist"`).
+- El filtro «Aptos» cuenta alumnos aptos en algún deporte; la lista pinta una línea por deporte.
+- Hoja de asistencia: selector con el mes actual y los once anteriores; descarga por blob con el nombre del
+  `Content-Disposition`; los errores (también los que llegan como blob) con el `{mensaje}` del servidor.
+- Confirmación del pase en hoja inferior (patrón de Mi caja, `cdkTrapFocus`, Escape), con «Rojo / Rojo bordado» dentro
+  cuando `pideRojoBordado`; «Crear cargo» desactivado durante la petición; 400 y 409 con el mensaje del backend; tras
+  crear, aviso con concepto, importe y enlace a Mi caja. Sin apto o sin grado siguiente, se dice por qué no hay pases.
+- Apto como interruptor (`role="switch"`); fecha de grado con `input type=date` (máximo hoy) y Guardar/Cancelar.
+- Salud: se pide solo al desplegar y se descarta al plegar o salir (al reabrir, nueva petición y nuevo registro); nunca
+  en un servicio ni en estado compartido.
+- Quien solo es profesor no tiene cabecera global: «Cerrar sesión» en Mis grupos, como en Mi caja.
+
+**Verificación.** Specs nuevos (en `tsconfig.spec.json` y `angular.json`): `profesor.service.spec.ts`,
+`mis-grupos.component.spec.ts`, `grupo-profesor.component.spec.ts`, `ficha-profesor.component.spec.ts`; ampliados
+`app.routes.spec.ts`, `header.component.spec.ts`, `mi-caja.component.spec.ts`, `role.guard.spec.ts` y
+`authentication.mi-caja.spec.ts`. Karma en verde, `build:production` sin aviso de presupuesto y capturas a 375 y
+1280 px con la API simulada y datos ficticios.

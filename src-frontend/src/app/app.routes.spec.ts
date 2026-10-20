@@ -4,6 +4,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
+import { Routes } from '@angular/router';
 
 describe('app routes', () => {
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
@@ -42,6 +43,20 @@ describe('app routes', () => {
     expect(typeof ruta?.loadComponent).toBe('function');
     expect(ruta?.resolve).toBeUndefined();
     expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
+  });
+
+  it('«Mis grupos» es lazy, con el guard de profesor y sin catálogo; sus hijas tampoco lo piden', async () => {
+    const indice = routes.findIndex((route) => route.path === 'mis-grupos');
+    const ruta = routes[indice];
+
+    expect(ruta?.canActivate).toEqual([profesorGuard]);
+    expect(typeof ruta?.loadChildren).toBe('function');
+    expect(ruta?.resolve).toBeUndefined();
+    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
+
+    const hijas = (await (ruta!.loadChildren as () => Promise<Routes>)()) as Routes;
+    expect(hijas.map((h) => h.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
+    expect(hijas.every((h) => !h.resolve && typeof h.loadComponent === 'function')).toBeTrue();
   });
 
   it('mantiene el portal user accesible para cuentas duales y usuarios finales', () => {

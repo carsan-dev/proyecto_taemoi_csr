@@ -1,0 +1,96 @@
+<div class="pantalla">
+  <app-navegacion-profesor actual="grupos" />
+
+  <a class="volver" [routerLink]="['/mis-grupos']">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Volver
+  </a>
+
+  <header>
+    <h1>{{ grupo?.nombre ?? 'Grupo' }}</h1>
+    @if (grupo) {
+      <p class="subtitulo">
+        @if (grupo.sede) {
+          {{ grupo.sede.nombre }} ·
+        }
+        {{ etiquetaRol(grupo.rol) }}
+      </p>
+    }
+  </header>
+
+  @if (error) {
+    <div class="estado estado-error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando && !cargado) {
+    <div class="esqueleto" role="status" aria-label="Cargando el grupo">
+      <span></span><span></span><span></span>
+    </div>
+  } @else if (cargado) {
+    <section class="asistencia" aria-labelledby="tituloAsistencia">
+      <h2 id="tituloAsistencia" class="visually-hidden">Hoja de asistencia</h2>
+      <label class="mes">
+        <span class="visually-hidden">Mes de la hoja de asistencia</span>
+        <select id="mesAsistencia" [(ngModel)]="mes" [disabled]="descargando">
+          @for (m of meses; track m.valor) {
+            <option [value]="m.valor">{{ m.etiqueta }}</option>
+          }
+        </select>
+        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+      </label>
+      <button type="button" class="btn-asistencia" [disabled]="descargando" (click)="descargarAsistencia()">
+        @if (descargando) {
+          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        } @else {
+          <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+        }
+        Hoja de asistencia
+      </button>
+    </section>
+
+    @if (alumnos.length === 0) {
+      <div class="estado">
+        <i class="bi bi-person-dash" aria-hidden="true"></i>
+        <p><strong>Este grupo no tiene alumnos activos.</strong></p>
+      </div>
+    } @else {
+      <div class="filtro" role="group" aria-label="Qué alumnos ver">
+        <button type="button" [attr.aria-pressed]="filtro === 'todos'" [class.activo]="filtro === 'todos'"
+          (click)="elegirFiltro('todos')">
+          Todos <span class="contador">{{ alumnos.length }}</span>
+        </button>
+        <button type="button" [attr.aria-pressed]="filtro === 'aptos'" [class.activo]="filtro === 'aptos'"
+          (click)="elegirFiltro('aptos')">
+          Aptos <span class="contador">{{ numeroAptos }}</span>
+        </button>
+      </div>
+
+      @if (visibles.length === 0) {
+        <div class="estado">
+          <p>Ningún alumno de este grupo está apto para examen.</p>
+        </div>
+      } @else {
+        <ul class="alumnos" aria-label="Alumnos">
+          @for (alumno of visibles; track alumno.id) {
+            <li>
+              <a class="alumno" [routerLink]="['/mis-grupos/alumnos', alumno.id]" [queryParams]="{ grupo: grupoId }">
+                <span class="alumno-texto">
+                  <span class="alumno-nombre">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</span>
+                  @for (d of alumno.deportes; track d.deporte) {
+                    <span class="deporte">
+                      <span>{{ d.deporteNombre }} · {{ d.grado?.nombre ?? 'Sin grado' }}</span>
+                      @if (d.apto) {
+                        <span class="chip-apto"><i class="bi bi-check2" aria-hidden="true"></i>apto</span>
+                      }
+                    </span>
+                  }
+                </span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</div>

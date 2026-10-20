@@ -1,0 +1,49 @@
+<div class="pantalla">
+  <app-navegacion-profesor actual="grupos" />
+
+  <header class="cabecera">
+    <h1>Mis grupos</h1>
+    @if (soloProfesor) {
+      <button type="button" class="btn-salir" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión
+      </button>
+    }
+  </header>
+
+  @if (error) {
+    <div class="estado estado-error" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (cargando && !cargado) {
+    <div class="esqueleto" role="status" aria-label="Cargando tus grupos">
+      <span></span><span></span><span></span>
+    </div>
+  } @else if (cargado && grupos.length === 0) {
+    <div class="estado estado-vacio">
+      <i class="bi bi-people" aria-hidden="true"></i>
+      <p><strong>Aún no tienes grupos asignados.</strong></p>
+      <p>Pídeselo a tu escuela.</p>
+    </div>
+  } @else {
+    <ul class="grupos">
+      @for (grupo of grupos; track grupo.id) {
+        <li>
+          <a class="grupo" [routerLink]="['/mis-grupos', grupo.id]">
+            <span class="grupo-texto">
+              <span class="grupo-nombre">{{ grupo.nombre }}</span>
+              <span class="grupo-meta">
+                @if (grupo.sede) {
+                  {{ grupo.sede.nombre }} ·
+                }
+                {{ etiquetaRol(grupo.rol) }}
+              </span>
+              <span class="grupo-alumnos">{{ textoAlumnos(grupo.alumnosActivos) }}</span>
+            </span>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</div>
