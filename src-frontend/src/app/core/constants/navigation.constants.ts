@@ -183,6 +183,12 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     icon: 'bi-exclamation-octagon',
     plataformaOnly: true,
   },
+  {
+    label: 'Logo de la escuela',
+    route: '/plataformaLogos',
+    icon: 'bi-image',
+    plataformaOnly: true,
+  },
 ];
 
 /**

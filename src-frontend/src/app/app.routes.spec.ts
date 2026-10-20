@@ -35,6 +35,18 @@ describe('app routes', () => {
     expect(resolverPortalContexto('/plataformaErrores')).not.toBe('user');
   });
 
+  it('protege el logo de la escuela con el guard de plataforma, sin roles de escuela ni catálogo', () => {
+    const indice = routes.findIndex((route) => route.path === 'plataformaLogos');
+    const ruta = routes[indice];
+
+    expect(ruta?.canActivate).toEqual([plataformaGuard]);
+    expect(ruta?.loadComponent).toBeDefined();
+    expect(ruta?.data?.['requiredRoles']).toBeUndefined();
+    expect(ruta?.resolve?.['catalogo']).toBeUndefined();
+    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
+    expect(resolverPortalContexto('/plataformaLogos')).not.toBe('user');
+  });
+
   it('«Mi caja» es lazy, con su guard de profesor y sin catálogo (una sesión solo profesor recibiría 403)', () => {
     const indice = routes.findIndex((route) => route.path === 'mi-caja');
     const ruta = routes[indice];

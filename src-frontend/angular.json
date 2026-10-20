@@ -247,6 +247,8 @@
               "src/app/utils/fecha-api.spec.ts",
               "src/app/componentes/endpoints/auditoria-sistema/auditoria-sistema.component.spec.ts",
               "src/app/componentes/endpoints/plataforma-errores/plataforma-errores.component.spec.ts",
+              "src/app/componentes/endpoints/plataforma-logos/plataforma-logos.component.spec.ts",
+              "src/app/servicios/plataforma/logo-escuela.service.spec.ts",
               "src/app/servicios/plataforma/plataforma.service.spec.ts",
               "src/app/guards/plataforma.guard.spec.ts",
               "src/app/componentes/vistas/vista-principal-admin/vista-principal-admin.component.spec.ts",
