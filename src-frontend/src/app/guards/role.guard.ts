@@ -23,8 +23,8 @@ export const roleGuard: CanActivateFn = (route, state) => {
         if (requiredRoles.some((role) => roles.includes(role))) {
           return true;
         }
-        // Solo profesor (p. ej. tras entrar con Google, que aterriza en /userpage): su sitio es «Mi caja».
-        router.navigate([esSoloProfesor(roles) ? '/mi-caja' : '/']);
+        // Solo profesor (p. ej. tras entrar con Google, que aterriza en /userpage): su sitio es «Mis grupos».
+        router.navigate([esSoloProfesor(roles) ? '/mis-grupos' : '/']);
         return false;
       }),
       catchError(() => {

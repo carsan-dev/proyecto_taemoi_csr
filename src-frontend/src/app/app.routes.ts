@@ -416,6 +416,13 @@ export const routes: Routes = [
     canActivate: [profesorGuard],
   },
   {
+    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Mismo guard que «Mi caja», sin catálogo.
+    path: 'mis-grupos',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),
+    canActivate: [profesorGuard],
+  },
+  {
     path: '**',
     loadComponent: () => import('./componentes/vistas/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
   }

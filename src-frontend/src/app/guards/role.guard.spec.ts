@@ -74,7 +74,7 @@ describe('roleGuard', () => {
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 
-  it('manda a «Mi caja» a una sesión solo profesor que llega a /userpage (entrada con Google)', async () => {
+  it('manda a «Mis grupos» a una sesión solo profesor que llega a /userpage (entrada con Google)', async () => {
     (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
       new BehaviorSubject(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']).asObservable()
     );
@@ -84,7 +84,7 @@ describe('roleGuard', () => {
     );
 
     expect(result).toBeFalse();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/mi-caja']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/mis-grupos']);
   });
 
   it('una sesión sin roles sigue yendo a la raíz', async () => {

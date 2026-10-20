@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
 import { DURACION_AVISO_MS, MiCajaComponent, agruparPorAlumno } from './mi-caja.component';
@@ -59,7 +59,7 @@ describe('MiCajaComponent', () => {
           provide: AuthenticationService,
           useValue: { getRolesActuales: () => roles, forzarCierreSesion: () => Promise.resolve() },
         },
-        { provide: Router, useValue: jasmine.createSpyObj<Router>('Router', ['navigate']) },
+        provideRouter([]),
       ],
     });
 
@@ -69,6 +69,13 @@ describe('MiCajaComponent', () => {
   }
 
   beforeEach(() => (roles = ['ROLE_PROFESOR']));
+
+  it('lleva las pestañas superiores «Mis grupos | Mi caja» con Mi caja marcada (D7-7)', () => {
+    crear();
+    const enlaces = Array.from(el().querySelectorAll<HTMLAnchorElement>('nav.nav-profesor a'));
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/mis-grupos', '/mi-caja']);
+    expect(enlaces[1].getAttribute('aria-current')).toBe('page');
+  });
 
   it('agrupa los cargos por alumno, por nombre, y filtra sin tildes', () => {
     const grupos = agruparPorAlumno(CARGOS);

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
 import { MiCajaComponent } from './mi-caja.component';
@@ -85,7 +85,7 @@ describe('MiCajaComponent (pedidos, 6c-8)', () => {
       providers: [
         { provide: CajaProfesorService, useValue: caja },
         { provide: AuthenticationService, useValue: { getRolesActuales: () => ['ROLE_PROFESOR'], forzarCierreSesion: () => Promise.resolve() } },
-        { provide: Router, useValue: jasmine.createSpyObj<Router>('Router', ['navigate']) },
+        provideRouter([]),
       ],
     });
     fixture = TestBed.createComponent(MiCajaComponent);

@@ -375,7 +375,7 @@ export class AuthenticationService {
       return '/userpage';
     }
     if (this.tieneRolProfesor(roles)) {
-      return '/mi-caja';
+      return '/mis-grupos';
     }
     return '/';
   }

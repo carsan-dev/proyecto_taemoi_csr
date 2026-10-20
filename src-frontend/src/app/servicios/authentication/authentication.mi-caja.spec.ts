@@ -22,12 +22,12 @@ describe('AuthenticationService: entrada de «Mi caja»', () => {
     http.verify();
   });
 
-  it('solo profesor entra en /mi-caja', () => {
-    expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR'])).toBe('/mi-caja');
+  it('solo profesor entra en /mis-grupos (D7-7)', () => {
+    expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR'])).toBe('/mis-grupos');
   });
 
-  it('profesor y responsable de sede entra en /mi-caja', () => {
-    expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'])).toBe('/mi-caja');
+  it('profesor y responsable de sede entra en /mis-grupos', () => {
+    expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'])).toBe('/mis-grupos');
   });
 
   it('familia + profesor y gestión + profesor entran como hoy', () => {
