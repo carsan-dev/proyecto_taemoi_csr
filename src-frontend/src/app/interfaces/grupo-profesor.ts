@@ -7,4 +7,6 @@ export interface ProfesorDeGrupo {
   apellidos: string;
   email: string;
   rol: RolAsignacionProfesor;
+  /** Pieza E8-4: cuenta invitada que aún no ha creado su contraseña (chip «Invitación pendiente»). */
+  invitacionPendiente?: boolean;
 }

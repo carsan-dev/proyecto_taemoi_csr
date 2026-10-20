@@ -822,12 +822,72 @@ Criterios del constructor (no los fija el diseño; se anotan en la PR):
 
 ---
 
-## 7. Pieza E8-6 (la detalla su implementador con TDD antes de empezar)
+## 7. Pieza E8-6: «También en estos grupos», invitaciones en «Profesores» y «Crea tu contraseña» (detallada)
 
-Rama `feature/e8-6`. Alcance:
-- «Profesores» de la ficha del grupo: «También en estos grupos» y «Añadir a N grupos» con `POST /api/miembros`
-  (D8-12); cambiar rol y quitar siguen con las rutas de la E7-4.
-- Sin cuenta: aviso, nombre, apellidos y «Enviar invitación»; rol desactivado: «Reactivar y añadir».
-- Chip «Invitación pendiente» y «Reenviar».
-- Página «Crea tu contraseña» reutilizando la de restablecer; enlace caducado o usado con «Pide que te la reenvíen».
-- Specs en las dos listas de Karma; punto de revisión 11; build sin aviso y capturas a 375 y 1280 px.
+Rama `feature/e8-6` desde `feature/e8-5`. Solo frontend, sin migración: atajo `desplegar`. Contratos del backend (E8-3 y
+E8-4, comprobados en `MiembroController`, `MiembrosRequests.Alta`, `MiembrosDTOs.Ficha`, `GrupoProfesoresDTOs.Profesor`,
+`AuthenticationController` e `InvitacionService`):
+- `POST /api/miembros {email, rol, grupos[{grupoId, rol}], nombre?, apellidos?, reactivar?}` → la ficha (200). Sin cuenta
+  y sin nombre ni apellidos, 404 «No hay ninguna cuenta con ese email.»; rol desactivado sin `reactivar`, 409 «La cuenta
+  tiene el rol de profesor desactivado en esta escuela.»; grupo ajeno, 404 «El grupo no existe.»; datos, 400. Siempre
+  `{"mensaje"}`.
+- `POST /api/miembros/{usuarioId}/invitacion` (sin cuerpo) → la ficha; 403, 404 y 409 con `{"mensaje"}`.
+- `GET /api/grupos/{grupoId}/profesores` → `[{usuarioId, nombre, apellidos, email, rol, invitacionPendiente}]`.
+- `POST /api/auth/invitacion/datos {token}` → `{email, nombre, escuela}`; 400 «El enlace ha caducado o ya se usó. Pide que
+  te lo reenvíen.».
+- `POST /api/auth/invitacion/aceptar {token, nuevaContrasena}` → cookie `jwt` y la respuesta de `signin`; 400 (enlace no
+  vale o contraseña débil), 403 `{"mensaje"}` si ninguna escuela abre sesión (la contraseña queda creada).
+- Enlace del correo: `app.frontend.base-url` + `/crear-contrasena?token=…` (`InvitacionCorreoListener.RUTA_PAGINA`).
+
+Criterios del constructor (no los fija el diseño; se anotan en la PR):
+- **`MiembrosService`** (`servicios/endpoints/miembros.service.ts`): `alta(cuerpo)` y `reenviarInvitacion(usuarioId)`, con
+  credenciales y `ERROR_HANDLED_LOCALLY` (los errores los pinta la sección). Cambiar el rol y quitar siguen en
+  `GrupoProfesoresService` con las rutas de la E7-4, sin cambios (D8-12).
+- **Chips «También en estos grupos»**: los demás grupos de `GET /api/grupos/resumen` (`obtenerResumenGrupos`, la lista
+  ligera que ya usa el panel), sin el grupo actual, en el orden que llega. Botones con `aria-pressed` dentro de un
+  `fieldset` con su `legend`; teclado nativo (Tab, Enter, Espacio). Sin otros grupos o si la lista falla, la fila no
+  sale (el alta funciona igual con «Añadir»).
+- **Botón**: «Añadir» sin chips marcados; «Añadir a N grupos» con N = este + los marcados. Un solo `POST /api/miembros`
+  con `rol: 'PROFESOR'` y `grupos` = este grupo y los marcados, todos con el rol elegido. Deshabilitado mientras va la
+  petición (sin doble envío). Con 200: recarga la lista, vacía el formulario (email, nombre, apellidos, chips, rol a
+  Titular) y toast «Profesor añadido» («Invitación enviada» si era una invitación).
+- **Estados del alta**: 404 con el mensaje de «sin cuenta» → aviso «No hay ninguna cuenta con ese email. Te pedimos su
+  nombre para invitarle.», campos Nombre y Apellidos (obligatorios, máx. 50, como las columnas) y el botón pasa a
+  «Enviar invitación» (mismo POST con `nombre` y `apellidos`). 409 con «desactivado en esta escuela» → aviso «Tiene el
+  rol de profesor desactivado en esta escuela.» y el botón pasa a «Reactivar y añadir» (mismo POST con
+  `reactivar: true`). Cambiar el email vuelve al estado normal. Cualquier otro error: el `mensaje` del backend.
+- **Filas**: chip «Invitación pendiente» y botón «Reenviar» solo con `invitacionPendiente`; «Reenviar» bloquea las
+  acciones de las filas mientras va; con 200, toast «Invitación reenviada»; 403, 404 y 409, el `mensaje`.
+- **«Crea tu contraseña»** (`componentes/vistas/crear-contrasena/`, ruta pública `crear-contrasena`, `noIndex`, carga
+  diferida): reutiliza los estilos y las reglas de contraseña de `reset-password` (mismos requisitos y mensajes). Al
+  cargar lee `token`, lo quita de la barra (`Location.replaceState('/crear-contrasena')`) y pone
+  `<meta name="referrer" content="no-referrer">` mientras dura la página (se quita al salir; revisión F6). Pide
+  `datos`: con 200, «Hola, {nombre}.» y «{email} · {escuela}»; sin token o con error, «El enlace ha caducado o ya se usó.
+  Pide que te lo reenvíen.» sin formulario. Botón «Crear contraseña y entrar», deshabilitado mientras va o si las
+  contraseñas no valen o no coinciden. Con 200, `AuthenticationService.aceptarInvitacion` refresca como `login()`
+  (roles, permisos y sondeo reiniciados; estado, nombre y email; roles nuevos) y navega a
+  `resolverRutaInicioPorRoles(roles)`. 400 → el mensaje de caducado sin formulario; 403 → el `mensaje` del backend y
+  enlace «Iniciar sesión».
+
+### Tarea 1: specs que fallan
+
+**Ficheros** (cada spec nuevo, en `tsconfig.spec.json` «files» **y** `angular.json` test «include»):
+- Modificar: `componentes/endpoints/editar-grupo/editar-grupo.profesores.spec.ts`: el alta va a `POST /api/miembros`
+  (`{email, rol: 'PROFESOR', grupos: [{grupoId: 5, rol}]}`); chips sin el grupo actual y con `aria-pressed`; «Añadir a 3
+  grupos» manda UNA petición con los tres grupos y el mismo rol; doble clic, una sola petición; 404 de sin cuenta pide
+  nombre y apellidos y «Enviar invitación» los manda; 409 de rol desactivado ofrece «Reactivar y añadir» con
+  `reactivar: true`; otro 404 o 409, el mensaje del backend; chip «Invitación pendiente» y «Reenviar» solo en la fila
+  pendiente y su POST; error del reenvío con el mensaje; cambiar rol y quitar siguen con las rutas de la E7-4.
+- Crear: `componentes/vistas/crear-contrasena/crear-contrasena.component.spec.ts`: quita el token de la URL y pone y quita
+  el `meta referrer`; datos vigentes (saludo, email y escuela); caducado y sin token (mensaje, sin formulario);
+  contraseñas distintas bloquean; aceptar con 200 navega donde lo haría el login; 400 y 403 con sus mensajes; el botón
+  se deshabilita mientras va.
+- Crear: `servicios/authentication/authentication.invitacion.spec.ts`: `datosInvitacion` y `aceptarInvitacion` (POST con
+  credenciales, reinicia permisos y pide roles).
+
+- [ ] **Paso 1: escribir los specs y verlos fallar**: `npm test -- --watch=false --browsers=ChromeHeadless`.
+- [ ] **Paso 2: implementar** hasta verde; `npm run build:production` sin aviso de presupuesto (inicial ~1,50 MB).
+- [ ] Capturas a 375 y 1280 px (sección con una fila pendiente; alta con chips marcados; sin cuenta; rol desactivado;
+  «Crea tu contraseña» y enlace caducado), con datos inventados y la API simulada.
+- [ ] `C:/Users/croly/.claude/skills/impeccable/scripts/impeccable detect --json` sobre los ficheros de UI cambiados.
+- [ ] `git diff --stat` igual a `git diff --ignore-cr-at-eol --stat`.

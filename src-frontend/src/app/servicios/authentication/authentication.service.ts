@@ -8,6 +8,13 @@ import { PermisosSesionService } from './permisos-sesion.service';
 
 export type PortalPreferido = 'admin' | 'user';
 
+/** `POST /api/auth/invitacion/datos` (pieza E8-4): lo que enseña «Crea tu contraseña». */
+export interface DatosInvitacion {
+  email: string;
+  nombre: string;
+  escuela: string;
+}
+
 /**
  * Sesión «solo profesor» (pieza 6b-3b): ROLE_PROFESOR sin gestión ni familia (puede ser también responsable de
  * sede). El servidor solo le deja «Mi caja» y lo imprescindible de la sesión: nada de gestión ni del portal familiar.
@@ -111,32 +118,62 @@ export class AuthenticationService {
   }
 
   login(credenciales: LoginInterface): Observable<string[]> {
+    return this.abrirSesion(
+      () =>
+        this.http.post<any>(`${this.urlBase}/signin`, credenciales, {
+          withCredentials: true,
+        }),
+      credenciales.email
+    );
+  }
+
+  /** Datos que enseña «Crea tu contraseña» antes de escribirla (pieza E8-6). El token va en el cuerpo. */
+  datosInvitacion(token: string): Observable<DatosInvitacion> {
+    return this.http.post<DatosInvitacion>(
+      `${this.urlBase}/invitacion/datos`,
+      { token },
+      { context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) }
+    );
+  }
+
+  /**
+   * Crea la contraseña de una invitación y abre la sesión (cookie del backend) con el mismo refresco que `login()`:
+   * roles, permisos y sondeo de plataforma nuevos. Errores (400 enlace, 403 sin escuela) tratados en la página.
+   */
+  aceptarInvitacion(token: string, nuevaContrasena: string, email: string): Observable<string[]> {
+    return this.abrirSesion(
+      () =>
+        this.http.post<any>(
+          `${this.urlBase}/invitacion/aceptar`,
+          { token, nuevaContrasena },
+          { withCredentials: true, context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) }
+        ),
+      email
+    );
+  }
+
+  private abrirSesion(peticion: () => Observable<unknown>, email: string): Observable<string[]> {
     this.rolesCargados = false;
     this.rolesPeticion$ = null;
     this.permisos.reiniciar();
     // Cambiar de usuario sin cerrar sesión no debe reutilizar el sondeo del anterior.
     this.sondeoPlataforma$ = null;
-    return this.http
-      .post<any>(`${this.urlBase}/signin`, credenciales, {
-        withCredentials: true,
-      })
-      .pipe(
-        switchMap(() => {
-          const email = credenciales.email;
-          const username = this.extraerNombreUsuario(email);
-          this.actualizarEstadoLogueado(true);
-          this.usernameSubject.next(username); // Actualizar nombre de usuario
-          this.emailSubject.next(email); // Actualizar email
+    return peticion().pipe(
+      switchMap(() => {
+        const username = this.extraerNombreUsuario(email);
+        this.actualizarEstadoLogueado(true);
+        this.usernameSubject.next(username); // Actualizar nombre de usuario
+        this.emailSubject.next(email); // Actualizar email
 
-          return this.obtenerRoles().pipe(
-            tap(() => {
-              // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
-              return this.usuarioLogueadoSubject.next(true);
-            })
-          );
-        }),
-        catchError(this.manejarError)
-      );
+        return this.obtenerRoles().pipe(
+          tap(() => {
+            // Si esto fue exitoso y los roles fueron obtenidos, confirmamos el login completo
+            return this.usuarioLogueadoSubject.next(true);
+          })
+        );
+      }),
+      catchError(this.manejarError)
+    );
   }
 
   solicitarResetContrasena(email: string): Observable<void> {

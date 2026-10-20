@@ -185,6 +185,12 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
   },
   {
+    // Enlace del correo de invitación (pieza E8-6): pública, como restablecer la contraseña.
+    path: 'crear-contrasena',
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/vistas/crear-contrasena/crear-contrasena.component').then(m => m.CrearContrasenaComponent)
+  },
+  {
     path: 'registro-confirmar',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
