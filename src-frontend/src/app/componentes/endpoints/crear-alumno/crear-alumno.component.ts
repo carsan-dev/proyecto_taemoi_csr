@@ -17,6 +17,7 @@ import { calcularCategoriaPorEdad } from '../../../utilities/categoria-por-edad'
 import { getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { showSuccessToast } from '../../../utils/toast.util';
+import { SUBIDA_IMAGEN, mensajeErrorSubida, prepararFicheroParaSubida, reiniciarSelectorArchivo } from '../../../utils/subida-archivos.util';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { CatalogoTarifa } from '../../../features/catalogo/catalogo.models';
 import { cuantiaEstandar } from '../../../features/catalogo/catalogo-reglas';
@@ -563,7 +564,10 @@ export class CrearAlumnoComponent implements OnInit {
         this.scrollService.scrollToTop('auto');
         void Swal.fire({
           title: 'Error en la petición',
-          text: error.error || 'No has completado todos los campos requeridos',
+          text:
+            typeof error?.error === 'string' && error.error.trim()
+              ? error.error
+              : mensajeErrorSubida(error, 'No has completado todos los campos requeridos'),
           icon: 'error',
         });
       },
@@ -571,10 +575,22 @@ export class CrearAlumnoComponent implements OnInit {
     });
   }
 
-  onFileChange(event: any) {
-    const fileList: FileList = event.target.files;
-    if (fileList.length > 0) {
-      this.imagen = fileList[0];
+  async onFileChange(event: Event): Promise<void> {
+    const entrada = event.target as HTMLInputElement;
+    const elegido = entrada?.files?.[0];
+    if (elegido) {
+      // Copia en memoria al elegirla: en Android leer el content:// al enviar falla.
+      const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_IMAGEN);
+      reiniciarSelectorArchivo(entrada);
+      if (!preparado.ok) {
+        void Swal.fire({
+          title: 'No se pudo usar la imagen',
+          text: preparado.motivo,
+          icon: 'error',
+        });
+        return;
+      }
+      this.imagen = preparado.file;
       const reader = new FileReader();
       reader.onload = (e) => (this.imagenPreview = e.target?.result ?? null);
       reader.readAsDataURL(this.imagen);

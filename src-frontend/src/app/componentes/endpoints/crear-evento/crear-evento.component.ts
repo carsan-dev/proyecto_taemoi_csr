@@ -11,6 +11,13 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LoadingService } from '../../../servicios/generales/loading.service';
+import {
+  SUBIDA_DOCUMENTO,
+  SUBIDA_IMAGEN,
+  mensajeErrorSubida,
+  prepararFicheroParaSubida,
+  reiniciarSelectorArchivo,
+} from '../../../utils/subida-archivos.util';
 
 @Component({
   selector: 'app-crear-evento',
@@ -76,11 +83,11 @@ export class CrearEventoComponent implements OnInit {
           this.mostrarExitoYRedirigir();
         }
       },
-      error: () => {
+      error: (error) => {
         this.finalizarGuardadoEvento();
         Swal.fire({
           title: 'Error en la petición',
-          text: 'No hemos podido crear el evento.',
+          text: mensajeErrorSubida(error, 'No hemos podido crear el evento.'),
           icon: 'error',
         });
       },
@@ -90,6 +97,7 @@ export class CrearEventoComponent implements OnInit {
   private subirDocumentos(eventoId: number): void {
     let subidos = 0;
     let errores = 0;
+    const motivos: string[] = [];
 
     this.documentos.forEach((doc) => {
       this.endpointsService.subirDocumentoEvento(eventoId, doc).subscribe({
@@ -97,14 +105,18 @@ export class CrearEventoComponent implements OnInit {
           subidos++;
           if (subidos + errores === this.documentos.length) {
             this.finalizarGuardadoEvento();
-            this.mostrarExitoYRedirigir(errores);
+            this.mostrarExitoYRedirigir(errores, motivos);
           }
         },
-        error: () => {
+        error: (error) => {
           errores++;
+          const motivo = mensajeErrorSubida(error, '');
+          if (motivo && !motivos.includes(motivo)) {
+            motivos.push(motivo);
+          }
           if (subidos + errores === this.documentos.length) {
             this.finalizarGuardadoEvento();
-            this.mostrarExitoYRedirigir(errores);
+            this.mostrarExitoYRedirigir(errores, motivos);
           }
         },
       });
@@ -121,13 +133,14 @@ export class CrearEventoComponent implements OnInit {
     this.loadingService.hide();
   }
 
-  private mostrarExitoYRedirigir(erroresDocumentos: number = 0): void {
+  private mostrarExitoYRedirigir(erroresDocumentos: number = 0, motivos: string[] = []): void {
     if (erroresDocumentos > 0) {
       Swal.fire({
         title: 'Evento creado',
-        text: `El evento se ha creado, pero ${erroresDocumentos} documento(s) no se pudieron subir.`,
+        text: [`El evento se ha creado, pero ${erroresDocumentos} documento(s) no se pudieron subir.`, ...motivos].join(' '),
         icon: 'warning',
-        timer: 3000,
+        // Con motivos que leer el aviso no se cierra solo.
+        ...(motivos.length > 0 ? {} : { timer: 3000 }),
       });
     } else {
       Swal.fire({
@@ -142,10 +155,22 @@ export class CrearEventoComponent implements OnInit {
   
 
   // Method to handle image selection and preview
-  onFileChange(event: any): void {
-    const fileList: FileList = event.target.files;
-    if (fileList.length > 0) {
-      this.imagen = fileList[0];
+  async onFileChange(event: Event): Promise<void> {
+    const entrada = event.target as HTMLInputElement;
+    const elegido = entrada?.files?.[0];
+    if (elegido) {
+      // Copia en memoria al elegirla: en Android leer el content:// al enviar falla.
+      const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_IMAGEN);
+      reiniciarSelectorArchivo(entrada);
+      if (!preparado.ok) {
+        Swal.fire({
+          title: 'No se pudo usar la imagen',
+          text: preparado.motivo,
+          icon: 'error',
+        });
+        return;
+      }
+      this.imagen = preparado.file;
 
       // Create a preview of the image
       const reader = new FileReader();
@@ -171,12 +196,27 @@ export class CrearEventoComponent implements OnInit {
     }
   }
 
-  onDocumentosChange(event: any): void {
-    const files: FileList = event.target.files;
-    for (const file of Array.from(files)) {
-      this.documentos.push(file);
+  async onDocumentosChange(event: Event): Promise<void> {
+    const entrada = event.target as HTMLInputElement;
+    const elegidos = Array.from(entrada?.files ?? []);
+    const rechazados: string[] = [];
+    // Copia en memoria al elegirlos: en Android leer el content:// al enviar falla.
+    for (const elegido of elegidos) {
+      const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_DOCUMENTO);
+      if (preparado.ok) {
+        this.documentos.push(preparado.file);
+      } else {
+        rechazados.push(`«${elegido.name}»: ${preparado.motivo}`);
+      }
     }
-    event.target.value = '';
+    reiniciarSelectorArchivo(entrada);
+    if (rechazados.length > 0) {
+      Swal.fire({
+        title: rechazados.length === 1 ? 'No se pudo añadir el documento' : 'Algunos documentos no se añadieron',
+        text: rechazados.join(' '),
+        icon: 'error',
+      });
+    }
   }
 
   removeDocumento(index: number): void {

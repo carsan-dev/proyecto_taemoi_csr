@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { EscuelaLogo } from '../../../interfaces/escuela-logo';
 import { LogoEscuelaService } from '../../../servicios/plataforma/logo-escuela.service';
 import { showErrorToast } from '../../../utils/toast.util';
+import { SUBIDA_LOGO, prepararFicheroParaSubida, reiniciarSelectorArchivo } from '../../../utils/subida-archivos.util';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 export const LOGO_MAX_BYTES = 1024 * 1024;
@@ -68,20 +69,26 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
     return fila.escuela.id;
   }
 
-  elegido(fila: FilaLogo, evento: Event): void {
+  async elegido(fila: FilaLogo, evento: Event): Promise<void> {
     const entrada = evento.target as HTMLInputElement;
     const archivo = entrada.files?.[0] ?? null;
-    entrada.value = '';
     if (!archivo || fila.ocupada) {
+      reiniciarSelectorArchivo(entrada);
       return;
     }
-    if (archivo.size > LOGO_MAX_BYTES) {
-      fila.error = 'El archivo pesa más de 1 MB. Elige una imagen más ligera.';
+    // Copia en memoria al elegirlo: en Android leer el content:// al enviar falla.
+    const preparado = await prepararFicheroParaSubida(archivo, SUBIDA_LOGO);
+    reiniciarSelectorArchivo(entrada);
+    if (!preparado.ok) {
+      fila.error = preparado.motivo;
+      return;
+    }
+    if (fila.ocupada) {
       return;
     }
     fila.error = null;
     fila.ocupada = true;
-    this.logos.subir(fila.escuela.id, archivo).subscribe({
+    this.logos.subir(fila.escuela.id, preparado.file).subscribe({
       next: (escuela) => {
         fila.escuela = escuela;
         fila.ocupada = false;
