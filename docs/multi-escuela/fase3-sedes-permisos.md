@@ -329,8 +329,12 @@ Despliegue 3 = V31 + entregas 1–9 (pueden ir en varias versiones; V31 va con l
 | 6 | Abrir endpoints al responsable de sede con filtro por sede (alumnos/grupos/turnos; preinscripciones/convocatorias; tesorería por sede, D4): tres PR | careful | Por módulo: ve lo suyo, 403/vacío en lo ajeno, por id y en listados | — |
 | 7 | Abrir endpoints al profesor (solo lectura por grupo, asistencia, salud) | careful | Igual que 6 | — |
 | 8 | API de sedes, miembros (rol, cargo, sedes) y asignación de profesores; `GET /api/auth/permisos` | careful | Servicio y WebMvc; D8 | — |
+| 8b | Rediseño del panel (E8b): auditoría, dirección visual y sistema de diseño con tokens; tema por escuela (colores y logo por organización, editados solo por el superadmin; Moiskimdo arranca con su paleta); inicio con gráficas; migrar pantallas principales. Decisiones 135, 136 y 228 (se diseña antes de construir) | medio | Specs; capturas antes/después a 375 y 1280 px | **Sí** (dirección elegida por el propietario) |
+| 8c | Contenido (E8c): fotos de los eventos realizados (subida en el panel y galería en la web pública; tener en cuenta la q16, imágenes de eventos ocultos; decisión 224) y pantalla para gestionar los recursos de las familias (vídeos y material de examen por grado y disciplina: añadir, cambiar, ordenar y eliminar sin desplegar; hoy está en el código del frontend, `materiales-examen-user.ts`; decisión 226). Tras la 8b y el hotfix de subidas en Android; primer paso 8c-0: inventario y diseño | medio | Specs y WebMvc de subida; capturas | **Sí** (antes de construir) |
 | 9 | Frontend: sedes, miembros, asignación de profesores, selector de escuela, filtro de sede en alumnos, grupos, preinscripciones, convocatorias y tesorería; vistas de profesor | medio | Specs; e2e por rol | **Sí** (antes de construir) |
 | 10 | `postcheck-v31.sql` limpio → V32 con guarda + código sin `Usuario.roles`, `Usuario.alumno`, `Alumno.usuario` | careful | Guarda con y sin placeholder; precheck que detiene; arranque con `ddl-auto=validate` | — |
+
+Las entregas 8b y 8c se añadieron al plan el 21/10/2026 (rediseño del panel y contenido); van entre la API de la 8 y las pantallas de la 9.
 
 Pantallas existentes afectadas: `listado-alumnos`, `listado-grupos`, `crear/editar-grupo` (campo sede),
 `crear/editar-turno`, `preinscripciones-admin`, `listado-convocatorias`, `tesoreria-cobros`,
