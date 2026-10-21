@@ -337,6 +337,28 @@ Pieza E8-4 (invitaciones por correo, fase3-e8-miembros.md D8-13): 3 líneas nuev
   `GET`/`POST /api/grupos/{grupoId}/profesores` (líneas existentes) devuelven además `invitacionPendiente`.
 Lo prueban `InvitacionesIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
+Pieza 8b-I (interruptor del diseño nuevo, fase3-e8b-plan.md §3): 5 líneas nuevas bajo `/api/panel`
+(`DisenoPanelController`); ninguna casilla existente cambia. Regla de URL propia `/api/panel`, `/api/panel/**`
+(`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`, junto a la de `/api/miembros`; fuera de la lista blanca de la sesión
+solo-profesor) y `@PreAuthorize` por método. Todo con la escuela activa de la sesión.
+- `GET`/`HEAD /api/panel/diseno-nuevo` (`#listar`): solo PROPIETARIO `PERMITE` (`hasAuthority('ROLE_ADMIN')`); el
+  gestor, 403. Devuelve `{porDefecto, usuarios[{usuarioId, permitido, activo}]}` de la gestión activa de la escuela
+  (PROPIETARIO o ADMINISTRADOR, `organizacion_id` explícito), solo ids y booleanos.
+- `PUT /api/panel/diseno-nuevo/{usuarioId}` (`#cambiarPermiso`, `{permitido}`): solo PROPIETARIO `PERMITE`. Cuenta de
+  otra escuela o inexistente, 404; sin gestión activa en la escuela (familia, profesor), 400. Al darlo, queda activo.
+- `PUT /api/panel/diseno-nuevo/por-defecto` (`#cambiarPorDefecto`, `{nuevo}`): solo PROPIETARIO `PERMITE`; clave
+  `panel.diseno_por_defecto` de `configuracion_organizacion`. Oculto en la pantalla hasta R5 (decisión 258).
+- `PUT /api/panel/mi-diseno` (`#cambiarMiDiseno`, `{activo}`): GESTOR y PROPIETARIO `PERMITE`; el servicio responde 403
+  sin permiso propio (ni fila permitida ni por defecto NUEVO): `PERMITE` solo dice que la petición llega.
+- El resto de columnas (ANONIMO, FAMILIA, SOLO_PLATAFORMA, RESPONSABLE_SEDE hasta la E9 y PROFESOR), `DENIEGA`.
+Las tres escrituras registran (módulo `panel`: `DISENO_PERMITIR`, `DISENO_QUITAR`, `DISENO_ACTIVAR`,
+`DISENO_DESACTIVAR` y `DISENO_POR_DEFECTO`; solo `usuario=#id`, `nuevo` y `sinCambios`, nunca email, nombre ni cargo),
+también la que no cambia nada, y están en `EscrituraConRegistroPropio` (`PANEL_DISENO_PERMISO`, solo con id numérico;
+`PANEL_DISENO_POR_DEFECTO`; `PANEL_MI_DISENO`). `GET /api/auth/permisos` (línea existente, sin cambio de permisos)
+devuelve además `disenoNuevo {activo, permitido}`: con gestión fuera de la sesión solo-profesor, el de la sesión; el
+resto, apagado. Lo prueban `DisenoPanelIntegrationTest`, `PermisosSesionIntegrationTest` y
+`RegistroUnicoProfesorIntegrationTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

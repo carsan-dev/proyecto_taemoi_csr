@@ -48,6 +48,20 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			@Param("organizacionId") Long organizacionId);
 
 	/**
+	 * Pieza 8b-I: las cuentas con alguno de esos roles activo en la organización ({@code organizacion_id} explícito), sin
+	 * repetir y por id. Para la gestión (PROPIETARIO o ADMINISTRADOR) del interruptor del diseño nuevo.
+	 */
+	@Query("""
+			SELECT DISTINCT m.usuarioId FROM Membresia m
+			WHERE m.organizacionId = :organizacionId
+			  AND m.activa = true
+			  AND m.rol IN :roles
+			ORDER BY m.usuarioId
+			""")
+	List<Long> findUsuariosConRolActivo(@Param("organizacionId") Long organizacionId,
+			@Param("roles") java.util.Collection<RolMembresia> roles);
+
+	/**
 	 * Usuarios visibles para la gestión de una organización: con alguna membresía en ella (activa o
 	 * no) y, si {@code incluirSinMembresia}, también los que no tienen ninguna membresía (legado).
 	 */

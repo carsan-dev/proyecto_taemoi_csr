@@ -82,7 +82,12 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_SEDES, new Ejemplo("PUT", "/api/miembros/21/sedes")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION,
-					new Ejemplo("POST", "/api/miembros/21/invitacion"))));
+					new Ejemplo("POST", "/api/miembros/21/invitacion")),
+			Map.entry(EscrituraConRegistroPropio.PANEL_DISENO_PERMISO,
+					new Ejemplo("PUT", "/api/panel/diseno-nuevo/21")),
+			Map.entry(EscrituraConRegistroPropio.PANEL_DISENO_POR_DEFECTO,
+					new Ejemplo("PUT", "/api/panel/diseno-nuevo/por-defecto")),
+			Map.entry(EscrituraConRegistroPropio.PANEL_MI_DISENO, new Ejemplo("PUT", "/api/panel/mi-diseno"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -133,6 +138,16 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("DELETE", "/api/miembros/21/invitacion"),
 			new Ejemplo("POST", "/api/miembros/21/invitacion/otra"),
 			new Ejemplo("POST", "/api/miembros/invitacion"),
+			// Pieza 8b-I: la lectura del interruptor y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/panel/diseno-nuevo"),
+			new Ejemplo("PUT", "/api/panel/diseno-nuevo"),
+			new Ejemplo("POST", "/api/panel/diseno-nuevo/21"),
+			new Ejemplo("DELETE", "/api/panel/diseno-nuevo/21"),
+			new Ejemplo("PUT", "/api/panel/diseno-nuevo/21/otra"),
+			new Ejemplo("GET", "/api/panel/mi-diseno"),
+			new Ejemplo("POST", "/api/panel/mi-diseno"),
+			new Ejemplo("PUT", "/api/panel/mi-diseno/otra"),
+			new Ejemplo("PUT", "/api/panel"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");

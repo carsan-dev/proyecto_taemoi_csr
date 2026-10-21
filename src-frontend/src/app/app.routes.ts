@@ -408,6 +408,14 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Diseño nuevo del panel (8b-I, decisión 256): quién lo usa. Solo el propietario (capacidad DAR_GESTION = ROLE_ADMIN).
+    path: 'panel/diseno-nuevo',
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/diseno-nuevo/diseno-nuevo.component').then(m => m.DisenoNuevoComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     // Plataforma (todas las escuelas): sin requiredRoles ni catálogo; la sesión puede no tener membresía.
     // Sin portalContext: solo distingue el portal 'user', y así no suma bytes al bundle inicial (al límite).
     path: 'plataformaErrores',

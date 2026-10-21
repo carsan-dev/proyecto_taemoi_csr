@@ -257,6 +257,13 @@
         </button>
         @if (isAdminAccountMenuOpen) {
         <div class="admin-account-menu-panel" role="menu" aria-label="Opciones de cuenta admin">
+          @if (isAdminOnly) {
+          <a class="admin-account-menu-item" role="menuitem" [routerLink]="['/panel/diseno-nuevo']"
+            (click)="closeAdminAccountMenu()">
+            <i class="bi bi-window-sidebar" aria-hidden="true"></i>
+            <span>Diseño nuevo</span>
+          </a>
+          }
           @if (tieneAccesoDual) {
           <button class="admin-account-menu-item" type="button" (click)="cambiarVistaUsuario()">
             <i class="bi bi-calendar2-check"></i>

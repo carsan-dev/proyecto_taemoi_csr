@@ -484,12 +484,32 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(fixture.componentInstance.veMisGrupos).toBeFalse();
     });
 
-    it('gestión sin ROLE_PROFESOR: ni «Mi caja» ni «Mis grupos», y no pide permisos', async () => {
+    it('gestión sin ROLE_PROFESOR: ni «Mi caja» ni «Mis grupos»; pide los permisos una vez (8b-I)', async () => {
       const { fixture, permisos } = await renderizar(['ROLE_ADMIN']);
       const hrefs = enlaces(fixture.nativeElement);
       expect(hrefs).not.toContain('/mi-caja');
       expect(hrefs).not.toContain('/mis-grupos');
-      expect(permisos.capacidades).not.toHaveBeenCalled();
+      // La cabecera puede pedirlos más de una vez al arrancar; la petición HTTP es una (shareReplay del servicio).
+      expect(permisos.capacidades).toHaveBeenCalled();
+    });
+
+    it('pedir permisos con gestión no cambia los menús: sin PROFESOR, «Mis grupos» nunca aparece', async () => {
+      for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER'], ['ROLE_MANAGER', 'ROLE_USER']]) {
+        const { fixture } = await renderizar(roles, ['MIS_GRUPOS', 'MI_CAJA']);
+        const hrefs = enlaces(fixture.nativeElement);
+        expect(fixture.componentInstance.veMisGrupos).withContext(roles.join()).toBeFalse();
+        expect(hrefs).withContext(roles.join()).not.toContain('/mis-grupos');
+        expect(hrefs).withContext(roles.join()).not.toContain('/mi-caja');
+      }
+    });
+
+    it('propietario que también es profesor (Moiskimdo): «Mi caja» como antes y la misma barra que hoy', async () => {
+      const { fixture, permisos } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
+      const hrefs = enlaces(fixture.nativeElement);
+      expect(hrefs).toContain('/mi-caja');
+      expect(hrefs).not.toContain('/mis-grupos');
+      // La cabecera puede pedirlos más de una vez al arrancar; la petición HTTP es una (shareReplay del servicio).
+      expect(permisos.capacidades).toHaveBeenCalled();
     });
 
     it('si los permisos fallan, la cabecera sigue y no ofrece «Mis grupos»', async () => {
@@ -509,8 +529,49 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     });
   });
 
-  it('familia sin profesor: no ve «Mi caja»', async () => {
-    const { fixture } = await renderizar(['ROLE_USER']);
+  describe('«Diseño nuevo» en el menú de cuenta (8b-I, decisión 256)', () => {
+    const entrada = (el: HTMLElement) =>
+      el.querySelector<HTMLAnchorElement>('.admin-account-menu-panel a[href="/panel/diseno-nuevo"]');
+
+    it('el propietario la ve en su menú de cuenta', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN']);
+      fixture.componentInstance.toggleAdminAccountMenu();
+      fixture.detectChanges();
+      expect(entrada(fixture.nativeElement)?.textContent?.trim()).toBe('Diseño nuevo');
+      expect(entrada(fixture.nativeElement)?.getAttribute('role')).toBe('menuitem');
+    });
+
+    it('el propietario que también es profesor, igual', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
+      fixture.componentInstance.toggleAdminAccountMenu();
+      fixture.detectChanges();
+      expect(entrada(fixture.nativeElement)).not.toBeNull();
+    });
+
+    it('el gestor no la ve', async () => {
+      for (const roles of [['ROLE_MANAGER'], ['ROLE_MANAGER', 'ROLE_PROFESOR'], ['ROLE_MANAGER', 'ROLE_USER']]) {
+        const { fixture } = await renderizar(roles);
+        fixture.componentInstance.toggleAdminAccountMenu();
+        fixture.detectChanges();
+        expect(entrada(fixture.nativeElement)).withContext(roles.join()).toBeNull();
+        expect((fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel')).not.toBeNull();
+      }
+    });
+
+    it('al pulsarla se cierra el menú', async () => {
+      const { fixture } = await renderizar(['ROLE_ADMIN']);
+      const componente = fixture.componentInstance;
+      componente.toggleAdminAccountMenu();
+      fixture.detectChanges();
+      entrada(fixture.nativeElement)!.click();
+      fixture.detectChanges();
+      expect(componente.isAdminAccountMenuOpen).toBeFalse();
+    });
+  });
+
+  it('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
+    const { fixture, permisos } = await renderizar(['ROLE_USER']);
+    expect(permisos.capacidades).not.toHaveBeenCalled();
     fixture.componentInstance.toggleDesktopUserMenu();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();

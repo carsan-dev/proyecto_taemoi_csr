@@ -1,0 +1,86 @@
+<div class="pn diseno">
+  @if (hojaLista) {
+  <div class="diseno__pagina">
+    <header class="diseno__cabecera">
+      <h1 class="diseno__titulo">Diseño nuevo del panel</h1>
+      <p class="diseno__nota">
+        Elige quién del equipo de gestión prueba el panel nuevo. Quien no tenga permiso sigue con el de siempre.
+      </p>
+    </header>
+
+    @if (mostrarParaTodo) {
+    <section class="diseno__bloque" aria-labelledby="diseno-todos">
+      <div class="diseno__bloque-cabecera">
+        <h2 id="diseno-todos" class="diseno__subtitulo">Para todo el equipo</h2>
+        <p class="diseno__resumen">
+          {{ porDefecto ? 'Todo el equipo usa el diseño nuevo.' : 'Cada uno usa el diseño que le permitas.' }}
+        </p>
+      </div>
+      <div class="diseno__fila diseno__fila--sola">
+        <button type="button" class="diseno__boton diseno__boton--secundario" [disabled]="guardando !== null"
+          [attr.aria-busy]="guardando === 'por-defecto' ? 'true' : null" (click)="cambiarPorDefecto()">
+          {{ porDefecto ? 'Volver al de siempre para todos' : 'Diseño nuevo para todos' }}
+        </button>
+      </div>
+    </section>
+    }
+
+    <section class="diseno__bloque" aria-labelledby="diseno-equipo" [attr.aria-busy]="estado === 'cargando'">
+      <div class="diseno__bloque-cabecera">
+        <h2 id="diseno-equipo" class="diseno__subtitulo">Equipo de gestión</h2>
+        @if (estado === 'listo' && filas.length > 0) {
+        <p class="diseno__resumen" data-cifras>{{ resumen }}</p>
+        }
+      </div>
+
+      @if (error) {
+      <p class="diseno__error" role="alert">
+        <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+        <span>{{ error }}</span>
+      </p>
+      }
+
+      @switch (estado) {
+      @case ('cargando') {
+      <p class="diseno__vacio" aria-live="polite">Cargando el equipo…</p>
+      }
+      @case ('error') {
+      <div class="diseno__fila diseno__fila--sola">
+        <button type="button" class="diseno__boton diseno__boton--secundario" (click)="cargar()">Reintentar</button>
+      </div>
+      }
+      @case ('listo') {
+      @if (filas.length === 0) {
+      <p class="diseno__vacio">Aún no hay nadie con gestión en la escuela. Da el rol desde Miembros.</p>
+      } @else {
+      <ul class="diseno__lista">
+        @for (fila of filas; track fila.usuarioId) {
+        <li class="diseno__fila" [attr.data-usuario]="fila.usuarioId">
+          <div class="diseno__quien">
+            <p class="diseno__nombre">
+              <span>{{ fila.nombre }}</span>
+              @if (fila.rol) {
+              <span class="diseno__rol">{{ fila.rol }}</span>
+              }
+            </p>
+            <p class="diseno__estado" [class.diseno__estado--activo]="fila.activo">
+              <i class="bi" [class.bi-check-circle-fill]="fila.activo" [class.bi-circle]="!fila.activo"
+                aria-hidden="true"></i>
+              <span>{{ textoEstado(fila) }}</span>
+            </p>
+          </div>
+          <button type="button" class="diseno__boton"
+            [class.diseno__boton--secundario]="!fila.permitido" [class.diseno__boton--texto]="fila.permitido"
+            [disabled]="guardando === fila.usuarioId" [attr.aria-busy]="guardando === fila.usuarioId ? 'true' : null"
+            [attr.aria-label]="(fila.permitido ? 'Quitar permiso a ' : 'Dar permiso a ') + fila.nombre"
+            (click)="cambiarPermiso(fila)">{{ fila.permitido ? 'Quitar permiso' : 'Dar permiso' }}</button>
+        </li>
+        }
+      </ul>
+      }
+      }
+      }
+    </section>
+  </div>
+  }
+</div>

@@ -15,7 +15,7 @@ import {
 import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
-import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesionService, pidePermisos } from '../../../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 @Component({
@@ -115,7 +115,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.esAdminPlataforma = false;
           this.isUser = false;
           this.tieneRolProfesor = false;
-          this.actualizarMisGrupos(false);
+          this.actualizarPermisos([]);
           this.tieneAccesoDual = false;
           this.pideContadorSolicitudes = false;
           this.solicitudesContador.reiniciar();
@@ -288,7 +288,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
-      this.actualizarMisGrupos(this.tieneRolProfesor);
+      this.actualizarPermisos(roles);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
       // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.
@@ -302,17 +302,22 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /** Solo con ROLE_PROFESOR hay MIS_GRUPOS: las demás sesiones no piden permisos. Si fallan, sin enlace. */
-  private actualizarMisGrupos(tieneRolProfesor: boolean): void {
+  /**
+   * Pide los permisos una vez por sesión con ROLE_PROFESOR o gestión (`pidePermisos`, 8b-I: el interruptor del diseño
+   * nuevo va en ellos). «Mis grupos» sigue igual que antes: solo con ROLE_PROFESOR y la capacidad MIS_GRUPOS, así que
+   * pedirlos con gestión no cambia ningún menú. Si fallan, sin enlace.
+   */
+  private actualizarPermisos(roles: readonly string[]): void {
     this.permisosSuscripcion?.unsubscribe();
     this.permisosSuscripcion = undefined;
     this.veMisGrupos = false;
-    if (!tieneRolProfesor) {
+    if (!pidePermisos(roles)) {
       return;
     }
+    const profesor = roles.includes('ROLE_PROFESOR');
     this.permisosSuscripcion = this.permisos
       .capacidades()
-      .subscribe((capacidades) => (this.veMisGrupos = capacidades.includes('MIS_GRUPOS')));
+      .subscribe((capacidades) => (this.veMisGrupos = profesor && capacidades.includes('MIS_GRUPOS')));
   }
 
   get mostrarHeaderAdmin(): boolean {

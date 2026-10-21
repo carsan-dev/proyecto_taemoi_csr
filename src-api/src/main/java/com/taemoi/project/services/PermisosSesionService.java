@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.taemoi.project.dtos.response.DisenoPanelDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO.Capacidad;
 import com.taemoi.project.entities.RolMembresia;
@@ -36,6 +37,8 @@ import com.taemoi.project.repositories.SedeRepository;
  * {@code COUNT}). {@code tieneGrupos}: {@code alcance.grupos()} no vacío.</li>
  * <li>Sesión solo-plataforma (ninguna autoridad de escuela): roles, sedes y capacidades vacíos y sin consultar la
  * escuela.</li>
+ * <li>{@code disenoNuevo} (pieza 8b-I): con gestión (ROLE_ADMIN o ROLE_MANAGER) fuera de la sesión solo-profesor, el de
+ * {@link DisenoPanelService#estadoPropio} (dos consultas pequeñas más); el resto, apagado sin consultar.</li>
  * </ul>
  * Reutiliza el alcance de la petición ({@link AlcanceActual}): como mucho dos consultas pequeñas de sedes, sin N+1.
  */
@@ -44,10 +47,12 @@ public class PermisosSesionService {
 
 	private final AlcanceActual alcanceActual;
 	private final SedeRepository sedes;
+	private final DisenoPanelService diseno;
 
-	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes) {
+	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes, DisenoPanelService diseno) {
 		this.alcanceActual = alcanceActual;
 		this.sedes = sedes;
+		this.diseno = diseno;
 	}
 
 	@Transactional(readOnly = true)
@@ -56,7 +61,8 @@ public class PermisosSesionService {
 		Set<Roles> autoridades = autoridades(autenticacion);
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
-			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of());
+			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
+					DisenoPanelDTO.Propio.APAGADO);
 		}
 		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -73,9 +79,13 @@ public class PermisosSesionService {
 					: List.of();
 			activas = sedes.countByActivaTrue();
 		}
+		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
+		DisenoPanelDTO.Propio disenoNuevo = gestion && !soloProfesor
+				? diseno.estadoPropio(CobroService.usuarioActualId())
+				: DisenoPanelDTO.Propio.APAGADO;
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
-				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos));
+				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo);
 	}
 
 	/**
