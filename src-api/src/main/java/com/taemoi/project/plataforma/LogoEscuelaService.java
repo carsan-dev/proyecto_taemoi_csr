@@ -226,6 +226,6 @@ public class LogoEscuelaService {
 
 	private static EscuelaPlataformaDTO dto(Organizacion escuela) {
 		return new EscuelaPlataformaDTO(escuela.getId(), escuela.getNombre(), escuela.getLogoImagenId() != null,
-				Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi()));
+				Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi()), escuela.getColorPrimario());
 	}
 }

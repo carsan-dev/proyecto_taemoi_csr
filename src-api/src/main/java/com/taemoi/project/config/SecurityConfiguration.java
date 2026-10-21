@@ -227,6 +227,10 @@ public class SecurityConfiguration {
 						// la lista blanca solo-profesor.
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G
+						// (R DENIEGA hasta la E9). Misma posición y motivo que /api/panel; fuera de la lista blanca solo-profesor.
+						.requestMatchers("/api/escuela", "/api/escuela/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor

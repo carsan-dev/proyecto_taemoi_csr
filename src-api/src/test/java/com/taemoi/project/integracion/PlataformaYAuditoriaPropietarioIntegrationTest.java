@@ -368,8 +368,8 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 				.andExpect(status().isOk()).andReturn();
 		JsonNode escuelas = json.readTree(r.getResponse().getContentAsString());
 		assertTrue(escuelas.isArray());
-		// Pieza E7-7a: además, si tiene logo y si usa la marca heredada (pantalla del logo).
-		assertEquals(Set.of("id", "nombre", "tieneLogo", "marcaHeredada"),
+		// Pieza E7-7a: además, si tiene logo y si usa la marca heredada (pantalla del logo); 8b-T, su color guardado.
+		assertEquals(Set.of("id", "nombre", "tieneLogo", "marcaHeredada", "colorPrimario"),
 				Set.copyOf(nombresDeCampos(escuelas.get(0))));
 		assertEquals(nombreOrganizacion(ORG1), buscar(escuelas, ORG1).get("nombre").asText());
 		assertEquals("Escuela plataforma " + sufijo, buscar(escuelas, org2).get("nombre").asText());

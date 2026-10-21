@@ -67,12 +67,15 @@
 }
 
 :where(.pn) {
-  // Color. Los cuatro primeros son los de Moiskimdo; una escuela los sustituye con la marca que lee de la API.
-  --pn-marca-primario: #1b2b2e;
+  // Color. Los cinco primeros son el tema de una escuela SIN color (decisión 257): ReglaContraste.tema(null), es
+  // decir, el de #1A2230, sacado de regla-contraste.ts (temaDe(null)). MarcaEscuelaPanelService los sustituye en el
+  // .pn con el tema que lee de la API; si no puede leerlo, se queda este neutro y no el color de otra escuela.
+  // Moiskimdo (#1B2B2E) llega de la API: #1b2b2e, #ffffff, #c6cacb, #1b2b2e y #e8eaea.
+  --pn-marca-primario: #1a2230;
   --pn-marca-sobre-primario: #ffffff;
-  --pn-marca-sobre-primario-2: #c3cdce;
-  --pn-marca-primario-tinta: #1b2b2e;
-  --pn-marca-primario-suave: #e6ebeb;
+  --pn-marca-sobre-primario-2: #c6c8cb;
+  --pn-marca-primario-tinta: #1a2230;
+  --pn-marca-primario-suave: #e8e9ea;
   --pn-marca-por-defecto: #1a2230;
   --pn-atencion: #a14f0b;
   --pn-atencion-suave: #fcf2e6;

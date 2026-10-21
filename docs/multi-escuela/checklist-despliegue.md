@@ -210,6 +210,12 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       (`SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1`) y
       `SELECT COUNT(*) FROM diseno_panel_usuario` = 0. Comprobar en el móvil que el propietario (también profesor en
       Umbrete) sigue viendo «Mi caja» y los mismos menús, y que un gestor no ve «Diseño nuevo».
+- [ ] E8b, pieza 8b-T (color y logo de la escuela en el panel; decisiones 255 y 257): sin migración (las columnas
+      `color_primario` y `logo_imagen_id` son de V18) → atajo `desplegar`. Después, el superadmin entra en «Logo y
+      color» y pone `#1B2B2E` a Moiskimdo (decisión 257; la vista previa dice texto blanco, 14,66:1); queda en el
+      registro de acciones de Moiskimdo como `PLATAFORMA MARCA_COLOR organizacion=#1 quitado=NO`, sin el valor.
+      Comprobar en el móvil, con el interruptor apagado, que nada cambia para el propietario ni el gestor (cabecera,
+      menús, logo de siempre y «Mi caja»): con él apagado nadie lee la marca.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

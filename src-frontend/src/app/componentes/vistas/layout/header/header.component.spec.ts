@@ -140,7 +140,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaErrores"]');
     expect(enlace?.textContent?.trim()).toBe('Errores de plataforma');
     const enlaceLogos = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/plataformaLogos"]');
-    expect(enlaceLogos?.textContent?.trim()).toBe('Logo de la escuela');
+    expect(enlaceLogos?.textContent?.trim()).toBe('Logo y color');
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 

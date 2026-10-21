@@ -9,6 +9,7 @@ import { LogoEscuelaService } from '../../../servicios/plataforma/logo-escuela.s
 import { showErrorToast } from '../../../utils/toast.util';
 import { SUBIDA_LOGO, prepararFicheroParaSubida, reiniciarSelectorArchivo } from '../../../utils/subida-archivos.util';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
+import { BLANCO, POR_DEFECTO, TemaColor, contraste, esColorValido, formatoRazon, temaDe } from './regla-contraste';
 
 export const LOGO_MAX_BYTES = 1024 * 1024;
 /** Espera antes de repetir la miniatura: en una red móvil cortada, repetir al instante suele fallar otra vez. */
@@ -28,7 +29,25 @@ export interface FilaLogo {
   descarga: Subscription | null;
   /** El logo se guardó pero su miniatura no llegó tras subirlo: se avisa en la fila, con «Reintentar». */
   sinVistaPrevia: boolean;
+  /** 8b-T: el color que se está escribiendo (`#RRGGBB`); vacío, sin color. */
+  color: string;
+  guardandoColor: boolean;
+  errorColor: string | null;
 }
+
+/** Lo que enseña la vista previa de la cabecera de una fila. */
+export interface VistaColor {
+  tema: TemaColor;
+  /** Razón del texto sobre el color de la cabecera. */
+  razonTexto: string;
+  textoBlanco: boolean;
+  /** Razón del color como tinta (botones y enlaces) sobre blanco. */
+  razonTinta: string;
+  /** Sin color: el de por defecto. */
+  porDefecto: boolean;
+}
+
+export const MENSAJE_FORMATO_COLOR = 'Escribe el color como #RRGGBB, por ejemplo #1B2B2E.';
 
 @Component({
   selector: 'app-plataforma-logos',
@@ -41,6 +60,8 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
   private readonly logos = inject(LogoEscuelaService);
 
   readonly formatos = '.png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml';
+  /** Color del panel de una escuela sin color guardado (decisión 257). */
+  readonly porDefecto = POR_DEFECTO;
 
   filas: FilaLogo[] = [];
   cargando = true;
@@ -68,7 +89,7 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
           this.cancelarDescarga(fila);
           this.soltarMiniatura(fila);
         });
-        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, cargandoMiniatura: false, peticion: 0, error: null, descarga: null, sinVistaPrevia: false }));
+        this.filas = (escuelas ?? []).map((escuela) => ({ escuela, miniatura: null, ocupada: false, cargandoMiniatura: false, peticion: 0, error: null, descarga: null, sinVistaPrevia: false, color: escuela.colorPrimario ?? '', guardandoColor: false, errorColor: null }));
         this.cargando = false;
         this.filas.forEach((fila) => this.cargarMiniatura(fila));
       },
@@ -153,6 +174,81 @@ export class PlataformaLogosComponent implements OnInit, OnDestroy {
       error: (error: HttpErrorResponse) => {
         fila.ocupada = false;
         fila.error = this.mensaje(error, 'No se pudo quitar el logo. Inténtalo de nuevo.');
+      },
+    });
+  }
+
+  // ------------------------------------------------------------------ color (8b-T)
+
+  /** El color de la vista previa: el escrito si vale; si no, el guardado; sin ninguno, el de por defecto. */
+  vista(fila: FilaLogo): VistaColor {
+    const escrito = fila.color.trim();
+    const guardado = fila.escuela.colorPrimario;
+    const color = esColorValido(escrito) ? escrito : esColorValido(guardado) ? guardado : null;
+    const tema = temaDe(color);
+    return {
+      tema,
+      razonTexto: formatoRazon(contraste(tema.sobrePrimario, tema.primario)),
+      textoBlanco: tema.sobrePrimario === BLANCO,
+      razonTinta: formatoRazon(contraste(tema.primarioTinta, BLANCO)),
+      porDefecto: color === null,
+    };
+  }
+
+  /** Valor del selector nativo (`#rrggbb` en minúsculas): el escrito si vale; si no, el guardado o el de por defecto. */
+  valorSelector(fila: FilaLogo): string {
+    const escrito = fila.color.trim();
+    const guardado = fila.escuela.colorPrimario;
+    return (esColorValido(escrito) ? escrito : esColorValido(guardado) ? guardado : POR_DEFECTO).toLowerCase();
+  }
+
+  colorElegido(fila: FilaLogo, evento: Event): void {
+    fila.color = (evento.target as HTMLInputElement).value.toUpperCase();
+    fila.errorColor = null;
+  }
+
+  colorEscrito(fila: FilaLogo, evento: Event): void {
+    fila.color = (evento.target as HTMLInputElement).value;
+    fila.errorColor = null;
+  }
+
+  /** Hay algo distinto de lo guardado que guardar. */
+  hayCambioDeColor(fila: FilaLogo): boolean {
+    return fila.color.trim().toUpperCase() !== (fila.escuela.colorPrimario ?? '').toUpperCase();
+  }
+
+  guardarColor(fila: FilaLogo): void {
+    if (fila.guardandoColor) {
+      return;
+    }
+    const escrito = fila.color.trim();
+    if (!esColorValido(escrito)) {
+      fila.errorColor = MENSAJE_FORMATO_COLOR;
+      return;
+    }
+    this.enviarColor(fila, escrito.toUpperCase(), 'No se pudo guardar el color. Inténtalo de nuevo.');
+  }
+
+  quitarColor(fila: FilaLogo): void {
+    if (fila.guardandoColor) {
+      return;
+    }
+    this.enviarColor(fila, null, 'No se pudo quitar el color. Inténtalo de nuevo.');
+  }
+
+  private enviarColor(fila: FilaLogo, color: string | null, porDefecto: string): void {
+    fila.errorColor = null;
+    fila.guardandoColor = true;
+    this.logos.guardarColor(fila.escuela.id, color).subscribe({
+      next: (escuela) => {
+        // El servidor añade el tema calculado; la fila guarda solo los datos de la escuela.
+        fila.escuela = { id: escuela.id, nombre: escuela.nombre, tieneLogo: escuela.tieneLogo, marcaHeredada: escuela.marcaHeredada, colorPrimario: escuela.colorPrimario ?? null };
+        fila.color = fila.escuela.colorPrimario ?? '';
+        fila.guardandoColor = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        fila.guardandoColor = false;
+        fila.errorColor = this.mensaje(error, porDefecto);
       },
     });
   }

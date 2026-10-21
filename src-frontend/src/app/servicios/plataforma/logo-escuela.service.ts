@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { EscuelaLogo } from '../../interfaces/escuela-logo';
 
-/** Logo de cada escuela (solo la sesión de plataforma). Los errores los muestra la pantalla en la fila. */
+/** Logo y color de cada escuela (solo la sesión de plataforma). Los errores los muestra la pantalla en la fila. */
 @Injectable({ providedIn: 'root' })
 export class LogoEscuelaService {
   private readonly http = inject(HttpClient);
@@ -33,5 +33,10 @@ export class LogoEscuelaService {
   /** Imagen del logo (404 si la escuela no tiene). */
   logo(organizacionId: number): Observable<Blob> {
     return this.http.get(`${this.base}/${organizacionId}/logo`, { ...this.opciones(), responseType: 'blob' });
+  }
+
+  /** Guarda (`#RRGGBB`) o quita (`null`) el color de la escuela (8b-T). El servidor responde también con el tema. */
+  guardarColor(organizacionId: number, colorPrimario: string | null): Observable<EscuelaLogo> {
+    return this.http.put<EscuelaLogo>(`${this.base}/${organizacionId}/marca`, { colorPrimario }, this.opciones());
   }
 }

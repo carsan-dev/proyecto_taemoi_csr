@@ -45,4 +45,30 @@ class PermisosSesionServiceTest {
 			}
 		}
 	}
+
+	/** Pieza 8b-T (§4): «Nombre A.» con la inicial del primer apellido, para el botón de cuenta. */
+	@Test
+	void nombreVisible_nombreEInicialDelPrimerApellido() {
+		assertEquals("Lucía O.", PermisosSesionService.nombreVisible("Lucía", "Ortega Ruiz"));
+		assertEquals("María José Á.", PermisosSesionService.nombreVisible(" María José ", "  álvarez"));
+		assertEquals("Ana María O.", PermisosSesionService.nombreVisible("Ana \t María", "ortega"));
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", null));
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", "  "));
+		assertEquals(null, PermisosSesionService.nombreVisible(null, "Ortega"));
+		assertEquals(null, PermisosSesionService.nombreVisible("  ", "Ortega"));
+	}
+
+	/** Ronda 2 de 8b-T: las partículas del apellido no dan la inicial. */
+	@Test
+	void nombreVisible_saltaLasParticulas() {
+		assertEquals("Lucía F.", PermisosSesionService.nombreVisible("Lucía", "de la Fuente"));
+		assertEquals("Lucía R.", PermisosSesionService.nombreVisible("Lucía", "del Río Ortega"));
+		assertEquals("Lucía G.", PermisosSesionService.nombreVisible("Lucía", "García-Pérez"));
+		assertEquals("Lucía G.", PermisosSesionService.nombreVisible("Lucía", "Van Gogh"));
+		assertEquals("Lucía S.", PermisosSesionService.nombreVisible("Lucía", "DOS Santos"));
+		assertEquals("Lucía Y.", PermisosSesionService.nombreVisible("Lucía", "Yáñez"), "«y» solo es partícula sola");
+		assertEquals("Lucía D.", PermisosSesionService.nombreVisible("Lucía", "Delgado"), "«del» solo como palabra");
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", "de la"), "todo partículas");
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", ""));
+	}
 }

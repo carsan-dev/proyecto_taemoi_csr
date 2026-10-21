@@ -4,9 +4,9 @@ description: Panel sobrio y ordenado donde la escuela manda en la cabecera y tod
 colors:
   marca-primario: "#1B2B2E"
   marca-sobre-primario: "#FFFFFF"
-  marca-sobre-primario-2: "#C3CDCE"
+  marca-sobre-primario-2: "#C6CACB"
   marca-primario-tinta: "#1B2B2E"
-  marca-primario-suave: "#E6EBEB"
+  marca-primario-suave: "#E8EAEA"
   marca-por-defecto: "#1A2230"
   atencion: "#A14F0B"
   atencion-suave: "#FCF2E6"
@@ -162,13 +162,19 @@ solo para lo pendiente.
 ### Primary
 
 - **Color de la escuela** (`marca-primario`): fondo de la cabecera y de la página actual en la paginación. En
-  Moiskimdo, el oscuro de su logo (decisión 247; blanco encima 14,67:1). Una escuela sin color guardado usa
+  Moiskimdo, el oscuro de su logo (decisión 247; blanco encima 14,66:1). Una escuela sin color guardado usa
   `marca-por-defecto`.
 - **Texto sobre el color** (`marca-sobre-primario`, `marca-sobre-primario-2`): nombres y entradas de la cabecera; el
-  secundario, para las entradas no activas (9,04:1 en Moiskimdo).
+  secundario, para las entradas no activas (8,87:1 en Moiskimdo).
 - **Color de la escuela como tinta** (`marca-primario-tinta`): botón principal, pestaña activa, enlaces y foco. Es el
   primario oscurecido hasta 4,5:1 sobre blanco si hace falta; en Moiskimdo coincide con el primario.
 - **Suave** (`marca-primario-suave`): fondo de la opción de menú actual y de la selección.
+- **Derivados.** El secundario y el suave se derivan del primario mezclando en sRGB: el secundario es el texto con el
+  25 % del primario (menos si no llega a 4,5:1) y el suave, el 10 % del primario sobre blanco. Los valores de arriba
+  son los de Moiskimdo (`#1B2B2E`), calculados por `ReglaContraste`.
+- **Tema por defecto** (escuela sin color, decisión 257; también el de `panel-nuevo.scss` mientras no llega la marca):
+  primario `#1A2230`, texto `#FFFFFF` (15,96:1), secundario `#C6C8CB` (9,52:1), tinta `#1A2230` y suave
+  `#E8E9EA`.
 
 ### Secondary
 

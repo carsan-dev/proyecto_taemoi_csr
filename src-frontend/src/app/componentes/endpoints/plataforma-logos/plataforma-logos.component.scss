@@ -175,6 +175,205 @@ $superficie: $text-light;
   }
 }
 
+// ------------------------------------------------------------------ color (8b-T)
+
+.bloque-color {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'campo vista acciones'
+    'estado estado estado';
+  align-items: start;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid $borde-suave;
+
+  > .nota,
+  > .error-color {
+    grid-area: estado;
+  }
+}
+
+.campo-color {
+  grid-area: campo;
+  min-width: 0;
+}
+
+.etiqueta-color {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.entrada-color {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selector-color {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 3px;
+  border: 1px solid $borde;
+  border-radius: 8px;
+  background: $superficie;
+  cursor: pointer;
+  @include foco-visible;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.color-texto {
+  width: 8.5rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid $borde;
+  border-radius: 8px;
+  background: $superficie;
+  color: $text-dark;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  @include foco-visible;
+
+  &::placeholder {
+    color: $text-muted;
+    opacity: 1;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: color.scale($danger-color, $lightness: -25%);
+  }
+}
+
+.vista-color {
+  grid-area: vista;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+// Imita la cabecera C de DESIGN.md: color de la escuela, logo y nombre a la izquierda, entradas en el secundario.
+.vista-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  height: 3.5rem;
+  padding: 0 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba($text-dark, 0.12);
+}
+
+.vista-logo {
+  flex: none;
+  width: auto;
+  max-width: 4.5rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+.vista-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.vista-entradas {
+  margin-left: auto;
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.razones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-size: 0.88rem;
+  color: $text-dark;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.muestra {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.5rem;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.muestra-tinta {
+  background: $superficie;
+  border: 1px solid $borde;
+}
+
+.nota-ajuste {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  color: $text-muted;
+  font-size: 0.88rem;
+  max-width: 62ch;
+}
+
+.acciones-color {
+  grid-area: acciones;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  // Alineadas con los campos, bajo la etiqueta.
+  padding-top: 1.6rem;
+}
+
+.error-color {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba($danger-color, 0.4);
+  background: rgba($danger-color, 0.08);
+  color: color.scale($danger-color, $lightness: -50%);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .btn-principal,
 .btn-secundario {
   display: inline-flex;
@@ -264,6 +463,52 @@ $superficie: $text-light;
   .vista-previa-fila .btn-secundario {
     min-height: 2.75rem;
     width: 100%;
+  }
+
+  .acciones button,
+  .acciones-color button {
+    min-height: 2.75rem;
+  }
+
+  .bloque-color {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'campo'
+      'vista'
+      'acciones'
+      'estado';
+  }
+
+  .color-texto {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .acciones-color {
+    padding-top: 0;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .vista-entradas {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .bloque-color {
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    grid-template-areas:
+      'campo vista'
+      'acciones acciones'
+      'estado estado';
+  }
+
+  .acciones-color {
+    flex-direction: row;
+    padding-top: 0;
   }
 }
 

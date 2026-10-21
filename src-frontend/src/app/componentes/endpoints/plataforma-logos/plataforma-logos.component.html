@@ -1,7 +1,9 @@
 <section class="plataforma-page">
   <header class="page-header">
-    <h1><i class="bi bi-image" aria-hidden="true"></i> Logo de la escuela</h1>
+    <h1><i class="bi bi-palette" aria-hidden="true"></i> Logo y color</h1>
     <p>El logo sale en los PDF y correos de la escuela. PNG, JPG o SVG, hasta 1 MB.</p>
+    <p>El color tiñe la cabecera y los botones principales del panel nuevo. El texto encima lo elige el sistema para
+      que se lea bien (al menos 4,5:1).</p>
   </header>
 
   @if (cargando) {
@@ -19,7 +21,7 @@
   } @else {
     <ul class="lista-escuelas">
       @for (fila of filas; track trackById($index, fila)) {
-        <li class="escuela" [class.ocupada]="fila.ocupada">
+        <li class="escuela" [class.ocupada]="fila.ocupada" [attr.data-escuela]="fila.escuela.id">
           <div class="miniatura" [class.vacia]="!fila.miniatura">
             @if (fila.miniatura) {
               <img [src]="fila.miniatura" [alt]="'Logo de ' + fila.escuela.nombre" />
@@ -69,6 +71,105 @@
           @if (fila.error) {
             <p class="error-fila" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ fila.error }}</p>
           }
+
+          @let vistaColor = vista(fila);
+          @let idColor = 'color-' + fila.escuela.id;
+          <div class="bloque-color">
+            <div class="campo-color">
+              <label class="etiqueta-color" [for]="idColor">Color (#RRGGBB)</label>
+              <div class="entrada-color">
+                <input
+                  type="color"
+                  class="selector-color"
+                  [value]="valorSelector(fila)"
+                  [disabled]="fila.guardandoColor"
+                  [attr.aria-label]="'Elegir el color de ' + fila.escuela.nombre"
+                  (input)="colorElegido(fila, $event)" />
+                <input
+                  type="text"
+                  class="color-texto"
+                  [id]="idColor"
+                  [value]="fila.color"
+                  [readonly]="fila.guardandoColor"
+                  placeholder="#RRGGBB"
+                  maxlength="7"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  [attr.aria-invalid]="fila.errorColor ? 'true' : null"
+                  [attr.aria-describedby]="fila.errorColor ? idColor + '-error ' + idColor + '-ayuda' : idColor + '-ayuda'"
+                  (input)="colorEscrito(fila, $event)"
+                  (keydown.enter)="guardarColor(fila)" />
+              </div>
+              <p class="nota" [id]="idColor + '-ayuda'">
+                @if (vistaColor.porDefecto) {
+                  Sin color: el panel usa {{ porDefecto }}.
+                } @else if (fila.escuela.colorPrimario) {
+                  Guardado: {{ fila.escuela.colorPrimario }}
+                } @else {
+                  Sin guardar
+                }
+              </p>
+            </div>
+
+            <figure class="vista-color">
+              <div
+                class="vista-cabecera"
+                aria-hidden="true"
+                [style.background-color]="vistaColor.tema.primario"
+                [style.color]="vistaColor.tema.sobrePrimario">
+                @if (fila.miniatura) {
+                  <img class="vista-logo" [src]="fila.miniatura" alt="" />
+                }
+                <span class="vista-nombre">{{ fila.escuela.nombre }}</span>
+                <span class="vista-entradas" [style.color]="vistaColor.tema.sobrePrimario2"><span>Alumnos</span><span>Tesorería</span></span>
+              </div>
+              <figcaption>
+                <span class="visually-hidden">Vista previa de la cabecera del panel de {{ fila.escuela.nombre }}.</span>
+                <ul class="razones">
+                  <li>
+                    <span class="muestra" aria-hidden="true" [style.background-color]="vistaColor.tema.primario" [style.color]="vistaColor.tema.sobrePrimario">Aa</span>
+                    {{ vistaColor.textoBlanco ? 'Texto blanco' : 'Texto oscuro' }} sobre el color: <strong>{{ vistaColor.razonTexto }}</strong>
+                  </li>
+                  <li>
+                    <span class="muestra muestra-tinta" aria-hidden="true" [style.color]="vistaColor.tema.primarioTinta">Aa</span>
+                    Botones y enlaces sobre blanco: <strong>{{ vistaColor.razonTinta }}</strong>
+                  </li>
+                </ul>
+                @if (vistaColor.tema.ajustado) {
+                  <p class="nota-ajuste">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Ni el texto blanco ni el oscuro llegan a 4,5:1 sobre este color: la cabecera usará
+                    {{ vistaColor.tema.primario }}, un poco más oscuro.
+                  </p>
+                }
+              </figcaption>
+            </figure>
+
+            <div class="acciones-color">
+              <button
+                type="button"
+                class="btn-principal"
+                [disabled]="fila.guardandoColor || !hayCambioDeColor(fila)"
+                (click)="guardarColor(fila)">
+                <i class="bi bi-check2" aria-hidden="true"></i> Guardar color
+              </button>
+              @if (fila.escuela.colorPrimario) {
+                <button type="button" class="btn-secundario" [disabled]="fila.guardandoColor" (click)="quitarColor(fila)">
+                  <i class="bi bi-x-lg" aria-hidden="true"></i> Quitar color
+                </button>
+              }
+            </div>
+
+            @if (fila.guardandoColor) {
+              <p class="nota" role="status"><span class="girando" aria-hidden="true"></span> Guardando…</p>
+            }
+            @if (fila.errorColor) {
+              <p class="error-color" role="alert" [id]="idColor + '-error'">
+                <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ fila.errorColor }}
+              </p>
+            }
+          </div>
         </li>
       }
     </ul>

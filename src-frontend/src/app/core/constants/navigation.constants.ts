@@ -184,9 +184,9 @@ export const ADMIN_HEADER_QUICK_LINKS: AdminQuickNavigationItem[] = [
     plataformaOnly: true,
   },
   {
-    label: 'Logo de la escuela',
+    label: 'Logo y color',
     route: '/plataformaLogos',
-    icon: 'bi-image',
+    icon: 'bi-palette',
     plataformaOnly: true,
   },
 ];
