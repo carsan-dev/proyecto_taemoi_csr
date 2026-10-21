@@ -25,6 +25,8 @@ export interface EntradaMenu {
   condicion?: Condicion;
   /** Empieza un grupo con nombre dentro del desplegable (separado de lo anterior). */
   grupo?: string;
+  /** Enlace a la portada pública: navega con `state.verWeb` para que la portada no vuelva al panel. */
+  verWeb?: boolean;
 }
 
 export interface SeccionMenu {
@@ -124,7 +126,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Crear evento', ruta: '/eventosCrear', icono: 'bi-calendar-plus' },
       { etiqueta: 'Configuración', ruta: '/configuracion-sistema', icono: 'bi-sliders', condicion: 'propietario' },
       { etiqueta: 'Registro de acciones', ruta: '/auditoriaSistema', icono: 'bi-journal-text', condicion: 'propietario' },
-      { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web' },
+      { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web', verWeb: true },
       {
         etiqueta: 'Errores de plataforma',
         ruta: '/plataformaErrores',

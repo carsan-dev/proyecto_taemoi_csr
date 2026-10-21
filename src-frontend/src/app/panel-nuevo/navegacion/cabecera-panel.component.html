@@ -43,7 +43,7 @@
                 <div class="pn-menu__titulo" aria-hidden="true">{{ grupo.nombre }}</div>
                 }
                 @for (entrada of grupo.entradas; track entrada.ruta) {
-                <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta"
+                <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined"
                   [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null" (click)="cerrar(false)">
                   <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
                   <span>{{ entrada.etiqueta }}</span>
@@ -84,7 +84,7 @@
           </div>
           <div class="pn-menu__grupo" role="group" aria-label="Panel">
             @for (entrada of cuenta(); track entrada.ruta) {
-            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta"
+            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined"
               [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null" (click)="cerrar(false)">
               <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
               <span>{{ entrada.etiqueta }}</span>
@@ -108,7 +108,7 @@
           <div class="pn-menu__grupo" role="group" aria-label="Legal">
             <div class="pn-menu__titulo" aria-hidden="true">Legal</div>
             @for (entrada of legales; track entrada.ruta) {
-            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" (click)="cerrar(false)">
+            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined" (click)="cerrar(false)">
               <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
               <span>{{ entrada.etiqueta }}</span>
             </a>

@@ -33,7 +33,7 @@
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
+              <a class="nav-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
@@ -136,7 +136,7 @@
       <div class="mobile-header-title" id="mobile-header-title">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
-      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+      <a class="mobile-header-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
         <i class="bi bi-house-door" aria-hidden="true"></i>
         <span>Inicio</span>
@@ -301,7 +301,7 @@
       </a>
     </li>
     <li>
-      <a class="menu-link" [routerLink]="['/']" routerLinkActive="active"
+      <a class="menu-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
         [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
         <i class="bi bi-house-door"></i>
         <span>Inicio</span>
@@ -663,7 +663,7 @@
           </a>
           <ul class="navbar-nav ms-lg-4">
             <li class="nav-item">
-              <a class="nav-link" [routerLink]="['/']" routerLinkActive="active"
+              <a class="nav-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
                 [routerLinkActiveOptions]="{exact: true}">
                 <i class="bi bi-house-door me-1"></i>Inicio
               </a>
@@ -803,7 +803,7 @@
       <div class="mobile-header-title" id="mobile-header-title-user">Navegación</div>
     </div>
     <nav class="mobile-header-nav" aria-label="Navegación principal">
-      <a class="mobile-header-link" [routerLink]="['/']" routerLinkActive="active"
+      <a class="mobile-header-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">
         <i class="bi bi-house-door" aria-hidden="true"></i>
         <span>Inicio</span>

@@ -41,6 +41,9 @@ export class EscaparatePrincipalComponent
 
   usuarioLogueado: boolean = false;
 
+  /** La visita viene de «Ver la web»: el enlace manda `state.verWeb` y no se vuelve al panel. */
+  private verWeb = false;
+
   // Reviews carousel
   currentReview: number = 0;
   totalReviews: number = 10;
@@ -64,6 +67,8 @@ export class EscaparatePrincipalComponent
   ) {}
 
   ngOnInit(): void {
+    const estado = this.router.getCurrentNavigation()?.extras.state ?? globalThis.history?.state;
+    this.verWeb = estado?.['verWeb'] === true;
     this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado) => {
       this.usuarioLogueado = estado;
@@ -331,7 +336,7 @@ export class EscaparatePrincipalComponent
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    if (!this.usuarioLogueado) {
+    if (!this.usuarioLogueado || this.verWeb) {
       return;
     }
     if (!this.debeAutoRedirigirDesdeEscaparate()) {

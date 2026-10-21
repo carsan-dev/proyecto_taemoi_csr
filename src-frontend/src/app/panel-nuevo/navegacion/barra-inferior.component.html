@@ -42,7 +42,7 @@
         <div class="pn-hoja__grupo" role="group" [attr.aria-labelledby]="'pn-mas-' + seccion.id">
           <div class="pn-hoja__titulo" [id]="'pn-mas-' + seccion.id">{{ seccion.etiqueta }}</div>
           @for (entrada of seccion.entradas; track entrada.ruta) {
-          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta"
+          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined"
             [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null">
             <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
             <span>{{ entrada.etiqueta }}</span>
@@ -53,7 +53,7 @@
         <div class="pn-hoja__grupo" role="group" aria-labelledby="pn-mas-legal">
           <div class="pn-hoja__titulo" id="pn-mas-legal">Legal</div>
           @for (entrada of legales; track entrada.ruta) {
-          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta">
+          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined">
             <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
             <span>{{ entrada.etiqueta }}</span>
           </a>
