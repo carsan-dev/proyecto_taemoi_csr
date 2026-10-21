@@ -206,6 +206,7 @@ $superficie: $text-light;
   margin-bottom: 0.35rem;
   font-weight: 600;
   font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .entrada-color {
@@ -262,7 +263,11 @@ $superficie: $text-light;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+
+  // La etiqueta comparte alto y margen con «Color (#RRGGBB)»: la barra arranca a la altura del campo.
+  > figcaption {
+    margin-top: 0.5rem;
+  }
 }
 
 // Imita la cabecera C de DESIGN.md: color de la escuela, logo y nombre a la izquierda, entradas en el secundario.
@@ -356,8 +361,8 @@ $superficie: $text-light;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  // Alineadas con los campos, bajo la etiqueta.
-  padding-top: 1.6rem;
+  // Alineadas con los campos, bajo la etiqueta: su alto (0,9rem x 1,5 de interlineado) más su margen.
+  padding-top: calc(0.9rem * 1.5 + 0.35rem);
 }
 
 .error-color {

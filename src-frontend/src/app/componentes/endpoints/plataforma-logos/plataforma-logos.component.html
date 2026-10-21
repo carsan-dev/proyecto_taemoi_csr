@@ -112,7 +112,8 @@
               </p>
             </div>
 
-            <figure class="vista-color">
+            <figure class="vista-color" [attr.aria-labelledby]="idColor + '-vista'">
+              <span class="etiqueta-color" [id]="idColor + '-vista'">Vista previa</span>
               <div
                 class="vista-cabecera"
                 aria-hidden="true"
