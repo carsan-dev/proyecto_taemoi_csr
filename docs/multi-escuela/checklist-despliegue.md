@@ -198,6 +198,11 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       contraseña; pendiente conocido del dominio único). Prueba manual en la escuela de pruebas con un email ficticio
       propio: invitar desde «Profesores», que llegue el correo con la marca de esa escuela, crear la contraseña con el
       enlace (entra en esa escuela) y que el enlace ya no sirva una segunda vez.
+- [ ] E8b, pieza 8b-1 (base del panel nuevo; decisión 255): sin migración → atajo `desplegar`. Cambia el CSS global
+      de todos (fuera el tema de Angular Material) sin cambiar nada visible. Comprobar en el móvil portada, login,
+      área de familias y panel (Alumnos, Tesorería, Mi caja) como antes, y que
+      `curl -sI https://moiskimdo.es/panel-nuevo.css` responde 200 con `Cache-Control: no-cache` y las cabeceras de
+      seguridad (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy).
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.
