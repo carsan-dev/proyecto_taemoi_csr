@@ -1,4 +1,4 @@
-import { eur, fecha, mes, numero, plural } from './formato-es';
+import { agruparMiles, eur, fecha, mes, numero, plural } from './formato-es';
 
 describe('formato-es', () => {
   const NBSP = ' ';
@@ -48,5 +48,49 @@ describe('formato-es', () => {
   it('fecha escribe día/mes/año con ceros y no desplaza el día de una fecha ISO', () => {
     expect(fecha(new Date(2026, 2, 5))).toBe('05/03/2026');
     expect(fecha('2026-10-01')).toBe('01/10/2026');
+  });
+
+  it('eur normaliza el cero negativo tras redondear a céntimos', () => {
+    expect(eur(-0.001)).toBe(`0,00${NBSP}€`);
+    expect(eur(-0)).toBe(`0,00${NBSP}€`);
+    expect(eur(-0.004)).toBe(`0,00${NBSP}€`);
+    expect(eur(-0.01)).toBe(`-0,01${NBSP}€`);
+  });
+
+  it('numero normaliza el cero negativo', () => {
+    expect(numero(-0)).toBe('0');
+  });
+
+  it('numero agrupa los negativos', () => {
+    expect(numero(-1044)).toBe('-1.044');
+  });
+
+  it('plural con NaN o no finito devuelve cadena vacía', () => {
+    expect(plural(Number.NaN, 'clase', 'clases')).toBe('');
+    expect(plural(Number.POSITIVE_INFINITY, 'clase', 'clases')).toBe('');
+    expect(plural(Number.NEGATIVE_INFINITY, 'clase', 'clases')).toBe('');
+  });
+
+  it('fecha y mes devuelven cadena vacía sin valor o con fecha inválida en lugar de lanzar', () => {
+    for (const invalido of [null, undefined, '', 'no es una fecha', new Date(Number.NaN)]) {
+      expect(fecha(invalido)).toBe('');
+      expect(mes(invalido)).toBe('');
+    }
+  });
+
+  describe('agruparMiles', () => {
+    it('agrupa de tres en tres con punto', () => {
+      expect(agruparMiles('0')).toBe('0');
+      expect(agruparMiles('999')).toBe('999');
+      expect(agruparMiles('1000')).toBe('1.000');
+      expect(agruparMiles('1044')).toBe('1.044');
+      expect(agruparMiles('12345')).toBe('12.345');
+      expect(agruparMiles('1234567')).toBe('1.234.567');
+    });
+
+    it('conserva el signo menos', () => {
+      expect(agruparMiles('-1044')).toBe('-1.044');
+      expect(agruparMiles('-999')).toBe('-999');
+    });
   });
 });

@@ -243,6 +243,8 @@ los menús desplegables y la barra inferior: una sombra para menús (`0 6px 20px
 `0 2px 4px` al 6 %) y otra hacia arriba para la barra. El carnet lleva una sombra mínima de tarjeta
 (`0 1px 2px` al 5 % y `0 3px 10px -4px` al 10 %).
 
+**Barra inferior** (token `--pn-sombra-barra`): `0 -6px 20px -8px` de la tinta al 22 %, más `0 -2px 4px` al 6 %, ambas hacia arriba.
+
 **The Dos Sombras Rule.** Hay dos sombras en todo el panel (menú y carnet) más la de la barra inferior. Una tercera
 pide una decisión, no un retoque.
 

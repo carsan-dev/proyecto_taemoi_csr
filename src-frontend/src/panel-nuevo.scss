@@ -1,6 +1,7 @@
 // Hoja global del panel nuevo (E8b). Fuente de verdad: DESIGN.md (raíz); cualquier cambio de token pasa antes por él.
 // Se compila aparte (angular.json, inject: false) y la carga EstilosPanelService al entrar en el panel nuevo.
-// Nada de esto va en :root ni en el bundle inicial: todo cuelga de la raíz .pn con especificidad 0.
+// Nada de esto va en :root ni en el bundle inicial: todo cuelga de la raíz .pn. :where(.pn) no suma especificidad, así que
+// cualquier regla de una pantalla pisa la base; solo el foco suma la de su pseudoclase :focus-visible (0,1,0).
 
 // Montserrat del panel lleva otro nombre de familia para no tocar la Montserrat 400/700 de la web pública
 // y de las pantallas de hoy. Las rutas son absolutas (font-src 'self' en producción).
@@ -146,6 +147,13 @@
 :where(.pn) *::before,
 :where(.pn) *::after {
   box-sizing: border-box;
+}
+
+// styles.scss declara `* { font-family: Montserrat }`, que da Montserrat a cada elemento por sí mismo y corta la herencia
+// desde .pn. Esta regla (especificidad 0, y la hoja se carga después) hace que los descendientes vuelvan a heredar.
+// Los iconos .bi no se ven afectados: su fuente va en .bi::before, que `:where(*)` no alcanza.
+:where(.pn) :where(*) {
+  font-family: inherit;
 }
 
 // Cifras tabulares en importes, contadores y horas.
