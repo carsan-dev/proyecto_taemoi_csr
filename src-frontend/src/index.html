@@ -19,7 +19,19 @@
     onerror="window.__gtagLoaded = false; window.__gtagLoadFailed = true;"></script>
   <script>
     gtag('js', new Date());
-    gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true, send_page_view: false });
+    // gtag.js usa este page_location en sus eventos automáticos (también sin consentimiento): va sin el token de los
+    // enlaces de contraseña o invitación. Misma regla que urlSinToken (src/app/utils/analitica.util.ts).
+    (function () {
+      var pagina;
+      try {
+        var url = new URL(location.href);
+        url.searchParams.delete('token');
+        pagina = url.toString();
+      } catch (e) {
+        pagina = location.href.split(/[?#]/)[0];
+      }
+      gtag('config', 'G-R3H7GC1T4X', { anonymize_ip: true, send_page_view: false, page_location: pagina });
+    })();
   </script>
   <meta charset="utf-8">
   <title>Moi's Kim Do Umbrete | Taekwondo, Kickboxing, Pilates y Defensa Personal</title>
