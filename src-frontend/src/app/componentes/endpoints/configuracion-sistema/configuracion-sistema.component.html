@@ -148,7 +148,7 @@
                   <td>
                     <span class="email-text">{{ usuario.email }}</span>
                   </td>
-                  <td>
+                  <td data-label="Roles actuales">
                     <div class="roles-badges">
                       @for (role of getCurrentRoles(usuario); track role) {
                       <span class="role-badge" [ngClass]="getRoleBadgeClass(role)">
@@ -157,7 +157,7 @@
                       }
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Asignar roles">
                     <div class="roles-checkboxes">
                       <div class="role-checkbox-item">
                         <input type="checkbox" [id]="'user-' + usuario.id"
@@ -188,7 +188,7 @@
                       </div>
                     </div>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center roles-acciones">
                     <div class="action-buttons">
                       <button type="button" class="admin-btn admin-btn-primary admin-btn-sm" (click)="guardarCambios(usuario)"
                         [disabled]="!hasChanges(usuario)">

@@ -224,3 +224,56 @@
     width: 100%;
   }
 }
+
+// Decisión 235: a 375 px la tabla de roles (5 columnas) se desplazaba dentro de su contenedor y «Guardar» quedaba
+// cortado. En pantallas estrechas cada usuario se apila en un bloque y los botones ocupan el ancho; desde 577 px la
+// tabla es la de siempre.
+@media (max-width: 576px) {
+  .admin-table {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tr,
+    td {
+      display: block;
+      width: 100%;
+    }
+
+    tr {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    td {
+      padding: 0.35rem 0.25rem;
+      border: 0;
+      text-align: left;
+    }
+
+    td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #6c757d;
+    }
+  }
+
+  .email-text {
+    overflow-wrap: anywhere;
+  }
+
+  .roles-acciones .action-buttons {
+    justify-content: stretch;
+
+    .admin-btn {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
+}
