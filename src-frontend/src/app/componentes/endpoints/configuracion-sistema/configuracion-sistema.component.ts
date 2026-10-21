@@ -224,8 +224,11 @@ export class ConfiguracionSistemaComponent implements OnInit {
             showSuccessToast('Los roles del usuario se han actualizado correctamente.');
             this.cargarUsuarios();
           },
-          error: () => {
-            showErrorToast('No se pudieron actualizar los roles del usuario.');
+          error: (error) => {
+            this.rolesSeleccionados.set(usuario.id, this.parseRoles(usuario.rol));
+            showErrorToast(
+              error?.error?.mensaje || 'No se pudieron actualizar los roles del usuario.'
+            );
           },
         });
       }

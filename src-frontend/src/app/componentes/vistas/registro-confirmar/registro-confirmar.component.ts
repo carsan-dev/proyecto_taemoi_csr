@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
+
+const RUTA = '/registro-confirmar';
 
 @Component({
   selector: 'app-registro-confirmar',
@@ -18,11 +20,16 @@ export class RegistroConfirmarComponent implements OnInit {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
+    // Fuera de la barra al momento y también del estado del router, como en «Nueva contraseña»: los eventos
+    // automáticos de la analítica toman la URL del documento.
+    this.location.replaceState(RUTA);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
     if (!token) {
       this.estado = 'invalid';
       this.mensajeError = 'El enlace no es válido o ha caducado.';

@@ -3,14 +3,18 @@ package com.taemoi.project.servicios;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
@@ -21,8 +25,10 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.services.impl.ImagenServiceImpl;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 class ImagenServiceImplTest {
 
@@ -100,6 +106,72 @@ class ImagenServiceImplTest {
 		Imagen maliciosa = new Imagen("x.webp", "image/webp", null, "../fuera.webp");
 		assertNull(imagenService.resolverRutaArchivo(maliciosa));
 		assertThrows(IllegalArgumentException.class, () -> imagenService.eliminarImagenDeSistema(maliciosa));
+	}
+
+	@Test
+	void guardarImagenes_rechazanHeicPorExtensionOTipoSinEscribirNada() throws Exception {
+		byte[] contenido = new byte[] { 0, 0, 0, 24, 'f', 't', 'y', 'p', 'h', 'e', 'i', 'c' };
+		ArchivoNoValidoException alumno = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagen(new MockMultipartFile("file", "IMG_0001.HEIC", "application/octet-stream", contenido)));
+		ArchivoNoValidoException evento = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagenEvento(new MockMultipartFile("file", "cartel.jpg", "image/heif", contenido)));
+
+		assertEquals(DocumentoSecurityUtils.MENSAJE_HEIC, alumno.getMessage());
+		assertEquals(DocumentoSecurityUtils.MENSAJE_HEIC, evento.getMessage());
+		assertFalse(Files.exists(tempDir.resolve("org-1")), "No debe crear carpetas ni ficheros");
+	}
+
+	@Test
+	void guardarImagenes_conContenidoQueNoEsImagenLanzanArgumentoInvalido() {
+		byte[] noImagen = "MZ esto no es una imagen".getBytes();
+		ArchivoNoValidoException alumno = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagen(new MockMultipartFile("file", "foto.jpg", "image/jpeg", noImagen)));
+		ArchivoNoValidoException evento = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagenEvento(new MockMultipartFile("file", "cartel.png", "image/png", noImagen)));
+
+		assertEquals("No se pudo leer la imagen del alumno.", alumno.getMessage());
+		assertEquals("No se pudo leer la imagen del evento.", evento.getMessage());
+	}
+
+	@Test
+	void errorDeEntradaSalidaDelServidorAlDecodificarSigueSiendoIOException() {
+		IOException disco = new IOException("No queda espacio en el dispositivo");
+		ImagenServiceImpl conDiscoRoto = decodificadorQueLanza(new IIOException("Can't create cache file!", disco));
+
+		IOException alumno = assertThrows(IOException.class, () -> conDiscoRoto
+				.guardarImagen(new MockMultipartFile("file", "foto.png", "image/png", crearPng())));
+		IOException evento = assertThrows(IOException.class, () -> conDiscoRoto
+				.guardarImagenEvento(new MockMultipartFile("file", "cartel.png", "image/png", crearPng())));
+
+		assertSame(disco, alumno.getCause());
+		assertSame(disco, evento.getCause());
+	}
+
+	@Test
+	void imagenDanadaAlDecodificarEsArchivoNoValido() {
+		ImagenServiceImpl sinCausa = decodificadorQueLanza(new IIOException("Unsupported Image Type"));
+		ImagenServiceImpl truncada = decodificadorQueLanza(
+				new IIOException("Error reading", new java.io.EOFException()));
+		ImagenServiceImpl anidada = decodificadorQueLanza(
+				new IIOException("Error reading", new IIOException("Bogus marker length")));
+
+		for (ImagenServiceImpl servicio : new ImagenServiceImpl[] { sinCausa, truncada, anidada }) {
+			ArchivoNoValidoException error = assertThrows(ArchivoNoValidoException.class, () -> servicio
+					.guardarImagen(new MockMultipartFile("file", "foto.jpg", "image/jpeg", new byte[] { 1 })));
+			assertEquals("No se pudo leer la imagen del alumno.", error.getMessage());
+		}
+	}
+
+	private ImagenServiceImpl decodificadorQueLanza(IIOException error) {
+		ImagenServiceImpl servicio = new ImagenServiceImpl() {
+			@Override
+			protected BufferedImage decodificar(InputStream entrada) throws IOException {
+				throw error;
+			}
+		};
+		ReflectionTestUtils.setField(servicio, "directorioImagenesLinux", tempDir.toString());
+		ReflectionTestUtils.setField(servicio, "directorioImagenesWindows", tempDir.toString());
+		return servicio;
 	}
 
 	private byte[] crearPng() {

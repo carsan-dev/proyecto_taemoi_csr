@@ -151,6 +151,30 @@ $superficie: $text-light;
   font-size: 0.9rem;
 }
 
+.vista-previa-fila {
+  // Fila propia bajo el error: si coinciden los dos estados no se pisan.
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba($warning-color, 0.5);
+  background: rgba($warning-color, 0.1);
+  color: color.scale($warning-color, $lightness: -60%);
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  p {
+    margin: 0;
+    flex: 1 1 14rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
 .btn-principal,
 .btn-secundario {
   display: inline-flex;
@@ -234,6 +258,12 @@ $superficie: $text-light;
     button {
       width: 100%;
     }
+  }
+
+  // Objetivo táctil de 44 px en el móvil.
+  .vista-previa-fila .btn-secundario {
+    min-height: 2.75rem;
+    width: 100%;
   }
 }
 

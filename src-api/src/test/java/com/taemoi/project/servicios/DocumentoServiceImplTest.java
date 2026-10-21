@@ -26,6 +26,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Documento;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.ConsentimientoRepository;
 import com.taemoi.project.repositories.DocumentoRepository;
@@ -230,6 +231,21 @@ class DocumentoServiceImplTest {
 				"<script>alert('xss')</script>".getBytes());
 
 		assertThrows(IllegalArgumentException.class, () -> documentoService.guardarDocumentoEvento(evento, archivo));
+	}
+
+	@Test
+	void guardarDocumentos_vacioOConTipoNoPermitidoSonArchivoNoValido() {
+		Alumno alumno = new Alumno();
+		alumno.setId(3L);
+		Evento evento = new Evento();
+		evento.setId(9L);
+		MultipartFile vacio = new MockMultipartFile("archivo", "dni.pdf", "application/pdf", new byte[0]);
+		MultipartFile exe = new MockMultipartFile("archivo", "programa.exe", "application/octet-stream",
+				new byte[] { 'M', 'Z' });
+
+		assertThrows(ArchivoNoValidoException.class, () -> documentoService.guardarDocumento(alumno, vacio));
+		assertThrows(ArchivoNoValidoException.class, () -> documentoService.guardarDocumentoEvento(evento, vacio));
+		assertThrows(ArchivoNoValidoException.class, () -> documentoService.guardarDocumento(alumno, exe));
 	}
 
 	@Test

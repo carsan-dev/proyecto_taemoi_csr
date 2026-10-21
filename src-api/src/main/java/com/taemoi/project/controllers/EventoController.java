@@ -21,6 +21,8 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -52,6 +54,7 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Roles;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.DocumentoService;
@@ -62,6 +65,8 @@ import com.taemoi.project.utils.DocumentoSecurityUtils;
 @RestController
 @RequestMapping("/api/eventos")
 public class EventoController {
+
+	private static final Logger logger = LoggerFactory.getLogger(EventoController.class);
 
 	private static final int MIN_ANCHO_IMAGEN = 160;
 	private static final int MAX_ANCHO_IMAGEN = 2200;
@@ -128,7 +133,13 @@ public class EventoController {
 
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (ArchivoNoValidoException e) {
+			// Imagen no válida (HEIC, no es una imagen): 400 con el motivo.
+			avisarArchivoRechazado("Imagen de evento rechazada (alta)", null, file, e);
+			return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
 		} catch (Exception e) {
+			logger.error("Error al crear evento: ext={} contentType={} causa={}", extensionParaLog(file),
+					contentTypeParaLog(file), causa(e));
 			return new ResponseEntity<>("Error interno al guardar el evento.", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -155,7 +166,13 @@ public class EventoController {
 
 		} catch (IOException e) {
 			return new ResponseEntity<>("Error al procesar la solicitud", HttpStatus.BAD_REQUEST);
+		} catch (ArchivoNoValidoException e) {
+			// Imagen no válida (HEIC, no es una imagen): 400 con el motivo.
+			avisarArchivoRechazado("Imagen de evento rechazada (edición)", id, file, e);
+			return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
 		} catch (Exception e) {
+			logger.error("Error al actualizar evento: eventoId={} ext={} contentType={} causa={}", id,
+					extensionParaLog(file), contentTypeParaLog(file), causa(e));
 			return new ResponseEntity<>("Error interno al actualizar el evento.", HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -382,10 +399,47 @@ public class EventoController {
 		} catch (EventoNoEncontradoException e) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(Map.of("error", "El evento no fue encontrado."));
+		} catch (ArchivoNoValidoException e) {
+			// Fichero no válido (tipo, extensión, HEIC, vacío): 400 con el motivo. Sin nombre del fichero en el log.
+			// Otro argumento inválido sigue a GlobalExceptionHandler (el mismo 400 con «mensaje», sin este aviso).
+			avisarArchivoRechazado("Documento de evento rechazado", eventoId, archivo, e);
+			return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
 		} catch (IOException e) {
+			// Sin el mensaje: puede llevar la ruta y el nombre del fichero.
+			logger.error("Error al guardar documento de evento: eventoId={} ext={} contentType={} causa={}", eventoId,
+					extensionParaLog(archivo), contentTypeParaLog(archivo), causa(e));
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("error", "Error al guardar el documento: " + e.getMessage()));
+					.body(Map.of("error", "Error al guardar el documento."));
 		}
+	}
+
+	private static void avisarArchivoRechazado(String que, Long eventoId, MultipartFile archivo,
+			IllegalArgumentException e) {
+		logger.warn("{}: eventoId={} ext={} contentType={} motivo={}", que, eventoId, extensionParaLog(archivo),
+				contentTypeParaLog(archivo), e.getMessage());
+	}
+
+	private static String extensionParaLog(MultipartFile archivo) {
+		return DocumentoSecurityUtils.extensionParaLog(archivo != null ? archivo.getOriginalFilename() : null);
+	}
+
+	private static String contentTypeParaLog(MultipartFile archivo) {
+		return DocumentoSecurityUtils.contentTypeParaLog(archivo != null ? archivo.getContentType() : null);
+	}
+
+	/** Motivo del rechazo para el cuerpo {@code {"mensaje": …}}; nunca nulo. */
+	private static String motivo(IllegalArgumentException e) {
+		return e.getMessage() != null ? e.getMessage() : "Solicitud no válida.";
+	}
+
+	/** Clase de la excepción y de su causa raíz, para el log sin mensajes (pueden llevar rutas o nombres). */
+	private static String causa(Throwable e) {
+		Throwable raiz = e;
+		while (raiz.getCause() != null && raiz.getCause() != raiz) {
+			raiz = raiz.getCause();
+		}
+		return raiz == e ? e.getClass().getSimpleName()
+				: e.getClass().getSimpleName() + " <- " + raiz.getClass().getSimpleName();
 	}
 
 	@DeleteMapping("/{eventoId}/documentos/{documentoId}")

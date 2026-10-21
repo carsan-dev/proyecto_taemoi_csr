@@ -1,9 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
+
+const RUTA = '/reset-password';
 
 @Component({
   selector: 'app-reset-password',
@@ -22,11 +24,16 @@ export class ResetPasswordComponent implements OnInit {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly authService: AuthenticationService
+    private readonly authService: AuthenticationService,
+    private readonly location: Location
   ) {}
 
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token');
+    // Fuera de la barra al momento y también del estado del router, como en «Crea tu contraseña»: los eventos
+    // automáticos de la analítica (formularios, scroll) toman la URL del documento.
+    this.location.replaceState(RUTA);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
   }
 
   get tipoContrasena(): string {

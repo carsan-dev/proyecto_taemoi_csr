@@ -20,6 +20,7 @@ import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.MarcaEscuelaService;
+import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 /**
  * Pieza E7-7a (decisión 212): el logo de una escuela, que sube o quita el superadmin. Es su ÚNICA escritura dentro de
@@ -75,6 +76,8 @@ public class LogoEscuelaService {
 		if (archivo == null || archivo.isEmpty()) {
 			throw new IllegalArgumentException("Falta el fichero del logo.");
 		}
+		// Decisión 227: HEIC/HEIF se rechaza con el mensaje de convertir a JPG (no se convierte).
+		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
 		if (archivo.getSize() > LogoEscuelaProcesador.TAMANO_MAXIMO) {
 			throw new IllegalArgumentException(
 					"El logo no puede superar " + (LogoEscuelaProcesador.TAMANO_MAXIMO / 1024) + " KB.");

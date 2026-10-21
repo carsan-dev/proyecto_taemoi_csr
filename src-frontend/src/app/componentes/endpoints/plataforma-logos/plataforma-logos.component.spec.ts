@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Subject, of, throwError } from 'rxjs';
+import { Subject, defer, of, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { EscuelaLogo } from '../../../interfaces/escuela-logo';
@@ -24,12 +24,17 @@ describe('PlataformaLogosComponent', () => {
   const boton = (fila: HTMLElement, etiqueta: string): HTMLButtonElement | undefined =>
     Array.from(fila.querySelectorAll('button')).find((b) => b.textContent!.includes(etiqueta)) as HTMLButtonElement | undefined;
 
-  function elegir(fila: HTMLElement, archivo: File): void {
+  /** El componente copia el archivo en memoria antes de enviarlo: se espera a que termine. */
+  async function elegir(fila: HTMLElement, archivo: File): Promise<void> {
+    const espia = jasmine.isSpy(componente.elegido)
+      ? (componente.elegido as jasmine.Spy)
+      : spyOn(componente, 'elegido').and.callThrough();
     const entrada = fila.querySelector('input[type=file]') as HTMLInputElement;
     const lista = new DataTransfer();
     lista.items.add(archivo);
     entrada.files = lista.files;
     entrada.dispatchEvent(new Event('change'));
+    await espia.calls.mostRecent().returnValue;
     fixture.detectChanges();
   }
 
@@ -157,16 +162,20 @@ describe('PlataformaLogosComponent', () => {
     expect(accept).toBe('.png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml');
   });
 
-  it('sube el archivo, desactiva el botón mientras tanto y refresca la miniatura revocando la anterior', () => {
+  it('sube el archivo, desactiva el botón mientras tanto y refresca la miniatura revocando la anterior', async () => {
     const envio = new Subject<EscuelaLogo>();
     servicio.subir.and.returnValue(envio);
 
     const antes = creadas.length;
     const anterior = componente.filas[1].miniatura!;
     const archivo = png();
-    elegir(filas()[1], archivo);
+    await elegir(filas()[1], archivo);
 
-    expect(servicio.subir).toHaveBeenCalledWith(2, archivo);
+    expect(servicio.subir).toHaveBeenCalledWith(2, jasmine.any(File));
+    const enviado = servicio.subir.calls.mostRecent().args[1];
+    expect(enviado).not.toBe(archivo);
+    expect(enviado.name).toBe('logo.png');
+    expect(enviado.size).toBe(archivo.size);
     expect(boton(filas()[1], 'Cambiar logo')!.disabled).toBeTrue();
     expect(filas()[1].textContent).toContain('Guardando');
 
@@ -180,40 +189,48 @@ describe('PlataformaLogosComponent', () => {
     expect(componente.filas[1].miniatura).toBe(creadas[creadas.length - 1]);
   });
 
-  it('subir a una escuela sin logo muestra la miniatura nueva', () => {
+  it('subir a una escuela sin logo muestra la miniatura nueva', async () => {
     servicio.subir.and.returnValue(of({ ...sin, tieneLogo: true }));
-    elegir(filas()[2], png());
+    await elegir(filas()[2], png());
     expect(servicio.logo).toHaveBeenCalledWith(3);
     expect(filas()[2].querySelector('img')).not.toBeNull();
     expect(boton(filas()[2], 'Quitar logo')).toBeDefined();
   });
 
-  it('un 400 muestra el mensaje del backend en la fila y no toca el logo', () => {
+  it('un 400 muestra el mensaje del backend en la fila y no toca el logo', async () => {
     servicio.subir.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 400, error: { mensaje: 'El SVG contiene contenido no permitido' } }))
     );
-    elegir(filas()[2], png());
+    await elegir(filas()[2], png());
     expect(filas()[2].querySelector('[role=alert]')!.textContent).toContain('El SVG contiene contenido no permitido');
     expect(boton(filas()[2], 'Subir logo')!.disabled).toBeFalse();
     expect(filas()[2].querySelector('img')).toBeNull();
   });
 
-  it('un 409 muestra el mensaje del backend', () => {
+  it('un 409 muestra el mensaje del backend', async () => {
     servicio.subir.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 409, error: { mensaje: 'Esta escuela tiene la marca de la plataforma' } }))
     );
-    elegir(filas()[1], png());
+    await elegir(filas()[1], png());
     expect(filas()[1].querySelector('[role=alert]')!.textContent).toContain('Esta escuela tiene la marca de la plataforma');
   });
 
-  it('un 404 sin cuerpo usa un texto por defecto', () => {
+  it('un 404 sin cuerpo usa un texto por defecto', async () => {
     servicio.subir.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-    elegir(filas()[1], png());
+    await elegir(filas()[1], png());
     expect(filas()[1].querySelector('[role=alert]')!.textContent).toContain('No se pudo subir el logo');
   });
 
-  it('un archivo de más de 1 MB no se envía y avisa', () => {
-    elegir(filas()[2], png(LOGO_MAX_BYTES + 1));
+  it('un archivo que no se puede leer no se envía y avisa del motivo en la fila', async () => {
+    const archivo = png();
+    spyOn(archivo, 'arrayBuffer').and.rejectWith(new DOMException('no legible', 'NotReadableError'));
+    await elegir(filas()[2], archivo);
+    expect(servicio.subir).not.toHaveBeenCalled();
+    expect(filas()[2].querySelector('[role=alert]')!.textContent).toContain('No se pudo leer el archivo');
+  });
+
+  it('un archivo de más de 1 MB no se envía y avisa', async () => {
+    await elegir(filas()[2], png(LOGO_MAX_BYTES + 1));
     expect(servicio.subir).not.toHaveBeenCalled();
     expect(filas()[2].querySelector('[role=alert]')!.textContent).toContain('más de 1 MB');
   });
@@ -277,5 +294,117 @@ describe('PlataformaLogosComponent', () => {
     boton(fixture.nativeElement, 'Reintentar')!.click();
     fixture.detectChanges();
     expect(filas().length).toBe(1);
+  });
+
+  describe('miniatura tras subir', () => {
+    const blob = () => new Blob(['x'], { type: 'image/png' });
+    const caida = (estado: number) => new HttpErrorResponse({ status: estado });
+    /** Cada suscripción consume un resultado: Error falla, Blob responde. */
+    const secuencia = (...pasos: Array<number | Blob>) => {
+      let i = 0;
+      return defer(() => {
+        const paso = pasos[Math.min(i++, pasos.length - 1)];
+        return paso instanceof Blob ? of(paso) : throwError(() => caida(paso));
+      });
+    };
+    /** Texto del aviso de arriba (toast) si hay uno visible. */
+    const aviso = (): string => (Swal.isVisible() ? Swal.getTitle()?.textContent ?? '' : '');
+    const subirEn2 = async (): Promise<void> => {
+      servicio.subir.and.returnValue(of(con));
+      await elegir(filas()[1], png());
+    };
+
+    const limpiarAvisos = (): void => {
+      Swal.close();
+      document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+    };
+    /** Reloj simulado: la espera del reintento se salta con tick, sin esperar de verdad. */
+    const tick = (ms = 1500): void => {
+      jasmine.clock().tick(ms);
+      fixture.detectChanges();
+    };
+    beforeEach(() => {
+      limpiarAvisos();
+      jasmine.clock().install();
+    });
+    afterEach(() => {
+      jasmine.clock().uninstall();
+      limpiarAvisos();
+    });
+
+    it('una caída de red (estado 0) en la miniatura se reintenta sola y no avisa de error', async () => {
+      let suscripciones = 0;
+      const base = secuencia(0, blob());
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return base; }));
+      await subirEn2();
+      expect(suscripciones).toBe(1); // sin tick no hay segunda petición
+      tick(1499);
+      expect(suscripciones).toBe(1);
+      tick(1);
+      expect(suscripciones).toBe(2);
+      expect(aviso()).not.toContain('No se pudo');
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+      expect(texto()).not.toContain('no se pudo mostrar la vista previa');
+    });
+
+    it('si falla dos veces, la fila dice que el logo está guardado, sin aviso de arriba, y «Reintentar» pinta la miniatura', async () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      await subirEn2();
+      tick();
+      expect(aviso()).not.toContain('No se pudo');
+      expect(filas()[1].textContent).toContain('Logo guardado; no se pudo mostrar la vista previa');
+      expect(filas()[1].querySelector('img')).toBeNull();
+
+      servicio.logo.and.returnValue(secuencia(blob()));
+      boton(filas()[1], 'Reintentar')!.click();
+      fixture.detectChanges();
+      tick();
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+      expect(filas()[1].textContent).not.toContain('no se pudo mostrar la vista previa');
+      expect(boton(filas()[1], 'Reintentar')).toBeUndefined();
+    });
+
+    it('si la fila está sin vista previa y falla otra subida, ambos avisos existen a la vez', async () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      await subirEn2();
+      tick();
+      servicio.subir.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { mensaje: 'Formato no permitido' } })));
+      await elegir(filas()[1], png());
+      expect(filas()[1].querySelector('.vista-previa-fila')).not.toBeNull();
+      expect(filas()[1].querySelector('.error-fila')).not.toBeNull();
+    });
+
+    it('si se destruye durante la espera del reintento no se hace la segunda petición', async () => {
+      let suscripciones = 0;
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return throwError(() => caida(0)); }));
+      await subirEn2();
+      expect(suscripciones).toBe(1);
+      fixture.destroy();
+      tick(1500);
+      expect(suscripciones).toBe(1);
+    });
+
+    it('un 5xx también se reintenta una vez', async () => {
+      servicio.logo.and.returnValue(secuencia(503, blob()));
+      await subirEn2();
+      tick();
+      expect(filas()[1].querySelector('img')).not.toBeNull();
+    });
+
+    it('un 4xx no se reintenta', async () => {
+      let suscripciones = 0;
+      servicio.logo.and.returnValue(defer(() => { suscripciones++; return throwError(() => caida(403)); }));
+      await subirEn2();
+      expect(suscripciones).toBe(1);
+    });
+
+    it('en la carga inicial, si falla dos veces conserva el aviso de arriba', () => {
+      servicio.logo.and.returnValue(secuencia(0, 0));
+      componente.cargar();
+      fixture.detectChanges();
+      tick();
+      expect(aviso()).toBe('No se pudo cargar el logo de Escuela Norte');
+      expect(texto()).not.toContain('Logo guardado');
+    });
   });
 });

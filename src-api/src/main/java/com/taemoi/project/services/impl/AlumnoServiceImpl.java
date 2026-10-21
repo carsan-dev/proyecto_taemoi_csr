@@ -804,16 +804,23 @@ public class AlumnoServiceImpl implements AlumnoService {
 						alumnoExistente.setFotoAlumno(null); // Remover referencia de la imagen
 					}
 				} else if (nuevaImagen != null && !nuevaImagen.isEmpty()) {
-					// Si hay una nueva imagen, reemplazar la imagen existente
+					// Primero se guarda la nueva: si no vale (HEIC, no es una imagen), el alumno conserva la anterior.
+					Imagen nuevaImagenGuardada = imagenService.guardarImagen(nuevaImagen);
+
+					// Reemplazar la imagen existente
 					Imagen imagenAnterior = alumnoExistente.getFotoAlumno();
 					if (imagenAnterior != null) {
-						// Eliminar la imagen anterior
-						imagenService.eliminarImagenDeSistema(imagenAnterior);
-						imagenRepository.delete(imagenAnterior);
+						try {
+							// Eliminar la imagen anterior
+							imagenService.eliminarImagenDeSistema(imagenAnterior);
+							imagenRepository.delete(imagenAnterior);
+						} catch (RuntimeException e) {
+							// No se pudo quitar la anterior: se deshace la nueva para no dejarla huérfana.
+							descartarImagenNueva(nuevaImagenGuardada, e);
+							throw e;
+						}
 					}
 
-					// Guardar la nueva imagen y asignarla al alumno
-					Imagen nuevaImagenGuardada = imagenService.guardarImagen(nuevaImagen);
 					alumnoExistente.setFotoAlumno(nuevaImagenGuardada);
 				}
 			} catch (IOException e) {
@@ -824,6 +831,22 @@ public class AlumnoServiceImpl implements AlumnoService {
 			return alumnoRepository.save(alumnoExistente);
 		} else {
 			throw new RuntimeException("No se encontro el alumno con ID: " + id);
+		}
+	}
+
+	/** Borra la imagen recién guardada (fichero y, si ya tiene fila, la fila); sus fallos quedan como suprimidos. */
+	private void descartarImagenNueva(Imagen nueva, RuntimeException causa) {
+		try {
+			imagenService.eliminarImagenDeSistema(nueva);
+		} catch (RuntimeException e) {
+			causa.addSuppressed(e);
+		}
+		if (nueva.getId() != null) {
+			try {
+				imagenRepository.delete(nueva);
+			} catch (RuntimeException e) {
+				causa.addSuppressed(e);
+			}
 		}
 	}
 

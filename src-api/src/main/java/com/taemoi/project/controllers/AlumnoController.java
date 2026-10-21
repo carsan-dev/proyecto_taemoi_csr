@@ -84,6 +84,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
@@ -493,7 +494,14 @@ public class AlumnoController {
 
 			// Si se proporciona un archivo de imagen, guardar la imagen
 			if (file != null && !file.isEmpty()) {
-				Imagen img = imagenService.guardarImagen(file); // Guardar la imagen
+				Imagen img;
+				try {
+					img = imagenService.guardarImagen(file); // Guardar la imagen
+				} catch (ArchivoNoValidoException e) {
+					// Foto no válida (HEIC, no es una imagen): 400 con el motivo.
+					avisarImagenRechazada("alta", null, file, e);
+					return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
+				}
 				nuevoAlumnoDTO.setFotoAlumno(img); // Asignar la imagen al DTO
 			}
 
@@ -533,11 +541,48 @@ public class AlumnoController {
         try {
             Documento documento = alumnoService.agregarDocumentoAAlumno(alumnoId, archivo);
             return ResponseEntity.ok(documento);
+        } catch (AlumnoNoEncontradoException e) {
+            return ResponseEntity.notFound().build();
+        } catch (ArchivoNoValidoException e) {
+            // Fichero no válido (tipo, extensión, HEIC, vacío): 400 con el motivo. Sin nombre del fichero en el log.
+            logger.warn("Documento de alumno rechazado: alumnoId={} ext={} contentType={} motivo={}", alumnoId,
+                    DocumentoSecurityUtils.extensionParaLog(archivo.getOriginalFilename()),
+                    DocumentoSecurityUtils.contentTypeParaLog(archivo.getContentType()), e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
+        } catch (IllegalArgumentException e) {
+            // Otro argumento inválido: el mismo 400 con «mensaje», sin el aviso de archivo rechazado.
+            return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
         } catch (Exception e) {
+            // Sin el mensaje: puede llevar la ruta y el nombre del fichero.
+            logger.error("Error al subir documento de alumno: alumnoId={} ext={} contentType={} causa={}", alumnoId,
+                    DocumentoSecurityUtils.extensionParaLog(archivo.getOriginalFilename()),
+                    DocumentoSecurityUtils.contentTypeParaLog(archivo.getContentType()), causa(e));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Error al subir el documento: " + e.getMessage());
+                                 .body("Error al subir el documento.");
         }
     }
+
+	/** Clase de la excepción y de su causa raíz, para el log sin mensajes (pueden llevar rutas o nombres). */
+	private static String causa(Throwable e) {
+		Throwable raiz = e;
+		while (raiz.getCause() != null && raiz.getCause() != raiz) {
+			raiz = raiz.getCause();
+		}
+		return raiz == e ? e.getClass().getSimpleName()
+				: e.getClass().getSimpleName() + " <- " + raiz.getClass().getSimpleName();
+	}
+
+	/** Motivo del rechazo para el cuerpo {@code {"mensaje": …}}; nunca nulo. */
+	private static String motivo(IllegalArgumentException e) {
+		return e.getMessage() != null ? e.getMessage() : "Solicitud no válida.";
+	}
+
+	private void avisarImagenRechazada(String operacion, Long alumnoId, MultipartFile file,
+			IllegalArgumentException e) {
+		logger.warn("Alumno con foto rechazado ({}): alumnoId={} ext={} contentType={} motivo={}", operacion,
+				alumnoId, DocumentoSecurityUtils.extensionParaLog(file != null ? file.getOriginalFilename() : null),
+				DocumentoSecurityUtils.contentTypeParaLog(file != null ? file.getContentType() : null), e.getMessage());
+	}
 
 	@PutMapping("/{id}/baja")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'EDITAR')")
@@ -587,7 +632,15 @@ public class AlumnoController {
 
 			Date nuevaFechaNacimiento = nuevoAlumnoDTO.getFechaNacimiento();
 			// Enviar el MultipartFile directamente
-			Alumno alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
+			Alumno alumno;
+			try {
+				alumno = alumnoService.actualizarAlumno(id, nuevoAlumnoDTO, nuevaFechaNacimiento, file);
+			} catch (ArchivoNoValidoException e) {
+				// Foto no válida (HEIC, no es una imagen): el mismo 400 con «mensaje» que da GlobalExceptionHandler,
+				// y además el aviso en el log. Otro argumento inválido (email en uso…) sigue al handler, sin aviso.
+				avisarImagenRechazada("edición", id, file, e);
+				return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
+			}
 			AlumnoDTO alumnoActualizadoDTO = aplicarUrlImagenPublica(AlumnoDTO.deAlumno(alumno));
 			return new ResponseEntity<>(alumnoActualizadoDTO, HttpStatus.OK);
 

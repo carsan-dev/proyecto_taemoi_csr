@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.taemoi.project.repositories.ConsentimientoRepository;
+import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.DocumentoReferenciadoException;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.config.FileUtils;
@@ -49,7 +50,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public Documento guardarDocumento(Alumno alumno, MultipartFile archivo) throws IOException {
 		if (archivo == null || archivo.isEmpty()) {
-			throw new IllegalArgumentException("No se ha enviado ningun documento.");
+			throw new ArchivoNoValidoException("No se ha enviado ningun documento.");
 		}
 		if (alumno == null || alumno.getId() == null) {
 			throw new IllegalArgumentException("El alumno debe existir antes de adjuntarle documentos.");
@@ -62,7 +63,7 @@ public class DocumentoServiceImpl implements DocumentoService {
 	@Override
 	public Documento guardarDocumentoEvento(Evento evento, MultipartFile archivo) throws IOException {
 		if (archivo == null || archivo.isEmpty()) {
-			throw new IllegalArgumentException("No se ha enviado ningun documento.");
+			throw new ArchivoNoValidoException("No se ha enviado ningun documento.");
 		}
 		if (evento == null || evento.getId() == null) {
 			throw new IllegalArgumentException("El evento debe existir antes de adjuntarle documentos.");

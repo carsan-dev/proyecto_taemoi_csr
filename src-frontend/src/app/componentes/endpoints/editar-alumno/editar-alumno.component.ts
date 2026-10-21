@@ -31,6 +31,13 @@ import { SearchableSelectDirective } from '../../../directives/searchable-select
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 import Swal from 'sweetalert2';
 import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
+import {
+  SUBIDA_DOCUMENTO,
+  SUBIDA_IMAGEN,
+  mensajeErrorSubida,
+  prepararFicheroParaSubida,
+  reiniciarSelectorArchivo,
+} from '../../../utils/subida-archivos.util';
 import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 
 /** Outcome of requesting an alumno from the route (loaded, or the request failed) */
@@ -1054,12 +1061,24 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDocumentoSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (!file) return;
+  async onDocumentoSelected(event: Event): Promise<void> {
+    const entrada = event.target as HTMLInputElement;
+    const elegido = entrada?.files?.[0];
+    if (!elegido) return;
 
-    // Llamamos al servicio
-    this.endpointsService.subirDocumentoAlumno(this.alumnoId!, file).subscribe({
+    // Copia en memoria al elegirlo: en Android leer el content:// al enviar falla.
+    const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_DOCUMENTO);
+    reiniciarSelectorArchivo(entrada);
+    if (!preparado.ok) {
+      Swal.fire({
+        title: 'No se pudo subir el documento',
+        text: preparado.motivo,
+        icon: 'error',
+      });
+      return;
+    }
+
+    this.endpointsService.subirDocumentoAlumno(this.alumnoId!, preparado.file).subscribe({
       next: (doc) => {
         Swal.fire({
           title: 'Documento subido',
@@ -1072,7 +1091,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       error: (err) => {
         Swal.fire({
           title: 'Error',
-          text: 'No se pudo subir el documento',
+          text: mensajeErrorSubida(err, 'No se pudo subir el documento'),
           icon: 'error',
         });
       },
@@ -1498,11 +1517,26 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   /**
    * Cuando el usuario selecciona un nuevo archivo de imagen.
    */
-  onFileSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (!file || !this.alumnoId || !this.alumno) {
+  async onFileSelected(event: Event): Promise<void> {
+    const entrada = event.target as HTMLInputElement;
+    const elegido = entrada?.files?.[0];
+    if (!elegido || !this.alumnoId || !this.alumno) {
+      reiniciarSelectorArchivo(entrada);
       return;
     }
+    // Copia en memoria al elegirla: en Android leer el content:// al enviar falla.
+    const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_IMAGEN);
+    reiniciarSelectorArchivo(entrada);
+    if (!preparado.ok) {
+      // Modal y no toast: el motivo dice cómo resolverlo y en 3 s no da tiempo a leerlo en el móvil.
+      Swal.fire({
+        title: 'No se pudo cambiar la imagen',
+        text: preparado.motivo,
+        icon: 'error',
+      });
+      return;
+    }
+    const file = preparado.file;
     this.alumnoEditado.fotoAlumno = file;
 
     const reader = new FileReader();
@@ -1520,9 +1554,9 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         showSuccessToast('Imagen actualizada');
         this.cargarAlumno(this.alumnoId!);
       },
-      error: () => {
+      error: (error) => {
         this.imagenPreview = null;
-        showErrorToast('No se pudo actualizar la imagen');
+        showErrorToast(mensajeErrorSubida(error, 'No se pudo actualizar la imagen'));
       },
     });
   }
