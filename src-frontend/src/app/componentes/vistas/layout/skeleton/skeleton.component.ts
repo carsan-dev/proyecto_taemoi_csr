@@ -1,12 +1,31 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs';
+import { Subscription, catchError, distinctUntilChanged, filter, from, map, of, skip, startWith, switchMap, take } from 'rxjs';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll.component';
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { CommonModule, DOCUMENT, Location } from '@angular/common';
 import { borrarCookiesGa, cargarScriptGtag, urlSinToken } from '../../../../utils/analitica.util';
+import { resolverPortalContexto } from '../../../../app.routes';
+import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
+import { CabeceraPanelComponent } from '../../../../panel-nuevo/navegacion/cabecera-panel.component';
+
+/** Rutas del panel sin `portalContext: 'admin'` que una sesión de gestión abre desde su menú (Mi caja, Mis grupos, plataforma). */
+const RUTAS_PANEL = ['/mi-caja', '/mis-grupos', '/plataformaErrores', '/plataformaLogos'];
+
+/** Ruta de gestión: la cabecera nueva solo va en ellas (8b-N); las públicas y las de familia siguen con las de hoy. */
+export function esRutaDelPanel(url: string): boolean {
+  const ruta = (url || '/').split('?')[0].split('#')[0] || '/';
+  return (
+    resolverPortalContexto(ruta) === 'admin' || RUTAS_PANEL.some((r) => ruta === r || ruta.startsWith(`${r}/`))
+  );
+}
+
+/** `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe el interruptor; `nuevo`: la navegación del panel nuevo. */
+type ModoCabecera = 'hoy' | 'hueco' | 'nuevo';
 
 @Component({
   selector: 'app-skeleton',
@@ -16,6 +35,7 @@ import { borrarCookiesGa, cargarScriptGtag, urlSinToken } from '../../../../util
     FooterComponent,
     BotonscrollComponent,
     CommonModule,
+    CabeceraPanelComponent,
   ],
   templateUrl: './skeleton.component.html',
   styleUrl: './skeleton.component.scss',
@@ -29,6 +49,23 @@ export class SkeletonComponent implements OnInit {
   private readonly document = inject(DOCUMENT);
   private analiticaActiva = false;
   private ultimaPagina: string | null = null;
+  private readonly injector = inject(Injector);
+  private readonly rutaPanel = signal(esRutaDelPanel(inject(Location).path()));
+  /** El interruptor de la sesión (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
+  private readonly encendido = signal<boolean | null>(null);
+  private evaluacion?: Subscription;
+
+  /**
+   * Fase3-e8b-plan.md §3 «Cabecera»: la de hoy salvo con el interruptor encendido y una ruta de gestión. Mientras no se
+   * sabe (primera carga en gestión), el hueco de 64 px, no la cabecera de hoy: así no salta de una a otra.
+   */
+  readonly modo = computed<ModoCabecera>(() => {
+    if (!this.rutaPanel()) {
+      return 'hoy';
+    }
+    const encendido = this.encendido();
+    return encendido === null ? 'hueco' : encendido ? 'nuevo' : 'hoy';
+  });
 
   ngOnInit(): void {
     // Un page_view por página, siempre sin el token de los enlaces de contraseña (revisión E8-6 F1). El page_location
@@ -40,12 +77,16 @@ export class SkeletonComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((e) => {
+        this.alCambiarDeRuta(e.urlAfterRedirects);
         const pagina = urlSinToken(`${globalThis.location?.origin ?? ''}${e.urlAfterRedirects}`);
         this.fijarPagina(pagina);
         if (this.analiticaActiva) {
           this.enviarPageView(pagina);
         }
       });
+    if (this.rutaPanel()) {
+      this.evaluarInterruptor();
+    }
     // La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada).
     const stored = this.getStored();
     if (stored === 'accepted') {
@@ -57,6 +98,56 @@ export class SkeletonComponent implements OnInit {
       return;
     }
     this.showCookieBanner = true;
+  }
+
+  private alCambiarDeRuta(url: string): void {
+    this.rutaPanel.set(esRutaDelPanel(url));
+    if (this.rutaPanel() && !this.evaluacion) {
+      this.evaluarInterruptor();
+    }
+  }
+
+  /**
+   * Lee el interruptor una vez (los servicios se piden aquí, no al crear el componente: fuera del panel no se
+   * pide nada) y lo vuelve a leer al entrar o salir de una cuenta. Encendido solo con `disenoNuevo.activo`, gestión en
+   * la escuela (la sesión solo-profesor queda fuera, decisión 260) y la hoja `panel-nuevo.css` cargada. Falla cerrado.
+   */
+  private evaluarInterruptor(): void {
+    const permisos = this.injector.get(PermisosSesionService);
+    const estilos = this.injector.get(EstilosPanelService);
+    const leer = () =>
+      permisos.obtener().pipe(
+        take(1),
+        map(
+          (p) =>
+            p?.disenoNuevo?.activo === true &&
+            (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR')
+        ),
+        switchMap((activo) =>
+          activo
+            ? from(estilos.cargar()).pipe(
+                map(() => true),
+                catchError(() => of(false))
+              )
+            : of(false)
+        ),
+        catchError(() => of(false))
+      );
+    this.evaluacion = this.injector
+      .get(AuthenticationService)
+      .usuarioLogueadoCambio.pipe(
+        distinctUntilChanged(),
+        skip(1),
+        startWith(true),
+        switchMap((logueado) => {
+          if (!logueado) {
+            this.encendido.set(null);
+          }
+          return leer();
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((v) => this.encendido.set(v));
   }
 
   acceptCookies(): void {

@@ -1,0 +1,136 @@
+<div class="pn pn-nav admin-ui" #raiz>
+  @if (lista()) {
+  <header class="pn-cab fixed-header">
+    <div class="pn-cab__fila">
+      <a class="pn-cab__marca" routerLink="/adminpage" [attr.title]="nombreEscuela()">
+        @if (logo(); as src) {
+        <img class="pn-cab__logo" src="{{ src }}" alt="" width="46" height="46" (error)="logoFallo.set(true)" />
+        }
+        <span class="pn-cab__nombre">{{ nombreEscuela() }}</span>
+      </a>
+
+      <nav class="pn-cab__nav" aria-label="Gestión">
+        <ul class="pn-cab__lista">
+          @for (seccion of secciones(); track seccion.id) {
+          <li class="pn-cab__item" [attr.data-pn-menu]="seccion.id">
+            @if (seccion.ruta) {
+            <a class="pn-cab__entrada" [attr.data-seccion]="seccion.id" [routerLink]="seccion.ruta"
+              [attr.aria-current]="activa() === seccion.id ? 'page' : null"
+              [attr.aria-label]="etiquetaEntrada(seccion)" (keydown)="teclaEntrada($event)">
+              <i class="bi {{ seccion.icono }}" aria-hidden="true"></i>
+              <span>{{ seccion.etiqueta }}</span>
+              @if (seccion.contador && contador() > 0) {
+              <span class="pn-contador" aria-hidden="true">{{ textoContador(contador()) }}</span>
+              }
+            </a>
+            } @else {
+            <button type="button" class="pn-cab__entrada" [id]="'pn-disparador-' + seccion.id"
+              [attr.data-seccion]="seccion.id" aria-haspopup="menu"
+              [attr.aria-expanded]="abierto() === seccion.id"
+              [attr.aria-controls]="abierto() === seccion.id ? 'pn-menu-' + seccion.id : null"
+              [attr.aria-current]="activa() === seccion.id ? 'true' : null"
+              (click)="alternar(seccion.id, $event)" (keydown)="teclaEntrada($event, seccion.id)">
+              <i class="bi {{ seccion.icono }}" aria-hidden="true"></i>
+              <span>{{ seccion.etiqueta }}</span>
+              <i class="bi bi-chevron-down pn-cab__flecha" aria-hidden="true"></i>
+            </button>
+            @if (abierto() === seccion.id) {
+            <div class="pn-menu" [class.pn-menu--fin]="seccion.id === 'escuela'" [id]="'pn-menu-' + seccion.id"
+              role="menu" [attr.aria-labelledby]="'pn-disparador-' + seccion.id" (keydown)="teclaMenu($event)">
+              @for (grupo of grupos(seccion.entradas); track $index) {
+              <div class="pn-menu__grupo" role="group" [attr.aria-label]="grupo.nombre">
+                @if (grupo.nombre) {
+                <div class="pn-menu__titulo" aria-hidden="true">{{ grupo.nombre }}</div>
+                }
+                @for (entrada of grupo.entradas; track entrada.ruta) {
+                <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta"
+                  [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null" (click)="cerrar(false)">
+                  <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
+                  <span>{{ entrada.etiqueta }}</span>
+                </a>
+                }
+              </div>
+              }
+            </div>
+            }
+            }
+          </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="pn-cab__cuenta-zona" data-pn-menu="cuenta">
+        <button type="button" id="pn-cuenta-boton" class="pn-cab__cuenta" aria-haspopup="menu"
+          [attr.aria-expanded]="abierto() === 'cuenta'"
+          [attr.aria-controls]="abierto() === 'cuenta' ? 'pn-menu-cuenta' : null"
+          [attr.aria-label]="'Cuenta de ' + nombreVisible()" (click)="alternar('cuenta', $event)"
+          (keydown)="teclaEntrada($event, 'cuenta')">
+          <span class="pn-cab__iniciales" aria-hidden="true">
+            @if (iniciales()) {
+            {{ iniciales() }}
+            } @else {
+            <i class="bi bi-person"></i>
+            }
+          </span>
+          <span class="pn-cab__cuenta-nombre">{{ nombreVisible() }}</span>
+          <i class="bi bi-chevron-down pn-cab__flecha" aria-hidden="true"></i>
+        </button>
+        @if (abierto() === 'cuenta') {
+        <div class="pn-menu pn-menu--fin pn-menu--cuenta" id="pn-menu-cuenta" role="menu"
+          aria-labelledby="pn-cuenta-boton" (keydown)="teclaMenu($event)">
+          <div class="pn-menu__quien" aria-hidden="true">
+            <span class="pn-menu__quien-nombre">{{ nombreVisible() }}</span>
+            <span class="pn-menu__quien-rol">{{ rol() }}</span>
+          </div>
+          <div class="pn-menu__grupo" role="group" aria-label="Panel">
+            @for (entrada of cuenta(); track entrada.ruta) {
+            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta"
+              [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null" (click)="cerrar(false)">
+              <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
+              <span>{{ entrada.etiqueta }}</span>
+            </a>
+            }
+            @if (accesoDual()) {
+            <button type="button" class="pn-menu__opcion" role="menuitem" (click)="cambiarAFamilia()">
+              <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+              <span>Cambiar a familia</span>
+            </button>
+            }
+            <button type="button" class="pn-menu__opcion" role="menuitem" [disabled]="volviendo()"
+              [attr.aria-busy]="volviendo() ? 'true' : null" (click)="volverAlDisenoAnterior()">
+              <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+              <span>Volver al diseño anterior</span>
+            </button>
+            @if (errorVolver(); as error) {
+            <p class="pn-menu__error" role="alert">{{ error }}</p>
+            }
+          </div>
+          <div class="pn-menu__grupo" role="group" aria-label="Legal">
+            <div class="pn-menu__titulo" aria-hidden="true">Legal</div>
+            @for (entrada of legales; track entrada.ruta) {
+            <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" (click)="cerrar(false)">
+              <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
+              <span>{{ entrada.etiqueta }}</span>
+            </a>
+            }
+            <button type="button" class="pn-menu__opcion" role="menuitem" (click)="alConfigurarCookies()">
+              <i class="bi bi-toggles" aria-hidden="true"></i>
+              <span>Configurar cookies</span>
+            </button>
+          </div>
+          <div class="pn-menu__grupo" role="group" aria-label="Sesión">
+            <button type="button" class="pn-menu__opcion" role="menuitem" (click)="cerrarSesion()">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <app-barra-inferior [secciones]="secciones()" [activa]="activa()" [url]="url()" [contador]="contador()"
+    (configurarCookies)="configurarCookies.emit()"></app-barra-inferior>
+  }
+</div>

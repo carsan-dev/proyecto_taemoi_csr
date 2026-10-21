@@ -36,3 +36,26 @@
     flex-shrink: 0;
   }
 }
+
+// Panel nuevo (8b-N): la cabecera (64 px; 56 en el móvil) y la barra inferior (64 px más la zona segura, por debajo de
+// 1024 px) van fijas; el contenido deja su hueco para que no lo tapen. Es también el hueco mientras no se sabe el
+// interruptor.
+.marco-panel #content {
+  padding-top: 64px;
+}
+
+@media (max-width: 1023.98px) {
+  .marco-panel #content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .marco-panel ::ng-deep .scroll-to-top-btn {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .marco-panel #content {
+    padding-top: 56px;
+  }
+}

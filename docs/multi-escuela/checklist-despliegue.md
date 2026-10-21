@@ -216,6 +216,13 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       registro de acciones de Moiskimdo como `PLATAFORMA MARCA_COLOR organizacion=#1 quitado=NO`, sin el valor.
       Comprobar en el móvil, con el interruptor apagado, que nada cambia para el propietario ni el gestor (cabecera,
       menús, logo de siempre y «Mi caja»): con él apagado nadie lee la marca.
+- [ ] E8b, pieza 8b-N (navegación del panel nuevo; decisiones 255, 256 y 259): sin migración → atajo `desplegar`.
+      Con el interruptor apagado, todo como antes (cabecera, pie y rutas). Después, el propietario, con su interruptor
+      encendido, recorre en el móvil las 6 entradas (Inicio, Alumnos, Grupos, Tesorería, Solicitudes y Escuela) desde
+      «Más» y la barra inferior (Inicio, Alumnos, Tesorería), comprueba que sigue viendo «Mi caja», «Mis grupos»,
+      «Registro de acciones», «Configuración» y «Diseño nuevo», que el contador de Solicitudes coincide con el de hoy y
+      que la portada y el área de familias siguen con la cabecera y el pie de hoy. Al terminar, «Volver al diseño
+      anterior» desde su cuenta lo deja como antes.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.
