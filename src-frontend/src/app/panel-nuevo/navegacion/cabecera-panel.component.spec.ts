@@ -157,6 +157,23 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   const tecla = (destino: Element, key: string) =>
     destino.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 
+  describe('Ver la web', () => {
+    it('el enlace navega a la portada con el estado verWeb', async () => {
+      await montar();
+      responderMarca();
+      entrada('escuela').click();
+      fixture.detectChanges();
+      const enlace = Array.from(el().querySelectorAll<HTMLAnchorElement>('.pn-menu__opcion')).find((a) =>
+        a.textContent?.includes('Ver la web')
+      )!;
+      expect(enlace).withContext('enlace').toBeDefined();
+      enlace.click();
+      await fixture.whenStable();
+      expect(router.url).toBe('/');
+      expect(router.lastSuccessfulNavigation?.extras.state?.['verWeb']).toBeTrue();
+    });
+  });
+
   describe('antes de pintar', () => {
     it('no pinta la cabecera hasta tener la marca; luego la escribe en el .pn de la raíz', async () => {
       await montar();
