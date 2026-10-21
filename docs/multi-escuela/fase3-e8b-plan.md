@@ -49,7 +49,8 @@ Rutas abreviadas: `J/` = `src-api/src/main/java/com/taemoi/project/`, `T/` = `sr
 - **Roles con nombre visible nuevo (decisión 262).** En las pantallas nuevas los roles se muestran como «Familia»,
   «Gestión» y «Administración». Solo cambia el texto: los roles, los permisos y los valores internos (`ROLE_USER`,
   `ROLE_MANAGER`, `ROLE_ADMIN`) no cambian, ni lo que se envía a la API. Correspondencia: `ROLE_USER` = «Familia»,
-  `ROLE_MANAGER` = «Gestión», `ROLE_ADMIN` = «Administración». El texto visible sale de un solo ayudante de las
+  `ROLE_MANAGER` = «Gestión», `ROLE_ADMIN` = «Administración»; por la decisión 263, `ROLE_PROFESOR` = «Profesorado» y
+  `ROLE_RESPONSABLE_SEDE` = «Responsable de sede». El texto visible sale de un solo ayudante de las
   pantallas nuevas, con su spec. Las pantallas de hoy no se tocan (hoy: «Usuario», «Manager», «Admin»).
 - **Formato es-ES.** Importes, fechas y plurales con los ayudantes de `F/panel-nuevo/formato/` (8b-1). `LOCALE_ID
   'es-ES'` solo en las rutas nuevas hasta 8b-Z (decisión 258). Nunca `toFixed` para mostrar importes.
@@ -334,6 +335,18 @@ diferencia); batería de Karma en verde.
 **Notas para la PR:** cifras del presupuesto antes y después; `@angular/material` sigue en `package.json` (sin uso; se
 quita en 8b-Z si se quiere); los tokens aún no los usa ninguna pantalla; `DESIGN.md` es la fuente y cualquier cambio de
 token pasa antes por él.
+
+**Notas de la base (ronda 2 de 8b-1):**
+- `panel-nuevo.css` sale **sin hash** (`inject: false`) y nginx servía todo `*.css` con `expires 1y` + `immutable`: un cambio
+  de tokens habría quedado cacheado un año. Los tres confs (`src-frontend/default.conf`, `nginx/nginx-production.conf` y
+  `nginx/nginx-production-http-only.conf`) llevan un `location = /panel-nuevo.css` con `Cache-Control: no-cache` (se revalida
+  con ETag y Last-Modified) y con `include /etc/nginx/cabeceras-seguridad.conf`, porque un `add_header` dentro de un location
+  anula los del server. Un location nuevo con `add_header` debe incluirlo también.
+- `styles.scss` declara `* { font-family: Montserrat }`, que corta la herencia desde `.pn`. `panel-nuevo.scss` lleva
+  `:where(.pn) :where(*) { font-family: inherit }` (especificidad 0, hoja cargada después): los descendientes heredan la fuente
+  del panel. Los iconos `.bi` no se ven afectados (su fuente va en `.bi::before`).
+- Los importes y números agrupan los miles a mano (`agruparMiles`) porque `useGrouping: 'always'` necesita Firefox 116 y
+  se admite Firefox 104. `--pn-sombra-barra` está ya en `DESIGN.md`.
 
 ## 6. Pieza 8b-I: interruptor por usuario
 
@@ -785,7 +798,8 @@ Inventario: Anexo A, Configuración y Registro de acciones.
 «Administración» (hoy «Usuario», «Manager» y «Admin» en las casillas, y «Usuario», «Manager» y «Administrador» en las
 pastillas: `configuracion-sistema.component.html:168, 177, 186` y `.ts:403-418`). Los permisos no cambian. El spec
 comprueba el texto visible y que el cuerpo enviado sigue llevando los `ROLE_*`. Otros roles que hoy muestra el
-componente (`ROLE_PROFESOR`, `ROLE_RESPONSABLE_SEDE`) quedan fuera de la decisión: se mantienen como hoy (a confirmar).
+componente (`ROLE_PROFESOR`, `ROLE_RESPONSABLE_SEDE`) se muestran como «Profesorado» y «Responsable de sede» (decisión
+263); solo cambia el texto, igual que en la 262.
 
 **Ficheros:** `F/panel-nuevo/escuela/configuracion/` y `F/panel-nuevo/escuela/registro/`; rutas `configuracion-sistema`
 y `auditoriaSistema` con `canMatch` **y** los mismos `roleGuard` y `adminOnlyGuard` de hoy.
@@ -881,6 +895,8 @@ Ronda 3 de bocetos (21/10/2026), tras publicar https://claude.ai/artifact/5ynw1n
   está cerrada.» Marca RB3 y 8b-B3 como hechas.
 - **262** (12:02). «En las pantallas nuevas los roles se muestran como "Familia", "Gestión" y "Administración". Solo
   cambia el texto visible; los roles, permisos y valores internos no cambian.»
+- **263** (14:38). En las pantallas nuevas `ROLE_PROFESOR` se muestra como «Profesorado» y `ROLE_RESPONSABLE_SEDE` como
+  «Responsable de sede». Solo texto, en el mismo ayudante que la 262.
 
 ---
 
