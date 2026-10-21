@@ -114,6 +114,16 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(boton(8).textContent?.trim()).toBe('Dar permiso');
   });
 
+  it('el estado de cada fila deja claro que con permiso no hay que volver a darlo', async () => {
+    await listo();
+    const base = { usuarioId: 1, nombre: 'X', rol: '' };
+    const texto = (permitido: boolean, activo: boolean) =>
+      fixture.componentInstance.textoEstado({ ...base, permitido, activo });
+    expect(texto(true, true)).toBe('Usa el diseño nuevo');
+    expect(texto(true, false)).toBe('Con permiso · usa el diseño anterior');
+    expect(texto(false, false)).toBe('Sin permiso');
+  });
+
   it('un clic, una petición; al terminar, la fila cambia y los permisos se vuelven a pedir', async () => {
     await listo();
     boton(8).click();

@@ -264,6 +264,16 @@
             <span>Diseño nuevo</span>
           </a>
           }
+          @if (veUsarDisenoNuevo) {
+          <button class="admin-account-menu-item" type="button" [disabled]="cambiandoDiseno"
+            [attr.aria-busy]="cambiandoDiseno ? 'true' : null" (click)="usarDisenoNuevo()">
+            <i class="bi bi-toggle-on" aria-hidden="true"></i>
+            <span>Usar el diseño nuevo</span>
+          </button>
+          @if (errorDiseno) {
+          <p class="admin-account-menu-error" role="alert">{{ errorDiseno }}</p>
+          }
+          }
           @if (tieneAccesoDual) {
           <button class="admin-account-menu-item" type="button" (click)="cambiarVistaUsuario()">
             <i class="bi bi-calendar2-check"></i>

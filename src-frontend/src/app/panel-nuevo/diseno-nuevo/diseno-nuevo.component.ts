@@ -140,7 +140,7 @@ export class DisenoNuevoComponent implements OnInit, OnDestroy {
     if (fila.activo) {
       return 'Usa el diseño nuevo';
     }
-    return fila.permitido ? 'Con permiso, usa el de siempre' : 'Sin permiso';
+    return fila.permitido ? 'Con permiso · usa el diseño anterior' : 'Sin permiso';
   }
 
   private fila(usuario: DisenoUsuario, miembro: MiembroDeGestion | undefined): FilaDiseno {
