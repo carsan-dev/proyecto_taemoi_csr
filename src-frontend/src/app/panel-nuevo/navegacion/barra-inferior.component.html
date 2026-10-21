@@ -1,0 +1,70 @@
+<nav class="pn-barra" aria-label="Accesos del panel">
+  <ul class="pn-barra__lista">
+    @for (seccion of principales; track seccion.id) {
+    <li>
+      <a class="pn-barra__entrada" [routerLink]="rutaDe(seccion)" [class.es-actual]="activa === seccion.id"
+        [attr.aria-current]="actual(seccion)">
+        <span class="pn-barra__icono"><i class="bi {{ seccion.icono }}" aria-hidden="true"></i></span>
+        <span class="pn-barra__nombre">{{ seccion.etiqueta }}</span>
+      </a>
+    </li>
+    }
+    <li data-pn-menu="mas">
+      <button type="button" id="pn-mas-boton" class="pn-barra__entrada pn-barra__mas" [class.es-actual]="masActual"
+        aria-haspopup="menu" [attr.aria-expanded]="abierta()" [attr.aria-controls]="abierta() ? 'pn-menu-mas' : null"
+        [attr.aria-current]="masActual ? 'true' : null"
+        [attr.aria-label]="etiquetaMas()" (click)="alternar($event)" (keydown)="teclaMas($event)">
+        <span class="pn-barra__icono">
+          <i class="bi bi-grid" aria-hidden="true"></i>
+          @if (contador > 0) {
+          <span class="pn-contador" aria-hidden="true">{{ textoContador(contador) }}</span>
+          }
+        </span>
+        <span class="pn-barra__nombre">Más</span>
+      </button>
+
+      @if (abierta()) {
+      <div class="pn-hoja" id="pn-menu-mas" role="menu" aria-labelledby="pn-mas-boton" (keydown)="teclaHoja($event)">
+        <div class="pn-hoja__grupo" role="group" aria-label="Panel">
+          @for (seccion of sueltas; track seccion.id) {
+          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="seccion.ruta"
+            [attr.aria-current]="esActual(seccion.ruta!) ? 'page' : null"
+            [attr.aria-label]="seccion.contador && contador > 0 ? seccion.etiqueta + ': ' + contador + ' por atender' : null">
+            <i class="bi {{ seccion.icono }}" aria-hidden="true"></i>
+            <span>{{ seccion.etiqueta }}</span>
+            @if (seccion.contador && contador > 0) {
+            <span class="pn-contador" aria-hidden="true">{{ textoContador(contador) }}</span>
+            }
+          </a>
+          }
+        </div>
+        @for (seccion of conOpciones; track seccion.id) {
+        <div class="pn-hoja__grupo" role="group" [attr.aria-labelledby]="'pn-mas-' + seccion.id">
+          <div class="pn-hoja__titulo" [id]="'pn-mas-' + seccion.id">{{ seccion.etiqueta }}</div>
+          @for (entrada of seccion.entradas; track entrada.ruta) {
+          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta"
+            [attr.aria-current]="esActual(entrada.ruta) ? 'page' : null">
+            <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
+            <span>{{ entrada.etiqueta }}</span>
+          </a>
+          }
+        </div>
+        }
+        <div class="pn-hoja__grupo" role="group" aria-labelledby="pn-mas-legal">
+          <div class="pn-hoja__titulo" id="pn-mas-legal">Legal</div>
+          @for (entrada of legales; track entrada.ruta) {
+          <a class="pn-hoja__opcion" role="menuitem" [routerLink]="entrada.ruta">
+            <i class="bi {{ entrada.icono }}" aria-hidden="true"></i>
+            <span>{{ entrada.etiqueta }}</span>
+          </a>
+          }
+          <button type="button" class="pn-hoja__opcion" role="menuitem" (click)="alConfigurarCookies()">
+            <i class="bi bi-toggles" aria-hidden="true"></i>
+            <span>Configurar cookies</span>
+          </button>
+        </div>
+      </div>
+      }
+    </li>
+  </ul>
+</nav>

@@ -30,6 +30,8 @@ export interface PermisosSesion {
   capacidades: Capacidad[];
   /** Opcional: un servidor anterior no lo manda y se trata como apagado. */
   disenoNuevo?: DisenoNuevoSesion;
+  /** «Nombre A.» de la cuenta (8b-T), para el botón de cuenta del panel nuevo; null sin nombre. */
+  nombreVisible?: string | null;
 }
 
 /**

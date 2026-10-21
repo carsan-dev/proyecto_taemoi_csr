@@ -1,15 +1,25 @@
 <!-- skeleton.component.html -->
-<div class="p-0 d-flex flex-column container-fluid">
+<div class="p-0 d-flex flex-column container-fluid" [class.marco-panel]="modo() !== 'hoy'"
+  [class.admin-ui]="modo() !== 'hoy'">
   <div class="row flex-grow-1">
     <div class="content-container p-0 d-flex flex-column w-100">
+      @if (modo() === 'hoy') {
       <app-header class="row justify-content-center"></app-header>
+      } @else if (modo() === 'nuevo') {
+      <!-- Panel nuevo (8b-N): la navegación va aparte del inicial; mientras llega, el hueco que deja .marco-panel. -->
+      @defer (on immediate) {
+      <app-cabecera-panel (configurarCookies)="showCookieBanner = true"></app-cabecera-panel>
+      }
+      }
       <main class="row g-0" id="content">
         <ng-content></ng-content>
       </main>
     </div>
   </div>
   <app-botonscroll></app-botonscroll>
+  @if (modo() === 'hoy') {
   <app-footer class="row" (configurarCookies)="showCookieBanner = true"></app-footer>
+  }
 </div>
 <div
   *ngIf="showCookieBanner"

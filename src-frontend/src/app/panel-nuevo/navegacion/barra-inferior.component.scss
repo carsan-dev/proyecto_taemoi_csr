@@ -1,0 +1,182 @@
+// Barra inferior del panel nuevo (DESIGN.md, Navigation): por debajo de 1024 px, 64 px más la zona segura, superficie
+// blanca con la sombra hacia arriba; la actual en el color de la escuela como tinta con una marca de 3 px arriba.
+
+:host {
+  display: contents;
+}
+
+.pn-barra {
+  position: fixed;
+  inset: auto 0 0;
+  // Por encima del botón de subir (1000): la hoja de «Más» vive dentro de la barra y comparte su apilamiento.
+  z-index: 1001;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-barra);
+}
+
+.pn-barra__lista {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: 64px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pn-barra__entrada {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--pn-transicion);
+
+  &.es-actual,
+  &[aria-expanded='true'] {
+    color: var(--pn-marca-primario-tinta);
+
+    &::before {
+      position: absolute;
+      top: 0;
+      right: 25%;
+      left: 25%;
+      height: 3px;
+      background: var(--pn-marca-primario-tinta);
+      content: '';
+    }
+  }
+
+  &:focus-visible {
+    border-radius: var(--pn-radio-m);
+    outline: 2px solid var(--pn-marca-primario-tinta);
+    outline-offset: -4px;
+  }
+}
+
+.pn-barra__icono {
+  position: relative;
+  display: inline-flex;
+
+  .bi {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .pn-contador {
+    position: absolute;
+    top: -8px;
+    left: calc(100% - 6px);
+  }
+}
+
+.pn-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-atencion);
+  color: var(--pn-superficie);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+// «Más»: hoja sobre la barra con todas las entradas, cada opción de 44 px.
+.pn-hoja {
+  position: fixed;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  // Por encima del botón de subir (1000), que queda debajo mientras «Más» está abierto.
+  z-index: 1001;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 0 var(--pn-espacio-l);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(100dvh - 64px - 64px - env(safe-area-inset-bottom, 0px) - 8px);
+  padding: var(--pn-espacio-s) var(--pn-espacio-m) var(--pn-espacio-m);
+  border-top: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0;
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-menu);
+  color: var(--pn-tinta);
+}
+
+.pn-hoja__grupo {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--pn-espacio-s);
+}
+
+.pn-hoja__titulo {
+  padding: 12px 10px 4px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+}
+
+.pn-hoja__opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  .bi {
+    width: 18px;
+    color: var(--pn-tinta-3);
+    text-align: center;
+  }
+
+  .pn-contador {
+    margin-left: auto;
+  }
+
+  &:hover,
+  &:focus-visible,
+  &[aria-current] {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &[aria-current] {
+    font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pn-marca-primario-tinta);
+    outline-offset: -2px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pn-hoja {
+    max-height: calc(100dvh - 56px - 64px - env(safe-area-inset-bottom, 0px) - 8px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pn-barra {
+    display: none;
+  }
+}

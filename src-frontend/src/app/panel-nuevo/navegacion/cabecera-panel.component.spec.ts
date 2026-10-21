@@ -1,0 +1,550 @@
+import { Component, signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Router, provideRouter } from '@angular/router';
+import { BehaviorSubject, of } from 'rxjs';
+
+import { environment } from '../../../environments/environment';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
+import { MarcaPanel } from '../marca-escuela-panel.service';
+import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
+import { CabeceraPanelComponent, RECARGAR_PAGINA, fondoActivoCabecera, iniciales } from './cabecera-panel.component';
+
+const API = environment.apiUrl;
+
+@Component({ standalone: true, template: '' })
+class PantallaFalsaComponent {}
+
+/** Escuela y cuenta inventadas. */
+function marca(parcial: Partial<MarcaPanel> = {}): MarcaPanel {
+  return {
+    nombre: 'Club Ficticio del Sur',
+    logo: 'LEGADO',
+    logoVersion: null,
+    tema: {
+      primario: '#1B2B2E',
+      sobrePrimario: '#FFFFFF',
+      sobrePrimario2: '#C6CACB',
+      primarioTinta: '#1B2B2E',
+      primarioSuave: '#E8EAEA',
+      ajustado: false,
+    },
+    ...parcial,
+  };
+}
+
+function permisos(parcial: Partial<PermisosSesion> & { nombreVisible?: string | null } = {}): PermisosSesion {
+  return {
+    roles: ['PROPIETARIO', 'PROFESOR'],
+    esAdminPlataforma: false,
+    sedes: [],
+    variasSedes: false,
+    tieneGrupos: true,
+    capacidades: ['DAR_GESTION', 'MIS_GRUPOS', 'MI_CAJA'],
+    disenoNuevo: { activo: true, permitido: true },
+    nombreVisible: 'Carla S.',
+    ...parcial,
+  } as PermisosSesion;
+}
+
+describe('fondoActivoCabecera e iniciales', () => {
+  it('el texto de la cabecera llega a 4,5:1 sobre el fondo de la entrada actual', () => {
+    const casos: [string, string][] = [
+      ['#FFFFFF', '#1B2B2E'],
+      ['#1A2230', '#3E9B4F'],
+      ['#1A2230', '#8FD19E'],
+      ['#FFFFFF', '#1A2230'],
+      ['#FFFFFF', '#6B6B6B'],
+    ];
+    for (const [texto, primario] of casos) {
+      const fondo = fondoActivoCabecera(texto, primario);
+      expect(contraste(texto, fondo)).withContext(`${texto} sobre ${fondo}`).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(fondoActivoCabecera('#FFFFFF', '#1B2B2E')).not.toBe('#1B2B2E');
+  });
+
+  it('iniciales del nombre visible', () => {
+    expect(iniciales('Carla S.')).toBe('CS');
+    expect(iniciales('Íñigo')).toBe('Í');
+    expect(iniciales(null)).toBe('');
+  });
+});
+
+describe('CabeceraPanelComponent (8b-N)', () => {
+  let fixture: ComponentFixture<CabeceraPanelComponent>;
+  let http: HttpTestingController;
+  let router: Router;
+  let roles: string[];
+  let refrescar: jasmine.Spy;
+  let reiniciarPermisos: jasmine.Spy;
+  let recargar: jasmine.Spy;
+  let logout: jasmine.Spy;
+  let total: ReturnType<typeof signal<number>>;
+  let datosPermisos: PermisosSesion;
+
+  async function montar(ruta = '/alumnosListar'): Promise<void> {
+    await TestBed.configureTestingModule({
+      imports: [CabeceraPanelComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: '**', component: PantallaFalsaComponent }]),
+        {
+          provide: AuthenticationService,
+          useValue: {
+            emailCambio: new BehaviorSubject<string | null>('cuenta@ejemplo.test'),
+            usernameCambio: new BehaviorSubject<string | null>('cuenta'),
+            usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
+            getRoles: () => of(roles),
+            getRolesActuales: () => roles,
+            esAdminPlataforma: () => of(false),
+            tieneAccesoDual: (r: string[]) =>
+              r.includes('ROLE_USER') && (r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER')),
+            guardarVistaPreferida: jasmine.createSpy('guardarVistaPreferida'),
+            logout,
+          },
+        },
+        {
+          provide: PermisosSesionService,
+          useValue: {
+            obtener: () => of(datosPermisos),
+            capacidades: () => of(datosPermisos.capacidades),
+            reiniciar: reiniciarPermisos,
+          },
+        },
+        { provide: SolicitudesContadorService, useValue: { total, refrescar, reiniciar: () => undefined } },
+        { provide: RECARGAR_PAGINA, useValue: recargar },
+      ],
+    }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    await router.navigateByUrl(ruta);
+    fixture = TestBed.createComponent(CabeceraPanelComponent);
+    fixture.detectChanges();
+  }
+
+  function responderMarca(m: MarcaPanel = marca()): void {
+    http.expectOne(`${API}/escuela/marca`).flush(m);
+    fixture.detectChanges();
+  }
+
+  // Las entradas solo se ven desde 1024 px; la ventana de Karma es más estrecha y un elemento oculto no toma el foco.
+  let escritorio: HTMLStyleElement;
+  beforeEach(() => {
+    escritorio = document.createElement('style');
+    escritorio.textContent = '.pn-cab__nav { display: block !important; }';
+    document.head.appendChild(escritorio);
+  });
+  afterEach(() => escritorio.remove());
+
+  beforeEach(() => {
+    roles = ['ROLE_ADMIN', 'ROLE_PROFESOR'];
+    refrescar = jasmine.createSpy('refrescar');
+    reiniciarPermisos = jasmine.createSpy('reiniciar');
+    recargar = jasmine.createSpy('recargar');
+    logout = jasmine.createSpy('logout');
+    total = signal(0);
+    datosPermisos = permisos();
+  });
+
+  afterEach(() => http.verify());
+
+  const el = () => fixture.nativeElement as HTMLElement;
+  const entrada = (id: string) => el().querySelector<HTMLElement>(`.pn-cab__entrada[data-seccion="${id}"]`)!;
+  const tecla = (destino: Element, key: string) =>
+    destino.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+
+  describe('antes de pintar', () => {
+    it('no pinta la cabecera hasta tener la marca; luego la escribe en el .pn de la raíz', async () => {
+      await montar();
+      const raiz = el().querySelector<HTMLElement>('.pn')!;
+      expect(raiz).withContext('raíz .pn').not.toBeNull();
+      expect(el().querySelector('header.pn-cab')).toBeNull();
+
+      responderMarca();
+
+      expect(el().querySelector('header.pn-cab')).not.toBeNull();
+      expect(raiz.style.getPropertyValue('--pn-marca-primario')).toBe('#1B2B2E');
+      expect(document.documentElement.style.getPropertyValue('--pn-marca-primario')).toBe('');
+    });
+
+    it('si la marca falla, pinta igual con los colores por defecto y sin logo', async () => {
+      await montar();
+      http.expectOne(`${API}/escuela/marca`).flush('no', { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+
+      expect(el().querySelector('header.pn-cab')).not.toBeNull();
+      expect(el().querySelector('img.pn-cab__logo')).toBeNull();
+      expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Panel de gestión');
+    });
+  });
+
+  describe('logo (plan B)', () => {
+    it('LEGADO: el SVG de siempre', async () => {
+      await montar();
+      responderMarca(marca({ logo: 'LEGADO' }));
+      expect(el().querySelector<HTMLImageElement>('img.pn-cab__logo')?.getAttribute('src')).toBe(
+        'assets/media/Logo_escuela.svg'
+      );
+      expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Club Ficticio del Sur');
+    });
+
+    it('NINGUNO: el nombre de la escuela sin logo', async () => {
+      await montar();
+      responderMarca(marca({ logo: 'NINGUNO' }));
+      expect(el().querySelector('img.pn-cab__logo')).toBeNull();
+      expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Club Ficticio del Sur');
+    });
+
+    it('SUBIDO que da error (404): se quita la imagen y queda el nombre', async () => {
+      await montar();
+      responderMarca(marca({ logo: 'SUBIDO', logoVersion: 31 }));
+      const img = el().querySelector<HTMLImageElement>('img.pn-cab__logo')!;
+      expect(img.getAttribute('src')).toBe(`${API}/escuela/logo?v=31`);
+
+      img.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      expect(el().querySelector('img.pn-cab__logo')).toBeNull();
+      expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Club Ficticio del Sur');
+    });
+  });
+
+  describe('entradas', () => {
+    it('seis con icono y nombre; cuatro con desplegable (aria-haspopup y aria-expanded)', async () => {
+      await montar();
+      responderMarca();
+      const entradas = Array.from(el().querySelectorAll<HTMLElement>('nav.pn-cab__nav .pn-cab__entrada'));
+      expect(entradas.map((e) => e.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+        'Inicio',
+        'Alumnos',
+        'Grupos',
+        'Tesorería',
+        'Solicitudes',
+        'Escuela',
+      ]);
+      entradas.forEach((e) => expect(e.querySelector('i.bi')).not.toBeNull());
+      const conMenu = entradas.filter((e) => e.getAttribute('aria-haspopup') === 'menu');
+      expect(conMenu.map((e) => e.dataset['seccion'])).toEqual(['alumnos', 'grupos', 'tesoreria', 'escuela']);
+      conMenu.forEach((e) => expect(e.getAttribute('aria-expanded')).toBe('false'));
+    });
+
+    it('aria-current en la entrada actual', async () => {
+      await montar('/alumnosEditar/4');
+      responderMarca();
+      expect(entrada('alumnos').getAttribute('aria-current')).toBe('true');
+      expect(entrada('inicio').hasAttribute('aria-current')).toBeFalse();
+
+      await router.navigateByUrl('/adminpage');
+      fixture.detectChanges();
+      expect(entrada('inicio').getAttribute('aria-current')).toBe('page');
+      expect(entrada('alumnos').hasAttribute('aria-current')).toBeFalse();
+    });
+
+    it('menú con teclado: flechas, Inicio/Fin y Esc, que cierra y devuelve el foco', async () => {
+      await montar();
+      responderMarca();
+      const disparador = entrada('alumnos');
+      disparador.focus();
+
+      tecla(disparador, 'ArrowDown');
+      fixture.detectChanges();
+      const menu = el().querySelector<HTMLElement>('#pn-menu-alumnos')!;
+      expect(disparador.getAttribute('aria-expanded')).toBe('true');
+      expect(menu.getAttribute('role')).toBe('menu');
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+      expect(items.length).toBeGreaterThan(3);
+      expect(document.activeElement).toBe(items[0]);
+
+      tecla(items[0], 'ArrowDown');
+      expect(document.activeElement).toBe(items[1]);
+      tecla(items[1], 'ArrowUp');
+      tecla(items[0], 'ArrowUp');
+      expect(document.activeElement).withContext('vuelve al último').toBe(items[items.length - 1]);
+      tecla(items[items.length - 1], 'Home');
+      expect(document.activeElement).toBe(items[0]);
+      tecla(items[0], 'End');
+      expect(document.activeElement).toBe(items[items.length - 1]);
+
+      tecla(items[items.length - 1], 'Escape');
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-alumnos')).toBeNull();
+      expect(disparador.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(disparador);
+    });
+
+    it('aria-current en la opción de la página actual, y solo en ella', async () => {
+      await montar('/alumnosListar');
+      responderMarca();
+      entrada('alumnos').click();
+      fixture.detectChanges();
+      const opciones = Array.from(el().querySelectorAll<HTMLElement>('#pn-menu-alumnos [role="menuitem"]'));
+      const actuales = opciones.filter((o) => o.hasAttribute('aria-current'));
+      expect(actuales.map((o) => o.getAttribute('href'))).toEqual(['/alumnosListar']);
+      expect(actuales[0].getAttribute('aria-current')).toBe('page');
+    });
+
+    it('flechas a los lados entre entradas; un clic fuera cierra el menú', async () => {
+      await montar();
+      responderMarca();
+      entrada('grupos').focus();
+      tecla(entrada('grupos'), 'ArrowRight');
+      expect(document.activeElement).toBe(entrada('tesoreria'));
+      tecla(entrada('tesoreria'), 'ArrowLeft');
+      expect(document.activeElement).toBe(entrada('grupos'));
+
+      entrada('grupos').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-grupos')).not.toBeNull();
+      document.body.click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-grupos')).toBeNull();
+    });
+
+    it('el propietario de Moiskimdo (ADMIN y PROFESOR con grupos) ve «Mi caja» y «Mis grupos»', async () => {
+      await montar();
+      responderMarca();
+      entrada('grupos').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-grupos a[href="/mis-grupos"]')).not.toBeNull();
+      entrada('tesoreria').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-tesoreria a[href="/mi-caja"]')).not.toBeNull();
+      entrada('escuela').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-escuela a[href="/auditoriaSistema"]')).not.toBeNull();
+    });
+
+    it('un gestor sin profesor no ve «Mi caja», «Mis grupos» ni lo solo del propietario', async () => {
+      roles = ['ROLE_MANAGER'];
+      datosPermisos = permisos({ roles: ['ADMINISTRADOR'], capacidades: [] });
+      await montar();
+      responderMarca();
+      for (const id of ['grupos', 'tesoreria', 'escuela']) {
+        entrada(id).click();
+        fixture.detectChanges();
+      }
+      expect(el().querySelector('a[href="/mis-grupos"]')).toBeNull();
+      expect(el().querySelector('a[href="/mi-caja"]')).toBeNull();
+      expect(el().querySelector('a[href="/auditoriaSistema"]')).toBeNull();
+      expect(el().querySelector('a[href="/configuracion-sistema"]')).toBeNull();
+    });
+  });
+
+  describe('contador de solicitudes', () => {
+    it('se refresca al entrar y al navegar, y se ve en la entrada', async () => {
+      await montar();
+      responderMarca();
+      expect(refrescar).toHaveBeenCalledTimes(1);
+
+      total.set(3);
+      fixture.detectChanges();
+      const solicitudes = entrada('solicitudes');
+      expect(solicitudes.querySelector('.pn-contador')?.textContent?.trim()).toBe('3');
+      expect(solicitudes.getAttribute('aria-label')).toBe('Solicitudes: 3 por atender');
+
+      await router.navigateByUrl('/tesoreriaCobros');
+      expect(refrescar).toHaveBeenCalledTimes(2);
+
+      total.set(140);
+      fixture.detectChanges();
+      expect(solicitudes.querySelector('.pn-contador')?.textContent?.trim()).toBe('99+');
+    });
+
+    it('tras destruir la cabecera, navegar no refresca el contador', async () => {
+      await montar();
+      responderMarca();
+      expect(refrescar).toHaveBeenCalledTimes(1);
+      fixture.destroy();
+
+      await router.navigateByUrl('/tesoreriaCobros');
+
+      expect(refrescar).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('cuenta', () => {
+    function abrirCuenta(): HTMLElement {
+      const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
+      boton.click();
+      fixture.detectChanges();
+      return el().querySelector<HTMLElement>('#pn-menu-cuenta')!;
+    }
+
+    it('iniciales y nombre visible', async () => {
+      await montar();
+      responderMarca();
+      const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
+      expect(boton.querySelector('.pn-cab__iniciales')?.textContent?.trim()).toBe('CS');
+      expect(boton.querySelector('.pn-cab__cuenta-nombre')?.textContent?.trim()).toBe('Carla S.');
+      expect(boton.getAttribute('aria-haspopup')).toBe('menu');
+    });
+
+    it('«Diseño nuevo» solo para el propietario; enlaces legales y «Configurar cookies»', async () => {
+      await montar();
+      responderMarca();
+      let configurar = 0;
+      fixture.componentInstance.configurarCookies.subscribe(() => configurar++);
+      const menu = abrirCuenta();
+      expect(menu.querySelector('a[href="/panel/diseno-nuevo"]')?.textContent?.trim()).toBe('Diseño nuevo');
+      for (const ruta of ['/politica-privacidad', '/politica-cookies', '/aviso-legal']) {
+        expect(menu.querySelector(`a[href="${ruta}"]`)).withContext(ruta).not.toBeNull();
+      }
+      const boton = Array.from(menu.querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Configurar cookies'
+      )!;
+      boton.click();
+      expect(configurar).toBe(1);
+    });
+
+    it('Esc en el menú de cuenta lo cierra y devuelve el foco al botón', async () => {
+      await montar();
+      responderMarca();
+      const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
+      boton.focus();
+      tecla(boton, 'ArrowDown');
+      fixture.detectChanges();
+      const primera = el().querySelector<HTMLElement>('#pn-menu-cuenta [role="menuitem"]')!;
+      expect(document.activeElement).toBe(primera);
+
+      tecla(primera, 'Escape');
+      fixture.detectChanges();
+
+      expect(el().querySelector('#pn-menu-cuenta')).toBeNull();
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(boton);
+    });
+
+    it('un gestor no ve «Diseño nuevo»', async () => {
+      roles = ['ROLE_MANAGER'];
+      await montar();
+      responderMarca();
+      expect(abrirCuenta().querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
+    });
+
+    it('«Cambiar a familia» solo con acceso doble, como «Cambiar a usuario» de hoy', async () => {
+      roles = ['ROLE_ADMIN', 'ROLE_USER'];
+      await montar();
+      responderMarca();
+      const auth = TestBed.inject(AuthenticationService) as unknown as { guardarVistaPreferida: jasmine.Spy };
+      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Cambiar a familia'
+      );
+      expect(boton).toBeDefined();
+      boton!.click();
+      expect(auth.guardarVistaPreferida).toHaveBeenCalledWith('user');
+    });
+
+    it('«Volver al diseño anterior» pide PUT /api/panel/mi-diseno {activo:false}, reinicia los permisos y recarga', async () => {
+      await montar();
+      responderMarca();
+      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Volver al diseño anterior'
+      )!;
+      boton.click();
+      const peticion = http.expectOne(`${API}/panel/mi-diseno`);
+      expect(peticion.request.method).toBe('PUT');
+      expect(peticion.request.body).toEqual({ activo: false });
+      expect(recargar).not.toHaveBeenCalled();
+
+      peticion.flush({ activo: false, permitido: true });
+
+      expect(reiniciarPermisos).toHaveBeenCalled();
+      expect(recargar).toHaveBeenCalledTimes(1);
+    });
+
+    it('si falla, lo dice y no recarga', async () => {
+      await montar();
+      responderMarca();
+      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Volver al diseño anterior'
+      )!;
+      boton.click();
+      http.expectOne(`${API}/panel/mi-diseno`).flush({ mensaje: 'x' }, { status: 403, statusText: 'Forbidden' });
+      fixture.detectChanges();
+
+      expect(recargar).not.toHaveBeenCalled();
+      expect(el().querySelector('#pn-menu-cuenta [role="alert"]')?.textContent).toContain(
+        'No se pudo volver al diseño anterior'
+      );
+    });
+
+    it('«Cerrar sesión» cierra la sesión', async () => {
+      await montar();
+      responderMarca();
+      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
+        (b) => b.textContent?.trim() === 'Cerrar sesión'
+      )!;
+      boton.click();
+      expect(logout).toHaveBeenCalled();
+    });
+  });
+
+  describe('barra inferior', () => {
+    it('«Más» lleva aria-current cuando la página no está en la barra (Grupos, Solicitudes, Escuela)', async () => {
+      await montar('/solicitudes');
+      responderMarca();
+      const mas = el().querySelector<HTMLElement>('.pn-barra__mas')!;
+      expect(mas.getAttribute('aria-current')).toBe('true');
+
+      await router.navigateByUrl('/alumnosListar');
+      fixture.detectChanges();
+      expect(mas.hasAttribute('aria-current')).toBeFalse();
+    });
+
+    it('Inicio, Alumnos, Tesorería y Más; «Más» lleva todo, lo legal y «Configurar cookies»', async () => {
+      await montar('/tesoreriaCobros');
+      responderMarca();
+      total.set(2);
+      fixture.detectChanges();
+      const barra = el().querySelector<HTMLElement>('nav.pn-barra')!;
+      expect(barra).not.toBeNull();
+      const nombres = Array.from(barra.querySelectorAll('.pn-barra__entrada .pn-barra__nombre')).map((e) =>
+        e.textContent?.trim()
+      );
+      expect(nombres).toEqual(['Inicio', 'Alumnos', 'Tesorería', 'Más']);
+      expect(barra.querySelector('.pn-barra__mas .pn-contador')?.textContent?.trim()).toBe('2');
+      expect(barra.querySelector('.pn-barra__mas')?.getAttribute('aria-label')).toBe('Más: 2 solicitudes por atender');
+      expect(barra.querySelector('a[href="/tesoreriaCobros"]')?.getAttribute('aria-current')).toBe('page');
+
+      const mas = barra.querySelector<HTMLElement>('.pn-barra__mas')!;
+      expect(mas.getAttribute('aria-expanded')).toBe('false');
+      mas.focus();
+      mas.click();
+      fixture.detectChanges();
+      expect(mas.getAttribute('aria-expanded')).toBe('true');
+      const hoja = el().querySelector<HTMLElement>('#pn-menu-mas')!;
+      for (const ruta of [
+        '/adminpage',
+        '/alumnosListar',
+        '/preinscripciones',
+        '/gruposListar',
+        '/mis-grupos',
+        '/tesoreriaCobros',
+        '/mi-caja',
+        '/solicitudes',
+        '/eventosListar',
+        '/configuracion-sistema',
+        '/politica-privacidad',
+        '/politica-cookies',
+        '/aviso-legal',
+      ]) {
+        expect(hoja.querySelector(`a[href="${ruta}"]`)).withContext(ruta).not.toBeNull();
+      }
+      expect(Array.from(hoja.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Configurar cookies')).toBeTrue();
+
+      expect(Number(getComputedStyle(hoja).zIndex)).withContext('la hoja, por encima del botón de subir (1000)').toBeGreaterThan(1000);
+      // La hoja vive dentro de la barra (contexto de apilamiento propio): la barra también ha de quedar por encima.
+      expect(Number(getComputedStyle(barra).zIndex)).withContext('la barra, por encima del botón de subir (1000)').toBeGreaterThan(1000);
+
+      const primero = hoja.querySelector<HTMLElement>('[role="menuitem"]')!;
+      tecla(primero, 'Escape');
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-mas')).toBeNull();
+      expect(document.activeElement).toBe(mas);
+    });
+  });
+});

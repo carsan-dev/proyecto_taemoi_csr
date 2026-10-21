@@ -1,0 +1,402 @@
+// Cabecera C del panel nuevo (DESIGN.md, Navigation). Solo tokens de panel-nuevo.scss bajo .pn; el color de la escuela
+// solo aquí y en el botón principal (decisión 239). --pn-cab-activa lo calcula el componente: el texto de la cabecera al
+// 14 % sobre el primario, menos si el texto no llegara a 4,5:1 encima.
+
+// Sin caja propia: la cabecera y la barra van fijas y skeleton reserva su hueco.
+:host {
+  display: contents;
+}
+
+.pn-cab {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1000;
+  height: 64px;
+  background: var(--pn-marca-primario);
+  color: var(--pn-marca-sobre-primario);
+}
+
+.pn-cab__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--pn-espacio-m);
+  height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--pn-espacio-l);
+}
+
+// Marca: logo de 46 px y nombre de la escuela.
+.pn-cab__marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+  padding-right: var(--pn-espacio-xs);
+  border-radius: var(--pn-radio-m);
+  color: inherit;
+  text-decoration: none;
+}
+
+.pn-cab__logo {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.pn-cab__nombre {
+  display: -webkit-box;
+  overflow: hidden;
+  max-width: 16rem;
+  font: var(--pn-titulo-bloque);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+// Entradas: solo desde 1024 px; por debajo, la barra inferior. No encogen: si falta sitio, encoge el nombre de la
+// escuela (la marca es lo único flexible de la fila), así nada se solapa.
+.pn-cab__nav {
+  display: none;
+  flex: none;
+}
+
+.pn-cab__lista {
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pn-cab__item {
+  position: relative;
+}
+
+.pn-cab__entrada {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pn-espacio-s);
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-marca-sobre-primario-2);
+  font: var(--pn-secundario);
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--pn-transicion),
+    color var(--pn-transicion);
+
+  .bi {
+    font-size: 1.125rem;
+    line-height: 1;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--pn-cab-activa);
+    color: var(--pn-marca-sobre-primario);
+  }
+
+  // Entrada actual: fondo del texto al 14 %, texto pleno y una marca de 3 px en el borde de la cabecera, para que no
+  // dependa solo del tono.
+  &[aria-current] {
+    background: var(--pn-cab-activa);
+    color: var(--pn-marca-sobre-primario);
+
+    &::after {
+      position: absolute;
+      right: 12px;
+      bottom: -12px;
+      left: 12px;
+      height: 3px;
+      background: var(--pn-marca-sobre-primario);
+      content: '';
+    }
+  }
+}
+
+// El foco del .pn usa la tinta del color de la escuela, que sobre la cabecera no se vería: aquí, el color del texto.
+.pn-cab__entrada:focus-visible,
+.pn-cab__marca:focus-visible,
+.pn-cab__cuenta:focus-visible {
+  outline: 2px solid var(--pn-marca-sobre-primario);
+  outline-offset: 2px;
+}
+
+.pn-cab .pn-cab__flecha {
+  font-size: 0.75rem;
+  transition: transform var(--pn-transicion);
+}
+
+[aria-expanded='true'] > .pn-cab__flecha {
+  transform: rotate(180deg);
+}
+
+// Cuenta: iniciales y nombre visible.
+.pn-cab__cuenta-zona {
+  position: relative;
+  flex: none;
+  margin-left: auto;
+}
+
+.pn-cab__cuenta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pn-espacio-s);
+  height: 44px;
+  padding: 0 var(--pn-espacio-s) 0 6px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-marca-sobre-primario);
+  font: var(--pn-secundario);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--pn-cab-activa);
+  }
+}
+
+.pn-cab__iniciales {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-marca-sobre-primario);
+  color: var(--pn-marca-primario);
+  font: var(--pn-etiqueta);
+  font-weight: 700;
+}
+
+.pn-cab__cuenta-nombre {
+  display: none;
+  overflow: hidden;
+  max-width: 12rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// Contador de solicitudes: ocre, común a todas las escuelas (The Un Pendiente Rule).
+.pn-contador {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-atencion);
+  color: var(--pn-superficie);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+// Desplegables: superficie blanca, filete, 8 px y la sombra de menú.
+.pn-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  z-index: 1010;
+  overflow-y: auto;
+  min-width: 248px;
+  max-width: 320px;
+  max-height: calc(100vh - 80px);
+  padding: 6px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-menu);
+  color: var(--pn-tinta);
+}
+
+.pn-menu--fin {
+  right: 0;
+  left: auto;
+}
+
+.pn-menu--cuenta {
+  top: calc(100% + 10px);
+}
+
+.pn-menu__grupo + .pn-menu__grupo {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.pn-menu__titulo {
+  padding: 4px 10px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+}
+
+.pn-menu__opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  .bi {
+    width: 18px;
+    color: var(--pn-tinta-3);
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pn-marca-primario-tinta);
+    outline-offset: -2px;
+  }
+
+  &[aria-current] {
+    background: var(--pn-marca-primario-suave);
+    font-weight: 600;
+  }
+
+  &:disabled {
+    cursor: progress;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.pn-menu__quien {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.pn-menu__quien-nombre {
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+}
+
+.pn-menu__quien-rol {
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+.pn-menu__error {
+  margin: 4px 10px 6px;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+}
+
+@media (min-width: 1024px) {
+  .pn-cab__nav {
+    display: block;
+  }
+}
+
+// 1024-1199 (tableta en horizontal): menos separación y el nombre en dos líneas más estrechas, sin quitar los nombres
+// de las entradas (DESIGN.md: icono y nombre).
+@media (min-width: 1024px) and (max-width: 1199.98px) {
+  .pn-cab__fila {
+    gap: 12px;
+    padding: 0 var(--pn-espacio-m);
+  }
+
+  .pn-cab__marca {
+    gap: var(--pn-espacio-s);
+  }
+
+  .pn-cab__lista {
+    gap: 0;
+  }
+
+  .pn-cab__entrada {
+    gap: 6px;
+    padding: 0 var(--pn-espacio-s);
+
+    &[aria-current]::after {
+      right: var(--pn-espacio-s);
+      left: var(--pn-espacio-s);
+    }
+  }
+
+  .pn-cab__nombre {
+    font-size: 0.9375rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .pn-cab__nombre {
+    max-width: 9rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .pn-cab__cuenta-nombre {
+    display: inline;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pn-cab {
+    height: 56px;
+  }
+
+  .pn-cab__fila {
+    padding: 0 var(--pn-espacio-m);
+  }
+
+  .pn-cab__logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .pn-menu--cuenta {
+    position: fixed;
+    top: 56px;
+    right: var(--pn-espacio-s);
+    max-width: calc(100vw - 2 * var(--pn-espacio-s));
+    max-height: calc(100dvh - 56px - 64px - env(safe-area-inset-bottom, 0px) - 16px);
+  }
+}
+
+// Objetivos de 44 px donde se toca (móvil y tableta).
+@media (max-width: 1023.98px) {
+  .pn-menu__opcion {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .pn-menu--cuenta {
+    max-height: calc(100dvh - 64px - 64px - env(safe-area-inset-bottom, 0px) - 16px);
+  }
+}
