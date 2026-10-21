@@ -7,6 +7,10 @@
     ]
   },
   "files": [
+    "src/app/panel-nuevo/formato/formato-es.spec.ts",
+    "src/app/panel-nuevo/formato/eur.pipe.spec.ts",
+    "src/app/panel-nuevo/formato/plural.pipe.spec.ts",
+    "src/app/panel-nuevo/estilos-panel.service.spec.ts",
     "src/app/app.routes.spec.ts",
     "src/app/componentes/endpoints/editar-grupo/editar-grupo.profesores.spec.ts",
     "src/app/servicios/endpoints/grupo-profesores.service.spec.ts",
