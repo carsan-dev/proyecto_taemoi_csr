@@ -1749,12 +1749,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, pagadas',
-      cancelButtonText: 'No',
+      showDenyButton: true,
+      denyButtonText: 'No',
+      cancelButtonText: 'Cancelar',
     }).then((resultadoPago) => {
-      if (resultadoPago.isConfirmed || resultadoPago.isDismissed) {
-        const pagado = resultadoPago.isConfirmed;
-        this.crearReservasParaDeportes(alumnoId, deportes, pagado);
+      // Decisión 248: cerrar el diálogo (Esc, clic fuera, la X o «Cancelar») no crea ninguna reserva.
+      if (!resultadoPago.isConfirmed && !resultadoPago.isDenied) {
+        return;
       }
+      const pagado = resultadoPago.isConfirmed;
+      this.crearReservasParaDeportes(alumnoId, deportes, pagado);
     });
   }
 
@@ -1814,12 +1818,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, pagada',
-      cancelButtonText: 'No',
+      showDenyButton: true,
+      denyButtonText: 'No',
+      cancelButtonText: 'Cancelar',
     }).then((resultadoPago) => {
-      if (resultadoPago.isConfirmed || resultadoPago.isDismissed) {
-        const pagado = resultadoPago.isConfirmed;
-        this.intentarCrearReservaDeporte(alumnoId, deporte, pagado);
+      // Decisión 248: cerrar el diálogo (Esc, clic fuera, la X o «Cancelar») no crea ninguna reserva.
+      if (!resultadoPago.isConfirmed && !resultadoPago.isDenied) {
+        return;
       }
+      const pagado = resultadoPago.isConfirmed;
+      this.intentarCrearReservaDeporte(alumnoId, deporte, pagado);
     });
   }
 

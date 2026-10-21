@@ -1019,15 +1019,19 @@ export class VistaPrincipalUserComponent implements OnInit, OnDestroy {
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Revisar checklist',
-      cancelButtonText: 'Marcar de todos modos',
+      showDenyButton: true,
+      denyButtonText: 'Marcar de todos modos',
+      cancelButtonText: 'Cancelar',
       reverseButtons: true,
     }).then((resultado) => {
       if (resultado.isConfirmed) {
         this.mostrarComoHacerRetoDiario();
         return;
       }
-
-      this.registrarCompletadoRetoDiario(alumnoId);
+      // Decisión 248: cerrar el diálogo (Esc, clic fuera, la X o «Cancelar») no marca el reto.
+      if (resultado.isDenied) {
+        this.registrarCompletadoRetoDiario(alumnoId);
+      }
     });
   }
 
