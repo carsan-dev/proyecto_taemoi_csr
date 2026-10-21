@@ -15,6 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
@@ -81,6 +84,8 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 	@Autowired PasswordEncoder encoder;
 
 	@MockitoBean JavaMailSender mailSender;
+
+	@Value("${app.imagenes.directorio.windows}") String raizImagenes;
 
 	EscuelaConSedesDePrueba e;
 	long orgB, propietarioA, profesorA, familiaA, dosEscuelas, gestorOrg1;
@@ -221,6 +226,22 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 					.cookie(new Cookie("jwt", tGestorA))).andExpect(status().isNotModified()).andReturn();
 			assertEquals(0, igual.getResponse().getContentAsByteArray().length);
 			assertEquals(etag, igual.getResponse().getHeader("ETag"));
+			String cache304 = igual.getResponse().getHeader("Cache-Control");
+			assertTrue(cache304.contains("private") && cache304.contains("max-age=300"), cache304);
+
+			// Ronda 2: el 304 no lee el fichero. Sin él en disco, con la misma etiqueta sigue 304; sin etiqueta, 404.
+			String ruta = jdbc.queryForObject("SELECT ruta FROM imagen WHERE id = ?", String.class, imagenId);
+			Path fichero = Path.of(raizImagenes).resolve(ruta);
+			Path apartado = fichero.resolveSibling(fichero.getFileName() + ".apartado");
+			Files.move(fichero, apartado);
+			try {
+				mvc.perform(get("/api/escuela/logo").header("If-None-Match", etag).cookie(new Cookie("jwt", tGestorA)))
+						.andExpect(status().isNotModified());
+				mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tGestorA)))
+						.andExpect(status().isNotFound());
+			} finally {
+				Files.move(apartado, fichero);
+			}
 
 			// La misma cuenta, en B (sin logo): no ve el de A.
 			mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tDosEnB))).andExpect(status().isNotFound());
@@ -337,6 +358,23 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 					.cookie(new Cookie("jwt", tPropietarioA))).andExpect(status().isOk()).andReturn();
 			String visto = registro.getResponse().getContentAsString();
 			assertTrue(visto.contains("PLATAFORMA MARCA_COLOR organizacion=#" + e.org + " quitado=SI"), visto);
+		});
+	}
+
+	/** Ronda 2: la clave colorPrimario es obligatoria (null explícito para quitar); sin ella, 400 y nada cambia. */
+	@Test
+	void sinClaveColorPrimario_400_yNoQuita() throws Exception {
+		conColor(orgB, "#3E9B4F", () -> {
+			for (String cuerpo : List.of("{}", "{\"color\":\"#1B2B2E\"}", "{\"colorprimario\":null}", "null")) {
+				MvcResult r = mvc.perform(put("/api/plataforma/escuelas/" + orgB + "/marca")
+						.contentType(MediaType.APPLICATION_JSON).content(cuerpo).cookie(cookieSuperadmin)).andReturn();
+				assertEquals(400, r.getResponse().getStatus(), cuerpo + " " + r.getResponse().getContentAsString());
+				assertTrue(json.readTree(r.getResponse().getContentAsString()).has("mensaje"), cuerpo);
+				assertEquals("#3E9B4F", colorDe(orgB), cuerpo);
+			}
+			// Con null explícito, sí quita.
+			assertTrue(leer(putColor(orgB, "null"), cookieSuperadmin, 200).get("colorPrimario").isNull());
+			assertNull(colorDe(orgB));
 		});
 	}
 

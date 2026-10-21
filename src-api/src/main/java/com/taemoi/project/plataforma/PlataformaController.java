@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.taemoi.project.marca.MarcaPanelService;
+import com.taemoi.project.marca.ReglaContraste;
 
 /**
  * Configuración y consultas de plataforma (todas las escuelas). Protegido dos veces con la misma autoridad: la
@@ -40,9 +42,8 @@ public class PlataformaController {
 		this.marcas = marcas;
 	}
 
-	/** Cuerpo de {@code PUT …/marca}: {@code #RRGGBB} o {@code null} (quitar el color). */
-	public record MarcaRequest(String colorPrimario) {
-	}
+	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
+	static final String FALTA_COLOR = "Falta colorPrimario: un color #RRGGBB, o null para quitarlo.";
 
 	/** Errores técnicos (4xx/5xx o sin sesión) de todas las escuelas, del más reciente al más antiguo. */
 	@GetMapping("/errores")
@@ -96,11 +97,31 @@ public class PlataformaController {
 	/**
 	 * Pieza 8b-T (decisiones 135, 136, 212 y 257): guarda ({@code #RRGGBB}) o quita ({@code null}) el color de la
 	 * marca de una escuela. 200 con la escuela y el tema calculado; 400 si el formato no vale; 404 si la escuela no
-	 * existe. Se registra en la escuela DESTINO, sin el valor del color.
+	 * existe. Se registra en la escuela DESTINO, sin el valor del color. La clave {@code colorPrimario} es obligatoria
+	 * (con {@code null} explícito para quitar): sin ella ({@code {}}, otra clave o sin cuerpo), 400 y nada cambia.
 	 */
 	@PutMapping("/escuelas/{organizacionId}/marca")
 	public ResponseEntity<EscuelaPlataformaConTemaDTO> cambiarMarca(@PathVariable Long organizacionId,
-			@RequestBody MarcaRequest cuerpo) {
-		return ResponseEntity.ok(marcas.cambiarColor(organizacionId, cuerpo == null ? null : cuerpo.colorPrimario()));
+			@RequestBody(required = false) JsonNode cuerpo) {
+		return ResponseEntity.ok(marcas.cambiarColor(organizacionId, colorPrimario(cuerpo)));
+	}
+
+	/**
+	 * El valor de {@code colorPrimario}: texto o {@code null} explícito.
+	 *
+	 * @throws IllegalArgumentException (400) sin la clave, o con un valor que no es texto ni {@code null}
+	 */
+	static String colorPrimario(JsonNode cuerpo) {
+		if (cuerpo == null || !cuerpo.isObject() || !cuerpo.has("colorPrimario")) {
+			throw new IllegalArgumentException(FALTA_COLOR);
+		}
+		JsonNode valor = cuerpo.get("colorPrimario");
+		if (valor.isNull()) {
+			return null;
+		}
+		if (!valor.isTextual()) {
+			throw new IllegalArgumentException(ReglaContraste.MENSAJE_FORMATO);
+		}
+		return valor.asText();
 	}
 }

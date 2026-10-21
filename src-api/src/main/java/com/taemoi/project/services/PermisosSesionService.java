@@ -124,21 +124,28 @@ public class PermisosSesionService {
 				: null;
 	}
 
+	/** Partículas que no dan la inicial del apellido («de la Fuente» → «F.»). */
+	private static final Set<String> PARTICULAS = Set.of("de", "del", "la", "las", "los", "y", "da", "das", "do", "dos",
+			"van", "von");
+
 	/**
-	 * Pieza 8b-T (§4): «Nombre A.», el nombre y la inicial del primer apellido, para el botón de cuenta. Sin apellidos,
-	 * solo el nombre; sin nombre, {@code null}.
+	 * Pieza 8b-T (§4): «Nombre A.», el nombre y la inicial del primer apellido (saltando las partículas), para el botón
+	 * de cuenta. Sin apellido o si todo son partículas, solo el nombre; sin nombre, {@code null}.
 	 */
 	static String nombreVisible(String nombre, String apellidos) {
 		String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
 		if (limpio.isEmpty()) {
 			return null;
 		}
-		String primerApellido = apellidos == null ? "" : apellidos.trim();
-		if (primerApellido.isEmpty()) {
-			return limpio;
+		if (apellidos != null) {
+			for (String palabra : apellidos.trim().split("\\s+")) {
+				if (!palabra.isEmpty() && !PARTICULAS.contains(palabra.toLowerCase(java.util.Locale.ROOT))) {
+					int inicial = palabra.codePointAt(0);
+					return limpio + " " + new String(Character.toChars(Character.toUpperCase(inicial))) + ".";
+				}
+			}
 		}
-		int inicial = primerApellido.codePointAt(0);
-		return limpio + " " + new String(Character.toChars(Character.toUpperCase(inicial))) + ".";
+		return limpio;
 	}
 
 	private static List<String> roles(Set<Roles> autoridades, boolean soloProfesor) {

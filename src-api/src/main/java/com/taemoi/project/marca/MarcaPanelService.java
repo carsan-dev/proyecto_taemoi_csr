@@ -74,6 +74,18 @@ public class MarcaPanelService {
 	}
 
 	/**
+	 * Versión (id de la imagen) del logo subido de la escuela activa, sin leer el fichero: para responder 304 con el
+	 * ETag sin tocar el disco.
+	 *
+	 * @throws NoSuchElementException (404) sin logo subido
+	 */
+	@Transactional(readOnly = true)
+	public Long versionLogoActiva() {
+		return logoSubido(escuelaActiva()).map(Imagen::getId)
+				.orElseThrow(() -> new NoSuchElementException("La escuela no tiene logo."));
+	}
+
+	/**
 	 * El PNG del logo subido de la escuela activa.
 	 *
 	 * @throws NoSuchElementException (404) sin logo subido (también Moiskimdo, que usa el SVG de siempre) o sin fichero

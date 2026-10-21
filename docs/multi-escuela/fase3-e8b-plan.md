@@ -101,8 +101,8 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
      `AuditoriaRequestFilterRegistroPropioTest` y en el IT; el cambio de color se registra en la escuela DESTINO, como el
      logo (E7-7a).
 4. **Regla de contraste.**
-   - 8b-T: `ReglaContrasteTest` con la tabla de §4 (Moiskimdo `#1B2B2E` → blanco 14,67:1; verde `#3E9B4F` → tinta
-     4,70:1; un amarillo → tinta; un gris medio que no llega con ninguno → primario oscurecido) y
+   - 8b-T: `ReglaContrasteTest` con la tabla de §4 (Moiskimdo `#1B2B2E` → blanco 14,66:1; verde `#3E9B4F` → tinta
+     4,56:1, razones truncadas como en §4; un amarillo → tinta; un gris medio que no llega con ninguno → primario oscurecido) y
      `tintaSiempreAlMenos4_5SobreBlanco` sobre una rejilla de colores.
 5. **El superadmin es el único que escribe la marca.**
    - 8b-T: `marca_soloPlataforma` (propietario, gestor y familia 403) y la matriz.
@@ -276,6 +276,9 @@ sombras en 9 pantallas, `$primary-color` en 15 ficheros con 3 valores (auditorí
     primario al 10 % sobre blanco, con la tinta ≥ 4,5:1 encima.
   - Sin color guardado: `#1A2230` (decisión 257).
   - Se guarda el valor tal cual; lo derivado se calcula al leer (determinista, sin columnas nuevas).
+  - Razones de contraste: se muestran truncadas a dos decimales (Moiskimdo 14,66:1 con blanco; el verde `#3E9B4F`
+    4,56:1 con la tinta), nunca redondeadas: así una pareja que no llega no puede aparecer como «4,50:1». La decisión
+    se toma con el valor exacto (≥ 4,5).
 - **Lectura** (`GET /api/escuela/marca`, gestión de la escuela activa; responsable de sede, `DENIEGA` hasta la E9):
   `{nombre, logo: 'SUBIDO' | 'LEGADO' | 'NINGUNO', logoVersion, tema {primario, sobrePrimario, sobrePrimario2,
   primarioTinta, primarioSuave, ajustado}}`. `GET /api/escuela/logo`: PNG del logo subido de la escuela activa
@@ -456,6 +459,16 @@ el SSE de avisos deben seguir funcionando en la cabecera nueva.
 
 **Notas para la PR:** mapa entrada de hoy → sitio nuevo; el nombre del botón de cuenta (`nombreVisible`); los enlaces
 legales del pie, dónde quedan.
+
+**Notas de 8b-T para esta pieza:**
+- (a) `MarcaEscuelaPanelService` reinicia su caché solo al cambiar el email de la sesión; si llega un selector de
+  escuela, debe reiniciarse también al cambiar de escuela.
+- (b) Si falta el fichero del logo, `GET /api/escuela/marca` dice `SUBIDO` y `/api/escuela/logo` da 404: la cabecera
+  necesita plan B, el nombre de la escuela sin logo.
+- (c) El `<img>` del logo depende de la cookie de sesión (`jwt`): solo funciona con la API en el mismo sitio.
+- (d) La paridad Java/TS de la regla de contraste (`ReglaContraste.java` y `regla-contraste.ts`) está medida con 0
+  diferencias en la rejilla de 4.096 colores y en 645.278 colores de todo el espacio sRGB (uno de cada 26); si se toca
+  una, se tocan las dos (los vectores compartidos de sus tests lo vigilan).
 
 ## 9. Pieza 8b-2: Inicio I1
 

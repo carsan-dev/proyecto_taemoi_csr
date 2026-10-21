@@ -57,4 +57,18 @@ class PermisosSesionServiceTest {
 		assertEquals(null, PermisosSesionService.nombreVisible(null, "Ortega"));
 		assertEquals(null, PermisosSesionService.nombreVisible("  ", "Ortega"));
 	}
+
+	/** Ronda 2 de 8b-T: las partículas del apellido no dan la inicial. */
+	@Test
+	void nombreVisible_saltaLasParticulas() {
+		assertEquals("Lucía F.", PermisosSesionService.nombreVisible("Lucía", "de la Fuente"));
+		assertEquals("Lucía R.", PermisosSesionService.nombreVisible("Lucía", "del Río Ortega"));
+		assertEquals("Lucía G.", PermisosSesionService.nombreVisible("Lucía", "García-Pérez"));
+		assertEquals("Lucía G.", PermisosSesionService.nombreVisible("Lucía", "Van Gogh"));
+		assertEquals("Lucía S.", PermisosSesionService.nombreVisible("Lucía", "DOS Santos"));
+		assertEquals("Lucía Y.", PermisosSesionService.nombreVisible("Lucía", "Yáñez"), "«y» solo es partícula sola");
+		assertEquals("Lucía D.", PermisosSesionService.nombreVisible("Lucía", "Delgado"), "«del» solo como palabra");
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", "de la"), "todo partículas");
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", ""));
+	}
 }

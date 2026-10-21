@@ -41,18 +41,25 @@ public class EscuelaMarcaController {
 
 	/**
 	 * PNG del logo subido de la escuela activa, con {@code Cache-Control: private, max-age=300} y {@code ETag} con el id
-	 * de la imagen (304 si coincide). 404 (JSON con {@code mensaje}) sin logo subido: Moiskimdo usa el SVG de siempre.
+	 * de la imagen (304 si coincide: se compara ANTES de leer el fichero). 404 (JSON con {@code mensaje}) sin logo
+	 * subido: Moiskimdo usa el SVG de siempre.
 	 * Sin {@code produces}: así el error sale como JSON aunque la petición acepte solo imágenes.
 	 */
 	@GetMapping("/logo")
 	public ResponseEntity<byte[]> logo(@RequestHeader(value = "If-None-Match", required = false) String siNoCoincide) {
-		MarcaPanelService.LogoPanel logo = marca.logoActivo();
-		String etag = "\"logo-" + logo.imagenId() + "\"";
-		if (coincide(siNoCoincide, etag)) {
-			return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).cacheControl(CACHE_LOGO).build();
+		if (siNoCoincide != null && !siNoCoincide.isBlank()) {
+			String vigente = etiqueta(marca.versionLogoActiva());
+			if (coincide(siNoCoincide, vigente)) {
+				return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(vigente).cacheControl(CACHE_LOGO).build();
+			}
 		}
-		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).eTag(etag).cacheControl(CACHE_LOGO)
-				.body(logo.png());
+		MarcaPanelService.LogoPanel logo = marca.logoActivo();
+		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).eTag(etiqueta(logo.imagenId()))
+				.cacheControl(CACHE_LOGO).body(logo.png());
+	}
+
+	private static String etiqueta(Long imagenId) {
+		return "\"logo-" + imagenId + "\"";
 	}
 
 	/** {@code If-None-Match} con la misma etiqueta (también débil, {@code W/}, o en una lista), o {@code *}. */

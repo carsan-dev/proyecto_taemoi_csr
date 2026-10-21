@@ -367,10 +367,11 @@ Pieza 8b-T (tema por escuela, fase3-e8b-plan.md §4): 5 líneas nuevas; ninguna 
   activa de la sesión; la imagen del logo, además, con `organizacion_id` de esa escuela. `marca` devuelve `{nombre,
   logo: SUBIDO|LEGADO|NINGUNO, logoVersion, tema{primario, sobrePrimario, sobrePrimario2, primarioTinta,
   primarioSuave, ajustado}}`; `logo`, el PNG subido con `Cache-Control: private, max-age=300` y `ETag` (304 si
-  coincide); sin logo subido (también Moiskimdo, `LEGADO`), 404.
+  coincide, sin leer el fichero); sin logo subido (también Moiskimdo, `LEGADO`), 404.
 - `PUT /api/plataforma/escuelas/{organizacionId}/marca` (`PlataformaController#cambiarMarca`, `{colorPrimario:
   '#RRGGBB' | null}`): solo SOLO_PLATAFORMA `PERMITE` (regla `/api/plataforma/**` y `@PreAuthorize` de clase, como el
-  logo). Formato inválido, 400; escuela inexistente, 404. Todo 2xx registra en la escuela DESTINO (módulo `plataforma`,
+  logo). La clave `colorPrimario` es obligatoria (`null` explícito para quitar): sin ella, 400 con `mensaje`.
+  Formato inválido, 400; escuela inexistente, 404. Todo 2xx registra en la escuela DESTINO (módulo `plataforma`,
   `PLATAFORMA MARCA_COLOR organizacion=#id quitado=SI|NO` y `sinCambios=SI` si no cambia nada), nunca el valor del
   color: está en `EscrituraConRegistroPropio` (`MARCA_ESCUELA_COLOR`) y el cuerpo de sus 4xx se guarda con
   `colorPrimario` redactado. `GET /api/plataforma/escuelas` (línea existente) devuelve además `colorPrimario`.
