@@ -14,9 +14,9 @@ describe('PlataformaLogosComponent', () => {
   let creadas: string[];
   let revocadas: string[];
 
-  const con: EscuelaLogo = { id: 2, nombre: 'Escuela Norte', tieneLogo: true, marcaHeredada: false };
-  const sin: EscuelaLogo = { id: 3, nombre: 'Escuela Sur', tieneLogo: false, marcaHeredada: false };
-  const heredada: EscuelaLogo = { id: 1, nombre: 'Moiskimdo', tieneLogo: false, marcaHeredada: true };
+  const con: EscuelaLogo = { id: 2, nombre: 'Escuela Norte', tieneLogo: true, marcaHeredada: false, colorPrimario: null };
+  const sin: EscuelaLogo = { id: 3, nombre: 'Escuela Sur', tieneLogo: false, marcaHeredada: false, colorPrimario: null };
+  const heredada: EscuelaLogo = { id: 1, nombre: 'Moiskimdo', tieneLogo: false, marcaHeredada: true, colorPrimario: null };
   const heredadaConLogo: EscuelaLogo = { ...heredada, tieneLogo: true };
 
   const texto = (): string => fixture.nativeElement.textContent.replace(/\s+/g, ' ');
@@ -53,7 +53,7 @@ describe('PlataformaLogosComponent', () => {
       revocadas.push(url);
     });
 
-    servicio = jasmine.createSpyObj<LogoEscuelaService>('LogoEscuelaService', ['escuelas', 'subir', 'quitar', 'logo']);
+    servicio = jasmine.createSpyObj<LogoEscuelaService>('LogoEscuelaService', ['escuelas', 'subir', 'quitar', 'logo', 'guardarColor']);
     servicio.escuelas.and.returnValue(of([heredada, con, sin]));
     servicio.logo.and.callFake(() => of(new Blob(['x'], { type: 'image/png' })));
 
@@ -405,6 +405,143 @@ describe('PlataformaLogosComponent', () => {
       tick();
       expect(aviso()).toBe('No se pudo cargar el logo de Escuela Norte');
       expect(texto()).not.toContain('Logo guardado');
+    });
+  });
+  describe('color de la escuela (8b-T)', () => {
+    const verde: EscuelaLogo = { id: 4, nombre: 'Escuela Ficticia Verde', tieneLogo: false, marcaHeredada: false, colorPrimario: '#3E9B4F' };
+    const fila = (id: number): HTMLElement => filas().find((f) => f.getAttribute('data-escuela') === String(id))!;
+    const campoTexto = (f: HTMLElement) => f.querySelector('input.color-texto') as HTMLInputElement;
+    const selector = (f: HTMLElement) => f.querySelector('input[type=color]') as HTMLInputElement;
+    const cabecera = (f: HTMLElement) => f.querySelector('.vista-cabecera') as HTMLElement;
+    const escribir = (f: HTMLElement, valor: string) => {
+      campoTexto(f).value = valor;
+      campoTexto(f).dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+    const respuesta = (escuela: EscuelaLogo, colorPrimario: string | null) => ({ ...escuela, colorPrimario });
+
+    beforeEach(() => {
+      servicio.guardarColor.and.callFake((id: number, color: string | null) =>
+        of(respuesta(id === 4 ? verde : sin, color))
+      );
+      servicio.escuelas.and.returnValue(of([verde, sin]));
+      componente.cargar();
+      fixture.detectChanges();
+    });
+
+    it('cada escuela tiene el campo de color con etiqueta y la alternativa de texto #RRGGBB', () => {
+      const f = fila(4);
+      expect(selector(f)).not.toBeNull();
+      expect(campoTexto(f)).not.toBeNull();
+      const etiqueta = f.querySelector(`label[for="${campoTexto(f).id}"]`);
+      expect(etiqueta?.textContent).toContain('#RRGGBB');
+      expect(selector(f).getAttribute('aria-label')).toContain('Escuela Ficticia Verde');
+      expect(campoTexto(f).value).toBe('#3E9B4F');
+      expect(selector(f).value).toBe('#3e9b4f');
+    });
+
+    it('la vista previa usa el color y el texto calculado, con las razones de contraste', () => {
+      const f = fila(4);
+      expect(cabecera(f).style.backgroundColor).toBe('rgb(62, 155, 79)');
+      expect(cabecera(f).style.color).toBe('rgb(26, 34, 48)'); // tinta: el blanco no llega en este verde
+      expect(cabecera(f).textContent).toContain('Escuela Ficticia Verde');
+      expect(f.textContent).toContain('4,56:1');
+      expect(f.textContent).toContain('Texto oscuro');
+    });
+
+    it('sin color guardado, la vista previa usa #1A2230 y lo dice', () => {
+      const f = fila(3);
+      expect(campoTexto(f).value).toBe('');
+      expect(cabecera(f).style.backgroundColor).toBe('rgb(26, 34, 48)');
+      expect(cabecera(f).style.color).toBe('rgb(255, 255, 255)');
+      expect(f.textContent).toContain('Sin color');
+      expect(f.textContent).toContain('#1A2230');
+      expect(boton(f, 'Quitar color')).toBeUndefined();
+    });
+
+    it('escribir un color cambia la vista previa al momento, sin guardar', () => {
+      const f = fila(3);
+      escribir(f, '#1b2b2e');
+      expect(cabecera(f).style.backgroundColor).toBe('rgb(27, 43, 46)');
+      expect(cabecera(f).style.color).toBe('rgb(255, 255, 255)');
+      expect(f.textContent).toContain('14,66:1');
+      expect(servicio.guardarColor).not.toHaveBeenCalled();
+    });
+
+    it('el selector nativo también cambia el texto', () => {
+      const f = fila(3);
+      selector(f).value = '#1b2b2e';
+      selector(f).dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(campoTexto(f).value).toBe('#1B2B2E');
+    });
+
+    it('«Guardar color» hace una sola petición con el color y deja la fila con el guardado', () => {
+      const f = fila(3);
+      escribir(f, '#1b2b2e');
+      boton(f, 'Guardar color')!.click();
+      fixture.detectChanges();
+      expect(servicio.guardarColor).toHaveBeenCalledOnceWith(3, '#1B2B2E');
+      expect(componente.filas.find((x) => x.escuela.id === 3)!.escuela.colorPrimario).toBe('#1B2B2E');
+      expect(boton(fila(3), 'Quitar color')).toBeDefined();
+      expect(boton(fila(3), 'Guardar color')!.disabled).toBeTrue(); // ya guardado: nada que guardar
+    });
+
+    it('mientras guarda, los botones del color están desactivados y un segundo clic no repite', () => {
+      const pendiente = new Subject<EscuelaLogo>();
+      servicio.guardarColor.and.returnValue(pendiente);
+      const f = fila(3);
+      escribir(f, '#1B2B2E');
+      boton(f, 'Guardar color')!.click();
+      boton(f, 'Guardar color')!.click();
+      fixture.detectChanges();
+      expect(servicio.guardarColor).toHaveBeenCalledTimes(1);
+      expect(boton(fila(3), 'Guardar color')!.disabled).toBeTrue();
+      pendiente.next(respuesta(sin, '#1B2B2E'));
+      pendiente.complete();
+      fixture.detectChanges();
+      expect(f.textContent).not.toContain('Guardando');
+    });
+
+    it('«Quitar color» envía null y vuelve al de por defecto', () => {
+      const f = fila(4);
+      boton(f, 'Quitar color')!.click();
+      fixture.detectChanges();
+      expect(servicio.guardarColor).toHaveBeenCalledOnceWith(4, null);
+      expect(campoTexto(fila(4)).value).toBe('');
+      expect(cabecera(fila(4)).style.backgroundColor).toBe('rgb(26, 34, 48)');
+    });
+
+    it('un formato inválido no se envía: error en la fila y el campo marcado', () => {
+      const f = fila(3);
+      escribir(f, '#12345');
+      boton(f, 'Guardar color')!.click();
+      fixture.detectChanges();
+      expect(servicio.guardarColor).not.toHaveBeenCalled();
+      const error = f.querySelector('.error-color[role=alert]');
+      expect(error?.textContent).toContain('#RRGGBB');
+      expect(campoTexto(f).getAttribute('aria-invalid')).toBe('true');
+      expect(campoTexto(f).getAttribute('aria-describedby')).toContain(error!.id);
+    });
+
+    it('el error del servidor sale en la fila del color, sin tocar el logo', () => {
+      servicio.guardarColor.and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 400, error: { mensaje: 'El color debe tener el formato #RRGGBB.' } }))
+      );
+      const f = fila(4);
+      escribir(f, '#1B2B2E');
+      boton(f, 'Guardar color')!.click();
+      fixture.detectChanges();
+      expect(f.querySelector('.error-color')!.textContent).toContain('El color debe tener el formato #RRGGBB.');
+      expect(f.querySelector('.error-fila')).toBeNull();
+      expect(componente.filas.find((x) => x.escuela.id === 4)!.escuela.colorPrimario).toBe('#3E9B4F');
+    });
+
+    it('un gris medio avisa de que la cabecera usará el color oscurecido', () => {
+      const f = fila(3);
+      escribir(f, '#808080');
+      expect(cabecera(f).style.backgroundColor).toBe('rgb(116, 116, 116)');
+      expect(f.textContent).toContain('#747474');
     });
   });
 });

@@ -359,6 +359,25 @@ devuelve además `disenoNuevo {activo, permitido}`: con gestión fuera de la ses
 resto, apagado. Lo prueban `DisenoPanelIntegrationTest`, `PermisosSesionIntegrationTest` y
 `RegistroUnicoProfesorIntegrationTest`.
 
+Pieza 8b-T (tema por escuela, fase3-e8b-plan.md §4): 5 líneas nuevas; ninguna casilla existente cambia.
+- `GET`/`HEAD /api/escuela/marca` (`EscuelaMarcaController#marca`) y `GET`/`HEAD /api/escuela/logo` (`#logo`): GESTOR y
+  PROPIETARIO `PERMITE`; el resto (ANONIMO, FAMILIA, SOLO_PLATAFORMA, RESPONSABLE_SEDE hasta la E9 y PROFESOR),
+  `DENIEGA`. Regla de URL propia `/api/escuela`, `/api/escuela/**` (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`,
+  junto a la de `/api/panel`; fuera de la lista blanca solo-profesor) y `@PreAuthorize` de clase. Siempre la escuela
+  activa de la sesión; la imagen del logo, además, con `organizacion_id` de esa escuela. `marca` devuelve `{nombre,
+  logo: SUBIDO|LEGADO|NINGUNO, logoVersion, tema{primario, sobrePrimario, sobrePrimario2, primarioTinta,
+  primarioSuave, ajustado}}`; `logo`, el PNG subido con `Cache-Control: private, max-age=300` y `ETag` (304 si
+  coincide); sin logo subido (también Moiskimdo, `LEGADO`), 404.
+- `PUT /api/plataforma/escuelas/{organizacionId}/marca` (`PlataformaController#cambiarMarca`, `{colorPrimario:
+  '#RRGGBB' | null}`): solo SOLO_PLATAFORMA `PERMITE` (regla `/api/plataforma/**` y `@PreAuthorize` de clase, como el
+  logo). Formato inválido, 400; escuela inexistente, 404. Todo 2xx registra en la escuela DESTINO (módulo `plataforma`,
+  `PLATAFORMA MARCA_COLOR organizacion=#id quitado=SI|NO` y `sinCambios=SI` si no cambia nada), nunca el valor del
+  color: está en `EscrituraConRegistroPropio` (`MARCA_ESCUELA_COLOR`) y el cuerpo de sus 4xx se guarda con
+  `colorPrimario` redactado. `GET /api/plataforma/escuelas` (línea existente) devuelve además `colorPrimario`.
+`GET /api/auth/permisos` (línea existente, sin cambio de permisos) devuelve además `nombreVisible` («Nombre A.») de la
+cuenta de la sesión. Lo prueban `MarcaEscuelaPanelIntegrationTest`, `PermisosSesionIntegrationTest`,
+`AuditoriaRequestFilterRegistroPropioTest` y `AuditoriaRequestFilterClavesRedactadasTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

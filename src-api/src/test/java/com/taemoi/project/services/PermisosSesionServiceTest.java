@@ -45,4 +45,16 @@ class PermisosSesionServiceTest {
 			}
 		}
 	}
+
+	/** Pieza 8b-T (§4): «Nombre A.» con la inicial del primer apellido, para el botón de cuenta. */
+	@Test
+	void nombreVisible_nombreEInicialDelPrimerApellido() {
+		assertEquals("Lucía O.", PermisosSesionService.nombreVisible("Lucía", "Ortega Ruiz"));
+		assertEquals("María José Á.", PermisosSesionService.nombreVisible(" María José ", "  álvarez"));
+		assertEquals("Ana María O.", PermisosSesionService.nombreVisible("Ana \t María", "ortega"));
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", null));
+		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", "  "));
+		assertEquals(null, PermisosSesionService.nombreVisible(null, "Ortega"));
+		assertEquals(null, PermisosSesionService.nombreVisible("  ", "Ortega"));
+	}
 }

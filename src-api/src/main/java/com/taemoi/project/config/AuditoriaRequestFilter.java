@@ -64,6 +64,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 */
 		LOGO_ESCUELA_CAMBIAR("PUT", "/api/plataforma/escuelas/[^/]+/logo"),
 		LOGO_ESCUELA_QUITAR("DELETE", "/api/plataforma/escuelas/[^/]+/logo"),
+		/**
+		 * Pieza 8b-T: color de la marca de una escuela (superadmin). MarcaPanelService#cambiarColor registra todo 2xx
+		 * en la escuela DESTINO (PLATAFORMA MARCA_COLOR con organizacion, quitado y, si no cambia nada, sinCambios),
+		 * nunca el valor del color. Caso en MarcaEscuelaPanelIntegrationTest.
+		 */
+		MARCA_ESCUELA_COLOR("PUT", "/api/plataforma/escuelas/[^/]+/marca"),
 		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
 		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
 		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),
@@ -153,7 +159,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			// Pieza E8-3 (D8-16): email, cargo, nombre y apellidos del alta de un miembro (los dos últimos, de la E8-4);
 			// el cargo al dar un rol.
 			Pattern.compile("^/api/miembros/?$"), Set.of("email", "cargo", "nombre", "apellidos"),
-			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"));
+			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"),
+			// Pieza 8b-T: el color de la escuela en el cuerpo del PUT de la marca (los 4xx; el 2xx tiene registro propio).
+			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"));
 
 	/**
 	 * Parámetros de la URL que no se guardan en la auditoría para una ruta. Pieza E8-3: la búsqueda de miembros

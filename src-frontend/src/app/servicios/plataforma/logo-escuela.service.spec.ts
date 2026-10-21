@@ -50,4 +50,21 @@ describe('LogoEscuelaService', () => {
     expect(peticion.request.responseType).toBe('blob');
     peticion.flush(new Blob(['x'], { type: 'image/png' }));
   });
+
+  it('guarda el color con PUT …/marca y el cuerpo {colorPrimario}', () => {
+    servicio.guardarColor(7, '#1B2B2E').subscribe();
+    const peticion = http.expectOne(`${base}/7/marca`);
+    expect(peticion.request.method).toBe('PUT');
+    expect(peticion.request.withCredentials).toBeTrue();
+    expect(peticion.request.body).toEqual({ colorPrimario: '#1B2B2E' });
+    peticion.flush({ id: 7, nombre: 'Norte', tieneLogo: false, marcaHeredada: false, colorPrimario: '#1B2B2E' });
+  });
+
+  it('quita el color enviando colorPrimario null', () => {
+    servicio.guardarColor(7, null).subscribe();
+    const peticion = http.expectOne(`${base}/7/marca`);
+    expect(peticion.request.method).toBe('PUT');
+    expect(peticion.request.body).toEqual({ colorPrimario: null });
+    peticion.flush({ id: 7, nombre: 'Norte', tieneLogo: false, marcaHeredada: false, colorPrimario: null });
+  });
 });

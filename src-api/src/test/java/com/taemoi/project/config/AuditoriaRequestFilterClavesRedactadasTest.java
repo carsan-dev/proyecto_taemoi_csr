@@ -55,6 +55,19 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		}
 	}
 
+	/** Pieza 8b-T: el color de la escuela no se guarda en el cuerpo de un 4xx del PUT de la marca. */
+	@Test
+	void marca_redactaElColor() {
+		for (String ruta : List.of("/api/plataforma/escuelas/7/marca", "/api/plataforma/escuelas/7/marca/",
+				"/API/PLATAFORMA/ESCUELAS/7/MARCA", "/api//plataforma/escuelas/7/marca")) {
+			assertEquals(Set.of("colorPrimario"), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+		for (String ruta : List.of("/api/plataforma/escuelas/7/logo", "/api/plataforma/escuelas/7/marca/otra",
+				"/api/escuela/marca")) {
+			assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+	}
+
 	/** Pieza E8-3: la búsqueda de miembros ({@code q}) no se guarda; los demás parámetros y rutas, como siempre. */
 	@Test
 	void miembros_q_redactada() {

@@ -17,6 +17,7 @@ import com.taemoi.project.dtos.response.PermisosSesionDTO.Capacidad;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Sede;
+import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.AlcanceActual;
 import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.plataforma.AutoridadPlataforma;
@@ -39,6 +40,7 @@ import com.taemoi.project.repositories.SedeRepository;
  * escuela.</li>
  * <li>{@code disenoNuevo} (pieza 8b-I): con gestión (ROLE_ADMIN o ROLE_MANAGER) fuera de la sesión solo-profesor, el de
  * {@link DisenoPanelService#estadoPropio} (dos consultas pequeñas más); el resto, apagado sin consultar.</li>
+ * <li>{@code nombreVisible} (pieza 8b-T): «Nombre A.» de la cuenta de la sesión, sin consulta ni registro.</li>
  * </ul>
  * Reutiliza el alcance de la petición ({@link AlcanceActual}): como mucho dos consultas pequeñas de sedes, sin N+1.
  */
@@ -62,7 +64,7 @@ public class PermisosSesionService {
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
-					DisenoPanelDTO.Propio.APAGADO);
+					DisenoPanelDTO.Propio.APAGADO, nombreVisible(autenticacion));
 		}
 		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -85,7 +87,8 @@ public class PermisosSesionService {
 				: DisenoPanelDTO.Propio.APAGADO;
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
-				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo);
+				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo,
+				nombreVisible(autenticacion));
 	}
 
 	/**
@@ -112,6 +115,30 @@ public class PermisosSesionService {
 			resultado.add(Capacidad.MI_CAJA);
 		}
 		return List.copyOf(resultado);
+	}
+
+	/** El nombre visible de la cuenta de la sesión (la ya cargada al verificar el JWT; sin consulta). */
+	private static String nombreVisible(Authentication autenticacion) {
+		return autenticacion != null && autenticacion.getPrincipal() instanceof Usuario usuario
+				? nombreVisible(usuario.getNombre(), usuario.getApellidos())
+				: null;
+	}
+
+	/**
+	 * Pieza 8b-T (§4): «Nombre A.», el nombre y la inicial del primer apellido, para el botón de cuenta. Sin apellidos,
+	 * solo el nombre; sin nombre, {@code null}.
+	 */
+	static String nombreVisible(String nombre, String apellidos) {
+		String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
+		if (limpio.isEmpty()) {
+			return null;
+		}
+		String primerApellido = apellidos == null ? "" : apellidos.trim();
+		if (primerApellido.isEmpty()) {
+			return limpio;
+		}
+		int inicial = primerApellido.codePointAt(0);
+		return limpio + " " + new String(Character.toChars(Character.toUpperCase(inicial))) + ".";
 	}
 
 	private static List<String> roles(Set<Roles> autoridades, boolean soloProfesor) {

@@ -17,9 +17,11 @@ import java.util.List;
  * @param disenoNuevo       pieza 8b-I: el interruptor del diseño nuevo de la sesión ({@code activo}: lo ve;
  *                          {@code permitido}: puede cambiarlo para sí). Solo con gestión (ROLE_ADMIN o ROLE_MANAGER)
  *                          fuera de la sesión solo-profesor (decisión 260); el resto, apagado.
+ * @param nombreVisible     pieza 8b-T: «Nombre A.» de la cuenta de la sesión (nombre e inicial del primer apellido),
+ *                          para el botón de cuenta; {@code null} sin nombre. Solo el propio.
  */
 public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, List<Sede> sedes, boolean variasSedes,
-		boolean tieneGrupos, List<Capacidad> capacidades, DisenoPanelDTO.Propio disenoNuevo) {
+		boolean tieneGrupos, List<Capacidad> capacidades, DisenoPanelDTO.Propio disenoNuevo, String nombreVisible) {
 
 	public PermisosSesionDTO {
 		roles = List.copyOf(roles);

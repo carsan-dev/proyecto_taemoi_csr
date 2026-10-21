@@ -75,13 +75,14 @@ public class ErroresPlataformaRepository {
 
 	/**
 	 * Todas las escuelas (id y nombre), para el filtro de la pantalla de errores; con la E7-7a, también si tienen logo
-	 * y si usan la marca heredada (pantalla del logo).
+	 * y si usan la marca heredada (pantalla del logo); con la 8b-T, su color guardado (pantalla «Logo y color»).
 	 */
 	public List<EscuelaPlataformaDTO> escuelas() {
 		return jdbc.query("SELECT o.id, o.nombre, o.logo_imagen_id IS NOT NULL AS tiene_logo, "
-				+ "o.comportamiento_legado_taemoi AS marca_heredada FROM organizacion o ORDER BY o.nombre, o.id",
+				+ "o.comportamiento_legado_taemoi AS marca_heredada, o.color_primario FROM organizacion o "
+				+ "ORDER BY o.nombre, o.id",
 				(rs, numero) -> new EscuelaPlataformaDTO(rs.getLong("id"), rs.getString("nombre"),
-						rs.getBoolean("tiene_logo"), rs.getBoolean("marca_heredada")));
+						rs.getBoolean("tiene_logo"), rs.getBoolean("marca_heredada"), rs.getString("color_primario")));
 	}
 
 	private static String condiciones(Filtro filtro, List<Object> parametros) {

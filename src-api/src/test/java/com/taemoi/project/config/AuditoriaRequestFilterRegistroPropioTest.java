@@ -45,6 +45,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 					new Ejemplo("PUT", "/api/plataforma/escuelas/7/logo")),
 			Map.entry(EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
 					new Ejemplo("DELETE", "/api/plataforma/escuelas/7/logo")),
+			Map.entry(EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR,
+					new Ejemplo("PUT", "/api/plataforma/escuelas/7/marca")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_APTO,
 					new Ejemplo("PUT", "/api/profesor/alumnos/12/deportes/TAEKWONDO/apto")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_FECHA_GRADO,
@@ -148,6 +150,15 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("POST", "/api/panel/mi-diseno"),
 			new Ejemplo("PUT", "/api/panel/mi-diseno/otra"),
 			new Ejemplo("PUT", "/api/panel"),
+			// Pieza 8b-T: la lectura de la marca y del logo, y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/escuela/marca"),
+			new Ejemplo("GET", "/api/escuela/logo"),
+			new Ejemplo("PUT", "/api/escuela/marca"),
+			new Ejemplo("GET", "/api/plataforma/escuelas/7/marca"),
+			new Ejemplo("DELETE", "/api/plataforma/escuelas/7/marca"),
+			new Ejemplo("POST", "/api/plataforma/escuelas/7/marca"),
+			new Ejemplo("PUT", "/api/plataforma/escuelas/7/marca/otra"),
+			new Ejemplo("PUT", "/api/plataforma/escuelas/marca"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");
