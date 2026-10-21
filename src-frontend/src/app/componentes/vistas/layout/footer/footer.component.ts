@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -9,4 +9,6 @@ import { RouterLink } from '@angular/router';
   styleUrl: './footer.component.scss'
 })
 export class FooterComponent {
+  /** «Configurar cookies»: el skeleton vuelve a abrir el aviso de cookies (decisión 250). */
+  @Output() readonly configurarCookies = new EventEmitter<void>();
 }

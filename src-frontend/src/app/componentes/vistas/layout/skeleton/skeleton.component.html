@@ -9,7 +9,7 @@
     </div>
   </div>
   <app-botonscroll></app-botonscroll>
-  <app-footer class="row"></app-footer>
+  <app-footer class="row" (configurarCookies)="showCookieBanner = true"></app-footer>
 </div>
 <div
   *ngIf="showCookieBanner"
@@ -25,10 +25,6 @@
       <p>
         Usamos cookies de an&aacute;lisis para mejorar la experiencia.
         Puedes aceptarlas o rechazarlas en cualquier momento.
-      </p>
-      <p class="cookie-consent__notice" [hidden]="!showAdblockNotice">
-        Si usas un bloqueador de anuncios, la anal&iacute;tica puede no funcionar aunque aceptes.
-        Para activarla, desactiva el adblock o permite esta web.
       </p>
       <div class="cookie-consent__links">
         <a href="/politica-privacidad">Pol&iacute;tica de privacidad</a>

@@ -12,6 +12,8 @@ describe('SkeletonComponent · analítica sin token', () => {
   let gtagAnterior: unknown;
   let consentimientoAnterior: string | null;
   let urlAnterior: string;
+  let cargarScript: jasmine.Spy;
+  let componente: SkeletonComponent;
 
   function hits(): ReadonlyArray<readonly unknown[]> {
     return gtag.calls.allArgs();
@@ -30,7 +32,9 @@ describe('SkeletonComponent · analítica sin token', () => {
       providers: [{ provide: Router, useValue: { events: eventos } }],
     });
     TestBed.overrideComponent(SkeletonComponent, { set: { imports: [], template: '' } });
-    TestBed.createComponent(SkeletonComponent).detectChanges();
+    const fixture = TestBed.createComponent(SkeletonComponent);
+    componente = fixture.componentInstance;
+    fixture.detectChanges();
   }
 
   beforeEach(() => {
@@ -40,10 +44,13 @@ describe('SkeletonComponent · analítica sin token', () => {
     consentimientoAnterior = localStorage.getItem('cookieConsent');
     localStorage.setItem('cookieConsent', 'accepted');
     urlAnterior = location.pathname + location.search + location.hash;
+    // Nunca se descarga gtag.js de verdad en las pruebas: solo se comprueba si se pide.
+    cargarScript = spyOn(SkeletonComponent.prototype as any, 'cargarScript');
   });
 
   afterEach(() => {
     global.gtag = gtagAnterior;
+    delete global['ga-disable-G-R3H7GC1T4X'];
     if (consentimientoAnterior === null) {
       localStorage.removeItem('cookieConsent');
     } else {
@@ -86,8 +93,8 @@ describe('SkeletonComponent · analítica sin token', () => {
   });
 
   /**
-   * Con Consent Mode avanzado, gtag.js manda eventos automáticos (scroll, user_engagement, formularios) también sin
-   * consentimiento, con el page_location fijado. Se fija en cada navegación, limpio, decida lo que decida el usuario.
+   * El page_location se fija en cada navegación, limpio, decida lo que decida el usuario: sin consentimiento se queda en
+   * dataLayer (gtag.js no se carga, decisión 233) y, si luego acepta, la cola que procesa gtag.js ya va limpia.
    */
   it('sin consentimiento, en cada navegación fija el page_location sin token y no manda ningún evento', () => {
     localStorage.setItem('cookieConsent', 'rejected');
@@ -129,5 +136,103 @@ describe('SkeletonComponent · analítica sin token', () => {
     gtag.calls.reset();
     eventos.next(new NavigationEnd(2, '/reset-password', '/reset-password'));
     expect(hits()).toEqual([['set', { page_location: `${location.origin}/reset-password` }]]);
+  });
+
+  /** Consentimiento básico (decisión 233): sin «Aceptar» no se carga gtag.js ni se manda ningún hit. */
+  describe('consentimiento básico', () => {
+    const selectorScript = 'script[src*="googletagmanager.com"]';
+
+    function hitsQueMandan(): ReadonlyArray<readonly unknown[]> {
+      return hits().filter((a) => a[0] === 'config' || a[0] === 'event' || a[0] === 'js');
+    }
+
+    function cookiesGa(): string[] {
+      return document.cookie
+        .split(';')
+        .map((c) => c.split('=')[0].trim())
+        .filter((n) => n.startsWith('_ga'));
+    }
+
+    it('con «Rechazar» guardado no carga gtag.js ni manda ningún hit, tampoco al navegar', () => {
+      localStorage.setItem('cookieConsent', 'rejected');
+      montar();
+      eventos.next(new NavigationEnd(1, '/reset-password?token=SECRETO2', '/reset-password?token=SECRETO2'));
+      expect(cargarScript).not.toHaveBeenCalled();
+      expect(document.querySelector(selectorScript)).toBeNull();
+      expect(hitsQueMandan()).toEqual([]);
+    });
+
+    it('sin decidir (aviso abierto) no carga gtag.js ni manda ningún hit', () => {
+      localStorage.removeItem('cookieConsent');
+      montar();
+      eventos.next(new NavigationEnd(1, '/horarios', '/horarios'));
+      expect(cargarScript).not.toHaveBeenCalled();
+      expect(document.querySelector(selectorScript)).toBeNull();
+      expect(hitsQueMandan()).toEqual([]);
+    });
+
+    it('al pulsar «Rechazar» tampoco carga gtag.js', () => {
+      localStorage.removeItem('cookieConsent');
+      montar();
+      componente.rejectCookies();
+      expect(cargarScript).not.toHaveBeenCalled();
+      expect(hitsQueMandan()).toEqual([]);
+    });
+
+    it('al pulsar «Aceptar» carga gtag.js una vez y lo configura sin token desde el primer hit', () => {
+      history.replaceState(history.state, '', '/reset-password?token=SECRETO1');
+      localStorage.removeItem('cookieConsent');
+      montar();
+      expect(cargarScript).not.toHaveBeenCalled();
+      componente.acceptCookies();
+      expect(cargarScript).toHaveBeenCalledTimes(1);
+      const llamadas = hits();
+      expect(JSON.stringify(llamadas)).not.toContain('SECRETO1');
+      const consentimiento = llamadas.findIndex(
+        (a) => a[0] === 'consent' && (a[2] as { analytics_storage: string }).analytics_storage === 'granted'
+      );
+      const js = llamadas.findIndex((a) => a[0] === 'js');
+      const config = llamadas.findIndex((a) => a[0] === 'config');
+      expect(consentimiento).toBeGreaterThanOrEqual(0);
+      expect(js).toBeGreaterThan(consentimiento);
+      expect(config).toBeGreaterThan(js);
+      expect(llamadas[config][2]).toEqual(
+        jasmine.objectContaining({ send_page_view: false, page_location: `${location.origin}/reset-password` })
+      );
+      expect(pageViews()).toEqual([{ page_location: `${location.origin}/reset-password`, page_path: '/reset-password' }]);
+    });
+
+    it('con «Aceptar» guardado de una visita anterior carga gtag.js al arrancar', () => {
+      montar();
+      expect(cargarScript).toHaveBeenCalledTimes(1);
+      expect(hits().some((a) => a[0] === 'config')).toBeTrue();
+    });
+
+    it('con «Rechazar» guardado borra las cookies _ga que quedaran de antes', () => {
+      document.cookie = '_ga=GA1.1.prueba; path=/';
+      document.cookie = '_ga_PRUEBA=GS1.1.prueba; path=/';
+      localStorage.setItem('cookieConsent', 'rejected');
+      montar();
+      expect(cookiesGa()).toEqual([]);
+    });
+
+    it('si retira el consentimiento tras aceptar: consent denied, borra las _ga y deja de mandar page_view', () => {
+      montar();
+      document.cookie = '_ga=GA1.1.prueba; path=/';
+      gtag.calls.reset();
+      componente.rejectCookies();
+      expect(hits()).toContain([
+        'consent',
+        'update',
+        jasmine.objectContaining({ analytics_storage: 'denied' }) as unknown as object,
+      ]);
+      expect(cookiesGa()).toEqual([]);
+      // gtag.js ya cargado deja de mandar hasta recargar (decisión 233, ronda 2)
+      expect(global['ga-disable-G-R3H7GC1T4X']).toBeTrue();
+      delete global['ga-disable-G-R3H7GC1T4X'];
+      eventos.next(new NavigationEnd(1, '/horarios', '/horarios'));
+      expect(pageViews()).toEqual([]);
+      expect(localStorage.getItem('cookieConsent')).toBe('rejected');
+    });
   });
 });

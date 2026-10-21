@@ -210,7 +210,13 @@ $github-color: #333;
   li {
     margin-bottom: 0.75rem;
 
-    a {
+    // Enlaces y el botón «Configurar cookies» (abre el aviso, no navega) con el mismo aspecto.
+    > * {
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      cursor: pointer;
       color: $text-muted;
       text-decoration: none;
       font-size: 0.95rem;
