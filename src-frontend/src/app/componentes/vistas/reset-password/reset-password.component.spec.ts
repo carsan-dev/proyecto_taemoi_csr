@@ -71,8 +71,17 @@ describe('ResetPasswordComponent · token fuera de la barra', () => {
     expect(aviso?.textContent?.trim()).toBe('Abre de nuevo el enlace del correo. Si ha caducado, pide otro.');
   });
 
+  it('sin token, debajo del aviso, enlaza a pedir un enlace nuevo en «Olvidé mi contraseña»', () => {
+    montar(null);
+    const raiz = fixture.nativeElement as HTMLElement;
+    const enlace = raiz.querySelector<HTMLAnchorElement>('.auth-error + .auth-nuevo-enlace a');
+    expect(enlace?.textContent?.trim()).toBe('Pedir un enlace nuevo');
+    expect(enlace?.getAttribute('href')).toBe('/recuperar-contrasena');
+  });
+
   it('con token no enseña el aviso', () => {
     montar('tok-123');
     expect((fixture.nativeElement as HTMLElement).querySelector('.auth-error')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.auth-nuevo-enlace')).toBeNull();
   });
 });
