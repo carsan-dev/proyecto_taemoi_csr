@@ -42,5 +42,11 @@ watch_certificate() {
   done
 }
 
+# /var/cache/nginx es un volumen que sobrevive a las imágenes: si una imagen nueva cambia el uid del usuario nginx,
+# los temporales antiguos quedan de otro dueño y nginx corta las respuestas grandes del proxy (Permission denied).
+if [ "$(id -u)" -eq 0 ] && [ -d /var/cache/nginx ]; then
+  chown -R nginx:nginx /var/cache/nginx || echo "Could not fix ownership of /var/cache/nginx" >&2
+fi
+
 watch_certificate &
 exec nginx "$@"

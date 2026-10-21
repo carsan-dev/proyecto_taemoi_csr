@@ -29,6 +29,8 @@ COPY --from=build /app/dist/taemoi-angular-front/browser /usr/share/nginx/html
 # Copy nginx configuration
 COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY ./default.conf /etc/nginx/conf.d/default.conf
+# Cabeceras de seguridad que incluye default.conf (fuera de conf.d: nginx.conf incluye conf.d/*.conf a nivel http)
+COPY ./nginx-cabeceras-seguridad.conf /etc/nginx/cabeceras-seguridad.conf
 
 # Set proper permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
