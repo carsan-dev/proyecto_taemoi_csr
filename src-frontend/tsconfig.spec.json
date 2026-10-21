@@ -95,6 +95,7 @@
     "src/app/componentes/endpoints/crear-producto/producto-vendible-profesor.spec.ts",
     "src/app/componentes/endpoints/listado-convocatorias/listado-convocatorias.bloqueos.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/editar-alumno.bloqueos.spec.ts",
+    "src/app/componentes/endpoints/listado-convocatorias/listado-convocatorias.asignar.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.bloqueos.spec.ts",
     "src/app/servicios/endpoints/solicitudes.service.spec.ts",
     "src/app/componentes/vistas/layout/header/header.solicitudes.spec.ts",

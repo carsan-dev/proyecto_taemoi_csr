@@ -515,13 +515,19 @@ export class ListadoConvocatoriasComponent implements OnInit {
 
     Swal.fire({
       title: 'Selecciona el tipo de producto',
-      text: 'Asignar el precio por antiguedad o por recompensa?',
+      text: '¿Asignar el precio por antigüedad o por recompensa?',
       icon: 'question',
-      showCancelButton: true,
       confirmButtonText: 'Por Recompensa',
-      cancelButtonText: 'Por Antiguedad',
+      showDenyButton: true,
+      denyButtonText: 'Por Antigüedad',
+      showCancelButton: true,
+      cancelButtonText: 'Cancelar',
     }).then((result) => {
-      const porRecompensa = result.isConfirmed; // true si selecciona recompensa
+      // Decisión 235: cerrar el diálogo (Esc, clic fuera, la X o «Cancelar») no asigna nada.
+      if (!result.isConfirmed && !result.isDenied) {
+        return;
+      }
+      const porRecompensa = result.isConfirmed; // «Por Recompensa»; «Por Antigüedad» es isDenied
 
       const agregarAlumno = (rojoBordado: boolean) => {
         this.endpointsService
