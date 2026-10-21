@@ -39,16 +39,10 @@ import {
   seccionActiva,
   visible,
 } from './menu-panel';
+import { RECARGAR_PAGINA } from '../../core/recargar-pagina';
 import { enfocarOpcion, teclaEnMenu } from './teclado-menu';
 
-/** Recarga de la página tras «Volver al diseño anterior» (decisión 256); en los tests se sustituye. */
-export const RECARGAR_PAGINA = new InjectionToken<() => void>('RECARGAR_PAGINA', {
-  providedIn: 'root',
-  factory: () => {
-    const documento = inject(DOCUMENT);
-    return () => documento.defaultView?.location.reload();
-  },
-});
+export { RECARGAR_PAGINA };
 
 /** Tema de una escuela sin color (decisión 257): el de `panel-nuevo.scss` mientras no llega la marca. */
 const TEXTO_POR_DEFECTO = '#FFFFFF';

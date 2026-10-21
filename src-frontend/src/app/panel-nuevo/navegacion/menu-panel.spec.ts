@@ -93,7 +93,7 @@ async function rutasDeLaCabeceraDeHoy(caso: Caso): Promise<Set<string>> {
       { provide: PageScrollService, useValue: { scrollTop: 0 } },
       { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
       { provide: SolicitudesContadorService, useValue: { total: () => 0, refrescar: () => undefined, reiniciar: () => undefined } },
-      { provide: PermisosSesionService, useValue: { capacidades: () => of(caso.capacidades) } },
+      { provide: PermisosSesionService, useValue: { capacidades: () => of(caso.capacidades), obtener: () => of({}) } },
     ],
   }).compileComponents();
   const fixture = TestBed.createComponent(HeaderComponent);

@@ -50,7 +50,7 @@ describe('HeaderComponent: contador de solicitudes', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contador },
-        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
 

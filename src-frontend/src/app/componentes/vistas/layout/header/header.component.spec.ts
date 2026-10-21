@@ -2,11 +2,13 @@ import { HeaderComponent } from './header.component';
 import { NgZone } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
-import { Capacidad, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { Capacidad, DisenoNuevoSesion, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { DisenoPanelService } from '../../../../panel-nuevo/diseno-panel.service';
+import { RECARGAR_PAGINA } from '../../../../core/recargar-pagina';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 /** El contador de solicitudes (6c-7) sin HTTP: lo prueba header.solicitudes.spec.ts. */
@@ -40,7 +42,9 @@ describe('HeaderComponent', () => {
       pageScroll as any,
       scrollLock as any,
       contadorSolicitudesSimulado as any,
-      { capacidades: () => of([]) } as any
+      { capacidades: () => of([]), obtener: () => of({}) } as any,
+      {} as any,
+      () => undefined
     );
   }
 
@@ -121,7 +125,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
-        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
 
@@ -219,7 +223,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
-        { provide: PermisosSesionService, useValue: { capacidades: () => of([]) } },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
 
@@ -360,6 +364,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       capacidades: jasmine
         .createSpy('capacidades')
         .and.callFake(() => of(capacidades === 'error' ? [] : (capacidades ?? porDefecto))),
+      obtener: () => of({}),
     };
     const esAdminPlataforma = jasmine.createSpy('esAdminPlataforma').and.returnValue(of(false));
     const authServiceMock = {
@@ -576,5 +581,106 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+});
+
+describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de gestión', () => {
+  let diseno: { cambiarMiDiseno: jasmine.Spy };
+  let reiniciar: jasmine.Spy;
+  let recargar: jasmine.Spy;
+
+  async function renderizar(roles: string[], disenoNuevo?: DisenoNuevoSesion) {
+    diseno = { cambiarMiDiseno: jasmine.createSpy('cambiarMiDiseno').and.returnValue(of({ activo: true, permitido: true })) };
+    reiniciar = jasmine.createSpy('reiniciar');
+    recargar = jasmine.createSpy('recargar');
+    const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    const permisos = {
+      capacidades: () => of([]),
+      obtener: () => of({ roles, disenoNuevo }),
+      reiniciar,
+    };
+    const authServiceMock = {
+      usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
+      usernameCambio: new BehaviorSubject<string | null>('cuenta'),
+      rolesCambio: new BehaviorSubject<string[]>(roles),
+      comprobarLogueado: () => true,
+      getRoles: () => of(roles),
+      resolverRolesDisponibles: () => of(roles),
+      esAdminPlataforma: () => of(false),
+      marcarVistaPreferidaSegunRuta: () => undefined,
+      tieneAccesoAdmin: () => gestion,
+      tieneAccesoUser: (r: string[]) => r.includes('ROLE_USER'),
+      tieneAccesoDual: () => false,
+      logout: () => undefined,
+    };
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceMock },
+        { provide: PageScrollService, useValue: { scrollTop: 0 } },
+        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
+        { provide: PermisosSesionService, useValue: permisos },
+        { provide: DisenoPanelService, useValue: diseno },
+        { provide: RECARGAR_PAGINA, useValue: recargar },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.toggleAdminAccountMenu();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const entrada = (fixture: { nativeElement: unknown }) =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.admin-account-menu-panel button')).find(
+      (b) => b.textContent?.trim() === 'Usar el diseño nuevo'
+    );
+  const esperar = () => new Promise<void>((r) => setTimeout(r, 50));
+
+  it('visible con permiso y diseño anterior (permitido y no activo)', async () => {
+    for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
+      const fixture = await renderizar(roles, { activo: false, permitido: true });
+      expect(entrada(fixture)).withContext(roles.join()).toBeDefined();
+    }
+  });
+
+  it('oculta sin permiso, ya encendido, sin dato, y con sesión solo-profesor o de familia', async () => {
+    const casos: [string[], DisenoNuevoSesion | undefined][] = [
+      [['ROLE_ADMIN'], { activo: false, permitido: false }],
+      [['ROLE_ADMIN'], { activo: true, permitido: true }],
+      [['ROLE_ADMIN'], undefined],
+      [['ROLE_PROFESOR'], { activo: false, permitido: true }],
+      [['ROLE_USER'], { activo: false, permitido: true }],
+    ];
+    for (const [roles, dato] of casos) {
+      const fixture = await renderizar(roles, dato);
+      expect(entrada(fixture)).withContext(JSON.stringify([roles, dato])).toBeUndefined();
+    }
+  });
+
+  it('el clic llama a cambiarMiDiseno(true), reinicia los permisos y recarga; un clic, una petición', async () => {
+    const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
+    entrada(fixture)!.click();
+    entrada(fixture)?.click();
+    await esperar();
+    expect(diseno.cambiarMiDiseno).toHaveBeenCalledOnceWith(true);
+    expect(reiniciar).toHaveBeenCalledTimes(1);
+    expect(recargar).toHaveBeenCalledTimes(1);
+  });
+
+  it('si falla, avisa y no recarga', async () => {
+    const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
+    diseno.cambiarMiDiseno.and.returnValue(throwError(() => new Error('403')));
+    entrada(fixture)!.click();
+    await esperar();
+    fixture.detectChanges();
+    expect(recargar).not.toHaveBeenCalled();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel [role="alert"]')?.textContent).toContain(
+      'No se pudo cambiar al diseño nuevo'
+    );
+    expect(entrada(fixture)!.disabled).toBeFalse();
   });
 });

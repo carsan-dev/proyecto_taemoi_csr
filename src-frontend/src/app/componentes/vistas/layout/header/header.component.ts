@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
+import { Component, HostListener, Inject, Injector, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
 import {
   AuthenticationService,
@@ -6,7 +6,7 @@ import {
   esSoloProfesor,
 } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
-import { Subscription, of, switchMap } from 'rxjs';
+import { Subscription, firstValueFrom, of, switchMap } from 'rxjs';
 import Swal from 'sweetalert2';
 import {
   ADMIN_HEADER_QUICK_LINKS,
@@ -16,7 +16,10 @@ import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { PermisosSesionService, pidePermisos } from '../../../../servicios/authentication/permisos-sesion.service';
+import { RECARGAR_PAGINA } from '../../../../core/recargar-pagina';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
+
+const ERROR_DISENO_NUEVO = 'No se pudo cambiar al diseño nuevo. Inténtalo de nuevo.';
 
 @Component({
   selector: 'app-header',
@@ -53,6 +56,12 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   /** La sesión tiene cabecera de gestión y pide el contador de solicitudes (ADMIN o MANAGER; D6c-4). */
   private pideContadorSolicitudes = false;
   private permisosSuscripcion?: Subscription;
+  private disenoSuscripcion?: Subscription;
+
+  /** «Usar el diseño nuevo» (decisión 256): gestión con permiso (`permitido`) que hoy usa el diseño anterior. */
+  veUsarDisenoNuevo = false;
+  cambiandoDiseno = false;
+  errorDiseno: string | null = null;
 
   // Expandable menu sections
   expandedSections: { [key: string]: boolean } = {
@@ -82,7 +91,9 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly pageScroll: PageScrollService,
     private readonly scrollLock: ScrollLockService,
     private readonly solicitudesContador: SolicitudesContadorService,
-    private readonly permisos: PermisosSesionService
+    private readonly permisos: PermisosSesionService,
+    private readonly injector: Injector,
+    @Inject(RECARGAR_PAGINA) private readonly recargar: () => void
   ) {}
 
   /** Lo que espera acción de la sesión en la bandeja de solicitudes (0: sin distintivo). */
@@ -205,6 +216,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.permisosSuscripcion?.unsubscribe();
+    this.disenoSuscripcion?.unsubscribe();
     this.setBodyScrollLock(false);
 
     // Clean up document scroll listener
@@ -263,7 +275,30 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isAdminAccountMenuOpen = !this.isAdminAccountMenuOpen;
   }
 
+  /**
+   * Decisión 256: la cuenta enciende el diseño nuevo para sí; se reinician los permisos y se recarga. El servicio vive
+   * en el chunk del panel nuevo y se carga solo al pulsar. Un clic, una petición; si falla, avisa y no recarga.
+   */
+  async usarDisenoNuevo(): Promise<void> {
+    if (this.cambiandoDiseno) {
+      return;
+    }
+    this.cambiandoDiseno = true;
+    this.errorDiseno = null;
+    try {
+      const { DisenoPanelService } = await import('../../../../panel-nuevo/diseno-panel.service');
+      await firstValueFrom(this.injector.get(DisenoPanelService).cambiarMiDiseno(true));
+    } catch {
+      this.cambiandoDiseno = false;
+      this.errorDiseno = ERROR_DISENO_NUEVO;
+      return;
+    }
+    this.permisos.reiniciar();
+    this.recargar();
+  }
+
   closeAdminAccountMenu(): void {
+    this.errorDiseno = null;
     this.isAdminAccountMenuOpen = false;
   }
 
@@ -311,8 +346,17 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.permisosSuscripcion?.unsubscribe();
     this.permisosSuscripcion = undefined;
     this.veMisGrupos = false;
+    this.disenoSuscripcion?.unsubscribe();
+    this.disenoSuscripcion = undefined;
+    this.veUsarDisenoNuevo = false;
     if (!pidePermisos(roles)) {
       return;
+    }
+    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
+      this.disenoSuscripcion = this.permisos.obtener().subscribe({
+        next: (p) => (this.veUsarDisenoNuevo = p.disenoNuevo?.permitido === true && p.disenoNuevo.activo === false),
+        error: () => (this.veUsarDisenoNuevo = false),
+      });
     }
     const profesor = roles.includes('ROLE_PROFESOR');
     this.permisosSuscripcion = this.permisos
