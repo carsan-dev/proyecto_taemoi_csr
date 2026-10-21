@@ -58,6 +58,8 @@
     "typescript": "5.9.3"
   },
   "overrides": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "follow-redirects": "^1.16.1",
     "less": "4.9.0",
     "webpack-dev-server": "5.2.6",
     "sockjs": {
