@@ -116,7 +116,14 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** GestionMiembrosService#reemplazarGrupos (PROFESOR ASIGNACION_*; sin cambios, MIEMBROS GRUPOS_CAMBIADOS). */
 		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos"),
 		/** Pieza E8-4: GestionMiembrosService#reenviarInvitacion (MIEMBROS INVITACION_REENVIADA). */
-		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion");
+		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion"),
+		// Pieza 8b-I: interruptor del diseño nuevo. Todo 2xx registra, también el que no cambia nada (sinCambios=SI).
+		/** DisenoPanelService#cambiarPermiso (PANEL DISENO_PERMITIR o DISENO_QUITAR). Solo ids numéricos. */
+		PANEL_DISENO_PERMISO("PUT", "/api/panel/diseno-nuevo/[0-9]+"),
+		/** DisenoPanelService#cambiarPorDefecto (PANEL DISENO_POR_DEFECTO). */
+		PANEL_DISENO_POR_DEFECTO("PUT", "/api/panel/diseno-nuevo/por-defecto"),
+		/** DisenoPanelService#cambiarMiDiseno (PANEL DISENO_ACTIVAR o DISENO_DESACTIVAR). */
+		PANEL_MI_DISENO("PUT", "/api/panel/mi-diseno");
 
 		private final String metodo;
 		private final Pattern ruta;

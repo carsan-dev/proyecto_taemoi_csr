@@ -136,7 +136,8 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void permisos_propietario() throws Exception {
 		JsonNode p = permisos(tPropietario);
-		assertEquals(Set.of("roles", "esAdminPlataforma", "sedes", "variasSedes", "tieneGrupos", "capacidades"),
+		assertEquals(Set.of("roles", "esAdminPlataforma", "sedes", "variasSedes", "tieneGrupos", "capacidades",
+				"disenoNuevo"),
 				campos(p), "claves del DTO");
 		assertEquals(List.of("PROPIETARIO"), textos(p.get("roles")));
 		assertFalse(p.get("esAdminPlataforma").asBoolean());

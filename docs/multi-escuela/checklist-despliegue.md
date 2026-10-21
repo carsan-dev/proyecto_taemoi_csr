@@ -203,6 +203,13 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       área de familias y panel (Alumnos, Tesorería, Mi caja) como antes, y que
       `curl -sI https://moiskimdo.es/panel-nuevo.css` responde 200 con `Cache-Control: no-cache` y las cabeceras de
       seguridad (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy).
+- [ ] E8b, pieza 8b-I (interruptor del diseño nuevo por usuario; decisiones 255, 256 y 258): con migración V31_10
+      (`diseno_panel_usuario`, tabla nueva y vacía; solo amplía) → atajo `desplegar_migrar`. Con el interruptor apagado
+      (por defecto) nadie nota nada; solo el propietario ve «Diseño nuevo» en su menú de cuenta del panel, con la
+      pantalla de asignación («Para todo el equipo», oculto hasta R5). Después, solo lectura: Flyway en 31.10
+      (`SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1`) y
+      `SELECT COUNT(*) FROM diseno_panel_usuario` = 0. Comprobar en el móvil que el propietario (también profesor en
+      Umbrete) sigue viendo «Mi caja» y los mismos menús, y que un gestor no ve «Diseño nuevo».
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

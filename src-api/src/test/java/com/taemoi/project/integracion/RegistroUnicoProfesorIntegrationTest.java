@@ -368,6 +368,35 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					List.of("MIEMBROS INVITACION_REENVIADA"), () -> post("/api/miembros/" + aceptada + "/invitacion"),
 					409);
 		});
+		// Pieza 8b-I: interruptor del diseño nuevo (módulo panel). Cada caso con su cuenta nueva.
+		casos.put(EscrituraConRegistroPropio.PANEL_DISENO_PERMISO, () -> {
+			long gestor = e.cuenta(usuarios, "diseno-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, gestor, "ADMINISTRADOR");
+			long familia = e.cuenta(usuarios, "diseno-familia-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, familia, "FAMILIA");
+			// Sin gestión en la escuela: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/panel/diseno-nuevo/" + gestor), "{\"permitido\":true}"), 200,
+					List.of("PANEL DISENO_PERMITIR"),
+					() -> conCuerpo(put("/api/panel/diseno-nuevo/" + familia), "{\"permitido\":true}"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.PANEL_DISENO_POR_DEFECTO, () ->
+		// El valor de siempre (VIEJO) otra vez: 200 con sinCambios=SI, sin cambiar la escuela. Sin «nuevo»: 400.
+		new Caso(tPropietario, propietario,
+				() -> conCuerpo(put("/api/panel/diseno-nuevo/por-defecto"), "{\"nuevo\":false}"), 200,
+				List.of("PANEL DISENO_POR_DEFECTO"), () -> conCuerpo(put("/api/panel/diseno-nuevo/por-defecto"), "{}"),
+				400));
+		casos.put(EscrituraConRegistroPropio.PANEL_MI_DISENO, () -> {
+			long gestor = e.cuenta(usuarios, "mi-diseno-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, gestor, "ADMINISTRADOR");
+			jdbc.update("""
+					INSERT INTO diseno_panel_usuario (organizacion_id, usuario_id, permitido, activo, cambiado_en)
+					VALUES (?, ?, TRUE, TRUE, NOW(6))""", e.org, gestor);
+			String token = e.token(jwtService, usuarios, gestor);
+			// Sin «activo»: 400.
+			return new Caso(token, gestor, () -> conCuerpo(put("/api/panel/mi-diseno"), "{\"activo\":false}"), 200,
+					List.of("PANEL DISENO_DESACTIVAR"), () -> conCuerpo(put("/api/panel/mi-diseno"), "{}"), 400);
+		});
 		return casos;
 	}
 

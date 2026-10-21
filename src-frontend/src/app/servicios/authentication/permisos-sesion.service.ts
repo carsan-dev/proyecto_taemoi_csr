@@ -14,6 +14,12 @@ export interface SedeVisible {
   activa: boolean;
 }
 
+/** Interruptor del diseño nuevo de la sesión (8b-I): `activo`, lo ve; `permitido`, puede cambiarlo para sí. */
+export interface DisenoNuevoSesion {
+  activo: boolean;
+  permitido: boolean;
+}
+
 /** `GET /api/auth/permisos` (`PermisosSesionDTO`). */
 export interface PermisosSesion {
   roles: string[];
@@ -22,6 +28,16 @@ export interface PermisosSesion {
   variasSedes: boolean;
   tieneGrupos: boolean;
   capacidades: Capacidad[];
+  /** Opcional: un servidor anterior no lo manda y se trata como apagado. */
+  disenoNuevo?: DisenoNuevoSesion;
+}
+
+/**
+ * Quién pide los permisos al entrar (8b-I): ROLE_PROFESOR (Mis grupos y Mi caja) y, por el interruptor del diseño
+ * nuevo, también la gestión (ROLE_ADMIN o ROLE_MANAGER). Una vez por sesión: la petición se comparte.
+ */
+export function pidePermisos(roles: readonly string[]): boolean {
+  return roles.includes('ROLE_PROFESOR') || roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
 }
 
 /**

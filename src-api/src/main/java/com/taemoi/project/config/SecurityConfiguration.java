@@ -222,6 +222,11 @@ public class SecurityConfiguration {
 						// el servicio). Misma posición y motivo que /api/sedes; fuera de la lista blanca solo-profesor.
 						.requestMatchers("/api/miembros", "/api/miembros/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza 8b-I (fase3-e8b-plan.md §3): interruptor del diseño nuevo del panel, solo P y G (lo del
+						// propietario, con @PreAuthorize por método). Misma posición y motivo que /api/miembros; fuera de
+						// la lista blanca solo-profesor.
+						.requestMatchers("/api/panel", "/api/panel/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
 						// escuela (las tarifas solo para gestión, en CatalogoController). Toda sesión de escuela tiene
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor

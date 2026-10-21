@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { firstValueFrom } from 'rxjs';
 
 import { AuthenticationService } from './authentication.service';
-import { PermisosSesion, PermisosSesionService } from './permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService, pidePermisos } from './permisos-sesion.service';
 import { environment } from '../../../environments/environment';
 
 const URL_PERMISOS = `${environment.apiUrl}/auth/permisos`;
@@ -74,6 +74,25 @@ describe('PermisosSesionService', () => {
     const resultado = firstValueFrom(servicio.capacidades());
     http.expectOne(URL_PERMISOS).flush('no', { status: 403, statusText: 'Forbidden' });
     expect(await resultado).toEqual([]);
+  });
+});
+
+describe('pidePermisos: quién pide GET /api/auth/permisos (8b-I)', () => {
+  it('con ROLE_PROFESOR, como hasta ahora', () => {
+    expect(pidePermisos(['ROLE_PROFESOR'])).toBeTrue();
+    expect(pidePermisos(['ROLE_USER', 'ROLE_PROFESOR'])).toBeTrue();
+  });
+
+  it('gestión también pide: ROLE_ADMIN o ROLE_MANAGER (el interruptor del diseño nuevo va en los permisos)', () => {
+    expect(pidePermisos(['ROLE_ADMIN'])).toBeTrue();
+    expect(pidePermisos(['ROLE_MANAGER'])).toBeTrue();
+    expect(pidePermisos(['ROLE_MANAGER', 'ROLE_USER'])).toBeTrue();
+  });
+
+  it('la familia, el responsable de sede solo o sin roles no piden', () => {
+    expect(pidePermisos(['ROLE_USER'])).toBeFalse();
+    expect(pidePermisos(['ROLE_USER', 'ROLE_RESPONSABLE_SEDE'])).toBeFalse();
+    expect(pidePermisos([])).toBeFalse();
   });
 });
 

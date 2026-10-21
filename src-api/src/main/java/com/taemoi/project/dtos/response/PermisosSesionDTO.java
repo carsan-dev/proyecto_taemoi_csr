@@ -14,14 +14,18 @@ import java.util.List;
  * @param variasSedes       la escuela tiene más de una sede activa.
  * @param tieneGrupos       la sesión tiene grupos asignados como profesor ({@code alcance.grupos()}).
  * @param capacidades       por el orden de {@link Capacidad}.
+ * @param disenoNuevo       pieza 8b-I: el interruptor del diseño nuevo de la sesión ({@code activo}: lo ve;
+ *                          {@code permitido}: puede cambiarlo para sí). Solo con gestión (ROLE_ADMIN o ROLE_MANAGER)
+ *                          fuera de la sesión solo-profesor (decisión 260); el resto, apagado.
  */
 public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, List<Sede> sedes, boolean variasSedes,
-		boolean tieneGrupos, List<Capacidad> capacidades) {
+		boolean tieneGrupos, List<Capacidad> capacidades, DisenoPanelDTO.Propio disenoNuevo) {
 
 	public PermisosSesionDTO {
 		roles = List.copyOf(roles);
 		sedes = List.copyOf(sedes);
 		capacidades = List.copyOf(capacidades);
+		disenoNuevo = disenoNuevo == null ? DisenoPanelDTO.Propio.APAGADO : disenoNuevo;
 	}
 
 	public record Sede(Long id, String nombre, boolean activa) {
