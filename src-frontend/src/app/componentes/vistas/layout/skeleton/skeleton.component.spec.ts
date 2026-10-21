@@ -8,7 +8,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { PermisosSesion, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { HeaderComponent } from '../header/header.component';
-import { SkeletonComponent } from './skeleton.component';
+import { RECORDATORIO_PANEL, SkeletonComponent, esRutaDelPanel } from './skeleton.component';
 
 @Component({ selector: 'app-header', standalone: true, template: '' })
 class HeaderFalsoComponent {}
@@ -39,6 +39,7 @@ function permisos(activo: boolean, roles: string[] = ['PROPIETARIO', 'PROFESOR']
 describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   let obtener: jasmine.Spy<() => Observable<PermisosSesion>>;
   let cargarHoja: jasmine.Spy<() => Promise<void>>;
+  let sesion: BehaviorSubject<boolean>;
 
   async function montar(ruta: string): Promise<HTMLElement & { detectar: () => void }> {
     TestBed.configureTestingModule({
@@ -47,7 +48,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
         provideRouter([{ path: '**', component: PantallaFalsaComponent }]),
         { provide: PermisosSesionService, useValue: { obtener } },
         { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
-        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: new BehaviorSubject<boolean>(true) } },
+        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion } },
       ],
       deferBlockBehavior: DeferBlockBehavior.Manual,
     });
@@ -73,6 +74,12 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   beforeEach(() => {
     obtener = jasmine.createSpy('obtener');
     cargarHoja = jasmine.createSpy('cargar').and.resolveTo();
+    sesion = new BehaviorSubject<boolean>(true);
+    localStorage.removeItem(RECORDATORIO_PANEL);
+  });
+
+  afterEach(() => {
+    localStorage.removeItem(RECORDATORIO_PANEL);
   });
 
   function esperarHoy(raiz: HTMLElement): void {
@@ -137,13 +144,84 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect((await fixture.getDeferBlocks()).length).toBe(1);
   });
 
-  it('mientras no se sabe el interruptor, en gestión: el hueco, no la cabecera de hoy ni el pie', async () => {
+  it('mientras no se sabe el interruptor y sin recordatorio: la cabecera y el pie de hoy desde el primer píxel', async () => {
+    obtener.and.returnValue(NEVER);
+    esperarHoy(await montar('/alumnosListar'));
+  });
+
+  it('con el recordatorio de encendido y sin respuesta todavía: el hueco, ni la cabecera de hoy ni el pie', async () => {
+    localStorage.setItem(RECORDATORIO_PANEL, '1');
     obtener.and.returnValue(NEVER);
     const raiz = await montar('/alumnosListar');
 
     expect(cabeceraDeHoy(raiz)).toBeNull();
     expect(pie(raiz)).toBeNull();
     expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+  });
+
+  it('con el recordatorio y la respuesta apagado: lo de hoy, y se borra el recordatorio', async () => {
+    localStorage.setItem(RECORDATORIO_PANEL, '1');
+    obtener.and.returnValue(of(permisos(false)));
+    esperarHoy(await montar('/adminpage'));
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBeNull();
+  });
+
+  it('respuesta encendido: se guarda el recordatorio (un booleano global, sin cuenta)', async () => {
+    obtener.and.returnValue(of(permisos(true)));
+    await montar('/adminpage');
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBe('1');
+  });
+
+  it('error de permisos: ni se escribe ni se borra el recordatorio', async () => {
+    localStorage.setItem(RECORDATORIO_PANEL, '1');
+    obtener.and.returnValue(throwError(() => new Error('500')));
+    esperarHoy(await montar('/adminpage'));
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBe('1');
+  });
+
+  it('si localStorage lanza, no rompe: sin recordatorio y con la respuesta de siempre', async () => {
+    const espias = [
+      spyOn(Storage.prototype, 'getItem').and.throwError('bloqueado'),
+      spyOn(Storage.prototype, 'setItem').and.throwError('bloqueado'),
+      spyOn(Storage.prototype, 'removeItem').and.throwError('bloqueado'),
+    ];
+    obtener.and.returnValue(of(permisos(true)));
+    const raiz = await montar('/adminpage');
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+    expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+
+    obtener.and.returnValue(NEVER);
+    sesion.next(false);
+    raiz.detectar();
+    esperarHoy(raiz);
+    espias.forEach((e) => e.and.callThrough());
+  });
+
+  it('al cerrar sesión se borra el recordatorio y vuelve lo de hoy', async () => {
+    obtener.and.returnValue(of(permisos(true)));
+    const raiz = await montar('/adminpage');
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBe('1');
+
+    obtener.and.returnValue(NEVER);
+    sesion.next(false);
+    raiz.detectar();
+
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBeNull();
+    esperarHoy(raiz);
+  });
+
+  it('se vuelve a leer al navegar a una ruta del panel (tras cambiar el propio diseño y reiniciar los permisos)', async () => {
+    obtener.and.returnValue(of(permisos(false)));
+    const raiz = await montar('/adminpage');
+    esperarHoy(raiz);
+
+    obtener.and.returnValue(of(permisos(true)));
+    await TestBed.inject(Router).navigateByUrl('/panel/diseno-nuevo');
+    await (raiz as any).fixture.whenStable();
+    raiz.detectar();
+
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+    expect(pie(raiz)).toBeNull();
   });
 
   it('encendido: al pasar de gestión a una ruta pública vuelve lo de hoy, y al volver, lo nuevo', async () => {
@@ -159,6 +237,19 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     raiz.detectar();
     expect(cabeceraDeHoy(raiz)).toBeNull();
     expect(pie(raiz)).toBeNull();
-    expect(obtener).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('esRutaDelPanel', () => {
+  it('las rutas de gestión y las del panel sin portal de gestión', () => {
+    for (const ruta of ['/adminpage', '/alumnosListar', '/mi-caja', '/mis-grupos', '/mis-grupos/4', '/plataformaErrores', '/plataformaLogos', '/panel/diseno-nuevo']) {
+      expect(esRutaDelPanel(ruta)).withContext(ruta).toBeTrue();
+    }
+  });
+
+  it('las públicas y las de familia, no', () => {
+    for (const ruta of ['/', '', '/horarios', '/userpage', '/userpage/turnos', '/mi-cajas', '/login']) {
+      expect(esRutaDelPanel(ruta)).withContext(ruta).toBeFalse();
+    }
   });
 });

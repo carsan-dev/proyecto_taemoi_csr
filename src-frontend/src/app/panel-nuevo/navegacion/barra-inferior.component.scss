@@ -8,7 +8,8 @@
 .pn-barra {
   position: fixed;
   inset: auto 0 0;
-  z-index: 1000;
+  // Por encima del botón de subir (1000): la hoja de «Más» vive dentro de la barra y comparte su apilamiento.
+  z-index: 1001;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--pn-superficie);
   box-shadow: var(--pn-sombra-barra);
@@ -40,7 +41,8 @@
   cursor: pointer;
   transition: color var(--pn-transicion);
 
-  &.es-actual {
+  &.es-actual,
+  &[aria-expanded='true'] {
     color: var(--pn-marca-primario-tinta);
 
     &::before {
@@ -55,6 +57,7 @@
   }
 
   &:focus-visible {
+    border-radius: var(--pn-radio-m);
     outline: 2px solid var(--pn-marca-primario-tinta);
     outline-offset: -4px;
   }
@@ -97,7 +100,8 @@
   right: 0;
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   left: 0;
-  z-index: 999;
+  // Por encima del botón de subir (1000), que queda debajo mientras «Más» está abierto.
+  z-index: 1001;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: 0 var(--pn-espacio-l);

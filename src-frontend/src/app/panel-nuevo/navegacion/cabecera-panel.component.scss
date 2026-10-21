@@ -47,18 +47,21 @@
 }
 
 .pn-cab__nombre {
+  display: -webkit-box;
   overflow: hidden;
   max-width: 16rem;
   font: var(--pn-titulo-bloque);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
-// Entradas: solo desde 1024 px; por debajo, la barra inferior.
+// Entradas: solo desde 1024 px; por debajo, la barra inferior. No encogen: si falta sitio, encoge el nombre de la
+// escuela (la marca es lo único flexible de la fila), así nada se solapa.
 .pn-cab__nav {
   display: none;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: none;
 }
 
 .pn-cab__lista {
@@ -316,6 +319,37 @@
 @media (min-width: 1024px) {
   .pn-cab__nav {
     display: block;
+  }
+}
+
+// 1024-1199 (tableta en horizontal): menos separación y el nombre en dos líneas más estrechas, sin quitar los nombres
+// de las entradas (DESIGN.md: icono y nombre).
+@media (min-width: 1024px) and (max-width: 1199.98px) {
+  .pn-cab__fila {
+    gap: 12px;
+    padding: 0 var(--pn-espacio-m);
+  }
+
+  .pn-cab__marca {
+    gap: var(--pn-espacio-s);
+  }
+
+  .pn-cab__lista {
+    gap: 0;
+  }
+
+  .pn-cab__entrada {
+    gap: 6px;
+    padding: 0 var(--pn-espacio-s);
+
+    &[aria-current]::after {
+      right: var(--pn-espacio-s);
+      left: var(--pn-espacio-s);
+    }
+  }
+
+  .pn-cab__nombre {
+    font-size: 0.9375rem;
   }
 }
 

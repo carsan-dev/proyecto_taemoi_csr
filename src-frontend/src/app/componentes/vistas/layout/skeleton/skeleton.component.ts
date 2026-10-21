@@ -1,7 +1,7 @@
 import { Component, DestroyRef, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { Subscription, catchError, distinctUntilChanged, filter, from, map, of, skip, startWith, switchMap, take } from 'rxjs';
+import { Subject, catchError, filter, from, map, of, skip, switchMap, take } from 'rxjs';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll.component';
@@ -18,10 +18,22 @@ const RUTAS_PANEL = ['/mi-caja', '/mis-grupos', '/plataformaErrores', '/platafor
 
 /** Ruta de gestión: la cabecera nueva solo va en ellas (8b-N); las públicas y las de familia siguen con las de hoy. */
 export function esRutaDelPanel(url: string): boolean {
-  const ruta = (url || '/').split('?')[0].split('#')[0] || '/';
+  const ruta = url.split(/[?#]/)[0] || '/';
   return (
     resolverPortalContexto(ruta) === 'admin' || RUTAS_PANEL.some((r) => ruta === r || ruta.startsWith(`${r}/`))
   );
+}
+
+/** Recordatorio global (sin cuenta ni email) de que el interruptor estaba encendido en este navegador. */
+export const RECORDATORIO_PANEL = 'panelNuevo';
+
+/** localStorage puede lanzar (modo privado, bloqueado): entonces, sin recordatorio. */
+function recordatorio(accion: (s: Storage) => unknown): unknown {
+  try {
+    return accion(localStorage);
+  } catch {
+    return null;
+  }
 }
 
 /** `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe el interruptor; `nuevo`: la navegación del panel nuevo. */
@@ -53,17 +65,19 @@ export class SkeletonComponent implements OnInit {
   private readonly rutaPanel = signal(esRutaDelPanel(inject(Location).path()));
   /** El interruptor de la sesión (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
   private readonly encendido = signal<boolean | null>(null);
-  private evaluacion?: Subscription;
+  private readonly recordado = signal(recordatorio((s) => s.getItem(RECORDATORIO_PANEL)) === '1');
+  private evaluar$?: Subject<void>;
 
   /**
    * Fase3-e8b-plan.md §3 «Cabecera»: la de hoy salvo con el interruptor encendido y una ruta de gestión. Mientras no se
-   * sabe (primera carga en gestión), el hueco de 64 px, no la cabecera de hoy: así no salta de una a otra.
+   * sabe, la de hoy (apagado = hoy desde el primer píxel), salvo que este navegador recuerde que estaba encendido:
+   * entonces el hueco de 64 px, para no pintar la de hoy y saltar a la nueva.
    */
   readonly modo = computed<ModoCabecera>(() => {
     if (!this.rutaPanel()) {
       return 'hoy';
     }
-    const encendido = this.encendido();
+    const encendido = this.encendido() ?? (this.recordado() ? null : false);
     return encendido === null ? 'hueco' : encendido ? 'nuevo' : 'hoy';
   });
 
@@ -102,52 +116,62 @@ export class SkeletonComponent implements OnInit {
 
   private alCambiarDeRuta(url: string): void {
     this.rutaPanel.set(esRutaDelPanel(url));
-    if (this.rutaPanel() && !this.evaluacion) {
+    if (this.rutaPanel()) {
       this.evaluarInterruptor();
     }
   }
 
   /**
-   * Lee el interruptor una vez (los servicios se piden aquí, no al crear el componente: fuera del panel no se
-   * pide nada) y lo vuelve a leer al entrar o salir de una cuenta. Encendido solo con `disenoNuevo.activo`, gestión en
-   * la escuela (la sesión solo-profesor queda fuera, decisión 260) y la hoja `panel-nuevo.css` cargada. Falla cerrado.
+   * Lee el interruptor al entrar en cada ruta del panel (los permisos están en caché: solo hay petición tras
+   * `reiniciar()`, p. ej. al cambiar el propio diseño) y al entrar o salir de una cuenta. Los servicios se piden aquí,
+   * no al crear el componente: fuera del panel no se pide nada. Encendido solo con `disenoNuevo.activo`, gestión en la
+   * escuela (la sesión solo-profesor queda fuera, decisión 260) y la hoja `panel-nuevo.css` cargada. Falla cerrado.
+   * Una respuesta válida guarda o borra el recordatorio; un error no lo toca; cerrar sesión lo borra.
    */
   private evaluarInterruptor(): void {
-    const permisos = this.injector.get(PermisosSesionService);
-    const estilos = this.injector.get(EstilosPanelService);
-    const leer = () =>
-      permisos.obtener().pipe(
-        take(1),
-        map(
-          (p) =>
-            p?.disenoNuevo?.activo === true &&
-            (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR')
-        ),
-        switchMap((activo) =>
-          activo
-            ? from(estilos.cargar()).pipe(
-                map(() => true),
-                catchError(() => of(false))
-              )
-            : of(false)
-        ),
-        catchError(() => of(false))
-      );
-    this.evaluacion = this.injector
-      .get(AuthenticationService)
-      .usuarioLogueadoCambio.pipe(
-        distinctUntilChanged(),
-        skip(1),
-        startWith(true),
-        switchMap((logueado) => {
+    if (!this.evaluar$) {
+      const permisos = this.injector.get(PermisosSesionService);
+      const estilos = this.injector.get(EstilosPanelService);
+      const evaluar$ = (this.evaluar$ = new Subject<void>());
+      evaluar$
+        .pipe(
+          switchMap(() =>
+            permisos.obtener().pipe(
+              take(1),
+              map(
+                (p) =>
+                  p?.disenoNuevo?.activo === true &&
+                  (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR')
+              ),
+              switchMap((activo) => {
+                this.recordar(activo);
+                return activo ? from(estilos.cargar()).pipe(map(() => true)) : of(false);
+              }),
+              catchError(() => of(false))
+            )
+          ),
+          takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe((v) => this.encendido.set(v));
+      this.injector
+        .get(AuthenticationService)
+        .usuarioLogueadoCambio.pipe(skip(1), takeUntilDestroyed(this.destroyRef))
+        .subscribe((logueado) => {
           if (!logueado) {
             this.encendido.set(null);
+            this.recordar(false);
           }
-          return leer();
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((v) => this.encendido.set(v));
+          if (this.rutaPanel()) {
+            evaluar$.next();
+          }
+        });
+    }
+    this.evaluar$.next();
+  }
+
+  private recordar(encendido: boolean): void {
+    this.recordado.set(encendido);
+    recordatorio((s) => (encendido ? s.setItem(RECORDATORIO_PANEL, '1') : s.removeItem(RECORDATORIO_PANEL)));
   }
 
   acceptCookies(): void {

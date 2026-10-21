@@ -276,6 +276,17 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(document.activeElement).toBe(disparador);
     });
 
+    it('aria-current en la opción de la página actual, y solo en ella', async () => {
+      await montar('/alumnosListar');
+      responderMarca();
+      entrada('alumnos').click();
+      fixture.detectChanges();
+      const opciones = Array.from(el().querySelectorAll<HTMLElement>('#pn-menu-alumnos [role="menuitem"]'));
+      const actuales = opciones.filter((o) => o.hasAttribute('aria-current'));
+      expect(actuales.map((o) => o.getAttribute('href'))).toEqual(['/alumnosListar']);
+      expect(actuales[0].getAttribute('aria-current')).toBe('page');
+    });
+
     it('flechas a los lados entre entradas; un clic fuera cierra el menú', async () => {
       await montar();
       responderMarca();
@@ -342,6 +353,17 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       fixture.detectChanges();
       expect(solicitudes.querySelector('.pn-contador')?.textContent?.trim()).toBe('99+');
     });
+
+    it('tras destruir la cabecera, navegar no refresca el contador', async () => {
+      await montar();
+      responderMarca();
+      expect(refrescar).toHaveBeenCalledTimes(1);
+      fixture.destroy();
+
+      await router.navigateByUrl('/tesoreriaCobros');
+
+      expect(refrescar).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('cuenta', () => {
@@ -376,6 +398,24 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       )!;
       boton.click();
       expect(configurar).toBe(1);
+    });
+
+    it('Esc en el menú de cuenta lo cierra y devuelve el foco al botón', async () => {
+      await montar();
+      responderMarca();
+      const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
+      boton.focus();
+      tecla(boton, 'ArrowDown');
+      fixture.detectChanges();
+      const primera = el().querySelector<HTMLElement>('#pn-menu-cuenta [role="menuitem"]')!;
+      expect(document.activeElement).toBe(primera);
+
+      tecla(primera, 'Escape');
+      fixture.detectChanges();
+
+      expect(el().querySelector('#pn-menu-cuenta')).toBeNull();
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(boton);
     });
 
     it('un gestor no ve «Diseño nuevo»', async () => {
@@ -444,6 +484,17 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('barra inferior', () => {
+    it('«Más» lleva aria-current cuando la página no está en la barra (Grupos, Solicitudes, Escuela)', async () => {
+      await montar('/solicitudes');
+      responderMarca();
+      const mas = el().querySelector<HTMLElement>('.pn-barra__mas')!;
+      expect(mas.getAttribute('aria-current')).toBe('true');
+
+      await router.navigateByUrl('/alumnosListar');
+      fixture.detectChanges();
+      expect(mas.hasAttribute('aria-current')).toBeFalse();
+    });
+
     it('Inicio, Alumnos, Tesorería y Más; «Más» lleva todo, lo legal y «Configurar cookies»', async () => {
       await montar('/tesoreriaCobros');
       responderMarca();
@@ -484,6 +535,10 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         expect(hoja.querySelector(`a[href="${ruta}"]`)).withContext(ruta).not.toBeNull();
       }
       expect(Array.from(hoja.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Configurar cookies')).toBeTrue();
+
+      expect(Number(getComputedStyle(hoja).zIndex)).withContext('la hoja, por encima del botón de subir (1000)').toBeGreaterThan(1000);
+      // La hoja vive dentro de la barra (contexto de apilamiento propio): la barra también ha de quedar por encima.
+      expect(Number(getComputedStyle(barra).zIndex)).withContext('la barra, por encima del botón de subir (1000)').toBeGreaterThan(1000);
 
       const primero = hoja.querySelector<HTMLElement>('[role="menuitem"]')!;
       tecla(primero, 'Escape');

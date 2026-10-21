@@ -262,7 +262,13 @@ sombras en 9 pantallas, `$primary-color` en 15 ficheros con 3 valores (auditorí
   parpadeo ni pantalla a medias). Al cambiar el interruptor propio: `reiniciar()` de permisos y recarga de la página.
 - **Cabecera.** `skeleton` muestra `<app-header>` de hoy salvo con el interruptor encendido **y** una ruta de gestión;
   entonces, `@defer (on immediate)` de la cabecera nueva, con un hueco de 64 px mientras llega. Mientras no se sepa el
-  interruptor (primera carga en una ruta de gestión), el hueco, no la cabecera vieja: así no salta de una a otra.
+  interruptor (primera carga en una ruta de gestión), la cabecera de hoy, salvo que el navegador recuerde que estaba
+  encendido: entonces el hueco. Por qué: con el hueco para todos, quien lo tiene apagado (casi todos hasta R5) veía un
+  hueco de 64 px y luego la cabecera de hoy de 70 px; así, apagado = hoy desde el primer píxel, y solo quien lo usa ve
+  el hueco en vez de la cabecera vieja. El recordatorio es un booleano global en `localStorage` (`panelNuevo`), sin
+  email ni usuario (sería un dato personal): se escribe o se borra solo con una respuesta válida de permisos (un
+  error no lo toca), se borra al cerrar sesión y, si `localStorage` falla, no hay recordatorio. El interruptor se vuelve
+  a leer en cada navegación a una ruta del panel (los permisos están en caché; tras `reiniciar()`, una petición).
 
 ## 4. Diseño del tema por escuela (8b-T)
 
@@ -453,6 +459,12 @@ rediseñadas se ven dentro, tal cual.
   diseño anterior» llama a `PUT /api/panel/mi-diseno`), `skeleton.component.spec.ts` (apagado → cabecera y pie de hoy;
   encendido en ruta pública o de familia → los de hoy; encendido en gestión → la nueva y sin pie).
 - [ ] Implementar; capturas a 375, 768 y 1280 de la cabecera, los desplegables y la barra inferior.
+
+**Primera carga (ronda 2):** mientras no se sabe el interruptor, la cabecera de hoy; el hueco, solo con el recordatorio
+de encendido de este navegador (§3 «Cabecera»). Specs: sin recordatorio → hoy; con recordatorio y sin respuesta →
+hueco; con recordatorio y respuesta apagado → hoy y se borra; respuesta encendido → se guarda; error → ni se escribe
+ni se borra; `localStorage` que lanza → no rompe; cerrar sesión → se borra; navegar a una ruta del panel → se vuelve a
+leer.
 
 **Riesgos:** 13 entradas quedan a dos clics (hoy 11 a uno): revisarlo con el gestor en R3; el contador de solicitudes y
 el SSE de avisos deben seguir funcionando en la cabecera nueva.
