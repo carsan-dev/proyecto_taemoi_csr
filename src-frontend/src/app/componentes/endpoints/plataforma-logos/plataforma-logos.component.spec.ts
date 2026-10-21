@@ -440,6 +440,18 @@ describe('PlataformaLogosComponent', () => {
       expect(selector(f).value).toBe('#3e9b4f');
     });
 
+    it('la vista previa tiene la etiqueta visible «Vista previa» y la región la referencia con aria-labelledby', () => {
+      const f = fila(4);
+      const region = f.querySelector('figure.vista-color') as HTMLElement;
+      const id = region.getAttribute('aria-labelledby');
+      expect(id).toBeTruthy();
+      const etiqueta = f.querySelector('#' + id) as HTMLElement;
+      expect(etiqueta.textContent?.trim()).toBe('Vista previa');
+      expect(etiqueta.classList).toContain('etiqueta-color');
+      expect(etiqueta.tagName).not.toBe('LABEL');
+      expect(etiqueta.classList).not.toContain('visually-hidden');
+    });
+
     it('la vista previa usa el color y el texto calculado, con las razones de contraste', () => {
       const f = fila(4);
       expect(cabecera(f).style.backgroundColor).toBe('rgb(62, 155, 79)');
