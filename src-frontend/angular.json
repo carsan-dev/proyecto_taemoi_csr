@@ -49,7 +49,12 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              {
+                "input": "src/panel-nuevo.scss",
+                "bundleName": "panel-nuevo",
+                "inject": false
+              }
             ],
             "scripts": [
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
@@ -196,6 +201,10 @@
             ],
             "scripts": [],
             "include": [
+              "src/app/panel-nuevo/formato/formato-es.spec.ts",
+              "src/app/panel-nuevo/formato/eur.pipe.spec.ts",
+              "src/app/panel-nuevo/formato/plural.pipe.spec.ts",
+              "src/app/panel-nuevo/estilos-panel.service.spec.ts",
               "src/app/app.routes.spec.ts",
               "src/app/componentes/endpoints/editar-grupo/editar-grupo.profesores.spec.ts",
               "src/app/servicios/endpoints/grupo-profesores.service.spec.ts",

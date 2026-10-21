@@ -1,0 +1,181 @@
+// Hoja global del panel nuevo (E8b). Fuente de verdad: DESIGN.md (raíz); cualquier cambio de token pasa antes por él.
+// Se compila aparte (angular.json, inject: false) y la carga EstilosPanelService al entrar en el panel nuevo.
+// Nada de esto va en :root ni en el bundle inicial: todo cuelga de la raíz .pn. :where(.pn) no suma especificidad, así que
+// cualquier regla de una pantalla pisa la base; solo el foco suma la de su pseudoclase :focus-visible (0,1,0).
+
+// Montserrat del panel lleva otro nombre de familia para no tocar la Montserrat 400/700 de la web pública
+// y de las pantallas de hoy. Las rutas son absolutas (font-src 'self' en producción).
+@font-face {
+  font-family: "Montserrat Panel";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/assets/fonts/montserrat-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Montserrat Panel";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url("/assets/fonts/montserrat-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Montserrat Panel";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("/assets/fonts/montserrat-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Montserrat Panel";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("/assets/fonts/montserrat-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// Public Sans variable (400 a 700).
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/assets/fonts/public-sans-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("/assets/fonts/public-sans-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:where(.pn) {
+  // Color. Los cuatro primeros son los de Moiskimdo; una escuela los sustituye con la marca que lee de la API.
+  --pn-marca-primario: #1b2b2e;
+  --pn-marca-sobre-primario: #ffffff;
+  --pn-marca-sobre-primario-2: #c3cdce;
+  --pn-marca-primario-tinta: #1b2b2e;
+  --pn-marca-primario-suave: #e6ebeb;
+  --pn-marca-por-defecto: #1a2230;
+  --pn-atencion: #a14f0b;
+  --pn-atencion-suave: #fcf2e6;
+  --pn-fondo: #f5f5f2;
+  --pn-superficie: #ffffff;
+  --pn-superficie-2: #fafaf8;
+  --pn-linea: #e4e4df;
+  --pn-linea-fuerte: #cfcfc8;
+  --pn-borde-control: #868d97;
+  --pn-tinta: #1a2230;
+  --pn-tinta-2: #5d6573;
+  --pn-tinta-3: #7a8290;
+  --pn-peligro: #b42318;
+  --pn-bien: #2f6b3a;
+  --pn-disc-1: #3d75bf;
+  --pn-disc-2: #a04916;
+  --pn-disc-3: #00a390;
+  --pn-disc-4: #894081;
+  --pn-serie-ocupacion: #2b6cb0;
+  --pn-serie-pista: #eceef1;
+  --pn-cinto-borde: #7a8290;
+
+  // Rampa de ocupación: 5, 14, 32 y 58 % mezclado con blanco, y el color pleno con cifra blanca.
+  --pn-ocupacion-1: color-mix(in srgb, var(--pn-serie-ocupacion) 5%, #ffffff);
+  --pn-ocupacion-2: color-mix(in srgb, var(--pn-serie-ocupacion) 14%, #ffffff);
+  --pn-ocupacion-3: color-mix(in srgb, var(--pn-serie-ocupacion) 32%, #ffffff);
+  --pn-ocupacion-4: color-mix(in srgb, var(--pn-serie-ocupacion) 58%, #ffffff);
+  --pn-ocupacion-5: var(--pn-serie-ocupacion);
+
+  // Tipografía.
+  --pn-fuente-titulo: "Montserrat Panel", montserrat, system-ui, sans-serif;
+  --pn-fuente-cuerpo: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --pn-titulo-pantalla: 700 1.5rem / 1.15 var(--pn-fuente-titulo);
+  --pn-titulo-pantalla-espaciado: -0.01em;
+  --pn-titulo-bloque: 700 1.0625rem / 1.25 var(--pn-fuente-titulo);
+  --pn-cifra: 700 1.75rem / 1.1 var(--pn-fuente-titulo);
+  --pn-nombre-carnet: 700 2.25rem / 1.05 var(--pn-fuente-titulo);
+  --pn-nombre-carnet-espaciado: -0.02em;
+  --pn-cuerpo: 400 0.9375rem / 1.45 var(--pn-fuente-cuerpo);
+  --pn-secundario: 400 0.875rem / 1.35 var(--pn-fuente-cuerpo);
+  --pn-etiqueta: 600 0.8125rem / 1.2 var(--pn-fuente-cuerpo);
+
+  // Esquinas.
+  --pn-radio-s: 6px;
+  --pn-radio-m: 8px;
+  --pn-radio-carnet: 14px;
+  --pn-radio-pastilla: 999px;
+
+  // Espacio.
+  --pn-espacio-xs: 4px;
+  --pn-espacio-s: 8px;
+  --pn-espacio-m: 16px;
+  --pn-espacio-l: 24px;
+  --pn-espacio-xl: 32px;
+
+  // Sombras: menú y carnet, más la de la barra inferior (hacia arriba).
+  --pn-sombra-menu: 0 6px 20px -6px rgb(26 34 48 / 22%), 0 2px 4px rgb(26 34 48 / 6%);
+  --pn-sombra-carnet: 0 1px 2px rgb(26 34 48 / 5%), 0 3px 10px -4px rgb(26 34 48 / 10%);
+  --pn-sombra-barra: 0 -6px 20px -8px rgb(26 34 48 / 22%), 0 -2px 4px rgb(26 34 48 / 6%);
+
+  // Movimiento: solo el que responde a una acción.
+  --pn-transicion: 150ms ease-out;
+
+  // Base.
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(.pn) *,
+:where(.pn) *::before,
+:where(.pn) *::after {
+  box-sizing: border-box;
+}
+
+// styles.scss declara `* { font-family: Montserrat }`, que da Montserrat a cada elemento por sí mismo y corta la herencia
+// desde .pn. Esta regla (especificidad 0, y la hoja se carga después) hace que los descendientes vuelvan a heredar.
+// Los iconos .bi no se ven afectados: su fuente va en .bi::before, que `:where(*)` no alcanza.
+:where(.pn) :where(*) {
+  font-family: inherit;
+}
+
+// Cifras tabulares en importes, contadores y horas.
+:where(.pn) :where(.pn-cifras, [data-cifras]) {
+  font-variant-numeric: tabular-nums;
+}
+
+// Foco: contorno de 2 px del color de la escuela como tinta.
+:where(.pn) :focus-visible {
+  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.pn) {
+    --pn-transicion: 0s;
+  }
+
+  :where(.pn) *,
+  :where(.pn) *::before,
+  :where(.pn) *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
