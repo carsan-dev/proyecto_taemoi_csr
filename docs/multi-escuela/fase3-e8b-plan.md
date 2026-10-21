@@ -9,9 +9,9 @@
 **Objetivo:** el panel de gestión con la dirección C («La escuela al frente») detrás de un interruptor por usuario:
 cabecera del color y el logo de cada escuela, navegación de 6 entradas con barra inferior en el móvil, Inicio I1,
 Alumnos, ficha F1 «Carnet», Grupos, Tesorería y Convocatorias y, por la decisión 259, las siete pantallas de gestión
-restantes (Eventos, Productos, Preinscripciones, Solicitudes, Caja de sede, Configuración y Registro de acciones, tras su
-boceto de la ronda 3), sin perder nada de lo que se ve hoy (decisiones 232 y 236 a 260). Moiskimdo no nota nada
-mientras el interruptor esté apagado.
+restantes (Eventos, Productos, Preinscripciones, Solicitudes, Caja de sede, Configuración y Registro de acciones, con la
+dirección ya elegida en la ronda 3, decisión 261), sin perder nada de lo que se ve hoy (decisiones 232 y 236 a 262).
+Moiskimdo no nota nada mientras el interruptor esté apagado.
 
 **Arquitectura:** las pantallas nuevas viven en `F/panel-nuevo/`, se cargan aparte (carga diferida) y se enrutan con un
 `canMatch` que mira el interruptor: con él apagado, el router ni descarga la pantalla nueva y sigue a la ruta de hoy.
@@ -24,7 +24,7 @@ regla de contraste y logo) se lee con `GET /api/escuela/marca` y la escribe solo
 Flyway).
 
 **Spec y diseño:** `DESIGN.md` (raíz), `PRODUCT.md`, `docs/multi-escuela/fase3-e8b-diseno.md` y las decisiones 232 a
-260 del propietario (las de esta entrega, en §25). Los inventarios «nada se pierde» de cada pantalla están en el
+262 del propietario (las de esta entrega, en §25). Los inventarios «nada se pierde» de cada pantalla están en el
 **Anexo A**: son la lista de aceptación de cada pieza de pantalla.
 
 Rutas abreviadas: `J/` = `src-api/src/main/java/com/taemoi/project/`, `T/` = `src-api/src/test/java/com/taemoi/project/`,
@@ -46,6 +46,11 @@ Rutas abreviadas: `J/` = `src-api/src/main/java/com/taemoi/project/`, `T/` = `sr
   pieza puede subir el inicial más de 4.000 bytes, y cada PR anota el total exacto.
 - **Carga diferida.** Toda pantalla nueva, la cabecera nueva y la hoja `panel-nuevo.css` se cargan aparte. El código
   que va al inicial se limita al guard, al servicio del interruptor y a la rama de la cabecera en `skeleton`.
+- **Roles con nombre visible nuevo (decisión 262).** En las pantallas nuevas los roles se muestran como «Familia»,
+  «Gestión» y «Administración». Solo cambia el texto: los roles, los permisos y los valores internos (`ROLE_USER`,
+  `ROLE_MANAGER`, `ROLE_ADMIN`) no cambian, ni lo que se envía a la API. Correspondencia: `ROLE_USER` = «Familia»,
+  `ROLE_MANAGER` = «Gestión», `ROLE_ADMIN` = «Administración». El texto visible sale de un solo ayudante de las
+  pantallas nuevas, con su spec. Las pantallas de hoy no se tocan (hoy: «Usuario», «Manager», «Admin»).
 - **Formato es-ES.** Importes, fechas y plurales con los ayudantes de `F/panel-nuevo/formato/` (8b-1). `LOCALE_ID
   'es-ES'` solo en las rutas nuevas hasta 8b-Z (decisión 258). Nunca `toFixed` para mostrar importes.
 - Aislamiento por escuela: tablas nuevas como `EntidadOrganizacion` (`@TenantId`); `membresia`, `asignacion_profesor` y
@@ -111,7 +116,7 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
      endpoint, con el mismo cuerpo y la misma confirmación que hoy (spec con `HttpTestingController`); el grado sigue
      subiendo solo al cobrar el derecho de examen.
 9. **Nada se pierde.** Cada PR de pantalla con su tabla del Anexo A marcada fila a fila; las de 8b-3f a 8b-3k, con el
-   inventario aprobado en RB3.
+   inventario de la variante elegida en la ronda 3 (decisión 261, RB3 hecha).
 10. **Las rutas duplicadas conservan sus guards.**
     - 8b-3k: `configuracion-sistema` y `auditoriaSistema` nuevas con `roleGuard` y `adminOnlyGuard` (un gestor encendido
       no entra); 8b-3i: acciones por rol iguales que hoy; 8b-3g: cuerpo de productos idéntico campo a campo.
@@ -122,8 +127,8 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
 
 Orden: **8b-1 → 8b-I → 8b-T → 8b-N → 8b-2 → 8b-3a … 8b-3e → 8b-3f … 8b-3k → 8b-Z**. 8b-I y 8b-T se pueden hacer
 en paralelo tras 8b-1; 8b-N depende de las dos; las pantallas dependen de 8b-N y no entre sí (3b enlaza desde 3a, pero
-la ruta de la ficha existe ya); **8b-B3** (boceto de la ronda 3, solo diseño) puede hacerse en paralelo desde el
-principio, pero 8b-3f a 8b-3k no empiezan hasta que el propietario lo apruebe (decisión 228: se diseña antes de
+la ruta de la ficha existe ya); **8b-B3** (boceto de la ronda 3, solo diseño) está **hecha**: el propietario eligió las
+variantes (decisión 261) y 8b-3f a 8b-3k pueden empezar cuando 8b-N esté lista (decisión 228: se diseñó antes de
 construir); 8b-Z, de la aprobación del propietario (R6). Cada pieza se despliega apagada al fusionarse (decisión 255,
 §24).
 
@@ -142,7 +147,7 @@ y actualiza este mapa.
 | **8b-3c** | Grupos: estructura de C con tarjetas de A | No | 8b-N | medium; `savvy-medium` | `feat(panel): grupos nuevos (8b-3c)` |
 | **8b-3d** | Tesorería C: pestañas, filas de dos líneas con «Cobrar», exportar en menú | No | 8b-N | careful; `savvy-careful`, revisión opus | `feat(panel): tesorería nueva (8b-3d)` |
 | **8b-3e** | Convocatorias C | No | 8b-N | medium; `savvy-medium` en opus | `feat(panel): convocatorias nuevas (8b-3e)` |
-| **8b-B3** | Boceto ronda 3: las siete pantallas restantes, hoy frente a propuestas en el mundo de C, con inventario; aprobación del propietario | No (solo diseño, sin código) | 8b-1 (tokens) | — ; diseño con `impeccable` | `docs(e8b): bocetos de la ronda 3` |
+| **8b-B3** (hecha, https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w) | Boceto ronda 3: las siete pantallas restantes, hoy frente a propuestas en el mundo de C, con inventario; aprobación del propietario (decisión 261) | No (solo diseño, sin código) | 8b-1 (tokens) | — ; diseño con `impeccable` | `docs(e8b): bocetos de la ronda 3` |
 | **8b-3f** | Eventos: listado (con su orden por arrastre), crear y editar | No | 8b-N, 8b-B3 | medium; `savvy-medium` | `feat(panel): eventos nuevos (8b-3f)` |
 | **8b-3g** | Productos: listado, crear y editar (precios del catálogo) | No | 8b-N, 8b-B3 | careful (dinero); `savvy-careful` | `feat(panel): productos nuevos (8b-3g)` |
 | **8b-3h** | Preinscripciones: bandeja, lista de espera y paso a alumno | No | 8b-N, 8b-B3 | careful (datos de menores, altas); `savvy-careful` | `feat(panel): preinscripciones nuevas (8b-3h)` |
@@ -572,6 +577,9 @@ ya se corrigió en la pantalla de hoy (hotfix 2); la nueva conserva ese comporta
 Rama `feature/e8b-b3`. Sin código de la aplicación, sin migración y sin despliegue. Decisiones 228 (se diseña antes de
 construir) y 259 (las siete pantallas entran en la E8b).
 
+**Estado: hecha.** Boceto publicado en https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w; el propietario eligió una variante por pantalla (decisión 261, RB3 hecha) y
+los inventarios elegidos están copiados al Anexo A.
+
 **Objetivo:** las siete pantallas de gestión que no tenían boceto, cada una **hoy frente a una o dos propuestas en el
 mundo de C** (`DESIGN.md`: cabecera de la escuela, filas de dos líneas, pestañas, un primario por pantalla, acciones
 raras en «⋯»), a 375, 768 y 1280 px y con datos ficticios:
@@ -604,17 +612,41 @@ Mi caja (Caja de sede, 28/40 en la auditoría): el boceto conserva lo que funcio
 ## 16. Pieza 8b-3f: Eventos
 
 Rama `feature/e8b-3f`. Solo frontend, sin migración: atajo `desplegar`. Tier medium: contenido de la web pública, sin
-dinero ni permisos nuevos. Empieza tras RB3.
+dinero ni permisos nuevos. RB3 hecha (decisión 261).
 
-**Objetivo:** listado, crear y editar eventos según la propuesta aprobada en 8b-B3, con el orden (subir, bajar y
-arrastrar), la vista previa, la visibilidad en la web y las imágenes de hoy. Inventario: Anexo A, ronda 3.
+**Objetivo:** listado, crear y editar eventos con el orden (subir, bajar y arrastrar), la vista previa, la visibilidad
+en la web y las imágenes de hoy. Inventario: Anexo A, Eventos y Editar evento.
+
+**Variantes elegidas (decisión 261).**
+- **Listado: P1, lista densa ordenable.** Una fila por evento: asa y flechas de orden al principio, miniatura, título,
+  descripción en dos líneas, fecha con su estado e interruptor «Visible en la web»; «Editar» a la vista y «Eliminar» en
+  «⋯». Un aviso bajo el título explica que aparecerá «Guardar orden» al reordenar.
+- **Editar y crear: P2, vista previa al lado.** Formulario en una columna con tres secciones (información, imagen,
+  documentos), etiquetas «obligatorio» u «opcional», resumen de errores arriba con enlaces a cada campo y barra fija
+  abajo con «Cancelar» y «Guardar cambios» (desactivado con errores). Al lado, la vista previa de la tarjeta pública,
+  que cambia mientras se escribe y dice si el evento está visible u oculto.
+- **Vista previa a 375 y 768 px:** el boceto la baja al final del formulario, donde deja de verse a la vez que los campos
+  (riesgo anotado en 8b-B3). No fija una solución móvil: **a confirmar en R4b**. Desde 1280 px va al lado.
+
+**Requisito explícito: arreglar el móvil del listado P1.** El propietario lo vio descolocado a 375 px. El boceto no
+trae la maqueta móvil corregida: la pieza la resuelve sin cambiar el contenido de la fila (Anexo A) y la presenta en
+R4b. El implementador compara su captura a 375 con la de P1 en el boceto (https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w) antes de dar la pieza por
+buena. Criterios de aceptación a 375 px (y 360 como mínimo útil):
+- Una sola columna, sin desplazamiento horizontal de la página ni de la fila (`scrollWidth` igual a `clientWidth`).
+- Ningún elemento de la fila se solapa con otro ni queda cortado: miniatura, título, descripción (dos líneas con
+  elipsis), fecha con su estado, interruptor «Visible en la web», «Editar» y «⋯» caben, apilados si hace falta.
+- El control de orden (asa y flechas subir y bajar) se maneja con el dedo, con objetivos de 44 px, y con teclado
+  (flechas con foco en el asa o en los botones, anunciado con `LiveAnnouncer`). Arrastrar no es la única vía.
+- El aviso «Guardar orden» y la acción de guardar se ven sin tapar filas ni la barra inferior de 8b-N.
+- Cadenas largas (título de 80 caracteres, sin espacios) no desbordan; con el texto al 200 % sigue sin desplazamiento.
 
 **Ficheros:** `F/panel-nuevo/eventos/` (listado y un formulario compartido de crear y editar); rutas `eventosListar`,
 `eventosCrear` y `eventosEditar/:id` con `canMatch`.
 
 **Tareas TDD:** specs (el orden manda la misma petición que hoy, con teclado además de arrastre; publicar u ocultar con
 la misma llamada; subida de imagen con las mismas validaciones, HEIC rechazado con su mensaje; vista previa con el foco
-atrapado y Esc). Capturas.
+atrapado y Esc; a 375 sin desplazamiento horizontal en el listado). Capturas del listado a 375 antes y después del
+arreglo.
 
 **Riesgos:** la web pública muestra estos eventos: el formulario no puede cambiar lo que se guarda.
 
@@ -625,8 +657,14 @@ atrapado y Esc). Capturas.
 Rama `feature/e8b-3g`. Solo frontend, sin migración: atajo `desplegar`. **Tier careful** (sube de medium): el catálogo
 fija los precios que luego se cargan a los alumnos y los productos que puede vender el profesor (V31_7).
 
-**Objetivo:** listado con filtros, crear y editar productos según 8b-B3; importes es-ES al leer y en los campos, sin
-cambiar el valor que se envía. Inventario: Anexo A, ronda 3.
+**Objetivo:** listado con filtros, crear y editar productos; importes es-ES al leer y en los campos, sin cambiar el
+valor que se envía. Inventario: Anexo A, Productos.
+
+**Variante elegida (decisión 261): P2, agrupados por tipo.** Productos en grupos por tipo (mensualidad, licencia,
+reserva, competidor, derechos de examen), cada grupo con su número y sin páginas. Fila corta: casilla, concepto, «nº»,
+precio a la derecha, interruptor «Mi caja» y «⋯» (Editar, Eliminar). Barra fija al pie con los seleccionados («Dar a Mi
+caja», «Quitar de Mi caja», «Eliminar»). Ordenar por ID, concepto o precio pasa a un menú de cada grupo. Los derechos
+de examen son un grupo largo (riesgo anotado en 8b-B3).
 
 **Ficheros:** `F/panel-nuevo/productos/`; rutas `productosListar`, `productosCrear` y `productosEditar/:id` con
 `canMatch`.
@@ -646,10 +684,18 @@ Rama `feature/e8b-3h`. Solo frontend, sin migración: atajo `desplegar`. **Tier 
 borrado definitivo y paso a ficha de alumno (altas). Si 8b-B3 la divide en bandeja y configuración (plantillas PDF y
 normas), van en dos PR de esta misma pieza.
 
-**Objetivo:** la propuesta aprobada en 8b-B3 con todo lo de hoy: filtros, ficha con historial, firma presentada y
+**Objetivo:** la variante elegida con todo lo de hoy: filtros, ficha con historial, firma presentada y
 solicitud firmada, observaciones, modificar turnos, lista de espera, asignación administrativa, destino de la ficha
 (nueva o existente), finalizar, cancelar, eliminar definitivamente, reenviar aviso, correo definitivo de acceso,
-plantillas PDF (previsualizar y publicar versión) y normas. Inventario: Anexo A, ronda 3.
+plantillas PDF (previsualizar y publicar versión) y normas. Inventario: Anexo A, Preinscripciones.
+
+**Variante elegida (decisión 261): P1, lista con detalle al lado.** Lista a la izquierda (nombre, estado, referencia,
+disciplina, hace cuánto llegó, marca «Con observación») y detalle a la derecha, siempre visible en escritorio: datos,
+horario, observación resaltada, avisos por correo con intentos, «Firma y ficha» y acciones al pie («Revisar y finalizar
+alta» como primario, «Reenviar solicitud original», «Más» con cancelar y eliminar definitivamente). En el móvil, la
+lista y, al tocar, el detalle. Las pestañas Solicitudes y Plantillas PDF, y los filtros, se quedan como hoy. La lista
+estrecha puede recortar nombres largos (riesgo anotado en 8b-B3). El boceto no divide la pantalla en dos PR; si el
+implementador la parte por tamaño, lo anota (ver arriba).
 
 **Ficheros:** `F/panel-nuevo/preinscripciones/`; ruta `preinscripciones` con `canMatch`.
 
@@ -666,8 +712,13 @@ hoy; ningún dato personal en la URL). Capturas con datos inventados.
 Rama `feature/e8b-3i`. Solo frontend, sin migración: atajo `desplegar`. **Tier careful, revisión opus:** decide sobre
 dinero (deshacer cobros, devoluciones enlazadas y encargos de la 6c) y cada acción depende del rol.
 
-**Objetivo:** bandeja según 8b-B3, conservando lo que ya funciona (recorrido del encargo, aceptar, retirar, encargado,
-recibido, reintentar) y el contador de la cabecera. Inventario: Anexo A, ronda 3.
+**Objetivo:** bandeja conservando lo que ya funciona (recorrido del encargo, aceptar, retirar, encargado, recibido,
+reintentar) y el contador de la cabecera. Inventario: Anexo A, Solicitudes.
+
+**Variante elegida (decisión 261): P1, acciones en la fila.** La idea de hoy en el lenguaje de C: quién, cuándo y sede
+a la izquierda; qué, importe y motivo en el centro; acciones a la derecha, todo a la vista. Segmentos con su número
+como pestañas; debajo de las pendientes, los encargos en curso con su recorrido Pedido, Encargado, Recibido y
+Entregado. Es un cambio pequeño: no hay panel de detalle ni explicación de «qué pasa al aceptar» (eso era P2).
 
 **Ficheros:** `F/panel-nuevo/solicitudes/`; ruta `solicitudes` con `canMatch`.
 
@@ -684,9 +735,15 @@ retirar; un 409 muestra el `mensaje`). Capturas por rol.
 Rama `feature/e8b-3j`. Solo frontend, sin migración: atajo `desplegar`. **Tier careful, revisión opus:** efectivo,
 entregas de los profesores y movimientos por sede.
 
-**Objetivo:** según 8b-B3, conservando lo que hoy funciona: resumen de la caja, efectivo en mano de cada profesor,
-recibir entrega (con selección de cobros y correcciones), entregas y movimientos, apuntar movimiento y selector de sede
-con varias sedes. Inventario: Anexo A, ronda 3.
+**Objetivo:** conservar lo que hoy funciona: resumen de la caja, efectivo en mano de cada profesor, recibir entrega
+(con selección de cobros y correcciones), entregas y movimientos, apuntar movimiento y selector de sede con varias
+sedes. Inventario: Anexo A, Caja de sede.
+
+**Variante elegida (decisión 261): P2, pestañas Por recibir, Entregas y Movimientos.** Resumen arriba (saldo de caja,
+pendiente de entregar, recibido en el periodo, diferencias) con sede y periodo bajo el título, y debajo tres pestañas
+con su número. Abre en «Por recibir» (efectivo en mano de cada profesor y «Recibir entrega», que se abre bajo el
+profesor con el cálculo de lo que falta y la nota obligatoria si no cuadra); «Entregas» y «Movimientos» quedan a un
+clic, este último con «Apuntar movimiento».
 
 **Ficheros:** `F/panel-nuevo/caja-sede/`; ruta `cajaSede` con `canMatch`.
 
@@ -705,14 +762,36 @@ solo del propietario (`adminOnlyGuard`); Configuración cambia roles (Gestión d
 /api/admin/users/{id}/roles`, con el 409 de último propietario de la decisión 221) y el límite por turno, y el
 Registro de acciones enseña datos sensibles. Van juntas por pequeñas y por compartir guard y revisión (§1).
 
-**Objetivo:** según 8b-B3. Configuración: límite de alumnos por turno y Gestión de Roles (búsqueda, roles actuales,
-asignar roles). Registro de acciones: filtros, tabla y detalle (parámetros y cuerpo, tal como ya llegan redactados del
-backend). Inventario: Anexo A, ronda 3.
+**Objetivo:** Configuración: límite de alumnos por turno y Gestión de Roles (búsqueda, roles actuales, asignar roles).
+Registro de acciones: filtros, cronología y detalle (parámetros y cuerpo, tal como ya llegan redactados del backend).
+Inventario: Anexo A, Configuración y Registro de acciones.
+
+**Variantes elegidas (decisión 261).**
+- **Configuración: dos distribuciones según el ancho, con el mismo contenido y las mismas acciones.** Por debajo de
+  768 px, **P1**: secciones seguidas, «Alumnos por turno» (valor actual, nuevo valor, «Modificado», Guardar y
+  restaurar; el error bajo el campo y Guardar desactivado) y «Roles y permisos» con una fila por cuenta. Desde 768 px
+  (tablet y escritorio), **P2**: índice de ajustes a la izquierda (Alumnos por turno, Roles y permisos, Avisos legales
+  y cookies) y, a la derecha, la sección elegida; cada cuenta en dos líneas (nombre y roles actuales arriba; casillas
+  y Guardar abajo). Un solo componente con dos plantillas por ancho, sin lógica duplicada; los tests comprueban las
+  mismas acciones en 375 y en 768. Con dos ajustes, el índice aporta poco hasta que haya más (riesgo anotado en 8b-B3).
+- **Registro de acciones: P2, cronología por días con detalle.** Días como título y, por acción, hora, pastilla del
+  tipo, qué, módulo y «Cuenta N» (el identificador, sin nombre ni email); el detalle (incluidos los datos técnicos
+  desplegables) en un panel al lado. Los filtros (desde, hasta, acción, módulo, persona y buscar) se pliegan en un botón
+  «Filtros»: quedan a un clic (riesgo anotado en 8b-B3).
+
+**Gestión de Roles y nombres visibles (decisión 262).** Las casillas y las pastillas de roles muestran «Familia»,
+«Gestión» y «Administración». Correspondencia con los valores internos, que no cambian ni cambia lo que se envía a
+`PUT /api/admin/users/{id}/roles`: `ROLE_USER` = «Familia», `ROLE_MANAGER` = «Gestión», `ROLE_ADMIN` =
+«Administración» (hoy «Usuario», «Manager» y «Admin» en las casillas, y «Usuario», «Manager» y «Administrador» en las
+pastillas: `configuracion-sistema.component.html:168, 177, 186` y `.ts:403-418`). Los permisos no cambian. El spec
+comprueba el texto visible y que el cuerpo enviado sigue llevando los `ROLE_*`. Otros roles que hoy muestra el
+componente (`ROLE_PROFESOR`, `ROLE_RESPONSABLE_SEDE`) quedan fuera de la decisión: se mantienen como hoy (a confirmar).
 
 **Ficheros:** `F/panel-nuevo/escuela/configuracion/` y `F/panel-nuevo/escuela/registro/`; rutas `configuracion-sistema`
 y `auditoriaSistema` con `canMatch` **y** los mismos `roleGuard` y `adminOnlyGuard` de hoy.
 
-**Tareas TDD:** specs (las rutas nuevas conservan `adminOnlyGuard`: un gestor con el interruptor encendido no entra;
+**Tareas TDD:** specs (los textos «Familia», «Gestión» y «Administración» con los `ROLE_*` intactos en el cuerpo; las
+dos distribuciones de Configuración ofrecen las mismas acciones; las rutas nuevas conservan `adminOnlyGuard`: un gestor con el interruptor encendido no entra;
 cambiar roles manda el mismo cuerpo y muestra el 409 de último propietario con su `mensaje`; el límite se guarda con la
 misma llamada; el detalle del registro no muestra nada que hoy no muestre ni pone datos en la URL). Capturas.
 
@@ -747,8 +826,8 @@ global de formato en pantallas no rediseñadas.
 - **R3 (tras 8b-N):** navegación con datos reales, en el móvil y en el escritorio; el gestor que el propietario elija
   prueba las 13 entradas a dos clics.
 - **R4 (tras cada pantalla, 8b-2 a 8b-3e):** con datos reales a 375, 768 y 1280; la tabla del Anexo A como lista.
-- **RB3 (ronda 3, antes de 8b-3f):** el propietario elige, pantalla a pantalla, la propuesta de 8b-B3 y aprueba su
-  inventario. Sin esta aprobación no se construye ninguna de las siete (decisión 228).
+- **RB3 (ronda 3, antes de 8b-3f): hecha (21/10/2026).** El propietario eligió, pantalla a pantalla, la propuesta de
+  8b-B3 (decisión 261; boceto en https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w) y los inventarios elegidos están en el Anexo A.
 - **R4b (tras cada pantalla, 8b-3f a 8b-3k):** como R4.
 - **R5 (antes de «para todos»):** el propietario pone el valor por defecto `NUEVO` y lo vigila unos días.
 - **R6 (antes de 8b-Z):** aprobación explícita para retirar lo viejo.
@@ -764,7 +843,7 @@ con datos reales (decisión 236). Orden, cada una con su línea en `checklist-de
   `SELECT COUNT(*) FROM diseno_panel_usuario` = 0. El código anterior funciona sobre este esquema (tabla que no conoce).
 - 8b-T (sin migración): `desplegar`; el superadmin pone `#1B2B2E` en «Logo y color» (decisión 257).
 - 8b-N, 8b-2 y 8b-3a a 8b-3e: `desplegar`, apagadas.
-- 8b-B3 no se despliega (solo diseño); tras RB3, 8b-3f a 8b-3k: `desplegar`, apagadas. Las de dinero o permisos
+- 8b-B3 no se despliega (solo diseño); con RB3 hecha, 8b-3f a 8b-3k: `desplegar`, apagadas. Las de dinero o permisos
   (8b-3g, 8b-3i, 8b-3j, 8b-3k) llevan en su línea una prueba manual en la escuela de pruebas con el interruptor
   encendido (cobrar o deshacer un cargo ficticio; cambiar un rol ficticio) antes de activársela a nadie.
 - 8b-Z: `desplegar`, con capturas de todas las pantallas de gestión.
@@ -792,13 +871,30 @@ El propietario respondió las preguntas abiertas de la primera versión de este 
   fuera del interruptor hasta 8b-Z.
 - Pregunta 12 (el diálogo de Convocatorias que asignaba «Por Antigüedad» al cancelar): resuelta en el hotfix 2.
 
+Ronda 3 de bocetos (21/10/2026), tras publicar https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w:
+
+- **261** (12:00). «Eventos: P1 (lista densa ordenable), arreglando el móvil, que se ve descolocado. Editar evento: P2
+  (vista previa de la web al lado). Productos: P2 (agrupados por tipo). Preinscripciones: P1 (lista con detalle al
+  lado). Solicitudes: P1 (acciones en la fila). Caja de sede: P2 (pestañas Por recibir, Entregas y Movimientos).
+  Configuración: P1 en móvil (secciones seguidas) y P2 en tablet y escritorio (índice de ajustes a la izquierda).
+  Registro de acciones: P2 (cronología por días con detalle). Con esto la dirección de todas las pantallas de la E8b
+  está cerrada.» Marca RB3 y 8b-B3 como hechas.
+- **262** (12:02). «En las pantallas nuevas los roles se muestran como "Familia", "Gestión" y "Administración". Solo
+  cambia el texto visible; los roles, permisos y valores internos no cambian.»
+
 ---
 
 ## Anexo A: inventarios «nada se pierde» (decisión 232)
 
 Dónde queda en la pantalla nueva cada cosa que se ve hoy, según los bocetos aprobados (ronda 1: Alumnos, Tesorería y
-Convocatorias de C; ronda 2: Inicio I1, Ficha F1 y Grupos). «Añadido» es lo nuevo. Cada PR de pantalla lo copia y lo
-marca fila a fila.
+Convocatorias de C; ronda 2: Inicio I1, Ficha F1 y Grupos; ronda 3: Eventos, Editar evento, Productos,
+Preinscripciones, Solicitudes, Caja de sede, Configuración y Registro de acciones, con la variante elegida en la decisión
+261). «Añadido» es lo nuevo. Cada PR de pantalla lo copia y lo marca fila a fila.
+
+Los inventarios de la ronda 3 salen de la página de comparación de 8b-B3
+(https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w), columna de la variante elegida, sin quitar ninguna fila. Donde la
+página dice «Igual» sobre la variante, aquí se copia el texto de la otra variante o «Igual que hoy», para que cada
+tabla se entienda sola. Configuración lleva dos columnas porque elige una variante por ancho.
 
 ### Inicio (I1)
 
@@ -983,17 +1079,202 @@ marca fila a fila.
 | Paginación de convocatorias | Bajo los bloques |
 | Aviso sin convocatorias con «Crear primera convocatoria» | Igual que hoy |
 
-### Inventario pendiente de la ronda 3 (decisión 259)
+### Eventos (P1: lista densa ordenable)
 
-Se rellena con 8b-B3 y lo aprueba el propietario en RB3, con el mismo formato (hoy → pantalla nueva). Hasta entonces,
-ninguna de estas piezas empieza.
+Pieza 8b-3f. Rutas de hoy: `eventosListar`. Componentes de hoy: `listado-eventos`.
 
-| Pantalla | Pieza | Rutas de hoy | Componentes de hoy | Inventario |
-|---|---|---|---|---|
-| Eventos | 8b-3f | `eventosListar`, `eventosCrear`, `eventosEditar/:id` | `listado-eventos`, `crear-evento`, `editar-evento` | Pendiente de la ronda 3 |
-| Productos | 8b-3g | `productosListar`, `productosCrear`, `productosEditar/:id` | `listado-productos`, `crear-producto`, `editar-producto` | Pendiente de la ronda 3 |
-| Preinscripciones | 8b-3h | `preinscripciones` | `preinscripciones-admin` | Pendiente de la ronda 3 |
-| Solicitudes | 8b-3i | `solicitudes` | `solicitudes-bandeja` | Pendiente de la ronda 3 |
-| Caja de sede | 8b-3j | `cajaSede` | `caja-sede` | Pendiente de la ronda 3 |
-| Configuración | 8b-3k | `configuracion-sistema` | `configuracion-sistema` | Pendiente de la ronda 3 |
-| Registro de acciones | 8b-3k | `auditoriaSistema` | `auditoria-sistema` | Pendiente de la ronda 3 |
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título «Gestión de eventos» | «Eventos» con total y visibles |
+| Guardar cambios de orden (aparece al reordenar) | Aviso bajo el título que pasa a «Guardar orden» |
+| Mostrar u ocultar la vista previa de la web | «Ver cómo queda en la web» |
+| Crear nuevo evento | Botón principal |
+| Imagen (se amplía) | Miniatura en la fila |
+| Título del evento | Fila |
+| Fecha con su estado (próximo, hoy, pasado) | Columna de fecha con su estado |
+| Visible u oculto | Interruptor «Visible en la web» |
+| Descripción | Bajo el título, dos líneas |
+| Subir, bajar y arrastrar para ordenar | Asa y flechas |
+| Ocultar o mostrar | Interruptor |
+| Editar | Botón en la fila |
+| Eliminar | Menú «⋯» |
+| Aviso sin eventos y estado de carga | Igual que hoy |
+
+### Editar evento (P2: vista previa de la web al lado)
+
+Pieza 8b-3f. Rutas de hoy: `eventosCrear`, `eventosEditar/:id`. Componentes de hoy: `crear-evento`, `editar-evento`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título «Editar evento» y subtítulo | Igual, con enlace «Eventos» |
+| Título del evento (obligatorio, máximo) y sus errores | Campo con ayuda y error debajo |
+| Descripción (obligatoria) y sus errores | Campo con ayuda y error |
+| Fecha del evento (opcional) y su ayuda | Campo |
+| Visible en la web (al crear) | Interruptor y vista previa |
+| Imagen: subir, formatos, vista previa y quitar | Sección «Imagen» |
+| Documentos guardados: descargar y eliminar | Sección «Documentos» |
+| Documentos por subir: nombre, tamaño, quitar y «Subir N» | Sección «Documentos» |
+| Aviso de que los documentos son públicos | Ayuda de «Documentos» |
+| Cancelar | Barra fija de guardar |
+| Actualizar evento (desactivado con errores, «Guardando…») | «Guardar cambios» en la barra fija |
+| Estado de carga | Igual que hoy |
+| Añadido: Resumen de errores con enlaces a cada campo | Arriba |
+| Añadido: Vista previa de la tarjeta pública | Al lado del formulario |
+
+### Productos (P2: agrupados por tipo)
+
+Pieza 8b-3g. Rutas de hoy: `productosListar`, `productosCrear`, `productosEditar/:id`. Componentes de hoy: `listado-productos`, `crear-producto`, `editar-producto`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título «Gestión de productos» | «Productos» y para qué sirven |
+| Crear producto | Botón principal |
+| Dar a Mi caja (seleccionados) | Barra fija al pie |
+| Quitar de Mi caja (seleccionados) | Barra fija al pie |
+| Eliminar seleccionados | Barra fija al pie |
+| Filtro por concepto | Buscador |
+| Filtro por tipo | Desplegable |
+| Filtro Mi caja | Desplegable |
+| Limpiar filtros | Botón |
+| Total de productos | Junto a los filtros |
+| Chips de filtros activos con quitar | Bajo los filtros |
+| Seleccionar todos y cada uno | Casilla en cada producto |
+| Ordenar por ID, concepto o precio | Menú de cada grupo |
+| ID | «nº» en la fila |
+| Concepto (enlace a editar) | Fila |
+| Precio | A la derecha |
+| Mi caja (interruptor) | Interruptor «Mi caja» |
+| Editar | Menú «⋯» |
+| Eliminar | Menú «⋯» |
+| Paginación | Grupos enteros, sin páginas |
+| Aviso sin productos o sin coincidencias | Igual que hoy |
+| Añadido: Tipo de cada producto | Grupos por tipo |
+
+### Preinscripciones (P1: lista con detalle al lado)
+
+Pieza 8b-3h. Rutas de hoy: `preinscripciones`. Componentes de hoy: `preinscripciones-admin`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Pestañas Solicitudes y Plantillas PDF | Igual que hoy |
+| Título y «Actualizar» | Igual que hoy |
+| Filtro temporada | Desplegable |
+| Filtro deporte | Desplegable |
+| Filtro estado | Desplegable |
+| Buscar por DNI, referencia o nombre | Buscador |
+| Filtrar | Botón |
+| Referencia y DNI (o «Sin DNI») | Lista |
+| Alumno o alumna | Lista |
+| «Con observación» | Marca en la lista |
+| Deporte | Lista |
+| Temporada | Detalle |
+| Estado (y puesto en la lista de espera) | Pastilla en la lista |
+| Email inicial, aviso de cambio y confirmación final | Detalle: «Avisos por correo» con intentos |
+| Paginación «1–6 de 6» | Bajo la lista |
+| Detalle: DNI, teléfonos, discapacidad, deporte | Panel al lado |
+| Horario solicitado y asignación vigente | Detalle «Horario» |
+| Cambiar la asignación de turnos (cancelar y guardar) | «Cambiar la asignación» |
+| Observación sobre el horario | Resaltada en el detalle |
+| Firma presentada y descargar la solicitud firmada | Detalle «Firma y ficha» |
+| Fichas de alumno compatibles | Detalle «Firma y ficha» |
+| Revisar y finalizar alta (con su diálogo completo) | Botón principal del detalle |
+| Reenviar solicitud original | Botón del detalle |
+| Cancelar solicitud y eliminar definitivamente | Menú «Más» del detalle |
+| Plantillas PDF (deporte, previsualizar, campos, historial) | Pestaña, sin cambios |
+| Añadido: Hace cuánto llegó | En la lista |
+
+### Solicitudes (P1: acciones en la fila)
+
+Pieza 8b-3i. Rutas de hoy: `solicitudes`. Componentes de hoy: `solicitudes-bandeja`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título y subtítulo | Igual que hoy |
+| Actualizar | Botón |
+| Segmentos con su número | Pestañas |
+| Tipo de solicitud | Pastilla |
+| Estado y «Devolución pendiente» | Pastillas |
+| Quién la pidió y cuándo | Bloque izquierdo |
+| Sede | Bloque izquierdo |
+| Sobre qué (concepto y alumno) | Columna central |
+| Importe | Columna central |
+| Motivo o nota | Cita bajo «sobre qué» |
+| Recorrido del encargo | Barra de pasos |
+| Resuelta por y cuándo; respuesta o motivo del rechazo | En la fila (Resueltas) |
+| Aceptar (con el verbo de cada tipo) | Botón principal de la fila |
+| Denegar o rechazar | Botón de la fila |
+| Retirar (las propias) | En la fila |
+| Marcar encargado, marcar recibido, registrar devolución | En la fila |
+| Error con «Reintentar» y vacíos de cada segmento | Igual que hoy |
+| (Solo en P2, no entra: «Qué pasa al aceptar») | — |
+
+### Caja de sede (P2: pestañas Por recibir, Entregas y Movimientos)
+
+Pieza 8b-3j. Rutas de hoy: `cajaSede`. Componentes de hoy: `caja-sede`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título y subtítulo | Igual que hoy |
+| Sede | Desplegable bajo el título |
+| Periodo | Desplegable bajo el título |
+| Saldo de caja | Resumen |
+| Pendiente de entregar | Resumen |
+| Recibido en el periodo | Resumen |
+| Diferencias | Resumen |
+| Efectivo en mano: profesor, cobros, importe, desde | Pestaña «Por recibir» |
+| Recibir entrega: cobros, debería entregar, has contado, faltan o sobran, nota obligatoria, cancelar y recibir | Igual, en «Por recibir» |
+| Entregas: fecha, de, recibió, contado, diferencia, nota | Pestaña «Entregas» |
+| Entregas anuladas tachadas con motivo y correcciones | Igual que hoy |
+| Anular o pedir anular una entrega | En la fila |
+| Mostrando X de Y entregas | Pie de la pestaña |
+| Movimientos: fecha, tipo, alumno, importe, nota, anulados | Pestaña «Movimientos» |
+| Apuntar movimiento (tipo, importe, alumno, nota) | Botón de la pestaña |
+| Anular o pedir anular un movimiento | En la fila |
+| Errores con «Reintentar», sin sedes y vacíos | Igual que hoy |
+
+### Configuración (P1 en móvil, P2 en tablet y escritorio)
+
+Pieza 8b-3k. Rutas de hoy: `configuracion-sistema`. Componentes de hoy: `configuracion-sistema`.
+
+| Hoy | En móvil (menos de 768 px, P1) | En tablet y escritorio (desde 768 px, P2) |
+|---|---|---|
+| Título y subtítulo | «Configuración» | Igual que en móvil |
+| Límite de alumnos por turno y su ayuda | Sección «Alumnos por turno» | Igual, desde el índice |
+| Valor actual, nuevo valor y «Modificado» | Al lado del campo | Igual que en móvil |
+| Guardar cambios y restaurar | Bajo el campo | Igual que en móvil |
+| Aviso de que afecta a la web de horarios | Texto de la sección | Igual que en móvil |
+| Error si el límite es menor que 1 | Error bajo el campo; Guardar desactivado | Igual que en móvil |
+| Buscador de usuarios | Cabecera de «Roles y permisos» | Igual que en móvil |
+| Usuario (iniciales y nombre) y email | Fila | Dos líneas por cuenta |
+| Roles actuales | Pastillas | Pastillas |
+| Asignar roles (usuario, manager, admin) | Casillas Familia, Gestión y Administración | Igual que en móvil |
+| Guardar y restablecer por usuario | En la fila | Igual que en móvil |
+| Paginación de usuarios y aviso sin usuarios | Igual que hoy | Igual que en móvil |
+| Añadido: Avisos legales y cookies | Menú de la cuenta | Índice y menú de la cuenta |
+
+### Registro de acciones (P2: cronología por días con detalle)
+
+Pieza 8b-3k. Rutas de hoy: `auditoriaSistema`. Componentes de hoy: `auditoria-sistema`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Título y subtítulo | Igual, con el total |
+| Actualizar ahora | Botón |
+| Filtro desde | Botón «Filtros» |
+| Filtro hasta | Botón «Filtros» |
+| Filtro acción | Botón «Filtros» |
+| Filtro módulo (fijo en salud con su ayuda) | Botón «Filtros» |
+| Filtro persona | Botón «Filtros» |
+| Buscar en el resumen | Botón «Filtros» |
+| Aplicar filtros y restablecer | Botón «Filtros» |
+| Total de acciones | Subtítulo |
+| Cuándo | Día como título y hora |
+| Acción | Pastilla |
+| Qué | Texto principal |
+| Módulo | Bajo el texto |
+| Quién | Bajo el texto, «Cuenta N» |
+| Ver el detalle | Panel al lado |
+| Detalle: qué, módulo, ficha afectada, fecha, persona | En el panel |
+| Datos técnicos: método, estado, endpoint, query params, payload | Desplegable del detalle |
+| Paginación | Pie de la cronología |
+| Aviso sin acciones en el periodo | Igual que hoy |
