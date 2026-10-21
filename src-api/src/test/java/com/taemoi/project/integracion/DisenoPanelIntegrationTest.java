@@ -297,9 +297,12 @@ class DisenoPanelIntegrationTest extends MySqlIntegrationTest {
 			assertTrue(estado.get("activo").asBoolean());
 			assertTrue(estado.get("permitido").asBoolean(), "con NUEVO puede volver al anterior para sí");
 			assertEquals(0, filas(gestor));
-			// Volver al anterior para sí deja su fila, que manda sobre el por defecto.
+			// Volver al anterior para sí deja su fila, que manda sobre el por defecto, SIN permiso (decisión 256).
 			assertFalse(leer(miDiseno(false), token, 200).get("activo").asBoolean());
 			assertFalse(leer(get(PERMISOS), token, 200).get("disenoNuevo").get("activo").asBoolean());
+			assertEquals(1, filas(gestor));
+			assertFalse(permitidoEnBase(gestor), "mi-diseno nunca da permiso");
+			assertFalse(deLaLista(leer(get(RUTA), tPropietarioC, 200), gestor).get("permitido").asBoolean());
 			// La escuela A no se entera.
 			assertFalse(leer(get(RUTA), tPropietarioA, 200).get("porDefecto").asBoolean());
 		} finally {
@@ -318,9 +321,69 @@ class DisenoPanelIntegrationTest extends MySqlIntegrationTest {
 			leer(porDefecto(true), tPropietarioC, 200);
 			assertFalse(leer(get(PERMISOS), token, 200).get("disenoNuevo").get("activo").asBoolean(),
 					"su fila apagada manda");
-			// Sin permiso, cuenta el por defecto.
+			// Ronda 2: quitarle el permiso no borra su elección; con NUEVO, su fila apagada sigue mandando.
 			leer(permiso(gestor, false), tPropietarioC, 200);
-			assertTrue(leer(get(PERMISOS), token, 200).get("disenoNuevo").get("activo").asBoolean());
+			assertFalse(leer(get(PERMISOS), token, 200).get("disenoNuevo").get("activo").asBoolean());
+		} finally {
+			leer(porDefecto(false), tPropietarioC, 200);
+		}
+	}
+
+	/** Ronda 2 (decisión 256): con NUEVO, a quien el propietario quitó el permiso, apagar no se lo devuelve. */
+	@Test
+	void porDefectoNuevo_permisoQuitado_apagarNoLoDevuelve_yAlVolverAViejoQuedaSinPermiso() throws Exception {
+		long gestor = gestorNuevo(c);
+		String token = c.token(jwtService, usuarios, gestor);
+		leer(permiso(gestor, true), tPropietarioC, 200);
+		leer(permiso(gestor, false), tPropietarioC, 200);
+		try {
+			leer(porDefecto(true), tPropietarioC, 200);
+			JsonNode apagado = leer(miDiseno(false), token, 200);
+			assertFalse(apagado.get("activo").asBoolean());
+			assertFalse(permitidoEnBase(gestor), "apagar no le devuelve el permiso");
+			assertFalse(deLaLista(leer(get(RUTA), tPropietarioC, 200), gestor).get("permitido").asBoolean());
+			// Lo enciende otra vez: su fila queda activa, todavía sin permiso.
+			assertTrue(leer(miDiseno(true), token, 200).get("activo").asBoolean());
+			assertFalse(permitidoEnBase(gestor));
+
+			// El propietario vuelve a VIEJO: en VIEJO y sin permiso, aunque su fila tenga activo = TRUE.
+			leer(porDefecto(false), tPropietarioC, 200);
+			assertEquals(1, jdbc.queryForObject("""
+					SELECT COUNT(*) FROM diseno_panel_usuario WHERE usuario_id = ? AND activo = TRUE
+					  AND permitido = FALSE""", Integer.class, gestor));
+			JsonNode estado = leer(get(PERMISOS), token, 200).get("disenoNuevo");
+			assertFalse(estado.get("activo").asBoolean());
+			assertFalse(estado.get("permitido").asBoolean());
+			JsonNode fila = deLaLista(leer(get(RUTA), tPropietarioC, 200), gestor);
+			assertFalse(fila.get("permitido").asBoolean(), "no sale «con permiso» en la pantalla del propietario");
+			assertFalse(fila.get("activo").asBoolean());
+			assertEquals(403, estado(miDiseno(true), token));
+		} finally {
+			leer(porDefecto(false), tPropietarioC, 200);
+		}
+	}
+
+	/** Ronda 2: con el permiso del propietario, su elección se mantiene en NUEVO y en VIEJO. */
+	@Test
+	void conPermisoDelPropietario_mantieneSuEleccionEnNuevoYEnViejo() throws Exception {
+		long gestor = gestorNuevo(c);
+		String token = c.token(jwtService, usuarios, gestor);
+		leer(permiso(gestor, true), tPropietarioC, 200);
+		leer(miDiseno(false), token, 200);
+		try {
+			for (boolean nuevo : new boolean[] { true, false }) {
+				leer(porDefecto(nuevo), tPropietarioC, 200);
+				assertFalse(leer(get(PERMISOS), token, 200).get("disenoNuevo").get("activo").asBoolean(),
+						"apagado " + nuevo);
+				assertTrue(permitidoEnBase(gestor));
+			}
+			leer(miDiseno(true), token, 200);
+			for (boolean nuevo : new boolean[] { true, false }) {
+				leer(porDefecto(nuevo), tPropietarioC, 200);
+				JsonNode estado = leer(get(PERMISOS), token, 200).get("disenoNuevo");
+				assertTrue(estado.get("activo").asBoolean(), "encendido " + nuevo);
+				assertTrue(estado.get("permitido").asBoolean());
+			}
 		} finally {
 			leer(porDefecto(false), tPropietarioC, 200);
 		}
@@ -446,6 +509,11 @@ class DisenoPanelIntegrationTest extends MySqlIntegrationTest {
 	private int filas(long usuario) {
 		return jdbc.queryForObject("SELECT COUNT(*) FROM diseno_panel_usuario WHERE usuario_id = ?", Integer.class,
 				usuario);
+	}
+
+	private boolean permitidoEnBase(long usuario) {
+		return Boolean.TRUE.equals(jdbc.queryForObject(
+				"SELECT permitido FROM diseno_panel_usuario WHERE usuario_id = ?", Boolean.class, usuario));
 	}
 
 	private long ultimoEvento() {

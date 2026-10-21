@@ -13,8 +13,8 @@ import jakarta.persistence.UniqueConstraint;
 /**
  * Interruptor del diseño nuevo del panel de una cuenta en la escuela activa (V31_10, pieza 8b-I; fase3-e8b-plan.md §3).
  * {@code @TenantId}: Hibernate filtra por la escuela activa, así que la misma cuenta tiene una fila por escuela y nunca
- * se lee la de otra. Regla efectiva en {@code DisenoPanelService#activoPara}: con fila y {@code permitido}, su
- * {@code activo}; si no, el valor por defecto de la escuela.
+ * se lee la de otra. Regla efectiva en {@code DisenoPanelService#activoPara}: con fila y ({@code permitido} o el valor
+ * por defecto NUEVO), su {@code activo}; si no, el valor por defecto de la escuela.
  */
 @Entity
 @Table(name = "diseno_panel_usuario",
@@ -29,11 +29,11 @@ public class DisenoPanelUsuario extends EntidadOrganizacion {
 	@Column(name = "usuario_id", nullable = false, updatable = false)
 	private Long usuarioId;
 
-	/** El propietario le dio permiso (o lo dejó el propio usuario con el valor por defecto NUEVO). */
+	/** El propietario le dio permiso (decisión 256). Solo lo cambia el propietario; {@code mi-diseno}, nunca. */
 	@Column(nullable = false)
 	private boolean permitido;
 
-	/** Encendido para él; solo cuenta con {@code permitido}. */
+	/** Su elección; cuenta con {@code permitido} o con el valor por defecto NUEVO. */
 	@Column(nullable = false)
 	private boolean activo;
 

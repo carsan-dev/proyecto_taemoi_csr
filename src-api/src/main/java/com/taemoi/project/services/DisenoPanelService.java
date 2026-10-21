@@ -32,13 +32,16 @@ import com.taemoi.project.repositories.UsuarioRepository;
  * {@code organizacion_id} explícito.
  *
  * <ul>
- * <li>Regla efectiva ({@link #activoPara}): con fila y {@code permitido}, su {@code activo}; si no, el valor por defecto
- * de la escuela ({@value #CLAVE_POR_DEFECTO} = {@value #NUEVO}; sin la clave, VIEJO). Sin filas ni clave, nadie cambia.</li>
- * <li>El propietario da o quita el permiso a la gestión de su escuela (PROPIETARIO o ADMINISTRADOR activa), también a sí
- * mismo; al darlo queda activo, y darlo otra vez no pisa lo que eligió la cuenta. Cuenta sin gestión en la escuela, 400;
- * de otra escuela o inexistente, 404. El gestor no asigna (403, en el controlador).</li>
- * <li>Cada cuenta con permiso, o con el valor por defecto NUEVO, lo enciende o apaga para sí; sin él, 403. Con el valor
- * por defecto NUEVO y sin permiso, apagarlo deja una fila con permiso (la única forma de que su elección mande).</li>
+ * <li>Regla efectiva ({@link #activoPara}): con fila y ({@code permitido} o el valor por defecto NUEVO), su
+ * {@code activo}; si no, el valor por defecto de la escuela ({@value #CLAVE_POR_DEFECTO} = {@value #NUEVO}; sin la
+ * clave, VIEJO). Sin filas ni clave, nadie cambia.</li>
+ * <li>{@code permitido} es solo el que da el propietario (decisión 256): a la gestión de su escuela (PROPIETARIO o
+ * ADMINISTRADOR activa), también a sí mismo; al darlo queda activo, y darlo otra vez no pisa lo que eligió la cuenta;
+ * quitarlo no borra su elección (con NUEVO sigue contando; con VIEJO, no). Cuenta sin gestión en la escuela, 400; de otra
+ * escuela o inexistente, 404. El gestor no asigna (403, en el controlador).</li>
+ * <li>Cada cuenta con permiso, o con el valor por defecto NUEVO, lo enciende o apaga para sí; sin él, 403. Solo escribe
+ * {@code activo}: sin fila, la crea con {@code permitido = false}; nunca toca {@code permitido}. Si el propietario vuelve
+ * a VIEJO, la cuenta sin permiso vuelve al de siempre.</li>
  * <li>El valor por defecto («Para todo el equipo»), solo el propietario; la pantalla lo esconde hasta R5 (258).</li>
  * <li>Cada escritura correcta deja UNA fila en el registro ({@link RegistroAccionesPanel}, misma transacción), también la
  * que no cambia nada ({@code sinCambios=SI}): por eso las tres rutas están en
@@ -133,6 +136,7 @@ public class DisenoPanelService {
 	 *
 	 * @throws IllegalArgumentException (400) sin {@code permitido} o la cuenta no tiene gestión en la escuela
 	 * @throws NoSuchElementException   (404) la cuenta es de otra escuela o no existe
+	 * @throws IllegalStateException    (409) saltó la clave única por otro cambio a la vez
 	 */
 	@Transactional
 	public DisenoPanelDTO.Usuario cambiarPermiso(Long usuarioId, DisenoPanelRequests.Permiso solicitud) {
@@ -152,8 +156,10 @@ public class DisenoPanelService {
 		if (!sinCambios) {
 			DisenoPanelUsuario fila = actual.orElseGet(() -> new DisenoPanelUsuario(usuarioId));
 			fila.setPermitido(permitir);
-			// Al darlo queda activo (§3); al quitarlo, su elección deja de contar.
-			fila.setActivo(permitir);
+			// Al darlo queda activo (§3). Al quitarlo no se toca su elección: con VIEJO deja de contar.
+			if (permitir) {
+				fila.setActivo(true);
+			}
 			guardar(fila, actor);
 		}
 		registro.registrar(permitir ? RegistroAccionesPanel.Accion.DISENO_PERMITIR
@@ -166,6 +172,7 @@ public class DisenoPanelService {
 	 *
 	 * @throws IllegalArgumentException (400) sin {@code activo}
 	 * @throws SecurityException        (403) sin gestión en la escuela, o sin permiso y con el por defecto VIEJO
+	 * @throws IllegalStateException    (409) saltó la clave única por otro cambio a la vez
 	 */
 	@Transactional
 	public DisenoPanelDTO.Propio cambiarMiDiseno(DisenoPanelRequests.MiDiseno solicitud) {
@@ -186,15 +193,14 @@ public class DisenoPanelService {
 		}
 		boolean sinCambios = regla(actual, porDefecto) == activo;
 		if (!sinCambios) {
+			// Solo su elección: el permiso es del propietario (decisión 256). Una fila nueva nace sin permiso.
 			DisenoPanelUsuario fila = actual.orElseGet(() -> new DisenoPanelUsuario(usuario));
-			// Con el por defecto NUEVO y sin permiso, la fila lleva permiso para que su elección mande.
-			fila.setPermitido(true);
 			fila.setActivo(activo);
 			guardar(fila, usuario);
 		}
 		registro.registrar(activo ? RegistroAccionesPanel.Accion.DISENO_ACTIVAR
 				: RegistroAccionesPanel.Accion.DISENO_DESACTIVAR, RUTA_MI_DISENO, valores(usuario, sinCambios));
-		return new DisenoPanelDTO.Propio(activo, true);
+		return new DisenoPanelDTO.Propio(activo, puedeCambiarPropio(actual, porDefecto));
 	}
 
 	/**
@@ -233,9 +239,10 @@ public class DisenoPanelService {
 
 	// ------------------------------------------------------------------ reglas
 
-	/** Con fila y permitido, su activo; si no, el valor por defecto. */
+	/** Con fila y (permitido o el por defecto NUEVO), su activo; si no, el valor por defecto. */
 	static boolean regla(Optional<DisenoPanelUsuario> fila, boolean porDefectoNuevo) {
-		return fila.filter(DisenoPanelUsuario::isPermitido).map(DisenoPanelUsuario::isActivo).orElse(porDefectoNuevo);
+		return fila.filter(f -> f.isPermitido() || porDefectoNuevo).map(DisenoPanelUsuario::isActivo)
+				.orElse(porDefectoNuevo);
 	}
 
 	/** Puede cambiarlo para sí: con permiso o con el por defecto NUEVO. */
@@ -269,9 +276,17 @@ public class DisenoPanelService {
 		return membresias.findRolesActivos(usuarioId, organizacion).stream().anyMatch(GESTION::contains);
 	}
 
+	/**
+	 * Guarda con flush. El bloqueo de la cuenta ordena los cambios; si aun así saltara la clave única
+	 * (organizacion_id, usuario_id), 409 con {@link #A_LA_VEZ} en vez de un 500.
+	 */
 	private void guardar(DisenoPanelUsuario fila, Long actor) {
 		fila.marcarCambio(actor, LocalDateTime.now());
-		filas.saveAndFlush(fila);
+		try {
+			filas.saveAndFlush(fila);
+		} catch (DataIntegrityViolationException error) {
+			throw new IllegalStateException(A_LA_VEZ);
+		}
 	}
 
 	private static Map<String, Object> valores(Long usuario, boolean sinCambios) {

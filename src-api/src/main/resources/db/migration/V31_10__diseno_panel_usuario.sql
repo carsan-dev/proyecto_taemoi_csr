@@ -6,9 +6,11 @@
 -- «por detrás» y Flyway la rechazaría cuando llegue.
 --
 --   diseno_panel_usuario  una fila por (escuela, usuario) cuando el propietario da o quita el permiso, o cuando el
---                         usuario lo enciende o apaga para sí. Regla efectiva (DisenoPanelService#activoPara): con fila
---                         y permitido, su activo; si no, el valor por defecto de la escuela (clave
---                         panel.diseno_por_defecto de configuracion_organizacion, que ya existe; sin la clave, VIEJO).
+--                         usuario lo enciende o apaga para sí. permitido solo lo da el propietario (decisión 256); el
+--                         usuario solo escribe activo. Regla efectiva (DisenoPanelService#activoPara): con fila y
+--                         (permitido o el valor por defecto NUEVO), su activo; si no, el valor por defecto de la escuela
+--                         (clave panel.diseno_por_defecto de configuracion_organizacion, que ya existe; sin la clave,
+--                         VIEJO).
 --                         Sin filas, nadie cambia: Moiskimdo sigue con el panel de siempre.
 --                         Ni usuario (es global: cruzaría escuelas) ni membresia (una fila por rol: se duplicaría)
 --                         sirven para guardarlo. Clave única (organizacion_id, usuario_id): la misma cuenta en dos

@@ -134,6 +134,20 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(reiniciar).toHaveBeenCalledTimes(1);
   });
 
+  it('con una petición en vuelo, los botones de TODAS las filas quedan desactivados', async () => {
+    await listo();
+    boton(8).click();
+    fixture.detectChanges();
+    expect([4, 8, 9].map((id) => boton(id).disabled)).toEqual([true, true, true]);
+    expect(boton(4).getAttribute('aria-busy')).toBeNull();
+    boton(4).click();
+    http.expectNone(`${API}/panel/diseno-nuevo/4`);
+
+    http.expectOne(`${API}/panel/diseno-nuevo/8`).flush({ usuarioId: 8, permitido: true, activo: true });
+    fixture.detectChanges();
+    expect([4, 8, 9].map((id) => boton(id).disabled)).toEqual([false, false, false]);
+  });
+
   it('quitar el permiso manda {permitido: false}', async () => {
     await listo();
     boton(4).click();

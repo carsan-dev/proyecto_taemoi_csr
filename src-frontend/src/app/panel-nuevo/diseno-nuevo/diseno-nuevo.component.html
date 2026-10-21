@@ -71,7 +71,7 @@
           </div>
           <button type="button" class="diseno__boton"
             [class.diseno__boton--secundario]="!fila.permitido" [class.diseno__boton--texto]="fila.permitido"
-            [disabled]="guardando === fila.usuarioId" [attr.aria-busy]="guardando === fila.usuarioId ? 'true' : null"
+            [disabled]="guardando !== null" [attr.aria-busy]="guardando === fila.usuarioId ? 'true' : null"
             [attr.aria-label]="(fila.permitido ? 'Quitar permiso a ' : 'Dar permiso a ') + fila.nombre"
             (click)="cambiarPermiso(fila)">{{ fila.permitido ? 'Quitar permiso' : 'Dar permiso' }}</button>
         </li>

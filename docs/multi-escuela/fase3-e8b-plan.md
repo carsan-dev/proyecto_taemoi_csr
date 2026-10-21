@@ -389,7 +389,11 @@ apagado, capturas idénticas a hoy.
 
 **Notas para la PR:** V31_10 y por qué no V32.x (§1); el gestor no asigna (decisión 236: «el propietario y quien él
 elija»); el control «Para todo el equipo» está construido pero oculto hasta R5 (decisión 258); con el
-interruptor encendido, hasta 8b-N no cambia nada visible salvo la pantalla del propietario.
+interruptor encendido, hasta 8b-N no cambia nada visible salvo la pantalla del propietario. Regla efectiva (ronda 2
+de la revisión): con fila y (`permitido` o el valor por defecto NUEVO), su `activo`; si no, el valor por defecto;
+`permitido` solo lo da el propietario y `mi-diseno` solo escribe `activo`. **Límite conocido:** la pantalla pide los
+nombres con `GET /api/miembros?rol=PROPIETARIO|ADMINISTRADOR&size=100` (una página por rol); una escuela con más de 100
+propietarios o gestores vería «Cuenta n.º …» en los que pasen de ahí.
 
 ## 7. Pieza 8b-T: tema por escuela
 
