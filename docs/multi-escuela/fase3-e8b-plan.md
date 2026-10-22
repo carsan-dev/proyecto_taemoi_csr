@@ -1105,7 +1105,9 @@ cinturones, la ocupación y el diálogo rojo de peligro no cambian; las pantalla
   sobre `acento-suave`.
 - `acento-borde`: H, C 0,08 y la L más alta que dé ≥ 3:1 sobre blanco, sobre el fondo (`#F5F5F2`) y sobre
   `acento-suave`.
-- C < 0,01: los neutros de hoy (`marca-primario-tinta`, `marca-primario-suave` y `borde-control`).
+- C < 0,01: `marca-primario-tinta` y `marca-primario-suave` del tema, y el `acento-borde` con la misma búsqueda de L y
+  C = 0 (≥ 3:1 sobre blanco, el fondo y ese suave; `borde-control` daba 2,99:1 sobre `#F2F2F2`). `#808080`: `#8C8C8C`.
+- Un primario que no es `#RRGGBB` (`''`, `'abc'`, `'#abc'`, `'#GGGGGG'`, `null`): el acento por defecto.
 
 | Escuela | acento | acento-suave | acento-borde |
 |---|---|---|---|
@@ -1116,9 +1118,12 @@ cinturones, la ocupación y el diálogo rojo de peligro no cambian; las pantalla
 **Ficheros:**
 - Nuevos en `F/panel-nuevo/`: `acento-escuela.ts` (OKLCH ↔ sRGB y contraste WCAG, en TypeScript puro; `acentoDe`) y
   `acento-escuela.directive.ts` (`AcentoEscuelaActual`, `escribirAcento`, `seguirAcento` y la directiva `pnAcento`).
-- `MarcaEscuelaPanelService.aplicarEn` calcula el acento al aplicar la marca, lo escribe en el `.pn` de la cabecera y lo
-  deja en `AcentoEscuelaActual`; con otra sesión se vacía. Inicio, Alumnos y la ficha llevan `pnAcento` en su `.pn`; el
-  diálogo y los avisos, `seguirAcento()` (sin `hostDirectives`, que añadía 1.106 bytes al bundle inicial).
+- `MarcaEscuelaPanelService.aplicarEn` calcula el acento al aplicar la marca, escribe el tema y el acento en el `.pn`
+  de la cabecera y deja los dos (`{tema, acento}`) en `AcentoEscuelaActual`; con otra sesión se vacía. Inicio, Alumnos y
+  la ficha llevan `pnAcento` en su `.pn`; el diálogo y los avisos, `seguirAcento()` (sin `hostDirectives`, que añadía
+  1.106 bytes al bundle inicial). Los dos escriben con `escribirTema` las ocho variables (ronda 2: antes solo el acento,
+  y el botón principal de cada pantalla salía con `#1A2230`, contra la decisión 239). `tema-escuela.ts` (sin Angular)
+  guarda `TemaMarca` y los nombres de las variables, para que el servicio y la directiva no se importen entre sí.
 - `panel-nuevo.scss`: `--pn-acento`, `--pn-acento-borde` y `--pn-acento-suave` bajo `.pn` con los de `#1A2230`, y el
   foco de 3 px en `acento-borde` con 2 px de separación. Ningún token en `:root`.
 - Acento en: entrada actual de los desplegables del menú y de la hoja «Más», entrada actual de la barra inferior,
@@ -1127,8 +1132,12 @@ cinturones, la ocupación y el diálogo rojo de peligro no cambian; las pantalla
   botones de texto, enlaces («Ir a Tesorería», «Ver todos», «Ver grupo», la acción de los avisos), iconos de las
   entradas del Inicio y avatar de iniciales.
 - Sin acento a propósito: «Diseño nuevo» (se abre también con el panel de hoy, sin marca: mantiene su foco de 2 px) y
-  el diálogo destructivo (vuelve a los neutros con su foco de antes). Las acciones `peligro` y `bien` conservan el
-  fondo neutro al pasar.
+  el diálogo destructivo (vuelve a los neutros de `#1A2230` con su foco de antes: `marca-por-defecto` y el nuevo
+  `marca-suave-por-defecto`, fijos bajo `.pn`). Las acciones `peligro` y `bien` conservan el fondo neutro al pasar.
+- Listas flotantes del buscador (ronda 2): la de las herramientas va dentro del `<dialog>` de Alumnos y pierde su
+  `pn` propio (hereda el tema); la de la ficha va al `body` y lo lleva copiado con el input nuevo
+  `searchDropdownVariables` de `SearchableSelectDirective` (vacío por defecto: las pantallas de hoy no cambian). La
+  opción elegida, en `acento` sobre `acento-suave`.
 
 **Tareas TDD:**
 - [x] Specs en rojo antes del código: `acento-escuela.spec.ts` y los casos nuevos de `marca-escuela-panel.service.spec.ts`
@@ -1144,6 +1153,25 @@ cinturones, la ocupación y el diálogo rojo de peligro no cambian; las pantalla
   «Cancelar».
 - [x] `ficha-alumno.component.spec.ts`: pestaña activa (texto y subrayado), «Cambiar foto» y «Agregar deporte».
 - [x] `inicio.component.spec.ts`: «Ir a Tesorería», iconos de «Accesos» y «Cobrar».
+- [x] Ronda 2, en rojo antes del código (12 FAILED, 1664 SUCCESS: `--pn-marca-primario` vacío en la pantalla, principal
+  `rgb(26, 34, 48)` en vez de `rgb(27, 43, 46)`, `#NANNANNAN` con una entrada no válida, borde gris 2,99:1, lista con
+  `pn` propio, `NG0303` sin `searchDropdownVariables`, etc.):
+  - `marca-escuela-panel.service.spec.ts`: la pantalla con `pnAcento` recibe las cinco `--pn-marca-*` de Sierra
+    (`#3E9B4F`) y las pierde al cambiar de sesión; `escribirTema` escribe las ocho y con `null` las quita, y se niega
+    fuera de un `.pn`; `AcentoEscuelaActual` guarda `{tema, acento}`.
+  - `alumnos.component.spec.ts`: el principal con la tinta de Moiskimdo (`rgb(27, 43, 46)`); `ficha-alumno.component.spec.ts`:
+    el `.pn` de la ficha con el tema y las listas flotantes de Deportes (en el `body`) con el tema copiado y la opción
+    elegida en el acento.
+  - `acento-escuela.spec.ts`: entradas no válidas (`''`, `'abc'`, `'#abc'`, `'#GGGGGG'`, `'#12345'`, `'#1234567'`, con
+    espacio, `null`, `undefined`) dan el acento por defecto; caso gris: `#8C8C8C`, y ≥ 3:1 sobre blanco, el fondo y su
+    suave en cuatro grises.
+  - `confirmacion.service.spec.ts`: el diálogo normal con el tema de Sierra (principal `#24853A`, «Cancelar» en el
+    acento); el de peligro en neutros (texto `#1A2230`, borde `linea-fuerte`, hover `#E8E9EA` y foco en la tinta neutra).
+  - `avisos.service.spec.ts`: la acción del aviso en el acento de la escuela.
+  - `diseno-nuevo.component.spec.ts`: «Diseño nuevo» sin variables de la escuela y en la tinta neutra con una marca aplicada.
+  - `herramienta-panel.component.spec.ts`: foco de 3 px en `acento-borde` con 2 px de separación en el buscador; su
+    lista, dentro del `<dialog>`, sin `pn` y con la opción elegida en el acento de la pantalla.
+  - `searchable-select.directive.spec.ts`: `searchDropdownVariables` copia, cambia y quita las variables; sin él, nada.
 
 **Contrastes nuevos (WCAG 2.2 AA):** acento sobre blanco, fondo, `superficie-2` y `acento-suave` ≥ 4,5:1 (Moiskimdo
 5,79, 5,30, 5,54 y 5,04); `acento-borde` sobre blanco, fondo, `superficie-2` y `acento-suave` ≥ 3:1 (3,45, 3,16, 3,30 y
@@ -1151,6 +1179,9 @@ cinturones, la ocupación y el diálogo rojo de peligro no cambian; las pantalla
 
 **Notas para la PR:** bundle inicial 1.456.347 bytes, igual que en `ffc88711`; capturas apagado antes y después
 idénticas (16/16); encendido con Moiskimdo y con Sierra de prueba a 375, 768, 1024 y 1280.
+Ronda 2: bundle inicial 1.456.347 bytes (sin cambio); karma 1676 SUCCESS; apagado antes (`f14da53e`) y después 16/16
+idénticas en bytes; encendido con Moiskimdo y Sierra de prueba (Inicio, Alumnos, ficha, «Cobrar» y la lista del
+buscador abierta) a 375, 768, 1024 y 1280: «Nuevo alumno» y «Marcar como pagado» con la tinta de la escuela.
 
 ## 22. Pieza 8b-Z: retirada de lo viejo
 

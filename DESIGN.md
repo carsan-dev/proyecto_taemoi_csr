@@ -8,6 +8,7 @@ colors:
   marca-primario-tinta: "#1B2B2E"
   marca-primario-suave: "#E8EAEA"
   marca-por-defecto: "#1A2230"
+  marca-suave-por-defecto: "#E8E9EA"
   acento: "#01707F"
   acento-borde: "#4595A3"
   acento-suave: "#D5F5FC"
@@ -180,15 +181,23 @@ solo para lo pendiente.
   OKLCH: `acento-suave` es H con L 0,95 y C 0,035; `acento`, H con C máx(C, 0,09) recortado a sRGB y la L que baja desde
   0,50 hasta dar ≥ 4,5:1 sobre blanco y sobre `acento-suave` (texto, enlaces, iconos); `acento-borde`, H con C 0,08 y la
   L más alta que dé ≥ 3:1 sobre blanco, el fondo y `acento-suave` (bordes de control, anillo de foco). Un color sin tono
-  (C < 0,01) se queda con `marca-primario-tinta`, `marca-primario-suave` y `borde-control`. Moiskimdo: `#01707F` (5,79:1
+  (C < 0,01) se queda con `marca-primario-tinta` y `marca-primario-suave`, y su `acento-borde` sale de la misma búsqueda
+  de L con C = 0 (≥ 3:1 sobre blanco, el fondo y ese suave; `borde-control` daba 2,99:1 sobre `#F2F2F2`): con `#808080`,
+  `#8C8C8C` (3,36, 3,08 y 3,00). Un primario que no es `#RRGGBB` da el acento por defecto. Moiskimdo: `#01707F` (5,79:1
   sobre blanco, 5,30 sobre el fondo, 5,04 sobre el suave), `#4595A3` (3,45, 3,16 y 3,00) y `#D5F5FC`. Sin marca, el de
   `#1A2230`: `#466396`, `#6F8ABB` y `#E6EFFF`.
+- **Dónde se escribe.** La cabecera y cada pantalla o capa (Inicio, Alumnos, ficha, diálogo, avisos) tienen su propio
+  `.pn`, y `:where(.pn)` redeclara en cada uno el tema por defecto: el tema COMPLETO de la escuela (las cinco `marca-*`
+  y las tres del acento) se escribe en todos ellos, así que el botón principal de cada pantalla lleva la tinta de la
+  escuela (decisión 239). Las listas flotantes del buscador que van dentro de un `<dialog>` de la pantalla no llevan
+  `.pn` propio y lo heredan; las que van al `body` lo llevan copiado. «Diseño nuevo» no lo recibe (se abre también con
+  el panel de hoy) y el diálogo de peligro lo neutraliza con `marca-por-defecto` y `marca-suave-por-defecto`.
 - **Derivados.** El secundario y el suave se derivan del primario mezclando en sRGB: el secundario es el texto con el
   25 % del primario (menos si no llega a 4,5:1) y el suave, el 10 % del primario sobre blanco. Los valores de arriba
   son los de Moiskimdo (`#1B2B2E`), calculados por `ReglaContraste`.
 - **Tema por defecto** (escuela sin color, decisión 257; también el de `panel-nuevo.scss` mientras no llega la marca):
   primario `#1A2230`, texto `#FFFFFF` (15,96:1), secundario `#C6C8CB` (9,52:1), tinta `#1A2230` y suave
-  `#E8E9EA`.
+  `#E8E9EA`. `marca-por-defecto` y `marca-suave-por-defecto` guardan la tinta y el suave fijos: la marca no los cambia.
 
 ### Secondary
 
@@ -305,7 +314,8 @@ redondas de 40 px; foto del carnet 4:5 con 12 px.
 
 Campos de 42 px con `borde-control`, 8 px de radio y etiqueta visible encima. Foco (8b-C): anillo de 3 px de
 `acento-borde` con 2 px de separación (por dentro en menús y pestañas, con `acento-suave` debajo en las entradas de
-menú). Buscador con icono dentro y botón de borrar.
+menú). Buscador con icono dentro y botón de borrar; en su lista flotante, la opción elegida va en `acento` sobre
+`acento-suave`.
 
 ### Navigation
 
@@ -359,6 +369,8 @@ Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y l
 - Cobro: el concepto en etiqueta y el importe en la cifra ocre de 28 px entre dos filetes; el método, un grupo de
   pastillas `role=radiogroup` (32 px, borde de control; la elegida, `acento-suave` con borde `acento-borde`, texto
   `acento` y la marca de verificación) con «Sin indicar» por defecto. Flechas, Inicio y Fin mueven la elección.
+- Destructivo (rojo de peligro): sin el color de la escuela. «Cancelar» con borde `linea-fuerte` y texto, hover y foco
+  de 2 px en los neutros de `#1A2230`, con cualquier marca.
 - Esc, el clic fuera y la X cancelan sin hacer nada (decisiones 235 y 248). El foco queda contenido y vuelve al
   disparador al cerrar. Foco inicial: en la acción; en los destructivos, en «Cancelar», con la acción en `peligro`.
 - Con la acción en vuelo, el diálogo sigue abierto con el botón ocupado («Cobrando…») y no se puede cancelar: ni Esc,
