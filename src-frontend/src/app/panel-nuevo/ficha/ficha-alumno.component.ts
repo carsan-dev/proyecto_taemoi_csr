@@ -9,7 +9,7 @@ import { FotoAmpliadaComponent } from '../../componentes/endpoints/editar-alumno
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
-import { EstadoLicencia, estadoLicencia, fondoCinturon, tiempoConGrado } from '../alumnos/alumno-vista';
+import { EstadoLicencia, estadoLicencia, gradoFila, gradoParaFrase, tiempoConGrado } from '../alumnos/alumno-vista';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from '../alumnos/pendientes-alumno.service';
 import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
@@ -230,13 +230,14 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
 
   private disciplina(d: AlumnoDeporteDTO, hoy: Date): DisciplinaCarnet {
     const conGrados = !this.catalogo.sinGrados(d.deporte);
-    const grado = conGrados ? (d.grado ? this.getGradoNombre(d.grado, d.deporte) : 'Sin grado') : '';
+    const vista = conGrados && d.grado ? gradoFila(d.grado, d.deporte) : null;
+    const grado = conGrados ? (vista ? gradoParaFrase(vista) : 'Sin grado') : '';
     return {
       codigo: d.deporte,
       nombre: this.catalogo.etiquetaDisciplina(d.deporte),
       clase: this.claseDisciplina(d.deporte),
       principal: d.activo !== false && this.isDeportePrincipal(d.deporte),
-      fondo: conGrados && d.grado ? fondoCinturon(d.grado, d.deporte) : null,
+      fondo: vista ? vista.fondo : null,
       linea: lineaGrado(grado, conGrados && d.grado ? tiempoConGrado(d.fechaGrado, hoy) : ''),
     };
   }

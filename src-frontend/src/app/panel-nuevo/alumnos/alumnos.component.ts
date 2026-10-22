@@ -17,7 +17,6 @@ import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
-import { getGradoNombreParaDeporte } from '../../utilities/grado-colors';
 import { showErrorToast, showSuccessToast } from '../../utils/toast.util';
 import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
@@ -26,7 +25,8 @@ import {
   EstadoLicencia,
   antiguedad,
   estadoLicencia,
-  fondoCinturon,
+  GradoFila,
+  gradoFila,
   iniciales,
   ordenarDeportes,
   principalDe,
@@ -42,14 +42,6 @@ export const POR_PAGINA = 25;
 
 type Vista = 'filas' | 'tarjetas';
 type Estado = 'cargando' | 'listo' | 'error';
-
-interface GradoFila {
-  /** En la línea 2, en minúscula («naranja-verde»); en el detalle, el texto de hoy («NARANJA-VERDE», «NEGRO 1º DAN»). */
-  nombre: string;
-  nombreDetalle: string;
-  /** Fondo del cinturón: un color o las dos mitades. */
-  fondo: string;
-}
 
 interface DeporteFila {
   codigo: string;
@@ -616,13 +608,6 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     const i = this.catalogo.disciplinasActivas().findIndex((d) => d.codigo === codigo);
     return i >= 0 && i < 4 ? `alumnos__disc--${i + 1}` : 'alumnos__disc--otra';
   }
-}
-
-function gradoFila(codigo: string, deporte: string): GradoFila {
-  const fondo = fondoCinturon(codigo, deporte);
-  // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
-  const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
-  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
 }
 
 function fotoDe(a: any): string | null {

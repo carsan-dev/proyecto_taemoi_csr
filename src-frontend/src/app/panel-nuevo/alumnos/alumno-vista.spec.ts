@@ -1,5 +1,13 @@
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
-import { antiguedad, estadoLicencia, iniciales, ordenarDeportes, tiempoConGrado } from './alumno-vista';
+import {
+  antiguedad,
+  estadoLicencia,
+  gradoFila,
+  gradoParaFrase,
+  iniciales,
+  ordenarDeportes,
+  tiempoConGrado,
+} from './alumno-vista';
 
 function deporte(parcial: Partial<AlumnoDeporteDTO>): AlumnoDeporteDTO {
   return {
@@ -79,5 +87,22 @@ describe('alumno-vista (8b-3a, listado de alumnos)', () => {
     expect(estadoLicencia(deporte({ tieneLicencia: true, fechaLicencia: '2025-12-31' }), true, hoy))
       .toEqual({ clave: 'caducada', texto: 'Caducada' });
     expect(estadoLicencia(null, true, hoy)).toBeNull();
+  });
+});
+
+describe('alumno-vista: grado compartido por el listado y el carnet (8b-3b)', () => {
+  it('gradoFila: en minúscula para la línea 2, el texto de hoy para el detalle y el fondo del cinturón', () => {
+    const blanco = gradoFila('BLANCO', 'TAEKWONDO');
+    expect(blanco.nombre).toBe('blanco');
+    expect(blanco.nombreDetalle).toBe('BLANCO');
+    expect(blanco.fondo.toUpperCase()).toBe('#FFFFFF');
+    const raro = gradoFila('ROJO_NEGRO_X', 'TAEKWONDO');
+    expect(raro.nombre).toBe('rojo negro x');
+    expect(raro.nombreDetalle).toBe('ROJO NEGRO X');
+  });
+
+  it('gradoParaFrase: el nombre con mayúscula inicial («Blanco», «Rojo negro x»)', () => {
+    expect(gradoParaFrase(gradoFila('BLANCO', 'TAEKWONDO'))).toBe('Blanco');
+    expect(gradoParaFrase(gradoFila('ROJO_NEGRO_X', 'TAEKWONDO'))).toBe('Rojo negro x');
   });
 });

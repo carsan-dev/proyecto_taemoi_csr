@@ -348,10 +348,10 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(lineas.length).toBe(2);
       expect(lineas[0].textContent).toContain('Taekwondo');
       expect(lineas[0].querySelector('.ficha__principal')?.textContent?.trim()).toBe('principal');
-      expect(texto(lineas[0], '.ficha__grado-linea')).toMatch(/^BLANCO, \d+ años?( y \d+ meses?)?$/);
+      expect(texto(lineas[0], '.ficha__grado-linea')).toMatch(/^Blanco, \d+ años?( y \d+ meses?)?$/);
       expect(lineas[1].textContent).toContain('Kickboxing');
       expect(lineas[1].querySelector('.ficha__principal')).toBeNull();
-      expect(texto(lineas[1], '.ficha__grado-linea')).toMatch(/^NARANJA, /);
+      expect(texto(lineas[1], '.ficha__grado-linea')).toMatch(/^Naranja, /);
     });
 
     it('franja: un tramo por disciplina con grado y cada cinturón con el borde cinto-borde, que llega a 3:1', async () => {
