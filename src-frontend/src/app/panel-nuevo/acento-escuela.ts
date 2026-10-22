@@ -8,7 +8,10 @@
  *   sobre `acentoSuave` (texto, enlaces e iconos).
  * - `acentoBorde`: tono H, croma 0,08 y la luz más alta que dé ≥ 3:1 sobre blanco, sobre el fondo del panel y sobre
  *   `acentoSuave` (bordes de controles y anillo de foco, WCAG 1.4.11).
- * - Un color sin tono (C < 0,01) se queda con los neutros de hoy: la tinta y el suave de su tema y `borde-control`.
+ * - Un color sin tono (C < 0,01) se queda con la tinta y el suave de su tema, y el borde sale de la misma búsqueda de L
+ *   con C = 0 (≥ 3:1 sobre blanco, el fondo y ese suave; `borde-control` daba 2,99:1 sobre `#F2F2F2`).
+ * - Una entrada que no es `#RRGGBB` (vacía, de tres cifras, con letras que no son hexadecimales, `null`) da el acento
+ *   por defecto, el de `#1A2230`.
  *
  * Las razones se miden sobre el color ya redondeado a `#RRGGBB`, que es el que se pinta (WCAG 2.2, 1.4.3).
  */
@@ -44,27 +47,36 @@ const PASO_CROMA = 0.0005;
 const TEXTO = 4.5;
 const CONTROL = 3;
 
-/** Los tres colores del acento para un tema. */
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Los tres colores del acento para un tema; con un primario que no es `#RRGGBB`, el acento por defecto. */
 export function acentoDe(tema: TemaParaAcento): AcentoEscuela {
+  if (typeof tema?.primario !== 'string' || !HEX.test(tema.primario)) {
+    return { ...ACENTO_POR_DEFECTO };
+  }
+  return calcular(tema);
+}
+
+/**
+ * El de una escuela sin color (decisión 257): el de `#1A2230`, que es también el tema por defecto de `panel-nuevo.scss`
+ * (`--pn-acento: #466396`, `--pn-acento-suave: #e6efff` y `--pn-acento-borde: #6f8abb`). Sale de `calcular` y no de
+ * `acentoDe`, que lo devuelve para una entrada no válida.
+ */
+export const ACENTO_POR_DEFECTO: AcentoEscuela = Object.freeze(
+  calcular({ primario: '#1A2230', primarioTinta: '#1A2230', primarioSuave: '#E8E9EA' })
+);
+
+function calcular(tema: TemaParaAcento): AcentoEscuela {
   const [, croma, tono] = oklch(tema.primario);
   if (croma < CROMA_SIN_TONO) {
-    return { acento: tema.primarioTinta, acentoSuave: tema.primarioSuave, acentoBorde: BORDE_CONTROL };
+    const acentoBorde = bajarLuz(LUZ_BORDE, 0, 0, CONTROL, [BLANCO, FONDO, tema.primarioSuave]);
+    return { acento: tema.primarioTinta, acentoSuave: tema.primarioSuave, acentoBorde };
   }
   const acentoSuave = desdeOklch(LUZ_SUAVE, CROMA_SUAVE, tono);
   const acento = bajarLuz(LUZ_ACENTO, Math.max(croma, CROMA_ACENTO_MINIMO), tono, TEXTO, [BLANCO, acentoSuave]);
   const acentoBorde = bajarLuz(LUZ_BORDE, CROMA_BORDE, tono, CONTROL, [BLANCO, FONDO, acentoSuave]);
   return { acento, acentoSuave, acentoBorde };
 }
-
-/**
- * El de una escuela sin color (decisión 257): el de `#1A2230`, que es también el tema por defecto de `panel-nuevo.scss`
- * (`--pn-acento: #466396`, `--pn-acento-suave: #e6efff` y `--pn-acento-borde: #6f8abb`).
- */
-export const ACENTO_POR_DEFECTO: AcentoEscuela = acentoDe({
-  primario: '#1A2230',
-  primarioTinta: '#1A2230',
-  primarioSuave: '#E8E9EA',
-});
 
 /** La luz más alta, desde `desde` y en pasos de 0,0025, con la que el color llega a `minimo` sobre cada fondo. */
 function bajarLuz(desde: number, croma: number, tono: number, minimo: number, fondos: string[]): string {

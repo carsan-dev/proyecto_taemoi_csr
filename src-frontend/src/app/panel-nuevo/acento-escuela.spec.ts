@@ -24,8 +24,40 @@ describe('acentoDe (8b-C, decisión 273)', () => {
     });
   }
 
-  it('un gris puro (croma < 0,01) se queda con los neutros de hoy', () => {
-    expect(acentoDe(GRIS)).toEqual({ acento: '#767676', acentoSuave: '#F2F2F2', acentoBorde: BORDE_CONTROL });
+  it('un gris puro (croma < 0,01): tinta y suave de su tema, y el borde con la búsqueda de L de la regla y C = 0', () => {
+    const { acento, acentoSuave, acentoBorde } = acentoDe(GRIS);
+    expect(acento).toBe('#767676');
+    expect(acentoSuave).toBe('#F2F2F2');
+    expect(oklch(acentoBorde)[1]).withContext(`${acentoBorde} sin tono`).toBeLessThan(0.01);
+    expect(acentoBorde).withContext('el borde-control de hoy no llega a 3:1 sobre el suave').not.toBe(BORDE_CONTROL);
+    expect(acentoBorde).withContext('L más alta con ≥ 3:1: 3,36 blanco, 3,08 fondo y 3,00 suave').toBe('#8C8C8C');
+  });
+
+  it('caso gris: el borde llega a 3:1 sobre blanco, el fondo y su acento-suave (el borde-control daba 2,99 y 2,75)', () => {
+    expect(contraste(BORDE_CONTROL, '#F2F2F2')).toBeLessThan(3);
+    expect(contraste(BORDE_CONTROL, '#E8E9EA')).toBeLessThan(3);
+    const grises: [string, string][] = [
+      ['#808080', '#F2F2F2'],
+      ['#1A1A1A', '#E8E8E8'],
+      ['#E0E0E0', '#FCFCFC'],
+      ['#7F7F80', '#F2F2F2'],
+    ];
+    for (const [primario, suave] of grises) {
+      const { acentoBorde } = acentoDe({ primario, primarioTinta: '#1A2230', primarioSuave: suave });
+      const donde = `${primario}: ${acentoBorde}`;
+      expect(contraste(acentoBorde, '#FFFFFF')).withContext(`borde/blanco ${donde}`).toBeGreaterThanOrEqual(3);
+      expect(contraste(acentoBorde, FONDO)).withContext(`borde/fondo ${donde}`).toBeGreaterThanOrEqual(3);
+      expect(contraste(acentoBorde, suave)).withContext(`borde/suave ${donde}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('una entrada que no es #RRGGBB devuelve el acento por defecto (y no lanza)', () => {
+    const malas = ['', 'abc', '#abc', '#GGGGGG', '#12345', '#1234567', ' #1A2230', null, undefined];
+    for (const primario of malas) {
+      const tema = { primario: primario as unknown as string, primarioTinta: '#1A2230', primarioSuave: '#E8E9EA' };
+      expect(acentoDe(tema)).withContext(String(primario)).toEqual(ACENTO_POR_DEFECTO);
+    }
+    expect(acentoDe(tema('#3e9b4f'))).withContext('minúsculas valen').toEqual(acentoDe(tema('#3E9B4F')));
   });
 
   it('el acento por defecto es el de #1A2230, el de panel-nuevo.scss', () => {
