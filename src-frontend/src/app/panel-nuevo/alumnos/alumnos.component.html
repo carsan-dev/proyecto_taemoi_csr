@@ -231,7 +231,7 @@
               @if (d.grado) {
               <span class="alumnos__dato">
                 <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
-                <strong class="alumnos__grado-detalle">{{ d.grado.nombre }}</strong>
+                <strong class="alumnos__grado-detalle">{{ d.grado.nombreDetalle }}</strong>
                 @if (d.tiempoConGrado) {<span class="alumnos__etiqueta" data-cifras>{{ d.tiempoConGrado === 'Desde hoy' ? 'desde hoy' : d.tiempoConGrado + ' con el grado' }}</span>}
               </span>
               }
