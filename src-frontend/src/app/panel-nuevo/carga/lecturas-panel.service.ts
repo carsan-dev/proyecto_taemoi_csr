@@ -5,6 +5,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
+import { PaginatedResponse } from '../../interfaces/paginated-response';
+import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
+import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { TurnoResumen } from '../../interfaces/turno-resumen';
 
 /**
@@ -96,4 +99,82 @@ export class LecturasPanelService {
       context: contextoErrorLocal(),
     });
   }
+  /** Igual que `EndpointsService.obtenerTesoreriaResumen` (Tesorería, 8b-3d). */
+  tesoreriaResumen(mes: number | null, ano: number | null, deporte = 'TODOS', soloActivos = true): Observable<TesoreriaResumen> {
+    return this.http.get<TesoreriaResumen>(`${environment.apiUrl}/tesoreria/resumen`, {
+      params: paramsTesoreria(mes, ano, deporte, undefined, undefined, soloActivos),
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerTesoreriaMovimientos` (Tesorería, 8b-3d). */
+  tesoreriaMovimientos(
+    mes: number | null,
+    ano: number | null,
+    deporte = 'TODOS',
+    pagado?: boolean,
+    texto?: string,
+    soloActivos = true,
+    page = 1,
+    size = 25
+  ): Observable<PaginatedResponse<TesoreriaMovimiento>> {
+    const params = paramsTesoreria(mes, ano, deporte, pagado, texto, soloActivos)
+      .set('page', page.toString())
+      .set('size', size.toString());
+    return this.http.get<PaginatedResponse<TesoreriaMovimiento>>(`${environment.apiUrl}/tesoreria/movimientos`, {
+      params,
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerTesoreriaAniosDisponibles` (Tesorería, 8b-3d; hoy su fallo se ignora). */
+  tesoreriaAnios(): Observable<number[]> {
+    return this.http.get<number[]>(`${environment.apiUrl}/tesoreria/anios-disponibles`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerTodosLosAlumnosSinPaginar` (certificados de la Tesorería, 8b-3d). */
+  alumnosSinPaginar(incluirInactivos = false): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/alumnos`, {
+      params: new HttpParams().set('incluirInactivos', incluirInactivos.toString()),
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+}
+
+/** Los parámetros de la tesorería de hoy (`EndpointsService.construirParamsTesoreria`, privado), en el mismo orden. */
+export function paramsTesoreria(
+  mes: number | null,
+  ano: number | null,
+  deporte: string,
+  pagado?: boolean,
+  texto?: string,
+  soloActivos?: boolean
+): HttpParams {
+  let params = new HttpParams();
+  if (ano !== null && ano !== undefined) {
+    params = params.set('ano', ano.toString());
+  }
+  if (mes !== null && mes !== undefined) {
+    params = params.set('mes', mes.toString());
+  }
+  if (deporte && deporte !== 'TODOS') {
+    params = params.set('deporte', deporte);
+  }
+  if (pagado !== undefined && pagado !== null) {
+    params = params.set('pagado', pagado.toString());
+  }
+  const textoNormalizado = texto?.trim();
+  if (textoNormalizado) {
+    params = params.set('texto', textoNormalizado);
+  }
+  if (soloActivos !== undefined && soloActivos !== null) {
+    params = params.set('soloActivos', soloActivos.toString());
+  }
+  return params;
 }

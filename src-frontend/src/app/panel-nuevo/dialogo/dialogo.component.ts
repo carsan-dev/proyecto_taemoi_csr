@@ -81,6 +81,11 @@ export interface OpcionesConfirmacion<R = unknown> {
   cancelar?: string;
   /** La acción va en peligro y el foco inicial en «Cancelar». */
   destructivo?: boolean;
+  /**
+   * Con campos, el foco inicial va al primero; con esto (8b-3d, «Revertir» con su motivo opcional), a «Cancelar», como
+   * en cualquier destructivo.
+   */
+  focoEnCancelar?: boolean;
   /** Si se da, el diálogo sigue abierto con el botón ocupado hasta que termine. */
   ejecutar?: (valor: string | null) => Observable<R>;
   /** Párrafos y listas tras la frase (8b-D2b). */
@@ -216,7 +221,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     const dialogo = this.dialogoRef.nativeElement;
     dialogo.showModal();
     this.pila.abrir(dialogo);
-    const primerCampo = this.opciones.campos?.length
+    const primerCampo = this.opciones.campos?.length && !this.opciones.focoEnCancelar
       ? dialogo.querySelector<HTMLElement>('.pn-dialogo__campo input:not([type="hidden"]):not(:disabled), .pn-dialogo__campo select:not(:disabled), .pn-dialogo__campo textarea:not(:disabled), .pn-dialogo__campo [role="radio"][tabindex="0"]')
       : null;
     if (primerCampo) {

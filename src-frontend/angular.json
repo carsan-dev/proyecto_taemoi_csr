@@ -220,6 +220,8 @@
               "src/app/panel-nuevo/alumnos/alumnos.component.spec.ts",
               "src/app/panel-nuevo/grupos/grupos-vista.spec.ts",
               "src/app/panel-nuevo/grupos/grupos.component.spec.ts",
+              "src/app/panel-nuevo/tesoreria/tesoreria-vista.spec.ts",
+              "src/app/panel-nuevo/tesoreria/tesoreria.component.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/dialogos-ficha.port.spec.ts",

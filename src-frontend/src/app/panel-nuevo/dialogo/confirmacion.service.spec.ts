@@ -417,4 +417,20 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     boton('Cancelar').click();
     await promesa;
   });
+
+  it('8b-3d: destructivo con campos y `focoEnCancelar`: el foco inicial en «Cancelar» y el campo sigue ahí', async () => {
+    const promesa = abrir({
+      titulo: 'Revertir cobro',
+      mensaje: 'El cobro "Mensualidad" pasará a pendiente.',
+      accion: 'Sí, revertir',
+      cancelar: 'Cancelar',
+      destructivo: true,
+      focoEnCancelar: true,
+      campos: [{ id: 'motivo', tipo: 'textarea', etiqueta: 'Motivo (opcional)', valor: '' }],
+    });
+    expect(dialogo()!.querySelector('#motivo')).not.toBeNull();
+    expect(document.activeElement).toBe(boton('Cancelar'));
+    boton('Cancelar').click();
+    expect((await promesa).confirmado).toBeFalse();
+  });
 });
