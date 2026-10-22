@@ -228,6 +228,12 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       Después, el propietario, con su interruptor encendido, abre Inicio y compara «Pendiente de cobro · vencido» con
       la tesorería: los desgloses por tipo, mes y sede suman el total, y las mensualidades del mes en curso solo
       cuentan desde el día 6. Comprueba la ocupación de la semana y «Hoy» frente a los grupos reales; no cobra nada.
+- [ ] E8b, pieza 8b-3a (Alumnos C; decisiones 251, 253 y 267): sin migración → atajo `desplegar`. Con el
+      interruptor apagado, el listado de alumnos de hoy sin cambios (las herramientas del pie, «Generar informe», «Dar
+      de baja» y «Dar de alta» hacen lo mismo). Después, el propietario, con su interruptor encendido, abre Alumnos:
+      el contador da el total de la escuela (no el de la página) y cambia con la búsqueda, la disciplina, «Inactivos» y
+      «Solo aptos»; el pendiente de cada alumno coincide con lo vencido de la tesorería; y prueba «Cobrar» solo sobre un
+      cargo ficticio de la escuela de pruebas, nunca de Moiskimdo.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

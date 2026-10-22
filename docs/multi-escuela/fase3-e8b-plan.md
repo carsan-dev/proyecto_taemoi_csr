@@ -570,6 +570,34 @@ ruta `alumnosListar` con `canMatch`.
 `coincideConPendienteVencido`); specs del listado (25 por página, contador del total y no de la página, filtros a
 la API, cambio filas/tarjetas recordado, «Cobrar» igual que hoy, teclado en la fila desplegable). Capturas.
 
+**Tests (lista detallada):**
+- [x] IT `PendientesPorAlumnoIntegrationTest` (MySQL, dos escuelas sintéticas, `Clock` simulado el 06/03/2026):
+  `pendientesPorAlumno_soloEscuelaActiva` (importe, cargos y detalle con `vencidoDesde`; el cargo de una inscripción se
+  atribuye al alumno; la otra escuela no ve nada), `pendientesPorAlumno_idsAjenosSeIgnoran`,
+  `pendientesPorAlumno_masDe25_400` (26 → 400, 25 → 200, sin ids → 400),
+  `pendientesPorAlumno_coincideConPendienteVencido` (la suma por alumno y los cargos son los de `/pendiente-vencido`) y
+  `pendientesPorAlumno_responsableSede_403` (GET y HEAD 403; familia 403; gestor 200). La regla sale de
+  `PendienteVencidoService` (la consulta, `PendienteVencidoRepository.CANDIDATOS`, compartida); sus 9 casos siguen verdes.
+- [x] `MatrizPermisosTest`: 2 líneas nuevas (GET y HEAD `/api/tesoreria/pendientes-por-alumno`), ninguna casilla cambia.
+- [x] `alumno-vista.spec.ts`: iniciales, antigüedad y tiempo con el grado con plurales (singular y plural), principal
+  primero como hoy y estado de la licencia como hoy.
+- [x] `alumnos.component.spec.ts` (`HttpTestingController`): 25 por página y una sola llamada de pendientes con los ids
+  de la página; contador del total del servidor y rango «1–25 de N» con miles; plurales en singular y en plural; filtros
+  a la API (`nombre` con espera, `deporte`, `incluirInactivos`, `aptoParaExamen`, `page`); «Filas | Tarjetas» recordado
+  en localStorage y sin él; «Cobrar» con un cargo (mismo diálogo, mismo `PUT /api/productos-alumno/{id}` y cuerpo, con
+  método, sin método y cancelado) y con varios (panel con cada cargo, foco en el primero, Esc lo cierra y devuelve el
+  foco); refresco del pendiente de ese alumno; fila desplegable (botón nativo con `aria-expanded`/`aria-controls`,
+  detalle por deporte y acciones); «Marcar principal» con la ruta de hoy; menú «Informes» con teclado, el diálogo de
+  tipos de hoy y las tres herramientas del pie; error con «Reintentar».
+- [x] `app.routes.spec.ts`: dos entradas `alumnosListar`, la nueva con `disenoNuevoGuard` y la misma data, guards y
+  resolve que la de hoy; apagado, no se llama al `loadComponent` nuevo.
+- [x] Las herramientas del pie (`HerramientasAlumnosComponent`), el diálogo «Generar informe» (`informes-alumnos.ts`) y
+  «Dar de baja» / «Dar de alta» (`bajas-altas-alumno.ts`) salen del listado de hoy sin cambios para que el nuevo los use
+  sin copiarlos; `informes-preview.spec.ts` sigue igual salvo que asistencia y listado de mensualidades se prueban en
+  el componente del pie.
+- [x] Capturas apagado (antes y después idénticas en bytes, también con el pie desplegado) y encendido (normal, fila
+  desplegada, «Cobrar» con varios cargos, tarjetas e «Informes») a 375, 768, 1024 y 1280.
+
 **Riesgos:** 800+ alumnos: búsqueda en el servidor; editar, vista de familia y dar de baja quedan a un clic.
 
 **Notas para la PR:** tabla del Anexo A marcada; el contador cuenta el total (hoy cuenta la página).

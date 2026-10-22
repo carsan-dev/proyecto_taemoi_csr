@@ -49,7 +49,8 @@ public interface PendienteVencidoRepository extends Repository<ProductoAlumno, L
 		String getProductoCodigo();
 	}
 
-	@Query(value = """
+	/** Consulta común: la de {@link #candidatos} y, con el filtro por alumno, la de {@link #candidatosDeAlumnos}. */
+	String CANDIDATOS = """
 			SELECT pa.id AS id, pa.concepto AS concepto,
 			  CAST(COALESCE(pa.precio, 0) AS DECIMAL(12, 2)) AS importe,
 			  DATE(pa.fecha_asignacion) AS fechaAsignacion, DATE(pa.fecha_pago) AS fechaPago,
@@ -74,9 +75,25 @@ public interface PendienteVencidoRepository extends Repository<ProductoAlumno, L
 			  AND (:todasLasSedes = TRUE OR pa.sede_id IN (:sedes))
 			  AND (UPPER(pa.concepto) LIKE '%MENSUALIDAD%' OR UPPER(pa.concepto) LIKE '%EXAMEN%'
 			    OR UPPER(pa.concepto) LIKE '%RECOMPENSA%' OR p.tipo IN ('MENSUALIDAD', 'EXAMEN', 'RECOMPENSA'))
-			""", nativeQuery = true)
+			""";
+
+	@Query(value = CANDIDATOS, nativeQuery = true)
 	List<CargoCandidato> candidatos(
 			@Param("organizacion") Long organizacion,
 			@Param("todasLasSedes") boolean todasLasSedes,
 			@Param("sedes") Collection<Long> sedes);
+
+	/**
+	 * Pieza 8b-3a: los mismos candidatos, solo de los alumnos indicados (el del cargo o el de su inscripción, como
+	 * {@code alumnoId} en {@link #candidatos}). Los ids de otra escuela no casan con ningún alumno de esta (los joins
+	 * llevan {@code organizacion_id}). El filtro va sobre las columnas, no sobre el {@code COALESCE}, para que use los
+	 * índices de {@code producto_alumno.alumno_id} y {@code alumno_deporte.alumno_id}; una fila que casara solo por la
+	 * otra columna se atribuye a un alumno no pedido y el servicio la descarta.
+	 */
+	@Query(value = CANDIDATOS + "  AND (pa.alumno_id IN (:alumnos) OR ad.alumno_id IN (:alumnos))", nativeQuery = true)
+	List<CargoCandidato> candidatosDeAlumnos(
+			@Param("organizacion") Long organizacion,
+			@Param("todasLasSedes") boolean todasLasSedes,
+			@Param("sedes") Collection<Long> sedes,
+			@Param("alumnos") Collection<Long> alumnos);
 }

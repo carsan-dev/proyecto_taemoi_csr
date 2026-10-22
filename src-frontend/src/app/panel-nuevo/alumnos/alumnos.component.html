@@ -1,0 +1,307 @@
+<div class="pn alumnos">
+  <div class="alumnos__pagina">
+    <header class="alumnos__cabecera">
+      <div class="alumnos__titulos">
+        <h1 class="alumnos__titulo">Alumnos</h1>
+        <p class="alumnos__subtitulo" data-cifras>{{ subtitulo }}</p>
+      </div>
+      <div class="alumnos__acciones">
+        <div class="alumnos__menu-zona" (focusout)="alSalirDelMenu($event)">
+          <button #botonInformes type="button" id="alumnos-informes" class="alumnos__boton-secundario"
+            aria-haspopup="menu" [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'alumnos-menu-informes' : null"
+            (click)="alternarMenu()" (keydown)="teclaBotonMenu($event)">
+            <span>Informes</span>
+            <i class="bi bi-chevron-down alumnos__chevron-menu" aria-hidden="true"></i>
+          </button>
+          @if (menuAbierto) {
+          <div #menuInformes id="alumnos-menu-informes" class="alumnos__menu" role="menu" aria-labelledby="alumnos-informes"
+            (keydown)="teclaMenu($event)">
+            <button type="button" class="alumnos__menu-opcion" role="menuitem" (click)="abrirInformes()">
+              <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+              <span>Generar informe…</span>
+            </button>
+            <div class="alumnos__menu-separador" role="separator"></div>
+            @for (o of opcionesHerramientas; track o.seccion) {
+            <button type="button" class="alumnos__menu-opcion" role="menuitem" (click)="abrirHerramienta(o.seccion)">
+              <i class="bi" [class.bi-calendar-check]="o.seccion === 'mensualidades'"
+                [class.bi-clipboard-check]="o.seccion === 'asistencia'"
+                [class.bi-calendar2-month]="o.seccion === 'listado-mensualidades'" aria-hidden="true"></i>
+              <span>{{ o.etiqueta }}</span>
+            </button>
+            }
+          </div>
+          }
+        </div>
+        <a class="alumnos__boton-primario" routerLink="/alumnosCrear">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+          <span>Nuevo alumno</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="alumnos__barra" role="search" aria-label="Buscar y filtrar alumnos">
+      <div class="alumnos__buscador">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <label class="alumnos__oculto" for="alumnos-buscar">Buscar por nombre o apellidos</label>
+        <input id="alumnos-buscar" type="search" class="alumnos__campo alumnos__campo--buscar" autocomplete="off"
+          placeholder="Buscar por nombre o apellidos" [value]="nombre" (input)="buscar($any($event.target).value)" />
+      </div>
+      <label class="alumnos__oculto" for="alumnos-disciplina">Disciplina</label>
+      <select id="alumnos-disciplina" class="alumnos__campo alumnos__campo--select" [value]="deporte"
+        (change)="elegirDeporte($any($event.target).value)">
+        <option value="">Todas las disciplinas</option>
+        @for (d of catalogo.disciplinasActivas(); track d.codigo) {
+        <option [value]="d.codigo" [selected]="d.codigo === deporte">{{ d.nombre }}</option>
+        }
+      </select>
+      <div class="alumnos__filtros">
+        <button type="button" class="alumnos__filtro alumnos__filtro--inactivos" [attr.aria-pressed]="inactivos"
+          (click)="alternarInactivos()">
+          @if (inactivos) {<i class="bi bi-check2" aria-hidden="true"></i>}
+          <span>Inactivos</span>
+        </button>
+        <button type="button" class="alumnos__filtro alumnos__filtro--aptos" [attr.aria-pressed]="aptos"
+          (click)="alternarAptos()">
+          <i class="bi" [class.bi-award]="!aptos" [class.bi-award-fill]="aptos" aria-hidden="true"></i>
+          <span>Solo aptos</span>
+        </button>
+      </div>
+      <p class="alumnos__contador" data-cifras aria-live="polite">{{ estado === 'listo' ? contador : '' }}</p>
+      <div class="alumnos__vista" role="group" aria-label="Vista">
+        <button type="button" class="alumnos__vista-opcion" data-vista="filas" [attr.aria-pressed]="vista === 'filas'"
+          (click)="cambiarVista('filas')">Filas</button>
+        <button type="button" class="alumnos__vista-opcion" data-vista="tarjetas" [attr.aria-pressed]="vista === 'tarjetas'"
+          (click)="cambiarVista('tarjetas')">Tarjetas</button>
+      </div>
+    </div>
+
+    @if (estado === 'cargando') {
+    <div class="alumnos__lista alumnos__lista--cargando" [class.alumnos__lista--tarjetas]="vista === 'tarjetas'" aria-busy="true">
+      <p class="alumnos__oculto" role="status">Cargando alumnos…</p>
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+      <div class="alumnos__esqueleto" aria-hidden="true">
+        <span class="alumnos__esqueleto-avatar"></span>
+        <span class="alumnos__esqueleto-lineas"><span></span><span></span></span>
+      </div>
+      }
+    </div>
+    } @else if (estado === 'error') {
+    <div class="alumnos__estado" role="alert">
+      <p>No se pudo cargar el listado. Comprueba la conexión y vuelve a intentarlo.</p>
+      <button type="button" class="alumnos__boton-secundario" (click)="cargar()">Reintentar</button>
+    </div>
+    } @else if (filas.length === 0) {
+    <div class="alumnos__estado">
+      @if (hayFiltros) {
+      <p>No hay alumnos con estos filtros.</p>
+      <button type="button" class="alumnos__boton-secundario" (click)="quitarFiltros()">Quitar filtros</button>
+      } @else {
+      <p>Todavía no hay alumnos en la escuela.</p>
+      <a class="alumnos__boton-secundario" routerLink="/alumnosCrear">Dar de alta el primero</a>
+      }
+    </div>
+    } @else {
+    <ul class="alumnos__lista" [class.alumnos__lista--tarjetas]="vista === 'tarjetas'" aria-label="Alumnos">
+      @for (f of filas; track f.id) {
+      <li class="alumnos__fila" [class.alumnos__fila--abierta]="estaAbierta(f.id)" [class.alumnos__fila--baja]="!f.activo"
+        [attr.data-alumno]="f.id">
+        <div class="alumnos__resumen">
+          <a class="alumnos__avatar" [routerLink]="['/alumnosEditar', f.id]" tabindex="-1" aria-hidden="true">
+            @if (f.foto) {
+            <img src="{{ f.foto }}" alt="" width="40" height="40" loading="lazy" decoding="async" />
+            } @else {
+            <span>{{ f.iniciales }}</span>
+            }
+          </a>
+          <div class="alumnos__datos">
+            <p class="alumnos__linea1">
+              <a class="alumnos__nombre" [routerLink]="['/alumnosEditar', f.id]">{{ f.nombre }}</a>
+              @if (f.expediente) {<span class="alumnos__exp" data-cifras>Exp. {{ f.expediente }}</span>}
+              @if (f.edad) {<span class="alumnos__edad" data-cifras>{{ f.edad }}</span>}
+              @if (inactivos && f.fechaBaja) {<span class="alumnos__baja" data-cifras>Baja {{ f.fechaBaja }}</span>}
+            </p>
+            <p class="alumnos__linea2">
+              <span class="alumnos__num-deportes" role="img" data-cifras
+                [attr.aria-label]="plural(f.deportes.length, 'disciplina', 'disciplinas')">{{ numero(f.deportes.length) }}</span>
+              @for (d of f.deportes; track d.codigo) {
+              <span class="alumnos__disciplina">
+                <span class="alumnos__punto" [class]="d.claseDisciplina" aria-hidden="true"></span>
+                <span>{{ d.nombre }}</span>
+                @if (d.grado) {
+                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
+                <span class="alumnos__grado">{{ d.grado.nombre }}</span>
+                } @else if (d.sinGrado) {
+                <span class="alumnos__grado">sin grado</span>
+                }
+                @if (d.principal && f.deportes.length > 1) {
+                <i class="bi bi-star-fill alumnos__estrella" aria-hidden="true"></i><span class="alumnos__oculto">(principal)</span>
+                }
+              </span>
+              }
+              @if (f.deportes.length === 0) {<span class="alumnos__dato">Sin disciplinas activas</span>}
+              @if (f.tarifa) {<span class="alumnos__dato"><span class="alumnos__etiqueta">Tarifa</span> {{ f.tarifa }}</span>}
+              @if (f.antiguedad) {
+              <span class="alumnos__dato" data-cifras><span class="alumnos__etiqueta">Antigüedad</span> {{ f.antiguedad }}</span>
+              }
+              @if (f.licencia) {
+              <span class="alumnos__licencia" [class]="'alumnos__licencia--' + f.licencia.clave">
+                @if (f.licencia.clave === 'con') {<i class="bi bi-check2" aria-hidden="true"></i>}
+                {{ f.licencia.texto }}
+              </span>
+              }
+            </p>
+          </div>
+          <div class="alumnos__pendiente" data-cifras>
+            @if (pendienteDe(f.id); as p) {
+            <span class="alumnos__importe">{{ eur(p.importe) }}</span>
+            <button type="button" class="alumnos__cobrar"
+              [attr.aria-label]="'Cobrar ' + eur(p.importe) + ' a ' + f.nombre + (p.cargos > 1 ? ', ' + plural(p.cargos, 'cargo', 'cargos') : '')"
+              [attr.aria-haspopup]="p.cargos > 1 ? 'dialog' : null"
+              [attr.aria-expanded]="p.cargos > 1 ? panelDe === f.id : null"
+              [attr.aria-controls]="panelDe === f.id ? 'alumnos-cargos-' + f.id : null"
+              [disabled]="p.cargos === 1 && cobrando.has(p.detalle[0].productoAlumnoId)"
+              (click)="pulsarCobrar(f.id, $event)">Cobrar</button>
+            } @else if (estadoPendientes === 'cargando') {
+            <span class="alumnos__pendiente-cargando" aria-hidden="true"></span>
+            } @else if (estadoPendientes === 'error') {
+            <span class="alumnos__al-dia" title="No se pudo leer el pendiente">—<span class="alumnos__oculto">Pendiente sin leer</span></span>
+            } @else if (f.activo) {
+            <span class="alumnos__al-dia">Al día</span>
+            }
+          </div>
+          <button type="button" class="alumnos__desplegar" [attr.aria-expanded]="estaAbierta(f.id)"
+            [attr.aria-controls]="'alumnos-detalle-' + f.id"
+            [attr.aria-label]="(estaAbierta(f.id) ? 'Ocultar detalle de ' : 'Ver detalle de ') + f.nombre"
+            (click)="alternarFila(f.id)">
+            <i class="bi bi-chevron-down" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        @if (panelDe === f.id && pendienteDe(f.id); as p) {
+        <div class="alumnos__cargos-fondo" (click)="cerrarPanel(true)" aria-hidden="true"></div>
+        <div class="alumnos__cargos" [id]="'alumnos-cargos-' + f.id" role="dialog" aria-modal="true" [attr.aria-labelledby]="'alumnos-cargos-titulo-' + f.id"
+          (keydown)="teclaPanel($event)">
+          <div class="alumnos__cargos-cabecera">
+            <h2 class="alumnos__cargos-titulo" [id]="'alumnos-cargos-titulo-' + f.id">
+              {{ plural(p.cargos, 'cargo vencido', 'cargos vencidos') }}
+              <span class="alumnos__cargos-quien">{{ f.nombre }}</span>
+            </h2>
+            <button type="button" class="alumnos__cerrar" aria-label="Cerrar" (click)="cerrarPanel(true)">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </div>
+          <ul class="alumnos__cargos-lista">
+            @for (c of p.detalle; track c.productoAlumnoId) {
+            <li class="alumnos__cargo">
+              <span class="alumnos__cargo-texto">
+                <span class="alumnos__cargo-concepto">{{ c.concepto }}</span>
+                <span class="alumnos__cargo-desde" data-cifras>Vencido desde el {{ fecha(c.vencidoDesde) }}</span>
+              </span>
+              <span class="alumnos__cargo-importe" data-cifras>{{ eur(c.importe) }}</span>
+              <button type="button" class="alumnos__cobrar" [disabled]="cobrando.has(c.productoAlumnoId)"
+                [attr.aria-label]="'Cobrar ' + c.concepto + ', ' + eur(c.importe)" (click)="cobrar(f.id, c)">Cobrar</button>
+            </li>
+            }
+          </ul>
+        </div>
+        }
+
+        @if (estaAbierta(f.id)) {
+        <div class="alumnos__detalle" [id]="'alumnos-detalle-' + f.id">
+          @if (f.detalle.length === 0) {
+          <p class="alumnos__dato">Sin disciplinas.</p>
+          } @else {
+          <ul class="alumnos__deportes">
+            @for (d of f.detalle; track d.codigo) {
+            <li class="alumnos__deporte">
+              <span class="alumnos__deporte-cabeza">
+                <span class="alumnos__disciplina alumnos__disciplina--fuerte">
+                  <span class="alumnos__punto" [class]="d.claseDisciplina" aria-hidden="true"></span>
+                  <span>{{ d.nombre }}</span>
+                </span>
+                @if (!d.activo) {
+                <span class="alumnos__etiqueta-baja">De baja</span>
+                } @else if (d.principal) {
+                <span class="alumnos__principal"><i class="bi bi-star-fill" aria-hidden="true"></i> Principal</span>
+                } @else {
+                <button type="button" class="alumnos__marcar-principal" (click)="marcarPrincipal(f.id, d.codigo)"
+                  [attr.aria-label]="'Marcar ' + d.nombre + ' como principal'">
+                  <i class="bi bi-star" aria-hidden="true"></i> Marcar principal
+                </button>
+                }
+              </span>
+              @if (d.grado) {
+              <span class="alumnos__dato">
+                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
+                <strong class="alumnos__grado-detalle">{{ d.grado.nombreDetalle }}</strong>
+                @if (d.tiempoConGrado) {<span class="alumnos__etiqueta" data-cifras>{{ d.tiempoConGrado === 'Desde hoy' ? 'desde hoy' : d.tiempoConGrado + ' con el grado' }}</span>}
+              </span>
+              } @else if (d.sinGrado) {
+              <span class="alumnos__dato"><span class="alumnos__etiqueta">Sin grado</span></span>
+              }
+              <span class="alumnos__dato"><span class="alumnos__etiqueta">Tarifa</span> {{ d.tarifa }}</span>
+              @if (d.alta) {<span class="alumnos__dato" data-cifras><span class="alumnos__etiqueta">Alta</span> {{ d.alta }}</span>}
+              @if (d.antiguedad) {
+              <span class="alumnos__dato" data-cifras><span class="alumnos__etiqueta">Antigüedad</span> {{ d.antiguedad }}</span>
+              }
+              @if (d.categoria) {<span class="alumnos__dato"><span class="alumnos__etiqueta">Categoría</span> {{ d.categoria }}</span>}
+            </li>
+            }
+          </ul>
+          }
+          <div class="alumnos__detalle-acciones">
+            <a class="alumnos__accion" [routerLink]="['/alumnosEditar', f.id]">
+              <i class="bi bi-pencil" aria-hidden="true"></i>Editar ficha</a>
+            <a class="alumnos__accion" routerLink="/userpage" [queryParams]="{ alumnoId: f.id }">
+              <i class="bi bi-person-badge" aria-hidden="true"></i>Vista de familia</a>
+            @if (f.activo) {
+            <button type="button" class="alumnos__accion alumnos__accion--peligro" (click)="darDeBaja(f.id)">
+              <i class="bi bi-person-dash" aria-hidden="true"></i>Dar de baja</button>
+            } @else {
+            <button type="button" class="alumnos__accion alumnos__accion--bien" (click)="darDeAlta(f.id)">
+              <i class="bi bi-person-check" aria-hidden="true"></i>Dar de alta</button>
+            }
+          </div>
+        </div>
+        }
+      </li>
+      }
+    </ul>
+
+    <nav class="alumnos__paginacion" aria-label="Páginas del listado">
+      <p class="alumnos__rango" data-cifras>{{ rango }}</p>
+      @if (totalPaginas > 1) {
+      <div class="alumnos__paginas">
+        <button type="button" class="alumnos__pagina-paso" [disabled]="pagina === 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+        @for (p of paginas; track $index) {
+        @if (p === null) {
+        <span class="alumnos__pagina-salto" aria-hidden="true">…</span>
+        } @else {
+        <button type="button" class="alumnos__pagina-num" data-cifras [attr.aria-current]="p === pagina ? 'page' : null"
+          [attr.aria-label]="'Página ' + numero(p)" (click)="irAPagina(p)">{{ numero(p) }}</button>
+        }
+        }
+        <button type="button" class="alumnos__pagina-paso" [disabled]="pagina === totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+      </div>
+      }
+    </nav>
+    }
+
+    <section class="alumnos__herramientas" aria-labelledby="alumnos-herramientas-titulo">
+      <h2 id="alumnos-herramientas-titulo" class="alumnos__seccion-titulo">Mensualidades, licencias y listados</h2>
+      <app-herramientas-alumnos [mostrarInactivos]="inactivos" [aptoParaExamen]="aptos" (asignado)="cargar()" />
+    </section>
+  </div>
+
+  @if (mostrarModalInforme) {
+  <app-informe-modal title="Generar Informe" [generando]="informes.ocupado" [opcionesInforme]="opcionesInforme"
+    [temporadasReservasPlaza]="temporadasReservasPlaza" (cerrar)="cerrarInformes()"
+    (informeSeleccionado)="generarInforme($event)">
+  </app-informe-modal>
+  }
+</div>
+
+@if (informes.documentos.length) {
+<app-informe-pdf-modal [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno"
+  (cerrar)="informes.cerrar()" />
+}

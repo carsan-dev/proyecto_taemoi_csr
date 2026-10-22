@@ -1,8 +1,9 @@
 import { inject } from '@angular/core';
-import { map as mapInforme } from 'rxjs/operators';
 import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
-import { SelectorMesAnoComponent } from '../../generales/selector-mes-ano/selector-mes-ano.component';
+import { HerramientasAlumnosComponent } from './herramientas-alumnos/herramientas-alumnos.component';
+import { BajasAltasAlumno } from './bajas-altas-alumno';
+import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from './informes-alumnos';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import Swal from 'sweetalert2';
@@ -13,8 +14,8 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
-import { Subject, Subscription, forkJoin, of, concat } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, finalize, map } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { AlumnoService } from '../../../features/alumno/services/alumno.service';
@@ -23,7 +24,6 @@ import { getDeporteLabel } from '../../../enums/deporte';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
-import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 
 type ResumenAlumno = {
   totalDeportes: number;
@@ -38,7 +38,7 @@ type ResumenAlumno = {
   selector: 'app-listado-alumnos',
   standalone: true,
   imports: [InformePdfModalComponent,
-    SelectorMesAnoComponent,
+    HerramientasAlumnosComponent,
     CommonModule,
     PaginacionComponent,
     FormsModule,
@@ -55,9 +55,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   readonly catalogo = inject(CatalogoService);
   alumnos: any[] = [];
   private peticionPorDeporte?: Subscription; // R2-P6: la última petición del listado filtrado por deporte
-  alumnosSeleccionables: any[] = [];
-  cargandoAlumnosSeleccionables: boolean = false;
-  private alumnosSeleccionablesCargados: boolean = false;
   paginaActual: number = 1;
   tamanoPagina: number = 9;
   totalPaginas: number = 0;
@@ -66,34 +63,31 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   cargando: boolean = true; // Local loading state
   usandoPaginacionCliente: boolean = false; // Filtrando por deporte (R2-P6: en el servidor; nombre conservado por el estado guardado)
   private readonly searchSubject = new Subject<string>();
-  mesAnoSeleccionado: string = '';
-  deporteSeleccionado: string = 'TODOS';
-  alumnoSeleccionado: number | null = null;
-  mesAnoSeleccionadoIndividual: string = '';
-  deporteSeleccionadoIndividual: string = 'TODOS';
-  anoLicenciaSeleccionado: number = new Date().getFullYear();
-  deporteLicenciaSeleccionado: string = 'TODOS';
-  anoLicenciaSeleccionadoIndividual: number = new Date().getFullYear();
-  deporteLicenciaSeleccionadoIndividual: string = 'TODOS';
-  fechaMensualidadGeneral: string = this.obtenerFechaActualLocalYyyyMmDd();
-  fechaMensualidadIndividual: string = this.obtenerFechaActualLocalYyyyMmDd();
-  fechaLicenciaGeneral: string = this.obtenerFechaActualLocalYyyyMmDd();
-  fechaLicenciaIndividual: string = this.obtenerFechaActualLocalYyyyMmDd();
-  licenciasTab: 'general' | 'individual' = 'general';
-  mensualidadesTab: 'general' | 'individual' = 'general';
   mostrarModalInforme: boolean = false;
   modalTitle: string = '';
   opcionesInforme: Array<{ value: string; label: string }> = [];
-  temporadasReservasPlaza: string[] = [];
-  cargandoTemporadasReservasPlaza: boolean = false;
-  mesAnoAsistencia!: string;
-  mesAnoMensualidad!: string;
-  grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
-  gruposSeleccionados: string[] = [];
-  procesandoMensualidadesGenerales: boolean = false;
-  procesandoMensualidadIndividual: boolean = false;
-  procesandoLicenciasGenerales: boolean = false;
-  procesandoLicenciaIndividual: boolean = false;
+  // Diálogo «Generar informe»: su lógica está en informes-alumnos.ts (compartida con el listado nuevo, 8b-3a).
+  private informesAlumnosInstancia?: InformesAlumnos;
+  private get informesAlumnos(): InformesAlumnos {
+    return (this.informesAlumnosInstancia ??= new InformesAlumnos(this.endpointsService, this.informes));
+  }
+  get temporadasReservasPlaza(): string[] {
+    return this.informesAlumnos.temporadas;
+  }
+  set temporadasReservasPlaza(temporadas: string[]) {
+    this.informesAlumnos.temporadas = temporadas;
+  }
+  get cargandoTemporadasReservasPlaza(): boolean {
+    return this.informesAlumnos.cargandoTemporadas;
+  }
+
+  // «Dar de baja» y «Dar de alta»: en bajas-altas-alumno.ts (compartidas con el listado nuevo, 8b-3a).
+  private bajasAltasInstancia?: BajasAltasAlumno;
+  private get bajasAltas(): BajasAltasAlumno {
+    return (this.bajasAltasInstancia ??= new BajasAltasAlumno(this.endpointsService, this.alumnoService, () =>
+      this.recargarDatos()
+    ));
+  }
 
   // Multi-sport data
   deportesPorAlumno: Map<number, AlumnoDeporteDTO[]> = new Map();
@@ -110,23 +104,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly router: Router
   ) {}
-
-  /**
-   * Helper method to generate PDF with loading spinner
-   * @param observable$ The Observable that returns the PDF blob
-   * @param errorMessage Error message to show if generation fails
-   */
-  private generarPdfConLoading(
-    observable$: import('rxjs').Observable<Blob>,
-    errorMessage: string,
-    filename: string = 'informe.pdf',
-    accion: AccionInforme = 'descargar',
-    titulo: string = 'Informe'
-  ): void {
-    this.informes.generar(observable$.pipe(mapInforme(blob => ({
-      documentos: [{ blob, nombreArchivo: filename, titulo }]
-    }))), accion, errorMessage);
-  }
 
   ngOnInit(): void {
     // Load saved view preference
@@ -221,101 +198,11 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleGrupoSeleccionado(grupo: string): void {
-    const index = this.gruposSeleccionados.indexOf(grupo);
-    if (index >= 0) {
-      this.gruposSeleccionados.splice(index, 1);
-    } else {
-      this.gruposSeleccionados.push(grupo);
-    }
-  }
-
   abrirModalInforme(): void {
     this.modalTitle = 'Generar Informe';
-    this.opcionesInforme = [
-      { value: 'general', label: 'Informe de Alumnos por Grado General' },
-      {
-        value: 'taekwondo',
-        label: 'Informe de Alumnos de Taekwondo por Grado',
-      },
-      {
-        value: 'kickboxing',
-        label: 'Informe de Alumnos de Kickboxing por Grado',
-      },
-      { value: 'licencias', label: 'Informe de Estado de Licencias' },
-      {
-        value: 'infantiles',
-        label:
-          'Informe de Alumnos Infantiles a Promocionar (Todos los deportes)',
-      },
-      {
-        value: 'adultos',
-        label: 'Informe de Alumnos Adultos a Promocionar (Todos los deportes)',
-      },
-      {
-        value: 'infantiles-taekwondo',
-        label: 'Informe de Alumnos Infantiles a Promocionar (Taekwondo)',
-      },
-      {
-        value: 'adultos-taekwondo',
-        label: 'Informe de Alumnos Adultos a Promocionar (Taekwondo)',
-      },
-      {
-        value: 'infantiles-kickboxing',
-        label: 'Informe de Alumnos Infantiles a Promocionar (Kickboxing)',
-      },
-      {
-        value: 'adultos-kickboxing',
-        label: 'Informe de Alumnos Adultos a Promocionar (Kickboxing)',
-      },
-      { value: 'deudas', label: 'Informe de Deudas de Alumnos' },
-      {
-        value: 'mensualidades',
-        label: 'Informe de Mensualidades de Todos los Alumnos',
-      },
-      {
-        value: 'mensualidades-taekwondo',
-        label: 'Informe de Mensualidades de Taekwondo',
-      },
-      {
-        value: 'mensualidades-kickboxing',
-        label: 'Informe de Mensualidades de Kickboxing',
-      },
-      {
-        value: 'reservas-plaza',
-        label: 'Informe de Reservas de Plaza',
-      },
-      {
-        value: 'productos',
-        label: 'Informe de Productos',
-      },
-      {
-        value: 'competidores',
-        label: 'Informe de Competidores',
-      },
-      {
-        value: 'dpf',
-        label: 'Informe de Alumnas de D.P.F',
-      },
-    ];
-    this.temporadasReservasPlaza = [];
-    this.cargandoTemporadasReservasPlaza = true;
+    this.opcionesInforme = [...OPCIONES_INFORME_ALUMNOS];
     this.mostrarModalInforme = true;
-    this.cargarTemporadasReservasPlaza();
-  }
-
-  private cargarTemporadasReservasPlaza(): void {
-    this.endpointsService.obtenerTemporadasReservasPlaza().subscribe({
-      next: temporadas => {
-        this.temporadasReservasPlaza = temporadas;
-        this.cargandoTemporadasReservasPlaza = false;
-      },
-      error: () => {
-        this.temporadasReservasPlaza = [];
-        this.cargandoTemporadasReservasPlaza = false;
-        showErrorToast('No se pudieron cargar las temporadas de reservas');
-      },
-    });
+    this.informesAlumnos.abrir();
   }
 
   cerrarModalInforme(): void {
@@ -372,7 +259,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     });
 
     this.obtenerAlumnos();
-    this.refrescarAlumnosSeleccionablesSiNecesario();
   }
 
   /**
@@ -390,7 +276,6 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       });
 
       this.obtenerAlumnos();
-      this.refrescarAlumnosSeleccionablesSiNecesario();
     }
   }
 
@@ -789,210 +674,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     return this.alumnos;
   }
 
-  cargarTodosLosAlumnos(): void {
-    if (this.alumnosSeleccionablesCargados || this.cargandoAlumnosSeleccionables) {
-      return;
-    }
-
-    this.cargandoAlumnosSeleccionables = true;
-    this.endpointsService
-      .obtenerAlumnosSinPaginar(this.mostrarInactivos)
-      .pipe(finalize(() => (this.cargandoAlumnosSeleccionables = false)))
-      .subscribe({
-        next: (response) => {
-          this.alumnosSeleccionables = response;
-          this.alumnosSeleccionablesCargados = true;
-        },
-        error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo cargar la lista completa de alumnos.',
-            'error'
-          );
-        },
-      });
-  }
-
   generarInformeSeleccionado(event: {
     tipo: string;
     soloActivos: boolean;
     temporada?: string;
     accion: AccionInforme;
   }): void {
-    if (this.informes.ocupado || this.informes.destruido) { return; }
-    const { tipo, soloActivos, temporada, accion } = event;
-    const titulo = this.opcionesInforme.find(opcion => opcion.value === tipo)?.label || 'Informe';
-
-    switch (tipo) {
-      case 'general':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeAlumnosPorGrado(soloActivos),
-          'No se pudo generar el informe general', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'taekwondo':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeTaekwondoPorGrado(soloActivos),
-          'No se pudo generar el informe de Taekwondo', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'kickboxing':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeKickboxingPorGrado(soloActivos),
-          'No se pudo generar el informe de Kickboxing', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'licencias':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeLicencias(soloActivos),
-          'No se pudo generar el informe de licencias', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'infantiles':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeInfantilesAPromocionar(soloActivos),
-          'No se pudo generar el informe de infantiles', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'adultos':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeAdultosAPromocionar(soloActivos),
-          'No se pudo generar el informe de adultos', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'infantiles-taekwondo':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeInfantilesAPromocionarTaekwondo(soloActivos),
-          'No se pudo generar el informe de infantiles de Taekwondo', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'infantiles-kickboxing':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeInfantilesAPromocionarKickboxing(soloActivos),
-          'No se pudo generar el informe de infantiles de Kickboxing', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'adultos-taekwondo':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeAdultosAPromocionarTaekwondo(soloActivos),
-          'No se pudo generar el informe de adultos de Taekwondo', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'adultos-kickboxing':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeAdultosAPromocionarKickboxing(soloActivos),
-          'No se pudo generar el informe de adultos de Kickboxing', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'deudas':
-        this.generarInformeDeudas(soloActivos, accion);
-        break;
-      case 'mensualidades':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeMensualidades(soloActivos),
-          'No se pudo generar el informe de mensualidades', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'mensualidades-taekwondo':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeMensualidadesTaekwondo(soloActivos),
-          'No se pudo generar el informe de mensualidades de Taekwondo', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'mensualidades-kickboxing':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeMensualidadesKickboxing(soloActivos),
-          'No se pudo generar el informe de mensualidades de Kickboxing', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'reservas-plaza':
-        this.solicitarTemporadaReservasPlaza(soloActivos, temporada, accion);
-        break;
-      case 'productos':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeProductos(),
-          'No se pudo generar el informe de productos', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'competidores':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeCompetidores(),
-          'No se pudo generar el informe de competidores', 'informe.pdf', accion, titulo
-        );
-        break;
-      case 'dpf':
-        this.generarPdfConLoading(
-          this.endpointsService.generarInformeAlumnasDpf(soloActivos),
-          'No se pudo generar el informe de alumnas de D.P.F', 'informe_alumnas_dpf.pdf', accion, titulo
-        );
-        break;
-    }
-  }
-
-  private solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string, accion: AccionInforme = 'descargar'): void {
-    if (this.cargandoTemporadasReservasPlaza) {
-      Swal.fire('Cargando temporadas', 'Espera unos segundos y vuelve a generar el informe.', 'info');
-      return;
-    }
-
-    if (this.temporadasReservasPlaza.length === 0) {
-      Swal.fire('Sin temporadas', 'No hay temporadas con reservas de plaza disponibles.', 'warning');
-      return;
-    }
-
-    const anoActual = new Date().getFullYear();
-    const temporadaActual = `${anoActual}/${anoActual + 1}`;
-    const temporadaInicial = temporadaPreseleccionada
-      || (this.temporadasReservasPlaza.includes(temporadaActual) ? temporadaActual : this.temporadasReservasPlaza[0]);
-    const inputOptions = this.temporadasReservasPlaza.reduce((options, temporada) => {
-      options[temporada] = temporada === temporadaActual ? `Actual (${temporada})` : temporada;
-      return options;
-    }, {} as Record<string, string>);
-
-    this.informes.seleccionar({
-      title: 'Seleccionar temporada',
-      input: 'select',
-      inputOptions,
-      inputValue: temporadaInicial,
-      showCancelButton: true,
-      confirmButtonText: 'Generar informe',
-      cancelButtonText: 'Cancelar',
-      inputValidator: value => value ? null : 'Debes seleccionar una temporada',
-    }).then(result => {
-      if (!result?.isConfirmed || !result.value) {
-        return;
-      }
-      const temporada = result.value;
-      this.generarPdfConLoading(
-        this.endpointsService.generarInformeReservasPlaza(temporada, soloActivos),
-        'No se pudo generar el informe de reservas de plaza',
-        `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`, accion, `Reservas de plaza ${temporada}`
-      );
-    });
-  }
-
-  /**
-   * Handles deudas report generation with format selection dialog
-   */
-  private generarInformeDeudas(soloActivos: boolean, accion: AccionInforme): void {
-    if (accion === 'ver') {
-      this.generarPdfConLoading(this.endpointsService.generarInformeDeudas(soloActivos),
-        'No se pudo generar el informe de deudas en PDF', 'informe.pdf', accion, 'Deudas');
-      return;
-    }
-    void this.informes.seleccionar({
-      title: 'Seleccionar Formato', text: '¿En qué formato deseas generar el informe de deudas?',
-      icon: 'question', showCancelButton: true, showDenyButton: true,
-      confirmButtonText: 'PDF', denyButtonText: 'CSV', cancelButtonText: 'Cancelar',
-    }).then(result => {
-      if (result?.isConfirmed) {
-        this.generarPdfConLoading(this.endpointsService.generarInformeDeudas(soloActivos),
-          'No se pudo generar el informe de deudas en PDF');
-      } else if (result?.isDenied) {
-        this.generarPdfConLoading(this.endpointsService.generarInformeDeudasCSV(soloActivos),
-          'No se pudo generar el informe CSV', 'informe_deudas_alumnos.csv');
-      }
-    });
+    this.informesAlumnos.generarInformeSeleccionado(event);
   }
 
   calcularEdad(fechaNacimiento: string): number {
@@ -1071,127 +759,13 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     } else {
       this.obtenerAlumnos();
     }
-
-    this.refrescarAlumnosSeleccionablesSiNecesario();
-  }
-
-  cambiarMensualidadesTab(tab: 'general' | 'individual'): void {
-    this.mensualidadesTab = tab;
-    if (tab === 'individual') {
-      this.cargarTodosLosAlumnos();
-    }
-  }
-
-  cambiarLicenciasTab(tab: 'general' | 'individual'): void {
-    this.licenciasTab = tab;
-    if (tab === 'individual') {
-      this.cargarTodosLosAlumnos();
-    }
-  }
-
-  private refrescarAlumnosSeleccionablesSiNecesario(): void {
-    if (!this.alumnosSeleccionablesCargados) {
-      return;
-    }
-    this.alumnosSeleccionablesCargados = false;
-    this.cargarTodosLosAlumnos();
   }
 
   darDeAlta(alumnoId: number) {
-    // Primero obtener los deportes del alumno para ver cuáles están inactivos
-    this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
-      next: (deportes: AlumnoDeporteDTO[]) => {
-        const deportesInactivos = deportes.filter(d => d.activo === false);
-
-        if (deportesInactivos.length === 0) {
-          Swal.fire({
-            title: 'Información',
-            text: 'El alumno ya tiene todos sus deportes activos.',
-            icon: 'info',
-          });
-          return;
-        }
-
-        // Si solo hay un deporte inactivo, activarlo directamente
-        if (deportesInactivos.length === 1) {
-          this.activarDeporteDeAlumno(alumnoId, deportesInactivos[0].deporte);
-          return;
-        }
-
-        // Si hay múltiples deportes inactivos, mostrar selector con opción "Todos"
-        const deportesOptions = deportesInactivos
-          .map(d => `<option value="${d.deporte}">${getDeporteLabel(d.deporte)}</option>`)
-          .join('');
-
-        Swal.fire({
-          title: 'Selecciona el deporte a activar',
-          html: `
-            <select id="deporte-select" class="swal2-input">
-              <option value="">Selecciona un deporte...</option>
-              <option value="TODOS">✓ Todos los deportes</option>
-              ${deportesOptions}
-            </select>
-          `,
-          showCancelButton: true,
-          confirmButtonText: 'Dar de Alta',
-          cancelButtonText: 'Cancelar',
-          didOpen: () => {
-            attachSwalSelectSearch({ selectId: 'deporte-select', placeholder: 'Buscar deporte...' });
-          },
-          preConfirm: () => {
-            const select = document.getElementById('deporte-select') as HTMLSelectElement;
-            if (!select.value) {
-              Swal.showValidationMessage('Por favor selecciona un deporte');
-              return false;
-            }
-            return select.value;
-          },
-        }).then((result) => {
-          if (result.isConfirmed && result.value) {
-            if (result.value === 'TODOS') {
-              this.activarTodosLosDeportes(alumnoId, deportesInactivos);
-            } else {
-              this.activarDeporteDeAlumno(alumnoId, result.value);
-            }
-          }
-        });
-      },
-      error: () => {
-        showErrorToast('Error al obtener los deportes del alumno');
-      },
-    });
+    this.bajasAltas.darDeAlta(alumnoId);
   }
 
-  private activarDeporteDeAlumno(alumnoId: number, deporte: string): void {
-    this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte).subscribe({
-      next: () => {
-        showSuccessToast(`Alumno dado de alta en ${getDeporteLabel(deporte)}`);
-        this.recargarDatos();
-      },
-      error: (error) => {
-        showErrorToast(error.error || 'Error al dar de alta al alumno');
-      },
-    });
-  }
-
-  private activarTodosLosDeportes(alumnoId: number, deportesInactivos: AlumnoDeporteDTO[]): void {
-    const activarDeportesObservables = deportesInactivos.map(deporte =>
-      this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte.deporte)
-    );
-
-    concat(...activarDeportesObservables).subscribe({
-      complete: () => {
-        const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
-        showSuccessToast(`Alumno dado de alta en todos sus deportes: ${deportesLabels}`);
-        this.recargarDatos();
-      },
-      error: (error) => {
-        showErrorToast(error.error || 'Error al activar algunos deportes');
-      },
-    });
-  }
-
-  private recargarDatos(): void {
+  recargarDatos(): void {
     if (this.usandoPaginacionCliente) {
       this.obtenerAlumnosFiltradosPorDeporte();
     } else {
@@ -1200,522 +774,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   darDeBaja(alumnoId: number) {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'El alumno será dado de baja.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, dar de baja',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.endpointsService.darDeBajaAlumno(alumnoId).subscribe({
-          next: () => {
-            showSuccessToast('Alumno dado de baja correctamente');
-            // Reload data using the current pagination mode
-            if (this.usandoPaginacionCliente) {
-              this.obtenerAlumnosFiltradosPorDeporte();
-            } else {
-              this.obtenerAlumnos();
-            }
-          },
-          error: () => {
-            showErrorToast('Error al dar de baja al alumno');
-          },
-        });
-      }
-    });
-  }
-
-  cargarMensualidadesGenerales(): void {
-    if (this.procesandoMensualidadesGenerales) {
-      return;
-    }
-
-    if (!this.mesAnoSeleccionado) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un mes y año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    // Show loading spinner
-    this.procesandoMensualidadesGenerales = true;
-    this.loadingService.show();
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaMensualidadGeneral
-    );
-
-    // Determine which service method to call based on sport selection
-    const serviceCall =
-      this.deporteSeleccionado === 'TODOS'
-        ? this.endpointsService.cargarMensualidadesGenerales(
-            this.mesAnoSeleccionado,
-            fechaAsignacion
-          )
-        : this.endpointsService.cargarMensualidadesPorDeporte(
-            this.mesAnoSeleccionado,
-            this.deporteSeleccionado,
-            fechaAsignacion
-          );
-
-    const deporteTexto =
-      this.deporteSeleccionado === 'TODOS'
-        ? 'todos los alumnos activos'
-        : `alumnos activos de ${this.deporteSeleccionado}`;
-
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoMensualidadesGenerales = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
-        // Reload data using the current pagination mode
-        if (this.usandoPaginacionCliente) {
-          this.obtenerAlumnosFiltradosPorDeporte();
-        } else {
-          this.obtenerAlumnos();
-        }
-      },
-      error: () => {
-        showErrorToast('Error al asignar las mensualidades');
-      },
-    });
-  }
-
-  cargarMensualidadIndividual(): void {
-    if (this.procesandoMensualidadIndividual) {
-      return;
-    }
-
-    if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un mes/año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaMensualidadIndividual
-    );
-
-    // Determine which service method to call based on sport selection
-    const serviceCall =
-      this.deporteSeleccionadoIndividual === 'TODOS'
-        ? this.endpointsService.cargarMensualidadIndividual(
-            this.alumnoSeleccionado,
-            this.mesAnoSeleccionadoIndividual,
-            false,
-            fechaAsignacion
-          )
-        : this.endpointsService.cargarMensualidadIndividualPorDeporte(
-            this.alumnoSeleccionado,
-            this.mesAnoSeleccionadoIndividual,
-            this.deporteSeleccionadoIndividual,
-            false,
-            fechaAsignacion
-          );
-
-    const deporteTexto =
-      this.deporteSeleccionadoIndividual === 'TODOS'
-        ? 'todos los deportes'
-        : this.deporteSeleccionadoIndividual;
-
-    this.procesandoMensualidadIndividual = true;
-    this.loadingService.show();
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoMensualidadIndividual = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
-      },
-      error: (error) => {
-        if (error.status === 409 && error.error?.accion === 'completar') {
-          const html = this.construirAvisoMensualidadIncompleta(error.error);
-          Swal.fire({
-            title: 'Atención',
-            html,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, aplicar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.forzarCargarMensualidad();
-            }
-          });
-          return;
-        }
-        if (error.status === 409 && error.error?.accion === 'confirmar') {
-          Swal.fire({
-            title: 'Atención',
-            text: error.error?.mensaje || 'La mensualidad ya existe.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.forzarCargarMensualidad();
-            }
-          });
-          return;
-        }
-        Swal.fire('Error', error?.error?.mensaje || 'No se pudo cargar la mensualidad.', 'error');
-      },
-    });
-  }
-
-  forzarCargarMensualidad(): void {
-    if (this.procesandoMensualidadIndividual) {
-      return;
-    }
-
-    if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un mes/año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaMensualidadIndividual
-    );
-
-    const serviceCall =
-      this.deporteSeleccionadoIndividual === 'TODOS'
-        ? this.endpointsService.cargarMensualidadIndividual(
-            this.alumnoSeleccionado,
-            this.mesAnoSeleccionadoIndividual,
-            true,
-            fechaAsignacion
-          )
-        : this.endpointsService.cargarMensualidadIndividualPorDeporte(
-            this.alumnoSeleccionado,
-            this.mesAnoSeleccionadoIndividual,
-            this.deporteSeleccionadoIndividual,
-            true,
-            fechaAsignacion
-          );
-
-    const deporteTexto =
-      this.deporteSeleccionadoIndividual === 'TODOS'
-        ? 'todos los deportes'
-        : this.deporteSeleccionadoIndividual;
-
-    this.procesandoMensualidadIndividual = true;
-    this.loadingService.show();
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoMensualidadIndividual = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast('Productos faltantes de mensualidad y competidor cargados correctamente');
-      },
-      error: () => {
-        showErrorToast('No se pudo cargar la mensualidad');
-      },
-    });
-  }
-
-  cargarLicenciasGenerales(): void {
-    if (this.procesandoLicenciasGenerales) {
-      return;
-    }
-
-    if (!this.anoLicenciaSeleccionado) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    this.procesandoLicenciasGenerales = true;
-    this.loadingService.show();
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaLicenciaGeneral
-    );
-
-    const serviceCall = this.endpointsService.cargarLicenciasGenerales(
-      this.anoLicenciaSeleccionado,
-      this.deporteLicenciaSeleccionado,
-      fechaAsignacion
-    );
-
-    const deporteTexto =
-      this.deporteLicenciaSeleccionado === 'TODOS'
-        ? 'alumnos activos'
-        : `alumnos activos de ${this.deporteLicenciaSeleccionado}`;
-
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoLicenciasGenerales = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast(
-          `Licencias ${this.anoLicenciaSeleccionado} asignadas a ${deporteTexto}`
-        );
-        if (this.usandoPaginacionCliente) {
-          this.obtenerAlumnosFiltradosPorDeporte();
-        } else {
-          this.obtenerAlumnos();
-        }
-      },
-      error: (error) => {
-        showErrorToast(
-          error?.error?.mensaje || 'Error al asignar las licencias'
-        );
-      },
-    });
-  }
-
-  cargarLicenciaIndividual(): void {
-    if (this.procesandoLicenciaIndividual) {
-      return;
-    }
-
-    if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaLicenciaIndividual
-    );
-
-    const serviceCall = this.endpointsService.cargarLicenciaIndividual(
-      this.alumnoSeleccionado,
-      this.anoLicenciaSeleccionadoIndividual,
-      this.deporteLicenciaSeleccionadoIndividual,
-      false,
-      fechaAsignacion
-    );
-
-    const deporteTexto =
-      this.deporteLicenciaSeleccionadoIndividual === 'TODOS'
-        ? 'todos los deportes'
-        : this.deporteLicenciaSeleccionadoIndividual;
-
-    this.procesandoLicenciaIndividual = true;
-    this.loadingService.show();
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoLicenciaIndividual = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast(
-          `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
-        );
-      },
-      error: (error) => {
-        if (error.status === 409 && error.error.accion === 'confirmar') {
-          Swal.fire({
-            title: 'Atención',
-            text: error.error.mensaje,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.forzarCargarLicenciaIndividual();
-            }
-          });
-        } else {
-          showErrorToast(
-            error?.error?.mensaje || 'No se pudo cargar la licencia'
-          );
-        }
-      },
-    });
-  }
-
-  forzarCargarLicenciaIndividual(): void {
-    if (this.procesandoLicenciaIndividual) {
-      return;
-    }
-
-    if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un año.',
-        icon: 'error',
-      });
-      return;
-    }
-
-    const fechaAsignacion = this.normalizarFechaAsignacion(
-      this.fechaLicenciaIndividual
-    );
-
-    const serviceCall = this.endpointsService.cargarLicenciaIndividual(
-      this.alumnoSeleccionado,
-      this.anoLicenciaSeleccionadoIndividual,
-      this.deporteLicenciaSeleccionadoIndividual,
-      true,
-      fechaAsignacion
-    );
-
-    const deporteTexto =
-      this.deporteLicenciaSeleccionadoIndividual === 'TODOS'
-        ? 'todos los deportes'
-        : this.deporteLicenciaSeleccionadoIndividual;
-
-    this.procesandoLicenciaIndividual = true;
-    this.loadingService.show();
-    serviceCall.pipe(
-      finalize(() => {
-        this.procesandoLicenciaIndividual = false;
-        this.loadingService.hide();
-      })
-    ).subscribe({
-      next: () => {
-        showSuccessToast(
-          `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
-        );
-      },
-      error: (error) => {
-        showErrorToast(
-          error?.error?.mensaje || 'No se pudo cargar la licencia'
-        );
-      },
-    });
-  }
-
-  generarListadoAsistencia(accion: AccionInforme = 'descargar'): void {
-    if (this.informes.ocupado || this.informes.destruido) { return; }
-    if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
-      Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error'); return;
-    }
-    const mesAno = this.mesAnoAsistencia;
-    const [year, month] = mesAno.split('-').map(Number);
-    const grupos = [...this.gruposSeleccionados];
-    const solicitudes = grupos.map(grupo => this.endpointsService.descargarAsistencia(year, month, grupo).pipe(
-      map(blob => ({ grupo, blob })), catchError(() => of({ grupo, blob: null as Blob | null }))
-    ));
-    this.informes.generar(forkJoin(solicitudes).pipe(map(resultados => {
-      const fallidos = resultados.filter(r => !r.blob).map(r => r.grupo);
-      return {
-        documentos: resultados.filter(r => r.blob).map(r => ({ blob: r.blob!,
-          nombreArchivo: `Asistencia-${r.grupo}-${mesAno}.pdf`, titulo: `Asistencia ${r.grupo} — ${mesAno}` })),
-        aviso: fallidos.length ? `No se pudo generar el PDF para: ${fallidos.join(', ')}` : '',
-      };
-    })), accion, 'No se pudo generar el listado de asistencia');
-  }
-
-  generarListadoMensualidadMensual(accion: AccionInforme = 'descargar'): void {
-    if (this.informes.ocupado || this.informes.destruido) { return; }
-    if (!this.mesAnoMensualidad) {
-      Swal.fire('Error', 'Debes seleccionar un mes y año', 'error'); return;
-    }
-    const mesAno = this.mesAnoMensualidad;
-    this.generarPdfConLoading(this.endpointsService.generarListadoMensualidadMensual(mesAno, true),
-      'No se pudo generar el listado de mensualidad mensual',
-      `listado_mensualidad_${this.formatearNombreMensualidad(mesAno)}.pdf`, accion,
-      `Mensualidades ${this.formatearNombreMensualidad(mesAno)}`);
-  }
-
-  private formatearNombreMensualidad(mesAno: string): string {
-    const [anio, mes] = mesAno.split('-');
-    const meses = [
-      'ENERO',
-      'FEBRERO',
-      'MARZO',
-      'ABRIL',
-      'MAYO',
-      'JUNIO',
-      'JULIO',
-      'AGOSTO',
-      'SEPTIEMBRE',
-      'OCTUBRE',
-      'NOVIEMBRE',
-      'DICIEMBRE',
-    ];
-    return `${meses[Number.parseInt(mes, 10) - 1]} ${anio}`;
-  }
-
-  private obtenerFechaActualLocalYyyyMmDd(): string {
-    const hoy = new Date();
-    const year = hoy.getFullYear();
-    const month = String(hoy.getMonth() + 1).padStart(2, '0');
-    const day = String(hoy.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  private normalizarFechaAsignacion(
-    fecha: string | null | undefined
-  ): string | null {
-    const fechaLimpia = (fecha ?? '').trim();
-    return fechaLimpia.length > 0 ? fechaLimpia : null;
-  }
-
-  private formatearListaDeportes(deportes: unknown): string {
-    if (!Array.isArray(deportes) || deportes.length === 0) {
-      return '';
-    }
-    const deportesValidos = deportes
-      .filter((deporte) => typeof deporte === 'string' && deporte.trim().length > 0)
-      .map((deporte) => this.getDeporteLabel(deporte as string));
-    return deportesValidos.join(', ');
-  }
-
-  private construirAvisoMensualidadIncompleta(payload: any): string {
-    const existentesMensualidad = this.formatearListaDeportes(payload?.existentes?.mensualidades);
-    const existentesCompetidor = this.formatearListaDeportes(payload?.existentes?.tarifasCompetidor);
-    const faltantesMensualidad = this.formatearListaDeportes(payload?.faltantes?.mensualidades);
-    const faltantesCompetidor = this.formatearListaDeportes(payload?.faltantes?.tarifasCompetidor);
-
-    const partes: string[] = [];
-    if (this.mesAnoSeleccionadoIndividual) {
-      partes.push(`<div><strong>Mes:</strong> ${this.formatearNombreMensualidad(this.mesAnoSeleccionadoIndividual)}</div>`);
-    }
-    if (existentesMensualidad || existentesCompetidor) {
-      partes.push('<div style="margin-top: 0.5rem;"><strong>Ya tiene:</strong></div>');
-      if (existentesMensualidad) {
-        partes.push(`<div>Mensualidad: ${existentesMensualidad}</div>`);
-      }
-      if (existentesCompetidor) {
-        partes.push(`<div>Cuota competidor: ${existentesCompetidor}</div>`);
-      }
-    }
-    if (faltantesMensualidad || faltantesCompetidor) {
-      partes.push('<div style="margin-top: 0.5rem;"><strong>Falta:</strong></div>');
-      if (faltantesMensualidad) {
-        partes.push(`<div>Mensualidad: ${faltantesMensualidad}</div>`);
-      }
-      if (faltantesCompetidor) {
-        partes.push(`<div>Cuota competidor: ${faltantesCompetidor}</div>`);
-      }
-    }
-    partes.push('<div style="margin-top: 0.75rem;">¿Quieres aplicar lo que falta?</div>');
-    return partes.join('');
+    this.bajasAltas.darDeBaja(alumnoId);
   }
 
   /**

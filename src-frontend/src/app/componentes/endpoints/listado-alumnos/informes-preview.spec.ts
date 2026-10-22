@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ListadoAlumnosComponent } from './listado-alumnos.component';
+import { HerramientasAlumnosComponent } from './herramientas-alumnos/herramientas-alumnos.component';
+import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { ListadoConvocatoriasComponent } from '../listado-convocatorias/listado-convocatorias.component';
 import { TesoreriaCobrosComponent } from '../tesoreria-cobros/tesoreria-cobros.component';
 import { InformePdfService } from '../../../servicios/generales/informe-pdf.service';
@@ -13,6 +15,7 @@ import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fix
 describe('Acciones de informes administrativos', () => {
   let service: InformePdfService;
   let alumnos: ListadoAlumnosComponent;
+  let herramientas: HerramientasAlumnosComponent;
   let api: any;
   const blob = new Blob(['pdf']);
   const casos = [
@@ -29,13 +32,16 @@ describe('Acciones de informes administrativos', () => {
   ];
   beforeEach(() => {
     const loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
-    TestBed.configureTestingModule({ providers: [InformePdfService, { provide: LoadingService, useValue: loading }, proveerCatalogoTesting(CATALOGO_TAEMOI)] });
-    service = TestBed.inject(InformePdfService);
     api = jasmine.createSpyObj('EndpointsService', [...casos.map(c => c[1]), 'generarInformeDeudas',
       'generarInformeDeudasCSV', 'generarInformeReservasPlaza', 'descargarAsistencia',
       'generarListadoMensualidadMensual', 'descargarInformePDFConvocatoria', 'exportarTesoreriaPDF', 'exportarTesoreriaCSV']);
     Object.values(api).forEach((spy: any) => spy.and.returnValue(of(blob)));
+    TestBed.configureTestingModule({ providers: [InformePdfService, { provide: LoadingService, useValue: loading },
+      { provide: EndpointsService, useValue: api }, proveerCatalogoTesting(CATALOGO_TAEMOI)] });
+    service = TestBed.inject(InformePdfService);
     alumnos = TestBed.runInInjectionContext(() => new ListadoAlumnosComponent(api, {} as any, loading, {} as any, {} as any));
+    // 8b-3a: las herramientas del pie (asistencia y listado de mensualidades) salen del listado a su propio componente.
+    herramientas = TestBed.runInInjectionContext(() => new HerramientasAlumnosComponent());
     spyOn(URL, 'createObjectURL').and.returnValue('blob:test'); spyOn(URL, 'revokeObjectURL');
     spyOn(HTMLAnchorElement.prototype, 'click');
     spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: false, isDenied: false, isDismissed: true });
@@ -77,23 +83,23 @@ describe('Acciones de informes administrativos', () => {
     expect(service.documentos[0].nombreArchivo).toBe('informe_reservas_plaza_2025_2026.pdf');
   });
   it('asistencia: orden seleccionado, fallo parcial y todos los PDF en descarga directa', () => {
-    alumnos.mesAnoAsistencia = '2026-09';
-    ['viernes', 'lunes', 'martes'].forEach(grupo => alumnos.toggleGrupoSeleccionado(grupo));
+    herramientas.mesAnoAsistencia = '2026-09';
+    ['viernes', 'lunes', 'martes'].forEach(grupo => herramientas.toggleGrupoSeleccionado(grupo));
     api.descargarAsistencia.and.callFake((_y: number, _m: number, grupo: string) =>
       grupo === 'lunes' ? throwError(() => new Error()) : of(blob));
-    alumnos.generarListadoAsistencia('ver');
+    herramientas.generarListadoAsistencia('ver');
     expect(api.descargarAsistencia.calls.allArgs()).toEqual([[2026, 9, 'viernes'], [2026, 9, 'lunes'], [2026, 9, 'martes']]);
     expect(service.documentos.map(d => d.nombreArchivo)).toEqual(['Asistencia-viernes-2026-09.pdf', 'Asistencia-martes-2026-09.pdf']);
     expect(service.aviso).toContain('lunes'); expect(URL.createObjectURL).not.toHaveBeenCalled();
-    alumnos.generarListadoAsistencia('descargar');
+    herramientas.generarListadoAsistencia('descargar');
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(2);
   });
   it('captura mes al iniciar; bloquea duplicados y conserva validaciones', () => {
-    alumnos.generarListadoMensualidadMensual('ver');
+    herramientas.generarListadoMensualidadMensual('ver');
     expect(api.generarListadoMensualidadMensual).not.toHaveBeenCalled();
     const pending = new Subject<Blob>(); api.generarListadoMensualidadMensual.and.returnValue(pending);
-    alumnos.mesAnoMensualidad = '2026-09'; alumnos.generarListadoMensualidadMensual('ver');
-    alumnos.mesAnoMensualidad = '2026-10'; alumnos.generarListadoMensualidadMensual('descargar');
+    herramientas.mesAnoMensualidad = '2026-09'; herramientas.generarListadoMensualidadMensual('ver');
+    herramientas.mesAnoMensualidad = '2026-10'; herramientas.generarListadoMensualidadMensual('descargar');
     expect(api.generarListadoMensualidadMensual).toHaveBeenCalledOnceWith('2026-09', true);
     pending.next(blob); pending.complete();
     expect(service.documentos[0].nombreArchivo).toBe('listado_mensualidad_SEPTIEMBRE 2026.pdf');

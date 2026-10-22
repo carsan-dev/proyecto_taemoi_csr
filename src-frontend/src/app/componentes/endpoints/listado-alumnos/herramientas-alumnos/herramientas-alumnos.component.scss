@@ -1,0 +1,391 @@
+// Las tres herramientas plegables del pie del listado de alumnos: estilos movidos tal cual de
+// listado-alumnos.component.scss (8b-3a), sin cambiar ningún valor.
+@use '../../../../componentes/admin-theme' as *;
+
+:host {
+  display: block;
+}
+
+
+// ========================================
+// GESTION PANELS
+// ========================================
+
+.gestion-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 2px solid rgba($text-muted, 0.12);
+  background: $text-light;
+  box-shadow: $shadow-sm;
+}
+
+.gestion-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba($primary-color, 0.1);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  i {
+    font-size: 1.6rem;
+    color: $primary-color;
+    background: rgba($primary-color, 0.12);
+    padding: 0.6rem;
+    border-radius: 12px;
+  }
+}
+
+.panel-text {
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $text-dark;
+  }
+
+  p {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: $text-muted;
+  }
+}
+
+.panel-tag {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba($primary-color, 0.12);
+  color: $primary-color;
+  border: 1px solid rgba($primary-color, 0.3);
+}
+
+.gestion-panel-mensualidades {
+  border-color: rgba($success-color, 0.35);
+  border-left: 4px solid $success-color;
+  background: linear-gradient(135deg, rgba($success-color, 0.08), rgba($success-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($success-color, 0.2);
+  }
+
+  .panel-title i {
+    color: $success-color;
+    background: rgba($success-color, 0.15);
+  }
+
+  .panel-tag {
+    background: rgba($success-color, 0.15);
+    color: $success-color;
+    border-color: rgba($success-color, 0.35);
+  }
+}
+
+.gestion-panel-licencias {
+  border-color: rgba($primary-color, 0.35);
+  border-left: 4px solid $primary-color;
+  background: linear-gradient(135deg, rgba($primary-color, 0.08), rgba($primary-color, 0.02));
+
+  .gestion-panel-header {
+    border-bottom-color: rgba($primary-color, 0.2);
+  }
+}
+
+// ========================================
+// TABS (LICENCIAS + MENSUALIDADES)
+// ========================================
+
+.licencias-tabs,
+.mensualidades-tabs {
+  margin-top: 1rem;
+
+  .tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    background: $background-light;
+    border-radius: 12px;
+    box-shadow: $shadow-sm;
+  }
+
+  .tab-item {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.85rem 1.25rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: $text-light;
+    color: $text-dark;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: $transition;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+      background: rgba($primary-color, 0.05);
+      border-color: rgba($primary-color, 0.3);
+      color: $primary-color;
+    }
+
+    &.active {
+      background: $primary-color;
+      color: $text-light;
+      border-color: $primary-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  .tab-content {
+    margin-top: 1rem;
+  }
+}
+
+// ========================================
+// LISTADO ASISTENCIA
+// ========================================
+
+.dias-semana-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.dias-semana-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0;
+  min-width: 0;
+
+  legend {
+    padding: 0;
+  }
+}
+
+.mensualidades-tabs {
+  .tab-item {
+    &:hover {
+      background: rgba($success-color, 0.08);
+      border-color: rgba($success-color, 0.35);
+      color: $success-color;
+    }
+
+    &.active {
+      background: $success-color;
+      color: $text-light;
+      border-color: $success-color;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+.dia-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid $background-light;
+  background: $text-light;
+  color: $text-muted;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: $transition;
+  user-select: none;
+
+  &:hover {
+    border-color: rgba($primary-color, 0.6);
+    color: $primary-color;
+  }
+
+  &.active {
+    border-color: $primary-color;
+    background: rgba($primary-color, 0.1);
+    color: $primary-color;
+    box-shadow: $shadow-sm;
+  }
+
+  &:focus-within {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.15);
+  }
+}
+
+.dia-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+@media (min-width: 1200px) {
+  .dias-semana-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+// ========================================
+// COLLAPSIBLE SECTIONS
+// ========================================
+
+.collapsible-section {
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  background: $text-light;
+  border-radius: 12px;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  border: 2px solid $background-light;
+  transition: $transition;
+
+  &[open] {
+    border-color: $primary-color;
+
+    .section-summary {
+      background: linear-gradient(135deg, rgba($primary-color, 0.1), rgba($primary-color, 0.05));
+      border-bottom: 2px solid rgba($primary-color, 0.2);
+
+      .chevron-icon {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .section-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: $text-dark;
+    background: rgba($background-light, 0.5);
+    transition: $transition;
+    user-select: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    i:first-child {
+      font-size: 1.3rem;
+      color: $primary-color;
+    }
+
+    span {
+      flex: 1;
+    }
+
+    .chevron-icon {
+      font-size: 1.2rem;
+      color: $text-muted;
+      transition: transform 0.3s ease;
+      margin-left: auto;
+    }
+
+    &:hover {
+      background: rgba($primary-color, 0.08);
+
+      .chevron-icon {
+        color: $primary-color;
+      }
+    }
+  }
+
+  .section-content {
+    padding: 1.5rem;
+    animation: slideDown 0.3s ease;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 992px) {
+  .collapsible-section {
+    .section-summary {
+      padding: 1rem 1.25rem;
+      font-size: 1rem;
+    }
+
+    .section-content {
+      padding: 1.25rem;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .gestion-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel-tag {
+    align-self: flex-start;
+  }
+
+  .licencias-tabs,
+  .mensualidades-tabs {
+    .tabs-nav {
+      flex-direction: column;
+    }
+
+    .tab-item {
+      width: 100%;
+    }
+  }
+
+  // Hoy, «.dias-semana-grid» y «.dia-chip» de este bloque quedaban anidados por error dentro de «.unified-controls-bar»
+  // y no se aplicaban nunca: no se traen, para que el pie se vea igual.
+
+  .collapsible-section {
+    .section-summary {
+      padding: 0.875rem 1rem;
+      font-size: 0.95rem;
+
+      i:first-child {
+        font-size: 1.1rem;
+      }
+
+      .chevron-icon {
+        font-size: 1rem;
+      }
+    }
+
+    .section-content {
+      padding: 1rem;
+    }
+  }
+}
