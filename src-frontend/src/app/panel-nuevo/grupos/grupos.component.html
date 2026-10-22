@@ -1,0 +1,198 @@
+<div class="pn grupos" pnAcento>
+  <div class="grupos__pagina">
+    <header class="grupos__cabecera">
+      <div class="grupos__titulos">
+        <h1 class="grupos__titulo">Grupos</h1>
+        <p class="grupos__subtitulo" data-cifras>{{ subtitulo }}</p>
+      </div>
+      <div class="grupos__acciones">
+        <a class="grupos__boton-secundario" routerLink="/turnosCrear">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+          <span>Nuevo turno</span>
+        </a>
+        <a class="grupos__boton-primario" routerLink="/gruposCrear">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"></path></svg>
+          <span>Nuevo grupo</span>
+        </a>
+      </div>
+    </header>
+
+    <section class="grupos__tipos" aria-labelledby="grupos-tipos-titulo">
+      <h2 class="grupos__rotulo" id="grupos-tipos-titulo">Alumnos por tipo de grupo</h2>
+      @if (estadoConteo === 'error') {
+      <pn-bloque-error class="grupos__bloque-estado" titulo="No se pudo leer cuántos alumnos hay por tipo" (reintentar)="cargarConteo()" />
+      } @else {
+      <div class="grupos__tipos-fila" [attr.aria-busy]="estadoConteo === 'cargando' ? 'true' : null">
+        @for (t of tipos; track t) {
+        <button type="button" class="grupos__tipo" aria-haspopup="dialog" (click)="abrirTipo(t)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 19.5c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5"></path><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.4c1.6.9 2.6 2.7 3 5.1"></path></svg>
+          <span class="grupos__tipo-texto"><span class="grupos__tipo-nombre">{{ t }}</span>@if (estadoConteo === 'listo') {<span class="grupos__punto-medio" aria-hidden="true"> · </span><span class="grupos__tipo-cifra" data-cifras>{{ numero(activosDe(t)) }}</span>} @else {<span class="grupos__tipo-hueco" aria-hidden="true"></span>}</span>
+        </button>
+        }
+      </div>
+      }
+    </section>
+
+    @if (estadoGrupos === 'cargando') {
+    <pn-esqueleto class="grupos__cargando" etiqueta="Cargando grupos" aria-busy="true">
+      <div class="grupos__esqueleto-filtro"><span></span><span></span><span></span></div>
+      <div class="grupos__rejilla">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="grupos__esqueleto-tarjeta">
+          <span class="grupos__esqueleto-nombre"></span>
+          <span class="grupos__esqueleto-datos"><span></span><span></span><span></span></span>
+          <span class="grupos__esqueleto-turnos"></span>
+          <span class="grupos__esqueleto-pie"><span></span><span></span><span></span></span>
+        </div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (estadoGrupos === 'error') {
+    <div class="grupos__lista-estado">
+      <pn-bloque-error class="grupos__bloque-estado" titulo="No se pudieron cargar los grupos" (reintentar)="cargarGrupos()" />
+    </div>
+    } @else if (grupos.length === 0) {
+    <pn-bloque-vacio class="grupos__bloque-estado" titulo="Todavía no hay grupos">
+      <a pnAccionVacio class="grupos__boton-secundario" routerLink="/gruposCrear">Nuevo grupo</a>
+    </pn-bloque-vacio>
+    } @else {
+    <div class="grupos__filtro" role="radiogroup" aria-label="Filtrar por disciplina" (keydown)="teclaFiltro($event)">
+      @for (o of opcionesFiltro; track o.codigo) {
+      <button type="button" role="radio" class="grupos__segmento" [attr.aria-checked]="o.codigo === filtro"
+        [attr.tabindex]="o.codigo === filtro ? 0 : -1" (click)="elegirFiltro(o.codigo)">
+        <span>{{ o.nombre }}</span><span class="grupos__punto-medio" aria-hidden="true"> · </span><span class="grupos__segmento-cifra" data-cifras>{{ numero(o.cuantos) }}</span>
+      </button>
+      }
+    </div>
+
+    @if (seccionesVisibles.length === 0) {
+    <pn-bloque-vacio class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + nombreFiltro" accion="Ver todas"
+      (accionar)="elegirFiltro(null)" />
+    }
+
+    @for (s of seccionesVisibles; track s.codigo) {
+    <section class="grupos__seccion" [attr.aria-labelledby]="'grupos-seccion-' + $index">
+      <div class="grupos__seccion-cabecera">
+        <h2 class="grupos__seccion-titulo" [id]="'grupos-seccion-' + $index">
+          <span class="grupos__disc" [class]="'grupos__disc--' + s.color" aria-hidden="true"></span>{{ s.nombre }}
+        </h2>
+        <p class="grupos__seccion-total" data-cifras>{{ numero(s.alumnos) }} {{ s.alumnos === 1 ? 'alumno' : 'alumnos' }}</p>
+      </div>
+      @if (s.grupos.length === 0) {
+      <pn-bloque-vacio class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + s.nombre" accion="Ver todas"
+        (accionar)="elegirFiltro(null)" />
+      } @else {
+      <ul class="grupos__rejilla" [attr.aria-label]="'Grupos de ' + s.nombre">
+        @for (g of s.grupos; track g.id) {
+        <li class="grupos__tarjeta" [attr.data-grupo]="g.id">
+          <h3 class="grupos__cabeza">
+            <a class="grupos__nombre" [routerLink]="['/gruposEditar', g.id]">{{ g.nombre }}</a>
+          </h3>
+          <dl class="grupos__datos">
+            <div class="grupos__dato">
+              <dt>Alumnos</dt>
+              <dd data-cifras>{{ numero(g.numAlumnos) }}</dd>
+            </div>
+            <div class="grupos__dato">
+              <dt>Edad</dt>
+              <dd data-cifras>{{ rangoEdad(g.rangoEdadMin, g.rangoEdadMax) }}</dd>
+            </div>
+            <div class="grupos__dato grupos__dato--horario">
+              <dt>Horario</dt>
+              <dd data-cifras>{{ resumenHorario(g.turnos) }}</dd>
+            </div>
+          </dl>
+
+          <div class="grupos__turnos" [class.grupos__turnos--abierto]="abiertas.has(g.id)">
+            <button type="button" class="grupos__turnos-boton" [attr.aria-expanded]="abiertas.has(g.id)"
+              [attr.aria-controls]="idTurnos(g)" (click)="alternarTurnos(g)">
+              <span>Turnos ({{ g.turnos.length }})</span>
+              <svg class="grupos__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+            <div class="grupos__turnos-lista" [id]="idTurnos(g)" [hidden]="!abiertas.has(g.id)">
+              @if (abiertas.has(g.id)) {
+              @if (g.turnos.length > 0) {
+              <ul class="grupos__turnos-ul">
+                @for (t of g.turnos; track t.id) {
+                <li class="grupos__turno">
+                  <span class="grupos__turno-texto" data-cifras>{{ textoTurno(t) }}</span>
+                  <a class="grupos__turno-icono" [routerLink]="['/turnosEditar', t.id]" [attr.aria-label]="'Editar turno ' + textoTurno(t)"
+                    title="Editar turno">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+                  </a>
+                  <button type="button" class="grupos__turno-icono grupos__turno-icono--quitar"
+                    [attr.aria-label]="'Quitar turno ' + textoTurno(t) + ' del grupo'" title="Quitar del grupo" (click)="quitarTurno(g, t)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M7 7l10 10M17 7 7 17"></path></svg>
+                  </button>
+                </li>
+                }
+              </ul>
+              } @else {
+              <p class="grupos__sin-turnos">Sin turnos asignados</p>
+              }
+              <div class="grupos__anadir">
+                <label class="grupos__anadir-etiqueta" [attr.for]="'grupo-' + g.id + '-anadir'">Añadir turno</label>
+                <div class="grupos__anadir-fila">
+                  <select class="grupos__select" [id]="'grupo-' + g.id + '-anadir'" [disabled]="turnosSinGrupo.length === 0"
+                    (change)="elegirTurno(g, $any($event.target).value)">
+                    <option value="" [selected]="!eleccion.has(g.id)">{{ turnosSinGrupo.length ? 'Elige un turno sin grupo' : 'No hay turnos sin grupo' }}</option>
+                    @for (t of turnosSinGrupo; track t.id) {
+                    <option [value]="t.id" [selected]="eleccion.get(g.id) === t.id">{{ textoTurno(t) }}</option>
+                    }
+                  </select>
+                  <button type="button" pnOcupado class="grupos__boton-anadir" [ocupado]="anadiendo.has(g.id)" textoOcupado="Añadiendo…"
+                    [deshabilitado]="!eleccion.has(g.id)" (click)="anadirTurno(g)">Añadir</button>
+                </div>
+              </div>
+              }
+            </div>
+          </div>
+
+          <div class="grupos__pie">
+            <a class="grupos__accion" [routerLink]="['/gestionarAlumnos', g.id]">Alumnos</a>
+            <a class="grupos__accion" [routerLink]="['/gruposEditar', g.id]">Editar</a>
+            <button type="button" class="grupos__accion" (click)="editarRango(g)">Rango de edad</button>
+            <button type="button" class="grupos__papelera" [attr.aria-label]="'Eliminar grupo ' + g.nombre" title="Eliminar"
+              (click)="eliminarGrupo(g)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg>
+            </button>
+          </div>
+        </li>
+        }
+      </ul>
+      }
+    </section>
+    }
+    }
+
+    @if (estadoTurnos === 'error') {
+    <section class="grupos__sin-grupo" aria-labelledby="grupos-sin-grupo-titulo">
+      <h2 class="grupos__sin-grupo-titulo" id="grupos-sin-grupo-titulo">Turnos sin grupo asignado</h2>
+      <pn-bloque-error class="grupos__bloque-estado" titulo="No se pudieron cargar los turnos" (reintentar)="cargarTurnos()" />
+    </section>
+    } @else if (estadoTurnos === 'listo' && turnosSinGrupo.length > 0) {
+    <section class="grupos__sin-grupo" aria-labelledby="grupos-sin-grupo-titulo">
+      <h2 class="grupos__sin-grupo-titulo" id="grupos-sin-grupo-titulo">Turnos sin grupo asignado ({{ turnosSinGrupo.length }})</h2>
+      <ul class="grupos__sin-grupo-lista">
+        @for (t of turnosSinGrupo; track t.id) {
+        <li class="grupos__sin-grupo-fila">
+          <span class="grupos__turno-texto" data-cifras>{{ textoTurno(t) }}</span>
+          <a class="grupos__accion grupos__accion--borde" [routerLink]="['/turnosEditar', t.id]">Editar</a>
+        </li>
+        }
+      </ul>
+    </section>
+    }
+  </div>
+
+  @if (tipoAbierto) {
+  <pn-alumnos-tipo [grupoNombre]="tipoAbierto" (cerrado)="cerrarTipo()" />
+  }
+</div>

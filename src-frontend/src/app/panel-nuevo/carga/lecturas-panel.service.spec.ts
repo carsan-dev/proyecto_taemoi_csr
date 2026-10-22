@@ -59,4 +59,30 @@ describe('LecturasPanelService (8b-D2a)', () => {
     deHoy.flush(36);
     delPanel.flush(36);
   });
+
+  it('Grupos (8b-3c): resumen de grupos y de turnos, conteo por tipo y alumnos por tipo, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(EndpointsService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const pares: [Observable<unknown>, Observable<unknown>][] = [
+      [hoy.obtenerResumenGrupos(), panel.resumenGrupos()],
+      [hoy.obtenerResumenTurnos(), panel.resumenTurnos()],
+      [hoy.obtenerAlumnosPorTipo('Taekwondo Competición'), panel.alumnosPorTipo('Taekwondo Competición')],
+    ];
+    for (const [deHoy$, delPanel$] of pares) {
+      const deHoy = pedir(deHoy$);
+      const delPanel = pedir(delPanel$);
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      deHoy.flush([]);
+      delPanel.flush([]);
+    }
+    hoy.obtenerConteoAlumnosPorGrupo();
+    const [conteoHoy] = http.match(() => true);
+    const conteoPanel = pedir(panel.conteoAlumnosPorGrupo());
+    expect(forma(conteoPanel)).toEqual(forma(conteoHoy));
+    expect(conteoPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    expect(conteoPanel.request.url).toMatch(/\/grupos\/conteo-alumnos$/);
+    conteoHoy.flush({});
+    conteoPanel.flush({});
+  });
 });

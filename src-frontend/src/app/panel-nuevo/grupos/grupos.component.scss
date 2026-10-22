@@ -1,0 +1,687 @@
+// Grupos del panel nuevo (8b-3c). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): estructura de C (alumnos por
+// tipo, filtro por disciplina, secciones por disciplina) y la tarjeta de grupo de A como bloque blanco con filete, sin
+// sombra. El color de la escuela, solo en el botón principal; el acento, en secundarios, enlaces, el segmento elegido y
+// el foco; las disciplinas, con su color y siempre con su nombre.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.grupos {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.grupos__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.grupos__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.grupos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 24px;
+}
+
+.grupos__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.grupos__subtitulo {
+  min-height: 1.35em;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.grupos__acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.grupos__boton-primario {
+  @include c.boton-primario;
+
+  & {
+    color: var(--pn-marca-sobre-primario);
+  }
+}
+
+.grupos__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.grupos__boton-primario,
+.grupos__boton-secundario {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+// ------------------------------------------------------------------ alumnos por tipo
+
+.grupos__tipos {
+  margin-bottom: 24px;
+}
+
+.grupos__rotulo {
+  margin: 0 0 10px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.grupos__tipos-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.grupos__tipo {
+  @include c.boton-secundario;
+
+  & {
+    gap: 8px;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.grupos__tipo-texto {
+  // Un solo texto en línea: el gap del botón solo separa el icono del texto.
+  display: inline;
+}
+
+.grupos__tipo-cifra {
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+// Dentro de un flex los espacios del borde de cada hijo se pierden: «pre» los conserva («Todas · 16»).
+.grupos__punto-medio {
+  color: var(--pn-tinta-2);
+  white-space: pre;
+}
+
+.grupos__tipo-hueco {
+  display: inline-block;
+  margin-inline-start: 8px;
+  width: 32px;
+  height: 10px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+// ------------------------------------------------------------------ filtro por disciplina (segmentos)
+
+.grupos__filtro {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 100%;
+  margin-bottom: 28px;
+  padding: 3px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-serie-pista);
+}
+
+.grupos__segmento {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  // Elegido (8b-C): acento-suave, texto acento y el borde acento-borde (en sombra, sin mover nada).
+  &[aria-checked='true'] {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+    box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+
+    .grupos__punto-medio {
+      color: inherit;
+    }
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+}
+
+.grupos__segmento-cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+// ------------------------------------------------------------------ secciones
+
+.grupos__seccion {
+  & + & {
+    margin-top: 32px;
+  }
+}
+
+.grupos__seccion-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+}
+
+.grupos__seccion-titulo,
+.grupos__sin-grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.grupos__seccion-total {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.grupos__disc {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.grupos__disc--1 {
+  background: var(--pn-disc-1);
+}
+
+.grupos__disc--2 {
+  background: var(--pn-disc-2);
+}
+
+.grupos__disc--3 {
+  background: var(--pn-disc-3);
+}
+
+.grupos__disc--4 {
+  background: var(--pn-disc-4);
+}
+
+.grupos__disc--otra {
+  background: var(--pn-tinta-3);
+}
+
+.grupos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  align-items: start;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grupos__bloque-estado {
+  display: block;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+// ------------------------------------------------------------------ tarjeta de grupo
+
+.grupos__tarjeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.grupos__cabeza {
+  margin: 0;
+  padding: 14px 16px 0;
+  font: var(--pn-titulo-bloque);
+}
+
+.grupos__nombre {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  color: var(--pn-tinta);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  border-radius: var(--pn-radio-s);
+
+  &:hover {
+    color: var(--pn-acento);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.grupos__datos {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 12px 20px;
+  margin: 0;
+  padding: 10px 16px 14px;
+}
+
+.grupos__dato {
+  min-width: 0;
+
+  dt {
+    margin-bottom: 2px;
+    font: var(--pn-etiqueta);
+    font-weight: 500;
+    color: var(--pn-tinta-2);
+  }
+
+  dd {
+    margin: 0;
+    font: var(--pn-cuerpo);
+    font-weight: 600;
+    color: var(--pn-tinta);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+}
+
+// Turnos desplegables.
+.grupos__turnos {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.grupos__turnos-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+}
+
+.grupos__chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion);
+
+  [aria-expanded='true'] > & {
+    transform: rotate(180deg);
+  }
+}
+
+.grupos__turnos--abierto {
+  background: var(--pn-superficie-2);
+}
+
+.grupos__turnos-lista {
+  padding: 4px 16px 16px;
+}
+
+.grupos__turnos-ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grupos__turno {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.grupos__turno-texto {
+  flex: 1;
+  min-width: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+// Iconos de turno de 34 px (hoy 12 × 13; el plan pide 32 como mínimo), 44 en el móvil.
+.grupos__turno-icono {
+  @include c.boton-icono;
+
+  & {
+    color: var(--pn-acento);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+  }
+}
+
+// Quitar es un estado (peligro): conserva su color y el fondo neutro al pasar.
+.grupos__turno-icono--quitar {
+  & {
+    color: var(--pn-peligro);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-peligro);
+  }
+}
+
+.grupos__sin-turnos {
+  margin: 8px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.grupos__anadir {
+  margin-top: 12px;
+}
+
+.grupos__anadir-etiqueta {
+  display: block;
+  margin-bottom: 6px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.grupos__anadir-fila {
+  display: flex;
+  gap: 8px;
+}
+
+.grupos__select {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background-color: var(--pn-superficie);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%235d6573' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 10px;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  appearance: none;
+
+  &:disabled {
+    color: var(--pn-tinta-2);
+    cursor: not-allowed;
+  }
+}
+
+.grupos__boton-anadir {
+  @include c.boton-secundario;
+
+  & {
+    flex: none;
+    min-width: 88px;
+  }
+}
+
+// Pie: «Alumnos», «Editar» y «Rango de edad» como botones de texto; la papelera a la derecha.
+.grupos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  padding: 8px 8px 8px 10px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.grupos__accion {
+  @include c.boton-texto;
+
+  & {
+    min-height: 36px;
+    padding: 0 10px;
+  }
+}
+
+.grupos__accion--borde {
+  & {
+    border: 1px solid var(--pn-acento-borde);
+    background: var(--pn-superficie);
+  }
+}
+
+.grupos__papelera {
+  @include c.boton-icono;
+
+  & {
+    width: 36px;
+    height: 36px;
+    margin-left: auto;
+    color: var(--pn-peligro);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-peligro);
+  }
+}
+
+// ------------------------------------------------------------------ turnos sin grupo
+
+.grupos__sin-grupo {
+  margin-top: 40px;
+
+  .grupos__sin-grupo-titulo {
+    margin-bottom: 12px;
+  }
+}
+
+.grupos__sin-grupo-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.grupos__sin-grupo-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 10px 6px 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+// ------------------------------------------------------------------ esqueleto (forma de las tarjetas)
+
+.grupos__cargando {
+  display: block;
+}
+
+.grupos__esqueleto-filtro {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+
+  span {
+    width: 110px;
+    height: 36px;
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.grupos__esqueleto-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 210px;
+  padding: 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  span span,
+  > span:not(.grupos__esqueleto-datos):not(.grupos__esqueleto-pie) {
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.grupos__esqueleto-nombre {
+  width: 60%;
+  height: 18px;
+}
+
+.grupos__esqueleto-datos,
+.grupos__esqueleto-pie {
+  display: flex;
+  gap: 16px;
+
+  span {
+    width: 64px;
+    height: 28px;
+  }
+}
+
+.grupos__esqueleto-turnos {
+  height: 32px;
+}
+
+.grupos__esqueleto-pie {
+  margin-top: auto;
+
+  span {
+    height: 24px;
+  }
+}
+
+// ------------------------------------------------------------------ móvil (objetivos de 44 px, una columna)
+
+@media (max-width: 767.98px) {
+  .grupos__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .grupos__titulo {
+    font-size: 1.375rem;
+  }
+
+  .grupos__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grupos__acciones {
+    flex-wrap: wrap;
+
+    > a {
+      flex: 1 1 140px;
+    }
+  }
+
+  .grupos__boton-primario,
+  .grupos__boton-secundario,
+  .grupos__tipo,
+  .grupos__segmento,
+  .grupos__turnos-boton,
+  .grupos__select,
+  .grupos__boton-anadir,
+  .grupos__accion,
+  .grupos__nombre {
+    min-height: 44px;
+  }
+
+  .grupos__turno-icono,
+  .grupos__papelera {
+    width: 44px;
+    height: 44px;
+  }
+
+  .grupos__turno {
+    min-height: 48px;
+  }
+
+  // Las tres acciones y la papelera en una sola línea a 375.
+  .grupos__pie {
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 4px 4px 4px 6px;
+  }
+
+  .grupos__accion {
+    padding: 0 9px;
+  }
+
+  .grupos__datos {
+    gap: 10px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grupos__segmento,
+  .grupos__turnos-boton,
+  .grupos__chevron {
+    transition: none;
+  }
+}

@@ -1,0 +1,301 @@
+// «Alumnos por tipo de grupo» en el panel lateral (8b-3c). Solo tokens de panel-nuevo.scss bajo .pn: filas de alumno
+// con foto o iniciales de 40 px, separadas por la línea; el cinturón con su borde; el acento solo en lo elegido y el foco.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.tipo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tipo__oculto {
+  @include c.oculto;
+}
+
+.tipo__barra {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tipo__buscador {
+  position: relative;
+
+  svg {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    color: var(--pn-tinta-2);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
+
+.tipo__campo {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px 0 40px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.tipo__activos {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  min-height: 40px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  cursor: pointer;
+
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--pn-acento);
+    cursor: pointer;
+  }
+
+  input:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.tipo__contador {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.tipo__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+
+  > li + li,
+  > .tipo__esqueleto + .tipo__esqueleto {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.tipo__alumno {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px 10px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pn-tinta);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+li:first-child > .tipo__alumno {
+  border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0;
+}
+
+li:last-child > .tipo__alumno {
+  border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+}
+
+.tipo__avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.tipo__datos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tipo__nombre {
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tipo__linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.tipo__grado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Cinturón de 16 × 8 px con su borde (WCAG 1.4.11: el blanco se ve).
+.tipo__cinto {
+  flex: none;
+  width: 16px;
+  height: 8px;
+  border: 1px solid var(--pn-cinto-borde);
+  border-radius: 2px;
+}
+
+.tipo__flecha {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--pn-tinta-3);
+}
+
+.tipo__paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tipo__paso {
+  @include c.boton-icono;
+
+  & {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--pn-linea);
+    background: var(--pn-superficie);
+    color: var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.tipo__pagina-actual {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.tipo__pie {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tipo__cerrar {
+  @include c.boton-secundario;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.tipo__esqueleto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+}
+
+.tipo__esqueleto-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pn-serie-pista);
+}
+
+.tipo__esqueleto-lineas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+
+  span {
+    height: 10px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    width: 60%;
+    height: 12px;
+  }
+
+  span:last-child {
+    width: 40%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .tipo__campo,
+  .tipo__activos,
+  .tipo__cerrar {
+    min-height: 44px;
+  }
+
+  .tipo__paso {
+    width: 44px;
+    height: 44px;
+  }
+
+  .tipo__cerrar {
+    width: 100%;
+  }
+}
