@@ -57,13 +57,15 @@ export class InformePdfService implements OnDestroy {
           this.aviso = aviso;
         } else {
           if (accion === 'descargar') { documentos.forEach(descargarDocumentoInforme); }
-          if (aviso) { void Swal.fire('Aviso', aviso, 'warning'); }
+          if (aviso) { this.avisar('Aviso', aviso, 'warning'); }
         }
       },
-      error: () => { if (!this.destruido) { void Swal.fire('Error', error, 'error'); } },
+      error: () => { if (!this.destruido) { this.avisar('Error', error, 'error'); } },
     });
   }
   cerrar(): void { this.documentos = []; this.aviso = ''; this.focoRetorno = null; }
+  /** Aviso o error al generar (hoy, SweetAlert2). El panel nuevo lo cambia por sus avisos (8b-D1). */
+  protected avisar(titulo: string, texto: string, icono: 'warning' | 'error'): void { void Swal.fire(titulo, texto, icono); }
   ngOnDestroy(): void {
     this.destruido = true;
     this.destroy$.next(); this.destroy$.complete();

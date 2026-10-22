@@ -680,6 +680,96 @@
 
 // ------------------------------------------------------------------ escritorio: dos columnas (contenido y 380 px)
 
+// ------------------------------------------------------------------ carga (8b-D1, boceto `Carga.dc.html`, b)
+
+// Huesos de los esqueletos, en `serie-pista`, con la forma de cada bloque; el pulso y los 300 ms los pone `pn-esqueleto`.
+.inicio__hueso {
+  display: block;
+  height: 12px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.inicio__hueso--corto {
+  width: 60%;
+}
+
+.inicio__hueso--hora {
+  flex: none;
+  width: 44px;
+  height: 32px;
+}
+
+.inicio__hueso--foto {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.inicio__hueso--cifra {
+  width: 148px;
+  height: 32px;
+}
+
+.inicio__hueso--linea {
+  width: min(200px, 80%);
+}
+
+.inicio__hueso--etiqueta {
+  align-self: center;
+}
+
+.inicio__hueso--celda {
+  height: 34px;
+}
+
+.inicio__esqueleto-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inicio__esqueleto-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inicio__esqueleto-lineas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.inicio__esqueleto-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inicio__esqueleto-mapa {
+  display: grid;
+  grid-template-columns: 52px repeat(6, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.inicio__esqueleto-cifras {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inicio__esqueleto-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
 @media (min-width: 1024px) {
   .inicio__rejilla {
     grid-template-columns: minmax(0, 1fr) 380px;
@@ -804,6 +894,14 @@
 
   .inicio__bloque-cabecera {
     align-items: center;
+  }
+
+  .inicio__esqueleto-mapa {
+    grid-template-columns: 44px repeat(6, minmax(0, 1fr));
+  }
+
+  .inicio__esqueleto-cifras {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inicio__mapa {

@@ -132,10 +132,16 @@
   --pn-espacio-l: 24px;
   --pn-espacio-xl: 32px;
 
-  // Sombras: menú y carnet, más la de la barra inferior (hacia arriba).
+  // Sombras: menú, carnet y diálogo (decisión 271), más la de la barra inferior (hacia arriba).
   --pn-sombra-menu: 0 6px 20px -6px rgb(26 34 48 / 22%), 0 2px 4px rgb(26 34 48 / 6%);
   --pn-sombra-carnet: 0 1px 2px rgb(26 34 48 / 5%), 0 3px 10px -4px rgb(26 34 48 / 10%);
   --pn-sombra-barra: 0 -6px 20px -8px rgb(26 34 48 / 22%), 0 -2px 4px rgb(26 34 48 / 6%);
+  // Diálogo y panel lateral (decisión 271, 8b-D1); la hoja inferior lleva la misma sombra vuelta hacia arriba.
+  --pn-sombra-dialogo: 0 24px 48px -12px rgb(26 34 48 / 28%), 0 4px 10px rgb(26 34 48 / 8%);
+  --pn-sombra-hoja: 0 -12px 32px -8px rgb(26 34 48 / 28%);
+  // Velo de las capas modales: la tinta al 40 %.
+  --pn-velo: rgb(26 34 48 / 40%);
+  --pn-titulo-dialogo: 700 1.125rem / 1.3 var(--pn-fuente-titulo);
 
   // Movimiento: solo el que responde a una acción.
   --pn-transicion: 150ms ease-out;

@@ -1,0 +1,160 @@
+// Piezas comunes de las capas del panel nuevo (8b-D1): diálogo, hoja, panel lateral, avisos y carga. Medidas del
+// boceto aprobado (decisión 271); solo tokens de panel-nuevo.scss bajo .pn.
+
+@mixin oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@mixin boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--pn-radio-m);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion), border-color var(--pn-transicion);
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  &:disabled:not([aria-busy='true']) {
+    opacity: 0.55;
+  }
+}
+
+@mixin boton-primario {
+  @include boton;
+  border: 0;
+  background: var(--pn-marca-primario-tinta);
+  color: var(--pn-marca-sobre-primario);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--pn-marca-primario-tinta) 86%, #000);
+  }
+
+  // Ocupado (boceto `Carga.dc.html`, c): el mismo fondo y el texto secundario sobre el color.
+  &[aria-busy='true'] {
+    color: var(--pn-marca-sobre-primario-2);
+  }
+}
+
+@mixin boton-peligro {
+  background: var(--pn-peligro);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--pn-peligro) 86%, #000);
+  }
+}
+
+@mixin boton-secundario {
+  @include boton;
+  border: 1px solid var(--pn-linea-fuerte);
+  background: var(--pn-superficie);
+  color: var(--pn-marca-primario-tinta);
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+// Sin fondo: «Cancelar» del pie del panel lateral.
+@mixin boton-texto {
+  @include boton;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-marca-primario-tinta);
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+// X de cerrar: 34 px (44 en la hoja), icono de 18.
+@mixin boton-icono {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+// Pastilla de una elección (radio) o de varias (casilla): 32 px, borde de control; elegida, el color de la escuela como
+// tinta con la marca de verificación.
+@mixin pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: 500 0.875rem / 1.2 var(--pn-fuente-cuerpo);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion), border-color var(--pn-transicion);
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--pn-marca-primario-tinta);
+  }
+
+  &[aria-checked='true'],
+  &.es-elegida {
+    padding-left: 10px;
+    border-color: var(--pn-marca-primario-tinta);
+    background: var(--pn-marca-primario-tinta);
+    color: var(--pn-marca-sobre-primario);
+    font-weight: 600;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}

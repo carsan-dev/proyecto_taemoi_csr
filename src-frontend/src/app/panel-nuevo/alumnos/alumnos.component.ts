@@ -3,11 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, filter } from 'rxjs/operators';
 
-import { BajasAltasAlumno } from '../../componentes/endpoints/listado-alumnos/bajas-altas-alumno';
-import {
-  HerramientasAlumnosComponent,
-  SeccionHerramientas,
-} from '../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
+import { SeccionHerramientas } from '../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
 import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from '../../componentes/endpoints/listado-alumnos/informes-alumnos';
 import { InformeModalComponent } from '../../componentes/generales/informe-modal/informe-modal.component';
 import { InformePdfModalComponent } from '../../componentes/generales/informe-pdf-modal/informe-pdf-modal.component';
@@ -17,8 +13,11 @@ import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
-import { showErrorToast, showSuccessToast } from '../../utils/toast.util';
-import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
+import { AvisosService } from '../avisos/avisos.service';
+import { BloqueErrorComponent } from '../carga/bloque-error.component';
+import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
+import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { CobroCargoService, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import {
@@ -32,6 +31,9 @@ import {
   principalDe,
   tiempoConGrado,
 } from './alumno-vista';
+import { BajasAltasPanel } from './bajas-altas-panel';
+import { HerramientaPanelComponent } from './herramientas/herramienta-panel.component';
+import { InformePdfPanelService } from './herramientas/informe-pdf-panel.service';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from './pendientes-alumno.service';
 
 /** Clave de localStorage de «Filas | Tarjetas». */
@@ -89,14 +91,27 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
  * Listado de alumnos C del panel nuevo (8b-3a; decisiones 251 y 253). Filas de dos líneas o tarjetas, 25 por página con
  * búsqueda, filtros y paginación en el servidor (el mismo `GET /api/alumnos` que el listado de hoy), el pendiente vencido
  * de cada alumno de la página (`GET /api/tesoreria/pendientes-por-alumno`) con «Cobrar» como la tesorería de hoy, la fila
- * desplegable con el detalle por deporte y sus acciones, el menú «Informes» y las herramientas del pie de hoy. Va en su
- * propio chunk detrás de `disenoNuevoGuard`: con el interruptor apagado sigue el listado de hoy.
+ * desplegable con el detalle por deporte y sus acciones y el menú «Informes». Va en su propio chunk detrás de
+ * `disenoNuevoGuard`: con el interruptor apagado sigue el listado de hoy.
+ *
+ * 8b-D1 (decisiones 269 y 270): «Cobrar», «Dar de baja» y «Dar de alta» con el diálogo del panel nuevo, avisos propios,
+ * esqueleto, error y vacío comunes, y las tres herramientas del pie, cada una en el panel lateral desde «Informes» (el
+ * listado acaba en la paginación).
  */
 @Component({
   selector: 'app-alumnos',
   standalone: true,
-  imports: [RouterLink, HerramientasAlumnosComponent, InformeModalComponent, InformePdfModalComponent],
-  providers: [InformePdfService],
+  imports: [
+    RouterLink,
+    InformeModalComponent,
+    InformePdfModalComponent,
+    EsqueletoComponent,
+    BloqueErrorComponent,
+    BloqueVacioComponent,
+    HerramientaPanelComponent,
+  ],
+  // El de siempre, con los avisos del panel nuevo (un SweetAlert2 quedaría detrás del panel lateral).
+  providers: [{ provide: InformePdfService, useClass: InformePdfPanelService }],
   templateUrl: './alumnos.component.html',
   styleUrls: ['./alumnos.component.scss'],
 })
@@ -110,6 +125,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cobros = inject(CobroCargoService);
+  private readonly bajasAltas = inject(BajasAltasPanel);
+  private readonly avisos = inject(AvisosService);
 
   readonly eur = eur;
   readonly fecha = fecha;
@@ -118,7 +136,6 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   readonly porPagina = POR_PAGINA;
   readonly opcionesHerramientas = OPCIONES_HERRAMIENTAS;
 
-  @ViewChild(HerramientasAlumnosComponent) private herramientas?: HerramientasAlumnosComponent;
   @ViewChild('menuInformes') private menuInformes?: ElementRef<HTMLElement>;
   @ViewChild('botonInformes') private botonInformes?: ElementRef<HTMLButtonElement>;
 
@@ -146,11 +163,12 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   /** Cargos con un cobro en vuelo. */
   readonly cobrando = new Set<number>();
   menuAbierto = false;
+  /** Herramienta abierta en el panel lateral (decisión 270). */
+  herramientaAbierta: SeccionHerramientas | null = null;
   mostrarModalInforme = false;
   readonly opcionesInforme = [...OPCIONES_INFORME_ALUMNOS];
 
   private readonly informesAlumnos = new InformesAlumnos(this.endpoints, this.informes);
-  private readonly bajasAltas = new BajasAltasAlumno(this.endpoints, this.alumnoService, () => this.cargar());
   private readonly busqueda = new Subject<string>();
   private readonly suscripciones = new Subscription();
   private carga?: Subscription;
@@ -306,7 +324,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
         }
         this.cdr.markForCheck();
       },
-      error: () => showErrorToast('No se pudo actualizar el pendiente del alumno'),
+      error: () => this.avisos.error('No se pudo actualizar el pendiente del alumno'),
     }));
   }
 
@@ -411,25 +429,29 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     const deportes: AlumnoDeporteDTO[] = alumno?.deportes ?? [];
     const elegido = deportes.find((d) => d.deporte === codigo);
     if (!elegido || elegido.activo === false) {
-      showErrorToast('No se puede marcar como principal un deporte inactivo');
+      this.avisos.error('No se puede marcar como principal un deporte inactivo');
       return;
     }
     this.alumnoService.establecerDeportePrincipal(alumnoId, codigo).subscribe({
       next: () => {
         alumno.deportes = deportes.map((d) => ({ ...d, principal: d.deporte === codigo }));
         this.reconstruir();
-        showSuccessToast(`Deporte principal actualizado a ${this.catalogo.etiquetaDisciplina(codigo)}`);
+        this.avisos.exito(`Deporte principal actualizado a ${this.catalogo.etiquetaDisciplina(codigo)}`);
       },
-      error: (error) => showErrorToast(error?.error || 'No se pudo actualizar el deporte principal'),
+      error: (error) =>
+        this.avisos.error(
+          typeof error?.error === 'string' && error.error ? error.error : 'No se pudo actualizar el deporte principal'
+        ),
     });
   }
 
   darDeBaja(id: number): void {
-    this.bajasAltas.darDeBaja(id);
+    const nombre = this.filas.find((f) => f.id === id)?.nombre ?? '';
+    void this.bajasAltas.darDeBaja(id, nombre, () => this.cargar());
   }
 
   darDeAlta(id: number): void {
-    this.bajasAltas.darDeAlta(id);
+    this.bajasAltas.darDeAlta(id, () => this.cargar());
   }
 
   // ------------------------------------------------------------------ cobrar
@@ -472,9 +494,13 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     teclaPanelCargos(evento, () => this.cerrarPanel(true));
   }
 
-  /** El mismo diálogo, la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
+  /** El diálogo nuevo, con la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
   cobrar(alumnoId: number, cargo: CargoPendiente): void {
-    cobrarCargo(this.endpoints, cargo, this.cobrando, () => this.refrescarPendiente(alumnoId));
+    const nombre = this.filas.find((f) => f.id === alumnoId)?.nombre ?? '';
+    void this.cobros.cobrar({ ...cargo, alumnoNombre: nombre, tipo: null }, this.cobrando, () => {
+      this.refrescarPendiente(alumnoId);
+      this.cdr.markForCheck();
+    });
   }
 
   private enfocarEnFila(alumnoId: number, selector: string): void {
@@ -543,9 +569,17 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.informesAlumnos.generarInformeSeleccionado(evento);
   }
 
+  /** Desde «Informes»: la herramienta en el panel lateral (hoja inferior en el móvil). */
   abrirHerramienta(seccion: SeccionHerramientas): void {
     this.cerrarMenu(false);
-    this.herramientas?.abrir(seccion);
+    this.herramientaAbierta = seccion;
+  }
+
+  /** Al cerrar el panel, el foco vuelve a «Informes» (la opción del menú que lo abrió ya no está). */
+  cerrarHerramienta(): void {
+    this.herramientaAbierta = null;
+    this.cdr.detectChanges();
+    this.botonInformes?.nativeElement.focus();
   }
 
   // ------------------------------------------------------------------ vista

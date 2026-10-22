@@ -3,12 +3,13 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
+import { AvisosService } from '../avisos/avisos.service';
+import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { InicioComponent } from './inicio.component';
 import { PendienteVencido } from './pendiente-vencido.service';
 
@@ -75,6 +76,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
   let http: HttpTestingController;
 
   beforeEach(async () => {
+    quitarTokens = ponerTokensDePrueba();
     jasmine.clock().install();
     // Miércoles 21/10/2026 a las 08:00: las dos clases del día están por llegar.
     jasmine.clock().mockDate(new Date(2026, 9, 21, 8, 0));
@@ -84,7 +86,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']) } },
+        { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true } },
         { provide: PlataformaService, useValue: { esAdminPlataforma: () => of(false) } },
         {
           provide: CatalogoService,
@@ -106,8 +108,41 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
 
   afterEach(() => {
     fixture.destroy();
+    TestBed.inject(AvisosService).cerrarTodos();
+    pintarCapas();
+    document.querySelectorAll('pn-dialogo').forEach((e) => e.remove());
     jasmine.clock().uninstall();
+    quitarTokens();
   });
+
+  let quitarTokens: () => void = () => undefined;
+
+  // ---- 8b-D1: el diálogo y los avisos se pintan en el body
+  function pintar(): void {
+    pintarCapas();
+    fixture.detectChanges();
+  }
+
+  function dialogo(): HTMLDialogElement | null {
+    return document.querySelector<HTMLDialogElement>('dialog.pn-dialogo');
+  }
+
+  function botonDialogo(textoBoton: string): HTMLButtonElement {
+    return Array.from(dialogo()!.querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim() === textoBoton
+    )!;
+  }
+
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 10; i++) {
+      await Promise.resolve();
+    }
+    pintar();
+  }
+
+  function elemento(): HTMLElement {
+    return fixture.nativeElement as HTMLElement;
+  }
 
   interface Respuestas {
     totales?: number;
@@ -221,43 +256,91 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(pendienteTexto).not.toMatch(/\d\.\d{2} ?€|EUR/);
   });
 
-  it('«Cobrar» abre la confirmación de hoy y hace el mismo PUT con el mismo cuerpo', async () => {
+  it('«Cobrar» abre el diálogo nuevo y hace el mismo PUT con el mismo cuerpo que hoy; aviso y recarga del pendiente (8b-D1)', async () => {
     responder();
-    const promesa = Promise.resolve({ isConfirmed: true, value: 'BIZUM' } as any);
-    const fire = spyOn(Swal, 'fire').and.returnValue(promesa);
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.inicio__cobrar')!.click();
-    const opciones = fire.calls.mostRecent().args[0] as any;
-    expect(opciones.title).toBe('Confirmar cobro');
-    expect(opciones.text).toBe('Marcar como pagado "MENSUALIDAD SEPTIEMBRE 2026 - TAEKWONDO"?');
-    expect(opciones.input).toBe('select');
-    expect(opciones.inputLabel).toBe('Método (opcional)');
-    expect(opciones.confirmButtonText).toBe('Si, marcar pagado');
-    await promesa;
-    await Promise.resolve();
+    elemento().querySelector<HTMLButtonElement>('.inicio__cobrar')!.click();
+    pintar();
+    const d = dialogo()!;
+    expect(d.querySelector('h2')!.textContent!.trim()).toBe('Cobrar mensualidad');
+    const textoDialogo = d.textContent!.replace(/\s+/g, ' ');
+    expect(textoDialogo).toContain('Se registra el pago de Triana Vidal Zamora y la mensualidad deja de figurar como pendiente.');
+    expect(textoDialogo).toContain('MENSUALIDAD SEPTIEMBRE 2026 - TAEKWONDO');
+    expect(d.querySelector('.pn-dialogo__destacado-valor')!.textContent!.trim()).toBe('30,00\u00a0€');
+    Array.from(d.querySelectorAll<HTMLButtonElement>('[role="radio"]')).find((b) => b.textContent!.trim() === 'Bizum')!.click();
+    pintar();
+    botonDialogo('Marcar como pagado').click();
+    pintar();
+    expect(botonDialogo('Cobrando…').disabled).toBeTrue();
     const put = http.expectOne(`${API}/productos-alumno/501`);
     expect(put.request.method).toBe('PUT');
     expect(put.request.body).toEqual({ pagado: true, metodoPago: 'BIZUM' });
     expect(put.request.withCredentials).toBeTrue();
     put.flush({ id: 501, pagado: true });
+    await esperar();
+    expect(dialogo()).toBeNull();
+    expect(document.querySelector('.pn-aviso')!.textContent).toContain('Cobro registrado: 30,00\u00a0€ · Triana Vidal Zamora');
     expect(http.match(`${API}/tesoreria/pendiente-vencido`).length).toBe(1);
   });
 
-  it('«Cobrar» sin indicar método no envía metodoPago, y cancelar no envía nada', async () => {
+  it('«Cobrar» sin indicar método no envía metodoPago, y cancelar (X) no envía nada', async () => {
     responder();
-    const cancelar = Promise.resolve({ isConfirmed: false } as any);
-    const fire = spyOn(Swal, 'fire').and.returnValue(cancelar);
-    const boton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.inicio__cobrar')!;
+    const boton = elemento().querySelector<HTMLButtonElement>('.inicio__cobrar')!;
     boton.click();
-    await cancelar;
-    await Promise.resolve();
+    pintar();
+    botonDialogo('Cerrar').click();
+    await esperar();
     http.expectNone(`${API}/productos-alumno/501`);
 
-    const sinMetodo = Promise.resolve({ isConfirmed: true, value: '' } as any);
-    fire.and.returnValue(sinMetodo);
     boton.click();
-    await sinMetodo;
-    await Promise.resolve();
+    pintar();
+    botonDialogo('Marcar como pagado').click();
     expect(http.expectOne(`${API}/productos-alumno/501`).request.body).toEqual({ pagado: true });
+  });
+
+  it('cargando: esqueletos con la forma de cada bloque a partir de los 300 ms (8b-D1)', () => {
+    expect(elemento().querySelector('pn-esqueleto .pn-esqueleto__forma')).toBeNull();
+    jasmine.clock().tick(300);
+    fixture.detectChanges();
+    const etiquetas = Array.from(elemento().querySelectorAll('pn-esqueleto [role="status"]')).map((e) => e.textContent!.trim());
+    expect(etiquetas).toEqual([
+      'Cargando las clases de hoy',
+      'Cargando lo pendiente',
+      'Cargando la ocupación',
+      'Cargando las cifras',
+      'Cargando los eventos',
+    ]);
+    expect(elemento().querySelectorAll('.inicio__ocupacion pn-esqueleto .inicio__hueso--celda').length).toBeGreaterThan(0);
+    // Sin el límite aún, la nota no dice «límite común de 0».
+    expect(elemento().querySelector('.inicio__ocupacion-nota')).toBeNull();
+    responder();
+    expect(elemento().querySelector('pn-esqueleto')).toBeNull();
+  });
+
+  it('error de los datos: bloques de error con «Reintentar», que vuelve a pedirlos (8b-D1)', () => {
+    http.match((r) => r.url === `${API}/alumnos`).forEach((r) => r.flush('x', { status: 500, statusText: 'Error' }));
+    http.match(`${API}/grupos/resumen`).forEach((r) => r.flush('x', { status: 500, statusText: 'Error' }));
+    http.match(`${API}/turnos/resumen`).forEach((r) => r.flush('x', { status: 500, statusText: 'Error' }));
+    http.match(`${API}/turnos/limite`).forEach((r) => r.flush(36));
+    http.match(`${API}/alumnos/aptos`).forEach((r) => r.flush([]));
+    http.match(`${API}/alumnos/deportes/distribucion`).forEach((r) => r.flush({}));
+    fixture.detectChanges();
+    const titulos = Array.from(elemento().querySelectorAll('pn-bloque-error .pn-bloque-error__titulo')).map((t) => t.textContent!.trim());
+    expect(titulos).toEqual(['No se pudieron cargar las clases', 'No se pudo cargar la ocupación', 'No se pudieron cargar las cifras']);
+    expect(elemento().querySelector('.inicio__ocupacion pn-bloque-error')!.textContent).toContain(
+      'El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo.'
+    );
+    elemento().querySelector<HTMLButtonElement>('.inicio__ocupacion pn-bloque-error button')!.click();
+    expect(http.match(`${API}/grupos/resumen`).length).toBe(1);
+  });
+
+  it('error del pendiente: bloque de error con «Reintentar», que solo vuelve a pedir el pendiente (8b-D1)', () => {
+    http.match(`${API}/tesoreria/pendiente-vencido`).forEach((r) => r.flush('x', { status: 500, statusText: 'Error' }));
+    fixture.detectChanges();
+    const bloque = elemento().querySelector<HTMLElement>('.inicio__pendiente pn-bloque-error')!;
+    expect(bloque.textContent).toContain('No se pudo cargar lo pendiente');
+    bloque.querySelector<HTMLButtonElement>('button')!.click();
+    expect(http.match(`${API}/tesoreria/pendiente-vencido`).length).toBe(1);
+    expect(http.match(`${API}/grupos/resumen`).length).toBe(1);
   });
 
   it('nada vencido: lo dice y no hay «Cobrar»', () => {
@@ -321,7 +404,9 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     it(`límite ${caso === 0 ? 'en 0' : 'que falla'}: la ocupación muestra un error y no «/0» (ronda 2)`, () => {
       responder(pendiente(), { limite: caso });
       const ocupacion = texto('.inicio__ocupacion');
-      expect(ocupacion).toContain('No se pudo leer el límite de plazas por turno.');
+      // 8b-D1: el error del límite pasa al bloque de error común, con «Reintentar».
+      expect(ocupacion).toContain('No se pudo leer el límite de plazas por turno');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.inicio__ocupacion pn-bloque-error')).not.toBeNull();
       expect(ocupacion).not.toContain('/0');
       expect(ocupacion).not.toContain('límite común de 0');
       expect((fixture.nativeElement as HTMLElement).querySelector('table.inicio__ocupacion-tabla')).toBeNull();

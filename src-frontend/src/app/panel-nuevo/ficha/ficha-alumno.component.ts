@@ -7,11 +7,11 @@ import { DialogosAlumnoComponent } from '../../componentes/endpoints/editar-alum
 import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
 import { FotoAmpliadaComponent } from '../../componentes/endpoints/editar-alumno/foto-ampliada/foto-ampliada.component';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
-import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { EstadoLicencia, estadoLicencia, gradoFila, gradoParaFrase, tiempoConGrado } from '../alumnos/alumno-vista';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from '../alumnos/pendientes-alumno.service';
-import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
+import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { CobroCargoService, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { FichaDatosComponent } from './datos/ficha-datos.component';
@@ -64,8 +64,10 @@ class CobrosEnVuelo extends Set<number> {
  * Ficha del alumno F1 «Carnet» del panel nuevo (8b-3b; decisión 254). Carnet arriba (foto, nombre, datos, disciplinas
  * con su cinturón, pendiente con «Cobrar», licencia y acciones del alumno) y cuatro pestañas debajo, con la pestaña en
  * la dirección. Toda la lógica (cargas, guardados, validaciones, diálogos y navegación entre alumnos) es la de la ficha
- * de hoy: esta clase la hereda sin copiarla y solo cambia la plantilla. «Cobrar» del carnet es el de la tesorería
- * (`cobrarCargo`, como el listado nuevo). Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * de hoy: esta clase la hereda sin copiarla y solo cambia la plantilla. «Cobrar» del carnet hace el PUT de la tesorería
+ * con el diálogo del panel nuevo (`CobroCargoService`, como el listado nuevo; 8b-D1) y el pendiente carga con su
+ * esqueleto. Los diálogos que hereda de la ficha de hoy (pestañas) siguen con SweetAlert2 hasta 8b-D2. Va en su propio
+ * chunk detrás de `disenoNuevoGuard`.
  */
 @Component({
   selector: 'app-ficha-alumno',
@@ -78,13 +80,14 @@ class CobrosEnVuelo extends Set<number> {
     FichaDocumentosComponent,
     DialogosAlumnoComponent,
     FotoAmpliadaComponent,
+    EsqueletoComponent,
   ],
   templateUrl: './ficha-alumno.component.html',
   styleUrls: ['./ficha-alumno.component.scss'],
 })
 export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnInit, OnDestroy {
   private readonly pendientesApi = inject(PendientesAlumnoService);
-  private readonly endpoints = inject(EndpointsService);
+  private readonly cobros = inject(CobroCargoService);
   private readonly rutaActiva = inject(ActivatedRoute);
   private readonly enrutador = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -327,7 +330,11 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   }
 
   cobrar(cargo: CargoPendiente): void {
-    cobrarCargo(this.endpoints, cargo, this.cobrando, () => this.trasCobrar());
+    const nombre = `${this.alumno?.nombre ?? ''} ${this.alumno?.apellidos ?? ''}`.trim();
+    void this.cobros.cobrar({ ...cargo, alumnoNombre: nombre, tipo: null }, this.cobrando, () => {
+      this.trasCobrar();
+      this.cdr.markForCheck();
+    });
   }
 
   /** Tras cobrar: el pendiente, la tabla de pagos y los grados (el derecho de examen cobrado sube el grado). */

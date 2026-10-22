@@ -1,0 +1,64 @@
+<dialog #dialogo class="pn-dialogo" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="opciones.destructivo"
+  [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="partes.length ? id + '-mensaje' : null"
+  (cancel)="alCancelarNativo($event)" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  <div class="pn-dialogo__caja">
+    @if (hoja) {
+    <div class="pn-dialogo__asa" aria-hidden="true"></div>
+    }
+    <div class="pn-dialogo__cabecera">
+      <h2 class="pn-dialogo__titulo" [id]="id + '-titulo'">{{ opciones.titulo }}</h2>
+      <button type="button" class="pn-dialogo__cerrar" aria-label="Cerrar" [disabled]="ocupado" (click)="cancelar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="pn-dialogo__cuerpo">
+      @if (partes.length) {
+      <p class="pn-dialogo__mensaje" [id]="id + '-mensaje'">@for (p of partes; track $index) {@if (esFuerte(p)) {<strong>{{ p.fuerte }}</strong>} @else {<ng-container>{{ p }}</ng-container>}}</p>
+      }
+      @if (opciones.destacado; as d) {
+      <div class="pn-dialogo__destacado">
+        <span class="pn-dialogo__destacado-etiqueta">{{ d.etiqueta }}</span>
+        <span class="pn-dialogo__destacado-valor" data-cifras>{{ d.valor }}</span>
+      </div>
+      }
+      @if (opciones.campo; as campo) {
+      <div class="pn-dialogo__campo">
+        <span class="pn-dialogo__campo-etiqueta" [id]="id + '-campo'">{{ campo.etiqueta }}</span>
+        <div class="pn-dialogo__pastillas" role="radiogroup" [attr.aria-labelledby]="id + '-campo'"
+          [attr.aria-required]="campo.requerido ? 'true' : null" (keydown)="teclaPastillas($event)">
+          @for (o of campo.opciones; track o.valor; let i = $index) {
+          <button type="button" role="radio" class="pn-dialogo__pastilla" [attr.aria-checked]="valor === o.valor"
+            [attr.tabindex]="indiceTab(i)" [disabled]="ocupado" (click)="elegir(o.valor)">
+            @if (valor === o.valor) {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            }
+            <span>{{ o.texto }}</span>
+          </button>
+          }
+        </div>
+      </div>
+      }
+      @if (hoja) {
+      <div class="pn-dialogo__pie">
+        <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado"
+          [textoOcupado]="opciones.accionOcupada ?? opciones.accion" [deshabilitado]="accionDeshabilitada"
+          (click)="confirmar()">{{ opciones.accion }}</button>
+        <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">{{
+          opciones.cancelar ?? 'Cancelar' }}</button>
+      </div>
+      }
+    </div>
+    @if (!hoja) {
+    <div class="pn-dialogo__pie">
+      <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">{{
+        opciones.cancelar ?? 'Cancelar' }}</button>
+      <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado"
+        [textoOcupado]="opciones.accionOcupada ?? opciones.accion" [deshabilitado]="accionDeshabilitada"
+        (click)="confirmar()">{{ opciones.accion }}</button>
+    </div>
+    }
+  </div>
+</dialog>

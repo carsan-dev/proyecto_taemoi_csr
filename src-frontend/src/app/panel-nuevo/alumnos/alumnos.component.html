@@ -76,30 +76,29 @@
     </div>
 
     @if (estado === 'cargando') {
-    <div class="alumnos__lista alumnos__lista--cargando" [class.alumnos__lista--tarjetas]="vista === 'tarjetas'" aria-busy="true">
-      <p class="alumnos__oculto" role="status">Cargando alumnos…</p>
-      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-      <div class="alumnos__esqueleto" aria-hidden="true">
-        <span class="alumnos__esqueleto-avatar"></span>
-        <span class="alumnos__esqueleto-lineas"><span></span><span></span></span>
+    <pn-esqueleto class="alumnos__cargando" etiqueta="Cargando alumnos" aria-busy="true">
+      <div class="alumnos__lista alumnos__lista--cargando" [class.alumnos__lista--tarjetas]="vista === 'tarjetas'">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="alumnos__esqueleto">
+          <span class="alumnos__esqueleto-avatar"></span>
+          <span class="alumnos__esqueleto-lineas"><span></span><span></span></span>
+          <span class="alumnos__esqueleto-importe"></span>
+        </div>
+        }
       </div>
-      }
-    </div>
+    </pn-esqueleto>
     } @else if (estado === 'error') {
-    <div class="alumnos__estado" role="alert">
-      <p>No se pudo cargar el listado. Comprueba la conexión y vuelve a intentarlo.</p>
-      <button type="button" class="alumnos__boton-secundario" (click)="cargar()">Reintentar</button>
-    </div>
+    <pn-bloque-error class="alumnos__estado" titulo="No se pudo cargar el listado" (reintentar)="cargar()" />
     } @else if (filas.length === 0) {
-    <div class="alumnos__estado">
-      @if (hayFiltros) {
-      <p>No hay alumnos con estos filtros.</p>
-      <button type="button" class="alumnos__boton-secundario" (click)="quitarFiltros()">Quitar filtros</button>
-      } @else {
-      <p>Todavía no hay alumnos en la escuela.</p>
-      <a class="alumnos__boton-secundario" routerLink="/alumnosCrear">Dar de alta el primero</a>
-      }
-    </div>
+    @if (hayFiltros) {
+    <pn-bloque-vacio titulo="Ningún alumno coincide con la búsqueda"
+      texto="Prueba con otro nombre o quita los filtros de disciplina e inactivos." accion="Quitar filtros"
+      (accionar)="quitarFiltros()" />
+    } @else {
+    <pn-bloque-vacio titulo="Todavía no hay alumnos en la escuela">
+      <a pnAccionVacio class="alumnos__boton-secundario alumnos__accion-vacio" routerLink="/alumnosCrear">Dar de alta el primero</a>
+    </pn-bloque-vacio>
+    }
     } @else {
     <ul class="alumnos__lista" [class.alumnos__lista--tarjetas]="vista === 'tarjetas'" aria-label="Alumnos">
       @for (f of filas; track f.id) {
@@ -156,7 +155,7 @@
             <span class="alumnos__importe">{{ eur(p.importe) }}</span>
             <button type="button" class="alumnos__cobrar"
               [attr.aria-label]="'Cobrar ' + eur(p.importe) + ' a ' + f.nombre + (p.cargos > 1 ? ', ' + plural(p.cargos, 'cargo', 'cargos') : '')"
-              [attr.aria-haspopup]="p.cargos > 1 ? 'dialog' : null"
+              aria-haspopup="dialog"
               [attr.aria-expanded]="p.cargos > 1 ? panelDe === f.id : null"
               [attr.aria-controls]="panelDe === f.id ? 'alumnos-cargos-' + f.id : null"
               [disabled]="p.cargos === 1 && cobrando.has(p.detalle[0].productoAlumnoId)"
@@ -286,12 +285,12 @@
       }
     </nav>
     }
-
-    <section class="alumnos__herramientas" aria-labelledby="alumnos-herramientas-titulo">
-      <h2 id="alumnos-herramientas-titulo" class="alumnos__seccion-titulo">Mensualidades, licencias y listados</h2>
-      <app-herramientas-alumnos [mostrarInactivos]="inactivos" [aptoParaExamen]="aptos" (asignado)="cargar()" />
-    </section>
   </div>
+
+  @if (herramientaAbierta) {
+  <pn-herramienta-alumnos [herramienta]="herramientaAbierta" [mostrarInactivos]="inactivos" [aptoParaExamen]="aptos"
+    (asignado)="cargar()" (cerrar)="cerrarHerramienta()" />
+  }
 
   @if (mostrarModalInforme) {
   <app-informe-modal title="Generar Informe" [generando]="informes.ocupado" [opcionesInforme]="opcionesInforme"

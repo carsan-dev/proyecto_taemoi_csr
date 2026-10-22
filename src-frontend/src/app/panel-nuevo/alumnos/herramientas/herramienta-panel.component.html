@@ -1,0 +1,176 @@
+<pn-panel-lateral [titulo]="textos.titulo" [descripcion]="textos.descripcion" (cerrar)="cerrar.emit()">
+  @switch (herramienta) {
+  @case ('asistencia') {
+  <div class="herramienta__form">
+    <pn-campo-mes-ano campoId="pn-asistencia-mes" [(valor)]="mesAnoAsistencia" />
+    <fieldset class="herramienta__grupo" aria-describedby="pn-asistencia-dias-ayuda">
+      <legend class="herramienta__leyenda">Días de la semana</legend>
+      <div class="herramienta__pastillas">
+        @for (g of grupos; track g) {
+        <label class="herramienta__pastilla" [class.es-elegida]="gruposSeleccionados.includes(g)">
+          <input type="checkbox" class="herramienta__casilla" [checked]="gruposSeleccionados.includes(g)"
+            (change)="toggleGrupoSeleccionado(g)" />
+          @if (gruposSeleccionados.includes(g)) {
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+          }
+          <span>{{ etiquetaDia(g) }}</span>
+        </label>
+        }
+      </div>
+      <p class="herramienta__ayuda" id="pn-asistencia-dias-ayuda" data-cifras>{{ diasElegidos }}</p>
+    </fieldset>
+  </div>
+  }
+  @case ('listado-mensualidades') {
+  <div class="herramienta__form">
+    <pn-campo-mes-ano campoId="pn-listado-mes" [(valor)]="mesAnoMensualidad" />
+  </div>
+  }
+  @default {
+  <div class="herramienta__form">
+    <div class="herramienta__grupo">
+      <span class="herramienta__leyenda" id="pn-gestion-carga">Qué se carga</span>
+      <div class="herramienta__pastillas" role="radiogroup" aria-labelledby="pn-gestion-carga" (keydown)="teclaCargas($event)">
+        @for (c of cargas; track c.valor) {
+        <button type="button" role="radio" class="herramienta__pastilla" [attr.aria-checked]="carga === c.valor"
+          [attr.tabindex]="carga === c.valor ? 0 : -1" [disabled]="ocupadoGestion" (click)="elegirCarga(c.valor)">
+          @if (carga === c.valor) {
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+          }
+          <span>{{ c.texto }}</span>
+        </button>
+        }
+      </div>
+    </div>
+
+    @switch (carga) {
+    @case ('mensualidades-general') {
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-deporte-mensualidad-general">Deporte</label>
+      <select class="herramienta__control" id="pn-deporte-mensualidad-general" [(ngModel)]="deporteSeleccionado">
+        <option value="TODOS">Todos los alumnos</option>
+        @for (d of catalogo.disciplinasActivas(); track d.codigo) {
+        <option [value]="d.codigo">Solo {{ d.nombre }}</option>
+        }
+      </select>
+    </div>
+    <pn-campo-mes-ano campoId="pn-mensualidad-mes" [(valor)]="mesAnoSeleccionado" />
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-fecha-mensualidad-general">Fecha de asignación (opcional)</label>
+      <input class="herramienta__control" id="pn-fecha-mensualidad-general" type="date"
+        [(ngModel)]="fechaMensualidadGeneral" />
+    </div>
+    }
+    @case ('mensualidades-individual') {
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-alumno-mensualidad">Alumno</label>
+      <select appSearchableSelect searchDropdownClass="pn pn-desplegable" [searchDropdownEnDialogo]="true"
+        searchPlaceholder="Buscar alumno…" class="herramienta__control" id="pn-alumno-mensualidad"
+        [(ngModel)]="alumnoSeleccionado">
+        @for (a of alumnosSeleccionables; track a.id) {
+        <option [value]="a.id">{{ a.nombre }} {{ a.apellidos }}</option>
+        }
+      </select>
+      @if (cargandoAlumnosSeleccionables) {
+      <p class="herramienta__ayuda" role="status">Cargando la lista de alumnos…</p>
+      }
+    </div>
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-deporte-mensualidad-individual">Deporte</label>
+      <select class="herramienta__control" id="pn-deporte-mensualidad-individual"
+        [(ngModel)]="deporteSeleccionadoIndividual">
+        <option value="TODOS">Todos los deportes</option>
+        @for (d of catalogo.disciplinasActivas(); track d.codigo) {
+        <option [value]="d.codigo">Solo {{ d.nombre }}</option>
+        }
+      </select>
+    </div>
+    <pn-campo-mes-ano campoId="pn-mensualidad-individual-mes" [(valor)]="mesAnoSeleccionadoIndividual" />
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-fecha-mensualidad-individual">Fecha de asignación (opcional)</label>
+      <input class="herramienta__control" id="pn-fecha-mensualidad-individual" type="date"
+        [(ngModel)]="fechaMensualidadIndividual" />
+    </div>
+    }
+    @case ('licencias-general') {
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-deporte-licencia-general">Deporte</label>
+      <select class="herramienta__control" id="pn-deporte-licencia-general"
+        [(ngModel)]="deporteLicenciaSeleccionado">
+        <option value="TODOS">Todos los alumnos</option>
+        @for (d of catalogo.disciplinasActivas(); track d.codigo) {
+        @if (d.requiereLicencia) {
+        <option [value]="d.codigo">Solo {{ d.nombre }}</option>
+        }
+        }
+      </select>
+    </div>
+    <div class="herramienta__campo herramienta__campo--corto">
+      <label class="herramienta__etiqueta" for="pn-ano-licencia-general">Año</label>
+      <input class="herramienta__control" id="pn-ano-licencia-general" type="number" min="2000"
+        max="2100" inputmode="numeric" [(ngModel)]="anoLicenciaSeleccionado" />
+    </div>
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-fecha-licencia-general">Fecha de asignación (opcional)</label>
+      <input class="herramienta__control" id="pn-fecha-licencia-general" type="date"
+        [(ngModel)]="fechaLicenciaGeneral" />
+    </div>
+    }
+    @default {
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-alumno-licencia">Alumno</label>
+      <select appSearchableSelect searchDropdownClass="pn pn-desplegable" [searchDropdownEnDialogo]="true"
+        searchPlaceholder="Buscar alumno…" class="herramienta__control" id="pn-alumno-licencia"
+        [(ngModel)]="alumnoSeleccionado">
+        @for (a of alumnosSeleccionables; track a.id) {
+        <option [value]="a.id">{{ a.nombre }} {{ a.apellidos }}</option>
+        }
+      </select>
+      @if (cargandoAlumnosSeleccionables) {
+      <p class="herramienta__ayuda" role="status">Cargando la lista de alumnos…</p>
+      }
+    </div>
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-deporte-licencia-individual">Deporte</label>
+      <select class="herramienta__control" id="pn-deporte-licencia-individual"
+        [(ngModel)]="deporteLicenciaSeleccionadoIndividual">
+        <option value="TODOS">Todos los deportes</option>
+        @for (d of catalogo.disciplinasActivas(); track d.codigo) {
+        @if (d.requiereLicencia) {
+        <option [value]="d.codigo">Solo {{ d.nombre }}</option>
+        }
+        }
+      </select>
+    </div>
+    <div class="herramienta__campo herramienta__campo--corto">
+      <label class="herramienta__etiqueta" for="pn-ano-licencia-individual">Año</label>
+      <input class="herramienta__control" id="pn-ano-licencia-individual" type="number" min="2000"
+        max="2100" inputmode="numeric" [(ngModel)]="anoLicenciaSeleccionadoIndividual" />
+    </div>
+    <div class="herramienta__campo">
+      <label class="herramienta__etiqueta" for="pn-fecha-licencia-individual">Fecha de asignación (opcional)</label>
+      <input class="herramienta__control" id="pn-fecha-licencia-individual" type="date"
+        [(ngModel)]="fechaLicenciaIndividual" />
+    </div>
+    }
+    }
+  </div>
+  }
+  }
+
+  <div pnPie class="herramienta__pie">
+    <button type="button" class="herramienta__cancelar" (click)="cerrar.emit()">Cancelar</button>
+    @if (herramienta === 'mensualidades') {
+    <button type="button" pnOcupado class="herramienta__primario" [ocupado]="ocupadoGestion" [textoOcupado]="accionGestion.ocupado"
+      [deshabilitado]="gestionIncompleta" (click)="ejecutarGestion()">{{ accionGestion.texto }}</button>
+    } @else {
+    <button type="button" pnOcupado class="herramienta__secundario" [ocupado]="informes.ocupado && pdfPulsado === 'ver'"
+      textoOcupado="Generando…" [deshabilitado]="informes.ocupado || pdfIncompleto" (click)="generarPdf('ver')">Ver PDF</button>
+    <button type="button" pnOcupado class="herramienta__primario" [ocupado]="informes.ocupado && pdfPulsado === 'descargar'"
+      textoOcupado="Generando…" [deshabilitado]="informes.ocupado || pdfIncompleto" (click)="generarPdf('descargar')">Descargar
+      PDF</button>
+    }
+  </div>
+</pn-panel-lateral>

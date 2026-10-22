@@ -104,3 +104,14 @@ export function plural(cantidad: number, singular: string, pluralTexto: string):
   }
   return `${numero(cantidad)} ${cantidad === 1 ? singular : pluralTexto}`;
 }
+
+/**
+ * Una frase entera que concuerda con la cantidad («Se genera 1 PDF.» / «Se generan 2 PDF, uno por día.»): el singular
+ * solo con 1 y `{n}` con la cifra es-ES. Vacío si la cantidad no es un número finito.
+ */
+export function frasePlural(cantidad: number, singular: string, pluralTexto: string): string {
+  if (!esNumero(cantidad)) {
+    return '';
+  }
+  return (cantidad === 1 ? singular : pluralTexto).replace('{n}', numero(cantidad));
+}

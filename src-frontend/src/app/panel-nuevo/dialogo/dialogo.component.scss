@@ -1,0 +1,200 @@
+// Diálogo y hoja inferior del panel nuevo (8b-D1, decisión 271). Medidas, colores y textos del boceto aprobado
+// (`Main.dc.html`, `Baja.dc.html`, `HojaMovil.dc.html`); solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.pn-dialogo {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+}
+
+.pn-dialogo__caja {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pn-dialogo__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0 24px;
+}
+
+.pn-dialogo__titulo {
+  margin: 8px 0 0;
+  font: var(--pn-titulo-dialogo);
+  color: var(--pn-tinta);
+  text-wrap: balance;
+}
+
+.pn-dialogo__cerrar {
+  @include c.boton-icono;
+}
+
+.pn-dialogo__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 24px 0;
+}
+
+.pn-dialogo__mensaje {
+  margin: 0;
+  color: var(--pn-tinta-2);
+  max-width: 60ch;
+
+  strong {
+    color: var(--pn-tinta);
+    font-weight: 600;
+  }
+}
+
+.pn-dialogo__destacado {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 0;
+  border-top: 1px solid var(--pn-linea);
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.pn-dialogo__destacado-etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.pn-dialogo__destacado-valor {
+  font: 700 1.75rem / 1.2 var(--pn-fuente-titulo);
+  color: var(--pn-atencion);
+}
+
+.pn-dialogo__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pn-dialogo__campo-etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.pn-dialogo__pastillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pn-dialogo__pastilla {
+  @include c.pastilla;
+}
+
+.pn-dialogo__pie {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 24px;
+}
+
+.pn-dialogo__cancelar {
+  @include c.boton-secundario;
+}
+
+.pn-dialogo__accion {
+  @include c.boton-primario;
+}
+
+.pn-dialogo--peligro .pn-dialogo__accion {
+  @include c.boton-peligro;
+}
+
+// Hoja inferior (por debajo de 768 px): pegada abajo, radio 14 arriba, asa, botones de 44 px a ancho completo con la
+// acción arriba.
+.pn-dialogo--hoja {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100dvh - 24px);
+  margin: auto 0 0;
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  box-shadow: var(--pn-sombra-hoja);
+
+  .pn-dialogo__caja {
+    max-height: calc(100dvh - 24px);
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pn-dialogo__asa {
+    flex: none;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 8px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-linea-fuerte);
+  }
+
+  .pn-dialogo__cabecera {
+    gap: 12px;
+    padding: 0;
+  }
+
+  .pn-dialogo__titulo {
+    margin-top: 10px;
+  }
+
+  .pn-dialogo__cerrar {
+    width: 44px;
+    height: 44px;
+    margin-right: -8px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .pn-dialogo__cuerpo {
+    padding: 4px 0 0;
+  }
+
+  .pn-dialogo__destacado {
+    padding: 12px 0;
+  }
+
+  .pn-dialogo__pastilla {
+    min-height: 44px;
+  }
+
+  .pn-dialogo__pie {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0 0;
+  }
+
+  .pn-dialogo__cancelar,
+  .pn-dialogo__accion {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.9375rem;
+  }
+}

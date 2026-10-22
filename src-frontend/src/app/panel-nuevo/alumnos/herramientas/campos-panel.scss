@@ -1,0 +1,43 @@
+// Campos de los formularios del panel lateral (8b-D1, boceto `InformesPanel.dc.html`): etiqueta visible encima en 13 px
+// y 600, control de 40 px (44 en el móvil) con el borde de control y 8 px de radio. Solo tokens de panel-nuevo.scss.
+
+.pn-mes-ano {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.pn-mes-ano__campo,
+.herramienta__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pn-mes-ano__etiqueta,
+.herramienta__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.pn-mes-ano__control,
+.herramienta__control {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background-color: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 2px solid var(--pn-marca-primario-tinta);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}

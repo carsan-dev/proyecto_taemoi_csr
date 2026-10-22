@@ -1,0 +1,135 @@
+// Panel lateral del panel nuevo (8b-D1, decisión 270; boceto `InformesPanel.dc.html`): 480 px a la derecha bajo la
+// cabecera de 64 px, sobre el velo, con la sombra de diálogo y el pie fijo. Por debajo de 768 px, hoja inferior.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.pn-panel {
+  position: fixed;
+  inset: 64px 0 0 auto;
+  width: 480px;
+  max-width: 100vw;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-left: 1px solid var(--pn-linea);
+  border-radius: 0;
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+}
+
+.pn-panel__caja {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pn-panel__cabecera {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 16px 20px 24px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.pn-panel__titulos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.pn-panel__titulo {
+  margin: 0;
+  font: var(--pn-titulo-dialogo);
+  color: var(--pn-tinta);
+}
+
+.pn-panel__descripcion {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.pn-panel__cerrar {
+  @include c.boton-icono;
+}
+
+.pn-panel__cuerpo {
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pn-panel__pie {
+  flex: none;
+  padding: 16px 24px;
+  border-top: 1px solid var(--pn-linea);
+  background: var(--pn-superficie);
+}
+
+// Hoja inferior (por debajo de 768 px).
+.pn-panel--hoja {
+  inset: auto 0 0 0;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 24px);
+  border-left: 0;
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  box-shadow: var(--pn-sombra-hoja);
+
+  .pn-panel__caja {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .pn-panel__asa {
+    flex: none;
+    width: 36px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-linea-fuerte);
+  }
+
+  .pn-panel__cabecera {
+    gap: 12px;
+    padding: 0 8px 16px 16px;
+  }
+
+  .pn-panel__titulos {
+    padding-top: 10px;
+  }
+
+  .pn-panel__cerrar {
+    width: 44px;
+    height: 44px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .pn-panel__cuerpo {
+    padding: 16px;
+  }
+
+  .pn-panel__pie {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}

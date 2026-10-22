@@ -14,6 +14,11 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
    * hoy no la usan. El panel nuevo pasa `pn …` para que la lista tome sus tokens.
    */
   @Input() searchDropdownClass = '';
+  /**
+   * La lista flotante se pinta dentro del `<dialog>` modal que contiene el campo (8b-D1): en el `body` quedaría inerte y
+   * por debajo del diálogo. False por defecto: las pantallas de hoy no lo usan y su lista sigue en el `body`.
+   */
+  @Input() searchDropdownEnDialogo = false;
 
   private static nextId = 0;
 
@@ -544,6 +549,12 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     }
 
     const wasClosed = !this.isOpen;
+    if (this.searchDropdownEnDialogo) {
+      const capa = this.inputEl.closest('dialog') ?? document.body;
+      if (this.dropdownEl.parentElement !== capa) {
+        this.renderer.appendChild(capa, this.dropdownEl);
+      }
+    }
     this.isOpen = true;
     this.renderer.addClass(this.dropdownEl, 'is-open');
     this.renderer.addClass(this.wrapperEl, 'is-open');
