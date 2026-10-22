@@ -1,4 +1,5 @@
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
+import { getGradoColors } from '../../utilities/grado-colors';
 import { plural } from '../formato/formato-es';
 
 /**
@@ -133,4 +134,10 @@ export function estadoLicencia(
   return fecha && fecha.getFullYear() >= hoy.getFullYear()
     ? { clave: 'con', texto: 'Con licencia' }
     : { clave: 'caducada', texto: 'Caducada' };
+}
+
+/** Fondo de la muestra del cinturón: su color o, si es de dos colores, las dos mitades. */
+export function fondoCinturon(codigo: string, deporte: string): string {
+  const { colors, isSplit } = getGradoColors(codigo, deporte);
+  return isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
 }

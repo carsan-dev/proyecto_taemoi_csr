@@ -1,9 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, filter, finalize } from 'rxjs/operators';
-import Swal from 'sweetalert2';
+import { debounceTime, filter } from 'rxjs/operators';
 
 import { BajasAltasAlumno } from '../../componentes/endpoints/listado-alumnos/bajas-altas-alumno';
 import {
@@ -11,7 +9,6 @@ import {
   SeccionHerramientas,
 } from '../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
 import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from '../../componentes/endpoints/listado-alumnos/informes-alumnos';
-import { cambiosDeCobro, opcionesConfirmarCobro } from '../../componentes/endpoints/tesoreria-cobros/confirmar-cobro';
 import { InformeModalComponent } from '../../componentes/generales/informe-modal/informe-modal.component';
 import { InformePdfModalComponent } from '../../componentes/generales/informe-pdf-modal/informe-pdf-modal.component';
 import { AlumnoService } from '../../features/alumno/services/alumno.service';
@@ -20,14 +17,16 @@ import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
-import { getGradoColors, getGradoNombreParaDeporte } from '../../utilities/grado-colors';
+import { getGradoNombreParaDeporte } from '../../utilities/grado-colors';
 import { showErrorToast, showSuccessToast } from '../../utils/toast.util';
+import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import {
   EstadoLicencia,
   antiguedad,
   estadoLicencia,
+  fondoCinturon,
   iniciales,
   ordenarDeportes,
   principalDe,
@@ -449,59 +448,12 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 
   /** Panel modal: Esc lo cierra y devuelve el foco a «Cobrar»; Tab y Mayús+Tab dan la vuelta dentro del panel. */
   teclaPanel(evento: KeyboardEvent): void {
-    if (evento.key === 'Escape') {
-      evento.preventDefault();
-      evento.stopPropagation();
-      this.cerrarPanel(true);
-      return;
-    }
-    if (evento.key !== 'Tab') {
-      return;
-    }
-    const panel = evento.currentTarget instanceof HTMLElement ? evento.currentTarget : null;
-    const enfocables = Array.from(panel?.querySelectorAll<HTMLButtonElement>('button:not([disabled])') ?? []);
-    if (enfocables.length === 0) {
-      evento.preventDefault();
-      return;
-    }
-    const primero = enfocables[0];
-    const ultimo = enfocables[enfocables.length - 1];
-    const activo = panel?.ownerDocument.activeElement;
-    if (evento.shiftKey && (activo === primero || !panel?.contains(activo ?? null))) {
-      evento.preventDefault();
-      ultimo.focus();
-    } else if (!evento.shiftKey && (activo === ultimo || !panel?.contains(activo ?? null))) {
-      evento.preventDefault();
-      primero.focus();
-    }
+    teclaPanelCargos(evento, () => this.cerrarPanel(true));
   }
 
   /** El mismo diálogo, la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
   cobrar(alumnoId: number, cargo: CargoPendiente): void {
-    const id = cargo.productoAlumnoId;
-    if (this.cobrando.has(id)) {
-      return;
-    }
-    Swal.fire(opcionesConfirmarCobro(cargo.concepto)).then((resultado) => {
-      if (!resultado.isConfirmed) {
-        return;
-      }
-      this.cobrando.add(id);
-      this.endpoints
-        .actualizarCobroTesoreria(id, cambiosDeCobro(resultado.value))
-        .pipe(finalize(() => this.cobrando.delete(id)))
-        .subscribe({
-          next: () => {
-            showSuccessToast('Cobro actualizado como pagado');
-            this.refrescarPendiente(alumnoId);
-          },
-          error: (error: HttpErrorResponse) => {
-            showErrorToast(
-              error?.status === 403 ? 'Solo administradores pueden revertir cobros' : 'No se pudo actualizar el estado del cobro'
-            );
-          },
-        });
-    });
+    cobrarCargo(this.endpoints, cargo, this.cobrando, () => this.refrescarPendiente(alumnoId));
   }
 
   private enfocarEnFila(alumnoId: number, selector: string): void {
@@ -638,8 +590,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 }
 
 function gradoFila(codigo: string, deporte: string): GradoFila {
-  const { colors, isSplit } = getGradoColors(codigo, deporte);
-  const fondo = isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
+  const fondo = fondoCinturon(codigo, deporte);
   // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
   const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
   return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
