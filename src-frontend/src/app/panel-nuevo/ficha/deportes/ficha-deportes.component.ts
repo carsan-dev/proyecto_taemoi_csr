@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { fondoCinturon, tiempoConGrado } from '../../alumnos/alumno-vista';
 import { fecha, numero, plural } from '../../formato/formato-es';
@@ -15,7 +16,7 @@ import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 @Component({
   selector: 'app-ficha-deportes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SearchableSelectDirective],
   templateUrl: './ficha-deportes.component.html',
   styleUrls: ['./ficha-deportes.component.scss'],
 })

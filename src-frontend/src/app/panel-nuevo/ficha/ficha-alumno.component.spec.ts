@@ -1112,6 +1112,46 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     });
   });
 
+  describe('buscador en los desplegables de Deportes (el de hoy)', () => {
+    it('tarifa, rol familiar, categoría, añadir turno y añadir grupo llevan el buscador de hoy, con su lista en .pn', async () => {
+      const datos = datosPorDefecto();
+      datos.deportes[0] = { ...datos.deportes[0], tipoTarifa: 'PADRES_HIJOS', competidor: true };
+      datos.alumno.deportes = datos.deportes;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      const tkd = bloque(m, 'TAEKWONDO');
+      for (const selector of [
+        'select[id^="tipoTarifa-"]',
+        'select[id^="rolFamiliar-"]',
+        'select[id^="categoria-"]',
+        'select.deportes__anadir-turno',
+        'select.deportes__anadir-grupo',
+      ]) {
+        const select = tkd.querySelector<HTMLSelectElement>(selector);
+        expect(select).withContext(selector).not.toBeNull();
+        expect(select!.closest('.admin-select-combobox')).withContext(`${selector} con buscador`).not.toBeNull();
+      }
+      const listaId = tkd.querySelector('select[id^="tipoTarifa-"]')!.closest('.admin-select-combobox')!
+        .querySelector('input.admin-select-input')!.getAttribute('aria-controls')!;
+      const lista = document.getElementById(listaId)!;
+      expect(lista.classList).withContext('la lista flotante usa los tokens del panel').toContain('pn');
+    });
+
+    it('filtra las tarifas al escribir', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      const combo = bloque(m, 'TAEKWONDO').querySelector('select[id^="tipoTarifa-"]')!.closest('.admin-select-combobox')!;
+      const entrada = combo.querySelector<HTMLInputElement>('input.admin-select-input')!;
+      const lista = document.getElementById(entrada.getAttribute('aria-controls')!)!;
+      const visibles = () =>
+        Array.from(lista.querySelectorAll<HTMLElement>('.admin-select-option'))
+          .filter((o) => o.style.display !== 'none')
+          .map((o) => o.textContent!.trim());
+      entrada.value = 'grupo';
+      entrada.dispatchEvent(new Event('input'));
+      await new Promise((r) => setTimeout(r, 300));
+      expect(visibles()).toEqual(['Adulto Grupo', 'Infantil Grupo']);
+    });
+  });
+
   // ---------------------------------------------------------------- cinturón (sin grados)
 
   it('disciplina sin grados: sin caja Grado ni Licencia, como hoy; los diálogos quedan fuera de .pn', async () => {

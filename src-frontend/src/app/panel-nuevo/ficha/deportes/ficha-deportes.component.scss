@@ -306,6 +306,83 @@
   }
 }
 
+// ------------------------------------------------------------------ buscador de los desplegables (directiva de hoy)
+
+// El campo que pinta appSearchableSelect, con los tokens del panel (solo dentro de esta pestaña).
+:host ::ng-deep .admin-select-input {
+  @include b.control;
+
+  & {
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%235d6573' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px 10px;
+    font: var(--pn-cuerpo);
+    transition: none;
+  }
+}
+
+:host ::ng-deep .admin-select-input:hover:not(:focus) {
+  border-color: var(--pn-borde-control);
+}
+
+:host ::ng-deep .admin-select-input:focus {
+  border-color: var(--pn-borde-control);
+  box-shadow: none;
+}
+
+:host ::ng-deep .admin-select-input:focus-visible {
+  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline-offset: 2px;
+}
+
+// Su lista flotante va en el body con «pn ficha-desplegable» (solo la de la ficha nueva; la de hoy no lleva esas clases).
+::ng-deep .ficha-desplegable.admin-select-dropdown {
+  padding: 4px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-menu);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+}
+
+::ng-deep .ficha-desplegable .admin-select-option {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-s);
+  transition: none;
+}
+
+::ng-deep .ficha-desplegable .admin-select-option:hover,
+::ng-deep .ficha-desplegable .admin-select-option.is-active {
+  background: var(--pn-marca-primario-suave);
+}
+
+::ng-deep .ficha-desplegable .admin-select-option.is-selected {
+  font-weight: 600;
+  color: var(--pn-marca-primario-tinta);
+}
+
+::ng-deep .ficha-desplegable .admin-select-option.is-disabled {
+  color: var(--pn-tinta-2);
+}
+
+::ng-deep .ficha-desplegable .admin-select-empty {
+  padding: 10px;
+  color: var(--pn-tinta-2);
+  font-style: normal;
+}
+
+@media (max-width: 767.98px) {
+  ::ng-deep .ficha-desplegable .admin-select-option {
+    min-height: 44px;
+  }
+}
+
 // ------------------------------------------------------------------ tableta
 
 @media (max-width: 1279.98px) {

@@ -9,6 +9,11 @@ import { esOpcionMarcador } from '../utils/opcion-marcador';
 export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   @Input() searchPlaceholder = 'Buscar...';
   @Input() debounceMs = 250;
+  /**
+   * Clases extra para la lista flotante (que va en el body, fuera del componente). Vacío por defecto: las pantallas de
+   * hoy no la usan. El panel nuevo pasa `pn …` para que la lista tome sus tokens.
+   */
+  @Input() searchDropdownClass = '';
 
   private static nextId = 0;
 
@@ -116,6 +121,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.renderer.addClass(this.dropdownEl, 'is-floating');
     this.renderer.setAttribute(this.dropdownEl, 'id', listboxId);
     this.renderer.setAttribute(this.dropdownEl, 'role', 'listbox');
+    this.searchDropdownClass
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((clase) => this.renderer.addClass(this.dropdownEl, clase));
 
     const parent = select.parentElement;
     this.renderer.insertBefore(parent, this.wrapperEl, select);
