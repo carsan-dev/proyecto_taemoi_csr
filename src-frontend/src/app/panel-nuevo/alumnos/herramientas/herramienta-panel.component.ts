@@ -131,6 +131,21 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
     }
   }
 
+  /**
+   * Algún envío en vuelo (cualquiera de las cuatro cargas o un PDF): el panel no se cierra por ninguna vía. Hoy el
+   * cargador global tapa la pantalla mientras tanto; sin este bloqueo, cerrar y reabrir daría una instancia nueva sin
+   * `procesando*` que dejaría lanzar el mismo `POST` a la vez, y el `asignado` de la instancia quitada no llegaría.
+   */
+  get enVuelo(): boolean {
+    return (
+      this.procesandoMensualidadesGenerales ||
+      this.procesandoMensualidadIndividual ||
+      this.procesandoLicenciasGenerales ||
+      this.procesandoLicenciaIndividual ||
+      this.informes.ocupado
+    );
+  }
+
   /** Lo mismo que deshabilita hoy cada botón (y las validaciones de hoy para los que hoy no se deshabilitan). */
   get gestionIncompleta(): boolean {
     switch (this.carga) {
@@ -188,6 +203,9 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
   }
 
   generarPdf(accion: AccionInforme): void {
+    if (this.informes.ocupado) {
+      return;
+    }
     this.pdfPulsado = accion;
     if (this.herramienta === 'asistencia') {
       this.generarListadoAsistencia(accion);

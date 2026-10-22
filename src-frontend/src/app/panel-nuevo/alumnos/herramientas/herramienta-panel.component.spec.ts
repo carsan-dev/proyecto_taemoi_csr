@@ -340,19 +340,79 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     expect(anotar()).toEqual(individualHoy);
   });
 
-  it('«Cancelar», la X y Esc cierran el panel; mientras se carga, el botón queda ocupado con su texto', () => {
+  /** Las cuatro vías de cierre del panel: «Cancelar», la X, Esc (y el evento «cancel» del navegador) y el velo. */
+  function intentarCerrar(): void {
+    const d = panel();
+    botonPie('Cancelar').click();
+    d.querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')!.click();
+    d.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    d.dispatchEvent(new Event('cancel', { cancelable: true }));
+    d.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 10, clientY: 300, detail: 1 }));
+    pintar();
+  }
+
+  it('con «Cargar mensualidades» en vuelo el panel NO se cierra por ninguna vía ni deja un segundo envío; tras la respuesta, sí', () => {
     abrir('mensualidades');
     elegir('#pn-mensualidad-mes', '10');
     elegir('#pn-mensualidad-mes-ano', '2026');
     const cargar = botonPie('Cargar mensualidades');
+    cargar.focus();
     cargar.click();
     pintar();
+    const [envio] = http.match((r) => r.method === 'POST');
+    expect(envio).withContext('primer POST').toBeDefined();
     expect(cargar.getAttribute('aria-busy')).toBe('true');
     expect(cargar.textContent!.trim()).toBe('Cargando…');
-    anotar();
+    expect(document.activeElement).toBe(cargar);
+    expect(botonPie('Cancelar').disabled).toBeTrue();
+    expect(panel().querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')!.disabled).toBeTrue();
+
+    intentarCerrar();
+    expect(fixture.componentInstance.cerrada).toBeFalse();
+    expect(panel().open).toBeTrue();
+    cargar.click();
     pintar();
+    expect(http.match((r) => r.method === 'POST').length).withContext('segundo POST').toBe(0);
+
+    envio.flush({});
+    pintar();
+    expect(fixture.componentInstance.asignados).toBe(1);
     expect(cargar.getAttribute('aria-busy')).toBeNull();
+    expect(botonPie('Cancelar').disabled).toBeFalse();
     botonPie('Cancelar').click();
+    expect(fixture.componentInstance.cerrada).toBeTrue();
+  });
+
+  it('con «Cargar licencias» en vuelo tampoco se cierra; tras la respuesta, la X lo cierra', () => {
+    abrir('mensualidades');
+    pulsar('Licencias generales');
+    elegir('#pn-ano-licencia-general', '2026');
+    botonPie('Cargar licencias').click();
+    pintar();
+    const [envio] = http.match((r) => r.method === 'POST');
+    expect(envio).toBeDefined();
+    intentarCerrar();
+    expect(fixture.componentInstance.cerrada).toBeFalse();
+    envio.flush({});
+    pintar();
+    expect(fixture.componentInstance.asignados).toBe(1);
+    panel().querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')!.click();
+    expect(fixture.componentInstance.cerrada).toBeTrue();
+  });
+
+  it('con un PDF generándose tampoco se cierra; tras la respuesta, Esc lo cierra', () => {
+    abrir('listado-mensualidades');
+    elegir('#pn-listado-mes', '09');
+    elegir('#pn-listado-mes-ano', '2026');
+    botonPie('Descargar PDF').click();
+    pintar();
+    const [pdf] = http.match((r) => r.method === 'GET' && r.url.includes('/informes/'));
+    expect(pdf).toBeDefined();
+    intentarCerrar();
+    expect(fixture.componentInstance.cerrada).toBeFalse();
+    pdf.flush(new Blob(['pdf']));
+    pintar();
+    panel().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     expect(fixture.componentInstance.cerrada).toBeTrue();
   });
 });

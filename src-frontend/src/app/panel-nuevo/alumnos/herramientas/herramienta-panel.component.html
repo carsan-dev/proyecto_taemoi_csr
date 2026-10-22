@@ -1,4 +1,4 @@
-<pn-panel-lateral [titulo]="textos.titulo" [descripcion]="textos.descripcion" (cerrar)="cerrar.emit()">
+<pn-panel-lateral [titulo]="textos.titulo" [descripcion]="textos.descripcion" [bloqueado]="enVuelo" (cerrar)="cerrar.emit()">
   @switch (herramienta) {
   @case ('asistencia') {
   <div class="herramienta__form">
@@ -161,7 +161,7 @@
   }
 
   <div pnPie class="herramienta__pie">
-    <button type="button" class="herramienta__cancelar" (click)="cerrar.emit()">Cancelar</button>
+    <button type="button" class="herramienta__cancelar" [disabled]="enVuelo" (click)="cerrar.emit()">Cancelar</button>
     @if (herramienta === 'mensualidades') {
     <button type="button" pnOcupado class="herramienta__primario" [ocupado]="ocupadoGestion" [textoOcupado]="accionGestion.ocupado"
       [deshabilitado]="gestionIncompleta" (click)="ejecutarGestion()">{{ accionGestion.texto }}</button>

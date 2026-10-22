@@ -1,5 +1,5 @@
 <dialog #panel class="pn-panel" [class.pn-panel--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'"
-  [attr.aria-describedby]="descripcion ? id + '-descripcion' : null" (cancel)="alCancelarNativo($event)" (click)="alClic($event)"
+  [attr.aria-describedby]="descripcion ? id + '-descripcion' : null" (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)"
   (keydown)="alTeclear($event)">
   <div class="pn-panel__caja">
     @if (hoja) {
@@ -12,7 +12,7 @@
         <p class="pn-panel__descripcion" [id]="id + '-descripcion'">{{ descripcion }}</p>
         }
       </div>
-      <button type="button" class="pn-panel__cerrar" aria-label="Cerrar" (click)="cerrar.emit()">
+      <button type="button" class="pn-panel__cerrar" aria-label="Cerrar" [disabled]="bloqueado" (click)="pedirCierre()">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M6 6l12 12M18 6 6 18"></path>
         </svg>

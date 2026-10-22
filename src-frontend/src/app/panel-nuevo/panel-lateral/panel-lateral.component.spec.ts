@@ -12,7 +12,7 @@ import { PanelLateralComponent } from './panel-lateral.component';
     <div class="pn">
       <button type="button" class="disparador" (click)="abierto = true">Listado de asistencia</button>
       @if (abierto) {
-      <pn-panel-lateral titulo="Listado de asistencia" descripcion="Genera un PDF por cada día elegido."
+      <pn-panel-lateral titulo="Listado de asistencia" descripcion="Genera un PDF por cada día elegido." [bloqueado]="bloqueado"
         (cerrar)="cerrados = cerrados + 1; abierto = false">
         <label for="campo">Mes</label><select id="campo"><option>Octubre</option></select>
         <div pnPie><button type="button" class="ver">Ver PDF</button><button type="button" class="descargar">Descargar PDF</button></div>
@@ -23,6 +23,7 @@ import { PanelLateralComponent } from './panel-lateral.component';
 })
 class Anfitrion {
   abierto = false;
+  bloqueado = false;
   cerrados = 0;
   @ViewChild(PanelLateralComponent) panel?: PanelLateralComponent;
 }
@@ -131,6 +132,63 @@ describe('PanelLateralComponent (8b-D1, panel lateral de 480 px y hoja en el mó
     expect(document.activeElement).toBe(disparador);
     disparador = el().querySelector<HTMLButtonElement>('.disparador')!;
     expect(disparador).toBeTruthy();
+  });
+
+  it('bloqueado (un envío en vuelo): ni Esc, ni el evento «cancel», ni la X, ni el velo cierran; al desbloquear, sí', () => {
+    ancho(false);
+    abrir();
+    fixture.componentInstance.bloqueado = true;
+    fixture.detectChanges();
+    const d = dialogo();
+    const x = d.querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')!;
+    expect(x.disabled).toBeTrue();
+    for (let i = 0; i < 2; i++) {
+      const esc = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      d.dispatchEvent(esc);
+      expect(esc.defaultPrevented).toBeTrue();
+      const cancel = new Event('cancel', { cancelable: true });
+      d.dispatchEvent(cancel);
+      expect(cancel.defaultPrevented).toBeTrue();
+    }
+    x.click();
+    d.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 10, clientY: 300, detail: 1 }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cerrados).toBe(0);
+    expect(d.open).toBeTrue();
+
+    fixture.componentInstance.bloqueado = false;
+    fixture.detectChanges();
+    expect(x.disabled).toBeFalse();
+    d.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cerrados).toBe(1);
+  });
+
+  it('bloqueado: si el navegador cierra el <dialog> igualmente (segundo Esc), se vuelve a abrir como modal', async () => {
+    ancho(false);
+    abrir();
+    fixture.componentInstance.bloqueado = true;
+    fixture.detectChanges();
+    const d = dialogo();
+    const cerrado = new Promise((r) => d.addEventListener('close', () => setTimeout(r), { once: true }));
+    d.close();
+    await cerrado;
+    fixture.detectChanges();
+    expect(d.open).toBeTrue();
+    expect(d.matches(':modal')).toBeTrue();
+    expect(fixture.componentInstance.cerrados).toBe(0);
+  });
+
+  it('sin bloquear, un cierre del navegador (evento «close») emite «cerrar» una sola vez', async () => {
+    ancho(false);
+    abrir();
+    const d = dialogo();
+    const cerrado = new Promise((r) => d.addEventListener('close', () => setTimeout(r), { once: true }));
+    d.close();
+    await cerrado;
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cerrados).toBe(1);
+    expect(el().querySelector('dialog.pn-panel')).toBeNull();
   });
 
   it('un clic dentro no cierra; el foco queda contenido con Tab', () => {
