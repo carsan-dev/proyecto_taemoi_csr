@@ -446,11 +446,32 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Panel modal: Esc lo cierra y devuelve el foco a «Cobrar»; Tab y Mayús+Tab dan la vuelta dentro del panel. */
   teclaPanel(evento: KeyboardEvent): void {
     if (evento.key === 'Escape') {
       evento.preventDefault();
       evento.stopPropagation();
       this.cerrarPanel(true);
+      return;
+    }
+    if (evento.key !== 'Tab') {
+      return;
+    }
+    const panel = evento.currentTarget instanceof HTMLElement ? evento.currentTarget : null;
+    const enfocables = Array.from(panel?.querySelectorAll<HTMLButtonElement>('button:not([disabled])') ?? []);
+    if (enfocables.length === 0) {
+      evento.preventDefault();
+      return;
+    }
+    const primero = enfocables[0];
+    const ultimo = enfocables[enfocables.length - 1];
+    const activo = panel?.ownerDocument.activeElement;
+    if (evento.shiftKey && (activo === primero || !panel?.contains(activo ?? null))) {
+      evento.preventDefault();
+      ultimo.focus();
+    } else if (!evento.shiftKey && (activo === ultimo || !panel?.contains(activo ?? null))) {
+      evento.preventDefault();
+      primero.focus();
     }
   }
 

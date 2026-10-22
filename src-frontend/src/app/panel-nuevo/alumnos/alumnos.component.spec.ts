@@ -520,4 +520,28 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(detalle).toBe('ROJO NEGRO X');
     expect(texto('.alumnos__linea2')).toContain('rojo negro x');
   });
+
+  it('panel de cargos modal: aria-modal y el Tab no sale del panel', () => {
+    crear();
+    responder();
+    document.body.appendChild(el());
+    el().querySelector<HTMLButtonElement>('.alumnos__fila .alumnos__cobrar')!.click();
+    fixture.detectChanges();
+    const panel = el().querySelector<HTMLElement>('.alumnos__cargos')!;
+    expect(panel.getAttribute('aria-modal')).toBe('true');
+    const botones = Array.from(panel.querySelectorAll<HTMLButtonElement>('button'));
+    const primero = botones[0];
+    const ultimo = botones[botones.length - 1];
+    ultimo.focus();
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    ultimo.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(primero);
+    const atras = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true });
+    primero.dispatchEvent(atras);
+    expect(atras.defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(ultimo);
+    expect(el().querySelector('.alumnos__cargos')).not.toBeNull();
+    el().remove();
+  });
 });

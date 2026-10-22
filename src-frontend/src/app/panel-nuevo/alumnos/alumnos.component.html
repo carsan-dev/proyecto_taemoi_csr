@@ -179,7 +179,7 @@
 
         @if (panelDe === f.id && pendienteDe(f.id); as p) {
         <div class="alumnos__cargos-fondo" (click)="cerrarPanel(true)" aria-hidden="true"></div>
-        <div class="alumnos__cargos" [id]="'alumnos-cargos-' + f.id" role="dialog" [attr.aria-labelledby]="'alumnos-cargos-titulo-' + f.id"
+        <div class="alumnos__cargos" [id]="'alumnos-cargos-' + f.id" role="dialog" aria-modal="true" [attr.aria-labelledby]="'alumnos-cargos-titulo-' + f.id"
           (keydown)="teclaPanel($event)">
           <div class="alumnos__cargos-cabecera">
             <h2 class="alumnos__cargos-titulo" [id]="'alumnos-cargos-titulo-' + f.id">
