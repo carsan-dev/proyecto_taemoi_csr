@@ -1,0 +1,235 @@
+// Pestaña «Pagos» de la ficha nueva (8b-3b): la tabla de hoy en el sistema nuevo. Importes a la derecha con cifras
+// tabulares; lo pendiente en ocre. Por debajo de 768 px, filas de dos líneas sin desplazamiento horizontal.
+@use '../ficha-base' as b;
+
+:host {
+  display: block;
+}
+
+.pagos {
+  @include b.bloque;
+  padding: 20px;
+}
+
+.pagos__oculto {
+  @include b.oculto;
+}
+
+.pagos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pn-espacio-xs) var(--pn-espacio-m);
+  margin-bottom: 14px;
+}
+
+.pagos__titulo {
+  @include b.titulo-bloque;
+  font-size: 1.1875rem;
+}
+
+.pagos__resumen {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta-2);
+}
+
+.pagos__vacio {
+  margin: 0 0 var(--pn-espacio-m);
+  color: var(--pn-tinta-2);
+}
+
+.pagos__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--pn-cuerpo);
+
+  th {
+    padding: 10px 12px;
+    background: var(--pn-superficie-2);
+    border-bottom: 1px solid var(--pn-linea);
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+    text-align: left;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--pn-linea);
+    color: var(--pn-tinta);
+    vertical-align: middle;
+  }
+}
+
+.pagos__col-fecha {
+  width: 120px;
+  white-space: nowrap;
+}
+
+.pagos__col-cifra {
+  width: 1%;
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.pagos__total {
+  font-weight: 700;
+}
+
+.pagos__fila--pendiente .pagos__total {
+  color: var(--pn-atencion);
+}
+
+.pagos__concepto {
+  overflow-wrap: anywhere;
+}
+
+.pagos__pastilla {
+  @include b.pastilla;
+}
+
+.pagos__pastilla--pendiente {
+  border-color: transparent;
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.pagos__pastilla--pagado {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+  color: var(--pn-bien);
+}
+
+.pagos__accion {
+  width: 1%;
+  text-align: right;
+}
+
+.pagos__cobrar {
+  @include b.boton-secundario;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    min-height: 36px;
+    padding: 0 14px;
+  }
+}
+
+.pagos__paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.pagos__paso {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    width: 36px;
+    padding: 0;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.pagos__posicion {
+  min-width: 56px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+.pagos__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-espacio-s);
+  margin-top: var(--pn-espacio-m);
+}
+
+.pagos__boton-secundario {
+  @include b.boton-secundario;
+}
+
+// ------------------------------------------------------------------ móvil: filas de dos líneas
+
+@media (max-width: 767.98px) {
+  .pagos {
+    padding: 16px 14px;
+  }
+
+  .pagos__tabla {
+    thead {
+      @include b.oculto;
+    }
+
+    tbody,
+    tr,
+    td {
+      display: block;
+    }
+
+    td {
+      padding: 0;
+      border: 0;
+    }
+  }
+
+  .pagos__fila {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'fecha cantidad total'
+      'concepto concepto concepto'
+      'estado estado accion';
+    gap: 4px 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--pn-linea);
+  }
+
+  .pagos__col-fecha {
+    grid-area: fecha;
+    width: auto;
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2) !important;
+  }
+
+  .pagos__concepto {
+    grid-area: concepto;
+  }
+
+  .pagos__cantidad {
+    grid-area: cantidad;
+    width: auto;
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2) !important;
+
+    &::before {
+      content: 'Cant. ';
+    }
+  }
+
+  .pagos__total {
+    grid-area: total;
+    width: auto;
+  }
+
+  .pagos__estado {
+    grid-area: estado;
+    align-self: center;
+  }
+
+  .pagos__accion {
+    grid-area: accion;
+    width: auto;
+  }
+
+  .pagos__cobrar,
+  .pagos__paso {
+    min-height: 44px;
+  }
+
+  .pagos__paso {
+    width: 44px;
+  }
+}

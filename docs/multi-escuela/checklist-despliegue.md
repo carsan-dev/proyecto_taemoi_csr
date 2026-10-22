@@ -234,6 +234,14 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       el contador da el total de la escuela (no el de la página) y cambia con la búsqueda, la disciplina, «Inactivos» y
       «Solo aptos»; el pendiente de cada alumno coincide con lo vencido de la tesorería; y prueba «Cobrar» solo sobre un
       cargo ficticio de la escuela de pruebas, nunca de Moiskimdo.
+- [ ] E8b, pieza 8b-3b (ficha del alumno F1 «Carnet»; decisión 254): sin migración → atajo `desplegar`. Con el
+      interruptor apagado, la ficha de hoy sin cambios (sus diálogos de foto, agregar deporte, actualizar grado,
+      convocatorias y WhatsApp salen ahora de piezas compartidas y se ven igual). Después, el propietario, con su
+      interruptor encendido, abre la ficha de un alumno real y recorre las cuatro pestañas (Deportes, Pagos, Datos y
+      contacto, Documentos y notas) sin guardar cambios: comprueba que el pendiente del carnet coincide con el del
+      listado, que el cinturón blanco se distingue, que «1 de N» conserva la pestaña y que «← Alumnos» vuelve al
+      listado con su búsqueda, filtros y página; y prueba «Cobrar» solo sobre un cargo ficticio de la escuela de
+      pruebas, nunca de Moiskimdo.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

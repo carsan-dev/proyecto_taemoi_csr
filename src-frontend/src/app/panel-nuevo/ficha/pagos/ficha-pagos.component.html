@@ -1,0 +1,75 @@
+<section class="pagos" aria-labelledby="pagos-titulo">
+  <header class="pagos__cabecera">
+    <h2 id="pagos-titulo" class="pagos__titulo">Pagos y productos</h2>
+    @if (resumen) {
+    <p class="pagos__resumen" data-cifras>{{ resumen }}</p>
+    }
+  </header>
+
+  @if (ficha.productosPaginados.length === 0) {
+  <p class="pagos__vacio">Este alumno no tiene productos asignados.</p>
+  } @else {
+  <table class="pagos__tabla">
+    <caption class="pagos__oculto">Productos y pagos del alumno</caption>
+    <thead>
+      <tr>
+        <th scope="col" class="pagos__col-fecha">Fecha</th>
+        <th scope="col">Concepto</th>
+        <th scope="col" class="pagos__col-cifra">Cant.</th>
+        <th scope="col" class="pagos__col-cifra">Total</th>
+        <th scope="col">Estado</th>
+        <th scope="col"><span class="pagos__oculto">Acción</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (p of ficha.productosPaginados; track p.id) {
+      <tr class="pagos__fila" [class.pagos__fila--pendiente]="!p.pagado">
+        <td class="pagos__col-fecha" data-cifras>{{ fecha(p.fechaAsignacion) }}</td>
+        <td class="pagos__concepto">{{ p.concepto }}</td>
+        <td class="pagos__col-cifra pagos__cantidad" data-cifras>{{ numero(p.cantidad) }}</td>
+        <td class="pagos__col-cifra pagos__total" data-cifras>{{ total(p) }}</td>
+        <td class="pagos__estado">
+          @if (p.pagado) {
+          <span class="pagos__pastilla pagos__pastilla--pagado" data-cifras>{{ estadoPagado(p) }}</span>
+          } @else {
+          <span class="pagos__pastilla pagos__pastilla--pendiente">Pendiente</span>
+          }
+        </td>
+        <td class="pagos__accion">
+          @if (!p.pagado) {
+          <button type="button" class="pagos__cobrar" [attr.aria-label]="'Cobrar ' + p.concepto"
+            [disabled]="ficha.isPagandoProducto(p.id)" (click)="ficha.pagarProducto(p)">Cobrar</button>
+          }
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+  }
+
+  @if (ficha.totalPaginasProductos > 1) {
+  <nav class="pagos__paginacion" aria-label="Páginas de pagos">
+    <button type="button" class="pagos__paso" aria-label="Página anterior de pagos" [disabled]="ficha.paginaActualProductos <= 1"
+      (click)="ficha.cambiarPaginaProductos(ficha.paginaActualProductos - 1)">
+      <i class="bi bi-chevron-left" aria-hidden="true"></i>
+    </button>
+    <span class="pagos__posicion" data-cifras aria-live="polite">{{ posicion }}</span>
+    <button type="button" class="pagos__paso" aria-label="Página siguiente de pagos"
+      [disabled]="ficha.paginaActualProductos >= ficha.totalPaginasProductos"
+      (click)="ficha.cambiarPaginaProductos(ficha.paginaActualProductos + 1)">
+      <i class="bi bi-chevron-right" aria-hidden="true"></i>
+    </button>
+  </nav>
+  }
+
+  <div class="pagos__acciones">
+    <button type="button" class="pagos__boton-secundario" (click)="ficha.navegarAGestionProductos(ficha.alumno.id)">
+      <i class="bi bi-gear" aria-hidden="true"></i>
+      <span>Gestionar productos</span>
+    </button>
+    <button type="button" class="pagos__boton-secundario" (click)="ficha.reservarPlaza(ficha.alumno.id)">
+      <i class="bi bi-bookmark-check" aria-hidden="true"></i>
+      <span>Reservar plaza</span>
+    </button>
+  </div>
+</section>

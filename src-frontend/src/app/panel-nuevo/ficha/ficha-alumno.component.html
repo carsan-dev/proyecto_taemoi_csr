@@ -1,0 +1,276 @@
+<div class="pn ficha">
+  <div class="ficha__pagina">
+    <nav class="ficha__barra" aria-label="Alumnos">
+      <a class="ficha__volver" routerLink="/alumnosListar" [queryParams]="volverAlListado">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>Alumnos</span>
+      </a>
+      @if (totalPaginas > 0) {
+      <div class="ficha__paso" role="group" aria-label="Paso entre alumnos">
+        <button type="button" class="ficha__paso-boton ficha__anterior" aria-label="Alumno anterior"
+          [disabled]="cargando || paginaActual <= 1" (click)="irAlAnterior()">
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+        <span class="ficha__posicion" data-cifras aria-live="polite">{{ posicion }}</span>
+        <button type="button" class="ficha__paso-boton ficha__siguiente" aria-label="Alumno siguiente"
+          [disabled]="cargando || paginaActual >= totalPaginas" (click)="irAlSiguiente()">
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+      }
+      <label class="ficha__inactivos" for="ficha-inactivos">
+        <input id="ficha-inactivos" type="checkbox" [checked]="mostrarInactivos" (change)="alternarInactivos()" />
+        <span>Incluir inactivos</span>
+      </label>
+    </nav>
+
+    @if (cargando) {
+    <div class="ficha__carnet ficha__carnet--cargando" aria-busy="true">
+      <p class="ficha__oculto" role="status">Cargando la ficha…</p>
+      <div class="ficha__esqueleto" aria-hidden="true">
+        <span class="ficha__esqueleto-foto"></span>
+        <span class="ficha__esqueleto-lineas"><span></span><span></span><span></span></span>
+      </div>
+    </div>
+    } @else if (alumno) {
+    <section class="ficha__carnet" aria-labelledby="ficha-nombre">
+      <div class="ficha__franja" aria-hidden="true">
+        @for (d of franja; track d.codigo) {
+        <span class="ficha__franja-tramo" [style.background]="d.fondo"></span>
+        }
+      </div>
+
+      <div class="ficha__carnet-cuerpo">
+        <div class="ficha__foto-zona">
+          <button type="button" class="ficha__foto" [attr.aria-label]="'Ampliar la foto de ' + alumno.nombre"
+            (click)="abrirModal(imagenPreview || alumno.fotoAlumno?.url)">
+            <img src="{{ fotoUrl || '/assets/media/default.webp' }}" alt="" width="240" height="300" loading="eager"
+              decoding="async" />
+            <span class="ficha__foto-lupa" aria-hidden="true"><i class="bi bi-zoom-in"></i></span>
+          </button>
+          @if (!fotoUrl) {
+          <p class="ficha__sin-foto">Sin foto todavía</p>
+          }
+          <div class="ficha__foto-acciones">
+            <button type="button" class="ficha__boton-secundario ficha__boton-secundario--compacto" (click)="inputFile.click()">
+              <i class="bi bi-camera" aria-hidden="true"></i>
+              <span>Cambiar foto</span>
+            </button>
+            <button type="button" class="ficha__boton-texto ficha__boton-texto--peligro" [disabled]="!alumno.fotoAlumno?.url"
+              (click)="eliminarFoto(alumno.id)">
+              <i class="bi bi-trash3" aria-hidden="true"></i>
+              <span>Quitar</span>
+            </button>
+            <input #inputFile type="file" accept="image/*" class="ficha__oculto" tabindex="-1"
+              aria-label="Elegir una foto nueva del alumno" (change)="onFileSelected($event)" />
+          </div>
+        </div>
+
+        <div class="ficha__identidad">
+          <h1 id="ficha-nombre" class="ficha__nombre">
+            <span class="ficha__nombre-nombre">{{ alumno.nombre }}</span>
+            <span class="ficha__apellidos">{{ alumno.apellidos }}</span>
+          </h1>
+          <dl class="ficha__datos">
+            <div class="ficha__dato" data-dato="expediente">
+              <dt>Expediente</dt>
+              <dd data-cifras>{{ alumno.numeroExpediente }}</dd>
+            </div>
+            <div class="ficha__dato" data-dato="edad">
+              <dt>Edad</dt>
+              <dd data-cifras>{{ edad }}</dd>
+            </div>
+            <div class="ficha__dato" data-dato="alta">
+              <dt>Alumno desde</dt>
+              <dd data-cifras>{{ alumnoDesde }}</dd>
+            </div>
+            <div class="ficha__dato" data-dato="estado">
+              <dt>Estado</dt>
+              <dd>
+                <span class="ficha__pastilla" [class.ficha__pastilla--bien]="isAlumnoActivo()">{{ isAlumnoActivo() ? 'Activo' : 'Inactivo' }}</span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        @if (disciplinas.length) {
+        <ul class="ficha__disciplinas" aria-label="Disciplinas">
+          @for (d of disciplinas; track d.codigo) {
+          <li class="ficha__disciplina">
+            @if (d.fondo) {
+            <span class="ficha__cinto" [style.background]="d.fondo" aria-hidden="true"></span>
+            } @else {
+            <span class="ficha__cinto ficha__cinto--sin" [class]="d.clase" aria-hidden="true"></span>
+            }
+            <span class="ficha__disciplina-texto">
+              <span class="ficha__disciplina-nombre">{{ d.nombre }}</span>
+              @if (d.principal && disciplinas.length > 1) {
+              <span class="ficha__principal">principal</span>
+              }
+              @if (d.linea) {
+              <span class="ficha__grado-linea" data-cifras>{{ d.linea }}</span>
+              }
+            </span>
+          </li>
+          }
+        </ul>
+        }
+
+        <aside class="ficha__resumen" aria-label="Pendiente y licencia">
+          <div class="ficha__pendiente" [class.ficha__pendiente--debe]="pendiente" tabindex="-1">
+            <p class="ficha__resumen-titulo">Pendiente de cobro</p>
+            @if (pendiente; as p) {
+            <p class="ficha__importe" data-cifras>{{ eur(p.importe) }}</p>
+            <p class="ficha__resumen-cargos" data-cifras>{{ resumenCargos }}</p>
+            <div class="ficha__cobrar-zona">
+              <button type="button" class="ficha__boton-primario ficha__cobrar"
+                [attr.aria-label]="'Cobrar ' + eur(p.importe) + (p.cargos > 1 ? ', ' + plural(p.cargos, 'cargo', 'cargos') : '')"
+                [attr.aria-haspopup]="p.detalle.length > 1 ? 'dialog' : null"
+                [attr.aria-expanded]="p.detalle.length > 1 ? panelAbierto : null"
+                [attr.aria-controls]="panelAbierto ? 'ficha-cargos' : null"
+                [disabled]="p.detalle.length === 1 && cobrando.has(p.detalle[0].productoAlumnoId)"
+                (click)="pulsarCobrar()">
+                <i class="bi bi-cash-coin" aria-hidden="true"></i>
+                <span>Cobrar</span>
+              </button>
+              @if (panelAbierto) {
+              <div class="ficha__cargos-fondo" (click)="cerrarPanel(true)" aria-hidden="true"></div>
+              <div class="ficha__cargos" id="ficha-cargos" role="dialog" aria-modal="true" aria-labelledby="ficha-cargos-titulo"
+                (keydown)="teclaPanel($event)">
+                <div class="ficha__cargos-cabecera">
+                  <h2 class="ficha__cargos-titulo" id="ficha-cargos-titulo">
+                    {{ plural(p.cargos, 'cargo vencido', 'cargos vencidos') }}
+                    <span class="ficha__cargos-quien">{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+                  </h2>
+                  <button type="button" class="ficha__cerrar" aria-label="Cerrar" (click)="cerrarPanel(true)">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <ul class="ficha__cargos-lista">
+                  @for (c of p.detalle; track c.productoAlumnoId) {
+                  <li class="ficha__cargo">
+                    <span class="ficha__cargo-texto">
+                      <span class="ficha__cargo-concepto">{{ c.concepto }}</span>
+                      <span class="ficha__cargo-desde" data-cifras>Vencido desde el {{ fecha(c.vencidoDesde) }}</span>
+                    </span>
+                    <span class="ficha__cargo-importe" data-cifras>{{ eur(c.importe) }}</span>
+                    <button type="button" class="ficha__boton-secundario ficha__boton-secundario--compacto"
+                      [disabled]="cobrando.has(c.productoAlumnoId)" [attr.aria-label]="'Cobrar ' + c.concepto + ', ' + eur(c.importe)"
+                      (click)="cobrar(c)">Cobrar</button>
+                  </li>
+                  }
+                </ul>
+              </div>
+              }
+            </div>
+            } @else if (estadoPendiente === 'cargando') {
+            <span class="ficha__pendiente-cargando" aria-hidden="true"></span>
+            <span class="ficha__oculto" role="status">Leyendo el pendiente…</span>
+            } @else if (estadoPendiente === 'error') {
+            <p class="ficha__resumen-cargos">No se pudo leer el pendiente.</p>
+            <button type="button" class="ficha__boton-texto" (click)="releerPendiente()">Reintentar</button>
+            } @else {
+            <p class="ficha__al-dia">Al día</p>
+            }
+          </div>
+          @if (licencia; as l) {
+          <div class="ficha__licencia">
+            <p class="ficha__resumen-titulo">Licencia federativa</p>
+            <span class="ficha__pastilla" [class]="'ficha__pastilla--' + l.clave">
+              @if (l.clave === 'con') {<i class="bi bi-check2" aria-hidden="true"></i>}
+              {{ l.texto }}
+            </span>
+          </div>
+          }
+        </aside>
+
+        <div class="ficha__acciones">
+          <button type="button" class="ficha__boton-secundario ficha__accion--editar" (click)="editarDatos()">
+            <i class="bi bi-pencil" aria-hidden="true"></i>
+            <span>Editar datos</span>
+          </button>
+          <a class="ficha__boton-texto ficha__accion--familia" routerLink="/userpage" [queryParams]="{ alumnoId: alumno.id }">
+            <i class="bi bi-person-badge" aria-hidden="true"></i>
+            <span>Vista de familia</span>
+          </a>
+          <button type="button" class="ficha__boton-texto ficha__accion--whatsapp" [disabled]="!alumno.telefono && !alumno.telefono2"
+            (click)="abrirWhatsApp()">
+            <i class="bi bi-whatsapp" aria-hidden="true"></i>
+            <span>WhatsApp</span>
+          </button>
+          <div class="ficha__mas-zona" (focusout)="alSalirDelMenu($event)">
+            <button #botonMas type="button" id="ficha-mas" class="ficha__boton-texto ficha__mas" aria-label="Más acciones"
+              aria-haspopup="menu" [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'ficha-menu-mas' : null"
+              (click)="alternarMenu()" (keydown)="teclaBotonMenu($event)">
+              <i class="bi bi-three-dots" aria-hidden="true"></i>
+            </button>
+            @if (menuAbierto) {
+            <div #menuMas id="ficha-menu-mas" class="ficha__menu" role="menu" aria-labelledby="ficha-mas" (keydown)="teclaMenu($event)">
+              <button type="button" class="ficha__menu-opcion ficha__menu-opcion--peligro" role="menuitem" (click)="bajaAltaOEliminar()">
+                <i class="bi" [class.bi-person-dash]="isAlumnoActivo()" [class.bi-person-check]="!isAlumnoActivo()" aria-hidden="true"></i>
+                <span>{{ isAlumnoActivo() ? 'Dar de baja o eliminar…' : 'Dar de alta o eliminar…' }}</span>
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ficha__pestanas">
+      <div class="ficha__pestanas-lista" role="tablist" aria-label="Secciones de la ficha" (keydown)="teclaPestanas($event)">
+        @for (p of pestanas; track p.clave) {
+        <button type="button" role="tab" class="ficha__pestana" [id]="'ficha-pestana-' + p.clave"
+          [attr.aria-selected]="pestana === p.clave" [attr.aria-controls]="pestana === p.clave ? 'ficha-panel-' + p.clave : null"
+          [attr.aria-label]="etiquetaPestana(p.clave, p.texto)" [tabIndex]="pestana === p.clave ? 0 : -1"
+          (click)="cambiarPestana(p.clave)">
+          <span class="ficha__pestana-texto">{{ p.texto }}</span>
+          @if (p.clave === 'pagos' && pendiente) {
+          <span class="ficha__insignia" data-cifras aria-hidden="true">{{ numero(pendiente.cargos) }}</span>
+          }
+        </button>
+        }
+      </div>
+    </div>
+
+    <div class="ficha__panel" role="tabpanel" [id]="'ficha-panel-' + pestana" [attr.aria-labelledby]="'ficha-pestana-' + pestana"
+      tabindex="0">
+      @switch (pestana) {
+      @case ('deportes') { <app-ficha-deportes [ficha]="this" /> }
+      @case ('pagos') { <app-ficha-pagos [ficha]="this" /> }
+      @case ('datos') { <app-ficha-datos [ficha]="this" /> }
+      @case ('documentos') { <app-ficha-documentos [ficha]="this" /> }
+      }
+    </div>
+
+    @if (editingBasicInfo && hasPendingBasicInfoChanges()) {
+    <div class="ficha__guardar" role="region" aria-label="Cambios sin guardar" [class.ficha__guardar--errores]="hasBasicInfoErrors()">
+      <p class="ficha__guardar-texto" aria-live="polite">
+        @if (hasBasicInfoErrors()) {
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        Corrige los errores antes de guardar
+        } @else {
+        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+        Tienes cambios sin guardar
+        }
+      </p>
+      <div class="ficha__guardar-botones">
+        <button type="button" class="ficha__boton-secundario" (click)="cancelBasicInfoChanges()">Cancelar</button>
+        <button type="button" class="ficha__boton-primario" [disabled]="hasBasicInfoErrors()" (click)="applyBasicInfoChanges()">Guardar cambios</button>
+      </div>
+    </div>
+    }
+    } @else {
+    <div class="ficha__estado">
+      <p>No se pudo abrir la ficha de este alumno.</p>
+      <a class="ficha__boton-secundario" routerLink="/alumnosListar">Volver a Alumnos</a>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- Diálogos de la ficha de hoy, sin cambios y fuera de .pn (conservan su tipografía y su CSS). -->
+<app-foto-ampliada [ficha]="this" />
+@if (!cargando && alumno) {
+<app-dialogos-alumno [ficha]="this" />
+}

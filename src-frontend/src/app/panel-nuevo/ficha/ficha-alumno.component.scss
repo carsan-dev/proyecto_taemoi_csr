@@ -1,0 +1,910 @@
+// Ficha del alumno F1 «Carnet» del panel nuevo (8b-3b). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): el
+// carnet (14 px, sombra de carnet) con la franja de cinturones arriba, el pendiente en ocre y la licencia a la derecha
+// (debajo en el móvil), las acciones del alumno al pie y las pestañas fijas bajo la cabecera. El color de la escuela,
+// solo en el botón principal, la pestaña activa, los enlaces y el foco.
+@use './ficha-base' as b;
+
+:host {
+  display: block;
+}
+
+@include b.colores-disciplina;
+
+.ficha {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.ficha__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-m) var(--pn-espacio-l) 96px;
+}
+
+.ficha__oculto {
+  @include b.oculto;
+}
+
+.ficha__boton-primario {
+  @include b.boton-primario;
+}
+
+.ficha__boton-secundario {
+  @include b.boton-secundario;
+}
+
+.ficha__boton-secundario--compacto {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.ficha__boton-texto {
+  @include b.boton-texto;
+}
+
+.ficha__boton-texto--peligro {
+  @include b.peligro;
+}
+
+.ficha__pastilla {
+  @include b.pastilla;
+}
+
+.ficha__pastilla--bien,
+.ficha__pastilla--con {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+  color: var(--pn-bien);
+}
+
+.ficha__pastilla--sin,
+.ficha__pastilla--caducada {
+  border-color: transparent;
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+// ------------------------------------------------------------------ barra
+
+.ficha__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--pn-espacio-l);
+  row-gap: var(--pn-espacio-xs);
+  min-height: 56px;
+  margin-bottom: var(--pn-espacio-s);
+}
+
+.ficha__volver {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    margin-left: -10px;
+    color: var(--pn-tinta);
+  }
+}
+
+.ficha__paso {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ficha__paso-boton {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    width: 36px;
+    padding: 0;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.ficha__posicion {
+  min-width: 64px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+.ficha__inactivos {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  margin-left: auto;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--pn-marca-primario-tinta);
+    cursor: pointer;
+  }
+}
+
+// ------------------------------------------------------------------ carnet
+
+.ficha__carnet {
+  position: relative;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-carnet);
+  box-shadow: var(--pn-sombra-carnet);
+}
+
+// Franja de 10 px con el cinturón de cada disciplina; cada tramo lleva cinto-borde para que el blanco se vea.
+.ficha__franja {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: calc(var(--pn-radio-carnet) - 1px) calc(var(--pn-radio-carnet) - 1px) 0 0;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.ficha__franja-tramo {
+  @include b.cinto;
+  flex: 1 1 0;
+  border-radius: 0;
+
+  & + & {
+    border-left-width: 0;
+  }
+}
+
+.ficha__carnet-cuerpo {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'foto identidad resumen'
+    'foto disciplinas resumen'
+    'foto acciones acciones';
+  column-gap: 28px;
+  row-gap: var(--pn-espacio-m);
+  padding: 22px 26px 22px;
+}
+
+.ficha__foto-zona {
+  grid-area: foto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pn-espacio-s);
+}
+
+.ficha__foto {
+  position: relative;
+  display: block;
+  width: 240px;
+  height: 300px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--pn-linea);
+  border-radius: 12px;
+  background: var(--pn-superficie-2);
+  cursor: zoom-in;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  &:hover .ficha__foto-lupa,
+  &:focus-visible .ficha__foto-lupa {
+    opacity: 1;
+  }
+}
+
+.ficha__foto-lupa {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgb(26 34 48 / 72%);
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--pn-transicion);
+}
+
+.ficha__sin-foto {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.ficha__foto-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--pn-espacio-xs) var(--pn-espacio-s);
+}
+
+.ficha__identidad {
+  grid-area: identidad;
+  min-width: 0;
+}
+
+.ficha__nombre {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--pn-espacio-m);
+  font: var(--pn-nombre-carnet);
+  letter-spacing: var(--pn-nombre-carnet-espaciado);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.ficha__apellidos {
+  margin-top: 2px;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--pn-tinta-2);
+}
+
+.ficha__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-espacio-s) 28px;
+  margin: 0;
+}
+
+.ficha__dato {
+  dt {
+    margin-bottom: 2px;
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+  }
+
+  dd {
+    margin: 0;
+    font: var(--pn-cuerpo);
+    color: var(--pn-tinta);
+  }
+}
+
+.ficha__disciplinas {
+  grid-area: disciplinas;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha__disciplina {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+// Muestra del cinturón: 56 × 12 px con su borde.
+.ficha__cinto {
+  @include b.cinto;
+  flex: none;
+  width: 56px;
+  height: 12px;
+  margin-top: 5px;
+}
+
+// Disciplina sin grados: un punto con su color fijo en lugar del cinturón.
+.ficha__cinto--sin {
+  width: 12px;
+  height: 12px;
+  margin-left: 22px;
+  margin-right: 22px;
+  border-radius: 3px;
+}
+
+.ficha__disciplina-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ficha__disciplina-nombre {
+  font: var(--pn-cuerpo);
+  font-weight: 700;
+  color: var(--pn-tinta);
+}
+
+.ficha__principal {
+  font: var(--pn-etiqueta);
+  color: var(--pn-atencion);
+}
+
+.ficha__grado-linea {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ pendiente y licencia
+
+.ficha__resumen {
+  grid-area: resumen;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ficha__pendiente,
+.ficha__licencia {
+  padding: 16px 16px 18px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.ficha__pendiente:focus {
+  outline: none;
+}
+
+.ficha__pendiente--debe {
+  border-color: color-mix(in srgb, var(--pn-atencion) 30%, var(--pn-superficie));
+  background: var(--pn-atencion-suave);
+}
+
+.ficha__resumen-titulo {
+  margin: 0 0 6px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.ficha__importe {
+  margin: 0;
+  font: var(--pn-cifra);
+  color: var(--pn-atencion);
+}
+
+.ficha__resumen-cargos {
+  margin: 4px 0 14px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.ficha__al-dia {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+}
+
+.ficha__pendiente-cargando {
+  display: block;
+  width: 120px;
+  height: 28px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.ficha__cobrar-zona {
+  position: relative;
+}
+
+.ficha__cobrar[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--pn-marca-primario-tinta) 86%, #000);
+}
+
+// Panel de cargos (varios), como el del listado nuevo.
+.ficha__cargos-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.ficha__cargos {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 31;
+  width: min(420px, calc(100vw - 32px));
+  padding: 12px 14px 8px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.ficha__cargos-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ficha__cargos-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 6px;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.ficha__cargos-quien {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.ficha__cerrar {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    width: 36px;
+    padding: 0;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.ficha__cargos-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha__cargo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.ficha__cargo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ficha__cargo-concepto {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.ficha__cargo-desde {
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.ficha__cargo-importe {
+  color: var(--pn-atencion);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// ------------------------------------------------------------------ acciones del alumno
+
+.ficha__acciones {
+  grid-area: acciones;
+  align-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-espacio-s);
+  padding-top: var(--pn-espacio-m);
+  border-top: 1px solid var(--pn-linea);
+}
+
+.ficha__mas-zona {
+  position: relative;
+}
+
+.ficha__mas {
+  width: 40px;
+  padding: 0;
+  color: var(--pn-tinta-2);
+
+  &[aria-expanded='true'] {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.ficha__menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 260px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.ficha__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.ficha__menu-opcion--peligro {
+  color: var(--pn-peligro);
+}
+
+// ------------------------------------------------------------------ pestañas
+
+.ficha__pestanas {
+  position: sticky;
+  top: 64px;
+  z-index: 20;
+  margin: var(--pn-espacio-l) 0 var(--pn-espacio-m);
+  background: var(--pn-fondo);
+}
+
+.ficha__pestanas-lista {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--pn-linea);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.ficha__pestana {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--pn-transicion), box-shadow var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  &[aria-selected='true'] {
+    color: var(--pn-marca-primario-tinta);
+    box-shadow: inset 0 -3px 0 var(--pn-marca-primario-tinta);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+.ficha__insignia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-atencion);
+  color: #fff;
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+}
+
+.ficha__panel:focus-visible {
+  outline-offset: 4px;
+  border-radius: var(--pn-radio-m);
+}
+
+// ------------------------------------------------------------------ guardar (edición de datos)
+
+.ficha__guardar {
+  position: fixed;
+  right: 0;
+  bottom: var(--pn-espacio-m);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 12px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.ficha__guardar-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+}
+
+.ficha__guardar--errores .ficha__guardar-texto {
+  color: var(--pn-peligro);
+}
+
+.ficha__guardar-botones {
+  display: flex;
+  gap: var(--pn-espacio-s);
+}
+
+// ------------------------------------------------------------------ carga y error
+
+.ficha__carnet--cargando {
+  padding: 22px 26px;
+}
+
+.ficha__esqueleto {
+  display: flex;
+  gap: 28px;
+}
+
+.ficha__esqueleto-foto {
+  flex: none;
+  width: 240px;
+  height: 300px;
+  border-radius: 12px;
+  background: var(--pn-serie-pista);
+}
+
+.ficha__esqueleto-lineas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+
+  span {
+    height: 20px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+
+    &:first-child {
+      width: 60%;
+      height: 36px;
+    }
+
+    &:nth-child(2) {
+      width: 45%;
+    }
+
+    &:nth-child(3) {
+      width: 70%;
+    }
+  }
+}
+
+.ficha__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  p {
+    margin: 0;
+  }
+}
+
+// ------------------------------------------------------------------ tableta (768 a 1023)
+
+@media (max-width: 1023.98px) {
+  .ficha__carnet-cuerpo {
+    grid-template-columns: 240px minmax(0, 1fr);
+    // La holgura junto a la foto, en la fila de las disciplinas (pegadas a los datos, como en el escritorio).
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-areas:
+      'foto identidad'
+      'foto disciplinas'
+      'resumen resumen'
+      'acciones acciones';
+  }
+
+  .ficha__resumen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ficha__guardar {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+// ------------------------------------------------------------------ móvil (375; objetivos de 44 px)
+
+@media (max-width: 767.98px) {
+  .ficha__pagina {
+    padding: var(--pn-espacio-s) var(--pn-espacio-m) 120px;
+  }
+
+  .ficha__barra {
+    column-gap: var(--pn-espacio-s);
+  }
+
+  .ficha__paso-boton {
+    width: 44px;
+  }
+
+  .ficha__inactivos {
+    min-height: 44px;
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .ficha__carnet-cuerpo {
+    grid-template-columns: 184px minmax(0, 1fr);
+    grid-template-areas:
+      'foto identidad'
+      'resumen resumen'
+      'disciplinas disciplinas'
+      'acciones acciones';
+    column-gap: 14px;
+    padding: 16px 14px 16px;
+  }
+
+  .ficha__foto {
+    width: 184px;
+    height: 230px;
+  }
+
+  .ficha__foto-lupa {
+    opacity: 1;
+  }
+
+  .ficha__nombre {
+    margin-bottom: 12px;
+    font-size: 1.375rem;
+  }
+
+  .ficha__apellidos {
+    font-size: 1.0625rem;
+  }
+
+  .ficha__datos {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ficha__resumen {
+    gap: 10px;
+  }
+
+  .ficha__pendiente,
+  .ficha__licencia {
+    padding: 12px;
+  }
+
+  .ficha__importe {
+    font-size: 1.5rem;
+  }
+
+  .ficha__cerrar,
+  .ficha__mas {
+    width: 44px;
+  }
+
+  .ficha__boton-secundario--compacto {
+    min-height: 44px;
+  }
+
+  .ficha__menu-opcion {
+    min-height: 44px;
+  }
+
+  .ficha__pestanas {
+    top: 56px;
+    margin-left: calc(-1 * var(--pn-espacio-m));
+    margin-right: calc(-1 * var(--pn-espacio-m));
+    padding: 0 var(--pn-espacio-s);
+  }
+
+  // En el móvil, el panel de cargos es una hoja inferior sobre la barra de navegación.
+  .ficha__cargos-fondo {
+    z-index: 1015;
+    background: rgb(26 34 48 / 40%);
+  }
+
+  .ficha__cargos {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1020;
+    width: auto;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 14px 16px calc(12px + env(safe-area-inset-bottom));
+    border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+    box-shadow: var(--pn-sombra-barra);
+  }
+
+  .ficha__cargo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'texto importe'
+      'boton boton';
+
+    .ficha__cargo-texto {
+      grid-area: texto;
+    }
+
+    .ficha__cargo-importe {
+      grid-area: importe;
+    }
+
+    button {
+      grid-area: boton;
+    }
+  }
+
+  .ficha__guardar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ficha__guardar-botones {
+    > * {
+      flex: 1 1 0;
+    }
+  }
+
+  .ficha__esqueleto-foto {
+    width: 184px;
+    height: 230px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha__foto-lupa,
+  .ficha__pestana {
+    transition: none;
+  }
+}

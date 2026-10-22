@@ -1,4 +1,5 @@
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
+import { getGradoColors, getGradoNombreParaDeporte } from '../../utilities/grado-colors';
 import { plural } from '../formato/formato-es';
 
 /**
@@ -133,4 +134,31 @@ export function estadoLicencia(
   return fecha && fecha.getFullYear() >= hoy.getFullYear()
     ? { clave: 'con', texto: 'Con licencia' }
     : { clave: 'caducada', texto: 'Caducada' };
+}
+
+/** Fondo de la muestra del cinturón: su color o, si es de dos colores, las dos mitades. */
+export function fondoCinturon(codigo: string, deporte: string): string {
+  const { colors, isSplit } = getGradoColors(codigo, deporte);
+  return isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
+}
+
+/** Grado de una disciplina para las pantallas nuevas (listado y carnet). */
+export interface GradoFila {
+  /** En la línea 2, en minúscula («naranja-verde»); en el detalle, el texto de hoy («NARANJA-VERDE», «NEGRO 1º DAN»). */
+  nombre: string;
+  nombreDetalle: string;
+  /** Fondo del cinturón: un color o las dos mitades. */
+  fondo: string;
+}
+
+export function gradoFila(codigo: string, deporte: string): GradoFila {
+  const fondo = fondoCinturon(codigo, deporte);
+  // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
+  const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
+  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
+}
+
+/** El grado dentro de una frase, con mayúscula inicial: «Blanco», «Naranja-verde», «Negro 1º dan». */
+export function gradoParaFrase(grado: GradoFila): string {
+  return grado.nombre.charAt(0).toLocaleUpperCase('es-ES') + grado.nombre.slice(1);
 }

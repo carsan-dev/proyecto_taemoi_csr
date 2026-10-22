@@ -1,9 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, filter, finalize } from 'rxjs/operators';
-import Swal from 'sweetalert2';
+import { debounceTime, filter } from 'rxjs/operators';
 
 import { BajasAltasAlumno } from '../../componentes/endpoints/listado-alumnos/bajas-altas-alumno';
 import {
@@ -11,7 +9,6 @@ import {
   SeccionHerramientas,
 } from '../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
 import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from '../../componentes/endpoints/listado-alumnos/informes-alumnos';
-import { cambiosDeCobro, opcionesConfirmarCobro } from '../../componentes/endpoints/tesoreria-cobros/confirmar-cobro';
 import { InformeModalComponent } from '../../componentes/generales/informe-modal/informe-modal.component';
 import { InformePdfModalComponent } from '../../componentes/generales/informe-pdf-modal/informe-pdf-modal.component';
 import { AlumnoService } from '../../features/alumno/services/alumno.service';
@@ -20,14 +17,16 @@ import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
-import { getGradoColors, getGradoNombreParaDeporte } from '../../utilities/grado-colors';
 import { showErrorToast, showSuccessToast } from '../../utils/toast.util';
+import { cobrarCargo, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import {
   EstadoLicencia,
   antiguedad,
   estadoLicencia,
+  GradoFila,
+  gradoFila,
   iniciales,
   ordenarDeportes,
   principalDe,
@@ -43,14 +42,6 @@ export const POR_PAGINA = 25;
 
 type Vista = 'filas' | 'tarjetas';
 type Estado = 'cargando' | 'listo' | 'error';
-
-interface GradoFila {
-  /** En la línea 2, en minúscula («naranja-verde»); en el detalle, el texto de hoy («NARANJA-VERDE», «NEGRO 1º DAN»). */
-  nombre: string;
-  nombreDetalle: string;
-  /** Fondo del cinturón: un color o las dos mitades. */
-  fondo: string;
-}
 
 interface DeporteFila {
   codigo: string;
@@ -163,6 +154,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   private readonly busqueda = new Subject<string>();
   private readonly suscripciones = new Subscription();
   private carga?: Subscription;
+  /** Tras la primera carga, cada cambio de búsqueda, filtro, página o vista se escribe en la dirección. */
+  private escribirDireccion = false;
   private cargaPendientes?: Subscription;
   /** Botón «Cobrar» que abrió el panel: recibe el foco al cerrarlo. */
   private disparadorPanel: HTMLElement | null = null;
@@ -209,8 +202,16 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.vista = leerVista();
-    this.aptos = this.route.snapshot?.queryParamMap?.get('aptoParaExamen') === 'true';
+    // La dirección manda (volver desde la ficha, recargar o compartir el enlace); si no trae vista, la recordada.
+    const parametros = this.route.snapshot?.queryParamMap;
+    this.nombre = (parametros?.get('nombre') ?? '').trim();
+    this.deporte = parametros?.get('deporte') ?? '';
+    this.inactivos = parametros?.get('inactivos') === 'true';
+    this.aptos = parametros?.get('aptoParaExamen') === 'true';
+    const pagina = Number(parametros?.get('pagina'));
+    this.pagina = Number.isInteger(pagina) && pagina > 1 ? pagina : 1;
+    const vista = parametros?.get('vista');
+    this.vista = vista === 'tarjetas' || vista === 'filas' ? vista : leerVista();
     this.suscripciones.add(
       // Solo si el texto cambia frente al filtro vigente: «Quitar filtros» vacía la búsqueda sin repetir la carga.
       this.busqueda.pipe(debounceTime(300), filter((texto) => texto !== this.nombre)).subscribe((texto) => {
@@ -221,6 +222,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     );
     this.contarActivos();
     this.cargar();
+    this.escribirDireccion = true;
   }
 
   ngOnDestroy(): void {
@@ -237,6 +239,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.carga?.unsubscribe();
     this.cargaPendientes?.unsubscribe();
     this.estado = 'cargando';
+    if (this.escribirDireccion) {
+      this.escribirEstado();
+    }
     this.carga = this.endpoints
       .obtenerAlumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null)
       .subscribe({
@@ -328,16 +333,10 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.cargar();
   }
 
-  /** Como hoy: «Solo aptos» también queda en la dirección (`?aptoParaExamen=true`). */
+  /** Como hoy: «Solo aptos» también queda en la dirección (`?aptoParaExamen=true`), con el resto del estado. */
   alternarAptos(): void {
     this.aptos = !this.aptos;
     this.pagina = 1;
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: this.aptos ? { aptoParaExamen: 'true' } : {},
-      queryParamsHandling: this.aptos ? 'merge' : '',
-      replaceUrl: true,
-    });
     this.cargar();
   }
 
@@ -369,6 +368,27 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   cambiarVista(vista: Vista): void {
     this.vista = vista;
     guardarVista(vista);
+    this.escribirEstado();
+  }
+
+  /**
+   * Búsqueda, disciplina, «Inactivos», «Solo aptos», página y vista en la dirección (sin apilar historial): al volver
+   * desde la ficha («← Alumnos») el listado sale como estaba. Solo los valores que no son los de por defecto.
+   */
+  private escribirEstado(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        nombre: this.nombre.trim() || null,
+        deporte: this.deporte || null,
+        inactivos: this.inactivos ? 'true' : null,
+        aptoParaExamen: this.aptos ? 'true' : null,
+        pagina: this.pagina > 1 ? String(this.pagina) : null,
+        vista: this.vista === 'tarjetas' ? 'tarjetas' : null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   // ------------------------------------------------------------------ fila desplegable
@@ -449,59 +469,12 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 
   /** Panel modal: Esc lo cierra y devuelve el foco a «Cobrar»; Tab y Mayús+Tab dan la vuelta dentro del panel. */
   teclaPanel(evento: KeyboardEvent): void {
-    if (evento.key === 'Escape') {
-      evento.preventDefault();
-      evento.stopPropagation();
-      this.cerrarPanel(true);
-      return;
-    }
-    if (evento.key !== 'Tab') {
-      return;
-    }
-    const panel = evento.currentTarget instanceof HTMLElement ? evento.currentTarget : null;
-    const enfocables = Array.from(panel?.querySelectorAll<HTMLButtonElement>('button:not([disabled])') ?? []);
-    if (enfocables.length === 0) {
-      evento.preventDefault();
-      return;
-    }
-    const primero = enfocables[0];
-    const ultimo = enfocables[enfocables.length - 1];
-    const activo = panel?.ownerDocument.activeElement;
-    if (evento.shiftKey && (activo === primero || !panel?.contains(activo ?? null))) {
-      evento.preventDefault();
-      ultimo.focus();
-    } else if (!evento.shiftKey && (activo === ultimo || !panel?.contains(activo ?? null))) {
-      evento.preventDefault();
-      primero.focus();
-    }
+    teclaPanelCargos(evento, () => this.cerrarPanel(true));
   }
 
   /** El mismo diálogo, la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
   cobrar(alumnoId: number, cargo: CargoPendiente): void {
-    const id = cargo.productoAlumnoId;
-    if (this.cobrando.has(id)) {
-      return;
-    }
-    Swal.fire(opcionesConfirmarCobro(cargo.concepto)).then((resultado) => {
-      if (!resultado.isConfirmed) {
-        return;
-      }
-      this.cobrando.add(id);
-      this.endpoints
-        .actualizarCobroTesoreria(id, cambiosDeCobro(resultado.value))
-        .pipe(finalize(() => this.cobrando.delete(id)))
-        .subscribe({
-          next: () => {
-            showSuccessToast('Cobro actualizado como pagado');
-            this.refrescarPendiente(alumnoId);
-          },
-          error: (error: HttpErrorResponse) => {
-            showErrorToast(
-              error?.status === 403 ? 'Solo administradores pueden revertir cobros' : 'No se pudo actualizar el estado del cobro'
-            );
-          },
-        });
-    });
+    cobrarCargo(this.endpoints, cargo, this.cobrando, () => this.refrescarPendiente(alumnoId));
   }
 
   private enfocarEnFila(alumnoId: number, selector: string): void {
@@ -635,14 +608,6 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     const i = this.catalogo.disciplinasActivas().findIndex((d) => d.codigo === codigo);
     return i >= 0 && i < 4 ? `alumnos__disc--${i + 1}` : 'alumnos__disc--otra';
   }
-}
-
-function gradoFila(codigo: string, deporte: string): GradoFila {
-  const { colors, isSplit } = getGradoColors(codigo, deporte);
-  const fondo = isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
-  // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
-  const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
-  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
 }
 
 function fotoDe(a: any): string | null {

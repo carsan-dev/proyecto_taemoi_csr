@@ -140,3 +140,35 @@ describe('SearchableSelectDirective', () => {
     expect(visible(0).length).toBe(4);
   });
 });
+
+@Component({
+  standalone: true,
+  imports: [FormsModule, SearchableSelectDirective],
+  template: `
+    <select id="con-clase" appSearchableSelect searchDropdownClass="pn ficha-lista" [(ngModel)]="valor">
+      <option value="a">Uno</option>
+    </select>
+    <select id="sin-clase" appSearchableSelect [(ngModel)]="valor">
+      <option value="a">Uno</option>
+    </select>
+  `,
+})
+class HostConClaseComponent {
+  valor = 'a';
+}
+
+describe('SearchableSelectDirective: clase de la lista flotante (8b-3b)', () => {
+  it('añade las clases pedidas a la lista (que va en el body) y, sin pedirlas, la deja como hoy', async () => {
+    await TestBed.configureTestingModule({ imports: [HostConClaseComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(HostConClaseComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const lista = (id: string) => {
+      const entrada = document.getElementById(`${id}-input`)!;
+      return document.getElementById(entrada.getAttribute('aria-controls')!)!;
+    };
+    expect(Array.from(lista('con-clase').classList)).toEqual(['admin-select-dropdown', 'is-floating', 'pn', 'ficha-lista']);
+    expect(Array.from(lista('sin-clase').classList)).toEqual(['admin-select-dropdown', 'is-floating']);
+    fixture.destroy();
+  });
+});

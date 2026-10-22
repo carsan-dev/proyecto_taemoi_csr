@@ -1,0 +1,199 @@
+// Pestaña «Documentos y notas» de la ficha nueva (8b-3b): información adicional y documentos, lado a lado en
+// escritorio y uno debajo del otro por debajo de 1024 px.
+@use '../ficha-base' as b;
+
+:host {
+  display: block;
+}
+
+@include b.colores-disciplina;
+
+.documentos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.documentos__bloque {
+  @include b.bloque;
+  padding: 20px;
+}
+
+.documentos__oculto {
+  @include b.oculto;
+}
+
+.documentos__titulo {
+  @include b.titulo-bloque;
+  margin-bottom: var(--pn-espacio-s);
+  font-size: 1.1875rem;
+}
+
+.documentos__fila {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.documentos__etiqueta {
+  @include b.etiqueta;
+}
+
+.documentos__valor {
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+}
+
+.documentos__valor--vacio {
+  color: var(--pn-tinta-2);
+}
+
+.documentos__nota {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.documentos__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.documentos__chip {
+  @include b.pastilla;
+  color: var(--pn-tinta);
+}
+
+.documentos__punto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.documentos__control {
+  @include b.control;
+}
+
+.documentos__observaciones {
+  min-height: 112px;
+  padding: 10px 12px;
+  resize: vertical;
+  font: var(--pn-cuerpo);
+}
+
+.documentos__guardar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.documentos__interruptor {
+  @include b.interruptor;
+}
+
+.documentos__boton-secundario {
+  @include b.boton-secundario;
+}
+
+.documentos__boton-texto {
+  @include b.boton-texto;
+}
+
+.documentos__lista {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.documentos__documento {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.documentos__icono {
+  font-size: 1.25rem;
+  color: var(--pn-tinta-3);
+}
+
+.documentos__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.documentos__nombre {
+  overflow: hidden;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.documentos__tipo {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.documentos__acciones {
+  display: flex;
+  gap: 2px;
+}
+
+.documentos__icono-boton {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    width: 36px;
+    padding: 0;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.documentos__icono-boton--peligro:hover:not(:disabled) {
+  color: var(--pn-peligro);
+}
+
+.documentos__vacio {
+  margin: 0 0 var(--pn-espacio-s);
+  color: var(--pn-tinta-2);
+}
+
+.documentos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-espacio-s);
+  margin-top: var(--pn-espacio-s);
+  padding-top: var(--pn-espacio-m);
+  border-top: 1px solid var(--pn-linea);
+}
+
+@media (max-width: 1023.98px) {
+  .documentos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .documentos__bloque {
+    padding: 16px 14px;
+  }
+
+  .documentos__icono-boton {
+    width: 44px;
+  }
+}
