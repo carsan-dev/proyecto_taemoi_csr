@@ -286,7 +286,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 
   /** Tras un cobro: solo el pendiente de ese alumno. */
   private refrescarPendiente(alumnoId: number): void {
-    this.pendientesApi.obtener([alumnoId]).subscribe({
+    // En `suscripciones`: si la pantalla se cierra antes de la respuesta, no se toca una vista destruida.
+    this.suscripciones.add(this.pendientesApi.obtener([alumnoId]).subscribe({
       next: (lista) => {
         const suyo = (lista ?? []).find((p) => p.alumnoId === alumnoId);
         if (suyo && suyo.cargos > 0) {
@@ -301,7 +302,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: () => showErrorToast('No se pudo actualizar el pendiente del alumno'),
-    });
+    }));
   }
 
   pendienteDe(alumnoId: number): PendienteAlumno | null {

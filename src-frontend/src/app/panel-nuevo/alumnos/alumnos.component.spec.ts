@@ -544,4 +544,18 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(el().querySelector('.alumnos__cargos')).not.toBeNull();
     el().remove();
   });
+
+  it('al cerrar la pantalla se cancela el refresco del pendiente en vuelo', async () => {
+    crear();
+    responder();
+    const promesa = Promise.resolve({ isConfirmed: true, value: '' } as never);
+    spyOn(Swal, 'fire').and.returnValue(promesa);
+    el().querySelectorAll('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
+    await promesa;
+    await Promise.resolve();
+    http.expectOne(`${API}/productos-alumno/801`).flush({});
+    const [refresco] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    fixture.destroy();
+    expect(refresco.cancelled).toBeTrue();
+  });
 });
