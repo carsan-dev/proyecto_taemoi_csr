@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.acceso.FiltroSedesTesoreria;
 import com.taemoi.project.acceso.GestionPorSede;
-import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.dtos.response.PendienteVencidoDTO;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.organizacion.TenantContext;
@@ -34,7 +33,7 @@ import com.taemoi.project.repositories.PendienteVencidoRepository.CargoCandidato
  * Pieza 8b-2: «Pendiente de cobro · vencido» del Inicio nuevo (decisiones 242 y 267). Servicio aparte: no toca los
  * métodos de {@code TesoreriaServiceImpl} que vigila {@code MoiskimdoTesoreriaIdenticaIntegrationTest}.
  *
- * <p>Regla (decisión 267, «hoy» en Europe/Madrid con {@link #setReloj(Clock)} fijable en los tests):
+ * <p>Regla (decisión 267, «hoy» con el {@code Clock} de {@code RelojConfig}, Europe/Madrid; fijo en los tests):
  * <ul>
  * <li>Solo cargos no pagados ni cancelados de alumnos activos, como la tesorería de hoy, y solo de las categorías
  * {@code MENSUALIDAD} y {@code EXAMEN} de la tesorería ({@link #categoria}).</li>
@@ -69,17 +68,13 @@ public class PendienteVencidoService {
 	private final PendienteVencidoRepository repositorio;
 	private final GestionPorSede gestionPorSede;
 	private final ComportamientoLegadoService comportamientoLegado;
-	private Clock reloj = Clock.system(ValidacionRelojConfig.ZONA);
+	private final Clock reloj;
 
 	public PendienteVencidoService(PendienteVencidoRepository repositorio, GestionPorSede gestionPorSede,
-			ComportamientoLegadoService comportamientoLegado) {
+			ComportamientoLegadoService comportamientoLegado, Clock reloj) {
 		this.repositorio = repositorio;
 		this.gestionPorSede = gestionPorSede;
 		this.comportamientoLegado = comportamientoLegado;
-	}
-
-	/** Solo para los tests: fija «hoy». */
-	public void setReloj(Clock reloj) {
 		this.reloj = reloj;
 	}
 
@@ -178,7 +173,10 @@ public class PendienteVencidoService {
 		};
 	}
 
-	/** Mes del concepto (y su año o, si no lo trae, el de la fecha); sin mes en el concepto, el de la fecha. */
+	/**
+	 * Periodo de la mensualidad como {@code TesoreriaServiceImpl#obtenerPeriodoMovimiento}: el año y el mes del concepto
+	 * y, el que falte, el de la fecha del cargo (un concepto con año y sin mes toma su año y el mes de la fecha).
+	 */
 	static YearMonth mesDeMensualidad(String concepto, LocalDate fechaCargo) {
 		String c = concepto != null ? concepto.toUpperCase(Locale.ROOT) : "";
 		Integer mes = null;
@@ -190,11 +188,9 @@ public class PendienteVencidoService {
 		}
 		Matcher ano = ANO_PATTERN.matcher(c);
 		Integer anoConcepto = ano.find() ? Integer.parseInt(ano.group(1)) : null;
-		if (mes != null) {
-			Integer anio = anoConcepto != null ? anoConcepto : (fechaCargo != null ? fechaCargo.getYear() : null);
-			return anio != null ? YearMonth.of(anio, mes) : null;
-		}
-		return fechaCargo != null ? YearMonth.from(fechaCargo) : null;
+		Integer anio = anoConcepto != null ? anoConcepto : (fechaCargo != null ? fechaCargo.getYear() : null);
+		Integer mesFinal = mes != null ? mes : (fechaCargo != null ? fechaCargo.getMonthValue() : null);
+		return anio != null && mesFinal != null ? YearMonth.of(anio, mesFinal) : null;
 	}
 
 	// ------------------------------------------------------------------ resumen

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -18,6 +19,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +39,6 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
-import com.taemoi.project.services.PendienteVencidoService;
 
 import jakarta.servlet.http.Cookie;
 
@@ -46,8 +47,8 @@ import jakarta.servlet.http.Cookie;
  * y los derechos de examen NO pagados (ni cancelados) con el plazo vencido, de cualquier mes. Mensualidad: su mes (el
  * del concepto o, si no lo trae, el de la asignación) es anterior al mes en curso, o es el mes en curso y hoy es día 6
  * o posterior. Derecho de examen: la fecha de su convocatoria es hoy o anterior; sin convocatoria, la fecha de
- * asignación. Mismo universo que la tesorería (alumnos activos, sin cancelados). Hoy fijado a un reloj de
- * Europe/Madrid. Escuelas sintéticas de {@link EscuelaConSedesDePrueba}; datos inventados.
+ * asignación. Mismo universo que la tesorería (alumnos activos, sin cancelados). Hoy fijado:
+ * Europe/Madrid con un {@code Clock} simulado ({@code @MockitoBean}). Escuelas sintéticas de {@link EscuelaConSedesDePrueba}; datos inventados.
  *
  * <pre>
  * hoy 06/03/2026         cargo                                   alumno    sede  importe  ¿vencido?
@@ -63,6 +64,10 @@ import jakarta.servlet.http.Cookie;
  * exFutura               DERECHO A EXAMEN, conv. 15/06/2026      aB        B     20       no
  * exSinConv              DERECHO A EXAMEN sin conv., 10/02/2026  aA        A     20       sí (fecha de asignación)
  * otro                   CAMISETA IT, 2025                       aA        A     10       no (no es de esos tipos)
+ * mPagadoNull            MENSUALIDAD FEBRERO 2026, pagado NULL   aB        B     15       sí (NULL = pendiente)
+ * mInscripcion           MENSUALIDAD ENERO 2026, sin alumno_id   aGrupoA*  B     10       sí (*por su inscripción)
+ * mAnoSinMes             MENSUALIDAD 2027 (año sin mes), ene-26  aA        A     30       no (enero de 2027, como la
+ *                                                                                         tesorería: año del concepto)
  * </pre>
  */
 @SpringBootTest
@@ -78,7 +83,7 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
-	@Autowired PendienteVencidoService servicio;
+	@MockitoBean Clock reloj;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -91,6 +96,7 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	long pMens, pExamen, pOtro;
 	long mEne, mFeb, mMar, mAbr, mSinMes, mPagada, mCancelada, mInactivo;
 	long exPasada, exHoy, exFutura, exSinConv, otro;
+	long mPagadoNull, mInscripcion, mAnoSinMes;
 	long otraVencido;
 
 	@BeforeAll
@@ -122,6 +128,18 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 		inscribir(e, e.aB, exFutura, "2026-06-15");
 		exSinConv = cargo(e, e.aA, pExamen, "DERECHO A EXAMEN IT", "20.00", "2026-02-10 12:00:00", e.sA);
 		otro = cargo(e, e.aA, pOtro, "CAMISETA IT", "10.00", "2025-01-10 12:00:00", e.sA);
+		mPagadoNull = cargo(e, e.aB, pMens, "MENSUALIDAD FEBRERO 2026 - PILATES", "15.00", "2026-02-01 12:00:00", e.sB);
+		jdbc.update("UPDATE producto_alumno SET pagado = NULL WHERE id = ?", mPagadoNull);
+		long inscripcion = jdbc.queryForObject("SELECT id FROM alumno_deporte WHERE alumno_id = ? AND organizacion_id = ?",
+				Long.class, e.aGrupoA, e.org);
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, alumno_deporte_id, producto_id, concepto, precio, cantidad, pagado,
+				  fecha_asignacion, organizacion_id, sede_id)
+				VALUES (NULL, ?, ?, 'MENSUALIDAD ENERO 2026 - TAEKWONDO', 10.00, 1, 0, '2026-01-02 12:00:00', ?, ?)""",
+				inscripcion, pMens, e.org, e.sB);
+		mInscripcion = jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class,
+				e.org);
+		mAnoSinMes = cargo(e, e.aA, pMens, "MENSUALIDAD 2027 - TAEKWONDO", "30.00", "2026-01-02 12:00:00", e.sA);
 
 		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-8b2-otra");
 		long pOtraMens = producto(otra, "CUOTA MENSUAL IT", "MENSUALIDAD", "MENSUALIDAD_IT");
@@ -134,6 +152,13 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 		tokenFamilia = e.token(jwtService, usuarios, e.cuentaFamilia(usuarios, "familiapendiente"));
 	}
 
+	/** Sin «hoy» explícito, el 06/03/2026 a las 10:00 (Europe/Madrid). */
+	@BeforeEach
+	void relojPorDefecto() {
+		when(reloj.instant()).thenReturn(LocalDateTime.parse("2026-03-06T10:00").atZone(ValidacionRelojConfig.ZONA).toInstant());
+		when(reloj.getZone()).thenReturn(ValidacionRelojConfig.ZONA);
+	}
+
 	@AfterEach
 	void sinFugaDeOrganizacion() {
 		assertNull(TenantContext.get(), "El test dejó una organización fijada en el hilo");
@@ -142,8 +167,8 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void pendienteVencido_coincideConMovimientosNoPagadosVencidos() throws Exception {
 		JsonNode r = leerEl("2026-03-06T10:00", tokenGestor);
-		assertImporte("175.00", r.get("total"));
-		assertEquals(7, r.get("cargos").asLong());
+		assertImporte("200.00", r.get("total"));
+		assertEquals(9, r.get("cargos").asLong());
 		assertEquals(4, r.get("alumnos").asLong(), "aA, aB, aGrupoA y aSinSede");
 
 		// La misma clasificación que la tesorería de hoy: los movimientos no pagados de esas categorías son
@@ -161,8 +186,8 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 				deEsosTipos.add(id);
 			}
 		});
-		Set<Long> vencidos = Set.of(mEne, mFeb, mMar, mSinMes, exPasada, exHoy, exSinConv);
-		assertEquals(union(vencidos, Set.of(mAbr, exFutura)), deEsosTipos);
+		Set<Long> vencidos = Set.of(mEne, mFeb, mMar, mSinMes, exPasada, exHoy, exSinConv, mPagadoNull, mInscripcion);
+		assertEquals(union(vencidos, Set.of(mAbr, exFutura, mAnoSinMes)), deEsosTipos);
 		BigDecimal suma = vencidos.stream().map(importe::get).reduce(BigDecimal.ZERO, BigDecimal::add);
 		assertEquals(0, suma.compareTo(new BigDecimal(r.get("total").asText())));
 	}
@@ -181,8 +206,8 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(0, total.compareTo(suma), desglose + " suma el total");
 			assertEquals(r.get("cargos").asLong(), cargos, desglose + " suma los cargos");
 		}
-		assertEquals(Map.of("MENSUALIDAD", "115.00", "EXAMEN", "60.00"), filas(r.get("porTipo"), "tipo"));
-		assertEquals(Map.of("2025-12", "25.00", "2026-01", "30.00", "2026-02", "70.00", "2026-03", "50.00"),
+		assertEquals(Map.of("MENSUALIDAD", "140.00", "EXAMEN", "60.00"), filas(r.get("porTipo"), "tipo"));
+		assertEquals(Map.of("2025-12", "25.00", "2026-01", "40.00", "2026-02", "85.00", "2026-03", "50.00"),
 				filas(r.get("porMes"), "mes"));
 		List<String> meses = new ArrayList<>();
 		r.get("porMes").forEach(f -> meses.add(f.get("mes").asText()));
@@ -190,13 +215,13 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 		Map<String, String> porSede = new HashMap<>();
 		r.get("porSede").forEach(f -> porSede.put(f.get("sedeId").isNull() ? "sin" : f.get("sedeId").asText(),
 				new BigDecimal(f.get("importe").asText()).setScale(2).toPlainString()));
-		assertEquals(Map.of(String.valueOf(e.sA), "100.00", String.valueOf(e.sB), "50.00", "sin", "25.00"), porSede);
+		assertEquals(Map.of(String.valueOf(e.sA), "100.00", String.valueOf(e.sB), "75.00", "sin", "25.00"), porSede);
 	}
 
 	@Test
 	void pendienteVencido_noCruzaEscuelas() throws Exception {
 		JsonNode deE = leerEl("2026-03-06T10:00", tokenGestor);
-		assertImporte("175.00", deE.get("total"));
+		assertImporte("200.00", deE.get("total"));
 		deE.get("masAntiguos").forEach(c -> assertTrue(c.get("productoAlumnoId").asLong() != otraVencido));
 
 		JsonNode deOtra = leerEl("2026-03-06T10:00", tokenOtraGestor);
@@ -213,8 +238,8 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Set.of(mSinMes), idsMasAntiguos(enDiciembre), "solo diciembre de 2025");
 		// El 06/03/2026, abril (generada por adelantado) y el examen de junio siguen fuera.
 		Set<Long> enMarzo = idsMasAntiguos(leerEl("2026-03-06T10:00", tokenGestor));
-		assertTrue(!enMarzo.contains(mAbr) && !enMarzo.contains(exFutura));
-		assertEquals(7, leerEl("2026-03-06T10:00", tokenGestor).get("cargos").asLong(), "ni abril ni junio");
+		assertTrue(!enMarzo.contains(mAbr) && !enMarzo.contains(exFutura) && !enMarzo.contains(mAnoSinMes));
+		assertEquals(9, leerEl("2026-03-06T10:00", tokenGestor).get("cargos").asLong(), "ni abril, ni junio, ni 2027");
 	}
 
 	@Test
@@ -222,7 +247,7 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 		JsonNode r = leerEl("2026-03-06T10:00", tokenGestor);
 		List<Long> ids = new ArrayList<>();
 		r.get("masAntiguos").forEach(c -> ids.add(c.get("productoAlumnoId").asLong()));
-		assertEquals(List.of(mSinMes, mEne, mFeb, exSinConv, exPasada), ids,
+		assertEquals(List.of(mSinMes, mEne, mInscripcion, mFeb, mPagadoNull), ids,
 				"los cinco más antiguos por la fecha en que vencieron");
 		JsonNode primero = r.get("masAntiguos").get(0);
 		assertEquals("MENSUALIDAD", primero.get("tipo").asText());
@@ -236,14 +261,14 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void pendienteVencido_mensualidadMesEnCurso_dia5_noCuenta() throws Exception {
 		JsonNode r = leerEl("2026-03-05T23:30", tokenGestor);
-		assertImporte("125.00", r.get("total"));
-		assertEquals(5, r.get("cargos").asLong(), "sin marzo ni el examen de mañana");
+		assertImporte("150.00", r.get("total"));
+		assertEquals(7, r.get("cargos").asLong(), "sin marzo ni el examen de mañana");
 	}
 
 	@Test
 	void pendienteVencido_mensualidadMesEnCurso_dia6_cuenta() throws Exception {
 		JsonNode r = leerEl("2026-03-06T00:30", tokenGestor);
-		assertEquals(Map.of("2025-12", "25.00", "2026-01", "30.00", "2026-02", "70.00", "2026-03", "50.00"),
+		assertEquals(Map.of("2025-12", "25.00", "2026-01", "40.00", "2026-02", "85.00", "2026-03", "50.00"),
 				filas(r.get("porMes"), "mes"));
 	}
 
@@ -251,8 +276,8 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	void pendienteVencido_derechoExamenElDiaDeLaConvocatoria_cuenta() throws Exception {
 		JsonNode antes = leerEl("2026-03-05T12:00", tokenGestor);
 		JsonNode ese = leerEl("2026-03-06T08:00", tokenGestor);
-		assertEquals(Map.of("MENSUALIDAD", "85.00", "EXAMEN", "40.00"), filas(antes.get("porTipo"), "tipo"));
-		assertEquals(Map.of("MENSUALIDAD", "115.00", "EXAMEN", "60.00"), filas(ese.get("porTipo"), "tipo"));
+		assertEquals(Map.of("MENSUALIDAD", "110.00", "EXAMEN", "40.00"), filas(antes.get("porTipo"), "tipo"));
+		assertEquals(Map.of("MENSUALIDAD", "140.00", "EXAMEN", "60.00"), filas(ese.get("porTipo"), "tipo"));
 	}
 
 	@Test
@@ -265,16 +290,11 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ ayudantes
 
-	/** Lee la ruta con «hoy» fijado (Europe/Madrid); el reloj vuelve al del sistema al terminar. */
+	/** Lee la ruta con «hoy» fijado en el {@code Clock} simulado (Europe/Madrid). */
 	private JsonNode leerEl(String ahora, String token) throws Exception {
-		Clock fijo = Clock.fixed(LocalDateTime.parse(ahora).atZone(ValidacionRelojConfig.ZONA).toInstant(),
-				ValidacionRelojConfig.ZONA);
-		servicio.setReloj(fijo);
-		try {
-			return leer(RUTA, token);
-		} finally {
-			servicio.setReloj(Clock.system(ValidacionRelojConfig.ZONA));
-		}
+		when(reloj.instant()).thenReturn(LocalDateTime.parse(ahora).atZone(ValidacionRelojConfig.ZONA).toInstant());
+		when(reloj.getZone()).thenReturn(ValidacionRelojConfig.ZONA);
+		return leer(RUTA, token);
 	}
 
 	private long producto(EscuelaConSedesDePrueba escuela, String concepto, String tipo, String codigo) {
