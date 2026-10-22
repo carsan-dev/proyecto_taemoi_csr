@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { AccionInforme, InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { InformePdfModalComponent } from '../../generales/informe-pdf-modal/informe-pdf-modal.component';
 import { HerramientasAlumnosComponent } from './herramientas-alumnos/herramientas-alumnos.component';
+import { BajasAltasAlumno } from './bajas-altas-alumno';
 import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from './informes-alumnos';
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
@@ -13,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { calcularEdad } from '../../../utilities/calcular-edad';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { InformeModalComponent } from '../../generales/informe-modal/informe-modal.component';
-import { Subject, Subscription, concat } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../../utilities/grado-colors';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
@@ -23,7 +24,6 @@ import { getDeporteLabel } from '../../../enums/deporte';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
-import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
 
 type ResumenAlumno = {
   totalDeportes: number;
@@ -79,6 +79,14 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
   get cargandoTemporadasReservasPlaza(): boolean {
     return this.informesAlumnos.cargandoTemporadas;
+  }
+
+  // «Dar de baja» y «Dar de alta»: en bajas-altas-alumno.ts (compartidas con el listado nuevo, 8b-3a).
+  private bajasAltasInstancia?: BajasAltasAlumno;
+  private get bajasAltas(): BajasAltasAlumno {
+    return (this.bajasAltasInstancia ??= new BajasAltasAlumno(this.endpointsService, this.alumnoService, () =>
+      this.recargarDatos()
+    ));
   }
 
   // Multi-sport data
@@ -751,101 +759,10 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
     } else {
       this.obtenerAlumnos();
     }
-
   }
 
   darDeAlta(alumnoId: number) {
-    // Primero obtener los deportes del alumno para ver cuáles están inactivos
-    this.alumnoService.obtenerDeportesDelAlumno(alumnoId).subscribe({
-      next: (deportes: AlumnoDeporteDTO[]) => {
-        const deportesInactivos = deportes.filter(d => d.activo === false);
-
-        if (deportesInactivos.length === 0) {
-          Swal.fire({
-            title: 'Información',
-            text: 'El alumno ya tiene todos sus deportes activos.',
-            icon: 'info',
-          });
-          return;
-        }
-
-        // Si solo hay un deporte inactivo, activarlo directamente
-        if (deportesInactivos.length === 1) {
-          this.activarDeporteDeAlumno(alumnoId, deportesInactivos[0].deporte);
-          return;
-        }
-
-        // Si hay múltiples deportes inactivos, mostrar selector con opción "Todos"
-        const deportesOptions = deportesInactivos
-          .map(d => `<option value="${d.deporte}">${getDeporteLabel(d.deporte)}</option>`)
-          .join('');
-
-        Swal.fire({
-          title: 'Selecciona el deporte a activar',
-          html: `
-            <select id="deporte-select" class="swal2-input">
-              <option value="">Selecciona un deporte...</option>
-              <option value="TODOS">✓ Todos los deportes</option>
-              ${deportesOptions}
-            </select>
-          `,
-          showCancelButton: true,
-          confirmButtonText: 'Dar de Alta',
-          cancelButtonText: 'Cancelar',
-          didOpen: () => {
-            attachSwalSelectSearch({ selectId: 'deporte-select', placeholder: 'Buscar deporte...' });
-          },
-          preConfirm: () => {
-            const select = document.getElementById('deporte-select') as HTMLSelectElement;
-            if (!select.value) {
-              Swal.showValidationMessage('Por favor selecciona un deporte');
-              return false;
-            }
-            return select.value;
-          },
-        }).then((result) => {
-          if (result.isConfirmed && result.value) {
-            if (result.value === 'TODOS') {
-              this.activarTodosLosDeportes(alumnoId, deportesInactivos);
-            } else {
-              this.activarDeporteDeAlumno(alumnoId, result.value);
-            }
-          }
-        });
-      },
-      error: () => {
-        showErrorToast('Error al obtener los deportes del alumno');
-      },
-    });
-  }
-
-  private activarDeporteDeAlumno(alumnoId: number, deporte: string): void {
-    this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte).subscribe({
-      next: () => {
-        showSuccessToast(`Alumno dado de alta en ${getDeporteLabel(deporte)}`);
-        this.recargarDatos();
-      },
-      error: (error) => {
-        showErrorToast(error.error || 'Error al dar de alta al alumno');
-      },
-    });
-  }
-
-  private activarTodosLosDeportes(alumnoId: number, deportesInactivos: AlumnoDeporteDTO[]): void {
-    const activarDeportesObservables = deportesInactivos.map(deporte =>
-      this.alumnoService.activarDeporteDeAlumno(alumnoId, deporte.deporte)
-    );
-
-    concat(...activarDeportesObservables).subscribe({
-      complete: () => {
-        const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
-        showSuccessToast(`Alumno dado de alta en todos sus deportes: ${deportesLabels}`);
-        this.recargarDatos();
-      },
-      error: (error) => {
-        showErrorToast(error.error || 'Error al activar algunos deportes');
-      },
-    });
+    this.bajasAltas.darDeAlta(alumnoId);
   }
 
   recargarDatos(): void {
@@ -857,33 +774,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
   }
 
   darDeBaja(alumnoId: number) {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'El alumno será dado de baja.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, dar de baja',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.endpointsService.darDeBajaAlumno(alumnoId).subscribe({
-          next: () => {
-            showSuccessToast('Alumno dado de baja correctamente');
-            // Reload data using the current pagination mode
-            if (this.usandoPaginacionCliente) {
-              this.obtenerAlumnosFiltradosPorDeporte();
-            } else {
-              this.obtenerAlumnos();
-            }
-          },
-          error: () => {
-            showErrorToast('Error al dar de baja al alumno');
-          },
-        });
-      }
-    });
+    this.bajasAltas.darDeBaja(alumnoId);
   }
 
   /**
