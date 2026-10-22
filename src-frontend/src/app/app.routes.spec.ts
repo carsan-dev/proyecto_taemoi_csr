@@ -5,6 +5,13 @@ import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
+import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
+import { PermisosSesionService } from './servicios/authentication/permisos-sesion.service';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
@@ -110,5 +117,40 @@ describe('app routes', () => {
     expect(hoy.canActivate).toEqual([roleGuard]);
     expect(hoy.loadComponent).toBeDefined();
     expect(await hoy.loadComponent!()).not.toBe(InicioComponent);
+  });
+
+  it('alumnosListar (8b-3a): primero el listado nuevo tras disenoNuevoGuard, con la misma data, guards y resolve que el de hoy', async () => {
+    const entradas = routes.filter((route) => route.path === 'alumnosListar');
+    expect(entradas.length).toBe(2);
+    const [nueva, hoy] = entradas;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.canActivate).toEqual([roleGuard]);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(AlumnosComponent);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(AlumnosComponent);
+  });
+
+  it('alumnosListar (8b-3a): con el interruptor apagado no se descarga el chunk nuevo', async () => {
+    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
+    class PantallaDeHoy {}
+    const nueva = routes.find((route) => route.path === 'alumnosListar' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent nuevo');
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'alumnosListar', component: PantallaDeHoy }]),
+        {
+          provide: PermisosSesionService,
+          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
+            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
+        },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/alumnosListar');
+    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
+    expect(cargar).not.toHaveBeenCalled();
   });
 });

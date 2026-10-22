@@ -1,0 +1,1146 @@
+// Listado de alumnos C del panel nuevo (8b-3a). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): un bloque blanco
+// con filete y filas de dos líneas separadas por la línea; ocre solo para lo que se debe o vence (importe, licencia sin
+// tramitar o caducada) y la estrella de la principal. El color de la escuela, solo en el botón principal, la página
+// actual y el foco. Sin sombras salvo la del menú (menú «Informes» y panel de cargos).
+
+:host {
+  display: block;
+}
+
+.alumnos {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.alumnos__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.alumnos__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.alumnos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 20px;
+}
+
+.alumnos__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.alumnos__subtitulo {
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+// ------------------------------------------------------------------ botones (DESIGN.md)
+
+.alumnos__boton-primario,
+.alumnos__boton-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--pn-radio-m);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+}
+
+.alumnos__boton-primario {
+  border: 1px solid var(--pn-marca-primario-tinta);
+  background: var(--pn-marca-primario-tinta);
+  color: var(--pn-marca-sobre-primario);
+
+  &:hover {
+    background: color-mix(in srgb, var(--pn-marca-primario-tinta) 86%, #000);
+    color: var(--pn-marca-sobre-primario);
+  }
+}
+
+.alumnos__boton-secundario {
+  border: 1px solid var(--pn-borde-control);
+  background: var(--pn-superficie);
+  color: var(--pn-marca-primario-tinta);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.alumnos__chevron-menu {
+  font-size: 0.75rem;
+  transition: transform var(--pn-transicion);
+
+  [aria-expanded='true'] > & {
+    transform: rotate(180deg);
+  }
+}
+
+// ------------------------------------------------------------------ menú «Informes»
+
+.alumnos__menu-zona {
+  position: relative;
+}
+
+.alumnos__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 300px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.alumnos__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  cursor: pointer;
+
+  i {
+    color: var(--pn-tinta-2);
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.alumnos__menu-separador {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--pn-linea);
+}
+
+// ------------------------------------------------------------------ barra de filtros
+
+.alumnos__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--pn-espacio-m);
+}
+
+.alumnos__buscador {
+  position: relative;
+  flex: 1 1 320px;
+  min-width: 0;
+
+  > i {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    color: var(--pn-tinta-2);
+    pointer-events: none;
+  }
+}
+
+.alumnos__campo {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+}
+
+.alumnos__campo--buscar {
+  padding-left: 40px;
+}
+
+.alumnos__campo--select {
+  flex: 0 1 240px;
+  width: auto;
+  cursor: pointer;
+}
+
+.alumnos__filtros {
+  display: flex;
+  gap: 10px;
+}
+
+.alumnos__filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--pn-marca-primario-tinta);
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-marca-primario-tinta);
+  }
+}
+
+.alumnos__contador {
+  margin: 0 4px 0 auto;
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-tinta);
+  white-space: nowrap;
+}
+
+.alumnos__vista {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-serie-pista);
+}
+
+.alumnos__vista-opcion {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--pn-superficie);
+    color: var(--pn-tinta);
+    box-shadow: 0 0 0 1px var(--pn-linea);
+  }
+}
+
+// ------------------------------------------------------------------ lista (filas)
+
+.alumnos__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.alumnos__fila {
+  position: relative;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.alumnos__fila--abierta {
+  background: var(--pn-superficie-2);
+}
+
+.alumnos__resumen {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto 40px;
+  grid-template-areas: 'avatar datos pendiente desplegar';
+  align-items: center;
+  column-gap: 14px;
+  padding: 10px 12px 10px 16px;
+}
+
+.alumnos__avatar {
+  grid-area: avatar;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  text-decoration: none;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.alumnos__datos {
+  grid-area: datos;
+  min-width: 0;
+}
+
+.alumnos__linea1,
+.alumnos__linea2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+}
+
+.alumnos__linea1 {
+  column-gap: 10px;
+  row-gap: 2px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__nombre {
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 2px;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.alumnos__baja {
+  color: var(--pn-peligro);
+}
+
+.alumnos__linea2 {
+  column-gap: 14px;
+  row-gap: 4px;
+  margin-top: 4px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+}
+
+.alumnos__num-deportes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-pastilla);
+  color: var(--pn-tinta-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.alumnos__disciplina {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.alumnos__disciplina--fuerte {
+  font-weight: 600;
+}
+
+.alumnos__punto {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.alumnos__disc--1 {
+  background: var(--pn-disc-1);
+}
+
+.alumnos__disc--2 {
+  background: var(--pn-disc-2);
+}
+
+.alumnos__disc--3 {
+  background: var(--pn-disc-3);
+}
+
+.alumnos__disc--4 {
+  background: var(--pn-disc-4);
+}
+
+.alumnos__disc--otra {
+  background: var(--pn-tinta-3);
+}
+
+// Cinturón de 16 × 8 px con su borde (WCAG 1.4.11: el blanco y el amarillo claro se ven).
+.alumnos__cinto {
+  flex: none;
+  width: 16px;
+  height: 8px;
+  margin-left: 4px;
+  border: 1px solid var(--pn-cinto-borde);
+  border-radius: 2px;
+}
+
+.alumnos__grado {
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__estrella {
+  color: var(--pn-atencion);
+  font-size: 0.75rem;
+}
+
+.alumnos__dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--pn-tinta);
+}
+
+.alumnos__etiqueta {
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__licencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-pastilla);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__licencia--sin,
+.alumnos__licencia--caducada {
+  border-color: transparent;
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.alumnos__licencia--con {
+  color: var(--pn-bien);
+}
+
+// ------------------------------------------------------------------ pendiente
+
+.alumnos__pendiente {
+  grid-area: pendiente;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.alumnos__importe {
+  color: var(--pn-atencion);
+  font: var(--pn-cuerpo);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.alumnos__cobrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-marca-primario-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: progress;
+    color: var(--pn-tinta-2);
+    background: var(--pn-superficie-2);
+  }
+}
+
+.alumnos__al-dia {
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+.alumnos__pendiente-cargando {
+  width: 64px;
+  height: 12px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+}
+
+.alumnos__desplegar {
+  grid-area: desplegar;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  i {
+    transition: transform var(--pn-transicion);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &[aria-expanded='true'] i {
+    transform: rotate(180deg);
+  }
+}
+
+// ------------------------------------------------------------------ panel de cargos (varios)
+
+.alumnos__cargos-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.alumnos__cargos {
+  position: absolute;
+  top: calc(100% - 6px);
+  right: 52px;
+  z-index: 31;
+  width: min(420px, calc(100vw - 32px));
+  padding: 12px 14px 8px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.alumnos__cargos-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alumnos__cargos-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 6px;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.alumnos__cargos-quien {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.alumnos__cargos-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alumnos__cargo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.alumnos__cargo-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.alumnos__cargo-concepto {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.alumnos__cargo-desde {
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__cargo-importe {
+  color: var(--pn-atencion);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// ------------------------------------------------------------------ fila desplegada
+
+.alumnos__detalle {
+  padding: 0 16px 14px 70px;
+}
+
+.alumnos__deportes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+}
+
+.alumnos__deporte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 18px;
+  row-gap: 6px;
+  padding: 10px 12px;
+  font: var(--pn-secundario);
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.alumnos__deporte-cabeza {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.alumnos__principal,
+.alumnos__etiqueta-baja {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+}
+
+.alumnos__principal {
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.alumnos__etiqueta-baja {
+  border: 1px solid var(--pn-linea-fuerte);
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__marcar-principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.alumnos__grado-detalle {
+  font-weight: 600;
+}
+
+.alumnos__detalle-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.alumnos__accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-marca-primario-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:first-child {
+    border-color: var(--pn-borde-control);
+    background: var(--pn-superficie);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.alumnos__accion--peligro {
+  color: var(--pn-peligro);
+}
+
+.alumnos__accion--bien {
+  color: var(--pn-bien);
+}
+
+// ------------------------------------------------------------------ tarjetas
+
+.alumnos__lista--tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--pn-espacio-m);
+  background: transparent;
+  border: 0;
+
+  .alumnos__fila {
+    background: var(--pn-superficie);
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+
+    & + .alumnos__fila {
+      border-top: 1px solid var(--pn-linea);
+    }
+  }
+
+  .alumnos__fila--abierta {
+    grid-column: 1 / -1;
+  }
+
+  .alumnos__resumen {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    grid-template-areas:
+      'avatar datos desplegar'
+      'pendiente pendiente pendiente';
+    row-gap: 10px;
+    align-items: start;
+    padding: 14px 12px 12px 16px;
+  }
+
+  .alumnos__pendiente {
+    justify-content: space-between;
+    min-height: 40px;
+    padding-top: 10px;
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  .alumnos__detalle {
+    padding-left: 16px;
+  }
+}
+
+// ------------------------------------------------------------------ carga, vacío y error
+
+.alumnos__lista--cargando {
+  padding: 4px 0;
+}
+
+.alumnos__esqueleto {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.alumnos__lista--tarjetas .alumnos__esqueleto {
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.alumnos__esqueleto-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pn-serie-pista);
+}
+
+.alumnos__esqueleto-lineas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+
+  span {
+    height: 10px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    width: min(260px, 60%);
+  }
+
+  span:last-child {
+    width: min(520px, 90%);
+  }
+}
+
+.alumnos__estado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  p {
+    margin: 0;
+    color: var(--pn-tinta);
+  }
+}
+
+// ------------------------------------------------------------------ paginación
+
+.alumnos__paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+.alumnos__rango {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.alumnos__paginas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alumnos__pagina-num,
+.alumnos__pagina-paso {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.alumnos__pagina-num[aria-current='page'] {
+  background: var(--pn-marca-primario);
+  color: var(--pn-marca-sobre-primario);
+}
+
+.alumnos__pagina-salto {
+  min-width: 24px;
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+// ------------------------------------------------------------------ herramientas del pie
+
+.alumnos__herramientas {
+  margin-top: var(--pn-espacio-xl);
+}
+
+.alumnos__seccion-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+// ------------------------------------------------------------------ tableta
+
+@media (max-width: 1023.98px) {
+  .alumnos__campo--select {
+    flex: 1 1 200px;
+  }
+}
+
+// ------------------------------------------------------------------ móvil (objetivos de 44 px, una columna)
+
+@media (max-width: 767.98px) {
+  .alumnos__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .alumnos__titulo {
+    font-size: 1.375rem;
+  }
+
+  .alumnos__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alumnos__acciones {
+    flex-wrap: wrap;
+  }
+
+  .alumnos__boton-primario,
+  .alumnos__boton-secundario,
+  .alumnos__filtro,
+  .alumnos__campo,
+  .alumnos__cobrar,
+  .alumnos__accion,
+  .alumnos__menu-opcion,
+  .alumnos__pagina-num,
+  .alumnos__pagina-paso,
+  .alumnos__vista-opcion,
+  .alumnos__marcar-principal {
+    min-height: 44px;
+  }
+
+  .alumnos__pagina-num {
+    min-width: 44px;
+  }
+
+  .alumnos__desplegar,
+  .alumnos__cerrar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .alumnos__buscador,
+  .alumnos__campo--select {
+    flex: 1 1 100%;
+  }
+
+  .alumnos__filtros {
+    flex: 1 1 auto;
+
+    .alumnos__filtro {
+      flex: 1 1 0;
+      justify-content: center;
+    }
+  }
+
+  .alumnos__contador {
+    margin-left: auto;
+  }
+
+  .alumnos__menu {
+    left: 0;
+    right: auto;
+    min-width: min(300px, calc(100vw - 32px));
+  }
+
+  .alumnos__resumen,
+  .alumnos__lista--tarjetas .alumnos__resumen {
+    grid-template-columns: 40px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'avatar datos desplegar'
+      '. pendiente pendiente';
+    row-gap: 8px;
+    align-items: start;
+    padding: 12px 8px 12px 12px;
+  }
+
+  .alumnos__pendiente,
+  .alumnos__lista--tarjetas .alumnos__pendiente {
+    justify-content: space-between;
+    min-width: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .alumnos__lista--tarjetas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .alumnos__detalle,
+  .alumnos__lista--tarjetas .alumnos__detalle {
+    padding: 0 12px 14px;
+  }
+
+  .alumnos__deporte-cabeza {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .alumnos__detalle-acciones {
+    .alumnos__accion {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
+
+  // En el móvil, el panel de cargos es una hoja inferior sobre la barra de navegación.
+  .alumnos__cargos-fondo {
+    z-index: 1015;
+    background: rgb(26 34 48 / 40%);
+  }
+
+  .alumnos__cargos {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1020;
+    width: auto;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 14px 16px calc(12px + env(safe-area-inset-bottom));
+    border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+    box-shadow: var(--pn-sombra-barra);
+  }
+
+  .alumnos__cargo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'texto importe'
+      'boton boton';
+
+    .alumnos__cargo-texto {
+      grid-area: texto;
+    }
+
+    .alumnos__cargo-importe {
+      grid-area: importe;
+    }
+
+    .alumnos__cobrar {
+      grid-area: boton;
+    }
+  }
+
+  .alumnos__paginacion {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alumnos__paginas {
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alumnos__chevron-menu,
+  .alumnos__desplegar i {
+    transition: none;
+  }
+}
