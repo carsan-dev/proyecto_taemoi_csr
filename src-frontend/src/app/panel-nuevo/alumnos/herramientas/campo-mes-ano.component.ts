@@ -1,19 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 
-const MESES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-];
+import { nombreMes } from '../../formato/formato-es';
+
+const MESES = Array.from({ length: 12 }, (_, i) => nombreMes(i));
 
 /**
  * Mes y año con su etiqueta visible cada uno (boceto `InformesPanel.dc.html`), con el mismo valor «AAAA-MM» y los mismos

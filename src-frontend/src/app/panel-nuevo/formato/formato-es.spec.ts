@@ -1,4 +1,4 @@
-import { agruparMiles, eur, fecha, fechaLarga, frasePlural, mes, numero, plural } from './formato-es';
+import { agruparMiles, eur, fecha, fechaLarga, frasePlural, mes, nombreMes, numero, plural } from './formato-es';
 
 describe('formato-es', () => {
   const NBSP = ' ';
@@ -107,5 +107,26 @@ describe('formato-es', () => {
     expect(f(0)).toBe('Se generan 0 PDF, uno por día.');
     expect(f(1044)).toBe('Se generan 1.044 PDF, uno por día.');
     expect(frasePlural(Number.NaN, 'uno', 'varios')).toBe('');
+  });
+
+  it('nombreMes: el nombre del mes con mayúscula inicial, de 0 (enero) a 11 (diciembre) (8b-D1)', () => {
+    expect(Array.from({ length: 12 }, (_, i) => nombreMes(i))).toEqual([
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ]);
+    expect(nombreMes(-1)).toBe('');
+    expect(nombreMes(12)).toBe('');
+    expect(nombreMes(1.5)).toBe('');
+    expect(nombreMes(Number.NaN)).toBe('');
   });
 });
