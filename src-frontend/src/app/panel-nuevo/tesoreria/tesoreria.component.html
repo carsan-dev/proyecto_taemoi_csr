@@ -296,7 +296,7 @@
         <div class="cert__campo">
           <label class="cert__etiqueta" for="cert-ano">Año</label>
           <select id="cert-ano" class="cert__control" [disabled]="generandoCert" (change)="elegirAnoCert($any($event.target).value)">
-            @for (a of anosDisponibles; track a) {
+            @for (a of certAnos; track a) {
             <option [value]="a" [selected]="certAno === a">{{ a }}</option>
             }
           </select>

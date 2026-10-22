@@ -88,11 +88,14 @@ export interface BarraCobro {
   texto: string;
 }
 
-/** Un % entero; con una décima si el entero borraría una parte que existe (0,1 % o 99,9 %). */
+/** Un % entero; con una décima si el entero borraría una parte que existe: se muestra entre 0,1 % y 99,9 %. */
 function porcentaje(parte: number, total: number): number {
   const p = (parte / total) * 100;
-  if ((p > 0 && p < 1) || (p > 99 && p < 100)) {
-    return Math.round(p * 10) / 10;
+  if (p > 0 && p < 100) {
+    if (p < 1 || p > 99) {
+      return Math.min(Math.max(Math.round(p * 10) / 10, 0.1), 99.9);
+    }
+    return Math.round(p);
   }
   return Math.round(p);
 }

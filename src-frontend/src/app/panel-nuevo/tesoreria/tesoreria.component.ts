@@ -103,6 +103,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   readonly textoPorcentaje = textoPorcentaje;
 
   anosDisponibles: number[] = [];
+  certAnos: number[] = [];
   filtroMes: number | null = new Date().getMonth() + 1;
   filtroAno: number | null = new Date().getFullYear();
   filtroDeporte = 'TODOS';
@@ -135,8 +136,54 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   /** Cargos con una escritura en vuelo (cobro incluido): sin doble envío. */
   readonly enProceso = new Set<number>();
 
-  menuExportar = false;
-  menuFila: number | null = null;
+  private _menuExportar = false;
+  private _menuFila: number | null = null;
+  private escuchaFuera = false;
+
+  get menuExportar(): boolean {
+    return this._menuExportar;
+  }
+
+  set menuExportar(v: boolean) {
+    this._menuExportar = v;
+    this.sincronizarEscucha();
+  }
+
+  get menuFila(): number | null {
+    return this._menuFila;
+  }
+
+  set menuFila(v: number | null) {
+    this._menuFila = v;
+    this.sincronizarEscucha();
+  }
+
+  /** El clic fuera de un menú abierto lo cierra, también en zonas sin foco; solo se escucha mientras hay uno abierto. */
+  private readonly alPulsarFuera = (evento: Event): void => {
+    const destino = evento.target as Node | null;
+    const zonas = [
+      this._menuExportar ? this.botonExportar?.nativeElement.closest('.tesoreria__menu-zona') : null,
+      this._menuFila !== null ? this.botonMas(this._menuFila)?.closest('.tesoreria__menu-zona') : null,
+    ];
+    if (destino && zonas.some((z) => z?.contains(destino))) {
+      return;
+    }
+    this._menuExportar = false;
+    this._menuFila = null;
+    this.sincronizarEscucha();
+    this.cdr.markForCheck();
+  };
+
+  private sincronizarEscucha(): void {
+    const abierto = this._menuExportar || this._menuFila !== null;
+    if (abierto && !this.escuchaFuera) {
+      document.addEventListener('pointerdown', this.alPulsarFuera, true);
+      this.escuchaFuera = true;
+    } else if (!abierto && this.escuchaFuera) {
+      document.removeEventListener('pointerdown', this.alPulsarFuera, true);
+      this.escuchaFuera = false;
+    }
+  }
 
   certAbierto = false;
   certEstado: 'inicial' | Estado = 'inicial';
@@ -216,6 +263,10 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.carga?.unsubscribe();
+    if (this.escuchaFuera) {
+      document.removeEventListener('pointerdown', this.alPulsarFuera, true);
+      this.escuchaFuera = false;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -272,6 +323,10 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       error: () => {
         if (silencioso) {
           this.avisos.error('No se pudo cargar la información de tesorería');
+          // Si la relectura cortó una carga de página, la lista no llegó a cargarse: bloque de error con «Reintentar».
+          if (this.estadoLista === 'cargando') {
+            this.estadoLista = 'error';
+          }
         } else {
           this.estado = 'error';
         }
@@ -613,10 +668,13 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       return;
     }
     const motivo = (r.valores['motivo'] ?? '').trim();
-    this.solicitudes.crear({ tipo: 'REVERTIR_COBRO', productoAlumnoId: m.productoAlumnoId, motivo }).subscribe({
-      next: () => this.avisos.exito('Solicitud enviada al propietario'),
-      error: (error) => this.avisos.error(mensajeDeError(error) ?? 'No se ha podido enviar la solicitud.'),
-    });
+    this.solicitudes
+      .crear({ tipo: 'REVERTIR_COBRO', productoAlumnoId: m.productoAlumnoId, motivo })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.avisos.exito('Solicitud enviada al propietario'),
+        error: (error) => this.avisos.error(mensajeDeError(error) ?? 'No se ha podido enviar la solicitud.'),
+      });
   }
 
   /** `actualizarCobro` de hoy: un cambio a la vez por cargo, aviso y relectura; el 403 dice quién puede. */
@@ -626,17 +684,20 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       return;
     }
     this.enProceso.add(id);
-    this.endpoints.actualizarCobroTesoreria(id, cambios).subscribe({
-      next: () => {
-        this.enProceso.delete(id);
-        this.avisos.exito(ok);
-        this.cargar(true, true);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.enProceso.delete(id);
-        this.avisos.error(error?.status === 403 ? 'Solo administradores pueden revertir cobros' : fallo);
-      },
-    });
+    this.endpoints
+      .actualizarCobroTesoreria(id, cambios)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.enProceso.delete(id);
+          this.avisos.exito(ok);
+          this.cargar(true, true);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.enProceso.delete(id);
+          this.avisos.error(error?.status === 403 ? 'Solo administradores pueden revertir cobros' : fallo);
+        },
+      });
   }
 
   // ------------------------------------------------------------------ «Exportar»
@@ -706,6 +767,10 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     this.cerrarMenuExportar(false);
     this.certAbierto = true;
     this.certAno = this.filtroAno ?? new Date().getFullYear();
+    // El selector enseña exactamente el año que se enviará: si no está entre los disponibles, se añade.
+    this.certAnos = this.anosDisponibles.includes(this.certAno)
+      ? [...this.anosDisponibles].sort((a, b) => b - a)
+      : [...this.anosDisponibles, this.certAno].sort((a, b) => b - a);
     this.certFiltro = '';
     this.certSeleccion = [];
     this.cargarAlumnosCert();
@@ -797,7 +862,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     const ano = this.certAno;
     this.endpoints
       .generarCertificadosCobros(this.certSeleccion, ano)
-      .pipe(finalize(() => (this.generandoCert = false)))
+      .pipe(takeUntil(this.destroy$), finalize(() => (this.generandoCert = false)))
       .subscribe({
         next: (blob: Blob) => {
           const url = globalThis.URL.createObjectURL(blob);

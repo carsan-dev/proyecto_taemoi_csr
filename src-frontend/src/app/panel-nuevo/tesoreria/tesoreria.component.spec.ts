@@ -943,6 +943,101 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudieron generar los certificados' }]);
       expect(document.querySelector('dialog.pn-panel')).not.toBeNull();
     });
+
+    it('«Certificados…» con «Todos los años» y sin el año actual en la lista: el selector enseña el año que se enviará', async () => {
+      crear();
+      const p = pendientes();
+      p.anios.forEach((r) => r.flush([2023, 2024]));
+      p.resumen[0].flush(RESUMEN);
+      p.movimientos[0].flush(pagina([PENDIENTE]));
+      fixture.detectChanges();
+      const ano = el().querySelector<HTMLSelectElement>('#tesoreria-ano')!;
+      ano.value = '';
+      ano.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      elegirMenu(abrirExportar(), 'Certificados…');
+      const panel = () => document.querySelector<HTMLElement>('dialog.pn-panel')!;
+      http.expectOne((r) => r.url === `${API}/alumnos`).flush([{ id: 1, nombre: 'Ana', apellidos: 'Prueba' }]);
+      pintar();
+      const select = panel().querySelector<HTMLSelectElement>('#cert-ano')!;
+      expect(Array.from(select.options).map((o) => o.value)).toEqual(['2026', '2024', '2023']);
+      expect(select.value).toBe('2026');
+      panel().querySelector<HTMLInputElement>('.cert__alumno input')!.click();
+      pintar();
+      botonEn(panel(), 'Generar').click();
+      pintar();
+      const r = http.expectOne(`${API}/tesoreria/certificados-cobros`);
+      expect(r.request.body).toEqual({ alumnoIds: [1], ano: 2026 });
+      r.flush(new Blob(['pdf']));
+      await esperar();
+      expect(descargas).toEqual(['certificado_cobros_2026.pdf']);
+    });
+
+    it('clic fuera en una zona sin foco cierra «Exportar» sin quitar el foco de donde está; dentro no lo cierra', () => {
+      crear();
+      responder();
+      const menu = abrirExportar();
+      menu.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      fixture.detectChanges();
+      expect(el().querySelector('#tesoreria-menu-exportar')).not.toBeNull();
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      fixture.detectChanges();
+      expect(el().querySelector('#tesoreria-menu-exportar')).toBeNull();
+      expect(document.activeElement).not.toBe(el().querySelector('#tesoreria-exportar'));
+    });
+  });
+
+  it('clic fuera en una zona sin foco cierra el «⋯»; dentro del menú no', () => {
+    crear();
+    responder();
+    const menu = abrirMenuFila(1000);
+    menu.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    expect(fila(1000).querySelector('[role="menu"]')).not.toBeNull();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+    expect(fila(1000).querySelector('[role="menu"]')).toBeNull();
+  });
+
+  it('una relectura silenciosa que cancela una carga de página y falla deja la lista en error, no en esqueleto', () => {
+    crear();
+    responder();
+    const c = fixture.componentInstance;
+    c.cargar(false);
+    expect(c.estadoLista).toBe('cargando');
+    c.cargar(true, true);
+    const p = pendientes();
+    p.resumen[0].flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(c.estadoLista).toBe('error');
+    expect(c.cargando).toBeFalse();
+  });
+
+  it('al destruir la pantalla antes de la respuesta no hay aviso ni relectura (escritura y solicitud)', async () => {
+    crear();
+    responder([PAGADO]);
+    elegirMenu(abrirMenuFila(1001), 'Revertir');
+    botonEn(dialogo()!, 'Sí, revertir').click();
+    await esperar();
+    const put = http.expectOne(`${API}/productos-alumno/1001`);
+    fixture.destroy();
+    expect(put.cancelled).toBeTrue();
+    expect(avisos()).toEqual([]);
+    expect(pendientes().movimientos.length).toBe(0);
+  });
+
+  it('al destruir antes de la respuesta de «Pedir revertir» no hay aviso', async () => {
+    esAdmin = false;
+    crear();
+    responder([PAGADO]);
+    elegirMenu(abrirMenuFila(1001), 'Pedir revertir');
+    escribir('#motivo', 'Duplicado');
+    botonEn(dialogo()!, 'Enviar solicitud').click();
+    await esperar();
+    const r = http.expectOne(`${API}/solicitudes`);
+    fixture.destroy();
+    expect(r.cancelled).toBeTrue();
+    expect(avisos()).toEqual([]);
   });
 
   it('nunca abre SweetAlert2 ni el cargador global en el flujo normal', () => {

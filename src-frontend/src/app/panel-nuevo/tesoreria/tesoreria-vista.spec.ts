@@ -66,4 +66,16 @@ describe('tesoreria-vista (8b-3d)', () => {
     expect(barraCobro(1, 999)).toEqual({ cobrado: 0.1, pendiente: 99.9, vacia: false, texto: 'Cobrado 1,00 € (0,1 %), pendiente 999,00 € (99,9 %)' });
     expect(barraCobro(0, 0)).toEqual({ cobrado: 0, pendiente: 0, vacia: true, texto: 'Sin importes en el periodo' });
   });
+
+  it('barraCobro: una parte minúscula no desaparece y la casi total no llega a 100 %', () => {
+    const chica = barraCobroReal(1, 100000);
+    expect(chica.cobrado).toBe(0.1);
+    expect(chica.pendiente).toBe(99.9);
+    expect(chica.texto.replace(/\s+/g, ' ')).toContain('(0,1 %)');
+    const grande = barraCobroReal(100000, 1);
+    expect(grande.cobrado).toBe(99.9);
+    expect(grande.pendiente).toBe(0.1);
+    expect(barraCobroReal(0, 0).vacia).toBeTrue();
+    expect(barraCobroReal(5, 0).cobrado).toBe(100);
+  });
 });
