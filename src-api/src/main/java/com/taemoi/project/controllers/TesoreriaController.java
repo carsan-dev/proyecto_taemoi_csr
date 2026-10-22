@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.CertificadosCobrosRequest;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
+import com.taemoi.project.dtos.response.PendienteAlumnoDTO;
 import com.taemoi.project.dtos.response.PendienteVencidoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.services.PendienteVencidoService;
@@ -68,6 +69,16 @@ public class TesoreriaController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
 	public ResponseEntity<PendienteVencidoDTO> obtenerPendienteVencido() {
 		return ResponseEntity.ok(pendienteVencidoService.obtener());
+	}
+
+	/**
+	 * Pieza 8b-3a: lo vencido de cada alumno de una página del listado nuevo (como mucho 25 ids; más, 400), con la misma
+	 * regla que /pendiente-vencido. Solo alumnos de la escuela activa: los ids ajenos se ignoran. Mismas autoridades.
+	 */
+	@GetMapping("/pendientes-por-alumno")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<List<PendienteAlumnoDTO>> obtenerPendientesPorAlumno(@RequestParam List<Long> alumnoIds) {
+		return ResponseEntity.ok(pendienteVencidoService.porAlumno(alumnoIds));
 	}
 
 	@GetMapping("/movimientos")

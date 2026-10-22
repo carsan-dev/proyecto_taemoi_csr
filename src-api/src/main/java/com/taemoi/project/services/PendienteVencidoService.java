@@ -6,8 +6,10 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.acceso.FiltroSedesTesoreria;
 import com.taemoi.project.acceso.GestionPorSede;
+import com.taemoi.project.dtos.response.PendienteAlumnoDTO;
 import com.taemoi.project.dtos.response.PendienteVencidoDTO;
 import com.taemoi.project.entities.TipoProducto;
 import com.taemoi.project.organizacion.TenantContext;
@@ -58,6 +61,8 @@ public class PendienteVencidoService {
 	static final String MENSUALIDAD = "MENSUALIDAD";
 	static final String EXAMEN = "EXAMEN";
 	private static final int MAS_ANTIGUOS = 5;
+	/** Pieza 8b-3a: una página del listado de alumnos. */
+	public static final int MAX_ALUMNOS = 25;
 
 	/** Como {@code TesoreriaServiceImpl}: meses en mayúsculas y año de cuatro cifras en el concepto. */
 	private static final String[] MESES_ES = { "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO",
@@ -80,23 +85,69 @@ public class PendienteVencidoService {
 
 	@Transactional(readOnly = true)
 	public PendienteVencidoDTO obtener() {
+		Long organizacion = organizacionActiva();
+		// La gestión ve toda la escuela, como /resumen sin sede (el responsable de sede no entra hasta la E9).
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
+		return resumir(vencidos(repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro())));
+	}
+
+	/**
+	 * Pieza 8b-3a: lo vencido de cada alumno indicado (como mucho {@link #MAX_ALUMNOS}), con la misma regla y el mismo
+	 * universo que {@link #obtener()}: la suma por alumno coincide con su parte del total. Solo los alumnos de la
+	 * escuela activa con algo vencido; los ids ajenos o sin deuda no salen. Orden: el de los ids pedidos.
+	 */
+	@Transactional(readOnly = true)
+	public List<PendienteAlumnoDTO> porAlumno(List<Long> alumnoIds) {
+		if (alumnoIds == null || alumnoIds.isEmpty() || alumnoIds.size() > MAX_ALUMNOS) {
+			throw new IllegalArgumentException("Indica entre 1 y " + MAX_ALUMNOS + " alumnos.");
+		}
+		Long organizacion = organizacionActiva();
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
+		Set<Long> pedidos = new LinkedHashSet<>(alumnoIds);
+		Map<Long, List<Vencido>> porAlumno = new HashMap<>();
+		for (Vencido v : vencidos(repositorio.candidatosDeAlumnos(organizacion, sedes.todas(), sedes.parametro(),
+				pedidos))) {
+			porAlumno.computeIfAbsent(v.cargo().getAlumnoId(), k -> new ArrayList<>()).add(v);
+		}
+		List<PendienteAlumnoDTO> resultado = new ArrayList<>();
+		for (Long alumno : pedidos) {
+			List<Vencido> suyos = porAlumno.get(alumno);
+			if (suyos == null) {
+				continue;
+			}
+			suyos.sort(Comparator.comparing(Vencido::desde).thenComparing(v -> v.cargo().getId()));
+			BigDecimal importe = BigDecimal.ZERO;
+			List<PendienteAlumnoDTO.Cargo> detalle = new ArrayList<>();
+			for (Vencido v : suyos) {
+				importe = importe.add(importe(v.cargo()));
+				detalle.add(new PendienteAlumnoDTO.Cargo(v.cargo().getId(), v.cargo().getConcepto(), importe(v.cargo()),
+						v.desde().toString()));
+			}
+			resultado.add(new PendienteAlumnoDTO(alumno, importe, detalle.size(), detalle));
+		}
+		return resultado;
+	}
+
+	private static Long organizacionActiva() {
 		Long organizacion = TenantContext.get();
 		if (organizacion == null) {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
-		// La gestión ve toda la escuela, como /resumen sin sede (el responsable de sede no entra hasta la E9).
-		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
+		return organizacion;
+	}
+
+	/** La regla común de {@link #obtener()} y {@link #porAlumno}: los candidatos vencidos hoy. */
+	private List<Vencido> vencidos(List<CargoCandidato> candidatos) {
 		LocalDate hoy = LocalDate.now(reloj);
 		boolean legado = comportamientoLegado.activo();
-
 		List<Vencido> vencidos = new ArrayList<>();
-		for (CargoCandidato c : repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro())) {
+		for (CargoCandidato c : candidatos) {
 			Vencido v = vencido(c, hoy, legado);
 			if (v != null) {
 				vencidos.add(v);
 			}
 		}
-		return resumir(vencidos);
+		return vencidos;
 	}
 
 	// ------------------------------------------------------------------ regla

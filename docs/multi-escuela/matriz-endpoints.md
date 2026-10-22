@@ -388,6 +388,15 @@ Pieza 8b-2 (Inicio I1, fase3-e8b-plan.md §9; decisiones 242 y 267): 2 líneas n
   en cada tabla (`PendienteVencidoRepository`). Devuelve `{total, cargos, alumnos, diaLimiteMensualidad, porTipo[],
   porMes[], porSede[], masAntiguos[5]}` con importes en decimal. Lo prueba `PendienteVencidoIntegrationTest`.
 
+Pieza 8b-3a (Alumnos C, fase3-e8b-plan.md §10): 2 líneas nuevas; ninguna casilla existente cambia.
+- `GET`/`HEAD /api/tesoreria/pendientes-por-alumno?alumnoIds=…` (`TesoreriaController#obtenerPendientesPorAlumno`):
+  mismas casillas que `/pendiente-vencido` (GESTOR y PROPIETARIO `PERMITE`; RESPONSABLE_SEDE `DENIEGA` hasta la E9).
+  Entre 1 y 25 ids (más o ninguno, 400). Solo alumnos de la escuela activa: los ids ajenos se ignoran, sin error.
+  Misma regla y consulta nativa que `/pendiente-vencido` (`PendienteVencidoRepository#candidatosDeAlumnos`, con
+  `organizacion_id` explícito en cada tabla). Devuelve `[{alumnoId, importe, cargos, detalle[{productoAlumnoId,
+  concepto, importe, vencidoDesde}]}]` solo de los alumnos con algo vencido. Solo lectura, sin registro. Lo prueba
+  `PendientesPorAlumnoIntegrationTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).
