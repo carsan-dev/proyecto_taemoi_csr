@@ -176,6 +176,10 @@ interface Montaje<C> {
   /** Resultados que devolverá cada `Swal.fire` en orden; después, cancelado. */
   resultados: any[];
   datos: Datos;
+  /** Peticiones que no se responden solas (para probar respuestas que llegan tarde). */
+  retener: ((req: TestRequest) => boolean) | null;
+  /** Las retenidas, para responderlas a mano. */
+  retenidas: TestRequest[];
   asentar: () => Promise<void>;
 }
 
@@ -214,11 +218,17 @@ async function montar<C>(tipo: Type<C>, url = '/alumnosEditar/7', datos: Datos =
     swal: [],
     resultados: [],
     datos,
+    retener: null,
+    retenidas: [],
     asentar: async () => {
       for (let vuelta = 0; vuelta < 12; vuelta++) {
         await new Promise((r) => setTimeout(r));
         for (const req of http.match(() => true)) {
           if (req.cancelled) continue;
+          if (m.retener?.(req)) {
+            m.retenidas.push(req);
+            continue;
+          }
           if (req.request.method !== 'GET') {
             m.escrituras.push({ metodo: req.request.method, url: req.request.urlWithParams.replace(API, ''), cuerpo: serializar(req.request.body) });
           }
@@ -1051,6 +1061,54 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     it('«Vista de familia» lleva a la vista de la familia con el alumno', async () => {
       const m = await montar(FichaAlumnoComponent);
       expect(m.el().querySelector('a.ficha__accion--familia')!.getAttribute('href')).toBe('/userpage?alumnoId=7');
+    });
+  });
+
+  // ---------------------------------------------------------------- revisión de la ronda 2
+
+  describe('el pendiente es siempre del alumno que se ve', () => {
+    const esPendiente = (r: TestRequest) => r.request.url.endsWith('/tesoreria/pendientes-por-alumno');
+
+    it('al pasar de 7 a 9 sin respuesta del pendiente de 9: sin importe, «Cobrar», panel ni insignia; la del 7 que llega tarde se ignora', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!.click();
+      await m.asentar();
+      expect(m.el().querySelector('.ficha__cargos')).withContext('panel abierto en el 7').not.toBeNull();
+      m.retener = esPendiente;
+      m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
+      await m.asentar();
+      expect(TestBed.inject(Router).url).toBe('/alumnosEditar/9');
+      expect(m.comp.alumnoId).toBe(9);
+      expect(m.el().querySelector('.ficha__importe')).toBeNull();
+      expect(m.el().querySelector('.ficha__cobrar')).toBeNull();
+      expect(m.el().querySelector('.ficha__cargos')).toBeNull();
+      expect(m.el().querySelector('[role="tab"] .ficha__insignia')).toBeNull();
+      const pendientes = m.retenidas.filter((r) => !r.cancelled);
+      expect(pendientes.map((r) => r.request.params.get('alumnoIds'))).toEqual(['9']);
+      // Llega una respuesta que no es del alumno que se ve (la del 7): no se pinta ni se puede cobrar.
+      pendientes[0].flush([TRES_CARGOS]);
+      m.harness.detectChanges();
+      expect(m.el().querySelector('.ficha__cobrar')).toBeNull();
+      expect(m.el().querySelector('.ficha__importe')).toBeNull();
+      expect(texto(m.el(), '.ficha__al-dia')).toBe('Al día');
+    });
+
+    it('la respuesta del alumno anterior que llega cuando ya se ve otro no lo pinta', async () => {
+      const datos = datosPorDefecto();
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      m.retener = esPendiente;
+      m.comp.releerPendiente();
+      const [del7] = m.http.match((r) => r.url.endsWith('/tesoreria/pendientes-por-alumno')).filter((r) => !r.cancelled);
+      expect(del7.request.params.get('alumnoIds')).toBe('7');
+      m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
+      await m.asentar();
+      expect(m.comp.alumnoId).toBe(9);
+      if (!del7.cancelled) {
+        del7.flush([TRES_CARGOS]);
+        m.harness.detectChanges();
+      }
+      expect(m.el().querySelector('.ficha__cobrar')).toBeNull();
+      expect(m.el().querySelector('.ficha__importe')).toBeNull();
     });
   });
 

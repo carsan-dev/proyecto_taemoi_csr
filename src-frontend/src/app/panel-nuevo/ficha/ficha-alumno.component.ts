@@ -110,6 +110,7 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   override pagandoProductos: Set<number> = new CobrosEnVuelo(() => this.releerPendiente());
 
   private readonly suscripciones = new Subscription();
+  private destruida = false;
   private cargaPendiente?: Subscription;
   private cacheDisciplinas: { deportes: AlumnoDeporteDTO[]; lista: DisciplinaCarnet[] } | null = null;
 
@@ -134,6 +135,7 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   }
 
   override ngOnDestroy(): void {
+    this.destruida = true;
     super.ngOnDestroy();
     this.suscripciones.unsubscribe();
     this.cargaPendiente?.unsubscribe();
@@ -244,12 +246,21 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   private cargarPendiente(): void {
     const id = this.alumnoId;
     this.cargaPendiente?.unsubscribe();
-    if (!id) {
+    // Al cambiar de alumno, nada del anterior (importe, insignia, «Cobrar» ni su panel) mientras llega el del nuevo.
+    if (this.pendiente?.alumnoId !== id) {
+      this.pendiente = null;
+      this.panelAbierto = false;
+    }
+    if (!id || this.destruida) {
       return;
     }
     this.estadoPendiente = 'cargando';
     this.cargaPendiente = this.pendientesApi.obtener([id]).subscribe({
       next: (lista) => {
+        // Una respuesta que llega cuando ya se ve otro alumno se descarta.
+        if (id !== this.alumnoId) {
+          return;
+        }
         const suyo = (lista ?? []).find((p) => p.alumnoId === id);
         this.pendiente = suyo && suyo.cargos > 0 ? suyo : null;
         this.estadoPendiente = 'listo';
@@ -260,6 +271,9 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
         this.cdr.markForCheck();
       },
       error: () => {
+        if (id !== this.alumnoId) {
+          return;
+        }
         this.pendiente = null;
         this.estadoPendiente = 'error';
       },
@@ -312,7 +326,7 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   /** Tras cobrar: el pendiente, la tabla de pagos y los grados (el derecho de examen cobrado sube el grado). */
   private trasCobrar(): void {
     const id = this.alumnoId;
-    if (!id) {
+    if (!id || this.destruida) {
       return;
     }
     this.cargarPendiente();

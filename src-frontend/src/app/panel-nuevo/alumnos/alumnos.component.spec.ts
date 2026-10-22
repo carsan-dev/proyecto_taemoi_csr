@@ -558,4 +558,42 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     fixture.destroy();
     expect(refresco.cancelled).toBeTrue();
   });
+
+  // ---------------------------------------------------------------- 8b-3b: estado en la dirección y carreras
+
+  it('cambiar de página con el panel de cargos abierto: no queda ningún cargo de la página anterior', () => {
+    crear();
+    responder();
+    el().querySelector<HTMLButtonElement>('.alumnos__fila .alumnos__cobrar')!.click();
+    fixture.detectChanges();
+    expect(el().querySelector('.alumnos__cargos')).not.toBeNull();
+    const pasos = el().querySelectorAll<HTMLButtonElement>('.alumnos__pagina-paso');
+    pasos[pasos.length - 1].click();
+    fixture.detectChanges();
+    expect(el().querySelector('.alumnos__cargos')).toBeNull();
+    expect(el().querySelector('.alumnos__cobrar')).toBeNull();
+    listados()[0].flush(pagina(812, 25, 26));
+    fixture.detectChanges();
+    expect(el().querySelector('.alumnos__cobrar')).withContext('pendientes sin llegar').toBeNull();
+    const [p] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    expect(p.request.params.get('alumnoIds')!.split(',')[0]).toBe('26');
+    // Una respuesta con alumnos de otra página no pinta nada.
+    p.flush([DOS_CARGOS, UN_CARGO]);
+    fixture.detectChanges();
+    expect(el().querySelector('.alumnos__cobrar')).toBeNull();
+  });
+
+  it('los pendientes que no han llegado al cambiar de página o de filtro se cancelan', () => {
+    crear();
+    http.match((r) => r.url === `${API}/alumnos` && r.params.get('size') === '1').forEach((r) => r.flush({ totalElements: 790 }));
+    listados()[0].flush(pagina(812));
+    fixture.detectChanges();
+    const [enVuelo] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    fixture.componentInstance.irAPagina(2);
+    expect(enVuelo.cancelled).toBeTrue();
+    listados()[0].flush(pagina(812, 25, 26));
+    const [otra] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    fixture.componentInstance.alternarInactivos();
+    expect(otra.cancelled).toBeTrue();
+  });
 });
