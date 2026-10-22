@@ -98,12 +98,13 @@
   --pn-serie-pista: #eceef1;
   --pn-cinto-borde: #7a8290;
 
-  // Rampa de ocupación: 5, 14, 32 y 58 % mezclado con blanco, y el color pleno con cifra blanca.
-  --pn-ocupacion-1: color-mix(in srgb, var(--pn-serie-ocupacion) 5%, #ffffff);
-  --pn-ocupacion-2: color-mix(in srgb, var(--pn-serie-ocupacion) 14%, #ffffff);
-  --pn-ocupacion-3: color-mix(in srgb, var(--pn-serie-ocupacion) 32%, #ffffff);
-  --pn-ocupacion-4: color-mix(in srgb, var(--pn-serie-ocupacion) 58%, #ffffff);
-  --pn-ocupacion-5: var(--pn-serie-ocupacion);
+  // Rampa de ocupación (8b-2): cuatro pasos fijos de un solo tono, de claro a oscuro, para 0-24, 25-49, 50-74 y 75 % o
+  // más. Validada con el validador de dataviz (ordinal, sobre blanco): el paso claro llega a 2,11:1 contra el bloque y la
+  // cifra de cada celda pasa de 4,5:1 (tinta sobre los dos claros: 7,57 y 4,82:1; blanco sobre los oscuros: 5,41 y 9,68:1).
+  --pn-ocupacion-1: #95b6d8;
+  --pn-ocupacion-2: #6091c4;
+  --pn-ocupacion-3: var(--pn-serie-ocupacion);
+  --pn-ocupacion-4: #1c4672;
 
   // Tipografía.
   --pn-fuente-titulo: "Montserrat Panel", montserrat, system-ui, sans-serif;

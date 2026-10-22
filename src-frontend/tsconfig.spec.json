@@ -19,6 +19,8 @@
     "src/app/panel-nuevo/diseno-nuevo/diseno-nuevo.component.spec.ts",
     "src/app/panel-nuevo/navegacion/menu-panel.spec.ts",
     "src/app/panel-nuevo/navegacion/cabecera-panel.component.spec.ts",
+    "src/app/panel-nuevo/inicio/ocupacion.spec.ts",
+    "src/app/panel-nuevo/inicio/inicio.component.spec.ts",
     "src/app/componentes/vistas/escaparate-principal/escaparate-principal.component.spec.ts",
     "src/app/componentes/vistas/layout/skeleton/skeleton.component.spec.ts",
     "src/app/app.routes.spec.ts",

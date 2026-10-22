@@ -1,4 +1,4 @@
-import { agruparMiles, eur, fecha, mes, numero, plural } from './formato-es';
+import { agruparMiles, eur, fecha, fechaLarga, mes, numero, plural } from './formato-es';
 
 describe('formato-es', () => {
   const NBSP = ' ';
@@ -92,5 +92,11 @@ describe('formato-es', () => {
       expect(agruparMiles('-1044')).toBe('-1.044');
       expect(agruparMiles('-999')).toBe('-999');
     });
+  });
+
+  it('fechaLarga: día de la semana con mayúscula inicial, día, mes y año (8b-2)', () => {
+    expect(fechaLarga(new Date(2026, 9, 21))).toBe('Miércoles, 21 de octubre de 2026');
+    expect(fechaLarga('2026-03-05')).toBe('Jueves, 5 de marzo de 2026');
+    expect(fechaLarga(null)).toBe('');
   });
 });

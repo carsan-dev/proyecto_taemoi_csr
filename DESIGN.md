@@ -186,8 +186,10 @@ solo para lo pendiente.
 - **Disciplinas** (`disc-1` a `disc-4`, orden fijo del catálogo: taekwondo, kickboxing, pilates, defensa personal
   femenina). Validadas como paleta categórica: todas ≥ 3:1 sobre blanco y diferencia mínima para daltonismo 15,6.
   Siempre con su nombre al lado: nunca el color solo.
-- **Ocupación** (`serie-ocupacion`): rampa secuencial de un solo tono para el mapa día × franja, en cinco pasos
-  (5, 14, 32 y 58 % mezclado con blanco, y el color pleno con cifra blanca, 5,42:1). `serie-pista`: plazas libres.
+- **Ocupación** (`serie-ocupacion`): rampa secuencial de un solo tono para el mapa día × franja, en cuatro pasos fijos
+  (8b-2, validados con dataviz): `#95B6D8` (menos del 25 %), `#6091C4` (25-49 %), el color pleno `#2B6CB0` (50-74 %) y
+  `#1C4672` (75 % o más). Cifra en tinta sobre los dos claros (7,57 y 4,82:1) y en blanco sobre los oscuros (5,41 y
+  9,68:1); el paso claro llega a 2,11:1 contra el bloque. «Sin clase», trama sin color. `serie-pista`: plazas libres.
 - **Cinturones**: el color real de cada grado, con `cinto-borde` alrededor (3,87:1 sobre blanco), para que el
   cinturón blanco o amarillo claro se vea (WCAG 1.4.11).
 
@@ -311,11 +313,12 @@ del alumno al pie del carnet; debajo, pestañas Deportes, Pagos, Datos y contact
 ### Ocupación de la semana (Inicio, I1)
 
 Mapa de calor día × franja: columnas de lunes a sábado, filas por hora de inicio. Cada celda muestra
-«inscritos/plazas» en texto (el color nunca va solo), con los cinco pasos de `serie-ocupacion` (menos del 25 %,
+«inscritos/plazas» en texto (el color nunca va solo), con los cuatro pasos de `serie-ocupacion` (menos del 25 %,
 25-49 %, 50-74 %, 75 % o más) y una trama a 135° para «sin clase». La columna de hoy lleva «Hoy» en ocre. Leyenda
 debajo, título con el total («N plazas ocupadas de M») y la nota «Inscritos frente al límite común de 36 por
-turno», que desaparece cuando exista el aforo por sede (E9). Cada celda es enfocable con su descripción completa;
-hay una tabla equivalente para lectores de pantalla.
+turno», que desaparece cuando exista el aforo por sede (E9). Cada celda lleva su descripción completa al pasar
+el ratón; el mapa no se lee en voz alta ni recibe el foco: los lectores de pantalla leen la tabla equivalente, con la
+misma descripción por celda (8b-2).
 
 ### Pendiente de cobro (Inicio, I1)
 

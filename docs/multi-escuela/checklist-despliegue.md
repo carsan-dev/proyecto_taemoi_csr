@@ -223,6 +223,11 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       «Registro de acciones», «Configuración» y «Diseño nuevo», que el contador de Solicitudes coincide con el de hoy y
       que la portada y el área de familias siguen con la cabecera y el pie de hoy. Al terminar, «Volver al diseño
       anterior» desde su cuenta lo deja como antes.
+- [ ] E8b, pieza 8b-2 (Inicio I1; decisiones 242, 255, 267 y 268): sin migración → atajo `desplegar`. Con el
+      interruptor apagado, el inicio de hoy sin cambios y la tesorería cobra igual (mismo diálogo «Confirmar cobro»).
+      Después, el propietario, con su interruptor encendido, abre Inicio y compara «Pendiente de cobro · vencido» con
+      la tesorería: los desgloses por tipo, mes y sede suman el total, y las mensualidades del mes en curso solo
+      cuentan desde el día 6. Comprueba la ocupación de la semana y «Hoy» frente a los grupos reales; no cobra nada.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

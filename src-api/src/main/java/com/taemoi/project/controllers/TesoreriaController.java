@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.CertificadosCobrosRequest;
 import com.taemoi.project.dtos.response.TesoreriaMovimientoDTO;
+import com.taemoi.project.dtos.response.PendienteVencidoDTO;
 import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
+import com.taemoi.project.services.PendienteVencidoService;
 import com.taemoi.project.services.TesoreriaService;
 
 import jakarta.validation.Valid;
@@ -38,6 +40,9 @@ public class TesoreriaController {
 	@Autowired
 	private TesoreriaService tesoreriaService;
 
+	@Autowired
+	private PendienteVencidoService pendienteVencidoService;
+
 	@GetMapping("/resumen")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> obtenerResumen(
@@ -52,6 +57,17 @@ public class TesoreriaController {
 		} catch (IllegalArgumentException ex) {
 			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", ex.getMessage()));
 		}
+	}
+
+	/**
+	 * Pieza 8b-2 (decisiones 242 y 267): lo no pagado con el plazo vencido, de cualquier mes (mensualidades y derechos
+	 * de examen), con desglose por tipo, mes y sede y los cinco más antiguos. Para el Inicio de la gestión: el
+	 * responsable de sede no entra hasta la E9 (como en las sedes), aunque /resumen sí lo admite.
+	 */
+	@GetMapping("/pendiente-vencido")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<PendienteVencidoDTO> obtenerPendienteVencido() {
+		return ResponseEntity.ok(pendienteVencidoService.obtener());
 	}
 
 	@GetMapping("/movimientos")

@@ -502,13 +502,49 @@ activos y «Operaciones y accesos» debajo. Inventario: Anexo A, Inicio.
 - Datos que ya existen: `grupos/resumen`, `turnos/resumen`, `turnos/limite`, `alumnos/aptos`, `eventos/admin/todos`.
 
 **Tareas TDD:**
-- [ ] Tests que fallan: IT `PendienteVencidoIntegrationTest` (`coincideConMovimientosNoPagadosVencidos`,
+- [x] Tests que fallan: IT `PendienteVencidoIntegrationTest` (`coincideConMovimientosNoPagadosVencidos`,
   `desglosesSumanElTotal`, `noCruzaEscuelas`, `cargoFuturoNoCuenta`, `masAntiguosOrdenados`,
   `responsableSede_denegadoHastaE9`), matriz.
-- [ ] Specs que fallan: `ocupacion.spec.ts` (franjas ordenadas, celdas sin clase, capacidad = turnos × límite, pasos
+- [x] Specs que fallan: `ocupacion.spec.ts` (franjas ordenadas, celdas sin clase, capacidad = turnos × límite, pasos
   0/25/50/75 %, el texto de cada celda), `inicio.component.spec.ts` (tabla equivalente de la ocupación; plurales;
   importes es-ES; «Cobrar» con la misma llamada que hoy).
-- [ ] Implementar; capturas apagado/encendido a 375, 768 y 1280.
+- [x] Implementar; capturas apagado/encendido a 375, 768 y 1280 (y 1024).
+
+**Regla de «vencido» (decisión 267, Europe/Madrid, bean `Clock` de `RelojConfig`):** pendiente = `pagado` FALSE o NULL y
+`cancelado_en` NULL, de un alumno activo (como la tesorería), solo categorías `MENSUALIDAD` y `EXAMEN` de la tesorería.
+Mensualidad: su periodo, como la tesorería, es el año y el mes del concepto y, el que falte, el de la asignación;
+vencida si es anterior al mes en curso o si es
+el mes en curso y hoy es día 6 o posterior (`PendienteVencidoService.DIA_LIMITE_MENSUALIDAD = 5`, de las normas de
+Moiskimdo; ajuste por escuela en la E9). Derecho de examen: vencido si `convocatoria.fecha_convocatoria` <= hoy; sin
+convocatoria, la fecha de asignación. El responsable de sede recibe 403 hasta la E9 (a diferencia de `/resumen`).
+
+**Tests (lista detallada):**
+- [x] IT `PendienteVencidoIntegrationTest` (MySQL, dos escuelas sintéticas): `pendienteVencido_coincideConMovimientosNoPagadosVencidos`
+  (mismo universo y categorías que `GET /api/tesoreria/movimientos?pagado=false`), `pendienteVencido_desglosesSumanElTotal`
+  (por tipo, mes y sede suman importe y cargos; meses ordenados), `pendienteVencido_noCruzaEscuelas`,
+  `pendienteVencido_cargoFuturoNoCuenta` (meses posteriores y examen futuro), `pendienteVencido_masAntiguosOrdenados`
+  (por la fecha en que vencieron), `pendienteVencido_mensualidadMesEnCurso_dia5_noCuenta`,
+  `pendienteVencido_mensualidadMesEnCurso_dia6_cuenta`, `pendienteVencido_derechoExamenElDiaDeLaConvocatoria_cuenta` y
+  `pendienteVencido_responsableSede_denegadoHastaE9` (GET y HEAD 403; familia 403; gestor 200).
+- [x] `MatrizPermisosTest`: 2 líneas nuevas (GET y HEAD `/api/tesoreria/pendiente-vencido`), ninguna casilla cambia.
+- [x] `ocupacion.spec.ts`: franjas ordenadas y en «HH:mm»; lunes a sábado y domingo solo con clase; celda sin clase;
+  capacidad = turnos × límite; grupo de dos días en ambos; pasos 0/25/50/75 %; texto y descripción de cada celda;
+  totales; sin turnos; `claveDia`; `clasesDeHoy` con la siguiente resaltada y día sin clases.
+- [x] `inicio.component.spec.ts` (`HttpTestingController`): pide los datos de hoy y el pendiente; tabla equivalente de la
+  ocupación con la nota del límite común y del grupo de dos días; plurales; «Hoy» con la siguiente; importes es-ES y
+  desgloses; «Cobrar» con el mismo diálogo, el mismo `PUT /api/productos-alumno/{id}` y el mismo cuerpo (con método y
+  sin él; cancelar no envía nada) y recarga del pendiente; nada vencido; accesos con cifra; la escuela en cifras.
+- [x] `formato-es.spec.ts`: `fechaLarga`. `app.routes.spec.ts`: dos entradas `adminpage`, la nueva con
+  `disenoNuevoGuard` y `roleGuard` delante de la de hoy.
+- [x] El diálogo «Confirmar cobro» sale de `tesoreria-cobros/confirmar-cobro.ts`, compartido con la tesorería de hoy
+  (sus specs de la decisión 148 siguen igual).
+- [x] Ronda 2 de revisión: el IT suma un cargo con `pagado` NULL, uno de alumno por su inscripción (`alumno_id` NULL) y
+  uno con año sin mes (enero de 2027: no vence); reloj como bean simulado con `@MockitoBean Clock`. Specs del Inicio:
+  plurales en singular y con miles, límite en 0 o con error (la ocupación muestra su error y «Actualizar ahora» lo
+  reintenta) y «Ir a Tesorería».
+
+**Pendiente para 8b-3d:** la tesorería de hoy no admite «todos los meses» por parámetro (sin `mes` usa el mes en curso);
+el enlace del bloque es «Ir a Tesorería» hasta que la Tesorería nueva pueda abrir lo vencido de todos los meses.
 
 **Riesgos:** la ocupación se ve clara con 36 plazas (va rotulada; será real con el aforo por sede, E9); un grupo con
 dos días cuenta sus alumnos en ambos (no hay inscritos por turno: rotularlo); el pendiente vencido suma todos los

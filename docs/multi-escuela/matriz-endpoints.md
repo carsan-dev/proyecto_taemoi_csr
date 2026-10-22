@@ -379,6 +379,15 @@ Pieza 8b-T (tema por escuela, fase3-e8b-plan.md §4): 5 líneas nuevas; ninguna 
 cuenta de la sesión. Lo prueban `MarcaEscuelaPanelIntegrationTest`, `PermisosSesionIntegrationTest`,
 `AuditoriaRequestFilterRegistroPropioTest` y `AuditoriaRequestFilterClavesRedactadasTest`.
 
+Pieza 8b-2 (Inicio I1, fase3-e8b-plan.md §9; decisiones 242 y 267): 2 líneas nuevas; ninguna casilla existente cambia.
+- `GET`/`HEAD /api/tesoreria/pendiente-vencido` (`TesoreriaController#obtenerPendienteVencido`): GESTOR y PROPIETARIO
+  `PERMITE` (`@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")`); el resto, `DENIEGA`. A diferencia de
+  `/resumen`, RESPONSABLE_SEDE `DENIEGA` hasta la E9 (el Inicio es de la gestión, decisión 238): la regla de URL de
+  `/api/tesoreria/**` le deja pasar y el método le responde 403. La gestión ve toda la escuela
+  (`GestionPorSede.filtroTesoreria(null)`). Solo lectura, sin registro. Consulta nativa con `organizacion_id` explícito
+  en cada tabla (`PendienteVencidoRepository`). Devuelve `{total, cargos, alumnos, diaLimiteMensualidad, porTipo[],
+  porMes[], porSede[], masAntiguos[5]}` con importes en decimal. Lo prueba `PendienteVencidoIntegrationTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

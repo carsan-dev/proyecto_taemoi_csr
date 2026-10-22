@@ -1,0 +1,833 @@
+// Inicio I1 del panel nuevo (8b-2). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): bloques blancos con filete,
+// filas separadas por la línea, ocre solo para lo que se debe o vence y para «Hoy». La ocupación usa la rampa fija
+// --pn-ocupacion-1..4 (un tono, validada con dataviz): nunca el color de la escuela.
+
+:host {
+  display: block;
+}
+
+.inicio {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.inicio__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+// ------------------------------------------------------------------ cabecera de la pantalla
+
+.inicio__cabecera {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--pn-espacio-s) var(--pn-espacio-l);
+  margin-bottom: 20px;
+}
+
+.inicio__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.inicio__fecha {
+  margin: 0;
+  justify-self: center;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ botones (DESIGN.md: texto y secundario)
+
+.inicio__boton-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-marca-primario-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: progress;
+    color: var(--pn-tinta-2);
+    background: transparent;
+  }
+}
+
+.inicio__boton-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-marca-primario-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: progress;
+    color: var(--pn-tinta-2);
+    background: var(--pn-superficie-2);
+  }
+}
+
+.inicio__girando {
+  display: inline-block;
+  animation: inicio-girar 900ms linear infinite;
+}
+
+@keyframes inicio-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.inicio__enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-marca-primario-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+// ------------------------------------------------------------------ rejilla y bloques
+
+.inicio__rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.inicio__bloque {
+  min-width: 0;
+  padding: 18px 20px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.inicio__bloque-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pn-espacio-xs) var(--pn-espacio-m);
+  margin-bottom: 10px;
+}
+
+.inicio__subtitulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.inicio__subapartado {
+  margin: 18px 0 6px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__nota-derecha {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__vacio {
+  margin: 6px 0 4px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__vacio--sin-margen {
+  margin: 0;
+}
+
+.inicio__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li + li {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.inicio__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ------------------------------------------------------------------ Hoy
+
+.inicio__clase {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--pn-espacio-m);
+  padding: 12px 12px 12px 0;
+}
+
+.inicio__clase--siguiente {
+  margin: 0 -10px;
+  padding-left: 10px;
+  padding-right: 22px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-atencion-suave);
+
+  + li {
+    border-top-color: transparent;
+  }
+}
+
+.inicio__clase-hora {
+  display: grid;
+  line-height: 1.2;
+}
+
+.inicio__clase-inicio {
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.inicio__clase-fin {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__clase-cuerpo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inicio__clase-nombre {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--pn-tinta);
+}
+
+.inicio__punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  transform: translateY(1px);
+  background: var(--pn-tinta-3);
+}
+
+.inicio__disc--1 {
+  background: var(--pn-disc-1);
+}
+
+.inicio__disc--2 {
+  background: var(--pn-disc-2);
+}
+
+.inicio__disc--3 {
+  background: var(--pn-disc-3);
+}
+
+.inicio__disc--4 {
+  background: var(--pn-disc-4);
+}
+
+.inicio__disc--otra {
+  background: var(--pn-tinta-3);
+}
+
+.inicio__clase-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding-left: 18px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__siguiente {
+  color: var(--pn-atencion);
+  font-weight: 700;
+}
+
+.inicio__ver-grupo {
+  min-height: 40px;
+}
+
+// ------------------------------------------------------------------ Pendiente de cobro
+
+.inicio__pendiente-total {
+  margin: 0;
+  font: var(--pn-cifra);
+  color: var(--pn-atencion);
+}
+
+.inicio__pendiente-resumen {
+  margin: 6px 0 10px;
+  max-width: 60ch;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__desglose {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font: var(--pn-cuerpo);
+
+  caption {
+    caption-side: top;
+    padding: 0 0 6px;
+    text-align: left;
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+  }
+
+  tr {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  th,
+  td {
+    padding: 6px 0;
+    vertical-align: baseline;
+  }
+
+  th {
+    font-weight: 400;
+    text-align: left;
+    color: var(--pn-tinta);
+  }
+
+  td {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  td:first-of-type {
+    width: 4.5em;
+    padding-right: var(--pn-espacio-m);
+    color: var(--pn-tinta-2);
+  }
+
+  td:last-of-type {
+    width: 7.5em;
+    font-weight: 700;
+  }
+}
+
+.inicio__cargo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  padding: 12px 0;
+}
+
+.inicio__cargo-cuerpo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inicio__cargo-nombre {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 24px;
+  font-weight: 600;
+  color: var(--pn-tinta);
+  text-decoration: none;
+  border-radius: var(--pn-radio-s);
+
+  &:is(a):hover {
+    color: var(--pn-marca-primario-tinta);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.inicio__cargo-detalle {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__cargo-accion {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex: none;
+}
+
+.inicio__cargo-importe {
+  font-weight: 700;
+  color: var(--pn-tinta);
+}
+
+// ------------------------------------------------------------------ Ocupación de la semana
+
+.inicio__ocupacion-nota {
+  margin: 0 0 14px;
+  max-width: 68ch;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  strong {
+    font-weight: 600;
+    color: var(--pn-tinta);
+  }
+}
+
+.inicio__mapa {
+  display: grid;
+  grid-template-columns: 52px repeat(var(--inicio-columnas, 6), minmax(0, 1fr));
+  grid-auto-rows: minmax(34px, auto);
+  gap: 3px;
+  font: var(--pn-secundario);
+}
+
+.inicio__mapa-dia {
+  align-self: end;
+  padding-bottom: 4px;
+  text-align: center;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__mapa-dia--hoy {
+  color: var(--pn-atencion);
+  font-weight: 700;
+}
+
+.inicio__mapa-franja {
+  align-self: center;
+  color: var(--pn-tinta-2);
+}
+
+.inicio__celda {
+  display: grid;
+  place-items: center;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-tinta);
+}
+
+.inicio__celda-cifra {
+  font-weight: 700;
+}
+
+.inicio__celda-plazas {
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
+
+// Pasos 0/25/50/75 %: cifra en tinta sobre los dos claros (7,57 y 4,82:1) y en blanco sobre los oscuros (5,41 y 9,68:1).
+.inicio__celda--paso-1 {
+  background: var(--pn-ocupacion-1);
+}
+
+.inicio__celda--paso-2 {
+  background: var(--pn-ocupacion-2);
+}
+
+.inicio__celda--paso-3 {
+  background: var(--pn-ocupacion-3);
+  color: #ffffff;
+}
+
+.inicio__celda--paso-4 {
+  background: var(--pn-ocupacion-4);
+  color: #ffffff;
+}
+
+// «Sin clase»: trama a 135° con la línea, sin color de la rampa.
+.inicio__celda--sin-clase {
+  background: repeating-linear-gradient(135deg, var(--pn-linea-fuerte) 0 1px, transparent 1px 7px);
+}
+
+.inicio__celda--hoy {
+  outline: 2px solid var(--pn-atencion);
+  outline-offset: -2px;
+}
+
+.inicio__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px var(--pn-espacio-m);
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.inicio__muestra {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+
+  &.inicio__celda--sin-clase {
+    box-shadow: inset 0 0 0 1px var(--pn-linea-fuerte);
+  }
+}
+
+// ------------------------------------------------------------------ accesos y avisos
+
+.inicio__acceso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 4px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-tinta);
+  text-decoration: none;
+  transition: background-color var(--pn-transicion);
+
+  > .bi:first-child {
+    flex: none;
+    width: 20px;
+    font-size: 1.05rem;
+    color: var(--pn-tinta-2);
+  }
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+}
+
+.inicio__acceso-texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.inicio__acceso-descripcion,
+.inicio__aviso-accion {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__acceso-cifra {
+  font-weight: 700;
+  color: var(--pn-tinta);
+}
+
+.inicio__chevron {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--pn-tinta-3);
+}
+
+// ------------------------------------------------------------------ la escuela en cifras
+
+.inicio__totales {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    border-left: 1px solid var(--pn-linea);
+  }
+}
+
+.inicio__total {
+  display: grid;
+  gap: 2px;
+  height: 100%;
+  padding: 4px 14px 8px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-tinta);
+  text-decoration: none;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+}
+
+.inicio__totales li:first-child .inicio__total {
+  padding-left: 0;
+}
+
+.inicio__total-etiqueta {
+  font: var(--pn-etiqueta);
+}
+
+.inicio__total-cifra {
+  font: var(--pn-cifra);
+}
+
+.inicio__total-detalle {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.inicio__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--pn-linea);
+  font: var(--pn-secundario);
+
+  th,
+  td {
+    padding: 8px;
+    border-top: 1px solid var(--pn-linea);
+    text-align: left;
+  }
+
+  thead th {
+    border-top: 0;
+    background: var(--pn-superficie-2);
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  tfoot th,
+  tfoot td {
+    font-weight: 700;
+  }
+
+  .inicio__num {
+    text-align: right;
+  }
+}
+
+// ------------------------------------------------------------------ eventos activos
+
+.inicio__evento {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.inicio__evento-foto {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--pn-radio-s);
+  border: 1px solid var(--pn-linea);
+  background: var(--pn-superficie-2);
+}
+
+.inicio__evento-titulo {
+  font-weight: 600;
+}
+
+// ------------------------------------------------------------------ operaciones y accesos
+
+.inicio__operaciones-columnas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+  align-items: start;
+}
+
+// ------------------------------------------------------------------ escritorio: dos columnas (contenido y 380 px)
+
+@media (min-width: 1024px) {
+  .inicio__rejilla {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    // Las dos columnas se apilan cada una a su ritmo: «La escuela en cifras» empieza al acabar «Hoy» y ocupa las filas
+    // de «Accesos» y «Eventos activos», que empiezan al acabar «Pendiente de cobro».
+    grid-template-areas:
+      'ocupacion pendiente'
+      'hoy pendiente'
+      'cifras pendiente'
+      'cifras accesos'
+      'cifras eventos'
+      'operaciones operaciones';
+    align-items: start;
+  }
+
+  .inicio__ocupacion {
+    grid-area: ocupacion;
+  }
+
+  .inicio__pendiente {
+    grid-area: pendiente;
+  }
+
+  .inicio__hoy {
+    grid-area: hoy;
+  }
+
+  .inicio__accesos {
+    grid-area: accesos;
+  }
+
+  .inicio__cifras {
+    grid-area: cifras;
+  }
+
+  .inicio__eventos {
+    grid-area: eventos;
+  }
+
+  .inicio__operaciones {
+    grid-area: operaciones;
+  }
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (max-width: 1023.98px) {
+  .inicio__operaciones-columnas {
+    grid-template-columns: minmax(0, 1fr);
+
+    > ul + ul {
+      border-top: 1px solid var(--pn-linea);
+    }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .inicio__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .inicio__cabecera {
+    grid-template-columns: auto 1fr;
+  }
+
+  .inicio__titulo {
+    font-size: 1.375rem;
+  }
+
+  .inicio__fecha {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .inicio__actualizar {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+    margin-left: -10px;
+  }
+
+  .inicio__bloque {
+    padding: 16px 14px 12px;
+  }
+
+  .inicio__clase {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .inicio__clase--siguiente {
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .inicio__ver-grupo {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .inicio__ver-grupo-texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .inicio__boton-secundario {
+    min-height: 44px;
+  }
+
+  // Objetivos de 44 px en el móvil: enlaces de bloque y nombre del alumno en «Los más antiguos».
+  .inicio__enlace,
+  .inicio__cargo-nombre {
+    min-height: 44px;
+  }
+
+  .inicio__bloque-cabecera {
+    align-items: center;
+  }
+
+  .inicio__mapa {
+    grid-template-columns: 44px repeat(var(--inicio-columnas, 6), minmax(0, 1fr));
+  }
+
+  .inicio__celda-plazas {
+    display: none;
+  }
+
+  .inicio__totales {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 8px;
+
+    li + li {
+      border-left: 0;
+    }
+
+    li:nth-child(even) {
+      border-left: 1px solid var(--pn-linea);
+    }
+  }
+
+  .inicio__totales li:nth-child(odd) .inicio__total {
+    padding-left: 0;
+  }
+}
