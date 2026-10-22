@@ -7,6 +7,7 @@ import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
+import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -188,6 +189,41 @@ describe('app routes', () => {
     });
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/alumnosEditar/7');
+    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
+    expect(cargar).not.toHaveBeenCalled();
+  });
+
+  it('gruposListar (8b-3c): primero Grupos nuevo tras disenoNuevoGuard, con la misma data, guards y resolve que el de hoy', async () => {
+    const entradas = routes.filter((route) => route.path === 'gruposListar');
+    expect(entradas.length).toBe(2);
+    const [nueva, hoy] = entradas;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.canActivate).toEqual([roleGuard]);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(GruposComponent);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+  });
+
+  it('gruposListar (8b-3c): con el interruptor apagado no se descarga el chunk nuevo', async () => {
+    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
+    class GruposDeHoy {}
+    const nueva = routes.find((route) => route.path === 'gruposListar' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent nuevo');
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposListar', component: GruposDeHoy }]),
+        {
+          provide: PermisosSesionService,
+          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
+            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
+        },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/gruposListar');
     expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
     expect(cargar).not.toHaveBeenCalled();
   });

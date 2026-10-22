@@ -1,0 +1,86 @@
+<pn-panel-lateral [titulo]="'Alumnos de ' + grupoNombre"
+  (cerrar)="cerrarModal()">
+  <div class="tipo">
+    <div class="tipo__barra">
+      <div class="tipo__buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+        </svg>
+        <label class="tipo__oculto" for="tipo-buscar">Buscar alumno por nombre</label>
+        <input id="tipo-buscar" type="search" class="tipo__campo" autocomplete="off" placeholder="Buscar alumno por nombre…"
+          [value]="nombreFiltro" [disabled]="cargando || error" (input)="buscar($any($event.target).value)" />
+      </div>
+      <label class="tipo__activos">
+        <input id="tipo-solo-activos" type="checkbox" role="switch" [checked]="mostrarSoloActivos"
+          [disabled]="cargando || error" (change)="alternarActivos()" />
+        <span>Solo alumnos activos</span>
+      </label>
+    </div>
+
+    @if (cargando) {
+    <pn-esqueleto etiqueta="Cargando alumnos" aria-busy="true">
+      <div class="tipo__lista">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="tipo__esqueleto"><span class="tipo__esqueleto-avatar"></span><span class="tipo__esqueleto-lineas"><span></span><span></span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (error) {
+    <pn-bloque-error titulo="No hemos podido obtener los alumnos del grupo" (reintentar)="cargar()" />
+    } @else {
+    <p class="tipo__contador" data-cifras aria-live="polite">{{ contador }}</p>
+    @if (alumnosPaginados.length > 0) {
+    <ul class="tipo__lista" aria-label="Alumnos">
+      @for (a of alumnosPaginados; track a.id) {
+      <li>
+        <button type="button" class="tipo__alumno" (click)="navegarAAlumno(a)">
+          <span class="tipo__avatar" aria-hidden="true">
+            @if (foto(a); as f) {
+            <img [src]="f" alt="" width="40" height="40" loading="lazy" decoding="async" />
+            } @else {
+            <span>{{ iniciales(a.nombre, a.apellidos) }}</span>
+            }
+          </span>
+          <span class="tipo__datos">
+            <span class="tipo__nombre">{{ a.nombre }} {{ a.apellidos }}</span>
+            <span class="tipo__linea">
+              @if (a.numeroExpediente) {<span data-cifras>Exp. {{ a.numeroExpediente }}</span>}
+              @if (a.grado) {
+              <span class="tipo__grado">
+                @if (colorGrado(a.grado); as c) {<span class="tipo__cinto" [style.background]="c" aria-hidden="true"></span>}
+                <span>{{ a.grado }}</span>
+              </span>
+              }
+            </span>
+          </span>
+          <svg class="tipo__flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </button>
+      </li>
+      }
+    </ul>
+    } @else {
+    <pn-bloque-vacio
+      [titulo]="nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo'" />
+    }
+    @if (totalPaginas > 1) {
+    <nav class="tipo__paginacion" aria-label="Páginas de alumnos">
+      <button type="button" class="tipo__paso" aria-label="Página anterior" [disabled]="paginaActual === 1"
+        (click)="cambiarPagina(paginaActual - 1)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg>
+      </button>
+      <span class="tipo__pagina-actual" data-cifras aria-live="polite">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+      <button type="button" class="tipo__paso" aria-label="Página siguiente" [disabled]="paginaActual === totalPaginas"
+        (click)="cambiarPagina(paginaActual + 1)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </button>
+    </nav>
+    }
+    }
+  </div>
+  <div pnPie class="tipo__pie">
+    <button type="button" class="tipo__cerrar" (click)="cerrarModal()">Cerrar</button>
+  </div>
+</pn-panel-lateral>

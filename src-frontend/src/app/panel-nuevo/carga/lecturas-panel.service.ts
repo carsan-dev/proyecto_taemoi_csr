@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { GrupoResumen } from '../../interfaces/grupo-resumen';
+import { TurnoResumen } from '../../interfaces/turno-resumen';
 
 /**
  * Contexto de una lectura cuyo fallo enseña la pantalla nueva con su bloque de error (8b-D2a): el interceptor de errores
@@ -56,5 +58,42 @@ export class LecturasPanelService {
   /** Igual que `EndpointsService.obtenerLimiteTurno`. */
   limiteTurno(): Observable<number> {
     return this.http.get<number>(`${environment.apiUrl}/turnos/limite`, { context: contextoErrorLocal() });
+  }
+
+  /** Igual que `EndpointsService.obtenerResumenGrupos` (Grupos, 8b-3c). */
+  resumenGrupos(): Observable<GrupoResumen[]> {
+    return this.http.get<GrupoResumen[]>(`${environment.apiUrl}/grupos/resumen`, {
+      withCredentials: true,
+      headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerResumenTurnos` (Grupos, 8b-3c). */
+  resumenTurnos(): Observable<TurnoResumen[]> {
+    return this.http.get<TurnoResumen[]>(`${environment.apiUrl}/turnos/resumen`, {
+      withCredentials: true,
+      headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /**
+   * La petición de `EndpointsService.obtenerConteoAlumnosPorGrupo` (Grupos, 8b-3c), que hoy se suscribe sola y guarda
+   * el resultado en el servicio: aquí se devuelve, para que la pantalla sepa si falló.
+   */
+  conteoAlumnosPorGrupo(): Observable<Record<string, { active?: number; total?: number }>> {
+    return this.http.get<Record<string, { active?: number; total?: number }>>(`${environment.apiUrl}/grupos/conteo-alumnos`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAlumnosPorTipo` (Grupos, 8b-3c). */
+  alumnosPorTipo(tipo: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/grupos/tipo/${encodeURIComponent(tipo)}/alumnos`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
   }
 }
