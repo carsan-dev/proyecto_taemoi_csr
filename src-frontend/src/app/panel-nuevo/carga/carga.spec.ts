@@ -15,7 +15,8 @@ import { EsqueletoComponent, RETRASO_ESQUELETO } from './esqueleto.component';
       @if (cargando) {
       <pn-esqueleto etiqueta="Cargando alumnos"><span class="hueso"></span></pn-esqueleto>
       }
-      <button type="button" pnOcupado [ocupado]="ocupado" textoOcupado="Cobrando…" style="padding: 0 16px">Cobrar</button>
+      <button type="button" pnOcupado [ocupado]="ocupado" textoOcupado="Cobrando…" style="padding: 0 16px"
+        (click)="pulsados = pulsados + 1">Cobrar</button>
       <pn-bloque-error titulo="No se pudo cargar la ocupación" (reintentar)="reintentos = reintentos + 1" />
       <pn-bloque-vacio titulo="Ningún alumno coincide con la búsqueda"
         texto="Prueba con otro nombre o quita los filtros de disciplina e inactivos." accion="Quitar filtros"
@@ -26,6 +27,7 @@ import { EsqueletoComponent, RETRASO_ESQUELETO } from './esqueleto.component';
 class Anfitrion {
   cargando = true;
   ocupado = false;
+  pulsados = 0;
   reintentos = 0;
   quitados = 0;
 }
@@ -105,16 +107,24 @@ describe('Carga del panel nuevo (8b-D1): esqueleto, botón ocupado, error y vac�
     expect(el().querySelector('pn-esqueleto')).toBeNull();
   }));
 
-  it('botón ocupado: mismo ancho, indicador de 16 px, deshabilitado, aria-busy y «Cobrando…»', () => {
+  it('botón ocupado: mismo ancho, indicador de 16 px, aria-disabled sin perder el foco, aria-busy y «Cobrando…»', () => {
     crear();
     const boton = el().querySelector<HTMLButtonElement>('button[pnOcupado]')!;
     boton.style.width = '';
     const ancho = boton.getBoundingClientRect().width;
     expect(boton.disabled).toBeFalse();
     expect(boton.getAttribute('aria-busy')).toBeNull();
+    expect(boton.getAttribute('aria-disabled')).toBeNull();
+    boton.focus();
     fixture.componentInstance.ocupado = true;
     fixture.detectChanges();
-    expect(boton.disabled).toBeTrue();
+    // Deshabilitado con aria-disabled y no con `disabled`: el foco se queda en el botón (no cae al body) y el clic no llega.
+    expect(boton.disabled).toBeFalse();
+    expect(boton.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(boton);
+    boton.click();
+    boton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(fixture.componentInstance.pulsados).toBe(0);
     expect(boton.getAttribute('aria-busy')).toBe('true');
     expect(boton.textContent!.trim()).toBe('Cobrando…');
     const indicador = boton.querySelector('svg')!;
@@ -125,6 +135,9 @@ describe('Carga del panel nuevo (8b-D1): esqueleto, botón ocupado, error y vac�
     fixture.detectChanges();
     expect(boton.textContent!.trim()).toBe('Cobrar');
     expect(boton.disabled).toBeFalse();
+    expect(boton.getAttribute('aria-disabled')).toBeNull();
+    boton.click();
+    expect(fixture.componentInstance.pulsados).toBe(1);
   });
 
   it('bloque de error: título, cómo seguir y «Reintentar»', () => {

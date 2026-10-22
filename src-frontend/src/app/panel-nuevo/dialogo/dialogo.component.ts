@@ -93,6 +93,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
   ocupado = false;
 
   private terminado = false;
+  private destruido = false;
   private ejecucion?: Subscription;
   private consulta: MediaQueryList | null = null;
   private readonly alCambiarAncho = (e: MediaQueryListEvent) => {
@@ -121,6 +122,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destruido = true;
     this.consulta?.removeEventListener?.('change', this.alCambiarAncho);
     this.ejecucion?.unsubscribe();
     this.pila.cerrar(this.dialogoRef.nativeElement);
@@ -144,6 +146,23 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
   alCancelarNativo(evento: Event): void {
     evento.preventDefault();
     this.cancelar();
+  }
+
+  /**
+   * El `<dialog>` se cerró sin pasar por `terminar` (el navegador solo deja cancelar el evento `cancel` una vez por
+   * activación del usuario: un segundo Esc lo cierra igualmente). Con la acción en vuelo se vuelve a abrir, con el foco
+   * en la acción ocupada; si no, cuenta como cancelar.
+   */
+  alCerrarNativo(): void {
+    if (this.terminado || this.destruido) {
+      return;
+    }
+    if (this.ocupado) {
+      this.dialogoRef.nativeElement.showModal();
+      this.botonAccion?.nativeElement.focus();
+      return;
+    }
+    this.terminar({ confirmado: false, valor: null });
   }
 
   alClic(evento: MouseEvent): void {

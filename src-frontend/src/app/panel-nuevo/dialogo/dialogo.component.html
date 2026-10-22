@@ -1,6 +1,6 @@
 <dialog #dialogo class="pn-dialogo" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="opciones.destructivo"
   [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="partes.length ? id + '-mensaje' : null"
-  (cancel)="alCancelarNativo($event)" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <div class="pn-dialogo__caja">
     @if (hoja) {
     <div class="pn-dialogo__asa" aria-hidden="true"></div>

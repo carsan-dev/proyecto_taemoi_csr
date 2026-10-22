@@ -241,24 +241,68 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(getComputedStyle(d).borderBottomLeftRadius).toBe('0px');
   });
 
-  it('con `ejecutar`: botón ocupado («Cobrando…», deshabilitado, aria-busy) y Esc no cierra hasta que termina', async () => {
+  it('con `ejecutar`: botón ocupado («Cobrando…», aria-disabled, aria-busy) y Esc no cierra hasta que termina', async () => {
     const respuesta = new Subject<string>();
-    const promesa = abrir({ ...COBRAR, ejecutar: () => respuesta });
+    const ejecutar = jasmine.createSpy('ejecutar').and.returnValue(respuesta);
+    const promesa = abrir({ ...COBRAR, ejecutar });
     const accion = boton('Marcar como pagado');
     const ancho = accion.getBoundingClientRect().width;
+    accion.focus();
     accion.click();
     tick();
-    expect(accion.disabled).toBeTrue();
+    // aria-disabled y no `disabled`: el foco no cae al body (si cayera, el Esc ya no pasaría por el diálogo).
+    expect(accion.disabled).toBeFalse();
+    expect(accion.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(accion);
+    accion.click();
+    expect(ejecutar).toHaveBeenCalledTimes(1);
     expect(accion.getAttribute('aria-busy')).toBe('true');
     expect(accion.textContent!.trim()).toBe('Cobrando…');
     expect(accion.querySelector('svg')!.getBoundingClientRect().width).toBe(16);
     expect(accion.getBoundingClientRect().width).toBeCloseTo(ancho, 0);
     expect(boton('Cancelar').disabled).toBeTrue();
-    dialogo()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    for (let i = 0; i < 2; i++) {
+      const esc = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      accion.dispatchEvent(esc);
+      expect(esc.defaultPrevented).toBeTrue();
+      const cancel = new Event('cancel', { cancelable: true });
+      dialogo()!.dispatchEvent(cancel);
+      expect(cancel.defaultPrevented).toBeTrue();
+    }
     expect(dialogo()!.open).toBeTrue();
     respuesta.next('hecho');
     respuesta.complete();
     expect(await promesa).toEqual({ confirmado: true, valor: '', respuesta: 'hecho' });
+    expect(dialogo()).toBeNull();
+  });
+
+  it('con `ejecutar` en vuelo: si el navegador cierra el <dialog> igualmente (segundo Esc), se vuelve a abrir', async () => {
+    const respuesta = new Subject<string>();
+    let resuelto = false;
+    const promesa = abrir({ ...COBRAR, ejecutar: () => respuesta }).then((r) => {
+      resuelto = true;
+      return r;
+    });
+    boton('Marcar como pagado').click();
+    tick();
+    const d = dialogo()!;
+    const cerrado = new Promise((r) => d.addEventListener('close', () => setTimeout(r), { once: true }));
+    d.close();
+    await cerrado;
+    tick();
+    expect(d.open).toBeTrue();
+    expect(d.matches(':modal')).toBeTrue();
+    expect(resuelto).toBeFalse();
+    respuesta.next('hecho');
+    respuesta.complete();
+    expect(await promesa).toEqual({ confirmado: true, valor: '', respuesta: 'hecho' });
+    expect(dialogo()).toBeNull();
+  });
+
+  it('sin nada en vuelo, un cierre del navegador (evento «close») cancela como Esc', async () => {
+    const promesa = abrir(COBRAR);
+    dialogo()!.close();
+    expect(await promesa).toEqual({ confirmado: false, valor: null });
     expect(dialogo()).toBeNull();
   });
 

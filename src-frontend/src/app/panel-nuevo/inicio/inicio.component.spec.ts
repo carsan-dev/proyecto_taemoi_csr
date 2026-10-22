@@ -270,7 +270,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     pintar();
     botonDialogo('Marcar como pagado').click();
     pintar();
-    expect(botonDialogo('Cobrando…').disabled).toBeTrue();
+    expect(botonDialogo('Cobrando…').getAttribute('aria-disabled')).toBe('true');
     const put = http.expectOne(`${API}/productos-alumno/501`);
     expect(put.request.method).toBe('PUT');
     expect(put.request.body).toEqual({ pagado: true, metodoPago: 'BIZUM' });

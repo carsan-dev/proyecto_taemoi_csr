@@ -2,8 +2,10 @@ import { Component, ElementRef, Input, OnChanges, SimpleChanges, inject } from '
 
 /**
  * Botón ocupado del panel nuevo (8b-D1, boceto `Carga.dc.html`, c): mientras la acción está en vuelo conserva su ancho,
- * se deshabilita, lleva `aria-busy` y cambia su texto por el de la acción en curso («Cobrando…») con un indicador de
- * 16 px. Se pone sobre el `<button>` de siempre: `<button pnOcupado [ocupado]="…" textoOcupado="Cobrando…">`.
+ * lleva `aria-disabled` y `aria-busy`, no atiende clics y cambia su texto por el de la acción en curso («Cobrando…») con
+ * un indicador de 16 px. Ocupado no usa `disabled`: un botón deshabilitado pierde el foco, que cae al body, y desde ahí
+ * Esc ya no pasa por la capa que lo contiene. Se pone sobre el `<button>` de siempre:
+ * `<button pnOcupado [ocupado]="…" textoOcupado="Cobrando…">`.
  */
 @Component({
   selector: 'button[pnOcupado]',
@@ -30,7 +32,8 @@ import { Component, ElementRef, Input, OnChanges, SimpleChanges, inject } from '
     }
   `,
   host: {
-    '[disabled]': 'ocupado || deshabilitado',
+    '[disabled]': 'deshabilitado && !ocupado',
+    '[attr.aria-disabled]': "ocupado ? 'true' : null",
     '[attr.aria-busy]': "ocupado ? 'true' : null",
     '[style.width.px]': 'ancho',
   },
@@ -44,6 +47,20 @@ export class BotonOcupadoComponent implements OnChanges {
 
   /** El ancho del botón antes de ocuparse: el texto nuevo no lo mueve. */
   ancho: number | null = null;
+
+  constructor() {
+    // En captura y en el propio botón: corre antes que el `(click)` de la plantilla que lo usa y lo corta.
+    this.host.nativeElement.addEventListener(
+      'click',
+      (evento) => {
+        if (this.ocupado) {
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+        }
+      },
+      true
+    );
+  }
 
   ngOnChanges(cambios: SimpleChanges): void {
     if (!cambios['ocupado']) {

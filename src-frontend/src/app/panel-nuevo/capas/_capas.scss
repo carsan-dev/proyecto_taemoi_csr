@@ -28,7 +28,9 @@
   cursor: pointer;
   transition: background-color var(--pn-transicion), color var(--pn-transicion), border-color var(--pn-transicion);
 
-  &:disabled {
+  // Ocupado va con aria-disabled (no pierde el foco) y se ve como el deshabilitado, pero sin atenuar.
+  &:disabled,
+  &[aria-disabled='true'] {
     cursor: not-allowed;
   }
 
@@ -43,7 +45,7 @@
   background: var(--pn-marca-primario-tinta);
   color: var(--pn-marca-sobre-primario);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([aria-disabled='true']) {
     background: color-mix(in srgb, var(--pn-marca-primario-tinta) 86%, #000);
   }
 
@@ -57,7 +59,7 @@
   background: var(--pn-peligro);
   color: #fff;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([aria-disabled='true']) {
     background: color-mix(in srgb, var(--pn-peligro) 86%, #000);
   }
 }
@@ -68,7 +70,7 @@
   background: var(--pn-superficie);
   color: var(--pn-marca-primario-tinta);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([aria-disabled='true']) {
     background: var(--pn-marca-primario-suave);
   }
 }
@@ -81,7 +83,7 @@
   background: transparent;
   color: var(--pn-marca-primario-tinta);
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([aria-disabled='true']) {
     background: var(--pn-marca-primario-suave);
   }
 }
