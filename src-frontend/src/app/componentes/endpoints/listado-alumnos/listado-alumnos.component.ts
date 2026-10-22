@@ -276,7 +276,7 @@ export class ListadoAlumnosComponent implements OnInit, OnDestroy {
       });
 
       this.obtenerAlumnos();
-      }
+    }
   }
 
   /**
