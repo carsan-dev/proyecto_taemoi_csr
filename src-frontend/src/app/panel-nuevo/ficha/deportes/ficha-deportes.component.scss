@@ -1,0 +1,337 @@
+// Pestaña «Deportes» de la ficha nueva (8b-3b): un bloque por disciplina con sus cajas en rejilla (4 columnas en
+// escritorio, 2 en tableta, 1 en el móvil). Solo tokens de panel-nuevo.scss (DESIGN.md).
+@use '../ficha-base' as b;
+
+:host {
+  display: block;
+}
+
+@include b.colores-disciplina;
+
+.deportes {
+  @include b.bloque;
+  padding: 20px 20px 8px;
+}
+
+.deportes__oculto {
+  @include b.oculto;
+}
+
+.deportes__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-s) var(--pn-espacio-m);
+  margin-bottom: var(--pn-espacio-s);
+}
+
+.deportes__titulo {
+  @include b.titulo-bloque;
+  font-size: 1.1875rem;
+}
+
+.deportes__acciones,
+.deportes__bloque-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-espacio-xs) var(--pn-espacio-s);
+}
+
+.deportes__boton-primario {
+  @include b.boton-primario;
+}
+
+.deportes__boton-secundario {
+  @include b.boton-secundario;
+}
+
+.deportes__boton-texto {
+  @include b.boton-texto;
+}
+
+.deportes__boton-texto--peligro {
+  @include b.peligro;
+}
+
+.deportes__boton-texto--bien {
+  @include b.bien;
+}
+
+.deportes__vacio {
+  margin: var(--pn-espacio-m) 0;
+  color: var(--pn-tinta-2);
+}
+
+.deportes__bloque {
+  padding: var(--pn-espacio-m) 0 20px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.deportes__bloque-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-s) var(--pn-espacio-m);
+  margin-bottom: 12px;
+}
+
+.deportes__nombre {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  font-size: 1.25rem;
+  color: var(--pn-tinta);
+}
+
+.deportes__bloque--inactivo .deportes__nombre > span:nth-child(2) {
+  color: var(--pn-tinta-2);
+}
+
+.deportes__punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.deportes__marca {
+  @include b.pastilla;
+  font-family: var(--pn-fuente-cuerpo);
+  letter-spacing: 0;
+}
+
+.deportes__marca--principal {
+  border-color: transparent;
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.deportes__marca--inactivo {
+  background: var(--pn-superficie-2);
+}
+
+.deportes__cajas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.deportes__caja {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 14px 16px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.deportes__caja-titulo {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  font-size: 0.9375rem;
+  color: var(--pn-tinta);
+}
+
+.deportes__etiqueta {
+  @include b.etiqueta;
+  margin: 0;
+}
+
+.deportes__grado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 0;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+}
+
+.deportes__cinto {
+  @include b.cinto;
+  flex: none;
+  width: 28px;
+  height: 10px;
+}
+
+.deportes__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deportes__control {
+  @include b.control;
+}
+
+.deportes__nota {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.deportes__nota--bloque {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.deportes__lectura {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+
+  dt {
+    @include b.etiqueta;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font: var(--pn-cuerpo);
+    color: var(--pn-tinta);
+  }
+}
+
+.deportes__interruptor {
+  @include b.interruptor;
+}
+
+.deportes__aplicar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pn-espacio-xs) var(--pn-espacio-s);
+}
+
+.deportes__botones-grado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+
+  .deportes__boton-secundario {
+    margin-bottom: 6px;
+  }
+
+  .deportes__boton-texto {
+    margin-left: -10px;
+  }
+}
+
+.deportes__convocatoria {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 2px;
+  font: var(--pn-secundario);
+  color: var(--pn-bien);
+}
+
+.deportes__convocatoria--sin {
+  color: var(--pn-tinta-2);
+}
+
+.deportes__grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deportes__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.deportes__grupo-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.deportes__grupo-nombre {
+  padding-top: 6px;
+  font: var(--pn-secundario);
+  font-weight: 700;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.deportes__turnos {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deportes__turno {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+}
+
+.deportes__quitar {
+  @include b.boton-texto;
+  // Tras el mixin (que acaba en reglas anidadas), en su propio bloque: mismo resultado y sin aviso de Sass.
+  & {
+    flex: none;
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
+    color: var(--pn-tinta-2);
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--pn-peligro);
+  }
+}
+
+// ------------------------------------------------------------------ tableta
+
+@media (max-width: 1279.98px) {
+  .deportes__cajas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .deportes {
+    padding: 16px 14px 4px;
+  }
+
+  .deportes__cajas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .deportes__acciones,
+  .deportes__bloque-acciones {
+    width: 100%;
+  }
+
+  .deportes__quitar {
+    width: 44px;
+    min-height: 44px;
+  }
+}

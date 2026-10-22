@@ -250,6 +250,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Ficha nueva (8b-3b): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'alumnosEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/ficha/ficha-alumno.component').then(m => m.FichaAlumnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'alumnosEditar/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),

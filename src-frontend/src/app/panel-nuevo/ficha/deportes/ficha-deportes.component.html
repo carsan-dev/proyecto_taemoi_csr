@@ -1,0 +1,379 @@
+<section class="deportes" aria-labelledby="deportes-titulo">
+  <header class="deportes__cabecera">
+    <h2 id="deportes-titulo" class="deportes__titulo">Deportes</h2>
+    <div class="deportes__acciones">
+      @if (ficha.deportesDisponibles.length > 0) {
+      <button type="button" class="deportes__boton-secundario" (click)="ficha.abrirModalAgregarDeporte()">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Agregar deporte</span>
+      </button>
+      }
+      @if (ficha.deportesDelAlumno.length > 0) {
+      @if (ficha.isAlumnoActivo()) {
+      <button type="button" class="deportes__boton-texto deportes__boton-texto--peligro" (click)="ficha.eliminarODarDeBajaAlumno()">
+        <i class="bi bi-person-dash" aria-hidden="true"></i>
+        <span>Dar de baja</span>
+      </button>
+      } @else {
+      <button type="button" class="deportes__boton-texto deportes__boton-texto--bien" (click)="ficha.eliminarODarDeBajaAlumno()">
+        <i class="bi bi-person-check" aria-hidden="true"></i>
+        <span>Dar de alta</span>
+      </button>
+      }
+      }
+    </div>
+  </header>
+
+  @if (ficha.deportesDelAlumno.length === 0) {
+  <p class="deportes__vacio">Este alumno no tiene disciplinas todavía.</p>
+  }
+
+  @for (d of ficha.deportesDelAlumno; track d.deporte) {
+  <article class="deportes__bloque" [class.deportes__bloque--inactivo]="d.activo === false" [attr.data-deporte]="d.deporte"
+    [attr.aria-labelledby]="'deporte-' + d.deporte">
+    <header class="deportes__bloque-cabecera">
+      <h3 class="deportes__nombre" [id]="'deporte-' + d.deporte">
+        <span class="deportes__punto" [class]="ficha.claseDisciplina(d.deporte)" aria-hidden="true"></span>
+        <span>{{ ficha.getDeporteLabel(d.deporte) }}</span>
+        @if (d.activo === false) {
+        <span class="deportes__marca deportes__marca--inactivo">Inactivo</span>
+        } @else if (ficha.isDeportePrincipal(d.deporte)) {
+        <span class="deportes__marca deportes__marca--principal">Principal</span>
+        }
+      </h3>
+      <div class="deportes__bloque-acciones">
+        @if (d.activo !== false && !ficha.isDeportePrincipal(d.deporte)) {
+        <button type="button" class="deportes__boton-texto" (click)="ficha.marcarDeportePrincipal(d.deporte)">
+          <i class="bi bi-star" aria-hidden="true"></i>
+          <span>Marcar principal</span>
+        </button>
+        }
+        @if (d.activo === false) {
+        <button type="button" class="deportes__boton-texto deportes__boton-texto--bien" (click)="ficha.activarDeporte(d.deporte)">
+          <i class="bi bi-play-circle" aria-hidden="true"></i>
+          <span>Activar</span>
+        </button>
+        }
+        @if (ficha.getDeportesActivosCount() > 1 && d.activo !== false) {
+        <button type="button" class="deportes__boton-texto" (click)="ficha.desactivarDeporte(d.deporte)">
+          <i class="bi bi-pause-circle" aria-hidden="true"></i>
+          <span>Desactivar</span>
+        </button>
+        }
+        @if (ficha.deportesDelAlumno.length > 1) {
+        <button type="button" class="deportes__boton-texto deportes__boton-texto--peligro" (click)="ficha.removerDeporte(d.deporte)">
+          <i class="bi bi-trash3" aria-hidden="true"></i>
+          <span>Eliminar deporte</span>
+        </button>
+        }
+      </div>
+    </header>
+
+    <div class="deportes__cajas">
+      @if (!ficha.esDeporteSinGrado(d.deporte)) {
+      <!-- Grado -->
+      <section class="deportes__caja" data-caja="grado" [attr.aria-labelledby]="'caja-grado-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-grado-' + d.deporte">Grado</h4>
+        <p class="deportes__etiqueta">Grado actual</p>
+        <p class="deportes__grado">
+          @if (fondo(d); as f) {
+          <span class="deportes__cinto" [style.background]="f" aria-hidden="true"></span>
+          }
+          <strong>{{ ficha.getGradoNombre(d.grado, d.deporte) || 'Sin grado asignado' }}</strong>
+        </p>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaGrado-' + d.deporte">Desde</label>
+          <input type="date" class="deportes__control" [id]="'fechaGrado-' + d.deporte"
+            [value]="ficha.getDisplayedFechaGrado(d.deporte)" (change)="ficha.onFechaGradoChange(d.deporte, $event)" />
+          @if (tiempoConGrado(d); as t) {
+          <span class="deportes__nota" data-cifras>{{ t }}</span>
+          }
+        </div>
+        @if (ficha.hasPendingGradoChanges(d.deporte)) {
+        <div class="deportes__aplicar">
+          <button type="button" class="deportes__boton-primario" (click)="ficha.applyGradoChanges(d.deporte)">Aplicar cambios</button>
+          <button type="button" class="deportes__boton-texto" (click)="ficha.cancelGradoChanges(d.deporte)">Cancelar</button>
+        </div>
+        }
+        <div class="deportes__interruptor">
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'aptoExamen-' + d.deporte"
+            [checked]="d.aptoParaExamen" (change)="ficha.actualizarAptoParaExamen(d.deporte, $event)" />
+          <label [for]="'aptoExamen-' + d.deporte">¿Apto para examen?</label>
+        </div>
+        <div class="deportes__botones-grado">
+          <button type="button" class="deportes__boton-secundario" (click)="ficha.abrirModalActualizarGrado(d.deporte)">
+            <i class="bi bi-arrow-up-circle" aria-hidden="true"></i>
+            <span>Actualizar grado</span>
+          </button>
+          @if (d.aptoParaExamen) {
+          @if (ficha.getProximaConvocatoriaPorDeporte(d.deporte); as convocatoria) {
+          <p class="deportes__convocatoria" data-cifras>
+            <i class="bi bi-check-circle" aria-hidden="true"></i>
+            Inscrito en la convocatoria del {{ fecha(convocatoria.fechaConvocatoria) }}
+            @if (ficha.getCantidadConvocatoriasProximasPorDeporte(d.deporte) > 1) {
+            <span>(y {{ numero(ficha.getCantidadConvocatoriasProximasPorDeporte(d.deporte) - 1) }} más)</span>
+            }
+          </p>
+          } @else {
+          <p class="deportes__convocatoria deportes__convocatoria--sin">Sin convocatoria próxima</p>
+          }
+          <button type="button" class="deportes__boton-texto" (click)="ficha.abrirModalConvocatoriasPorDeporte(d.deporte)">
+            <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+            <span>Agregar a convocatoria</span>
+          </button>
+          @if (ficha.ofreceRecompensaGrado(d.deporte)) {
+          <button type="button" class="deportes__boton-texto" (click)="ficha.pasarGradoPorRecompensa(d.deporte)">
+            <i class="bi bi-award" aria-hidden="true"></i>
+            <span>Pasar por recompensa</span>
+          </button>
+          }
+          @if (ficha.ofreceDerechoExamen(d.deporte)) {
+          <button type="button" class="deportes__boton-texto" (click)="ficha.pasarGradoConDerechoExamen(d.deporte)">
+            <i class="bi bi-journal-check" aria-hidden="true"></i>
+            <span>Añadir derecho de examen</span>
+          </button>
+          }
+          }
+        </div>
+      </section>
+      }
+
+      <!-- Tarifa -->
+      <section class="deportes__caja" data-caja="tarifa" [attr.aria-labelledby]="'caja-tarifa-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-tarifa-' + d.deporte">Tarifa</h4>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'tipoTarifa-' + d.deporte">Tipo</label>
+          <select class="deportes__control" [id]="'tipoTarifa-' + d.deporte" [ngModel]="ficha.getDisplayedTipoTarifa(d.deporte)"
+            (ngModelChange)="ficha.onTipoTarifaModelChange(d.deporte, $event)">
+            <option value="">Seleccionar tarifa</option>
+            @for (tarifa of ficha.tarifasParaDeporte(d.deporte); track tarifa.codigo) {
+            <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'cuantiaTarifa-' + d.deporte">Cuantía (€)</label>
+          <input type="number" step="0.01" inputmode="decimal" class="deportes__control" [id]="'cuantiaTarifa-' + d.deporte"
+            [ngModel]="ficha.getDisplayedCuantiaTarifa(d.deporte)" (ngModelChange)="ficha.onCuantiaTarifaModelChange(d.deporte, $event)" />
+        </div>
+        @if (ficha.requiereRolFamiliar(d.deporte)) {
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'rolFamiliar-' + d.deporte">Rol familiar</label>
+          <select class="deportes__control" [id]="'rolFamiliar-' + d.deporte" [ngModel]="ficha.getDisplayedRolFamiliar(d.deporte)"
+            (ngModelChange)="ficha.onRolFamiliarModelChange(d.deporte, $event)">
+            <option value="NINGUNO">Ninguno</option>
+            <option value="PADRE">Padre</option>
+            <option value="MADRE">Madre</option>
+            <option value="HIJO">Hijo</option>
+            <option value="HIJA">Hija</option>
+          </select>
+        </div>
+        }
+        @if (ficha.requiereGrupoFamiliar(d.deporte)) {
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'grupoFamiliar-' + d.deporte">Grupo familiar</label>
+          <input type="text" class="deportes__control" [id]="'grupoFamiliar-' + d.deporte" placeholder="Ej.: Familia García"
+            [ngModel]="ficha.getDisplayedGrupoFamiliar(d.deporte)" (ngModelChange)="ficha.onGrupoFamiliarModelChange(d.deporte, $event)" />
+        </div>
+        }
+        @if (ficha.hasPendingTarifaChanges(d.deporte)) {
+        <div class="deportes__aplicar">
+          <button type="button" class="deportes__boton-primario" (click)="ficha.applyTarifaChanges(d.deporte)">Aplicar cambios</button>
+          <button type="button" class="deportes__boton-texto" (click)="ficha.cancelTarifaChanges(d.deporte)">Cancelar</button>
+        </div>
+        }
+      </section>
+
+      <!-- Alta y antigüedad -->
+      <section class="deportes__caja" data-caja="alta" [attr.aria-labelledby]="'caja-alta-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-alta-' + d.deporte">Alta y antigüedad</h4>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaAlta-' + d.deporte">Alta</label>
+          <input type="date" class="deportes__control" [id]="'fechaAlta-' + d.deporte" [value]="ficha.getDisplayedFechaAlta(d.deporte)"
+            (change)="ficha.onFechaAltaChange(d.deporte, $event)" />
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaAltaInicial-' + d.deporte">Alta inicial</label>
+          <input type="date" class="deportes__control" [id]="'fechaAltaInicial-' + d.deporte"
+            [value]="ficha.getDisplayedFechaAltaInicial(d.deporte)" (change)="ficha.onFechaAltaInicialChange(d.deporte, $event)" />
+          <span class="deportes__nota">Cuenta para la antigüedad</span>
+        </div>
+        <dl class="deportes__lectura">
+          @if (d.antiguedad) {
+          <div>
+            <dt>Antigüedad</dt>
+            <dd data-cifras>{{ d.antiguedad }}</dd>
+          </div>
+          }
+          <div>
+            <dt>Estado</dt>
+            <dd>{{ d.activo ? 'Activo' : 'Inactivo' }}</dd>
+          </div>
+        </dl>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaBajaDeporte-' + d.deporte">Baja</label>
+          <input type="date" class="deportes__control" [id]="'fechaBajaDeporte-' + d.deporte" [value]="ficha.getDisplayedFechaBaja(d.deporte)"
+            (change)="ficha.onFechaBajaChange(d.deporte, $event)" />
+          <span class="deportes__nota">Vacía si no hay baja</span>
+        </div>
+        @if (ficha.hasPendingEstadisticasChanges(d.deporte)) {
+        <div class="deportes__aplicar">
+          <button type="button" class="deportes__boton-primario" (click)="ficha.applyEstadisticasChanges(d.deporte)">Aplicar cambios</button>
+          <button type="button" class="deportes__boton-texto" (click)="ficha.cancelEstadisticasChanges(d.deporte)">Cancelar</button>
+        </div>
+        }
+      </section>
+
+      @if (!ficha.esDeporteSinGrado(d.deporte)) {
+      <!-- Licencia federativa -->
+      <section class="deportes__caja" data-caja="licencia" [attr.aria-labelledby]="'caja-licencia-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-licencia-' + d.deporte">Licencia federativa</h4>
+        <div class="deportes__interruptor">
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'tieneLicencia-' + d.deporte"
+            [checked]="ficha.getDisplayedTieneLicencia(d.deporte)" (change)="ficha.onTieneLicenciaChange(d.deporte, $event)" />
+          <label [for]="'tieneLicencia-' + d.deporte">¿Tiene licencia?</label>
+        </div>
+        @if (ficha.getDisplayedTieneLicencia(d.deporte)) {
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'numeroLicencia-' + d.deporte">Número</label>
+          <input type="number" inputmode="numeric" class="deportes__control" [id]="'numeroLicencia-' + d.deporte"
+            [value]="ficha.getDisplayedNumeroLicencia(d.deporte) ?? ''" (input)="ficha.onNumeroLicenciaChange(d.deporte, $event)" />
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaLicencia-' + d.deporte">Fecha</label>
+          <input type="date" class="deportes__control" [id]="'fechaLicencia-' + d.deporte"
+            [value]="ficha.getDisplayedFechaLicencia(d.deporte)" (change)="ficha.onFechaLicenciaChange(d.deporte, $event)" />
+        </div>
+        }
+        @if (ficha.hasPendingLicenciaChanges(d.deporte)) {
+        <div class="deportes__aplicar">
+          <button type="button" class="deportes__boton-primario" (click)="ficha.applyLicenciaChanges(d.deporte)">Aplicar cambios</button>
+          <button type="button" class="deportes__boton-texto" (click)="ficha.cancelLicenciaChanges(d.deporte)">Cancelar</button>
+        </div>
+        }
+      </section>
+      }
+
+      @if (ficha.catalogo.permiteCompeticion(d.deporte)) {
+      <!-- Competidor -->
+      <section class="deportes__caja" data-caja="competidor" [attr.aria-labelledby]="'caja-competidor-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-competidor-' + d.deporte">Competidor</h4>
+        @if (ficha.pendingLicenciaChanges.get(d.deporte)?.tieneLicencia ?? d.tieneLicencia) {
+        <div class="deportes__interruptor">
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'competidor-' + d.deporte"
+            [checked]="ficha.pendingCompetidorChanges.get(d.deporte)?.competidor ?? d.competidor"
+            (change)="ficha.onCompetidorChange(d.deporte, $event)" />
+          <label [for]="'competidor-' + d.deporte">¿Es competidor?</label>
+        </div>
+        @if (ficha.pendingCompetidorChanges.get(d.deporte)?.competidor ?? d.competidor) {
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaAltaCompeticion-' + d.deporte">Alta en competición</label>
+          <input type="date" class="deportes__control" [id]="'fechaAltaCompeticion-' + d.deporte"
+            [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaAltaCompeticion ?? (d.fechaAltaCompeticion ? (d.fechaAltaCompeticion | date: 'yyyy-MM-dd') : '')"
+            (change)="ficha.onFechaAltaCompeticionChange(d.deporte, $event)" />
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaAltaCompetidorInicial-' + d.deporte">Alta inicial como competidor</label>
+          <input type="date" class="deportes__control" [id]="'fechaAltaCompetidorInicial-' + d.deporte"
+            [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaAltaCompetidorInicial ?? (d.fechaAltaCompetidorInicial ? (d.fechaAltaCompetidorInicial | date: 'yyyy-MM-dd') : '')"
+            (change)="ficha.onFechaAltaCompetidorInicialChange(d.deporte, $event)" />
+        </div>
+        @if (d.antiguedadCompetidor) {
+        <dl class="deportes__lectura">
+          <div>
+            <dt>Antigüedad como competidor</dt>
+            <dd data-cifras>{{ d.antiguedadCompetidor }}</dd>
+          </div>
+        </dl>
+        }
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'categoria-' + d.deporte">Categoría</label>
+          <select class="deportes__control" [id]="'categoria-' + d.deporte" [ngModel]="ficha.getCategoriaValue(d.deporte)"
+            (ngModelChange)="ficha.onCategoriaModelChange(d.deporte, $event)">
+            <option value="">Seleccionar categoría</option>
+            @for (cat of ficha.categorias; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'peso-' + d.deporte">Peso (kg)</label>
+          <input type="number" step="0.1" inputmode="decimal" class="deportes__control" [id]="'peso-' + d.deporte"
+            [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.peso ?? d.peso ?? ''" (input)="ficha.onPesoChange(d.deporte, $event)" />
+        </div>
+        <div class="deportes__campo">
+          <label class="deportes__etiqueta" [for]="'fechaPeso-' + d.deporte">Fecha del peso</label>
+          <input type="date" class="deportes__control" [id]="'fechaPeso-' + d.deporte"
+            [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaPeso ?? (d.fechaPeso ? (d.fechaPeso | date: 'yyyy-MM-dd') : '')"
+            (change)="ficha.onFechaPesoChange(d.deporte, $event)" />
+        </div>
+        }
+        } @else {
+        <p class="deportes__nota deportes__nota--bloque">Necesita licencia federativa activa para competir.</p>
+        }
+        @if (ficha.hasPendingCompetidorChanges(d.deporte)) {
+        <div class="deportes__aplicar">
+          <button type="button" class="deportes__boton-primario" (click)="ficha.applyCompetidorChanges(d.deporte)">Aplicar cambios</button>
+          <button type="button" class="deportes__boton-texto" (click)="ficha.cancelCompetidorChanges(d.deporte)">Cancelar</button>
+        </div>
+        }
+      </section>
+      }
+
+      <!-- Grupos y turnos -->
+      <section class="deportes__caja" data-caja="grupos" [attr.aria-labelledby]="'caja-grupos-' + d.deporte">
+        <h4 class="deportes__caja-titulo" [id]="'caja-grupos-' + d.deporte">Grupos y turnos</h4>
+        @if (ficha.getGruposDelDeporte(d.deporte).length === 0) {
+        <p class="deportes__nota deportes__nota--bloque">Sin grupos. Añade uno para elegir sus turnos.</p>
+        }
+        <ul class="deportes__grupos">
+          @for (grupo of ficha.getGruposDelDeporte(d.deporte); track grupo.id) {
+          <li class="deportes__grupo">
+            <div class="deportes__grupo-cabecera">
+              <span class="deportes__grupo-nombre">{{ grupo.nombre }}</span>
+              <button type="button" class="deportes__quitar" [attr.aria-label]="'Quitar el grupo ' + grupo.nombre"
+                (click)="ficha.eliminarGrupoAlumno(grupo.id)">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+              </button>
+            </div>
+            <ul class="deportes__turnos">
+              @for (turno of ficha.getTurnosDelGrupo(grupo.id); track turno.id) {
+              <li class="deportes__turno">
+                <span data-cifras>{{ quitarTexto(turno) }}</span>
+                <button type="button" class="deportes__quitar deportes__quitar--turno" [attr.aria-label]="'Quitar el turno ' + quitarTexto(turno)"
+                  (click)="ficha.eliminarTurnoAlumno(turno.id)">
+                  <i class="bi bi-x" aria-hidden="true"></i>
+                </button>
+              </li>
+              } @empty {
+              <li class="deportes__nota">Sin turnos</li>
+              }
+            </ul>
+            @if (ficha.getTurnosDisponiblesDelGrupo(grupo.id).length > 0) {
+            <label class="deportes__oculto" [for]="'anadir-turno-' + grupo.id">Añadir turno a {{ grupo.nombre }}</label>
+            <select class="deportes__control deportes__anadir-turno" [id]="'anadir-turno-' + grupo.id"
+              (change)="ficha.agregarTurnoAlumno(+$any($event.target).value); $any($event.target).value = ''">
+              <option value="" selected disabled>Añadir turno…</option>
+              @for (turno of ficha.getTurnosDisponiblesDelGrupo(grupo.id); track turno.id) {
+              <option [value]="turno.id">{{ quitarTexto(turno) }}</option>
+              }
+            </select>
+            }
+          </li>
+          }
+        </ul>
+        @if (ficha.getGruposDisponiblesDelDeporte(d.deporte).length > 0) {
+        <label class="deportes__oculto" [for]="'anadir-grupo-' + d.deporte">Añadir grupo de {{ ficha.getDeporteLabel(d.deporte) }}</label>
+        <select class="deportes__control deportes__anadir-grupo" [id]="'anadir-grupo-' + d.deporte"
+          (change)="ficha.agregarGrupoAlumno(+$any($event.target).value); $any($event.target).value = ''">
+          <option value="" selected disabled>Añadir grupo…</option>
+          @for (grupo of ficha.getGruposDisponiblesDelDeporte(d.deporte); track grupo.id) {
+          <option [value]="grupo.id">{{ grupo.nombre }}</option>
+          }
+        </select>
+        }
+      </section>
+    </div>
+  </article>
+  }
+</section>

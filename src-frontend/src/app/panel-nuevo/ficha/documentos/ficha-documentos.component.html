@@ -1,0 +1,116 @@
+<div class="documentos">
+  <section class="documentos__bloque" id="alumno-informacion-adicional" data-scroll-anchor="alumno-informacion-adicional"
+    aria-labelledby="documentos-adicional-titulo">
+    <h2 id="documentos-adicional-titulo" class="documentos__titulo">Información adicional</h2>
+    <div class="documentos__fila">
+      <span class="documentos__etiqueta">Deportes activos</span>
+      <span class="documentos__chips">
+        @for (d of ficha.deportesDelAlumno; track d.deporte) {
+        @if (d.activo !== false) {
+        <span class="documentos__chip">
+          <span class="documentos__punto" [class]="ficha.claseDisciplina(d.deporte)" aria-hidden="true"></span>
+          {{ ficha.getDeporteLabel(d.deporte) }}
+        </span>
+        }
+        }
+        @if (ficha.getDeportesActivosCount() === 0) {
+        <span class="documentos__valor documentos__valor--vacio">Sin deportes activos</span>
+        }
+      </span>
+    </div>
+    <div class="documentos__fila">
+      @if (ficha.editingBasicInfo) {
+      <label class="documentos__etiqueta" for="fechaBaja">Baja general</label>
+      <input type="date" id="fechaBaja" class="documentos__control" [value]="fechaBajaCampo"
+        (change)="ficha.onBasicInfoChange('fechaBaja', $event)" />
+      <span class="documentos__nota">Fecha en que dejó la escuela del todo</span>
+      } @else {
+      <span class="documentos__etiqueta">Baja general</span>
+      @if (ficha.alumno.fechaBaja) {
+      <span class="documentos__valor" data-cifras>{{ fecha(ficha.alumno.fechaBaja) }}</span>
+      } @else {
+      <span class="documentos__valor documentos__valor--vacio">No establecida</span>
+      }
+      }
+    </div>
+    <div class="documentos__fila">
+      @if (ficha.editingBasicInfo) {
+      <div class="documentos__interruptor">
+        <input type="checkbox" role="switch" id="autorizacionWeb" class="documentos__interruptor-control"
+          [checked]="ficha.pendingBasicInfoChanges.autorizacionWeb ?? ficha.alumno.autorizacionWeb"
+          (change)="ficha.onBasicInfoChange('autorizacionWeb', $event)" />
+        <label for="autorizacionWeb">Autorización web</label>
+      </div>
+      } @else {
+      <span class="documentos__etiqueta">Autorización web</span>
+      <span class="documentos__valor">{{ ficha.alumno.autorizacionWeb ? 'Sí' : 'No' }}</span>
+      }
+    </div>
+    <div class="documentos__fila">
+      <label class="documentos__etiqueta" for="observaciones">Observaciones</label>
+      <textarea id="observaciones" class="documentos__control documentos__observaciones" rows="4"
+        placeholder="Escribe aquí todas las observaciones que quieras." [(ngModel)]="ficha.observacionesDraft"></textarea>
+      <div class="documentos__guardar">
+        <button type="button" class="documentos__boton-secundario"
+          [disabled]="!ficha.hasObservacionesChanges() || ficha.guardandoObservaciones"
+          (click)="ficha.guardarObservaciones()">{{ ficha.guardandoObservaciones ? 'Guardando…' : 'Guardar observaciones' }}</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="documentos__bloque" id="documentos-section" data-scroll-anchor="documentos-section" aria-labelledby="documentos-titulo">
+    <h2 id="documentos-titulo" class="documentos__titulo">Documentos</h2>
+    @if (ficha.documentosAlumno.length > 0) {
+    <ul class="documentos__lista">
+      @for (doc of ficha.documentosVisibles; track doc.id) {
+      <li class="documentos__documento">
+        <i class="bi bi-file-earmark-text documentos__icono" aria-hidden="true"></i>
+        <span class="documentos__texto">
+          <span class="documentos__nombre" [title]="doc.nombre">{{ doc.nombre }}</span>
+          <span class="documentos__tipo">{{ tipo(doc.tipo) }}</span>
+        </span>
+        <span class="documentos__acciones">
+          @if (ficha.esDocumentoPrevisualizable(doc.tipo)) {
+          <button type="button" class="documentos__icono-boton" [attr.aria-label]="'Ver ' + doc.nombre" (click)="ficha.abrirDocumento(doc)">
+            <i class="bi bi-eye" aria-hidden="true"></i>
+          </button>
+          }
+          <button type="button" class="documentos__icono-boton" [attr.aria-label]="'Descargar ' + doc.nombre"
+            (click)="ficha.descargarDocumento(doc)">
+            <i class="bi bi-download" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="documentos__icono-boton documentos__icono-boton--peligro" [attr.aria-label]="'Eliminar ' + doc.nombre"
+            (click)="ficha.eliminarDocumento(doc.id)">
+            <i class="bi bi-trash3" aria-hidden="true"></i>
+          </button>
+        </span>
+      </li>
+      }
+    </ul>
+    @if (ficha.documentosAlumno.length > ficha.documentosVisiblesInicial) {
+    <button type="button" class="documentos__boton-texto" [attr.aria-expanded]="ficha.mostrarTodosDocumentos"
+      (click)="ficha.toggleMostrarDocumentos()">
+      <i class="bi" [class.bi-chevron-down]="!ficha.mostrarTodosDocumentos" [class.bi-chevron-up]="ficha.mostrarTodosDocumentos"
+        aria-hidden="true"></i>
+      <span>{{ ficha.mostrarTodosDocumentos ? 'Ver menos' : verMas }}</span>
+    </button>
+    }
+    } @else {
+    <p class="documentos__vacio">Todavía no hay documentos.</p>
+    }
+    <div class="documentos__pie">
+      <button type="button" class="documentos__boton-secundario" (click)="docFileInput.click()">
+        <i class="bi bi-upload" aria-hidden="true"></i>
+        <span>Subir documento</span>
+      </button>
+      <button type="button" class="documentos__boton-texto" [disabled]="!ficha.alumno?.telefono && !ficha.alumno?.telefono2"
+        (click)="ficha.abrirWhatsApp()">
+        <i class="bi bi-whatsapp" aria-hidden="true"></i>
+        <span>WhatsApp</span>
+      </button>
+      <input #docFileInput type="file" class="documentos__oculto" tabindex="-1"
+        accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx" aria-label="Elegir un documento para subir"
+        (change)="ficha.onDocumentoSelected($event)" />
+    </div>
+  </section>
+</div>

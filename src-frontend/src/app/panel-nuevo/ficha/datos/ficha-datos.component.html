@@ -1,0 +1,69 @@
+<div class="datos">
+  <section class="datos__bloque" id="alumno-informacion-personal" data-scroll-anchor="alumno-informacion-personal"
+    aria-labelledby="datos-personales-titulo">
+    <header class="datos__cabecera">
+      <h2 id="datos-personales-titulo" class="datos__titulo">Información personal</h2>
+      <button type="button" class="datos__boton-secundario" [attr.aria-pressed]="ficha.editingBasicInfo" (click)="ficha.toggleEditBasicInfo()">
+        <i class="bi" [class.bi-pencil]="!ficha.editingBasicInfo" [class.bi-x-lg]="ficha.editingBasicInfo" aria-hidden="true"></i>
+        <span>{{ ficha.editingBasicInfo ? 'Cancelar' : 'Editar' }}</span>
+      </button>
+    </header>
+    <ng-container *ngTemplateOutlet="campos; context: { $implicit: personales }"></ng-container>
+    <div class="datos__fila">
+      @if (ficha.editingBasicInfo) {
+      <div class="datos__interruptor">
+        <input type="checkbox" role="switch" id="tieneDiscapacidad" class="datos__interruptor-control"
+          [checked]="ficha.pendingBasicInfoChanges.tieneDiscapacidad ?? ficha.alumno.tieneDiscapacidad"
+          (change)="ficha.onBasicInfoChange('tieneDiscapacidad', $event)" />
+        <label for="tieneDiscapacidad">Discapacidad</label>
+      </div>
+      } @else {
+      <span class="datos__etiqueta">Discapacidad</span>
+      <span class="datos__valor">{{ ficha.alumno.tieneDiscapacidad ? 'Sí' : 'No' }}</span>
+      }
+    </div>
+  </section>
+
+  <section class="datos__bloque" id="alumno-contacto" data-scroll-anchor="alumno-contacto" aria-labelledby="datos-contacto-titulo">
+    <header class="datos__cabecera">
+      <h2 id="datos-contacto-titulo" class="datos__titulo">Contacto</h2>
+    </header>
+    <ng-container *ngTemplateOutlet="campos; context: { $implicit: contacto }"></ng-container>
+  </section>
+</div>
+
+<ng-template #campos let-lista>
+  @for (campo of lista; track campo.id) {
+  <div class="datos__fila" [class.datos__fila--error]="ficha.hasBasicInfoError(campo.id)">
+    @if (ficha.editingBasicInfo) {
+    <label class="datos__etiqueta" [for]="campo.id">
+      {{ campo.etiqueta }}
+      @if (campo.obligatorio) {<span class="datos__obligatorio" aria-hidden="true">*</span>}
+    </label>
+    <input class="datos__control" [id]="campo.id" [type]="campo.tipo" [value]="valor(campo)"
+      [attr.placeholder]="campo.marcador ?? null" [attr.maxlength]="campo.maximo ?? null" [attr.required]="campo.obligatorio ? '' : null"
+      [attr.aria-invalid]="ficha.hasBasicInfoError(campo.id) ? 'true' : null"
+      [attr.aria-describedby]="ficha.hasBasicInfoError(campo.id) ? campo.id + '-error' : null"
+      (input)="campo.tipo !== 'date' && ficha.onBasicInfoChange(campo.id, $event)"
+      (change)="campo.tipo === 'date' && ficha.onBasicInfoChange(campo.id, $event)" />
+    @if (ficha.hasBasicInfoError(campo.id)) {
+    <p class="datos__error" [id]="campo.id + '-error'">
+      <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+      {{ ficha.getBasicInfoError(campo.id) }}
+    </p>
+    }
+    } @else {
+    <span class="datos__etiqueta">{{ campo.etiqueta }}</span>
+    @if (lectura(campo); as texto) {
+    @if (enlace(campo); as href) {
+    <a class="datos__valor datos__enlace" [href]="href">{{ texto }}</a>
+    } @else {
+    <span class="datos__valor" [attr.data-cifras]="campo.tipo === 'date' ? '' : null">{{ texto }}</span>
+    }
+    } @else {
+    <span class="datos__valor datos__valor--vacio">No establecido</span>
+    }
+    }
+  </div>
+  }
+</ng-template>

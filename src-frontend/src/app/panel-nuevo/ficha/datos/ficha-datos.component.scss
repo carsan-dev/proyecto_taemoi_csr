@@ -1,0 +1,110 @@
+// Pestaña «Datos y contacto» de la ficha nueva (8b-3b): dos bloques lado a lado en escritorio, uno debajo del otro
+// por debajo de 1024 px. Lectura en filas etiqueta/valor; en edición, los campos de hoy con su error debajo.
+@use '../ficha-base' as b;
+
+:host {
+  display: block;
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.datos__bloque {
+  @include b.bloque;
+  padding: 20px;
+}
+
+.datos__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  min-height: 40px;
+  margin-bottom: var(--pn-espacio-s);
+}
+
+.datos__titulo {
+  @include b.titulo-bloque;
+  font-size: 1.1875rem;
+}
+
+.datos__boton-secundario {
+  @include b.boton-secundario;
+}
+
+.datos__fila {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.datos__etiqueta {
+  @include b.etiqueta;
+}
+
+.datos__obligatorio {
+  margin-left: 2px;
+  color: var(--pn-peligro);
+}
+
+.datos__valor {
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.datos__valor--vacio {
+  color: var(--pn-tinta-2);
+}
+
+.datos__enlace {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 24px;
+  color: var(--pn-marca-primario-tinta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.datos__control {
+  @include b.control;
+}
+
+.datos__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
+.datos__interruptor {
+  @include b.interruptor;
+}
+
+@media (max-width: 1023.98px) {
+  .datos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .datos__bloque {
+    padding: 16px 14px;
+  }
+
+  .datos__enlace {
+    min-height: 44px;
+  }
+}
