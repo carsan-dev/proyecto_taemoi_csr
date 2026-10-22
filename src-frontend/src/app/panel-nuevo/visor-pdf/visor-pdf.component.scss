@@ -216,6 +216,7 @@
 
   .pdf-toolbar-btn {
     min-height: 34px;
+    flex: none;
     border: 1px solid var(--pn-acento-borde);
     border-radius: var(--pn-radio-m);
     background: var(--pn-superficie);
@@ -244,9 +245,12 @@
     color: var(--pn-tinta-2);
   }
 
+  // El relleno lateral (16 px; 8 en la hoja) es el que se resta del ancho del lienzo (`anchoReservadoPx`), y el hueco de
+  // la barra de desplazamiento se reserva de antemano: la página cabe a lo ancho al abrir y solo el zoom desplaza.
   .pdf-canvas-wrap {
     padding: 16px;
     background: var(--pn-fondo);
+    scrollbar-gutter: stable;
   }
 
   .pdf-canvas {
@@ -275,11 +279,16 @@
     align-items: center;
     gap: 8px;
   }
+
+  .pdf-toolbar-row-secondary {
+    margin-left: auto;
+  }
 }
 
 // Hoja a pantalla completa (por debajo de 768 px).
 .pn-visor--hoja {
-  width: 100vw;
+  // 100 % y no 100vw: con barra de desplazamiento clásica en el documento, 100vw se sale del área visible.
+  width: 100%;
   height: 100dvh;
   border-radius: 0;
   box-shadow: none;
@@ -324,13 +333,50 @@
     padding: 28px 20px;
   }
 
+  // «Descargar PDF» pasa a icono de 44 px: el título gana el ancho.
+  .pn-visor__descargar {
+    justify-content: center;
+    width: 44px;
+    padding: 0;
+  }
+
+  .pn-visor__descargar-texto,
+  .pn-visor__cuerpo ::ng-deep .pdf-toolbar-texto,
+  .pn-visor__cuerpo ::ng-deep .pdf-canvas-page-etiqueta {
+    @include c.oculto;
+  }
+
+  // Barra de una sola línea: página anterior, «1 / N», siguiente, y zoom −, %, +; todo a 44 px.
   .pn-visor__cuerpo ::ng-deep .pdf-canvas-viewer {
     .pdf-canvas-toolbar {
-      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+
+    .pdf-toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pdf-toolbar-row-secondary {
+      margin-left: auto;
     }
 
     .pdf-toolbar-btn {
+      width: 44px;
+      min-width: 44px;
       min-height: 44px;
+      padding: 0;
+      font-size: 1.125rem;
+    }
+
+    .pdf-canvas-page,
+    .pdf-canvas-zoom {
+      min-width: 2.75rem;
     }
 
     .pdf-canvas-wrap {

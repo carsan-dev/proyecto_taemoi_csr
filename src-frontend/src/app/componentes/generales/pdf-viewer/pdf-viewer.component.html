@@ -7,6 +7,7 @@
         (contextmenu)="onBloquearDescargaContenido($event)"
       >
         <div class="pdf-canvas-toolbar">
+          @if (!(ocultarPaginacionDeUna && totalPaginasPdf <= 1)) {
           <div class="pdf-toolbar-row">
             <button
               type="button"
@@ -15,19 +16,20 @@
               [disabled]="paginaActualPdf <= 1 || cargandoPaginaPdf"
             >
               <i aria-hidden="true" class="bi bi-chevron-left"></i>
-              Anterior
+              <span class="pdf-toolbar-texto">Anterior</span>
             </button>
-            <span class="pdf-canvas-page" aria-live="polite">P&aacute;gina {{ paginaActualPdf }} / {{ totalPaginasPdf || 1 }}</span>
+            <span class="pdf-canvas-page" aria-live="polite"><span class="pdf-canvas-page-etiqueta">P&aacute;gina </span>{{ paginaActualPdf }} / {{ totalPaginasPdf || 1 }}</span>
             <button
               type="button"
               class="pdf-toolbar-btn"
               (click)="irAPaginaSiguientePdf()"
               [disabled]="!totalPaginasPdf || paginaActualPdf >= totalPaginasPdf || cargandoPaginaPdf"
             >
-              Siguiente
+              <span class="pdf-toolbar-texto">Siguiente</span>
               <i aria-hidden="true" class="bi bi-chevron-right"></i>
             </button>
           </div>
+          }
 
           <div class="pdf-toolbar-row pdf-toolbar-row-secondary">
             <button
@@ -49,10 +51,12 @@
             >
               <i aria-hidden="true" class="bi bi-zoom-in"></i>
             </button>
+            @if (permitirExpandir) {
             <button type="button" class="pdf-toolbar-btn pdf-toolbar-btn-full" (click)="toggleVisorExpandido()">
               <i aria-hidden="true" class="bi" [ngClass]="visorExpandido ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
               <span>{{ visorExpandido ? 'Salir' : 'Expandir' }}</span>
             </button>
+            }
           </div>
         </div>
 

@@ -75,7 +75,7 @@ describe('VisorPdfComponent (8b-D2a, visor de PDF del panel nuevo)', () => {
   /** Lo que mide `100vw` y `100dvh` en esta ventana (con o sin barra de desplazamiento). */
   function ventana(): { vw: number; dvh: number } {
     const sonda = document.createElement('div');
-    sonda.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100dvh;visibility:hidden';
+    sonda.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100dvh;visibility:hidden';
     document.body.appendChild(sonda);
     const r = sonda.getBoundingClientRect();
     sonda.remove();
@@ -196,8 +196,10 @@ describe('VisorPdfComponent (8b-D2a, visor de PDF del panel nuevo)', () => {
 
   it('Esc con el visor expandido solo sale de la expansión', () => {
     abrir();
-    const interno = visor()!.querySelector('app-pdf-viewer button.pdf-toolbar-btn-full') as HTMLButtonElement;
-    interno.click();
+    // «Expandir» ya no está en el visor del panel; la expansión sigue existiendo en el componente de hoy.
+    const comp = fixture.debugElement.query((d) => d.componentInstance instanceof VisorPdfComponent)
+      .componentInstance as VisorPdfComponent;
+    comp.visor!.toggleVisorExpandido();
     pintar();
     tecla('Escape');
     expect(fixture.componentInstance.cerradas).toBe(0);
@@ -278,4 +280,43 @@ describe('VisorPdfComponent (8b-D2a, visor de PDF del panel nuevo)', () => {
     expect(visor()!.querySelector('.pn-visor__esqueleto')).toBeNull();
     fixture.destroy();
   }));
+
+  describe('barra compacta (8b-D2a)', () => {
+    const visorPdf = () =>
+      fixture.debugElement.query((d) => d.componentInstance instanceof VisorPdfComponent).componentInstance as VisorPdfComponent;
+    const textos = () =>
+      Array.from(visor()!.querySelectorAll('.pdf-canvas-toolbar button')).map((b) =>
+        (b.getAttribute('aria-label') ?? b.textContent ?? '').trim()
+      );
+
+    it('«Expandir» no existe dentro del visor', () => {
+      abrir();
+      visorPdf().visor!.totalPaginasPdf = 3;
+      pintar();
+      expect(textos()).not.toContain('Expandir');
+      expect(visor()!.querySelector('.pdf-toolbar-btn-full')).toBeNull();
+    });
+
+    it('con una sola página no hay paginación; con varias, sí', () => {
+      abrir();
+      visorPdf().visor!.totalPaginasPdf = 1;
+      pintar();
+      expect(visor()!.querySelector('.pdf-canvas-page')).toBeNull();
+      expect(textos()).toEqual(['Reducir zoom', 'Aumentar zoom']);
+      visorPdf().visor!.totalPaginasPdf = 4;
+      pintar();
+      expect(visor()!.querySelector('.pdf-canvas-page')).not.toBeNull();
+      expect(textos()).toEqual(['Anterior', 'Siguiente', 'Reducir zoom', 'Aumentar zoom']);
+    });
+
+    it('en el móvil «Descargar PDF» es un icono de 44 px con su etiqueta accesible', () => {
+      forzarAncho(true);
+      abrir();
+      const b = visor()!.querySelector<HTMLButtonElement>('.pn-visor__descargar')!;
+      expect(b.getAttribute('aria-label')).toBe('Descargar PDF');
+      const caja = b.getBoundingClientRect();
+      expect(Math.round(caja.width)).toBe(44);
+      expect(Math.round(caja.height)).toBe(44);
+    });
+  });
 });
