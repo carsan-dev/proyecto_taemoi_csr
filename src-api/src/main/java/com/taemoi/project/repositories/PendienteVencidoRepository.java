@@ -85,9 +85,12 @@ public interface PendienteVencidoRepository extends Repository<ProductoAlumno, L
 
 	/**
 	 * Pieza 8b-3a: los mismos candidatos, solo de los alumnos indicados (el del cargo o el de su inscripción, como
-	 * {@code alumnoId} en {@link #candidatos}). Los ids de otra escuela no casan con ningún alumno de esta.
+	 * {@code alumnoId} en {@link #candidatos}). Los ids de otra escuela no casan con ningún alumno de esta (los joins
+	 * llevan {@code organizacion_id}). El filtro va sobre las columnas, no sobre el {@code COALESCE}, para que use los
+	 * índices de {@code producto_alumno.alumno_id} y {@code alumno_deporte.alumno_id}; una fila que casara solo por la
+	 * otra columna se atribuye a un alumno no pedido y el servicio la descarta.
 	 */
-	@Query(value = CANDIDATOS + "  AND COALESCE(a.id, ada.id) IN (:alumnos)", nativeQuery = true)
+	@Query(value = CANDIDATOS + "  AND (pa.alumno_id IN (:alumnos) OR ad.alumno_id IN (:alumnos))", nativeQuery = true)
 	List<CargoCandidato> candidatosDeAlumnos(
 			@Param("organizacion") Long organizacion,
 			@Param("todasLasSedes") boolean todasLasSedes,
