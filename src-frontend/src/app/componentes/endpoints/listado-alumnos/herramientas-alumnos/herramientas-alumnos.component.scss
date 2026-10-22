@@ -367,14 +367,8 @@
     }
   }
 
-  .dias-semana-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dia-chip {
-    padding: 0.5rem 0.65rem;
-    font-size: 0.8rem;
-  }
+  // Hoy, «.dias-semana-grid» y «.dia-chip» de este bloque quedaban anidados por error dentro de «.unified-controls-bar»
+  // y no se aplicaban nunca: no se traen, para que el pie se vea igual.
 
   .collapsible-section {
     .section-summary {
