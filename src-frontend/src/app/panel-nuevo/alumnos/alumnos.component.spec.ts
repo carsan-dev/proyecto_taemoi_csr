@@ -473,4 +473,30 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     const titulos = Array.from(el().querySelectorAll('app-herramientas-alumnos summary span')).map((s) => s.textContent!.trim());
     expect(titulos).toEqual(['Gestión de Mensualidades y Licencias', 'Listado de Asistencia', 'Listado de Mensualidades']);
   });
+
+  it('«Quitar filtros» hace una sola petición del listado (la búsqueda vaciada no repite la carga)', fakeAsync(() => {
+    crear();
+    responder();
+    const buscador = el().querySelector<HTMLInputElement>('#alumnos-buscar')!;
+    buscador.value = 'zzz';
+    buscador.dispatchEvent(new Event('input'));
+    tick(300);
+    listados()[0].flush(pagina(0, 0));
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.alumnos__estado button')!.click();
+    tick(1000);
+    const peticiones = listados();
+    expect(peticiones.length).toBe(1);
+    expect(peticiones[0].request.params.has('nombre')).toBeFalse();
+    peticiones[0].flush(pagina(812));
+    http.match(() => true).forEach((r) => r.flush([]));
+    tick(1000);
+    expect(listados().length).toBe(0);
+    // Volver a buscar el mismo texto sí carga.
+    buscador.value = 'zzz';
+    buscador.dispatchEvent(new Event('input'));
+    tick(300);
+    expect(listados().length).toBe(1);
+    flush();
+  }));
 });

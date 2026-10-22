@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { debounceTime, filter, finalize } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
 import { BajasAltasAlumno } from '../../componentes/endpoints/listado-alumnos/bajas-altas-alumno';
@@ -210,7 +210,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.vista = leerVista();
     this.aptos = this.route.snapshot?.queryParamMap?.get('aptoParaExamen') === 'true';
     this.suscripciones.add(
-      this.busqueda.pipe(debounceTime(300), distinctUntilChanged()).subscribe((texto) => {
+      // Solo si el texto cambia frente al filtro vigente: «Quitar filtros» vacía la búsqueda sin repetir la carga.
+      this.busqueda.pipe(debounceTime(300), filter((texto) => texto !== this.nombre)).subscribe((texto) => {
         this.nombre = texto;
         this.pagina = 1;
         this.cargar();
