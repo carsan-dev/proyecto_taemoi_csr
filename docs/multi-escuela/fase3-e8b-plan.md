@@ -698,6 +698,32 @@ Capturas (16 tarjetas en móvil, con y sin filtro).
 
 **Notas para la PR:** tabla del Anexo A marcada.
 
+**Implementación (rama `feature/e8b-3c`, desde `develop` en `ea233fab`):**
+- Nuevos en `F/panel-nuevo/grupos/`: `grupos.component.*` (`GruposComponent`, `app-grupos`), `grupos-vista.ts`
+  (`rangoEdad`, `resumenHorario`, `textoTurno`, `seccionesPorDisciplina`) y `alumnos-tipo-panel.component.*`
+  (`pn-alumnos-tipo`, hereda de `GrupoAlumnosModalComponent`: buscador con 300 ms, «solo activos», 8 por página y paso a
+  la ficha; solo cambian plantilla, carga y cierre). `LecturasPanelService`: `resumenGrupos`, `resumenTurnos`,
+  `conteoAlumnosPorGrupo` y `alumnosPorTipo`, la misma petición que hoy con `ERROR_HANDLED_LOCALLY`. Ruta `gruposListar`
+  con `canMatch: [disenoNuevoGuard]` delante de la de hoy.
+- Escrituras con los métodos de hoy de `EndpointsService` (mismo método, ruta y cuerpo): añadir turno (`POST
+  /grupos/{id}/turnos/{turnoId}`, cuerpo nulo), quitar turno (`DELETE`), rango de edad (`PUT /grupos/{id}` con `{id,
+  nombre, deporte, rangoEdadMin, rangoEdadMax}`) y eliminar (`DELETE /grupos/{id}` y relectura de grupos y turnos).
+  Confirmaciones con `ConfirmacionService` (quitar y eliminar destructivas, textos de hoy); rango con `DialogoComponent`
+  (dos campos numéricos y la validación de hoy en línea); avisos con `AvisosService`; sin SweetAlert2 ni cargador global.
+- [x] Specs en rojo antes del código (`Can't resolve './grupos.component'`, `'./grupos-vista'`; `resumenGrupos` no existe
+  en `LecturasPanelService`), luego verdes: `grupos-vista.spec.ts`, `grupos.component.spec.ts` (filtro con números,
+  selección y teclado; `aria-expanded`/`aria-controls`; objetivos ≥ 24 px e iconos de turno ≥ 32 px; cada acción con
+  método, ruta y cuerpo, y nada al cancelar; panel de alumnos por tipo; esqueleto, error por lectura y vacío),
+  `lecturas-panel.service.spec.ts` y `app.routes.spec.ts` (dos entradas; apagado no descarga el chunk).
+- **Turnos sin grupo:** la pantalla de hoy filtra `!grupoId && !grupoNombre`, pero la API manda «Sin grupo» en
+  `grupoNombre`, así que hoy nunca ofrece ninguno (lo fija `listado-grupos.resumen.spec.ts`). La nueva filtra solo por
+  `!grupoId`: «Añadir turno» y el bloque del final funcionan. Al quitar un turno pasa al bloque sin recargar (hoy solo
+  desaparecía de la tarjeta). Mensajes de validación del rango con tildes («La edad mínima…»; hoy sin ellas).
+- **Notas para la PR:** bundle inicial 1.455.687 bytes (+158 frente a 1.455.529, la entrada de la ruta); chunk
+  `grupos-component` 52,35 kB; karma 1804 SUCCESS; capturas apagado antes (`ea233fab`) y después idénticas en bytes, 9/9
+  (carga, alumnos por tipo y rango a 375, 768 y 1280); encendido a 375, 768 y 1280 (16 tarjetas, con filtro, una
+  desplegada, alumnos por tipo y rango de edad); objetivos medidos: 44 px mínimo a 375, sin desplazamiento horizontal.
+
 ## 13. Pieza 8b-3d: Tesorería
 
 Rama `feature/e8b-3d`. Solo frontend, sin migración: atajo `desplegar`. Tier careful: dinero.
@@ -1525,26 +1551,26 @@ tabla se entienda sola. Configuración lleva dos columnas porque elige una varia
 
 ### Grupos (estructura de C con tarjetas de A)
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Grupos y turnos» | Título con el total de grupos y turnos |
-| Nuevo turno | Arriba a la derecha |
-| Nuevo grupo | Botón principal |
-| Alumnos por tipo de grupo (abre la lista) | Fila de botones con «ver alumnos» |
-| Nombre del grupo | Cabecera de la tarjeta |
-| Rango de edad | Dato «Edad» de la tarjeta |
-| Turnos: número y lista (día y hora) | Horario resumido a la vista; lista al desplegar «Turnos» |
-| Editar turno | Lápiz en cada turno (desplegado) |
-| Quitar turno del grupo | Cruz en cada turno (desplegado) |
-| Añadir turno (turnos sin grupo) | Desplegable dentro de «Turnos» |
-| Botón «Rango edad» | Pie de la tarjeta |
-| Botón «Alumnos» | Pie de la tarjeta |
-| Botón «Editar» | Pie y nombre de la tarjeta |
-| Botón «Eliminar» | Papelera al pie |
-| Turnos sin grupo asignado (con «Editar») | Bloque al final |
-| Diálogo con los alumnos de un tipo | Sin cambios |
-| Añadido: Alumnos de cada grupo y de cada disciplina | Dato «Alumnos» y total por disciplina |
-| Añadido: Filtro por disciplina | Segmentos con su número |
+| Hoy | En la pantalla nueva | 8b-3c |
+|---|---|---|
+| Título «Grupos y turnos» | Título con el total de grupos y turnos | Hecho |
+| Nuevo turno | Arriba a la derecha | Hecho |
+| Nuevo grupo | Botón principal | Hecho |
+| Alumnos por tipo de grupo (abre la lista) | Fila de botones con «ver alumnos» | Hecho |
+| Nombre del grupo | Cabecera de la tarjeta | Hecho |
+| Rango de edad | Dato «Edad» de la tarjeta | Hecho |
+| Turnos: número y lista (día y hora) | Horario resumido a la vista; lista al desplegar «Turnos» | Hecho |
+| Editar turno | Lápiz en cada turno (desplegado) | Hecho |
+| Quitar turno del grupo | Cruz en cada turno (desplegado) | Hecho |
+| Añadir turno (turnos sin grupo) | Desplegable dentro de «Turnos» | Hecho (desplegable + «Añadir», ocupado) |
+| Botón «Rango edad» | Pie de la tarjeta | Hecho |
+| Botón «Alumnos» | Pie de la tarjeta | Hecho |
+| Botón «Editar» | Pie y nombre de la tarjeta | Hecho |
+| Botón «Eliminar» | Papelera al pie | Hecho |
+| Turnos sin grupo asignado (con «Editar») | Bloque al final | Hecho (ver nota de §12: hoy nunca sale) |
+| Diálogo con los alumnos de un tipo | Sin cambios | Hecho: panel lateral (hoja en el móvil) con la lógica del de hoy heredada |
+| Añadido: Alumnos de cada grupo y de cada disciplina | Dato «Alumnos» y total por disciplina | Hecho |
+| Añadido: Filtro por disciplina | Segmentos con su número | Hecho |
 
 ### Tesorería (C)
 
