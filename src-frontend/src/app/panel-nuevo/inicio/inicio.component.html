@@ -1,0 +1,416 @@
+<div class="pn inicio">
+  <div class="inicio__pagina">
+    <header class="inicio__cabecera">
+      <h1 class="inicio__titulo">Inicio</h1>
+      <p class="inicio__fecha">{{ fechaHoy }}</p>
+      <button type="button" class="inicio__boton-texto inicio__actualizar" (click)="actualizar()" [disabled]="cargando"
+        [attr.aria-busy]="cargando ? 'true' : null">
+        <i class="bi bi-arrow-clockwise" [class.inicio__girando]="cargando" aria-hidden="true"></i>
+        <span>{{ cargando ? 'Actualizando…' : 'Actualizar ahora' }}</span>
+      </button>
+    </header>
+
+    <div class="inicio__rejilla">
+      <!-- Hoy: clases del día, la siguiente resaltada -->
+      <section class="inicio__bloque inicio__hoy" aria-labelledby="inicio-hoy">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-hoy" class="inicio__subtitulo">Hoy, {{ diaHoy }}</h2>
+          @if (estado === 'listo') {
+          <span class="inicio__nota-derecha inicio__hoy-cuenta" data-cifras>{{ plural(clases.length, 'clase', 'clases') }}</span>
+          }
+        </div>
+        @if (estado === 'cargando') {
+        <p class="inicio__vacio">Cargando las clases de hoy…</p>
+        } @else if (estado === 'error') {
+        <p class="inicio__vacio">No se pudieron cargar las clases. Prueba con «Actualizar ahora».</p>
+        } @else if (clases.length === 0) {
+        <p class="inicio__vacio">Hoy no hay clases.</p>
+        } @else {
+        <ol class="inicio__lista">
+          @for (c of clases; track c.turnoId) {
+          <li class="inicio__clase" [class.inicio__clase--siguiente]="c.siguiente">
+            <span class="inicio__clase-hora" data-cifras>
+              <span class="inicio__clase-inicio">{{ c.horaInicio }}</span>
+              <span class="inicio__clase-fin">{{ c.horaFin }}</span>
+            </span>
+            <span class="inicio__clase-cuerpo">
+              <span class="inicio__clase-nombre">
+                <span class="inicio__punto" [class]="claseDisciplina(c.deporte)" aria-hidden="true"></span>
+                {{ c.grupoNombre }}
+              </span>
+              <span class="inicio__clase-detalle">
+                @if (c.siguiente) {
+                <strong class="inicio__siguiente">Siguiente</strong>
+                }
+                @if (nombreDisciplina(c.deporte)) {
+                <span>{{ nombreDisciplina(c.deporte) }}</span>
+                }
+                <span data-cifras>{{ c.inscritos }} de {{ c.plazas }} plazas ocupadas</span>
+              </span>
+            </span>
+            <a class="inicio__boton-texto inicio__ver-grupo" [routerLink]="['/gruposEditar', c.grupoId]"
+              [attr.aria-label]="'Ver grupo ' + c.grupoNombre">
+              <span class="inicio__ver-grupo-texto">Ver grupo</span>
+              <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </a>
+          </li>
+          }
+        </ol>
+        }
+      </section>
+
+      <!-- Pendiente de cobro: todo lo vencido (decisiones 242 y 267) -->
+      <section class="inicio__bloque inicio__pendiente" aria-labelledby="inicio-pendiente">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-pendiente" class="inicio__subtitulo">Pendiente de cobro · vencido</h2>
+          <a class="inicio__enlace" routerLink="/tesoreriaCobros" [queryParams]="{ estado: 'PENDIENTES' }">Ver en Tesorería</a>
+        </div>
+        @if (estadoPendiente === 'cargando' && !pendiente) {
+        <p class="inicio__vacio">Cargando lo pendiente…</p>
+        } @else if (estadoPendiente === 'error') {
+        <p class="inicio__vacio">No se pudo cargar lo pendiente. Prueba con «Actualizar ahora».</p>
+        } @else if (pendiente) {
+        <div class="inicio__pendiente-cuerpo">
+          <p class="inicio__pendiente-total" data-cifras>{{ eur(pendiente.total) }}</p>
+          <p class="inicio__pendiente-resumen">
+            Lo no pagado fuera de plazo, de cualquier mes (las mensualidades vencen el día
+            {{ pendiente.diaLimiteMensualidad }}): {{ plural(pendiente.cargos, 'cargo', 'cargos') }} de
+            {{ plural(pendiente.alumnos, 'alumno', 'alumnos') }}.
+          </p>
+          @if (pendiente.cargos === 0) {
+          <p class="inicio__vacio inicio__vacio--sin-margen">No hay nada vencido sin cobrar.</p>
+          } @else {
+          <table class="inicio__desglose">
+            <caption>Por tipo</caption>
+            <thead class="inicio__oculto">
+              <tr><th scope="col">Tipo</th><th scope="col">Cargos</th><th scope="col">Importe</th></tr>
+            </thead>
+            <tbody>
+              @for (f of pendiente.porTipo; track f.tipo) {
+              <tr>
+                <th scope="row">{{ etiquetaTipo[f.tipo] }}</th>
+                <td data-cifras>{{ numero(f.cargos) }}</td>
+                <td data-cifras>{{ eur(f.importe) }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          <table class="inicio__desglose">
+            <caption>Por mes</caption>
+            <thead class="inicio__oculto">
+              <tr><th scope="col">Mes</th><th scope="col">Cargos</th><th scope="col">Importe</th></tr>
+            </thead>
+            <tbody>
+              @for (f of pendiente.porMes; track f.mes) {
+              <tr>
+                <th scope="row">{{ mesLargo(f.mes) }}</th>
+                <td data-cifras>{{ numero(f.cargos) }}</td>
+                <td data-cifras>{{ eur(f.importe) }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          <table class="inicio__desglose">
+            <caption>Por sede</caption>
+            <thead class="inicio__oculto">
+              <tr><th scope="col">Sede</th><th scope="col">Cargos</th><th scope="col">Importe</th></tr>
+            </thead>
+            <tbody>
+              @for (f of pendiente.porSede; track f.sedeId) {
+              <tr>
+                <th scope="row">{{ f.sede ?? 'Sin sede' }}</th>
+                <td data-cifras>{{ numero(f.cargos) }}</td>
+                <td data-cifras>{{ eur(f.importe) }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          <h3 class="inicio__subapartado">Los más antiguos</h3>
+          <ul class="inicio__lista">
+            @for (c of pendiente.masAntiguos; track c.productoAlumnoId) {
+            <li class="inicio__cargo">
+              <span class="inicio__cargo-cuerpo">
+                @if (c.alumnoId) {
+                <a class="inicio__cargo-nombre" [routerLink]="['/alumnosEditar', c.alumnoId]">{{ c.alumnoNombre }}</a>
+                } @else {
+                <span class="inicio__cargo-nombre">{{ c.alumnoNombre }}</span>
+                }
+                <span class="inicio__cargo-detalle">{{ detalleCargo(c) }}</span>
+              </span>
+              <span class="inicio__cargo-accion">
+                <span class="inicio__cargo-importe" data-cifras>{{ eur(c.importe) }}</span>
+                <button type="button" class="inicio__boton-secundario inicio__cobrar" (click)="cobrar(c)"
+                  [disabled]="cobrando.has(c.productoAlumnoId)"
+                  [attr.aria-busy]="cobrando.has(c.productoAlumnoId) ? 'true' : null"
+                  [attr.aria-label]="'Cobrar ' + c.concepto + ' de ' + c.alumnoNombre">Cobrar</button>
+              </span>
+            </li>
+            }
+          </ul>
+          }
+        </div>
+        }
+      </section>
+
+      <!-- Ocupación de la semana: día × franja (decisión 245) -->
+      <section class="inicio__bloque inicio__ocupacion" aria-labelledby="inicio-ocupacion">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-ocupacion" class="inicio__subtitulo">Ocupación de la semana</h2>
+          @if (estado === 'listo' && ocupacion.franjas.length) {
+          <span class="inicio__nota-derecha inicio__ocupacion-total" data-cifras>{{ numero(ocupacion.inscritos) }} plazas
+            ocupadas de {{ numero(ocupacion.plazas) }}</span>
+          }
+        </div>
+        <p class="inicio__ocupacion-nota">
+          Inscritos de cada franja frente al límite común de {{ limite }} por turno; un grupo con dos días cuenta sus
+          alumnos en cada día. <strong>Cuando cada sede tenga su aforo (E9), esta será la ocupación real.</strong>
+        </p>
+        @if (estado === 'cargando') {
+        <p class="inicio__vacio">Cargando la ocupación…</p>
+        } @else if (estado === 'error') {
+        <p class="inicio__vacio">No se pudo cargar la ocupación. Prueba con «Actualizar ahora».</p>
+        } @else if (ocupacion.franjas.length === 0) {
+        <p class="inicio__vacio">Aún no hay turnos con grupo: no hay ocupación que mostrar.</p>
+        } @else {
+        <div class="inicio__mapa" aria-hidden="true" [style.--inicio-columnas]="ocupacion.dias.length">
+          <span class="inicio__mapa-esquina"></span>
+          @for (d of ocupacion.dias; track d.clave) {
+          <span class="inicio__mapa-dia" [class.inicio__mapa-dia--hoy]="esHoy(d.clave)">{{ esHoy(d.clave) ? 'Hoy' : d.corto }}</span>
+          }
+          @for (f of ocupacion.filas; track f.franja) {
+          <span class="inicio__mapa-franja" data-cifras>{{ f.franja }}</span>
+          @for (c of f.celdas; track c.dia) {
+          <span class="inicio__celda" [class]="c.paso ? 'inicio__celda--paso-' + c.paso : 'inicio__celda--sin-clase'"
+            [class.inicio__celda--hoy]="esHoy(c.dia)" [attr.title]="c.descripcion">
+            @if (c.paso) {
+            <span class="inicio__celda-cifra" data-cifras>{{ numero(c.inscritos) }}<span class="inicio__celda-plazas">/{{
+                numero(c.plazas) }}</span></span>
+            }
+          </span>
+          }
+          }
+        </div>
+        <ul class="inicio__leyenda" aria-hidden="true">
+          <li><span class="inicio__muestra inicio__celda--sin-clase"></span>Sin clase</li>
+          <li><span class="inicio__muestra inicio__celda--paso-1"></span>Menos del 25 %</li>
+          <li><span class="inicio__muestra inicio__celda--paso-2"></span>25–49 %</li>
+          <li><span class="inicio__muestra inicio__celda--paso-3"></span>50–74 %</li>
+          <li><span class="inicio__muestra inicio__celda--paso-4"></span>75 % o más</li>
+        </ul>
+        <div class="inicio__oculto">
+        <table class="inicio__ocupacion-tabla">
+          <caption>Ocupación de la semana: inscritos y plazas de cada franja por día</caption>
+          <thead>
+            <tr>
+              <th scope="col">Franja</th>
+              @for (d of ocupacion.dias; track d.clave) {
+              <th scope="col">{{ d.largo }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of ocupacion.filas; track f.franja) {
+            <tr>
+              <th scope="row">{{ f.franja }}</th>
+              @for (c of f.celdas; track c.dia) {
+              <td>{{ c.paso ? plural(c.inscritos, 'inscrito', 'inscritos') + ' de ' + plural(c.plazas, 'plaza', 'plazas') +
+                ' (' + numero(c.porcentaje) + ' %)' : 'Sin clase' }}</td>
+              }
+            </tr>
+            }
+          </tbody>
+        </table>
+        </div>
+        }
+      </section>
+
+      <!-- Accesos con cifra -->
+      <section class="inicio__bloque inicio__accesos" aria-labelledby="inicio-accesos">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-accesos" class="inicio__subtitulo">Accesos</h2>
+        </div>
+        <ul class="inicio__lista">
+          <li>
+            <a class="inicio__acceso" data-acceso="alta" routerLink="/alumnosCrear">
+              <i class="bi bi-person-plus" aria-hidden="true"></i>
+              <span class="inicio__acceso-texto">Dar de alta un alumno</span>
+              <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__acceso" data-acceso="aptos" routerLink="/alumnosListar" [queryParams]="{ aptoParaExamen: 'true' }">
+              <i class="bi bi-award" aria-hidden="true"></i>
+              <span class="inicio__acceso-texto">Alumnos aptos para examen</span>
+              @if (estado === 'listo') {
+              <span class="inicio__acceso-cifra" data-cifras>{{ numero(aptos) }}</span>
+              }
+              <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__acceso" data-acceso="eventos" routerLink="/eventosListar">
+              <i class="bi bi-eye-slash" aria-hidden="true"></i>
+              <span class="inicio__acceso-texto">Eventos sin publicar</span>
+              @if (estadoEventos === 'listo') {
+              <span class="inicio__acceso-cifra" data-cifras>{{ numero(eventosSinPublicar) }}</span>
+              }
+              <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__acceso" data-acceso="preinscripciones" routerLink="/preinscripciones">
+              <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
+              <span class="inicio__acceso-texto">Preinscripciones</span>
+              <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <!-- La escuela en cifras -->
+      <section class="inicio__bloque inicio__cifras" aria-labelledby="inicio-cifras">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-cifras" class="inicio__subtitulo">La escuela en cifras</h2>
+        </div>
+        @if (estado === 'cargando') {
+        <p class="inicio__vacio">Cargando las cifras…</p>
+        } @else if (estado === 'error') {
+        <p class="inicio__vacio">No se pudieron cargar las cifras. Prueba con «Actualizar ahora».</p>
+        } @else {
+        <ul class="inicio__totales">
+          <li>
+            <a class="inicio__total" routerLink="/alumnosListar">
+              <span class="inicio__total-etiqueta">Alumnos</span>
+              <span class="inicio__total-cifra" data-cifras>{{ numero(alumnosTotales) }}</span>
+              <span class="inicio__total-detalle" data-cifras>{{ numero(alumnosActivos) }} activos, {{
+                numero(alumnosInactivos) }} inactivos</span>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__total" routerLink="/gruposListar">
+              <span class="inicio__total-etiqueta">Grupos</span>
+              <span class="inicio__total-cifra" data-cifras>{{ numero(totalGrupos) }}</span>
+              <span class="inicio__total-detalle" data-cifras>{{ plural(totalTurnos, 'turno', 'turnos') }}</span>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__total" routerLink="/eventosListar">
+              <span class="inicio__total-etiqueta">Eventos</span>
+              <span class="inicio__total-cifra" data-cifras>{{ numero(totalEventos) }}</span>
+              <span class="inicio__total-detalle" data-cifras>{{ plural(eventosVisibles, 'visible', 'visibles') }}</span>
+            </a>
+          </li>
+          <li>
+            <a class="inicio__total" routerLink="/alumnosListar" [queryParams]="{ aptoParaExamen: 'true' }">
+              <span class="inicio__total-etiqueta">Aptos para examen</span>
+              <span class="inicio__total-cifra" data-cifras>{{ numero(aptos) }}</span>
+              <span class="inicio__total-detalle">Listos para promover</span>
+            </a>
+          </li>
+        </ul>
+
+        @if (avisos.length) {
+        <h3 class="inicio__subapartado">Avisos</h3>
+        <ul class="inicio__lista">
+          @for (a of avisos; track a.id) {
+          <li>
+            <a class="inicio__acceso" [routerLink]="a.ruta">
+              <i class="bi" [class]="'bi ' + a.icono" aria-hidden="true"></i>
+              <span class="inicio__acceso-texto">{{ a.texto }}<span class="inicio__aviso-accion">{{ a.accion }}</span></span>
+              <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+            </a>
+          </li>
+          }
+        </ul>
+        }
+
+        <h3 class="inicio__subapartado">Alumnos por disciplina</h3>
+        @if (disciplinas.length === 0) {
+        <p class="inicio__vacio inicio__vacio--sin-margen">No hay datos de inscripciones.</p>
+        } @else {
+        <table class="inicio__tabla">
+          <thead>
+            <tr>
+              <th scope="col">Disciplina</th>
+              <th scope="col" class="inicio__num">Alumnos</th>
+              <th scope="col" class="inicio__num">Porcentaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of disciplinas; track d.codigo) {
+            <tr>
+              <th scope="row">{{ d.nombre }}</th>
+              <td class="inicio__num" data-cifras>{{ numero(d.alumnos) }}</td>
+              <td class="inicio__num" data-cifras>{{ numero(d.porcentaje) }} %</td>
+            </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total de inscripciones</th>
+              <td class="inicio__num" data-cifras>{{ numero(totalInscripciones) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+        }
+        }
+      </section>
+
+      <!-- Eventos activos -->
+      <section class="inicio__bloque inicio__eventos" aria-labelledby="inicio-eventos">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-eventos" class="inicio__subtitulo">Eventos activos</h2>
+          <a class="inicio__enlace" routerLink="/eventosListar">Ver todos</a>
+        </div>
+        @if (estadoEventos === 'cargando') {
+        <p class="inicio__vacio">Cargando los eventos…</p>
+        } @else if (eventos.length === 0) {
+        <p class="inicio__vacio">No hay eventos activos.</p>
+        } @else {
+        <ul class="inicio__lista">
+          @for (e of eventos; track e.id) {
+          <li class="inicio__evento">
+            <img class="inicio__evento-foto" src="{{ e.miniatura }}" alt="" width="40" height="40" loading="lazy" />
+            <span class="inicio__evento-titulo">{{ e.titulo }}</span>
+          </li>
+          }
+        </ul>
+        }
+      </section>
+
+      <!-- Operaciones y accesos -->
+      <section class="inicio__bloque inicio__operaciones" aria-labelledby="inicio-operaciones">
+        <div class="inicio__bloque-cabecera">
+          <h2 id="inicio-operaciones" class="inicio__subtitulo">Operaciones y accesos</h2>
+        </div>
+        <div class="inicio__operaciones-columnas">
+          <ul class="inicio__lista" aria-label="Operaciones prioritarias">
+            @for (o of operaciones; track o.clave) {
+            <li>
+              <a class="inicio__acceso inicio__acceso--dos-lineas" [routerLink]="o.ruta" [queryParams]="o.queryParams">
+                <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+                <span class="inicio__acceso-texto">{{ o.etiqueta }}<span class="inicio__acceso-descripcion">{{
+                    o.descripcion }}</span></span>
+                <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+              </a>
+            </li>
+            }
+          </ul>
+          <ul class="inicio__lista" aria-label="Acceso rápido">
+            @for (s of secciones; track s.clave) {
+            <li>
+              <a class="inicio__acceso inicio__acceso--dos-lineas" [routerLink]="s.ruta">
+                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                <span class="inicio__acceso-texto">{{ s.etiqueta }}<span class="inicio__acceso-descripcion">{{
+                    s.descripcion }}</span></span>
+                <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
+              </a>
+            </li>
+            }
+          </ul>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

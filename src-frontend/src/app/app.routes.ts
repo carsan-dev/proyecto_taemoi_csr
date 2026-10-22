@@ -4,6 +4,7 @@ import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
+import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -194,6 +195,15 @@ export const routes: Routes = [
     path: 'registro-confirmar',
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
+  },
+  {
+    // Inicio nuevo (8b-2): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'adminpage',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/inicio/inicio.component').then(m => m.InicioComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'adminpage',

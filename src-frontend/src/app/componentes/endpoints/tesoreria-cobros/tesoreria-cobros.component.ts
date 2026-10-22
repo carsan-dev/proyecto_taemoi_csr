@@ -20,27 +20,13 @@ import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-ca
 import { PaginacionComponent } from '../../generales/paginacion/paginacion.component';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { PaginatedResponse } from '../../../interfaces/paginated-response';
-import { MetodoPago, ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
+import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 import { AlumnoDTO } from '../../../interfaces/alumno-dto';
 import { SolicitudesService } from '../../../servicios/endpoints/solicitudes.service';
 import { euros, pedirAlPropietario } from '../../generales/pedir-al-propietario/pedir-al-propietario';
+import { cambiosDeCobro, opcionesConfirmarCobro } from './confirmar-cobro';
 
 type EstadoFiltro = 'TODOS' | 'PENDIENTES' | 'PAGADOS';
-
-/** Opciones del método en «Confirmar cobro» (decisión 148); la clave vacía es «Sin indicar». */
-const METODOS_PAGO_COBRO: ReadonlyArray<[string, string]> = [
-  ['', 'Sin indicar'],
-  ['EFECTIVO', 'Efectivo'],
-  ['TRANSFERENCIA', 'Transferencia'],
-  ['TARJETA', 'Tarjeta'],
-  ['BIZUM', 'Bizum'],
-];
-
-/** Cuerpo del PUT al cobrar: `metodoPago` solo si se eligió uno (sin indicar → se omite). */
-function cambiosDeCobro(metodo: unknown): Partial<ProductoAlumnoDTO> {
-  const elegido = METODOS_PAGO_COBRO.find(([valor]) => valor !== '' && valor === metodo)?.[0] as MetodoPago | undefined;
-  return elegido ? { pagado: true, metodoPago: elegido } : { pagado: true };
-}
 
 @Component({
   providers: [InformePdfService],
@@ -178,20 +164,7 @@ export class TesoreriaCobrosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
-      title: 'Confirmar cobro',
-      text: `Marcar como pagado "${movimiento.concepto}"?`,
-      icon: 'question',
-      // Decisión 148: método opcional; «Sin indicar» por defecto (no se envía).
-      input: 'select',
-      inputLabel: 'Método (opcional)',
-      inputOptions: new Map<string, string>(METODOS_PAGO_COBRO),
-      inputValue: '',
-      showCancelButton: true,
-      confirmButtonText: 'Si, marcar pagado',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#2f855a',
-    }).then((result) => {
+    Swal.fire(opcionesConfirmarCobro(movimiento.concepto)).then((result) => {
       if (!result.isConfirmed) {
         return;
       }

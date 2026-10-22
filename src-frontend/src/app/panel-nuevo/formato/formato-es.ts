@@ -16,6 +16,13 @@ const formatoFecha = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2
 
 const formatoMes = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
 
+const formatoFechaLarga = new Intl.DateTimeFormat(LOCALE, {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
 /** «1044» pasa a «1.044»; conserva el signo menos. Solo para enteros en cadena de dígitos. */
 export function agruparMiles(entero: string): string {
   const negativo = entero.startsWith('-');
@@ -78,6 +85,16 @@ export function fecha(valor: Date | string | null | undefined): string {
 export function mes(valor: Date | string | null | undefined): string {
   const f = aFecha(valor);
   return f ? formatoMes.format(f) : '';
+}
+
+/** «Miércoles, 21 de octubre de 2026». Vacío si no hay fecha o no es válida. */
+export function fechaLarga(valor: Date | string | null | undefined): string {
+  const f = aFecha(valor);
+  if (!f) {
+    return '';
+  }
+  const texto = formatoFechaLarga.format(f);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 /** «1 clase», «7 clases»: el singular solo con 1. Vacío si la cantidad no es un número finito. */

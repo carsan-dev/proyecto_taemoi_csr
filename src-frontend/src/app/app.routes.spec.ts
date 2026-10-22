@@ -3,6 +3,8 @@ import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
+import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
@@ -94,5 +96,19 @@ describe('app routes', () => {
     const publicRoutes = routes.filter((route) => !route.canActivate?.includes(roleGuard));
 
     expect(publicRoutes.some((route) => route.resolve?.['catalogo'])).toBeFalse();
+  });
+
+  it('adminpage (8b-2): primero el Inicio nuevo tras disenoNuevoGuard y después la pantalla de hoy, los dos con roleGuard', async () => {
+    const entradas = routes.filter((route) => route.path === 'adminpage');
+    expect(entradas.length).toBe(2);
+    const [nueva, hoy] = entradas;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual([roleGuard]);
+    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+    expect(await nueva.loadComponent!()).toBe(InicioComponent);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(hoy.canActivate).toEqual([roleGuard]);
+    expect(hoy.loadComponent).toBeDefined();
+    expect(await hoy.loadComponent!()).not.toBe(InicioComponent);
   });
 });
