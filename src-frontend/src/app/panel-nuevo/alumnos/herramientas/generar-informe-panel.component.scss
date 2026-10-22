@@ -1,0 +1,148 @@
+// «Generar informe» en el panel lateral (8b-D2a, decisión 270). Las piezas de las herramientas de «Informes» (8b-D1):
+// pastilla elegida, campos y botones de texto para las acciones de fila. Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.informe {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// «Solo alumnos activos»: la pastilla de casilla de las herramientas (la casilla nativa sigue ahí, sin verse).
+.informe__activos {
+  @include c.pastilla;
+
+  & {
+    position: relative;
+    align-self: flex-start;
+    margin: 0;
+  }
+
+  &:has(.informe__casilla:focus-visible) {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:has(.informe__casilla:disabled) {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}
+
+.informe__casilla {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.informe__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.informe__grupo-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.informe__cuenta {
+  font-variant-numeric: tabular-nums;
+  color: var(--pn-tinta-2);
+  font-weight: 400;
+}
+
+.informe__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Una fila por informe: nombre y descripción, y sus acciones debajo (botones de texto, como las acciones de fila).
+.informe__fila {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0 8px;
+  border-bottom: 1px solid var(--pn-linea);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.informe__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.informe__nombre {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  text-wrap: pretty;
+}
+
+.informe__descripcion,
+.informe__ayuda {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.informe__temporada {
+  max-width: 240px;
+  margin-top: 4px;
+}
+
+// El primer botón de texto alineado con el texto de la fila (su relleno queda fuera, a la izquierda).
+.informe__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-left: -12px;
+}
+
+// Ancho mínimo para «Generando…» con su indicador: el botón ocupado conserva su ancho y el texto no pisa al vecino.
+.informe__accion {
+  @include c.boton-texto;
+
+  & {
+    justify-content: flex-start;
+    min-width: 8.5rem;
+    min-height: 34px;
+  }
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}
+
+.informe__pie {
+  display: flex;
+}
+
+.informe__cerrar {
+  @include c.boton-texto;
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}

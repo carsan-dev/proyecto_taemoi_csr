@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 
 export type TipoPendiente = 'MENSUALIDAD' | 'EXAMEN';
 
@@ -37,9 +38,11 @@ export interface PendienteVencido {
 export class PendienteVencidoService {
   private readonly http = inject(HttpClient);
 
+  /** Su fallo lo dice el bloque de error del pendiente: sin el SweetAlert2 del interceptor (8b-D2a). */
   obtener(): Observable<PendienteVencido> {
     return this.http.get<PendienteVencido>(`${environment.apiUrl}/tesoreria/pendiente-vencido`, {
       withCredentials: true,
+      context: contextoErrorLocal(),
     });
   }
 }

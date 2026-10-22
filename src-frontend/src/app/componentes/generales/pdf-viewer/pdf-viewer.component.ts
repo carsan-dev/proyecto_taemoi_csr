@@ -15,6 +15,12 @@ export class PdfViewerComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input() blob: Blob | null = null;
   @Input() titulo = 'Documento PDF';
   @Input() bloquearMenuContextual = false;
+  /** «Expandir» del visor; el panel nuevo ya lo muestra a pantalla completa y lo oculta. */
+  @Input() permitirExpandir = true;
+  /** Oculta Anterior/Siguiente y el contador cuando el documento tiene una sola página. */
+  @Input() ocultarPaginacionDeUna = false;
+  /** Ancho (px) que se resta al de la zona del lienzo al ajustarlo: 8 es el margen de hoy; el panel nuevo pasa su relleno. */
+  @Input() anchoReservadoPx = 8;
   @ViewChild('pdfCanvasRef') canvasRef?: ElementRef<HTMLCanvasElement>;
   visorExpandido = false;
   visorExpandidoTopOffsetPx = 0;
@@ -142,7 +148,7 @@ export class PdfViewerComponent implements OnChanges, AfterViewInit, OnDestroy {
       const page = await pdf.getPage(this.paginaActualPdf);
       if (version !== this.renderVersion) { return; }
       const base = page.getViewport({ scale: 1 });
-      const width = Math.max(1, (canvas.parentElement?.clientWidth ?? base.width) - 8);
+      const width = Math.max(1, (canvas.parentElement?.clientWidth ?? base.width) - this.anchoReservadoPx);
       const viewport = page.getViewport({ scale: Math.max(.1, Math.min(3.2, width / base.width * this.zoomPdf)) });
       const ratio = Math.max(1, globalThis.devicePixelRatio ?? 1);
       const context = canvas.getContext('2d', { alpha: false });

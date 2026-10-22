@@ -1,0 +1,69 @@
+<pn-panel-lateral titulo="Generar informe" descripcion="Elige un informe: «Ver PDF» lo abre aquí y «Descargar PDF» lo guarda en tu equipo."
+  [bloqueado]="informes.ocupado" (cerrar)="cerrar.emit()">
+  <div class="informe">
+    <label class="informe__activos" [class.es-elegida]="soloActivos">
+      <input type="checkbox" id="pn-informe-solo-activos" class="informe__casilla" [checked]="soloActivos"
+        [disabled]="informes.ocupado" (change)="alternarSoloActivos()" />
+      @if (soloActivos) {
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+      }
+      <span>Solo alumnos activos</span>
+    </label>
+
+    @for (c of categorias; track c.title; let g = $index) {
+    <section class="informe__grupo" [attr.aria-labelledby]="'pn-informe-grupo-' + g">
+      <h3 class="informe__grupo-titulo" [id]="'pn-informe-grupo-' + g">
+        <span class="informe__grupo-nombre">{{ c.title }}</span>
+        <span class="informe__cuenta" data-cifras aria-hidden="true">{{ c.opciones.length }}</span>
+      </h3>
+      <ul class="informe__lista">
+        @for (o of c.opciones; track o.value) {
+        <li class="informe__fila" [attr.data-informe]="o.value">
+          <div class="informe__texto">
+            <p class="informe__nombre" [id]="'pn-informe-' + o.value">{{ o.label }}</p>
+            @if (o.description) {
+            <p class="informe__descripcion">{{ o.description }}</p>
+            }
+          </div>
+          @if (o.value === reservas) {
+          @if (cargandoTemporadas) {
+          <p class="informe__ayuda" role="status">Cargando las temporadas…</p>
+          } @else if (opcionesTemporada.length === 0) {
+          <p class="informe__ayuda">No hay temporadas con reservas de plaza disponibles.</p>
+          } @else {
+          <div class="herramienta__campo informe__temporada">
+            <label class="herramienta__etiqueta" for="pn-informe-temporada">Temporada</label>
+            <select class="herramienta__control" id="pn-informe-temporada" [disabled]="informes.ocupado"
+              (change)="elegirTemporada($any($event.target).value)">
+              @for (t of opcionesTemporada; track t.value) {
+              <option [value]="t.value" [selected]="t.value === temporada">{{ t.label }}</option>
+              }
+            </select>
+          </div>
+          }
+          }
+          <div class="informe__acciones">
+            <button type="button" pnOcupado class="informe__accion" [ocupado]="ocupado(o.value, 'ver')" textoOcupado="Generando…"
+              [deshabilitado]="deshabilitado(o.value, 'ver')" [attr.aria-describedby]="'pn-informe-' + o.value"
+              (click)="generar(o.value, 'ver')">Ver PDF</button>
+            <button type="button" pnOcupado class="informe__accion" [ocupado]="ocupado(o.value, 'descargar')"
+              textoOcupado="Generando…" [deshabilitado]="deshabilitado(o.value, 'descargar')"
+              [attr.aria-describedby]="'pn-informe-' + o.value" (click)="generar(o.value, 'descargar')">Descargar PDF</button>
+            @if (o.value === 'deudas') {
+            <button type="button" pnOcupado class="informe__accion" [ocupado]="ocupado(o.value, 'csv')" textoOcupado="Generando…"
+              [deshabilitado]="deshabilitado(o.value, 'csv')" [attr.aria-describedby]="'pn-informe-' + o.value"
+              (click)="generar(o.value, 'csv')">Descargar CSV</button>
+            }
+          </div>
+        </li>
+        }
+      </ul>
+    </section>
+    }
+  </div>
+
+  <div pnPie class="informe__pie">
+    <button type="button" class="informe__cerrar" [disabled]="informes.ocupado" (click)="cerrar.emit()">Cerrar</button>
+  </div>
+</pn-panel-lateral>

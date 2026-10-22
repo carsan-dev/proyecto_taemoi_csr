@@ -4,20 +4,18 @@ import { Subject, Subscription } from 'rxjs';
 import { debounceTime, filter } from 'rxjs/operators';
 
 import { SeccionHerramientas } from '../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
-import { InformesAlumnos, OPCIONES_INFORME_ALUMNOS } from '../../componentes/endpoints/listado-alumnos/informes-alumnos';
-import { InformeModalComponent } from '../../componentes/generales/informe-modal/informe-modal.component';
-import { InformePdfModalComponent } from '../../componentes/generales/informe-pdf-modal/informe-pdf-modal.component';
 import { AlumnoService } from '../../features/alumno/services/alumno.service';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
-import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
+import { InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
@@ -32,7 +30,9 @@ import {
   principalDe,
   tiempoConGrado,
 } from './alumno-vista';
+import { VisorPdfComponent } from '../visor-pdf/visor-pdf.component';
 import { BajasAltasPanel } from './bajas-altas-panel';
+import { GenerarInformePanelComponent } from './herramientas/generar-informe-panel.component';
 import { HerramientaPanelComponent } from './herramientas/herramienta-panel.component';
 import { InformePdfPanelService } from './herramientas/informe-pdf-panel.service';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from './pendientes-alumno.service';
@@ -98,14 +98,18 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
  * 8b-D1 (decisiones 269 y 270): «Cobrar», «Dar de baja» y «Dar de alta» con el diálogo del panel nuevo, avisos propios,
  * esqueleto, error y vacío comunes, y las tres herramientas del pie, cada una en el panel lateral desde «Informes» (el
  * listado acaba en la paginación).
+ *
+ * 8b-D2a: «Generar informe…» abre su sección en el panel lateral (no el diálogo de hoy), los PDF se ven en el visor del
+ * panel nuevo, sin cargador global, y la carga del listado no abre además el SweetAlert2 del interceptor (su fallo ya lo
+ * dice el bloque de error).
  */
 @Component({
   selector: 'app-alumnos',
   standalone: true,
   imports: [
     RouterLink,
-    InformeModalComponent,
-    InformePdfModalComponent,
+    GenerarInformePanelComponent,
+    VisorPdfComponent,
     EsqueletoComponent,
     BloqueErrorComponent,
     BloqueVacioComponent,
@@ -121,6 +125,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   readonly informes = inject(InformePdfService);
   readonly catalogo = inject(CatalogoService);
   private readonly endpoints = inject(EndpointsService);
+  private readonly lecturas = inject(LecturasPanelService);
   private readonly alumnoService = inject(AlumnoService);
   private readonly pendientesApi = inject(PendientesAlumnoService);
   private readonly route = inject(ActivatedRoute);
@@ -167,10 +172,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   menuAbierto = false;
   /** Herramienta abierta en el panel lateral (decisión 270). */
   herramientaAbierta: SeccionHerramientas | null = null;
-  mostrarModalInforme = false;
-  readonly opcionesInforme = [...OPCIONES_INFORME_ALUMNOS];
+  /** «Generar informe» abierto en el panel lateral (8b-D2a). */
+  informeAbierto = false;
 
-  private readonly informesAlumnos = new InformesAlumnos(this.endpoints, this.informes);
   private readonly busqueda = new Subject<string>();
   private readonly suscripciones = new Subscription();
   private carga?: Subscription;
@@ -179,10 +183,6 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   private cargaPendientes?: Subscription;
   /** Botón «Cobrar» que abrió el panel: recibe el foco al cerrarlo. */
   private disparadorPanel: HTMLElement | null = null;
-
-  get temporadasReservasPlaza(): string[] {
-    return this.informesAlumnos.temporadas;
-  }
 
   get hayFiltros(): boolean {
     return this.nombre.trim() !== '' || this.deporte !== '' || this.inactivos || this.aptos;
@@ -254,7 +254,10 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ datos
 
-  /** El mismo `GET /api/alumnos` paginado que el listado de hoy, con los filtros en el servidor. */
+  /**
+   * El mismo `GET /api/alumnos` paginado que el listado de hoy, con los filtros en el servidor. Su fallo lo dice el
+   * bloque de error con «Reintentar»: sin el SweetAlert2 del interceptor (8b-D2a).
+   */
   cargar(): void {
     this.carga?.unsubscribe();
     this.cargaPendientes?.unsubscribe();
@@ -262,8 +265,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     if (this.escribirDireccion) {
       this.escribirEstado();
     }
-    this.carga = this.endpoints
-      .obtenerAlumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null)
+    this.carga = this.lecturas
+      .alumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null)
       .subscribe({
         next: (respuesta) => {
           this.alumnos = Array.isArray(respuesta?.content) ? respuesta.content : [];
@@ -556,19 +559,17 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** «Generar informe…»: su sección en el panel lateral (hoja inferior en el móvil). */
   abrirInformes(): void {
     this.cerrarMenu(false);
-    this.mostrarModalInforme = true;
-    this.informesAlumnos.abrir();
+    this.informeAbierto = true;
   }
 
+  /** Al cerrar el panel, el foco vuelve a «Informes». */
   cerrarInformes(): void {
-    this.mostrarModalInforme = false;
+    this.informeAbierto = false;
+    this.cdr.detectChanges();
     this.botonInformes?.nativeElement.focus();
-  }
-
-  generarInforme(evento: { tipo: string; soloActivos: boolean; temporada?: string; accion: AccionInforme }): void {
-    this.informesAlumnos.generarInformeSeleccionado(evento);
   }
 
   /** Desde «Informes»: la herramienta en el panel lateral (hoja inferior en el móvil). */

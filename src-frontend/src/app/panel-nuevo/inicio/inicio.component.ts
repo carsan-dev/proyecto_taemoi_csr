@@ -11,6 +11,7 @@ import { PlataformaService } from '../../servicios/plataforma/plataforma.service
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { DIAS_VENTANA_ERRORES, ventanaUltimosDias } from '../../utils/ventana-fechas.util';
 import { eur, fecha, fechaLarga, mes, numero, plural } from '../formato/formato-es';
@@ -150,6 +151,7 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 export class InicioComponent implements OnInit, OnDestroy {
   private readonly endpoints = inject(EndpointsService);
   private readonly pendienteApi = inject(PendienteVencidoService);
+  private readonly lecturas = inject(LecturasPanelService);
   private readonly auth = inject(AuthenticationService);
   private readonly plataforma = inject(PlataformaService);
   private readonly catalogo = inject(CatalogoService);
@@ -275,7 +277,8 @@ export class InicioComponent implements OnInit, OnDestroy {
       activos: o(this.endpoints.obtenerAlumnos(1, 1, '', false, false)),
       grupos: o(this.endpoints.obtenerResumenGrupos()),
       turnos: o(this.endpoints.obtenerResumenTurnos()),
-      limite: o(this.endpoints.obtenerLimiteTurno()),
+      // Su fallo lo dice el bloque «No se pudo leer el límite…»: sin el SweetAlert2 del interceptor (8b-D2a).
+      limite: o(this.lecturas.limiteTurno()),
       aptos: o(this.endpoints.obtenerAlumnosAptosParaExamen()),
       distribucion: o(this.endpoints.obtenerDistribucionAlumnosPorDeporte()),
       errores: this.contarErroresPlataforma(),

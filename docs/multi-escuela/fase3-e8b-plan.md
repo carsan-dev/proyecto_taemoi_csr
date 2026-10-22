@@ -1183,6 +1183,72 @@ Ronda 2: bundle inicial 1.456.347 bytes (sin cambio); karma 1676 SUCCESS; apagad
 idénticas en bytes; encendido con Moiskimdo y Sierra de prueba (Inicio, Alumnos, ficha, «Cobrar» y la lista del
 buscador abierta) a 375, 768, 1024 y 1280: «Nuevo alumno» y «Marcar como pagado» con la tinta de la escuela.
 
+## 21 quater. Pieza 8b-D2 (a): «Generar informe», visor de PDF y errores de carga
+
+Rama `feature/e8b-d2a` (sale de `develop` en `0c0dd45b`). Solo frontend, sin migración: atajo `desplegar`. Sin boceto
+nuevo: piezas de 8b-D1 (capas, panel lateral, botón ocupado, esqueleto y avisos) y tokens de DESIGN.md.
+
+**Objetivo:** lo que 8b-D1 dejó con SweetAlert2 o el cargador global en el listado nuevo y la cabecera: el diálogo
+«Generar informe», el visor de PDF, «Sesión cerrada con éxito», el SweetAlert2 del interceptor sobre los errores de
+carga que ya enseña un bloque y el cargador global de los PDF. Las pantallas de hoy no cambian.
+
+**Ficheros:**
+- Nuevos en `F/panel-nuevo/`: `alumnos/herramientas/generar-informe-panel.component.*` (sección «Generar informe» del
+  panel lateral), `alumnos/herramientas/informes-alumnos-panel.ts` (`InformesAlumnosPanel`), `visor-pdf/` (`VisorPdfComponent`)
+  y `carga/lecturas-panel.service.ts` (`contextoErrorLocal`, `LecturasPanelService`).
+- De hoy, sin cambio visible ni de comportamiento: `informe-modal/categorias-informe.ts` (los grupos y descripciones
+  salen de `InformeModalComponent`, que los usa igual), `informes-alumnos.ts` (miembros `protected`, `generarReservasPlaza`,
+  `descargarDeudas` y el aviso del fallo de temporadas como parámetro, por defecto el toast de hoy) e
+  `InformePdfService` (`mostrarCarga`/`ocultarCarga` protegidos con el `LoadingService` de siempre).
+- `EndpointsService` no se toca (CRLF): `LecturasPanelService` repite la misma petición de `obtenerAlumnos` y
+  `obtenerLimiteTurno` con el contexto (spec que las compara).
+
+**Tareas TDD:**
+- [x] En rojo antes del código: los dos specs nuevos no compilaban (`Cannot find module './generar-informe-panel.component'`,
+  `'./visor-pdf.component'`); con esbozos vacíos, 27 FAILED y 131 SUCCESS en los specs tocados. El caso del interceptor
+  (401 con `ERROR_HANDLED_LOCALLY`) pasó ya en rojo: el token no salta la sesión caducada.
+- [x] `generar-informe-panel.component.spec.ts`: grupos, orden, nombres y descripciones iguales a los de
+  `InformeModalComponent`; cada tipo con «Ver PDF» y «Descargar PDF» hace la misma petición, con el mismo título y nombre
+  de archivo, que `InformesAlumnos` de hoy; `soloActivos=false`; deudas («Descargar PDF» y «Descargar CSV» frente al
+  SweetAlert2 «PDF/CSV» de hoy) y reservas de plaza (temporada en la fila, la actual por defecto, frente al SweetAlert2 de
+  hoy) sin abrir SweetAlert2; sin temporadas, botones deshabilitados; el fallo al leerlas, aviso; botón ocupado, una
+  petición a la vez y panel bloqueado (Esc, `cancel`, X y «Cerrar»); error en un aviso dentro del panel; cerrar no envía
+  nada; nunca `LoadingService`.
+- [x] `visor-pdf.component.spec.ts`: `<dialog>` modal en el `.pn`, en `PilaCapas` y con el scroll bloqueado; cabecera
+  de 56 px con título, «Descargar PDF» y X (foco inicial en la X, como hoy); `min(1040px, 100vw - 48px)` por
+  `100dvh - 48px` y hoja a pantalla completa por debajo de 768 px; descarga con el nombre de hoy y la URL liberada; varios
+  documentos y aviso parcial; Esc (primero sale de la expansión), `cancel`, X y velo cierran, un clic dentro no; cierre
+  del navegador una vez; foco contenido y de vuelta al disparador; esqueleto a los 300 ms.
+- [x] `alumnos.component.spec.ts`: «Generar informe…» abre el panel (no `app-informe-modal`) y «Ver PDF» abre el visor
+  encima con el foco de vuelta a su botón; `inicio`, `alumnos`, `ficha` y `lecturas-panel`: el contexto en las lecturas
+  de bloque y solo en ellas; `error.interceptor.spec.ts`: el 401 sigue cerrando la sesión; `cabecera-panel`: cerrar sesión
+  sin SweetAlert2 ni avisos.
+
+**Inventario** (por qué: decisión 269; un SweetAlert2 o el cargador global quedarían detrás de una capa modal):
+
+| Pantalla | Qué | Antes | Ahora |
+|---|---|---|---|
+| Alumnos | «Generar informe…» | `app-informe-modal` (tipos con radio, «Solo alumnos activos», «Ver PDF» y «Descargar PDF» abajo) | Sección «Generar informe» del panel lateral (hoja en el móvil): los mismos grupos y filas, cada una con sus botones y botón ocupado |
+| Alumnos | Formato de las deudas al descargar | SweetAlert2 «PDF / CSV» | «Descargar PDF» y «Descargar CSV» en su fila |
+| Alumnos | Temporada de reservas de plaza | SweetAlert2 con selector (y «Cargando temporadas» / «Sin temporadas») | Campo «Temporada» en su fila; sin temporadas, la frase y los botones deshabilitados |
+| Alumnos | Fallo al leer las temporadas | Toast de SweetAlert2 | Aviso de error con el mismo texto |
+| Alumnos | Visor de PDF (informes y herramientas) | `app-informe-pdf-modal` | `pn-visor-pdf` con el mismo visor, documentos, aviso y descarga |
+| Alumnos | PDF en curso (informes y herramientas) | Cargador global (`LoadingService`) | Botón ocupado; panel bloqueado |
+| Cabecera | «Sesión cerrada con éxito» | SweetAlert2 al llegar a la web | Nada: la web pública no monta los avisos del panel nuevo |
+| Inicio | Fallo del límite y del pendiente | Bloque de error + SweetAlert2 del interceptor | Solo el bloque de error |
+| Alumnos | Fallo del listado | Bloque de error + SweetAlert2 del interceptor | Solo el bloque de error |
+| Ficha (carnet) | Fallo del pendiente | «No se pudo leer el pendiente.» + SweetAlert2 del interceptor | Solo el texto con «Reintentar» |
+
+**Además:** el visor no crea URL de objeto: hoy tampoco (pdf.js lee el Blob; la descarga crea y libera la suya al
+momento); al cerrarlo se destruye la tarea de pdf.js como hoy. La barra del visor de hoy lleva los tokens del panel solo
+dentro de `.pn-visor`. Siguen con el interceptor las lecturas cuyo fallo no enseña un bloque: grupos, turnos y totales
+del Inicio (solo hay bloque de error si fallan los tres), aptos, distribución, el total de activos del listado y los
+pendientes de su página («—»).
+
+**Notas para la PR:** inventario de arriba; bundle inicial 1.455.529 bytes (suma de los ficheros iniciales del build de
+producción; 1.456.347 en 8b-C): ningún fichero nuevo en el inicial; karma 1705 SUCCESS; capturas encendido a 375 y
+1280 (panel, financieros, ocupado y visor).
+
 ## 22. Pieza 8b-Z: retirada de lo viejo
 
 Solo cuando el propietario lo apruebe (R6), tras un periodo con el valor por defecto `NUEVO`. Rama `feature/e8b-z`.

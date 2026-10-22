@@ -2,20 +2,7 @@ import { AccionInforme } from '../../../servicios/generales/informe-pdf.service'
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-interface InformeOption {
-  value: string;
-  label: string;
-  icon?: string;
-  description?: string;
-}
-
-interface InformeCategory {
-  title: string;
-  icon: string;
-  color: string;
-  opciones: InformeOption[];
-}
+import { InformeCategory, categoriasDeInforme, descripcionInforme } from './categorias-informe';
 
 @Component({
   selector: 'app-informe-modal',
@@ -61,89 +48,14 @@ export class InformeModalComponent implements OnInit, OnChanges {
    * Organize reports into categories
    */
   organizarInformesPorCategoria(): void {
-    const categorias: InformeCategory[] = [
-      {
-        title: 'Listados de Alumnos',
-        icon: 'bi-trophy-fill',
-        color: '#6366f1',
-        opciones: []
-      },
-      {
-        title: 'Informes de Promoción',
-        icon: 'bi-arrow-up-circle-fill',
-        color: '#10b981',
-        opciones: []
-      },
-      {
-        title: 'Informes Financieros',
-        icon: 'bi-cash-stack',
-        color: '#f59e0b',
-        opciones: []
-      },
-      {
-        title: 'Otros Informes',
-        icon: 'bi-file-earmark-text-fill',
-        color: '#8b5cf6',
-        opciones: []
-      }
-    ];
-
-    // Classify each report into its category
-    this.opcionesInforme.forEach(opcion => {
-      const value = opcion.value.toLowerCase();
-
-      if (['general', 'taekwondo', 'kickboxing', 'competidores', 'dpf'].includes(value) || value.includes('grado')) {
-        categorias[0].opciones.push({
-          ...opcion,
-          icon: 'bi-award',
-          description: this.getDescription(opcion.value)
-        });
-      } else if (value.includes('infantiles') || value.includes('adultos')) {
-        categorias[1].opciones.push({
-          ...opcion,
-          icon: 'bi-people',
-          description: this.getDescription(opcion.value)
-        });
-      } else if (value.includes('deuda') || value.includes('mensualidad') || value.includes('producto') || value.includes('reservas-plaza')) {
-        categorias[2].opciones.push({
-          ...opcion,
-          icon: 'bi-currency-euro',
-          description: this.getDescription(opcion.value)
-        });
-      } else {
-        categorias[3].opciones.push({
-          ...opcion,
-          icon: 'bi-file-text',
-          description: this.getDescription(opcion.value)
-        });
-      }
-    });
-
-    // Only include categories that have reports
-    this.categoriasInforme = categorias.filter(cat => cat.opciones.length > 0);
+    this.categoriasInforme = categoriasDeInforme(this.opcionesInforme);
   }
 
   /**
    * Get description for each report type
    */
   getDescription(value: string): string {
-    const descriptions: { [key: string]: string } = {
-      'general': 'Listado completo de alumnos organizados por cinturón',
-      'taekwondo': 'Alumnos de Taekwondo por nivel de grado',
-      'kickboxing': 'Alumnos de Kickboxing por nivel de grado',
-      'competidores': 'Competidores activos de Taekwondo y Kickboxing organizados por categoría',
-      'dpf': 'Listado de alumnas de Defensa Personal Femenina con sus nombres y apellidos',
-      'licencias': 'Estado actual de todas las licencias deportivas',
-      'infantiles': 'Alumnos menores aptos para promoción de grado',
-      'adultos': 'Alumnos adultos aptos para promoción de grado',
-      'deudas': 'Resumen de pagos pendientes y deudas',
-      'mensualidades': 'Estado de mensualidades de todos los alumnos',
-      'mensualidades-taekwondo': 'Mensualidades específicas de Taekwondo',
-      'mensualidades-kickboxing': 'Mensualidades específicas de Kickboxing',
-      'productos': 'Listado completo de productos con precios',
-      'reservas-plaza': 'Reservas de plaza por temporada y deporte'
-    };
-    return descriptions[value] || '';
+    return descripcionInforme(value);
   }
 
   private actualizarOpcionesTemporadaReservas(): void {

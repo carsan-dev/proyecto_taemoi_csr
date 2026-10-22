@@ -17,7 +17,6 @@ import {
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
 import { catchError, filter, map, of, take } from 'rxjs';
-import Swal from 'sweetalert2';
 
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -359,12 +358,15 @@ export class CabeceraPanelComponent implements OnInit {
     });
   }
 
-  /** Igual que «Cerrar sesión» de la cabecera de hoy. */
+  /**
+   * Igual que «Cerrar sesión» de la cabecera de hoy, sin su SweetAlert2 «Sesión cerrada con éxito» (8b-D2a): se llega a
+   * la web pública, fuera del panel nuevo, donde no están sus avisos (y montarlos solo para esto los metería en el bundle
+   * inicial). Se ve que la sesión se cerró porque se sale del panel.
+   */
   cerrarSesion(): void {
     this.cerrar(false);
     this.auth.logout();
     this.auth.usuarioLogueadoCambio.pipe(filter((logueado) => !logueado), take(1)).subscribe(() => {
-      Swal.fire({ title: 'Sesión cerrada con éxito', text: '¡Hasta la próxima!', icon: 'success', timer: 2000 });
       this.router.navigate(['/']);
     });
   }

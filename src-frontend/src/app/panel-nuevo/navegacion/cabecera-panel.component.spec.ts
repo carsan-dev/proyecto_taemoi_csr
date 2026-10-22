@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -497,6 +498,22 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       )!;
       boton.click();
       expect(logout).toHaveBeenCalled();
+    });
+
+    it('«Cerrar sesión» sin SweetAlert2: lleva a la web y no monta los avisos del panel nuevo fuera de él (8b-D2a)', async () => {
+      await montar();
+      responderMarca();
+      const fire = spyOn(Swal, 'fire').and.callThrough();
+      const logueado = TestBed.inject(AuthenticationService).usuarioLogueadoCambio as BehaviorSubject<boolean>;
+      logout.and.callFake(() => logueado.next(false));
+      const navegar = spyOn(router, 'navigate').and.resolveTo(true);
+      Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button'))
+        .find((b) => b.textContent?.trim() === 'Cerrar sesión')!
+        .click();
+      await fixture.whenStable();
+      expect(navegar).toHaveBeenCalledWith(['/']);
+      expect(fire).not.toHaveBeenCalled();
+      expect(document.querySelector('pn-avisos, .pn-aviso')).toBeNull();
     });
   });
 

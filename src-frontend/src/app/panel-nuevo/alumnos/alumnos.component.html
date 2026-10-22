@@ -292,15 +292,12 @@
     (asignado)="cargar()" (cerrar)="cerrarHerramienta()" />
   }
 
-  @if (mostrarModalInforme) {
-  <app-informe-modal title="Generar Informe" [generando]="informes.ocupado" [opcionesInforme]="opcionesInforme"
-    [temporadasReservasPlaza]="temporadasReservasPlaza" (cerrar)="cerrarInformes()"
-    (informeSeleccionado)="generarInforme($event)">
-  </app-informe-modal>
+  @if (informeAbierto) {
+  <pn-generar-informe (cerrar)="cerrarInformes()" />
+  }
+
+  @if (informes.documentos.length) {
+  <pn-visor-pdf [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno"
+    (cerrar)="informes.cerrar()" />
   }
 </div>
-
-@if (informes.documentos.length) {
-<app-informe-pdf-modal [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno"
-  (cerrar)="informes.cerrar()" />
-}
