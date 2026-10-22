@@ -3,9 +3,8 @@ import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angu
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { DialogosAlumnoComponent } from '../../componentes/endpoints/editar-alumno/dialogos-alumno/dialogos-alumno.component';
+import { DIALOGOS_FICHA } from '../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
 import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
-import { FotoAmpliadaComponent } from '../../componentes/endpoints/editar-alumno/foto-ampliada/foto-ampliada.component';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
@@ -17,6 +16,9 @@ import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { FichaDatosComponent } from './datos/ficha-datos.component';
 import { FichaDeportesComponent } from './deportes/ficha-deportes.component';
+import { DialogosAlumnoPanelComponent } from './dialogos/dialogos-alumno-panel.component';
+import { DialogosFichaPanel } from './dialogos/dialogos-ficha-panel';
+import { FotoAmpliadaPanelComponent } from './dialogos/foto-ampliada-panel.component';
 import { FichaDocumentosComponent } from './documentos/ficha-documentos.component';
 import { fechaParaCampo, lineaGrado, resumenPendiente } from './ficha-vista';
 import { FichaPagosComponent } from './pagos/ficha-pagos.component';
@@ -67,8 +69,10 @@ class CobrosEnVuelo extends Set<number> {
  * la dirección. Toda la lógica (cargas, guardados, validaciones, diálogos y navegación entre alumnos) es la de la ficha
  * de hoy: esta clase la hereda sin copiarla y solo cambia la plantilla. «Cobrar» del carnet hace el PUT de la tesorería
  * con el diálogo del panel nuevo (`CobroCargoService`, como el listado nuevo; 8b-D1) y el pendiente carga con su
- * esqueleto. Los diálogos que hereda de la ficha de hoy (pestañas) siguen con SweetAlert2 hasta 8b-D2. Va en su propio
- * chunk detrás de `disenoNuevoGuard`.
+ * esqueleto. Los diálogos que hereda de la ficha de hoy pasan por el puerto `DIALOGOS_FICHA`, que aquí es el del panel
+ * (`DialogosFichaPanel`, 8b-D2b): las mismas opciones, pintadas con el diálogo y los avisos del panel nuevo, sin
+ * SweetAlert2; los diálogos propios de la ficha y la foto ampliada, con el panel lateral, el diálogo y una caja de luz.
+ * Va en su propio chunk detrás de `disenoNuevoGuard`.
  */
 @Component({
   selector: 'app-ficha-alumno',
@@ -79,13 +83,15 @@ class CobrosEnVuelo extends Set<number> {
     FichaPagosComponent,
     FichaDatosComponent,
     FichaDocumentosComponent,
-    DialogosAlumnoComponent,
-    FotoAmpliadaComponent,
+    DialogosAlumnoPanelComponent,
+    FotoAmpliadaPanelComponent,
     EsqueletoComponent,
     AcentoEscuelaDirective,
   ],
   templateUrl: './ficha-alumno.component.html',
   styleUrls: ['./ficha-alumno.component.scss'],
+  // 8b-D2b: solo la ficha nueva da los diálogos del panel; la de hoy sigue con SweetAlert2 (el puerto por defecto).
+  providers: [{ provide: DIALOGOS_FICHA, useClass: DialogosFichaPanel }],
 })
 export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnInit, OnDestroy {
   private readonly pendientesApi = inject(PendientesAlumnoService);
@@ -111,6 +117,8 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   readonly volverAlListado: Params | null = parametrosDelListado(this.enrutador);
 
   pestana: Pestana = 'deportes';
+  /** La foto ampliada en la caja de luz (8b-D2b); nula, cerrada. */
+  fotoAmpliada: string | null = null;
   pendiente: PendienteAlumno | null = null;
   estadoPendiente: Estado = 'cargando';
   panelAbierto = false;
@@ -251,6 +259,15 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
   claseDisciplina(codigo: string): string {
     const i = this.catalogo.disciplinasActivas().findIndex((d) => d.codigo === codigo);
     return i >= 0 && i < 4 ? `ficha__disc--${i + 1}` : 'ficha__disc--otra';
+  }
+
+  /** La foto ampliada en la caja de luz del panel (la de hoy abre su `<dialog id="imageModal">`). */
+  override abrirModal(imagenUrl: string | null | undefined): void {
+    this.fotoAmpliada = imagenUrl || '/assets/media/default.webp';
+  }
+
+  override cerrarModal(): void {
+    this.fotoAmpliada = null;
   }
 
   // ------------------------------------------------------------------ pendiente y «Cobrar»

@@ -1,0 +1,156 @@
+@if (ficha.mostrarModalConvocatorias) {
+<pn-panel-lateral [titulo]="'Seleccionar Convocatoria - ' + ficha.getDeporteLabel(ficha.deporteParaConvocatoria)"
+  [descripcion]="'Convocatorias disponibles para ' + ficha.getDeporteLabel(ficha.deporteParaConvocatoria) + '.'"
+  (cerrar)="ficha.cerrarModalConvocatorias()">
+  @if (!ficha.convocatoriaActual && ficha.convocatoriasFiltradasPorDeporte.length === 0) {
+  <p class="dialogos__vacio" role="status">No hay convocatorias disponibles para este deporte</p>
+  } @else {
+  <ul class="dialogos__lista" aria-label="Convocatorias">
+    @if (ficha.convocatoriaActual; as actual) {
+    <li>
+      <button type="button" class="dialogos__fila dialogos__fila--actual" (click)="ficha.agregarAConvocatoriaPorDeporte(actual)">
+        <span class="dialogos__fila-texto">
+          <span class="dialogos__fila-titulo">Convocatoria Actual</span>
+          <span class="dialogos__fila-detalle" data-cifras>{{ actual.fechaConvocatoria | date: 'dd/MM/yyyy' }} - {{ actual.deporte }}</span>
+        </span>
+        <svg class="dialogos__fila-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </button>
+    </li>
+    }
+    @for (c of ficha.convocatoriasFiltradasPorDeporte; track c.id) {
+    <li>
+      <button type="button" class="dialogos__fila" (click)="ficha.agregarAConvocatoriaPorDeporte(c)">
+        <span class="dialogos__fila-texto">
+          <span class="dialogos__fila-titulo">{{ c.deporte }}</span>
+          <span class="dialogos__fila-detalle" data-cifras>{{ c.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span>
+        </span>
+        <svg class="dialogos__fila-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </button>
+    </li>
+    }
+  </ul>
+  }
+  <div pnPie class="dialogos__pie">
+    <button type="button" class="dialogos__texto" (click)="ficha.cerrarModalConvocatorias()">Cerrar</button>
+  </div>
+</pn-panel-lateral>
+}
+
+@if (ficha.mostrarModalEliminarConvocatorias) {
+<pn-panel-lateral titulo="Eliminar de Convocatoria" descripcion="Elige la convocatoria de la que deseas eliminar al alumno."
+  (cerrar)="ficha.cerrarModalEliminarConvocatorias()">
+  <ul class="dialogos__lista" aria-label="Convocatorias del alumno">
+    @for (c of ficha.convocatoriasDelAlumno; track c.id) {
+    <li>
+      <button type="button" class="dialogos__fila dialogos__fila--peligro" (click)="ficha.eliminarDeConvocatoriaSeleccionada(c)">
+        <span class="dialogos__fila-texto">
+          <span class="dialogos__fila-titulo">{{ c.deporte }}</span>
+          <span class="dialogos__fila-detalle" data-cifras>{{ c.fechaConvocatoria | date: 'dd/MM/yyyy' }}</span>
+        </span>
+        <svg class="dialogos__fila-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </button>
+    </li>
+    }
+  </ul>
+  <div pnPie class="dialogos__pie">
+    <button type="button" class="dialogos__texto" (click)="ficha.cerrarModalEliminarConvocatorias()">Cerrar</button>
+  </div>
+</pn-panel-lateral>
+}
+
+@if (ficha.mostrarModalWhatsapp) {
+<pn-panel-lateral titulo="Enviar WhatsApp" descripcion="Escribe el mensaje y selecciona los documentos que quieras descargar."
+  (cerrar)="ficha.cerrarModalWhatsapp()">
+  <div class="dialogos__campos">
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="whatsappMensaje">Mensaje</label>
+      <textarea id="whatsappMensaje" class="dialogos__control dialogos__control--area" rows="4" placeholder="Escribe el mensaje"
+        [(ngModel)]="ficha.whatsappMensaje"></textarea>
+    </div>
+    <fieldset class="dialogos__grupo">
+      <legend class="dialogos__etiqueta">Documentos</legend>
+      @if (ficha.documentosAlumno.length > 0) {
+      <ul class="dialogos__documentos">
+        @for (doc of ficha.documentosAlumno; track doc.id) {
+        <li>
+          <label class="dialogos__documento">
+            <input type="checkbox" [checked]="ficha.isWhatsappDocumentoSeleccionado(doc.id)"
+              (change)="ficha.toggleWhatsappDocumento(doc.id, $event)" />
+            <span class="dialogos__documento-nombre" [title]="doc.nombre">{{ doc.nombre }}</span>
+            <span class="dialogos__documento-tipo">{{ doc.tipo }}</span>
+          </label>
+        </li>
+        }
+      </ul>
+      } @else {
+      <p class="dialogos__vacio">No hay documentos disponibles</p>
+      }
+      <p class="dialogos__ayuda">Los documentos seleccionados se descargaran al enviar para adjuntarlos manualmente en WhatsApp.</p>
+    </fieldset>
+    @if (ficha.whatsappTelefonoSeleccionado) {
+    <p class="dialogos__telefono" data-cifras>Numero seleccionado: {{ ficha.whatsappTelefonoSeleccionado }}</p>
+    }
+  </div>
+  <div pnPie class="dialogos__pie">
+    <button type="button" class="dialogos__texto dialogos__cancelar" (click)="ficha.cerrarModalWhatsapp()">Cancelar</button>
+    <button type="button" class="dialogos__primario" [disabled]="!ficha.whatsappTelefonoSeleccionado"
+      (click)="ficha.enviarWhatsappConDocumentos()">Enviar</button>
+  </div>
+</pn-panel-lateral>
+}
+
+@if (ficha.mostrarModalAgregarDeporte) {
+<pn-panel-lateral titulo="Agregar Deporte al Alumno" descripcion="Selecciona el deporte que deseas agregar."
+  (cerrar)="ficha.cerrarModalAgregarDeporte()">
+  <div class="dialogos__campos">
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="nuevoDeporte">Deporte <span class="dialogos__requerido" aria-hidden="true">*</span></label>
+      <select id="nuevoDeporte" class="dialogos__control" required [(ngModel)]="ficha.nuevoDeporte"
+        (ngModelChange)="ficha.onNuevoDeporteChange($event)">
+        @for (deporte of ficha.deportesDisponibles; track deporte) {
+        <option [value]="deporte">{{ ficha.getDeporteLabel(deporte) }}</option>
+        }
+      </select>
+    </div>
+    @if (!ficha.esDeporteSinGrado(ficha.nuevoDeporte)) {
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="gradoInicialDeporte">Grado Inicial <span class="dialogos__requerido" aria-hidden="true">*</span></label>
+      <select id="gradoInicialDeporte" class="dialogos__control" required aria-describedby="gradoInicialDeporte-ayuda"
+        [(ngModel)]="ficha.gradoInicialDeporte">
+        @for (grado of ficha.gradosDeLaDisciplina(ficha.nuevoDeporte); track grado.codigo) {
+        <option [value]="grado.codigo">{{ grado.nombre }}</option>
+        }
+      </select>
+      <p class="dialogos__ayuda" id="gradoInicialDeporte-ayuda">Selecciona el grado con el que comenzará en este deporte</p>
+    </div>
+    }
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="fechaAltaDeporte">Fecha de Alta <span class="dialogos__requerido" aria-hidden="true">*</span></label>
+      <input type="date" id="fechaAltaDeporte" class="dialogos__control" required aria-describedby="fechaAltaDeporte-ayuda"
+        [(ngModel)]="ficha.fechaAltaDeporte" />
+      <p class="dialogos__ayuda" id="fechaAltaDeporte-ayuda">Fecha en que el alumno se inscribe en este deporte</p>
+    </div>
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="fechaAltaInicialDeporte">Fecha de Alta Inicial (opcional)</label>
+      <input type="date" id="fechaAltaInicialDeporte" class="dialogos__control" aria-describedby="fechaAltaInicialDeporte-ayuda"
+        [(ngModel)]="ficha.fechaAltaInicialDeporte" />
+      <p class="dialogos__ayuda" id="fechaAltaInicialDeporte-ayuda">Si no se indica, se usará la fecha de alta</p>
+    </div>
+    @if (!ficha.esDeporteSinGrado(ficha.nuevoDeporte)) {
+    <div class="dialogos__campo">
+      <label class="dialogos__etiqueta" for="fechaGradoDeporte">Fecha de Grado <span class="dialogos__requerido" aria-hidden="true">*</span></label>
+      <input type="date" id="fechaGradoDeporte" class="dialogos__control" required aria-describedby="fechaGradoDeporte-ayuda"
+        [(ngModel)]="ficha.fechaGradoDeporte" />
+      <p class="dialogos__ayuda" id="fechaGradoDeporte-ayuda">Fecha en que obtuvo el grado inicial</p>
+    </div>
+    }
+  </div>
+  <div pnPie class="dialogos__pie">
+    <button type="button" class="dialogos__texto dialogos__cancelar" (click)="ficha.cerrarModalAgregarDeporte()">Cancelar</button>
+    <button type="button" class="dialogos__primario" [disabled]="agregarIncompleto" (click)="ficha.agregarDeporte()">Agregar Deporte</button>
+  </div>
+</pn-panel-lateral>
+}

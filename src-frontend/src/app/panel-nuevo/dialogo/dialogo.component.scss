@@ -112,6 +112,7 @@
 
 .pn-dialogo__pie {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   padding: 24px;
@@ -207,6 +208,132 @@
 
   .pn-dialogo__cancelar,
   .pn-dialogo__accion {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.9375rem;
+  }
+}
+
+// ---------------------------------------------------------------- 8b-D2b: explicación, campos y segunda acción
+// Los diálogos de la ficha que venían de SweetAlert2: párrafos y listas, campos con etiqueta encima (DESIGN.md,
+// «Inputs / Fields») y el error en línea bajo su campo, siempre con icono y palabra.
+
+// Con tres botones (la segunda acción), 500 px: «Cancelar» y la acción caben en la misma línea que la segunda.
+.pn-dialogo--tres:not(.pn-dialogo--hoja) {
+  width: 500px;
+}
+
+.pn-dialogo__explicacion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pn-dialogo__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--pn-tinta-2);
+  max-width: 60ch;
+
+  strong {
+    color: var(--pn-tinta);
+    font-weight: 600;
+  }
+}
+
+.pn-dialogo__oculto {
+  @include c.oculto;
+}
+
+.pn-dialogo__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background-color: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.pn-dialogo__control--area {
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.pn-dialogo__pastillas[aria-invalid='true'] .pn-dialogo__pastilla:not([aria-checked='true']) {
+  border-color: var(--pn-peligro);
+}
+
+.pn-dialogo__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--pn-peligro);
+  font: var(--pn-etiqueta);
+
+  svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+  }
+}
+
+// Segunda acción («denegar»): secundaria; si es destructiva, botón de texto en peligro con el hover neutro.
+.pn-dialogo__secundaria {
+  @include c.boton-secundario;
+
+  & {
+    margin-right: auto;
+  }
+}
+
+.pn-dialogo__secundaria--peligro {
+  @include c.boton-texto;
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-peligro);
+  }
+}
+
+.pn-dialogo--hoja {
+  .pn-dialogo__control {
+    min-height: 44px;
+  }
+
+  .pn-dialogo__control--area {
+    min-height: 96px;
+  }
+
+  .pn-dialogo__secundaria {
+    margin-right: 0;
     width: 100%;
     min-height: 44px;
     font-size: 0.9375rem;

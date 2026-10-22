@@ -35,6 +35,39 @@ export interface CampoPastillas {
 /** Trozo de la frase de consecuencia: texto o un nombre en negrita. */
 export type ParteMensaje = string | { fuerte: string };
 
+/** Un párrafo o una lista de la explicación (8b-D2b: el html de los diálogos de la ficha, sin su maquetación). */
+export type BloqueMensaje = { tipo: 'parrafo'; partes: ParteMensaje[] } | { tipo: 'lista'; elementos: ParteMensaje[][] };
+
+/** Tipos de campo del diálogo (8b-D2b). Las pastillas, `role=radiogroup`; el resto, controles nativos. */
+export type TipoCampoDialogo = 'pastillas' | 'select' | 'text' | 'number' | 'date' | 'textarea' | 'email';
+
+/**
+ * Campo del diálogo (8b-D2b), además del grupo de pastillas de `campo`. Su valor llega en `valores[id]` (texto; vacío
+ * si no hay). El control lleva `id` como id del DOM (en las pastillas, un `<input type="hidden">` con ese id lleva el
+ * valor elegido), así que quien lee el DOM por id (un `preConfirm` de SweetAlert2) lee lo mismo.
+ */
+export interface CampoDialogo {
+  id: string;
+  tipo: TipoCampoDialogo;
+  /** Etiqueta visible encima; sin ella, el campo lo nombra el título del diálogo. */
+  etiqueta?: string;
+  opciones?: OpcionPastilla[];
+  valor?: string | null;
+  /** Texto de ayuda del control; en el desplegable, su primera opción vacía. */
+  placeholder?: string;
+  /** Atributos del control (maxlength, min, max, step…). */
+  atributos?: Record<string, string>;
+}
+
+/** Error de validación en línea: bajo el campo `campo` o, sin campo, bajo la explicación. */
+export interface ErrorCampo {
+  campo?: string;
+  mensaje: string;
+}
+
+/** Valores de los campos al confirmar, por id. */
+export type ValoresDialogo = Record<string, string>;
+
 export interface OpcionesConfirmacion<R = unknown> {
   titulo: string;
   /** Frase de consecuencia: qué pasa si se confirma. */
@@ -50,6 +83,22 @@ export interface OpcionesConfirmacion<R = unknown> {
   destructivo?: boolean;
   /** Si se da, el diálogo sigue abierto con el botón ocupado hasta que termine. */
   ejecutar?: (valor: string | null) => Observable<R>;
+  /** Párrafos y listas tras la frase (8b-D2b). */
+  bloques?: BloqueMensaje[];
+  /** Campos del formulario (8b-D2b). */
+  campos?: CampoDialogo[];
+  /** Segunda acción («denegar» de SweetAlert2): cierra con `negado`. Destructiva, va en peligro y el foco en «Cancelar». */
+  accionSecundaria?: { texto: string; destructivo?: boolean };
+  /**
+   * Comprobación al pulsar la acción (8b-D2b): un error deja el diálogo abierto con el error en línea; una promesa pone
+   * el botón ocupado (sin Esc, velo, X ni «Cancelar») hasta que resuelve. Si la promesa falla, el diálogo se cierra
+   * con `error`.
+   */
+  comprobar?: (valores: ValoresDialogo) => ErrorCampo | null | PromiseLike<ErrorCampo | null>;
+  /** Nombre del diálogo en `data-dialogo` (para pruebas y capturas). */
+  nombre?: string;
+  /** Traducción genérica de un diálogo que no se pudo pintar con sus campos (`data-generico`). */
+  generico?: boolean;
 }
 
 export interface ResultadoConfirmacion<R = unknown> {
@@ -59,6 +108,10 @@ export interface ResultadoConfirmacion<R = unknown> {
   respuesta?: R;
   /** El error de `ejecutar`: el diálogo se cierra y quien lo abrió lo avisa. */
   error?: unknown;
+  /** Se pulsó la segunda acción (`accionSecundaria`). */
+  negado?: boolean;
+  /** Los valores de `campos` al confirmar. */
+  valores?: ValoresDialogo;
 }
 
 let siguienteId = 0;
@@ -94,6 +147,10 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
   hoja = anchoDeHoja();
   valor: string | null = null;
   ocupado = false;
+  /** Valores de `campos`, por id. */
+  valores: ValoresDialogo = {};
+  /** Error de validación en línea. */
+  errorCampo: ErrorCampo | null = null;
 
   private terminado = false;
   private destruido = false;
@@ -111,6 +168,20 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
 
   get accionDeshabilitada(): boolean {
     return !!this.opciones.campo?.requerido && this.valor === null;
+  }
+
+  /** La frase y, si los hay, los párrafos y listas que la siguen. */
+  get descritoPor(): string | null {
+    const ids = [
+      this.partes.length ? `${this.id}-mensaje` : null,
+      this.opciones.bloques?.length ? `${this.id}-bloques` : null,
+    ].filter((i): i is string => i !== null);
+    return ids.length ? ids.join(' ') : null;
+  }
+
+  /** Con alguna acción destructiva, el foco inicial va a «Cancelar». */
+  get conPeligro(): boolean {
+    return !!this.opciones.destructivo || !!this.opciones.accionSecundaria?.destructivo;
   }
 
   esFuerte(parte: ParteMensaje): parte is { fuerte: string } {
@@ -137,11 +208,15 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
   /** Abre el diálogo como modal y pone el foco: en «Cancelar» si es destructivo, en la acción si no. */
   abrir(): void {
     this.valor = this.opciones.campo?.valor ?? null;
+    this.valores = {};
+    for (const c of this.opciones.campos ?? []) {
+      this.valores[c.id] = c.valor ?? '';
+    }
     this.cdr.detectChanges();
     const dialogo = this.dialogoRef.nativeElement;
     dialogo.showModal();
     this.pila.abrir(dialogo);
-    const inicial = this.opciones.destructivo || this.accionDeshabilitada ? this.botonCancelar : this.botonAccion;
+    const inicial = this.conPeligro || this.accionDeshabilitada ? this.botonCancelar : this.botonAccion;
     inicial?.nativeElement.focus();
   }
 
@@ -194,10 +269,68 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     if (this.ocupado || this.accionDeshabilitada) {
       return;
     }
+    const comprobar = this.opciones.comprobar;
+    if (!comprobar) {
+      this.seguirConfirmando();
+      return;
+    }
+    const valores = { ...this.valores };
+    const comprobacion = comprobar(valores);
+    if (!esPromesa(comprobacion)) {
+      this.trasComprobar(comprobacion);
+      return;
+    }
+    this.ocupado = true;
+    this.cdr.detectChanges();
+    comprobacion.then(
+      (error) => {
+        this.ocupado = false;
+        this.trasComprobar(error);
+      },
+      (error: unknown) => {
+        this.ocupado = false;
+        this.terminar({ confirmado: true, valor: this.valor, valores, error });
+      }
+    );
+  }
+
+  /** «Denegar»: la segunda acción. */
+  negar(): void {
+    if (this.ocupado) {
+      return;
+    }
+    this.terminar({ confirmado: false, negado: true, valor: null });
+  }
+
+  private trasComprobar(error: ErrorCampo | null): void {
+    if (this.destruido || this.terminado) {
+      return;
+    }
+    if (error) {
+      this.mostrarError(error);
+      return;
+    }
+    this.seguirConfirmando();
+  }
+
+  /** Pinta el error bajo su campo (o bajo la explicación) y lleva el foco al campo. */
+  private mostrarError(error: ErrorCampo): void {
+    this.errorCampo = error;
+    this.cdr.detectChanges();
+    const dialogo = this.dialogoRef.nativeElement;
+    const control = error.campo ? dialogo.querySelector<HTMLElement>(`[data-campo="${error.campo}"]`) : null;
+    const destino = control?.matches('[role="radiogroup"]')
+      ? control.querySelector<HTMLElement>('[role="radio"][tabindex="0"]')
+      : control;
+    (destino ?? this.botonAccion?.nativeElement)?.focus();
+  }
+
+  private seguirConfirmando(): void {
     const valor = this.valor;
+    const valores = this.opciones.campos ? { ...this.valores } : undefined;
     const ejecutar = this.opciones.ejecutar;
     if (!ejecutar) {
-      this.terminar({ confirmado: true, valor });
+      this.terminar({ confirmado: true, valor, valores });
       return;
     }
     this.ocupado = true;
@@ -263,7 +396,67 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     grupo.querySelectorAll<HTMLElement>('[role="radio"]')[siguiente]?.focus();
   }
 
+  // ------------------------------------------------------------------ campos (8b-D2b)
+
+  /** Cambia el valor de un campo y quita su error. */
+  ponerValor(id: string, valor: string): void {
+    this.valores[id] = valor;
+    if (this.errorCampo && (this.errorCampo.campo === id || !this.errorCampo.campo)) {
+      this.errorCampo = null;
+    }
+    this.cdr.detectChanges();
+  }
+
+  /** Lee el valor de un control nativo (input, select o textarea). */
+  alEscribir(id: string, evento: Event): void {
+    this.ponerValor(id, (evento.target as HTMLInputElement).value);
+  }
+
+  errorDe(id: string): string | null {
+    return this.errorCampo?.campo === id && this.errorCampo.mensaje ? this.errorCampo.mensaje : null;
+  }
+
+  get errorGeneral(): string | null {
+    return this.errorCampo && !this.errorCampo.campo && this.errorCampo.mensaje ? this.errorCampo.mensaje : null;
+  }
+
+  /** Tabindex itinerante del grupo de pastillas de un campo. */
+  indiceTabCampo(campo: CampoDialogo, i: number): number {
+    const opciones = campo.opciones ?? [];
+    const elegida = opciones.findIndex((o) => o.valor === this.valores[campo.id]);
+    return i === (elegida >= 0 ? elegida : 0) ? 0 : -1;
+  }
+
+  /** Flechas (con vuelta), Inicio y Fin en las pastillas de un campo, como un grupo de radios nativo. */
+  teclaPastillasCampo(evento: KeyboardEvent, campo: CampoDialogo): void {
+    const opciones = campo.opciones ?? [];
+    const actual = Math.max(
+      opciones.findIndex((o) => o.valor === this.valores[campo.id]),
+      0
+    );
+    const siguiente = siguienteIndice(evento.key, actual, opciones.length);
+    if (siguiente === null) {
+      return;
+    }
+    evento.preventDefault();
+    this.ponerValor(campo.id, opciones[siguiente].valor);
+    const grupo = evento.currentTarget as HTMLElement;
+    grupo.querySelectorAll<HTMLElement>('[role="radio"]')[siguiente]?.focus();
+  }
+
+  atributo(campo: CampoDialogo, nombre: string): string | null {
+    return campo.atributos?.[nombre] ?? null;
+  }
+
+  esLista(bloque: BloqueMensaje): bloque is { tipo: 'lista'; elementos: ParteMensaje[][] } {
+    return bloque.tipo === 'lista';
+  }
+
   private terminar(resultado: ResultadoConfirmacion): void {
+    // Sin claves vacías: el resultado de hoy no las tenía.
+    resultado = Object.fromEntries(
+      Object.entries(resultado).filter(([, v]) => v !== undefined)
+    ) as unknown as ResultadoConfirmacion;
     if (this.terminado) {
       return;
     }
@@ -274,5 +467,30 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
       dialogo.close();
     }
     this.cerrado.emit(resultado);
+  }
+}
+
+function esPromesa<T>(valor: T | PromiseLike<T>): valor is PromiseLike<T> {
+  return !!valor && typeof (valor as PromiseLike<T>).then === 'function';
+}
+
+/** El índice al que mueven las flechas (con vuelta), Inicio y Fin en un grupo de `total` radios; nulo con otra tecla. */
+function siguienteIndice(tecla: string, actual: number, total: number): number | null {
+  if (total === 0) {
+    return null;
+  }
+  switch (tecla) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      return (actual + 1) % total;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return (actual - 1 + total) % total;
+    case 'Home':
+      return 0;
+    case 'End':
+      return total - 1;
+    default:
+      return null;
   }
 }
