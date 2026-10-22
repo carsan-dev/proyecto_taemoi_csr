@@ -167,6 +167,8 @@ export class InicioComponent implements OnInit, OnDestroy {
   esAdmin = false;
 
   limite = 0;
+  /** El límite común por turno se leyó y es mayor que 0; si no, la ocupación muestra su error (sin «/0»). */
+  limiteValido = false;
   ocupacion: Ocupacion = { dias: [], franjas: [], filas: [], inscritos: 0, plazas: 0 };
   clases: ClaseDeHoy[] = [];
   pendiente: PendienteVencido | null = null;
@@ -273,9 +275,12 @@ export class InicioComponent implements OnInit, OnDestroy {
       this.totalGrupos = grupos.length;
       this.totalTurnos = (d.turnos ?? []).length;
       this.aptos = (d.aptos ?? []).length;
-      this.limite = Number(d.limite) > 0 ? Number(d.limite) : 0;
+      this.limiteValido = d.limite !== null && Number.isFinite(Number(d.limite)) && Number(d.limite) > 0;
+      this.limite = this.limiteValido ? Number(d.limite) : 0;
       this.erroresPlataforma = d.errores;
-      this.ocupacion = calcularOcupacion(grupos, this.limite);
+      this.ocupacion = this.limiteValido
+        ? calcularOcupacion(grupos, this.limite)
+        : { dias: [], franjas: [], filas: [], inscritos: 0, plazas: 0 };
       this.clases = clasesDeHoy(grupos, this.limite, this.ahora);
       this.leerDistribucion(d.distribucion ?? {});
       this.estado = 'listo';

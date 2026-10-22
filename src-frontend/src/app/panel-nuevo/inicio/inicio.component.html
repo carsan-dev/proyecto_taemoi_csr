@@ -45,7 +45,11 @@
                 @if (nombreDisciplina(c.deporte)) {
                 <span>{{ nombreDisciplina(c.deporte) }}</span>
                 }
-                <span data-cifras>{{ c.inscritos }} de {{ c.plazas }} plazas ocupadas</span>
+                @if (c.plazas > 0) {
+                <span data-cifras>{{ numero(c.inscritos) }} de {{ plural(c.plazas, 'plaza ocupada', 'plazas ocupadas') }}</span>
+                } @else {
+                <span data-cifras>{{ plural(c.inscritos, 'inscrito', 'inscritos') }}</span>
+                }
               </span>
             </span>
             <a class="inicio__boton-texto inicio__ver-grupo" [routerLink]="['/gruposEditar', c.grupoId]"
@@ -63,7 +67,8 @@
       <section class="inicio__bloque inicio__pendiente" aria-labelledby="inicio-pendiente">
         <div class="inicio__bloque-cabecera">
           <h2 id="inicio-pendiente" class="inicio__subtitulo">Pendiente de cobro · vencido</h2>
-          <a class="inicio__enlace" routerLink="/tesoreriaCobros" [queryParams]="{ estado: 'PENDIENTES' }">Ver en Tesorería</a>
+          <!-- La tesorería de hoy no admite «todos los meses» por parámetro: enlace genérico hasta 8b-3d. -->
+          <a class="inicio__enlace" routerLink="/tesoreriaCobros">Ir a Tesorería</a>
         </div>
         @if (estadoPendiente === 'cargando' && !pendiente) {
         <p class="inicio__vacio">Cargando lo pendiente…</p>
@@ -74,7 +79,7 @@
           <p class="inicio__pendiente-total" data-cifras>{{ eur(pendiente.total) }}</p>
           <p class="inicio__pendiente-resumen">
             Lo no pagado fuera de plazo, de cualquier mes (las mensualidades vencen el día
-            {{ pendiente.diaLimiteMensualidad }}): {{ plural(pendiente.cargos, 'cargo', 'cargos') }} de
+            {{ numero(pendiente.diaLimiteMensualidad) }}): {{ plural(pendiente.cargos, 'cargo', 'cargos') }} de
             {{ plural(pendiente.alumnos, 'alumno', 'alumnos') }}.
           </p>
           @if (pendiente.cargos === 0) {
@@ -156,19 +161,24 @@
       <section class="inicio__bloque inicio__ocupacion" aria-labelledby="inicio-ocupacion">
         <div class="inicio__bloque-cabecera">
           <h2 id="inicio-ocupacion" class="inicio__subtitulo">Ocupación de la semana</h2>
-          @if (estado === 'listo' && ocupacion.franjas.length) {
-          <span class="inicio__nota-derecha inicio__ocupacion-total" data-cifras>{{ numero(ocupacion.inscritos) }} plazas
-            ocupadas de {{ numero(ocupacion.plazas) }}</span>
+          @if (estado === 'listo' && limiteValido && ocupacion.franjas.length) {
+          <span class="inicio__nota-derecha inicio__ocupacion-total" data-cifras>{{ plural(ocupacion.inscritos,
+            'plaza ocupada', 'plazas ocupadas') }} de {{ numero(ocupacion.plazas) }}</span>
           }
         </div>
+        @if (estado !== 'listo' || limiteValido) {
         <p class="inicio__ocupacion-nota">
-          Inscritos de cada franja frente al límite común de {{ limite }} por turno; un grupo con dos días cuenta sus
-          alumnos en cada día. <strong>Cuando cada sede tenga su aforo (E9), esta será la ocupación real.</strong>
+          Inscritos de cada franja frente al límite común de {{ numero(limite) }} por turno; un grupo con dos días cuenta
+          sus alumnos en cada día. <strong>Cuando cada sede tenga su aforo (E9), esta será la ocupación real.</strong>
         </p>
+        }
         @if (estado === 'cargando') {
         <p class="inicio__vacio">Cargando la ocupación…</p>
         } @else if (estado === 'error') {
         <p class="inicio__vacio">No se pudo cargar la ocupación. Prueba con «Actualizar ahora».</p>
+        } @else if (!limiteValido) {
+        <p class="inicio__vacio" role="status">No se pudo leer el límite de plazas por turno. Prueba con «Actualizar
+          ahora».</p>
         } @else if (ocupacion.franjas.length === 0) {
         <p class="inicio__vacio">Aún no hay turnos con grupo: no hay ocupación que mostrar.</p>
         } @else {
@@ -282,8 +292,8 @@
             <a class="inicio__total" routerLink="/alumnosListar">
               <span class="inicio__total-etiqueta">Alumnos</span>
               <span class="inicio__total-cifra" data-cifras>{{ numero(alumnosTotales) }}</span>
-              <span class="inicio__total-detalle" data-cifras>{{ numero(alumnosActivos) }} activos, {{
-                numero(alumnosInactivos) }} inactivos</span>
+              <span class="inicio__total-detalle" data-cifras>{{ plural(alumnosActivos, 'activo', 'activos') }}, {{
+                plural(alumnosInactivos, 'inactivo', 'inactivos') }}</span>
             </a>
           </li>
           <li>

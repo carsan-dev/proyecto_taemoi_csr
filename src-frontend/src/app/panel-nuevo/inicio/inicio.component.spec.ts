@@ -109,16 +109,28 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     jasmine.clock().uninstall();
   });
 
-  function responder(dto: PendienteVencido = pendiente()): void {
+  interface Respuestas {
+    totales?: number;
+    activos?: number;
+    grupos?: unknown[];
+    /** Número del límite o 'error' para que falle la petición. */
+    limite?: number | 'error';
+  }
+
+  function responder(dto: PendienteVencido = pendiente(), opciones: Respuestas = {}): void {
     http.match((r) => r.url === `${API}/alumnos` && r.params.get('incluirInactivos') === 'true').forEach((r) =>
-      r.flush({ totalElements: 52 })
+      r.flush({ totalElements: opciones.totales ?? 52 })
     );
     http.match((r) => r.url === `${API}/alumnos` && r.params.get('incluirInactivos') === 'false').forEach((r) =>
-      r.flush({ totalElements: 50 })
+      r.flush({ totalElements: opciones.activos ?? 50 })
     );
-    http.match(`${API}/grupos/resumen`).forEach((r) => r.flush(GRUPOS));
+    http.match(`${API}/grupos/resumen`).forEach((r) => r.flush(opciones.grupos ?? GRUPOS));
     http.match(`${API}/turnos/resumen`).forEach((r) => r.flush([{ id: 11 }, { id: 12 }, { id: 21 }]));
-    http.match(`${API}/turnos/limite`).forEach((r) => r.flush(36));
+    http.match(`${API}/turnos/limite`).forEach((r) =>
+      opciones.limite === 'error'
+        ? r.flush({ mensaje: 'fallo' }, { status: 500, statusText: 'Error' })
+        : r.flush(opciones.limite ?? 36)
+    );
     http.match(`${API}/alumnos/aptos`).forEach((r) => r.flush([{ id: 1 }]));
     http.match(`${API}/alumnos/deportes/distribucion`).forEach((r) => r.flush({ TAEKWONDO: 6, PILATES: 1 }));
     http.match(`${API}/eventos/admin/todos`).forEach((r) =>
@@ -269,5 +281,64 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(cifras).toContain('Taekwondo 6 86 %');
     expect(cifras).toContain('Total de inscripciones 7');
     expect(cifras).toContain('2 alumnos inactivos');
+  });
+
+  it('plurales en singular: plaza ocupada, activo e inactivo (ronda 2)', () => {
+    const uno = [
+      {
+        id: 3,
+        nombre: 'Grupo de uno',
+        deporte: 'TAEKWONDO',
+        numAlumnos: 1,
+        turnos: [{ id: 31, diaSemana: 'Miércoles', horaInicio: '17:00', horaFin: '18:00' }],
+      },
+    ];
+    responder(pendiente(), { totales: 2, activos: 1, grupos: uno, limite: 1 });
+    expect(texto('.inicio__ocupacion-total')).toBe('1 plaza ocupada de 1');
+    expect(texto('.inicio__clase')).toContain('1 de 1 plaza ocupada');
+    expect(texto('.inicio__clase')).not.toContain('plazas');
+    expect(texto('.inicio__cifras')).toContain('Alumnos 2 1 activo, 1 inactivo');
+    expect(texto('.inicio__ocupacion-nota')).toContain('límite común de 1 por turno');
+  });
+
+  it('plurales con miles: cifras agrupadas en «Hoy» y en el total de la ocupación', () => {
+    const muchos = [
+      {
+        id: 4,
+        nombre: 'Grupo enorme',
+        deporte: 'TAEKWONDO',
+        numAlumnos: 1200,
+        turnos: [{ id: 41, diaSemana: 'Miércoles', horaInicio: '17:00', horaFin: '18:00' }],
+      },
+    ];
+    responder(pendiente(), { totales: 1500, activos: 1300, grupos: muchos, limite: 2000 });
+    expect(texto('.inicio__clase')).toContain('1.200 de 2.000 plazas ocupadas');
+    expect(texto('.inicio__ocupacion-total')).toBe('1.200 plazas ocupadas de 2.000');
+    expect(texto('.inicio__cifras')).toContain('1.300 activos, 200 inactivos');
+  });
+
+  for (const caso of [0, 'error'] as const) {
+    it(`límite ${caso === 0 ? 'en 0' : 'que falla'}: la ocupación muestra un error y no «/0» (ronda 2)`, () => {
+      responder(pendiente(), { limite: caso });
+      const ocupacion = texto('.inicio__ocupacion');
+      expect(ocupacion).toContain('No se pudo leer el límite de plazas por turno.');
+      expect(ocupacion).not.toContain('/0');
+      expect(ocupacion).not.toContain('límite común de 0');
+      expect((fixture.nativeElement as HTMLElement).querySelector('table.inicio__ocupacion-tabla')).toBeNull();
+      expect(texto('.inicio__hoy')).not.toContain('de 0');
+      expect(texto('.inicio__clase')).toContain('6 inscritos');
+
+      fixture.componentInstance.actualizar();
+      responder();
+      expect((fixture.nativeElement as HTMLElement).querySelector('table.inicio__ocupacion-tabla')).not.toBeNull();
+      expect(texto('.inicio__ocupacion')).not.toContain('No se pudo leer el límite');
+    });
+  }
+
+  it('«Ir a Tesorería»: la tesorería de hoy no filtra lo vencido de todos los meses (ronda 2)', () => {
+    responder();
+    const enlace = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('.inicio__pendiente .inicio__enlace');
+    expect(enlace?.textContent?.trim()).toBe('Ir a Tesorería');
+    expect(enlace?.getAttribute('href')).toBe('/tesoreriaCobros');
   });
 });
