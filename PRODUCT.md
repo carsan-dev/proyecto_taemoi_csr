@@ -33,9 +33,11 @@ Bootstrap Icons, SweetAlert2), API Spring Boot con MySQL 8. Se usa en escritorio
 
 ## Product Purpose
 
-Gestionar escuelas de artes marciales (taekwondo, kickboxing, pilates y defensa personal femenina): alumnos,
-grupos, asistencia, cobros, grados y comunicación con las familias. La aplicación nació para una escuela y se
-está convirtiendo en SaaS multi-escuela «sin que la escuela actual note nada en el camino».
+Gestionar clubes y escuelas deportivas: alumnos, grupos, asistencia, cobros, progresión (grados o niveles) y
+comunicación con las familias. Nicho de entrada: las artes marciales (taekwondo, kickboxing, pilates y defensa
+personal femenina en Moiskimdo; taekwondo en Sierra Sur). Visión: cualquier deporte que se organice en grupos con
+cuotas y progresión. La aplicación nació para una escuela y se está convirtiendo en SaaS multi-escuela «sin que
+la escuela actual note nada en el camino».
 
 Éxito: la escuela 1 (Moiskimdo, 800+ alumnos reales) sigue funcionando sin sorpresas mientras entran escuelas
 nuevas, empezando por Taekwondo Sierra Sur (un club, seis sedes, caja por sede, tarifas comunes).
@@ -46,7 +48,8 @@ Supuesto: éxito también es que el profesor resuelva su clase desde el móvil s
 Hecha desde dentro de una escuela real: su propietario es profesor en activo y el producto modela las reglas
 del oficio (el grado sube solo al cobrar el derecho de examen, caja por sede, profesor titular o ayudante,
 pases de grado, convocatorias, consentimientos firmados en papel). Supuesto: ese conocimiento del día a día de
-una escuela es lo que un software genérico de gimnasios no puede copiar de verdad.
+un club real es lo que un software genérico de gimnasios no puede copiar de verdad. Las reglas propias de las
+artes marciales son el primer caso y deben poder generalizarse a otros deportes sin romperlas.
 
 ## Operating Context
 
@@ -92,7 +95,9 @@ Son superficies distintas, cada una con su propio brief; el rediseño de la E8b 
 - **Permisos que fallan cerrados.** Cada rol ve solo lo que su regla nombra; la interfaz no muestra lo que el
   rol no puede hacer (p. ej. «Mis grupos» solo con la capacidad `MIS_GRUPOS`).
 - **Terminología.** Escuela (organización), sede, grupo, disciplina, grado, pase de grado, convocatoria,
-  derecho de examen, mensualidad, caja, titular, ayudante, familia, preinscripción.
+  derecho de examen, mensualidad, caja, titular, ayudante, familia, preinscripción. Grado, pase de grado,
+  convocatoria y derecho de examen son del nicho de entrada; Supuesto: otros deportes pedirán equivalentes
+  (nivel, evaluación).
 - **Idioma.** Textos en español de España, neutro y profesional.
 
 ## Brand Commitments
@@ -104,7 +109,10 @@ Son superficies distintas, cada una con su propio brief; el rediseño de la E8b 
   (MindInventory) para el tono; Rhythm Bars (Varvara Yaremenko) para qué contar; Growly (Phenomenon Studio)
   para la densidad ordenada y las gráficas variadas.
 - **Anti-referencias:** degradados morados; filas de tarjetas pastel con un solo número.
-- Personalidad. Supuesto: la de un buen maestro de artes marciales; ordenado, directo, respetuoso, sin alardes.
+- Mascota de la plataforma (en diseño): neutra, sin colores propios (toma los de cada escuela) y de ningún
+  deporte concreto. Solo en momentos clave: más presente con familias y alumnos, poca y medida en el panel, y
+  nunca en dinero, bajas ni errores serios.
+- Personalidad. Supuesto: la de un buen entrenador; ordenado, directo, respetuoso, sin alardes.
 - Voz. Supuesto: frases cortas, verbos de acción, sin jerga técnica ni anglicismos innecesarios; los errores
   dicen qué pasó y qué hacer («No hay ninguna cuenta con ese email. Que se registre primero.»).
 

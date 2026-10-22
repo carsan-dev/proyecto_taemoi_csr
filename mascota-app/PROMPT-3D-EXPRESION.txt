@@ -1,0 +1,9 @@
+Método previsto: edición con generación de imágenes integrada.
+Prompt actualizado a la revisión 07. No indica una nueva generación 3D.
+Objetivo: cambiar únicamente los ojos de la ilustración promocional de saludo.
+
+Use case: precise-object-edit.
+Edit target: the attached ivory plasticine sweat-drop mascot illustration.
+Change ONLY the two closed arch eyes into two OPEN vertical dark charcoal oval eyes looking forward, matching the current flat greeting reference. Use simple solid oval shapes in matte sculpted clay, with no realistic irises or eyelashes. Position them at the same eye centers and keep the existing horizontal spacing, so the mascot has a clear, friendly gaze while greeting.
+Preserve everything else exactly: the curved drop silhouette, body proportions, ivory clay color and texture, headband teal color and fabric texture, knot and tails, raised greeting arm, resting arm, feet, small curved mouth and smile, camera, framing, lighting, studio background and contact shadow.
+Do not add eyebrows, eyelashes, blush, a nose, cheek marks, text, extra characters, props, or any other changes.
