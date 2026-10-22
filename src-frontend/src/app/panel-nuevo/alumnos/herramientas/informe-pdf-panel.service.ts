@@ -12,7 +12,12 @@ import { AvisosService } from '../../avisos/avisos.service';
 export class InformePdfPanelService extends InformePdfService {
   private readonly avisos = inject(AvisosService);
 
-  protected override avisar(_titulo: string, texto: string): void {
-    this.avisos.error(texto);
+  /** El «Aviso» de hoy (warning: PDF parciales) va como información con el mismo texto; el «Error», como error. */
+  protected override avisar(_titulo: string, texto: string, icono: 'warning' | 'error'): void {
+    if (icono === 'warning') {
+      this.avisos.info(texto);
+    } else {
+      this.avisos.error(texto);
+    }
   }
 }

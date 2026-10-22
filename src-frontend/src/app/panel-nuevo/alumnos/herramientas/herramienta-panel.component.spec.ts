@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, Input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../../environments/environment';
@@ -230,9 +231,23 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     pintar();
     expect(fire).not.toHaveBeenCalled();
     const aviso = document.querySelector<HTMLElement>('.pn-aviso')!;
-    expect(aviso.getAttribute('role')).toBe('alert');
+    expect(aviso.classList).toContain('pn-aviso--error');
     expect(aviso.textContent).toContain('No se pudo generar el listado de mensualidad mensual');
     expect(panel().contains(aviso)).toBeTrue();
+  });
+
+  it('el aviso de un PDF parcial (el «Aviso» de hoy, de tipo warning) sale como información con el mismo texto, no como error', () => {
+    const avisos = TestBed.inject(AvisosService);
+    const info = spyOn(avisos, 'info').and.callThrough();
+    const error = spyOn(avisos, 'error').and.callThrough();
+    const servicio = TestBed.runInInjectionContext(() => new InformePdfPanelService());
+    const texto = 'No se pudo generar el PDF de: martes.';
+    servicio.generar(of({ documentos: [], aviso: texto }), 'descargar', 'No se pudo generar el listado');
+    expect(info).toHaveBeenCalledOnceWith(texto);
+    expect(error).not.toHaveBeenCalled();
+    servicio.generar(throwError(() => new Error('500')), 'descargar', 'No se pudo generar el listado');
+    expect(error).toHaveBeenCalledOnceWith('No se pudo generar el listado');
+    servicio.ngOnDestroy();
   });
 
   it('gestión: mensualidades generales y por deporte, con la fecha de asignación, como hoy', () => {

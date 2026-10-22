@@ -1,7 +1,9 @@
+<div class="pn-avisos__vivo" role="status">@for (a of avisos.anuncios(); track a.id) {@if (!esError(a)) {<p>{{ a.texto }}</p>}}</div>
+<div class="pn-avisos__vivo" role="alert">@for (a of avisos.anuncios(); track a.id) {@if (esError(a)) {<p>{{ a.texto }}</p>}}</div>
 @if (avisos.lista().length) {
 <section class="pn-avisos" aria-label="Avisos">
   @for (a of avisos.lista(); track a.id) {
-  <div class="pn-aviso" [class]="'pn-aviso pn-aviso--' + a.tipo" [attr.role]="rol(a)" (mouseenter)="avisos.pausar(a.id)"
+  <div class="pn-aviso" [class]="'pn-aviso pn-aviso--' + a.tipo" (mouseenter)="avisos.pausar(a.id)"
     (mouseleave)="avisos.seguir(a.id)" (focusin)="avisos.pausar(a.id)" (focusout)="avisos.seguir(a.id)">
     @switch (a.tipo) {
     @case ('exito') {
@@ -29,7 +31,8 @@
       </svg>
     </button>
     @if (a.tipo !== 'error') {
-    <div class="pn-aviso__tiempo" aria-hidden="true" [style.animation-duration]="duracion"></div>
+    <div class="pn-aviso__tiempo" [class.pn-aviso__tiempo--quieta]="quieta" aria-hidden="true"
+      [style.animation-duration]="duracion"></div>
     }
   </div>
   }

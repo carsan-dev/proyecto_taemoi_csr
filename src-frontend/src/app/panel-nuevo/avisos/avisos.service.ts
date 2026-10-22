@@ -34,6 +34,11 @@ export interface Aviso {
 export const DURACION_AVISO = 5000;
 /** Como mucho 3 a la vez: el cuarto saca al más antiguo. */
 export const MAX_AVISOS = 3;
+/**
+ * Lo que tarda el texto de un aviso en llegar a su región viva. Las regiones (`role=status` y `role=alert`) nacen vacías
+ * con la de avisos y el texto se añade después: un lector de pantalla no anuncia una región viva que se inserta ya llena.
+ */
+export const RETRASO_ANUNCIO = 100;
 
 interface Temporizador {
   id: ReturnType<typeof setTimeout> | null;
@@ -44,7 +49,8 @@ interface Temporizador {
 /**
  * Avisos del panel nuevo (8b-D1, decisión 271; boceto `Avisos.dc.html` y `AvisosMovil.dc.html`). Sustituyen a los
  * avisos de SweetAlert2 en las pantallas nuevas. La región se crea al primer aviso y se pinta en el `body` o, si hay una
- * capa modal abierta, dentro de la de arriba (fuera de ella quedaría inerte). Vive en los chunks del panel nuevo.
+ * capa modal abierta, dentro de la de arriba (fuera de ella quedaría inerte). Las tarjetas se ven al momento; su texto
+ * llega a las regiones vivas `RETRASO_ANUNCIO` después. Vive en los chunks del panel nuevo.
  */
 @Injectable({ providedIn: 'root' })
 export class AvisosService {
@@ -56,9 +62,12 @@ export class AvisosService {
   private readonly router = inject(Router);
 
   readonly lista = signal<Aviso[]>([]);
+  /** Los avisos ya enviados a las regiones vivas (cada uno, `RETRASO_ANUNCIO` después de pintarse). */
+  readonly anuncios = signal<Aviso[]>([]);
   private siguiente = 0;
   private region: ComponentRef<AvisosComponent> | null = null;
   private readonly temporizadores = new Map<number, Temporizador>();
+  private readonly retrasosAnuncio = new Map<number, ReturnType<typeof setTimeout>>();
 
   constructor() {
     // La región sigue a la capa modal de arriba (o vuelve al body).
@@ -91,7 +100,13 @@ export class AvisosService {
       clearTimeout(t.id);
     }
     this.temporizadores.delete(id);
+    const retraso = this.retrasosAnuncio.get(id);
+    if (retraso) {
+      clearTimeout(retraso);
+    }
+    this.retrasosAnuncio.delete(id);
     this.lista.update((lista) => lista.filter((a) => a.id !== id));
+    this.anuncios.update((lista) => lista.filter((a) => a.id !== id));
   }
 
   cerrarTodos(): void {
@@ -128,6 +143,17 @@ export class AvisosService {
     const actuales = this.lista();
     actuales.slice(0, Math.max(actuales.length - (MAX_AVISOS - 1), 0)).forEach((a) => this.cerrar(a.id));
     this.lista.update((lista) => [...lista, aviso]);
+    this.retrasosAnuncio.set(
+      aviso.id,
+      setTimeout(
+        () =>
+          this.zona.run(() => {
+            this.retrasosAnuncio.delete(aviso.id);
+            this.anuncios.update((lista) => [...lista, aviso]);
+          }),
+        RETRASO_ANUNCIO
+      )
+    );
     if (tipo !== 'error') {
       const t: Temporizador = { id: null, restante: DURACION_AVISO, desde: Date.now() };
       this.temporizadores.set(aviso.id, t);
@@ -148,6 +174,8 @@ export class AvisosService {
     const ref = createComponent(AvisosComponent, { environmentInjector: this.injector });
     this.appRef.attachView(ref.hostView);
     (this.pila.arriba() ?? this.documento.body).appendChild(ref.location.nativeElement);
+    // Las regiones vivas, en la página y vacías antes del primer aviso.
+    ref.changeDetectorRef.detectChanges();
     this.region = ref;
   }
 }

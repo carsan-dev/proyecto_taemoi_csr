@@ -138,7 +138,7 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
     expect(cobrando.has(801)).toBeFalse();
     expect(alCambiar).toHaveBeenCalledTimes(1);
     const [aviso] = avisos();
-    expect(aviso.getAttribute('role')).toBe('status');
+    expect(aviso.classList).toContain('pn-aviso--exito');
     expect(aviso.textContent).toContain(`Cobro registrado: 30,00${NBSP}€ · Adrián Prueba Ficticia`);
     expect(aviso.querySelector('.pn-aviso__accion')).toBeNull();
   });
@@ -181,7 +181,7 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
     http.expectOne(`${API}/productos-alumno/801`).flush({}, { status: 500, statusText: 'Error' });
     await promesa;
     await esperar();
-    expect(avisos()[0].getAttribute('role')).toBe('alert');
+    expect(avisos()[0].classList).toContain('pn-aviso--error');
     expect(avisos()[0].textContent).toContain('No se pudo actualizar el estado del cobro');
 
     promesa = servicio.cobrar(CARGO, new Set(), () => undefined);

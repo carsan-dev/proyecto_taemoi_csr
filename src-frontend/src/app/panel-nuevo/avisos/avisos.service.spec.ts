@@ -10,7 +10,7 @@ import { CLASE_ERROR_HTTP, PilaCapas } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { disenoNuevoGuard } from '../diseno-nuevo.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
-import { AvisosService, DURACION_AVISO, MAX_AVISOS } from './avisos.service';
+import { AvisosService, DURACION_AVISO, MAX_AVISOS, RETRASO_ANUNCIO } from './avisos.service';
 
 @Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
 class PantallaNueva {}
@@ -29,6 +29,15 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
 
   function tarjetas(): HTMLElement[] {
     return Array.from(document.querySelectorAll<HTMLElement>('.pn-aviso'));
+  }
+
+  /** Las regiones vivas persistentes: `role=status` (éxito e información) y `role=alert` (error). */
+  function vivo(rol: 'status' | 'alert'): HTMLElement | null {
+    return document.querySelector<HTMLElement>(`pn-avisos .pn-avisos__vivo[role="${rol}"]`);
+  }
+
+  function anunciado(rol: 'status' | 'alert'): string[] {
+    return Array.from(vivo(rol)?.querySelectorAll('p') ?? []).map((p) => p.textContent!.trim());
   }
 
   beforeEach(() => {
@@ -64,10 +73,14 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     expect(r.getAttribute('aria-label')).toBe('Avisos');
     expect(r.closest('.pn')).not.toBeNull();
     const [aviso] = tarjetas();
-    expect(aviso.getAttribute('role')).toBe('status');
+    expect(aviso.hasAttribute('role')).toBeFalse();
     expect(aviso.textContent).toContain('Cobro registrado: 30,00 € · Adrián Prueba Ficticia');
+    tick(RETRASO_ANUNCIO);
+    pintar();
+    expect(anunciado('status')).toEqual(['Cobro registrado: 30,00 € · Adrián Prueba Ficticia']);
+    expect(anunciado('alert')).toEqual([]);
     expect(aviso.querySelector('.pn-aviso__tiempo')).not.toBeNull();
-    tick(DURACION_AVISO - 1);
+    tick(DURACION_AVISO - 1 - RETRASO_ANUNCIO);
     pintar();
     expect(tarjetas().length).toBe(1);
     tick(1);
@@ -78,8 +91,10 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
   it('información: role=status y también se cierra a los 5 s', fakeAsync(() => {
     avisos.info('Lista de asistencia preparada');
     pintar();
-    expect(tarjetas()[0].getAttribute('role')).toBe('status');
-    tick(DURACION_AVISO);
+    tick(RETRASO_ANUNCIO);
+    pintar();
+    expect(anunciado('status')).toEqual(['Lista de asistencia preparada']);
+    tick(DURACION_AVISO - RETRASO_ANUNCIO);
     pintar();
     expect(tarjetas().length).toBe(0);
   }));
@@ -88,8 +103,12 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     avisos.error('No se pudo guardar la ficha. Revisa la conexión y vuelve a intentarlo.');
     pintar();
     const [aviso] = tarjetas();
-    expect(aviso.getAttribute('role')).toBe('alert');
+    expect(aviso.hasAttribute('role')).toBeFalse();
     expect(aviso.querySelector('.pn-aviso__tiempo')).toBeNull();
+    tick(RETRASO_ANUNCIO);
+    pintar();
+    expect(anunciado('alert')).toEqual(['No se pudo guardar la ficha. Revisa la conexión y vuelve a intentarlo.']);
+    expect(anunciado('status')).toEqual([]);
     tick(60_000);
     pintar();
     expect(tarjetas().length).toBe(1);
@@ -105,6 +124,48 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     avisos.error('cuatro');
     pintar();
     expect(tarjetas().map((t) => t.querySelector('p')!.textContent!.trim())).toEqual(['dos', 'tres', 'cuatro']);
+    flush();
+  }));
+
+  it('las regiones vivas se crean vacías y los avisos llegan después (un lector no anuncia una región que nace llena)', fakeAsync(() => {
+    avisos.exito('Guardado');
+    pintar();
+    expect(vivo('status')).not.toBeNull();
+    expect(vivo('alert')).not.toBeNull();
+    expect(vivo('status')!.textContent!.trim()).toBe('');
+    expect(vivo('alert')!.textContent!.trim()).toBe('');
+    expect(tarjetas().length).toBe(1);
+    tick(RETRASO_ANUNCIO);
+    pintar();
+    expect(anunciado('status')).toEqual(['Guardado']);
+    avisos.error('No se pudo guardar');
+    pintar();
+    tick(RETRASO_ANUNCIO);
+    pintar();
+    expect(anunciado('alert')).toEqual(['No se pudo guardar']);
+    // Siguen en su sitio aunque no quede ningún aviso: la siguiente vez ya existen.
+    avisos.cerrarTodos();
+    pintar();
+    expect(vivo('status')!.textContent!.trim()).toBe('');
+    expect(vivo('alert')!.textContent!.trim()).toBe('');
+    flush();
+  }));
+
+  it('barra de tiempo: sin animación con prefers-reduced-motion', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.callFake(
+      (consulta: string) =>
+        ({
+          matches: consulta.includes('prefers-reduced-motion'),
+          media: consulta,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList
+    );
+    avisos.exito('Guardado');
+    pintar();
+    const barra = tarjetas()[0].querySelector<HTMLElement>('.pn-aviso__tiempo')!;
+    expect(barra.classList).toContain('pn-aviso__tiempo--quieta');
+    expect(getComputedStyle(barra).animationName).toBe('none');
     flush();
   }));
 

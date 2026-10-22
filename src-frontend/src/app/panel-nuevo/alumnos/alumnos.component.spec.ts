@@ -111,9 +111,10 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     return (dialogo()?.textContent ?? '').replace(/[ \t\r\n]+/g, ' ').trim();
   }
 
+  /** Cada aviso con la región viva por la que se anuncia: `alert` el error, `status` el resto. */
   function avisos(): { rol: string | null; texto: string }[] {
     return Array.from(document.querySelectorAll<HTMLElement>('.pn-aviso')).map((a) => ({
-      rol: a.getAttribute('role'),
+      rol: a.classList.contains('pn-aviso--error') ? 'alert' : 'status',
       texto: a.querySelector('.pn-aviso__texto')!.textContent!.trim(),
     }));
   }
