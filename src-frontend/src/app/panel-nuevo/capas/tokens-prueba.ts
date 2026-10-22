@@ -7,7 +7,8 @@ import { TestBed } from '@angular/core/testing';
  */
 const TOKENS = `.pn {
   --pn-marca-primario-tinta: #1a2230; --pn-marca-sobre-primario: #ffffff; --pn-marca-sobre-primario-2: #c6c8cb;
-  --pn-marca-primario-suave: #e8e9ea; --pn-superficie: #ffffff; --pn-linea: #e4e4df; --pn-linea-fuerte: #cfcfc8;
+  --pn-marca-primario-suave: #e8e9ea; --pn-marca-por-defecto: #1a2230;
+  --pn-marca-suave-por-defecto: #e8e9ea; --pn-superficie: #ffffff; --pn-linea: #e4e4df; --pn-linea-fuerte: #cfcfc8;
   --pn-borde-control: #868d97; --pn-tinta: #1a2230; --pn-tinta-2: #5d6573; --pn-peligro: #b42318; --pn-bien: #2f6b3a;
   --pn-atencion: #a14f0b; --pn-serie-pista: #eceef1; --pn-radio-s: 6px; --pn-radio-m: 8px; --pn-radio-carnet: 14px;
   --pn-radio-pastilla: 999px; --pn-velo: rgb(26 34 48 / 40%);

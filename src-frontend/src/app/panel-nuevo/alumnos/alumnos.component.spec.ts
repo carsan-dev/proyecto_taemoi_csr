@@ -8,6 +8,7 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { AlumnosComponent, CLAVE_VISTA } from './alumnos.component';
@@ -912,7 +913,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     const SUAVE = 'rgb(213, 245, 252)';
     const BORDE = 'rgb(69, 149, 163)';
     crear();
-    TestBed.inject(AcentoEscuelaActual).poner({ acento: '#01707F', acentoSuave: '#D5F5FC', acentoBorde: '#4595A3' });
+    TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
     responder(60);
     const raiz = el().querySelector<HTMLElement>('.pn')!;
     expect(raiz.style.getPropertyValue('--pn-acento')).toBe('#01707F');
@@ -949,7 +950,8 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(avatar.color).withContext('avatar de iniciales: texto').toBe(ACENTO);
 
     const primario = getComputedStyle(el().querySelector('.alumnos__boton-primario')!);
-    expect(primario.backgroundColor).withContext('el principal no cambia').toBe('rgb(26, 34, 48)');
+    expect(primario.backgroundColor).withContext('el principal, con la tinta de Moiskimdo').toBe('rgb(27, 43, 46)');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario-tinta')).withContext('la pantalla lleva el tema completo').toBe('#1B2B2E');
 
     el().querySelectorAll<HTMLButtonElement>('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
     pintar();

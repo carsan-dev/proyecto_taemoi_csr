@@ -125,8 +125,11 @@
   @include c.boton-primario;
 }
 
-// Decisión 273: el diálogo rojo de peligro no lleva el acento; «Cancelar» y el foco siguen como antes de 8b-C.
+// Decisión 273: el diálogo rojo de peligro no lleva el color de la escuela; «Cancelar», su hover y el foco siguen en
+// los neutros de #1A2230, aunque la capa reciba el tema completo.
 .pn-dialogo--peligro {
+  --pn-marca-primario-tinta: var(--pn-marca-por-defecto);
+  --pn-marca-primario-suave: var(--pn-marca-suave-por-defecto);
   --pn-acento: var(--pn-marca-primario-tinta);
   --pn-acento-suave: var(--pn-marca-primario-suave);
   --pn-acento-borde: var(--pn-linea-fuerte);

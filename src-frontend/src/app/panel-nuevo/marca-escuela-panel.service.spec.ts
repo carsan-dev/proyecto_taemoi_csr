@@ -8,8 +8,9 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../core/http-context';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
-import { AcentoEscuelaDirective } from './acento-escuela.directive';
+import { AcentoEscuelaActual, AcentoEscuelaDirective, escribirTema } from './acento-escuela.directive';
 import { MarcaEscuelaPanelService, MarcaPanel } from './marca-escuela-panel.service';
+import { SIERRA_PRUEBA } from './tema-prueba';
 
 @Component({
   standalone: true,
@@ -136,7 +137,7 @@ describe('MarcaEscuelaPanelService (8b-T)', () => {
     }
   });
 
-  it('8b-C: el .pn de cada pantalla (pnAcento) recibe el acento cuando llega la marca, sin pedirla otra vez', () => {
+  it('8b-C: el .pn de cada pantalla (pnAcento) recibe el tema y el acento cuando llega la marca, sin pedirla otra vez', () => {
     const fixture = TestBed.createComponent(PantallaDePrueba);
     fixture.detectChanges();
     const raiz: HTMLElement = fixture.nativeElement.querySelector('.pn');
@@ -147,14 +148,45 @@ describe('MarcaEscuelaPanelService (8b-T)', () => {
     expect(raiz.style.getPropertyValue('--pn-acento')).toBe('#0E782D');
     expect(raiz.style.getPropertyValue('--pn-acento-suave')).toBe('#E0F5E1');
     expect(raiz.style.getPropertyValue('--pn-acento-borde')).toBe('#67956B');
-    expect(raiz.style.getPropertyValue('--pn-marca-primario')).withContext('la pantalla solo lleva el acento').toBe('');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario')).withContext('la pantalla lleva el tema completo').toBe('#3E9B4F');
+    expect(raiz.style.getPropertyValue('--pn-marca-sobre-primario')).toBe('#1A2230');
+    expect(raiz.style.getPropertyValue('--pn-marca-sobre-primario-2')).toBe('#1A2230');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario-tinta')).withContext('botón principal').toBe('#24853A');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario-suave')).withContext('hover suave').toBe('#ECF5ED');
     http.expectNone(URL_MARCA);
 
     email.next('otra@example.test');
     fixture.detectChanges();
     expect(servicio.acento()).toBeNull();
-    expect(raiz.style.getPropertyValue('--pn-acento')).withContext('otra sesión: vuelve al de por defecto').toBe('');
+    for (const variable of VARIABLES) {
+      expect(raiz.style.getPropertyValue(variable)).withContext(`otra sesión: ${variable} vuelve al de por defecto`).toBe('');
+    }
     fixture.destroy();
+  });
+
+  it('8b-C: escribirTema escribe las cinco variables de la marca y las tres del acento, y con null las quita', () => {
+    escribirTema(pn, SIERRA_PRUEBA);
+    expect(VARIABLES.map((v) => pn.style.getPropertyValue(v))).toEqual([
+      '#3E9B4F',
+      '#1A2230',
+      '#1A2230',
+      '#24853A',
+      '#ECF5ED',
+      '#0E782D',
+      '#67956B',
+      '#E0F5E1',
+    ]);
+    escribirTema(pn, null);
+    expect(VARIABLES.map((v) => pn.style.getPropertyValue(v))).toEqual(VARIABLES.map(() => ''));
+    const suelto = documento.createElement('div');
+    for (const elemento of [documento.documentElement, documento.body, suelto]) {
+      expect(() => escribirTema(elemento, SIERRA_PRUEBA)).toThrowError(/\.pn/);
+    }
+  });
+
+  it('8b-C: deja en AcentoEscuelaActual el tema y el acento aplicados', () => {
+    servicio.aplicarEn(pn, MARCA.tema);
+    expect(TestBed.inject(AcentoEscuelaActual).aplicado()).toEqual(SIERRA_PRUEBA);
   });
 
   it('se niega a escribir en documentElement, body o un elemento sin la clase .pn', () => {

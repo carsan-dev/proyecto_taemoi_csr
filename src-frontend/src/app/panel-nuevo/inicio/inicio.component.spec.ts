@@ -9,6 +9,7 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { InicioComponent } from './inicio.component';
@@ -429,7 +430,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
   });
 
   it('8b-C: con la marca, el enlace, los iconos de «Accesos» y el «Cobrar» de fila llevan el acento', () => {
-    TestBed.inject(AcentoEscuelaActual).poner({ acento: '#01707F', acentoSuave: '#D5F5FC', acentoBorde: '#4595A3' });
+    TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
     responder();
     const raiz = fixture.nativeElement as HTMLElement;
     expect(getComputedStyle(raiz.querySelector('.inicio__pendiente .inicio__enlace')!).color).withContext('enlace').toBe(

@@ -16,6 +16,7 @@ import { LoadingService } from '../../servicios/generales/loading.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
 
@@ -580,9 +581,9 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(panel.getAttribute('aria-labelledby')).toBe(tabs[0].id);
     });
 
-    it('8b-C: con la marca, la pestaña activa y los secundarios llevan el acento; el principal, no', async () => {
+    it('8b-C: con la marca, la pestaña activa y los secundarios llevan el acento; el principal, la tinta de la escuela', async () => {
       const m = await montar(FichaAlumnoComponent);
-      TestBed.inject(AcentoEscuelaActual).poner({ acento: '#01707F', acentoSuave: '#D5F5FC', acentoBorde: '#4595A3' });
+      TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
       await m.asentar();
       const activa = getComputedStyle(m.el().querySelector('[role="tab"][aria-selected="true"]')!);
       expect(activa.color).withContext('pestaña activa: texto').toBe('rgb(1, 112, 127)');
@@ -593,6 +594,9 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       const agregar = getComputedStyle(boton(m.el(), 'Agregar deporte'));
       expect(agregar.borderTopColor).withContext('«Agregar deporte»: borde').toBe('rgb(69, 149, 163)');
       expect(agregar.color).withContext('«Agregar deporte»: texto').toBe('rgb(1, 112, 127)');
+      expect(m.el().querySelector<HTMLElement>('.pn')!.style.getPropertyValue('--pn-marca-primario-tinta'))
+        .withContext('la ficha lleva el tema completo')
+        .toBe('#1B2B2E');
     });
 
     it('flechas, Inicio y Fin mueven la pestaña y el foco; la pestaña queda en la dirección', async () => {
