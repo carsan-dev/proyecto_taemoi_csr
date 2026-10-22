@@ -239,8 +239,9 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       convocatorias y WhatsApp salen ahora de piezas compartidas y se ven igual). Después, el propietario, con su
       interruptor encendido, abre la ficha de un alumno real y recorre las cuatro pestañas (Deportes, Pagos, Datos y
       contacto, Documentos y notas) sin guardar cambios: comprueba que el pendiente del carnet coincide con el del
-      listado, que el cinturón blanco se distingue y que «1 de N» conserva la pestaña; y prueba «Cobrar» solo sobre un
-      cargo ficticio de la escuela de pruebas, nunca de Moiskimdo.
+      listado, que el cinturón blanco se distingue, que «1 de N» conserva la pestaña y que «← Alumnos» vuelve al
+      listado con su búsqueda, filtros y página; y prueba «Cobrar» solo sobre un cargo ficticio de la escuela de
+      pruebas, nunca de Moiskimdo.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

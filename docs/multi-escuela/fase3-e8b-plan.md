@@ -664,9 +664,21 @@ cancelar). Capturas con «Pagos a la vista».
 - [x] Capturas apagado antes (`bc910a12`) y después idénticas en bytes a 375, 768, 1024 y 1280, también con la foto
   ampliada, «Agregar deporte», «Actualizar grado» y WhatsApp abiertos; encendido con las cuatro pestañas, el cinturón
   blanco, el panel de «Cobrar» de varios cargos, «Editar datos», «⋯» y los diálogos de hoy.
+- [x] Ronda 2 (revisión): al pasar de 7 a 9 sin respuesta del pendiente de 9 no quedan importe, «Cobrar», panel ni
+  insignia del 7, y una respuesta que no es del alumno que se ve se descarta (en rojo sin la corrección); el listado
+  nuevo no tenía esa carrera (oculta las filas al cambiar de página o de filtro y cancela los pendientes en vuelo):
+  specs que lo fijan. Buscador de hoy (`appSearchableSelect`) en tarifa, rol familiar, categoría, añadir turno y
+  añadir grupo, con su lista flotante en `.pn` (`searchDropdownClass`, sin efecto en las pantallas de hoy) y spec de
+  que filtra. El listado escribe y lee en la dirección `nombre`, `deporte`, `inactivos`, `aptoParaExamen`, `pagina` y
+  `vista` (sin repetir cargas); «← Alumnos» vuelve con ellos si se vino del listado y sin ellos si no. Cada
+  `aria-controls` de las pestañas apunta a un panel que existe; la insignia dice «cargos vencidos». Grado del carnet
+  con mayúscula inicial con `gradoFila`/`gradoParaFrase` de `alumno-vista.ts`, compartidos con el listado. Capturas
+  apagado de la ficha y del listado otra vez idénticas en bytes.
 
 **Riesgos:** perder una acción poco usada (el inventario manda); el formulario de edición; la salud (si aparece, con las
-mismas reglas de lectura y registro de hoy). La ficha de hoy no muestra datos de salud: la nueva tampoco.
+mismas reglas de lectura y registro de hoy). La ficha de hoy muestra un dato de salud, «Discapacidad» (Sí/No, editable con
+«Editar»): la nueva lo muestra y lo edita en «Datos y contacto» con el mismo DTO y el mismo guardado (`PUT /alumnos/{id}`),
+así que le aplica las mismas reglas de lectura y de registro que hoy, sin registro aparte.
 
 **Notas para la PR:** tabla del Anexo A marcada; qué quedó a un clic; cinturones medidos.
 
