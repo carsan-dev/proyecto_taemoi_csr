@@ -1,0 +1,17 @@
+Método: edición con la herramienta integrada de generación de imágenes.
+Referencia de construcción: imagen(4).png aportada por el usuario.
+
+Use case: precise-object-edit.
+Image 1 is the edit target: the ivory clay birthday sweat-drop mascot.
+Image 2 is a construction reference showing actual Spanish matasuegras party blowouts with a long colored plastic mouthpiece and a wider decorated paper roll.
+
+Replace ONLY the long striped object currently in the mascot's mouth with a clearly recognizable REAL PARTY BLOWOUT based on image 2, while keeping it EXTENDED because the mascot is blowing it.
+
+The new object must have TWO VISIBLY DISTINCT PARTS:
+1. A noticeably long, narrow, smooth TEAL PLASTIC mouthpiece, visibly colored all the way from the pursed lips. A little soft shine identifies the plastic. It is longer than the current tiny ivory mouthpiece, about one third of the object's total length.
+2. A much wider, lightweight PAPER blowout section, teal with large warm-white POLKA DOTS, fully inflated and mostly UNROLLED horizontally towards the viewer's right. The paper has a flattened slightly wavy profile and very thin visible edges, not a thick rigid cylindrical rod. At the far end, show only a small residual upturned curl of paper with its pale underside visible, enough to recognize the rolled-paper construction. The main length must remain clearly extended, not coiled up like the unused examples in image 2.
+
+This should look immediately like a playful party noisemaker, with the distinctive colored plastic stem and broad patterned paper, not a cigar, cigarette, pipe, straw, candy stick, trumpet or musical instrument. No smoke, ember, ash or glowing end.
+The existing hand should continue to support the mouthpiece naturally, with minimal local adjustment only if needed.
+
+Preserve all the rest exactly: the mascot's shape, ivory material, both closed upside-down-U eyes, blowing mouth, raised arm, feet, teal sweat headband, endearingly crooked cone birthday hat, pompom, confetti positions and colors, lighting, background, shadow, framing and overall scale. No additional characters, props or text.

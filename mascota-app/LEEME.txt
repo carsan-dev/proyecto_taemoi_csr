@@ -1,0 +1,81 @@
+LA GOTA DE ESFUERZO · PROPUESTA 09 · DESCANSO SENTADO
+
+Mascota de la plataforma, común a todas las escuelas y disciplinas.
+Cuerpo marfil claro, contorno oscuro, punta curvada y cinta de sudor.
+La cinta es la señal deportiva y toma el color de la escuela.
+En cumpleaños, el gorro y el confeti también usan ese color.
+
+CONTENIDO
+svg/: seis poses editables y un estado inicial adicional de cumpleaños,
+dos ejemplos de color, una versión compacta
+de 32 px y una versión monocroma con huecos transparentes para carnets.
+png/: exportaciones con fondo transparente. La compacta está a 32 px;
+el resto está a 1024 px.
+gota-propuesta.svg y .png: lámina de presentación de la propuesta.
+gota-celebracion-cumpleanos.svg y .png: sonrisa revisada y pareja de estados.
+gota-mirada-y-gestos.svg y .png: detalle de saludar, explicar y dudar.
+
+COLOR
+La cinta tiene el atributo fill con un color por defecto y la propiedad
+CSS --school-accent. Los archivos son SVG reales con trazados editables.
+Para cambiar el color de un SVG mediante el tema de la página, úsalo inline
+y asigna --school-accent al SVG o a su contenedor. Si usas un archivo externo
+con img, cambia el color dentro del archivo antes de exportarlo.
+Los ejemplos verde azulado, rojo y azul no se atribuyen a ninguna escuela.
+La versión monocroma admite --mascot-ink.
+
+ESCALA
+La versión compacta elimina los brazos y refuerza el grosor del contorno,
+los ojos y la boca. Es un dibujo específico, no una reducción del saludo.
+Comprueba la legibilidad sobre los fondos reales antes de integrar.
+
+PERSONALIDAD Y USOS
+Seis poses: saludar, explicar, celebrar, dudar, descansar y cumpleaños.
+Forma base y saludar: ojos ovalados abiertos y sonrisa amable.
+Explicar: ojos ovalados abiertos, boca en O y brazo de presentación
+inclinado hacia arriba, con una mano sencilla y pulgar reconocible.
+Celebrar: opción A seleccionada. Ojos cerrados en arcos suaves y risa
+abierta sin dientes, con interior oscuro y una pequeña lengua rosa suave.
+Cumpleaños: ojos sonrientes, boca soplando un matasuegras completamente
+extendido, gorro ladeado, una mano junto al matasuegras y confeti.
+El matasuegras distingue una boquilla de color y un papel ancho de lunares,
+desplegado salvo una pequeña vuelta en el extremo.
+Cumpleaños, estado inicial adicional: ojos ovalados abiertos, sin confeti,
+el mismo matasuegras con el papel enrollado y el mismo gorro ladeado.
+Pareja para preparar una futura animación:
+  inicio: svg/gota-cumpleanos-inicio.svg y png/gota-cumpleanos-inicio.png
+  final:  svg/gota-cumpleanos.svg y png/gota-cumpleanos.png
+Ambos estados usan el mismo lienzo, escala, posición, cuerpo, brazos,
+gorro y boquilla. Sólo cambian ojos, papel y presencia de confeti.
+Los PNG son de 1024 × 1024 con transparencia, sin recortar el lienzo.
+Son imágenes estáticas; no se incluye una animación.
+Dudar: ojos ovalados completamente oscuros, sin parte blanca visible,
+boca corta neutra y mano justo debajo de la boca, como acariciando
+una perilla imaginaria. El codo flexionado sobresale del cuerpo.
+El gesto expresa reflexión; no incluye media sonrisa ni párpados caídos.
+Descansar: postura sentada con los pies abiertos hacia los lados y los dos
+brazos apoyados en diagonal sobre la barriga. Conserva los ojos cerrados
+y la sonrisa suave del gesto de descanso.
+Los ojos cerrados se reservan a celebrar, descansar y al instante festivo
+final de cumpleaños. El estado inicial de cumpleaños tiene ojos abiertos.
+La versión compacta conserva los ojos ovalados de su estado neutro.
+La versión monocroma de saludo también conserva los ojos abiertos.
+Los brazos bajos de saludar, explicar y dudar sobresalen del cuerpo para
+que su forma se distinga junto a la cadera.
+Bienvenida, progresión, cumpleaños y fin de una preinscripción.
+En gestión: estados vacíos, primera visita y cierre de una tarea larga.
+No usar en dinero, bajas ni errores serios.
+El humor debe acompañar al usuario y nunca hacer burla de él.
+El nombre de la propuesta describe el concepto; no fija un nombre propio.
+
+FONDOS Y ACCESIBILIDAD
+Conservar el cuerpo claro y el contorno oscuro al cambiar la cinta.
+La mascota es decorativa cuando el texto contiguo ya comunica lo mismo.
+Si comunica algo por sí sola, añadir una alternativa textual equivalente.
+No sustituir mensajes de estado ni acciones por un gesto de la mascota.
+
+ALCANCE
+Propuesta visual, no integrada en el producto. Los SVG no contienen
+imágenes incrustadas, filtros, fuentes externas ni degradados.
+Los prompts 3D de saludo siguen esta revisión de ojos abiertos; su texto
+no implica que se hayan regenerado las ilustraciones 3D anteriores.

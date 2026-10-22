@@ -126,7 +126,7 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
 
 ## 1. Mapa de piezas
 
-Orden: **8b-1 → 8b-I → 8b-T → 8b-N → 8b-2 → 8b-3a … 8b-3e → 8b-3f … 8b-3k → 8b-Z**. 8b-I y 8b-T se pueden hacer
+Orden: **8b-1 → 8b-I → 8b-T → 8b-N → 8b-2 → 8b-3a … 8b-3e → 8b-3f … 8b-3k → 8b-M → 8b-Z**. 8b-I y 8b-T se pueden hacer
 en paralelo tras 8b-1; 8b-N depende de las dos; las pantallas dependen de 8b-N y no entre sí (3b enlaza desde 3a, pero
 la ruta de la ficha existe ya); **8b-B3** (boceto de la ronda 3, solo diseño) está **hecha**: el propietario eligió las
 variantes (decisión 261) y 8b-3f a 8b-3k pueden empezar cuando 8b-N esté lista (decisión 228: se diseñó antes de
@@ -1397,6 +1397,23 @@ Un aviso o diálogo del panel que responde a un error cierra el SweetAlert2 del 
 nuevo en el inicial; karma 1766 SUCCESS; capturas apagado antes (`542fe10e`) y después idénticas en bytes, 16/16 (carga,
 baja, error, selector, fecha, formulario, toast y foto a 375 y 1280); encendido a 375 y 1280 (destructivo, pastillas y su
 error, formulario, fecha, aviso de error, agregar deporte, actualizar grado y foto).
+
+## 21 sexies. Pieza 8b-M: mascota en el panel (decisiones 274 y 275)
+
+Rama `feature/e8b-m`, tras 8b-3k y antes de 8b-Z. Solo frontend, sin migración: atajo `desplegar`. Fuente:
+`mascota-app/` (gota de esfuerzo: poses en SVG, compacta de 32 px, monocroma y `LEEME.txt` con las reglas de uso).
+
+**Objetivo:** `pn-mascota` (pose como entrada) con los SVG inline; la cinta, el gorro y el confeti toman el acento de
+8b-C (`--school-accent` enlazado al token). Animaciones CSS cortas: aparecer, saludar, celebrar, dudar, descansar y
+cumpleaños (de `gota-cumpleanos-inicio` a `gota-cumpleanos`); con `prefers-reduced-motion`, la pose quieta. Decorativa
+(`aria-hidden`) si el texto contiguo dice lo mismo. Nada en el bundle inicial.
+
+**Dónde:** estados vacíos de las pantallas nuevas, cierre de tareas largas (mes cobrado entero, mensualidades
+generadas) y errores sin conexión o página no encontrada. Nunca en dinero, bajas ni errores serios.
+
+**Fuera:** «primera visita a una pantalla» (hay que decidir si se recuerda en el navegador o en el servidor), área de
+familias, web pública y cumpleaños de las familias (otras superficies, su propia entrega). PNG o GIF solo para
+correos y redes, exportados de los mismos SVG.
 
 ## 22. Pieza 8b-Z: retirada de lo viejo
 

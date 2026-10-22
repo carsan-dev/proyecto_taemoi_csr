@@ -1,0 +1,11 @@
+Método previsto: generación de imágenes integrada; referencia: gota-saludar.png.
+Prompt actualizado a la revisión 07. No indica una nueva generación 3D.
+
+Use case: stylized-concept.
+Asset type: promotional illustration of a sports school platform mascot, clay version.
+Input image 1 is the exact flat vector mascot identity reference. Translate this single character into a high quality matte plasticine 3D illustration. This is a style translation, preserve the recognizable identity, not a redesign.
+Character: one warm ivory sweat-drop mascot, with a wide rounded lower body, an asymmetric long taper ending in a rounded curved point leaning to the viewer's right. Two simple OPEN vertical dark charcoal oval eyes looking forward and a tiny simple curved smile. No nose, no eyebrows, no cheek blush, no eyelashes. Short rounded arms and small flattened oval feet. Calm kind coach personality, understated gentle humor, relaxed and approachable.
+The only sports signal and only saturated color is an opaque deep teal sweat headband across the forehead, above the eyes, with a small short fabric knot and two short tails at the viewer's right. The band is a sweatband, not a costume. No uniform, shoes, equipment, medals, trophies, badges or additional logos.
+Pose: full body, mostly frontal, one short arm gently raised in a modest greeting, the other hanging at its side. Keep the source pose and same silhouette proportions, with a little physical depth.
+Materials: warm off-white matte hand-sculpted plasticine with very subtle tactile imperfections; charcoal oval eyes embedded simply on the surface; fabric-like matte teal band. No watery translucency, no wet sheen, no blue body, no glass, no glossy toy look.
+Scene: warm off-white seamless studio background, soft diffuse studio lighting and a soft contact shadow under the feet. The full character is centered, fills about 75 percent of the frame, generous clear margin. Refined restrained character design appropriate for adults and families. One character only. No type, no labels, no watermark, no decorative graphics.

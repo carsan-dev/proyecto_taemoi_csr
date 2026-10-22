@@ -1,0 +1,8 @@
+Método previsto: herramienta integrada de generación de imágenes.
+Prompt actualizado a la revisión 07. No indica una nueva generación 3D.
+
+Use case: precise-object-edit.
+Edit target: the attached warm ivory plasticine sweat-drop mascot, already smiling with open oval eyes.
+Change ONLY the lowered arm on the LEFT SIDE OF THE IMAGE, next to the mascot's hip. It is currently almost hidden behind the body. Bring this arm outward and slightly forward, so substantially more of the whole short rounded arm is visible. Let it hang in a relaxed pose at a modest outward angle, with a clearly readable rounded tip and a small separation from the torso near its lower end. Its shoulder must remain naturally attached. Keep it short, softly rounded, ivory, fingerless, and proportional to the raised arm. Do not turn it into a second wave.
+Preserve everything else exactly: both open oval eyes, the existing mouth and friendly expression, body shape and curved pointed top, proportions, the raised greeting arm on the right of the image, feet, teal fabric headband and knot, clay texture, lighting, contact shadow, camera, background, and framing.
+One targeted change only: make the lowered left-side arm more visible. No additional details, no text.
