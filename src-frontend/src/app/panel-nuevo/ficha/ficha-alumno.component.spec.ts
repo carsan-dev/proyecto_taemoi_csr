@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { pintarCapas } from '../capas/tokens-prueba';
 
 import { environment } from '../../../environments/environment';
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
@@ -488,6 +489,19 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       await m.asentar();
       expect(m.el().querySelector('.ficha__pendiente pn-esqueleto')).toBeNull();
       expect(texto(m.el(), '.ficha__importe')).toBe(`85,00${NBSP}€`);
+    });
+
+    it('la lectura del pendiente del carnet (su fallo lo dice el carnet con «Reintentar») va con ERROR_HANDLED_LOCALLY (8b-D2a)', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      m.retener = (req) => req.request.url.endsWith('/tesoreria/pendientes-por-alumno');
+      m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
+      await m.asentar();
+      const [pendiente] = m.retenidas.filter((r) => !r.cancelled);
+      expect(pendiente.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      m.retener = null;
+      pendiente.flush('x', { status: 500, statusText: 'Error' });
+      await m.asentar();
+      expect(texto(m.el(), '.ficha__resumen-cargos')).toBe('No se pudo leer el pendiente.');
     });
 
     it('sin nada vencido: «Al día» y sin «Cobrar»; la pestaña Pagos sin insignia', async () => {

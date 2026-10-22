@@ -267,7 +267,8 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
       return;
     }
     this.estadoPendiente = 'cargando';
-    this.cargaPendiente = this.pendientesApi.obtener([id]).subscribe({
+    // Su fallo lo dice el carnet («No se pudo leer el pendiente.» con «Reintentar»): sin el SweetAlert2 del interceptor.
+    this.cargaPendiente = this.pendientesApi.obtener([id], true).subscribe({
       next: (lista) => {
         // Una respuesta que llega cuando ya se ve otro alumno se descarta.
         if (id !== this.alumnoId) {

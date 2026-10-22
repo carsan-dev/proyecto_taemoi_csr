@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 
 export interface CargoPendiente {
   productoAlumnoId: number;
@@ -25,12 +26,16 @@ export interface PendienteAlumno {
 export class PendientesAlumnoService {
   private readonly http = inject(HttpClient);
 
-  /** Como mucho 25 ids (una página); el servidor ignora los de otra escuela. */
-  obtener(alumnoIds: number[]): Observable<PendienteAlumno[]> {
+  /**
+   * Como mucho 25 ids (una página); el servidor ignora los de otra escuela. Con `errorLocal`, quien llama enseña el fallo
+   * (el carnet de la ficha, con «Reintentar») y el interceptor no abre además su SweetAlert2 (8b-D2a).
+   */
+  obtener(alumnoIds: number[], errorLocal = false): Observable<PendienteAlumno[]> {
     const params = new HttpParams().set('alumnoIds', alumnoIds.join(','));
     return this.http.get<PendienteAlumno[]>(`${environment.apiUrl}/tesoreria/pendientes-por-alumno`, {
       params,
       withCredentials: true,
+      ...(errorLocal ? { context: contextoErrorLocal() } : {}),
     });
   }
 }

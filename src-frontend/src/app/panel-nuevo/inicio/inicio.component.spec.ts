@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -204,6 +205,18 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(http.match(`${API}/alumnos/aptos`).length).toBe(1);
     expect(http.match(`${API}/eventos/admin/todos`).length).toBe(1);
     expect(http.match(`${API}/tesoreria/pendiente-vencido`).length).toBe(1);
+  });
+
+  it('el límite y el pendiente (su fallo lo enseña su bloque de error) van con ERROR_HANDLED_LOCALLY; el resto, no (8b-D2a)', () => {
+    const local = (url: string) => http.match(url).map((r) => r.request.context.get(ERROR_HANDLED_LOCALLY));
+    expect(local(`${API}/turnos/limite`)).toEqual([true]);
+    expect(local(`${API}/tesoreria/pendiente-vencido`)).toEqual([true]);
+    expect(local(`${API}/grupos/resumen`)).toEqual([false]);
+    expect(local(`${API}/turnos/resumen`)).toEqual([false]);
+    expect(local(`${API}/alumnos/aptos`)).toEqual([false]);
+    expect(
+      http.match((r) => r.url === `${API}/alumnos`).map((r) => r.request.context.get(ERROR_HANDLED_LOCALLY))
+    ).toEqual([false, false]);
   });
 
   it('la ocupación lleva una tabla equivalente para lectores de pantalla', () => {
