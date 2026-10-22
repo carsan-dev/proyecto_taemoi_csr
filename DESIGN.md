@@ -8,6 +8,9 @@ colors:
   marca-primario-tinta: "#1B2B2E"
   marca-primario-suave: "#E8EAEA"
   marca-por-defecto: "#1A2230"
+  acento: "#01707F"
+  acento-borde: "#4595A3"
+  acento-suave: "#D5F5FC"
   atencion: "#A14F0B"
   atencion-suave: "#FCF2E6"
   fondo: "#F5F5F2"
@@ -86,12 +89,12 @@ components:
     padding: "0 16px"
   boton-secundario:
     backgroundColor: "{colors.superficie}"
-    textColor: "{colors.marca-primario-tinta}"
+    textColor: "{colors.acento}"
     rounded: "{rounded.m}"
     height: "40px"
     padding: "0 16px"
   boton-texto:
-    textColor: "{colors.marca-primario-tinta}"
+    textColor: "{colors.acento}"
     rounded: "{rounded.m}"
     height: "34px"
     padding: "0 10px"
@@ -116,7 +119,7 @@ components:
     height: "44px"
     padding: "0 14px"
   pestana-activa:
-    textColor: "{colors.marca-primario-tinta}"
+    textColor: "{colors.acento}"
     height: "44px"
   pastilla-pendiente:
     backgroundColor: "{colors.atencion-suave}"
@@ -145,8 +148,11 @@ Alcance (decisión 240): solo el panel de gestión. El área de familias y la we
 declara en `:root`: todo vive bajo la raíz del panel nuevo. Solo modo claro (decisión 241), con todos los colores en
 variables. Se diseña y revisa a 375, 768 y 1280 px (decisión 237). Objetivo WCAG 2.2 AA (decisión 243).
 
-**The Una Escuela Rule.** La marca ocupa la cabecera y el botón principal. Gráficas, estados, disciplinas y fondos
-usan colores fijos que no cambian por escuela.
+**The Una Escuela Rule.** La marca ocupa la cabecera y el botón principal; el resto del panel la lleva solo como un
+acento medido (decisión 273, variante B; pieza 8b-C): entrada actual de los menús y de la barra inferior, pestaña
+activa, controles elegidos (filtros, segmento, pastillas, página actual), secundarios, botones de texto, enlaces,
+iconos de las entradas del Inicio, avatar de iniciales y foco. Siguen fijos el fondo, la cabecera y el botón principal,
+los estados (`bien`, `atencion`, `peligro`), las disciplinas, los cinturones, la ocupación y el diálogo rojo de peligro.
 
 **The Nada Se Pierde Rule.** Cada pantalla nueva conserva todo lo que muestra y permite la de hoy (decisión 232); el
 inventario de su pieza es la lista de aceptación.
@@ -161,14 +167,22 @@ solo para lo pendiente.
 
 ### Primary
 
-- **Color de la escuela** (`marca-primario`): fondo de la cabecera y de la página actual en la paginación. En
+- **Color de la escuela** (`marca-primario`): fondo de la cabecera (la página actual de la paginación pasa al acento en 8b-C). En
   Moiskimdo, el oscuro de su logo (decisión 247; blanco encima 14,66:1). Una escuela sin color guardado usa
   `marca-por-defecto`.
 - **Texto sobre el color** (`marca-sobre-primario`, `marca-sobre-primario-2`): nombres y entradas de la cabecera; el
   secundario, para las entradas no activas (8,87:1 en Moiskimdo).
-- **Color de la escuela como tinta** (`marca-primario-tinta`): botón principal, pestaña activa, enlaces y foco. Es el
+- **Color de la escuela como tinta** (`marca-primario-tinta`): botón principal. Es el
   primario oscurecido hasta 4,5:1 sobre blanco si hace falta; en Moiskimdo coincide con el primario.
-- **Suave** (`marca-primario-suave`): fondo de la opción de menú actual y de la selección.
+- **Suave** (`marca-primario-suave`): fondo neutro al pasar el ratón por menús, filas y botones de icono.
+- **Acento** (`acento`, `acento-borde`, `acento-suave`; decisión 273, 8b-C): el color de la escuela medido para el resto
+  del panel, calculado en `acento-escuela.ts` y escrito bajo `.pn` (nunca en `:root`). Con P de tono H y croma C en
+  OKLCH: `acento-suave` es H con L 0,95 y C 0,035; `acento`, H con C máx(C, 0,09) recortado a sRGB y la L que baja desde
+  0,50 hasta dar ≥ 4,5:1 sobre blanco y sobre `acento-suave` (texto, enlaces, iconos); `acento-borde`, H con C 0,08 y la
+  L más alta que dé ≥ 3:1 sobre blanco, el fondo y `acento-suave` (bordes de control, anillo de foco). Un color sin tono
+  (C < 0,01) se queda con `marca-primario-tinta`, `marca-primario-suave` y `borde-control`. Moiskimdo: `#01707F` (5,79:1
+  sobre blanco, 5,30 sobre el fondo, 5,04 sobre el suave), `#4595A3` (3,45, 3,16 y 3,00) y `#D5F5FC`. Sin marca, el de
+  `#1A2230`: `#466396`, `#6F8ABB` y `#E6EFFF`.
 - **Derivados.** El secundario y el suave se derivan del primario mezclando en sRGB: el secundario es el texto con el
   25 % del primario (menos si no llega a 4,5:1) y el suave, el 10 % del primario sobre blanco. Los valores de arriba
   son los de Moiskimdo (`#1B2B2E`), calculados por `ReglaContraste`.
@@ -272,8 +286,11 @@ redondas de 40 px; foto del carnet 4:5 con 12 px.
 
 - **Primario**: uno por pantalla, el color de la escuela como tinta con texto blanco, 40 px de alto (44 px en
   móvil). Hover: el mismo color mezclado con un 14 % de negro.
-- **Secundario**: blanco con borde y texto del color de la escuela; hover con el fondo suave.
-- **Texto**: sin fondo, para acciones de fila («Cobrar», «Ver alumnos»); hover con el fondo suave.
+- **Secundario**: blanco con borde `acento-borde` y texto `acento`; hover `acento-suave`.
+- **Texto**: sin fondo, para acciones de fila («Cobrar», «Ver alumnos»), en `acento`; hover `acento-suave`. Las de
+  `peligro` y `bien` conservan su color y el hover neutro.
+- **Elegido** (filtro activo, segmento, pastilla, página actual): `acento-suave` con borde `acento-borde` y texto
+  `acento`.
 - **Icono**: 34 px, solo con `aria-label`; en móvil ningún botón de ancho completo lleva solo un icono.
 - Exportar, informes y acciones raras van en un botón con menú («Exportar», «Informes», «⋯»).
 
@@ -286,8 +303,9 @@ redondas de 40 px; foto del carnet 4:5 con 12 px.
 
 ### Inputs / Fields
 
-Campos de 42 px con `borde-control`, 8 px de radio y etiqueta visible encima. Foco: contorno de 2 px del color de la
-escuela como tinta. Buscador con icono dentro y botón de borrar.
+Campos de 42 px con `borde-control`, 8 px de radio y etiqueta visible encima. Foco (8b-C): anillo de 3 px de
+`acento-borde` con 2 px de separación (por dentro en menús y pestañas, con `acento-suave` debajo en las entradas de
+menú). Buscador con icono dentro y botón de borrar.
 
 ### Navigation
 
@@ -295,10 +313,11 @@ escuela como tinta. Buscador con icono dentro y botón de borrar.
   nombre (Inicio, Alumnos, Grupos, Tesorería, Solicitudes, Escuela), cuatro con desplegable; cuenta con iniciales y
   nombre visible a la derecha. Entrada actual con fondo claro del texto al 14 % y `aria-current="page"`.
 - **Barra inferior** (por debajo de 1024 px): Inicio, Alumnos, Tesorería y Más, con icono y nombre; la actual en el
-  color de la escuela como tinta con una marca de 3 px arriba. Contador de solicitudes en ocre.
+  `acento` con una marca de 3 px arriba; en la hoja «Más» y en los desplegables de la cabecera, la entrada actual va en
+  `acento-suave` con texto e icono en `acento`. Contador de solicitudes en ocre.
 - **Sin pie público** (decisión 259): el panel nuevo no lleva el pie de la web; los enlaces legales y «Configurar
   cookies» van en «Más» y en el menú de cuenta.
-- **Pestañas**: subrayado de 3 px del color de la escuela como tinta en la activa, `role="tablist"` y teclado con
+- **Pestañas**: texto y subrayado de 3 px en `acento` en la activa, `role="tablist"` y teclado con
   flechas. Tesorería: Pendientes | Cobrados | Todos.
 
 ### Fila de dos líneas (Alumnos, Tesorería)
@@ -338,8 +357,8 @@ Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y l
   700 de 18 px (`--pn-titulo-dialogo`), X de cerrar de 34 px, frase de consecuencia en `tinta-2` (el nombre, en negrita
   y en `tinta`), campos opcionales y pie con «Cancelar» (secundario) a la izquierda y la acción a la derecha.
 - Cobro: el concepto en etiqueta y el importe en la cifra ocre de 28 px entre dos filetes; el método, un grupo de
-  pastillas `role=radiogroup` (32 px, borde de control; la elegida, el color de la escuela como tinta con la marca de
-  verificación) con «Sin indicar» por defecto. Flechas, Inicio y Fin mueven la elección.
+  pastillas `role=radiogroup` (32 px, borde de control; la elegida, `acento-suave` con borde `acento-borde`, texto
+  `acento` y la marca de verificación) con «Sin indicar» por defecto. Flechas, Inicio y Fin mueven la elección.
 - Esc, el clic fuera y la X cancelan sin hacer nada (decisiones 235 y 248). El foco queda contenido y vuelve al
   disparador al cerrar. Foco inicial: en la acción; en los destructivos, en «Cancelar», con la acción en `peligro`.
 - Con la acción en vuelo, el diálogo sigue abierto con el botón ocupado («Cobrando…») y no se puede cancelar: ni Esc,

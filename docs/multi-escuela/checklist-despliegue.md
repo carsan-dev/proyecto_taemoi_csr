@@ -250,6 +250,11 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       cambia nada), y abre desde «Informes» las tres herramientas (gestión de mensualidades y licencias, listado de
       asistencia y listado de mensualidades) en el panel lateral, con «Ver PDF» en los dos listados. Nunca sobre
       Moiskimdo.
+- [ ] E8b, pieza 8b-C (color de la escuela en el panel nuevo, variante B; decisión 273): sin migración → atajo
+      `desplegar`. Con el interruptor apagado, todo igual (también «Diseño nuevo»). Después, el propietario, con su
+      interruptor encendido, revisa Inicio, Alumnos y la ficha: pestaña activa, filtros y «Filas | Tarjetas» elegidos,
+      secundarios, enlaces y la página actual en el acento de Moiskimdo (`#01707F` sobre `#D5F5FC`, borde `#4595A3`);
+      la cabecera, el botón principal, los estados y la ocupación, como antes.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.
