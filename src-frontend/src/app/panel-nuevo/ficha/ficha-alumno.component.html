@@ -221,7 +221,7 @@
       <div class="ficha__pestanas-lista" role="tablist" aria-label="Secciones de la ficha" (keydown)="teclaPestanas($event)">
         @for (p of pestanas; track p.clave) {
         <button type="button" role="tab" class="ficha__pestana" [id]="'ficha-pestana-' + p.clave"
-          [attr.aria-selected]="pestana === p.clave" [attr.aria-controls]="'ficha-panel-' + p.clave"
+          [attr.aria-selected]="pestana === p.clave" [attr.aria-controls]="pestana === p.clave ? 'ficha-panel-' + p.clave : null"
           [attr.aria-label]="etiquetaPestana(p.clave, p.texto)" [tabIndex]="pestana === p.clave ? 0 : -1"
           (click)="cambiarPestana(p.clave)">
           <span class="ficha__pestana-texto">{{ p.texto }}</span>

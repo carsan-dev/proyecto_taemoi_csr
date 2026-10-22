@@ -525,7 +525,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         'Documentos y notas',
       ]);
       expect(texto(tabs[1], '.ficha__insignia')).toBe('3');
-      expect(tabs[1].getAttribute('aria-label')).toBe('Pagos, 3 cargos pendientes');
+      expect(tabs[1].getAttribute('aria-label')).toBe('Pagos, 3 cargos vencidos');
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(tabs[0].tabIndex).toBe(0);
       expect(tabs[1].tabIndex).toBe(-1);
@@ -1181,6 +1181,18 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datosPorDefecto(), '/adminpage?pagina=3');
       expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toBe('/alumnosListar');
     });
+  });
+
+  it('cada aria-controls de las pestañas apunta a un panel que existe', async () => {
+    const m = await montar(FichaAlumnoComponent);
+    const tabs = Array.from(m.el().querySelectorAll<HTMLElement>('[role="tab"]'));
+    for (const tab of tabs) {
+      const controla = tab.getAttribute('aria-controls');
+      if (controla) {
+        expect(m.el().querySelector(`#${controla}`)).withContext(`${tab.id} → ${controla}`).not.toBeNull();
+      }
+    }
+    expect(tabs.find((t) => t.getAttribute('aria-selected') === 'true')!.getAttribute('aria-controls')).toBe('ficha-panel-deportes');
   });
 
   // ---------------------------------------------------------------- cinturón (sin grados)

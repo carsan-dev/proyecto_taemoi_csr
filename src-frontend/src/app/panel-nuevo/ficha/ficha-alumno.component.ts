@@ -440,7 +440,7 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
     if (clave !== 'pagos' || !this.pendiente) {
       return null;
     }
-    return `${texto}, ${plural(this.pendiente.cargos, 'cargo pendiente', 'cargos pendientes')}`;
+    return `${texto}, ${plural(this.pendiente.cargos, 'cargo vencido', 'cargos vencidos')}`;
   }
 
   /** La pestaña en la dirección (`?pestana=`), sin apilar historial; Deportes es la de por defecto y no se escribe. */
