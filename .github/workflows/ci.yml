@@ -81,10 +81,18 @@ jobs:
             if ! [[ "$arbol" =~ ^[0-9a-f]{40}$ && "$p2" =~ ^[0-9a-f]{40}$ ]]; then
               motivo="datos inesperados del commit $SHA"; return
             fi
-            if ! runs="$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=pull_request&head_sha=$p2&status=success&per_page=100" \
-                --jq '.workflow_runs[] | select(.conclusion == "success" and .path == ".github/workflows/ci.yml") | .id')"; then
-              motivo="error de la API al buscar runs de PR de la cabeza $p2"; return
-            fi
+            # Sin status=success: tarda en reflejar un run recién terminado. Espera hasta ~15 min a uno en marcha o que aún no aparece.
+            local intento total enmarcha
+            for intento in $(seq 1 30); do
+              if ! datos="$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?event=pull_request&head_sha=$p2&per_page=100" \
+                  --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | [(map(select(.conclusion == "success") | .id) | join(" ")), (length | tostring), (map(select(.status != "completed")) | length | tostring)] | join("|")')"; then
+                motivo="error de la API al buscar runs de PR de la cabeza $p2"; return
+              fi
+              IFS='|' read -r runs total enmarcha <<< "$datos"
+              if [ -n "$runs" ] || { [ "$total" != "0" ] && [ "$enmarcha" = "0" ]; } || [ "$intento" = "30" ]; then break; fi
+              echo "intento $intento: ningún run de PR en verde de la cabeza $p2 ($total runs, $enmarcha en marcha); reintento en 30 s"
+              sleep 30
+            done
             if [ -z "$runs" ]; then
               motivo="no hay ningún run de PR en verde con la cabeza $p2"; return
             fi
