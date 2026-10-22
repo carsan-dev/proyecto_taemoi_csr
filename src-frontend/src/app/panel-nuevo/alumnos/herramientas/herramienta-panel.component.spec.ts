@@ -279,6 +279,46 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     expect(anotar()).toEqual(deporteHoy);
   });
 
+  it('8b-C: el buscador de alumnos: foco de 3 px en el acento-borde y su lista, dentro del <dialog>, con el acento de la pantalla', async () => {
+    abrir('mensualidades');
+    // Lo que deja escribirTema en el .pn de la pantalla (Alumnos) con una escuela verde.
+    const pantalla = el().querySelector<HTMLElement>('.pn')!;
+    pantalla.style.setProperty('--pn-acento', '#0E782D');
+    pantalla.style.setProperty('--pn-acento-suave', '#E0F5E1');
+    pantalla.style.setProperty('--pn-acento-borde', '#67956B');
+    pulsar('Mensualidades individuales');
+    http
+      .expectOne((r) => r.url === `${API}/alumnos` && r.params.get('incluirInactivos') === 'false')
+      .flush([
+        { id: 5, nombre: 'Ada', apellidos: 'Simulada Maqueta' },
+        { id: 6, nombre: 'Bruno', apellidos: 'Ficticio Prueba' },
+      ]);
+    pintar();
+    // La directiva rehace las opciones con un MutationObserver: se espera a que lleguen.
+    await new Promise((r) => setTimeout(r));
+    elegir('#pn-alumno-mensualidad', '5');
+    await new Promise((r) => setTimeout(r));
+    pintar();
+    const entrada = panel().querySelector<HTMLInputElement>('#pn-alumno-mensualidad-input')!;
+    entrada.focus();
+    entrada.click();
+    pintar();
+    const foco = getComputedStyle(entrada);
+    expect(entrada.matches(':focus-visible')).toBeTrue();
+    expect(foco.outlineWidth).withContext('anillo de 3 px').toBe('3px');
+    expect(foco.outlineStyle).toBe('solid');
+    expect(foco.outlineColor).withContext('en el acento-borde').toBe('rgb(103, 149, 107)');
+    expect(foco.outlineOffset).withContext('2 px de separación').toBe('2px');
+
+    const lista = document.getElementById(entrada.getAttribute('aria-controls')!)!;
+    expect(lista.parentElement).withContext('la lista va dentro del <dialog>').toBe(panel());
+    expect(lista.classList).withContext('sin .pn propio: hereda las variables de la pantalla').not.toContain('pn');
+    const elegida = getComputedStyle(lista.querySelector('.admin-select-option.is-selected')!);
+    expect(elegida.color).withContext('opción elegida: texto').toBe('rgb(14, 120, 45)');
+    expect(elegida.backgroundColor).withContext('opción elegida: fondo').toBe('rgb(224, 245, 225)');
+    entrada.blur();
+  });
+
   it('gestión: mensualidad individual con el 409 «confirmar» en el diálogo nuevo y el reintento forzado de hoy', async () => {
     const { comp } = hoy();
     const fire = spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as never);

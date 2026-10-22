@@ -19,6 +19,14 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
    * por debajo del diálogo. False por defecto: las pantallas de hoy no lo usan y su lista sigue en el `body`.
    */
   @Input() searchDropdownEnDialogo = false;
+  /**
+   * Variables CSS que se copian en la lista flotante (8b-C): la del panel nuevo que va en el `body`, fuera de su `.pn`,
+   * lleva así el tema y el acento de la escuela. Vacío por defecto: las pantallas de hoy no lo usan.
+   */
+  @Input() set searchDropdownVariables(variables: Record<string, string> | null) {
+    this.variablesLista = variables ?? {};
+    this.aplicarVariablesLista();
+  }
 
   private static nextId = 0;
 
@@ -40,6 +48,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private cardEl?: HTMLElement;
   private detachOpenListeners: Array<() => void> = [];
   private positionRafId?: number;
+  private variablesLista: Record<string, string> = {};
+  private variablesEscritas: string[] = [];
 
   constructor(
     private readonly elRef: ElementRef<HTMLSelectElement>,
@@ -130,6 +140,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       .split(/\s+/)
       .filter(Boolean)
       .forEach((clase) => this.renderer.addClass(this.dropdownEl, clase));
+    this.aplicarVariablesLista();
 
     const parent = select.parentElement;
     this.renderer.insertBefore(parent, this.wrapperEl, select);
@@ -149,6 +160,23 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     this.bindEvents();
     this.observeChanges(select);
     this.watchSelectValue(select);
+  }
+
+  /** Escribe en la lista las variables pedidas y quita las que ya no vienen. */
+  private aplicarVariablesLista(): void {
+    const lista = this.dropdownEl;
+    if (!lista) {
+      return;
+    }
+    for (const variable of this.variablesEscritas) {
+      if (!(variable in this.variablesLista)) {
+        lista.style.removeProperty(variable);
+      }
+    }
+    for (const [variable, valor] of Object.entries(this.variablesLista)) {
+      lista.style.setProperty(variable, valor);
+    }
+    this.variablesEscritas = Object.keys(this.variablesLista);
   }
 
   private hideSelect(select: HTMLSelectElement): void {

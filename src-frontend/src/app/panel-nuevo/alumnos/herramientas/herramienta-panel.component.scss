@@ -109,7 +109,7 @@ fieldset > .herramienta__leyenda {
 }
 
 // El buscador de alumnos (appSearchableSelect de hoy) con los tokens del panel; su lista flotante va dentro del
-// <dialog> del panel con «pn pn-desplegable».
+// <dialog> del panel con «pn-desplegable», sin «pn» propio: hereda el tema y el acento del .pn de la pantalla (8b-C).
 :host ::ng-deep .admin-select-input {
   width: 100%;
   min-height: 40px;
@@ -167,8 +167,9 @@ fieldset > .herramienta__leyenda {
 }
 
 ::ng-deep .pn-desplegable .admin-select-option.is-selected {
+  background: var(--pn-acento-suave);
   font-weight: 600;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 }
 
 ::ng-deep .pn-desplegable .admin-select-empty {

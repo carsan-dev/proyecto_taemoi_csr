@@ -337,7 +337,8 @@
   outline-offset: 2px;
 }
 
-// Su lista flotante va en el body con «pn ficha-desplegable» (solo la de la ficha nueva; la de hoy no lleva esas clases).
+// Su lista flotante va en el body con «pn ficha-desplegable» (solo la de la ficha nueva; la de hoy no lleva esas clases)
+// y el tema y el acento de la escuela copiados con searchDropdownVariables (8b-C).
 ::ng-deep .ficha-desplegable.admin-select-dropdown {
   padding: 4px;
   border: 1px solid var(--pn-linea);
@@ -363,8 +364,9 @@
 }
 
 ::ng-deep .ficha-desplegable .admin-select-option.is-selected {
+  background: var(--pn-acento-suave);
   font-weight: 600;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 }
 
 ::ng-deep .ficha-desplegable .admin-select-option.is-disabled {
