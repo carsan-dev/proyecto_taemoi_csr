@@ -621,8 +621,52 @@ formularios de `editar-alumno` sin duplicar su lógica), ruta `alumnosEditar/:id
 del inventario contra el mismo endpoint que hoy (agregar deporte, principal, baja/alta, grado, documentos, guardar y
 cancelar). Capturas con «Pagos a la vista».
 
+**Tests (lista detallada):**
+- [x] Reutilización sin copiar: `FichaAlumnoComponent` **hereda** de `EditarAlumnoComponent` (mismas cargas, guardados,
+  validaciones, diálogos SweetAlert y navegación entre alumnos) y solo cambia la plantilla; `aplicarAlumnoCargado` pasa
+  de `private` a `protected` (el JS emitido no cambia). Los diálogos en línea de hoy (convocatorias, quitar de
+  convocatoria, WhatsApp, agregar deporte, actualizar grado) salen a `DialogosAlumnoComponent` y la foto ampliada a
+  `FotoAmpliadaComponent`, con su CSS movido tal cual; la ficha de hoy los usa (`[ficha]="this"`, anfitrión con
+  `display: contents`). «Cobrar» del listado nuevo sale a `panel-nuevo/cobro/cobro-cargo.ts` (`cobrarCargo`,
+  `teclaPanelCargos`) y el cinturón a `fondoCinturon` (`alumno-vista.ts`); `alumnos.component.spec.ts` sin cambios y
+  en verde.
+- [x] `dialogos-alumno.component.spec.ts`: los cinco diálogos con sus ids, cerrados y sin pintar sin alumno; sus
+  botones llaman a los métodos de la ficha; la foto ampliada es el `<dialog id="imageModal">` de hoy.
+- [x] `ficha-vista.spec.ts`: contraste WCAG (21:1, simétrico); `cinto-borde` ≥ 3:1 frente a superficie (3,87),
+  superficie-2 (3,71) y fondo (3,55), y el blanco y el amarillo sin borde por debajo de 3:1; resumen del pendiente
+  («3 cargos, el más antiguo vencido desde 06/09/2026», «1 cargo, vencido desde…», miles); línea del grado («desde
+  hoy»); `fechaParaCampo` (ISO, milisegundos de la API, `Date`, vacío).
+- [x] `ficha-alumno.component.spec.ts` (`HttpTestingController`, `RouterTestingHarness`), carnet: nombre en dos
+  líneas como `h1`, expediente, edad con plural, «Alumno desde» (sin alta propia, la más antigua de sus disciplinas) y
+  estado; una línea por disciplina activa con cinturón, «principal», grado y tiempo; franja con un tramo por disciplina
+  con grado y cada tramo y muestra con borde `cinto-borde` ≥ 3:1 frente al carnet (estilos calculados); pendiente con
+  importe es-ES y «Cobrar»: varios cargos → panel modal (foco en el primero, Esc lo cierra y devuelve el foco), cada
+  «Cobrar» con «Confirmar cobro» y el `PUT /productos-alumno/{id}` de la tesorería (`{pagado, metodoPago}`) y relectura
+  del pendiente; un cargo → el diálogo directo, cancelado no envía, sin método no envía `metodoPago`; «Al día» y sin
+  insignia con 0; licencia de la principal con su pastilla; foto 240 × 300 que se amplía con el diálogo de hoy,
+  «Cambiar foto» y «Quitar».
+- [x] Barra: «Alumnos» enlaza al listado, «1 de N» con miles, anterior y siguiente, «Incluir inactivos» pide los ids
+  con inactivos.
+- [x] Pestañas: `tablist` con cuatro `tab` (`aria-selected`, `aria-controls`, `tabindex` itinerante), insignia de
+  Pagos con su `aria-label`; flechas, Inicio y Fin mueven pestaña y foco; `?pestana=` en la dirección, se vuelve a
+  ella y se conserva al pasar al alumno siguiente; una desconocida abre Deportes.
+- [x] Cada acción, **comparada con la ficha de hoy** (mismas escrituras —método, URL y cuerpo— y mismos diálogos
+  SweetAlert, con las mismas respuestas del usuario), y con su endpoint: agregar deporte (diálogo de hoy), marcar
+  principal, desactivar, activar, eliminar deporte, dar de baja (cabecera de Deportes y «⋯»), eliminar alumno (dos
+  confirmaciones), dar de alta, actualizar grado (diálogo de hoy), apto para examen, agregar a convocatoria, pasar por
+  recompensa, añadir derecho de examen, fecha de grado, tarifa, licencia, alta (con «Aplicar cambios»), competidor,
+  cancelar sin enviar, quitar y añadir grupo y turno, quitar y cambiar foto, subir y eliminar documento, descargar, ver
+  y «Ver 1 más», WhatsApp (carnet y Documentos), guardar observaciones, «Editar datos» + guardar (mismo `PUT
+  /alumnos/{id}` con `FormData`), errores y cancelar, «Cobrar» de la tabla de Pagos (diálogo y `PUT` de la ficha de
+  hoy), paginación de pagos, gestionar productos, reservar plaza y «Vista de familia».
+- [x] `app.routes.spec.ts`: dos entradas `alumnosEditar/:id`, la nueva con `disenoNuevoGuard` y la misma data, guards y
+  resolve que la de hoy; apagado, no se llama al `loadComponent` nuevo; `alumnosEditar` sin id sigue solo con la de hoy.
+- [x] Capturas apagado antes (`bc910a12`) y después idénticas en bytes a 375, 768, 1024 y 1280, también con la foto
+  ampliada, «Agregar deporte», «Actualizar grado» y WhatsApp abiertos; encendido con las cuatro pestañas, el cinturón
+  blanco, el panel de «Cobrar» de varios cargos, «Editar datos», «⋯» y los diálogos de hoy.
+
 **Riesgos:** perder una acción poco usada (el inventario manda); el formulario de edición; la salud (si aparece, con las
-mismas reglas de lectura y registro de hoy).
+mismas reglas de lectura y registro de hoy). La ficha de hoy no muestra datos de salud: la nueva tampoco.
 
 **Notas para la PR:** tabla del Anexo A marcada; qué quedó a un clic; cinturones medidos.
 
