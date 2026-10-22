@@ -10,6 +10,8 @@ import { CLASE_ERROR_HTTP, CONSULTA_HOJA } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { disenoNuevoGuard } from '../diseno-nuevo.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { SIERRA_PRUEBA } from '../tema-prueba';
 import { ConfirmacionService } from './confirmacion.service';
 import { OpcionesConfirmacion, ResultadoConfirmacion } from './dialogo.component';
 
@@ -169,6 +171,43 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(document.activeElement).toBe(boton('Cancelar'));
     const accion = boton('Dar de baja');
     expect(getComputedStyle(accion).backgroundColor).toBe('rgb(180, 35, 24)');
+  });
+
+  it('8b-C: con la marca, el diálogo lleva el tema completo: principal con la tinta de la escuela y «Cancelar» con el acento', () => {
+    TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
+    void abrir(COBRAR);
+    const capa = dialogo()!.closest<HTMLElement>('pn-dialogo')!;
+    expect(capa.style.getPropertyValue('--pn-marca-primario-tinta')).toBe('#24853A');
+    const accion = getComputedStyle(boton('Marcar como pagado'));
+    expect(accion.backgroundColor).withContext('principal: la tinta de la escuela').toBe('rgb(36, 133, 58)');
+    expect(accion.color).withContext('principal: sobre-primario de la escuela').toBe('rgb(26, 34, 48)');
+    const cancelar = getComputedStyle(boton('Cancelar'));
+    expect(cancelar.borderTopColor).withContext('«Cancelar»: borde').toBe('rgb(103, 149, 107)');
+    expect(cancelar.color).withContext('«Cancelar»: texto').toBe('rgb(14, 120, 45)');
+    boton('Cancelar').click();
+  });
+
+  it('8b-C: el diálogo de peligro sigue en neutros con la marca: «Cancelar», su hover y su foco como sin marca', () => {
+    TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
+    void abrir(BAJA);
+    const d = dialogo()!;
+    const cancelar = boton('Cancelar');
+    const estilo = getComputedStyle(cancelar);
+    expect(estilo.color).withContext('«Cancelar»: texto en la tinta neutra').toBe('rgb(26, 34, 48)');
+    expect(estilo.borderTopColor).withContext('«Cancelar»: borde línea fuerte').toBe('rgb(207, 207, 200)');
+    expect(getComputedStyle(boton('Dar de baja')).backgroundColor).withContext('acción en peligro').toBe('rgb(180, 35, 24)');
+    // El hover y el foco leen estas variables: las neutras de #1A2230, no las de la escuela.
+    const muestra = document.createElement('span');
+    d.querySelector('.pn-dialogo__pie')!.appendChild(muestra);
+    muestra.style.color = 'var(--pn-acento-suave)';
+    muestra.style.backgroundColor = 'var(--pn-marca-primario-suave)';
+    muestra.style.borderTopColor = 'var(--pn-marca-primario-tinta)';
+    const neutro = getComputedStyle(muestra);
+    expect(neutro.color).withContext('hover de «Cancelar»').toBe('rgb(232, 233, 234)');
+    expect(neutro.backgroundColor).withContext('suave neutro').toBe('rgb(232, 233, 234)');
+    expect(neutro.borderTopColor).withContext('tinta neutra (foco)').toBe('rgb(26, 34, 48)');
+    muestra.remove();
+    cancelar.click();
   });
 
   it('Esc cancela sin hacer nada, cierra el diálogo y devuelve el foco al disparador', async () => {

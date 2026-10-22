@@ -4,7 +4,10 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 
 import { environment } from '../../../environments/environment';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { SIERRA_PRUEBA } from '../tema-prueba';
 import { DisenoNuevoComponent } from './diseno-nuevo.component';
 
 const API = environment.apiUrl;
@@ -98,6 +101,22 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     await cargarHoja();
     responderCarga();
     expect(filas().length).toBe(3);
+  });
+
+  it('8b-C: «Diseño nuevo» sigue en neutros aunque haya marca aplicada (se abre también con el panel de hoy)', async () => {
+    const quitarTokens = ponerTokensDePrueba();
+    TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
+    await listo();
+    const raiz = el().querySelector<HTMLElement>('.pn')!;
+    for (const variable of ['--pn-marca-primario-tinta', '--pn-marca-primario-suave', '--pn-acento', '--pn-acento-borde']) {
+      expect(raiz.style.getPropertyValue(variable)).withContext(variable).toBe('');
+    }
+    const secundario = getComputedStyle(el().querySelector('.diseno__boton--secundario')!);
+    expect(secundario.color).withContext('texto en la tinta neutra').toBe('rgb(26, 34, 48)');
+    expect(secundario.borderTopColor).withContext('borde en la tinta neutra').toBe('rgb(26, 34, 48)');
+    const fila = getComputedStyle(boton(4));
+    expect(fila.color).withContext('botón de fila').toBe('rgb(26, 34, 48)');
+    quitarTokens();
   });
 
   it('cruza el estado con los miembros: nombre, rol visible y estado; sin nombre, la cuenta por número', async () => {

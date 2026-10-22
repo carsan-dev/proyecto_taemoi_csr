@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
 import { fondoCinturon, tiempoConGrado } from '../../alumnos/alumno-vista';
+import { AcentoEscuelaActual } from '../../acento-escuela.directive';
 import { fecha, numero, plural } from '../../formato/formato-es';
+import { variablesDelTema } from '../../tema-escuela';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 
 /**
@@ -26,6 +28,10 @@ export class FichaDeportesComponent {
   readonly fecha = fecha;
   readonly numero = numero;
   readonly plural = plural;
+
+  private readonly temaActual = inject(AcentoEscuelaActual);
+  /** 8b-C: las listas flotantes van en el body, fuera del `.pn` de la ficha: llevan copiado el tema de la escuela. */
+  readonly variablesDesplegable = computed(() => variablesDelTema(this.temaActual.aplicado()));
 
   /** Fondo del cinturón del grado actual, o nulo sin grado. */
   fondo(d: AlumnoDeporteDTO): string | null {

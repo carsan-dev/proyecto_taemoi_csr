@@ -7,6 +7,8 @@ import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { AlumnosComponent, CLAVE_VISTA } from './alumnos.component';
@@ -904,4 +906,64 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     fixture.componentInstance.alternarInactivos();
     expect(otra.cancelled).toBeTrue();
   });
+
+  // ---- 8b-C: el acento de la escuela (Moiskimdo) en los controles elegidos, los secundarios y la página actual
+  it('8b-C: con la marca, el filtro activo, el secundario, la vista elegida, la página actual y la pastilla del cobro llevan el acento', fakeAsync(() => {
+    const ACENTO = 'rgb(1, 112, 127)';
+    const SUAVE = 'rgb(213, 245, 252)';
+    const BORDE = 'rgb(69, 149, 163)';
+    crear();
+    TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
+    responder(60);
+    const raiz = el().querySelector<HTMLElement>('.pn')!;
+    expect(raiz.style.getPropertyValue('--pn-acento')).toBe('#01707F');
+
+    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    const [p] = listados();
+    p.flush(pagina(60));
+    http.match(() => true).forEach((r) => r.flush([DOS_CARGOS, UN_CARGO]));
+    fixture.detectChanges();
+
+    const filtro = getComputedStyle(el().querySelector('.alumnos__filtro--inactivos')!);
+    expect(filtro.backgroundColor).withContext('filtro activo: fondo').toBe(SUAVE);
+    expect(filtro.borderTopColor).withContext('filtro activo: borde').toBe(BORDE);
+    expect(filtro.color).withContext('filtro activo: texto').toBe(ACENTO);
+
+    const informes = getComputedStyle(el().querySelector('.alumnos__boton-secundario')!);
+    expect(informes.borderTopColor).withContext('secundario: borde').toBe(BORDE);
+    expect(informes.color).withContext('secundario: texto').toBe(ACENTO);
+    const cobrar = getComputedStyle(el().querySelector('.alumnos__cobrar')!);
+    expect(cobrar.borderTopColor).withContext('«Cobrar» de fila: borde').toBe(BORDE);
+    expect(cobrar.color).withContext('«Cobrar» de fila: texto').toBe(ACENTO);
+
+    const vista = getComputedStyle(el().querySelector('.alumnos__vista-opcion[aria-pressed="true"]')!);
+    expect(vista.backgroundColor).withContext('segmento elegido: fondo').toBe(SUAVE);
+    expect(vista.color).withContext('segmento elegido: texto').toBe(ACENTO);
+    expect(vista.boxShadow).withContext('segmento elegido: borde').toContain(BORDE);
+
+    const actual = getComputedStyle(el().querySelector('.alumnos__pagina-num[aria-current="page"]')!);
+    expect(actual.backgroundColor).withContext('página actual: fondo').toBe(SUAVE);
+    expect(actual.color).withContext('página actual: texto').toBe(ACENTO);
+
+    const avatar = getComputedStyle(el().querySelector('.alumnos__avatar')!);
+    expect(avatar.backgroundColor).withContext('avatar de iniciales: fondo').toBe(SUAVE);
+    expect(avatar.color).withContext('avatar de iniciales: texto').toBe(ACENTO);
+
+    const primario = getComputedStyle(el().querySelector('.alumnos__boton-primario')!);
+    expect(primario.backgroundColor).withContext('el principal, con la tinta de Moiskimdo').toBe('rgb(27, 43, 46)');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario-tinta')).withContext('la pantalla lleva el tema completo').toBe('#1B2B2E');
+
+    el().querySelectorAll<HTMLButtonElement>('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
+    pintar();
+    const elegida = getComputedStyle(dialogo()!.querySelector('[role="radio"][aria-checked="true"]')!);
+    expect(elegida.backgroundColor).withContext('pastilla elegida: fondo').toBe(SUAVE);
+    expect(elegida.borderTopColor).withContext('pastilla elegida: borde').toBe(BORDE);
+    expect(elegida.color).withContext('pastilla elegida: texto').toBe(ACENTO);
+    const cancelar = getComputedStyle(botonDialogo('Cancelar'));
+    expect(cancelar.borderTopColor).withContext('«Cancelar» del diálogo: borde').toBe(BORDE);
+    expect(cancelar.color).withContext('«Cancelar» del diálogo: texto').toBe(ACENTO);
+    botonDialogo('Cancelar').click();
+    pintar();
+    flush();
+  }));
 });

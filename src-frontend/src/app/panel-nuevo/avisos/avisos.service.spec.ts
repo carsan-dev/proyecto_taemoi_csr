@@ -10,6 +10,8 @@ import { CLASE_ERROR_HTTP, PilaCapas } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { disenoNuevoGuard } from '../diseno-nuevo.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { SIERRA_PRUEBA } from '../tema-prueba';
 import { AvisosService, DURACION_AVISO, MAX_AVISOS, RETRASO_ANUNCIO } from './avisos.service';
 
 @Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
@@ -197,6 +199,18 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     pintar();
     expect(deshacer).toHaveBeenCalledTimes(1);
     expect(tarjetas().length).toBe(0);
+    flush();
+  }));
+
+  it('8b-C: con la marca, la acción del aviso va en el acento de la escuela', fakeAsync(() => {
+    TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined });
+    pintar();
+    const capa = document.querySelector<HTMLElement>('pn-avisos')!;
+    expect(capa.style.getPropertyValue('--pn-acento')).toBe('#0E782D');
+    expect(capa.style.getPropertyValue('--pn-marca-primario-tinta')).withContext('tema completo').toBe('#24853A');
+    const accion = tarjetas()[0].querySelector<HTMLButtonElement>('.pn-aviso__accion')!;
+    expect(getComputedStyle(accion).color).toBe('rgb(14, 120, 45)');
     flush();
   }));
 

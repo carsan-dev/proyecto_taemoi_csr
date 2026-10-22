@@ -172,3 +172,47 @@ describe('SearchableSelectDirective: clase de la lista flotante (8b-3b)', () => 
     fixture.destroy();
   });
 });
+
+@Component({
+  standalone: true,
+  imports: [FormsModule, SearchableSelectDirective],
+  template: `
+    <select id="con-variables" appSearchableSelect searchDropdownClass="pn ficha-lista" [searchDropdownVariables]="variables"
+      [(ngModel)]="valor">
+      <option value="a">Uno</option>
+    </select>
+    <select id="sin-variables" appSearchableSelect [(ngModel)]="valor">
+      <option value="a">Uno</option>
+    </select>
+  `,
+})
+class HostConVariablesComponent {
+  valor = 'a';
+  variables: Record<string, string> | null = { '--pn-acento': '#0E782D', '--pn-marca-primario-tinta': '#24853A' };
+}
+
+describe('SearchableSelectDirective: variables de la lista flotante (8b-C)', () => {
+  it('copia las variables pedidas en la lista del body, las cambia y las quita; sin pedirlas, nada', async () => {
+    await TestBed.configureTestingModule({ imports: [HostConVariablesComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(HostConVariablesComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const lista = (id: string) => {
+      const entrada = document.getElementById(`${id}-input`)!;
+      return document.getElementById(entrada.getAttribute('aria-controls')!)!;
+    };
+    expect(lista('con-variables').style.getPropertyValue('--pn-acento')).toBe('#0E782D');
+    expect(lista('con-variables').style.getPropertyValue('--pn-marca-primario-tinta')).toBe('#24853A');
+    expect(lista('sin-variables').getAttribute('style') ?? '').not.toContain('--pn-');
+
+    fixture.componentInstance.variables = { '--pn-acento': '#01707F' };
+    fixture.detectChanges();
+    expect(lista('con-variables').style.getPropertyValue('--pn-acento')).toBe('#01707F');
+    expect(lista('con-variables').style.getPropertyValue('--pn-marca-primario-tinta')).withContext('la que ya no viene').toBe('');
+
+    fixture.componentInstance.variables = null;
+    fixture.detectChanges();
+    expect(lista('con-variables').style.getPropertyValue('--pn-acento')).toBe('');
+    fixture.destroy();
+  });
+});

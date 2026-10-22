@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 
+import { seguirAcento } from '../acento-escuela.directive';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, esClicEnElVelo } from '../capas/capa-modal';
 
@@ -79,6 +80,8 @@ let siguienteId = 0;
 export class DialogoComponent implements AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly pila = inject(PilaCapas);
+  /** 8b-C: el acento de la escuela en el `.pn` de la capa. */
+  private readonly acento = seguirAcento();
 
   @Input({ required: true }) opciones!: OpcionesConfirmacion;
   @Output() readonly cerrado = new EventEmitter<ResultadoConfirmacion>();

@@ -271,19 +271,26 @@
     text-align: center;
   }
 
-  &:hover,
-  &:focus-visible {
+  &:hover {
     background: var(--pn-marca-primario-suave);
   }
 
+  // Con el foco, acento-suave debajo del anillo: el acento-borde llega ahí a 3:1 (sobre el suave neutro, no).
   &:focus-visible {
-    outline: 2px solid var(--pn-marca-primario-tinta);
-    outline-offset: -2px;
+    background: var(--pn-acento-suave);
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
   }
 
+  // Entrada actual (8b-C): acento-suave con el texto y el icono en acento.
   &[aria-current] {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
     font-weight: 600;
+
+    .bi {
+      color: var(--pn-acento);
+    }
   }
 
   &:disabled {

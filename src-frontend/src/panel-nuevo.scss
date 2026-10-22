@@ -69,7 +69,8 @@
 :where(.pn) {
   // Color. Los cinco primeros son el tema de una escuela SIN color (decisión 257): ReglaContraste.tema(null), es
   // decir, el de #1A2230, sacado de regla-contraste.ts (temaDe(null)). MarcaEscuelaPanelService los sustituye en el
-  // .pn con el tema que lee de la API; si no puede leerlo, se queda este neutro y no el color de otra escuela.
+  // .pn de la cabecera con el tema que lee de la API, y pnAcento o seguirAcento() en el .pn de cada pantalla y capa
+  // (8b-C); si no puede leerlo, se queda este neutro y no el color de otra escuela.
   // Moiskimdo (#1B2B2E) llega de la API: #1b2b2e, #ffffff, #c6cacb, #1b2b2e y #e8eaea.
   --pn-marca-primario: #1a2230;
   --pn-marca-sobre-primario: #ffffff;
@@ -77,6 +78,14 @@
   --pn-marca-primario-tinta: #1a2230;
   --pn-marca-primario-suave: #e8e9ea;
   --pn-marca-por-defecto: #1a2230;
+  // El suave de #1A2230 (su 10 % sobre blanco), fijo como el de arriba: el diálogo de peligro lo usa aunque llegue la
+  // marca (8b-C, decisión 273).
+  --pn-marca-suave-por-defecto: #e8e9ea;
+  // Acento de la escuela (8b-C, decisión 273; acento-escuela.ts): el de #1A2230 mientras no llega la marca. La cabecera
+  // y la directiva pnAcento lo sustituyen en cada .pn con el de la escuela; Moiskimdo: #01707f, #4595a3 y #d5f5fc.
+  --pn-acento: #466396;
+  --pn-acento-borde: #6f8abb;
+  --pn-acento-suave: #e6efff;
   --pn-atencion: #a14f0b;
   --pn-atencion-suave: #fcf2e6;
   --pn-fondo: #f5f5f2;
@@ -171,9 +180,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-// Foco: contorno de 2 px del color de la escuela como tinta.
+// Foco (8b-C): anillo de 3 px del acento-borde con 2 px de separación (≥ 3:1 sobre blanco, fondo y acento-suave).
 :where(.pn) :focus-visible {
-  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline: 3px solid var(--pn-acento-borde);
   outline-offset: 2px;
 }
 

@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 
+import { seguirAcento } from '../acento-escuela.directive';
 import { menosMovimiento } from '../capas/capa-modal';
 import { Aviso, AvisosService, DURACION_AVISO } from './avisos.service';
 
@@ -21,6 +22,8 @@ export class AvisosComponent {
   readonly avisos = inject(AvisosService);
   readonly duracion = `${DURACION_AVISO}ms`;
   readonly quieta = menosMovimiento();
+  /** 8b-C: el acento de la escuela en el `.pn` de la capa. */
+  private readonly acento = seguirAcento();
 
   esError(aviso: Aviso): boolean {
     return aviso.tipo === 'error';

@@ -13,6 +13,7 @@ import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
+import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
@@ -109,6 +110,7 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
     BloqueErrorComponent,
     BloqueVacioComponent,
     HerramientaPanelComponent,
+    AcentoEscuelaDirective,
   ],
   // El de siempre, con los avisos del panel nuevo (un SweetAlert2 quedaría detrás del panel lateral).
   providers: [{ provide: InformePdfService, useClass: InformePdfPanelService }],

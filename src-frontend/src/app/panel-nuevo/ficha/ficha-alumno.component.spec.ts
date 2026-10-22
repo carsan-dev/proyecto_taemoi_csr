@@ -15,6 +15,8 @@ import { AuthenticationService } from '../../servicios/authentication/authentica
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
+import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
 
@@ -577,6 +579,48 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       const panel = m.el().querySelector<HTMLElement>('[role="tabpanel"]')!;
       expect(panel.id).toBe(tabs[0].getAttribute('aria-controls')!);
       expect(panel.getAttribute('aria-labelledby')).toBe(tabs[0].id);
+    });
+
+    it('8b-C: con la marca, la pestaña activa y los secundarios llevan el acento; el principal, la tinta de la escuela', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
+      await m.asentar();
+      const activa = getComputedStyle(m.el().querySelector('[role="tab"][aria-selected="true"]')!);
+      expect(activa.color).withContext('pestaña activa: texto').toBe('rgb(1, 112, 127)');
+      expect(activa.boxShadow).withContext('pestaña activa: subrayado').toContain('rgb(1, 112, 127)');
+      const foto = getComputedStyle(boton(m.el(), 'Cambiar foto'));
+      expect(foto.borderTopColor).withContext('«Cambiar foto»: borde').toBe('rgb(69, 149, 163)');
+      expect(foto.color).withContext('«Cambiar foto»: texto').toBe('rgb(1, 112, 127)');
+      const agregar = getComputedStyle(boton(m.el(), 'Agregar deporte'));
+      expect(agregar.borderTopColor).withContext('«Agregar deporte»: borde').toBe('rgb(69, 149, 163)');
+      expect(agregar.color).withContext('«Agregar deporte»: texto').toBe('rgb(1, 112, 127)');
+      expect(m.el().querySelector<HTMLElement>('.pn')!.style.getPropertyValue('--pn-marca-primario-tinta'))
+        .withContext('la ficha lleva el tema completo')
+        .toBe('#1B2B2E');
+    });
+
+    it('8b-C: las listas flotantes de Deportes (en el body) llevan el tema y el acento de la escuela', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
+      await m.asentar();
+      const listas = Array.from(m.el().querySelectorAll<HTMLInputElement>('.deportes__control.admin-select-input, .admin-select-input')).map(
+        (entrada) => document.getElementById(entrada.getAttribute('aria-controls')!)!
+      ).filter((lista) => lista.classList.contains('ficha-desplegable'));
+      expect(listas.length).toBeGreaterThan(0);
+      for (const lista of listas) {
+        expect(lista.style.getPropertyValue('--pn-acento')).toBe('#01707F');
+        expect(lista.style.getPropertyValue('--pn-acento-suave')).toBe('#D5F5FC');
+        expect(lista.style.getPropertyValue('--pn-marca-primario-tinta')).toBe('#1B2B2E');
+      }
+      const opcion = listas[0].querySelector<HTMLElement>('.admin-select-option')!;
+      opcion.classList.add('is-selected');
+      const elegida = getComputedStyle(opcion);
+      expect(elegida.color).withContext('opción elegida: texto').toBe('rgb(1, 112, 127)');
+      expect(elegida.backgroundColor).withContext('opción elegida: fondo').toBe('rgb(213, 245, 252)');
+
+      TestBed.inject(AcentoEscuelaActual).poner(null);
+      await m.asentar();
+      expect(listas[0].style.getPropertyValue('--pn-acento')).withContext('sin marca: las quita').toBe('');
     });
 
     it('flechas, Inicio y Fin mueven la pestaña y el foco; la pestaña queda en la dirección', async () => {

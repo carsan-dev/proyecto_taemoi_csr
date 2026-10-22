@@ -11,6 +11,11 @@
   min-height: 50vh;
 }
 
+// 8b-C: esta pantalla se abre también con el panel de hoy, sin la marca; se queda sin acento y con el foco de antes.
+.diseno :focus-visible {
+  outline: 2px solid var(--pn-marca-primario-tinta);
+}
+
 .diseno__pagina {
   max-width: 760px;
   margin: 0 auto;
