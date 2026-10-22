@@ -77,6 +77,11 @@
   --pn-marca-primario-tinta: #1a2230;
   --pn-marca-primario-suave: #e8e9ea;
   --pn-marca-por-defecto: #1a2230;
+  // Acento de la escuela (8b-C, decisión 273; acento-escuela.ts): el de #1A2230 mientras no llega la marca. La cabecera
+  // y la directiva pnAcento lo sustituyen en cada .pn con el de la escuela; Moiskimdo: #01707f, #4595a3 y #d5f5fc.
+  --pn-acento: #466396;
+  --pn-acento-borde: #6f8abb;
+  --pn-acento-suave: #e6efff;
   --pn-atencion: #a14f0b;
   --pn-atencion-suave: #fcf2e6;
   --pn-fondo: #f5f5f2;
@@ -171,9 +176,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-// Foco: contorno de 2 px del color de la escuela como tinta.
+// Foco (8b-C): anillo de 3 px del acento-borde con 2 px de separación (≥ 3:1 sobre blanco, fondo y acento-suave).
 :where(.pn) :focus-visible {
-  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline: 3px solid var(--pn-acento-borde);
   outline-offset: 2px;
 }
 

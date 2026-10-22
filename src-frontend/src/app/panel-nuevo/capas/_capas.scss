@@ -64,14 +64,15 @@
   }
 }
 
+// Secundario (8b-C): borde acento-borde, texto acento y, al pasar, acento-suave.
 @mixin boton-secundario {
   @include boton;
-  border: 1px solid var(--pn-linea-fuerte);
+  border: 1px solid var(--pn-acento-borde);
   background: var(--pn-superficie);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 }
 
@@ -81,10 +82,10 @@
   padding: 0 12px;
   border: 0;
   background: transparent;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 
   &:hover:not(:disabled):not([aria-disabled='true']) {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 }
 
@@ -120,8 +121,8 @@
   }
 }
 
-// Pastilla de una elección (radio) o de varias (casilla): 32 px, borde de control; elegida, el color de la escuela como
-// tinta con la marca de verificación.
+// Pastilla de una elección (radio) o de varias (casilla): 32 px, borde de control; elegida (8b-C), acento-suave con
+// borde acento-borde, texto acento y la marca de verificación.
 @mixin pastilla {
   display: inline-flex;
   align-items: center;
@@ -143,15 +144,15 @@
   }
 
   &:hover:not(:disabled) {
-    border-color: var(--pn-marca-primario-tinta);
+    border-color: var(--pn-acento-borde);
   }
 
   &[aria-checked='true'],
   &.es-elegida {
     padding-left: 10px;
-    border-color: var(--pn-marca-primario-tinta);
-    background: var(--pn-marca-primario-tinta);
-    color: var(--pn-marca-sobre-primario);
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
     font-weight: 600;
   }
 

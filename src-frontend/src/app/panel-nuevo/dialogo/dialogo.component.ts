@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 
+import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, esClicEnElVelo } from '../capas/capa-modal';
 
@@ -75,6 +76,7 @@ let siguienteId = 0;
   templateUrl: './dialogo.component.html',
   styleUrls: ['./dialogo.component.scss'],
   host: { class: 'pn pn-capa' },
+  hostDirectives: [AcentoEscuelaDirective],
 })
 export class DialogoComponent implements AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);

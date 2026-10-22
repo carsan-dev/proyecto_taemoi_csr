@@ -8,6 +8,7 @@ import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno
 import { FotoAmpliadaComponent } from '../../componentes/endpoints/editar-alumno/foto-ampliada/foto-ampliada.component';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { calcularEdad } from '../../utilities/calcular-edad';
+import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { EstadoLicencia, estadoLicencia, gradoFila, gradoParaFrase, tiempoConGrado } from '../alumnos/alumno-vista';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from '../alumnos/pendientes-alumno.service';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
@@ -81,6 +82,7 @@ class CobrosEnVuelo extends Set<number> {
     DialogosAlumnoComponent,
     FotoAmpliadaComponent,
     EsqueletoComponent,
+    AcentoEscuelaDirective,
   ],
   templateUrl: './ficha-alumno.component.html',
   styleUrls: ['./ficha-alumno.component.scss'],

@@ -48,7 +48,7 @@ fieldset > .herramienta__leyenda {
   }
 
   &:has(.herramienta__casilla:focus-visible) {
-    outline: 2px solid var(--pn-marca-primario-tinta);
+    outline: 3px solid var(--pn-acento-borde);
     outline-offset: 2px;
   }
 
@@ -137,7 +137,7 @@ fieldset > .herramienta__leyenda {
 }
 
 :host ::ng-deep .admin-select-input:focus-visible {
-  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline: 3px solid var(--pn-acento-borde);
   outline-offset: 2px;
 }
 

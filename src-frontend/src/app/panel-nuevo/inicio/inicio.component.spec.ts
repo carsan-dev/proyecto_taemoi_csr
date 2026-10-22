@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
+import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { InicioComponent } from './inicio.component';
@@ -425,5 +426,20 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     const enlace = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('.inicio__pendiente .inicio__enlace');
     expect(enlace?.textContent?.trim()).toBe('Ir a Tesorería');
     expect(enlace?.getAttribute('href')).toBe('/tesoreriaCobros');
+  });
+
+  it('8b-C: con la marca, el enlace, los iconos de «Accesos» y el «Cobrar» de fila llevan el acento', () => {
+    TestBed.inject(AcentoEscuelaActual).poner({ acento: '#01707F', acentoSuave: '#D5F5FC', acentoBorde: '#4595A3' });
+    responder();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(getComputedStyle(raiz.querySelector('.inicio__pendiente .inicio__enlace')!).color).withContext('enlace').toBe(
+      'rgb(1, 112, 127)'
+    );
+    expect(getComputedStyle(raiz.querySelector('.inicio__accesos .inicio__acceso > .bi')!).color)
+      .withContext('icono de «Accesos»')
+      .toBe('rgb(1, 112, 127)');
+    const cobrar = getComputedStyle(raiz.querySelector('.inicio__cobrar')!);
+    expect(cobrar.borderTopColor).withContext('«Cobrar»: borde').toBe('rgb(69, 149, 163)');
+    expect(cobrar.color).withContext('«Cobrar»: texto').toBe('rgb(1, 112, 127)');
   });
 });

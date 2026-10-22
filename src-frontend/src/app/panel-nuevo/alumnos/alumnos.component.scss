@@ -89,13 +89,14 @@
   }
 }
 
+// Secundario (8b-C): borde acento-borde, texto acento y, al pasar, acento-suave.
 .alumnos__boton-secundario {
-  border: 1px solid var(--pn-borde-control);
+  border: 1px solid var(--pn-acento-borde);
   background: var(--pn-superficie);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 
   &:hover {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 }
 
@@ -234,9 +235,9 @@
   }
 
   &[aria-pressed='true'] {
-    border-color: var(--pn-marca-primario-tinta);
-    background: var(--pn-marca-primario-suave);
-    color: var(--pn-marca-primario-tinta);
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
   }
 }
 
@@ -266,10 +267,11 @@
   font-size: 0.875rem;
   cursor: pointer;
 
+  // Elegido (8b-C): acento-suave, texto acento y el borde acento-borde (en sombra, sin mover nada).
   &[aria-pressed='true'] {
-    background: var(--pn-superficie);
-    color: var(--pn-tinta);
-    box-shadow: 0 0 0 1px var(--pn-linea);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+    box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
   }
 }
 
@@ -314,8 +316,8 @@
   height: 40px;
   overflow: hidden;
   border-radius: 50%;
-  background: var(--pn-serie-pista);
-  color: var(--pn-tinta);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.75rem;
   text-decoration: none;
@@ -504,21 +506,21 @@
   justify-content: center;
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--pn-borde-control);
+  border: 1px solid var(--pn-acento-borde);
   border-radius: var(--pn-radio-m);
   background: var(--pn-superficie);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.8125rem;
   cursor: pointer;
   transition: background-color var(--pn-transicion);
 
   &:hover {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 
   &[aria-expanded='true'] {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 
   &:disabled {
@@ -767,7 +769,7 @@
   border: 1px solid transparent;
   border-radius: var(--pn-radio-m);
   background: transparent;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.8125rem;
   text-decoration: none;
@@ -775,21 +777,30 @@
   transition: background-color var(--pn-transicion);
 
   &:first-child {
-    border-color: var(--pn-borde-control);
+    border-color: var(--pn-acento-borde);
     background: var(--pn-superficie);
   }
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+}
+
+// Los estados no llevan el acento (decisión 273): ni el texto ni el fondo al pasar.
+.alumnos__accion--peligro {
+  color: var(--pn-peligro);
 
   &:hover {
     background: var(--pn-marca-primario-suave);
   }
 }
 
-.alumnos__accion--peligro {
-  color: var(--pn-peligro);
-}
-
 .alumnos__accion--bien {
   color: var(--pn-bien);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
 }
 
 // ------------------------------------------------------------------ tarjetas
@@ -972,9 +983,12 @@
   }
 }
 
+// Página actual (8b-C): acento-suave con el borde acento-borde (en sombra) y el número en acento.
 .alumnos__pagina-num[aria-current='page'] {
-  background: var(--pn-marca-primario);
-  color: var(--pn-marca-sobre-primario);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
 }
 
 .alumnos__pagina-salto {

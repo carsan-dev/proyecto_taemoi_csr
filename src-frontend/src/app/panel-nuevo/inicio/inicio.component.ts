@@ -8,6 +8,7 @@ import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
+import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { CobroCargoService } from '../cobro/cobro-cargo';
@@ -142,7 +143,7 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [RouterLink, EsqueletoComponent, BloqueErrorComponent],
+  imports: [RouterLink, EsqueletoComponent, BloqueErrorComponent, AcentoEscuelaDirective],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss'],
 })

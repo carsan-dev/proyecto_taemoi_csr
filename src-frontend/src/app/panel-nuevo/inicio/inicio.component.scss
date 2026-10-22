@@ -52,7 +52,7 @@
   border: 0;
   border-radius: var(--pn-radio-m);
   background: transparent;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.875rem;
   text-decoration: none;
@@ -60,7 +60,7 @@
   transition: background-color var(--pn-transicion);
 
   &:hover {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 
   &:disabled {
@@ -76,17 +76,17 @@
   justify-content: center;
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid var(--pn-borde-control);
+  border: 1px solid var(--pn-acento-borde);
   border-radius: var(--pn-radio-m);
   background: var(--pn-superficie);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.875rem;
   cursor: pointer;
   transition: background-color var(--pn-transicion);
 
   &:hover {
-    background: var(--pn-marca-primario-suave);
+    background: var(--pn-acento-suave);
   }
 
   &:disabled {
@@ -112,7 +112,7 @@
   align-items: center;
   min-height: 24px;
   border-radius: var(--pn-radio-s);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
   font: var(--pn-etiqueta);
   font-size: 0.875rem;
   text-decoration: none;
@@ -382,7 +382,7 @@
   border-radius: var(--pn-radio-s);
 
   &:is(a):hover {
-    color: var(--pn-marca-primario-tinta);
+    color: var(--pn-acento);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
@@ -530,11 +530,12 @@
   text-decoration: none;
   transition: background-color var(--pn-transicion);
 
+  // Icono de la entrada (8b-C): en acento.
   > .bi:first-child {
     flex: none;
     width: 20px;
     font-size: 1.05rem;
-    color: var(--pn-tinta-2);
+    color: var(--pn-acento);
   }
 
   &:hover {

@@ -11,6 +11,7 @@ const TOKENS = `.pn {
   --pn-borde-control: #868d97; --pn-tinta: #1a2230; --pn-tinta-2: #5d6573; --pn-peligro: #b42318; --pn-bien: #2f6b3a;
   --pn-atencion: #a14f0b; --pn-serie-pista: #eceef1; --pn-radio-s: 6px; --pn-radio-m: 8px; --pn-radio-carnet: 14px;
   --pn-radio-pastilla: 999px; --pn-velo: rgb(26 34 48 / 40%);
+  --pn-acento: #466396; --pn-acento-borde: #6f8abb; --pn-acento-suave: #e6efff;
   --pn-sombra-dialogo: 0 24px 48px -12px rgb(26 34 48 / 28%), 0 4px 10px rgb(26 34 48 / 8%);
   --pn-sombra-hoja: 0 -12px 32px -8px rgb(26 34 48 / 28%);
   --pn-sombra-menu: 0 6px 20px -6px rgb(26 34 48 / 22%), 0 2px 4px rgb(26 34 48 / 6%);

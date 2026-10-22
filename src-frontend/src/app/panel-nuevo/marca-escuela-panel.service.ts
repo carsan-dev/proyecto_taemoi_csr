@@ -1,13 +1,14 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Observable, catchError, distinctUntilChanged, shareReplay, skip, tap, throwError } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../core/http-context';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
-import { AcentoEscuela, acentoDe } from './acento-escuela';
+import { acentoDe } from './acento-escuela';
+import { AcentoEscuelaActual, escribirAcento } from './acento-escuela.directive';
 
 /** Colores del panel de la escuela (`TemaEscuela` del servidor, `#RRGGBB`). */
 export interface TemaMarca {
@@ -41,13 +42,6 @@ const VARIABLES: Record<keyof Omit<TemaMarca, 'ajustado'>, string> = {
   primarioSuave: '--pn-marca-primario-suave',
 };
 
-/** Variables del acento (8b-C, decisión 273), derivadas del primario con `acentoDe`. */
-const VARIABLES_ACENTO: Record<keyof AcentoEscuela, string> = {
-  acento: '--pn-acento',
-  acentoSuave: '--pn-acento-suave',
-  acentoBorde: '--pn-acento-borde',
-};
-
 /**
  * Marca de la escuela en el panel nuevo (pieza 8b-T, fase3-e8b-plan.md §4). Vive en el chunk de `panel-nuevo`: con el
  * interruptor apagado nadie la carga ni la pide.
@@ -65,17 +59,17 @@ export class MarcaEscuelaPanelService {
   private readonly documento = inject(DOCUMENT);
   private readonly url = `${environment.apiUrl}/escuela/marca`;
   private peticion$: Observable<MarcaPanel> | null = null;
-  private readonly acentoActual = signal<AcentoEscuela | null>(null);
+  private readonly acentoActual = inject(AcentoEscuelaActual);
 
   /** El acento de la escuela de la última marca aplicada; `null` antes de aplicarla o tras cambiar de sesión. */
-  readonly acento = this.acentoActual.asReadonly();
+  readonly acento = this.acentoActual.acento;
 
   constructor() {
     inject(AuthenticationService)
       .emailCambio.pipe(distinctUntilChanged(), skip(1), takeUntilDestroyed(inject(DestroyRef)))
       .subscribe(() => {
         this.peticion$ = null;
-        this.acentoActual.set(null);
+        this.acentoActual.poner(null);
       });
   }
 
@@ -108,20 +102,8 @@ export class MarcaEscuelaPanelService {
       elemento.style.setProperty(variable, tema[clave]);
     }
     const acento = acentoDe(tema);
-    this.escribirAcento(elemento, acento);
-    this.acentoActual.set(acento);
-  }
-
-  /** Escribe el acento en el `.pn` (o lo quita con `null`, y queda el de `panel-nuevo.scss`). Lanza como `aplicarEn`. */
-  escribirAcento(elemento: HTMLElement, acento: AcentoEscuela | null): void {
-    this.comprobarPn(elemento);
-    for (const [clave, variable] of Object.entries(VARIABLES_ACENTO) as [keyof AcentoEscuela, string][]) {
-      if (acento) {
-        elemento.style.setProperty(variable, acento[clave]);
-      } else {
-        elemento.style.removeProperty(variable);
-      }
-    }
+    escribirAcento(elemento, acento);
+    this.acentoActual.poner(acento);
   }
 
   private comprobarPn(elemento: HTMLElement): void {

@@ -57,15 +57,16 @@
   @include boton-estados;
 }
 
+// Secundario (8b-C): borde acento-borde, texto acento y, al pasar, acento-suave.
 @mixin boton-secundario {
   @include boton;
-  border: 1px solid var(--pn-borde-control);
+  border: 1px solid var(--pn-acento-borde);
   background: var(--pn-superficie);
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 
   &:hover:not(:disabled) {
-    background: var(--pn-marca-primario-suave);
-    color: var(--pn-marca-primario-tinta);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
   }
 
   @include boton-estados;
@@ -77,20 +78,22 @@
   padding: 0 10px;
   border: 0;
   background: transparent;
-  color: var(--pn-marca-primario-tinta);
+  color: var(--pn-acento);
 
   &:hover:not(:disabled) {
-    background: var(--pn-marca-primario-suave);
-    color: var(--pn-marca-primario-tinta);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
   }
 
   @include boton-estados;
 }
 
+// Los estados no llevan el acento (decisión 273): ni el texto ni el fondo al pasar.
 @mixin peligro {
   color: var(--pn-peligro);
 
   &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
     color: var(--pn-peligro);
   }
 }
@@ -99,6 +102,7 @@
   color: var(--pn-bien);
 
   &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
     color: var(--pn-bien);
   }
 }

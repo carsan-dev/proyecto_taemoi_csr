@@ -333,7 +333,7 @@
 }
 
 :host ::ng-deep .admin-select-input:focus-visible {
-  outline: 2px solid var(--pn-marca-primario-tinta);
+  outline: 3px solid var(--pn-acento-borde);
   outline-offset: 2px;
 }
 
