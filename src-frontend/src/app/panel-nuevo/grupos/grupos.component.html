@@ -29,12 +29,7 @@
         <button type="button" class="grupos__tipo" aria-haspopup="dialog" (click)="abrirTipo(t)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 19.5c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5"></path><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.4c1.6.9 2.6 2.7 3 5.1"></path></svg>
-          <span class="grupos__tipo-nombre">{{ t }}</span>
-          @if (estadoConteo === 'listo') {
-          <span class="grupos__tipo-cifra" data-cifras><span class="grupos__punto-medio" aria-hidden="true"> · </span>{{ numero(activosDe(t)) }}</span>
-          } @else {
-          <span class="grupos__tipo-hueco" aria-hidden="true"></span>
-          }
+          <span class="grupos__tipo-texto"><span class="grupos__tipo-nombre">{{ t }}</span>@if (estadoConteo === 'listo') {<span class="grupos__punto-medio" aria-hidden="true"> · </span><span class="grupos__tipo-cifra" data-cifras>{{ numero(activosDe(t)) }}</span>} @else {<span class="grupos__tipo-hueco" aria-hidden="true"></span>}</span>
         </button>
         }
       </div>
@@ -118,8 +113,8 @@
               <svg class="grupos__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
             </button>
-            @if (abiertas.has(g.id)) {
-            <div class="grupos__turnos-lista" [id]="idTurnos(g)">
+            <div class="grupos__turnos-lista" [id]="idTurnos(g)" [hidden]="!abiertas.has(g.id)">
+              @if (abiertas.has(g.id)) {
               @if (g.turnos.length > 0) {
               <ul class="grupos__turnos-ul">
                 @for (t of g.turnos; track t.id) {
@@ -155,8 +150,8 @@
                     [deshabilitado]="!eleccion.has(g.id)" (click)="anadirTurno(g)">Añadir</button>
                 </div>
               </div>
+              }
             </div>
-            }
           </div>
 
           <div class="grupos__pie">

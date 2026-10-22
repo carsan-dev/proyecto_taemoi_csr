@@ -108,6 +108,11 @@
   }
 }
 
+.grupos__tipo-texto {
+  // Un solo texto en línea: el gap del botón solo separa el icono del texto.
+  display: inline;
+}
+
 .grupos__tipo-cifra {
   color: var(--pn-tinta);
   font-variant-numeric: tabular-nums;
@@ -121,6 +126,7 @@
 
 .grupos__tipo-hueco {
   display: inline-block;
+  margin-inline-start: 8px;
   width: 32px;
   height: 10px;
   border-radius: var(--pn-radio-s);

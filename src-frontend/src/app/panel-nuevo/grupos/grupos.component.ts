@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
@@ -8,6 +8,7 @@ import { TurnoResumen } from '../../interfaces/turno-resumen';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
+import { cerrarSweetAlertAbierto } from '../capas/capa-modal';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
@@ -53,6 +54,7 @@ export class GruposComponent implements OnInit, OnDestroy {
   private readonly catalogo = inject(CatalogoService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
+  private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -146,6 +148,9 @@ export class GruposComponent implements OnInit, OnDestroy {
       next: (grupos) => {
         this.grupos = (grupos ?? []).map((g) => ({ ...g, turnos: [...(g.turnos ?? [])] }));
         this.estadoGrupos = 'listo';
+        if (this.filtro !== null && !this.opcionesFiltro.some((o) => o.codigo === this.filtro)) {
+          this.filtro = null;
+        }
       },
       error: () => {
         this.estadoGrupos = 'error';
@@ -243,6 +248,12 @@ export class GruposComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ tarjeta
 
+  /** El aviso de error del panel nuevo sustituye al SweetAlert2 del interceptor, como en 8b-D1. */
+  private avisoError(texto: string): void {
+    cerrarSweetAlertAbierto(this.router);
+    this.avisos.error(texto);
+  }
+
   idTurnos(grupo: GrupoResumen): string {
     return `grupo-${grupo.id}-turnos`;
   }
@@ -273,7 +284,11 @@ export class GruposComponent implements OnInit, OnDestroy {
     this.endpoints.agregarTurnoAGrupo(grupo.id, turnoId).subscribe({
       next: () => {
         this.anadiendo.delete(grupo.id);
-        this.eleccion.delete(grupo.id);
+        this.eleccion.forEach((v, k) => {
+          if (v === turnoId) {
+            this.eleccion.delete(k);
+          }
+        });
         const turno = this.turnosSinGrupo.find((t) => t.id === turnoId);
         if (turno) {
           this.turnosSinGrupo = this.turnosSinGrupo.filter((t) => t.id !== turnoId);
@@ -285,7 +300,7 @@ export class GruposComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.anadiendo.delete(grupo.id);
-        this.avisos.error('No se pudo asignar el turno al grupo');
+        this.avisoError('No se pudo asignar el turno al grupo');
         this.cdr.markForCheck();
       },
     });
@@ -314,7 +329,7 @@ export class GruposComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.avisos.error('No se pudo eliminar el turno');
+        this.avisoError('No se pudo eliminar el turno');
       },
     });
   }
@@ -346,7 +361,7 @@ export class GruposComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: () => {
-        this.avisos.error('No se pudo actualizar el rango de edad');
+        this.avisoError('No se pudo actualizar el rango de edad');
       },
     });
   }
@@ -372,7 +387,7 @@ export class GruposComponent implements OnInit, OnDestroy {
         this.cargarTurnos(true);
       },
       error: () => {
-        this.avisos.error('No se pudo eliminar el grupo');
+        this.avisoError('No se pudo eliminar el grupo');
       },
     });
   }

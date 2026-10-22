@@ -1,17 +1,27 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
+import { Component } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { TurnoResumen } from '../../interfaces/turno-resumen';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { CLASE_ERROR_HTTP } from '../capas/capa-modal';
+import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { EstilosPanelService } from '../estilos-panel.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { GruposComponent } from './grupos.component';
+
+@Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
+class PantallaNueva {}
 
 const API = environment.apiUrl;
 const T = (id: number, diaSemana: string, horaInicio: string, horaFin: string) => ({ id, diaSemana, horaInicio, horaFin });
@@ -160,6 +170,8 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: loading },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         {
           provide: CatalogoService,
           useValue: {
@@ -181,6 +193,8 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     TestBed.inject(AvisosService).cerrarTodos();
     pintarCapas();
     document.querySelectorAll('pn-dialogo').forEach((e) => e.remove());
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
     quitarTokens();
   });
 
@@ -480,7 +494,8 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     expect(b.getAttribute('aria-expanded')).toBe('false');
     const id = b.getAttribute('aria-controls')!;
     expect(id).toBeTruthy();
-    expect(tarjeta(1).querySelector('.grupos__turnos-lista')).toBeNull();
+    expect(document.getElementById(id)!.hidden).toBeTrue();
+    expect(tarjeta(1).querySelector('.grupos__turno')).toBeNull();
     b.click();
     fixture.detectChanges();
     expect(b.getAttribute('aria-expanded')).toBe('true');
@@ -491,7 +506,7 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     b.click();
     fixture.detectChanges();
     expect(b.getAttribute('aria-expanded')).toBe('false');
-    expect(document.getElementById(id)).toBeNull();
+    expect(document.getElementById(id)!.hidden).toBeTrue();
   });
 
   it('tarjeta: pie con «Alumnos», «Editar», «Rango de edad» y la papelera, a las rutas de hoy', () => {
@@ -754,5 +769,111 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     expect(filas.map((f) => texto(f.querySelector('.grupos__turno-texto')))).toEqual(['Viernes 18:00–19:00', 'Sábado 09:00–10:00']);
     expect(filas[0].querySelector('a')!.getAttribute('href')).toBe('/turnosEditar/127');
     expect(texto(filas[0].querySelector('a'))).toBe('Editar');
+  });
+
+  // ------------------------------------------------------------------ revisión (8b-3c)
+
+  function elegir(id: number, turno: string): void {
+    const select = tarjeta(id).querySelector<HTMLSelectElement>('select')!;
+    select.value = turno;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+  }
+
+  it('añadir turno: tras asignarlo en un grupo, otro grupo con el mismo turno elegido queda sin elección y sin POST', () => {
+    crear();
+    responder();
+    boton(tarjeta(1), 'Turnos (2)').click();
+    boton(tarjeta(2), 'Turnos (3)').click();
+    fixture.detectChanges();
+    elegir(1, '128');
+    elegir(2, '128');
+    boton(tarjeta(1), 'Añadir').click();
+    http.expectOne(`${API}/grupos/1/turnos/128`).flush({});
+    pintar();
+    const anadirB = boton(tarjeta(2), 'Añadir');
+    expect(anadirB.disabled || anadirB.getAttribute('aria-disabled') === 'true').toBeTrue();
+    anadirB.click();
+    http.expectNone((r) => r.method === 'POST');
+  });
+
+  it('filtro: si la disciplina filtrada desaparece al recargar (último grupo eliminado), vuelve a «Todas»', async () => {
+    crear();
+    const suelto = { id: 9, nombre: 'Suelto', deporte: 'SIN_DISCIPLINA', rangoEdadMin: null, rangoEdadMax: null, numAlumnos: 2, turnos: [] };
+    responder([...datosGrupos(), suelto], datosTurnos());
+    const opcion = segmentos().find((s) => !texto(s).startsWith('Todas') && texto(s).includes('·') && tarjetaDeOpcion(s))!;
+    expect(opcion).toBeTruthy();
+    opcion.click();
+    fixture.detectChanges();
+    boton(tarjeta(9), 'Eliminar grupo Suelto').click();
+    pintar();
+    botonDialogo('Sí, eliminarlo').click();
+    await esperar();
+    http.expectOne(`${API}/grupos/9`).flush({});
+    await esperar();
+    http.expectOne(`${API}/grupos/resumen`).flush(datosGrupos());
+    http.expectOne(`${API}/turnos/resumen`).flush(datosTurnos());
+    fixture.detectChanges();
+    const marcado = segmentos().filter((s) => s.getAttribute('aria-checked') === 'true');
+    expect(marcado.length).toBe(1);
+    expect(texto(marcado[0]).startsWith('Todas')).toBeTrue();
+    expect(segmentos().filter((s) => s.getAttribute('tabindex') === '0').length).toBe(1);
+    expect(texto(el())).not.toContain('No hay grupos de ');
+  });
+
+  /** El segmento de la disciplina sin catálogo de la prueba (la de «Suelto»). */
+  function tarjetaDeOpcion(s: HTMLElement): boolean {
+    return !['Taekwondo', 'Kickboxing', 'Pilates'].some((n) => texto(s).startsWith(n));
+  }
+
+  it('alumnos por tipo: nombre, punto medio y cifra en un solo texto («Kickboxing · 50»)', () => {
+    crear();
+    responder();
+    const botones = Array.from(el().querySelectorAll<HTMLElement>('.grupos__tipo'));
+    expect(botones.map(texto)).toEqual(['Taekwondo · 1.234', 'Taekwondo Competición · 12', 'Kickboxing · 50']);
+    for (const b of botones) {
+      const hijos = Array.from(b.children).filter((c) => c.tagName.toLowerCase() !== 'svg');
+      expect(hijos.length).withContext('icono y un único texto').toBe(1);
+    }
+  });
+
+  it('escritura fallida en el panel nuevo: el aviso de error cierra el SweetAlert2 del interceptor (swal-error-http)', async () => {
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'grupos', canMatch: [disenoNuevoGuard], component: PantallaNueva }]);
+    await router.navigateByUrl('/grupos');
+    crear();
+    responder();
+    boton(tarjeta(1), 'Turnos (2)').click();
+    fixture.detectChanges();
+    elegir(1, '128');
+    boton(tarjeta(1), 'Añadir').click();
+    void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
+    expect(Swal.isVisible()).toBeTrue();
+    http.expectOne(`${API}/grupos/1/turnos/128`).flush({}, { status: 500, statusText: 'Error' });
+    pintar();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo asignar el turno al grupo' }]);
+    expect(Swal.isVisible()).toBeFalse();
+  });
+
+  it('turnos: aria-controls solo apunta a una región que existe, cerrada o abierta', () => {
+    crear();
+    responder();
+    const b = tarjeta(1).querySelector<HTMLButtonElement>('.grupos__turnos-boton')!;
+    function coherente(): void {
+      const id = b.getAttribute('aria-controls');
+      if (id !== null) {
+        expect(el().querySelector(`[id="${id}"]`)).withContext('región de aria-controls').not.toBeNull();
+      }
+    }
+    coherente();
+    b.click();
+    fixture.detectChanges();
+    coherente();
+    const id = b.getAttribute('aria-controls');
+    expect(id).not.toBeNull();
+    expect(el().querySelector<HTMLElement>(`[id="${id}"]`)!.hidden).toBeFalse();
+    b.click();
+    fixture.detectChanges();
+    coherente();
   });
 });

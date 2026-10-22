@@ -205,7 +205,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  /** Abre el diálogo como modal y pone el foco: en «Cancelar» si es destructivo, en la acción si no. */
+  /** Abre el diálogo como modal y pone el foco: en el primer campo si lo hay, en «Cancelar» si es destructivo, en la acción si no. */
   abrir(): void {
     this.valor = this.opciones.campo?.valor ?? null;
     this.valores = {};
@@ -216,6 +216,13 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     const dialogo = this.dialogoRef.nativeElement;
     dialogo.showModal();
     this.pila.abrir(dialogo);
+    const primerCampo = this.opciones.campos?.length
+      ? dialogo.querySelector<HTMLElement>('.pn-dialogo__campo input:not([type="hidden"]):not(:disabled), .pn-dialogo__campo select:not(:disabled), .pn-dialogo__campo textarea:not(:disabled), .pn-dialogo__campo [role="radio"][tabindex="0"]')
+      : null;
+    if (primerCampo) {
+      primerCampo.focus();
+      return;
+    }
     const inicial = this.conPeligro || this.accionDeshabilitada ? this.botonCancelar : this.botonAccion;
     inicial?.nativeElement.focus();
   }

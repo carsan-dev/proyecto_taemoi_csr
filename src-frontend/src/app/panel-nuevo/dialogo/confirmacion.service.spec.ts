@@ -402,4 +402,19 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     boton('Dar de alta').click();
     expect(await promesa).toEqual({ confirmado: true, valor: 'TODOS' });
   });
+
+  it('con campos de formulario el foco inicial va al primer campo; sin campos, a la acción', async () => {
+    const promesa = abrir({
+      titulo: 'Rango de edad del grupo',
+      accion: 'Guardar',
+      cancelar: 'Cancelar',
+      campos: [
+        { id: 'rangoEdadMin', tipo: 'number', etiqueta: 'Edad mínima', valor: '6' },
+        { id: 'rangoEdadMax', tipo: 'number', etiqueta: 'Edad máxima', valor: '12' },
+      ],
+    });
+    expect(document.activeElement).toBe(dialogo()!.querySelector('#rangoEdadMin'));
+    boton('Cancelar').click();
+    await promesa;
+  });
 });
