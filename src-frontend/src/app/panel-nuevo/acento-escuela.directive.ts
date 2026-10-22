@@ -42,6 +42,17 @@ export function escribirAcento(elemento: HTMLElement, acento: AcentoEscuela | nu
 }
 
 /**
+ * Desde el contexto de inyección de un componente o directiva: mantiene el acento en su elemento anfitrión (un `.pn`).
+ * Las capas con la clase `.pn` en el anfitrión (diálogo, avisos) lo llaman en vez de `hostDirectives`, que añadiría su
+ * soporte al bundle inicial.
+ */
+export function seguirAcento(): void {
+  const actual = inject(AcentoEscuelaActual);
+  const elemento: HTMLElement = inject(ElementRef).nativeElement;
+  effect(() => escribirAcento(elemento, actual.acento()));
+}
+
+/**
  * El acento de la escuela (8b-C) en el `.pn` de una pantalla o capa del panel nuevo. No pide la marca: escribe el
  * acento que dejó la cabecera al aplicarla. Mientras no hay marca, o con otra sesión, quita las variables y el `.pn`
  * vuelve al acento por defecto de `panel-nuevo.scss`. Solo el acento: el botón principal y el resto del tema de cada
@@ -53,8 +64,6 @@ export function escribirAcento(elemento: HTMLElement, acento: AcentoEscuela | nu
 })
 export class AcentoEscuelaDirective {
   constructor() {
-    const actual = inject(AcentoEscuelaActual);
-    const elemento: HTMLElement = inject(ElementRef).nativeElement;
-    effect(() => escribirAcento(elemento, actual.acento()));
+    seguirAcento();
   }
 }
