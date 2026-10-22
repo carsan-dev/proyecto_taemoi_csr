@@ -45,7 +45,7 @@ type Vista = 'filas' | 'tarjetas';
 type Estado = 'cargando' | 'listo' | 'error';
 
 interface GradoFila {
-  /** En la línea 2, en minúscula («naranja-verde»); en el detalle, con mayúscula inicial («Naranja-verde»). */
+  /** En la línea 2, en minúscula («naranja-verde»); en el detalle, el texto de hoy («NARANJA-VERDE», «NEGRO 1º DAN»). */
   nombre: string;
   nombreDetalle: string;
   /** Fondo del cinturón: un color o las dos mitades. */
@@ -618,8 +618,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 function gradoFila(codigo: string, deporte: string): GradoFila {
   const { colors, isSplit } = getGradoColors(codigo, deporte);
   const fondo = isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
-  const nombre = getGradoNombreParaDeporte(codigo, deporte).toLocaleLowerCase('es-ES');
-  return { nombre, nombreDetalle: nombre.charAt(0).toLocaleUpperCase('es-ES') + nombre.slice(1), fondo };
+  // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
+  const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
+  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
 }
 
 function fotoDe(a: any): string | null {

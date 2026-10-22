@@ -509,4 +509,15 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     fixture.detectChanges();
     expect(texto('.alumnos__deporte')).toContain('Sin grado');
   });
+
+  it('grado en el detalle con el texto de hoy: nombre del catálogo o el código sin guiones bajos', () => {
+    crear();
+    const raro = alumno(1, { deportes: [{ ...(alumno(1)['deportes'] as any[])[0], grado: 'ROJO_NEGRO_X' }] });
+    responder(1, [], { content: [raro], totalElements: 1, totalPages: 1, number: 0, size: 25 } as never);
+    el().querySelector<HTMLButtonElement>('.alumnos__desplegar')!.click();
+    fixture.detectChanges();
+    const detalle = texto('.alumnos__grado-detalle');
+    expect(detalle).toBe('ROJO NEGRO X');
+    expect(texto('.alumnos__linea2')).toContain('rojo negro x');
+  });
 });
