@@ -1,6 +1,5 @@
 import { Component, Injector, OnInit } from '@angular/core';
-import Swal from 'sweetalert2';
-import { showSuccessToast, showErrorToast } from '../../../../utils/toast.util';
+import { DIALOGOS_FICHA, DIALOGOS_SWEETALERT } from '../dialogos-ficha.port';
 import { mensajeDeError } from '../../../../servicios/endpoints/caja.service';
 import { Producto } from '../../../../interfaces/producto';
 import type { AlumnoDeporteDTO } from '../../../../interfaces/alumno-deporte-dto';
@@ -68,6 +67,14 @@ export class ProductosAlumnoComponent implements OnInit {
     private readonly injector: Injector
   ) {}
 
+  /**
+   * Diálogos y toasts (8b-D2b): SweetAlert2 tal cual (el puerto por defecto). Se lee del inyector de la página para
+   * que un `Injector` sin él (algunos specs) siga con SweetAlert2.
+   */
+  private get dialogos() {
+    return this.injector.get(DIALOGOS_FICHA, DIALOGOS_SWEETALERT);
+  }
+
   ngOnInit(): void {
     this.resolverPermisos();
     this.alumnoId = +this.route.snapshot.paramMap.get('id')!;
@@ -77,7 +84,7 @@ export class ProductosAlumnoComponent implements OnInit {
     this.obtenerProductos();
     this.endpointsService.obtenerAlumnoPorId(this.alumnoId).subscribe({
       next: (alumno) => { this.deportesAlumno = alumno.deportes ?? []; },
-      error: () => { showErrorToast('No se han podido obtener los deportes del alumno'); },
+      error: () => { this.dialogos.toastError('No se han podido obtener los deportes del alumno'); },
     });
   }
 
@@ -108,7 +115,7 @@ export class ProductosAlumnoComponent implements OnInit {
         },
         error: (error) => {
           this.cargando = false;
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error al obtener',
             text: 'No se han podido obtener los productos del alumno',
             icon: 'error',
@@ -134,7 +141,7 @@ export class ProductosAlumnoComponent implements OnInit {
         this.products = productos;
       },
       error: (error) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error al obtener',
           text: 'No se han podido obtener los productos',
           icon: 'error',
@@ -145,7 +152,7 @@ export class ProductosAlumnoComponent implements OnInit {
 
   asignarProducto() {
     if (this.selectedProductoId == null) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Error',
         text: 'Seleccione un producto',
         icon: 'error',
@@ -154,7 +161,7 @@ export class ProductosAlumnoComponent implements OnInit {
     }
     const esMatricula = this.esMatriculaSeleccionada();
     if (esMatricula && !this.deportesAlumno.some((item) => item.deporte === this.selectedDeporte)) {
-      Swal.fire({ title: 'Seleccione un deporte', text: 'La matrícula debe asignarse a un deporte del alumno.', icon: 'error' });
+      this.dialogos.fire({ title: 'Seleccione un deporte', text: 'La matrícula debe asignarse a un deporte del alumno.', icon: 'error' });
       return;
     }
     this.pendingAsignaciones.push({ productoId: this.selectedProductoId, deporte: esMatricula ? this.selectedDeporte : null });
@@ -205,7 +212,7 @@ export class ProductosAlumnoComponent implements OnInit {
     if (!this.puedeCancelar(producto) || this.accionEnCurso(producto.id)) {
       return;
     }
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Cancelar cargo',
       text: `«${producto.concepto}». No se borra: queda tachado en la ficha y se puede reactivar.`,
       icon: 'warning',
@@ -238,7 +245,7 @@ export class ProductosAlumnoComponent implements OnInit {
         .subscribe({
         next: (actualizado) => {
           this.aplicarCargoActualizado(actualizado);
-          showSuccessToast('Cargo cancelado');
+          this.dialogos.toastExito('Cargo cancelado');
         },
         // 400/409 con {mensaje}: los muestra el interceptor de errores.
         error: () => undefined,
@@ -250,7 +257,7 @@ export class ProductosAlumnoComponent implements OnInit {
     if (!this.estaCancelado(producto) || this.accionEnCurso(producto.id)) {
       return;
     }
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Reactivar cargo',
       text: `«${producto.concepto}» vuelve a estar pendiente de pago.`,
       icon: 'question',
@@ -271,7 +278,7 @@ export class ProductosAlumnoComponent implements OnInit {
         .subscribe({
         next: (actualizado) => {
           this.aplicarCargoActualizado(actualizado);
-          showSuccessToast('Cargo reactivado');
+          this.dialogos.toastExito('Cargo reactivado');
         },
         error: () => undefined,
       });
@@ -460,7 +467,7 @@ export class ProductosAlumnoComponent implements OnInit {
         this.endpointsService.actualizarProductoAlumno(producto.id, producto).pipe(
           catchError((e) => {
             hasErrors = true;
-            showErrorToast(mensajeDeError(e) ?? 'No se pudo actualizar un producto');
+            this.dialogos.toastError(mensajeDeError(e) ?? 'No se pudo actualizar un producto');
             return of(null);
           })
         )
@@ -472,7 +479,7 @@ export class ProductosAlumnoComponent implements OnInit {
         this.endpointsService.eliminarProductoAlumno(productoId).pipe(
           catchError(() => {
             hasErrors = true;
-            showErrorToast('No se pudo eliminar un producto');
+            this.dialogos.toastError('No se pudo eliminar un producto');
             return of(null);
           })
         )
@@ -499,7 +506,7 @@ export class ProductosAlumnoComponent implements OnInit {
         asignacion.pipe(
           catchError(() => {
             hasErrors = true;
-            showErrorToast('No se pudo asignar un producto');
+            this.dialogos.toastError('No se pudo asignar un producto');
             return of(null);
           })
         )
@@ -517,7 +524,7 @@ export class ProductosAlumnoComponent implements OnInit {
         complete: () => {
           this.obtenerProductosAlumno(this.alumnoId);
           if (!hasErrors) {
-            showSuccessToast('Cambios aplicados correctamente');
+            this.dialogos.toastExito('Cambios aplicados correctamente');
           }
         },
       });

@@ -29,8 +29,6 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
-import Swal from 'sweetalert2';
-import { showSuccessToast, showErrorToast } from '../../../utils/toast.util';
 import {
   SUBIDA_DOCUMENTO,
   SUBIDA_IMAGEN,
@@ -41,6 +39,7 @@ import {
 import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
 import { DialogosAlumnoComponent } from './dialogos-alumno/dialogos-alumno.component';
 import { FotoAmpliadaComponent } from './foto-ampliada/foto-ampliada.component';
+import { DIALOGOS_FICHA } from './dialogos-ficha.port';
 
 /** Outcome of requesting an alumno from the route (loaded, or the request failed) */
 interface ResultadoCargaAlumno {
@@ -83,6 +82,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   mostrarFormulario: boolean = false;
   alumnoForm: FormGroup;
   readonly catalogo = inject(CatalogoService);
+  /**
+   * Diálogos y toasts (8b-D2b): SweetAlert2 tal cual por defecto; la ficha nueva del panel da los suyos.
+   */
+  protected readonly dialogos = inject(DIALOGOS_FICHA);
   imagenPreview: string | null = null;
 
   // Otras propiedades
@@ -329,7 +332,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.cargando = false;
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudo obtener la lista de alumnos.',
           icon: 'error',
@@ -436,7 +439,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       this.cargando = false;
 
       // Show error and navigate to first alumno if available
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Alumno no encontrado',
         text: 'El alumno solicitado no existe.',
         icon: 'error',
@@ -494,7 +497,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private mostrarAlumnoCargado(id: number, resultado: ResultadoCargaAlumno): void {
     if (resultado.error) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Error',
         text: `No se pudo cargar el alumno con ID ${id}`,
         icon: 'error',
@@ -521,7 +524,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.aplicarAlumnoCargado(alumnoResponse);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: `No se pudo cargar el alumno con ID ${id}`,
             icon: 'error',
@@ -588,7 +591,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cambiarPaginaProductos(1);
       },
       error: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudieron obtener los productos del alumno.',
           icon: 'error',
@@ -611,7 +614,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Marcar como pagado',
       text: `¿Quieres marcar como pagado "${producto.concepto}"?`,
       icon: 'question',
@@ -643,10 +646,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             if (this.alumnoId && this.isProductoQueAfectaGrado(productoFinal)) {
               this.cargarDeportesDelAlumno(this.alumnoId, true);
             }
-            showSuccessToast('Producto marcado como pagado y grado actualizado');
+            this.dialogos.toastExito('Producto marcado como pagado y grado actualizado');
           },
           error: () => {
-            showErrorToast('No se pudo marcar como pagado');
+            this.dialogos.toastError('No se pudo marcar como pagado');
           },
         });
     });
@@ -886,11 +889,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.asignarAlumnoAGrupo(this.alumnoId, grupoId).subscribe({
       next: () => {
-        showSuccessToast('Grupo añadido');
+        this.dialogos.toastExito('Grupo añadido');
         this.cargarGruposYTurnos(this.alumnoId!);
       },
       error: (error) => {
-        showErrorToast(error.error?.message || 'No se pudo añadir al grupo');
+        this.dialogos.toastError(error.error?.message || 'No se pudo añadir al grupo');
       },
     });
   }
@@ -903,11 +906,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.removerAlumnoDeGrupo(this.alumnoId, grupoId).subscribe({
       next: () => {
-        showSuccessToast('Grupo eliminado');
+        this.dialogos.toastExito('Grupo eliminado');
         this.cargarGruposYTurnos(this.alumnoId!);
       },
       error: (error) => {
-        showErrorToast(error.error?.message || 'No se pudo eliminar del grupo');
+        this.dialogos.toastError(error.error?.message || 'No se pudo eliminar del grupo');
       },
     });
   }
@@ -920,11 +923,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.asignarAlumnoATurno(this.alumnoId, turnoId).subscribe({
       next: () => {
-        showSuccessToast('Turno añadido');
+        this.dialogos.toastExito('Turno añadido');
         this.cargarGruposYTurnos(this.alumnoId!);
       },
       error: (error) => {
-        showErrorToast(error.error?.message || 'No se pudo añadir al turno');
+        this.dialogos.toastError(error.error?.message || 'No se pudo añadir al turno');
       },
     });
   }
@@ -937,11 +940,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.removerAlumnoDeTurno(this.alumnoId, turnoId).subscribe({
       next: () => {
-        showSuccessToast('Turno eliminado');
+        this.dialogos.toastExito('Turno eliminado');
         this.cargarGruposYTurnos(this.alumnoId!);
       },
       error: (error) => {
-        showErrorToast(error.error?.message || 'No se pudo eliminar del turno');
+        this.dialogos.toastError(error.error?.message || 'No se pudo eliminar del turno');
       },
     });
   }
@@ -1000,7 +1003,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   confirmarYActualizarAlumno(id: number, alumno: any) {
     if (this.alumnoForm.invalid) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Formulario inválido',
         text: 'Por favor, complete todos los campos requeridos correctamente',
         icon: 'error',
@@ -1008,7 +1011,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Estás seguro?',
       text: 'El alumno se actualizará con la información introducida',
       icon: 'warning',
@@ -1045,7 +1048,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.actualizarAlumno(id, formData).subscribe({
       next: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Bien!',
           text: '¡Alumno actualizado correctamente!',
           icon: 'success',
@@ -1056,7 +1059,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarAlumno(id);
       },
       error: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error al actualizar',
           text: 'Error al actualizar al alumno',
           icon: 'error',
@@ -1074,7 +1077,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const preparado = await prepararFicheroParaSubida(elegido, SUBIDA_DOCUMENTO);
     reiniciarSelectorArchivo(entrada);
     if (!preparado.ok) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'No se pudo subir el documento',
         text: preparado.motivo,
         icon: 'error',
@@ -1084,7 +1087,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.subirDocumentoAlumno(this.alumnoId!, preparado.file).subscribe({
       next: (doc) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Documento subido',
           text: 'El documento se ha subido correctamente.',
           icon: 'success',
@@ -1093,7 +1096,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarDocumentosAlumno(this.alumnoId!);
       },
       error: (err) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: mensajeErrorSubida(err, 'No se pudo subir el documento'),
           icon: 'error',
@@ -1112,16 +1115,16 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.alumnoEditado.fotoAlumno = null;
         this.imagenPreview = '../../../../assets/media/default.webp';
         this.cargarAlumno(id);
-        showSuccessToast('Imagen eliminada');
+        this.dialogos.toastExito('Imagen eliminada');
       },
       error: () => {
-        showErrorToast('No se pudo eliminar la imagen');
+        this.dialogos.toastError('No se pudo eliminar la imagen');
       },
     });
   }
 
   eliminarDocumento(documentoId: number) {
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Estás seguro?',
       text: 'Eliminarás este documento permanentemente',
       icon: 'warning',
@@ -1136,7 +1139,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           .eliminarDocumentoAlumno(this.alumnoId!, documentoId)
           .subscribe({
             next: () => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: 'Eliminado',
                 text: 'Documento eliminado correctamente.',
                 icon: 'success',
@@ -1148,7 +1151,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
               );
             },
             error: () => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: 'Error',
                 text: 'No se pudo eliminar el documento.',
                 icon: 'error',
@@ -1171,7 +1174,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const alumnoId = this.alumno?.id ?? this.alumnoId;
 
     if (!doc?.id || !alumnoId) {
-      Swal.fire({
+      this.dialogos.fire({
         icon: 'error',
         title: 'No se pudo descargar',
         text: 'Falta la información necesaria del documento o del alumno.',
@@ -1212,7 +1215,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Download error details:', error);
-        Swal.fire({
+        this.dialogos.fire({
           icon: 'error',
           title: 'Descarga fallida',
           text: `Error ${error.status}: ${error.statusText || 'No se pudo descargar el documento.'}`,
@@ -1307,7 +1310,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const telefono2 = this.alumno?.telefono2;
 
     if (!telefono1 && !telefono2) {
-      Swal.fire({
+      this.dialogos.fire({
         icon: 'warning',
         title: 'Sin telefono',
         text: 'Este alumno no tiene ningun teléfono registrado.',
@@ -1327,7 +1330,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
 
     // Si hay dos telefonos, mostrar selector
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Seleccionar telefono',
       text: 'A qué número deseas enviar el mensaje de WhatsApp?',
       icon: 'question',
@@ -1375,7 +1378,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   enviarWhatsappConDocumentos(): void {
     if (!this.whatsappTelefonoSeleccionado) {
-      showErrorToast('No se pudo seleccionar teléfono');
+      this.dialogos.toastError('No se pudo seleccionar teléfono');
       return;
     }
 
@@ -1448,7 +1451,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   renovarLicencia(alumnoId: number): void {
     this.endpointsService.renovarLicencia(alumnoId).subscribe({
       next: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Licencia renovada!',
           text: 'Se ha añadido la licencia al perfil del alumno.',
           icon: 'success',
@@ -1456,7 +1459,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarAlumno(alumnoId);
       },
       error: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudo renovar la licencia.',
           icon: 'error',
@@ -1533,7 +1536,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     reiniciarSelectorArchivo(entrada);
     if (!preparado.ok) {
       // Modal y no toast: el motivo dice cómo resolverlo y en 3 s no da tiempo a leerlo en el móvil.
-      Swal.fire({
+      this.dialogos.fire({
         title: 'No se pudo cambiar la imagen',
         text: preparado.motivo,
         icon: 'error',
@@ -1555,12 +1558,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.actualizarAlumno(this.alumnoId, formData).subscribe({
       next: () => {
-        showSuccessToast('Imagen actualizada');
+        this.dialogos.toastExito('Imagen actualizada');
         this.cargarAlumno(this.alumnoId!);
       },
       error: (error) => {
         this.imagenPreview = null;
-        showErrorToast(mensajeErrorSubida(error, 'No se pudo actualizar la imagen'));
+        this.dialogos.toastError(mensajeErrorSubida(error, 'No se pudo actualizar la imagen'));
       },
     });
   }
@@ -1658,7 +1661,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const deportesActivos = this.deportesDelAlumno.filter((d: AlumnoDeporteDTO) => d.activo !== false);
 
     if (deportesActivos.length === 0) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Sin deportes',
         text: 'El alumno no tiene deportes activos para reservar plaza.',
         icon: 'warning',
@@ -1680,7 +1683,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       inputOptions[d.deporte] = this.getDeporteLabel(d.deporte);
     });
 
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Para qué deporte?',
       text: `Temporada: ${anoActual}/${proximoAno}`,
       icon: 'question',
@@ -1712,7 +1715,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Confirms reservation for a specific sport
    */
   private confirmarReservaConDeporte(alumnoId: number, deporte: string, anoActual: number, proximoAno: number): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Quiere añadir una reserva de plaza?',
       text: `${this.getDeporteLabel(deporte)} - Temporada: ${anoActual}/${proximoAno}`,
       icon: 'question',
@@ -1730,7 +1733,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Reserves plaza for all active sports
    */
   private reservarPlazaTodosDeportes(alumnoId: number, deportes: any[], anoActual: number, proximoAno: number): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Reservar para todos los deportes?',
       text: `Se crearán ${deportes.length} reservas - Temporada: ${anoActual}/${proximoAno}`,
       icon: 'question',
@@ -1748,7 +1751,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Confirma pago y crea reservas para todos los deportes
    */
   private confirmarPagoReservaTodosDeportes(alumnoId: number, deportes: any[]): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Han sido abonadas las reservas?',
       icon: 'question',
       showCancelButton: true,
@@ -1798,14 +1801,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private mostrarResultadoReservasMultiples(completadas: number, errores: number): void {
     if (errores === 0) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Reservas creadas',
         text: `Se han creado ${completadas} reservas correctamente.`,
         icon: 'success',
         timer: 2000,
       });
     } else {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Reservas parciales',
         text: `Completadas: ${completadas}, Errores: ${errores}`,
         icon: 'warning',
@@ -1817,7 +1820,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Confirma si la reserva ha sido pagada (por deporte)
    */
   private confirmarPagoReservaDeporte(alumnoId: number, deporte: string): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Ha sido abonada la reserva?',
       icon: 'question',
       showCancelButton: true,
@@ -1865,7 +1868,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Confirma si desea forzar la creación de la reserva por deporte
    */
   private confirmarReservaForzadaDeporte(alumnoId: number, deporte: string, pagado: boolean): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Reserva existente',
       text: `Ya existe una reserva de plaza para ${this.getDeporteLabel(deporte)}. ¿Quieres proceder de todas formas?`,
       icon: 'warning',
@@ -1901,7 +1904,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const texto = deporte
       ? `La reserva de plaza para ${this.getDeporteLabel(deporte)} ha sido añadida correctamente.`
       : 'La reserva de plaza ha sido añadida correctamente.';
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Reserva creada',
       text: texto,
       icon: 'success',
@@ -1913,7 +1916,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    * Muestra mensaje de error al crear la reserva
    */
   private mostrarErrorReserva(): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Error',
       text: 'No se pudo crear la reserva.',
       icon: 'error',
@@ -1978,7 +1981,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .agregarAlumnoAConvocatoria(this.alumnoId, convocatoria.id, porRecompensa)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Alumno agregado',
             text: 'El alumno ha sido agregado correctamente a la convocatoria.',
             icon: 'success',
@@ -1991,7 +1994,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           }
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error,
             icon: 'error',
@@ -2004,7 +2007,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     if (!this.alumnoId) return;
 
     this.cerrarModalEliminarConvocatorias();
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Estás seguro?',
       text: `Eliminarás al alumno de la convocatoria de ${convocatoria.deporte}
              del ${formatDate(convocatoria.fechaConvocatoria)}`,
@@ -2020,7 +2023,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           .eliminarAlumnoDeConvocatoria(this.alumnoId!, convocatoria.id)
           .subscribe({
             next: () => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: 'Eliminado',
                 text: 'El alumno ha sido eliminado de la convocatoria.',
                 icon: 'success',
@@ -2030,7 +2033,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
               this.obtenerProductosAlumno(this.alumnoId!);
             },
             error: (e) => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: 'Error',
                 text: mensajeDeError(e) ?? 'No se pudo eliminar al alumno de la convocatoria.',
                 icon: 'error',
@@ -2185,7 +2188,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.deportesDelAlumno = [];
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudieron cargar los deportes del alumno',
           icon: 'error',
@@ -2260,7 +2263,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
     const deporteData = this.deportesDelAlumno.find(d => d.deporte === deporte);
     if (!deporteData || deporteData.activo === false) {
-      showErrorToast('No se puede marcar como principal un deporte inactivo');
+      this.dialogos.toastError('No se puede marcar como principal un deporte inactivo');
       return;
     }
     if (this.isDeportePrincipal(deporte)) {
@@ -2268,11 +2271,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     }
     this.alumnoService.establecerDeportePrincipal(this.alumnoId, deporte).subscribe({
       next: () => {
-        showSuccessToast(`Deporte principal actualizado a ${getDeporteLabel(deporte)}`);
+        this.dialogos.toastExito(`Deporte principal actualizado a ${getDeporteLabel(deporte)}`);
         this.cargarDeportesDelAlumno(this.alumnoId!, true);
       },
       error: (error) => {
-        showErrorToast(error?.error || 'No se pudo actualizar el deporte principal');
+        this.dialogos.toastError(error?.error || 'No se pudo actualizar el deporte principal');
       },
     });
   }
@@ -2290,7 +2293,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   abrirModalAgregarDeporte(): void {
     this.deportesDisponibles = this.getDeportesDisponiblesParaAgregar();
     if (this.deportesDisponibles.length === 0) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'No hay deportes disponibles',
         text: 'El alumno ya está inscrito en todos los deportes disponibles',
         icon: 'info',
@@ -2385,7 +2388,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: '¡Deporte agregado!',
             text: `El deporte ${getDeporteLabel(deporteToActivate)} ha sido agregado exitosamente`,
             icon: 'success',
@@ -2405,7 +2408,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           }
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo agregar el deporte',
             icon: 'error',
@@ -2419,7 +2422,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   removerDeporte(deporte: string): void {
     if (this.deportesDelAlumno.length === 1) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'No se puede eliminar',
         text: 'El alumno debe tener al menos un deporte asignado',
         icon: 'warning',
@@ -2433,7 +2436,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     if (estaInactivo) {
       // Si ya está inactivo, solo mostrar opción de eliminar completamente
-      Swal.fire({
+      this.dialogos.fire({
         title: '¿Eliminar deporte?',
         html: `
           <p>El deporte <strong>${getDeporteLabel(deporte)}</strong> será eliminado completamente.</p>
@@ -2445,14 +2448,14 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#d33',
         cancelButtonColor: '#6c757d',
-      }).then((result) => {
+      }, 'eliminar-deporte').then((result) => {
         if (result.isConfirmed && this.alumnoId) {
           this.ejecutarEliminacionDeporte(deporte);
         }
       });
     } else {
       // Si está activo, mostrar opciones de desactivar o eliminar
-      Swal.fire({
+      this.dialogos.fire({
         title: '¿Qué deseas hacer?',
         html: `
           <p>Selecciona una opción para el deporte <strong>${getDeporteLabel(deporte)}</strong>:</p>
@@ -2470,12 +2473,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         confirmButtonColor: '#ffa500',
         denyButtonColor: '#d33',
         cancelButtonColor: '#6c757d',
-      }).then((result) => {
+      }, 'desactivar-o-eliminar-deporte').then((result) => {
         if (result.isConfirmed && this.alumnoId) {
           // Desactivar (soft delete)
           this.alumnoService.desactivarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
             next: () => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: '¡Desactivado!',
                 text: 'El deporte ha sido desactivado. Puedes reactivarlo cuando quieras.',
                 icon: 'success',
@@ -2485,7 +2488,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
               this.cargarDeportesDelAlumno(this.alumnoId!);
             },
             error: (error) => {
-              Swal.fire({
+              this.dialogos.fire({
                 title: 'Error',
                 text: error.error || 'No se pudo desactivar el deporte',
                 icon: 'error',
@@ -2502,7 +2505,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   private ejecutarEliminacionDeporte(deporte: string): void {
     this.alumnoService.removerDeporteDeAlumno(this.alumnoId!, deporte).subscribe({
       next: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Eliminado!',
           text: 'El deporte ha sido eliminado completamente',
           icon: 'success',
@@ -2521,7 +2524,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarDeportesDelAlumno(this.alumnoId!);
       },
       error: (error) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: error.error || 'No se pudo eliminar el deporte',
           icon: 'error',
@@ -2538,7 +2541,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Activar deporte?',
       text: `¿Deseas reactivar el deporte ${getDeporteLabel(deporte)}? Se mantendrán todos los datos (grado, historial, etc.).`,
       icon: 'question',
@@ -2551,7 +2554,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       if (result.isConfirmed && this.alumnoId) {
         this.alumnoService.activarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
           next: () => {
-            Swal.fire({
+            this.dialogos.fire({
               title: '¡Activado!',
               text: 'El deporte ha sido reactivado correctamente',
               icon: 'success',
@@ -2561,7 +2564,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.cargarDeportesDelAlumno(this.alumnoId!);
           },
           error: (error) => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Error',
               text: error.error || 'No se pudo activar el deporte',
               icon: 'error',
@@ -2582,7 +2585,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Verificar que hay más de un deporte activo
     if (this.getDeportesActivosCount() <= 1) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'No se puede desactivar',
         text: 'No se puede desactivar el último deporte activo del alumno.',
         icon: 'warning',
@@ -2590,7 +2593,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Desactivar deporte?',
       text: `¿Deseas desactivar el deporte ${getDeporteLabel(deporte)}? Se mantendrán todos los datos (grado, historial, etc.) y podrás reactivarlo cuando quieras.`,
       icon: 'question',
@@ -2603,7 +2606,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       if (result.isConfirmed && this.alumnoId) {
         this.alumnoService.desactivarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
           next: () => {
-            Swal.fire({
+            this.dialogos.fire({
               title: '¡Desactivado!',
               text: 'El deporte ha sido desactivado. Puedes reactivarlo cuando quieras.',
               icon: 'success',
@@ -2613,7 +2616,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.cargarDeportesDelAlumno(this.alumnoId!);
           },
           error: (error) => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Error',
               text: error.error || 'No se pudo desactivar el deporte',
               icon: 'error',
@@ -2637,7 +2640,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     if (alumnoActivo) {
       // Alumno ACTIVO - Mostrar opciones de dar de baja o eliminar
-      Swal.fire({
+      this.dialogos.fire({
         title: '¿Qué deseas hacer?',
         html: `
           <p>Selecciona una opción para <strong>${this.alumno.nombre} ${this.alumno.apellidos}</strong>:</p>
@@ -2655,7 +2658,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         confirmButtonColor: '#ffa500',
         denyButtonColor: '#d33',
         cancelButtonColor: '#6c757d',
-      }).then((result) => {
+      }, 'baja-o-eliminar').then((result) => {
         if (result.isConfirmed) {
           // Dar de baja (soft delete)
           this.darDeBajaAlumno();
@@ -2666,7 +2669,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       });
     } else {
       // Alumno INACTIVO - Mostrar opciones de dar de alta o eliminar
-      Swal.fire({
+      this.dialogos.fire({
         title: '¿Qué deseas hacer?',
         html: `
           <p>Selecciona una opción para <strong>${this.alumno.nombre} ${this.alumno.apellidos}</strong> (actualmente inactivo):</p>
@@ -2684,7 +2687,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         confirmButtonColor: '#28a745',
         denyButtonColor: '#d33',
         cancelButtonColor: '#6c757d',
-      }).then((result) => {
+      }, 'alta-o-eliminar').then((result) => {
         if (result.isConfirmed) {
           // Dar de alta
           this.darDeAltaAlumno();
@@ -2709,7 +2712,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const deportesActivos = this.deportesDelAlumno.filter(d => d.activo !== false);
 
     if (deportesActivos.length === 0) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Información',
         text: 'El alumno ya está inactivo (no tiene deportes activos)',
         icon: 'info',
@@ -2720,7 +2723,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Usar el endpoint del backend que maneja la lógica completa de dar de baja
     this.endpointsService.darDeBajaAlumno(this.alumnoId).subscribe({
       next: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Dado de baja!',
           text: `El alumno ha sido dado de baja en todos sus deportes (${deportesActivos.length} ${deportesActivos.length === 1 ? 'deporte' : 'deportes'}).`,
           icon: 'success',
@@ -2730,7 +2733,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarDeportesDelAlumno(this.alumnoId!);
       },
       error: (error: any) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: error.error?.message || 'No se pudo dar de baja al alumno',
           icon: 'error',
@@ -2747,7 +2750,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: '¿Estás completamente seguro?',
       html: `
         <p>Esta acción <strong>NO SE PUEDE DESHACER</strong>.</p>
@@ -2767,11 +2770,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6c757d',
-    }).then((result) => {
+    }, 'eliminar-alumno').then((result) => {
       if (result.isConfirmed) {
         this.endpointsService.eliminarAlumnos(this.alumnoId!).subscribe({
           next: () => {
-            Swal.fire({
+            this.dialogos.fire({
               title: '¡Eliminado!',
               text: 'El alumno ha sido eliminado completamente del sistema.',
               icon: 'success',
@@ -2781,7 +2784,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             });
           },
           error: (error) => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Error',
               text: error.error?.message || 'No se pudo eliminar al alumno',
               icon: 'error',
@@ -2805,7 +2808,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const deportesInactivos = this.deportesDelAlumno.filter(d => d.activo === false);
 
     if (deportesInactivos.length === 0) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Información',
         text: 'El alumno ya está activo (tiene deportes activos)',
         icon: 'info',
@@ -2824,7 +2827,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       `<option value="${d.deporte}">${getDeporteLabel(d.deporte)}</option>`
     ).join('');
 
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Selecciona el deporte a activar',
       html: `
         <p>El alumno tiene ${deportesInactivos.length} deportes inactivos.</p>
@@ -2847,12 +2850,12 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       preConfirm: () => {
         const deporteSelect = document.getElementById('deporte-select') as HTMLSelectElement;
         if (!deporteSelect.value) {
-          Swal.showValidationMessage('Debes seleccionar un deporte');
+          this.dialogos.showValidationMessage('Debes seleccionar un deporte');
           return false;
         }
         return deporteSelect.value;
       },
-    }).then((result) => {
+    }, 'alta-deporte').then((result) => {
       if (result.isConfirmed && result.value) {
         if (result.value === 'TODOS') {
           this.activarTodosLosDeportesYLimpiarFechas(deportesInactivos);
@@ -2874,7 +2877,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     // Activar el deporte seleccionado - el backend ya actualiza el alumno automáticamente
     this.alumnoService.activarDeporteDeAlumno(this.alumnoId, deporte).subscribe({
       next: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Dado de alta!',
           text: `El alumno ha sido dado de alta en ${getDeporteLabel(deporte)}.`,
           icon: 'success',
@@ -2884,7 +2887,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarDeportesDelAlumno(this.alumnoId!);
       },
       error: (error) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: error.error || 'No se pudo activar el deporte',
           icon: 'error',
@@ -2912,7 +2915,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         // Se ejecuta después de cada activación individual
       },
       error: (error: any) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: error.error || 'No se pudieron activar algunos deportes',
           icon: 'error',
@@ -2922,7 +2925,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         // El backend ya actualiza el alumno automáticamente al activar cada deporte
         // Solo recargamos los datos para reflejar los cambios
         const deportesLabels = deportesInactivos.map(d => getDeporteLabel(d.deporte)).join(', ');
-        Swal.fire({
+        this.dialogos.fire({
           title: '¡Dado de alta!',
           text: `El alumno ha sido dado de alta en todos sus deportes: ${deportesLabels}.`,
           icon: 'success',
@@ -3037,7 +3040,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           ? `El grado y la fecha para ${deporteLabel} han sido actualizados a ${gradoNombre}`
           : `El grado para ${deporteLabel} ha sido actualizado a ${gradoNombre}`;
 
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Grado actualizado!',
           text: mensaje,
           icon: 'success',
@@ -3048,7 +3051,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.cargarDeportesDelAlumno(this.alumnoId!, true);
       },
       error: (error) => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: error.error || 'No se pudo actualizar el grado o la fecha',
           icon: 'error',
@@ -3071,7 +3074,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarAptoParaExamen(this.alumnoId, deporte, aptoParaExamen)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: '¡Actualizado!',
             text: `Estado de aptitud para examen actualizado en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3084,7 +3087,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         error: (error) => {
           // Revert the checkbox
           event.target.checked = !aptoParaExamen;
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar el estado',
             icon: 'error',
@@ -3110,7 +3113,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarFechaGrado(this.alumnoId, deporte, fechaGrado)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: '¡Fecha actualizada!',
             text: `Fecha de grado actualizada en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3121,7 +3124,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar la fecha',
             icon: 'error',
@@ -3149,7 +3152,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarFechaAltaInicialDeporte(this.alumnoId, deporte, fechaAltaInicial)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Fecha actualizada',
             text: `Fecha de alta inicial actualizada en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3159,7 +3162,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar la fecha',
             icon: 'error',
@@ -3350,7 +3353,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarNumeroLicenciaDeporte(this.alumnoId, deporte, numeroLicencia)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Número actualizado',
             text: `Número de licencia actualizado en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3360,7 +3363,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar el número de licencia',
             icon: 'error',
@@ -3387,7 +3390,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarFechaLicenciaDeporte(this.alumnoId, deporte, fechaLicencia)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Fecha actualizada',
             text: `Fecha de licencia actualizada en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3397,7 +3400,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar la fecha',
             icon: 'error',
@@ -3421,7 +3424,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarCompetidorDeporte(this.alumnoId, deporte, competidor)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Competidor actualizado',
             text: `Estado de competidor actualizado en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3431,7 +3434,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar el estado de competidor',
             icon: 'error',
@@ -3458,7 +3461,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarPesoDeporte(this.alumnoId, deporte, peso)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Peso actualizado',
             text: `Peso actualizado en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3468,7 +3471,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar el peso',
             icon: 'error',
@@ -3495,7 +3498,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .actualizarFechaPesoDeporte(this.alumnoId, deporte, fechaPeso)
       .subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Fecha actualizada',
             text: `Fecha de peso actualizada en ${getDeporteLabel(deporte)}`,
             icon: 'success',
@@ -3505,7 +3508,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.cargarDeportesDelAlumno(this.alumnoId!, true);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo actualizar la fecha',
             icon: 'error',
@@ -3551,7 +3554,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           );
         const convocatoriaDefault = proximas[0] ?? convocatoriasOrdenadas[0];
 
-        Swal.fire({
+        this.dialogos.fire({
           title: `Selecciona convocatoria (${this.getDeporteLabel(deporte)})`,
           input: 'select',
           inputOptions,
@@ -3582,7 +3585,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         });
       },
       error: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudieron cargar las convocatorias',
           icon: 'error',
@@ -3623,7 +3626,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         this.mostrarModalConvocatorias = true;
       },
       error: () => {
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Error',
           text: 'No se pudieron cargar las convocatorias',
           icon: 'error',
@@ -3647,7 +3650,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     );
 
     if (!deporteData) {
-      Swal.fire({
+      this.dialogos.fire({
         title: 'Error',
         text: 'No se pudo encontrar el registro del deporte',
         icon: 'error',
@@ -3674,7 +3677,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         )
         .subscribe({
           next: () => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Agregado!',
               text: `El alumno ha sido agregado a la convocatoria de ${getDeporteLabel(
                 deporteSeleccionado
@@ -3687,7 +3690,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.obtenerProductosAlumno(this.alumnoId!);
           },
           error: (error) => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Error',
               text: error.error?.message || 'No se pudo agregar a la convocatoria',
               icon: 'error',
@@ -3717,7 +3720,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   private solicitarTipoCinturonRojo(titulo: string, texto: string): Promise<boolean | null> {
-    return Swal.fire({
+    return this.dialogos.fire({
       title: titulo,
       text: texto,
       input: 'radio',
@@ -4091,7 +4094,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   private onAllTarifaUpdatesComplete(deporte: string): void {
     this.pendingTarifaChanges.delete(deporte);
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Tarifa actualizada',
       text: `Información de tarifa actualizada en ${getDeporteLabel(deporte)}`,
       icon: 'success',
@@ -4167,7 +4170,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   private onAllLicenciaUpdatesComplete(deporte: string): void {
     this.pendingLicenciaChanges.delete(deporte);
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Licencia actualizada',
       text: `Información de licencia actualizada en ${getDeporteLabel(deporte)}`,
       icon: 'success',
@@ -4243,7 +4246,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.onAllCompetidorUpdatesComplete(deporte);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudieron actualizar los datos de competidor',
             icon: 'error',
@@ -4273,7 +4276,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         // NOW delete pending changes after data has been reloaded
         this.pendingCompetidorChanges.delete(deporte);
 
-        Swal.fire({
+        this.dialogos.fire({
           title: 'Competidor actualizado',
           text: `Información de competidor actualizada en ${getDeporteLabel(deporte)}`,
           icon: 'success',
@@ -4354,7 +4357,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         .subscribe({
           next: () => {
             this.pendingGradoChanges.delete(deporte);
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Fecha de grado actualizada',
               text: `Fecha de grado actualizada en ${getDeporteLabel(deporte)}`,
               icon: 'success',
@@ -4494,7 +4497,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
   private onAllEstadisticasUpdatesComplete(deporte: string): void {
     this.pendingEstadisticasChanges.delete(deporte);
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Fechas actualizadas',
       text: `Estadísticas actualizadas en ${getDeporteLabel(deporte)}`,
       icon: 'success',
@@ -4505,7 +4508,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   private handleUpdateError(fieldName: string, error: any): void {
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Error',
       text: error.error || `No se pudo actualizar ${fieldName}`,
       icon: 'error',
@@ -4628,11 +4631,11 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => (this.guardandoObservaciones = false)))
       .subscribe({
         next: () => {
-          showSuccessToast('Observaciones actualizadas');
+          this.dialogos.toastExito('Observaciones actualizadas');
           this.alumno.observaciones = observaciones;
         },
         error: () => {
-          showErrorToast('Error al actualizar las observaciones');
+          this.dialogos.toastError('Error al actualizar las observaciones');
         },
       });
   }
@@ -4642,7 +4645,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
    */
   private abrirSwalCrearConvocatoria(deporte: string): void {
     this.deporteParaConvocatoria = deporte;
-    Swal.fire({
+    this.dialogos.fire({
       title: `Nueva convocatoria (${this.getDeporteLabel(deporte)})`,
       input: 'date',
       inputLabel: 'Fecha de la convocatoria',
@@ -4668,7 +4671,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
             this.agregarAConvocatoriaPorDeporte(convocatoriaCreada);
           },
           error: (error) => {
-            Swal.fire({
+            this.dialogos.fire({
               title: 'Error',
               text: error.error?.message || 'No se pudo crear la convocatoria',
               icon: 'error',
@@ -4690,7 +4693,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const ejecutarPase = (rojoBordado: boolean) => {
       this.endpointsService.pasarGradoPorRecompensa(this.alumnoId!, deporte, rojoBordado).subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Grado actualizado!',
             text: `El alumno ha pasado de grado por recompensa en ${this.getDeporteLabel(deporte)}.`,
             icon: 'success',
@@ -4700,7 +4703,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.obtenerProductosAlumno(this.alumnoId!);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo pasar de grado por recompensa',
             icon: 'error',
@@ -4723,7 +4726,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Pasar de grado por recompensa',
       text: `Se actualizará el grado en ${this.getDeporteLabel(deporte)} una vez realizado el pago y se añadirá el producto de recompensa.`,
       icon: 'question',
@@ -4752,7 +4755,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     const ejecutarPase = (rojoBordado: boolean) => {
       this.endpointsService.pasarGradoConDerechoExamen(this.alumnoId!, deporte, rojoBordado).subscribe({
         next: () => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Derecho de examen añadido',
             text: `Se ha añadido el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado.`,
             icon: 'success',
@@ -4762,7 +4765,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
           this.obtenerProductosAlumno(this.alumnoId!);
         },
         error: (error) => {
-          Swal.fire({
+          this.dialogos.fire({
             title: 'Error',
             text: error.error || 'No se pudo añadir el derecho de examen',
             icon: 'error',
@@ -4785,7 +4788,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    Swal.fire({
+    this.dialogos.fire({
       title: 'Añadir derecho de examen',
       text: `Se añadirá el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado.`,
       icon: 'question',
@@ -4877,7 +4880,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     // Validate all pending changes before applying
     if (this.hasBasicInfoErrors()) {
-      showErrorToast('Por favor, corrige los errores antes de guardar');
+      this.dialogos.toastError('Por favor, corrige los errores antes de guardar');
       return;
     }
 
@@ -4938,7 +4941,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
 
     this.endpointsService.actualizarAlumno(this.alumnoId, formData).subscribe({
       next: () => {
-        showSuccessToast('Información actualizada correctamente');
+        this.dialogos.toastExito('Información actualizada correctamente');
         this.pendingBasicInfoChanges = {};
         this.editingBasicInfo = false;
         // Reload alumno data
@@ -4947,7 +4950,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
         });
       },
       error: (error) => {
-        showErrorToast('Error al actualizar la información');
+        this.dialogos.toastError('Error al actualizar la información');
       },
     });
   }
