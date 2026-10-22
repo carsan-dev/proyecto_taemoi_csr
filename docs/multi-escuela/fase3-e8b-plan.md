@@ -1023,6 +1023,32 @@ cuerpo, con una confirmación equivalente (punto de revisión 8).
 - [x] Capturas apagado antes y después idénticas en bytes, también con el pie de herramientas desplegado y con cada
   herramienta abierta; encendido a 375, 768, 1024 y 1280.
 
+**Ronda 2 (revisión devuelta, 22/10/2026).** Specs en rojo antes del código: 21 casos (con las exportaciones nuevas
+como esbozo vacío) en `capa-modal`, `carga`, `confirmacion.service`, `avisos.service`, `panel-lateral`,
+`herramienta-panel`, `formato-es` y el interceptor; después, la batería completa en verde (1.649).
+- [x] Bloqueante: `herramienta-panel.component.spec.ts`: con «Cargar mensualidades», «Cargar licencias» o un PDF en
+  vuelo, el panel NO se cierra con «Cancelar», la X, Esc, el evento `cancel` ni el velo, y un segundo clic no lanza
+  otro `POST`; tras la respuesta, `asignado` llega una vez y el panel se cierra. `panel-lateral.component.spec.ts`:
+  con `bloqueado`, la X deshabilitada, dos Esc y dos `cancel` con `preventDefault` y sin emitir, el velo tampoco; si el
+  navegador cierra el `<dialog>`, se vuelve a abrir como modal; sin bloquear, su `close` emite `cerrar` una vez.
+- [x] `capa-modal.spec.ts` (nuevo, en `tsconfig.spec.json` y `angular.json`): `cerrarSweetAlertAbierto` cierra el
+  SweetAlert2 con `swal-error-http` en una pantalla nueva (entrada con `disenoNuevoGuard`) y no cierra otro (una
+  confirmación, «Sesión expirada») ni, en una pantalla de hoy, el del error. `error.interceptor.spec.ts`: su
+  SweetAlert2 lleva `customClass: { popup: 'swal-error-http' }`. Avisos y diálogo, lo mismo con el router de verdad.
+- [x] `confirmacion.service.spec.ts` y `carga.spec.ts`: el botón ocupado lleva `aria-disabled` (no `disabled`), el foco
+  se queda en él y un segundo clic no llega; dos Esc y dos `cancel` sin efecto; si el navegador cierra el `<dialog>` con
+  la acción en vuelo, se vuelve a abrir y el resultado llega al terminar; sin nada en vuelo, ese cierre cancela.
+- [x] `formato-es.spec.ts`: `nombreMes` (0 a 11, mayúscula inicial, vacío fuera de rango); `pn-campo-mes-ano` lo usa.
+- [x] `avisos.service.spec.ts`: las regiones vivas `role=status` y `role=alert` existen vacías al crear la región y
+  reciben el texto a los 100 ms, por tipo, y siguen ahí vacías sin avisos; barra de tiempo sin animación con
+  `prefers-reduced-motion`. `herramienta-panel.component.spec.ts`: el «Aviso» de un PDF parcial sale como información
+  con el mismo texto y el error como error.
+- [x] Capturas: apagado antes (`80d8bbf4`) y después idénticas en bytes, 28/28 (con 52 alumnos ficticios); encendido,
+  solo lo que cambia (`encendido-ocupado` y `encendido-panel-envuelo`) a 375, 768, 1024 y 1280, con dos Esc en
+  Chrome sin cerrar el diálogo ni el panel y un solo `POST` retenido en el navegador.
+- La frase de la baja sigue siendo «desde hoy» (exacta: `fechaBaja` = hoy); ni el plan ni DESIGN.md citaban la del
+  boceto.
+
 **Inventario de lo sustituido** (dónde estaba → qué lo sustituye; por qué: decisión 269, y un SweetAlert2 o el cargador
 global quedarían detrás de una capa modal nueva, sin verse ni poder cerrarse):
 
@@ -1048,7 +1074,8 @@ cargo»; el Inicio, que sí lo sabe, «Cobrar mensualidad» o «Cobrar derecho d
 
 **Además:** el interceptor de errores de hoy abre un SweetAlert2 con cada error HTTP; en las pantallas de hoy el aviso
 propio (otro SweetAlert2) lo sustituía. En el panel nuevo, un aviso de error o un diálogo que responde a un error lo
-cierran igual (`cerrarSweetAlertAbierto`). Dentro de una capa modal, los avisos no tapan sus botones (con el panel
+cierran igual (`cerrarSweetAlertAbierto`), solo el del interceptor (clase `swal-error-http`) y solo en una pantalla
+nueva. Dentro de una capa modal, los avisos no tapan sus botones (con el panel
 lateral, a su izquierda; en una hoja, arriba). La nota «límite común de N por turno» de la ocupación ya no sale mientras
 carga ni con error (decía «de 0»). En el móvil, pastillas y acciones de aviso de 44 px (el boceto las dibuja de 40 y 32)
 por la regla de 44 a 375.
@@ -1057,8 +1084,9 @@ por la regla de 44 a 375.
 informes del listado ya no lo usan); la lista flotante del buscador de hoy va dentro del `<dialog>` solo donde se pide;
 los errores de carga de los bloques siguen pasando también por el SweetAlert2 del interceptor (como en 8b-2 y 8b-3a).
 
-**Notas para la PR:** inventario de arriba; bundle inicial 1.456.078 bytes (+1.612 frente a 1.454.466); contrastes de
-las parejas nuevas; capturas apagado idénticas.
+**Notas para la PR:** inventario de arriba; bundle inicial 1.456.347 bytes tras la ronda 2 (1.456.078 en la ronda 1,
++1.612 frente a 1.454.466; la ronda 2 suma 269, la clase del interceptor); contrastes de las parejas nuevas; capturas
+apagado idénticas.
 
 ## 22. Pieza 8b-Z: retirada de lo viejo
 

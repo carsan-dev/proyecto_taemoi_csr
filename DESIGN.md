@@ -342,7 +342,8 @@ Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y l
   verificación) con «Sin indicar» por defecto. Flechas, Inicio y Fin mueven la elección.
 - Esc, el clic fuera y la X cancelan sin hacer nada (decisiones 235 y 248). El foco queda contenido y vuelve al
   disparador al cerrar. Foco inicial: en la acción; en los destructivos, en «Cancelar», con la acción en `peligro`.
-- Con la acción en vuelo, el diálogo sigue abierto con el botón ocupado («Cobrando…») y no se puede cancelar.
+- Con la acción en vuelo, el diálogo sigue abierto con el botón ocupado («Cobrando…») y no se puede cancelar: ni Esc,
+  ni el velo, ni la X, ni «Cancelar»; si el navegador lo cierra igualmente (un segundo Esc), se vuelve a abrir.
 - Por debajo de 768 px es una hoja inferior: pegada abajo, radio 14 arriba, asa de 36 × 4, botones y pastillas de
   44 px y los botones a ancho completo, con la acción arriba.
 
@@ -355,18 +356,22 @@ Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y l
 - Superficie con filete y la sombra de los menús; icono de 20 px del color de su estado (`bien`, `peligro`, `tinta-2`)
   y la acción como enlace subrayado en el color de la escuela como tinta.
 - Éxito e información se cierran a los 5 s con una barra de tiempo de 2 px (`linea-fuerte`), que se para con el ratón
-  encima o el foco dentro; el error no se cierra solo. `role=status`; el error, `role=alert`.
+  encima o el foco dentro (quieta con `prefers-reduced-motion`); el error no se cierra solo. Los lectores de pantalla
+  los oyen por dos regiones vivas ocultas que nacen vacías con la de avisos, `role=status` y, la del error,
+  `role=alert`; el texto llega 100 ms después de verse la tarjeta.
 - Con una capa modal abierta, los avisos se pintan dentro de ella (fuera quedarían inertes), sin tapar sus botones:
   con el panel lateral, a su izquierda; en una hoja inferior, arriba. Un aviso de error cierra el SweetAlert2 que haya
-  abierto el interceptor de errores de hoy, como lo sustituía el aviso de las pantallas de hoy.
+  abierto el interceptor de errores de hoy (clase `swal-error-http`, sin estilos), como lo sustituía el aviso de las
+  pantallas de hoy; solo ese y solo en una pantalla nueva.
 
 ### Carga (8b-D1)
 
 - **Esqueleto** (`pn-esqueleto`): la forma del contenido que sustituye, en `serie-pista`, con un pulso de opacidad
   (1 a 0,55 en 1,6 s); aparece a los 300 ms (una carga más corta no parpadea) y se queda quieto con
   `prefers-reduced-motion`. La forma va con `aria-hidden` y a los lectores les llega «Cargando…» en un `role=status`.
-- **Botón ocupado** (`button[pnOcupado]`): mismo ancho, indicador de 16 px, deshabilitado con `aria-busy` y el texto
-  de la acción en curso («Cobrando…», «Generando…»); en el primario, el texto pasa al secundario sobre el color.
+- **Botón ocupado** (`button[pnOcupado]`): mismo ancho, indicador de 16 px, `aria-disabled` y `aria-busy` (no
+  `disabled`: el foco se queda en el botón) sin atender clics, y el texto de la acción en curso («Cobrando…»,
+  «Generando…»); en el primario, el texto pasa al secundario sobre el color.
 - **Error de bloque** (`pn-bloque-error`): icono de peligro, qué falló, cómo seguir y «Reintentar», que vuelve a pedir
   solo ese bloque.
 - **Vacío** (`pn-bloque-vacio`): qué no hay, por qué y la acción que lo arregla («Quitar filtros»), en `role=status`.
@@ -376,7 +381,9 @@ Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y l
 `pn-panel-lateral`: `<dialog>` modal de 480 px a la derecha, bajo la cabecera de 64 px, con filete a la izquierda y la
 sombra de diálogo sobre el velo. Cabecera con título, descripción y X; cuerpo con su propio desplazamiento; pie fijo
 con «Cancelar» (botón de texto) a la izquierda y las acciones a la derecha. Por debajo de 768 px, hoja inferior. Esc, el
-clic fuera y la X lo cierran y el foco vuelve a quien lo abrió. Lo usan las herramientas de «Informes» del listado.
+clic fuera y la X lo cierran y el foco vuelve a quien lo abrió. Con `bloqueado` (un envío en vuelo) no se cierra por
+ninguna vía: la X y «Cancelar» van deshabilitados y, si el navegador lo cierra, se vuelve a abrir. Lo usan las
+herramientas de «Informes» del listado.
 
 ## Do's and Don'ts
 
