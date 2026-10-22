@@ -162,6 +162,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   private readonly busqueda = new Subject<string>();
   private readonly suscripciones = new Subscription();
   private carga?: Subscription;
+  /** Tras la primera carga, cada cambio de búsqueda, filtro, página o vista se escribe en la dirección. */
+  private escribirDireccion = false;
   private cargaPendientes?: Subscription;
   /** Botón «Cobrar» que abrió el panel: recibe el foco al cerrarlo. */
   private disparadorPanel: HTMLElement | null = null;
@@ -208,8 +210,16 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.vista = leerVista();
-    this.aptos = this.route.snapshot?.queryParamMap?.get('aptoParaExamen') === 'true';
+    // La dirección manda (volver desde la ficha, recargar o compartir el enlace); si no trae vista, la recordada.
+    const parametros = this.route.snapshot?.queryParamMap;
+    this.nombre = (parametros?.get('nombre') ?? '').trim();
+    this.deporte = parametros?.get('deporte') ?? '';
+    this.inactivos = parametros?.get('inactivos') === 'true';
+    this.aptos = parametros?.get('aptoParaExamen') === 'true';
+    const pagina = Number(parametros?.get('pagina'));
+    this.pagina = Number.isInteger(pagina) && pagina > 1 ? pagina : 1;
+    const vista = parametros?.get('vista');
+    this.vista = vista === 'tarjetas' || vista === 'filas' ? vista : leerVista();
     this.suscripciones.add(
       // Solo si el texto cambia frente al filtro vigente: «Quitar filtros» vacía la búsqueda sin repetir la carga.
       this.busqueda.pipe(debounceTime(300), filter((texto) => texto !== this.nombre)).subscribe((texto) => {
@@ -220,6 +230,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     );
     this.contarActivos();
     this.cargar();
+    this.escribirDireccion = true;
   }
 
   ngOnDestroy(): void {
@@ -236,6 +247,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.carga?.unsubscribe();
     this.cargaPendientes?.unsubscribe();
     this.estado = 'cargando';
+    if (this.escribirDireccion) {
+      this.escribirEstado();
+    }
     this.carga = this.endpoints
       .obtenerAlumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null)
       .subscribe({
@@ -327,16 +341,10 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.cargar();
   }
 
-  /** Como hoy: «Solo aptos» también queda en la dirección (`?aptoParaExamen=true`). */
+  /** Como hoy: «Solo aptos» también queda en la dirección (`?aptoParaExamen=true`), con el resto del estado. */
   alternarAptos(): void {
     this.aptos = !this.aptos;
     this.pagina = 1;
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: this.aptos ? { aptoParaExamen: 'true' } : {},
-      queryParamsHandling: this.aptos ? 'merge' : '',
-      replaceUrl: true,
-    });
     this.cargar();
   }
 
@@ -368,6 +376,27 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   cambiarVista(vista: Vista): void {
     this.vista = vista;
     guardarVista(vista);
+    this.escribirEstado();
+  }
+
+  /**
+   * Búsqueda, disciplina, «Inactivos», «Solo aptos», página y vista en la dirección (sin apilar historial): al volver
+   * desde la ficha («← Alumnos») el listado sale como estaba. Solo los valores que no son los de por defecto.
+   */
+  private escribirEstado(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        nombre: this.nombre.trim() || null,
+        deporte: this.deporte || null,
+        inactivos: this.inactivos ? 'true' : null,
+        aptoParaExamen: this.aptos ? 'true' : null,
+        pagina: this.pagina > 1 ? String(this.pagina) : null,
+        vista: this.vista === 'tarjetas' ? 'tarjetas' : null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   // ------------------------------------------------------------------ fila desplegable

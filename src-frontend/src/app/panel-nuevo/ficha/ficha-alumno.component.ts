@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -98,6 +98,12 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
 
   @ViewChild('menuMas') private menuMas?: ElementRef<HTMLElement>;
   @ViewChild('botonMas') private botonMas?: ElementRef<HTMLButtonElement>;
+
+  /**
+   * Query params del listado del que se vino (búsqueda, filtros, página y vista), para que «← Alumnos» vuelva a él como
+   * estaba; nulo si se llegó desde otra pantalla. Se toma al construir: pasar a otro alumno no lo cambia.
+   */
+  readonly volverAlListado: Params | null = parametrosDelListado(this.enrutador);
 
   pestana: Pestana = 'deportes';
   pendiente: PendienteAlumno | null = null;
@@ -446,4 +452,11 @@ export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnIni
       replaceUrl: true,
     });
   }
+}
+
+/** Los query params de la navegación anterior si era el listado de alumnos; si no, nulo. */
+function parametrosDelListado(enrutador: Router): Params | null {
+  const anterior = enrutador.currentNavigation()?.previousNavigation?.finalUrl;
+  const primero = anterior?.root.children['primary']?.segments[0]?.path;
+  return primero === 'alumnosListar' ? { ...anterior!.queryParams } : null;
 }

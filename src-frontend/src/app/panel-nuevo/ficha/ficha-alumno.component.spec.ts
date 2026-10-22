@@ -204,7 +204,12 @@ function configurar(): void {
 
 let componenteRuta: Type<unknown> = FichaAlumnoComponent;
 
-async function montar<C>(tipo: Type<C>, url = '/alumnosEditar/7', datos: Datos = datosPorDefecto()): Promise<Montaje<C>> {
+async function montar<C>(
+  tipo: Type<C>,
+  url = '/alumnosEditar/7',
+  datos: Datos = datosPorDefecto(),
+  previa: string | null = null
+): Promise<Montaje<C>> {
   componenteRuta = tipo;
   configurar();
   const harness = await RouterTestingHarness.create();
@@ -239,6 +244,9 @@ async function montar<C>(tipo: Type<C>, url = '/alumnosEditar/7', datos: Datos =
     },
   };
   actual = m;
+  if (previa) {
+    await harness.navigateByUrl(previa);
+  }
   const navegacion = harness.navigateByUrl(url);
   await m.asentar();
   m.comp = (await navegacion) as C;
@@ -1149,6 +1157,29 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       entrada.dispatchEvent(new Event('input'));
       await new Promise((r) => setTimeout(r, 300));
       expect(visibles()).toEqual(['Adulto Grupo', 'Infantil Grupo']);
+    });
+  });
+
+  describe('«← Alumnos» vuelve al listado como estaba', () => {
+    it('si se vino del listado, con su búsqueda, filtros, página y vista', async () => {
+      const m = await montar(
+        FichaAlumnoComponent,
+        '/alumnosEditar/7',
+        datosPorDefecto(),
+        '/alumnosListar?nombre=garc%C3%ADa&deporte=PILATES&inactivos=true&pagina=2&vista=tarjetas'
+      );
+      expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toBe(
+        '/alumnosListar?nombre=garc%C3%ADa&deporte=PILATES&inactivos=true&pagina=2&vista=tarjetas'
+      );
+      // Pasar a otro alumno no cambia a dónde se vuelve.
+      m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
+      await m.asentar();
+      expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toContain('pagina=2');
+    });
+
+    it('si se vino de otra pantalla, al listado sin filtros', async () => {
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datosPorDefecto(), '/adminpage?pagina=3');
+      expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toBe('/alumnosListar');
     });
   });
 

@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
@@ -560,6 +560,81 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
   });
 
   // ---------------------------------------------------------------- 8b-3b: estado en la dirección y carreras
+
+  it('búsqueda, disciplina, «Inactivos», «Solo aptos», página y vista quedan en la dirección sin repetir cargas', fakeAsync(() => {
+    crear();
+    responder();
+    const router = TestBed.inject(Router);
+    const c = fixture.componentInstance;
+    const buscador = el().querySelector<HTMLInputElement>('#alumnos-buscar')!;
+    buscador.value = 'garcía';
+    buscador.dispatchEvent(new Event('input'));
+    tick(300);
+    listados()[0].flush(pagina(60, 25));
+    http.match(() => true).forEach((r) => r.flush([]));
+    flush();
+    expect(router.url).toContain('nombre=garc%C3%ADa');
+    const disciplina = el().querySelector<HTMLSelectElement>('#alumnos-disciplina')!;
+    disciplina.value = 'PILATES';
+    disciplina.dispatchEvent(new Event('change'));
+    listados()[0].flush(pagina(60, 25));
+    http.match(() => true).forEach((r) => r.flush([]));
+    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    listados()[0].flush(pagina(60, 25));
+    http.match(() => true).forEach((r) => r.flush([]));
+    el().querySelector<HTMLButtonElement>('.alumnos__filtro--aptos')!.click();
+    listados()[0].flush(pagina(60, 25));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    c.irAPagina(2);
+    listados()[0].flush(pagina(60, 25, 26));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.alumnos__vista-opcion[data-vista="tarjetas"]')!.click();
+    flush();
+    const params = router.parseUrl(router.url).queryParams;
+    expect(params).toEqual({
+      nombre: 'garcía',
+      deporte: 'PILATES',
+      inactivos: 'true',
+      aptoParaExamen: 'true',
+      pagina: '2',
+      vista: 'tarjetas',
+    });
+    expect(listados().length).withContext('escribir la dirección no vuelve a cargar').toBe(0);
+    // Sin filtros, la dirección se queda limpia.
+    c.quitarFiltros();
+    tick(1000);
+    listados().forEach((r) => r.flush(pagina(812)));
+    http.match(() => true).forEach((r) => r.flush([]));
+    flush();
+    expect(router.parseUrl(router.url).queryParams).toEqual({ vista: 'tarjetas' });
+  }));
+
+  it('al entrar lee de la dirección la búsqueda, los filtros, la página y la vista', async () => {
+    await TestBed.inject(Router).navigateByUrl(
+      '/?nombre=garc%C3%ADa&deporte=PILATES&inactivos=true&aptoParaExamen=true&pagina=2&vista=tarjetas'
+    );
+    crear();
+    const [p] = listados();
+    expect(p.request.params.get('nombre')).toBe('garcía');
+    expect(p.request.params.get('deporte')).toBe('PILATES');
+    expect(p.request.params.get('incluirInactivos')).toBe('true');
+    expect(p.request.params.get('aptoParaExamen')).toBe('true');
+    expect(p.request.params.get('page')).toBe('2');
+    p.flush(pagina(812, 25, 26));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    expect(el().querySelector<HTMLInputElement>('#alumnos-buscar')!.value).toBe('garcía');
+    expect(el().querySelector('.alumnos__lista--tarjetas')).not.toBeNull();
+    expect(el().querySelector('.alumnos__filtro--inactivos')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('una página inválida en la dirección empieza en la 1', async () => {
+    await TestBed.inject(Router).navigateByUrl('/?pagina=abc');
+    crear();
+    expect(listados()[0].request.params.get('page')).toBe('1');
+  });
 
   it('cambiar de página con el panel de cargos abierto: no queda ningún cargo de la página anterior', () => {
     crear();
