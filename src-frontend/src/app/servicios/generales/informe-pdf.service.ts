@@ -46,9 +46,9 @@ export class InformePdfService implements OnDestroy {
     this.focoRetorno = this.focoSeleccion?.isConnected ? this.focoSeleccion : document.activeElement as HTMLElement;
     this.focoSeleccion = null;
     this.generando = true;
-    this.loading.show();
+    this.mostrarCarga();
     solicitud.pipe(takeUntil(this.destroy$), finalize(() => {
-      this.generando = false; this.loading.hide();
+      this.generando = false; this.ocultarCarga();
     })).subscribe({
       next: ({ documentos, aviso = '' }) => {
         if (this.destruido) { return; }
@@ -66,6 +66,9 @@ export class InformePdfService implements OnDestroy {
   cerrar(): void { this.documentos = []; this.aviso = ''; this.focoRetorno = null; }
   /** Aviso o error al generar (hoy, SweetAlert2). El panel nuevo lo cambia por sus avisos (8b-D1). */
   protected avisar(titulo: string, texto: string, icono: 'warning' | 'error'): void { void Swal.fire(titulo, texto, icono); }
+  /** El cargador global mientras se genera (hoy). El panel nuevo lo cambia por el botón ocupado (8b-D2a). */
+  protected mostrarCarga(): void { this.loading.show(); }
+  protected ocultarCarga(): void { this.loading.hide(); }
   ngOnDestroy(): void {
     this.destruido = true;
     this.destroy$.next(); this.destroy$.complete();

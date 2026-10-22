@@ -97,8 +97,10 @@ export class InformesAlumnos {
   cargandoTemporadas = false;
 
   constructor(
-    private readonly endpoints: EndpointsService,
-    private readonly informes: InformePdfService
+    protected readonly endpoints: EndpointsService,
+    protected readonly informes: InformePdfService,
+    /** Fallo al leer las temporadas: hoy, un toast de SweetAlert2 (el panel nuevo pasa sus avisos, 8b-D2a). */
+    private readonly avisarErrorTemporadas: (texto: string) => void = showErrorToast
   ) {}
 
   /** Al abrir el diálogo: vacía y vuelve a pedir las temporadas. */
@@ -117,7 +119,7 @@ export class InformesAlumnos {
       error: () => {
         this.temporadas = [];
         this.cargandoTemporadas = false;
-        showErrorToast('No se pudieron cargar las temporadas de reservas');
+        this.avisarErrorTemporadas('No se pudieron cargar las temporadas de reservas');
       },
     });
   }
@@ -238,7 +240,7 @@ export class InformesAlumnos {
     }
   }
 
-  private solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string, accion: AccionInforme = 'descargar'): void {
+  protected solicitarTemporadaReservasPlaza(soloActivos: boolean, temporadaPreseleccionada?: string, accion: AccionInforme = 'descargar'): void {
     if (this.cargandoTemporadas) {
       Swal.fire('Cargando temporadas', 'Espera unos segundos y vuelve a generar el informe.', 'info');
       return;
@@ -271,19 +273,23 @@ export class InformesAlumnos {
       if (!result?.isConfirmed || !result.value) {
         return;
       }
-      const temporada = result.value;
-      generarPdf(this.informes, 
-        this.endpoints.generarInformeReservasPlaza(temporada, soloActivos),
-        'No se pudo generar el informe de reservas de plaza',
-        `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`, accion, `Reservas de plaza ${temporada}`
-      );
+      this.generarReservasPlaza(result.value, soloActivos, accion);
     });
+  }
+
+  /** El informe de reservas de plaza de una temporada ya elegida. */
+  generarReservasPlaza(temporada: string, soloActivos: boolean, accion: AccionInforme): void {
+    generarPdf(this.informes,
+      this.endpoints.generarInformeReservasPlaza(temporada, soloActivos),
+      'No se pudo generar el informe de reservas de plaza',
+      `informe_reservas_plaza_${temporada.replace('/', '_')}.pdf`, accion, `Reservas de plaza ${temporada}`
+    );
   }
 
   /**
    * Handles deudas report generation with format selection dialog
    */
-  private generarInformeDeudas(soloActivos: boolean, accion: AccionInforme): void {
+  protected generarInformeDeudas(soloActivos: boolean, accion: AccionInforme): void {
     if (accion === 'ver') {
       generarPdf(this.informes, this.endpoints.generarInformeDeudas(soloActivos),
         'No se pudo generar el informe de deudas en PDF', 'informe.pdf', accion, 'Deudas');
@@ -295,12 +301,21 @@ export class InformesAlumnos {
       confirmButtonText: 'PDF', denyButtonText: 'CSV', cancelButtonText: 'Cancelar',
     }).then(result => {
       if (result?.isConfirmed) {
-        generarPdf(this.informes, this.endpoints.generarInformeDeudas(soloActivos),
-          'No se pudo generar el informe de deudas en PDF');
+        this.descargarDeudas(soloActivos, 'pdf');
       } else if (result?.isDenied) {
-        generarPdf(this.informes, this.endpoints.generarInformeDeudasCSV(soloActivos),
-          'No se pudo generar el informe CSV', 'informe_deudas_alumnos.csv');
+        this.descargarDeudas(soloActivos, 'csv');
       }
     });
+  }
+
+  /** Descarga el informe de deudas en el formato ya elegido. */
+  descargarDeudas(soloActivos: boolean, formato: 'pdf' | 'csv'): void {
+    if (formato === 'pdf') {
+      generarPdf(this.informes, this.endpoints.generarInformeDeudas(soloActivos),
+        'No se pudo generar el informe de deudas en PDF');
+    } else {
+      generarPdf(this.informes, this.endpoints.generarInformeDeudasCSV(soloActivos),
+        'No se pudo generar el informe CSV', 'informe_deudas_alumnos.csv');
+    }
   }
 }

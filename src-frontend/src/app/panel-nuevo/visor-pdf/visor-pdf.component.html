@@ -1,0 +1,55 @@
+<dialog #capa class="pn-visor" [class.pn-visor--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'"
+  (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  <div class="pn-visor__caja">
+    <header class="pn-visor__cabecera">
+      <h2 class="pn-visor__titulo" [id]="id + '-titulo'" [attr.title]="actual?.titulo">{{ actual?.titulo }}</h2>
+      <button type="button" class="pn-visor__descargar" [disabled]="!actual" (click)="descargar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"></path></svg>
+        <span>Descargar PDF</span>
+      </button>
+      <button #cerrarBoton type="button" class="pn-visor__cerrar" aria-label="Cerrar" (click)="pedirCierre()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </header>
+    @if (aviso || documentos.length > 1) {
+    <div class="pn-visor__barra">
+      @if (documentos.length > 1) {
+      <div class="pn-visor__documento">
+        <label class="pn-visor__etiqueta" [for]="id + '-documento'">Documento</label>
+        <select class="pn-visor__control" [id]="id + '-documento'" (change)="elegir($any($event.target).value)">
+          @for (d of documentos; track $index) {
+          <option [value]="$index" [selected]="$index === indice">{{ d.titulo }}</option>
+          }
+        </select>
+      </div>
+      }
+      @if (aviso) {
+      <p class="pn-visor__aviso" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5m0 3.5v.01"></path></svg>
+        <span>{{ aviso }}</span>
+      </p>
+      }
+    </div>
+    }
+    <div class="pn-visor__cuerpo">
+      @if (actual; as d) {
+      <app-pdf-viewer [blob]="d.blob" [titulo]="d.titulo" />
+      }
+      @if (cargando) {
+      <pn-esqueleto class="pn-visor__esqueleto" etiqueta="Cargando el PDF">
+        <div class="pn-visor__hoja-pdf">
+          <span class="pn-visor__hueso pn-visor__hueso--titulo"></span>
+          <span class="pn-visor__hueso"></span>
+          <span class="pn-visor__hueso"></span>
+          <span class="pn-visor__hueso pn-visor__hueso--corto"></span>
+          <span class="pn-visor__hueso pn-visor__hueso--tabla"></span>
+        </div>
+      </pn-esqueleto>
+      }
+    </div>
+  </div>
+</dialog>

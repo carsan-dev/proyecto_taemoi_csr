@@ -3,6 +3,7 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -647,6 +648,23 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(listados().length).toBe(1);
   });
 
+  it('la carga del listado (su fallo lo enseña el bloque de error) va con ERROR_HANDLED_LOCALLY; el resto, no (8b-D2a)', () => {
+    crear();
+    const [listado] = listados();
+    expect(listado.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    const [activos] = http.match((r) => r.url === `${API}/alumnos` && r.params.get('size') === '1');
+    expect(activos.request.context.get(ERROR_HANDLED_LOCALLY)).toBeFalse();
+    activos.flush({ totalElements: 1 });
+    listado.flush(pagina(30));
+    fixture.detectChanges();
+    const [pendientes] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    expect(pendientes.request.context.get(ERROR_HANDLED_LOCALLY)).toBeFalse();
+    pendientes.flush([]);
+    // «Reintentar» del bloque de error, también.
+    fixture.componentInstance.cargar();
+    expect(listados()[0].request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+  });
+
   it('«Informes»: menú con teclado, el diálogo de tipos de hoy y las tres herramientas en el panel lateral (8b-D1)', () => {
     crear();
     responder();
@@ -688,16 +706,53 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
       expect(document.activeElement).toBe(boton);
     });
 
+    // 8b-D2a: «Generar informe…» abre su sección en el panel lateral, no el diálogo de hoy.
     boton.click();
     fixture.detectChanges();
     el().querySelector<HTMLButtonElement>('[role="menuitem"]')!.click();
     fixture.detectChanges();
-    const modal = el().querySelector('app-informe-modal');
-    expect(modal).not.toBeNull();
-    expect(fixture.componentInstance.opcionesInforme.length).toBe(18);
-    // Como hoy, al abrir el diálogo se piden las temporadas de reservas de plaza.
+    expect(el().querySelector('app-informe-modal')).toBeNull();
+    const panel = el().querySelector<HTMLDialogElement>('dialog.pn-panel')!;
+    expect(panel.open).toBeTrue();
+    expect(panel.querySelector('h2')!.textContent!.trim()).toBe('Generar informe');
+    expect(panel.querySelectorAll('.informe__fila').length).toBe(18);
+    // Como hoy, al abrir se piden las temporadas de reservas de plaza.
     http.expectOne(`${API}/informes/reservas-plaza/temporadas`).flush(['2025/2026']);
-    expect(fixture.componentInstance.temporadasReservasPlaza).toEqual(['2025/2026']);
+    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+    expect(el().querySelector('dialog.pn-panel')).toBeNull();
+    expect(document.activeElement).toBe(boton);
+    el().remove();
+  });
+
+  it('«Ver PDF» de «Generar informe» abre el visor nuevo encima del panel; al cerrarlo, el foco vuelve a su botón (8b-D2a)', () => {
+    crear();
+    responder();
+    document.body.appendChild(el());
+    el().querySelector<HTMLButtonElement>('#alumnos-informes')!.click();
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('[role="menuitem"]')!.click();
+    fixture.detectChanges();
+    http.expectOne(`${API}/informes/reservas-plaza/temporadas`).flush([]);
+    pintar();
+    const ver = Array.from(
+      el().querySelectorAll<HTMLButtonElement>('.informe__fila[data-informe="licencias"] button')
+    ).find((b) => b.textContent!.trim() === 'Ver PDF')!;
+    ver.focus();
+    ver.click();
+    pintar();
+    http.expectOne((r) => r.url === `${API}/informes/licencias`).flush(new Blob(['pdf']));
+    pintar();
+    expect(el().querySelector('app-informe-pdf-modal')).toBeNull();
+    const visor = el().querySelector<HTMLDialogElement>('dialog.pn-visor')!;
+    expect(visor.open).toBeTrue();
+    expect(visor.querySelector('h2')!.textContent!.trim()).toBe('Informe de Estado de Licencias');
+    expect(el().querySelector<HTMLDialogElement>('dialog.pn-panel')!.open).toBeTrue();
+    visor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    pintar();
+    expect(el().querySelector('dialog.pn-visor')).toBeNull();
+    expect(el().querySelector('dialog.pn-panel')).not.toBeNull();
+    expect(document.activeElement).toBe(ver);
     el().remove();
   });
 

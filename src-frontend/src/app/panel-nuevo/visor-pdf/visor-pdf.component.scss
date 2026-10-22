@@ -1,0 +1,340 @@
+// Visor de PDF del panel nuevo (8b-D2a), sobre las capas de 8b-D1: diálogo grande con la sombra de diálogo sobre el
+// velo, cabecera de 56 px y, por debajo de 768 px, a pantalla completa. El visor de hoy (`app-pdf-viewer`) va dentro con
+// los tokens del panel; fuera de `.pn-visor` sigue igual. Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.pn-visor {
+  width: min(1040px, calc(100vw - 48px));
+  max-width: none;
+  height: calc(100dvh - 48px);
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+}
+
+.pn-visor__caja {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pn-visor__cabecera {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 12px 0 24px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.pn-visor__titulo {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font: var(--pn-titulo-dialogo);
+  color: var(--pn-tinta);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pn-visor__descargar {
+  @include c.boton-secundario;
+
+  & {
+    flex: none;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.pn-visor__cerrar {
+  @include c.boton-icono;
+}
+
+.pn-visor__descargar:focus-visible,
+.pn-visor__cerrar:focus-visible,
+.pn-visor__control:focus-visible {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+// Documento (varios PDF) y aviso de un lote parcial, entre la cabecera y el documento.
+.pn-visor__barra {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--pn-linea);
+  background: var(--pn-superficie-2);
+}
+
+.pn-visor__documento {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pn-visor__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.pn-visor__control {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+}
+
+.pn-visor__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    color: var(--pn-atencion);
+  }
+}
+
+.pn-visor__cuerpo {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--pn-fondo);
+}
+
+// Esqueleto: la forma de una hoja de informe, centrada sobre el fondo, mientras pdf.js lee el Blob.
+.pn-visor__esqueleto {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 24px;
+  overflow: hidden;
+  background: var(--pn-fondo);
+}
+
+.pn-visor__hoja-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(640px, 100%);
+  aspect-ratio: 1 / 1.414;
+  max-height: 100%;
+  margin: 0 auto;
+  padding: 40px 36px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie);
+}
+
+.pn-visor__hueso {
+  display: block;
+  height: 12px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.pn-visor__hueso--titulo {
+  width: 55%;
+  height: 20px;
+  margin-bottom: 10px;
+}
+
+.pn-visor__hueso--corto {
+  width: 40%;
+}
+
+.pn-visor__hueso--tabla {
+  flex: 1;
+  margin-top: 12px;
+}
+
+// El visor de hoy dentro del panel nuevo: ocupa todo el cuerpo y lleva los tokens del panel.
+.pn-visor__cuerpo ::ng-deep app-pdf-viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pn-visor__cuerpo ::ng-deep .pdf-canvas-viewer:not(.is-expanded) {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--pn-fondo);
+
+  .pdf-canvas-wrap {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+}
+
+.pn-visor__cuerpo ::ng-deep .pdf-canvas-viewer {
+  .pdf-canvas-toolbar {
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--pn-linea);
+    background: var(--pn-superficie);
+  }
+
+  .pdf-toolbar-btn {
+    min-height: 34px;
+    border: 1px solid var(--pn-acento-borde);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+    color: var(--pn-acento);
+    font: var(--pn-etiqueta);
+    transition: background-color var(--pn-transicion);
+
+    &:hover:not(:disabled) {
+      background: var(--pn-acento-suave);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+    }
+  }
+
+  .pdf-canvas-page,
+  .pdf-canvas-zoom {
+    font: var(--pn-etiqueta);
+    font-variant-numeric: tabular-nums;
+    color: var(--pn-tinta-2);
+  }
+
+  .pdf-canvas-wrap {
+    padding: 16px;
+    background: var(--pn-fondo);
+  }
+
+  .pdf-canvas {
+    border-radius: var(--pn-radio-s);
+    box-shadow: var(--pn-sombra-carnet);
+  }
+
+  .pdf-canvas-loading {
+    background: color-mix(in srgb, var(--pn-fondo) 85%, transparent);
+    color: var(--pn-tinta-2);
+    font: var(--pn-secundario);
+    backdrop-filter: none;
+  }
+}
+
+// En escritorio, la barra del visor en una sola línea: páginas a la izquierda, zoom y «Expandir» a la derecha.
+.pn-visor:not(.pn-visor--hoja) .pn-visor__cuerpo ::ng-deep .pdf-canvas-viewer .pdf-canvas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+
+  .pdf-toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// Hoja a pantalla completa (por debajo de 768 px).
+.pn-visor--hoja {
+  width: 100vw;
+  height: 100dvh;
+  border-radius: 0;
+  box-shadow: none;
+
+  .pn-visor__cabecera {
+    gap: 4px;
+    padding: 0 4px 0 16px;
+  }
+
+  .pn-visor__titulo {
+    font-size: 1rem;
+  }
+
+  .pn-visor__descargar {
+    min-height: 44px;
+    padding: 0 12px;
+  }
+
+  .pn-visor__cerrar {
+    width: 44px;
+    height: 44px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .pn-visor__barra {
+    padding: 10px 16px;
+  }
+
+  .pn-visor__control {
+    min-height: 44px;
+  }
+
+  .pn-visor__esqueleto {
+    padding: 16px;
+  }
+
+  .pn-visor__hoja-pdf {
+    padding: 28px 20px;
+  }
+
+  .pn-visor__cuerpo ::ng-deep .pdf-canvas-viewer {
+    .pdf-canvas-toolbar {
+      padding: 8px 16px;
+    }
+
+    .pdf-toolbar-btn {
+      min-height: 44px;
+    }
+
+    .pdf-canvas-wrap {
+      padding: 8px;
+    }
+  }
+}
