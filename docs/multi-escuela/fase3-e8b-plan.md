@@ -1249,6 +1249,88 @@ pendientes de su página («—»).
 producción; 1.456.347 en 8b-C): ningún fichero nuevo en el inicial; karma 1705 SUCCESS; capturas encendido a 375 y
 1280 (panel, financieros, ocupado y visor).
 
+## 21 quinquies. Pieza 8b-D2 (b): diálogos heredados de la ficha
+
+Rama `feature/e8b-d2b` (sale de `develop` en `542fe10e`). Solo frontend, sin migración: atajo `desplegar`. Sin boceto
+nuevo: piezas de 8b-D1 (diálogo, avisos, panel lateral, botón ocupado, `cerrarSweetAlertAbierto`) y tokens de DESIGN.md.
+
+**Objetivo:** lo que 8b-D1 dejó pendiente en la ficha nueva (decisión 269): los SweetAlert2 que hereda de
+`EditarAlumnoComponent` (111 `Swal.fire`, 1 `showValidationMessage` y 23 toasts), los diálogos propios de `DialogosAlumnoComponent` y la foto ampliada.
+Con el interruptor apagado, la ficha de hoy no cambia: mismas opciones de SweetAlert2, mismo flujo, mismas peticiones.
+
+**Ficheros:**
+- Nuevo `editar-alumno/dialogos-ficha.port.ts`: `DIALOGOS_FICHA` (`InjectionToken`, `providedIn: 'root'`) con
+  `fire(opciones, id?)`, `close`, `showValidationMessage`, `toastExito` y `toastError`; por defecto
+  `DIALOGOS_SWEETALERT`, que pasa el mismo objeto a `Swal.fire` e ignora `id`.
+- `editar-alumno.component.ts` (CRLF, sin reescribir) y `productos-alumno.component.ts` (finales mixtos, conservados):
+  sustitución mecánica de `Swal.fire(`, `Swal.showValidationMessage(`, `showSuccessToast(` y `showErrorToast(` por el
+  puerto; ningún import de `sweetalert2` ni de `toast.util`. Seis llamadas llevan `id`: `baja-o-eliminar`,
+  `alta-o-eliminar`, `eliminar-deporte`, `desactivar-o-eliminar-deporte`, `eliminar-alumno` y `alta-deporte`. Productos lee
+  el puerto de su `Injector` con `DIALOGOS_SWEETALERT` por defecto (un spec la construye fuera de contexto).
+- Nuevos en `F/panel-nuevo/ficha/dialogos/`: `dialogos-ficha-panel.ts` (`DialogosFichaPanel`, el puerto del panel),
+  `dialogos-alumno-panel.component.*` (`pn-dialogos-alumno`) y `foto-ampliada-panel.component.*` (`pn-foto-ampliada`).
+- `FichaAlumnoComponent`: `providers: [{ provide: DIALOGOS_FICHA, useClass: DialogosFichaPanel }]`, pinta
+  `pn-dialogos-alumno` y `pn-foto-ampliada` dentro de su `.pn` y sobrescribe `abrirModal`/`cerrarModal`.
+- `DialogoComponent` (8b-D1), con opciones nuevas y opcionales: `bloques` (párrafos y listas), `campos` (pastillas,
+  desplegable, texto, número, fecha, área, email; error en línea con `aria-invalid` y `aria-describedby`),
+  `accionSecundaria` (la «denegar»), `comprobar` (validación síncrona o promesa con el botón ocupado) y `nombre`/`generico`
+  (`data-dialogo`, `data-generico`). Sin ellas, igual que antes (su spec, en verde).
+
+**Tareas TDD:**
+- [x] En rojo antes del código: los tres specs nuevos y el de la ficha no compilaban (`Can't resolve
+  './dialogos-ficha.port'`, `'./dialogos-ficha-panel'`, `'./dialogos-alumno-panel.component'`,
+  `'./foto-ampliada-panel.component'`).
+- [x] `dialogos-ficha.port.spec.ts`: el puerto por defecto llama a `Swal.fire` con el objeto idéntico (`toBe`) y un solo
+  argumento, por categoría de la ficha de hoy (aviso, error, confirmación, denegar con html, selector, fecha, formulario
+  html con `preConfirm` y `showValidationMessage`, toast) y en productos; `EditarAlumnoComponent` y
+  `ProductosAlumnoComponent` no nombran `sweetalert2` ni `toast.util` en su código emitido; el puerto sí.
+- [x] `dialogos-ficha-panel.spec.ts` (nunca `Swal.fire` ni `Toast.fire`): avisos de éxito, información y error (con la
+  regla del texto); confirmación con foco en la acción; destructivo con foco en «Cancelar»; denegar como segunda acción
+  (en peligro si borra); select de hasta 6 opciones en pastillas y de más en desplegable; radio; fecha y área con su
+  validación en línea; formulario html por id con `preConfirm` leyendo el DOM; acción larga con botón ocupado y Esc,
+  `cancel` y «Cancelar» sin efecto; tipo desconocido como confirmación genérica.
+- [x] `dialogos-alumno-panel.component.spec.ts`: convocatorias, quitar de convocatoria, WhatsApp y agregar deporte en el
+  panel lateral (hoja por debajo de 768 px) con los métodos de la ficha; «Actualizar grado» en el diálogo; caja de luz
+  (modal, `min(90vw, 960px)` × `90dvh`, X de 44 px con el foco, Esc, X y velo, foco de vuelta).
+- [x] `ficha-alumno.component.spec.ts`: las comparaciones con la ficha de hoy siguen igual (opciones del puerto = las de
+  SweetAlert2 de hoy, mismos toasts y escrituras); agregar deporte, actualizar grado, WhatsApp y foto con las capas
+  nuevas; bloque «diálogos en el panel nuevo» sin simular el puerto: la ficha nueva da `DialogosFichaPanel` y la de hoy
+  `DIALOGOS_SWEETALERT`; eliminar documento, dar de baja y eliminar alumno desde «⋯», reservar plaza (pastillas y dos
+  confirmaciones), fecha de convocatoria y error de convocatorias, con las mismas peticiones que hoy y sin SweetAlert2.
+
+**Inventario** (por qué: decisión 269; detalle por llamada en el informe de la pieza):
+
+| Grupo de diálogos (ficha de hoy) | Llamadas | En el panel nuevo |
+|---|---|---|
+| Éxitos (con o sin temporizador) | 34 | Aviso de éxito con la frase (sin frase, el título) |
+| Información («Información», «No hay deportes disponibles») | 3 | Aviso de información |
+| Errores (45) y advertencias (5) sin «Cancelar» | 50 | Aviso de error (`role=alert`, sin cierre solo); título no genérico delante: «No se pudo subir el documento. …» |
+| Toasts de `toast.util` | 23 | `toastExito` / `toastError` → avisos |
+| Confirmaciones (activar, desactivar, marcar pagado, recompensa, derecho de examen, reservas ×3, actualizar datos) | 9 | `ConfirmacionService` con título, frase y botones de hoy, foco en la acción |
+| Destructivas (eliminar documento, quitar de convocatoria, eliminar deporte, eliminar alumno) | 4 | Diálogo de peligro, foco en «Cancelar» |
+| Con «denegar» (baja o eliminar, alta o eliminar, desactivar o eliminar deporte, ¿abonada? ×2, teléfono) | 6 | Segunda acción del diálogo; en peligro (botón de texto) si borra; a 500 px para que quepan los tres |
+| Selector (¿para qué deporte?, convocatoria con «Crear nueva») y radio (cinturón rojo) | 3 | Pastillas hasta 6 opciones; desplegable con más; error en línea |
+| Fecha (nueva convocatoria) | 1 | Campo de fecha con su etiqueta; error en línea con el foco |
+| Formulario html (dar de alta: `#deporte-select` + `preConfirm` y su `showValidationMessage`) | 1 + 1 | Pastillas con los mismos valores y un `input` oculto con el id: el `preConfirm` de hoy lee lo mismo; `showValidationMessage` en línea |
+| `DialogosAlumnoComponent`: convocatorias, quitar de convocatoria, WhatsApp, agregar deporte | 4 | `pn-panel-lateral` (hoja en el móvil) con los mismos métodos |
+| `DialogosAlumnoComponent`: actualizar grado | 1 | Diálogo con pastillas o desplegable y fecha |
+| `FotoAmpliadaComponent` | 1 | Caja de luz sobre la capa modal |
+
+**Genéricos y sin traducir:** ninguna llamada de la ficha cae en la confirmación genérica (solo `input` de tipos que el
+diálogo no pinta: file, range, checkbox…; con spec). `didOpen` (el buscador `attachSwalSelectSearch` del alta) no se
+ejecuta en el panel. `close()` del panel no hace nada (la ficha no lo llama). La página de productos del alumno
+(`alumnos/:id/productos`) es de hoy en los dos diseños: usa el puerto por defecto y sigue con SweetAlert2, igual que
+`pedirAlPropietario`.
+
+**Además:** «Actualizar grado» se cierra al aceptar (hoy el modal sigue abierto hasta la respuesta); si falla, el aviso de
+error lo dice y se vuelve a abrir con el botón. Su frase dice el nombre del grado («Naranja»; hoy, el código «NARANJA»).
+Un aviso o diálogo del panel que responde a un error cierra el SweetAlert2 del interceptor, como en 8b-D1.
+
+**Notas para la PR:** inventario de arriba; bundle inicial 1.455.529 bytes (igual que en 8b-D2 (a)): ningún fichero
+nuevo en el inicial; karma 1766 SUCCESS; capturas apagado antes (`542fe10e`) y después idénticas en bytes, 16/16 (carga,
+baja, error, selector, fecha, formulario, toast y foto a 375 y 1280); encendido a 375 y 1280 (destructivo, pastillas y su
+error, formulario, fecha, aviso de error, agregar deporte, actualizar grado y foto).
+
 ## 22. Pieza 8b-Z: retirada de lo viejo
 
 Solo cuando el propietario lo apruebe (R6), tras un periodo con el valor por defecto `NUEVO`. Rama `feature/e8b-z`.
