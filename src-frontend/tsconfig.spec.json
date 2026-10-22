@@ -16,6 +16,7 @@
     "src/app/panel-nuevo/rutas-panel-nuevo.spec.ts",
     "src/app/panel-nuevo/diseno-panel.service.spec.ts",
     "src/app/panel-nuevo/marca-escuela-panel.service.spec.ts",
+    "src/app/panel-nuevo/acento-escuela.spec.ts",
     "src/app/panel-nuevo/diseno-nuevo/diseno-nuevo.component.spec.ts",
     "src/app/panel-nuevo/navegacion/menu-panel.spec.ts",
     "src/app/panel-nuevo/navegacion/cabecera-panel.component.spec.ts",

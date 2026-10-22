@@ -1,13 +1,22 @@
 import { DOCUMENT } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../core/http-context';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
+import { AcentoEscuelaDirective } from './acento-escuela.directive';
 import { MarcaEscuelaPanelService, MarcaPanel } from './marca-escuela-panel.service';
+
+@Component({
+  standalone: true,
+  imports: [AcentoEscuelaDirective],
+  template: '<div class="pn" pnAcento></div>',
+})
+class PantallaDePrueba {}
 
 const URL_MARCA = `${environment.apiUrl}/escuela/marca`;
 
@@ -31,6 +40,9 @@ const VARIABLES = [
   '--pn-marca-sobre-primario-2',
   '--pn-marca-primario-tinta',
   '--pn-marca-primario-suave',
+  '--pn-acento',
+  '--pn-acento-borde',
+  '--pn-acento-suave',
 ];
 
 describe('MarcaEscuelaPanelService (8b-T)', () => {
@@ -110,6 +122,39 @@ describe('MarcaEscuelaPanelService (8b-T)', () => {
       expect(documento.documentElement.style.getPropertyValue(variable)).withContext(variable).toBe('');
       expect(documento.body.style.getPropertyValue(variable)).withContext(variable).toBe('');
     }
+  });
+
+  it('8b-C: con la marca escribe también el acento en el .pn (derivado del primario, decisión 273)', () => {
+    servicio.aplicarEn(pn, MARCA.tema);
+    expect(pn.style.getPropertyValue('--pn-acento')).toBe('#0E782D');
+    expect(pn.style.getPropertyValue('--pn-acento-suave')).toBe('#E0F5E1');
+    expect(pn.style.getPropertyValue('--pn-acento-borde')).toBe('#67956B');
+    expect(servicio.acento()).toEqual({ acento: '#0E782D', acentoSuave: '#E0F5E1', acentoBorde: '#67956B' });
+    for (const variable of ['--pn-acento', '--pn-acento-borde', '--pn-acento-suave']) {
+      expect(documento.documentElement.style.getPropertyValue(variable)).withContext(variable).toBe('');
+      expect(documento.body.style.getPropertyValue(variable)).withContext(variable).toBe('');
+    }
+  });
+
+  it('8b-C: el .pn de cada pantalla (pnAcento) recibe el acento cuando llega la marca, sin pedirla otra vez', () => {
+    const fixture = TestBed.createComponent(PantallaDePrueba);
+    fixture.detectChanges();
+    const raiz: HTMLElement = fixture.nativeElement.querySelector('.pn');
+    expect(raiz.style.getPropertyValue('--pn-acento')).withContext('sin marca: el de panel-nuevo.scss').toBe('');
+
+    servicio.aplicarEn(pn, MARCA.tema);
+    fixture.detectChanges();
+    expect(raiz.style.getPropertyValue('--pn-acento')).toBe('#0E782D');
+    expect(raiz.style.getPropertyValue('--pn-acento-suave')).toBe('#E0F5E1');
+    expect(raiz.style.getPropertyValue('--pn-acento-borde')).toBe('#67956B');
+    expect(raiz.style.getPropertyValue('--pn-marca-primario')).withContext('la pantalla solo lleva el acento').toBe('');
+    http.expectNone(URL_MARCA);
+
+    email.next('otra@example.test');
+    fixture.detectChanges();
+    expect(servicio.acento()).toBeNull();
+    expect(raiz.style.getPropertyValue('--pn-acento')).withContext('otra sesión: vuelve al de por defecto').toBe('');
+    fixture.destroy();
   });
 
   it('se niega a escribir en documentElement, body o un elemento sin la clase .pn', () => {
