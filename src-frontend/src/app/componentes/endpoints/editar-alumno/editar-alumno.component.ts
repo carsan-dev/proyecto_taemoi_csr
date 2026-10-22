@@ -39,6 +39,8 @@ import {
   reiniciarSelectorArchivo,
 } from '../../../utils/subida-archivos.util';
 import { mensajeDeError } from '../../../servicios/endpoints/caja.service';
+import { DialogosAlumnoComponent } from './dialogos-alumno/dialogos-alumno.component';
+import { FotoAmpliadaComponent } from './foto-ampliada/foto-ampliada.component';
 
 /** Outcome of requesting an alumno from the route (loaded, or the request failed) */
 interface ResultadoCargaAlumno {
@@ -55,6 +57,8 @@ interface ResultadoCargaAlumno {
     ReactiveFormsModule,
     PaginacionComponent,
     SearchableSelectDirective,
+    DialogosAlumnoComponent,
+    FotoAmpliadaComponent,
   ],
   templateUrl: './editar-alumno.component.html',
   styleUrls: ['./editar-alumno.component.scss'],
@@ -526,7 +530,7 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
     });
   }
 
-  private aplicarAlumnoCargado(alumnoResponse: any): void {
+  protected aplicarAlumnoCargado(alumnoResponse: any): void {
     this.alumno = alumnoResponse;
     this.alumnoId = this.alumno.id;
     this.observacionesDraft = this.alumno.observaciones ?? '';

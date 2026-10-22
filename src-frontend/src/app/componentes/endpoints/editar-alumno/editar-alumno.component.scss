@@ -101,148 +101,6 @@
   }
 }
 
-// Image Modal (for viewing full-size images)
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1050;
-  padding-top: 100px;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.9);
-  overflow-y: auto;
-  transition: opacity 0.3s ease-in-out;
-
-  &.show {
-    display: block;
-  }
-
-  // Image modal content (for viewing images)
-  > .modal-content {
-    margin: auto;
-    display: block;
-    width: 80%;
-    max-width: 700px;
-    animation: zoom 0.6s;
-  }
-}
-
-// Convocatorias Modal (different structure from image modal)
-#imageModal {
-  margin: 0;
-  max-width: none;
-  max-height: none;
-  border: 0;
-
-  &[open] { display: block; }
-  .close { background: transparent; border: 0; }
-}
-
-#convocatoriaModal,
-#eliminarConvocatoriaModal {
-  .modal-content {
-    background-color: $text-light;
-    margin: auto;
-    padding: 2rem;
-    border: none;
-    width: 50%;
-    max-width: 600px;
-    border-radius: 20px;
-    box-shadow: $shadow-lg;
-    animation: fadeInDown 0.4s ease;
-
-    .modal-header {
-      border-bottom: 2px solid $background-light;
-      padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
-
-      .modal-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: $text-dark;
-      }
-    }
-
-    .modal-body {
-      font-size: 1rem;
-      color: $text-dark;
-
-      ul {
-        list-style: none;
-        padding: 0;
-
-        .convocatoria-item {
-          cursor: pointer;
-          padding: 1rem 1.25rem;
-          border-radius: 12px;
-          transition: $transition;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background-color: $background-light;
-          border: 2px solid transparent;
-          margin-bottom: 0.75rem;
-
-          &:hover {
-            background-color: rgba($primary-color, 0.05);
-            border-color: $primary-color;
-            transform: translateY(-2px);
-            box-shadow: $shadow-sm;
-          }
-
-          &.actual {
-            background-color: rgba($success-color, 0.1);
-            border-color: $success-color;
-            font-weight: 600;
-
-            strong {
-              color: $success-color;
-            }
-          }
-        }
-      }
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 1.5rem;
-      padding-top: 1rem;
-      border-top: 2px solid $background-light;
-    }
-  }
-}
-
-#caption {
-  margin: auto;
-  display: block;
-  width: 80%;
-  max-width: 700px;
-  text-align: center;
-  color: #ccc;
-  padding: 10px 0;
-  animation: zoom 0.6s;
-}
-
-.close {
-  position: absolute;
-  top: 15px;
-  right: 35px;
-  color: $text-light;
-  font-size: 40px;
-  font-weight: bold;
-  transition: $transition-fast;
-  cursor: pointer;
-
-  &:hover,
-  &:focus {
-    color: #bbb;
-    text-decoration: none;
-  }
-}
-
 // Profile info container
 .profile-info {
   cursor: pointer;
@@ -508,15 +366,6 @@
   }
 }
 
-@keyframes zoom {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-
 @keyframes pulse {
   0% {
     transform: scale(1);
@@ -531,14 +380,6 @@
 
 // Responsive adjustments
 @media (max-width: 768px) {
-  #convocatoriaModal,
-  #eliminarConvocatoriaModal {
-    .modal-content {
-      width: 90%;
-      padding: 1.5rem;
-    }
-  }
-
   .deporte-container {
     .deporte-text {
       font-size: 1.25rem;
@@ -1112,127 +953,11 @@
   margin-top: 0.5rem;
 }
 
-// Modals with shared layout (add sport, update grade, WhatsApp)
-#agregarDeporteModal,
-#actualizarGradoModal,
-#whatsappModal {
-  .modal-content {
-    background-color: $text-light;
-    margin: auto;
-    padding: 2rem;
-    border: none;
-    width: 50%;
-    max-width: 600px;
-    border-radius: 20px;
-    box-shadow: $shadow-lg;
-    animation: fadeInDown 0.4s ease;
-
-    .modal-header {
-      border-bottom: 2px solid $background-light;
-      padding-bottom: 1rem;
-      margin-bottom: 1.5rem;
-
-      .modal-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: $text-dark;
-      }
-    }
-
-    .modal-body {
-      font-size: 1rem;
-      color: $text-dark;
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      margin-top: 1.5rem;
-      padding-top: 1rem;
-      border-top: 2px solid $background-light;
-    }
-  }
-}
-
-#whatsappModal {
-  .whatsapp-docs-section {
-    margin-top: 1rem;
-  }
-
-  .whatsapp-docs-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: $text-muted;
-    margin-bottom: 0.75rem;
-
-    i {
-      color: $primary-color;
-    }
-  }
-
-  .whatsapp-docs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 240px;
-    overflow-y: auto;
-    padding-right: 0.25rem;
-  }
-
-  .whatsapp-doc-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 0.75rem;
-    background: $background-light;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-
-    .doc-name {
-      flex: 1;
-      font-weight: 500;
-      color: $text-dark;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .doc-type {
-      font-size: 0.8rem;
-      color: $text-muted;
-      white-space: nowrap;
-    }
-  }
-
-  .whatsapp-telefono {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: $text-muted;
-    font-size: 0.9rem;
-  }
-}
-
 // Fade in animation
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
   }
   to {
     opacity: 1;
@@ -1325,15 +1050,6 @@
           }
         }
       }
-    }
-  }
-
-  #agregarDeporteModal,
-  #actualizarGradoModal,
-  #whatsappModal {
-    .modal-content {
-      width: 90%;
-      padding: 1.5rem;
     }
   }
 }
