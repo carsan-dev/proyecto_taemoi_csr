@@ -403,6 +403,14 @@ export const routes: Routes = [
   },
   {
     path: 'tesoreriaCobros',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/tesoreria/tesoreria.component').then(m => m.TesoreriaComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'tesoreriaCobros',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
     canActivate: [roleGuard],

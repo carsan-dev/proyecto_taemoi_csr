@@ -1,0 +1,362 @@
+<div class="pn tesoreria" pnAcento>
+  <div class="tesoreria__pagina">
+    <header class="tesoreria__cabecera">
+      <div class="tesoreria__titulos">
+        <h1 class="tesoreria__titulo">Tesorería</h1>
+        <p class="tesoreria__subtitulo" data-cifras>{{ subtitulo }}</p>
+      </div>
+      <div class="tesoreria__menu-zona" (focusout)="alSalirDeZona($event, 'exportar')">
+        <button #botonExportar type="button" id="tesoreria-exportar" pnOcupado class="tesoreria__boton-secundario"
+          [ocupado]="informes.ocupado" textoOcupado="Generando…" aria-haspopup="menu" [attr.aria-expanded]="menuExportar"
+          [attr.aria-controls]="menuExportar ? 'tesoreria-menu-exportar' : null" (click)="alternarMenuExportar()"
+          (keydown)="teclaBotonExportar($event)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"></path></svg>
+          <span>Exportar</span>
+          <svg class="tesoreria__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        @if (menuExportar) {
+        <div #menuExportarRef id="tesoreria-menu-exportar" class="tesoreria__menu tesoreria__menu--exportar" role="menu"
+          aria-labelledby="tesoreria-exportar" (keydown)="teclaMenuExportar($event)">
+          <button type="button" class="tesoreria__menu-opcion" role="menuitem" (click)="exportar('pdf', 'ver')">
+            <i class="bi bi-eye" aria-hidden="true"></i><span>Ver PDF</span>
+          </button>
+          <button type="button" class="tesoreria__menu-opcion" role="menuitem" (click)="exportar('pdf')">
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span>Exportar PDF</span>
+          </button>
+          <button type="button" class="tesoreria__menu-opcion" role="menuitem" (click)="exportar('csv')">
+            <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i><span>Exportar CSV</span>
+          </button>
+          <div class="tesoreria__menu-separador" role="separator"></div>
+          <button type="button" class="tesoreria__menu-opcion" role="menuitem" aria-haspopup="dialog" (click)="abrirCertificados()">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Certificados…</span>
+          </button>
+        </div>
+        }
+      </div>
+    </header>
+
+    <div class="tesoreria__filtros" role="search" aria-label="Filtrar movimientos">
+      <div class="tesoreria__campo tesoreria__campo--mes">
+        <label class="tesoreria__etiqueta" for="tesoreria-mes">Mes</label>
+        <select id="tesoreria-mes" class="tesoreria__control" [disabled]="filtroAno === null" (change)="elegirMes($any($event.target).value)">
+          <option value="" [selected]="filtroMes === null">Todos los meses</option>
+          @for (m of meses; track m.value) {
+          <option [value]="m.value" [selected]="filtroMes === m.value">{{ m.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="tesoreria__campo tesoreria__campo--ano">
+        <label class="tesoreria__etiqueta" for="tesoreria-ano">Año</label>
+        <select id="tesoreria-ano" class="tesoreria__control" (change)="elegirAno($any($event.target).value)">
+          <option value="" [selected]="filtroAno === null">Todos los años (totales)</option>
+          @for (a of anosDisponibles; track a) {
+          <option [value]="a" [selected]="filtroAno === a">{{ a }}</option>
+          }
+        </select>
+      </div>
+      <div class="tesoreria__campo tesoreria__campo--deporte">
+        <label class="tesoreria__etiqueta" for="tesoreria-deporte">Deporte</label>
+        <select id="tesoreria-deporte" class="tesoreria__control" (change)="elegirDeporte($any($event.target).value)">
+          @for (d of deportes; track d.value) {
+          <option [value]="d.value" [selected]="filtroDeporte === d.value">{{ d.label }}</option>
+          }
+        </select>
+      </div>
+      <label class="tesoreria__casilla" for="tesoreria-activos">
+        <input id="tesoreria-activos" type="checkbox" [checked]="filtroSoloActivos" (change)="alternarActivos($event)" />
+        <span>Solo alumnos activos</span>
+      </label>
+      <div class="tesoreria__campo tesoreria__campo--buscar">
+        <label class="tesoreria__etiqueta" for="tesoreria-buscar">Buscar</label>
+        <div class="tesoreria__buscador">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="tesoreria-buscar" type="search" class="tesoreria__control tesoreria__control--buscar" autocomplete="off"
+            placeholder="Alumno, concepto o categoría" [value]="filtroTexto" (input)="buscar($any($event.target).value)" />
+        </div>
+      </div>
+      <div class="tesoreria__filtros-acciones">
+        <button type="button" class="tesoreria__boton-primario" [disabled]="cargando" (click)="aplicar()">Aplicar</button>
+        <button type="button" class="tesoreria__boton-secundario" [disabled]="cargando" (click)="restablecer()">Restablecer</button>
+      </div>
+    </div>
+
+    @if (estado === 'error') {
+    <pn-bloque-error class="tesoreria__bloque-estado" titulo="No se pudo cargar la información de tesorería" (reintentar)="cargar()" />
+    } @else {
+    <section class="tesoreria__resumen" aria-labelledby="tesoreria-resumen-titulo">
+      <h2 class="tesoreria__oculto" id="tesoreria-resumen-titulo">Resumen del periodo</h2>
+      @if (estado === 'cargando') {
+      <pn-esqueleto class="tesoreria__cargando" etiqueta="Cargando la tesorería" aria-busy="true">
+        <div class="tesoreria__esqueleto-resumen">
+          @for (i of [1, 2, 3, 4]; track i) {
+          <span class="tesoreria__esqueleto-cifra"><span></span><span></span><span></span></span>
+          }
+        </div>
+        <span class="tesoreria__esqueleto-barra"></span>
+      </pn-esqueleto>
+      } @else {
+      <dl class="tesoreria__cifras">
+        <div class="tesoreria__cifra">
+          <dt class="tesoreria__cifra-titulo">Pendiente</dt>
+          <dd class="tesoreria__cifra-valor tesoreria__cifra-valor--pendiente" data-cifras>{{ eur(resumen.importePendiente) }}</dd>
+          <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalPendientes) }} {{ resumen.totalPendientes === 1 ? 'cobro pendiente' : 'cobros pendientes' }}</dd>
+        </div>
+        <div class="tesoreria__cifra">
+          <dt class="tesoreria__cifra-titulo">Cobrado</dt>
+          <dd class="tesoreria__cifra-valor" data-cifras>{{ eur(resumen.importePagado) }}</dd>
+          <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalPagados) }} {{ resumen.totalPagados === 1 ? 'cobro pagado' : 'cobros pagados' }}</dd>
+          @if (resumen.importeDevuelto) {
+          <dd class="tesoreria__cifra-detalle" data-cifras>De ello, {{ eur(resumen.importeDevuelto) }} devueltos</dd>
+          }
+        </div>
+        <div class="tesoreria__cifra">
+          <dt class="tesoreria__cifra-titulo">Total generado</dt>
+          <dd class="tesoreria__cifra-valor" data-cifras>{{ eur(resumen.importeTotal) }}</dd>
+          <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalMovimientos) }} {{ resumen.totalMovimientos === 1 ? 'movimiento' : 'movimientos' }}</dd>
+        </div>
+        <div class="tesoreria__cifra">
+          <dt class="tesoreria__cifra-titulo">Alumnos con deuda</dt>
+          <dd class="tesoreria__cifra-valor" data-cifras>{{ numero(resumen.alumnosConPendientes) }}</dd>
+          <dd class="tesoreria__cifra-detalle">{{ etiquetaPeriodo(resumen.mes, resumen.ano) }}</dd>
+        </div>
+      </dl>
+      @if (barra; as b) {
+      <div class="tesoreria__reparto">
+        <div class="tesoreria__barra" role="img" [attr.aria-label]="b.texto" [class.tesoreria__barra--vacia]="b.vacia">
+          @if (b.cobrado > 0) {
+          <span class="tesoreria__barra-cobrado" [style.width.%]="b.cobrado" [attr.title]="'Cobrado ' + eur(resumen.importePagado)"></span>
+          }
+          @if (b.pendiente > 0) {
+          <span class="tesoreria__barra-pendiente" [style.width.%]="b.pendiente" [attr.title]="'Pendiente ' + eur(resumen.importePendiente)"></span>
+          }
+        </div>
+        @if (b.vacia) {
+        <p class="tesoreria__leyenda-vacia">{{ b.texto }}</p>
+        } @else {
+        <ul class="tesoreria__leyenda" aria-hidden="true">
+          <li><span class="tesoreria__muestra tesoreria__muestra--cobrado"></span><span class="tesoreria__leyenda-nombre">Cobrado</span><span class="tesoreria__leyenda-valor" data-cifras> {{ eur(resumen.importePagado) }} · {{ textoPorcentaje(b.cobrado) }}</span></li>
+          <li><span class="tesoreria__muestra tesoreria__muestra--pendiente"></span><span class="tesoreria__leyenda-nombre">Pendiente</span><span class="tesoreria__leyenda-valor" data-cifras> {{ eur(resumen.importePendiente) }} · {{ textoPorcentaje(b.pendiente) }}</span></li>
+        </ul>
+        }
+      </div>
+      }
+      }
+    </section>
+
+    <section class="tesoreria__lista" aria-labelledby="tesoreria-lista-titulo">
+      <div class="tesoreria__lista-cabecera">
+        <div>
+          <h2 class="tesoreria__lista-titulo" id="tesoreria-lista-titulo">Movimientos de cobro</h2>
+          <p class="tesoreria__lista-sub">{{ etiquetaDeporte(filtroDeporte) }} · {{ etiquetaPeriodo(filtroMes, filtroAno) }}</p>
+        </div>
+        <div class="tesoreria__pestanas" role="tablist" aria-label="Estado de los cobros" (keydown)="teclaPestanas($event)">
+          @for (p of pestanas; track p.clave) {
+          <button type="button" role="tab" class="tesoreria__pestana" [id]="'tesoreria-pestana-' + p.clave"
+            [attr.aria-selected]="filtroEstado === p.estado" aria-controls="tesoreria-panel"
+            [tabIndex]="filtroEstado === p.estado ? 0 : -1" (click)="elegirPestana(p.estado)">{{ p.texto }}</button>
+          }
+        </div>
+      </div>
+
+      <div class="tesoreria__panel" id="tesoreria-panel" role="tabpanel" [attr.aria-labelledby]="'tesoreria-pestana-' + pestanaActual"
+        [attr.aria-busy]="cargando ? 'true' : null">
+        @if (estado === 'cargando' || estadoLista === 'cargando') {
+        <pn-esqueleto class="tesoreria__cargando" etiqueta="Cargando movimientos" aria-busy="true">
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="tesoreria__esqueleto-fila">
+            <span class="tesoreria__esqueleto-lineas"><span></span><span></span></span>
+            <span class="tesoreria__esqueleto-lineas tesoreria__esqueleto-lineas--concepto"><span></span><span></span></span>
+            <span class="tesoreria__esqueleto-pastilla"></span>
+            <span class="tesoreria__esqueleto-importe"></span>
+          </div>
+          }
+        </pn-esqueleto>
+        } @else if (estadoLista === 'error') {
+        <pn-bloque-error titulo="No se pudieron cargar los movimientos de tesorería" (reintentar)="cargar(false)" />
+        } @else if (movimientos.length === 0) {
+        <pn-bloque-vacio titulo="No hay cobros para los filtros seleccionados." accion="Restablecer" (accionar)="restablecer()" />
+        } @else {
+        <ul class="tesoreria__filas" aria-label="Movimientos">
+          @for (m of movimientos; track m.productoAlumnoId) {
+          <li class="tesoreria__fila" [class.tesoreria__fila--pendiente]="!m.pagado" [attr.data-movimiento]="m.productoAlumnoId">
+            <div class="tesoreria__quien">
+              @if (m.alumnoId) {
+              <a class="tesoreria__alumno" [routerLink]="['/alumnosEditar', m.alumnoId]">{{ m.alumnoNombreCompleto }}</a>
+              } @else {
+              <span class="tesoreria__alumno">{{ m.alumnoNombreCompleto }}</span>
+              }
+              <p class="tesoreria__meta" data-cifras>{{ meta(m) }}</p>
+            </div>
+            <div class="tesoreria__que">
+              <p class="tesoreria__concepto" [id]="'tesoreria-concepto-' + m.productoAlumnoId">{{ m.concepto }}</p>
+              @if (m.notas) {
+              <p class="tesoreria__notas" [title]="m.notas">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"></path></svg><span class="tesoreria__oculto">Nota: </span><span class="tesoreria__notas-texto">{{ m.notas }}</span>
+              </p>
+              }
+            </div>
+            <div class="tesoreria__estado">
+              @if (m.pagado) {
+              <span class="tesoreria__pastilla tesoreria__pastilla--pagado" data-cifras>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>{{ m.fechaPago ? 'Pagado el ' + fecha(m.fechaPago) : 'Pagado' }}</span>
+              @if (m.devuelto) {
+              <span class="tesoreria__pastilla tesoreria__pastilla--devuelto" title="Su cobro tiene una devolución registrada">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>Devuelto</span>
+              }
+              } @else {
+              <span class="tesoreria__pastilla tesoreria__pastilla--pendiente">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>Pendiente</span>
+              }
+            </div>
+            <p class="tesoreria__importe" data-cifras>{{ eur(m.precio) }}</p>
+            <div class="tesoreria__acciones">
+              @if (!m.pagado) {
+              <button type="button" class="tesoreria__cobrar" aria-haspopup="dialog" [disabled]="ocupado(m) || sinId(m)"
+                [attr.aria-label]="'Cobrar ' + eur(m.precio) + ' de ' + m.concepto + ' a ' + m.alumnoNombreCompleto"
+                (click)="cobrar(m)">Cobrar</button>
+              }
+              <div class="tesoreria__menu-zona" (focusout)="alSalirDeZona($event, 'fila')">
+                <button type="button" class="tesoreria__mas" [attr.data-mas]="m.productoAlumnoId" aria-label="Más acciones"
+                  [attr.aria-describedby]="'tesoreria-concepto-' + m.productoAlumnoId" aria-haspopup="menu"
+                  [attr.aria-expanded]="menuFila === m.productoAlumnoId"
+                  [attr.aria-controls]="menuFila === m.productoAlumnoId ? 'tesoreria-menu-fila-' + m.productoAlumnoId : null"
+                  [disabled]="ocupado(m) || sinId(m)" (click)="alternarMenuFila(m.productoAlumnoId)"
+                  (keydown)="teclaBotonFila($event, m.productoAlumnoId)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.75"></circle>
+                    <circle cx="12" cy="12" r="1.75"></circle><circle cx="18.5" cy="12" r="1.75"></circle></svg>
+                </button>
+                @if (menuFila === m.productoAlumnoId) {
+                <div class="tesoreria__menu tesoreria__menu-fila" role="menu" [id]="'tesoreria-menu-fila-' + m.productoAlumnoId"
+                  [attr.aria-label]="'Acciones de ' + m.concepto" (keydown)="teclaMenuFila($event, m.productoAlumnoId)">
+                  <button type="button" class="tesoreria__menu-opcion" role="menuitem" aria-haspopup="dialog" (click)="opcionFila(m, 'notas')">
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i><span>Notas</span>
+                  </button>
+                  @if (m.pagado) {
+                  <button type="button" class="tesoreria__menu-opcion" role="menuitem" aria-haspopup="dialog" (click)="opcionFila(m, 'fecha')">
+                    <i class="bi bi-calendar-event" aria-hidden="true"></i><span>Cambiar fecha de pago</span>
+                  </button>
+                  @if (!m.devuelto) {
+                  @if (isAdmin) {
+                  <button type="button" class="tesoreria__menu-opcion tesoreria__menu-opcion--peligro" role="menuitem" aria-haspopup="dialog"
+                    (click)="opcionFila(m, 'revertir')">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span>Revertir</span>
+                  </button>
+                  } @else {
+                  <button type="button" class="tesoreria__menu-opcion" role="menuitem" aria-haspopup="dialog" (click)="opcionFila(m, 'pedir')">
+                    <i class="bi bi-send" aria-hidden="true"></i><span>Pedir revertir</span>
+                  </button>
+                  }
+                  }
+                  }
+                </div>
+                }
+              </div>
+            </div>
+          </li>
+          }
+        </ul>
+        }
+      </div>
+
+      @if (estado === 'listo' && estadoLista === 'listo' && movimientos.length > 0) {
+      <nav class="tesoreria__paginacion" aria-label="Páginas de movimientos">
+        <p class="tesoreria__mostrando" data-cifras>{{ mostrando }}</p>
+        @if (totalPaginas > 1) {
+        <div class="tesoreria__paginas">
+          <button type="button" class="tesoreria__pagina-paso" [disabled]="pagina === 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+          @for (p of paginas; track $index) {
+          @if (p === null) {
+          <span class="tesoreria__pagina-salto" aria-hidden="true">…</span>
+          } @else {
+          <button type="button" class="tesoreria__pagina-num" data-cifras [attr.aria-current]="p === pagina ? 'page' : null"
+            [attr.aria-label]="'Página ' + numero(p)" (click)="irAPagina(p)">{{ numero(p) }}</button>
+          }
+          }
+          <button type="button" class="tesoreria__pagina-paso" [disabled]="pagina === totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+        </div>
+        }
+      </nav>
+      }
+    </section>
+    }
+  </div>
+
+  @if (certAbierto) {
+  <pn-panel-lateral titulo="Certificados de cobros" descripcion="Genera PDF editable por alumno con el desglose anual."
+    [bloqueado]="generandoCert" (cerrar)="cerrarCertificados()">
+    <div class="cert">
+      <div class="cert__controles">
+        <div class="cert__campo">
+          <label class="cert__etiqueta" for="cert-ano">Año</label>
+          <select id="cert-ano" class="cert__control" [disabled]="generandoCert" (change)="elegirAnoCert($any($event.target).value)">
+            @for (a of certAnos; track a) {
+            <option [value]="a" [selected]="certAno === a">{{ a }}</option>
+            }
+          </select>
+        </div>
+        <div class="cert__campo cert__campo--buscar">
+          <label class="cert__etiqueta" for="cert-buscar">Alumno</label>
+          <div class="cert__buscador">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <input id="cert-buscar" type="search" class="cert__control cert__control--buscar" autocomplete="off" placeholder="Buscar alumno"
+              [value]="certFiltro" [disabled]="generandoCert" (input)="filtrarCert($any($event.target).value)" />
+          </div>
+        </div>
+      </div>
+
+      @if (certEstado === 'cargando') {
+      <pn-esqueleto etiqueta="Cargando alumnos" aria-busy="true">
+        <div class="cert__lista">
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="cert__esqueleto"><span></span><span></span></div>
+          }
+        </div>
+      </pn-esqueleto>
+      } @else if (certEstado === 'error') {
+      <pn-bloque-error titulo="No se pudieron cargar los alumnos" (reintentar)="cargarAlumnosCert()" />
+      } @else {
+      <div class="cert__barra">
+        <p class="cert__contador" data-cifras aria-live="polite">{{ certContador }}</p>
+        <div class="cert__barra-acciones">
+          <button type="button" class="cert__texto" [disabled]="generandoCert" (click)="seleccionarVisiblesCert()">Seleccionar visibles</button>
+          <button type="button" class="cert__texto" [disabled]="generandoCert || certSeleccion.length === 0" (click)="limpiarCert()">Limpiar</button>
+        </div>
+      </div>
+      @if (certVisibles.length > 0) {
+      <ul class="cert__lista" aria-label="Alumnos">
+        @for (a of certVisibles; track a.id) {
+        <li>
+          <label class="cert__alumno">
+            <input type="checkbox" [checked]="certSeleccion.includes(a.id)" [disabled]="generandoCert"
+              (change)="alternarCert(a.id, $any($event.target).checked)" />
+            <span>{{ nombreAlumno(a) }}</span>
+          </label>
+        </li>
+        }
+      </ul>
+      } @else {
+      <pn-bloque-vacio titulo="No hay alumnos con ese filtro." />
+      }
+      }
+    </div>
+    <div pnPie class="cert__pie">
+      <button type="button" class="tesoreria__boton-secundario" [disabled]="generandoCert" (click)="cerrarCertificados()">Cancelar</button>
+      <button type="button" pnOcupado class="tesoreria__boton-primario" [ocupado]="generandoCert" textoOcupado="Generando…"
+        [deshabilitado]="certSeleccion.length === 0 || !certAno" (click)="generarCertificados()">Generar</button>
+    </div>
+  </pn-panel-lateral>
+  }
+
+  @if (informes.documentos.length) {
+  <pn-visor-pdf [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno"
+    (cerrar)="informes.cerrar()" />
+  }
+</div>

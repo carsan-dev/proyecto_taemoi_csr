@@ -743,6 +743,47 @@ hay backend nuevo.
 
 **Notas para la PR:** tabla del Anexo A marcada; mismas peticiones que la pantalla de hoy (lista).
 
+**Implementación (rama `feature/e8b-3d`, desde `develop` en `4442751b`):**
+- Nuevos en `F/panel-nuevo/tesoreria/`: `tesoreria.component.*` (`TesoreriaComponent`, `app-tesoreria`) y `tesoreria-vista.ts`
+  (`PESTANAS`, `pagadoDeEstado`, `nombreExportacion`, `etiquetaPeriodo`, `fechaHora`, `fechaPagoParaCampo`, `barraCobro`).
+  `LecturasPanelService`: `tesoreriaResumen`, `tesoreriaMovimientos`, `tesoreriaAnios` y `alumnosSinPaginar` (la misma
+  petición que hoy con `ERROR_HANDLED_LOCALLY`) y `paramsTesoreria` (copia de `construirParamsTesoreria`, privado en
+  `EndpointsService`, que no se toca). `DialogoComponent`: opción `focoEnCancelar` (destructivo con campos: el foco va a
+  «Cancelar» y no al campo; sin ella, igual que antes). Ruta `tesoreriaCobros` con `canMatch: [disenoNuevoGuard]` delante
+  de la de hoy.
+- **Mismas peticiones** que `TesoreriaCobrosComponent`: `GET /tesoreria/resumen`, `/movimientos` (25 por página),
+  `/anios-disponibles` y `/alumnos?incluirInactivos=false` con los mismos parámetros; `PUT /productos-alumno/{id}` con
+  `{pagado: true[, metodoPago]}` («Cobrar», `CobroCargoService`), `{notas}`, `{fechaPago}` (mediodía del día elegido) y
+  `{pagado: false, motivoCambio}`; `POST /solicitudes` `{tipo: 'REVERTIR_COBRO', productoAlumnoId, motivo}`;
+  `GET /tesoreria/export/pdf|csv` con el estado de la pestaña y los nombres de hoy
+  (`tesoreria_<año>_<mes>_<deporte>_<estado>_<alumnos>.csv|pdf`); `POST /tesoreria/certificados-cobros` `{alumnoIds, ano}`
+  con `certificado_cobros_<año>.pdf` o `certificados_cobros_<año>.zip`. Textos de confirmación, validaciones y avisos de
+  hoy; el 403 dice «Solo administradores pueden revertir cobros».
+- Diálogos con `ConfirmacionService` («Editar notas», «Editar fecha de pago», «Revertir cobro» destructivo con el foco en
+  «Cancelar», «Pedir al propietario que revierta este cobro» con datos, nota y motivo obligatorio en línea); certificados
+  en `pn-panel-lateral` (bloqueado mientras genera); «Ver PDF» en `pn-visor-pdf` con `InformePdfPanelService`; avisos con
+  `AvisosService`; esqueletos a los 300 ms, `pn-bloque-error` con «Reintentar» y `pn-bloque-vacio`. Sin SweetAlert2 ni
+  cargador global. Menús «Exportar» y «⋯» con el patrón de botón de menú (`teclado-menu.ts`); pestañas `tablist` con
+  flechas, Inicio y Fin. Barra apilada con `serie-ocupacion` (cobrado) y `atencion` (pendiente), validada con el script de
+  dataviz (ΔE CVD 22,3; ≥ 3:1), texto equivalente en `aria-label` y leyenda con nombre, importe y %.
+- **Pendiente por sede:** no; `TesoreriaResumen` no trae desglose por sede y la pieza no toca el backend.
+- **Cambios de texto a propósito:** «Pagados» pasa a la pestaña «Cobrados» y «Pedir al propietario» a «Pedir revertir»
+  (el diseño); «Movimientos de cobro» en minúscula; deporte y periodo con «·»; plurales calculados («1 cobro
+  pendiente»); importes es-ES con €; «Debes seleccionar un año» con eñe (hoy «ano»; el botón está deshabilitado en ese
+  caso). Tras una escritura se relee sin esqueleto (hoy, con el esqueleto de toda la pantalla).
+- [x] Specs en rojo antes del código (`Can't resolve './tesoreria.component'`, `'./tesoreria-vista'`; `tesoreriaResumen` no
+  existe en `LecturasPanelService`; `focoEnCancelar` no existe), luego verdes: `tesoreria-vista.spec.ts`,
+  `tesoreria.component.spec.ts` (pestaña → `pagado`; filtros, «Aplicar», «Restablecer» y parámetros de la dirección;
+  búsqueda a los 300 ms; resumen, plurales y barra; filas, pastillas, «Mostrando X de Y» y paginación; cobrar, notas,
+  fecha, revertir y pedir revertir con método, ruta y cuerpo, nada al cancelar y sin doble envío; menús con teclado;
+  exportaciones y certificados con parámetros y nombres; esqueleto, error y vacío), `lecturas-panel.service.spec.ts`,
+  `confirmacion.service.spec.ts` y `app.routes.spec.ts` (dos entradas; apagado no descarga el chunk).
+- **Notas para la PR:** bundle inicial 1.455.851 bytes (+164 frente a 1.455.687, la entrada de la ruta); chunk
+  `tesoreria-component` 67,15 kB; karma 1862 SUCCESS; capturas apagado antes (`4442751b`) y después idénticas en bytes,
+  15/15 (carga, cobrados, certificados, revertir y cobrar a 375, 768 y 1280); encendido a 375, 768 y 1280 (Pendientes,
+  Cobrados, «⋯» abierto, «Exportar» abierto, revertir, cambiar fecha, certificados y vacío); objetivos de 44 px a 375
+  salvo el enlace del alumno (24, como en Alumnos), sin desplazamiento horizontal.
+
 ## 14. Pieza 8b-3e: Convocatorias
 
 Rama `feature/e8b-3e`. Solo frontend, sin migración: atajo `desplegar`.
@@ -1574,43 +1615,43 @@ tabla se entienda sola. Configuración lleva dos columnas porque elige una varia
 
 ### Tesorería (C)
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Tesorería y cobros» y subtítulo | «Tesorería» y subtítulo |
-| Actualizado (fecha y hora) | En el subtítulo |
-| Filtro mes | Desplegable |
-| Filtro año (o todos los años) | Desplegable |
-| Filtro deporte | Desplegable |
-| Filtro estado | Pestañas Pendientes | Cobrados | Todos |
-| Solo alumnos activos | Casilla |
-| Buscar (alumno, concepto o categoría) | Campo |
-| Aplicar filtros | Botón |
-| Restablecer | Botón |
-| Importe pendiente y nº de cobros | Resumen |
-| Importe cobrado, nº y devueltos | Resumen |
-| Total generado y movimientos | Resumen |
-| Alumnos con deuda y periodo | Resumen |
-| Título de la tabla, deporte y periodo | Cabecera de la lista |
-| Certificados (diálogo por alumno y año) | Menú «Exportar» |
-| Ver PDF | Menú «Exportar» |
-| Exportar PDF | Menú «Exportar» |
-| Exportar CSV | Menú «Exportar» |
-| Alumno (enlace a la ficha) | Línea 1 |
-| Deporte | Bajo el alumno |
-| Concepto | Columna |
-| Categoría | Bajo el alumno |
-| Fecha de cargo | «Cargado …» bajo el alumno |
-| Importe | A la derecha |
-| Estado (pagado, pendiente, devuelto) | Pastilla |
-| Fecha de pago | En la pastilla «Pagado el …» |
-| Notas (texto) | Bajo el concepto y menú «⋯» |
-| Marcar pagado | «Cobrar» en la fila |
-| Cambiar fecha de pago (pagados) | Menú «⋯» |
-| Revertir o pedir revertir (pagados) | Menú «⋯» |
-| Mostrando X de Y movimientos | Pie de la lista |
-| Paginación (con más de una página) | Pie de la lista |
-| Aviso «No hay cobros para los filtros» | Igual que hoy |
-| Añadido: Barra cobrado / pendiente y pendiente por sede | Barra y pendiente por sede |
+| Hoy | En la pantalla nueva | 8b-3d |
+|---|---|---|
+| Título «Tesorería y cobros» y subtítulo | «Tesorería» y subtítulo | Hecho |
+| Actualizado (fecha y hora) | En el subtítulo | Hecho |
+| Filtro mes | Desplegable | Hecho |
+| Filtro año (o todos los años) | Desplegable | Hecho (con «Todos» el mes se deshabilita, como hoy) |
+| Filtro deporte | Desplegable | Hecho |
+| Filtro estado | Pestañas Pendientes | Cobrados | Todos | Hecho (`pagado` false / true / sin él; `?estado=` de la dirección elige la pestaña) |
+| Solo alumnos activos | Casilla | Hecho |
+| Buscar (alumno, concepto o categoría) | Campo | Hecho (a los 300 ms, solo movimientos, como hoy) |
+| Aplicar filtros | Botón | Hecho («Aplicar») |
+| Restablecer | Botón | Hecho |
+| Importe pendiente y nº de cobros | Resumen | Hecho |
+| Importe cobrado, nº y devueltos | Resumen | Hecho |
+| Total generado y movimientos | Resumen | Hecho |
+| Alumnos con deuda y periodo | Resumen | Hecho |
+| Título de la tabla, deporte y periodo | Cabecera de la lista | Hecho |
+| Certificados (diálogo por alumno y año) | Menú «Exportar» | Hecho: panel lateral (hoja en el móvil) |
+| Ver PDF | Menú «Exportar» | Hecho: `pn-visor-pdf` |
+| Exportar PDF | Menú «Exportar» | Hecho |
+| Exportar CSV | Menú «Exportar» | Hecho |
+| Alumno (enlace a la ficha) | Línea 1 | Hecho |
+| Deporte | Bajo el alumno | Hecho |
+| Concepto | Columna | Hecho |
+| Categoría | Bajo el alumno | Hecho |
+| Fecha de cargo | «Cargado …» bajo el alumno | Hecho |
+| Importe | A la derecha | Hecho |
+| Estado (pagado, pendiente, devuelto) | Pastilla | Hecho |
+| Fecha de pago | En la pastilla «Pagado el …» | Hecho |
+| Notas (texto) | Bajo el concepto y menú «⋯» | Hecho |
+| Marcar pagado | «Cobrar» en la fila | Hecho (`CobroCargoService`) |
+| Cambiar fecha de pago (pagados) | Menú «⋯» | Hecho |
+| Revertir o pedir revertir (pagados) | Menú «⋯» | Hecho («Revertir» el propietario, «Pedir revertir» la gestión; ninguno con devuelto, como hoy) |
+| Mostrando X de Y movimientos | Pie de la lista | Hecho |
+| Paginación (con más de una página) | Pie de la lista | Hecho |
+| Aviso «No hay cobros para los filtros» | Igual que hoy | Hecho (`pn-bloque-vacio` con «Restablecer») |
+| Añadido: Barra cobrado / pendiente y pendiente por sede | Barra y pendiente por sede | Barra hecha; pendiente por sede no: la API no lo trae (sin backend) |
 
 ### Convocatorias (C)
 

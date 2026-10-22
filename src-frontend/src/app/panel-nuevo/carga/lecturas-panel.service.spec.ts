@@ -85,4 +85,28 @@ describe('LecturasPanelService (8b-D2a)', () => {
     conteoHoy.flush({});
     conteoPanel.flush({});
   });
+  it('Tesorería (8b-3d): resumen, movimientos, años y alumnos sin paginar, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(EndpointsService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const pares: [Observable<unknown>, Observable<unknown>][] = [
+      [hoy.obtenerTesoreriaResumen(10, 2026, 'TODOS', true), panel.tesoreriaResumen(10, 2026, 'TODOS', true)],
+      [hoy.obtenerTesoreriaResumen(null, null, 'KICKBOXING', false), panel.tesoreriaResumen(null, null, 'KICKBOXING', false)],
+      [hoy.obtenerTesoreriaMovimientos(10, 2026, 'TODOS', false, '', true, 1, 25),
+        panel.tesoreriaMovimientos(10, 2026, 'TODOS', false, '', true, 1, 25)],
+      [hoy.obtenerTesoreriaMovimientos(null, 2025, 'PILATES', true, '  Ana  ', false, 3, 25),
+        panel.tesoreriaMovimientos(null, 2025, 'PILATES', true, '  Ana  ', false, 3, 25)],
+      [hoy.obtenerTesoreriaMovimientos(4, 2026, 'TODOS', undefined, 'x', true, 2, 25),
+        panel.tesoreriaMovimientos(4, 2026, 'TODOS', undefined, 'x', true, 2, 25)],
+      [hoy.obtenerTesoreriaAniosDisponibles(), panel.tesoreriaAnios()],
+      [hoy.obtenerTodosLosAlumnosSinPaginar(false), panel.alumnosSinPaginar(false)],
+    ];
+    for (const [deHoy$, delPanel$] of pares) {
+      const deHoy = pedir(deHoy$);
+      const delPanel = pedir(delPanel$);
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      deHoy.flush([]);
+      delPanel.flush([]);
+    }
+  });
 });
