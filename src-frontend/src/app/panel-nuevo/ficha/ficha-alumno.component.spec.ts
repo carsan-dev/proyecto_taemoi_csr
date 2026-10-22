@@ -10,6 +10,7 @@ import { pintarCapas } from '../capas/tokens-prueba';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
+import { DIALOGOS_FICHA, DIALOGOS_SWEETALERT } from '../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -19,6 +20,7 @@ import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
+import { DialogosFichaPanel } from './dialogos/dialogos-ficha-panel';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
 
 const API = environment.apiUrl;
@@ -317,13 +319,24 @@ async function comparar(
   return { hoy: deHoy, nueva: { escrituras: [...b.escrituras], swal: [...b.swal] } };
 }
 
+/** Apunta las opciones del diálogo y contesta con el siguiente resultado (después, cancelado). */
+const contestar = ((opciones: any) => {
+  actual?.swal.push(opcionesSwal(opciones));
+  const r = actual?.resultados.shift() ?? { isConfirmed: false, isDenied: false, isDismissed: true };
+  return Promise.resolve(r);
+}) as any;
+
 describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   beforeEach(() => {
-    fire = spyOn(Swal, 'fire').and.callFake(((opciones: any) => {
-      actual?.swal.push(opcionesSwal(opciones));
-      const r = actual?.resultados.shift() ?? { isConfirmed: false, isDenied: false, isDismissed: true };
-      return Promise.resolve(r);
-    }) as any);
+    fire = spyOn(Swal, 'fire').and.callFake(contestar);
+    // 8b-D2b: la ficha nueva abre sus diálogos con el puerto del panel (no con SweetAlert2). Aquí se comparan las
+    // opciones que recibe el puerto con las del SweetAlert2 de hoy y se contestan igual; cómo se pintan, en
+    // dialogos-ficha-panel.spec.ts y en «diálogos en el panel nuevo», más abajo.
+    spyOn(DialogosFichaPanel.prototype, 'fire').and.callFake(contestar);
+    // Los toasts de hoy (Toast.fire, que hereda el espía de Swal.fire) quedan apuntados como `{icon, title}`; los de la
+    // ficha nueva pasan por el puerto: se apuntan igual para compararlos (se pintan como avisos, ver más abajo).
+    spyOn(DialogosFichaPanel.prototype, 'toastExito').and.callFake((m: string) => void contestar({ icon: 'success', title: m }));
+    spyOn(DialogosFichaPanel.prototype, 'toastError').and.callFake((m: string) => void contestar({ icon: 'error', title: m }));
   });
 
   afterEach(() => {
@@ -521,15 +534,23 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m2.el(), '.ficha__licencia .ficha__pastilla')).toBe('Sin licencia');
     });
 
-    it('foto: se amplía al pulsar con el diálogo de hoy; «Cambiar foto» abre el selector y «Quitar» va desactivado sin foto', async () => {
+    it('foto: se amplía al pulsar en la caja de luz del panel (8b-D2b); «Cambiar foto» abre el selector y «Quitar» va desactivado sin foto', async () => {
       const m = await montar(FichaAlumnoComponent);
       const img = m.el().querySelector<HTMLImageElement>('.ficha__foto img')!;
       expect(img.getAttribute('width')).toBe('240');
       expect(img.getAttribute('height')).toBe('300');
-      const abrir = spyOn(m.comp, 'abrirModal');
-      m.el().querySelector<HTMLButtonElement>('.ficha__foto')!.click();
-      expect(abrir).toHaveBeenCalled();
-      expect(m.el().querySelector('dialog#imageModal')).withContext('diálogo de la foto de hoy').not.toBeNull();
+      const foto = m.el().querySelector<HTMLButtonElement>('.ficha__foto')!;
+      foto.focus();
+      foto.click();
+      m.harness.detectChanges();
+      const caja = document.querySelector<HTMLDialogElement>('dialog.pn-foto');
+      expect(caja?.open).withContext('caja de luz del panel nuevo').toBeTrue();
+      expect(caja!.querySelector('img')!.getAttribute('src')).toBe('/assets/media/default.webp');
+      expect(document.querySelector('dialog#imageModal')).withContext('sin el diálogo de hoy').toBeNull();
+      caja!.querySelector<HTMLButtonElement>('.pn-foto__cerrar')!.click();
+      m.harness.detectChanges();
+      expect(document.querySelector('dialog.pn-foto')).toBeNull();
+      expect(document.activeElement).withContext('foco de vuelta a la foto').toBe(foto);
       const selector = m.el().querySelector<HTMLInputElement>('input[type="file"][accept="image/*"]')!;
       const clic = spyOn(selector, 'click');
       boton(m.el(), 'Cambiar foto').click();
@@ -698,7 +719,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       esperado.forEach((e, i) => expect(r.nueva.escrituras[i]).toEqual(jasmine.objectContaining(e)));
     }
 
-    it('agregar deporte (diálogo de hoy)', async () => {
+    it('agregar deporte (panel lateral del panel nuevo, 8b-D2b)', async () => {
       await igual(
         async (m) => {
           m.comp.abrirModalAgregarDeporte();
@@ -708,9 +729,10 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         async (m) => {
           boton(m.el(), 'Agregar deporte').click();
           await m.asentar();
-          const modal = document.querySelector('#agregarDeporteModal.show') ?? m.el().querySelector('#agregarDeporteModal.show');
-          expect(modal).withContext('el diálogo de hoy, abierto').not.toBeNull();
-          boton(modal!, 'Agregar Deporte').click();
+          expect(document.querySelector('#agregarDeporteModal')).withContext('sin el diálogo de hoy').toBeNull();
+          const panel = document.querySelector<HTMLDialogElement>('dialog.pn-panel');
+          expect(panel?.open).withContext('el panel lateral, abierto').toBeTrue();
+          boton(panel!, 'Agregar Deporte').click();
         },
         [],
         [{ metodo: 'POST', url: '/alumnos/7/deportes' }]
@@ -801,7 +823,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('actualizar grado (diálogo de hoy)', async () => {
+    it('actualizar grado (diálogo del panel nuevo, 8b-D2b)', async () => {
       await igual(
         async (m) => {
           m.comp.abrirModalActualizarGrado('TAEKWONDO');
@@ -812,9 +834,11 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         async (m) => {
           boton(bloque(m, 'TAEKWONDO'), 'Actualizar grado').click();
           await m.asentar();
-          expect(m.el().querySelector('#actualizarGradoModal.show')).not.toBeNull();
-          m.comp.nuevoGradoActualizar = 'AMARILLO';
-          boton(m.el().querySelector('#actualizarGradoModal')!, 'Actualizar Grado').click();
+          expect(document.querySelector('#actualizarGradoModal')).withContext('sin el diálogo de hoy').toBeNull();
+          const d = document.querySelector<HTMLDialogElement>('dialog.pn-dialogo')!;
+          expect(d.querySelector('h2')!.textContent!.trim()).toBe('Actualizar Grado - Taekwondo');
+          elegirEnDialogo(d, 'AMARILLO');
+          boton(d, 'Actualizar Grado').click();
         },
         [],
         [
@@ -1058,7 +1082,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().querySelectorAll('.documentos__documento').length).toBe(6);
     });
 
-    it('WhatsApp desde el carnet y desde Documentos: el selector de teléfono y el diálogo de hoy', async () => {
+    it('WhatsApp desde el carnet y desde Documentos: el selector de teléfono y su panel lateral (8b-D2b)', async () => {
       await igual(
         (m) => m.comp.abrirWhatsApp(),
         (m) => m.el().querySelector<HTMLButtonElement>('.ficha__accion--whatsapp')!.click(),
@@ -1070,7 +1094,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       await pestana(m, 'Documentos y notas');
       boton(m.el().querySelector('app-ficha-documentos')!, 'WhatsApp').click();
       await m.asentar();
-      expect(m.el().querySelector('#whatsappModal.show')).withContext('diálogo de WhatsApp de hoy').not.toBeNull();
+      expect(document.querySelector('dialog.pn-panel h2')?.textContent?.trim()).withContext('panel de WhatsApp').toBe('Enviar WhatsApp');
     });
 
     it('información adicional: guardar observaciones', async () => {
@@ -1300,7 +1324,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
 
   // ---------------------------------------------------------------- cinturón (sin grados)
 
-  it('disciplina sin grados: sin caja Grado ni Licencia, como hoy; los diálogos quedan fuera de .pn', async () => {
+  it('disciplina sin grados: sin caja Grado ni Licencia, como hoy; los diálogos (8b-D2b) van dentro de .pn', async () => {
     const m = await montar(FichaAlumnoComponent);
     const pilates = bloque(m, 'PILATES');
     expect(pilates.querySelector('[data-caja="grado"]')).toBeNull();
@@ -1308,8 +1332,170 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     expect(pilates.querySelector('[data-caja="tarifa"]')).not.toBeNull();
     expect(pilates.querySelector('[data-caja="alta"]')).not.toBeNull();
     expect(texto(pilates, '.deportes__marca')).toBe('Inactivo');
-    const dialogos = m.el().querySelector('app-dialogos-alumno')!;
-    expect(dialogos.closest('.pn')).withContext('los diálogos de hoy conservan su tipografía').toBeNull();
+    expect(m.el().querySelector('app-dialogos-alumno')).withContext('sin los diálogos de hoy').toBeNull();
+    expect(m.el().querySelector('pn-dialogos-alumno')!.closest('.pn')).withContext('los del panel, con sus tokens').not.toBeNull();
+  });
+});
+
+/** Elige un valor en el campo de un diálogo del panel: el desplegable (más de 6 opciones) o su pastilla. */
+function elegirEnDialogo(d: HTMLElement, valor: string): void {
+  const select = d.querySelector<HTMLSelectElement>('select');
+  if (select) {
+    select.value = valor;
+    select.dispatchEvent(new Event('change'));
+  } else {
+    const radio = d.querySelector<HTMLButtonElement>(`[role="radio"][data-valor="${valor}"]`);
+    if (!radio) throw new Error(`Sin opción ${valor}`);
+    radio.click();
+  }
+  pintarCapas();
+}
+
+describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
+  const dlg = () => document.querySelector<HTMLDialogElement>('dialog.pn-dialogo');
+  const avisos = () => TestBed.inject(AvisosService).lista().map((a) => [a.tipo, a.texto]);
+
+  async function pulsar(m: Montaje<any>, texto: string): Promise<void> {
+    const d = dlg();
+    if (!d) throw new Error(`Sin diálogo para pulsar «${texto}»`);
+    boton(d, texto).click();
+    await m.asentar();
+  }
+
+  beforeEach(() => {
+    // Solo la ficha de hoy contesta con SweetAlert2 (simulado); la nueva pinta sus diálogos de verdad.
+    fire = spyOn(Swal, 'fire').and.callFake(contestar);
+  });
+
+  afterEach(() => {
+    actual?.harness.fixture.destroy();
+    actual = null;
+    document.querySelectorAll('.swal2-container').forEach((n) => n.remove());
+    TestBed.inject(AvisosService).cerrarTodos();
+    document.querySelectorAll('pn-dialogo, pn-avisos').forEach((n) => n.remove());
+  });
+
+  it('la ficha nueva da a sus diálogos el puerto del panel; la de hoy, el de SweetAlert2', async () => {
+    const hoy = await montar(EditarAlumnoComponent);
+    expect(hoy.harness.routeDebugElement!.injector.get(DIALOGOS_FICHA)).toBe(DIALOGOS_SWEETALERT);
+    hoy.harness.fixture.destroy();
+    const nueva = await montar(FichaAlumnoComponent);
+    expect(nueva.harness.routeDebugElement!.injector.get(DIALOGOS_FICHA)).toEqual(jasmine.any(DialogosFichaPanel));
+  });
+
+  it('eliminar documento: diálogo destructivo con el foco en «Cancelar», el mismo DELETE que hoy y un aviso', async () => {
+    const r = await comparar(
+      (m) => m.comp.eliminarDocumento(900),
+      async (m) => {
+        await pestana(m, 'Documentos y notas');
+        boton(m.el(), 'Eliminar documento-ficticio-1.pdf').click();
+        await m.asentar();
+        expect(dlg()!.classList).toContain('pn-dialogo--peligro');
+        expect(document.activeElement).toBe(boton(dlg()!, 'Cancelar'));
+        await pulsar(m, 'Sí, eliminar');
+      },
+      [{ isConfirmed: true }]
+    );
+    expect(r.nueva.escrituras).toEqual(r.hoy.escrituras);
+    expect(r.hoy.escrituras).toEqual([jasmine.objectContaining({ metodo: 'DELETE', url: '/alumnos/7/documentos/900' })]);
+    expect(r.nueva.swal).withContext('sin SweetAlert2').toEqual([]);
+    expect(avisos()).toEqual([['exito', 'Documento eliminado correctamente.']]);
+  });
+
+  it('«Dar de baja o eliminar…» de «⋯»: una sola capa con «Dar de baja» y «Eliminar completamente»; dar de baja como hoy', async () => {
+    const r = await comparar(
+      (m) => m.comp.eliminarODarDeBajaAlumno(),
+      async (m) => {
+        m.el().querySelector<HTMLButtonElement>('.ficha__mas')!.click();
+        await m.asentar();
+        boton(m.el().querySelector('.ficha__menu')!, 'Dar de baja o eliminar…').click();
+        await m.asentar();
+        const pie = Array.from(dlg()!.querySelectorAll('.pn-dialogo__pie button')).map((b) => b.textContent!.trim());
+        expect(pie).toEqual(jasmine.arrayWithExactContents(['Cancelar', 'Eliminar completamente', 'Dar de baja']));
+        await pulsar(m, 'Dar de baja');
+      },
+      [{ isConfirmed: true }]
+    );
+    expect(r.nueva.escrituras).toEqual(r.hoy.escrituras);
+    expect(r.hoy.escrituras).toEqual([jasmine.objectContaining({ metodo: 'PUT', url: '/alumnos/7/baja' })]);
+    expect(r.nueva.swal).toEqual([]);
+  });
+
+  it('eliminar alumno: «Eliminar completamente» y la segunda confirmación destructiva; el mismo DELETE', async () => {
+    const r = await comparar(
+      (m) => m.comp.eliminarODarDeBajaAlumno(),
+      async (m) => {
+        m.el().querySelector<HTMLButtonElement>('.ficha__mas')!.click();
+        await m.asentar();
+        boton(m.el().querySelector('.ficha__menu')!, 'Dar de baja o eliminar…').click();
+        await m.asentar();
+        await pulsar(m, 'Eliminar completamente');
+        expect(dlg()!.querySelector('h2')!.textContent!.trim()).toBe('¿Estás completamente seguro?');
+        expect(dlg()!.classList).toContain('pn-dialogo--peligro');
+        await pulsar(m, 'Sí, eliminar permanentemente');
+      },
+      [{ isDenied: true }, { isConfirmed: true }]
+    );
+    expect(r.nueva.escrituras).toEqual(r.hoy.escrituras);
+    expect(r.hoy.escrituras).toEqual([jasmine.objectContaining({ metodo: 'DELETE', url: '/alumnos/7' })]);
+  });
+
+  it('reservar plaza: pastillas del deporte, las dos confirmaciones y el mismo POST que hoy', async () => {
+    const r = await comparar(
+      (m) => m.comp.reservarPlaza(7),
+      async (m) => {
+        await pestana(m, 'Pagos');
+        boton(m.el(), 'Reservar plaza').click();
+        await m.asentar();
+        const radios = Array.from(dlg()!.querySelectorAll('[role="radio"]')).map((x) => x.textContent!.trim());
+        expect(radios).toEqual(['Todos los deportes', 'Taekwondo', 'Kickboxing']);
+        elegirEnDialogo(dlg()!, 'TAEKWONDO');
+        await pulsar(m, 'Continuar');
+        expect(dlg()!.querySelector('h2')!.textContent!.trim()).toBe('¿Quiere añadir una reserva de plaza?');
+        await pulsar(m, 'Sí');
+        expect(dlg()!.querySelector('h2')!.textContent!.trim()).toBe('¿Ha sido abonada la reserva?');
+        await pulsar(m, 'Sí, pagada');
+      },
+      [{ isConfirmed: true, value: 'TAEKWONDO' }, { isConfirmed: true }, { isConfirmed: true }]
+    );
+    expect(r.hoy.escrituras.length).toBe(1);
+    expect(r.nueva.escrituras).toEqual(r.hoy.escrituras);
+    expect(r.nueva.swal).toEqual([]);
+  });
+
+  it('un error (las convocatorias no cargan): aviso de error y nada de SweetAlert2', async () => {
+    const m = await montar(FichaAlumnoComponent);
+    m.retener = (req) => req.request.method === 'GET' && req.request.url.endsWith('/convocatorias');
+    boton(bloque(m, 'KICKBOXING'), 'Agregar a convocatoria').click();
+    await m.asentar();
+    m.retenidas[0].flush({ message: 'fallo' }, { status: 500, statusText: 'Error' });
+    await m.asentar();
+    expect(avisos()).toEqual([['error', 'No se pudieron cargar las convocatorias']]);
+    expect(fire).not.toHaveBeenCalled();
+  });
+
+  it('sin convocatorias: la fecha de la nueva en un campo con su etiqueta; «Crear y añadir» crea la convocatoria', async () => {
+    const m = await montar(FichaAlumnoComponent);
+    m.retener = (req) => req.request.method === 'GET' && req.request.url.endsWith('/convocatorias');
+    boton(bloque(m, 'KICKBOXING'), 'Agregar a convocatoria').click();
+    await m.asentar();
+    m.retener = null;
+    m.retenidas[0].flush([]);
+    await m.asentar();
+    const campo = dlg()!.querySelector<HTMLInputElement>('input[type="date"]')!;
+    expect(document.querySelector(`label[for="${campo.id}"]`)!.textContent!.trim()).toBe('Fecha de la convocatoria');
+    campo.value = '2099-12-10';
+    campo.dispatchEvent(new Event('input'));
+    await pulsar(m, 'Crear y añadir');
+    expect(m.escrituras[0]).toEqual(jasmine.objectContaining({ metodo: 'POST' }));
+    expect(fire).not.toHaveBeenCalled();
+  });
+
+  it('marcar principal: el toast de hoy es un aviso de éxito', async () => {
+    const m = await montar(FichaAlumnoComponent);
+    boton(bloque(m, 'KICKBOXING'), 'Marcar principal').click();
+    await m.asentar();
+    expect(avisos()).toEqual([['exito', 'Deporte principal actualizado a Kickboxing']]);
   });
 });
 

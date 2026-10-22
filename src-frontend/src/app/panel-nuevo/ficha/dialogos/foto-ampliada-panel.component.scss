@@ -1,0 +1,67 @@
+// Caja de luz de la foto del alumno (8b-D2b): el <dialog> ocupa la ventana sin fondo propio (un clic fuera de la foto
+// cae en él: es el velo), la foto centrada con el radio del carnet y la X de 44 px arriba a la derecha.
+@use '../../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.pn-foto[open] {
+  display: flex;
+}
+
+.pn-foto {
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+}
+
+.pn-foto__imagen {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(90vw, 960px);
+  max-height: 90dvh;
+  border-radius: var(--pn-radio-carnet);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-dialogo);
+  object-fit: contain;
+}
+
+.pn-foto__cerrar {
+  @include c.boton-icono;
+
+  & {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-superficie);
+    color: var(--pn-tinta);
+    box-shadow: var(--pn-sombra-menu);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}

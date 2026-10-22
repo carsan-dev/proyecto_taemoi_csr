@@ -269,10 +269,12 @@
     </div>
     }
   </div>
-</div>
 
-<!-- Diálogos de la ficha de hoy, sin cambios y fuera de .pn (conservan su tipografía y su CSS). -->
-<app-foto-ampliada [ficha]="this" />
-@if (!cargando && alumno) {
-<app-dialogos-alumno [ficha]="this" />
-}
+  <!-- 8b-D2b: los diálogos propios de la ficha y la foto ampliada, con las capas del panel (dentro de .pn, con sus tokens). -->
+  @if (!cargando && alumno) {
+  <pn-dialogos-alumno [ficha]="this" />
+  }
+  @if (fotoAmpliada) {
+  <pn-foto-ampliada [url]="fotoAmpliada" [alt]="'Foto de ' + (alumno?.nombre ?? '') + ' ' + (alumno?.apellidos ?? '')" (cerrar)="cerrarModal()" />
+  }
+</div>

@@ -27,6 +27,8 @@
     "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",
     "src/app/componentes/endpoints/editar-alumno/dialogos-ficha.port.spec.ts",
+    "src/app/panel-nuevo/ficha/dialogos/dialogos-ficha-panel.spec.ts",
+    "src/app/panel-nuevo/ficha/dialogos/dialogos-alumno-panel.component.spec.ts",
     "src/app/panel-nuevo/dialogo/confirmacion.service.spec.ts",
     "src/app/panel-nuevo/avisos/avisos.service.spec.ts",
     "src/app/panel-nuevo/carga/carga.spec.ts",

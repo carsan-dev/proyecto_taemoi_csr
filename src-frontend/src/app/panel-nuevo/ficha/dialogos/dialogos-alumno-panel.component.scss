@@ -1,0 +1,227 @@
+// Diálogos propios de la ficha en el panel lateral (8b-D2b): filas de convocatoria, campos con etiqueta encima
+// (DESIGN.md, «Inputs / Fields») y el pie del panel. Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.dialogos__lista,
+.dialogos__documentos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Una convocatoria: fila entera pulsable, con su fecha en cifras y la flecha.
+.dialogos__fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+
+  &:hover {
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.dialogos__fila--actual {
+  border-color: var(--pn-acento-borde);
+
+  .dialogos__fila-titulo {
+    color: var(--pn-acento);
+  }
+}
+
+// Quitar de una convocatoria: el estado de peligro, con el hover neutro.
+.dialogos__fila--peligro {
+  &:hover {
+    border-color: var(--pn-linea-fuerte);
+    background: var(--pn-marca-primario-suave);
+  }
+
+  .dialogos__fila-flecha {
+    color: var(--pn-peligro);
+  }
+}
+
+.dialogos__fila-texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dialogos__fila-titulo {
+  font: var(--pn-etiqueta);
+  font-size: 0.9375rem;
+  color: var(--pn-tinta);
+}
+
+.dialogos__fila-detalle {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.dialogos__fila-flecha {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--pn-tinta-2);
+}
+
+.dialogos__vacio {
+  margin: 0;
+  color: var(--pn-tinta-2);
+}
+
+.dialogos__campos {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dialogos__campo,
+.dialogos__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dialogos__etiqueta {
+  padding: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.dialogos__requerido {
+  color: var(--pn-peligro);
+}
+
+.dialogos__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background-color: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}
+
+.dialogos__control--area {
+  min-height: 96px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.dialogos__ayuda {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.dialogos__documento {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--pn-acento);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.dialogos__documento-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pn-tinta);
+}
+
+.dialogos__documento-tipo {
+  flex: none;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.dialogos__telefono {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  color: var(--pn-tinta);
+}
+
+.dialogos__pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialogos__texto {
+  @include c.boton-texto;
+}
+
+.dialogos__cancelar {
+  margin-right: auto;
+}
+
+.dialogos__primario {
+  @include c.boton-primario;
+}
+
+.dialogos__texto,
+.dialogos__primario {
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}

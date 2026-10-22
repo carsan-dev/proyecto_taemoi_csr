@@ -1,5 +1,7 @@
 <dialog #dialogo class="pn-dialogo" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="opciones.destructivo"
-  [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="partes.length ? id + '-mensaje' : null"
+  [class.pn-dialogo--tres]="!!opciones.accionSecundaria"
+  [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="descritoPor"
+  [attr.data-dialogo]="opciones.nombre ?? null" [attr.data-generico]="opciones.generico ? 'true' : null"
   (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <div class="pn-dialogo__caja">
     @if (hoja) {
@@ -16,6 +18,28 @@
     <div class="pn-dialogo__cuerpo">
       @if (partes.length) {
       <p class="pn-dialogo__mensaje" [id]="id + '-mensaje'">@for (p of partes; track $index) {@if (esFuerte(p)) {<strong>{{ p.fuerte }}</strong>} @else {<ng-container>{{ p }}</ng-container>}}</p>
+      }
+      @if (opciones.bloques?.length) {
+      <div class="pn-dialogo__explicacion" [id]="id + '-bloques'">
+        @for (b of opciones.bloques; track $index) {
+        @if (esLista(b)) {
+        <ul class="pn-dialogo__lista">
+          @for (el of b.elementos; track $index) {
+          <li>@for (p of el; track $index) {@if (esFuerte(p)) {<strong>{{ p.fuerte }}</strong>} @else {<ng-container>{{ p }}</ng-container>}}</li>
+          }
+        </ul>
+        } @else {
+        <p class="pn-dialogo__mensaje">@for (p of b.partes; track $index) {@if (esFuerte(p)) {<strong>{{ p.fuerte }}</strong>} @else {<ng-container>{{ p }}</ng-container>}}</p>
+        }
+        }
+      </div>
+      }
+      @if (errorGeneral; as e) {
+      <p class="pn-dialogo__error" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ e }}</span>
+      </p>
       }
       @if (opciones.destacado; as d) {
       <div class="pn-dialogo__destacado">
@@ -41,11 +65,81 @@
         </div>
       </div>
       }
+      @for (c of opciones.campos ?? []; track c.id) {
+      <div class="pn-dialogo__campo">
+        @if (c.tipo === 'pastillas') {
+        @if (c.etiqueta) {
+        <span class="pn-dialogo__campo-etiqueta" [id]="c.id + '-etiqueta'">{{ c.etiqueta }}</span>
+        }
+        <div class="pn-dialogo__pastillas" role="radiogroup" [attr.data-campo]="c.id"
+          [attr.aria-labelledby]="c.etiqueta ? c.id + '-etiqueta' : id + '-titulo'"
+          [attr.aria-invalid]="errorDe(c.id) ? 'true' : null" [attr.aria-describedby]="errorDe(c.id) ? c.id + '-error' : null"
+          (keydown)="teclaPastillasCampo($event, c)">
+          @for (o of c.opciones ?? []; track o.valor; let i = $index) {
+          <button type="button" role="radio" class="pn-dialogo__pastilla" [attr.data-valor]="o.valor"
+            [attr.aria-checked]="valores[c.id] === o.valor" [attr.tabindex]="indiceTabCampo(c, i)" [disabled]="ocupado"
+            (click)="ponerValor(c.id, o.valor)">
+            @if (valores[c.id] === o.valor) {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            }
+            <span>{{ o.texto }}</span>
+          </button>
+          }
+        </div>
+        <!-- El valor elegido con el id del campo: quien lee el DOM por id (un preConfirm) lee lo mismo que hoy. -->
+        <input type="hidden" [id]="c.id" [value]="valores[c.id] || ''" />
+        } @else {
+        <label class="pn-dialogo__campo-etiqueta" [class.pn-dialogo__oculto]="!c.etiqueta" [attr.for]="c.id">{{
+          c.etiqueta || opciones.titulo }}</label>
+        @switch (c.tipo) {
+        @case ('select') {
+        <select class="pn-dialogo__control" [id]="c.id" [attr.data-campo]="c.id" [disabled]="ocupado"
+          [attr.aria-invalid]="errorDe(c.id) ? 'true' : null" [attr.aria-describedby]="errorDe(c.id) ? c.id + '-error' : null"
+          (change)="alEscribir(c.id, $event)">
+          @if (c.placeholder) {
+          <option value="" disabled [selected]="!valores[c.id]">{{ c.placeholder }}</option>
+          }
+          @for (o of c.opciones ?? []; track o.valor) {
+          <option [value]="o.valor" [selected]="valores[c.id] === o.valor">{{ o.texto }}</option>
+          }
+        </select>
+        }
+        @case ('textarea') {
+        <textarea class="pn-dialogo__control pn-dialogo__control--area" [id]="c.id" [attr.data-campo]="c.id" rows="4"
+          [value]="valores[c.id] || ''" [attr.placeholder]="c.placeholder ?? null" [attr.maxlength]="atributo(c, 'maxlength')"
+          [attr.aria-label]="atributo(c, 'aria-label')" [disabled]="ocupado"
+          [attr.aria-invalid]="errorDe(c.id) ? 'true' : null" [attr.aria-describedby]="errorDe(c.id) ? c.id + '-error' : null"
+          (input)="alEscribir(c.id, $event)"></textarea>
+        }
+        @default {
+        <input class="pn-dialogo__control" [type]="c.tipo" [id]="c.id" [attr.data-campo]="c.id" [value]="valores[c.id] || ''"
+          [attr.placeholder]="c.placeholder ?? null" [attr.maxlength]="atributo(c, 'maxlength')" [attr.min]="atributo(c, 'min')"
+          [attr.max]="atributo(c, 'max')" [attr.step]="atributo(c, 'step')" [attr.aria-label]="atributo(c, 'aria-label')"
+          [disabled]="ocupado" [attr.aria-invalid]="errorDe(c.id) ? 'true' : null"
+          [attr.aria-describedby]="errorDe(c.id) ? c.id + '-error' : null" (input)="alEscribir(c.id, $event)"
+          (change)="alEscribir(c.id, $event)" />
+        }
+        }
+        }
+        @if (errorDe(c.id); as e) {
+        <p class="pn-dialogo__error" [id]="c.id + '-error'" role="alert">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+      }
       @if (hoja) {
       <div class="pn-dialogo__pie">
         <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado"
           [textoOcupado]="opciones.accionOcupada ?? opciones.accion" [deshabilitado]="accionDeshabilitada"
           (click)="confirmar()">{{ opciones.accion }}</button>
+        @if (opciones.accionSecundaria; as s) {
+        <button type="button" class="pn-dialogo__secundaria" [class.pn-dialogo__secundaria--peligro]="s.destructivo"
+          [disabled]="ocupado" (click)="negar()">{{ s.texto }}</button>
+        }
         <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">{{
           opciones.cancelar ?? 'Cancelar' }}</button>
       </div>
@@ -53,6 +147,11 @@
     </div>
     @if (!hoja) {
     <div class="pn-dialogo__pie">
+      <!-- La segunda acción, a la izquierda: si no cabe en una línea, sube sola y «Cancelar» y la acción siguen juntas. -->
+      @if (opciones.accionSecundaria; as s) {
+      <button type="button" class="pn-dialogo__secundaria" [class.pn-dialogo__secundaria--peligro]="s.destructivo"
+        [disabled]="ocupado" (click)="negar()">{{ s.texto }}</button>
+      }
       <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">{{
         opciones.cancelar ?? 'Cancelar' }}</button>
       <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado"
