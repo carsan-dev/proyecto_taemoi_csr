@@ -16,6 +16,8 @@ const formatoFecha = new Intl.DateTimeFormat(LOCALE, { day: '2-digit', month: '2
 
 const formatoMes = new Intl.DateTimeFormat(LOCALE, { month: 'long', year: 'numeric' });
 
+const formatoNombreMes = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
+
 const formatoFechaLarga = new Intl.DateTimeFormat(LOCALE, {
   weekday: 'long',
   day: 'numeric',
@@ -87,6 +89,15 @@ export function mes(valor: Date | string | null | undefined): string {
   return f ? formatoMes.format(f) : '';
 }
 
+/** «Enero» … «Diciembre» con mayúscula inicial, del índice 0 al 11 (como `Date.getMonth()`). Vacío fuera de rango. */
+export function nombreMes(indice: number): string {
+  if (!Number.isInteger(indice) || indice < 0 || indice > 11) {
+    return '';
+  }
+  const texto = formatoNombreMes.format(new Date(2000, indice, 1));
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 /** «Miércoles, 21 de octubre de 2026». Vacío si no hay fecha o no es válida. */
 export function fechaLarga(valor: Date | string | null | undefined): string {
   const f = aFecha(valor);
@@ -103,4 +114,15 @@ export function plural(cantidad: number, singular: string, pluralTexto: string):
     return '';
   }
   return `${numero(cantidad)} ${cantidad === 1 ? singular : pluralTexto}`;
+}
+
+/**
+ * Una frase entera que concuerda con la cantidad («Se genera 1 PDF.» / «Se generan 2 PDF, uno por día.»): el singular
+ * solo con 1 y `{n}` con la cifra es-ES. Vacío si la cantidad no es un número finito.
+ */
+export function frasePlural(cantidad: number, singular: string, pluralTexto: string): string {
+  if (!esNumero(cantidad)) {
+    return '';
+  }
+  return (cantidad === 1 ? singular : pluralTexto).replace('{n}', numero(cantidad));
 }

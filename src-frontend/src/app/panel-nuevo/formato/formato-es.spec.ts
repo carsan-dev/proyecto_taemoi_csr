@@ -1,4 +1,4 @@
-import { agruparMiles, eur, fecha, fechaLarga, mes, numero, plural } from './formato-es';
+import { agruparMiles, eur, fecha, fechaLarga, frasePlural, mes, nombreMes, numero, plural } from './formato-es';
 
 describe('formato-es', () => {
   const NBSP = ' ';
@@ -98,5 +98,35 @@ describe('formato-es', () => {
     expect(fechaLarga(new Date(2026, 9, 21))).toBe('Miércoles, 21 de octubre de 2026');
     expect(fechaLarga('2026-03-05')).toBe('Jueves, 5 de marzo de 2026');
     expect(fechaLarga(null)).toBe('');
+  });
+
+  it('frasePlural: la frase entera concuerda con la cantidad, con la cifra es-ES en {n} (8b-D1)', () => {
+    const f = (n: number) => frasePlural(n, 'Se genera {n} PDF.', 'Se generan {n} PDF, uno por día.');
+    expect(f(1)).toBe('Se genera 1 PDF.');
+    expect(f(2)).toBe('Se generan 2 PDF, uno por día.');
+    expect(f(0)).toBe('Se generan 0 PDF, uno por día.');
+    expect(f(1044)).toBe('Se generan 1.044 PDF, uno por día.');
+    expect(frasePlural(Number.NaN, 'uno', 'varios')).toBe('');
+  });
+
+  it('nombreMes: el nombre del mes con mayúscula inicial, de 0 (enero) a 11 (diciembre) (8b-D1)', () => {
+    expect(Array.from({ length: 12 }, (_, i) => nombreMes(i))).toEqual([
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ]);
+    expect(nombreMes(-1)).toBe('');
+    expect(nombreMes(12)).toBe('');
+    expect(nombreMes(1.5)).toBe('');
+    expect(nombreMes(Number.NaN)).toBe('');
   });
 });

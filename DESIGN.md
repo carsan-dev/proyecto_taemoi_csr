@@ -247,14 +247,18 @@ useGrouping: 'always' })`: «1.010,00 €», alineados a la derecha. Fechas y me
 ## Elevation & Depth
 
 Plano. Bloques, filas y tablas se separan con un filete de 1 px (`linea`) sobre el fondo, sin sombra. Solo flotan
-los menús desplegables y la barra inferior: una sombra para menús (`0 6px 20px -6px` de la tinta al 22 %, más
-`0 2px 4px` al 6 %) y otra hacia arriba para la barra. El carnet lleva una sombra mínima de tarjeta
-(`0 1px 2px` al 5 % y `0 3px 10px -4px` al 10 %).
+los menús desplegables, los avisos, la barra inferior y las capas modales: una sombra para menús y avisos
+(`0 6px 20px -6px` de la tinta al 22 %, más `0 2px 4px` al 6 %) y otra hacia arriba para la barra. El carnet lleva una
+sombra mínima de tarjeta (`0 1px 2px` al 5 % y `0 3px 10px -4px` al 10 %).
 
 **Barra inferior** (token `--pn-sombra-barra`): `0 -6px 20px -8px` de la tinta al 22 %, más `0 -2px 4px` al 6 %, ambas hacia arriba.
 
-**The Dos Sombras Rule.** Hay dos sombras en todo el panel (menú y carnet) más la de la barra inferior. Una tercera
-pide una decisión, no un retoque.
+**Diálogo** (token `--pn-sombra-dialogo`, decisión 271, 8b-D1): `0 24px 48px -12px` de la tinta al 28 %, más `0 4px 10px`
+al 8 %. La llevan el diálogo centrado y el panel lateral, sobre el velo (`--pn-velo`, la tinta al 40 %). La hoja inferior
+lleva la misma, vuelta hacia arriba (`--pn-sombra-hoja`: `0 -12px 32px -8px` de la tinta al 28 %), como la barra.
+
+**The Tres Sombras Rule.** Hay tres sombras en todo el panel (menú, carnet y diálogo, decisión 271) más sus versiones
+hacia arriba para la barra inferior y la hoja. Una cuarta pide una decisión, no un retoque.
 
 ## Shapes
 
@@ -324,6 +328,62 @@ misma descripción por celda (8b-2).
 
 Total de todo lo vencido en ocre a 28 px, cargos y alumnos debajo; desglose por tipo, por mes y por sede en filas de
 importe alineado a la derecha; los cinco cargos más antiguos con «Cobrar».
+
+### Diálogo y hoja (8b-D1, decisión 271)
+
+Sustituyen a SweetAlert2 en las pantallas nuevas (decisión 269); las de hoy y las de familias siguen con él hasta 8b-Z.
+`ConfirmacionService.confirmar(opciones)` devuelve una `Promise` con `{confirmado, valor}`.
+
+- `<dialog>` con `showModal()`, centrado y de 440 px, radio 8, sombra de diálogo, sobre el velo. Título en Montserrat
+  700 de 18 px (`--pn-titulo-dialogo`), X de cerrar de 34 px, frase de consecuencia en `tinta-2` (el nombre, en negrita
+  y en `tinta`), campos opcionales y pie con «Cancelar» (secundario) a la izquierda y la acción a la derecha.
+- Cobro: el concepto en etiqueta y el importe en la cifra ocre de 28 px entre dos filetes; el método, un grupo de
+  pastillas `role=radiogroup` (32 px, borde de control; la elegida, el color de la escuela como tinta con la marca de
+  verificación) con «Sin indicar» por defecto. Flechas, Inicio y Fin mueven la elección.
+- Esc, el clic fuera y la X cancelan sin hacer nada (decisiones 235 y 248). El foco queda contenido y vuelve al
+  disparador al cerrar. Foco inicial: en la acción; en los destructivos, en «Cancelar», con la acción en `peligro`.
+- Con la acción en vuelo, el diálogo sigue abierto con el botón ocupado («Cobrando…») y no se puede cancelar: ni Esc,
+  ni el velo, ni la X, ni «Cancelar»; si el navegador lo cierra igualmente (un segundo Esc), se vuelve a abrir.
+- Por debajo de 768 px es una hoja inferior: pegada abajo, radio 14 arriba, asa de 36 × 4, botones y pastillas de
+  44 px y los botones a ancho completo, con la acción arriba.
+
+### Avisos (8b-D1)
+
+`AvisosService` con `exito`, `error` e `info`, y una acción opcional («Deshacer», «Reintentar», «Descargar»).
+
+- Abajo a la derecha, de 360 px, 3 como mucho (el cuarto saca al más antiguo); con la barra inferior (por debajo de
+  1024 px), encima de ella; por debajo de 768 px, a lo ancho con 16 px a cada lado y la acción y la X de 44 px.
+- Superficie con filete y la sombra de los menús; icono de 20 px del color de su estado (`bien`, `peligro`, `tinta-2`)
+  y la acción como enlace subrayado en el color de la escuela como tinta.
+- Éxito e información se cierran a los 5 s con una barra de tiempo de 2 px (`linea-fuerte`), que se para con el ratón
+  encima o el foco dentro (quieta con `prefers-reduced-motion`); el error no se cierra solo. Los lectores de pantalla
+  los oyen por dos regiones vivas ocultas que nacen vacías con la de avisos, `role=status` y, la del error,
+  `role=alert`; el texto llega 100 ms después de verse la tarjeta.
+- Con una capa modal abierta, los avisos se pintan dentro de ella (fuera quedarían inertes), sin tapar sus botones:
+  con el panel lateral, a su izquierda; en una hoja inferior, arriba. Un aviso de error cierra el SweetAlert2 que haya
+  abierto el interceptor de errores de hoy (clase `swal-error-http`, sin estilos), como lo sustituía el aviso de las
+  pantallas de hoy; solo ese y solo en una pantalla nueva.
+
+### Carga (8b-D1)
+
+- **Esqueleto** (`pn-esqueleto`): la forma del contenido que sustituye, en `serie-pista`, con un pulso de opacidad
+  (1 a 0,55 en 1,6 s); aparece a los 300 ms (una carga más corta no parpadea) y se queda quieto con
+  `prefers-reduced-motion`. La forma va con `aria-hidden` y a los lectores les llega «Cargando…» en un `role=status`.
+- **Botón ocupado** (`button[pnOcupado]`): mismo ancho, indicador de 16 px, `aria-disabled` y `aria-busy` (no
+  `disabled`: el foco se queda en el botón) sin atender clics, y el texto de la acción en curso («Cobrando…»,
+  «Generando…»); en el primario, el texto pasa al secundario sobre el color.
+- **Error de bloque** (`pn-bloque-error`): icono de peligro, qué falló, cómo seguir y «Reintentar», que vuelve a pedir
+  solo ese bloque.
+- **Vacío** (`pn-bloque-vacio`): qué no hay, por qué y la acción que lo arregla («Quitar filtros»), en `role=status`.
+
+### Panel lateral (8b-D1, decisión 270)
+
+`pn-panel-lateral`: `<dialog>` modal de 480 px a la derecha, bajo la cabecera de 64 px, con filete a la izquierda y la
+sombra de diálogo sobre el velo. Cabecera con título, descripción y X; cuerpo con su propio desplazamiento; pie fijo
+con «Cancelar» (botón de texto) a la izquierda y las acciones a la derecha. Por debajo de 768 px, hoja inferior. Esc, el
+clic fuera y la X lo cierran y el foco vuelve a quien lo abrió. Con `bloqueado` (un envío en vuelo) no se cierra por
+ninguna vía: la X y «Cancelar» van deshabilitados y, si el navegador lo cierra, se vuelve a abrir. Lo usan las
+herramientas de «Informes» del listado.
 
 ## Do's and Don'ts
 

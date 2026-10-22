@@ -1,0 +1,72 @@
+// Bloques de error y vacío del panel nuevo (8b-D1, boceto `Carga.dc.html`, d y e). Solo tokens de panel-nuevo.scss.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.pn-bloque-error,
+.pn-bloque-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.pn-bloque-vacio {
+  padding: 48px 24px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.pn-bloque-error__icono,
+.pn-bloque-vacio__icono {
+  width: 24px;
+  height: 24px;
+  color: var(--pn-tinta-2);
+}
+
+.pn-bloque-error__icono {
+  color: var(--pn-peligro);
+}
+
+.pn-bloque-error__titulo,
+.pn-bloque-vacio__titulo {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pn-tinta);
+}
+
+.pn-bloque-error__texto,
+.pn-bloque-vacio__texto {
+  max-width: 44ch;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.pn-bloque-vacio__texto {
+  max-width: 52ch;
+}
+
+.pn-bloque-error__reintentar,
+.pn-bloque-vacio__accion {
+  @include c.boton-secundario;
+
+  & {
+    margin-top: 8px;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (max-width: 767.98px) {
+    min-height: 44px;
+  }
+}

@@ -2,11 +2,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
+import { AvisosService } from '../avisos/avisos.service';
+import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { AlumnosComponent, CLAVE_VISTA } from './alumnos.component';
 import { PendienteAlumno } from './pendientes-alumno.service';
 
@@ -77,6 +79,53 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     return (el().querySelector(selector)?.textContent ?? '').replace(/\s+/g, ' ').trim();
   }
 
+  // ---- 8b-D1: diálogo, avisos y panel lateral del panel nuevo (fuera del fixture, en el body o en la capa de arriba)
+  function pintar(): void {
+    pintarCapas();
+    fixture.detectChanges();
+  }
+
+  function dialogo(): HTMLDialogElement | null {
+    return document.querySelector<HTMLDialogElement>('dialog.pn-dialogo');
+  }
+
+  function botonDialogo(textoBoton: string): HTMLButtonElement {
+    const hallado = Array.from(dialogo()!.querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim() === textoBoton
+    );
+    if (!hallado) {
+      throw new Error(`Sin botón «${textoBoton}» en el diálogo`);
+    }
+    return hallado;
+  }
+
+  function pastilla(textoPastilla: string): void {
+    Array.from(dialogo()!.querySelectorAll<HTMLButtonElement>('[role="radio"]'))
+      .find((b) => b.textContent!.trim() === textoPastilla)!
+      .click();
+    pintar();
+  }
+
+  function textoDialogo(): string {
+    // Sin tocar el espacio duro de los importes.
+    return (dialogo()?.textContent ?? '').replace(/[ \t\r\n]+/g, ' ').trim();
+  }
+
+  /** Cada aviso con la región viva por la que se anuncia: `alert` el error, `status` el resto. */
+  function avisos(): { rol: string | null; texto: string }[] {
+    return Array.from(document.querySelectorAll<HTMLElement>('.pn-aviso')).map((a) => ({
+      rol: a.classList.contains('pn-aviso--error') ? 'alert' : 'status',
+      texto: a.querySelector('.pn-aviso__texto')!.textContent!.trim(),
+    }));
+  }
+
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 10; i++) {
+      await Promise.resolve();
+    }
+    pintar();
+  }
+
   function crear(): void {
     fixture = TestBed.createComponent(AlumnosComponent);
     http = TestBed.inject(HttpTestingController);
@@ -103,7 +152,12 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     fixture.detectChanges();
   }
 
+  let quitarTokens: () => void;
+  let esAdmin = false;
+
   beforeEach(async () => {
+    quitarTokens = ponerTokensDePrueba();
+    esAdmin = false;
     localStorage.removeItem(CLAVE_VISTA);
     await TestBed.configureTestingModule({
       imports: [AlumnosComponent],
@@ -112,6 +166,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
+        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin } },
         {
           provide: CatalogoService,
           useValue: {
@@ -132,7 +187,11 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
 
   afterEach(() => {
     fixture?.destroy();
+    TestBed.inject(AvisosService).cerrarTodos();
+    pintarCapas();
+    document.querySelectorAll('pn-dialogo').forEach((e) => e.remove());
     localStorage.removeItem(CLAVE_VISTA);
+    quitarTokens();
   });
 
   it('pide 25 por página al servidor y una sola vez los pendientes de los ids de la página', () => {
@@ -275,23 +334,27 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(filas[2].querySelector('.alumnos__cobrar')).toBeNull();
   });
 
-  it('«Cobrar» con un cargo: el diálogo y el PUT de la tesorería de hoy, y refresca ese alumno', async () => {
+  it('«Cobrar» con un cargo: el diálogo nuevo y el PUT de la tesorería de hoy; aviso y refresco de ese alumno (8b-D1)', async () => {
     crear();
     responder();
-    const promesa = Promise.resolve({ isConfirmed: true, value: 'EFECTIVO' } as never);
-    const fire = spyOn(Swal, 'fire').and.returnValue(promesa);
     el().querySelectorAll<HTMLButtonElement>('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
-    const opciones = fire.calls.mostRecent().args[0] as any;
-    expect(opciones.title).toBe('Confirmar cobro');
-    expect(opciones.text).toBe('Marcar como pagado "MENSUALIDAD FEBRERO 2026 - TAEKWONDO"?');
-    expect(opciones.inputLabel).toBe('Método (opcional)');
-    await promesa;
-    await Promise.resolve();
+    pintar();
+    expect(dialogo()!.querySelector('h2')!.textContent!.trim()).toBe('Cobrar cargo');
+    expect(textoDialogo()).toContain('Se registra el pago de Nombre2 Apellido2 Segundo y el cargo deja de figurar como pendiente.');
+    expect(textoDialogo()).toContain('MENSUALIDAD FEBRERO 2026 - TAEKWONDO');
+    expect(textoDialogo()).toContain(`30,00${NBSP}€`);
+    expect(dialogo()!.querySelector('[role="radiogroup"]')).not.toBeNull();
+    pastilla('Efectivo');
+    botonDialogo('Marcar como pagado').click();
+    pintar();
     const put = http.expectOne(`${API}/productos-alumno/801`);
     expect(put.request.method).toBe('PUT');
     expect(put.request.body).toEqual({ pagado: true, metodoPago: 'EFECTIVO' });
     expect(put.request.withCredentials).toBeTrue();
     put.flush({ id: 801, pagado: true });
+    await esperar();
+    expect(dialogo()).toBeNull();
+    expect(avisos()).toEqual([{ rol: 'status', texto: `Cobro registrado: 30,00${NBSP}€ · Nombre2 Apellido2 Segundo` }]);
     const [refresco] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
     expect(refresco.request.params.get('alumnoIds')).toBe('2');
     refresco.flush([]);
@@ -299,32 +362,29 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(el().querySelectorAll('.alumnos__fila')[1].querySelector('.alumnos__al-dia')).not.toBeNull();
   });
 
-  it('«Cobrar» cancelado no envía nada; sin método no envía metodoPago', async () => {
+  it('«Cobrar» cancelado (Esc) no envía nada; sin método no envía metodoPago', async () => {
     crear();
     responder();
-    const cancelar = Promise.resolve({ isConfirmed: false } as never);
-    const fire = spyOn(Swal, 'fire').and.returnValue(cancelar);
     const boton = el().querySelectorAll('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!;
     boton.click();
-    await cancelar;
-    await Promise.resolve();
+    pintar();
+    dialogo()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await esperar();
+    expect(dialogo()).toBeNull();
     http.expectNone(`${API}/productos-alumno/801`);
-    const sinMetodo = Promise.resolve({ isConfirmed: true, value: '' } as never);
-    fire.and.returnValue(sinMetodo);
     boton.click();
-    await sinMetodo;
-    await Promise.resolve();
+    pintar();
+    botonDialogo('Marcar como pagado').click();
     expect(http.expectOne(`${API}/productos-alumno/801`).request.body).toEqual({ pagado: true });
   });
 
-  it('«Cobrar» con varios cargos abre el panel con cada cargo; cada «Cobrar» hace lo mismo que hoy', async () => {
+  it('«Cobrar» con varios cargos abre el panel con cada cargo; cada «Cobrar» abre el diálogo nuevo y hace lo mismo que hoy', async () => {
     crear();
     responder();
-    const fire = spyOn(Swal, 'fire');
     const boton = el().querySelector<HTMLButtonElement>('.alumnos__fila .alumnos__cobrar')!;
     boton.click();
     fixture.detectChanges();
-    expect(fire).not.toHaveBeenCalled();
+    expect(dialogo()).toBeNull();
     const panel = el().querySelector<HTMLElement>('.alumnos__cargos')!;
     expect(panel.getAttribute('role')).toBe('dialog');
     expect(boton.getAttribute('aria-expanded')).toBe('true');
@@ -334,21 +394,45 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(cargos[0].textContent).toContain(`30,00${NBSP}€`);
     expect(cargos[0].textContent).toContain('Vencido desde el 06/01/2026');
 
-    const promesa = Promise.resolve({ isConfirmed: true, value: 'BIZUM' } as never);
-    fire.and.returnValue(promesa);
     cargos[1].querySelector<HTMLButtonElement>('button')!.click();
-    expect((fire.calls.mostRecent().args[0] as any).text).toBe('Marcar como pagado "DERECHO A EXAMEN"?');
-    await promesa;
-    await Promise.resolve();
+    pintar();
+    expect(textoDialogo()).toContain('DERECHO A EXAMEN');
+    expect(textoDialogo()).toContain(`20,00${NBSP}€`);
+    pastilla('Bizum');
+    botonDialogo('Marcar como pagado').click();
     const put = http.expectOne(`${API}/productos-alumno/702`);
     expect(put.request.body).toEqual({ pagado: true, metodoPago: 'BIZUM' });
     put.flush({});
+    await esperar();
     const [refresco] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
     expect(refresco.request.params.get('alumnoIds')).toBe('1');
     refresco.flush([{ ...DOS_CARGOS, importe: 30, cargos: 1, detalle: [DOS_CARGOS.detalle[0]] }]);
     fixture.detectChanges();
     expect(el().querySelectorAll('.alumnos__cargos .alumnos__cargo').length).toBe(1);
     expect(el().querySelector('.alumnos__fila .alumnos__importe')!.textContent!.trim()).toBe(`30,00${NBSP}€`);
+  });
+
+  it('«Deshacer» del aviso solo para el propietario, con la misma llamada que «Revertir» de la tesorería de hoy', async () => {
+    esAdmin = true;
+    crear();
+    responder();
+    el().querySelectorAll('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
+    pintar();
+    botonDialogo('Marcar como pagado').click();
+    http.expectOne(`${API}/productos-alumno/801`).flush({});
+    await esperar();
+    http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`).forEach((r) => r.flush([]));
+    const deshacer = document.querySelector<HTMLButtonElement>('.pn-aviso__accion')!;
+    expect(deshacer.textContent!.trim()).toBe('Deshacer');
+    deshacer.click();
+    const revertir = http.expectOne(`${API}/productos-alumno/801`);
+    expect(revertir.request.body).toEqual({ pagado: false, motivoCambio: null });
+    revertir.flush({});
+    await esperar();
+    const [refresco] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
+    expect(refresco.request.params.get('alumnoIds')).toBe('2');
+    refresco.flush([UN_CARGO]);
+    expect(avisos().map((a) => a.texto)).toContain('Cobro revertido a pendiente');
   });
 
   it('teclado del panel: foco en el primer cargo; Esc lo cierra y devuelve el foco a «Cobrar»', () => {
@@ -413,19 +497,155 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     el().querySelector<HTMLButtonElement>('.alumnos__marcar-principal')!.click();
     const put = http.expectOne(`${API}/alumnos/1/deportes/KICKBOXING/principal`);
     expect(put.request.method).toBe('PUT');
+    put.flush({});
+    pintar();
+    // 8b-D1: el aviso del panel nuevo, con el texto de hoy.
+    expect(avisos()).toEqual([{ rol: 'status', texto: 'Deporte principal actualizado a Kickboxing' }]);
   });
+
+  it('«Marcar principal» que falla: aviso de error con el texto del servidor (8b-D1)', () => {
+    crear();
+    const dos = alumno(1, {
+      deportes: [
+        ...(alumno(1)['deportes'] as unknown[]),
+        { id: 11, deporte: 'KICKBOXING', grado: 'VERDE', activo: true, principal: false, fechaAlta: '2025-01-01', tipoTarifa: null },
+      ],
+    });
+    responder(1, [], { content: [dos], totalElements: 1, totalPages: 1, number: 0, size: 25 } as never);
+    el().querySelector<HTMLButtonElement>('.alumnos__desplegar')!.click();
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.alumnos__marcar-principal')!.click();
+    http.expectOne(`${API}/alumnos/1/deportes/KICKBOXING/principal`).flush('No permitido', { status: 400, statusText: 'Bad' });
+    pintar();
+    expect(avisos()).toEqual([{ rol: 'alert', texto: 'No permitido' }]);
+  });
+
+  it('«Dar de baja»: diálogo destructivo con el foco en «Cancelar»; Esc no envía nada; confirmado, el PUT de hoy (8b-D1)', async () => {
+    crear();
+    responder();
+    document.body.appendChild(el());
+    el().querySelector<HTMLButtonElement>('.alumnos__desplegar')!.click();
+    fixture.detectChanges();
+    const baja = Array.from(el().querySelectorAll<HTMLButtonElement>('.alumnos__accion')).find((b) => b.textContent!.trim() === 'Dar de baja')!;
+    baja.focus();
+    baja.click();
+    pintar();
+    expect(dialogo()!.querySelector('h2')!.textContent!.trim()).toBe('¿Dar de baja a Nombre1 Apellido1 Segundo?');
+    expect(textoDialogo()).toContain('Se desactivan todas sus disciplinas desde hoy');
+    expect(dialogo()!.classList).toContain('pn-dialogo--peligro');
+    expect(document.activeElement).toBe(botonDialogo('Cancelar'));
+    dialogo()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    await esperar();
+    http.expectNone(`${API}/alumnos/1/baja`);
+    expect(document.activeElement).toBe(baja);
+
+    baja.click();
+    pintar();
+    botonDialogo('Dar de baja').click();
+    await esperar();
+    const put = http.expectOne(`${API}/alumnos/1/baja`);
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual({});
+    put.flush({});
+    await esperar();
+    expect(avisos()).toEqual([{ rol: 'status', texto: 'Alumno dado de baja correctamente' }]);
+    expect(listados().length).toBe(1);
+    el().remove();
+  });
+
+  it('«Dar de alta»: con un deporte inactivo lo activa como hoy; con varios, el diálogo con «Todos los deportes» (8b-D1)', async () => {
+    crear();
+    const deBaja = (id: number) =>
+      alumno(id, { activo: false, deportes: [{ ...(alumno(id)['deportes'] as any[])[0], activo: false }] });
+    const filas = () => ({ content: [deBaja(1), deBaja(2)], totalElements: 2, totalPages: 1, number: 0, size: 25 });
+    responder(2, [], filas() as never);
+    const alta = (i: number) => {
+      el().querySelectorAll<HTMLButtonElement>('.alumnos__desplegar')[i].click();
+      fixture.detectChanges();
+      el().querySelectorAll<HTMLElement>('.alumnos__fila')[i]
+        .querySelector<HTMLButtonElement>('.alumnos__accion--bien')!
+        .click();
+    };
+    alta(0);
+    http.expectOne(`${API}/alumnos/1/deportes`).flush([{ deporte: 'TAEKWONDO', activo: false }, { deporte: 'PILATES', activo: true }]);
+    pintar();
+    expect(dialogo()).toBeNull();
+    http.expectOne(`${API}/alumnos/1/deportes/TAEKWONDO/activar`).flush({});
+    pintar();
+    expect(avisos().map((a) => a.texto)).toContain('Alumno dado de alta en Taekwondo');
+    listados().forEach((r) => r.flush(filas()));
+    http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+
+    alta(1);
+    http.expectOne(`${API}/alumnos/2/deportes`).flush([{ deporte: 'TAEKWONDO', activo: false }, { deporte: 'KICKBOXING', activo: false }]);
+    pintar();
+    expect(dialogo()!.querySelector('h2')!.textContent!.trim()).toBe('Selecciona el deporte a activar');
+    const radios = Array.from(dialogo()!.querySelectorAll('[role="radio"]')).map((r) => r.textContent!.trim());
+    expect(radios).toEqual(['Todos los deportes', 'Taekwondo', 'Kickboxing']);
+    expect(botonDialogo('Dar de alta').disabled).toBeTrue();
+    pastilla('Todos los deportes');
+    botonDialogo('Dar de alta').click();
+    await esperar();
+    http.expectOne(`${API}/alumnos/2/deportes/TAEKWONDO/activar`).flush({});
+    http.expectOne(`${API}/alumnos/2/deportes/KICKBOXING/activar`).flush({});
+    pintar();
+    expect(avisos().map((a) => a.texto)).toContain('Alumno dado de alta en todos sus deportes: Taekwondo, Kickboxing');
+  });
+
+  it('«Dar de alta» sin deportes inactivos: aviso de información como el de hoy (8b-D1)', () => {
+    crear();
+    const deBaja = alumno(1, { activo: false, deportes: [{ ...(alumno(1)['deportes'] as any[])[0], activo: false }] });
+    responder(1, [], { content: [deBaja], totalElements: 1, totalPages: 1, number: 0, size: 25 } as never);
+    el().querySelector<HTMLButtonElement>('.alumnos__desplegar')!.click();
+    fixture.detectChanges();
+    el().querySelector<HTMLButtonElement>('.alumnos__accion--bien')!.click();
+    http.expectOne(`${API}/alumnos/1/deportes`).flush([{ deporte: 'TAEKWONDO', activo: true }]);
+    pintar();
+    expect(avisos()).toEqual([{ rol: 'status', texto: 'El alumno ya tiene todos sus deportes activos.' }]);
+  });
+
+  it('cargando: esqueleto de filas a partir de los 300 ms (8b-D1)', fakeAsync(() => {
+    crear();
+    expect(el().querySelector('.alumnos__esqueleto')).toBeNull();
+    tick(300);
+    fixture.detectChanges();
+    const esqueleto = el().querySelector('pn-esqueleto')!;
+    expect(esqueleto.querySelector('[role="status"]')!.textContent!.trim()).toBe('Cargando alumnos');
+    expect(esqueleto.querySelectorAll('.alumnos__esqueleto').length).toBe(6);
+    responder();
+    expect(el().querySelector('pn-esqueleto')).toBeNull();
+    flush();
+  }));
+
+  it('vacío por filtros: «Ningún alumno coincide…» con «Quitar filtros» (8b-D1)', fakeAsync(() => {
+    crear();
+    responder();
+    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    listados()[0].flush(pagina(0, 0));
+    fixture.detectChanges();
+    const vacio = el().querySelector<HTMLElement>('pn-bloque-vacio [role="status"]')!;
+    expect(vacio.textContent).toContain('Ningún alumno coincide con la búsqueda');
+    expect(vacio.textContent).toContain('Prueba con otro nombre o quita los filtros de disciplina e inactivos.');
+    vacio.querySelector<HTMLButtonElement>('button')!.click();
+    const [peticion] = listados();
+    expect(peticion.request.params.get('incluirInactivos')).toBe('false');
+    flush();
+  }));
 
   it('error al leer la página: lo dice y deja reintentar', () => {
     crear();
     http.match((r) => r.url === `${API}/alumnos` && r.params.get('size') === '1').forEach((r) => r.flush({ totalElements: 1 }));
     listados()[0].flush('fallo', { status: 500, statusText: 'Error' });
     fixture.detectChanges();
-    expect(texto('.alumnos__estado')).toContain('No se pudo cargar el listado.');
-    el().querySelector<HTMLButtonElement>('.alumnos__estado button')!.click();
+    // 8b-D1: el bloque de error común.
+    expect(texto('pn-bloque-error [role="alert"]')).toContain('No se pudo cargar el listado');
+    expect(texto('pn-bloque-error')).toContain('Comprueba la conexión y vuelve a intentarlo.');
+    el().querySelector<HTMLButtonElement>('pn-bloque-error button')!.click();
     expect(listados().length).toBe(1);
   });
 
-  it('«Informes»: menú con teclado, el diálogo de tipos de hoy y las tres herramientas del pie', () => {
+  it('«Informes»: menú con teclado, el diálogo de tipos de hoy y las tres herramientas en el panel lateral (8b-D1)', () => {
     crear();
     responder();
     document.body.appendChild(el());
@@ -446,13 +666,25 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(el().querySelector('[role="menu"]')).toBeNull();
     expect(document.activeElement).toBe(boton);
 
-    boton.click();
-    fixture.detectChanges();
-    el().querySelectorAll<HTMLButtonElement>('[role="menuitem"]')[2].click();
-    fixture.detectChanges();
-    const asistencia = Array.from(el().querySelectorAll<HTMLDetailsElement>('app-herramientas-alumnos details'))[1];
-    expect(asistencia.open).toBeTrue();
-    expect(asistencia.textContent).toContain('Listado de Asistencia');
+    const titulos = ['Gestión de mensualidades y licencias', 'Listado de asistencia', 'Listado de mensualidades'];
+    titulos.forEach((titulo, i) => {
+      boton.click();
+      fixture.detectChanges();
+      el().querySelectorAll<HTMLButtonElement>('[role="menuitem"]')[i + 1].click();
+      fixture.detectChanges();
+      const panel = el().querySelector<HTMLDialogElement>('dialog.pn-panel')!;
+      expect(panel.open).toBeTrue();
+      expect(panel.querySelector('h2')!.textContent!.trim()).toBe(titulo);
+      const pie = Array.from(panel.querySelectorAll('.pn-panel__pie button')).map((b) => b.textContent!.trim());
+      expect(pie[0]).toBe('Cancelar');
+      if (i > 0) {
+        expect(pie.slice(1)).toEqual(['Ver PDF', 'Descargar PDF']);
+      }
+      panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(el().querySelector('dialog.pn-panel')).toBeNull();
+      expect(document.activeElement).toBe(boton);
+    });
 
     boton.click();
     fixture.detectChanges();
@@ -467,11 +699,13 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     el().remove();
   });
 
-  it('las tres herramientas del pie son las de hoy (mismo componente)', () => {
+  it('las tres herramientas salen del pie: el listado acaba en la paginación (decisión 270)', () => {
     crear();
     responder();
-    const titulos = Array.from(el().querySelectorAll('app-herramientas-alumnos summary span')).map((s) => s.textContent!.trim());
-    expect(titulos).toEqual(['Gestión de Mensualidades y Licencias', 'Listado de Asistencia', 'Listado de Mensualidades']);
+    expect(el().querySelector('app-herramientas-alumnos')).toBeNull();
+    expect(el().querySelector('.alumnos__herramientas')).toBeNull();
+    const contenido = el().querySelector('.alumnos__pagina')!;
+    expect(contenido.lastElementChild!.classList).toContain('alumnos__paginacion');
   });
 
   it('«Quitar filtros» hace una sola petición del listado (la búsqueda vaciada no repite la carga)', fakeAsync(() => {
@@ -483,7 +717,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     tick(300);
     listados()[0].flush(pagina(0, 0));
     fixture.detectChanges();
-    el().querySelector<HTMLButtonElement>('.alumnos__estado button')!.click();
+    el().querySelector<HTMLButtonElement>('pn-bloque-vacio button')!.click();
     tick(1000);
     const peticiones = listados();
     expect(peticiones.length).toBe(1);
@@ -548,12 +782,11 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
   it('al cerrar la pantalla se cancela el refresco del pendiente en vuelo', async () => {
     crear();
     responder();
-    const promesa = Promise.resolve({ isConfirmed: true, value: '' } as never);
-    spyOn(Swal, 'fire').and.returnValue(promesa);
     el().querySelectorAll('.alumnos__fila')[1].querySelector<HTMLButtonElement>('.alumnos__cobrar')!.click();
-    await promesa;
-    await Promise.resolve();
+    pintar();
+    botonDialogo('Marcar como pagado').click();
     http.expectOne(`${API}/productos-alumno/801`).flush({});
+    await esperar();
     const [refresco] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
     fixture.destroy();
     expect(refresco.cancelled).toBeTrue();

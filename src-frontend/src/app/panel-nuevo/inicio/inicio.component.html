@@ -20,9 +20,19 @@
           }
         </div>
         @if (estado === 'cargando') {
-        <p class="inicio__vacio">Cargando las clases de hoy…</p>
+        <pn-esqueleto etiqueta="Cargando las clases de hoy">
+          <div class="inicio__esqueleto-lista">
+            @for (i of [1, 2, 3]; track i) {
+            <div class="inicio__esqueleto-fila">
+              <span class="inicio__hueso inicio__hueso--hora"></span>
+              <span class="inicio__esqueleto-lineas"><span class="inicio__hueso"></span><span class="inicio__hueso inicio__hueso--corto"></span></span>
+            </div>
+            }
+          </div>
+        </pn-esqueleto>
         } @else if (estado === 'error') {
-        <p class="inicio__vacio">No se pudieron cargar las clases. Prueba con «Actualizar ahora».</p>
+        <pn-bloque-error titulo="No se pudieron cargar las clases"
+          texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else if (clases.length === 0) {
         <p class="inicio__vacio">Hoy no hay clases.</p>
         } @else {
@@ -71,9 +81,15 @@
           <a class="inicio__enlace" routerLink="/tesoreriaCobros">Ir a Tesorería</a>
         </div>
         @if (estadoPendiente === 'cargando' && !pendiente) {
-        <p class="inicio__vacio">Cargando lo pendiente…</p>
+        <pn-esqueleto etiqueta="Cargando lo pendiente">
+          <div class="inicio__esqueleto-pendiente">
+            <span class="inicio__hueso inicio__hueso--cifra"></span>
+            <span class="inicio__hueso inicio__hueso--linea"></span>
+          </div>
+        </pn-esqueleto>
         } @else if (estadoPendiente === 'error') {
-        <p class="inicio__vacio">No se pudo cargar lo pendiente. Prueba con «Actualizar ahora».</p>
+        <pn-bloque-error titulo="No se pudo cargar lo pendiente"
+          texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarPendiente()" />
         } @else if (pendiente) {
         <div class="inicio__pendiente-cuerpo">
           <p class="inicio__pendiente-total" data-cifras>{{ eur(pendiente.total) }}</p>
@@ -166,19 +182,29 @@
             'plaza ocupada', 'plazas ocupadas') }} de {{ numero(ocupacion.plazas) }}</span>
           }
         </div>
-        @if (estado !== 'listo' || limiteValido) {
+        @if (estado === 'listo' && limiteValido) {
         <p class="inicio__ocupacion-nota">
           Inscritos de cada franja frente al límite común de {{ numero(limite) }} por turno; un grupo con dos días cuenta
           sus alumnos en cada día. <strong>Cuando cada sede tenga su aforo (E9), esta será la ocupación real.</strong>
         </p>
         }
         @if (estado === 'cargando') {
-        <p class="inicio__vacio">Cargando la ocupación…</p>
+        <pn-esqueleto etiqueta="Cargando la ocupación">
+          <div class="inicio__esqueleto-mapa">
+            <span class="inicio__hueso inicio__hueso--etiqueta"></span>
+            @for (d of [1, 2, 3, 4, 5, 6]; track d) {<span class="inicio__hueso inicio__hueso--etiqueta"></span>}
+            @for (f of [1, 2, 3, 4]; track f) {
+            <span class="inicio__hueso inicio__hueso--etiqueta"></span>
+            @for (d of [1, 2, 3, 4, 5, 6]; track d) {<span class="inicio__hueso inicio__hueso--celda"></span>}
+            }
+          </div>
+        </pn-esqueleto>
         } @else if (estado === 'error') {
-        <p class="inicio__vacio">No se pudo cargar la ocupación. Prueba con «Actualizar ahora».</p>
+        <pn-bloque-error titulo="No se pudo cargar la ocupación"
+          texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else if (!limiteValido) {
-        <p class="inicio__vacio" role="status">No se pudo leer el límite de plazas por turno. Prueba con «Actualizar
-          ahora».</p>
+        <pn-bloque-error titulo="No se pudo leer el límite de plazas por turno"
+          texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else if (ocupacion.franjas.length === 0) {
         <p class="inicio__vacio">Aún no hay turnos con grupo: no hay ocupación que mostrar.</p>
         } @else {
@@ -283,9 +309,17 @@
           <h2 id="inicio-cifras" class="inicio__subtitulo">La escuela en cifras</h2>
         </div>
         @if (estado === 'cargando') {
-        <p class="inicio__vacio">Cargando las cifras…</p>
+        <pn-esqueleto etiqueta="Cargando las cifras">
+          <div class="inicio__esqueleto-cifras">
+            @for (i of [1, 2, 3, 4]; track i) {
+            <span class="inicio__esqueleto-cifra"><span class="inicio__hueso inicio__hueso--corto"></span><span
+                class="inicio__hueso inicio__hueso--cifra"></span></span>
+            }
+          </div>
+        </pn-esqueleto>
         } @else if (estado === 'error') {
-        <p class="inicio__vacio">No se pudieron cargar las cifras. Prueba con «Actualizar ahora».</p>
+        <pn-bloque-error titulo="No se pudieron cargar las cifras"
+          texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else {
         <ul class="inicio__totales">
           <li>
@@ -374,7 +408,16 @@
           <a class="inicio__enlace" routerLink="/eventosListar">Ver todos</a>
         </div>
         @if (estadoEventos === 'cargando') {
-        <p class="inicio__vacio">Cargando los eventos…</p>
+        <pn-esqueleto etiqueta="Cargando los eventos">
+          <div class="inicio__esqueleto-lista">
+            @for (i of [1, 2]; track i) {
+            <div class="inicio__esqueleto-fila">
+              <span class="inicio__hueso inicio__hueso--foto"></span>
+              <span class="inicio__esqueleto-lineas"><span class="inicio__hueso"></span></span>
+            </div>
+            }
+          </div>
+        </pn-esqueleto>
         } @else if (eventos.length === 0) {
         <p class="inicio__vacio">No hay eventos activos.</p>
         } @else {

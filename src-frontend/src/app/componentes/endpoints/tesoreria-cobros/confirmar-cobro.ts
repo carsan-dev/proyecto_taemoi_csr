@@ -2,8 +2,11 @@ import { SweetAlertOptions } from 'sweetalert2';
 
 import { MetodoPago, ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
 
-/** Opciones del método en «Confirmar cobro» (decisión 148); la clave vacía es «Sin indicar». */
-const METODOS_PAGO_COBRO: ReadonlyArray<[string, string]> = [
+/**
+ * Opciones del método en «Confirmar cobro» (decisión 148); la clave vacía es «Sin indicar». Las pastillas del «Cobrar»
+ * de las pantallas nuevas (8b-D1) salen de aquí.
+ */
+export const METODOS_PAGO_COBRO: ReadonlyArray<[string, string]> = [
   ['', 'Sin indicar'],
   ['EFECTIVO', 'Efectivo'],
   ['TRANSFERENCIA', 'Transferencia'],

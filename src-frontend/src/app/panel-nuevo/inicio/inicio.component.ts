@@ -1,17 +1,16 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Observable, Subscription, forkJoin, interval, of } from 'rxjs';
-import { catchError, finalize, map, skip, switchMap, take } from 'rxjs/operators';
-import Swal from 'sweetalert2';
+import { catchError, map, skip, switchMap, take } from 'rxjs/operators';
 
-import { cambiosDeCobro, opcionesConfirmarCobro } from '../../componentes/endpoints/tesoreria-cobros/confirmar-cobro';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
-import { showErrorToast, showSuccessToast } from '../../utils/toast.util';
+import { BloqueErrorComponent } from '../carga/bloque-error.component';
+import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { CobroCargoService } from '../cobro/cobro-cargo';
 import { DIAS_VENTANA_ERRORES, ventanaUltimosDias } from '../../utils/ventana-fechas.util';
 import { eur, fecha, fechaLarga, mes, numero, plural } from '../formato/formato-es';
 import { ClaseDeHoy, Ocupacion, calcularOcupacion, clasesDeHoy } from './ocupacion';
@@ -135,12 +134,15 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
  * B: ocupación de la semana, «Hoy», pendiente de cobro vencido con «Cobrar», accesos con cifra, la escuela en cifras,
  * eventos activos y operaciones y accesos. Va en su propio chunk detrás de `disenoNuevoGuard`: con el interruptor
  * apagado sigue la pantalla de hoy. Lee los mismos datos que la de hoy y, además, `GET /api/tesoreria/pendiente-vencido`.
- * «Cobrar» abre el mismo diálogo y hace el mismo PUT que la tesorería de hoy.
+ * «Cobrar» hace el mismo PUT que la tesorería de hoy.
+ *
+ * 8b-D1: esqueletos con la forma de cada bloque mientras carga, errores de bloque comunes con «Reintentar» (el del
+ * límite, también) y «Cobrar» con el diálogo del panel nuevo.
  */
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, EsqueletoComponent, BloqueErrorComponent],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss'],
 })
@@ -150,6 +152,7 @@ export class InicioComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthenticationService);
   private readonly plataforma = inject(PlataformaService);
   private readonly catalogo = inject(CatalogoService);
+  private readonly cobros = inject(CobroCargoService);
   private readonly suscripciones = new Subscription();
   private readonly autoRefrescoMs = 30000;
   private carga?: Subscription;
@@ -247,6 +250,17 @@ export class InicioComponent implements OnInit, OnDestroy {
     this.cargarPendiente();
     this.estadoEventos = 'cargando';
     this.endpoints.obtenerTodosLosEventos();
+  }
+
+  /** «Reintentar» de los bloques de hoy, la ocupación y las cifras (y del límite): vuelve a pedir esos datos. */
+  reintentarDatos(): void {
+    this.ahora = new Date();
+    this.cargarDatos();
+  }
+
+  /** «Reintentar» del bloque del pendiente: solo el pendiente. */
+  reintentarPendiente(): void {
+    this.cargarPendiente();
   }
 
   // ------------------------------------------------------------------ datos
@@ -381,32 +395,9 @@ export class InicioComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ cobrar
 
-  /** El mismo diálogo, la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
+  /** El diálogo nuevo, con la misma llamada y el mismo cuerpo que «Marcar pagado» en la tesorería de hoy. */
   cobrar(cargo: CargoVencido): void {
-    const id = cargo.productoAlumnoId;
-    if (this.cobrando.has(id)) {
-      return;
-    }
-    Swal.fire(opcionesConfirmarCobro(cargo.concepto)).then((result) => {
-      if (!result.isConfirmed) {
-        return;
-      }
-      this.cobrando.add(id);
-      this.endpoints
-        .actualizarCobroTesoreria(id, cambiosDeCobro(result.value))
-        .pipe(finalize(() => this.cobrando.delete(id)))
-        .subscribe({
-          next: () => {
-            showSuccessToast('Cobro actualizado como pagado');
-            this.cargarPendiente();
-          },
-          error: (error: HttpErrorResponse) => {
-            showErrorToast(
-              error?.status === 403 ? 'Solo administradores pueden revertir cobros' : 'No se pudo actualizar el estado del cobro'
-            );
-          },
-        });
-    });
+    void this.cobros.cobrar(cargo, this.cobrando, () => this.cargarPendiente());
   }
 
   // ------------------------------------------------------------------ vista

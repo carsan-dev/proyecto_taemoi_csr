@@ -242,6 +242,14 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       listado, que el cinturón blanco se distingue, que «1 de N» conserva la pestaña y que «← Alumnos» vuelve al
       listado con su búsqueda, filtros y página; y prueba «Cobrar» solo sobre un cargo ficticio de la escuela de
       pruebas, nunca de Moiskimdo.
+- [ ] E8b, pieza 8b-D1 (diálogos, avisos y carga del panel nuevo; decisiones 269, 270 y 271): sin migración → atajo
+      `desplegar`. Con el interruptor apagado, todo igual: el listado de alumnos de hoy con sus tres herramientas del
+      pie, la tesorería con su «Revertir» y las fichas y familias con SweetAlert2. Después, el propietario, con su
+      interruptor encendido, en la escuela de pruebas: prueba un cobro solo sobre un cargo ficticio (diálogo «Cobrar»
+      con el método en pastillas y aviso «Cobro registrado»), abre «Dar de baja» de un alumno y lo cancela con Esc (no
+      cambia nada), y abre desde «Informes» las tres herramientas (gestión de mensualidades y licencias, listado de
+      asistencia y listado de mensualidades) en el panel lateral, con «Ver PDF» en los dos listados. Nunca sobre
+      Moiskimdo.
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

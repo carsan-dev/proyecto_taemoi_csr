@@ -962,6 +962,132 @@ misma llamada; el detalle del registro no muestra nada que hoy no muestre ni pon
 
 **Notas para la PR:** inventario marcado; guards de cada ruta nueva frente a los de hoy.
 
+## 21 bis. Pieza 8b-D1: diálogos, avisos y carga
+
+Rama `feature/e8b-d1` (sale de `feature/e8b-3b`). Solo frontend, sin migración: atajo `desplegar`. Boceto aprobado tal
+cual como especificación visual (decisión 271): `Main.dc.html` (diálogo «Cobrar»), `Baja.dc.html` (destructivo),
+`HojaMovil.dc.html`, `Avisos.dc.html`, `AvisosMovil.dc.html`, `Carga.dc.html` e `InformesPanel.dc.html`.
+
+**Objetivo:** el diálogo de confirmación, la hoja inferior, los avisos, el panel lateral y los estados de carga
+propios del panel nuevo (decisión 269), aplicados a Inicio (8b-2), Alumnos (8b-3a) y el carnet de la ficha (8b-3b).
+Las pantallas de hoy y las de familias siguen con SweetAlert2 hasta 8b-Z (decisión 240). En el listado nuevo, las tres
+herramientas del pie salen del pie y se abren desde «Informes» en el panel lateral (hoja inferior en el móvil), con su
+formulario redibujado y los mismos campos y acciones (decisión 270). «Cobrar» llama al mismo endpoint con el mismo
+cuerpo, con una confirmación equivalente (punto de revisión 8).
+
+**Ficheros:**
+- Nuevos en `F/panel-nuevo/`: `capas/capa-modal.ts` (foco contenido, clic en el velo, vuelta al disparador, ancho de
+  hoja, `PilaCapas`) y `capas/_capas.scss`; `dialogo/` (`DialogoComponent`, `ConfirmacionService`); `avisos/`
+  (`AvisosService`, `AvisosComponent`); `carga/` (`EsqueletoComponent`, `BotonOcupadoComponent`, `BloqueErrorComponent`,
+  `BloqueVacioComponent`); `panel-lateral/` (`PanelLateralComponent`); `cobro/cobro-cargo.ts` (`CobroCargoService`, que
+  sustituye a `cobrarCargo`); `alumnos/bajas-altas-panel.ts`; `alumnos/herramientas/` (`HerramientaPanelComponent`,
+  `CampoMesAnoComponent`, `InformePdfPanelService`); `formato/formato-es.ts` (`frasePlural`).
+- Tokens en `panel-nuevo.scss`: `--pn-sombra-dialogo`, `--pn-sombra-hoja`, `--pn-velo`, `--pn-titulo-dialogo`.
+- De hoy, sin cambio visible ni de comportamiento: `HerramientasAlumnosComponent` (avisos, errores, confirmaciones del
+  409 y cargador global por métodos `protected` que hacen lo de siempre), `InformePdfService` (`avisar` protegido, con el
+  mismo SweetAlert2), `SearchableSelectDirective` (`searchDropdownEnDialogo`, falso por defecto) y `confirmar-cobro.ts`
+  (exporta `METODOS_PAGO_COBRO`).
+
+**Tareas TDD:**
+- [x] Specs en rojo antes del código: con la implementación apartada, los cinco specs nuevos no compilan
+  (`Can't resolve './confirmacion.service'`, `'./avisos.service'`, `'./esqueleto.component'`,
+  `'./panel-lateral.component'`, `CobroCargoService` no exportado); `herramienta-panel.component.spec.ts`, igual
+  (`Can't resolve './herramienta-panel.component'`); con las pantallas aún con SweetAlert2, 33 casos en rojo de Inicio,
+  Alumnos, ficha y herramientas.
+- [x] `confirmacion.service.spec.ts`: `<dialog>` modal en el body dentro de un `.pn`; título, frase, concepto, importe
+  y pastillas `role=radiogroup` con «Sin indicar» por defecto y tabindex itinerante; «Cancelar» a la izquierda y foco
+  en la acción; destructivo con la acción en peligro y el foco en «Cancelar»; Esc, el evento `cancel`, el clic en el
+  velo, la X y «Cancelar» cancelan (un clic dentro no); flechas, Inicio y Fin en las pastillas; foco contenido con Tab
+  y Mayús+Tab; vuelta al disparador; hoja por debajo de 768 px (asa, acción arriba, 44 px, radio 14 arriba); con
+  `ejecutar`, botón ocupado («Cobrando…», mismo ancho, 16 px, `aria-busy`) y Esc sin efecto hasta que termina; error
+  devuelto a quien lo abrió; campo requerido.
+- [x] `avisos.service.spec.ts`: éxito e información a los 5 s con barra de tiempo; error con `role=alert` y sin cierre
+  solo; como mucho 3; acción opcional; pausa con el ratón; dentro de la capa modal de arriba.
+- [x] `carga.spec.ts`: esqueleto a los 300 ms (no antes, y nada si la carga acaba antes), con su `role=status` y la
+  forma oculta; sin pulso con `prefers-reduced-motion`; botón ocupado; bloque de error con «Reintentar»; vacío con su
+  acción.
+- [x] `panel-lateral.component.spec.ts`: modal de 480 px a la derecha bajo la cabecera de 64 px, pie fijo, hoja por
+  debajo de 768 px; Esc, X y velo cierran con el foco de vuelta; foco contenido.
+- [x] `cobro-cargo.spec.ts` (`HttpTestingController`): el mismo `PUT /api/productos-alumno/{id}` con
+  `cambiosDeCobro(metodo)`, con método y sin él; cancelar no envía nada; botón «Cobrando…»; aviso «Cobro registrado»;
+  «Deshacer» solo para quien hoy puede «Revertir» (el propietario), con la misma llamada que «Revertir» de la tesorería
+  de hoy (`{pagado: false, motivoCambio: null}`); errores con los textos de hoy; sin doble cobro.
+- [x] `herramienta-panel.component.spec.ts`: cada herramienta, comparada con el componente de hoy (mismas peticiones
+  —método, ruta, parámetros y cuerpo— y mismos nombres de PDF): asistencia y listado de mensualidades con «Ver PDF» y
+  «Descargar PDF»; mensualidades generales y por deporte; mensualidad individual con el 409 en el diálogo nuevo y el
+  reintento forzado; licencias generales e individuales; un PDF que falla avisa dentro del panel y no con SweetAlert2.
+- [x] `alumnos.component.spec.ts`, `inicio.component.spec.ts` y `ficha-alumno.component.spec.ts`: cada sustitución con
+  la misma llamada y el mismo cuerpo, y nada al cancelar (listado arriba); `formato-es.spec.ts`: `frasePlural`.
+- [x] Ruta apagada: `app.routes.spec.ts` y `rutas-panel-nuevo.spec.ts` siguen en verde (no se llama al
+  `loadComponent` nuevo) y ningún fichero del inicial contiene los componentes nuevos (build de producción).
+- [x] Capturas apagado antes y después idénticas en bytes, también con el pie de herramientas desplegado y con cada
+  herramienta abierta; encendido a 375, 768, 1024 y 1280.
+
+**Ronda 2 (revisión devuelta, 22/10/2026).** Specs en rojo antes del código: 21 casos (con las exportaciones nuevas
+como esbozo vacío) en `capa-modal`, `carga`, `confirmacion.service`, `avisos.service`, `panel-lateral`,
+`herramienta-panel`, `formato-es` y el interceptor; después, la batería completa en verde (1.649).
+- [x] Bloqueante: `herramienta-panel.component.spec.ts`: con «Cargar mensualidades», «Cargar licencias» o un PDF en
+  vuelo, el panel NO se cierra con «Cancelar», la X, Esc, el evento `cancel` ni el velo, y un segundo clic no lanza
+  otro `POST`; tras la respuesta, `asignado` llega una vez y el panel se cierra. `panel-lateral.component.spec.ts`:
+  con `bloqueado`, la X deshabilitada, dos Esc y dos `cancel` con `preventDefault` y sin emitir, el velo tampoco; si el
+  navegador cierra el `<dialog>`, se vuelve a abrir como modal; sin bloquear, su `close` emite `cerrar` una vez.
+- [x] `capa-modal.spec.ts` (nuevo, en `tsconfig.spec.json` y `angular.json`): `cerrarSweetAlertAbierto` cierra el
+  SweetAlert2 con `swal-error-http` en una pantalla nueva (entrada con `disenoNuevoGuard`) y no cierra otro (una
+  confirmación, «Sesión expirada») ni, en una pantalla de hoy, el del error. `error.interceptor.spec.ts`: su
+  SweetAlert2 lleva `customClass: { popup: 'swal-error-http' }`. Avisos y diálogo, lo mismo con el router de verdad.
+- [x] `confirmacion.service.spec.ts` y `carga.spec.ts`: el botón ocupado lleva `aria-disabled` (no `disabled`), el foco
+  se queda en él y un segundo clic no llega; dos Esc y dos `cancel` sin efecto; si el navegador cierra el `<dialog>` con
+  la acción en vuelo, se vuelve a abrir y el resultado llega al terminar; sin nada en vuelo, ese cierre cancela.
+- [x] `formato-es.spec.ts`: `nombreMes` (0 a 11, mayúscula inicial, vacío fuera de rango); `pn-campo-mes-ano` lo usa.
+- [x] `avisos.service.spec.ts`: las regiones vivas `role=status` y `role=alert` existen vacías al crear la región y
+  reciben el texto a los 100 ms, por tipo, y siguen ahí vacías sin avisos; barra de tiempo sin animación con
+  `prefers-reduced-motion`. `herramienta-panel.component.spec.ts`: el «Aviso» de un PDF parcial sale como información
+  con el mismo texto y el error como error.
+- [x] Capturas: apagado antes (`80d8bbf4`) y después idénticas en bytes, 28/28 (con 52 alumnos ficticios); encendido,
+  solo lo que cambia (`encendido-ocupado` y `encendido-panel-envuelo`) a 375, 768, 1024 y 1280, con dos Esc en
+  Chrome sin cerrar el diálogo ni el panel y un solo `POST` retenido en el navegador.
+- La frase de la baja sigue siendo «desde hoy» (exacta: `fechaBaja` = hoy); ni el plan ni DESIGN.md citaban la del
+  boceto.
+
+**Inventario de lo sustituido** (dónde estaba → qué lo sustituye; por qué: decisión 269, y un SweetAlert2 o el cargador
+global quedarían detrás de una capa modal nueva, sin verse ni poder cerrarse):
+
+| Pantalla | Qué | Antes | Ahora |
+|---|---|---|---|
+| Inicio | «Cobrar» de los cinco más antiguos | `Swal.fire(opcionesConfirmarCobro)` + toasts SweetAlert2 | Diálogo «Cobrar mensualidad» / «… derecho de examen» con pastillas, botón ocupado y aviso |
+| Inicio | Carga de Hoy, pendiente, ocupación, cifras y eventos | Textos «Cargando…» | Esqueletos con la forma de cada bloque |
+| Inicio | Errores de Hoy, pendiente, ocupación, cifras y del límite | Textos «Prueba con «Actualizar ahora»» (el del límite, `role=status`) | Bloque de error con «Reintentar» por bloque |
+| Alumnos | «Cobrar» de uno o varios cargos | `cobrarCargo` con SweetAlert2 y toasts | `CobroCargoService`: diálogo «Cobrar cargo», aviso y «Deshacer» del propietario |
+| Alumnos | «Dar de baja» | `BajasAltasAlumno.darDeBaja`: SweetAlert2 «¿Estás seguro?» | Diálogo destructivo «¿Dar de baja a …?» con el foco en «Cancelar» |
+| Alumnos | «Dar de alta» | SweetAlert2 informativo y selector con buscador | Aviso de información; diálogo con pastillas («Todos los deportes» primero) |
+| Alumnos | «Marcar principal» y refresco del pendiente | Toasts SweetAlert2 | Avisos |
+| Alumnos | Carga, error y vacío del listado | Esqueleto fijo, error y vacío propios | `pn-esqueleto` (300 ms, pulso), `pn-bloque-error`, `pn-bloque-vacio` «Ningún alumno coincide…» con «Quitar filtros» |
+| Alumnos | Herramientas del pie | `<details>` en el pie con toasts, «Error» y 409 de SweetAlert2, cargador global y spinner de Bootstrap | Panel lateral desde «Informes» con avisos, diálogo del 409 y botón ocupado (lógica heredada sin copiar) |
+| Alumnos | Errores de «Ver/Descargar PDF» y «Generar informe» | `InformePdfService` con SweetAlert2 | `InformePdfPanelService`: avisos |
+| Ficha (carnet) | «Cobrar» | `cobrarCargo` con SweetAlert2 | `CobroCargoService` (diálogo y avisos) |
+| Ficha (carnet) | Pendiente cargando | Hueco fijo y «Leyendo el pendiente…» | Esqueleto (importe y línea) a los 300 ms |
+
+**Pendiente para 8b-D2:** los diálogos que la ficha hereda de `EditarAlumnoComponent` (pestañas Deportes, Pagos, Datos y
+contacto, Documentos y notas, y el «⋯» del carnet) siguen con SweetAlert2. El listado nuevo y la ficha no saben si un
+cargo es mensualidad o derecho de examen (el DTO de `pendientes-por-alumno` no lo trae): su diálogo dice «Cobrar
+cargo»; el Inicio, que sí lo sabe, «Cobrar mensualidad» o «Cobrar derecho de examen».
+
+**Además:** el interceptor de errores de hoy abre un SweetAlert2 con cada error HTTP; en las pantallas de hoy el aviso
+propio (otro SweetAlert2) lo sustituía. En el panel nuevo, un aviso de error o un diálogo que responde a un error lo
+cierran igual (`cerrarSweetAlertAbierto`), solo el del interceptor (clase `swal-error-http`) y solo en una pantalla
+nueva. Dentro de una capa modal, los avisos no tapan sus botones (con el panel
+lateral, a su izquierda; en una hoja, arriba). La nota «límite común de N por turno» de la ocupación ya no sale mientras
+carga ni con error (decía «de 0»). En el móvil, pastillas y acciones de aviso de 44 px (el boceto las dibuja de 40 y 32)
+por la regla de 44 a 375.
+
+**Riesgos:** un SweetAlert2 que alguien abra con una capa modal nueva delante queda detrás (las herramientas y los
+informes del listado ya no lo usan); la lista flotante del buscador de hoy va dentro del `<dialog>` solo donde se pide;
+los errores de carga de los bloques siguen pasando también por el SweetAlert2 del interceptor (como en 8b-2 y 8b-3a).
+
+**Notas para la PR:** inventario de arriba; bundle inicial 1.456.347 bytes tras la ronda 2 (1.456.078 en la ronda 1,
++1.612 frente a 1.454.466; la ronda 2 suma 269, la clase del interceptor); contrastes de las parejas nuevas; capturas
+apagado idénticas.
+
 ## 22. Pieza 8b-Z: retirada de lo viejo
 
 Solo cuando el propietario lo apruebe (R6), tras un periodo con el valor por defecto `NUEVO`. Rama `feature/e8b-z`.

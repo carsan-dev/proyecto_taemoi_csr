@@ -125,7 +125,7 @@
             <div class="ficha__cobrar-zona">
               <button type="button" class="ficha__boton-primario ficha__cobrar"
                 [attr.aria-label]="'Cobrar ' + eur(p.importe) + (p.cargos > 1 ? ', ' + plural(p.cargos, 'cargo', 'cargos') : '')"
-                [attr.aria-haspopup]="p.detalle.length > 1 ? 'dialog' : null"
+                aria-haspopup="dialog"
                 [attr.aria-expanded]="p.detalle.length > 1 ? panelAbierto : null"
                 [attr.aria-controls]="panelAbierto ? 'ficha-cargos' : null"
                 [disabled]="p.detalle.length === 1 && cobrando.has(p.detalle[0].productoAlumnoId)"
@@ -164,8 +164,10 @@
               }
             </div>
             } @else if (estadoPendiente === 'cargando') {
-            <span class="ficha__pendiente-cargando" aria-hidden="true"></span>
-            <span class="ficha__oculto" role="status">Leyendo el pendiente…</span>
+            <pn-esqueleto etiqueta="Cargando el pendiente">
+              <span class="ficha__hueso ficha__hueso--importe"></span>
+              <span class="ficha__hueso ficha__hueso--linea"></span>
+            </pn-esqueleto>
             } @else if (estadoPendiente === 'error') {
             <p class="ficha__resumen-cargos">No se pudo leer el pendiente.</p>
             <button type="button" class="ficha__boton-texto" (click)="releerPendiente()">Reintentar</button>

@@ -388,12 +388,22 @@
   color: var(--pn-tinta);
 }
 
-.ficha__pendiente-cargando {
+// Esqueleto del pendiente (8b-D1): la forma del importe y de la línea de cargos; pulso y 300 ms, de `pn-esqueleto`.
+.ficha__hueso {
   display: block;
-  width: 120px;
-  height: 28px;
   border-radius: var(--pn-radio-s);
   background: var(--pn-serie-pista);
+}
+
+.ficha__hueso--importe {
+  width: 148px;
+  height: 32px;
+  margin: 4px 0 10px;
+}
+
+.ficha__hueso--linea {
+  width: min(200px, 80%);
+  height: 12px;
 }
 
 .ficha__cobrar-zona {

@@ -837,17 +837,24 @@
   }
 }
 
-// ------------------------------------------------------------------ carga, vacío y error
+// ------------------------------------------------------------------ carga, vacío y error (8b-D1, boceto `Carga.dc.html`)
+
+// Esqueleto de filas: la forma de la fila de dos líneas (foto, nombre, línea 2 e importe), en `serie-pista`; el pulso y
+// los 300 ms los pone `pn-esqueleto`.
+.alumnos__cargando {
+  display: block;
+}
 
 .alumnos__lista--cargando {
-  padding: 4px 0;
+  padding: 0;
 }
 
 .alumnos__esqueleto {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 16px;
 
   & + & {
     border-top: 1px solid var(--pn-linea);
@@ -873,36 +880,49 @@
   flex: 1;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 
   span {
-    height: 10px;
-    border-radius: var(--pn-radio-pastilla);
+    border-radius: var(--pn-radio-s);
     background: var(--pn-serie-pista);
   }
 
   span:first-child {
-    width: min(260px, 60%);
+    width: min(200px, 60%);
+    height: 12px;
   }
 
   span:last-child {
-    width: min(520px, 90%);
+    width: min(300px, 90%);
+    height: 10px;
   }
 }
 
+.alumnos__esqueleto:nth-child(2n) .alumnos__esqueleto-lineas span:first-child {
+  width: min(168px, 55%);
+}
+
+.alumnos__esqueleto:nth-child(3n) .alumnos__esqueleto-lineas span:last-child {
+  width: min(252px, 80%);
+}
+
+.alumnos__esqueleto-importe {
+  flex: none;
+  width: 120px;
+  height: 28px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
 .alumnos__estado {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 24px 20px;
+  display: block;
   background: var(--pn-superficie);
   border: 1px solid var(--pn-linea);
   border-radius: var(--pn-radio-m);
+}
 
-  p {
-    margin: 0;
-    color: var(--pn-tinta);
-  }
+.alumnos__accion-vacio {
+  margin-top: 8px;
 }
 
 // ------------------------------------------------------------------ paginación
@@ -961,18 +981,6 @@
   min-width: 24px;
   color: var(--pn-tinta-2);
   text-align: center;
-}
-
-// ------------------------------------------------------------------ herramientas del pie
-
-.alumnos__herramientas {
-  margin-top: var(--pn-espacio-xl);
-}
-
-.alumnos__seccion-titulo {
-  margin: 0;
-  font: var(--pn-titulo-bloque);
-  color: var(--pn-tinta);
 }
 
 // ------------------------------------------------------------------ tableta

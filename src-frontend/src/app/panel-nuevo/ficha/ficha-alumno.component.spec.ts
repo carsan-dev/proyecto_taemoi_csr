@@ -5,14 +5,17 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import Swal from 'sweetalert2';
+import { pintarCapas } from '../capas/tokens-prueba';
 
 import { environment } from '../../../environments/environment';
 import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
+import { AvisosService } from '../avisos/avisos.service';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
 
 const API = environment.apiUrl;
@@ -198,6 +201,8 @@ function configurar(): void {
       ]),
       proveerCatalogoTesting(CATALOGO_TAEMOI),
       { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
+      // 8b-D1: «Cobrar» del carnet mira si la sesión puede «Deshacer» (el propietario); la ficha no usa nada más.
+      { provide: AuthenticationService, useValue: { tieneRolAdmin: () => false } },
     ],
   });
 }
@@ -322,6 +327,8 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     actual?.harness.fixture.destroy();
     actual = null;
     document.querySelectorAll('.swal2-container').forEach((n) => n.remove());
+    TestBed.inject(AvisosService).cerrarTodos();
+    document.querySelectorAll('pn-dialogo, pn-avisos').forEach((n) => n.remove());
   });
 
   // ---------------------------------------------------------------- carnet
@@ -407,40 +414,78 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       m.el().remove();
     });
 
-    it('«Cobrar» de un cargo del panel: el diálogo «Confirmar cobro» y el PUT de la tesorería; refresca el pendiente y los pagos', async () => {
+    // ---- 8b-D1: el «Cobrar» del carnet con el diálogo nuevo (el de la tabla de Pagos, heredado, sigue como hoy).
+    function dialogoNuevo(): HTMLDialogElement | null {
+      pintarCapas();
+      return document.querySelector<HTMLDialogElement>('dialog.pn-dialogo');
+    }
+
+    function pulsarEnDialogo(textoBoton: string): void {
+      const d = dialogoNuevo()!;
+      Array.from(d.querySelectorAll<HTMLButtonElement>('button'))
+        .find((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim() === textoBoton)!
+        .click();
+      pintarCapas();
+    }
+
+    it('«Cobrar» de un cargo del panel: el diálogo nuevo y el PUT de la tesorería; refresca el pendiente y los pagos (8b-D1)', async () => {
       const m = await montar(FichaAlumnoComponent);
       m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!.click();
       await m.asentar();
-      m.resultados = [{ isConfirmed: true, value: 'BIZUM' }];
-      const peticiones: string[] = [];
-      const espia = spyOn(m.http, 'match').and.callThrough();
       m.el().querySelectorAll<HTMLButtonElement>('.ficha__cargo button')[1].click();
-      expect(m.swal[0]).toEqual(jasmine.objectContaining({ title: 'Confirmar cobro', text: 'Marcar como pagado "MENSUALIDAD OCTUBRE 2026 - TAEKWONDO"?', inputLabel: 'Método (opcional)' }));
+      const d = dialogoNuevo()!;
+      expect(fire).not.toHaveBeenCalled();
+      expect(d.querySelector('h2')!.textContent!.trim()).toBe('Cobrar cargo');
+      expect(d.textContent!.replace(/\s+/g, ' ')).toContain('Se registra el pago de Rubén Prueba Ficticia y el cargo deja de figurar como pendiente.');
+      expect(d.textContent).toContain('MENSUALIDAD OCTUBRE 2026 - TAEKWONDO');
+      pulsarEnDialogo('Bizum');
       m.datos.pendientes = [{ ...TRES_CARGOS, importe: 55, cargos: 2, detalle: [TRES_CARGOS.detalle[0], TRES_CARGOS.detalle[2]] }];
+      pulsarEnDialogo('Marcar como pagado');
       await m.asentar();
       expect(m.escrituras).toEqual([{ metodo: 'PUT', url: '/productos-alumno/802', cuerpo: { pagado: true, metodoPago: 'BIZUM' } }]);
-      espia.calls.all().forEach((c) => peticiones.push(String(c.args[0])));
+      expect(dialogoNuevo()).toBeNull();
       expect(texto(m.el(), '.ficha__importe')).toBe(`55,00${NBSP}€`);
       expect(m.el().querySelectorAll('.ficha__cargos .ficha__cargo').length).toBe(2);
+      expect(document.querySelector('.pn-aviso')!.textContent).toContain('Cobro registrado: 30,00');
     });
 
-    it('«Cobrar» con un cargo: el diálogo de hoy sin panel; cancelado no envía nada y sin método no envía metodoPago', async () => {
+    it('«Cobrar» con un cargo: el diálogo nuevo sin panel; cancelado (Esc) no envía nada y sin método no envía metodoPago', async () => {
       const datos = { ...datosPorDefecto(), pendientes: [UN_CARGO] };
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
       const cobrar = m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!;
-      expect(cobrar.getAttribute('aria-haspopup')).toBeNull();
+      expect(cobrar.getAttribute('aria-haspopup')).toBe('dialog');
       expect(texto(m.el(), '.ficha__resumen-cargos')).toBe('1 cargo, vencido desde 06/09/2026');
-      m.resultados = [{ isConfirmed: false }];
       cobrar.click();
+      dialogoNuevo()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
       await m.asentar();
+      expect(dialogoNuevo()).toBeNull();
       expect(m.el().querySelector('.ficha__cargos')).toBeNull();
       expect(m.escrituras).toEqual([]);
-      m.resultados = [{ isConfirmed: true, value: '' }];
       m.datos.pendientes = [];
       cobrar.click();
+      pulsarEnDialogo('Marcar como pagado');
       await m.asentar();
       expect(m.escrituras).toEqual([{ metodo: 'PUT', url: '/productos-alumno/801', cuerpo: { pagado: true } }]);
       expect(texto(m.el(), '.ficha__al-dia')).toBe('Al día');
+    });
+
+    it('pendiente cargando: esqueleto con su forma a partir de los 300 ms (8b-D1)', async () => {
+      const m = await montar(FichaAlumnoComponent);
+      // Al pasar a otro alumno, su pendiente aún no ha llegado.
+      m.retener = (req) => req.request.url.endsWith('/tesoreria/pendientes-por-alumno');
+      m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
+      await m.asentar();
+      expect(m.comp.alumnoId).toBe(9);
+      await new Promise((r) => setTimeout(r, 320));
+      m.harness.detectChanges();
+      const esqueleto = m.el().querySelector('.ficha__pendiente pn-esqueleto')!;
+      expect(esqueleto.querySelector('[role="status"]')!.textContent!.trim()).toBe('Cargando el pendiente');
+      expect(esqueleto.querySelector('.ficha__hueso')).not.toBeNull();
+      m.retener = null;
+      m.retenidas.filter((r) => !r.cancelled).forEach((r) => r.flush([{ ...TRES_CARGOS, alumnoId: 9 }]));
+      await m.asentar();
+      expect(m.el().querySelector('.ficha__pendiente pn-esqueleto')).toBeNull();
+      expect(texto(m.el(), '.ficha__importe')).toBe(`85,00${NBSP}€`);
     });
 
     it('sin nada vencido: «Al día» y sin «Cobrar»; la pestaña Pagos sin insignia', async () => {

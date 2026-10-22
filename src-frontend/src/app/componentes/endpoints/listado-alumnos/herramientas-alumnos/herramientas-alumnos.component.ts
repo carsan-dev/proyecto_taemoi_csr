@@ -22,6 +22,10 @@ export type SeccionHerramientas = 'mensualidades' | 'asistencia' | 'listado-mens
  * asistencia y listado de mensualidades). Salen tal cual del listado de hoy (8b-3a) para que el listado nuevo las use sin
  * copiarlas. El {@link InformePdfService} es el del listado que las contiene (lo provee él). Tras asignar mensualidades o
  * licencias generales emite `asignado` para que el listado se recargue.
+ *
+ * 8b-D1: los avisos, los errores, las confirmaciones del 409 y el cargador global pasan por métodos `protected` que aquí
+ * hacen exactamente lo de siempre (SweetAlert2 y `LoadingService`); el panel lateral del listado nuevo los sustituye por
+ * los del panel nuevo heredando de esta clase, sin copiar la lógica.
  */
 @Component({
   selector: 'app-herramientas-alumnos',
@@ -133,11 +137,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
           this.alumnosSeleccionablesCargados = true;
         },
         error: () => {
-          Swal.fire(
-            'Error',
-            'No se pudo cargar la lista completa de alumnos.',
-            'error'
-          );
+          this.alertarError('No se pudo cargar la lista completa de alumnos.');
         },
       });
   }
@@ -156,17 +156,13 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.mesAnoSeleccionado) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un mes y año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un mes y año.');
       return;
     }
 
     // Show loading spinner
     this.procesandoMensualidadesGenerales = true;
-    this.loadingService.show();
+    this.mostrarCarga();
 
     const fechaAsignacion = this.normalizarFechaAsignacion(
       this.fechaMensualidadGeneral
@@ -193,16 +189,16 @@ export class HerramientasAlumnosComponent implements OnChanges {
     serviceCall.pipe(
       finalize(() => {
         this.procesandoMensualidadesGenerales = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast(`Mensualidades asignadas a ${deporteTexto}`);
+        this.avisarExito(`Mensualidades asignadas a ${deporteTexto}`);
         // El listado se recarga con su modo de paginación de siempre
         this.asignado.emit();
       },
       error: () => {
-        showErrorToast('Error al asignar las mensualidades');
+        this.avisarError('Error al asignar las mensualidades');
       },
     });
   }
@@ -213,11 +209,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un mes/año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un alumno y un mes/año.');
       return;
     }
 
@@ -248,49 +240,34 @@ export class HerramientasAlumnosComponent implements OnChanges {
         : this.deporteSeleccionadoIndividual;
 
     this.procesandoMensualidadIndividual = true;
-    this.loadingService.show();
+    this.mostrarCarga();
     serviceCall.pipe(
       finalize(() => {
         this.procesandoMensualidadIndividual = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast(`Mensualidad de ${deporteTexto} cargada correctamente`);
+        this.avisarExito(`Mensualidad de ${deporteTexto} cargada correctamente`);
       },
       error: (error) => {
         if (error.status === 409 && error.error?.accion === 'completar') {
-          const html = this.construirAvisoMensualidadIncompleta(error.error);
-          Swal.fire({
-            title: 'Atención',
-            html,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, aplicar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
+          this.confirmarCompletarMensualidad(error.error).then((confirmado) => {
+            if (confirmado) {
               this.forzarCargarMensualidad();
             }
           });
           return;
         }
         if (error.status === 409 && error.error?.accion === 'confirmar') {
-          Swal.fire({
-            title: 'Atención',
-            text: error.error?.mensaje || 'La mensualidad ya existe.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
+          this.confirmarCarga(error.error?.mensaje || 'La mensualidad ya existe.').then((confirmado) => {
+            if (confirmado) {
               this.forzarCargarMensualidad();
             }
           });
           return;
         }
-        Swal.fire('Error', error?.error?.mensaje || 'No se pudo cargar la mensualidad.', 'error');
+        this.alertarError(error?.error?.mensaje || 'No se pudo cargar la mensualidad.');
       },
     });
   }
@@ -301,11 +278,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.alumnoSeleccionado || !this.mesAnoSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un mes/año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un alumno y un mes/año.');
       return;
     }
 
@@ -335,18 +308,18 @@ export class HerramientasAlumnosComponent implements OnChanges {
         : this.deporteSeleccionadoIndividual;
 
     this.procesandoMensualidadIndividual = true;
-    this.loadingService.show();
+    this.mostrarCarga();
     serviceCall.pipe(
       finalize(() => {
         this.procesandoMensualidadIndividual = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast('Productos faltantes de mensualidad y competidor cargados correctamente');
+        this.avisarExito('Productos faltantes de mensualidad y competidor cargados correctamente');
       },
       error: () => {
-        showErrorToast('No se pudo cargar la mensualidad');
+        this.avisarError('No se pudo cargar la mensualidad');
       },
     });
   }
@@ -357,16 +330,12 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.anoLicenciaSeleccionado) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un año.');
       return;
     }
 
     this.procesandoLicenciasGenerales = true;
-    this.loadingService.show();
+    this.mostrarCarga();
 
     const fechaAsignacion = this.normalizarFechaAsignacion(
       this.fechaLicenciaGeneral
@@ -386,17 +355,17 @@ export class HerramientasAlumnosComponent implements OnChanges {
     serviceCall.pipe(
       finalize(() => {
         this.procesandoLicenciasGenerales = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast(
+        this.avisarExito(
           `Licencias ${this.anoLicenciaSeleccionado} asignadas a ${deporteTexto}`
         );
         this.asignado.emit();
       },
       error: (error) => {
-        showErrorToast(
+        this.avisarError(
           error?.error?.mensaje || 'Error al asignar las licencias'
         );
       },
@@ -409,11 +378,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un alumno y un año.');
       return;
     }
 
@@ -435,34 +400,27 @@ export class HerramientasAlumnosComponent implements OnChanges {
         : this.deporteLicenciaSeleccionadoIndividual;
 
     this.procesandoLicenciaIndividual = true;
-    this.loadingService.show();
+    this.mostrarCarga();
     serviceCall.pipe(
       finalize(() => {
         this.procesandoLicenciaIndividual = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast(
+        this.avisarExito(
           `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
         );
       },
       error: (error) => {
         if (error.status === 409 && error.error.accion === 'confirmar') {
-          Swal.fire({
-            title: 'Atención',
-            text: error.error.mensaje,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'No, cancelar',
-          }).then((result) => {
-            if (result.isConfirmed) {
+          this.confirmarCarga(error.error.mensaje).then((confirmado) => {
+            if (confirmado) {
               this.forzarCargarLicenciaIndividual();
             }
           });
         } else {
-          showErrorToast(
+          this.avisarError(
             error?.error?.mensaje || 'No se pudo cargar la licencia'
           );
         }
@@ -476,11 +434,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
     }
 
     if (!this.alumnoSeleccionado || !this.anoLicenciaSeleccionadoIndividual) {
-      Swal.fire({
-        title: 'Error',
-        text: 'Por favor selecciona un alumno y un año.',
-        icon: 'error',
-      });
+      this.alertarError('Por favor selecciona un alumno y un año.');
       return;
     }
 
@@ -502,20 +456,20 @@ export class HerramientasAlumnosComponent implements OnChanges {
         : this.deporteLicenciaSeleccionadoIndividual;
 
     this.procesandoLicenciaIndividual = true;
-    this.loadingService.show();
+    this.mostrarCarga();
     serviceCall.pipe(
       finalize(() => {
         this.procesandoLicenciaIndividual = false;
-        this.loadingService.hide();
+        this.ocultarCarga();
       })
     ).subscribe({
       next: () => {
-        showSuccessToast(
+        this.avisarExito(
           `Licencia ${this.anoLicenciaSeleccionadoIndividual} de ${deporteTexto} cargada correctamente`
         );
       },
       error: (error) => {
-        showErrorToast(
+        this.avisarError(
           error?.error?.mensaje || 'No se pudo cargar la licencia'
         );
       },
@@ -525,7 +479,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
   generarListadoAsistencia(accion: AccionInforme = 'descargar'): void {
     if (this.informes.ocupado || this.informes.destruido) { return; }
     if (!this.mesAnoAsistencia || this.gruposSeleccionados.length === 0) {
-      Swal.fire('Error', 'Debes seleccionar un mes y al menos un día', 'error'); return;
+      this.alertarError('Debes seleccionar un mes y al menos un día'); return;
     }
     const mesAno = this.mesAnoAsistencia;
     const [year, month] = mesAno.split('-').map(Number);
@@ -546,13 +500,80 @@ export class HerramientasAlumnosComponent implements OnChanges {
   generarListadoMensualidadMensual(accion: AccionInforme = 'descargar'): void {
     if (this.informes.ocupado || this.informes.destruido) { return; }
     if (!this.mesAnoMensualidad) {
-      Swal.fire('Error', 'Debes seleccionar un mes y año', 'error'); return;
+      this.alertarError('Debes seleccionar un mes y año'); return;
     }
     const mesAno = this.mesAnoMensualidad;
     generarPdf(this.informes, this.endpoints.generarListadoMensualidadMensual(mesAno, true),
       'No se pudo generar el listado de mensualidad mensual',
       `listado_mensualidad_${this.formatearNombreMensualidad(mesAno)}.pdf`, accion,
       `Mensualidades ${this.formatearNombreMensualidad(mesAno)}`);
+  }
+
+  // ------------------------------------------------------------------ avisos, confirmaciones y carga (8b-D1)
+
+  /** Aviso de éxito (hoy, el toast de SweetAlert2). */
+  protected avisarExito(texto: string): void {
+    showSuccessToast(texto);
+  }
+
+  /** Aviso de error (hoy, el toast de SweetAlert2). */
+  protected avisarError(texto: string): void {
+    showErrorToast(texto);
+  }
+
+  /** Error que hay que leer y cerrar (hoy, el diálogo «Error» de SweetAlert2). */
+  protected alertarError(texto: string): void {
+    Swal.fire({ title: 'Error', text: texto, icon: 'error' });
+  }
+
+  /** «Atención» con «Sí, cargar» / «No, cancelar» ante un 409 de «confirmar»; resuelve si se confirmó. */
+  protected confirmarCarga(texto: string): Promise<boolean> {
+    return Swal.fire({
+      title: 'Atención',
+      text: texto,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cargar',
+      cancelButtonText: 'No, cancelar',
+    }).then((result) => !!result.isConfirmed);
+  }
+
+  /** «Atención» con lo que ya tiene y lo que falta ante un 409 de «completar»; resuelve si se confirmó. */
+  protected confirmarCompletarMensualidad(payload: any): Promise<boolean> {
+    return Swal.fire({
+      title: 'Atención',
+      html: this.construirAvisoMensualidadIncompleta(payload),
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, aplicar',
+      cancelButtonText: 'No, cancelar',
+    }).then((result) => !!result.isConfirmed);
+  }
+
+  /** Cargador global mientras se asigna (hoy, el de `LoadingService`). */
+  protected mostrarCarga(): void {
+    this.loadingService.show();
+  }
+
+  protected ocultarCarga(): void {
+    this.loadingService.hide();
+  }
+
+  /** Lo que ya tiene y lo que falta de la mensualidad (409 «completar»), con los deportes por su nombre. */
+  protected resumenMensualidadIncompleta(payload: any): {
+    mes: string;
+    existentesMensualidad: string;
+    existentesCompetidor: string;
+    faltantesMensualidad: string;
+    faltantesCompetidor: string;
+  } {
+    return {
+      mes: this.mesAnoSeleccionadoIndividual ? this.formatearNombreMensualidad(this.mesAnoSeleccionadoIndividual) : '',
+      existentesMensualidad: this.formatearListaDeportes(payload?.existentes?.mensualidades),
+      existentesCompetidor: this.formatearListaDeportes(payload?.existentes?.tarifasCompetidor),
+      faltantesMensualidad: this.formatearListaDeportes(payload?.faltantes?.mensualidades),
+      faltantesCompetidor: this.formatearListaDeportes(payload?.faltantes?.tarifasCompetidor),
+    };
   }
 
   private formatearNombreMensualidad(mesAno: string): string {
@@ -600,14 +621,12 @@ export class HerramientasAlumnosComponent implements OnChanges {
   }
 
   private construirAvisoMensualidadIncompleta(payload: any): string {
-    const existentesMensualidad = this.formatearListaDeportes(payload?.existentes?.mensualidades);
-    const existentesCompetidor = this.formatearListaDeportes(payload?.existentes?.tarifasCompetidor);
-    const faltantesMensualidad = this.formatearListaDeportes(payload?.faltantes?.mensualidades);
-    const faltantesCompetidor = this.formatearListaDeportes(payload?.faltantes?.tarifasCompetidor);
+    const { mes, existentesMensualidad, existentesCompetidor, faltantesMensualidad, faltantesCompetidor } =
+      this.resumenMensualidadIncompleta(payload);
 
     const partes: string[] = [];
-    if (this.mesAnoSeleccionadoIndividual) {
-      partes.push(`<div><strong>Mes:</strong> ${this.formatearNombreMensualidad(this.mesAnoSeleccionadoIndividual)}</div>`);
+    if (mes) {
+      partes.push(`<div><strong>Mes:</strong> ${mes}</div>`);
     }
     if (existentesMensualidad || existentesCompetidor) {
       partes.push('<div style="margin-top: 0.5rem;"><strong>Ya tiene:</strong></div>');
