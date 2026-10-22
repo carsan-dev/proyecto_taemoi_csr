@@ -59,6 +59,8 @@ interface DeporteFila {
   principal: boolean;
   activo: boolean;
   grado: GradoFila | null;
+  /** Disciplina con grados y sin grado asignado: hoy se ve «Sin grado». */
+  sinGrado: boolean;
   tiempoConGrado: string;
   tarifa: string;
   alta: string;
@@ -590,6 +592,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       principal,
       activo: d.activo !== false,
       grado: conGrados && d.grado ? gradoFila(d.grado, d.deporte) : null,
+      sinGrado: conGrados && !d.grado,
       tiempoConGrado: conGrados ? tiempoConGrado(d.fechaGrado, hoy) : '',
       tarifa: this.nombreTarifa(d.tipoTarifa),
       alta: fecha(d.fechaAltaInicial || d.fechaAlta),

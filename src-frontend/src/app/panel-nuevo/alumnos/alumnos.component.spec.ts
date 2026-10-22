@@ -499,4 +499,14 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(listados().length).toBe(1);
     flush();
   }));
+
+  it('disciplina con grados y sin grado: «sin grado» en la línea 2 y «Sin grado» en el detalle', () => {
+    crear();
+    const sinGrado = alumno(1, { deportes: [{ ...(alumno(1)['deportes'] as any[])[0], grado: null }] });
+    responder(1, [], { content: [sinGrado], totalElements: 1, totalPages: 1, number: 0, size: 25 } as never);
+    expect(texto('.alumnos__linea2')).toContain('sin grado');
+    el().querySelector<HTMLButtonElement>('.alumnos__desplegar')!.click();
+    fixture.detectChanges();
+    expect(texto('.alumnos__deporte')).toContain('Sin grado');
+  });
 });
