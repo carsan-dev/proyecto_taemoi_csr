@@ -112,7 +112,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           title: errorTitle,
           text: errorMessage,
           icon: 'error',
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
+          // Sin estilos: solo la reconoce el panel nuevo para cerrar este aviso y ningún otro (8b-D1).
+          customClass: { popup: 'swal-error-http' }
         });
       }
 

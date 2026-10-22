@@ -1,9 +1,15 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { Subject, of } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { CONSULTA_HOJA } from '../capas/capa-modal';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { CLASE_ERROR_HTTP, CONSULTA_HOJA } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
+import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { EstilosPanelService } from '../estilos-panel.service';
 import { ConfirmacionService } from './confirmacion.service';
 import { OpcionesConfirmacion, ResultadoConfirmacion } from './dialogo.component';
 
@@ -30,6 +36,9 @@ const BAJA: OpcionesConfirmacion = {
   accion: 'Dar de baja',
   destructivo: true,
 };
+
+@Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
+class PantallaNueva {}
 
 /** `matchMedia` simulado: la consulta de la hoja da `hoja`; las demás, false. */
 function anchoDeMovil(hoja: boolean): void {
@@ -76,7 +85,16 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva }]),
+        {
+          provide: PermisosSesionService,
+          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },
+        },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ],
+    });
     servicio = TestBed.inject(ConfirmacionService);
     disparador = document.createElement('button');
     disparador.textContent = 'Cobrar';
@@ -114,11 +132,26 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(radios.map((r) => r.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1']);
   });
 
-  it('al abrirse cierra el SweetAlert2 que haya abierto el interceptor de errores (el 409 de las herramientas)', () => {
-    spyOn(Swal, 'isVisible').and.returnValue(true);
-    const cerrar = spyOn(Swal, 'close');
+  it('al abrirse en una pantalla nueva cierra el SweetAlert2 del interceptor de errores (el 409 de las herramientas)', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/alumnosListar');
+    void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
+    expect(Swal.isVisible()).toBeTrue();
     void abrir(COBRAR);
-    expect(cerrar).toHaveBeenCalled();
+    expect(Swal.isVisible()).toBeFalse();
+  });
+
+  it('al abrirse no cierra otro SweetAlert2 ni, fuera del panel nuevo, el del interceptor', async () => {
+    void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
+    void abrir(COBRAR);
+    expect(Swal.isVisible()).withContext('ruta de hoy').toBeTrue();
+    boton('Cancelar').click();
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/alumnosListar');
+    void Swal.fire({ title: 'Confirmar cobro', showClass: { popup: '' }, hideClass: { popup: '' } });
+    void abrir(COBRAR);
+    expect(Swal.isVisible()).withContext('otro SweetAlert2').toBeTrue();
+    Swal.close();
   });
 
   it('«Cancelar» a la izquierda y la acción a la derecha; foco inicial en la acción', () => {

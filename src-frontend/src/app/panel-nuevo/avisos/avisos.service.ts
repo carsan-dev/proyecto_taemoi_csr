@@ -10,6 +10,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { PilaCapas, cerrarSweetAlertAbierto } from '../capas/capa-modal';
 import { AvisosComponent } from './avisos.component';
@@ -52,6 +53,7 @@ export class AvisosService {
   private readonly documento = inject(DOCUMENT);
   private readonly pila = inject(PilaCapas);
   private readonly zona = inject(NgZone);
+  private readonly router = inject(Router);
 
   readonly lista = signal<Aviso[]>([]);
   private siguiente = 0;
@@ -75,7 +77,7 @@ export class AvisosService {
 
   /** Sustituye al SweetAlert2 del interceptor de errores, como el aviso de hoy. */
   error(texto: string, accion?: AccionAviso): number {
-    cerrarSweetAlertAbierto();
+    cerrarSweetAlertAbierto(this.router);
     return this.mostrar('error', texto, accion);
   }
 

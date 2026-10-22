@@ -25,4 +25,15 @@ describe('Errores de informes parciales', () => {
     TestBed.inject(HttpTestingController).expectOne('/otra').flush({}, { status: 500, statusText: 'Error' });
     expect(Swal.fire).toHaveBeenCalled();
   });
+  it('su SweetAlert2 lleva la clase «swal-error-http» (sin estilos): el panel nuevo cierra solo ese (8b-D1)', () => {
+    TestBed.inject(HttpClient).get('/otra').subscribe({ error: () => {} });
+    TestBed.inject(HttpTestingController).expectOne('/otra').flush({}, { status: 500, statusText: 'Error' });
+    expect(Swal.fire).toHaveBeenCalledWith({
+      title: 'Error del Servidor',
+      text: jasmine.any(String),
+      icon: 'error',
+      confirmButtonText: 'Aceptar',
+      customClass: { popup: 'swal-error-http' },
+    } as never);
+  });
 });

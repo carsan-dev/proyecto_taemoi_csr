@@ -1,5 +1,8 @@
 import { Injectable, signal } from '@angular/core';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import Swal from 'sweetalert2';
+
+import { disenoNuevoGuard } from '../diseno-nuevo.guard';
 
 /**
  * Lo común de las capas modales del panel nuevo (8b-D1, decisiones 235, 248 y 271): diálogo, hoja inferior y panel
@@ -60,15 +63,33 @@ export function esClicEnElVelo(evento: MouseEvent, dialogo: HTMLDialogElement): 
   return evento.target === dialogo && !deTeclado;
 }
 
+/** Clase (sin estilos) del SweetAlert2 que abre el interceptor de errores con cada respuesta de error. */
+export const CLASE_ERROR_HTTP = 'swal-error-http';
+
 /**
  * El interceptor de errores de hoy abre un SweetAlert2 con cada respuesta de error; en las pantallas de hoy el aviso
  * propio de la pantalla (otro SweetAlert2) lo sustituye. En el panel nuevo, el aviso o el diálogo que responden a ese
- * error hacen lo mismo: cierran el SweetAlert2 que haya abierto (si no, quedaría detrás o debajo).
+ * error hacen lo mismo: cierran ese SweetAlert2 (si no, quedaría detrás o debajo). Solo ese (con `CLASE_ERROR_HTTP`:
+ * nunca una confirmación ni «Sesión expirada», que lleva a /login) y solo en una pantalla nueva: una respuesta que llega
+ * tarde, tras volver a una pantalla de hoy, no le toca nada.
  */
-export function cerrarSweetAlertAbierto(): void {
-  if (Swal.isVisible()) {
-    Swal.close();
+export function cerrarSweetAlertAbierto(router: Router): void {
+  if (!Swal.isVisible() || !Swal.getPopup()?.classList.contains(CLASE_ERROR_HTTP) || !enPantallaNueva(router)) {
+    return;
   }
+  Swal.close();
+}
+
+/** ¿La ruta activa es la entrada nueva de una pantalla (la que lleva `disenoNuevoGuard` en `canMatch`)? */
+export function enPantallaNueva(router: Router): boolean {
+  let ruta: ActivatedRouteSnapshot | null = router.routerState.snapshot.root;
+  while (ruta) {
+    if (ruta.routeConfig?.canMatch?.includes(disenoNuevoGuard)) {
+      return true;
+    }
+    ruta = ruta.firstChild;
+  }
+  return false;
 }
 
 /** El elemento enfocado ahora, para devolverle el foco al cerrar. */

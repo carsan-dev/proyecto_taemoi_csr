@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { ApplicationRef, EnvironmentInjector, Injectable, createComponent, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { cerrarSweetAlertAbierto, devolverFoco, disparadorActual } from '../capas/capa-modal';
 import { DialogoComponent, OpcionesConfirmacion, ResultadoConfirmacion } from './dialogo.component';
@@ -15,10 +16,11 @@ export class ConfirmacionService {
   private readonly appRef = inject(ApplicationRef);
   private readonly injector = inject(EnvironmentInjector);
   private readonly documento = inject(DOCUMENT);
+  private readonly router = inject(Router);
 
   confirmar<R = unknown>(opciones: OpcionesConfirmacion<R>): Promise<ResultadoConfirmacion<R>> {
     // Si lo abre la respuesta a un error (el 409 de las herramientas), sustituye al SweetAlert2 del interceptor.
-    cerrarSweetAlertAbierto();
+    cerrarSweetAlertAbierto(this.router);
     return new Promise((resolver) => {
       const disparador = disparadorActual(this.documento);
       const ref = createComponent(DialogoComponent, { environmentInjector: this.injector });

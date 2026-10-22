@@ -1,10 +1,19 @@
+import { Component } from '@angular/core';
 import { TestBed, discardPeriodicTasks, fakeAsync, flush, tick } from '@angular/core/testing';
-
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { PilaCapas } from '../capas/capa-modal';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { CLASE_ERROR_HTTP, PilaCapas } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
+import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { EstilosPanelService } from '../estilos-panel.service';
 import { AvisosService, DURACION_AVISO, MAX_AVISOS } from './avisos.service';
+
+@Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
+class PantallaNueva {}
 
 describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
   let avisos: AvisosService;
@@ -24,7 +33,16 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva }]),
+        {
+          provide: PermisosSesionService,
+          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },
+        },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ],
+    });
     avisos = TestBed.inject(AvisosService);
   });
 
@@ -90,13 +108,23 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     flush();
   }));
 
-  it('un error cierra el SweetAlert2 que haya abierto el interceptor (como el aviso de hoy, que lo sustituía)', fakeAsync(() => {
-    spyOn(Swal, 'isVisible').and.returnValue(true);
-    const cerrar = spyOn(Swal, 'close');
+  it('un error en una pantalla nueva cierra el SweetAlert2 del interceptor (como el aviso de hoy, que lo sustituía)', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/alumnosListar');
+    void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
+    expect(Swal.isVisible()).toBeTrue();
     avisos.error('No se pudo cargar la mensualidad');
-    expect(cerrar).toHaveBeenCalled();
-    flush();
-  }));
+    expect(Swal.isVisible()).toBeFalse();
+  });
+
+  it('un error no cierra un SweetAlert2 que no sea el del interceptor', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/alumnosListar');
+    void Swal.fire({ title: 'Confirmar cobro', showClass: { popup: '' }, hideClass: { popup: '' } });
+    avisos.error('No se pudo cargar la mensualidad');
+    expect(Swal.isVisible()).toBeTrue();
+    Swal.close();
+  });
 
   it('acción opcional («Deshacer»): la llama y cierra el aviso', fakeAsync(() => {
     const deshacer = jasmine.createSpy('deshacer');
