@@ -126,7 +126,7 @@ Los casos que más pueden morder. Cada uno tiene su test en la pieza que lo pose
 
 ## 1. Mapa de piezas
 
-Orden: **8b-1 → 8b-I → 8b-T → 8b-N → 8b-2 → 8b-3a … 8b-3e → 8b-3f … 8b-3k → 8b-M → 8b-Z**. 8b-I y 8b-T se pueden hacer
+Orden: **8b-1 → 8b-I → 8b-T → 8b-N → 8b-2 → 8b-3a … 8b-3e → 8b-3f … 8b-3k → 8b-B4 → 8b-3l … 8b-3n → 8b-M → 8b-Z**. 8b-I y 8b-T se pueden hacer
 en paralelo tras 8b-1; 8b-N depende de las dos; las pantallas dependen de 8b-N y no entre sí (3b enlaza desde 3a, pero
 la ruta de la ficha existe ya); **8b-B3** (boceto de la ronda 3, solo diseño) está **hecha**: el propietario eligió las
 variantes (decisión 261) y 8b-3f a 8b-3k pueden empezar cuando 8b-N esté lista (decisión 228: se diseñó antes de
@@ -155,6 +155,10 @@ y actualiza este mapa.
 | **8b-3i** | Solicitudes: bandeja de la 6c (deshacer cobros, devoluciones, encargos) | No | 8b-N, 8b-B3 | careful (dinero y permisos); `savvy-careful`, revisión opus | `feat(panel): solicitudes nuevas (8b-3i)` |
 | **8b-3j** | Caja de sede: efectivo de los profesores, entregas y movimientos | No | 8b-N, 8b-B3 | careful (dinero); `savvy-careful`, revisión opus | `feat(panel): caja de sede nueva (8b-3j)` |
 | **8b-3k** | Escuela: Configuración (límite por turno y Gestión de Roles) y Registro de acciones | No | 8b-N, 8b-B3 | careful (permisos y datos sensibles); `savvy-careful`, revisión opus | `feat(panel): configuración y registro de acciones nuevos (8b-3k)` |
+| **8b-B4** | Boceto de la ronda 4: alta de alumno, crear y editar grupo y turno, alumnos del grupo y productos del alumno (hoy frente a una o dos propuestas en el mundo de C, con inventario «nada se pierde») | No | 8b-3k | solo diseño; el orquestador con `impeccable` y `frontend-design` | `docs(e8b): boceto de la ronda 4 (8b-B4)` |
+| **8b-3l** | Alta de alumno | No | 8b-B4 | careful (datos de menores, altas y cargos iniciales); `savvy-careful`, revisión opus | `feat(panel): alta de alumno nueva (8b-3l)` |
+| **8b-3m** | Grupos: crear y editar grupo y turno, y gestionar los alumnos del grupo | No | 8b-B4, 8b-3c | medium; `savvy-medium`, revisión sonnet | `feat(panel): formularios de grupos y turnos nuevos (8b-3m)` |
+| **8b-3n** | Productos de un alumno: asignar, editar (fecha, cantidad, precio), cobrar y quitar | No | 8b-B4, 8b-3b | careful (dinero); `savvy-careful`, revisión opus | `feat(panel): productos del alumno nuevos (8b-3n)` |
 | **8b-Z** | Retirada de lo viejo (tras aprobación): rutas de hoy fuera, `LOCALE_ID` global, interruptor retirado | No (la tabla se queda; su borrado iría con la contracción) | todas y R6 | careful; `savvy-careful`, revisión opus | `refactor(panel): retirar las pantallas anteriores al rediseño (8b-Z)` |
 
 **Migración:** solo V31_10 (8b-I). El `#1B2B2E` de Moiskimdo lo pone el superadmin desde «Logo y color», sin migración
@@ -168,10 +172,11 @@ Preinscripciones, Solicitudes, Caja de sede, Configuración y Registro de accion
 (8b-B3). Agrupación: solo Configuración y Registro de acciones van juntas (8b-3k): son pequeñas (≈ 29 y 24 kB de
 plantilla y código), las dos solo del propietario (`adminOnlyGuard`) y piden la misma revisión de permisos. Eventos y
 Productos, aunque pequeñas, van separadas porque su riesgo es distinto (Productos toca precios). Hasta que cada una se
-construya, con el interruptor encendido se ve con la cabecera nueva y su contenido de hoy. Fuera de las siete quedan
-los formularios de alta y edición que no nombra la 259 (alta de alumno, crear y editar grupo y turno, gestionar alumnos
-del grupo) y las pantallas de plataforma: siguen con su contenido de hoy dentro de la cabecera nueva; el boceto de la
-ronda 3 los lista para que el propietario confirme si entran.
+construya, con el interruptor encendido se ve con la cabecera nueva y su contenido de hoy. Los formularios que la 259 no
+nombraba (alta de alumno, crear y editar grupo y turno, gestionar los alumnos del grupo y gestionar los productos de un
+alumno) entran también (decisión 282, 23/10): boceto de la ronda 4 (8b-B4) y piezas 8b-3l a 8b-3n tras 8b-3k. Siguen
+fuera las pantallas de plataforma (superadmin) y, por la 260, Mis grupos y Mi caja hasta 8b-Z; hasta entonces, con el
+interruptor encendido, se ve con la cabecera nueva y su contenido de hoy.
 
 ---
 
@@ -1649,6 +1654,23 @@ Un aviso o diálogo del panel que responde a un error cierra el SweetAlert2 del 
 nuevo en el inicial; karma 1766 SUCCESS; capturas apagado antes (`542fe10e`) y después idénticas en bytes, 16/16 (carga,
 baja, error, selector, fecha, formulario, toast y foto a 375 y 1280); encendido a 375 y 1280 (destructivo, pastillas y su
 error, formulario, fecha, aviso de error, agregar deporte, actualizar grado y foto).
+
+## 20 ter. Pieza 8b-B4 y piezas 8b-3l a 8b-3n (decisión 282)
+
+Decisión del propietario del 23/10: los formularios que quedaron fuera de la 259 entran en la E8b. Van tras 8b-3k y antes de 8b-M.
+
+- **8b-B4, boceto de la ronda 4** (solo diseño, sin código ni despliegue, como 8b-B3): alta de alumno, crear y editar
+  grupo y turno, gestionar los alumnos del grupo y gestionar los productos de un alumno, cada una hoy frente a una o dos
+  propuestas en el mundo de C, a 375, 768 y 1280 px, con datos ficticios e inventario por pantalla. El propietario elige
+  una variante por pantalla y los inventarios elegidos se copian al Anexo A.
+- **8b-3l, alta de alumno:** mismo cuerpo de alta que hoy campo a campo, cargos iniciales y documentos iguales; datos de
+  menores.
+- **8b-3m, formularios de grupos:** crear y editar grupo y turno y la pantalla de alumnos del grupo, con las mismas
+  llamadas que hoy; enlaza con Grupos (8b-3c).
+- **8b-3n, productos de un alumno:** la pantalla «Gestionar productos» que hoy abre la ficha (pestaña Pagos): asignar,
+  editar fecha de asignación, cantidad y precio, cobrar con el mismo diálogo y llamada que Tesorería, quitar; mismos
+  cuerpos que hoy.
+- Siguen fuera: pantallas de plataforma (superadmin) y, por la 260, Mis grupos y Mi caja hasta 8b-Z.
 
 ## 21 sexies. Pieza 8b-M: mascota en el panel (decisiones 274 y 275)
 
