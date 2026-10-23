@@ -801,6 +801,72 @@ y un cancelar que no decide nada). Capturas.
 **Notas para la PR:** tabla del Anexo A marcada; el fallo de «Por Antigüedad» (`listado-convocatorias.component.ts:516-523`)
 ya se corrigió en la pantalla de hoy (hotfix 2); la nueva conserva ese comportamiento corregido.
 
+**Implementación (rama `feature/e8b-3e`, desde `develop` en `2672b8fa`):**
+- Nuevos en `F/panel-nuevo/convocatorias/`: `convocatorias.component.*` (`ConvocatoriasComponent`, `app-convocatorias`) y
+  `convocatorias-vista.ts` (`cifrasDe`, `textoCifra`, `nombreInforme`, `paginar`, `totalPaginas`, `paginasVisibles`,
+  `iniciales`, `diaParaCampo`, `fechaDeCampo`, `cuantiaDeCampo`, `cuantiaParaCampo`, `pestanasDisciplina`).
+  `LecturasPanelService`: `convocatorias`, `alumnosDeConvocatoria` y `aptosParaConvocatoria` (la misma petición que
+  `obtenerConvocatorias`, `obtenerAlumnosDeConvocatoria` y `obtenerAlumnosElegiblesParaConvocatoria`, con
+  `ERROR_HANDLED_LOCALLY`); «Cargar más alumnos» usa `alumnos` (la de `obtenerAlumnos`). Ruta `convocatoriasListar` con
+  `canMatch: [disenoNuevoGuard]` delante de la de hoy (misma data, `roleGuard` y resolve).
+- **Mismas escrituras** que `ListadoConvocatoriasComponent`, con los métodos de hoy de `EndpointsService`: conmutador y
+  cuantía, `PUT /convocatorias/alumno/{id}` con `{cuantiaExamen, pagado}` (sin `metodoPago`, como hoy); agregar,
+  `POST /alumnos/{convocatoria}/alumno/{alumno}` con `{porRecompensa, rojoBordado}`; quitar, `DELETE` a esa ruta;
+  «Actualizar grados de todos», `PUT /convocatorias/{id}/actualizar-grados` con `{}`; crear, `POST /convocatorias` con
+  `{fechaConvocatoria: medianoche local del día, deporte}`; eliminar, `DELETE /convocatorias/{id}`; PDF,
+  `GET /convocatorias/{id}/informe-pdf` con `informe_convocatoria_<deporte>_<dd_mm_aaaa>.pdf` y el título de hoy. Sin
+  comprobaciones de rol en la pantalla, como hoy (la ruta sigue con `ROUTE_ROLE_SETS.management`). Página y disciplina
+  se recuerdan en `sessionStorage` con la clave de hoy (`listadoConvocatoriasEstado`).
+- Diálogos con `ConfirmacionService`: «Quitar alumno» y «Eliminar convocatoria» destructivos con `focoEnCancelar`;
+  «Actualizar grados» con `ejecutar` (ocupado mientras va, sin doble envío); «Crear convocatoria» con disciplina y fecha
+  (la validación de hoy en línea) y su confirmación; «Selecciona el tipo de producto» y «Selecciona el grado rojo» con
+  pastillas. Avisos con `AvisosService`; «Ver PDF» en `pn-visor-pdf` con `InformePdfPanelService`; menú «PDF» con el
+  patrón de botón de menú (`teclado-menu.ts`); pestañas `tablist` con flechas, Inicio y Fin; esqueletos a los 300 ms,
+  `pn-bloque-error` con «Reintentar» (lista, cifras de un bloque y alumnos del bloque) y `pn-bloque-vacio`. Sin
+  SweetAlert2 ni cargador global. Cabecera de cada convocatoria: un `<button>` con `aria-expanded`/`aria-controls` y
+  anillo de foco de 3 px (`acento-borde`), que hoy no tiene. Conmutador: dos botones con `aria-pressed` en un `group`.
+- **«Selecciona el tipo de producto»:** hoy, desde el hotfix 2 (decisión 235), cerrar ya no asigna nada: «Por
+  Recompensa» y «Por Antigüedad» son botones propios y Esc, el clic fuera, la X y «Cancelar» no llaman al backend (el
+  fallo de origen era «Por Antigüedad» como botón de cancelar). La nueva conserva eso y además pide la elección
+  explícita: dos pastillas sin ninguna elegida al abrir, «Agregar» deshabilitado hasta elegir y el foco en «Cancelar»;
+  Enter ya no puede decidir por defecto.
+- **Lecturas de más (mismo endpoint y parámetros):** los números de las pestañas piden `GET /convocatorias?deporte=` de
+  cada disciplina con grados a la vez (hoy, solo la elegida; cambiar de pestaña ya no vuelve a pedir la lista) y las
+  cifras de cada bloque piden `GET /convocatorias/{id}/alumnos` de los bloques a la vista, 5 como mucho (hoy, solo al
+  abrir). Una convocatoria recién creada empieza en cero sin pedir nada.
+- **Cambios a propósito:** título «Convocatorias» con subtítulo (hoy «Gestión de Convocatorias»); tras cualquier
+  escritura se relee la lista con el bloque abierto (hoy `seleccionarConvocatoria` alternaba y el bloque se cerraba);
+  «Actualizar grados de todos» confirma siempre («Se actualizará el grado de N alumnos inscritos.» si todos han pagado;
+  hoy iba directo); los diálogos llevan título propio («Quitar alumno», «Eliminar convocatoria», «Actualizar grados»,
+  «Crear convocatoria»; hoy «¿Estás seguro?») con la frase de hoy; la fecha al eliminar en es-ES («14/11/2026»; hoy
+  `AAAA-MM-DD`); la disciplina por su nombre en «Crear» y su confirmación (hoy el código); la fecha por defecto es el día
+  local (hoy `toISOString`, que entre las 00:00 y las 02:00 daba el día anterior); la convocatoria creada va a la lista
+  de su disciplina (hoy a la que estuviera a la vista) y se recalculan las páginas al eliminar; «Selecciona cinturón
+  rojo» pasa a «Selecciona el grado rojo» («Selecciona el tipo de grado rojo.»; mismas opciones y «Rojo (sin bordar)»
+  elegida); «Por recompensa» y «Por antigüedad» en minúscula; cuantía en un campo decimal es-ES («25,00 €», acepta coma;
+  lo que no es un número no se envía y el campo vuelve atrás); «No se pudieron obtener las convocatorias» (hoy «No se
+  pudo»); plurales calculados («1 inscrito», «1 pendiente»). «Cargar más alumnos» hace lo de hoy: pide la página
+  siguiente del listado (10), que la pantalla no usa, y vuelve a leer los aptos.
+- [x] Specs en rojo antes del código (`Can't resolve './convocatorias.component'` y `'./convocatorias-vista'`;
+  `convocatorias`, `alumnosDeConvocatoria` y `aptosParaConvocatoria` no existen en `LecturasPanelService`), luego verdes:
+  `convocatorias-vista.spec.ts` (10), `convocatorias.component.spec.ts` (40: carga y parámetros; cabecera; pestañas con
+  número, cambio sin relectura y teclado; bloques, cifras y su error; foco visible y `aria-expanded`; «Ver alumnos»;
+  lista con grados y color; conmutador, cuantía, quitar, agregar, tipo de producto y grado rojo con método, ruta y
+  cuerpo, nada al cancelar y sin doble envío; «Cargar más alumnos»; menú «PDF» con teclado, nombre y visor;
+  «Actualizar grados»; crear y eliminar; paginación y `sessionStorage`; esqueleto, error y vacíos),
+  `lecturas-panel.service.spec.ts` y `app.routes.spec.ts` (dos entradas; apagado no descarga el chunk).
+- **Notas para la PR:** bundle inicial 1.456.023 bytes (+172 frente a 1.455.851, la entrada de la ruta; sin
+  cambio tras la revisión); chunk `convocatorias-component` 57,71 kB (12,03 kB por la red; 56,43 kB antes de la revisión);
+  karma 1930 SUCCESS; capturas apagado antes (`2672b8fa`) y
+  después idénticas en bytes, 12/12 (carga, abierta, crear y eliminar a 375, 768 y 1280); encendido a 375, 768 y 1280
+  (lista, alumnos abiertos, menú «PDF», actualizar grados, tipo de producto, quitar y vacío); objetivos de 44 px como
+  mínimo a 375, sin desplazamiento horizontal en ningún ancho; `impeccable detect` sin hallazgos.
+- **Correcciones de la revisión:** tras guardar, el inscrito pasa a llevar la cuantía y el pagado enviados, de modo que
+  el siguiente PUT no revierte lo recién guardado mientras llega la relectura (cuatro pruebas); la lectura de cada
+  disciplina tiene su propio `catchError` (esa pestaña va sin número; solo si fallan todas, bloque de error); una
+  respuesta tardía de las cifras no pisa las de la relectura del bloque abierto (generación por bloque); fuera el
+  getter `cifrasAbierta`; el `|` de «Pagado | Pendiente» escapado en el Anexo A.
+
 ## 15. Pieza 8b-B3: boceto de la ronda 3 (solo diseño)
 
 Rama `feature/e8b-b3`. Sin código de la aplicación, sin migración y sin despliegue. Decisiones 228 (se diseña antes de
@@ -1672,30 +1738,30 @@ tabla se entienda sola. Configuración lleva dos columnas porque elige una varia
 
 ### Convocatorias (C)
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Gestión de convocatorias» | «Convocatorias» y subtítulo |
-| Crear convocatoria | Botón principal |
-| Filtro por deporte | Pestañas con nº |
-| Lista: disciplina y fecha de examen | Bloques |
-| Abrir una convocatoria | «Ver alumnos» |
-| Eliminar convocatoria | Papelera en el bloque |
-| Alumnos inscritos, pagados y pendientes | Cifras del bloque |
-| Ver PDF | Menú «PDF» al pie |
-| Descargar PDF (con la fecha) | Menú «PDF» al pie |
-| Actualizar grados de todos los alumnos | Botón principal al pie |
-| Alumno (iniciales y nombre) | Lista |
-| Grado actual con su color | Con su cinturón |
-| Grado siguiente con su color | Con su cinturón |
-| Cuantía editable | Campo |
-| Pagado / pendiente (se cambia) | Conmutador Pagado | Pendiente |
-| Quitar alumno de la convocatoria | Cruz |
-| Aviso «No hay alumnos inscritos» | Igual que hoy |
-| Seleccionar alumno apto para examen | Desplegable al pie |
-| Agregar alumno | Botón al pie |
-| Cargar más alumnos | Botón al pie |
-| Paginación de convocatorias | Bajo los bloques |
-| Aviso sin convocatorias con «Crear primera convocatoria» | Igual que hoy |
+| Hoy | En la pantalla nueva | 8b-3e |
+|---|---|---|
+| Título «Gestión de convocatorias» | «Convocatorias» y subtítulo | Hecho |
+| Crear convocatoria | Botón principal | Hecho (disciplina y fecha, y la confirmación de hoy) |
+| Filtro por deporte | Pestañas con nº | Hecho (`tablist` con flechas, Inicio y Fin; disciplinas con grados) |
+| Lista: disciplina y fecha de examen | Bloques | Hecho |
+| Abrir una convocatoria | «Ver alumnos» | Hecho (la cabecera entera es el botón, con foco visible) |
+| Eliminar convocatoria | Papelera en el bloque | Hecho (destructivo, foco en «Cancelar») |
+| Alumnos inscritos, pagados y pendientes | Cifras del bloque | Hecho (también con el bloque cerrado) |
+| Ver PDF | Menú «PDF» al pie | Hecho: `pn-visor-pdf` |
+| Descargar PDF (con la fecha) | Menú «PDF» al pie | Hecho (la fecha en la opción y en el nombre de hoy) |
+| Actualizar grados de todos los alumnos | Botón principal al pie | Hecho (confirma siempre) |
+| Alumno (iniciales y nombre) | Lista | Hecho |
+| Grado actual con su color | Con su cinturón | Hecho (muestra del color y nombre del grado) |
+| Grado siguiente con su color | Con su cinturón | Hecho |
+| Cuantía editable | Campo | Hecho (decimal es-ES) |
+| Pagado / pendiente (se cambia) | Conmutador Pagado \| Pendiente | Hecho (la misma llamada que hoy) |
+| Quitar alumno de la convocatoria | Cruz | Hecho (destructivo, foco en «Cancelar») |
+| Aviso «No hay alumnos inscritos» | Igual que hoy | Hecho (`pn-bloque-vacio`) |
+| Seleccionar alumno apto para examen | Desplegable al pie | Hecho (con buscador) |
+| Agregar alumno | Botón al pie | Hecho (tipo de producto con elección explícita y grado rojo) |
+| Cargar más alumnos | Botón al pie | Hecho |
+| Paginación de convocatorias | Bajo los bloques | Hecho (5 por página, como hoy) |
+| Aviso sin convocatorias con «Crear primera convocatoria» | Igual que hoy | Hecho (`pn-bloque-vacio`) |
 
 ### Eventos (P1: lista densa ordenable)
 

@@ -109,4 +109,21 @@ describe('LecturasPanelService (8b-D2a)', () => {
       delPanel.flush([]);
     }
   });
+  it('Convocatorias (8b-3e): listas por disciplina, alumnos de una convocatoria y aptos, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(EndpointsService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const pares: [Observable<unknown>, Observable<unknown>][] = [
+      [hoy.obtenerConvocatorias('TAEKWONDO'), panel.convocatorias('TAEKWONDO')],
+      [hoy.obtenerAlumnosDeConvocatoria(11), panel.alumnosDeConvocatoria(11)],
+      [hoy.obtenerAlumnosElegiblesParaConvocatoria('KICKBOXING'), panel.aptosParaConvocatoria('KICKBOXING')],
+    ];
+    for (const [deHoy$, delPanel$] of pares) {
+      const deHoy = pedir(deHoy$);
+      const delPanel = pedir(delPanel$);
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      deHoy.flush([]);
+      delPanel.flush([]);
+    }
+  });
 });
