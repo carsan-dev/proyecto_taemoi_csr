@@ -229,6 +229,7 @@
               "src/app/panel-nuevo/eventos/evento-formulario.component.spec.ts",
               "src/app/panel-nuevo/productos/productos-vista.spec.ts",
               "src/app/panel-nuevo/productos/productos.component.spec.ts",
+              "src/app/panel-nuevo/productos/producto-formulario.component.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/dialogos-ficha.port.spec.ts",

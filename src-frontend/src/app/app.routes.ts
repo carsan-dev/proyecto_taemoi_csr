@@ -424,9 +424,27 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Crear producto del panel nuevo (8b-3g), el mismo formulario que editar.
+    path: 'productosCrear',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/productos/producto-formulario.component').then(m => m.ProductoFormularioComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'productosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-producto/crear-producto.component').then(m => m.CrearProductoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Editar producto del panel nuevo (8b-3g).
+    path: 'productosEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/productos/producto-formulario.component').then(m => m.ProductoFormularioComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },

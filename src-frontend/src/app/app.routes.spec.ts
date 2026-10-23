@@ -13,6 +13,7 @@ import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatoria
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
 import { EventoFormularioComponent } from './panel-nuevo/eventos/evento-formulario.component';
 import { ProductosComponent } from './panel-nuevo/productos/productos.component';
+import { ProductoFormularioComponent } from './panel-nuevo/productos/producto-formulario.component';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -306,6 +307,8 @@ describe('app routes', () => {
     ['eventosCrear', '/eventosCrear', EventoFormularioComponent],
     ['eventosEditar/:id', '/eventosEditar/7', EventoFormularioComponent],
     ['productosListar', '/productosListar', ProductosComponent],
+    ['productosCrear', '/productosCrear', ProductoFormularioComponent],
+    ['productosEditar/:id', '/productosEditar/7', ProductoFormularioComponent],
   ] as const) {
     it(`${ruta} (8b-3f y 8b-3g): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
       const entradas = routes.filter((route) => route.path === ruta);

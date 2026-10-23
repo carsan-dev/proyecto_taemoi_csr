@@ -1,0 +1,450 @@
+// Crear y editar producto del panel nuevo (8b-3g). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md), con las piezas
+// del formulario de Eventos: una sección blanca con filete, etiquetas «obligatorio», el error bajo cada campo, el resumen
+// de errores arriba y la barra de guardar fija abajo (la sombra de los menús). El precio, a la derecha y con cifras
+// tabulares, con el «€» dentro del campo.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.producto-form {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.producto-form__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.producto-form__cabecera,
+.producto-form__rejilla,
+.producto-form__bloque-estado,
+.producto-form__cargando {
+  max-width: 640px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.producto-form__cabecera {
+  margin-bottom: 20px;
+}
+
+.producto-form__miga a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin-left: -6px;
+  padding: 0 8px 0 4px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.producto-form__titulo {
+  margin: 4px 0 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.producto-form__subtitulo {
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.producto-form__bloque-estado {
+  display: block;
+}
+
+// ------------------------------------------------------------------ resumen de errores
+
+.producto-form__resumen {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-peligro);
+  border-radius: var(--pn-radio-m);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  h2 {
+    margin: 0 0 6px;
+    font: var(--pn-titulo-bloque);
+    font-size: 1rem;
+    color: var(--pn-peligro);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    color: var(--pn-peligro);
+    font: var(--pn-cuerpo);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+  }
+}
+
+// ------------------------------------------------------------------ sección y campos
+
+.producto-form__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px 20px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.producto-form__seccion-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.producto-form__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.producto-form__campo--corto {
+  max-width: 280px;
+}
+
+.producto-form__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+// «obligatorio», a la vista junto a la etiqueta.
+.producto-form__marca {
+  margin-left: 6px;
+  font: var(--pn-etiqueta);
+  font-weight: 500;
+  color: var(--pn-tinta-2);
+}
+
+.producto-form__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-3);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.producto-form__importe {
+  position: relative;
+}
+
+.producto-form__control--importe {
+  padding-right: 36px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.producto-form__euro {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.producto-form__campo--error .producto-form__control {
+  border-color: var(--pn-peligro);
+}
+
+.producto-form__ayuda {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.producto-form__error {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-weight: 600;
+  color: var(--pn-peligro);
+  overflow-wrap: anywhere;
+}
+
+// «Lo puede vender el profesor»: casilla nativa con papel de interruptor; la zona de 44 px es el control entero.
+.producto-form__campo--interruptor {
+  padding-top: 16px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.producto-form__interruptor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  label {
+    font: var(--pn-etiqueta);
+    font-size: 0.9375rem;
+    color: var(--pn-tinta);
+    cursor: pointer;
+  }
+}
+
+.producto-form__zona {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 44px;
+  margin-left: -6px;
+
+  input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.producto-form__pista {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.producto-form__bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion), background-color var(--pn-transicion);
+}
+
+input:checked + .producto-form__pista {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento);
+
+  .producto-form__bola {
+    background: var(--pn-superficie);
+    transform: translateX(16px);
+  }
+}
+
+input:focus-visible + .producto-form__pista {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+.producto-form__zona:hover input:not(:checked) + .producto-form__pista {
+  border-color: var(--pn-acento-borde);
+}
+
+// ------------------------------------------------------------------ botones y barra fija
+
+.producto-form__boton-primario {
+  @include c.boton-primario;
+}
+
+.producto-form__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.producto-form__boton-primario,
+.producto-form__boton-secundario {
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// Desactivado con errores: aria-disabled (sigue recibiendo el foco y su clic lleva al resumen).
+.producto-form__guardar[aria-disabled='true']:not([aria-busy='true']) {
+  opacity: 0.55;
+}
+
+.producto-form__giro {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  animation: producto-form-giro 0.8s linear infinite;
+}
+
+@keyframes producto-form-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.producto-form__barra {
+  position: sticky;
+  bottom: var(--pn-espacio-m);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+// ------------------------------------------------------------------ esqueleto
+
+.producto-form__esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  span {
+    width: 30%;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.producto-form__esqueleto .producto-form__esqueleto-campo {
+  width: 100%;
+  height: 42px;
+  margin-bottom: 8px;
+}
+
+.producto-form__esqueleto .producto-form__esqueleto-campo--corto {
+  width: 280px;
+  max-width: 100%;
+}
+
+// ------------------------------------------------------------------ anchos
+
+@media (max-width: 1023.98px) {
+  // Por encima de la barra inferior del panel (8b-N).
+  .producto-form__barra {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .producto-form__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .producto-form__titulo {
+    font-size: 1.375rem;
+  }
+
+  .producto-form__seccion {
+    padding: 16px;
+  }
+
+  .producto-form__campo--corto {
+    max-width: none;
+  }
+
+  .producto-form__control,
+  .producto-form__boton-primario,
+  .producto-form__boton-secundario,
+  .producto-form__miga a {
+    min-height: 44px;
+  }
+
+  .producto-form__resumen a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .producto-form__barra {
+    padding: 10px 12px;
+
+    > button {
+      flex: 1 1 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .producto-form__pista,
+  .producto-form__bola {
+    transition: none;
+  }
+
+  .producto-form__giro {
+    animation: none;
+  }
+}
