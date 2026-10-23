@@ -154,6 +154,9 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
   }
 
   beforeEach(async () => {
+    // El componente actualiza los inscritos que recibe: cada prueba parte de los suyos.
+    Object.assign(PAGADO, inscrito(1));
+    Object.assign(PENDIENTE, inscrito(2, { pagado: false, cuantiaExamen: 30, gradoActual: 'AMARILLO', gradoSiguiente: 'NARANJA' }));
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date(2026, 9, 22, 10, 0));
     sessionStorage.removeItem(CLAVE_ESTADO);
@@ -302,6 +305,39 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(Array.from(bloque(11).querySelectorAll('.convocatorias__cifra')).map(texto)).toEqual(['1 inscrito', '1 pagado', '0 pendientes']);
   });
 
+  it('pestañas: si falla la lectura de una disciplina, la pantalla sigue y esa pestaña va sin número', () => {
+    crear();
+    const r = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
+    r.find((x) => x.request.params.get('deporte') === 'TAEKWONDO')!.flush([C1, C2]);
+    r.find((x) => x.request.params.get('deporte') === 'KICKBOXING')!.flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    responderCifras();
+    expect(el().querySelector('.pn-bloque-error')).toBeNull();
+    expect(el().querySelector('[role="tablist"]')).not.toBeNull();
+    expect(pestanas().map(texto)).toEqual(['Taekwondo 2', 'Kickboxing']);
+    expect(bloque(11)).not.toBeNull();
+  });
+
+  it('cifras: una respuesta tardía de la lectura de cifras no pisa la del bloque abierto, que es más nueva', () => {
+    crear();
+    responderListas();
+    const cifras = http.expectOne(`${API}/convocatorias/12/alumnos`);
+    cifras.flush([]);
+    const tardia = http.expectOne(`${API}/convocatorias/11/alumnos`);
+    cabecera(11).click();
+    fixture.detectChanges();
+    const lecturas = http.match(`${API}/convocatorias/11/alumnos`).filter((x) => !x.cancelled);
+    expect(lecturas.length).toBe(1);
+    // La del bloque abierto responde antes que la de las cifras, que llega tarde y con datos viejos.
+    lecturas[0].flush([PAGADO, PENDIENTE]);
+    fixture.detectChanges();
+    http.expectOne((x) => x.url === `${API}/alumnos/aptos/convocatoria`).flush([]);
+    expect(Array.from(bloque(11).querySelectorAll('.convocatorias__cifra')).map(texto)).toEqual(['2 inscritos', '1 pagado', '1 pendiente']);
+    tardia.flush([]);
+    fixture.detectChanges();
+    expect(Array.from(bloque(11).querySelectorAll('.convocatorias__cifra')).map(texto)).toEqual(['2 inscritos', '1 pagado', '1 pendiente']);
+  });
+
   it('cabecera de cada convocatoria: un botón (foco de teclado) con aria-expanded, aria-controls y foco visible', () => {
     cargar();
     const c = cabecera(11);
@@ -439,6 +475,72 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     r.flush(null);
     fixture.detectChanges();
     responderRelectura();
+  });
+
+  describe('escrituras seguidas con la relectura sin responder (el cuerpo parte de lo ya guardado)', () => {
+    function campoCuantia(id: number): HTMLInputElement {
+      return filaAlumno(id).querySelector<HTMLInputElement>('.convocatorias__cuantia input')!;
+    }
+    function cambiarCuantia(id: number, valor: string): void {
+      const campo = campoCuantia(id);
+      campo.value = valor;
+      campo.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+    function guardar(id: number, esperado: unknown): void {
+      const r = http.expectOne(`${API}/convocatorias/alumno/${id}`);
+      expect(r.request.body).toEqual(esperado as object);
+      r.flush(null);
+      fixture.detectChanges();
+    }
+
+    it('Pagado guardado y la relectura sin llegar: cambiar la cuantía envía la nueva con pagado: true', () => {
+      cargar();
+      abrir();
+      botonEn(filaAlumno(2), 'Pagado').click();
+      fixture.detectChanges();
+      guardar(2, { cuantiaExamen: 30, pagado: true });
+      cambiarCuantia(2, '40');
+      guardar(2, { cuantiaExamen: 40, pagado: true });
+    });
+
+    it('cuantía guardada y la relectura sin llegar: marcar Pagado envía la cuantía nueva con pagado: true', () => {
+      cargar();
+      abrir();
+      cambiarCuantia(2, '40');
+      guardar(2, { cuantiaExamen: 40, pagado: false });
+      botonEn(filaAlumno(2), 'Pagado').click();
+      fixture.detectChanges();
+      guardar(2, { cuantiaExamen: 40, pagado: true });
+    });
+
+    it('Pagado guardado y la relectura sin llegar: Pendiente justo después sí se envía (pagado: false)', () => {
+      cargar();
+      abrir();
+      botonEn(filaAlumno(2), 'Pagado').click();
+      fixture.detectChanges();
+      guardar(2, { cuantiaExamen: 30, pagado: true });
+      botonEn(filaAlumno(2), 'Pendiente').click();
+      fixture.detectChanges();
+      guardar(2, { cuantiaExamen: 30, pagado: false });
+    });
+
+    it('cuantía vacía: envía cuantiaExamen: null', () => {
+      cargar();
+      abrir();
+      cambiarCuantia(1, '');
+      guardar(1, { cuantiaExamen: null, pagado: true });
+    });
+
+    it('un error al guardar no cambia lo guardado: el siguiente envío parte de lo anterior', () => {
+      cargar();
+      abrir();
+      botonEn(filaAlumno(2), 'Pagado').click();
+      http.expectOne(`${API}/convocatorias/alumno/2`).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      cambiarCuantia(2, '40');
+      guardar(2, { cuantiaExamen: 40, pagado: false });
+    });
   });
 
   it('cuantía: un texto que no es un número no se envía y el campo vuelve a lo guardado', () => {
@@ -872,10 +974,11 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(el().querySelector('pn-esqueleto')).toBeNull();
   });
 
-  it('error de carga: bloque de error con «Reintentar» (sin SweetAlert2) que vuelve a pedir las listas', () => {
+  it('error de carga (ninguna disciplina se pudo leer): bloque de error con «Reintentar» (sin SweetAlert2) que vuelve a pedir las listas', () => {
     crear();
     const r = http.match((x) => x.url === `${API}/convocatorias`);
     r[0].flush({}, { status: 500, statusText: 'Error' });
+    r[1].flush({}, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
     const error = el().querySelector('pn-bloque-error')!;
     expect(texto(error)).toContain('No se pudieron obtener las convocatorias');

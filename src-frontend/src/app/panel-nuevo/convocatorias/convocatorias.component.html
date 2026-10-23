@@ -32,7 +32,9 @@
         (click)="elegirDisciplina(p.codigo)">
         <span class="convocatorias__disc" [class]="'convocatorias__disc convocatorias__disc--' + p.color" aria-hidden="true"></span>
         <span>{{ p.nombre + ' ' }}</span>
+        @if (!sinNumero.has(p.codigo)) {
         <span class="convocatorias__pestana-numero" data-cifras>{{ numero(p.total) }}</span>
+        }
       </button>
       }
     </div>

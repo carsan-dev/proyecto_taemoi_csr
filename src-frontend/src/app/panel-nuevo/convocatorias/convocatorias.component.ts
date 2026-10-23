@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, computed, inject } from '@angular/core';
-import { Subject, Subscription, forkJoin } from 'rxjs';
-import { map, takeUntil } from 'rxjs/operators';
+import { Subject, Subscription, forkJoin, of } from 'rxjs';
+import { catchError, map, takeUntil } from 'rxjs/operators';
 
 import { SearchableSelectDirective } from '../../directives/searchable-select.directive';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
@@ -135,6 +135,13 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
 
   private carga?: Subscription;
   private lecturaBloque?: Subscription;
+  /** La lectura de cifras en curso de cada bloque: una nueva cancela la anterior. */
+  private readonly lecturasCifras = new Map<number, Subscription>();
+  /** Generación de las cifras de cada bloque: la respuesta de una lectura más vieja que la última escrita se descarta. */
+  private readonly generacionCifras = new Map<number, number>();
+  private contadorGeneracion = 0;
+  /** Disciplinas cuya lista no se pudo leer: su pestaña va sin número. */
+  readonly sinNumero = new Set<string>();
   private readonly destroy$ = new Subject<void>();
   private escuchaFuera = false;
 
@@ -174,10 +181,6 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     return paginasVisibles(this.pagina, this.totalPaginas);
   }
 
-  get cifrasAbierta(): Cifras {
-    return cifrasDe(this.alumnos);
-  }
-
   ngOnInit(): void {
     this.restaurarEstado();
     this.cargar();
@@ -186,6 +189,7 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.carga?.unsubscribe();
     this.lecturaBloque?.unsubscribe();
+    this.lecturasCifras.forEach((l) => l.unsubscribe());
     this.quitarEscucha();
     this.destroy$.next();
     this.destroy$.complete();
@@ -206,12 +210,24 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     if (!disciplinas.some((d) => d.codigo === this.deporte)) {
       this.deporte = disciplinas[0].codigo;
     }
+    this.sinNumero.clear();
     const lecturas: Record<string, ReturnType<LecturasPanelService['convocatorias']>> = {};
     for (const d of disciplinas) {
-      lecturas[d.codigo] = this.lecturas.convocatorias(d.codigo);
+      // Si falla una disciplina, la pantalla sigue y su pestaña va sin número.
+      lecturas[d.codigo] = this.lecturas.convocatorias(d.codigo).pipe(
+        catchError(() => {
+          this.sinNumero.add(d.codigo);
+          return of([] as any[]);
+        })
+      );
     }
     this.carga = forkJoin(lecturas).subscribe({
       next: (listas) => {
+        if (this.sinNumero.size === disciplinas.length) {
+          // Ninguna disciplina se pudo leer: no hay nada que enseñar.
+          this.estado = 'error';
+          return;
+        }
         this.listas = Object.fromEntries(
           Object.entries(listas).map(([codigo, lista]) => [codigo, (lista ?? []) as ConvocatoriaPanel[]])
         );
@@ -237,20 +253,34 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   }
 
   leerCifras(id: number): void {
+    this.lecturasCifras.get(id)?.unsubscribe();
     this.cifras.set(id, { estado: 'cargando' });
-    this.lecturas
+    const generacion = this.nuevaGeneracion(id);
+    this.lecturasCifras.set(id, this.lecturas
       .alumnosDeConvocatoria(id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alumnos) => {
+          if (this.generacionCifras.get(id) !== generacion) {
+            return;
+          }
           this.cifras.set(id, { estado: 'listo', cifras: cifrasDe((alumnos ?? []) as AlumnoConvocatoria[]) });
           this.cdr.markForCheck();
         },
         error: () => {
+          if (this.generacionCifras.get(id) !== generacion) {
+            return;
+          }
           this.cifras.set(id, { estado: 'error' });
           this.cdr.markForCheck();
         },
-      });
+      }));
+  }
+
+  private nuevaGeneracion(id: number): number {
+    const generacion = ++this.contadorGeneracion;
+    this.generacionCifras.set(id, generacion);
+    return generacion;
   }
 
   cifrasDe(id: number): CifrasBloque {
@@ -369,6 +399,8 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (datos) => {
           this.alumnos = (datos ?? []) as AlumnoConvocatoria[];
+          // Estas cifras son las más nuevas: una lectura de cifras anterior que llegue ahora no las pisa.
+          this.nuevaGeneracion(c.id);
           this.cifras.set(c.id, { estado: 'listo', cifras: cifrasDe(this.alumnos) });
           this.estadoAlumnos = 'listo';
           this.cdr.markForCheck();
@@ -462,6 +494,9 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.enProceso.delete(a.id);
+          // Lo guardado pasa a ser lo que hay hasta que llegue la relectura: el siguiente envío parte de ahí.
+          a.cuantiaExamen = cuerpo.cuantiaExamen;
+          a.pagado = cuerpo.pagado;
           this.avisos.exito('Datos del alumno actualizados correctamente.');
           this.leerBloque();
         },
