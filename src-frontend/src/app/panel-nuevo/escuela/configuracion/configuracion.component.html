@@ -1,0 +1,277 @@
+<div class="pn conf" pnAcento>
+  <div class="conf__pagina">
+    <header class="conf__cabecera">
+      <h1 class="conf__titulo">Configuración</h1>
+      <p class="conf__subtitulo">Los ajustes de la escuela: cuántos alumnos caben en un turno y qué puede hacer cada cuenta.</p>
+    </header>
+
+    @if (ancho) {
+    <!-- P2 (desde 768 px): índice de ajustes a la izquierda y la sección elegida a la derecha. -->
+    <div class="conf__rejilla">
+      <nav class="conf__indice" aria-label="Ajustes">
+        <div role="tablist" aria-orientation="vertical" aria-label="Ajustes" (keydown)="teclaIndice($event)">
+          @for (s of secciones; track s.clave) {
+          <button type="button" role="tab" class="conf__entrada" [id]="'conf-tab-' + s.clave" [attr.aria-controls]="seccion === s.clave ? 'conf-panel-' + s.clave : null"
+            [attr.aria-selected]="seccion === s.clave" [attr.tabindex]="seccion === s.clave ? 0 : -1" (click)="elegirSeccion(s.clave)">
+            @switch (s.clave) {
+            @case ('turno') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"></path><path d="M16 5.2a3 3 0 0 1 0 5.6M18.5 19c-.3-1.9-1.1-3.3-2.3-4.2"></path></svg>
+            }
+            @case ('roles') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M12 3.5 5 6.3v5.2c0 4.3 2.9 7.6 7 9 4.1-1.4 7-4.7 7-9V6.3z"></path><path d="m9 12 2.2 2.2L15.5 10"></path></svg>
+            }
+            @case ('legal') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M7 3.5h7l4 4v13H7z"></path><path d="M14 3.5v4h4M10 12h5M10 15.5h5"></path></svg>
+            }
+            }
+            <span>{{ s.titulo }}</span>
+          </button>
+          }
+        </div>
+      </nav>
+      <div class="conf__panel" role="tabpanel" [id]="'conf-panel-' + seccion" [attr.aria-labelledby]="'conf-tab-' + seccion">
+        @switch (seccion) {
+        @case ('turno') { <ng-container [ngTemplateOutlet]="turno" /> }
+        @case ('roles') { <ng-container [ngTemplateOutlet]="roles" /> }
+        @case ('legal') { <ng-container [ngTemplateOutlet]="legal" /> }
+        }
+      </div>
+    </div>
+    } @else {
+    <!-- P1 (menos de 768 px): las secciones seguidas; lo legal y las cookies, en el menú de la cuenta. -->
+    <div class="conf__seguidas">
+      <ng-container [ngTemplateOutlet]="turno" />
+      <ng-container [ngTemplateOutlet]="roles" />
+    </div>
+    }
+  </div>
+
+  @if (formContrasena; as form) {
+  <pn-panel-lateral titulo="Restablecer contraseña" [descripcion]="'Cuenta de ' + nombreCompleto(form.cuenta)" [bloqueado]="form.enviando"
+    (cerrar)="cerrarContrasena()">
+    <form id="conf-form-contrasena" class="conf__form-contrasena" novalidate (submit)="guardarContrasena($event)">
+      <div class="conf__campo">
+        <label class="conf__etiqueta" for="conf-nueva">Nueva contraseña</label>
+        <input id="conf-nueva" class="conf__control" [type]="form.mostrar ? 'text' : 'password'" autocomplete="new-password"
+          [value]="form.nueva" [disabled]="form.enviando" [attr.aria-invalid]="form.error ? 'true' : null"
+          [attr.aria-describedby]="'conf-reglas' + (form.error ? ' conf-contrasena-error' : '')" (input)="escribirContrasena('nueva', $event)" />
+      </div>
+      <div class="conf__campo">
+        <label class="conf__etiqueta" for="conf-confirmar">Confirmar contraseña</label>
+        <input id="conf-confirmar" class="conf__control" [type]="form.mostrar ? 'text' : 'password'" autocomplete="new-password"
+          [value]="form.confirmar" [disabled]="form.enviando" (input)="escribirContrasena('confirmar', $event)" />
+      </div>
+      <label class="conf__mostrar">
+        <input id="conf-mostrar" type="checkbox" [checked]="form.mostrar" [disabled]="form.enviando" (change)="alternarMostrar($event)" />
+        <span>Mostrar las contraseñas</span>
+      </label>
+      <div class="conf__reglas-bloque">
+        <p class="conf__reglas-titulo" id="conf-reglas-titulo">Requisitos</p>
+        <ul class="conf__reglas" id="conf-reglas" aria-labelledby="conf-reglas-titulo">
+          @for (r of reglas; track r.clave) {
+          @let cumple = r.cumple(form.nueva, form.confirmar);
+          <li class="conf__regla" [attr.data-regla]="r.clave" [attr.data-cumple]="cumple">
+            @if (cumple) {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            } @else {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"></circle></svg>
+            }
+            <span>{{ r.texto }}</span><span class="conf__oculto">{{ cumple ? ': cumple' : ': falta' }}</span>
+          </li>
+          }
+        </ul>
+      </div>
+      @if (form.error) {
+      <p class="conf__error" id="conf-contrasena-error" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ form.error }}</span>
+      </p>
+      }
+    </form>
+    <div pnPie class="conf__pie-panel">
+      <button type="button" class="conf__boton-texto" [disabled]="form.enviando" (click)="cerrarContrasena()">Cancelar</button>
+      <button type="submit" form="conf-form-contrasena" pnOcupado class="conf__boton-primario" [ocupado]="form.enviando"
+        textoOcupado="Guardando…">Guardar contraseña</button>
+    </div>
+  </pn-panel-lateral>
+  }
+</div>
+
+<!-- ================================================================== Alumnos por turno -->
+<ng-template #turno>
+  <section class="conf__seccion" data-seccion="turno" aria-labelledby="conf-titulo-turno">
+    <h2 class="conf__seccion-titulo" id="conf-titulo-turno">Alumnos por turno</h2>
+    <p class="conf__seccion-nota">Cuántos alumnos caben en cada turno. Con este número, un turno se ve «lleno» o «con pocas plazas».</p>
+
+    @if (cargandoLimite) {
+    <pn-esqueleto etiqueta="Cargando el límite por turno">
+      <div class="conf__esqueleto-campo"><span></span><span></span></div>
+    </pn-esqueleto>
+    } @else if (errorLimite) {
+    <pn-bloque-error titulo="No se ha podido leer el límite por turno." (reintentar)="cargarLimite()" />
+    } @else {
+    <div class="conf__limite">
+      <div class="conf__campo conf__campo--limite">
+        <label class="conf__etiqueta" for="conf-limite">Límite de alumnos</label>
+        <input id="conf-limite" class="conf__control conf__control--numero" type="number" inputmode="numeric" min="1" max="100" step="1"
+          [value]="textoLimite" [attr.aria-invalid]="validacionLimite.error ? 'true' : null"
+          [attr.aria-describedby]="validacionLimite.error ? 'conf-limite-error' : null" (input)="escribirLimite($event)" />
+        @if (validacionLimite.error; as error) {
+        <p class="conf__error" id="conf-limite-error" role="alert">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <span>{{ error }}</span>
+        </p>
+        }
+      </div>
+      <dl class="conf__valores" aria-live="polite">
+        <div>
+          <dt>Valor actual</dt>
+          <dd data-cifras>{{ plural(limiteOriginal ?? 0, 'alumno', 'alumnos') }}</dd>
+        </div>
+        <div>
+          <dt>Nuevo valor</dt>
+          <dd><span data-cifras>{{ validacionLimite.valor !== null ? plural(validacionLimite.valor, 'alumno', 'alumnos') : '—' }}</span>
+            @if (limiteModificado) {&ngsp;<span class="conf__modificado">Modificado</span>}</dd>
+        </div>
+      </dl>
+    </div>
+    <div class="conf__acciones">
+      <button type="button" class="conf__boton-primario" [disabled]="!puedeGuardarLimite" (click)="guardarLimite()">Guardar cambios</button>
+      <button type="button" class="conf__boton-texto" [disabled]="!limiteModificado" (click)="restaurarLimite()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4"></path><path d="M4.5 4.5v4h4"></path></svg>
+        <span>Restaurar</span>
+      </button>
+    </div>
+    <p class="conf__nota">Los cambios se ven al momento en la disponibilidad de la página pública de horarios.</p>
+    }
+  </section>
+</ng-template>
+
+<!-- ================================================================== Roles y permisos -->
+<ng-template #roles>
+  <section class="conf__seccion" data-seccion="roles" aria-labelledby="conf-titulo-roles">
+    <div class="conf__seccion-cabecera">
+      <div>
+        <h2 class="conf__seccion-titulo" id="conf-titulo-roles">Roles y permisos</h2>
+        <p class="conf__seccion-nota">Qué puede hacer cada cuenta en la escuela.</p>
+      </div>
+      <div class="conf__buscador">
+        <label class="conf__oculto" for="conf-buscar">Buscar cuentas</label>
+        <svg class="conf__buscador-icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4-4"></path></svg>
+        <input id="conf-buscar" class="conf__control conf__control--buscar" type="search" autocomplete="off" placeholder="Buscar por nombre o correo"
+          [value]="filtro" (input)="buscar($event)" />
+        @if (filtro) {
+        <button type="button" class="conf__buscador-borrar" aria-label="Borrar la búsqueda" (click)="limpiarBusqueda()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6 6 18"></path></svg>
+        </button>
+        }
+      </div>
+    </div>
+
+    @if (cargandoCuentas && cuentas === null) {
+    <pn-esqueleto etiqueta="Cargando las cuentas">
+      <div class="conf__esqueleto-lista">
+        @for (i of [1, 2, 3]; track i) {
+        <div class="conf__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (errorCuentas) {
+    <pn-bloque-error titulo="No se han podido cargar las cuentas." (reintentar)="cargarCuentas()" />
+    } @else if ((cuentas ?? []).length === 0) {
+    <pn-bloque-vacio titulo="No hay usuarios registrados en el sistema." />
+    } @else if (filtradas.length === 0) {
+    <pn-bloque-vacio titulo="Ninguna cuenta coincide con la búsqueda." [texto]="'Nada con «' + filtro + '» en el nombre ni en el correo.'"
+      accion="Borrar la búsqueda" (accionar)="limpiarBusqueda()" />
+    } @else {
+    <ul class="conf__cuentas" [attr.aria-busy]="cargandoCuentas ? 'true' : null">
+      @for (c of paginadas; track c.id) {
+      @let nombre = nombreCompleto(c);
+      <li class="conf__cuenta" [attr.data-id]="c.id">
+        <div class="conf__cuenta-quien">
+          <span class="conf__avatar" aria-hidden="true">{{ iniciales(c.nombre, c.apellidos) }}</span>
+          <div class="conf__cuenta-datos">
+            <p class="conf__nombre">{{ nombre }}</p>
+            <p class="conf__email">{{ c.email }}</p>
+          </div>
+          <ul class="conf__roles" [attr.aria-label]="'Roles actuales de ' + nombre">
+            @for (p of pastillasRoles(c.rol); track p.rol) {
+            <li class="conf__rol" [attr.data-rol]="p.rol">{{ p.texto }}</li>
+            }
+          </ul>
+        </div>
+        <div class="conf__cuenta-cambio">
+          <fieldset class="conf__asignar">
+            <legend class="conf__oculto">Roles de {{ nombre }}</legend>
+            @for (rol of rolesAsignables; track rol) {
+            <label class="conf__casilla">
+              <input type="checkbox" [value]="rol" [checked]="marcado(c, rol)" (change)="cambiarRol(c, rol, $event)" />
+              <span class="conf__casilla-caja" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+              </span>
+              <span>{{ etiquetaRol(rol) }}</span>
+            </label>
+            }
+          </fieldset>
+          <div class="conf__cuenta-acciones">
+            <button type="button" class="conf__boton-secundario" [disabled]="!rolesCambiados(c)"
+              [attr.aria-label]="'Guardar los roles de ' + nombre" (click)="guardarRoles(c)">Guardar</button>
+            <button type="button" class="conf__boton-texto" [attr.aria-disabled]="esCuentaGoogle(c) ? 'true' : null"
+              [attr.aria-label]="'Restablecer contraseña de ' + nombre"
+              [attr.title]="esCuentaGoogle(c) ? 'Cuenta de Google: no tiene contraseña que restablecer' : null"
+              (click)="abrirContrasena(c)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><circle cx="8" cy="15" r="3.5"></circle><path d="m10.5 12.5 8-8M16 7l2.5 2.5M14 9l1.5 1.5"></path></svg>
+              <span>Restablecer contraseña</span>
+            </button>
+          </div>
+        </div>
+      </li>
+      }
+    </ul>
+    @if (totalPaginas > 1) {
+    <nav class="conf__paginacion" aria-label="Páginas de cuentas">
+      <button type="button" class="conf__pagina-paso" [disabled]="pagina === 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+      @for (n of paginas; track $index) {
+      @if (n === null) {
+      <span class="conf__pagina-salto" aria-hidden="true">…</span>
+      } @else {
+      <button type="button" class="conf__pagina-num" data-cifras [attr.aria-current]="n === pagina ? 'page' : null"
+        [attr.aria-label]="'Página ' + numero(n)" (click)="irAPagina(n)">{{ numero(n) }}</button>
+      }
+      }
+      <button type="button" class="conf__pagina-paso" [disabled]="pagina === totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+    </nav>
+    }
+    }
+  </section>
+</ng-template>
+
+<!-- ================================================================== Avisos legales y cookies (solo en el índice) -->
+<ng-template #legal>
+  <section class="conf__seccion" data-seccion="legal" aria-labelledby="conf-titulo-legal">
+    <h2 class="conf__seccion-titulo" id="conf-titulo-legal">Avisos legales y cookies</h2>
+    <p class="conf__seccion-nota">Los textos legales de la web de la escuela.</p>
+    <ul class="conf__legales">
+      @for (e of legales; track e.ruta) {
+      <li>
+        <a [routerLink]="e.ruta">
+          <i class="bi {{ e.icono }}" aria-hidden="true"></i>
+          <span>{{ e.etiqueta }}</span>
+        </a>
+      </li>
+      }
+    </ul>
+    <p class="conf__nota">Para cambiar qué cookies aceptas en este navegador, abre el menú de tu cuenta y elige «Configurar cookies».</p>
+  </section>
+</ng-template>

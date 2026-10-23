@@ -1,0 +1,812 @@
+// Configuración del panel nuevo (8b-3k). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+//
+// Dos distribuciones con el mismo contenido: por debajo de 768 px (P1), las secciones seguidas en bloques blancos; desde
+// 768 px (P2), un índice de ajustes de 232 px a la izquierda, como una pestaña vertical (la elegida en `acento` sobre
+// `acento-suave`, como la entrada actual de los menús), y la sección a la derecha. Cada cuenta es una fila de dos líneas: quién y sus roles
+// guardados arriba; las casillas y las acciones abajo. Las casillas son pastillas de varias elecciones (el control
+// nativo cubre la pastilla). Un solo primario a la vista: «Guardar cambios» del límite. Sin sombras.
+@use '../../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.conf {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.conf__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.conf__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ botones
+
+.conf__boton-primario {
+  @include c.boton-primario;
+}
+
+.conf__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.conf__boton-texto {
+  @include c.boton-texto;
+
+  &[aria-disabled='true'] {
+    color: var(--pn-tinta-2);
+
+    &:hover {
+      background: transparent;
+    }
+  }
+}
+
+.conf__boton-primario,
+.conf__boton-secundario,
+.conf__boton-texto,
+.conf__entrada,
+.conf__pagina-num,
+.conf__pagina-paso,
+.conf__buscador-borrar {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.conf__cabecera {
+  margin-bottom: 20px;
+}
+
+.conf__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.conf__subtitulo {
+  max-width: 75ch;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ distribuciones
+
+.conf__seguidas {
+  display: grid;
+  gap: 20px;
+}
+
+.conf__rejilla {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.conf__indice {
+  position: sticky;
+  top: 88px;
+
+  [role='tablist'] {
+    display: grid;
+    gap: 2px;
+  }
+}
+
+.conf__entrada {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px 8px 14px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  svg {
+    color: var(--pn-tinta-3);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+
+  &[aria-selected='true'] {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+    font-weight: 600;
+
+    svg {
+      color: var(--pn-acento);
+    }
+  }
+}
+
+.conf__panel {
+  min-width: 0;
+}
+
+// ------------------------------------------------------------------ sección (bloque)
+
+.conf__seccion {
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.conf__seccion-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+
+  .conf__seccion-nota {
+    margin-bottom: 0;
+  }
+}
+
+.conf__seccion-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.conf__seccion-nota {
+  max-width: 65ch;
+  margin: 4px 0 18px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.conf__nota {
+  max-width: 65ch;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--pn-linea);
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ campos
+
+.conf__campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.conf__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.conf__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-2);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+}
+
+.conf__control--numero {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.conf__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+// ------------------------------------------------------------------ alumnos por turno
+
+.conf__limite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 32px;
+}
+
+.conf__campo--limite {
+  width: 180px;
+  max-width: 100%;
+}
+
+.conf__valores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+  padding-top: 2px;
+
+  div {
+    display: grid;
+    gap: 4px;
+  }
+
+  dt {
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+    font-weight: 500;
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    margin: 0;
+    font: var(--pn-cuerpo);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--pn-tinta);
+  }
+
+  [data-cifras] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.conf__modificado {
+  @include c.pastilla;
+  min-height: 24px;
+  padding: 0 10px;
+  border-color: var(--pn-acento-borde);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  cursor: default;
+}
+
+.conf__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 20px;
+}
+
+// ------------------------------------------------------------------ roles y permisos
+
+.conf__buscador {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+}
+
+.conf__buscador-icono {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  color: var(--pn-tinta-2);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.conf__control--buscar {
+  padding: 0 40px;
+
+  &::-webkit-search-cancel-button {
+    display: none;
+  }
+}
+
+.conf__buscador-borrar {
+  @include c.boton-icono;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.conf__cuentas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.conf__cuenta {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.conf__cuenta-quien {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.conf__avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: 700 0.875rem / 1 var(--pn-fuente-titulo);
+  letter-spacing: 0.02em;
+}
+
+.conf__cuenta-datos {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.conf__nombre {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+}
+
+.conf__email {
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.conf__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conf__rol {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-marca-primario-suave);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+}
+
+.conf__cuenta-cambio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-left: 52px;
+}
+
+.conf__asignar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+// Casilla como pastilla de varias elecciones: el control nativo cubre la pastilla entera (objetivo de 32 px, 44 en
+// móvil) y la caja se dibuja con los tokens.
+.conf__casilla {
+  @include c.pastilla;
+  position: relative;
+  padding-left: 10px;
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &:has(input:checked) {
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+    font-weight: 600;
+  }
+
+  &:has(input:focus-visible) {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.conf__casilla-caja {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--pn-borde-control);
+  border-radius: 4px;
+  background: var(--pn-superficie);
+
+  svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+  }
+
+  input:checked + & {
+    border-color: var(--pn-acento);
+    background: var(--pn-acento);
+    color: var(--pn-superficie);
+
+    svg {
+      opacity: 1;
+    }
+  }
+}
+
+.conf__cuenta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+// ------------------------------------------------------------------ paginación
+
+.conf__paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.conf__pagina-num,
+.conf__pagina-paso {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    color: var(--pn-tinta-2);
+    cursor: not-allowed;
+  }
+}
+
+.conf__pagina-num[aria-current='page'] {
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+}
+
+.conf__pagina-salto {
+  min-width: 24px;
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+// ------------------------------------------------------------------ avisos legales
+
+.conf__legales {
+  display: grid;
+  gap: 2px;
+  max-width: 420px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--pn-radio-m);
+    color: var(--pn-acento);
+    font: var(--pn-cuerpo);
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    i {
+      color: var(--pn-acento);
+      font-size: 1.05rem;
+    }
+
+    &:hover {
+      background: var(--pn-acento-suave);
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+    }
+  }
+}
+
+// ------------------------------------------------------------------ restablecer contraseña (panel lateral)
+
+.conf__form-contrasena {
+  display: grid;
+  gap: 16px;
+}
+
+.conf__mostrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--pn-acento);
+  }
+}
+
+.conf__reglas-bloque {
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+}
+
+.conf__reglas-titulo {
+  margin: 0 0 8px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.conf__reglas {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conf__regla {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+
+  &[data-cumple='true'] {
+    color: var(--pn-bien);
+    font-weight: 600;
+  }
+}
+
+.conf__pie-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+// ------------------------------------------------------------------ esqueletos
+
+.conf__esqueleto-campo {
+  display: flex;
+  gap: 24px;
+
+  span {
+    display: block;
+    width: 180px;
+    height: 42px;
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.conf__esqueleto-lista {
+  display: grid;
+  gap: 12px;
+}
+
+.conf__esqueleto-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  span {
+    display: block;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+
+  span:nth-child(2) {
+    width: 40%;
+  }
+
+  span:nth-child(3) {
+    width: 20%;
+  }
+}
+
+// ------------------------------------------------------------------ móvil (P1)
+
+@media (max-width: 767.98px) {
+  .conf__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-xl);
+  }
+
+  .conf__titulo {
+    font-size: 1.375rem;
+  }
+
+  .conf__seccion {
+    padding: 16px;
+  }
+
+  .conf__buscador {
+    width: 100%;
+  }
+
+  .conf__buscador-borrar {
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 44px;
+  }
+
+  .conf__control {
+    min-height: 44px;
+  }
+
+  .conf__cuenta-cambio {
+    padding-left: 0;
+  }
+
+  // Las tres casillas en una rejilla de dos columnas del mismo ancho: «Administración» no cabe en una de tres.
+  .conf__asignar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .conf__casilla {
+    min-height: 44px;
+  }
+
+  .conf__acciones,
+  .conf__cuenta-acciones {
+    width: 100%;
+  }
+
+  .conf__cuenta-acciones {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .conf__cuenta-cambio {
+    gap: 10px;
+  }
+
+  .conf__boton-primario,
+  .conf__boton-secundario,
+  .conf__boton-texto,
+  .conf__pagina-num,
+  .conf__pagina-paso {
+    min-height: 44px;
+  }
+
+  .conf__acciones .conf__boton-primario {
+    flex: 1 1 auto;
+  }
+
+  .conf__paginacion {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conf__entrada {
+    transition: none;
+  }
+}

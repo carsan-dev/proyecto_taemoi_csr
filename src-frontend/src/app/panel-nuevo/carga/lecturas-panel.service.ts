@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { AuditoriaEvento } from '../../interfaces/auditoria-evento';
+import { AuditoriaEventoDetalle } from '../../interfaces/auditoria-evento-detalle';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { PaginatedResponse } from '../../interfaces/paginated-response';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
@@ -228,6 +230,73 @@ export class LecturasPanelService {
   firmaPreinscripcion(referencia: string): Observable<Blob> {
     return this.http.get(`${environment.apiUrl}/preinscripciones/${referencia}/firma`, {
       responseType: 'blob',
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerUsuarios` (Roles y permisos de Configuración, 8b-3k). */
+  usuarios(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/admin/users`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAuditoriaEventos` (Registro de acciones, 8b-3k): mismos parámetros y orden. */
+  auditoriaEventos(
+    filtros: {
+      desde?: string | null;
+      hasta?: string | null;
+      resultado?: string | null;
+      accion?: string | null;
+      modulo?: string | null;
+      usuario?: string | null;
+      texto?: string | null;
+    },
+    page: number,
+    size: number
+  ): Observable<PaginatedResponse<AuditoriaEvento>> {
+    let params = new HttpParams().set('page', page.toString()).set('size', size.toString());
+    if (filtros.desde) {
+      params = params.set('desde', filtros.desde);
+    }
+    if (filtros.hasta) {
+      params = params.set('hasta', filtros.hasta);
+    }
+    if (filtros.resultado) {
+      params = params.set('resultado', filtros.resultado);
+    }
+    if (filtros.accion) {
+      params = params.set('accion', filtros.accion);
+    }
+    if (filtros.modulo) {
+      params = params.set('modulo', filtros.modulo);
+    }
+    if (filtros.usuario) {
+      params = params.set('usuario', filtros.usuario.trim());
+    }
+    if (filtros.texto) {
+      params = params.set('texto', filtros.texto.trim());
+    }
+    return this.http.get<PaginatedResponse<AuditoriaEvento>>(`${environment.apiUrl}/admin/auditoria/eventos`, {
+      params,
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAuditoriaEventoDetalle` (8b-3k). */
+  auditoriaEventoDetalle(id: number): Observable<AuditoriaEventoDetalle> {
+    return this.http.get<AuditoriaEventoDetalle>(`${environment.apiUrl}/admin/auditoria/eventos/${id}`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAuditoriaModulos` (8b-3k; hoy su fallo deja la lista vacía). */
+  auditoriaModulos(): Observable<string[]> {
+    return this.http.get<string[]>(`${environment.apiUrl}/admin/auditoria/modulos`, {
+      withCredentials: true,
       context: contextoErrorLocal(),
     });
   }

@@ -1266,7 +1266,7 @@ Inventario: Anexo A, Configuración y Registro de acciones.
   mismas acciones en 375 y en 768. Con dos ajustes, el índice aporta poco hasta que haya más (riesgo anotado en 8b-B3).
 - **Registro de acciones: P2, cronología por días con detalle.** Días como título y, por acción, hora, pastilla del
   tipo, qué, módulo y «Cuenta N» (el identificador, sin nombre ni email); el detalle (incluidos los datos técnicos
-  desplegables) en un panel al lado. Los filtros (desde, hasta, acción, módulo, persona y buscar) se pliegan en un botón
+  desplegables) en un panel al lado, con la persona como hoy, nombre o email (decisión del 24/10). Los filtros (desde, hasta, acción, módulo, persona y buscar) se pliegan en un botón
   «Filtros»: quedan a un clic (riesgo anotado en 8b-B3).
 
 **Gestión de Roles y nombres visibles (decisión 262).** Las casillas y las pastillas de roles muestran «Familia»,
@@ -1289,6 +1289,69 @@ misma llamada; el detalle del registro no muestra nada que hoy no muestre ni pon
 **Riesgos:** perder un guard al duplicar la ruta; ofrecer un rol que la sesión no puede dar.
 
 **Notas para la PR:** inventario marcado; guards de cada ruta nueva frente a los de hoy.
+
+**Implementación (rama `feature/e8b-3k`, desde `develop` en `724a1951`):**
+- Nuevos en `F/panel-nuevo/escuela/configuracion/`: `configuracion.component.*` (`ConfiguracionPanelComponent`,
+  `app-configuracion-panel`) y `configuracion-vista.ts` (`ROLES_ASIGNABLES`, `rolesDeTexto`, `seleccionDe`, `cuerpoRoles`,
+  `pastillasRoles`, `listaRoles`, `filtrarCuentas`, `validarLimite`, `REGLAS_CONTRASENA`, `mensajeErrorRoles`,
+  `mensajeErrorContrasena`); en `F/panel-nuevo/escuela/registro/`: `registro.component.*` (`RegistroAccionesComponent`,
+  `app-registro-acciones`) y `registro-vista.ts` (`describirAccion`, `filtrosParaConsulta`, `moduloParaConsulta`,
+  `numeroFiltrosActivos`, `textoCuenta`, `agruparPorDia`, `hora`, `fechaCompleta`, `tieneDatosTecnicos`,
+  `formatearJson`). `LecturasPanelService`: `usuarios`, `auditoriaEventos`, `auditoriaEventoDetalle` y
+  `auditoriaModulos` (la misma petición que `obtenerUsuarios`, `obtenerAuditoriaEventos`, `obtenerAuditoriaEventoDetalle`
+  y `obtenerAuditoriaModulos`, con `ERROR_HANDLED_LOCALLY`). Los nombres de rol salen de `etiquetaRol`
+  (`F/panel-nuevo/formato/roles.ts`, ya con su spec). `EndpointsService` no cambia.
+- **Rutas y guards.** `configuracion-sistema` y `auditoriaSistema` llevan una entrada nueva delante de la de hoy:
+
+  | Ruta | Hoy | Nueva |
+  |---|---|---|
+  | `configuracion-sistema` | `canActivate: [roleGuard, adminOnlyGuard]`, `data: privateRouteData(adminOnly)` (`requiredRoles: ['ROLE_ADMIN']`), `resolve: CATALOGO_RESOLVE` | `canMatch: [disenoNuevoGuard]` y lo mismo de hoy, sin cambiar nada |
+  | `auditoriaSistema` | igual que la anterior | igual que la anterior |
+
+  Specs en `app.routes.spec.ts`: las dos entradas con `canActivate`, `data` y `resolve` iguales a las de hoy; con el
+  interruptor apagado no se descarga el chunk; con él encendido y los guards de verdad, `ROLE_MANAGER` y `ROLE_USER` no
+  entran (se quedan en `/` sin cargar el chunk) y `ROLE_ADMIN` sí.
+- **Mismas peticiones que hoy.** Configuración: `GET /turnos/limite`, `GET /admin/users`; `PUT
+  /admin/configuracion/limite-turno` con el número en el cuerpo; `PUT /admin/users/{id}/roles` con los `ROLE_*` marcados
+  en el orden de hoy (`ROLE_USER`, `ROLE_MANAGER`, `ROLE_ADMIN`) y después relee las cuentas; `PUT
+  /admin/users/{id}/password` con `{nuevaContrasena}`. Registro: `GET /admin/auditoria/modulos`; `GET
+  /admin/auditoria/eventos?page&size=25&resultado=EXITO` más los filtros de hoy (salud fijo con «Consultas de salud»);
+  `GET /admin/auditoria/eventos/{id}` al pulsar una acción; «Actualizar ahora» y cada 30 s, la misma página. Nada va a
+  la URL; la página de cuentas se recuerda en `sessionStorage` (`panelConfiguracionUsuariosEstado`, hoy
+  `configuracionSistemaUsuariosEstado`).
+- **Roles que se ofrecen.** Solo Familia, Gestión y Administración (los que acepta `PUT /admin/users/{id}/roles`,
+  `RolMembresia.asignableDesdeApiDeRoles`), como hoy; Profesorado y Responsable de sede se ven en las pastillas y nunca
+  van al cuerpo. El 409 de último propietario (decisión 221) se avisa con su `mensaje` y las casillas vuelven a lo
+  guardado, como hoy.
+- **Dos distribuciones, un componente.** `matchMedia(CONSULTA_HOJA)` elige P1 (menos de 768 px: secciones seguidas) o
+  P2 (índice `role=tablist` vertical con flechas, Inicio y Fin, y la sección elegida). Las secciones son las mismas
+  `ng-template` en las dos; el spec compara las acciones (botones, casillas con su `ROLE_*` y campos) a 375 y a 768.
+- **Cambios a propósito:** título «Configuración» (hoy «Configuración del Sistema») y «Roles y permisos» (hoy «Gestión de
+  Roles»); nombres de rol de las decisiones 262 y 263; las pastillas enseñan los roles guardados (hoy seguían a las
+  casillas antes de guardar) e incluyen Profesorado y Responsable de sede; el límite no se puede guardar vacío ni con
+  decimales (hoy un vacío daba el aviso de «al menos 1» y un decimal llegaba a la API) y su error va bajo el campo con
+  Guardar desactivado; confirmaciones con el diálogo del panel («Cambiar el límite por turno», «Cambiar roles») y avisos
+  del panel con textos propios («Límite por turno guardado: 40 alumnos.», «Roles de … actualizados.»); restablecer
+  contraseña en el panel lateral, con las reglas de hoy marcadas al escribir, «Mostrar las contraseñas» y el error del
+  servidor dentro del panel (hoy un aviso tras cerrar); si falla la lectura del límite o de las cuentas, bloque de error
+  con «Reintentar» (hoy un aviso y el límite por defecto 36 a la vista). En el registro: «Cuenta N» en la lista (hoy nombre o email;
+  el detalle sí enseña nombre o email, decisión del 24/10); hora y día en vez de «hoy 10:42»; el detalle en el panel lateral (hoy bajo la
+  tabla); el total en el subtítulo; los filtros se aplican al pulsar «Aplicar filtros» y la relectura usa los aplicados
+  (hoy usaba lo escrito aunque no se hubiera aplicado); error de lectura con bloque y «Reintentar».
+- [x] Specs en rojo antes del código (`Can't resolve './configuracion.component'` y `'./registro.component'`), luego
+  verdes: `configuracion-vista.spec.ts` (7), `configuracion.component.spec.ts` (20), `registro-vista.spec.ts` (6),
+  `registro.component.spec.ts` (13), `lecturas-panel.service.spec.ts` (+1) y `app.routes.spec.ts` (+10 y el caso de los guards de admin ampliado a las cuatro entradas); batería
+  completa de Karma 2420 SUCCESS.
+- **Notas para la PR:** bundle inicial 1.458.997 bytes (+353 frente a 1.458.644 en `724a1951`, los dos con las
+  dependencias del checkout principal: las dos entradas de ruta), sin aviso de presupuesto; chunks de Configuración
+  46.268 bytes y de Registro 33.186 bytes. Capturas apagado antes y después idénticas en bytes (6/6: las dos pantallas a
+  375, 768 y 1280); encendido a 375, 768 y 1280 sin desplazamiento horizontal (Configuración: turno, roles, legal,
+  error del límite, roles cambiados, diálogo y contraseña; Registro: lista, filtros y detalle). `impeccable detect` sin
+  hallazgos.
+- **Preguntas abiertas:** (1) «Configurar cookies» no se puede abrir desde la sección «Avisos legales y cookies» sin tocar
+  `skeleton` (inicial): la sección enlaza los tres textos legales y remite al menú de la cuenta. (2) (Resuelta el 24/10: el detalle del
+  registro enseña la persona como hoy, nombre o email; la lista sigue con «Cuenta N».) (3) Una acción sin
+  cuenta se ve como «Sin cuenta» (hoy «-»).
 
 ## 21 bis. Pieza 8b-D1: diálogos, avisos y carga
 
@@ -2144,45 +2207,45 @@ Pieza 8b-3j. Rutas de hoy: `cajaSede`. Componentes de hoy: `caja-sede`.
 
 Pieza 8b-3k. Rutas de hoy: `configuracion-sistema`. Componentes de hoy: `configuracion-sistema`.
 
-| Hoy | En móvil (menos de 768 px, P1) | En tablet y escritorio (desde 768 px, P2) |
-|---|---|---|
-| Título y subtítulo | «Configuración» | Igual que en móvil |
-| Límite de alumnos por turno y su ayuda | Sección «Alumnos por turno» | Igual, desde el índice |
-| Valor actual, nuevo valor y «Modificado» | Al lado del campo | Igual que en móvil |
-| Guardar cambios y restaurar | Bajo el campo | Igual que en móvil |
-| Aviso de que afecta a la web de horarios | Texto de la sección | Igual que en móvil |
-| Error si el límite es menor que 1 | Error bajo el campo; Guardar desactivado | Igual que en móvil |
-| Buscador de usuarios | Cabecera de «Roles y permisos» | Igual que en móvil |
-| Usuario (iniciales y nombre) y email | Fila | Dos líneas por cuenta |
-| Roles actuales | Pastillas | Pastillas |
-| Asignar roles (usuario, manager, admin) | Casillas Familia, Gestión y Administración | Igual que en móvil |
-| Guardar y restablecer por usuario | En la fila | Igual que en móvil |
-| Paginación de usuarios y aviso sin usuarios | Igual que hoy | Igual que en móvil |
-| Añadido: Avisos legales y cookies | Menú de la cuenta | Índice y menú de la cuenta |
+| Hoy | En móvil (menos de 768 px, P1) | En tablet y escritorio (desde 768 px, P2) | 8b-3k |
+|---|---|---|---|
+| Título y subtítulo | «Configuración» | Igual que en móvil | Hecho |
+| Límite de alumnos por turno y su ayuda | Sección «Alumnos por turno» | Igual, desde el índice | Hecho |
+| Valor actual, nuevo valor y «Modificado» | Al lado del campo | Igual que en móvil | Hecho |
+| Guardar cambios y restaurar | Bajo el campo | Igual que en móvil | Hecho (confirmación con el diálogo del panel; el mismo PUT) |
+| Aviso de que afecta a la web de horarios | Texto de la sección | Igual que en móvil | Hecho |
+| Error si el límite es menor que 1 | Error bajo el campo; Guardar desactivado | Igual que en móvil | Hecho (también vacío o con decimales) |
+| Buscador de usuarios | Cabecera de «Roles y permisos» | Igual que en móvil | Hecho (con «Borrar la búsqueda») |
+| Usuario (iniciales y nombre) y email | Fila | Dos líneas por cuenta | Hecho |
+| Roles actuales | Pastillas | Pastillas | Hecho (los guardados, con Profesorado y Responsable de sede) |
+| Asignar roles (usuario, manager, admin) | Casillas Familia, Gestión y Administración | Igual que en móvil | Hecho (cuerpo con los `ROLE_*` de hoy; 409 con su `mensaje`) |
+| Guardar y restablecer por usuario | En la fila | Igual que en móvil | Hecho («Restablecer contraseña» en el panel lateral; Google solo avisa) |
+| Paginación de usuarios y aviso sin usuarios | Igual que hoy | Igual que en móvil | Hecho (5 por página) |
+| Añadido: Avisos legales y cookies | Menú de la cuenta | Índice y menú de la cuenta | Hecho (los tres enlaces legales; «Configurar cookies», en el menú de la cuenta) |
 
 ### Registro de acciones (P2: cronología por días con detalle)
 
 Pieza 8b-3k. Rutas de hoy: `auditoriaSistema`. Componentes de hoy: `auditoria-sistema`.
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título y subtítulo | Igual, con el total |
-| Actualizar ahora | Botón |
-| Filtro desde | Botón «Filtros» |
-| Filtro hasta | Botón «Filtros» |
-| Filtro acción | Botón «Filtros» |
-| Filtro módulo (fijo en salud con su ayuda) | Botón «Filtros» |
-| Filtro persona | Botón «Filtros» |
-| Buscar en el resumen | Botón «Filtros» |
-| Aplicar filtros y restablecer | Botón «Filtros» |
-| Total de acciones | Subtítulo |
-| Cuándo | Día como título y hora |
-| Acción | Pastilla |
-| Qué | Texto principal |
-| Módulo | Bajo el texto |
-| Quién | Bajo el texto, «Cuenta N» |
-| Ver el detalle | Panel al lado |
-| Detalle: qué, módulo, ficha afectada, fecha, persona | En el panel |
-| Datos técnicos: método, estado, endpoint, query params, payload | Desplegable del detalle |
-| Paginación | Pie de la cronología |
-| Aviso sin acciones en el periodo | Igual que hoy |
+| Hoy | En la pantalla nueva | 8b-3k |
+|---|---|---|
+| Título y subtítulo | Igual, con el total | Hecho |
+| Actualizar ahora | Botón | Hecho (y la relectura cada 30 s, como hoy) |
+| Filtro desde | Botón «Filtros» | Hecho |
+| Filtro hasta | Botón «Filtros» | Hecho |
+| Filtro acción | Botón «Filtros» | Hecho |
+| Filtro módulo (fijo en salud con su ayuda) | Botón «Filtros» | Hecho |
+| Filtro persona | Botón «Filtros» | Hecho |
+| Buscar en el resumen | Botón «Filtros» | Hecho |
+| Aplicar filtros y restablecer | Botón «Filtros» | Hecho (el botón lleva el número de filtros aplicados) |
+| Total de acciones | Subtítulo | Hecho |
+| Cuándo | Día como título y hora | Hecho («Hoy», «Ayer» o la fecha larga) |
+| Acción | Pastilla | Hecho |
+| Qué | Texto principal | Hecho |
+| Módulo | Bajo el texto | Hecho |
+| Quién | Bajo el texto, «Cuenta N» | Hecho (sin nombre ni email) |
+| Ver el detalle | Panel al lado | Hecho (panel lateral; nada en la URL) |
+| Detalle: qué, módulo, ficha afectada, fecha, persona | En el panel | Hecho (persona como hoy, nombre o email; decisión del 24/10) |
+| Datos técnicos: método, estado, endpoint, query params, payload | Desplegable del detalle | Hecho (tal como llegan; sin IP ni navegador, como hoy) |
+| Paginación | Pie de la cronología | Hecho |
+| Aviso sin acciones en el periodo | Igual que hoy | Hecho |

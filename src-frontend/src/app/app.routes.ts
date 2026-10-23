@@ -513,6 +513,16 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Registro de acciones nuevo (8b-3k): solo con el interruptor encendido y con los mismos guards de hoy (solo el
+    // propietario); si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'auditoriaSistema',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/escuela/registro/registro.component').then(m => m.RegistroAccionesComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'auditoriaSistema',
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
@@ -533,6 +543,16 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
     canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Configuración nueva (8b-3k): solo con el interruptor encendido y con los mismos guards de hoy (solo el
+    // propietario); si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'configuracion-sistema',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/escuela/configuracion/configuracion.component').then(m => m.ConfiguracionPanelComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
