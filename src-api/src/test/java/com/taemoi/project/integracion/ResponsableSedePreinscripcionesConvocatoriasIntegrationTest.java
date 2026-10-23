@@ -2,6 +2,7 @@ package com.taemoi.project.integracion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,7 @@ import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.PreinscripcionService;
 
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.servlet.http.Cookie;
 
 /**
@@ -80,6 +84,7 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
 	@Autowired PreinscripcionService preinscripcionService;
+	@Autowired EntityManagerFactory emf;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -562,6 +567,109 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		assertEquals(403, estado(get("/api/preinscripciones/" + pB), tokenA));
 		assertEquals(403, estado(post("/api/alumnos/" + convocatoria + "/alumno/" + e.propioA), tokenA),
 				"su alumno de familia no tiene sede: no lo apunta como responsable");
+	}
+
+	// ------------------------------------------------------------------ fotos en la lista de una convocatoria
+
+	@Test
+	void convocatoria_alumnosConYSinFoto() throws Exception {
+		long foto = fotoPara(e.aA);
+		try {
+			JsonNode lista = leer("/api/convocatorias/" + convocatoria + "/alumnos", tokenGestor);
+			JsonNode conFoto = fila(lista, e.aA).get("fotoAlumno");
+			assertEquals(foto, conFoto.get("id").asLong());
+			assertTrue(conFoto.get("url").asText().endsWith("/api/alumnos/" + e.aA + "/imagen"), conFoto.toString());
+			assertTrue(conFoto.path("ruta").isNull() || conFoto.path("ruta").isMissingNode(), "sin la ruta del disco");
+			assertTrue(fila(lista, e.aB).get("fotoAlumno").isNull(), "sin foto, null");
+		} finally {
+			quitarFoto(e.aA, foto);
+		}
+	}
+
+	/**
+	 * La foto llega a quien ya puede verla: cada URL de la lista del responsable pasa la autorización de
+	 * {@code GET /api/alumnos/{id}/imagen} (sin fichero en disco, 404; nunca 403). El alumno de otra sede no está en
+	 * su lista y su foto le sigue dando 403.
+	 */
+	@Test
+	void convocatoria_laFotoSoloAQuienYaPuedeVerla() throws Exception {
+		long fA = fotoPara(e.aA);
+		long fGrupo = fotoPara(e.aGrupoA);
+		long fB = fotoPara(e.aB);
+		try {
+			JsonNode lista = leer("/api/convocatorias/" + convocatoria + "/alumnos", tokenA);
+			int comprobadas = 0;
+			for (JsonNode n : lista) {
+				JsonNode foto = n.get("fotoAlumno");
+				if (foto.isNull()) {
+					continue;
+				}
+				String ruta = java.net.URI.create(foto.get("url").asText()).getPath();
+				assertEquals("/api/alumnos/" + n.get("alumnoId").asLong() + "/imagen", ruta);
+				assertNotEquals(403, estado(get(ruta), tokenA), ruta);
+				comprobadas++;
+			}
+			assertEquals(2, comprobadas, "aA (sede principal) y aGrupoA (por grupo)");
+			assertFalse(alumnos(lista).contains(e.aB));
+			assertEquals(403, estado(get("/api/alumnos/" + e.aB + "/imagen"), tokenA));
+		} finally {
+			quitarFoto(e.aA, fA);
+			quitarFoto(e.aGrupoA, fGrupo);
+			quitarFoto(e.aB, fB);
+		}
+	}
+
+	/** La foto viaja con el alumno que ya se carga: las mismas sentencias SQL con fotos que sin ellas. */
+	@Test
+	void convocatoria_lasFotosNoAnadenConsultas() throws Exception {
+		String ruta = "/api/convocatorias/" + convocatoria + "/alumnos";
+		Statistics st = emf.unwrap(SessionFactory.class).getStatistics();
+		boolean activas = st.isStatisticsEnabled();
+		st.setStatisticsEnabled(true);
+		List<long[]> fotos = new ArrayList<>();
+		try {
+			leer(ruta, tokenGestor);
+			st.clear();
+			int filas = leer(ruta, tokenGestor).size();
+			long sinFotos = st.getPrepareStatementCount();
+			assertTrue(sinFotos > 0, "las estadísticas cuentan");
+			for (long alumno : List.of(e.aA, e.aGrupoA, e.aB, e.aInactivoA)) {
+				fotos.add(new long[] { alumno, fotoPara(alumno) });
+			}
+			st.clear();
+			JsonNode lista = leer(ruta, tokenGestor);
+			long conFotos = st.getPrepareStatementCount();
+			assertEquals(filas, lista.size());
+			assertTrue(filas >= 3, "varias filas: " + filas);
+			lista.forEach(n -> assertFalse(n.get("fotoAlumno").isNull(), n.toString()));
+			assertEquals(sinFotos, conFotos, "ninguna consulta por alumno para su foto");
+		} finally {
+			fotos.forEach(f -> quitarFoto(f[0], f[1]));
+			st.setStatisticsEnabled(activas);
+		}
+	}
+
+	private long fotoPara(long alumno) {
+		String nombre = "it-foto-" + alumno + "-" + e.marca + ".jpg";
+		jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, 'image/jpeg', ?, ?)",
+				nombre, "org-" + e.org + "/alumnos/" + nombre, "/imagenes/org-" + e.org + "/alumnos/" + nombre, e.org);
+		long id = jdbc.queryForObject("SELECT id FROM imagen WHERE nombre = ?", Long.class, nombre);
+		jdbc.update("UPDATE alumno SET foto_alumno_id = ? WHERE id = ?", id, alumno);
+		return id;
+	}
+
+	private void quitarFoto(long alumno, long foto) {
+		jdbc.update("UPDATE alumno SET foto_alumno_id = NULL WHERE id = ?", alumno);
+		jdbc.update("DELETE FROM imagen WHERE id = ?", foto);
+	}
+
+	private static JsonNode fila(JsonNode lista, long alumno) {
+		for (JsonNode n : lista) {
+			if (n.get("alumnoId").asLong() == alumno) {
+				return n;
+			}
+		}
+		throw new AssertionError("sin fila del alumno " + alumno + ": " + lista);
 	}
 
 	// ------------------------------------------------------------------ datos

@@ -121,11 +121,16 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 		Predicate<AlumnoConvocatoria> enAlcance = enAlcanceDelResponsable();
 		return convocatoria.getAlumnosConvocatoria().stream()
 				.filter(enAlcance)
-				.map(alumnoConvocatoria -> new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(),
-						alumnoConvocatoria.getAlumno().getId(), alumnoConvocatoria.getAlumno().getNombre(),
-						alumnoConvocatoria.getAlumno().getApellidos(), alumnoConvocatoria.getCuantiaExamen(),
-						alumnoConvocatoria.getGradoActual(), alumnoConvocatoria.getGradoSiguiente(),
-						alumnoConvocatoria.getPagado()))
+				.map(alumnoConvocatoria -> {
+					AlumnoConvocatoriaDTO dto = new AlumnoConvocatoriaDTO(alumnoConvocatoria.getId(),
+							alumnoConvocatoria.getAlumno().getId(), alumnoConvocatoria.getAlumno().getNombre(),
+							alumnoConvocatoria.getAlumno().getApellidos(), alumnoConvocatoria.getCuantiaExamen(),
+							alumnoConvocatoria.getGradoActual(), alumnoConvocatoria.getGradoSiguiente(),
+							alumnoConvocatoria.getPagado());
+					// La foto ya viene cargada con el alumno (fotoAlumno es EAGER): sin consulta por alumno.
+					dto.setFotoAlumno(AlumnoConvocatoriaDTO.fotoDe(alumnoConvocatoria.getAlumno()));
+					return dto;
+				})
 				.collect(Collectors.toList());
 	}
 

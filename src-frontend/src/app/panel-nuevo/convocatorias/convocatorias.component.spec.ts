@@ -477,6 +477,97 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(botonEn(f, 'Quitar a Ana2 Ficticia Ruiz de la convocatoria')).toBeTruthy();
   });
 
+  describe('foto del alumno y enlace a su ficha', () => {
+    const FOTO = { id: 77, nombre: 'foto.jpg', url: 'https://api.prueba/api/alumnos/102/imagen' };
+
+    it('con foto: la imagen con la URL del listado de Alumnos (w=180 y versión), 40 × 40, diferida y con alt vacío (el nombre va al lado)', () => {
+      cargar();
+      abrir(11, [PAGADO, inscrito(2, { fotoAlumno: FOTO })]);
+      const avatar = filaAlumno(2).querySelector<HTMLElement>('.convocatorias__avatar')!;
+      const img = avatar.querySelector<HTMLImageElement>('img')!;
+      expect(img).withContext('imagen').toBeTruthy();
+      expect(img.getAttribute('src')).toBe('https://api.prueba/api/alumnos/102/imagen?w=180&v=77');
+      expect(img.getAttribute('alt')).toBe('');
+      expect([img.getAttribute('width'), img.getAttribute('height'), img.getAttribute('loading')]).toEqual(['40', '40', 'lazy']);
+      expect(texto(avatar)).withContext('sin iniciales').toBe('');
+    });
+
+    it('sin foto: las iniciales', () => {
+      cargar();
+      abrir(11, [PAGADO, inscrito(2, { fotoAlumno: null })]);
+      const avatar = filaAlumno(2).querySelector<HTMLElement>('.convocatorias__avatar')!;
+      expect(avatar.querySelector('img')).toBeNull();
+      expect(texto(avatar)).toBe('AF');
+    });
+
+    it('una foto que no carga: vuelven las iniciales', () => {
+      cargar();
+      abrir(11, [PAGADO, inscrito(2, { fotoAlumno: FOTO })]);
+      filaAlumno(2).querySelector('.convocatorias__avatar img')!.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+      const avatar = filaAlumno(2).querySelector<HTMLElement>('.convocatorias__avatar')!;
+      expect(avatar.querySelector('img')).toBeNull();
+      expect(texto(avatar)).toBe('AF');
+      expect(filaAlumno(1).querySelector('.convocatorias__avatar img')).withContext('las demás filas, igual').toBeNull();
+    });
+
+    it('foto y nombre forman un solo enlace (un único foco) a la ficha del alumno por su alumnoId, no por la inscripción; el grado queda fuera', () => {
+      cargar();
+      abrir(11, [PAGADO, inscrito(2, { fotoAlumno: FOTO })]);
+      const f = filaAlumno(2);
+      const enlaces = Array.from(f.querySelectorAll<HTMLAnchorElement>('a'));
+      expect(enlaces.length).toBe(1);
+      const a = enlaces[0];
+      expect(a.getAttribute('href')).toBe('/alumnosEditar/102');
+      expect(a.getAttribute('tabindex')).toBeNull();
+      expect(a.querySelector('.convocatorias__avatar')?.getAttribute('aria-hidden')).toBe('true');
+      expect(texto(a.querySelector('.convocatorias__nombre'))).toBe('Ana2 Ficticia Ruiz');
+      expect(a.contains(f.querySelector('.convocatorias__paso'))).withContext('el grado, fuera').toBeFalse();
+      expect(a.contains(f.querySelector('.convocatorias__cuantia'))).toBeFalse();
+    });
+
+    it('al abrir o cerrar un bloque se recuerda cuál está abierto, con la clave de hoy', () => {
+      cargar();
+      abrir(11);
+      expect(JSON.parse(sessionStorage.getItem(CLAVE_ESTADO)!).convocatoriaAbierta).toBe(11);
+      cabecera(11).click();
+      fixture.detectChanges();
+      expect(JSON.parse(sessionStorage.getItem(CLAVE_ESTADO)!).convocatoriaAbierta).toBeUndefined();
+    });
+
+    it('al volver de la ficha: la misma pestaña, la misma página y el bloque abierto con sus alumnos', () => {
+      sessionStorage.setItem(
+        CLAVE_ESTADO,
+        JSON.stringify({ paginaActualConvocatorias: 1, tamanoPaginaConvocatorias: 5, deporteSeleccionado: 'TAEKWONDO', convocatoriaAbierta: 12 })
+      );
+      crear();
+      responderListas();
+      expect(pestanas()[0].getAttribute('aria-selected')).toBe('true');
+      const lecturas = vivas(() => true);
+      const del12 = lecturas.filter((r) => r.request.url === `${API}/convocatorias/12/alumnos`);
+      expect(del12.length).withContext('sus cifras y la lista del bloque abierto').toBe(2);
+      lecturas.forEach((r) => r.flush(r.request.url === `${API}/convocatorias/12/alumnos` ? [PAGADO, PENDIENTE] : []));
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${API}/alumnos/aptos/convocatoria`).flush([APTO]);
+      fixture.detectChanges();
+      expect(cabecera(12).getAttribute('aria-expanded')).toBe('true');
+      expect(texto(filaAlumno(2).querySelector('.convocatorias__nombre'))).toBe('Ana2 Ficticia Ruiz');
+    });
+
+    it('si la convocatoria recordada ya no está a la vista, no abre nada', () => {
+      sessionStorage.setItem(
+        CLAVE_ESTADO,
+        JSON.stringify({ paginaActualConvocatorias: 1, tamanoPaginaConvocatorias: 5, deporteSeleccionado: 'TAEKWONDO', convocatoriaAbierta: 99 })
+      );
+      crear();
+      responderListas();
+      expect(vivas(() => true).map((r) => r.request.url).sort()).toEqual([`${API}/convocatorias/11/alumnos`, `${API}/convocatorias/12/alumnos`]);
+      responderCifras();
+      expect(cabecera(11).getAttribute('aria-expanded')).toBe('false');
+      expect(cabecera(12).getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
   it('cabecera de columnas: una sola, decorativa (aria-hidden) con «Alumno», «Cuantía» y «Pago'
     + '»; el campo conserva su label for', () => {
     cargar();
