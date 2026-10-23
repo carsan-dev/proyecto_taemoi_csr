@@ -307,12 +307,18 @@ export class AuthenticationService {
               : throwError(() => error),
         }),
         tap((roles) => {
+          // Una carga que siguió reintentando tras abrir o cerrar sesión ya no es la vigente: no pisa sus roles.
+          if (this.rolesPeticion$ !== peticion$) {
+            return;
+          }
           this.rolesSubject.next(roles);
           this.rolesCargados = true; // Marcar que los roles ya se han cargado
         }),
         catchError((error) => {
-          this.rolesSubject.next([]);
-          this.rolesCargados = false;
+          if (this.rolesPeticion$ === peticion$) {
+            this.rolesSubject.next([]);
+            this.rolesCargados = false;
+          }
           return of([]);
         }),
         finalize(() => {
