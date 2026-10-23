@@ -1062,6 +1062,103 @@ deje de enviarse.
 
 **Notas para la PR:** inventario marcado; tabla de cuerpos enviados hoy frente a la pantalla nueva.
 
+**Implementación (rama `feature/e8b-3g`, desde `develop` en `2e95a191`):**
+- Nuevos en `F/panel-nuevo/productos/`: `productos.component.*` (`ProductosComponent`, `app-productos`, listado P2),
+  `producto-formulario.component.*` (`ProductoFormularioComponent`, `app-producto-formulario`, crear y editar) y
+  `productos-vista.ts` (`TIPOS_PRODUCTO`, `TAMANO_LECTURA`, `leerImporte`, `importeParaCampo`, `validarPrecio`,
+  `mensajesError`, `cuerpoProducto`, `OPCIONES_ORDEN`, `ORDEN_POR_DEFECTO`, `ordenar`, `etiquetaOrden`, `mismoOrden`,
+  `filtrosActivos`, `miCajaParaApi`, `textoTotal`). `LecturasPanelService`: `productos` y `producto` (la misma petición
+  que `obtenerTodosLosProductosPaginado` y `obtenerProductoPorId`, con `ERROR_HANDLED_LOCALLY`). Rutas
+  `productosListar`, `productosCrear` y `productosEditar/:id` con `canMatch: [disenoNuevoGuard]` delante de las de hoy
+  (misma data, `roleGuard` y resolve). `EndpointsService` no cambia.
+- **Lectura y grupos.** `GET /productos` no trae el tipo (`Producto.tipo` es `@JsonIgnore`) y la pieza no toca la API:
+  se pide una lectura por tipo con la petición de hoy y su filtro `tipo` (`page=1&size=200&orderBy=concepto&order=asc&tipo=…`,
+  más `concepto` y `vendibleProfesor` si hay filtro) y las páginas siguientes si las hay, para enseñar cada grupo
+  entero. Con «Tipo» elegido, solo esa lectura. Los grupos siguen la columna `tipo` (la misma del filtro de hoy); los
+  siete tipos de la API tienen grupo (Mensualidades, Licencias, Reservas de plaza, Competidor, Derechos de examen,
+  Recompensas y Otros productos) y los vacíos no salen. El total es la suma de los grupos. El orden de cada grupo
+  (concepto de la A a la Z por defecto, como hoy) se hace en el navegador, sin volver a pedir nada.
+- **Mismas escrituras que hoy** (con los métodos de `EndpointsService`), campo a campo:
+
+  | Escritura | Hoy | Pantalla nueva |
+  |---|---|---|
+  | Crear | `POST /productos` con `productoForm.value` = `{concepto, precio, vendibleProfesor}`; el precio, número del campo `type="number"` | `POST /productos` con `{concepto, precio, vendibleProfesor}` en ese orden; el precio, `leerImporte` del texto es-ES (el mismo número); el concepto sin recortar, como hoy |
+  | Editar | `PUT /productos/{id}` con `{concepto, precio, vendibleProfesor}` (el `patchValue` solo rellena esos tres) | `PUT /productos/{id}` con el mismo cuerpo |
+  | Mi caja de uno | `PATCH /productos/{id}/vendible-profesor` con `{vendibleProfesor}`, al momento; el valor, el de la respuesta | Igual, al momento; el interruptor ocupado, sin doble envío; el valor, el de la respuesta |
+  | Mi caja en lote | `PATCH /productos/vendible-profesor` con `{ids, vendibleProfesor}` (los seleccionados de la página) | Igual, con los seleccionados de todos los grupos en el orden de la pantalla |
+  | Eliminar uno | `DELETE /productos/{id}` tras SweetAlert2 | Igual, tras el diálogo destructivo (foco en «Cancelar», ocupado «Eliminando…») |
+  | Eliminar en lote | Un `DELETE /productos/{id}` tras otro, del último al primero; un fallo no para el resto | Igual (`eliminarEnSerie`, con el diálogo ocupado) |
+
+  Specs: crear y editar de la pantalla nueva se comparan con `CrearProductoComponent` y `EditarProductoComponent` de
+  verdad (método, ruta, credenciales y JSON enviado) en cinco y seis casos; Mi caja y eliminar, con
+  `HttpTestingController`.
+- **Importes.** Se leen y se escriben en es-ES (`eur` en la fila; «1.010,50» en el campo, con todos los decimales
+  guardados: 12,345 sale «12,345», nunca redondeado). El campo es de texto (`inputmode="decimal"`) y `leerImporte` da el
+  mismo `Number` que hoy daba el campo con punto: «1.010,50», «1010,50» y «1010.50» → `1010.5`; «25» → `25`; «25,5» →
+  `25.5`; «1.5» → `1.5` (el punto decimal de hoy sigue valiendo: no es 15); «0.500» → `0.5`; «1.234.567» → `1234567`;
+  «,5» y «.5» → `0.5`; espacios por fuera y «€» al final se ignoran. **Ambiguo:** un solo punto seguido de tres cifras
+  sin cero delante («1.234», «10.000») puede ser miles (es-ES) o decimales (el campo de hoy): no se adivina y el error
+  pide escribirlo sin punto (1234) o con coma (1,234). Vacío → «El precio es obligatorio» (como hoy, no se envía);
+  negativo → «El precio debe ser mayor o igual a 0» (como hoy); texto, «1,010.50», «12,», «1 000», «+5» o «1e3» →
+  «Escribe el precio con cifras, por ejemplo 25 o 1.010,50». Al salir del campo, un precio válido se reescribe en es-ES
+  («1010.5» → «1.010,50»). Más de dos decimales se aceptan, como hoy.
+- Diálogos con `ConfirmacionService` (`ejecutar`): «Eliminar producto» y «Eliminar N productos», destructivos con
+  `focoEnCancelar`; nada al cancelar; ocupados mientras van, sin doble envío. Avisos con `AvisosService`; esqueletos a
+  los 300 ms, `pn-bloque-error` con «Reintentar» (listado y producto) y `pn-bloque-vacio` (sin productos, con «Crear
+  producto»; sin coincidencias, con «Limpiar filtros»). Sin SweetAlert2 ni cargador global. «⋯» y el orden de cada grupo
+  con el patrón de botón de menú (`teclado-menu.ts`). Escrituras sin `takeUntil` (salir no las cancela; tras destruir no
+  se relee ni se navega); lecturas canceladas al salir.
+- **Barra de seleccionados:** fija al pie (encima de la barra inferior de 8b-N por debajo de 1024 px) con «N productos
+  seleccionados», «Quitar selección», «Dar a Mi caja», «Quitar de Mi caja» y «Eliminar»; a la derecha deja el sitio del
+  botón flotante «volver arriba» de la aplicación, que si no tapaba «Eliminar». Casillas de 44 px (el control nativo
+  cubre la zona y la caja se dibuja con los tokens); «Seleccionar los N de …» en la cabecera de cada grupo, con estado
+  mixto.
+- **Cambios a propósito:** una lectura por tipo (siete) en vez de una página de 10, y sin páginas; el orden de cada
+  grupo en el navegador (sin mayúsculas ni acentos y con los números en su orden; hoy, la colación de MySQL); filtros y
+  orden recordados con la clave `panelProductosEstado` (hoy `listadoProductosEstado`, con la página); búsqueda a los
+  300 ms (hoy 500); tras eliminar se relee sin esqueleto; diálogos con título propio («Eliminar producto», «Eliminar N
+  productos»; hoy «¿Estás seguro?» y «Estas seguro?») y la frase de hoy con tildes; el lote avisa «N productos
+  eliminados.» y un error con los que fallaron (hoy un aviso por fallo y luego «Productos eliminados correctamente»
+  aunque fallaran); sin selección no hay barra (hoy «No hay productos seleccionados»); avisos con punto final; opciones
+  «Mi caja: todos», «Mi caja: sí» y «Mi caja: no»; chip del concepto con «»; títulos «Productos», «Crear producto» y
+  «Editar producto» (hoy «Gestión de Productos», «Crear Nuevo Producto» y «Editar Producto»); acciones «Crear producto»
+  y «Guardar cambios» (hoy «Crear Producto» y «Actualizar Producto»). En el formulario: precio en texto es-ES, un error
+  por causa (hoy uno común), resumen de errores con enlaces, la acción con `aria-disabled` (su clic enseña el resumen),
+  «Guardando…» sin doble envío, el mensaje del servidor si lo trae (el 400 de renombrar con cargos; hoy genérico), los
+  botones de la barra no quitan el foco al campo al pulsarlos (el error que aparecía al salir del campo movía el botón y
+  el clic se perdía) y, si falla la lectura al editar, bloque con «Reintentar» (hoy aviso y vuelta al listado).
+- [x] Specs en rojo antes del código (`Can't resolve './productos-vista'`, `'./productos.component'` y
+  `'./producto-formulario.component'`; `productos` y `producto` no existen en `LecturasPanelService`; después, el de los
+  botones de la barra, con `defaultPrevented` falso), luego verdes: `productos-vista.spec.ts` (59: conversión de
+  importes caso a caso, ida y vuelta, validación, mensajes, cuerpo, tipos, orden y chips), `productos.component.spec.ts`
+  (25: lecturas por tipo y páginas; cabecera; grupos y fila; menús con teclado; orden por grupo; buscador, tipo, Mi
+  caja, chips y limpiar; sesión; vacíos, esqueleto y error; Mi caja de uno y en lote con método, ruta y cuerpo, sin
+  doble envío y errores; selección y barra; eliminar uno y en lote, cancelar y errores; escrituras que no se cancelan; a
+  375 sin desplazamiento horizontal), `producto-formulario.component.spec.ts` (15: crear y editar comparados con las
+  pantallas de hoy; conversión en el campo; errores y resumen; sin doble envío; errores del servidor; cancelar; carga y
+  «Reintentar»; foco al pulsar), `lecturas-panel.service.spec.ts` y `app.routes.spec.ts` (dos entradas por ruta;
+  apagado no descarga el chunk).
+- **Notas para la PR:** bundle inicial 1.458.416 bytes (+748 frente a 1.457.668 en `2e95a191`, los dos medidos con las
+  dependencias del `package-lock.json`: las tres entradas de ruta; ningún fichero inicial contiene código de
+  `productos`); chunks `productos-component` 47.724 bytes y `producto-formulario-component` 21.903 bytes; karma 2131
+  SUCCESS dos veces; capturas apagado antes (`2e95a191`) y después idénticas en bytes, 9/9 (listado, crear y editar a
+  375, 768 y 1280; en una toma, editar a 375 difirió en 3 × 1 px junto al cursor, y tres repeticiones con cada build
+  salieron idénticas a la de antes); encendido a 375, 768 y 1280 (listado agrupado, seleccionados con la barra, menú de
+  orden abierto, «⋯» abierto, filtros con chips, eliminar, vacío, crear con errores y editar); objetivos de 44 px como
+  mínimo a 375 (40 en escritorio; 24 en los enlaces del resumen de errores), sin desplazamiento horizontal ni solapes en
+  ningún ancho y la barra sin tapar la inferior; `impeccable detect` sin hallazgos.
+- **Preguntas abiertas:** (1) «1.234» se pide aclarar: ¿leerlo como miles (es-ES) o como hoy (1,234)? (2) ¿Limitar el
+  precio a dos decimales? Hoy se aceptan más y se conservan.
+- **Correcciones de la revisión (mismo commit de arreglos):** (a) las páginas de cada grupo se piden con `orderBy=id`
+  (único; en paralelo, el orden por concepto podía repetir u omitir filas en el corte) y el orden visible se hace en el
+  navegador; (b) «Dar/Quitar de Mi caja» con más de 200 seleccionados no envía nada y avisa «Selecciona como máximo 200
+  productos a la vez.» (todo o nada de la API); 200 sí se envía; (c) el botón global «volver arriba» del `skeleton` solo
+  se monta con el diseño de hoy (así no tapa la barra inferior ni las barras fijas del panel nuevo, Eventos incluido);
+  se borró su regla sin efecto en `skeleton.component.scss` y la barra de selección vuelve a `padding` de 16 px;
+  (d) `productosEditar/abc` (id no numérico o no positivo) enseña `pn-bloque-error` «No se encontró el producto» sin
+  «Reintentar» (nuevo `@Input() reintentable`, por defecto `true`) y no deja guardar, en vez de caer en crear.
+  Cierra las preguntas (3) y (4) de antes. Karma 2134 SUCCESS; bundle inicial 26 bytes menos que antes de la corrección.
+
 ## 18. Pieza 8b-3h: Preinscripciones
 
 Rama `feature/e8b-3h`. Solo frontend, sin migración: atajo `desplegar`. **Tier careful:** datos de menores, firmas,
@@ -1898,30 +1995,30 @@ Pieza 8b-3f. Rutas de hoy: `eventosCrear`, `eventosEditar/:id`. Componentes de h
 
 Pieza 8b-3g. Rutas de hoy: `productosListar`, `productosCrear`, `productosEditar/:id`. Componentes de hoy: `listado-productos`, `crear-producto`, `editar-producto`.
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Gestión de productos» | «Productos» y para qué sirven |
-| Crear producto | Botón principal |
-| Dar a Mi caja (seleccionados) | Barra fija al pie |
-| Quitar de Mi caja (seleccionados) | Barra fija al pie |
-| Eliminar seleccionados | Barra fija al pie |
-| Filtro por concepto | Buscador |
-| Filtro por tipo | Desplegable |
-| Filtro Mi caja | Desplegable |
-| Limpiar filtros | Botón |
-| Total de productos | Junto a los filtros |
-| Chips de filtros activos con quitar | Bajo los filtros |
-| Seleccionar todos y cada uno | Casilla en cada producto |
-| Ordenar por ID, concepto o precio | Menú de cada grupo |
-| ID | «nº» en la fila |
-| Concepto (enlace a editar) | Fila |
-| Precio | A la derecha |
-| Mi caja (interruptor) | Interruptor «Mi caja» |
-| Editar | Menú «⋯» |
-| Eliminar | Menú «⋯» |
-| Paginación | Grupos enteros, sin páginas |
-| Aviso sin productos o sin coincidencias | Igual que hoy |
-| Añadido: Tipo de cada producto | Grupos por tipo |
+| Hoy | En la pantalla nueva | 8b-3g |
+|---|---|---|
+| Título «Gestión de productos» | «Productos» y para qué sirven | Hecho |
+| Crear producto | Botón principal | Hecho |
+| Dar a Mi caja (seleccionados) | Barra fija al pie | Hecho (el PATCH de hoy con los ids) |
+| Quitar de Mi caja (seleccionados) | Barra fija al pie | Hecho |
+| Eliminar seleccionados | Barra fija al pie | Hecho (uno tras otro, como hoy; destructivo, foco en «Cancelar») |
+| Filtro por concepto | Buscador | Hecho (a los 300 ms) |
+| Filtro por tipo | Desplegable | Hecho |
+| Filtro Mi caja | Desplegable | Hecho («Mi caja: todos \| sí \| no») |
+| Limpiar filtros | Botón | Hecho |
+| Total de productos | Junto a los filtros | Hecho |
+| Chips de filtros activos con quitar | Bajo los filtros | Hecho |
+| Seleccionar todos y cada uno | Casilla en cada producto | Hecho (y «Seleccionar los N» en cada grupo) |
+| Ordenar por ID, concepto o precio | Menú de cada grupo | Hecho (seis opciones, con teclado) |
+| ID | «nº» en la fila | Hecho |
+| Concepto (enlace a editar) | Fila | Hecho |
+| Precio | A la derecha | Hecho (es-ES) |
+| Mi caja (interruptor) | Interruptor «Mi caja» | Hecho (al momento, como hoy) |
+| Editar | Menú «⋯» | Hecho |
+| Eliminar | Menú «⋯» | Hecho (destructivo, foco en «Cancelar») |
+| Paginación | Grupos enteros, sin páginas | Hecho (las páginas de la API se leen todas) |
+| Aviso sin productos o sin coincidencias | Igual que hoy | Hecho (`pn-bloque-vacio`) |
+| Añadido: Tipo de cada producto | Grupos por tipo | Hecho (siete grupos; los vacíos no salen) |
 
 ### Preinscripciones (P1: lista con detalle al lado)
 

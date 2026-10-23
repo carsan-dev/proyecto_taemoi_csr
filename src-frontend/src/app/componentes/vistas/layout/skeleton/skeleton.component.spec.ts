@@ -144,6 +144,16 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect((await fixture.getDeferBlocks()).length).toBe(1);
   });
 
+  it('el botón «volver arriba» solo con el diseño de hoy: encendido en gestión no está (taparía la barra inferior)', async () => {
+    obtener.and.returnValue(of(permisos(true)));
+    const nuevo = await montar('/adminpage');
+    expect(nuevo.querySelector('app-botonscroll')).toBeNull();
+    TestBed.resetTestingModule();
+    obtener.and.returnValue(of(permisos(false)));
+    const hoy = await montar('/adminpage');
+    expect(hoy.querySelector('app-botonscroll')).not.toBeNull();
+  });
+
   it('mientras no se sabe el interruptor y sin recordatorio: la cabecera y el pie de hoy desde el primer píxel', async () => {
     obtener.and.returnValue(NEVER);
     esperarHoy(await montar('/alumnosListar'));

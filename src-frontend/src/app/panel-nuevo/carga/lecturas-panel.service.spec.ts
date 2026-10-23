@@ -145,4 +145,29 @@ describe('LecturasPanelService (8b-D2a)', () => {
     deHoy.flush({});
     delPanel.flush({});
   });
+
+  it('Productos (8b-3g): el listado con sus filtros y uno por id, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(EndpointsService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const casos: [string, number, number, string, string, string | null, boolean | null][] = [
+      ['', 1, 200, 'concepto', 'asc', 'MENSUALIDAD', null],
+      ['camis eta', 2, 200, 'concepto', 'asc', 'OTRO', false],
+      ['x', 1, 10, 'precio', 'desc', null, true],
+    ];
+    for (const caso of casos) {
+      const deHoy = pedir(hoy.obtenerTodosLosProductosPaginado(...caso));
+      const delPanel = pedir(panel.productos(...caso));
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      deHoy.flush({});
+      delPanel.flush({});
+    }
+
+    const deHoy = pedir(hoy.obtenerProductoPorId(7));
+    const delPanel = pedir(panel.producto(7));
+    expect(forma(delPanel)).toEqual(forma(deHoy));
+    expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    deHoy.flush({});
+    delPanel.flush({});
+  });
 });

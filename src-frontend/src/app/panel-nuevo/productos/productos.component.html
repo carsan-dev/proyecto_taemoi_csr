@@ -1,0 +1,197 @@
+<div class="pn productos" pnAcento>
+  <div class="productos__pagina" [class.productos__pagina--seleccion]="seleccion.size > 0">
+    <header class="productos__cabecera">
+      <div class="productos__titulos">
+        <h1 class="productos__titulo-pantalla">Productos</h1>
+        <p class="productos__subtitulo">Lo que se cobra a los alumnos y lo que el profesorado puede vender desde Mi caja.</p>
+      </div>
+      <a class="productos__boton-primario" routerLink="/productosCrear">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"></path></svg>
+        <span>Crear producto</span>
+      </a>
+    </header>
+
+    <div class="productos__barra" role="search" aria-label="Buscar y filtrar productos">
+      <div class="productos__buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <label class="productos__oculto" for="productos-buscar">Buscar por concepto</label>
+        <input id="productos-buscar" type="search" class="productos__campo productos__campo--buscar" autocomplete="off"
+          placeholder="Buscar por concepto" [value]="filtros.concepto" (input)="buscar($any($event.target).value)" />
+      </div>
+      <div class="productos__desplegables">
+        <label class="productos__oculto" for="productos-tipo">Tipo</label>
+        <select id="productos-tipo" class="productos__campo productos__campo--select" [class.productos__campo--elegido]="filtros.tipo"
+          (change)="elegirTipo($any($event.target).value)">
+          <option value="" [selected]="filtros.tipo === ''">Todos los tipos</option>
+          @for (t of tipos; track t.valor) {
+          <option [value]="t.valor" [selected]="filtros.tipo === t.valor">{{ t.etiqueta }}</option>
+          }
+        </select>
+        <label class="productos__oculto" for="productos-mi-caja">Mi caja</label>
+        <select id="productos-mi-caja" class="productos__campo productos__campo--select" [class.productos__campo--elegido]="filtros.miCaja"
+          (change)="elegirMiCaja($any($event.target).value)">
+          <option value="" [selected]="filtros.miCaja === ''">Mi caja: todos</option>
+          <option value="true" [selected]="filtros.miCaja === 'true'">Mi caja: sí</option>
+          <option value="false" [selected]="filtros.miCaja === 'false'">Mi caja: no</option>
+        </select>
+      </div>
+      <button type="button" class="productos__limpiar" [disabled]="!hayFiltros" (click)="limpiarFiltros()">Limpiar filtros</button>
+      <p class="productos__total" data-cifras aria-live="polite">{{ estado === 'listo' ? textoTotal : '' }}</p>
+    </div>
+
+    @if (hayFiltros) {
+    <ul class="productos__chips" aria-label="Filtros activos">
+      @for (f of activos; track f.clave) {
+      <li class="productos__chip">
+        <span>{{ f.texto }}</span>
+        <button type="button" class="productos__chip-quitar" [attr.aria-label]="'Quitar filtro ' + f.texto" (click)="quitarFiltro(f.clave)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round">
+            <path d="M7 7l10 10M17 7 7 17"></path></svg>
+        </button>
+      </li>
+      }
+    </ul>
+    }
+
+    <p id="productos-ayuda-mi-caja" class="productos__oculto">Lo puede vender el profesor desde Mi caja.</p>
+
+    @if (estado === 'error') {
+    <pn-bloque-error class="productos__bloque-estado" titulo="No se pudieron cargar los productos" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="productos__cargando" etiqueta="Cargando productos" aria-busy="true">
+      @for (g of [[1, 2, 3, 4], [1, 2, 3]]; track $index) {
+      <div class="productos__esqueleto-grupo">
+        <div class="productos__esqueleto-cabecera"><span></span><span></span></div>
+        @for (i of g; track i) {
+        <div class="productos__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+      }
+    </pn-esqueleto>
+    } @else if (grupos.length === 0) {
+    @if (hayFiltros) {
+    <pn-bloque-vacio class="productos__bloque-estado" titulo="Ningún producto coincide con los filtros"
+      texto="Prueba con otro concepto o quita los filtros de tipo y Mi caja." accion="Limpiar filtros" (accionar)="limpiarFiltros()" />
+    } @else {
+    <pn-bloque-vacio class="productos__bloque-estado" titulo="No hay productos disponibles"
+      texto="Crea los productos que se cobran en la escuela y aparecerán aquí, agrupados por tipo.">
+      <a pnAccionVacio class="productos__boton-secundario" routerLink="/productosCrear">Crear producto</a>
+    </pn-bloque-vacio>
+    }
+    } @else {
+    @for (g of grupos; track g.tipo) {
+    <section class="productos__grupo" [attr.data-tipo]="g.tipo" [attr.aria-labelledby]="'productos-grupo-' + g.tipo">
+      <div class="productos__grupo-cabecera">
+        <span class="productos__marca">
+          <input type="checkbox" class="productos__casilla-grupo" [checked]="todosDe(g)" [indeterminate]="algunosDe(g)"
+            [attr.aria-label]="etiquetaTodos(g)" (change)="alternarGrupo(g)" />
+          <span class="productos__caja" aria-hidden="true"></span>
+        </span>
+        <h2 class="productos__grupo-titulo" [id]="'productos-grupo-' + g.tipo">
+          <span>{{ g.titulo }}</span>{{ ' ' }}
+          <span class="productos__numero" role="img" data-cifras
+            [attr.aria-label]="plural(g.productos.length, 'producto', 'productos')">{{ numero(g.productos.length) }}</span>
+        </h2>
+        <div class="productos__menu-zona productos__menu-zona--orden" (focusout)="alSalirDelMenu($event)">
+          <button type="button" class="productos__ordenar" [id]="'productos-boton-' + claveOrden(g)" aria-haspopup="menu"
+            [attr.aria-label]="'Ordenar ' + g.titulo + ': ' + etiquetaOrden(ordenDe(g))"
+            [attr.aria-expanded]="menuAbierto === claveOrden(g)"
+            [attr.aria-controls]="menuAbierto === claveOrden(g) ? 'productos-menu-' + claveOrden(g) : null"
+            (click)="alternarMenu(claveOrden(g))" (keydown)="teclaBotonMenu(claveOrden(g), $event)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M13 6h8M13 12h6M13 18h4"></path></svg>
+            <span class="productos__ordenar-texto">{{ etiquetaOrden(ordenDe(g)) }}</span>
+          </button>
+          @if (menuAbierto === claveOrden(g)) {
+          <div class="productos__menu productos__menu--orden" role="menu" [id]="'productos-menu-' + claveOrden(g)"
+            [attr.aria-labelledby]="'productos-boton-' + claveOrden(g)" (keydown)="teclaMenu(claveOrden(g), $event)">
+            @for (o of opcionesOrden; track o.etiqueta) {
+            <button type="button" role="menuitem" class="productos__menu-opcion" [attr.aria-current]="esOrden(g, o.orden) ? 'true' : null"
+              (click)="elegirOrden(g, o.orden)">
+              <svg class="productos__menu-marca" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"
+                stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+              <span>{{ o.etiqueta }}</span>
+            </button>
+            }
+          </div>
+          }
+        </div>
+      </div>
+
+      <ul class="productos__lista" [attr.aria-label]="g.titulo">
+        @for (p of g.productos; track p.id) {
+        <li class="productos__fila" [attr.data-producto]="p.id" [class.productos__fila--elegida]="seleccionado(p)">
+          <span class="productos__marca productos__marca--fila">
+            <input type="checkbox" class="productos__casilla" [checked]="seleccionado(p)" [attr.aria-label]="'Seleccionar ' + p.concepto"
+              (change)="alternarSeleccion(p)" />
+            <span class="productos__caja" aria-hidden="true"></span>
+          </span>
+
+          <p class="productos__texto">
+            <a class="productos__concepto" [routerLink]="['/productosEditar', p.id]">{{ p.concepto }}</a>{{ ' ' }}
+            <span class="productos__id" data-cifras>nº {{ p.id }}</span>
+          </p>
+
+          <p class="productos__precio" data-cifras>
+            @if (p.precio !== null && p.precio !== undefined) {<span>{{ eur(p.precio) }}</span>} @else {<span class="productos__sin-precio">Sin precio</span>}
+          </p>
+
+          <button type="button" role="switch" class="productos__interruptor" [attr.aria-checked]="miCaja(p)"
+            [attr.aria-label]="'Mi caja: ' + p.concepto" aria-describedby="productos-ayuda-mi-caja"
+            [attr.aria-busy]="ocupadoMiCaja(p) ? 'true' : null" [attr.aria-disabled]="ocupadoMiCaja(p) ? 'true' : null"
+            (click)="alternarMiCaja(p)">
+            <span class="productos__interruptor-texto">Mi caja</span>
+            <span class="productos__pista" aria-hidden="true"><span class="productos__bola"></span></span>
+          </button>
+
+          <div class="productos__menu-zona productos__menu-zona--fila" (focusout)="alSalirDelMenu($event)">
+            <button type="button" class="productos__mas" [id]="'productos-boton-' + claveFila(p)" [attr.aria-label]="'Más acciones de ' + p.concepto"
+              aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === claveFila(p)"
+              [attr.aria-controls]="menuAbierto === claveFila(p) ? 'productos-menu-' + claveFila(p) : null"
+              (click)="alternarMenu(claveFila(p))" (keydown)="teclaBotonMenu(claveFila(p), $event)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle>
+                <circle cx="19" cy="12" r="1.8"></circle></svg>
+            </button>
+            @if (menuAbierto === claveFila(p)) {
+            <div class="productos__menu" role="menu" [id]="'productos-menu-' + claveFila(p)" [attr.aria-labelledby]="'productos-boton-' + claveFila(p)"
+              (keydown)="teclaMenu(claveFila(p), $event)">
+              <a role="menuitem" class="productos__menu-opcion" data-accion="editar" [routerLink]="['/productosEditar', p.id]">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+                <span>Editar</span>
+              </a>
+              <button type="button" role="menuitem" class="productos__menu-opcion productos__menu-opcion--peligro" data-accion="eliminar"
+                aria-haspopup="dialog" (click)="eliminar(p)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+                <span>Eliminar</span>
+              </button>
+            </div>
+            }
+          </div>
+        </li>
+        }
+      </ul>
+    </section>
+    }
+    }
+
+    @if (seleccion.size > 0 && estado === 'listo') {
+    <div class="productos__seleccion" role="region" aria-label="Productos seleccionados">
+      <p class="productos__seleccion-texto" data-cifras aria-live="polite">{{ textoSeleccion }}</p>
+      <div class="productos__seleccion-acciones">
+        <button type="button" class="productos__boton-texto productos__quitar-seleccion" [disabled]="!!accionBloque"
+          (click)="quitarSeleccion()">Quitar selección</button>
+        <button type="button" pnOcupado class="productos__boton-secundario" [ocupado]="accionBloque === 'dar'" textoOcupado="Guardando…"
+          [deshabilitado]="accionBloque === 'quitar'" (click)="miCajaEnLote(true)">Dar a Mi caja</button>
+        <button type="button" pnOcupado class="productos__boton-secundario" [ocupado]="accionBloque === 'quitar'" textoOcupado="Guardando…"
+          [deshabilitado]="accionBloque === 'dar'" (click)="miCajaEnLote(false)">Quitar de Mi caja</button>
+        <button type="button" class="productos__boton-peligro" aria-haspopup="dialog" [disabled]="!!accionBloque"
+          (click)="eliminarSeleccionados()">Eliminar</button>
+      </div>
+    </div>
+    }
+  </div>
+</div>

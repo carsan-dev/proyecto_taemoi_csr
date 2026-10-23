@@ -48,10 +48,6 @@
   .marco-panel #content {
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   }
-
-  .marco-panel ::ng-deep .scroll-to-top-btn {
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 @media (max-width: 767.98px) {
