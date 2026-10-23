@@ -124,6 +124,7 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
   }
 
   function crear(): void {
+    retenidas.length = 0;
     fixture = TestBed.createComponent(ProductosComponent);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -206,30 +207,233 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
       expect(r.request.params.keys()).toEqual(['page', 'size', 'orderBy', 'order', 'tipo']);
       expect(r.request.params.get('page')).toBe('1');
       expect(r.request.params.get('size')).toBe('200');
-      // Por id (único): con páginas pedidas en paralelo, un orden por concepto (repetible) podría repetir u omitir filas.
+      // Por id (único): un orden por concepto (repetible) podría repetir u omitir filas entre páginas.
       expect(r.request.params.get('orderBy')).toBe('id');
       expect(r.request.params.get('order')).toBe('asc');
     }
     responderLecturas(LISTA(), pendientes);
     expect(el().querySelectorAll('.productos__fila').length).toBe(8);
+    expect(el().querySelector('.productos__pie')).toBeNull();
     expect(loading.show).not.toHaveBeenCalled();
     http.verify();
   });
 
-  it('sin páginas: si un tipo tiene más de una página, pide las siguientes y enseña el grupo entero', () => {
-    const muchos = Array.from({ length: 450 }, (_, i) => P(100 + i, `Examen ${i}`, 25, 'EXAMEN'));
+  // ------------------------------------------------------------------ «Ver los N restantes»
+
+  const examenes = (n: number): ProductoPrueba[] => Array.from({ length: n }, (_, i) => P(100 + i, `Examen ${i}`, 25, 'EXAMEN'));
+  const pie = (tipo: Tipo): HTMLButtonElement | null => grupo(tipo)!.querySelector<HTMLButtonElement>('.productos__pie button');
+  /** `http.match` retira lo que devuelve: lo pendiente se guarda aquí para poder mirarlo más de una vez. */
+  const retenidas: TestRequest[] = [];
+  const nombre = (r: TestRequest): string => `${r.request.params.get('tipo')}:${r.request.params.get('page')}`;
+  const paginasPendientes = (): string[] => {
+    retenidas.push(...pendientesLista());
+    return retenidas.map(nombre);
+  };
+
+  /** Atiende la lectura pendiente de esa página y tipo (solo debe haber una) y deja las demás. */
+  function responderPagina(lista: ProductoPrueba[], pagina: string, tipo: Tipo = 'EXAMEN'): void {
+    retenidas.push(...pendientesLista());
+    const hay = retenidas.filter((r) => nombre(r) === `${tipo}:${pagina}`);
+    expect(hay.length).toBe(1);
+    hay.forEach((r) => retenidas.splice(retenidas.indexOf(r), 1));
+    responderLecturas(lista, hay);
+  }
+
+  it('al abrir: solo la primera página de cada grupo; nada de las siguientes aunque haya más', () => {
+    const muchos = examenes(450);
     crear();
     responderLecturas(muchos);
-    const siguientes = pendientesLista();
-    expect(siguientes.map((r) => [r.request.params.get('tipo'), r.request.params.get('page')])).toEqual([
-      ['EXAMEN', '2'],
-      ['EXAMEN', '3'],
-    ]);
-    expect(siguientes.map((r) => r.request.params.get('orderBy'))).toEqual(['id', 'id']);
-    responderLecturas(muchos, siguientes);
-    expect(idsDe('EXAMEN').length).toBe(450);
+    http.expectNone(() => true);
+    expect(idsDe('EXAMEN').length).toBe(50);
+  });
+
+  it('50 filas por grupo y «Ver los N restantes» con el número real (totalElements); cabecera y total también', () => {
+    cargar(examenes(450));
+    expect(idsDe('EXAMEN').length).toBe(50);
+    expect(texto(pie('EXAMEN'))).toBe('Ver los 400 restantes');
+    expect(pie('EXAMEN')!.getAttribute('aria-label')).toBe('Ver los 400 restantes de Derechos de examen');
     expect(texto(grupo('EXAMEN')!.querySelector('.productos__numero'))).toBe('450');
+    expect(grupo('EXAMEN')!.querySelector('.productos__numero')!.getAttribute('aria-label')).toBe('450 productos');
     expect(texto(el().querySelector('.productos__total'))).toBe('450 productos');
+    // Dentro de la tarjeta del grupo, justo bajo la lista, y solo en el grupo que lo necesita.
+    expect(grupo('EXAMEN')!.querySelector('.productos__lista')!.nextElementSibling!.classList).toContain('productos__pie');
+  });
+
+  it('el total suma el de cada grupo (totalElements), no las filas leídas', () => {
+    cargar([...examenes(450), P(1, 'Mensualidad taekwondo', 30, 'MENSUALIDAD')]);
+    expect(texto(el().querySelector('.productos__total'))).toBe('451 productos');
+  });
+
+  it('«Ver el restante» en singular cuando falta una', () => {
+    cargar(examenes(51));
+    expect(texto(pie('EXAMEN'))).toBe('Ver el restante');
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    expect(idsDe('EXAMEN').length).toBe(51);
+    expect(pie('EXAMEN')).toBeNull();
+    http.expectNone(() => true);
+  });
+
+  it('pulsarlo con todo ya leído enseña el grupo entero sin pedir nada y deja el foco en la primera fila nueva', () => {
+    cargar(examenes(120));
+    expect(texto(pie('EXAMEN'))).toBe('Ver los 70 restantes');
+    pie('EXAMEN')!.focus();
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    http.expectNone(() => true);
+    expect(idsDe('EXAMEN').length).toBe(120);
+    expect(pie('EXAMEN')).toBeNull();
+    // La fila 51 del orden por concepto («Examen 50»).
+    expect(document.activeElement).toBe(casilla(150));
+  });
+
+  it('pide las páginas 2..n de ESE grupo una tras otra: la siguiente solo cuando acaba la anterior; botón ocupado sin doble clic', () => {
+    const muchos = [...examenes(450), P(1, 'Mensualidad taekwondo', 30, 'MENSUALIDAD')];
+    cargar(muchos);
+    const boton = pie('EXAMEN')!;
+    boton.focus();
+    boton.click();
+    fixture.detectChanges();
+    // Se ven ya las 200 leídas y solo se pide la página 2 de EXAMEN.
+    expect(idsDe('EXAMEN').length).toBe(200);
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    expect(pie('EXAMEN')!.getAttribute('aria-busy')).toBe('true');
+    expect(texto(pie('EXAMEN'))).toBe('Cargando…');
+    // Un segundo clic no manda otra.
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    responderPagina(muchos, '2');
+    expect(idsDe('EXAMEN').length).toBe(400);
+    expect(paginasPendientes()).toEqual(['EXAMEN:3']);
+    expect(document.activeElement).toBe(casilla(150));
+    responderPagina(muchos, '3');
+    expect(idsDe('EXAMEN').length).toBe(450);
+    expect(pie('EXAMEN')).toBeNull();
+    http.expectNone(() => true);
+    expect(idsDe('MENSUALIDAD')).toEqual([1]);
+  });
+
+  it('un error deja lo leído, avisa y el botón sirve para reintentar desde la página que faltaba', async () => {
+    const muchos = examenes(450);
+    cargar(muchos);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    const r = http.expectOne((x) => x.url === URL_LISTA);
+    expect(r.request.params.get('page')).toBe('2');
+    r.flush({}, { status: 500, statusText: 'Error' });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudieron cargar los productos restantes.' }]);
+    expect(idsDe('EXAMEN').length).toBe(200);
+    expect(texto(pie('EXAMEN'))).toBe('Ver los 250 restantes');
+    expect(pie('EXAMEN')!.getAttribute('aria-busy')).toBeNull();
+    http.expectNone(() => true);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    responderPagina(muchos, '2');
+    responderPagina(muchos, '3');
+    expect(idsDe('EXAMEN').length).toBe(450);
+  });
+
+  it('una carga nueva cancela la lectura en vuelo y vuelve a 50 filas por grupo', () => {
+    const muchos = examenes(450);
+    cargar(muchos);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    const enVuelo = http.expectOne((x) => x.url === URL_LISTA);
+    elegir('productos-mi-caja', 'false');
+    expect(enVuelo.cancelled).toBeTrue();
+    responderLecturas(muchos);
+    expect(idsDe('EXAMEN').length).toBe(50);
+    expect(texto(pie('EXAMEN'))).toBe('Ver los 400 restantes');
+  });
+
+  it('destruir cancela la lectura en vuelo', () => {
+    cargar(examenes(450));
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    const enVuelo = http.expectOne((x) => x.url === URL_LISTA);
+    fixture.destroy();
+    expect(enVuelo.cancelled).toBeTrue();
+  });
+
+  it('«seleccionar todos» de un grupo solo marca las filas que se ven; el estado se calcula sobre ellas', () => {
+    cargar(examenes(120));
+    const todos = grupo('EXAMEN')!.querySelector<HTMLInputElement>('.productos__casilla-grupo')!;
+    expect(todos.getAttribute('aria-label')).toBe('Seleccionar los 50 de Derechos de examen');
+    todos.click();
+    fixture.detectChanges();
+    expect(texto(barra()!.querySelector('.productos__seleccion-texto'))).toBe('50 productos seleccionados');
+    expect(todos.checked).toBeTrue();
+    // Al enseñar el resto, ya no están todas marcadas; las 50 siguen seleccionadas.
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    expect(todos.checked).toBeFalse();
+    expect(todos.indeterminate).toBeTrue();
+    expect(texto(barra()!.querySelector('.productos__seleccion-texto'))).toBe('50 productos seleccionados');
+    expect(todos.getAttribute('aria-label')).toBe('Seleccionar los 120 de Derechos de examen');
+  });
+
+  it('relectura silenciosa con la página 2 en vuelo: cancela la vieja, vuelve a pedir la 1 y la 2 solo después', () => {
+    const lista = examenes(450);
+    cargar(lista);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    const vieja = http.expectOne((x) => x.url === URL_LISTA);
+    expect(vieja.request.params.get('page')).toBe('2');
+    fixture.componentInstance.cargar(true);
+    fixture.detectChanges();
+    expect(vieja.cancelled).toBeTrue();
+    expect(paginasPendientes()).toEqual(TIPOS.map((t) => `${t}:1`));
+    responderLecturas(lista, retenidas.splice(0));
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    responderPagina(lista, '2');
+    expect(paginasPendientes()).toEqual(['EXAMEN:3']);
+    responderPagina(lista, '3');
+    expect(idsDe('EXAMEN').length).toBe(450);
+    expect(pie('EXAMEN')).toBeNull();
+  });
+
+  it('pulsar el pie durante una relectura silenciosa no pide nada más y el botón sigue ocupado', () => {
+    const lista = examenes(450);
+    cargar(lista);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    http.expectOne((x) => x.url === URL_LISTA);
+    fixture.componentInstance.cargar(true);
+    fixture.detectChanges();
+    const primeras = pendientesLista();
+    expect(primeras.length).toBe(7);
+    expect(pie('EXAMEN')!.getAttribute('aria-busy')).toBe('true');
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    http.expectNone(() => true);
+    responderLecturas(lista, primeras);
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+  });
+
+  it('relectura silenciosa: el grupo abierto relee sus páginas en serie y sigue abierto; el cerrado, solo la primera', () => {
+    const lista = [...examenes(250), ...Array.from({ length: 300 }, (_, i) => P(1000 + i, `Otro ${i}`, 5, 'OTRO'))];
+    cargar(lista);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    responderPagina(lista, '2');
+    expect(idsDe('EXAMEN').length).toBe(250);
+    const c = fixture.componentInstance;
+    c.cargar(true);
+    fixture.detectChanges();
+    // Sin esqueleto y las siete primeras páginas a la vez; las siguientes, solo tras la primera de su tipo.
+    expect(el().querySelector('pn-esqueleto')).toBeNull();
+    expect(paginasPendientes()).toEqual(TIPOS.map((t) => `${t}:1`));
+    responderLecturas(lista, retenidas.splice(0));
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    responderPagina(lista, '2');
+    expect(idsDe('EXAMEN').length).toBe(250);
+    expect(pie('EXAMEN')).toBeNull();
+    expect(idsDe('OTRO').length).toBe(50);
+    expect(texto(pie('OTRO'))).toBe('Ver los 250 restantes');
+    http.expectNone(() => true);
   });
 
   it('cabecera: «Productos» con para qué sirven y «Crear producto» como único primario', () => {
@@ -559,9 +763,10 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
   });
 
   it('Mi caja en lote: más de 200 seleccionados no envía nada y avisa; 200 sí (todo o nada de la API)', async () => {
-    const examenes = (n: number) => Array.from({ length: n }, (_, i) => P(100 + i, `Examen ${i}`, 25, 'EXAMEN'));
     crear();
     responderLecturas(examenes(201));
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
     responderLecturas(examenes(201), pendientesLista());
     grupo('EXAMEN')!.querySelector<HTMLInputElement>('.productos__casilla-grupo')!.click();
     fixture.detectChanges();

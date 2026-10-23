@@ -1,6 +1,6 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
-import { agruparMiles, plural } from '../formato/formato-es';
+import { agruparMiles, numero, plural } from '../formato/formato-es';
 
 /**
  * Funciones puras de Productos del panel nuevo (8b-3g): tipos y grupos, orden de cada grupo, chips de filtros, el
@@ -20,8 +20,11 @@ export const TIPOS_PRODUCTO: ReadonlyArray<{ valor: TipoProducto; etiqueta: stri
   { valor: 'OTRO', etiqueta: 'Otro', grupo: 'Otros productos' },
 ];
 
-/** Tamaño de cada página leída: un grupo se lee entero, página a página, sin enseñar páginas. */
+/** Tamaño de cada página leída: al abrir solo se lee la primera de cada grupo; el resto, a petición y una a una. */
 export const TAMANO_LECTURA = 200;
+
+/** Filas que enseña cada grupo antes de pedir «Ver los N restantes». */
+export const FILAS_VISIBLES = 50;
 
 /** Lo que la pantalla usa de cada producto (el JSON de `GET /productos`; el tipo no viaja: sale de la lectura por tipo). */
 export interface ProductoPanel {
@@ -259,4 +262,9 @@ export function miCajaParaApi(miCaja: Filtros['miCaja']): boolean | null {
 
 export function textoTotal(n: number): string {
   return plural(n, 'producto', 'productos');
+}
+
+/** El botón del pie de un grupo con más filas de las que enseña: «Ver los 12 restantes» o «Ver el restante». */
+export function textoVerRestantes(n: number): string {
+  return n === 1 ? 'Ver el restante' : `Ver los ${numero(n)} restantes`;
 }
