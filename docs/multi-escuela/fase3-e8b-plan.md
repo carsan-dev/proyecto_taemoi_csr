@@ -1754,6 +1754,14 @@ Ronda 3 de bocetos (21/10/2026), tras publicar https://claude.ai/artifact/5ynw1n
 
 ---
 
+## Peticiones del propietario del 23/10 (sin pieza asignada)
+
+Recogidas en el roadmap como decisiones pendientes 278 a 280. Se planifican como piezas propias cuando se decidan los puntos abiertos; ninguna entra en las pantallas 8b-3h a 8b-3k.
+
+1. **Eventos con orden automático por fecha (278).** Primero los próximos, del más cercano a hoy al más lejano. Cuando un evento se realiza pasa solo detrás del último próximo, como el realizado más reciente; los realizados van del más reciente al más antiguo. Por decidir: si el orden manual de hoy (subir, bajar, arrastrar y «Guardar orden», 8b-3f) desaparece o solo desempata eventos de la misma fecha o sin fecha, y si el orden se calcula en la API (web pública y panel) o solo en la web. Toca la web pública: mismas pruebas de apagado que 8b-3f.
+2. **Recibo de pago (279).** Al marcar pagado un producto, opción de generar un recibo en PDF con el nombre y el logo de la escuela (8b-T); también desde Tesorería, la ficha y pantallas parecidas para un cobro ya hecho. Por decidir: numeración del recibo, datos de la escuela que salen (razón social, NIF, dirección), si el recibo se guarda o se genera al vuelo y quién puede generarlo. Toca dinero y backend (PDF): tier careful.
+3. **Mensualidades sin Pilates (280).** Al asignar mensualidades generales y cargas parecidas no se asigna mensualidad a Pilates, que está en la app solo para la ocupación por plazas. Propuesta para la plataforma multideporte (PRODUCT.md): un ajuste por disciplina «no genera mensualidad» en vez de excluir Pilates en el código, con Pilates marcado en Moiskimdo. Toca dinero: tier careful, con migración si el ajuste va en base de datos.
+
 ## Anexo A: inventarios «nada se pierde» (decisión 232)
 
 Dónde queda en la pantalla nueva cada cosa que se ve hoy, según los bocetos aprobados (ronda 1: Alumnos, Tesorería y
