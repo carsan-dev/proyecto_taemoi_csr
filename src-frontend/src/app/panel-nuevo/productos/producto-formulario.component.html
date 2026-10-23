@@ -12,7 +12,10 @@
       <p class="producto-form__subtitulo">{{ subtitulo }}</p>
     </header>
 
-    @if (estado === 'error') {
+    @if (estado === 'invalido') {
+    <pn-bloque-error class="producto-form__bloque-estado" titulo="No se encontró el producto"
+      texto="El enlace no corresponde a ningún producto. Vuelve a Productos y elige uno de la lista." [reintentable]="false" />
+    } @else if (estado === 'error') {
     <pn-bloque-error class="producto-form__bloque-estado" titulo="No se pudo cargar el producto" (reintentar)="cargar()" />
     } @else if (estado === 'cargando') {
     <pn-esqueleto class="producto-form__cargando" etiqueta="Cargando el producto" aria-busy="true">

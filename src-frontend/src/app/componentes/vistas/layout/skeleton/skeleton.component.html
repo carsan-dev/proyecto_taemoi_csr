@@ -16,7 +16,9 @@
       </main>
     </div>
   </div>
+  @if (modo() === 'hoy') {
   <app-botonscroll></app-botonscroll>
+  }
   @if (modo() === 'hoy') {
   <app-footer class="row" (configurarCookies)="showCookieBanner = true"></app-footer>
   }

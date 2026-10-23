@@ -1148,10 +1148,16 @@ deje de enviarse.
   mínimo a 375 (40 en escritorio; 24 en los enlaces del resumen de errores), sin desplazamiento horizontal ni solapes en
   ningún ancho y la barra sin tapar la inferior; `impeccable detect` sin hallazgos.
 - **Preguntas abiertas:** (1) «1.234» se pide aclarar: ¿leerlo como miles (es-ES) o como hoy (1,234)? (2) ¿Limitar el
-  precio a dos decimales? Hoy se aceptan más y se conservan. (3) El botón flotante «volver arriba» de la aplicación tapa
-  las barras fijas del panel nuevo (también la de guardar de Eventos); aquí se le deja sitio: ¿ocultarlo en el panel
-  nuevo? (4) Con grupos enteros se pueden seleccionar más de 200 productos y la API rechaza el lote («Como máximo 200
-  productos a la vez.», que se enseña); hoy no pasaba (10 por página): ¿partir en tandas?
+  precio a dos decimales? Hoy se aceptan más y se conservan.
+- **Correcciones de la revisión (mismo commit de arreglos):** (a) las páginas de cada grupo se piden con `orderBy=id`
+  (único; en paralelo, el orden por concepto podía repetir u omitir filas en el corte) y el orden visible se hace en el
+  navegador; (b) «Dar/Quitar de Mi caja» con más de 200 seleccionados no envía nada y avisa «Selecciona como máximo 200
+  productos a la vez.» (todo o nada de la API); 200 sí se envía; (c) el botón global «volver arriba» del `skeleton` solo
+  se monta con el diseño de hoy (así no tapa la barra inferior ni las barras fijas del panel nuevo, Eventos incluido);
+  se borró su regla sin efecto en `skeleton.component.scss` y la barra de selección vuelve a `padding` de 16 px;
+  (d) `productosEditar/abc` (id no numérico o no positivo) enseña `pn-bloque-error` «No se encontró el producto» sin
+  «Reintentar» (nuevo `@Input() reintentable`, por defecto `true`) y no deja guardar, en vez de caer en crear.
+  Cierra las preguntas (3) y (4) de antes. Karma 2134 SUCCESS; bundle inicial 26 bytes menos que antes de la corrección.
 
 ## 18. Pieza 8b-3h: Preinscripciones
 

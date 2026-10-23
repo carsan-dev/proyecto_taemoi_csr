@@ -23,7 +23,7 @@ import {
   validarPrecio,
 } from './productos-vista';
 
-type Estado = 'cargando' | 'listo' | 'error';
+type Estado = 'cargando' | 'listo' | 'error' | 'invalido';
 
 interface ErrorResumen {
   campo: CampoProducto;
@@ -95,8 +95,14 @@ export class ProductoFormularioComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.ruta.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      const id = Number(params['id']);
-      if (params['id'] !== undefined && !Number.isNaN(id)) {
+      const bruto = params['id'];
+      const id = Number(bruto);
+      if (bruto !== undefined && (!Number.isInteger(id) || id <= 0)) {
+        // `productosEditar/abc`: editar un producto que no existe, no crear uno.
+        this.modo = 'editar';
+        this.productoId = null;
+        this.estado = 'invalido';
+      } else if (bruto !== undefined) {
         this.modo = 'editar';
         this.productoId = id;
         this.cargar();
@@ -201,7 +207,7 @@ export class ProductoFormularioComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ guardar y cancelar
 
   guardar(): void {
-    if (this.guardando) {
+    if (this.guardando || this.estado !== 'listo') {
       return;
     }
     if (this.form.invalid) {

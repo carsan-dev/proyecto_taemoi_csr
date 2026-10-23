@@ -64,6 +64,9 @@ const TIPOS = TIPOS_PRODUCTO.map((t) => t.valor);
  * los estados de carga del panel nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de
  * `disenoNuevoGuard`.
  */
+/** Lo que acepta de una vez el PATCH de «Mi caja» en lote. */
+const MAXIMO_LOTE = 200;
+
 @Component({
   selector: 'app-productos',
   standalone: true,
@@ -188,7 +191,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private leerTipo(tipo: TipoProducto, concepto: string, miCaja: boolean | null): Observable<Lectura> {
     const pedir = (pagina: number) =>
-      this.lecturas.productos(concepto, pagina, TAMANO_LECTURA, ORDEN_POR_DEFECTO.campo, ORDEN_POR_DEFECTO.sentido, tipo, miCaja);
+      // Por id (único): las páginas van en paralelo y un orden por concepto (repetible) podría repetir u omitir filas en el
+      // corte; el orden que se ve se hace después en el navegador.
+      this.lecturas.productos(concepto, pagina, TAMANO_LECTURA, 'id', 'asc', tipo, miCaja);
     return pedir(1).pipe(
       switchMap((primera) => {
         const paginas = Number(primera?.totalPages) || 0;
@@ -380,6 +385,11 @@ export class ProductosComponent implements OnInit, OnDestroy {
   miCajaEnLote(vendibleProfesor: boolean): void {
     const lote = this.seleccionados;
     if (lote.length === 0 || this.accionBloque) {
+      return;
+    }
+    if (lote.length > MAXIMO_LOTE) {
+      // La API es todo o nada y rechaza más de 200: mejor no enviar que fallar con la selección entera.
+      this.avisos.error(`Selecciona como máximo ${MAXIMO_LOTE} productos a la vez.`);
       return;
     }
     this.accionBloque = vendibleProfesor ? 'dar' : 'quitar';

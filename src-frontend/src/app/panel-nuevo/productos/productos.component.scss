@@ -642,9 +642,7 @@ input:focus-visible + .productos__caja {
   justify-content: space-between;
   gap: 8px 16px;
   margin-top: 20px;
-  // A la derecha queda el sitio del botón flotante «volver arriba» de la aplicación (60 px a 20 px del borde), que si
-  // no taparía «Eliminar».
-  padding: 10px 92px 10px 16px;
+  padding: 10px 16px;
   background: var(--pn-superficie);
   border: 1px solid var(--pn-linea);
   border-radius: var(--pn-radio-m);

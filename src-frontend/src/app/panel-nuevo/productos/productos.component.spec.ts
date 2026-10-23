@@ -206,7 +206,8 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
       expect(r.request.params.keys()).toEqual(['page', 'size', 'orderBy', 'order', 'tipo']);
       expect(r.request.params.get('page')).toBe('1');
       expect(r.request.params.get('size')).toBe('200');
-      expect(r.request.params.get('orderBy')).toBe('concepto');
+      // Por id (único): con páginas pedidas en paralelo, un orden por concepto (repetible) podría repetir u omitir filas.
+      expect(r.request.params.get('orderBy')).toBe('id');
       expect(r.request.params.get('order')).toBe('asc');
     }
     responderLecturas(LISTA(), pendientes);
@@ -224,6 +225,7 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
       ['EXAMEN', '2'],
       ['EXAMEN', '3'],
     ]);
+    expect(siguientes.map((r) => r.request.params.get('orderBy'))).toEqual(['id', 'id']);
     responderLecturas(muchos, siguientes);
     expect(idsDe('EXAMEN').length).toBe(450);
     expect(texto(grupo('EXAMEN')!.querySelector('.productos__numero'))).toBe('450');
@@ -554,6 +556,31 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
     await esperar();
     expect(interruptor(17).getAttribute('aria-checked')).toBe('false');
     expect(avisos()[1]).toEqual({ tipo: 'otro', texto: '1 producto quitado de Mi caja.' });
+  });
+
+  it('Mi caja en lote: más de 200 seleccionados no envía nada y avisa; 200 sí (todo o nada de la API)', async () => {
+    const examenes = (n: number) => Array.from({ length: n }, (_, i) => P(100 + i, `Examen ${i}`, 25, 'EXAMEN'));
+    crear();
+    responderLecturas(examenes(201));
+    responderLecturas(examenes(201), pendientesLista());
+    grupo('EXAMEN')!.querySelector<HTMLInputElement>('.productos__casilla-grupo')!.click();
+    fixture.detectChanges();
+    expect(texto(barra()!.querySelector('.productos__seleccion-texto'))).toBe('201 productos seleccionados');
+    botonEn(barra()!, 'Dar a Mi caja').click();
+    await esperar();
+    http.expectNone(`${API}/productos/vendible-profesor`);
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'Selecciona como máximo 200 productos a la vez.' }]);
+    expect(barra()).not.toBeNull();
+    expect(botonEn(barra()!, 'Dar a Mi caja').disabled).toBeFalse();
+
+    casilla(100).click();
+    fixture.detectChanges();
+    botonEn(barra()!, 'Quitar de Mi caja').click();
+    fixture.detectChanges();
+    const r = http.expectOne(`${API}/productos/vendible-profesor`);
+    expect((r.request.body as { ids: number[] }).ids.length).toBe(200);
+    r.flush({ actualizados: 200 });
+    await esperar();
   });
 
   it('Mi caja en lote: un error no cambia nada, la selección sigue y avisa con el mensaje del servidor', async () => {

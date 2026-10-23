@@ -433,6 +433,23 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
     expect(precio().value).toBe('1.010,50');
   });
 
+  it('editar con un id que no es un número (productosEditar/abc): bloque de error sin «Reintentar», enlace al listado, ninguna petición y sin poder guardar', () => {
+    idRuta = 'abc';
+    fixture = TestBed.createComponent(ProductoFormularioComponent);
+    fixture.detectChanges();
+    http.expectNone((r) => r.url.startsWith(`${API}/productos`));
+    const error = el().querySelector('pn-bloque-error')!;
+    expect(error).not.toBeNull();
+    expect(texto(error)).toContain('No se encontró el producto');
+    expect(Array.from(error.querySelectorAll('button')).length).toBe(0);
+    expect(el().querySelector('.producto-form__guardar')).toBeNull();
+    expect(el().querySelector('form')).toBeNull();
+    expect(el().querySelector('.producto-form__miga a')).not.toBeNull();
+    fixture.componentInstance.guardar();
+    http.expectNone((r) => r.url.startsWith(`${API}/productos`));
+    expect(fixture.componentInstance.modo).toBe('editar');
+  });
+
   it('guardar no se cancela al salir: la petición sigue y no navega tras destruir', async () => {
     editar();
     guardar().click();
