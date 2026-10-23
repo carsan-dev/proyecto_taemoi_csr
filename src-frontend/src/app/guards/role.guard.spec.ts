@@ -1,10 +1,13 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { CanActivateFn } from '@angular/router';
-import { BehaviorSubject, firstValueFrom, isObservable } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { BehaviorSubject, Observable, firstValueFrom, isObservable } from 'rxjs';
 
 import { roleGuard } from './role.guard';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
+import { environment } from '../../environments/environment';
 
 describe('roleGuard', () => {
   const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
@@ -105,4 +108,38 @@ describe('roleGuard', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
     expect(authServiceMock.resolverRolesDisponibles).not.toHaveBeenCalled();
   });
+});
+
+describe('roleGuard con el servicio real: arranque con un fallo de red en /roles', () => {
+  const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
+
+  beforeEach(() => {
+    routerSpy.navigate.calls.reset();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: routerSpy }],
+    });
+  });
+
+  it('si /roles falla una vez con estado 0 y luego da ROLE_ADMIN, deja pasar sin navegar', fakeAsync(() => {
+    const http = TestBed.inject(HttpTestingController);
+    TestBed.inject(AuthenticationService);
+    http.expectOne(`${environment.apiUrl}/auth/auth-status`).flush(true);
+    http.expectOne(`${environment.apiUrl}/auth/user`).flush({ email: 'admin@escuela.es' });
+    // La carga de roles del arranque falla sin llegar al servidor (Firefox al restaurar la sesión).
+    http.expectOne(`${environment.apiUrl}/auth/roles`).error(new ProgressEvent('error'));
+
+    let resultado: unknown;
+    const guard = TestBed.runInInjectionContext(() =>
+      roleGuard({ data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER'] } } as any, { url: '/convocatoriasListar' } as any)
+    ) as Observable<unknown>;
+    guard.subscribe((r) => (resultado = r));
+    http.expectNone(`${environment.apiUrl}/auth/roles`);
+
+    tick(500);
+    http.expectOne(`${environment.apiUrl}/auth/roles`).flush(['ROLE_ADMIN']);
+
+    expect(resultado).toBeTrue();
+    expect(routerSpy.navigate).not.toHaveBeenCalled();
+    http.verify();
+  }));
 });
