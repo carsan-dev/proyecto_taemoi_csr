@@ -1,0 +1,560 @@
+// Solicitudes del panel nuevo (8b-3i, P1 «acciones en la fila»). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md):
+// cada segmento es un bloque blanco con filete y una fila por solicitud separada por la línea. La fila tiene tres zonas:
+// quién (nombre, cuándo y sede), qué (pastillas, sobre qué con el importe a la derecha, concepto, motivo como cita,
+// recorrido del encargo, resolución y respuesta) y acciones. El acento de la escuela solo en la pestaña activa, el
+// número de la activa, los secundarios, los botones de texto y el foco; los estados con `bien`, `atencion` y `peligro`
+// (siempre con su palabra); el ocre solo en «Devolución pendiente», «Sin cobrar» y «No aplicable». Sin sombras.
+//
+// La fila se compone con consultas de contenedor sobre la página: por debajo de 640 px se apila (quién, qué y acciones,
+// a lo ancho y sin desplazamiento horizontal); de 640 a 959, quién y qué lado a lado y las acciones debajo, a la
+// derecha; desde 960, las tres zonas en columnas con las acciones apiladas a la derecha.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.sol {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.sol__pagina {
+  container: sol / inline-size;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+// ------------------------------------------------------------------ botones
+
+.sol__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.sol__boton-secundario,
+.sol__accion,
+.sol__pestana {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// La de cada fila que hace avanzar (aceptar, marcar, registrar): secundario. Un solo primario por pantalla (DESIGN.md),
+// y en una bandeja cada fila tiene el suyo: el más fuerte de la fila es el secundario.
+.sol__accion {
+  @include c.boton-texto;
+  justify-content: center;
+}
+
+.sol__accion--principal {
+  @include c.boton-secundario;
+}
+
+// Denegar y rechazar: en peligro, con el hover neutro (DESIGN.md, botones de texto de peligro).
+.sol__accion--negativa {
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+// ------------------------------------------------------------------ cabecera y pestañas
+
+.sol__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 12px;
+}
+
+.sol__titulos {
+  min-width: 0;
+}
+
+.sol__titulo-pantalla {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.sol__subtitulo {
+  max-width: 75ch;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.sol__pestanas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.sol__pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--pn-transicion), box-shadow var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  // Activa (8b-C): texto y subrayado de 3 px en acento.
+  &[aria-selected='true'] {
+    color: var(--pn-acento);
+    box-shadow: inset 0 -3px 0 var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+}
+
+// El número de la pestaña: contador redondo; en la activa, elegido (acento-suave y acento).
+.sol__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+
+  .sol__pestana[aria-selected='true'] & {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+  }
+}
+
+// ------------------------------------------------------------------ listas
+
+.sol__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.sol__encargos {
+  margin-top: var(--pn-espacio-l);
+}
+
+.sol__titulo-bloque {
+  margin: 0 0 10px;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.sol__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  // Sin especificidad de más: los márgenes propios de cada párrafo, declarados después, mandan.
+  :where(p) {
+    margin: 0;
+  }
+}
+
+// ------------------------------------------------------------------ quién
+
+.sol__quien {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sol__nombre {
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.sol__cuando,
+.sol__sede {
+  color: var(--pn-tinta-2);
+}
+
+.sol__sede {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    color: var(--pn-tinta-3);
+  }
+}
+
+// ------------------------------------------------------------------ qué
+
+.sol__que {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sol__pastillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.sol__pastilla {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  overflow-wrap: anywhere;
+
+  // El tipo: silueta neutra, en tinta.
+  &[data-tono='tipo'] {
+    background: var(--pn-superficie);
+    box-shadow: inset 0 0 0 1px var(--pn-linea-fuerte);
+    color: var(--pn-tinta);
+  }
+
+  &[data-tono='curso'] {
+    color: var(--pn-tinta);
+  }
+
+  &[data-tono='atencion'] {
+    background: var(--pn-atencion-suave);
+    color: var(--pn-atencion);
+  }
+
+  &[data-tono='bien'] {
+    background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+    color: var(--pn-bien);
+  }
+
+  &[data-tono='peligro'] {
+    background: color-mix(in srgb, var(--pn-peligro) 8%, var(--pn-superficie));
+    color: var(--pn-peligro);
+  }
+}
+
+.sol__sobre-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  min-width: 0;
+}
+
+.sol__sobre {
+  min-width: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.sol__importe {
+  margin-left: auto;
+  font: var(--pn-cuerpo);
+  font-weight: 700;
+  color: var(--pn-tinta);
+  white-space: nowrap;
+}
+
+.sol__concepto {
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.sol__cita {
+  max-width: 70ch;
+  margin: 4px 0 0;
+  padding: 6px 10px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie-2);
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  overflow-wrap: anywhere;
+}
+
+.sol__resolucion {
+  margin-top: 4px;
+  color: var(--pn-tinta-2);
+}
+
+.sol__respuesta {
+  max-width: 70ch;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.sol__respuesta-etiqueta {
+  font-weight: 600;
+
+  .sol__respuesta[data-tono='atencion'] & {
+    color: var(--pn-atencion);
+  }
+}
+
+// ------------------------------------------------------------------ recorrido del encargo
+
+// Cuatro pasos con su marca y su nombre debajo, unidos por una línea; hechos con la marca llena, el actual con un
+// anillo de tinta y el nombre en 600, los que faltan con un anillo claro. En tinta y neutros: no es un estado de color.
+.sol__pasos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 440px;
+  margin: 8px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.sol__paso {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-weight: 500;
+  text-align: center;
+
+  // La línea hasta el paso anterior, por detrás de las marcas.
+  &:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--pn-linea-fuerte);
+  }
+
+  &[data-estado='hecho']:not(:first-child)::before,
+  &[data-estado='actual']:not(:first-child)::before {
+    background: var(--pn-tinta-2);
+  }
+
+  &[data-estado='actual'] {
+    color: var(--pn-tinta);
+    font-weight: 700;
+  }
+}
+
+.sol__paso-marca {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--pn-superficie);
+  box-shadow: inset 0 0 0 2px var(--pn-borde-control);
+  color: var(--pn-superficie);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .sol__paso[data-estado='hecho'] & {
+    background: var(--pn-tinta-2);
+    box-shadow: none;
+  }
+
+  .sol__paso[data-estado='actual'] & {
+    box-shadow: inset 0 0 0 2px var(--pn-tinta), inset 0 0 0 5px var(--pn-superficie), inset 0 0 0 9px var(--pn-tinta);
+  }
+}
+
+.sol__paso-texto {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+// ------------------------------------------------------------------ acciones
+
+.sol__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sol__nota-profesor {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 260px;
+  color: var(--pn-tinta-2);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+// ------------------------------------------------------------------ esqueleto
+
+.sol__esqueleto {
+  overflow: hidden;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.sol__esqueleto-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  span {
+    display: block;
+    height: 12px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(1) {
+    width: 40%;
+  }
+
+  span:nth-child(2) {
+    width: 85%;
+  }
+
+  span:nth-child(3) {
+    width: 30%;
+  }
+}
+
+// ------------------------------------------------------------------ composición por ancho de la página
+
+@container sol (min-width: 640px) {
+  .sol__fila {
+    grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
+    column-gap: 24px;
+  }
+
+  .sol__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .sol__esqueleto-fila {
+    grid-template-columns: 180px minmax(0, 1fr) 140px;
+    gap: 24px;
+
+    span:nth-child(n) {
+      width: 100%;
+    }
+  }
+}
+
+@container sol (min-width: 960px) {
+  .sol__fila {
+    grid-template-columns: minmax(160px, 220px) minmax(0, 1fr) 200px;
+  }
+
+  .sol__acciones {
+    grid-column: auto;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: start;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .sol__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .sol__titulo-pantalla {
+    font-size: 1.375rem;
+  }
+
+  // Tres pestañas a lo ancho: si «Encargos en curso» no cabe, parte en dos líneas en vez de desbordar.
+  .sol__pestana {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 4px 8px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .sol__boton-secundario,
+  .sol__accion {
+    min-height: 44px;
+  }
+
+  .sol__accion {
+    flex: 1 1 auto;
+  }
+
+  .sol__nota-profesor {
+    max-width: none;
+  }
+}

@@ -15,6 +15,7 @@ import { EventoFormularioComponent } from './panel-nuevo/eventos/evento-formular
 import { ProductosComponent } from './panel-nuevo/productos/productos.component';
 import { ProductoFormularioComponent } from './panel-nuevo/productos/producto-formulario.component';
 import { PreinscripcionesPanelComponent } from './panel-nuevo/preinscripciones/preinscripciones.component';
+import { SolicitudesPanelComponent } from './panel-nuevo/solicitudes/solicitudes.component';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -311,8 +312,9 @@ describe('app routes', () => {
     ['productosCrear', '/productosCrear', ProductoFormularioComponent],
     ['productosEditar/:id', '/productosEditar/7', ProductoFormularioComponent],
     ['preinscripciones', '/preinscripciones', PreinscripcionesPanelComponent],
+    ['solicitudes', '/solicitudes', SolicitudesPanelComponent],
   ] as const) {
-    it(`${ruta} (8b-3f, 8b-3g y 8b-3h): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
+    it(`${ruta} (8b-3f a 8b-3i): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
       const entradas = routes.filter((route) => route.path === ruta);
       expect(entradas.length).toBe(2);
       const [nueva, hoy] = entradas;
@@ -326,7 +328,7 @@ describe('app routes', () => {
       expect(await hoy.loadComponent!()).not.toBe(componente);
     });
 
-    it(`${ruta} (8b-3f, 8b-3g y 8b-3h): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
+    it(`${ruta} (8b-3f a 8b-3i): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
       @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
       class EventosDeHoy {}
       const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;

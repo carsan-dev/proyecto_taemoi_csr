@@ -1,0 +1,146 @@
+<div class="pn sol" pnAcento>
+  <div class="sol__pagina">
+    <header class="sol__cabecera">
+      <div class="sol__titulos">
+        <h1 class="sol__titulo-pantalla">Solicitudes</h1>
+        <p class="sol__subtitulo">{{ subtitulo }}</p>
+      </div>
+      <button type="button" class="sol__boton-secundario" [disabled]="estado[segmento].cargando" (click)="recargar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"></path></svg>
+        <span>Actualizar</span>
+      </button>
+    </header>
+
+    <div class="sol__pestanas" role="tablist" aria-label="Solicitudes" (keydown)="teclaPestanas($event)">
+      @for (opcion of segmentos; track opcion) {
+      <button type="button" role="tab" class="sol__pestana" [id]="'sol-pestana-' + opcion" [attr.aria-controls]="'sol-panel-' + opcion"
+        [attr.aria-selected]="segmento === opcion" [attr.tabindex]="segmento === opcion ? 0 : -1" (click)="elegirSegmento(opcion)">
+        <span>{{ etiquetaSegmento(opcion) }}</span>
+        @if (numero(opcion) !== null) {
+        <!-- Un espacio de verdad entre el nombre y el número: el nombre accesible es «Pendientes 3». -->
+        &ngsp;<span class="sol__numero" data-cifras>{{ numero(opcion) }}</span>
+        }
+      </button>
+      }
+    </div>
+
+    @for (opcion of segmentos; track opcion) {
+    <section class="sol__panel" role="tabpanel" [id]="'sol-panel-' + opcion" [attr.aria-labelledby]="'sol-pestana-' + opcion"
+      [hidden]="segmento !== opcion" [attr.aria-busy]="estado[opcion].cargando ? 'true' : null">
+      @if (segmento === opcion) {
+      @if (estado[opcion].error; as error) {
+      <pn-bloque-error titulo="No se han podido cargar las solicitudes."
+        [texto]="error.mensaje ?? 'Comprueba la conexión y vuelve a intentarlo.'" (reintentar)="cargar(opcion)" />
+      } @else if (estado[opcion].lista === null) {
+      <pn-esqueleto etiqueta="Cargando solicitudes">
+        <div class="sol__esqueleto">
+          @for (i of [1, 2, 3, 4]; track i) {
+          <div class="sol__esqueleto-fila"><span></span><span></span><span></span></div>
+          }
+        </div>
+      </pn-esqueleto>
+      } @else if (estado[opcion].lista!.length === 0) {
+      <pn-bloque-vacio [titulo]="vacio(opcion).titulo" [texto]="vacio(opcion).texto" />
+      } @else {
+      <ul class="sol__lista sol__lista--principal" [attr.aria-label]="etiquetaSegmento(opcion)">
+        @for (s of estado[opcion].lista; track s.id) {
+        <ng-container [ngTemplateOutlet]="filaSolicitud" [ngTemplateOutletContext]="{ $implicit: s, segmento: opcion }" />
+        }
+      </ul>
+      }
+
+      @if (opcion === 'PENDIENTES' && !estado[opcion].error && estado[opcion].lista !== null && encargosBajoPendientes.length) {
+      <section class="sol__encargos" aria-labelledby="sol-encargos-titulo">
+        <h2 class="sol__titulo-bloque" id="sol-encargos-titulo">Encargos en curso</h2>
+        <ul class="sol__lista">
+          @for (s of encargosBajoPendientes; track s.id) {
+          <ng-container [ngTemplateOutlet]="filaSolicitud" [ngTemplateOutletContext]="{ $implicit: s, segmento: 'ENCARGOS' }" />
+          }
+        </ul>
+      </section>
+      }
+      }
+    </section>
+    }
+  </div>
+</div>
+
+<ng-template #filaSolicitud let-s let-segmento="segmento">
+  <li class="sol__fila" [attr.data-id]="s.id">
+    <div class="sol__quien">
+      <p class="sol__nombre">{{ s.solicitadoPorNombre || 'Cuenta borrada' }}</p>
+      @if (s.solicitadoEn) {
+      <time class="sol__cuando" data-cifras [attr.datetime]="s.solicitadoEn">{{ fechaHora(s.solicitadoEn) }}</time>
+      }
+      <p class="sol__sede">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg>
+        <span>{{ s.sedeNombre || 'Sin sede' }}</span>
+      </p>
+    </div>
+
+    <div class="sol__que">
+      <p class="sol__pastillas">
+        @for (p of pastillas(s, segmento === 'PENDIENTES'); track $index) {
+        <span class="sol__pastilla" [attr.data-tono]="p.tono">{{ p.texto }}</span>
+        }
+        @if (pastillaCobro(s); as cobro) {
+        <span class="sol__pastilla sol__pastilla--cobro" [attr.data-tono]="cobro.tono">{{ cobro.texto }}</span>
+        }
+      </p>
+      <div class="sol__sobre-linea">
+        <p class="sol__sobre">{{ sobreQue(s) }}</p>
+        @if (s.importe !== null) {
+        <p class="sol__importe" data-cifras>{{ eur(s.importe) }}</p>
+        }
+      </div>
+      @if (s.concepto) {
+      <p class="sol__concepto">{{ s.concepto }}</p>
+      }
+      @if (s.motivo?.trim()) {
+      <blockquote class="sol__cita">«{{ s.motivo }}»</blockquote>
+      }
+      @if (pasosEncargo(s); as pasos) {
+      <ol class="sol__pasos" aria-label="Recorrido del encargo">
+        @for (paso of pasos; track paso.etiqueta) {
+        <li class="sol__paso" [attr.data-estado]="paso.estado" [attr.aria-current]="paso.estado === 'actual' ? 'step' : null">
+          <span class="sol__paso-marca" aria-hidden="true">
+            @if (paso.estado === 'hecho') {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            }
+          </span>
+          <span class="sol__paso-texto">{{ paso.etiqueta }}</span>
+        </li>
+        }
+      </ol>
+      }
+      @if (segmento === 'RESUELTAS' && textoResolucion(s); as resolucion) {
+      <p class="sol__resolucion">{{ resolucion }}</p>
+      }
+      @if (s.respuesta) {
+      <p class="sol__respuesta" [attr.data-tono]="s.estado === 'NO_APLICABLE' ? 'atencion' : null">
+        <span class="sol__respuesta-etiqueta">{{ etiquetaRespuesta(s) }}</span> {{ s.respuesta }}
+      </p>
+      }
+    </div>
+
+    @if (acciones(s).length || devolucionDelProfesor(s)) {
+    <div class="sol__acciones">
+      @for (accion of acciones(s); track accion) {
+      <button type="button" pnOcupado class="sol__accion" [class.sol__accion--principal]="esPrincipal(accion)"
+        [class.sol__accion--negativa]="esNegativa(accion)" [ocupado]="enVuelo(s, accion)" [textoOcupado]="textoOcupado(accion)"
+        [deshabilitado]="ocupada(s) && !enVuelo(s, accion)" (click)="hacer(s, accion)">{{ textoAccion(accion, s) }}</button>
+      }
+      @if (devolucionDelProfesor(s)) {
+      <p class="sol__nota-profesor">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>
+        <span>Devolución pendiente: la registra el profesor</span>
+      </p>
+      }
+    </div>
+    }
+  </li>
+</ng-template>
