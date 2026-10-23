@@ -173,13 +173,13 @@
           </div>
         </li>
         }
-        @if (g.hayMas) {
-        <li class="productos__pie">
-          <button type="button" pnOcupado class="productos__boton-texto" [ocupado]="leyendo(g)" textoOcupado="Cargando…"
-            [attr.aria-label]="textoRestantes(g) + ' de ' + g.titulo" (click)="verRestantes(g)">{{ textoRestantes(g) }}</button>
-        </li>
-        }
       </ul>
+      @if (g.hayMas) {
+      <div class="productos__pie">
+        <button type="button" pnOcupado class="productos__boton-texto" [ocupado]="leyendo(g)" textoOcupado="Cargando…"
+          [attr.aria-label]="textoRestantes(g) + ' de ' + g.titulo" (click)="verRestantes(g)">{{ textoRestantes(g) }}</button>
+      </div>
+      }
     </section>
     }
     }

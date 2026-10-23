@@ -340,12 +340,23 @@
   }
 }
 
-// Pie del grupo (con más filas de las que se ven): a la izquierda, bajo la última fila y dentro de la tarjeta.
+// Pie del grupo (con más filas de las que se ven): a la izquierda, pegado bajo la lista, dentro de la tarjeta del grupo.
+.productos__lista:has(+ .productos__pie) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+
+  .productos__fila:last-child {
+    border-radius: 0;
+  }
+}
+
 .productos__pie {
   display: flex;
   justify-content: flex-start;
   padding: 4px 6px;
-  border-top: 1px solid var(--pn-linea);
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-top: 0;
   border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
 }
 

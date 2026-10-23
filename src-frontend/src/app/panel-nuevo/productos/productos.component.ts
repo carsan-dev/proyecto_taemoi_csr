@@ -126,6 +126,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
   /** Grupos leyendo sus páginas restantes (botón ocupado). */
   private readonly leyendoResto = new Set<TipoProducto>();
   private readonly restos = new Map<TipoProducto, Subscription>();
+  /** Hay una lectura de los grupos en vuelo: «Ver los N restantes» espera a que acabe. */
+  private recargando = false;
   /** Concepto y Mi caja de la última lectura: las páginas restantes piden lo mismo. */
   private consulta: { concepto: string; miCaja: boolean | null } = { concepto: '', miCaja: null };
   private ordenes: Record<TipoProducto, Orden> = Object.fromEntries(TIPOS.map((t) => [t, ORDEN_POR_DEFECTO])) as Record<
@@ -191,6 +193,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   cargar(silencioso = false): void {
     this.carga?.unsubscribe();
     this.cancelarRestos();
+    this.recargando = true;
     this.conceptoAplicado = this.filtros.concepto;
     this.guardarEstado();
     if (!silencioso) {
@@ -201,6 +204,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.consulta = { concepto: this.filtros.concepto, miCaja: miCajaParaApi(this.filtros.miCaja) };
     this.carga = forkJoin(tipos.map((t) => this.leerTipo(t, this.abiertos.has(t)))).subscribe({
       next: (lecturas) => {
+        this.recargando = false;
+        this.cancelarRestos();
         this.porTipo = new Map(lecturas.map((l) => [l.tipo, l]));
         this.seleccion.clear();
         this.reconstruir();
@@ -208,6 +213,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: () => {
+        this.recargando = false;
         if (silencioso) {
           this.avisos.error('No se pudo actualizar la lista de productos.');
         } else {
@@ -295,7 +301,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   leyendo(g: Grupo): boolean {
-    return this.leyendoResto.has(g.tipo);
+    return this.leyendoResto.has(g.tipo) || (this.recargando && this.abiertos.has(g.tipo));
   }
 
   /**
@@ -305,14 +311,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
   verRestantes(g: Grupo): void {
     const tipo = g.tipo;
     const lectura = this.porTipo.get(tipo);
-    if (!lectura || this.leyendoResto.has(tipo)) {
+    if (!lectura || this.recargando || this.leyendoResto.has(tipo)) {
       return;
     }
     const primeraNueva = g.productos[g.visibles.length]?.id;
     this.abiertos.add(tipo);
     this.reconstruir();
     this.cdr.detectChanges();
-    this.enfocarFila(primeraNueva);
+    this.enfocarFila(primeraNueva, true);
     if (lectura.leidas >= lectura.paginas) {
       return;
     }
@@ -330,7 +336,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
             nuevaId ??= lectura.productos[antes]?.id;
             this.reconstruir();
             this.cdr.detectChanges();
-            if (nuevaId !== undefined && this.enfocarFila(nuevaId)) {
+            if (nuevaId !== undefined && this.enfocarFila(nuevaId, false)) {
               nuevaId = undefined;
             }
           },
@@ -352,15 +358,17 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Lleva el foco a la casilla de la primera fila recién enseñada, si el foco seguía en el botón (que puede desaparecer) o
-   * en ningún sitio: nunca se lo quita a quien ya se fue a otra parte.
+   * Lleva el foco a la casilla de la primera fila recién enseñada si el foco seguía en el botón del pie. En el clic
+   * (`enElClic`) también si ya cayó al body porque el botón se quitó; con la lectura en marcha, nunca se lo quita a quien
+   * se fue a otra parte.
    */
-  private enfocarFila(id: number | undefined): boolean {
+  private enfocarFila(id: number | undefined, enElClic: boolean): boolean {
     if (id === undefined) {
       return false;
     }
     const activo = document.activeElement;
-    if (activo && activo !== document.body && !activo.closest('.productos__pie')) {
+    const enPie = !!activo?.closest('.productos__pie');
+    if (!enPie && !(enElClic && (!activo || activo === document.body))) {
       return true;
     }
     const casilla = this.host.nativeElement.querySelector<HTMLInputElement>(

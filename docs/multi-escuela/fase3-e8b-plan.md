@@ -1165,7 +1165,8 @@ deje de enviarse.
   Cierra las preguntas (3) y (4) de antes. Karma 2134 SUCCESS; bundle inicial 26 bytes menos que antes de la corrección.
 - **Retoque `fix/productos-carga-paginas`:** al abrir se lee solo la primera página (200) de cada grupo y se ven 50 filas;
   «Ver los N restantes» lee el resto de ESE grupo, una página tras otra, y el total y el número de cada grupo salen de
-  `totalElements`. La relectura tras escribir mantiene abiertos los grupos que lo estaban.
+  `totalElements`. La relectura tras escribir mantiene abiertos los grupos que lo estaban. Con más de 200 filas en un grupo, el orden se
+  aplica a las leídas hasta que «Ver los N restantes» carga el resto.
 
 ## 18. Pieza 8b-3h: Preinscripciones
 

@@ -255,8 +255,8 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
     expect(texto(grupo('EXAMEN')!.querySelector('.productos__numero'))).toBe('450');
     expect(grupo('EXAMEN')!.querySelector('.productos__numero')!.getAttribute('aria-label')).toBe('450 productos');
     expect(texto(el().querySelector('.productos__total'))).toBe('450 productos');
-    // Dentro de la tarjeta, bajo la última fila, y solo en el grupo que lo necesita.
-    expect(grupo('EXAMEN')!.querySelector('.productos__lista')!.lastElementChild!.classList).toContain('productos__pie');
+    // Dentro de la tarjeta del grupo, justo bajo la lista, y solo en el grupo que lo necesita.
+    expect(grupo('EXAMEN')!.querySelector('.productos__lista')!.nextElementSibling!.classList).toContain('productos__pie');
   });
 
   it('el total suma el de cada grupo (totalElements), no las filas leídas', () => {
@@ -373,6 +373,44 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
     expect(todos.indeterminate).toBeTrue();
     expect(texto(barra()!.querySelector('.productos__seleccion-texto'))).toBe('50 productos seleccionados');
     expect(todos.getAttribute('aria-label')).toBe('Seleccionar los 120 de Derechos de examen');
+  });
+
+  it('relectura silenciosa con la página 2 en vuelo: cancela la vieja, vuelve a pedir la 1 y la 2 solo después', () => {
+    const lista = examenes(450);
+    cargar(lista);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    const vieja = http.expectOne((x) => x.url === URL_LISTA);
+    expect(vieja.request.params.get('page')).toBe('2');
+    fixture.componentInstance.cargar(true);
+    fixture.detectChanges();
+    expect(vieja.cancelled).toBeTrue();
+    expect(paginasPendientes()).toEqual(TIPOS.map((t) => `${t}:1`));
+    responderLecturas(lista, retenidas.splice(0));
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
+    responderPagina(lista, '2');
+    expect(paginasPendientes()).toEqual(['EXAMEN:3']);
+    responderPagina(lista, '3');
+    expect(idsDe('EXAMEN').length).toBe(450);
+    expect(pie('EXAMEN')).toBeNull();
+  });
+
+  it('pulsar el pie durante una relectura silenciosa no pide nada más y el botón sigue ocupado', () => {
+    const lista = examenes(450);
+    cargar(lista);
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    http.expectOne((x) => x.url === URL_LISTA);
+    fixture.componentInstance.cargar(true);
+    fixture.detectChanges();
+    const primeras = pendientesLista();
+    expect(primeras.length).toBe(7);
+    expect(pie('EXAMEN')!.getAttribute('aria-busy')).toBe('true');
+    pie('EXAMEN')!.click();
+    fixture.detectChanges();
+    http.expectNone(() => true);
+    responderLecturas(lista, primeras);
+    expect(paginasPendientes()).toEqual(['EXAMEN:2']);
   });
 
   it('relectura silenciosa: el grupo abierto relee sus páginas en serie y sigue abierto; el cerrado, solo la primera', () => {
