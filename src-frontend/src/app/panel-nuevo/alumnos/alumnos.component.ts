@@ -23,6 +23,7 @@ import {
   EstadoLicencia,
   antiguedad,
   estadoLicencia,
+  fotoDe,
   GradoFila,
   gradoFila,
   iniciales,
@@ -645,15 +646,6 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     const i = this.catalogo.disciplinasActivas().findIndex((d) => d.codigo === codigo);
     return i >= 0 && i < 4 ? `alumnos__disc--${i + 1}` : 'alumnos__disc--otra';
   }
-}
-
-function fotoDe(a: any): string | null {
-  const url: string | undefined = a?.fotoAlumno?.url;
-  if (!url) {
-    return null;
-  }
-  const version = encodeURIComponent(String(a.fotoAlumno.id ?? a.fotoAlumno.nombre ?? '0'));
-  return `${url}${url.includes('?') ? '&' : '?'}w=180&v=${version}`;
 }
 
 function leerVista(): Vista {

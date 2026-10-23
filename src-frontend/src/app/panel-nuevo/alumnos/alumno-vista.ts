@@ -61,6 +61,20 @@ export function iniciales(nombre: string | null | undefined, apellidos: string |
   return `${primera(nombre)}${primera(apellidos)}`;
 }
 
+/**
+ * La foto de un alumno en una lista (Alumnos, Convocatorias): la `url` de su `fotoAlumno` (`GET /alumnos/{id}/imagen`,
+ * que decide quién la ve) a 180 px y con la versión de la imagen para que un cambio de foto no salga de la caché. Nula
+ * sin foto.
+ */
+export function fotoDe(a: { fotoAlumno?: { id?: number | null; nombre?: string | null; url?: string | null } | null } | null | undefined): string | null {
+  const url = a?.fotoAlumno?.url;
+  if (!url) {
+    return null;
+  }
+  const version = encodeURIComponent(String(a!.fotoAlumno!.id ?? a!.fotoAlumno!.nombre ?? '0'));
+  return `${url}${url.includes('?') ? '&' : '?'}w=180&v=${version}`;
+}
+
 /** «2 años», «1 año y 8 meses», «4 meses» o «Menos de 1 mes». Vacío sin fecha. */
 export function antiguedad(desde: Date | string | null | undefined, hoy: Date): string {
   const inicio = aFecha(desde);

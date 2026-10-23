@@ -24,6 +24,8 @@ export interface AlumnoConvocatoria {
   gradoActual: string;
   gradoSiguiente: string;
   pagado: boolean;
+  /** La foto del alumno, con la `url` de `GET /alumnos/{id}/imagen` (la del listado de Alumnos); nula si no tiene. */
+  fotoAlumno?: { id?: number | null; nombre?: string | null; url?: string | null } | null;
 }
 
 export interface Cifras {

@@ -362,22 +362,54 @@ $columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
 
 .convocatorias__avatar {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
+  overflow: hidden;
   border-radius: 50%;
   background: var(--pn-acento-suave);
   color: var(--pn-acento);
   font: var(--pn-etiqueta);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
+// Avatar y nombre en las dos primeras columnas: un solo enlace a la ficha, y el paso de grado debajo, fuera de él.
 .convocatorias__quien {
+  grid-column: 1 / 3;
   min-width: 0;
 }
 
+.convocatorias__enlace {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
+  color: var(--pn-tinta);
+  text-decoration: none;
+  border-radius: 20px;
+
+  &:hover .convocatorias__nombre {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  // El anillo de foco, pegado al enlace para no tapar el paso de grado de debajo.
+  &:focus-visible {
+    outline-offset: 0;
+  }
+}
+
 .convocatorias__nombre {
-  margin: 0;
+  min-width: 0;
   overflow: hidden;
   font: var(--pn-cuerpo);
   font-weight: 600;
@@ -391,7 +423,7 @@ $columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 6px;
-  margin: 2px 0 0;
+  margin: 4px 0 0 calc(#{$col-avatar} + 16px);
   font: var(--pn-secundario);
   color: var(--pn-tinta-2);
 }
@@ -908,23 +940,30 @@ select.convocatorias__control {
   .convocatorias__alumno {
     grid-template-columns: 40px auto minmax(0, 1fr) 44px;
     grid-template-areas:
-      'avatar quien quien quitar'
+      'quien quien quien quitar'
       'cuantia cuantia cuantia cuantia'
       'pago pago pago pago';
     gap: 10px 12px;
     padding: 12px 12px 14px 16px;
   }
 
-  .convocatorias__avatar {
-    grid-area: avatar;
-  }
-
   .convocatorias__quien {
     grid-area: quien;
   }
 
+  // Objetivo táctil de 44 px.
+  .convocatorias__enlace {
+    gap: 12px;
+    min-height: 44px;
+    border-radius: 22px;
+  }
+
   .convocatorias__nombre {
     white-space: normal;
+  }
+
+  .convocatorias__paso {
+    margin-left: calc(#{$col-avatar} + 12px);
   }
 
   // Apilada: sin cabecera; «Cuantía» visible a la izquierda del campo, en la misma línea.

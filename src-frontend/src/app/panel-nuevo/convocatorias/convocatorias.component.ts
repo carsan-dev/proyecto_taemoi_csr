@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Subject, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, takeUntil } from 'rxjs/operators';
 
@@ -9,7 +10,7 @@ import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
 import { esSiguienteGradoRojo } from '../../utilities/grado-progresion';
 import { AcentoEscuelaActual, AcentoEscuelaDirective } from '../acento-escuela.directive';
-import { GradoFila, gradoFila } from '../alumnos/alumno-vista';
+import { GradoFila, fotoDe, gradoFila } from '../alumnos/alumno-vista';
 import { InformePdfPanelService } from '../alumnos/herramientas/informe-pdf-panel.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
@@ -76,6 +77,7 @@ const CLAVE_ESTADO = 'listadoConvocatoriasEstado';
   selector: 'app-convocatorias',
   standalone: true,
   imports: [
+    RouterLink,
     AcentoEscuelaDirective,
     SearchableSelectDirective,
     EsqueletoComponent,
@@ -128,6 +130,10 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   alumnosCargadosCompletamente = false;
   /** Inscripciones con una escritura en vuelo: sin doble envío. */
   readonly enProceso = new Set<number>();
+  /** Inscripciones cuya foto no cargó: su avatar vuelve a las iniciales. */
+  private readonly fotosFallidas = new Set<number>();
+  /** El bloque abierto antes de salir (p. ej. a la ficha de un alumno): se vuelve a abrir al leer las listas. */
+  private abiertaRecordada: number | null = null;
   agregando = false;
   /** Las preguntas de «Agregar alumno» están abiertas: no se abren otras encima. */
   private preguntando = false;
@@ -234,6 +240,7 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
         this.cifras.clear();
         this.estado = 'listo';
         this.ajustarPagina();
+        this.reabrirRecordada();
         this.guardarEstado();
         this.leerCifrasVisibles();
       },
@@ -382,12 +389,28 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   alternar(c: ConvocatoriaPanel): void {
     if (this.estaAbierta(c)) {
       this.cerrarBloque();
+      this.guardarEstado();
       return;
     }
     this.cerrarBloque();
+    this.abrirBloque(c);
+    this.guardarEstado();
+  }
+
+  private abrirBloque(c: ConvocatoriaPanel): void {
     this.abierta = c;
     this.aptoElegido = null;
     this.leerBloque(false);
+  }
+
+  /** Al volver a la pantalla (desde la ficha de un alumno), el bloque que estaba abierto, si sigue a la vista. */
+  private reabrirRecordada(): void {
+    const id = this.abiertaRecordada;
+    this.abiertaRecordada = null;
+    const c = id === null ? undefined : this.visibles.find((v) => v.id === id);
+    if (c && !this.abierta) {
+      this.abrirBloque(c);
+    }
   }
 
   private cerrarBloque(): void {
@@ -397,6 +420,7 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     this.aptos = [];
     this.aptoElegido = null;
     this.estadoAlumnos = 'listo';
+    this.fotosFallidas.clear();
     this.cerrarMenuPdf(false);
   }
 
@@ -460,6 +484,16 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   }
 
   // ------------------------------------------------------------------ fila del alumno
+
+  /** La foto del avatar (la misma URL que el listado de Alumnos); nula sin foto o si no cargó (quedan las iniciales). */
+  foto(a: AlumnoConvocatoria): string | null {
+    return this.fotosFallidas.has(a.id) ? null : fotoDe(a);
+  }
+
+  fotoFallida(a: AlumnoConvocatoria): void {
+    this.fotosFallidas.add(a.id);
+    this.cdr.markForCheck();
+  }
 
   nombreCompleto(a: { nombre?: string | null; apellidos?: string | null }): string {
     return `${a.nombre ?? ''} ${a.apellidos ?? ''}`.trim();
@@ -934,7 +968,13 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     try {
       sessionStorage.setItem(
         CLAVE_ESTADO,
-        JSON.stringify({ paginaActualConvocatorias: this.pagina, tamanoPaginaConvocatorias: POR_PAGINA, deporteSeleccionado: this.deporte })
+        JSON.stringify({
+          paginaActualConvocatorias: this.pagina,
+          tamanoPaginaConvocatorias: POR_PAGINA,
+          deporteSeleccionado: this.deporte,
+          // Solo con un bloque abierto; la pantalla de hoy ignora este campo.
+          convocatoriaAbierta: this.abierta?.id,
+        })
       );
     } catch {
       // Sin almacenamiento de sesión, no se recuerda.
@@ -952,6 +992,8 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
       if (typeof estado?.deporteSeleccionado === 'string' && estado.deporteSeleccionado) {
         this.deporte = estado.deporteSeleccionado;
       }
+      const abierta = Number(estado?.convocatoriaAbierta);
+      this.abiertaRecordada = Number.isInteger(abierta) && abierta > 0 ? abierta : null;
     } catch {
       // Un estado ilegible se ignora, como hoy.
     }

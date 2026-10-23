@@ -109,9 +109,17 @@
             <ul class="convocatorias__alumnos" [attr.aria-label]="'Alumnos inscritos el ' + fecha(c.fechaConvocatoria)">
               @for (a of alumnos; track a.id) {
               <li class="convocatorias__alumno" [attr.data-inscrito]="a.id">
-                <span class="convocatorias__avatar" aria-hidden="true">{{ iniciales(a.nombre, a.apellidos) }}</span>
                 <div class="convocatorias__quien">
-                  <p class="convocatorias__nombre">{{ nombreCompleto(a) }}</p>
+                  <a class="convocatorias__enlace" [routerLink]="['/alumnosEditar', a.alumnoId]">
+                    <span class="convocatorias__avatar" aria-hidden="true">
+                      @if (foto(a); as f) {
+                      <img [src]="f" alt="" width="40" height="40" loading="lazy" decoding="async" (error)="fotoFallida(a)" />
+                      } @else {
+                      {{ iniciales(a.nombre, a.apellidos) }}
+                      }
+                    </span>
+                    <span class="convocatorias__nombre">{{ nombreCompleto(a) }}</span>
+                  </a>
                   <p class="convocatorias__paso">
                     @if (grado(a.gradoActual); as g) {
                     <span class="convocatorias__cinto" [style.background]="g.fondo" aria-hidden="true"></span><span class="convocatorias__grado">{{ g.nombre }}</span>
