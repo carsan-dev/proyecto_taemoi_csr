@@ -1,4 +1,4 @@
-LA GOTA DE ESFUERZO · PROPUESTA 09 · DESCANSO SENTADO
+LA GOTA DE ESFUERZO · PLANOS Y RENDERS PROMOCIONALES
 
 Mascota de la plataforma, común a todas las escuelas y disciplinas.
 Cuerpo marfil claro, contorno oscuro, punta curvada y cinta de sudor.
@@ -6,18 +6,24 @@ La cinta es la señal deportiva y toma el color de la escuela.
 En cumpleaños, el gorro y el confeti también usan ese color.
 
 CONTENIDO
-svg/: seis poses editables y un estado inicial adicional de cumpleaños,
+svg/: catorce poses editables y un estado inicial adicional de cumpleaños,
 dos ejemplos de color, una versión compacta
 de 32 px y una versión monocroma con huecos transparentes para carnets.
 png/: exportaciones con fondo transparente. La compacta está a 32 px;
 el resto está a 1024 px.
-gota-propuesta.svg y .png: lámina de presentación de la propuesta.
+gota-propuesta.svg y .png: identidad y catálogo ampliado con catorce gestos.
 gota-celebracion-cumpleanos.svg y .png: sonrisa revisada y pareja de estados.
 gota-mirada-y-gestos.svg y .png: detalle de saludar, explicar y dudar.
+gota-nuevos-estados.svg y .png: los ocho nuevos gestos en una lámina 4 × 2.
+renders-3d/: quince renders promocionales PNG de 1254 × 1254 px,
+con fondo de estudio marfil y acabado de plastilina mate.
+Incluye los catorce gestos y el estado inicial de cumpleaños.
+PROMPT-3D-*.txt: instrucciones y referencias para reproducir cada render.
 
 COLOR
 La cinta tiene el atributo fill con un color por defecto y la propiedad
-CSS --school-accent. Los archivos son SVG reales con trazados editables.
+CSS --school-accent. El libro, la lupa y el reloj de muñeca
+comparten esa variable de acento en los nuevos SVG. Los archivos son SVG reales con trazados editables.
 Para cambiar el color de un SVG mediante el tema de la página, úsalo inline
 y asigna --school-accent al SVG o a su contenedor. Si usas un archivo externo
 con img, cambia el color dentro del archivo antes de exportarlo.
@@ -30,34 +36,41 @@ los ojos y la boca. Es un dibujo específico, no una reducción del saludo.
 Comprueba la legibilidad sobre los fondos reales antes de integrar.
 
 PERSONALIDAD Y USOS
-Seis poses: saludar, explicar, celebrar, dudar, descansar y cumpleaños.
+Catorce poses: saludar, explicar, celebrar, dudar, descansar, cumpleaños,
+prepararse, animar, leer, confirmar, buscar, esperar, invitar y agradecer.
+Cumpleaños incluye además un estado inicial para preparar la animación.
 Forma base y saludar: ojos ovalados abiertos y sonrisa amable.
 Explicar: ojos ovalados abiertos, boca en O y brazo de presentación
 inclinado hacia arriba, con una mano sencilla y pulgar reconocible.
 Celebrar: opción A seleccionada. Ojos cerrados en arcos suaves y risa
 abierta sin dientes, con interior oscuro y una pequeña lengua rosa suave.
 Cumpleaños: ojos sonrientes, boca soplando un matasuegras completamente
-extendido, gorro ladeado, una mano junto al matasuegras y confeti.
+extendido, gorro ladeado hacia la derecha de la imagen, una mano junto
+al matasuegras y confeti. El gorro se apoya sobre la punta de la gota
+y cubre su extremo; no atraviesa el contorno visible de la cabeza.
 El matasuegras distingue una boquilla de color y un papel ancho de lunares,
 desplegado salvo una pequeña vuelta en el extremo.
 Cumpleaños, estado inicial adicional: ojos ovalados abiertos, sin confeti,
-el mismo matasuegras con el papel enrollado y el mismo gorro ladeado.
+el mismo matasuegras con el papel enrollado y el mismo gorro hacia la derecha.
+El brazo libre, a la izquierda de la imagen, está bajo y separado del cuerpo,
+preparado para alzarse con emoción. La otra mano sigue sujetando la boquilla.
 Pareja para preparar una futura animación:
   inicio: svg/gota-cumpleanos-inicio.svg y png/gota-cumpleanos-inicio.png
   final:  svg/gota-cumpleanos.svg y png/gota-cumpleanos.png
-Ambos estados usan el mismo lienzo, escala, posición, cuerpo, brazos,
-gorro y boquilla. Sólo cambian ojos, papel y presencia de confeti.
+Los dos estados planos usan el mismo lienzo, escala, posición, cuerpo,
+gorro, boquilla y mano que la sujeta. Cambian los ojos, el papel,
+la presencia de confeti y el brazo libre: bajo al inicio y alzado al final.
 Los PNG son de 1024 × 1024 con transparencia, sin recortar el lienzo.
 Son imágenes estáticas; no se incluye una animación.
-Dudar: ojos ovalados completamente oscuros, sin parte blanca visible,
-boca corta neutra y mano justo debajo de la boca, como acariciando
-una perilla imaginaria. El codo flexionado sobresale del cuerpo.
-El gesto expresa reflexión; no incluye media sonrisa ni párpados caídos.
+Dudar: ojos ovalados oscuros abiertos, boca ondulada y mano en la cabeza
+a la izquierda de la imagen. El cuerpo se inclina ligeramente y los pies
+permanecen apoyados. Una interrogación verde azulado aparece arriba a la
+derecha, separada de la silueta. El símbolo sigue el color de la escuela.
 Descansar: postura sentada con los pies abiertos hacia los lados y los dos
 brazos apoyados en diagonal sobre la barriga. Conserva los ojos cerrados
 y la sonrisa suave del gesto de descanso.
-Los ojos cerrados se reservan a celebrar, descansar y al instante festivo
-final de cumpleaños. El estado inicial de cumpleaños tiene ojos abiertos.
+Los ojos cerrados aparecen en celebrar, descansar, animar, agradecer y en
+el instante festivo final de cumpleaños. El estado inicial tiene ojos abiertos.
 La versión compacta conserva los ojos ovalados de su estado neutro.
 La versión monocroma de saludo también conserva los ojos abiertos.
 Los brazos bajos de saludar, explicar y dudar sobresalen del cuerpo para
@@ -68,6 +81,52 @@ No usar en dinero, bajas ni errores serios.
 El humor debe acompañar al usuario y nunca hacer burla de él.
 El nombre de la propuesta describe el concepto; no fija un nombre propio.
 
+NUEVOS ESTADOS · GESTOS REVISADOS
+Prepararse: Ajusta la cinta torcida con ambas manos, mirada algo elevada y dos trazos de movimiento junto a cada mano.
+Uso: Próxima clase, convocatoria o preparación de examen.
+Archivos: svg/gota-prepararse.svg, png/gota-prepararse.png
+y renders-3d/gota-prepararse-3d.png.
+
+Dar ánimos: Puño alzado junto a la cara, ojos felices y sonrisa cerrada amplia con pequeñas comisuras elevadas, sin dientes. Opción 2 seleccionada.
+Uso: Acompañar objetivos de progresión o la preparación de una evaluación.
+Archivos: svg/gota-animar.svg, png/gota-animar.png
+y renders-3d/gota-animar-3d.png.
+
+Leer / aprender: Libro abierto sostenido con ambas manos y gafas redondas de pasta negras, con la mirada hacia las páginas.
+Uso: Material de examen, guías y contenidos para alumnos.
+Archivos: svg/gota-leer.svg, png/gota-leer.png
+y renders-3d/gota-leer-3d.png.
+
+Confirmar / listo: Sonrisa tranquila y pulgar levantado claramente visible, sin marca de verificación flotante.
+Uso: Preinscripción enviada o cierre de un proceso no económico.
+Archivos: svg/gota-confirmar.svg, png/gota-confirmar.png
+y renders-3d/gota-confirmar-3d.png.
+
+Buscar: Lupa ante un ojo, una ceja levantada y boca horizontal: expresión seria e inquisitiva, sin tristeza.
+Uso: Búsquedas sin resultados o exploración de grupos y actividades.
+Archivos: svg/gota-buscar.svg, png/gota-buscar.png
+y renders-3d/gota-buscar-3d.png.
+
+Esperar: Una mano en la cintura y el otro brazo delante del cuerpo, consultando un reloj de muñeca. Boca neutra y expresión seria, sin reloj flotante.
+Uso: Solicitud pendiente de revisión, sin urgencia ni presión.
+Archivos: svg/gota-esperar.svg, png/gota-esperar.png
+y renders-3d/gota-esperar-3d.png.
+
+Invitar / acoger: Gesto asimétrico de «pasa, adelante»: un brazo indica el camino y la otra palma se ofrece hacia quien mira, con sonrisa abierta.
+Uso: Web pública, preinscripciones y bienvenida a la escuela.
+Archivos: svg/gota-invitar.svg, png/gota-invitar.png
+y renders-3d/gota-invitar-3d.png.
+
+Agradecer: Reverencia hacia delante, ojos cerrados en arcos de felicidad y una mano sobre el pecho, sin inclinación lateral.
+Uso: Cierre de una bienvenida o agradecimiento por participar en un evento.
+Archivos: svg/gota-agradecer.svg, png/gota-agradecer.png
+y renders-3d/gota-agradecer-3d.png.
+
+Confirmar se comunica con el pulgar, sin tick flotante. Esperar utiliza
+un reloj de muñeca, sin reloj flotante. Buscar tiene boca neutra horizontal,
+no triste. Animar utiliza la sonrisa cerrada de la opción 2, sin dientes.
+Las gafas, la lupa, el reloj y los trazos de movimiento son formas editables.
+
 FONDOS Y ACCESIBILIDAD
 Conservar el cuerpo claro y el contorno oscuro al cambiar la cinta.
 La mascota es decorativa cuando el texto contiguo ya comunica lo mismo.
@@ -77,5 +136,8 @@ No sustituir mensajes de estado ni acciones por un gesto de la mascota.
 ALCANCE
 Propuesta visual, no integrada en el producto. Los SVG no contienen
 imágenes incrustadas, filtros, fuentes externas ni degradados.
-Los prompts 3D de saludo siguen esta revisión de ojos abiertos; su texto
-no implica que se hayan regenerado las ilustraciones 3D anteriores.
+Los renders promocionales incluidos son imágenes estáticas generadas con IA,
+con apariencia 3D. No incluyen modelos 3D editables ni una animación.
+La carpeta renders-3d contiene únicamente las versiones finales seleccionadas;
+los ensayos anteriores no forman parte del paquete.
+Los SVG, PNG y las cuatro láminas reflejan las instrucciones actuales.

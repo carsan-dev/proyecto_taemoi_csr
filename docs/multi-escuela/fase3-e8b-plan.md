@@ -1556,7 +1556,7 @@ error, formulario, fecha, aviso de error, agregar deporte, actualizar grado y fo
 ## 21 sexies. Pieza 8b-M: mascota en el panel (decisiones 274 y 275)
 
 Rama `feature/e8b-m`, tras 8b-3k y antes de 8b-Z. Solo frontend, sin migración: atajo `desplegar`. Fuente:
-`mascota-app/` (gota de esfuerzo: poses en SVG, compacta de 32 px, monocroma y `LEEME.txt` con las reglas de uso).
+`mascota-app/` (gota de esfuerzo: poses en SVG, entre ellas los 8 estados añadidos el 23/10 —agradecer, animar, buscar, confirmar, esperar, invitar, leer y prepararse—, compacta de 32 px, monocroma y `LEEME.txt` con las reglas de uso; los renders 3D de `mascota-app/renders-3d/` no van al repositorio).
 
 **Objetivo:** `pn-mascota` (pose como entrada) con los SVG inline; la cinta, el gorro y el confeti toman el acento de
 8b-C (`--school-accent` enlazado al token). Animaciones CSS cortas: aparecer, saludar, celebrar, dudar, descansar y

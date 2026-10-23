@@ -1,0 +1,15 @@
+PROMPT FINAL · DUDA CON INTERROGACIÓN 3D
+Método: herramienta integrada de generación y edición de imágenes.
+Referencias: renders-3d/gota-saludar-3d.png y png/gota-dudar.png.
+Resultado: renders-3d/gota-dudar-3d.png.
+
+Use case: stylized-concept.
+Translate the flat reference pose into the exact ivory matte clay character
+of the greeting reference. Put the hand on the VIEWER'S LEFT on the upper
+side of the head above the sweatband; the other arm hangs beside the hip.
+Preserve the modest body tilt, planted feet, open solid dark oval eyes and
+tiny wavy mouth. Add one small rounded teal clay question mark above the
+head on the VIEWER'S RIGHT, clearly separated from the silhouette.
+No hand under the mouth or chin, no raised eyebrows, no extra symbols.
+Match the same teal woven sweatband, warm off-white studio background,
+soft light, material, camera and framing as the promotional render series.
