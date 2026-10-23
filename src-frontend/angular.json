@@ -226,6 +226,7 @@
               "src/app/panel-nuevo/convocatorias/convocatorias.component.spec.ts",
               "src/app/panel-nuevo/eventos/eventos-vista.spec.ts",
               "src/app/panel-nuevo/eventos/eventos.component.spec.ts",
+              "src/app/panel-nuevo/eventos/evento-formulario.component.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",
               "src/app/componentes/endpoints/editar-alumno/dialogos-ficha.port.spec.ts",
