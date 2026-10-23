@@ -5,6 +5,13 @@
 // sombras salvo la del menú.
 @use '../capas/capas' as c;
 
+// Columnas de la fila del alumno (y de su cabecera), compartidas para que no se descuadren.
+$col-avatar: 40px;
+$col-cuantia: 116px;
+$col-pago: 200px;
+$col-quitar: 40px;
+$columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
+
 :host {
   display: block;
 }
@@ -319,13 +326,37 @@
 
 .convocatorias__alumno {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto auto 40px;
+  grid-template-columns: $columnas-fila;
   align-items: center;
   gap: 8px 16px;
   padding: 10px 12px 10px 16px;
 
   & + & {
     border-top: 1px solid var(--pn-linea);
+  }
+}
+
+// Cabecera de columnas, una vez por bloque; decorativa. Misma rejilla y mismo relleno que las filas.
+.convocatorias__columnas {
+  display: grid;
+  grid-template-columns: $columnas-fila;
+  gap: 8px 16px;
+  padding: 8px 12px 8px 16px;
+  border-bottom: 1px solid var(--pn-linea);
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+
+  span:nth-child(1) {
+    grid-column: 2;
+  }
+
+  span:nth-child(2) {
+    grid-column: 3;
+  }
+
+  span:nth-child(3) {
+    grid-column: 4;
   }
 }
 
@@ -382,9 +413,12 @@
 }
 
 .convocatorias__cuantia {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: block;
+}
+
+// Con la fila en una línea, la cabecera de columnas nombra el campo y la etiqueta queda solo para lectores.
+.convocatorias__cuantia-etiqueta {
+  @include c.oculto;
 }
 
 .convocatorias__cuantia-etiqueta,
@@ -396,7 +430,7 @@
 .convocatorias__cuantia-campo {
   position: relative;
   display: block;
-  width: 116px;
+  width: $col-cuantia;
 
   .convocatorias__control {
     min-height: 40px;
@@ -439,8 +473,9 @@ select.convocatorias__control {
 
 // Conmutador Pagado | Pendiente: el elegido, «Pagado» como control elegido (acento) y «Pendiente» en ocre (se debe).
 .convocatorias__pago {
-  display: inline-flex;
+  display: flex;
   align-self: center;
+  width: $col-pago;
   padding: 2px;
   border: 1px solid var(--pn-borde-control);
   border-radius: var(--pn-radio-m);
@@ -449,6 +484,7 @@ select.convocatorias__control {
 
 .convocatorias__pago-opcion {
   display: inline-flex;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -867,13 +903,14 @@ select.convocatorias__control {
   .convocatorias__fecha {
     font-size: 1rem;
   }
-
+  // Fila del alumno en tres líneas: avatar, nombre y cruz; «Cuantía» con su campo; el conmutador a todo el ancho.
   // Fila del alumno en dos líneas: avatar, nombre y cruz; cuantía y conmutador debajo.
   .convocatorias__alumno {
     grid-template-columns: 40px auto minmax(0, 1fr) 44px;
     grid-template-areas:
       'avatar quien quien quitar'
-      'cuantia cuantia pago pago';
+      'cuantia cuantia cuantia cuantia'
+      'pago pago pago pago';
     gap: 10px 12px;
     padding: 12px 12px 14px 16px;
   }
@@ -890,14 +927,33 @@ select.convocatorias__control {
     white-space: normal;
   }
 
+  // Apilada: sin cabecera; «Cuantía» visible a la izquierda del campo, en la misma línea.
+  .convocatorias__columnas {
+    display: none;
+  }
+
   .convocatorias__cuantia {
+    display: flex;
     grid-area: cuantia;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .convocatorias__cuantia-etiqueta {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: nowrap;
   }
 
   .convocatorias__pago {
     display: flex;
+    width: auto;
     grid-area: pago;
-    align-self: end;
     justify-self: stretch;
 
     .convocatorias__pago-opcion {
