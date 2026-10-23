@@ -487,6 +487,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Solicitudes nuevas (8b-3i): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'solicitudes',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/solicitudes/solicitudes.component').then(m => m.SolicitudesPanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     // Bandeja de solicitudes al propietario (6c-7).
     path: 'solicitudes',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
