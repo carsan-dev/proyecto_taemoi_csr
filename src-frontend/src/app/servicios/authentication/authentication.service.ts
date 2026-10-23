@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
-import { BehaviorSubject, catchError, finalize, map, Observable, of, shareReplay, switchMap, take, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, defer, finalize, map, Observable, of, retry, shareReplay, switchMap, take, tap, throwError, timer } from 'rxjs';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { PermisosSesionService } from './permisos-sesion.service';
 
@@ -26,6 +26,22 @@ export function esSoloProfesor(roles: readonly string[]): boolean {
     !roles.includes('ROLE_MANAGER') &&
     !roles.includes('ROLE_USER')
   );
+}
+
+/**
+ * Reintentos de `GET /auth/roles` cuando el fallo no es definitivo (red, 408, 429, 5xx): esperas de 500 ms, 1 s
+ * y 2 s. Al reabrir la web, el navegador puede cortar la primera petición sin que llegue al servidor (estado 0);
+ * sin reintento, `roleGuard` veía `[]` y mandaba a la portada. Sin sesión (401/403) no se reintenta.
+ */
+const REINTENTOS_ROLES = 3;
+const ESPERA_INICIAL_ROLES_MS = 500;
+
+function esFalloTransitorio(error: unknown): boolean {
+  if (!(error instanceof HttpErrorResponse)) {
+    return false;
+  }
+  const { status } = error;
+  return status === 0 || status === 408 || status === 429 || (status >= 500 && status < 600);
 }
 
 @Injectable({
@@ -275,16 +291,34 @@ export class AuthenticationService {
     if (this.rolesPeticion$) {
       return this.rolesPeticion$;
     }
-    const peticion$: Observable<string[]> = this.http
-      .get<string[]>(`${this.urlBase}/roles`, { withCredentials: true })
+    let intento = 0;
+    const peticion$: Observable<string[]> = defer(() => {
+      intento++;
+      // Los intentos que aún pueden reintentarse no abren el aviso global: si fallan todos, avisa solo el último.
+      const context = intento <= REINTENTOS_ROLES ? new HttpContext().set(ERROR_HANDLED_LOCALLY, true) : undefined;
+      return this.http.get<string[]>(`${this.urlBase}/roles`, { withCredentials: true, context });
+    })
       .pipe(
+        retry({
+          count: REINTENTOS_ROLES,
+          delay: (error, reintento) =>
+            esFalloTransitorio(error)
+              ? timer(ESPERA_INICIAL_ROLES_MS * 2 ** (reintento - 1))
+              : throwError(() => error),
+        }),
         tap((roles) => {
+          // Una carga que siguió reintentando tras abrir o cerrar sesión ya no es la vigente: no pisa sus roles.
+          if (this.rolesPeticion$ !== peticion$) {
+            return;
+          }
           this.rolesSubject.next(roles);
           this.rolesCargados = true; // Marcar que los roles ya se han cargado
         }),
         catchError((error) => {
-          this.rolesSubject.next([]);
-          this.rolesCargados = false;
+          if (this.rolesPeticion$ === peticion$) {
+            this.rolesSubject.next([]);
+            this.rolesCargados = false;
+          }
           return of([]);
         }),
         finalize(() => {
