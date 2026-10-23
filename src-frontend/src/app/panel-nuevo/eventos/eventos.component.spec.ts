@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
@@ -120,6 +121,8 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
   }
 
   beforeEach(async () => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date(2026, 9, 22, 10, 0));
     quitarTokens = ponerTokensDePrueba();
@@ -417,6 +420,47 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
     await esperar();
     expect(orden()).toEqual([1, 2, 3, 4]);
     expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo eliminar el evento.' }]);
+  });
+
+  // ------------------------------------------------------------------ salir a mitad de una escritura
+
+  it('salir con el interruptor en vuelo no cancela la petición, y al responder no revienta', async () => {
+    cargar();
+    interruptor(1).click();
+    fixture.detectChanges();
+    const r = http.expectOne(`${API}/eventos/1/toggle-visibilidad`);
+    fixture.destroy();
+    expect(r.cancelled).toBeFalse();
+    expect(() => r.flush({})).not.toThrow();
+  });
+
+  it('salir con «Guardar orden» en vuelo no cancela la petición ni relee la lista', async () => {
+    cargar();
+    botonEn(fila(1), 'Bajar Campeonato regional').click();
+    fixture.detectChanges();
+    botonEn(el(), 'Guardar orden').click();
+    const r = http.expectOne(`${API}/eventos/orden`);
+    fixture.destroy();
+    expect(r.cancelled).toBeFalse();
+    r.flush({});
+    http.expectNone(`${API}/eventos/admin/todos`);
+  });
+
+  it('salir con el borrado en vuelo no cancela el DELETE y la caché pública se limpia igual', async () => {
+    cargar();
+    const servicio = TestBed.inject(EndpointsService);
+    const limpiar = spyOn(servicio as any, 'limpiarCacheEventosPublicos').and.callThrough();
+    botonEn(fila(3), 'Más acciones de Seminario').click();
+    fixture.detectChanges();
+    botonEn(fila(3), 'Eliminar').click();
+    pintar();
+    botonEn(dialogo()!, 'Sí, eliminarlo').click();
+    await esperar();
+    const r = http.expectOne(`${API}/eventos/3`);
+    fixture.destroy();
+    expect(r.cancelled).toBeFalse();
+    r.flush(null);
+    expect(limpiar).toHaveBeenCalledTimes(1);
   });
 
   // ------------------------------------------------------------------ capas: web y miniatura

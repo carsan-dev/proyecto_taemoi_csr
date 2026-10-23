@@ -8,10 +8,16 @@ import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catal
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 import { Catalogo } from '../../../features/catalogo/catalogo.models';
 import { CrearAlumnoComponent } from './crear-alumno.component';
+import Swal from 'sweetalert2';
 
 describe('CrearAlumnoComponent: disciplinas del catálogo', () => {
   let fixture: ComponentFixture<CrearAlumnoComponent>;
   let component: CrearAlumnoComponent;
+
+  afterEach(() => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+  });
 
   async function crear(catalogo: Catalogo): Promise<void> {
     const endpoints = {

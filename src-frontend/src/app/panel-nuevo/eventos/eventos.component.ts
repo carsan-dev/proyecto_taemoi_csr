@@ -1,12 +1,9 @@
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Observable, Subject, Subscription } from 'rxjs';
-import { takeUntil, tap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
-import { environment } from '../../../environments/environment';
 import { EventosVistaComponent } from '../../componentes/vistas/eventos/eventos-vista.component';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
@@ -68,7 +65,6 @@ type MandoOrden = 'asa' | 'subir' | 'bajar';
 export class EventosPanelComponent implements OnInit, OnDestroy {
   private readonly endpoints = inject(EndpointsService);
   private readonly lecturas = inject(LecturasPanelService);
-  private readonly http = inject(HttpClient);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly anunciador = inject(LiveAnnouncer);
@@ -93,7 +89,8 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
   movida: number | null = null;
 
   private carga?: Subscription;
-  private readonly destroy$ = new Subject<void>();
+  /** Las escrituras no se cancelan al salir (acaban y limpian la caché); lo que toca la vista, sí se protege. */
+  private destruido = false;
   private escuchaFuera = false;
   private temporizadorMovida: ReturnType<typeof setTimeout> | null = null;
 
@@ -116,8 +113,7 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
     if (this.temporizadorMovida) {
       clearTimeout(this.temporizadorMovida);
     }
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.destruido = true;
   }
 
   // ------------------------------------------------------------------ lectura
@@ -257,13 +253,14 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
     this.guardandoOrden = true;
     this.endpoints
       .actualizarOrdenEventos(this.eventos.map((e) => e.id))
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.guardandoOrden = false;
           this.ordenPendiente = false;
           this.avisos.exito('Orden guardado.');
-          this.cargar(true);
+          if (!this.destruido) {
+            this.cargar(true);
+          }
         },
         error: () => {
           this.guardandoOrden = false;
@@ -287,7 +284,6 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
     this.cambiandoVisibilidad.add(e.id);
     this.endpoints
       .toggleVisibilidadEvento(e.id)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.cambiandoVisibilidad.delete(e.id);
@@ -399,28 +395,16 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
     if (!r.confirmado) {
       return;
     }
-    this.borrar(e.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.eventos = this.eventos.filter((x) => x.id !== e.id);
-          this.avisos.exito('Evento eliminado correctamente.');
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.avisos.error('No se pudo eliminar el evento.');
-          this.cdr.markForCheck();
-        },
-      });
-  }
-
-  /**
-   * La misma petición que `EndpointsService.eliminarEvento` (que se suscribe sola y no deja saber si fue bien): `DELETE
-   * /eventos/{id}` con credenciales y, al ir bien, la misma limpieza de la caché de eventos públicos.
-   */
-  private borrar(id: number): Observable<unknown> {
-    return this.http.delete(`${environment.apiUrl}/eventos/${id}`, { withCredentials: true }).pipe(
-      tap(() => this.endpoints['limpiarCacheEventosPublicos']())
-    );
+    this.endpoints.eliminarEventoConRespuesta(e.id).subscribe({
+      next: () => {
+        this.eventos = this.eventos.filter((x) => x.id !== e.id);
+        this.avisos.exito('Evento eliminado correctamente.');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.avisos.error('No se pudo eliminar el evento.');
+        this.cdr.markForCheck();
+      },
+    });
   }
 }

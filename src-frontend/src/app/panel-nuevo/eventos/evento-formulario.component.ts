@@ -110,6 +110,8 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
 
   private lectura?: Subscription;
   private readonly destroy$ = new Subject<void>();
+  /** Las escrituras no se cancelan al salir (acaban y suben los documentos); la navegación, no. */
+  private destruido = false;
 
   get titulo(): string {
     return this.modo === 'crear' ? 'Crear nuevo evento' : 'Editar evento';
@@ -143,6 +145,7 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.lectura?.unsubscribe();
     this.soltarImagenLocal();
+    this.destruido = true;
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -316,7 +319,6 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     this.eliminandoImagen = true;
     this.endpoints
       .eliminarImagenEvento(id)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.eliminandoImagen = false;
@@ -469,7 +471,6 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     }
     this.endpoints
       .eliminarDocumentoEvento(id, documento.id)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.documentosGuardados = this.documentosGuardados.filter((d) => d.id !== documento.id);
@@ -510,7 +511,6 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     this.guardando = true;
     this.endpoints
       .crearEvento(cuerpoCrear(v), this.imagen)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (creado: EventoPanel) => {
           if (documentos.length === 0) {
@@ -535,7 +535,9 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     } else {
       this.avisos.exito('Has creado un nuevo evento.');
     }
-    void this.router.navigate(['/eventosListar']);
+    if (!this.destruido) {
+      void this.router.navigate(['/eventosListar']);
+    }
   }
 
   /** `PUT /eventos/{id}` de hoy: «eventoEditado» y «file» (el archivo o "null"). */
@@ -554,12 +556,13 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     this.guardando = true;
     this.endpoints
       .actualizarEvento(id, datos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.guardando = false;
           this.avisos.exito('El evento ha sido actualizado correctamente.');
-          void this.router.navigate(['/eventosListar']);
+          if (!this.destruido) {
+            void this.router.navigate(['/eventosListar']);
+          }
         },
         error: (error) => {
           this.guardando = false;

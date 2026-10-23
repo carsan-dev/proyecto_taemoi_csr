@@ -6,6 +6,7 @@ import { ListadoGruposComponent } from './listado-grupos.component';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { GrupoResumen } from '../../../interfaces/grupo-resumen';
 import { TurnoResumen } from '../../../interfaces/turno-resumen';
+import Swal from 'sweetalert2';
 
 /**
  * R2-P4: la pantalla «Grupos y Turnos» se pinta con las listas ligeras (`/grupos/resumen` y `/turnos/resumen`):
@@ -59,7 +60,11 @@ describe('ListadoGruposComponent (resumen)', () => {
     fixture.detectChanges();
   }
 
-  afterEach(() => fixture?.destroy());
+  afterEach(() => {
+    fixture?.destroy();
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+  });
 
   it('carga los grupos y los turnos con dos peticiones ligeras, sin pedir los completos ni los turnos grupo a grupo', async () => {
     await crear();

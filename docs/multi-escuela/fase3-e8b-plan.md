@@ -961,8 +961,9 @@ arreglo.
   de hoy de `EndpointsService`: orden, `PUT /eventos/orden` con los ids en el orden de la lista (arrastre, flechas y
   teclado mandan el mismo cuerpo) y, después, la relectura `GET /eventos/admin/todos`; visible, `PUT
   /eventos/{id}/toggle-visibilidad` sin cuerpo; eliminar, `DELETE /eventos/{id}` con credenciales y la misma limpieza de
-  la caché de eventos públicos (`EndpointsService.eliminarEvento` se suscribe solo y no deja saber si fue bien: la
-  pantalla hace la misma petición y llama a `limpiarCacheEventosPublicos`); crear, `POST /eventos/crear` multipart con
+  la caché de eventos públicos y de `eventosSubject` (`EndpointsService.eliminarEvento` se suscribe solo y no deja saber
+  si fue bien: la pantalla usa el nuevo `eliminarEventoConRespuesta(id)`, el mismo DELETE devuelto como observable, y
+  `eliminarEvento` queda intacto); crear, `POST /eventos/crear` multipart con
   `nuevo` = `{titulo, descripcion, fechaEvento o null, visible}` y `file` con su nombre solo si hay imagen y, cuando
   responde, un `POST /eventos/{id}/documentos` (`archivo`) por documento, a la vez; editar, `PUT /eventos/{id}` con
   `eventoEditado` = `{titulo, descripcion, fechaEvento o null, fotoEvento: null}` y `file` (el archivo o `"null"`);
@@ -987,7 +988,9 @@ arreglo.
   cada fila (también con 80 caracteres sin espacios y con el texto al 200 %); sin solapes ni cortes entre las piezas de la
   fila; objetivos de 44 px; orden con el dedo, con teclado y anunciado; «Guardar orden» a la vista sin tapar la barra.
 - **Cambios a propósito:** el interruptor publica u oculta al momento (hoy, «Mostrar»/«Ocultar» quedaba pendiente hasta
-  «Guardar cambios», que mandaba orden y visibilidad juntos; la llamada es la misma) y el aviso pasa a «Guardar orden»
+  «Guardar cambios», que mandaba orden y visibilidad juntos; la llamada es la misma; **cambio a propósito decidido por el
+  propietario el 23/10**: publica u oculta al momento y «Ver cómo queda en la web» muestra lo ya publicado más el orden
+  sin guardar) y el aviso pasa a «Guardar orden»
   solo con el orden; «Eliminar imagen» pide confirmación (hoy borraba sin preguntar; se borra al momento, como hoy); los
   errores de imagen y documentos van en línea bajo su sección (hoy, SweetAlert2); sin foto, la miniatura no se amplía
   (hoy avisaba «Imagen no disponible»); el aviso de borrado sale cuando responde el servidor (hoy, antes); la acción de
@@ -1015,6 +1018,21 @@ arreglo.
   orden», «⋯» abierto, «Ver cómo queda en la web», eliminar, vacío, título largo, texto al 200 %, crear con errores y
   editar con imagen y documentos); objetivos de 44 px como mínimo a 360 y 375, sin desplazamiento horizontal ni solapes
   en ningún ancho. `impeccable detect`: solo «img sin src» en los `[src]` enlazados (falso positivo).
+- **Correcciones de la revisión (commit `fix(panel): correcciones de la revisión de Eventos (8b-3f)`):** (1) test
+  inestable: un `.swal2-container` (toast de 3 s) dejado por specs viejos rompía la primera aserción «sin Swal» que
+  corría después (1 de cada ~5 corridas); `Swal.close()` más la retirada de `.swal2-container` al inicio del
+  `beforeEach` de `eventos`, `evento-formulario` y `tesoreria`, y, de raíz, en el `afterEach` de CrearAlumno
+  (disciplinas), CajaSede, ficha de producto (vendible por el profesor), ListadoGrupos (resumen) y EditarAlumno. (2)
+  borrar evento ya no usa el método privado por corchetes ni `HttpClient`: `EndpointsService.eliminarEventoConRespuesta`
+  (spec: la caché se limpia y la siguiente `obtenerEventos` vuelve a pedir `GET /eventos`; el evento sale de
+  `eventos$`; un error no toca nada). (3) las escrituras (crear, actualizar, interruptor, orden, borrar, imagen,
+  documentos) ya no llevan `takeUntil(destroy$)`: salir a mitad de un guardado no aborta la petición, sube los
+  documentos y limpia la caché; lo que toca la vista o navega tras destruir se protege (no relee ni navega). Las lecturas
+  y la descarga lo mantienen. Specs en rojo con el código viejo (6 fallos) y verdes. (4) specs que faltaban: error al
+  eliminar imagen y documento, error de descarga, subida parcial al editar.
+- **Notas de la corrección:** karma 2006 SUCCESS tres veces seguidas; bundle inicial 1.457.342 bytes (sin cambio);
+  chunks `eventos-component` 39.937 bytes (39,94 kB; antes 40,25 kB) y `evento-formulario-component` 45.322 bytes (45,32
+  kB; antes 45,35 kB).
 - **Pregunta abierta (R4b):** a 375 y 768 px la vista previa va al final del formulario, como el boceto, y deja de verse
   a la vez que los campos. A confirmar por el propietario.
 

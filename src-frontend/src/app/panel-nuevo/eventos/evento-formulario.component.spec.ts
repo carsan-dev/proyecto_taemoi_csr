@@ -127,6 +127,8 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
   }
 
   beforeEach(async () => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
     quitarTokens = ponerTokensDePrueba();
     loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
     await TestBed.configureTestingModule({
@@ -517,6 +519,115 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
       'Autorización',
     ]);
     expect(avisos()).toEqual([{ tipo: 'otro', texto: 'El documento ha sido eliminado.' }]);
+  });
+
+  it('eliminar documento: un error avisa y el documento sigue', async () => {
+    editar();
+    botonEn(el(), 'Eliminar Circular.pdf').click();
+    pintar();
+    botonEn(dialogo()!, 'Sí, eliminar').click();
+    await esperar(1);
+    http.expectOne(`${API}/eventos/1/documentos/71`).flush({}, { status: 500, statusText: 'Error' });
+    await esperar(1);
+    expect(Array.from(el().querySelectorAll('.evento-form__documento--guardado .evento-form__documento-nombre')).map(texto)).toEqual([
+      'Circular.pdf',
+      'Autorización',
+    ]);
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo eliminar el documento.' }]);
+  });
+
+  it('eliminar imagen: un error avisa y la imagen sigue', async () => {
+    editar();
+    botonEn(el(), 'Eliminar imagen').click();
+    pintar();
+    botonEn(dialogo()!, 'Sí, eliminar').click();
+    await esperar(1);
+    http.expectOne(`${API}/eventos/1/imagen`).flush({}, { status: 500, statusText: 'Error' });
+    await esperar(1);
+    expect(el().querySelector('.evento-form__imagen-actual')).not.toBeNull();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se ha podido eliminar la imagen.' }]);
+  });
+
+  it('descargar: un error avisa y no descarga nada', async () => {
+    editar();
+    const clic = spyOn(HTMLAnchorElement.prototype, 'click');
+    botonEn(el(), 'Descargar Autorización').click();
+    http.expectOne(`${API}/eventos/1/documentos/72/descargar?download=true`).flush(new Blob(['x']), { status: 500, statusText: 'Error' });
+    await esperar(1);
+    expect(clic).not.toHaveBeenCalled();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo descargar el documento.' }]);
+  });
+
+  it('documentos al editar: si uno falla, avisa de la subida parcial y los que subieron quedan guardados', async () => {
+    editar();
+    elegir('evento-documentos', [PDF('Uno.pdf'), PDF('Dos.pdf')]);
+    await esperar();
+    botonEn(el(), 'Subir 2 documentos').click();
+    fixture.detectChanges();
+    const r = http.match(`${API}/eventos/1/documentos`);
+    expect(r.length).toBe(2);
+    r[0].flush({ id: 81, nombre: 'Uno.pdf', tipo: 'application/pdf' });
+    r[1].flush({ mensaje: 'Archivo dañado.' }, { status: 400, statusText: 'Bad' });
+    await esperar(1);
+    expect(Array.from(el().querySelectorAll('.evento-form__documento--nuevo')).length).toBe(0);
+    expect(Array.from(el().querySelectorAll('.evento-form__documento--guardado .evento-form__documento-nombre')).map(texto)).toEqual([
+      'Circular.pdf',
+      'Autorización',
+      'Uno.pdf',
+    ]);
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'Subida parcial: 1 documento subido, 1 error. Archivo dañado.' }]);
+  });
+
+  // ------------------------------------------------------------------ salir a mitad de un guardado
+
+  it('crear: salir con el guardado en vuelo no cancela la petición, sube los documentos y no navega', async () => {
+    crear();
+    rellenar();
+    elegir('evento-documentos', [PDF('Uno.pdf')]);
+    await esperar();
+    guardar().click();
+    fixture.detectChanges();
+    const r = http.expectOne(`${API}/eventos/crear`);
+    fixture.destroy();
+    expect(r.cancelled).toBeFalse();
+    r.flush({ id: 33 });
+    const doc = http.expectOne(`${API}/eventos/33/documentos`);
+    expect(doc.cancelled).toBeFalse();
+    doc.flush({ id: 1 });
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('editar: salir con el guardado en vuelo no cancela el PUT', () => {
+    editar();
+    escribir('evento-titulo', 'Otro');
+    guardar().click();
+    fixture.detectChanges();
+    const r = http.expectOne(`${API}/eventos/1`);
+    fixture.destroy();
+    expect(r.cancelled).toBeFalse();
+    r.flush({});
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('eliminar imagen y documento: salir con la petición en vuelo no la cancela', async () => {
+    editar();
+    botonEn(el(), 'Eliminar imagen').click();
+    pintar();
+    botonEn(dialogo()!, 'Sí, eliminar').click();
+    await esperar(1);
+    const img = http.expectOne(`${API}/eventos/1/imagen`);
+    botonEn(el(), 'Eliminar Circular.pdf').click();
+    pintar();
+    botonEn(dialogo()!, 'Sí, eliminar').click();
+    await esperar(1);
+    const doc = http.expectOne(`${API}/eventos/1/documentos/71`);
+    fixture.destroy();
+    expect(img.cancelled).toBeFalse();
+    expect(doc.cancelled).toBeFalse();
+    expect(() => {
+      img.flush(null);
+      doc.flush(null);
+    }).not.toThrow();
   });
 
   // ------------------------------------------------------------------ vista previa

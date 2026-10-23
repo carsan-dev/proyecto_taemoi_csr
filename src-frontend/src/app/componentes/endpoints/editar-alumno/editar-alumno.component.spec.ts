@@ -9,7 +9,10 @@ import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catal
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 
 describe('EditarAlumnoComponent scroll continuity', () => {
-  afterEach(() => Swal.close());
+  afterEach(() => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+  });
 
   it('reloads a saved student in the background and restores the active section', () => {
     const endpoints = {

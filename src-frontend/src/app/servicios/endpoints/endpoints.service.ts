@@ -1493,6 +1493,17 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /** El mismo DELETE que `eliminarEvento`, pero devuelve el observable (el llamador sabe si fue bien); misma limpieza al ir bien. */
+  eliminarEventoConRespuesta(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.urlBase}/eventos/${id}`, { withCredentials: true }).pipe(
+      tap(() => {
+        this.limpiarCacheEventosPublicos();
+        this.eventosSubject.next(this.eventosSubject.getValue().filter((evento) => evento.id !== id));
+      }),
+      catchError(this.manejarError)
+    );
+  }
+
   eliminarEvento(id: number): void {
     this.http
       .delete<any>(`${this.urlBase}/eventos/${id}`, { withCredentials: true })

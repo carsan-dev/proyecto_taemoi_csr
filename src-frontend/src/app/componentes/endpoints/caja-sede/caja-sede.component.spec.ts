@@ -69,6 +69,8 @@ describe('CajaSedeComponent', () => {
   afterEach(() => {
     fixture?.destroy();
     localStorage.removeItem(CLAVE_ULTIMA_SEDE);
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
   });
 
   const dosSedes = [{ id: 3, nombre: 'Norte' }, { id: 8, nombre: 'Sur' }];

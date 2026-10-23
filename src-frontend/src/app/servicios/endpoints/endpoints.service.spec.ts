@@ -1,4 +1,6 @@
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { EndpointsService } from './endpoints.service';
@@ -193,6 +195,56 @@ describe('EndpointsService', () => {
       expect(params.get('vendibleProfesor')).toBe('true');
       expect(params.get('tipo')).toBe('EXAMEN');
       expect(params.get('concepto')).toBe('dobok');
+    });
+  });
+
+  describe('eliminarEventoConRespuesta (8b-3f)', () => {
+    let servicio: EndpointsService;
+    let http: HttpTestingController;
+
+    beforeEach(() => {
+      TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+      servicio = TestBed.inject(EndpointsService);
+      http = TestBed.inject(HttpTestingController);
+    });
+
+    it('el mismo DELETE /eventos/{id} con credenciales, limpia la caché pública y saca el evento de eventos$', () => {
+      let visto: any[] = [];
+      servicio.eventos$.subscribe((e) => (visto = e));
+      servicio.obtenerEventos();
+      http.expectOne((r) => r.method === 'GET' && r.url.endsWith('/eventos')).flush([{ id: 1 }, { id: 2 }]);
+      expect(visto.map((e) => e.id)).toEqual([1, 2]);
+      // Con la caché llena no pide nada.
+      servicio.obtenerEventos();
+      http.expectNone((r) => r.url.endsWith('/eventos'));
+
+      let terminado = false;
+      servicio.eliminarEventoConRespuesta(1).subscribe(() => (terminado = true));
+      const r = http.expectOne((x) => x.method === 'DELETE' && x.url.endsWith('/eventos/1'));
+      expect(r.request.withCredentials).toBeTrue();
+      r.flush(null);
+      expect(terminado).toBeTrue();
+      expect(visto.map((e) => e.id)).toEqual([2]);
+
+      // La caché se limpió: la siguiente lectura vuelve a pedir GET /eventos.
+      servicio.obtenerEventos();
+      const otra = http.expectOne((x) => x.method === 'GET' && x.url.endsWith('/eventos'));
+      otra.flush([{ id: 2 }]);
+      http.verify();
+    });
+
+    it('si falla no toca la caché ni la lista y el error llega al llamador', () => {
+      let visto: any[] = [];
+      servicio.eventos$.subscribe((e) => (visto = e));
+      servicio.obtenerEventos();
+      http.expectOne((r) => r.url.endsWith('/eventos')).flush([{ id: 1 }]);
+      let fallo = false;
+      servicio.eliminarEventoConRespuesta(1).subscribe({ error: () => (fallo = true) });
+      http.expectOne((x) => x.method === 'DELETE').flush({}, { status: 500, statusText: 'Error' });
+      expect(fallo).toBeTrue();
+      expect(visto.map((e) => e.id)).toEqual([1]);
+      servicio.obtenerEventos();
+      http.expectNone((r) => r.url.endsWith('/eventos'));
     });
   });
 });
