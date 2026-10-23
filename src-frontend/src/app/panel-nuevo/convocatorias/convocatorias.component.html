@@ -1,0 +1,239 @@
+<div class="pn convocatorias" pnAcento>
+  <div class="convocatorias__pagina">
+    <header class="convocatorias__cabecera">
+      <div class="convocatorias__titulos">
+        <h1 class="convocatorias__titulo">Convocatorias</h1>
+        <p class="convocatorias__subtitulo">Exámenes de grado por disciplina: alumnos inscritos, pagos y actualización de grados.</p>
+      </div>
+      <button type="button" class="convocatorias__boton-primario" aria-haspopup="dialog" (click)="crearConvocatoria()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"></path></svg>
+        <span>Crear convocatoria</span>
+      </button>
+    </header>
+
+    @if (estado === 'error') {
+    <pn-bloque-error class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="convocatorias__cargando" etiqueta="Cargando convocatorias" aria-busy="true">
+      <div class="convocatorias__esqueleto-pestanas"><span></span><span></span></div>
+      @for (i of [1, 2, 3]; track i) {
+      <div class="convocatorias__esqueleto-bloque">
+        <span class="convocatorias__esqueleto-fecha"></span>
+        <span class="convocatorias__esqueleto-cifras"><span></span><span></span><span></span></span>
+      </div>
+      }
+    </pn-esqueleto>
+    } @else {
+    <div class="convocatorias__pestanas" role="tablist" aria-label="Disciplina" (keydown)="teclaPestanas($event)">
+      @for (p of pestanas; track p.codigo) {
+      <button type="button" role="tab" class="convocatorias__pestana" [id]="'convocatorias-pestana-' + p.codigo"
+        [attr.aria-selected]="deporte === p.codigo" aria-controls="convocatorias-panel" [tabIndex]="deporte === p.codigo ? 0 : -1"
+        (click)="elegirDisciplina(p.codigo)">
+        <span class="convocatorias__disc" [class]="'convocatorias__disc convocatorias__disc--' + p.color" aria-hidden="true"></span>
+        <span>{{ p.nombre + ' ' }}</span>
+        <span class="convocatorias__pestana-numero" data-cifras>{{ numero(p.total) }}</span>
+      </button>
+      }
+    </div>
+
+    <div class="convocatorias__panel" id="convocatorias-panel" role="tabpanel"
+      [attr.aria-labelledby]="pestanaActual ? 'convocatorias-pestana-' + pestanaActual.codigo : null">
+      @if (convocatorias.length === 0) {
+      <pn-bloque-vacio class="convocatorias__bloque-estado" titulo="No hay convocatorias disponibles"
+        [texto]="'No hay convocatorias registradas para ' + etiquetaDisciplina(deporte) + '.'"
+        accion="Crear primera convocatoria" (accionar)="crearConvocatoria()" />
+      } @else {
+      <ul class="convocatorias__lista" aria-label="Convocatorias">
+        @for (c of visibles; track c.id) {
+        <li class="convocatorias__bloque" [class.convocatorias__bloque--abierto]="estaAbierta(c)" [attr.data-convocatoria]="c.id">
+          <div class="convocatorias__bloque-cabecera">
+            <button type="button" class="convocatorias__abrir" [attr.aria-expanded]="estaAbierta(c)"
+              [attr.aria-controls]="'convocatoria-cuerpo-' + c.id" (click)="alternar(c)">
+              <span class="convocatorias__que">
+                <span class="convocatorias__disciplina">
+                  <span [class]="'convocatorias__disc convocatorias__disc--' + colorDisciplina(c.deporte)" aria-hidden="true"></span>{{ etiquetaDisciplina(c.deporte) }}</span>
+                <span class="convocatorias__fecha">{{ fechaLarga(c) }}</span>
+              </span>
+              @if (cifrasDe(c.id); as cb) {
+              @if (cb.estado === 'listo' && cb.cifras) {
+              <span class="convocatorias__cifras" data-cifras>
+                @for (k of claves; track k) {
+                <span class="convocatorias__cifra" [class.convocatorias__cifra--pendiente]="k === 'pendientes' && cb.cifras[k] > 0">{{ textoCifra(cb.cifras[k], k) }}</span>
+                }
+              </span>
+              } @else if (cb.estado === 'cargando') {
+              <span class="convocatorias__cifras convocatorias__cifras--hueco" aria-hidden="true"><span></span><span></span><span></span></span>
+              }
+              }
+              <span class="convocatorias__ver">
+                <span>{{ estaAbierta(c) ? 'Ocultar alumnos' : 'Ver alumnos' }}</span>
+                <svg class="convocatorias__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+              </span>
+            </button>
+            @if (cifrasDe(c.id).estado === 'error') {
+            <p class="convocatorias__cifras-error">
+              <span>No se pudieron leer las cifras.</span>
+              <button type="button" class="convocatorias__boton-texto" aria-label="Reintentar las cifras" (click)="leerCifras(c.id)">Reintentar</button>
+            </p>
+            }
+            <button type="button" class="convocatorias__papelera" aria-haspopup="dialog"
+              [attr.aria-label]="'Eliminar la convocatoria del ' + fecha(c.fechaConvocatoria)" (click)="eliminarConvocatoria(c)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+            </button>
+          </div>
+
+          @if (estaAbierta(c)) {
+          <div class="convocatorias__cuerpo" [id]="'convocatoria-cuerpo-' + c.id">
+            @if (estadoAlumnos === 'cargando') {
+            <pn-esqueleto etiqueta="Cargando alumnos" aria-busy="true">
+              @for (i of [1, 2, 3]; track i) {
+              <div class="convocatorias__esqueleto-fila"><span></span><span></span><span></span></div>
+              }
+            </pn-esqueleto>
+            } @else if (estadoAlumnos === 'error') {
+            <pn-bloque-error titulo="No se pudieron obtener los alumnos de la convocatoria" (reintentar)="leerBloque(false)" />
+            } @else {
+            @if (alumnos.length === 0) {
+            <pn-bloque-vacio class="convocatorias__vacio-alumnos" titulo="No hay alumnos inscritos en esta convocatoria"
+              texto="Agrega alumnos con el desplegable de abajo." />
+            } @else {
+            <ul class="convocatorias__alumnos" [attr.aria-label]="'Alumnos inscritos el ' + fecha(c.fechaConvocatoria)">
+              @for (a of alumnos; track a.id) {
+              <li class="convocatorias__alumno" [attr.data-inscrito]="a.id">
+                <span class="convocatorias__avatar" aria-hidden="true">{{ iniciales(a.nombre, a.apellidos) }}</span>
+                <div class="convocatorias__quien">
+                  <p class="convocatorias__nombre">{{ nombreCompleto(a) }}</p>
+                  <p class="convocatorias__paso">
+                    @if (grado(a.gradoActual); as g) {
+                    <span class="convocatorias__cinto" [style.background]="g.fondo" aria-hidden="true"></span><span class="convocatorias__grado">{{ g.nombre }}</span>
+                    }
+                    <svg class="convocatorias__flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    <span class="convocatorias__oculto">pasa a</span>
+                    @if (grado(a.gradoSiguiente); as g) {
+                    <span class="convocatorias__cinto" [style.background]="g.fondo" aria-hidden="true"></span><span class="convocatorias__grado">{{ g.nombre }}</span>
+                    }
+                  </p>
+                </div>
+                <div class="convocatorias__cuantia">
+                  <label class="convocatorias__cuantia-etiqueta" [attr.for]="'convocatorias-cuantia-' + a.id">Cuantía<span class="convocatorias__oculto"> de {{ nombreCompleto(a) }}</span></label>
+                  <span class="convocatorias__cuantia-campo">
+                    <input type="text" inputmode="decimal" autocomplete="off" class="convocatorias__control" data-cifras
+                      [id]="'convocatorias-cuantia-' + a.id" [value]="cuantiaParaCampo(a)" [disabled]="ocupado(a)"
+                      (change)="cambiarCuantia(a, $event)" />
+                    <span class="convocatorias__euro" aria-hidden="true">€</span>
+                  </span>
+                </div>
+                <div class="convocatorias__pago" role="group" [attr.aria-label]="'Pago de ' + nombreCompleto(a)">
+                  <button type="button" class="convocatorias__pago-opcion convocatorias__pago-opcion--pagado" [attr.aria-pressed]="a.pagado === true"
+                    [disabled]="ocupado(a)" (click)="marcarPago(a, true)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                      stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg><span>Pagado</span>
+                  </button>
+                  <button type="button" class="convocatorias__pago-opcion convocatorias__pago-opcion--pendiente" [attr.aria-pressed]="a.pagado !== true"
+                    [disabled]="ocupado(a)" (click)="marcarPago(a, false)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg><span>Pendiente</span>
+                  </button>
+                </div>
+                <button type="button" class="convocatorias__quitar" aria-haspopup="dialog" [disabled]="ocupado(a)"
+                  [attr.aria-label]="'Quitar a ' + nombreCompleto(a) + ' de la convocatoria'" (click)="quitar(a)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M6 6l12 12M18 6 6 18"></path></svg>
+                </button>
+              </li>
+              }
+            </ul>
+            }
+
+            <div class="convocatorias__pie">
+              <div class="convocatorias__agregar">
+                <div class="convocatorias__campo">
+                  <label class="convocatorias__etiqueta" for="convocatorias-apto">Alumno apto para examen</label>
+                  <select appSearchableSelect searchPlaceholder="Buscar alumno…" searchDropdownClass="pn convocatorias-desplegable"
+                    [searchDropdownVariables]="variablesDesplegable()" id="convocatorias-apto" class="convocatorias__control"
+                    (change)="elegirApto($any($event.target).value)">
+                    <option value="" disabled [selected]="aptoElegido === null">Selecciona un alumno apto para examen</option>
+                    @for (a of aptos; track a.id) {
+                    <option [value]="a.id" [selected]="aptoElegido === a.id">{{ nombreCompleto(a) }} - {{ gradoApto(a) }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="convocatorias__agregar-acciones">
+                  <button type="button" pnOcupado class="convocatorias__boton-secundario" aria-haspopup="dialog" [ocupado]="agregando"
+                    textoOcupado="Agregando…" [deshabilitado]="aptoElegido === null" (click)="agregar()">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M12 5v14M5 12h14"></path></svg>
+                    <span>Agregar alumno</span>
+                  </button>
+                  @if (!alumnosCargadosCompletamente) {
+                  <button type="button" class="convocatorias__boton-texto" (click)="cargarMasAlumnos()">Cargar más alumnos</button>
+                  }
+                </div>
+              </div>
+
+              <div class="convocatorias__pie-acciones">
+                <div class="convocatorias__menu-zona" (focusout)="alSalirDelMenu($event)">
+                  <button type="button" id="convocatorias-pdf" pnOcupado class="convocatorias__boton-secundario" [ocupado]="informes.ocupado"
+                    textoOcupado="Generando…" [deshabilitado]="alumnos.length === 0" aria-haspopup="menu" [attr.aria-expanded]="menuPdf"
+                    [attr.aria-controls]="menuPdf ? 'convocatorias-menu-pdf' : null" (click)="alternarMenuPdf()" (keydown)="teclaBotonPdf($event)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5Z"></path><path d="M14 3.5v5h5"></path></svg>
+                    <span>PDF</span>
+                    <svg class="convocatorias__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                  </button>
+                  @if (menuPdf) {
+                  <div id="convocatorias-menu-pdf" class="convocatorias__menu" role="menu" aria-labelledby="convocatorias-pdf"
+                    (keydown)="teclaMenuPdf($event)">
+                    <button type="button" class="convocatorias__menu-opcion" role="menuitem" (click)="pdf('ver')">
+                      <i class="bi bi-eye" aria-hidden="true"></i><span>Ver PDF</span>
+                    </button>
+                    <button type="button" class="convocatorias__menu-opcion" role="menuitem" (click)="pdf('descargar')">
+                      <i class="bi bi-download" aria-hidden="true"></i><span>Descargar PDF <span class="convocatorias__menu-nota" data-cifras>{{ fecha(c.fechaConvocatoria) }}</span></span>
+                    </button>
+                  </div>
+                  }
+                </div>
+                <button type="button" class="convocatorias__boton-primario" aria-haspopup="dialog" [disabled]="alumnos.length === 0"
+                  (click)="actualizarGrados()">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"></path></svg>
+                  <span>Actualizar grados de todos</span>
+                </button>
+              </div>
+            </div>
+            }
+          </div>
+          }
+        </li>
+        }
+      </ul>
+
+      @if (totalPaginas > 1) {
+      <nav class="convocatorias__paginacion" aria-label="Páginas de convocatorias">
+        <button type="button" class="convocatorias__pagina-paso" [disabled]="pagina === 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+        @for (p of paginas; track $index) {
+        @if (p === null) {
+        <span class="convocatorias__pagina-salto" aria-hidden="true">…</span>
+        } @else {
+        <button type="button" class="convocatorias__pagina-num" data-cifras [attr.aria-current]="p === pagina ? 'page' : null"
+          [attr.aria-label]="'Página ' + numero(p)" (click)="irAPagina(p)">{{ numero(p) }}</button>
+        }
+        }
+        <button type="button" class="convocatorias__pagina-paso" [disabled]="pagina === totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+      </nav>
+      }
+      }
+    </div>
+    }
+  </div>
+
+  @if (informes.documentos.length) {
+  <pn-visor-pdf [documentos]="informes.documentos" [aviso]="informes.aviso" [focoRetorno]="informes.focoRetorno"
+    (cerrar)="informes.cerrar()" />
+  }
+</div>

@@ -1,0 +1,961 @@
+// Convocatorias C del panel nuevo (8b-3e). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): un bloque blanco con
+// filete por convocatoria, su cabecera como botón de despliegue con la fecha y las cifras, y los alumnos en filas
+// separadas por la línea. Ocre solo para lo que se debe (cifra y estado «Pendiente»). El acento de la escuela en la
+// pestaña activa, el avatar, los secundarios, «Ver alumnos», la página actual, el «Pagado» elegido y el foco. Sin
+// sombras salvo la del menú.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.convocatorias {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.convocatorias__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.convocatorias__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.convocatorias__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 20px;
+}
+
+.convocatorias__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.convocatorias__subtitulo {
+  max-width: 68ch;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ botones (DESIGN.md)
+
+.convocatorias__boton-primario {
+  @include c.boton-primario;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.convocatorias__boton-secundario {
+  @include c.boton-secundario;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.convocatorias__boton-texto {
+  @include c.boton-texto;
+}
+
+.convocatorias__chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  transition: transform var(--pn-transicion);
+
+  [aria-expanded='true'] & {
+    transform: rotate(180deg);
+  }
+}
+
+// ------------------------------------------------------------------ pestañas por disciplina
+
+.convocatorias__pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.convocatorias__pestana {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--pn-transicion), box-shadow var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  // Activa (8b-C): texto y subrayado de 3 px en acento.
+  &[aria-selected='true'] {
+    color: var(--pn-acento);
+    box-shadow: inset 0 -3px 0 var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.convocatorias__pestana-numero {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie-2);
+  box-shadow: inset 0 0 0 1px var(--pn-linea);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  text-align: center;
+
+  [aria-selected='true'] > & {
+    background: var(--pn-acento-suave);
+    box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+    color: var(--pn-acento);
+  }
+}
+
+// Color de la disciplina (orden del catálogo, disc-1 a disc-4), siempre con su nombre al lado.
+.convocatorias__disc {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pn-tinta-3);
+}
+
+.convocatorias__disc--1 {
+  background: var(--pn-disc-1);
+}
+
+.convocatorias__disc--2 {
+  background: var(--pn-disc-2);
+}
+
+.convocatorias__disc--3 {
+  background: var(--pn-disc-3);
+}
+
+.convocatorias__disc--4 {
+  background: var(--pn-disc-4);
+}
+
+// ------------------------------------------------------------------ bloques
+
+.convocatorias__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.convocatorias__bloque {
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.convocatorias__bloque-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 10px 6px 6px;
+}
+
+// La cabecera entera abre y cierra la lista: un botón con foco visible (hoy no lo tiene).
+.convocatorias__abrir {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px 24px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 12px 10px 14px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.convocatorias__que {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.convocatorias__disciplina {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.convocatorias__fecha {
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.convocatorias__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.convocatorias__cifra:first-child {
+  color: var(--pn-tinta);
+  font-weight: 600;
+}
+
+.convocatorias__cifra--pendiente {
+  color: var(--pn-atencion);
+  font-weight: 600;
+}
+
+.convocatorias__cifras--hueco > span {
+  display: block;
+  width: 72px;
+  height: 12px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.convocatorias__ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.convocatorias__cifras-error {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  order: 3;
+  margin: 0;
+  padding: 0 14px 6px;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
+.convocatorias__papelera,
+.convocatorias__quitar {
+  @include c.boton-icono;
+  width: 40px;
+  height: 40px;
+
+  &:hover:not(:disabled) {
+    color: var(--pn-peligro);
+  }
+}
+
+// ------------------------------------------------------------------ alumnos del bloque abierto
+
+.convocatorias__cuerpo {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.convocatorias__alumnos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.convocatorias__alumno {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto 40px;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 12px 10px 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.convocatorias__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+}
+
+.convocatorias__quien {
+  min-width: 0;
+}
+
+.convocatorias__nombre {
+  margin: 0;
+  overflow: hidden;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.convocatorias__paso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.convocatorias__cinto {
+  flex: none;
+  width: 16px;
+  height: 8px;
+  border: 1px solid var(--pn-cinto-borde);
+  border-radius: 2px;
+}
+
+.convocatorias__flecha {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin: 0 2px;
+  color: var(--pn-tinta-3);
+}
+
+.convocatorias__cuantia {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.convocatorias__cuantia-etiqueta,
+.convocatorias__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.convocatorias__cuantia-campo {
+  position: relative;
+  display: block;
+  width: 116px;
+
+  .convocatorias__control {
+    min-height: 40px;
+    padding-right: 30px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.convocatorias__euro {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.convocatorias__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:disabled {
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-2);
+    cursor: not-allowed;
+  }
+}
+
+select.convocatorias__control {
+  cursor: pointer;
+}
+
+// Conmutador Pagado | Pendiente: el elegido, «Pagado» como control elegido (acento) y «Pendiente» en ocre (se debe).
+.convocatorias__pago {
+  display: inline-flex;
+  align-self: center;
+  padding: 2px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.convocatorias__pago-opcion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+
+  &:hover:not(:disabled):not([aria-pressed='true']) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &[aria-pressed='true'] {
+    cursor: default;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 1px;
+  }
+}
+
+.convocatorias__pago-opcion--pagado[aria-pressed='true'] {
+  background: var(--pn-acento-suave);
+  box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+  color: var(--pn-acento);
+}
+
+.convocatorias__pago-opcion--pendiente[aria-pressed='true'] {
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.convocatorias__pago-opcion:not([aria-pressed='true']) svg {
+  display: none;
+}
+
+.convocatorias__vacio-alumnos {
+  display: block;
+  padding: 8px 16px 0;
+}
+
+// ------------------------------------------------------------------ pie del bloque
+
+.convocatorias__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--pn-linea);
+  border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+}
+
+.convocatorias__agregar {
+  display: flex;
+  flex: 1 1 420px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.convocatorias__campo {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.convocatorias__agregar-acciones,
+.convocatorias__pie-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+// ------------------------------------------------------------------ menú «PDF»
+
+.convocatorias__menu-zona {
+  position: relative;
+}
+
+.convocatorias__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 240px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.convocatorias__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+
+  i {
+    color: var(--pn-tinta-2);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  // Foco por dentro con acento-suave debajo (DESIGN.md, menús).
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+    background: var(--pn-acento-suave);
+  }
+}
+
+.convocatorias__menu-nota {
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+// ------------------------------------------------------------------ paginación
+
+.convocatorias__paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+}
+
+.convocatorias__pagina-num,
+.convocatorias__pagina-paso {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.convocatorias__pagina-num[aria-current='page'] {
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+}
+
+.convocatorias__pagina-salto {
+  min-width: 24px;
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+// ------------------------------------------------------------------ estados
+
+// El bloque de error y el vacío ya llevan su caja.
+.convocatorias__bloque-estado {
+  display: block;
+}
+
+.convocatorias__esqueleto-pestanas {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--pn-linea);
+
+  span {
+    width: 128px;
+    height: 20px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.convocatorias__esqueleto-bloque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 78px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.convocatorias__esqueleto-fecha {
+  width: 260px;
+  max-width: 60%;
+  height: 20px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.convocatorias__esqueleto-cifras {
+  display: flex;
+  gap: 16px;
+
+  span {
+    width: 72px;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.convocatorias__esqueleto-fila {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 160px;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+
+  span {
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    height: 40px;
+    border-radius: 50%;
+  }
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+// ------------------------------------------------------------------ lista flotante del buscador de aptos (en el body)
+
+::ng-deep .convocatorias-desplegable.admin-select-dropdown {
+  padding: 4px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-menu);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+}
+
+::ng-deep .convocatorias-desplegable .admin-select-option {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-s);
+  transition: none;
+}
+
+::ng-deep .convocatorias-desplegable .admin-select-option:hover,
+::ng-deep .convocatorias-desplegable .admin-select-option.is-active {
+  background: var(--pn-marca-primario-suave);
+}
+
+::ng-deep .convocatorias-desplegable .admin-select-option.is-selected {
+  background: var(--pn-acento-suave);
+  font-weight: 600;
+  color: var(--pn-acento);
+}
+
+::ng-deep .convocatorias-desplegable .admin-select-option.is-disabled {
+  color: var(--pn-tinta-2);
+}
+
+::ng-deep .convocatorias-desplegable .admin-select-empty {
+  padding: 10px;
+  color: var(--pn-tinta-2);
+  font-style: normal;
+}
+
+// ------------------------------------------------------------------ tableta
+
+@media (max-width: 1023.98px) {
+  .convocatorias__abrir {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'que ver'
+      'cifras cifras';
+  }
+
+  .convocatorias__que {
+    grid-area: que;
+  }
+
+  .convocatorias__cifras {
+    grid-area: cifras;
+  }
+
+  .convocatorias__ver {
+    grid-area: ver;
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .convocatorias__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .convocatorias__titulo {
+    font-size: 1.375rem;
+  }
+
+  .convocatorias__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .convocatorias__boton-primario,
+  .convocatorias__boton-secundario,
+  .convocatorias__boton-texto,
+  .convocatorias__control,
+  .convocatorias__menu-opcion,
+  .convocatorias__pestana,
+  .convocatorias__pagina-num,
+  .convocatorias__pagina-paso,
+  .convocatorias__pago-opcion {
+    min-height: 44px;
+  }
+
+  .convocatorias__cuantia-campo .convocatorias__control {
+    min-height: 44px;
+  }
+
+  .convocatorias__papelera,
+  .convocatorias__quitar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .convocatorias__pagina-num {
+    min-width: 44px;
+  }
+
+  .convocatorias__pestanas .convocatorias__pestana {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .convocatorias__bloque-cabecera {
+    align-items: flex-start;
+    padding: 4px 4px 4px 2px;
+  }
+
+  // En el móvil, una columna: disciplina y fecha, cifras y «Ver alumnos» debajo.
+  .convocatorias__abrir {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'que'
+      'cifras'
+      'ver';
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .convocatorias__ver {
+    justify-self: start;
+    min-height: 24px;
+  }
+
+  .convocatorias__fecha {
+    font-size: 1rem;
+  }
+
+  // Fila del alumno en dos líneas: avatar, nombre y cruz; cuantía y conmutador debajo.
+  .convocatorias__alumno {
+    grid-template-columns: 40px auto minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'avatar quien quien quitar'
+      'cuantia cuantia pago pago';
+    gap: 10px 12px;
+    padding: 12px 12px 14px 16px;
+  }
+
+  .convocatorias__avatar {
+    grid-area: avatar;
+  }
+
+  .convocatorias__quien {
+    grid-area: quien;
+  }
+
+  .convocatorias__nombre {
+    white-space: normal;
+  }
+
+  .convocatorias__cuantia {
+    grid-area: cuantia;
+  }
+
+  .convocatorias__pago {
+    display: flex;
+    grid-area: pago;
+    align-self: end;
+    justify-self: stretch;
+
+    .convocatorias__pago-opcion {
+      flex: 1 1 0;
+      padding: 0 8px;
+    }
+  }
+
+  .convocatorias__quitar {
+    grid-area: quitar;
+  }
+
+  .convocatorias__cuantia-campo {
+    width: 112px;
+  }
+
+  .convocatorias__pie {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px 16px;
+  }
+
+  .convocatorias__agregar {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .convocatorias__campo {
+    flex: 1 1 auto;
+  }
+
+  .convocatorias__agregar-acciones,
+  .convocatorias__pie-acciones {
+    flex-direction: column;
+    align-items: stretch;
+
+    > * {
+      width: 100%;
+    }
+
+    .convocatorias__boton-secundario {
+      width: 100%;
+    }
+  }
+
+  .convocatorias__menu {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .convocatorias__chevron,
+  .convocatorias__pestana,
+  .convocatorias__abrir,
+  .convocatorias__pago-opcion {
+    transition: none;
+  }
+}

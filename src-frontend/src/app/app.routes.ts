@@ -439,6 +439,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Convocatorias C del panel nuevo (8b-3e): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
+    path: 'convocatoriasListar',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/convocatorias/convocatorias.component').then(m => m.ConvocatoriasComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'convocatoriasListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),

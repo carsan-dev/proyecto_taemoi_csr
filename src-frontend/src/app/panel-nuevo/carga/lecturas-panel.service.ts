@@ -137,6 +137,36 @@ export class LecturasPanelService {
     });
   }
 
+  /** Igual que `EndpointsService.obtenerConvocatorias` (Convocatorias, 8b-3e). */
+  convocatorias(deporte?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (deporte) {
+      params = params.set('deporte', deporte);
+    }
+    return this.http.get<any[]>(`${environment.apiUrl}/convocatorias`, {
+      params,
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAlumnosDeConvocatoria` (Convocatorias, 8b-3e). */
+  alumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/convocatorias/${convocatoriaId}/alumnos`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerAlumnosElegiblesParaConvocatoria` (Convocatorias, 8b-3e). */
+  aptosParaConvocatoria(deporte: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/alumnos/aptos/convocatoria`, {
+      params: new HttpParams().set('deporte', deporte),
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
   /** Igual que `EndpointsService.obtenerTodosLosAlumnosSinPaginar` (certificados de la Tesorería, 8b-3d). */
   alumnosSinPaginar(incluirInactivos = false): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/alumnos`, {
