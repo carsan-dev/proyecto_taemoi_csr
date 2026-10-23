@@ -105,6 +105,7 @@
             <pn-bloque-vacio class="convocatorias__vacio-alumnos" titulo="No hay alumnos inscritos en esta convocatoria"
               texto="Agrega alumnos con el desplegable de abajo." />
             } @else {
+            <div class="convocatorias__columnas" aria-hidden="true"><span>Alumno</span><span>Cuantía</span><span>Pago</span></div>
             <ul class="convocatorias__alumnos" [attr.aria-label]="'Alumnos inscritos el ' + fecha(c.fechaConvocatoria)">
               @for (a of alumnos; track a.id) {
               <li class="convocatorias__alumno" [attr.data-inscrito]="a.id">

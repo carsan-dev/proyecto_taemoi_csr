@@ -477,6 +477,18 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(botonEn(f, 'Quitar a Ana2 Ficticia Ruiz de la convocatoria')).toBeTruthy();
   });
 
+  it('cabecera de columnas: una sola, decorativa (aria-hidden) con «Alumno», «Cuantía» y «Pago'
+    + '»; el campo conserva su label for', () => {
+    cargar();
+    abrir();
+    const cabeceras = el().querySelectorAll('.convocatorias__columnas');
+    expect(cabeceras.length).toBe(1);
+    expect(cabeceras[0].getAttribute('aria-hidden')).toBe('true');
+    expect(Array.from(cabeceras[0].querySelectorAll('span')).map(texto)).toEqual(['Alumno', 'Cuantía', 'Pago']);
+    const campo = filaAlumno(2).querySelector<HTMLInputElement>('.convocatorias__cuantia input')!;
+    expect(texto(el().querySelector(`label[for="${campo.id}"]`))).toContain('Cuantía de Ana2 Ficticia Ruiz');
+  });
+
   // ------------------------------------------------------------------ escrituras de la lista
 
   it('conmutador: la MISMA llamada que hoy (PUT /convocatorias/alumno/{id} con cuantía y pagado), sin doble envío; aviso y relectura con el bloque abierto', () => {
@@ -768,6 +780,7 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     abrir(12, []);
     const vacio = bloque(12).querySelector('pn-bloque-vacio')!;
     expect(texto(vacio)).toContain('No hay alumnos inscritos en esta convocatoria');
+    expect(el().querySelector('.convocatorias__columnas')).toBeNull();
     expect(botonEn(bloque(12), 'PDF').disabled).toBeTrue();
     expect(botonEn(bloque(12), 'Actualizar grados de todos').disabled).toBeTrue();
   });
