@@ -396,6 +396,7 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
     this.cerrarMenu(false);
     this.editor = null;
     this.turnosSub?.unsubscribe();
+    this.firmaSub?.unsubscribe();
     this.alta = null;
     this.liberarFirma();
     this.descartarFichas();
@@ -701,7 +702,7 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
     if (!s || !this.opcionCancelar) {
       return;
     }
-    this.cerrarMenu(false);
+    this.cerrarMenu(true);
     const referencia = s['referencia'];
     const email = s['email'];
     let motivo = '';
@@ -759,7 +760,7 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
     if (!s || !this.puedeEliminar) {
       return;
     }
-    this.cerrarMenu(false);
+    this.cerrarMenu(true);
     const referencia: string = s['referencia'];
     const campo = 'preins-confirmar-referencia';
     const r = await this.confirmacion.confirmar({
