@@ -16,6 +16,7 @@ import { eur, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import {
   ClaveFiltro,
+  FILAS_VISIBLES,
   Filtros,
   OPCIONES_ORDEN,
   ORDEN_POR_DEFECTO,
@@ -30,6 +31,7 @@ import {
   mismoOrden,
   ordenar,
   textoTotal,
+  textoVerRestantes,
 } from './productos-vista';
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -37,12 +39,27 @@ type Estado = 'cargando' | 'listo' | 'error';
 interface Grupo {
   tipo: TipoProducto;
   titulo: string;
+  /** Las filas leídas, en el orden del grupo. */
   productos: ProductoPanel[];
+  /** Las que se ven: las primeras `FILAS_VISIBLES`, o todas las leídas si el grupo está abierto. */
+  visibles: ProductoPanel[];
+  /** Las del grupo según la API (`totalElements`), también las que aún no se han leído. */
+  total: number;
+  /** Quedan filas por ver: sin enseñar o sin leer. */
+  hayMas: boolean;
+  /** Cuántas faltan por ver (para «Ver los N restantes»). */
+  restantes: number;
 }
 
 interface Lectura {
   tipo: TipoProducto;
   productos: ProductoPanel[];
+  /** `totalElements` de la API. */
+  total: number;
+  /** `totalPages` de la API con el tamaño de lectura. */
+  paginas: number;
+  /** Páginas ya leídas (de la 1 a esta, seguidas). */
+  leidas: number;
 }
 
 interface ResultadoLote {
@@ -56,7 +73,8 @@ const CLAVE_ESTADO = 'panelProductosEstado';
 const TIPOS = TIPOS_PRODUCTO.map((t) => t.valor);
 
 /**
- * Productos del panel nuevo (8b-3g, P2 «agrupados por tipo»): un grupo por tipo con su número y entero (sin páginas);
+ * Productos del panel nuevo (8b-3g, P2 «agrupados por tipo»): un grupo por tipo con su número (el de la API); al abrir lee solo
+ * la primera página de cada grupo y enseña sus 50 primeras filas; «Ver los N restantes» lee el resto de ESE grupo, una página tras otra;
  * fila corta con casilla, concepto, «nº», precio a la derecha, interruptor «Mi caja» y «⋯» (Editar, Eliminar); barra
  * fija al pie con los seleccionados («Dar a Mi caja», «Quitar de Mi caja», «Eliminar»); orden por nº, concepto o precio
  * en un menú de cada grupo; buscador, «Tipo», «Mi caja», «Limpiar filtros», total y chips. Las MISMAS escrituras que
@@ -102,7 +120,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
   /** Menú abierto: `fila-<id>` («⋯») u `orden-<tipo>`. */
   menuAbierto: string | null = null;
 
-  private porTipo = new Map<TipoProducto, ProductoPanel[]>();
+  private porTipo = new Map<TipoProducto, Lectura>();
+  /** Grupos abiertos con «Ver los N restantes»: enseñan todo lo leído. */
+  private readonly abiertos = new Set<TipoProducto>();
+  /** Grupos leyendo sus páginas restantes (botón ocupado). */
+  private readonly leyendoResto = new Set<TipoProducto>();
+  private readonly restos = new Map<TipoProducto, Subscription>();
+  /** Concepto y Mi caja de la última lectura: las páginas restantes piden lo mismo. */
+  private consulta: { concepto: string; miCaja: boolean | null } = { concepto: '', miCaja: null };
   private ordenes: Record<TipoProducto, Orden> = Object.fromEntries(TIPOS.map((t) => [t, ORDEN_POR_DEFECTO])) as Record<
     TipoProducto,
     Orden
@@ -148,6 +173,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.carga?.unsubscribe();
+    this.cancelarRestos();
     this.quitarEscucha();
     this.destruido = true;
     this.destroy$.next();
@@ -158,21 +184,24 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   /**
    * Una lectura por tipo (o solo la del tipo elegido) con la petición de hoy (`GET /productos` con concepto, tipo y
-   * Mi caja), cada una entera, página a página. `silencioso`: sin esqueleto (tras una escritura).
+   * Mi caja), cada una con su primera página. Un grupo abierto con «Ver los N restantes» que se relee en silencio
+   * (`silencioso`: sin esqueleto, tras una escritura) vuelve a leer las páginas que enseña, una tras otra, y sigue abierto;
+   * una carga normal los cierra a todos.
    */
   cargar(silencioso = false): void {
     this.carga?.unsubscribe();
+    this.cancelarRestos();
     this.conceptoAplicado = this.filtros.concepto;
     this.guardarEstado();
     if (!silencioso) {
       this.estado = 'cargando';
+      this.abiertos.clear();
     }
     const tipos = this.filtros.tipo ? [this.filtros.tipo] : TIPOS;
-    const concepto = this.filtros.concepto;
-    const miCaja = miCajaParaApi(this.filtros.miCaja);
-    this.carga = forkJoin(tipos.map((t) => this.leerTipo(t, concepto, miCaja))).subscribe({
+    this.consulta = { concepto: this.filtros.concepto, miCaja: miCajaParaApi(this.filtros.miCaja) };
+    this.carga = forkJoin(tipos.map((t) => this.leerTipo(t, this.abiertos.has(t)))).subscribe({
       next: (lecturas) => {
-        this.porTipo = new Map(lecturas.map((l) => [l.tipo, l.productos]));
+        this.porTipo = new Map(lecturas.map((l) => [l.tipo, l]));
         this.seleccion.clear();
         this.reconstruir();
         this.estado = 'listo';
@@ -189,43 +218,156 @@ export class ProductosComponent implements OnInit, OnDestroy {
     });
   }
 
-  private leerTipo(tipo: TipoProducto, concepto: string, miCaja: boolean | null): Observable<Lectura> {
-    const pedir = (pagina: number) =>
-      // Por id (único): las páginas van en paralelo y un orden por concepto (repetible) podría repetir u omitir filas en el
-      // corte; el orden que se ve se hace después en el navegador.
-      this.lecturas.productos(concepto, pagina, TAMANO_LECTURA, 'id', 'asc', tipo, miCaja);
-    return pedir(1).pipe(
+  private pedir(tipo: TipoProducto, pagina: number): Observable<any> {
+    // Por id (único): las páginas se leen en tandas y un orden por concepto (repetible) podría repetir u omitir filas en el
+    // corte; el orden que se ve se hace después en el navegador.
+    return this.lecturas.productos(this.consulta.concepto, pagina, TAMANO_LECTURA, 'id', 'asc', tipo, this.consulta.miCaja);
+  }
+
+  /** La primera página del tipo; con `completo`, también las demás, una tras otra. */
+  private leerTipo(tipo: TipoProducto, completo: boolean): Observable<Lectura> {
+    return this.pedir(tipo, 1).pipe(
       switchMap((primera) => {
         const paginas = Number(primera?.totalPages) || 0;
-        if (paginas <= 1) {
-          return of([primera]);
-        }
-        const resto = Array.from({ length: paginas - 1 }, (_, i) => pedir(i + 2));
-        return forkJoin([of(primera), ...resto]);
-      }),
-      map((paginas) => {
-        const vistos = new Set<number>();
-        const productos: ProductoPanel[] = [];
-        for (const pagina of paginas) {
-          for (const p of (pagina?.content ?? []) as ProductoPanel[]) {
-            if (!vistos.has(p.id)) {
-              vistos.add(p.id);
-              productos.push(p);
-            }
-          }
-        }
-        return { tipo, productos };
+        const faltan = completo && paginas > 1 ? Array.from({ length: paginas - 1 }, (_, i) => i + 2) : [];
+        return from(faltan).pipe(
+          concatMap((pagina) => this.pedir(tipo, pagina).pipe(map((respuesta) => ({ pagina, respuesta })))),
+          toArray(),
+          map((resto) => {
+            const lectura = this.nuevaLectura(tipo, primera, paginas);
+            resto.forEach((r) => this.sumarPagina(lectura, r.respuesta, r.pagina));
+            return lectura;
+          })
+        );
       })
     );
   }
 
+  private nuevaLectura(tipo: TipoProducto, primera: any, paginas: number): Lectura {
+    const lectura: Lectura = { tipo, productos: [], total: 0, paginas, leidas: 1 };
+    this.sumarPagina(lectura, primera, 1);
+    lectura.total = Number(primera?.totalElements) || lectura.productos.length;
+    return lectura;
+  }
+
+  /** Añade las filas de una página que no estén ya (por id) y la da por leída. */
+  private sumarPagina(lectura: Lectura, pagina: any, numeroPagina: number): void {
+    const vistos = new Set(lectura.productos.map((p) => p.id));
+    for (const p of (pagina?.content ?? []) as ProductoPanel[]) {
+      if (!vistos.has(p.id)) {
+        vistos.add(p.id);
+        lectura.productos.push(p);
+      }
+    }
+    lectura.leidas = numeroPagina;
+  }
+
+  private cancelarRestos(): void {
+    this.restos.forEach((s) => s.unsubscribe());
+    this.restos.clear();
+    this.leyendoResto.clear();
+  }
+
   private reconstruir(): void {
-    this.grupos = TIPOS_PRODUCTO.filter((t) => (this.porTipo.get(t.valor)?.length ?? 0) > 0).map((t) => ({
-      tipo: t.valor,
-      titulo: t.grupo,
-      productos: ordenar(this.porTipo.get(t.valor)!, this.ordenes[t.valor]),
-    }));
-    this.total = this.grupos.reduce((suma, g) => suma + g.productos.length, 0);
+    this.grupos = TIPOS_PRODUCTO.filter((t) => (this.porTipo.get(t.valor)?.productos.length ?? 0) > 0).map((t) => {
+      const lectura = this.porTipo.get(t.valor)!;
+      const productos = ordenar(lectura.productos, this.ordenes[t.valor]);
+      const visibles = this.abiertos.has(t.valor) ? productos : productos.slice(0, FILAS_VISIBLES);
+      const sinLeer = lectura.leidas < lectura.paginas;
+      const total = Math.max(lectura.total, productos.length);
+      return {
+        tipo: t.valor,
+        titulo: t.grupo,
+        productos,
+        visibles,
+        total,
+        hayMas: sinLeer || visibles.length < productos.length,
+        restantes: sinLeer ? total - visibles.length : productos.length - visibles.length,
+      };
+    });
+    this.total = this.grupos.reduce((suma, g) => suma + g.total, 0);
+  }
+
+  // ------------------------------------------------------------------ «Ver los N restantes»
+
+  textoRestantes(g: Grupo): string {
+    return textoVerRestantes(g.restantes);
+  }
+
+  leyendo(g: Grupo): boolean {
+    return this.leyendoResto.has(g.tipo);
+  }
+
+  /**
+   * Enseña todo lo leído del grupo y lee lo que falte de ESE grupo, página a página (nunca en paralelo). Si falla, deja
+   * lo leído, avisa y el botón sirve para reintentar.
+   */
+  verRestantes(g: Grupo): void {
+    const tipo = g.tipo;
+    const lectura = this.porTipo.get(tipo);
+    if (!lectura || this.leyendoResto.has(tipo)) {
+      return;
+    }
+    const primeraNueva = g.productos[g.visibles.length]?.id;
+    this.abiertos.add(tipo);
+    this.reconstruir();
+    this.cdr.detectChanges();
+    this.enfocarFila(primeraNueva);
+    if (lectura.leidas >= lectura.paginas) {
+      return;
+    }
+    this.leyendoResto.add(tipo);
+    const pendientes = Array.from({ length: lectura.paginas - lectura.leidas }, (_, i) => lectura.leidas + i + 1);
+    let nuevaId: number | undefined = primeraNueva;
+    this.restos.set(
+      tipo,
+      from(pendientes)
+        .pipe(concatMap((pagina) => this.pedir(tipo, pagina).pipe(map((respuesta) => ({ pagina, respuesta })))))
+        .subscribe({
+          next: ({ pagina, respuesta }) => {
+            const antes = lectura.productos.length;
+            this.sumarPagina(lectura, respuesta, pagina);
+            nuevaId ??= lectura.productos[antes]?.id;
+            this.reconstruir();
+            this.cdr.detectChanges();
+            if (nuevaId !== undefined && this.enfocarFila(nuevaId)) {
+              nuevaId = undefined;
+            }
+          },
+          error: () => {
+            this.leyendoResto.delete(tipo);
+            this.restos.delete(tipo);
+            this.avisos.error('No se pudieron cargar los productos restantes.');
+            this.cdr.markForCheck();
+          },
+          complete: () => {
+            this.leyendoResto.delete(tipo);
+            this.restos.delete(tipo);
+            this.reconstruir();
+            this.cdr.markForCheck();
+          },
+        })
+    );
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Lleva el foco a la casilla de la primera fila recién enseñada, si el foco seguía en el botón (que puede desaparecer) o
+   * en ningún sitio: nunca se lo quita a quien ya se fue a otra parte.
+   */
+  private enfocarFila(id: number | undefined): boolean {
+    if (id === undefined) {
+      return false;
+    }
+    const activo = document.activeElement;
+    if (activo && activo !== document.body && !activo.closest('.productos__pie')) {
+      return true;
+    }
+    const casilla = this.host.nativeElement.querySelector<HTMLInputElement>(
+      `.productos__fila[data-producto="${id}"] .productos__casilla`
+    );
+    casilla?.focus();
+    return !!casilla;
   }
 
   // ------------------------------------------------------------------ filtros
@@ -319,22 +461,22 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   todosDe(g: Grupo): boolean {
-    return g.productos.length > 0 && g.productos.every((p) => this.seleccion.has(p.id));
+    return g.visibles.length > 0 && g.visibles.every((p) => this.seleccion.has(p.id));
   }
 
   algunosDe(g: Grupo): boolean {
-    return !this.todosDe(g) && g.productos.some((p) => this.seleccion.has(p.id));
+    return !this.todosDe(g) && g.visibles.some((p) => this.seleccion.has(p.id));
   }
 
   etiquetaTodos(g: Grupo): string {
-    return g.productos.length === 1
+    return g.visibles.length === 1
       ? `Seleccionar el producto de ${g.titulo}`
-      : `Seleccionar los ${numero(g.productos.length)} de ${g.titulo}`;
+      : `Seleccionar los ${numero(g.visibles.length)} de ${g.titulo}`;
   }
 
   alternarGrupo(g: Grupo): void {
     const marcar = !this.todosDe(g);
-    for (const p of g.productos) {
+    for (const p of g.visibles) {
       if (marcar) {
         this.seleccion.add(p.id);
       } else {

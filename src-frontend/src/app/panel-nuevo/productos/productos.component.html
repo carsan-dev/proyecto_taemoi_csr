@@ -92,7 +92,7 @@
         <h2 class="productos__grupo-titulo" [id]="'productos-grupo-' + g.tipo">
           <span>{{ g.titulo }}</span>{{ ' ' }}
           <span class="productos__numero" role="img" data-cifras
-            [attr.aria-label]="plural(g.productos.length, 'producto', 'productos')">{{ numero(g.productos.length) }}</span>
+            [attr.aria-label]="plural(g.total, 'producto', 'productos')">{{ numero(g.total) }}</span>
         </h2>
         <div class="productos__menu-zona productos__menu-zona--orden" (focusout)="alSalirDelMenu($event)">
           <button type="button" class="productos__ordenar" [id]="'productos-boton-' + claveOrden(g)" aria-haspopup="menu"
@@ -121,7 +121,7 @@
       </div>
 
       <ul class="productos__lista" [attr.aria-label]="g.titulo">
-        @for (p of g.productos; track p.id) {
+        @for (p of g.visibles; track p.id) {
         <li class="productos__fila" [attr.data-producto]="p.id" [class.productos__fila--elegida]="seleccionado(p)">
           <span class="productos__marca productos__marca--fila">
             <input type="checkbox" class="productos__casilla" [checked]="seleccionado(p)" [attr.aria-label]="'Seleccionar ' + p.concepto"
@@ -171,6 +171,12 @@
             </div>
             }
           </div>
+        </li>
+        }
+        @if (g.hayMas) {
+        <li class="productos__pie">
+          <button type="button" pnOcupado class="productos__boton-texto" [ocupado]="leyendo(g)" textoOcupado="Cargando…"
+            [attr.aria-label]="textoRestantes(g) + ' de ' + g.titulo" (click)="verRestantes(g)">{{ textoRestantes(g) }}</button>
         </li>
         }
       </ul>

@@ -340,6 +340,15 @@
   }
 }
 
+// Pie del grupo (con más filas de las que se ven): a la izquierda, bajo la última fila y dentro de la tarjeta.
+.productos__pie {
+  display: flex;
+  justify-content: flex-start;
+  padding: 4px 6px;
+  border-top: 1px solid var(--pn-linea);
+  border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+}
+
 .productos__fila--elegida {
   background: var(--pn-acento-suave);
 }

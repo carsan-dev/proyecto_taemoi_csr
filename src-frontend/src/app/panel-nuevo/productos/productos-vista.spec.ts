@@ -1,6 +1,7 @@
 import { FormControl } from '@angular/forms';
 
 import {
+  FILAS_VISIBLES,
   OPCIONES_ORDEN,
   ORDEN_POR_DEFECTO,
   TIPOS_PRODUCTO,
@@ -13,6 +14,7 @@ import {
   miCajaParaApi,
   ordenar,
   textoTotal,
+  textoVerRestantes,
   validarPrecio,
 } from './productos-vista';
 
@@ -295,5 +297,15 @@ describe('productos-vista (8b-3g)', () => {
     expect(textoTotal(0)).toBe('0 productos');
     expect(textoTotal(1)).toBe('1 producto');
     expect(textoTotal(1044)).toBe('1.044 productos');
+  });
+
+  it('textoVerRestantes: «Ver el restante» en singular y «Ver los N restantes» con miles es-ES', () => {
+    expect(textoVerRestantes(1)).toBe('Ver el restante');
+    expect(textoVerRestantes(2)).toBe('Ver los 2 restantes');
+    expect(textoVerRestantes(1044)).toBe('Ver los 1.044 restantes');
+  });
+
+  it('FILAS_VISIBLES: cada grupo enseña 50 filas antes de pedir el resto', () => {
+    expect(FILAS_VISIBLES).toBe(50);
   });
 });
