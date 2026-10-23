@@ -58,6 +58,12 @@ jobs:
     outputs:
       probado: ${{ steps.decidir.outputs.probado }}
     steps:
+      # fetch-depth 2: trae el primer padre para comparar con HEAD^1 (solo documentación).
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
       - name: Check whether this merge was already tested in its PR
         id: decidir
         continue-on-error: true
@@ -70,7 +76,15 @@ jobs:
           motivo=""
           reutiliza=""
           decidir() {
-            local datos arbol npadres p2 runs run njobs nhuellas
+            local datos arbol npadres p2 runs run njobs nhuellas ficheros nficheros
+            # Solo documentación (docs/, mascota-app/ o *.md): no hay nada que probar. Lista vacía o error: sigue la lógica normal.
+            if ficheros="$(git diff --name-only HEAD^1 HEAD)" && [ -n "$ficheros" ] \
+                && ! grep -qvE '^docs/|^mascota-app/|\.md$' <<< "$ficheros"; then
+              nficheros="$(wc -l <<< "$ficheros")"
+              resultado=true
+              motivo="solo cambia documentación ($nficheros ficheros: docs/, mascota-app/ o .md); no hacen falta los tests"
+              return
+            fi
             if ! datos="$(gh api "repos/$REPO/commits/$SHA" --jq '[.commit.tree.sha, (.parents | length), (.parents[1].sha // "")] | @tsv')"; then
               motivo="no se pudo leer el commit $SHA"; return
             fi
@@ -117,7 +131,11 @@ jobs:
             echo "$motivo"
             if [ "$resultado" = "true" ]; then
               echo ""
-              echo "Se saltan los tests; se reutiliza el run https://github.com/$REPO/actions/runs/$reutiliza"
+              if [ -n "$reutiliza" ]; then
+                echo "Se saltan los tests; se reutiliza el run https://github.com/$REPO/actions/runs/$reutiliza"
+              else
+                echo "Se saltan los tests."
+              fi
             else
               echo ""
               echo "Se ejecutan todos los tests."
