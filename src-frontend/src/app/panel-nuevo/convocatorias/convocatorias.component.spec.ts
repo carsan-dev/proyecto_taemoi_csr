@@ -318,6 +318,33 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(bloque(11)).not.toBeNull();
   });
 
+  it('pestañas: la disciplina que no se pudo leer enseña un error con «Reintentar», nunca el vacío; al reintentar con éxito salen sus bloques y su número', () => {
+    crear();
+    const r = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
+    r.find((x) => x.request.params.get('deporte') === 'TAEKWONDO')!.flush([C1, C2]);
+    r.find((x) => x.request.params.get('deporte') === 'KICKBOXING')!.flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    responderCifras();
+    pestanas()[1].click();
+    fixture.detectChanges();
+    const panel = el().querySelector<HTMLElement>('[role="tabpanel"]')!;
+    expect(texto(panel.querySelector('pn-bloque-error'))).toContain('No se pudieron obtener las convocatorias');
+    expect(panel.querySelector('pn-bloque-vacio')).toBeNull();
+    expect(el().textContent).not.toContain('Crear primera convocatoria');
+    expect(el().querySelector('.convocatorias__paginas')).toBeNull();
+    botonEn(panel, 'Reintentar').click();
+    fixture.detectChanges();
+    const nueva = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
+    expect(nueva.map((x) => x.request.params.get('deporte'))).toEqual(['KICKBOXING']);
+    nueva[0].flush([C3]);
+    fixture.detectChanges();
+    http.expectOne(`${API}/convocatorias/21/alumnos`).flush([]);
+    fixture.detectChanges();
+    expect(el().querySelector('[role="tabpanel"] pn-bloque-error')).toBeNull();
+    expect(bloque(21)).not.toBeNull();
+    expect(pestanas().map(texto)).toEqual(['Taekwondo 2', 'Kickboxing 1']);
+  });
+
   it('cifras: una respuesta tardía de la lectura de cifras no pisa la del bloque abierto, que es más nueva', () => {
     crear();
     responderListas();

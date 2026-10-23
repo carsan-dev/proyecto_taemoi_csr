@@ -41,7 +41,10 @@
 
     <div class="convocatorias__panel" id="convocatorias-panel" role="tabpanel"
       [attr.aria-labelledby]="pestanaActual ? 'convocatorias-pestana-' + pestanaActual.codigo : null">
-      @if (convocatorias.length === 0) {
+      @if (sinNumero.has(deporte)) {
+      <pn-bloque-error class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias"
+        (reintentar)="reintentarDisciplina(deporte)" />
+      } @else if (convocatorias.length === 0) {
       <pn-bloque-vacio class="convocatorias__bloque-estado" titulo="No hay convocatorias disponibles"
         [texto]="'No hay convocatorias registradas para ' + etiquetaDisciplina(deporte) + '.'"
         accion="Crear primera convocatoria" (accionar)="crearConvocatoria()" />

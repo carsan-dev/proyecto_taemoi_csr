@@ -243,6 +243,26 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** «Reintentar» en la pestaña de una disciplina que no se pudo leer: relee solo esa lista. */
+  reintentarDisciplina(codigo: string): void {
+    this.lecturas
+      .convocatorias(codigo)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (lista) => {
+          this.sinNumero.delete(codigo);
+          this.listas = { ...this.listas, [codigo]: (lista ?? []) as ConvocatoriaPanel[] };
+          this.ajustarPagina();
+          this.guardarEstado();
+          this.leerCifrasVisibles();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.avisos.error('No se pudieron obtener las convocatorias.');
+        },
+      });
+  }
+
   /** Las cifras de los bloques a la vista que aún no se han leído (los alumnos de cada convocatoria). */
   private leerCifrasVisibles(): void {
     for (const c of this.visibles) {
