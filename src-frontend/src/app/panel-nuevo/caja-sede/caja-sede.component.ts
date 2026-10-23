@@ -18,6 +18,7 @@ import {
 } from '../../componentes/endpoints/caja-sede/caja-calculos';
 import { SearchableSelectDirective } from '../../directives/searchable-select.directive';
 import {
+  CobroCaja,
   EntregaCaja,
   MovimientoCaja,
   MovimientoDeEntrega,
@@ -197,6 +198,9 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
   cargandoPendientes = false;
   cargandoEntregas = false;
   errorDatos: ErrorDatos | null = null;
+  /** Falló la última lectura de pendientes o de entregas: sin datos, la pestaña no enseña esqueleto bajo el error. */
+  errorPendientes = false;
+  errorEntregas = false;
 
   /** Nombres de alumnos para la tabla de movimientos y el selector del formulario (se cargan solo si hacen falta). */
   alumnos: Array<{ id: number; nombre: string }> = [];
@@ -366,6 +370,8 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
     }
     this.recarga$.next();
     this.errorDatos = null;
+    this.errorPendientes = false;
+    this.errorEntregas = false;
     this.cargarPeriodo();
     this.cargarPendientes();
     this.cargarEntregas();
@@ -421,6 +427,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       return;
     }
     this.cargandoPendientes = true;
+    this.errorPendientes = false;
     this.caja
       .pendienteEntrega(sede)
       .pipe(
@@ -429,11 +436,41 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (pendientes) => {
+          if (sede !== this.sedeId) {
+            return;
+          }
           this.pendientes = pendientes;
+          this.revisarEntregaAbierta(pendientes);
           this.cdr.markForCheck();
         },
-        error: (error) => this.fallo(error),
+        error: (error) => (this.errorPendientes = this.fallo(error)),
       });
+  }
+
+  /**
+   * «Recibir entrega» abierto (y sin envío en vuelo) cuando llegan pendientes nuevos (anular una entrega, «Reintentar»,
+   * un 409): si el profesor ya no está o sus cobros cambian (ids o importes), se cierra sin enviar y se avisa. Así lo
+   * marcado, «Debería entregar» y el envío nunca salen de unos cobros distintos de los que se pintan.
+   */
+  private revisarEntregaAbierta(pendientes: PendienteCobrador[]): void {
+    const f = this.formEntrega;
+    if (!f || f.enviando || f.sedeId !== this.sedeId) {
+      return;
+    }
+    const ahora = pendientes.find((p) => p.usuarioId === f.profesor.usuarioId);
+    if (ahora && mismosCobros(f.profesor.cobros, ahora.cobros)) {
+      return;
+    }
+    // El foco se devuelve si estaba en el formulario o se había perdido; si está en otra parte (otra pestaña), se queda.
+    const activo = typeof document !== 'undefined' ? document.activeElement : null;
+    const seccion = this.host.nativeElement.querySelector(`#caja-entrega-${f.profesor.usuarioId}`);
+    const devolver = !activo || activo === document.body || !!seccion?.contains(activo);
+    this.formEntrega = null;
+    if (devolver) {
+      const fila = `.caja__profesor[data-usuario="${f.profesor.usuarioId}"] .caja__recibir`;
+      this.devolverFoco(null, ...(ahora ? [fila] : []), '#caja-pestana-recibir');
+    }
+    this.avisos.info(`Los cobros pendientes de ${f.profesor.nombre} han cambiado. Vuelve a abrir «Recibir entrega».`);
   }
 
   private cargarEntregas(): void {
@@ -442,6 +479,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       return;
     }
     this.cargandoEntregas = true;
+    this.errorEntregas = false;
     this.consultaEntregas$.next({ sede, pagina: this.paginaEntregas });
   }
 
@@ -459,7 +497,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       .subscribe(({ valor, error }) => {
         this.cargandoEntregas = false;
         if (error) {
-          this.fallo(error);
+          this.errorEntregas = this.fallo(error);
         } else if (valor) {
           this.entregas = valor.content;
           this.totalPaginasEntregas = valor.totalPages ?? 0;
@@ -500,13 +538,14 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Como hoy: un 401 lo atiende la sesión; el resto, el aviso de la página con el `mensaje` si lo trae. */
-  private fallo(error: unknown): void {
+  /** Como hoy: un 401 lo atiende la sesión; el resto, el aviso de la página con el `mensaje` si lo trae. Dice si lo enseña. */
+  private fallo(error: unknown): boolean {
     if (error instanceof HttpErrorResponse && error.status === 401) {
-      return;
+      return false;
     }
     this.errorDatos = { mensaje: mensajeDeError(error) };
     this.cdr.markForCheck();
+    return true;
   }
 
   // ------------------------------------------------------------------ presentación
@@ -649,7 +688,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
   recibirEntrega(): void {
     const f = this.formEntrega;
     const calculo = this.calculoEntrega;
-    if (!f || !calculo || !this.puedeRecibir() || calculo.contado === null || f.sedeId !== this.sedeId) {
+    if (!f || !calculo || !this.puedeRecibir() || calculo.contado === null || f.sedeId !== this.sedeId || this.cargandoPendientes) {
       return;
     }
     f.enviando = true;
@@ -992,13 +1031,16 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ foco y permisos
 
-  /** Tras cerrar un formulario, el foco vuelve a quien lo abrió o, si ya no está (la fila se releyó), a su pestaña. */
-  private devolverFoco(disparador: HTMLElement | null, alternativa: string): void {
+  /** Tras cerrar un formulario, el foco vuelve a quien lo abrió o, si ya no está (la fila se releyó), a la primera alternativa que haya. */
+  private devolverFoco(disparador: HTMLElement | null, ...alternativas: string[]): void {
     if (this.destruido) {
       return;
     }
     setTimeout(() => {
-      const destino = disparador?.isConnected ? disparador : this.host.nativeElement.querySelector<HTMLElement>(alternativa);
+      const raiz = this.host.nativeElement;
+      const destino = disparador?.isConnected
+        ? disparador
+        : alternativas.map((a) => raiz.querySelector<HTMLElement>(a)).find((e): e is HTMLElement => !!e);
       destino?.focus();
     });
   }
@@ -1020,6 +1062,15 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       },
     });
   }
+}
+
+/** Los mismos cobros (ids e importes), sin mirar el orden. */
+function mismosCobros(antes: CobroCaja[], ahora: CobroCaja[]): boolean {
+  if (antes.length !== ahora.length) {
+    return false;
+  }
+  const importes = new Map(antes.map((c) => [c.cobroId, c.importe]));
+  return importes.size === ahora.length && ahora.every((c) => importes.has(c.cobroId) && importes.get(c.cobroId) === c.importe);
 }
 
 function disparadorDe(evento?: Event): HTMLElement | null {

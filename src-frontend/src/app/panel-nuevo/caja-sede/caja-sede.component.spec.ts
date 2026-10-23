@@ -367,6 +367,57 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta�
     ['resumen', 'movimientos', 'pendiente-entrega', 'entregas'].forEach((q) => expect(peticiones(caja(5, q)).length).withContext(q).toBe(1));
   });
 
+  it('si fallan los pendientes y las entregas, solo el error con «Reintentar», sin esqueleto debajo; al reintentar vuelve mientras carga', () => {
+    crear();
+    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 5, nombre: 'Sede Prueba' }] });
+    peticiones(caja(5, 'pendiente-entrega'))[0].flush({ mensaje: 'Error' }, { status: 500, statusText: 'Error' });
+    peticiones(caja(5, 'entregas'))[0].flush({ mensaje: 'Error' }, { status: 500, statusText: 'Error' });
+    responderSede(5);
+    jasmine.clock().tick(300);
+    fixture.detectChanges();
+    expect(el().querySelector('.caja__error-datos')).not.toBeNull();
+    expect(panel().querySelector('pn-esqueleto')).toBeNull();
+    elegir('entregas');
+    expect(panel().querySelector('pn-esqueleto')).toBeNull();
+    boton(el().querySelector('.caja__error-datos')!, 'Reintentar').click();
+    fixture.detectChanges();
+    expect(el().querySelector('.caja__error-datos')).toBeNull();
+    expect(panel().querySelector('pn-esqueleto')).not.toBeNull();
+    elegir('recibir');
+    expect(panel().querySelector('pn-esqueleto')).not.toBeNull();
+    responderSede(5);
+    expect(panel().querySelector('pn-esqueleto')).toBeNull();
+    expect(profesor()).not.toBeNull();
+  });
+
+  it('tras cambiar de sede, las respuestas en vuelo de la anterior (pendientes, entregas y periodo) no se pintan ni tocan la nueva', () => {
+    crear();
+    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 8, nombre: 'Sur' }, { sedeId: 3, nombre: 'Norte' }] });
+    fixture.detectChanges();
+    const viejas = ['resumen', 'movimientos', 'pendiente-entrega', 'entregas'].map((q) => peticiones(caja(3, q)));
+    viejas.forEach((l) => expect(l.length).toBe(1));
+    const sede = el().querySelector<HTMLSelectElement>('#caja-sede')!;
+    sede.value = '8';
+    sede.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    // Lo de Norte ya no puede llegar: se cancela al elegir Sur.
+    viejas.forEach(([r]) => expect(r.cancelled).withContext(r.request.url).toBeTrue());
+    expect(comp().pendientes).toBeNull();
+    expect(comp().entregas).toBeNull();
+    expect(comp().resumen).toBeNull();
+    expect(comp().movimientos).toBeNull();
+    expect(comp().errorDatos).toBeNull();
+    expect(comp().cargandoPendientes).toBeTrue();
+    responderSede(8, { pendientes: [profesorVista({ usuarioId: 12, nombre: 'Profe Sur' })], entregas: [], resumen: { saldoCaja: 7 } });
+    expect(el().querySelectorAll('.caja__profesor').length).toBe(1);
+    expect(texto(profesor(12))).toContain('Profe Sur');
+    expect(texto(el().querySelector('.caja__cifra'))).toContain('7,00 €');
+    expect(texto(pestana('entregas'))).toBe('Entregas 0');
+    expect(comp().cargandoPendientes).toBeFalse();
+    expect(comp().cargandoEntregas).toBeFalse();
+    expect(comp().cargandoResumen).toBeFalse();
+  });
+
   it('esqueleto a los 300 ms mientras cargan las sedes y mientras llega cada pestaña', () => {
     crear();
     jasmine.clock().tick(300);
@@ -581,6 +632,127 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta�
       expect(profesor(10).contains(formEntrega())).toBeTrue();
       expect(peticiones(caja(5, 'entregas'), 'POST').length).toBe(0);
       el().remove();
+    });
+
+    describe('abierto mientras se releen los pendientes', () => {
+      const AVISO_CAMBIO = 'Los cobros pendientes de Profe Prueba han cambiado. Vuelve a abrir «Recibir entrega».';
+      const CON_UNO_MAS = profesorVista({
+        numeroCobros: 3, importe: 65,
+        cobros: [...profesorVista().cobros, cobroVista({ cobroId: 3, cargoId: 13, concepto: 'EXAMEN', importe: 20 })],
+      });
+      const infos = (): string[] => avisos().filter((a) => a.tipo === 'info').map((a) => a.texto);
+      const enviar = (): HTMLButtonElement => formEntrega()!.querySelector<HTMLButtonElement>('.caja__recibir-enviar')!;
+
+      it('el propietario anula una entrega de X con su formulario abierto: sus cobros cambian, se cierra sin enviar y avisa', async () => {
+        cargar();
+        abrirRecibir();
+        elegir('entregas');
+        filaEntrega(7).querySelector<HTMLButtonElement>('button')!.click();
+        await esperar();
+        escribirDialogo(dialogo()!, 'contada dos veces');
+        await confirmarDialogo(dialogo()!);
+        peticiones(`${API}/caja/entregas/7/anular`, 'POST')[0].flush({ ...ENTREGA, estado: 'ANULADA' });
+        await esperar();
+        responderSede(5, { pendientes: [CON_UNO_MAS], entregas: [{ ...ENTREGA, estado: 'ANULADA' }] });
+        pintar();
+        expect(comp().formEntrega).toBeNull();
+        expect(formEntrega()).toBeNull();
+        expect(infos()).toEqual([AVISO_CAMBIO]);
+        expect(peticiones(caja(5, 'entregas'), 'POST').length).toBe(0);
+        // Al volver a abrirlo, los tres cobros entran en el cálculo y en el envío.
+        elegir('recibir');
+        const form = abrirRecibir();
+        expect(Array.from(form.querySelectorAll<HTMLInputElement>('.caja__cobro input[type="checkbox"]')).map((c) => c.checked)).toEqual([true, true, true]);
+        expect(texto(form.querySelector('.caja__deberia'))).toBe('Debería entregar 65,00 €');
+        boton(form, 'Recibir 65,00 €').click();
+        expect(peticiones(caja(5, 'entregas'), 'POST')[0].request.body).toEqual({
+          entregadoPorUsuarioId: 9, cobroIds: [1, 2, 3], importeContado: 65, nota: null,
+        });
+      });
+
+      it('si cambia el importe de un cobro o X ya no tiene pendientes, también se cierra sin enviar y avisa', () => {
+        cargar();
+        abrirRecibir();
+        comp().recargarTodo();
+        responderSede(5, { pendientes: [profesorVista({ cobros: [cobroVista(), cobroVista({ cobroId: 2, importe: 16 })] })] });
+        pintar();
+        expect(formEntrega()).toBeNull();
+        expect(infos()).toEqual([AVISO_CAMBIO]);
+        TestBed.inject(AvisosService).cerrarTodos();
+        abrirRecibir();
+        comp().recargarTodo();
+        responderSede(5, { pendientes: [profesorVista({ usuarioId: 10, nombre: 'Otra' })] });
+        pintar();
+        expect(formEntrega()).toBeNull();
+        expect(infos()).toEqual([AVISO_CAMBIO]);
+        expect(peticiones(caja(5, 'entregas'), 'POST').length).toBe(0);
+      });
+
+      it('al cerrarse, el foco vuelve a «Recibir entrega» de X o, si X ya no está, a la pestaña', () => {
+        cargar();
+        document.body.appendChild(el());
+        abrirRecibir();
+        expect(formEntrega()!.contains(document.activeElement)).toBeTrue();
+        comp().recargarTodo();
+        responderSede(5, { pendientes: [CON_UNO_MAS] });
+        pintar();
+        jasmine.clock().tick(1);
+        expect(document.activeElement).toBe(boton(profesor(), 'Recibir entrega'));
+        abrirRecibir();
+        comp().recargarTodo();
+        responderSede(5, { pendientes: [] });
+        pintar();
+        jasmine.clock().tick(1);
+        expect(document.activeElement).toBe(pestana('recibir'));
+        el().remove();
+      });
+
+      it('si los cobros de X no cambian, sigue abierto tal cual y envía los mismos cobros y lo contado; durante la recarga no se envía', () => {
+        cargar();
+        const form = abrirRecibir();
+        form.querySelector<HTMLInputElement>('.caja__cobro input[data-cobro="2"]')!.click();
+        fixture.detectChanges();
+        escribirEn(form.querySelector<HTMLInputElement>('.caja__contado')!, '29');
+        escribirEn(form.querySelector('textarea')!, 'falta 1');
+        expect(enviar().disabled).toBeFalse();
+        comp().recargarTodo();
+        fixture.detectChanges();
+        expect(enviar().disabled).toBeTrue();
+        expect(boton(profesor(), 'Recibir entrega').disabled).toBeTrue();
+        comp().recibirEntrega();
+        expect(peticiones(caja(5, 'entregas'), 'POST').length).toBe(0);
+        // Los mismos ids e importes, en otro orden y en objetos nuevos.
+        const [uno, dos] = profesorVista().cobros;
+        responderSede(5, { pendientes: [profesorVista({ cobros: [dos, uno] })] });
+        pintar();
+        expect(infos()).toEqual([]);
+        expect(formEntrega()).not.toBeNull();
+        expect(formEntrega()!.querySelector<HTMLInputElement>('.caja__contado')!.value).toBe('29');
+        expect(Array.from(formEntrega()!.querySelectorAll<HTMLInputElement>('.caja__cobro input[type="checkbox"]')).map((c) => c.checked)).toEqual([true, false]);
+        expect(texto(formEntrega()!.querySelector('.caja__deberia'))).toBe('Debería entregar 30,00 €');
+        expect(enviar().disabled).toBeFalse();
+        enviar().click();
+        const posts = peticiones(caja(5, 'entregas'), 'POST');
+        expect(posts.length).toBe(1);
+        expect(posts[0].request.body).toEqual({ entregadoPorUsuarioId: 9, cobroIds: [1], importeContado: 29, nota: 'falta 1' });
+      });
+
+      it('la lista, las casillas y «Seleccionar todos» del formulario salen de sus propios cobros, los del cálculo y el envío', () => {
+        cargar();
+        abrirRecibir();
+        comp().recargarTodo();
+        // Mismos ids e importes, otro concepto y un cobro de más en la fila: el formulario sigue con los suyos.
+        responderSede(5, { pendientes: [profesorVista({ cobros: [cobroVista({ concepto: 'OTRO CONCEPTO' }), profesorVista().cobros[1]] })] });
+        pintar();
+        const form = formEntrega()!;
+        expect(texto(form.querySelector('.caja__cobro'))).toContain('MENSUALIDAD');
+        expect(texto(form.querySelector('.caja__cobro'))).not.toContain('OTRO CONCEPTO');
+        comp().formEntrega!.profesor = profesorVista({ cobros: [] });
+        comp().formEntrega!.seleccionados = new Set();
+        fixture.detectChanges();
+        expect(formEntrega()!.querySelectorAll('.caja__cobro').length).toBe(0);
+        expect(formEntrega()!.querySelector<HTMLInputElement>('input[aria-label="Seleccionar todos los cobros"]')!.disabled).toBeTrue();
+      });
     });
   });
 

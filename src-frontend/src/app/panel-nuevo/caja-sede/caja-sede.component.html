@@ -93,7 +93,9 @@
       [hidden]="pestana !== 'recibir'" [attr.aria-busy]="cargandoPendientes ? 'true' : null">
       <p class="caja__panel-nota">Cobros en efectivo que los profesores aún no han entregado en la sede.</p>
       @if (pendientes === null) {
+      @if (!errorPendientes) {
       <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando el efectivo en mano' }" />
+      }
       } @else if (pendientes.length === 0) {
       <pn-bloque-vacio titulo="Ningún profesor tiene efectivo pendiente de entregar." />
       } @else {
@@ -145,13 +147,13 @@
                   <span class="caja__etiqueta" aria-hidden="true">Cobros</span>
                   <label class="caja__todos">
                     <input type="checkbox" aria-label="Seleccionar todos los cobros" [checked]="estadoSeleccionCobros === 'todos'"
-                      [indeterminate]="estadoSeleccionCobros === 'algunos'" [disabled]="f.enviando || p.cobros.length === 0"
+                      [indeterminate]="estadoSeleccionCobros === 'algunos'" [disabled]="f.enviando || f.profesor.cobros.length === 0"
                       (change)="alternarTodos($any($event.target).checked)" />
                     <span>Seleccionar todos</span>
                   </label>
                 </div>
                 <ul class="caja__cobros-lista">
-                  @for (c of p.cobros; track c.cobroId) {
+                  @for (c of f.profesor.cobros; track c.cobroId) {
                   <li>
                     <label class="caja__cobro">
                       <input type="checkbox" [attr.data-cobro]="c.cobroId" [checked]="f.seleccionados.has(c.cobroId)" [disabled]="f.enviando"
@@ -208,7 +210,7 @@
               <div class="caja__form-pie">
                 <button type="button" class="caja__boton-texto" [disabled]="f.enviando" (click)="cerrarEntrega()">Cancelar</button>
                 <button type="submit" pnOcupado class="caja__boton-primario caja__recibir-enviar" [ocupado]="f.enviando"
-                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir()">Recibir {{ eur(calc.contado ?? 0) }}</button>
+                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes">Recibir {{ eur(calc.contado ?? 0) }}</button>
               </div>
             </form>
             }
@@ -225,7 +227,9 @@
       [hidden]="pestana !== 'entregas'" [attr.aria-busy]="cargandoEntregas ? 'true' : null">
       <p class="caja__panel-nota">Dinero que los profesores han entregado en la sede, del más reciente al más antiguo.</p>
       @if (entregas === null) {
+      @if (!errorEntregas) {
       <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando las entregas' }" />
+      }
       } @else if (entregas.length === 0) {
       <pn-bloque-vacio titulo="Todavía no se ha recibido ninguna entrega en esta sede." />
       } @else {
