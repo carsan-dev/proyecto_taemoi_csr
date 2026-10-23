@@ -1668,9 +1668,12 @@ Decisión del propietario del 23/10: los formularios que quedaron fuera de la 25
   propuestas en el mundo de C, a 375, 768 y 1280 px, con datos ficticios e inventario por pantalla. El propietario elige
   una variante por pantalla y los inventarios elegidos se copian al Anexo A.
 - **8b-3l, alta de alumno:** mismo cuerpo de alta que hoy campo a campo, cargos iniciales y documentos iguales; datos de
-  menores.
+  menores. Incluye también Eliminar alumnos (`alumnosEliminar`, decisión 284): mismas llamadas y confirmaciones que hoy.
 - **8b-3m, formularios de grupos:** crear y editar grupo y turno y la pantalla de alumnos del grupo, con las mismas
-  llamadas que hoy; enlaza con Grupos (8b-3c).
+  llamadas que hoy; enlaza con Grupos (8b-3c). Incluye también Seleccionar alumnos para un grupo
+  (`seleccionarAlumnos/:id`) y Turnos de un alumno (`gestionarTurnosAlumno/:alumnoId`) (decisión 284).
+- **Decisión 284 (23/10):** las tres pantallas de gestión que el plan no nombraba (Eliminar alumnos, Seleccionar alumnos
+  y Turnos de un alumno) entran en el boceto 8b-B4 con su inventario, y se implementan en 8b-3l y 8b-3m como arriba.
 - **8b-3n, productos de un alumno:** la pantalla «Gestionar productos» que hoy abre la ficha (pestaña Pagos): asignar,
   editar fecha de asignación, cantidad y precio, cobrar con el mismo diálogo y llamada que Tesorería, quitar; mismos
   cuerpos que hoy.
