@@ -426,7 +426,7 @@ export class SolicitudesPanelComponent implements OnInit, OnDestroy {
       ejecutar: () => this.solicitudes.registrarDevolucion(s.id, nota),
     });
     if (r.error instanceof HttpErrorResponse && r.error.status === 403) {
-      this.avisos.info(DEVOLUCION_OTRA_SEDE);
+      this.avisos.error(`No puedes registrarla. ${DEVOLUCION_OTRA_SEDE}`);
       this.recargar();
       return;
     }

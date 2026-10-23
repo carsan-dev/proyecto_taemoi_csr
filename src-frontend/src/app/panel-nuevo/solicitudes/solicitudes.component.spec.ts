@@ -805,7 +805,7 @@ describe('SolicitudesPanelComponent (8b-3i, Solicitudes del panel nuevo, P1 acci
       await confirmarDialogo(d);
       http.expectOne(`${BASE}/23/devolucion`).flush({ mensaje: 'Acceso denegado' }, { status: 403, statusText: 'Forbidden' });
       await esperar();
-      expect(avisos()).toEqual([{ tipo: 'info', texto: DEVOLUCION_OTRA_SEDE }]);
+      expect(avisos()).toEqual([{ tipo: 'error', texto: `No puedes registrarla. ${DEVOLUCION_OTRA_SEDE}` }]);
       releer([], [DEVOLUCION_SEDE]);
       elegir('ENCARGOS');
 
