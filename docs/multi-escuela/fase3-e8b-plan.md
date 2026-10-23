@@ -856,7 +856,7 @@ ya se corrigió en la pantalla de hoy (hotfix 2); la nueva conserva ese comporta
   «Actualizar grados»; crear y eliminar; paginación y `sessionStorage`; esqueleto, error y vacíos),
   `lecturas-panel.service.spec.ts` y `app.routes.spec.ts` (dos entradas; apagado no descarga el chunk).
 - **Notas para la PR:** bundle inicial 1.456.023 bytes (+172 frente a 1.455.851, la entrada de la ruta; sin
-  cambio tras la revisión); chunk `convocatorias-component` 57,16 kB (11,98 kB por la red; 56,43 kB antes de la revisión);
+  cambio tras la revisión); chunk `convocatorias-component` 57,71 kB (12,03 kB por la red; 56,43 kB antes de la revisión);
   karma 1930 SUCCESS; capturas apagado antes (`2672b8fa`) y
   después idénticas en bytes, 12/12 (carga, abierta, crear y eliminar a 375, 768 y 1280); encendido a 375, 768 y 1280
   (lista, alumnos abiertos, menú «PDF», actualizar grados, tipo de producto, quitar y vacío); objetivos de 44 px como

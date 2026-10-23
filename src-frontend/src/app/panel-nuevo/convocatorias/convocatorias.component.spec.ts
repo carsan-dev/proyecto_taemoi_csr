@@ -331,7 +331,7 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(texto(panel.querySelector('pn-bloque-error'))).toContain('No se pudieron obtener las convocatorias');
     expect(panel.querySelector('pn-bloque-vacio')).toBeNull();
     expect(el().textContent).not.toContain('Crear primera convocatoria');
-    expect(el().querySelector('.convocatorias__paginas')).toBeNull();
+    expect(el().querySelector('.convocatorias__paginacion')).toBeNull();
     botonEn(panel, 'Reintentar').click();
     fixture.detectChanges();
     const nueva = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
@@ -343,6 +343,43 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(el().querySelector('[role="tabpanel"] pn-bloque-error')).toBeNull();
     expect(bloque(21)).not.toBeNull();
     expect(pestanas().map(texto)).toEqual(['Taekwondo 2', 'Kickboxing 1']);
+  });
+
+  it('crear en la disciplina que no se pudo leer: no la añade a la lista vacía, la relee una vez y, con la nueva, sale su número y desaparece el error', async () => {
+    crear();
+    const r = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
+    r.find((x) => x.request.params.get('deporte') === 'TAEKWONDO')!.flush([C1, C2]);
+    r.find((x) => x.request.params.get('deporte') === 'KICKBOXING')!.flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    responderCifras();
+    pestanas()[1].click();
+    fixture.detectChanges();
+    botonEn(el().querySelector('.convocatorias__cabecera')!, 'Crear convocatoria').click();
+    pintar();
+    const deporte = dialogo()!.querySelector<HTMLSelectElement>('#convocatoria-deporte')!;
+    expect(deporte.value).toBe('KICKBOXING');
+    const campoFecha = dialogo()!.querySelector<HTMLInputElement>('#convocatoria-fecha')!;
+    campoFecha.value = '2026-11-28';
+    campoFecha.dispatchEvent(new Event('input'));
+    botonEn(dialogo()!, 'Crear').click();
+    await esperar();
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__mensaje'))).toBe('Vas a crear una convocatoria de Kickboxing para 28/11/2026.');
+    botonEn(dialogo()!, 'Sí, crear').click();
+    await esperar();
+    const post = http.expectOne(`${API}/convocatorias`);
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body.deporte).toBe('KICKBOXING');
+    post.flush({ id: 22, fechaConvocatoria: '2026-11-28T00:00:00', deporte: 'KICKBOXING' });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'otro', texto: 'La convocatoria ha sido creada correctamente.' }]);
+    const releer = http.match((x) => x.url === `${API}/convocatorias`).filter((x) => !x.cancelled);
+    expect(releer.map((x) => x.request.params.get('deporte'))).toEqual(['KICKBOXING']);
+    releer[0].flush([C3, { id: 22, fechaConvocatoria: '2026-11-28T00:00:00', deporte: 'KICKBOXING' }]);
+    fixture.detectChanges();
+    responderCifras();
+    expect(el().querySelector('[role="tabpanel"] pn-bloque-error')).toBeNull();
+    expect(bloque(22)).not.toBeNull();
+    expect(pestanas().map(texto)).toEqual(['Taekwondo 2', 'Kickboxing 2']);
   });
 
   it('cifras: una respuesta tardía de la lectura de cifras no pisa la del bloque abierto, que es más nueva', () => {

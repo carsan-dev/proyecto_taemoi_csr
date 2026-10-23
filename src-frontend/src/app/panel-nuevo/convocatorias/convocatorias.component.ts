@@ -866,6 +866,11 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
             return;
           }
           const codigo = nueva.deporte || deporte;
+          if (this.sinNumero.has(codigo)) {
+            // Su lista no se pudo leer: se relee entera en vez de añadir la nueva a una lista incompleta.
+            this.reintentarDisciplina(codigo);
+            return;
+          }
           // Como hoy, se añade al final de su lista sin volver a pedirla; empieza sin alumnos.
           this.listas = { ...this.listas, [codigo]: [...(this.listas[codigo] ?? []), nueva] };
           this.cifras.set(nueva.id, { estado: 'listo', cifras: { inscritos: 0, pagados: 0, pendientes: 0 } });
