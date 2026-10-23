@@ -18,6 +18,26 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { SeoService } from '../../../servicios/generales/seo.service';
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 
+/**
+ * Ya se mandó al panel en esta carga del documento. Vive en memoria: se reinicia solo con cada
+ * carga (URL escrita, marcador, pestaña restaurada), de modo que la portada siempre vuelve a
+ * redirigir y solo evita rebotar si dentro de la misma carga se navega a «/» sin «Ver la web».
+ */
+let redireccionHechaEnEstaCarga = false;
+
+/** Solo para pruebas: simula una carga de documento nueva. */
+export function reiniciarRedireccionEscaparate(): void {
+  redireccionHechaEnEstaCarga = false;
+}
+
+/** El tipo de navegación del documento actual («navigate», «reload», «back_forward»…), si el navegador lo expone. */
+function tipoNavegacionDocumento(): string | undefined {
+  const entradas = globalThis.performance?.getEntriesByType?.('navigation') as
+    | PerformanceNavigationTiming[]
+    | undefined;
+  return entradas?.[0]?.type;
+}
+
 @Component({
   selector: 'app-escaparate-principal',
   standalone: true,
@@ -28,8 +48,6 @@ import { PageScrollService } from '../../../servicios/generales/page-scroll.serv
 export class EscaparatePrincipalComponent
   implements AfterViewInit, OnInit, OnDestroy
 {
-  private readonly autoRedirectSessionKey = 'escaparate-auth-autoredirect-done';
-
   @ViewChild('videoPresentacion')
   videoPresentacion!: ElementRef<HTMLVideoElement>;
 
@@ -67,8 +85,7 @@ export class EscaparatePrincipalComponent
   ) {}
 
   ngOnInit(): void {
-    const estado = this.router.getCurrentNavigation()?.extras.state ?? globalThis.history?.state;
-    this.verWeb = estado?.['verWeb'] === true;
+    this.verWeb = this.visitaDesdeVerWeb();
     this.usuarioLogueado = this.authService.comprobarLogueado();
     this.authService.usuarioLogueadoCambio.subscribe((estado) => {
       this.usuarioLogueado = estado;
@@ -332,47 +349,36 @@ export class EscaparatePrincipalComponent
     this.pageScroll.scrollToAnchor('map-section', 'smooth');
   }
 
+  /**
+   * «Ver la web» solo cuenta si llega en la navegación en curso. `history.state` sobrevive a F5 y a
+   * la restauración de pestañas, así que solo se respeta al recargar (F5) estando en «Ver la web».
+   */
+  private visitaDesdeVerWeb(): boolean {
+    const estadoNavegacion = this.router.getCurrentNavigation()?.extras.state;
+    if (estadoNavegacion?.['verWeb'] === true) {
+      return true;
+    }
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+    return tipoNavegacionDocumento() === 'reload' && globalThis.history?.state?.['verWeb'] === true;
+  }
+
   private redirigirUsuarioAutenticado(roles: string[]): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    if (!this.usuarioLogueado || this.verWeb) {
+    if (!this.usuarioLogueado || this.verWeb || redireccionHechaEnEstaCarga) {
       return;
     }
-    if (!this.debeAutoRedirigirDesdeEscaparate()) {
+    const urlActual = this.router.url.split('?')[0].split('#')[0];
+    if (urlActual !== '/' && urlActual !== '') {
       return;
     }
     const rutaDestino = this.authService.resolverRutaInicioPorRoles(roles);
     if (rutaDestino !== '/') {
-      this.marcarAutoRedireccionEscaparate();
+      redireccionHechaEnEstaCarga = true;
       this.router.navigate([rutaDestino]);
     }
-  }
-
-  private debeAutoRedirigirDesdeEscaparate(): boolean {
-    if (!isPlatformBrowser(this.platformId)) {
-      return false;
-    }
-
-    const urlActual = this.router.url.split('?')[0].split('#')[0];
-    if (urlActual !== '/' && urlActual !== '') {
-      return false;
-    }
-
-    const storage = globalThis.window?.sessionStorage;
-    if (!storage) {
-      return true;
-    }
-
-    return storage.getItem(this.autoRedirectSessionKey) !== 'true';
-  }
-
-  private marcarAutoRedireccionEscaparate(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    const storage = globalThis.window?.sessionStorage;
-    storage?.setItem(this.autoRedirectSessionKey, 'true');
   }
 }
