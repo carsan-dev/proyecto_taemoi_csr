@@ -167,6 +167,46 @@ export class LecturasPanelService {
     });
   }
 
+  /** Igual que `EndpointsService.obtenerTodosLosProductosPaginado` (Productos, 8b-3g): mismos parámetros y en el mismo orden. */
+  productos(
+    concepto: string,
+    page: number,
+    size: number,
+    orderBy: string,
+    order: string,
+    tipo?: string | null,
+    vendibleProfesor?: boolean | null
+  ): Observable<any> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('orderBy', orderBy)
+      .set('order', order);
+    if (concepto) {
+      params = params.set('concepto', concepto);
+    }
+    if (tipo) {
+      params = params.set('tipo', tipo);
+    }
+    if (vendibleProfesor !== undefined && vendibleProfesor !== null) {
+      params = params.set('vendibleProfesor', String(vendibleProfesor));
+    }
+    return this.http.get<any>(`${environment.apiUrl}/productos`, {
+      params,
+      withCredentials: true,
+      headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerProductoPorId` (Editar producto, 8b-3g). */
+  producto(productoId: number): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/productos/${productoId}`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
   /** Igual que `EndpointsService.obtenerAlumnosDeConvocatoria` (Convocatorias, 8b-3e). */
   alumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/convocatorias/${convocatoriaId}/alumnos`, {

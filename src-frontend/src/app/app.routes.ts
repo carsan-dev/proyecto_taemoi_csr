@@ -408,6 +408,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Productos del panel nuevo (8b-3g): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
+    path: 'productosListar',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/productos/productos.component').then(m => m.ProductosComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'productosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-productos/listado-productos.component').then(m => m.ListadoProductosComponent),

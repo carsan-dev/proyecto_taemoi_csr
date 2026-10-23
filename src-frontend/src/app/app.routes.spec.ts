@@ -12,6 +12,7 @@ import { TesoreriaComponent } from './panel-nuevo/tesoreria/tesoreria.component'
 import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatorias.component';
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
 import { EventoFormularioComponent } from './panel-nuevo/eventos/evento-formulario.component';
+import { ProductosComponent } from './panel-nuevo/productos/productos.component';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -304,8 +305,9 @@ describe('app routes', () => {
     ['eventosListar', '/eventosListar', EventosPanelComponent],
     ['eventosCrear', '/eventosCrear', EventoFormularioComponent],
     ['eventosEditar/:id', '/eventosEditar/7', EventoFormularioComponent],
+    ['productosListar', '/productosListar', ProductosComponent],
   ] as const) {
-    it(`${ruta} (8b-3f): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
+    it(`${ruta} (8b-3f y 8b-3g): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
       const entradas = routes.filter((route) => route.path === ruta);
       expect(entradas.length).toBe(2);
       const [nueva, hoy] = entradas;
@@ -319,7 +321,7 @@ describe('app routes', () => {
       expect(await hoy.loadComponent!()).not.toBe(componente);
     });
 
-    it(`${ruta} (8b-3f): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
+    it(`${ruta} (8b-3f y 8b-3g): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
       @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
       class EventosDeHoy {}
       const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;

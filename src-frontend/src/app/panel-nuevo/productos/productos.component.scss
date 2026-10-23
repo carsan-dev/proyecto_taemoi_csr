@@ -1,0 +1,863 @@
+// Productos del panel nuevo (8b-3g, P2 «agrupados por tipo»). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): cada
+// tipo es un bloque blanco con filete y una fila corta por producto separada por la línea, como Eventos y Alumnos. El
+// acento de la escuela en el orden, las casillas y el interruptor encendidos, los filtros elegidos, los secundarios y el
+// foco; el peligro solo en «Eliminar». Sin sombras salvo la de los menús y la de la barra de seleccionados.
+//
+// La fila se ordena con consultas de contenedor sobre la lista: en una línea desde 560 px de lista; por debajo, en dos
+// (concepto y precio arriba, «Mi caja» y «⋯» abajo) con la casilla a la izquierda. Así cabe a 375 px sin desplazamiento
+// horizontal, también con conceptos largos sin espacios.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.productos {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.productos__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.productos__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.productos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 20px;
+}
+
+.productos__titulos {
+  min-width: 0;
+}
+
+.productos__titulo-pantalla {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.productos__subtitulo {
+  max-width: 75ch;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.productos__boton-primario {
+  @include c.boton-primario;
+}
+
+.productos__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.productos__boton-texto {
+  @include c.boton-texto;
+}
+
+.productos__boton-peligro {
+  @include c.boton;
+  border: 1px solid var(--pn-peligro);
+  background: var(--pn-superficie);
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--pn-peligro) 8%, var(--pn-superficie));
+  }
+}
+
+.productos__boton-primario,
+.productos__boton-secundario,
+.productos__boton-texto,
+.productos__boton-peligro,
+.productos__limpiar {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ filtros
+
+.productos__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.productos__buscador {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 0;
+
+  > svg {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    width: 18px;
+    height: 18px;
+    color: var(--pn-tinta-2);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
+
+.productos__desplegables {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 10px;
+  min-width: 0;
+}
+
+.productos__campo {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.productos__campo--buscar {
+  padding-left: 40px;
+}
+
+.productos__campo--select {
+  flex: 0 1 200px;
+  width: 200px;
+  cursor: pointer;
+}
+
+// Un filtro elegido (8b-C): acento-suave con borde acento-borde y texto acento.
+.productos__campo--elegido {
+  border-color: var(--pn-acento-borde);
+  background-color: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 600;
+}
+
+.productos__limpiar {
+  @include c.boton-texto;
+  min-height: 42px;
+}
+
+.productos__total {
+  margin: 0 4px 0 auto;
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.productos__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.productos__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 2px 0 12px;
+  border: 1px solid var(--pn-acento-borde);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+
+  > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.productos__chip-quitar {
+  @include c.boton-icono;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--pn-radio-pastilla);
+  color: var(--pn-acento);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-superficie);
+    color: var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 1px;
+  }
+}
+
+// ------------------------------------------------------------------ grupos
+
+.productos__grupo {
+  margin-top: 20px;
+}
+
+.productos__grupo-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+  margin-bottom: 8px;
+  padding-left: 1px;
+}
+
+.productos__grupo-titulo {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.productos__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  box-shadow: inset 0 0 0 1px var(--pn-linea-fuerte);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-variant-numeric: tabular-nums;
+}
+
+.productos__ordenar {
+  @include c.boton-texto;
+  max-width: 100%;
+  padding: 0 10px;
+  font-weight: 600;
+
+  &[aria-expanded='true'] {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.productos__ordenar-texto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.productos__lista {
+  container: productos-lista / inline-size;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+// Por defecto (lista estrecha): dos líneas con la casilla a la izquierda.
+.productos__fila {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'marca texto precio'
+    'marca micaja mas';
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  padding: 6px 6px 6px 2px;
+  transition: background-color var(--pn-transicion);
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  &:first-child {
+    border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+  }
+}
+
+.productos__fila--elegida {
+  background: var(--pn-acento-suave);
+}
+
+// Casilla de 44 px: el control nativo cubre la zona entera y la caja de 20 px se dibuja con los tokens.
+.productos__marca {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+
+  input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.productos__marca--fila {
+  grid-area: marca;
+  align-self: start;
+}
+
+.productos__caja {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--pn-borde-control);
+  border-radius: 5px;
+  background: var(--pn-superficie) center / 14px 14px no-repeat;
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.productos__marca:hover .productos__caja {
+  border-color: var(--pn-acento-borde);
+}
+
+input:checked + .productos__caja,
+input:indeterminate + .productos__caja {
+  border-color: var(--pn-acento);
+  background-color: var(--pn-acento);
+}
+
+input:checked + .productos__caja {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+}
+
+input:indeterminate + .productos__caja {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E");
+}
+
+input:focus-visible + .productos__caja {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+.productos__texto {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: texto;
+  align-items: center;
+  column-gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  font: var(--pn-cuerpo);
+  overflow-wrap: anywhere;
+}
+
+// El enlace ocupa la altura de la línea de la fila: objetivo de 44 px (40 en la lista ancha).
+.productos__concepto {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--pn-tinta);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 2px;
+
+  &:hover {
+    color: var(--pn-acento);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.productos__id {
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.productos__precio {
+  grid-area: precio;
+  align-self: start;
+  margin: 0;
+  padding-top: 11px;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.productos__sin-precio {
+  color: var(--pn-tinta-2);
+  font-weight: 400;
+}
+
+// Interruptor «Mi caja»: la etiqueta a la vista y la pista; encendido, en el acento.
+.productos__interruptor {
+  display: inline-flex;
+  grid-area: micaja;
+  justify-self: start;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-left: -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover:not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-disabled='true'] {
+    cursor: progress;
+  }
+}
+
+.productos__pista {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.productos__bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion), background-color var(--pn-transicion);
+}
+
+[aria-checked='true'] > .productos__pista {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento);
+
+  .productos__bola {
+    background: var(--pn-superficie);
+    transform: translateX(16px);
+  }
+}
+
+[aria-busy='true'] > .productos__pista {
+  opacity: 0.55;
+}
+
+// ------------------------------------------------------------------ menús
+
+.productos__menu-zona {
+  position: relative;
+  min-width: 0;
+}
+
+.productos__menu-zona--orden {
+  flex: 0 1 auto;
+}
+
+.productos__menu-zona--fila {
+  grid-area: mas;
+  justify-self: end;
+}
+
+.productos__mas {
+  @include c.boton-icono;
+  width: 44px;
+  height: 44px;
+
+  &[aria-expanded='true'] {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.productos__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.productos__menu--orden {
+  min-width: 248px;
+}
+
+.productos__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+    background: var(--pn-acento-suave);
+  }
+
+  &[aria-current='true'] {
+    color: var(--pn-acento);
+  }
+}
+
+.productos__menu-opcion--peligro {
+  color: var(--pn-peligro);
+}
+
+.productos__menu-marca {
+  visibility: hidden;
+}
+
+[aria-current='true'] > .productos__menu-marca {
+  visibility: visible;
+}
+
+// ------------------------------------------------------------------ barra de seleccionados
+
+.productos__seleccion {
+  position: sticky;
+  bottom: var(--pn-espacio-m);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 20px;
+  // A la derecha queda el sitio del botón flotante «volver arriba» de la aplicación (60 px a 20 px del borde), que si
+  // no taparía «Eliminar».
+  padding: 10px 92px 10px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.productos__seleccion-texto {
+  margin: 0;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.productos__seleccion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// ------------------------------------------------------------------ estados
+
+.productos__bloque-estado {
+  display: block;
+  margin-top: 20px;
+}
+
+.productos__cargando {
+  margin-top: 20px;
+}
+
+.productos__esqueleto-grupo + .productos__esqueleto-grupo {
+  margin-top: 20px;
+}
+
+.productos__esqueleto-cabecera {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 12px;
+
+  span {
+    width: 160px;
+    height: 16px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span + span {
+    width: 120px;
+  }
+}
+
+.productos__esqueleto-fila {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+
+  span {
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    height: 20px;
+  }
+
+  & + & {
+    border-top: 0;
+  }
+
+  &:first-of-type {
+    border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+  }
+}
+
+// ------------------------------------------------------------------ lista ancha: una línea por producto
+
+@container productos-lista (min-width: 560px) {
+  .productos__fila {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(104px, auto) auto 44px;
+    grid-template-areas: 'marca texto precio micaja mas';
+    gap: 12px;
+    padding: 2px 8px 2px 2px;
+  }
+
+  .productos__marca--fila,
+  .productos__precio {
+    align-self: center;
+  }
+
+  .productos__precio {
+    padding-top: 0;
+  }
+
+  .productos__texto,
+  .productos__concepto {
+    min-height: 40px;
+  }
+
+  .productos__interruptor {
+    min-height: 40px;
+    margin-left: 0;
+  }
+
+  .productos__mas {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+// ------------------------------------------------------------------ anchos
+
+@media (max-width: 1023.98px) {
+  // Por encima de la barra inferior del panel (8b-N).
+  .productos__seleccion {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .productos__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .productos__titulo-pantalla {
+    font-size: 1.375rem;
+  }
+
+  .productos__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .productos__boton-primario,
+  .productos__boton-secundario,
+  .productos__boton-texto,
+  .productos__boton-peligro,
+  .productos__limpiar,
+  .productos__ordenar,
+  .productos__campo {
+    min-height: 44px;
+  }
+
+  .productos__buscador {
+    flex-basis: 100%;
+  }
+
+  .productos__desplegables {
+    flex: 1 1 100%;
+  }
+
+  .productos__campo--select {
+    flex: 1 1 0;
+    width: auto;
+  }
+
+  .productos__chip {
+    min-height: 44px;
+  }
+
+  .productos__chip {
+    padding-right: 0;
+  }
+
+  .productos__chip-quitar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .productos__grupo-cabecera {
+    flex-wrap: wrap;
+  }
+
+  .productos__menu-zona--orden {
+    flex: 1 1 100%;
+    padding-left: 44px;
+
+    .productos__menu {
+      right: auto;
+      left: 44px;
+    }
+  }
+
+  .productos__seleccion {
+    padding: 10px 64px 10px 12px;
+  }
+
+  .productos__seleccion-acciones {
+    display: grid;
+    flex: 1 1 100%;
+    grid-template-columns: 1fr 1fr;
+
+    > button {
+      white-space: normal;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productos__fila,
+  .productos__caja,
+  .productos__interruptor,
+  .productos__pista,
+  .productos__bola {
+    transition: none;
+  }
+}
