@@ -201,6 +201,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
   /** Falló la última lectura de pendientes o de entregas: sin datos, la pestaña no enseña esqueleto bajo el error. */
   errorPendientes = false;
   errorEntregas = false;
+  errorMovimientos = false;
 
   /** Nombres de alumnos para la tabla de movimientos y el selector del formulario (se cargan solo si hacen falta). */
   alumnos: Array<{ id: number; nombre: string }> = [];
@@ -383,6 +384,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
       return;
     }
     this.cargandoResumen = true;
+    this.errorMovimientos = false;
     this.consultaPeriodo$.next({ sede, rango: this.rango });
   }
 
@@ -410,7 +412,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
           this.resumen = resumen.valor;
         }
         if (movimientos.error) {
-          this.fallo(movimientos.error);
+          this.errorMovimientos = this.fallo(movimientos.error);
         } else if (movimientos.valor) {
           this.movimientos = movimientos.valor;
           if (movimientos.valor.some((m) => m.alumnoId !== null)) {
@@ -714,6 +716,7 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           f.enviando = false;
+          if (this.pendientes && f.sedeId === this.sedeId) this.revisarEntregaAbierta(this.pendientes);
           if (error instanceof HttpErrorResponse && error.status === 409) {
             const mensaje = mensajeDeError(error);
             this.avisos.error(`La entrega ha cambiado. ${mensaje ? `${mensaje} ` : ''}${TEXTO_ENTREGA_CAMBIADA}`);

@@ -406,7 +406,9 @@
       }
 
       @if (movimientos === null) {
+      @if (!errorMovimientos) {
       <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando los movimientos' }" />
+      }
       } @else if (movimientos.length === 0) {
       <pn-bloque-vacio [titulo]="'No hay movimientos en ' + periodoActual.etiqueta + '.'" />
       } @else {
