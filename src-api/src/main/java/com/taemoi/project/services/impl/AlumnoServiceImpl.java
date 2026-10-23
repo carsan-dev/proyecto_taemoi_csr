@@ -2518,6 +2518,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		dto.setGradoActual(alumnoConvocatoria.getGradoActual());
 		dto.setGradoSiguiente(alumnoConvocatoria.getGradoSiguiente());
 		dto.setPagado(alumnoConvocatoria.getPagado());
+		dto.setFotoAlumno(AlumnoConvocatoriaDTO.fotoDe(alumnoConvocatoria.getAlumno()));
 		return dto;
 	}
 

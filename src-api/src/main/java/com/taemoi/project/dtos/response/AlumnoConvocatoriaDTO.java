@@ -1,5 +1,7 @@
 package com.taemoi.project.dtos.response;
 
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.Imagen;
 
 public class AlumnoConvocatoriaDTO {
 	private Long id;
@@ -112,6 +114,38 @@ public class AlumnoConvocatoriaDTO {
 
 	public void setPagado(Boolean pagado) {
 		this.pagado = pagado;
+	}
+
+	/**
+	 * Foto del alumno para la lista de la convocatoria, solo de salida (ver {@link #fotoDe}). Nula si no tiene.
+	 */
+	@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+	private Imagen fotoAlumno;
+
+	public Imagen getFotoAlumno() {
+		return fotoAlumno;
+	}
+
+	public void setFotoAlumno(Imagen fotoAlumno) {
+		this.fotoAlumno = fotoAlumno;
+	}
+
+	/**
+	 * La foto del alumno como la lleva el listado de alumnos ({@code AlumnoDTO}): una {@link Imagen} nueva (la de la
+	 * entidad no se toca) cuya {@code url} es {@code /api/alumnos/{id}/imagen}, que {@code UrlArchivoSerializer}
+	 * hace absoluta. Esa ruta decide por sí misma quién ve la foto (gestión, responsable de la sede del alumno,
+	 * familia); quien lee la lista de una convocatoria ya puede leerla de cada alumno que recibe. Sin la ruta del
+	 * fichero en disco. Nula si el alumno no tiene foto.
+	 */
+	public static Imagen fotoDe(Alumno alumno) {
+		if (alumno == null || alumno.getId() == null || alumno.getFotoAlumno() == null) {
+			return null;
+		}
+		Imagen original = alumno.getFotoAlumno();
+		Imagen foto = new Imagen(original.getNombre(), original.getTipo(), "/api/alumnos/" + alumno.getId() + "/imagen",
+				null);
+		foto.setId(original.getId());
+		return foto;
 	}
 
 }
