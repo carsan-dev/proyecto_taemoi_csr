@@ -1,0 +1,404 @@
+<div class="pn preins" pnAcento [class.preins--plantillas]="pestana === 'plantillas'" [class.preins--con-detalle]="!!seleccion">
+  <div class="preins__pagina">
+    <header class="preins__cabecera">
+      <div class="preins__titulos">
+        <h1 class="preins__titulo-pantalla">Preinscripciones</h1>
+        <p class="preins__subtitulo">Las solicitudes que llegan desde la web: revisa el horario, la firma y la ficha, y completa el alta.</p>
+      </div>
+      @if (pestana === 'solicitudes') {
+      <button type="button" class="preins__boton-secundario" (click)="actualizar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"></path></svg>
+        <span>Actualizar</span>
+      </button>
+      }
+    </header>
+
+    <div class="preins__pestanas" role="tablist" aria-label="Secciones de preinscripciones" (keydown)="teclaPestanas($event)">
+      <button type="button" role="tab" class="preins__pestana" id="preins-pestana-solicitudes" aria-controls="preins-panel-solicitudes"
+        [attr.aria-selected]="pestana === 'solicitudes'" [attr.tabindex]="pestana === 'solicitudes' ? 0 : -1"
+        (click)="cambiarPestana('solicitudes')">Solicitudes</button>
+      <button type="button" role="tab" class="preins__pestana" id="preins-pestana-plantillas" aria-controls="preins-panel-plantillas"
+        [attr.aria-selected]="pestana === 'plantillas'" [attr.tabindex]="pestana === 'plantillas' ? 0 : -1"
+        (click)="cambiarPestana('plantillas')">Plantillas PDF</button>
+    </div>
+
+    @if (pestana === 'solicitudes') {
+    <div id="preins-panel-solicitudes" role="tabpanel" aria-labelledby="preins-pestana-solicitudes">
+      <form class="preins__filtros" role="search" aria-label="Filtrar preinscripciones" novalidate (submit)="filtrar($event)">
+        <div class="preins__filtro">
+          <label class="preins__oculto" for="preins-temporada">Temporada</label>
+          <select id="preins-temporada" class="preins__campo preins__campo--select" [class.preins__campo--elegido]="filtros.temporada"
+            (change)="ponerFiltro('temporada', $any($event.target).value)">
+            <option value="" [selected]="filtros.temporada === ''">Todas las temporadas</option>
+            @for (t of temporadas; track t) {
+            <option [value]="t" [selected]="filtros.temporada === t">{{ t }}</option>
+            }
+          </select>
+        </div>
+        <div class="preins__filtro">
+          <label class="preins__oculto" for="preins-deporte">Deporte</label>
+          <select id="preins-deporte" class="preins__campo preins__campo--select" [class.preins__campo--elegido]="filtros.deporte"
+            (change)="ponerFiltro('deporte', $any($event.target).value)">
+            <option value="" [selected]="filtros.deporte === ''">Todos los deportes</option>
+            @for (d of disciplinas; track d.codigo) {
+            <option [value]="d.codigo" [selected]="filtros.deporte === d.codigo">{{ d.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="preins__filtro">
+          <label class="preins__oculto" for="preins-estado">Estado</label>
+          <select id="preins-estado" class="preins__campo preins__campo--select" [class.preins__campo--elegido]="filtros.estado"
+            (change)="ponerFiltro('estado', $any($event.target).value)">
+            <option value="" [selected]="filtros.estado === ''">Todos los estados</option>
+            @for (e of estados; track e.valor) {
+            <option [value]="e.valor" [selected]="filtros.estado === e.valor">{{ e.etiqueta }}</option>
+            }
+          </select>
+        </div>
+        <div class="preins__buscador">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <label class="preins__oculto" for="preins-buscar">Buscar por DNI, referencia o nombre</label>
+          <input id="preins-buscar" type="search" class="preins__campo preins__campo--buscar" autocomplete="off" placeholder="DNI, referencia o nombre"
+            [value]="filtros.q" (input)="ponerFiltro('q', $any($event.target).value)" />
+        </div>
+        <button type="submit" class="preins__boton-secundario preins__filtrar">Filtrar</button>
+      </form>
+
+      <div class="preins__espacio">
+        <section class="preins__columna-lista" aria-label="Solicitudes">
+          @if (estado === 'error') {
+          <pn-bloque-error titulo="No se pudieron cargar las preinscripciones" (reintentar)="cargar()" />
+          } @else if (estado === 'cargando') {
+          <pn-esqueleto class="preins__cargando" etiqueta="Cargando preinscripciones" aria-busy="true">
+            <div class="preins__esqueleto">
+              @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+              <div class="preins__esqueleto-fila"><span></span><span></span><span></span></div>
+              }
+            </div>
+          </pn-esqueleto>
+          } @else if (filas.length === 0) {
+          @if (hayFiltros) {
+          <pn-bloque-vacio titulo="No hay solicitudes con estos filtros" texto="Prueba con otra temporada, deporte o estado, o quita los filtros."
+            accion="Quitar filtros" (accionar)="quitarFiltros()" />
+          } @else {
+          <pn-bloque-vacio titulo="Todavía no ha llegado ninguna preinscripción" texto="Las solicitudes que se envíen desde la web aparecerán aquí." />
+          }
+          } @else {
+          <ul class="preins__lista">
+            @for (f of filas; track f.referencia; let i = $index) {
+            <li class="preins__elemento">
+              <button type="button" class="preins__fila" [attr.data-ref]="f.referencia" aria-controls="preins-detalle"
+                [attr.aria-current]="esElegida(f) ? 'true' : null" (click)="elegirFila(i)">
+                <span class="preins__fila-linea">
+                  <span class="preins__nombre" [attr.title]="f.nombre || null">{{ f.nombre || 'Sin nombre' }}</span>
+                  <span class="preins__pastilla" [attr.data-tono]="f.tono">{{ f.pastilla }}</span>
+                </span>
+                <span class="preins__fila-linea preins__fila-linea--meta">
+                  <span class="preins__ref" data-cifras>{{ f.referencia }}</span>
+                  <span class="preins__dni" data-cifras>{{ f.dni }}</span>
+                  @if (f.disciplina) {
+                  <span class="preins__disciplina">{{ f.disciplina }}</span>
+                  }
+                </span>
+                <span class="preins__fila-linea preins__fila-linea--pie">
+                  @if (f.llegada) {
+                  <time class="preins__llegada" [attr.datetime]="f.llegadaIso" [attr.title]="'Llegó el ' + f.llegadaCompleta">{{ f.llegada }}</time>
+                  }
+                  @if (f.conObservacion) {
+                  <span class="preins__observacion-marca">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round"><path d="M5 5h14v10H9l-4 4z"></path></svg>
+                    <span>Con observación</span>
+                  </span>
+                  }
+                </span>
+              </button>
+            </li>
+            }
+          </ul>
+          }
+          @if (estado === 'listo' && filas.length) {
+          <nav class="preins__paginacion" aria-label="Páginas de preinscripciones">
+            <p class="preins__rango" data-cifras aria-live="polite">{{ textoRango }}</p>
+            @if (paginas > 1) {
+            <div class="preins__paginas">
+              <button type="button" class="preins__pagina-boton" aria-label="Página anterior" [disabled]="pagina === 0" (click)="irAPagina(pagina - 1)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path></svg>
+              </button>
+              <span class="preins__pagina-texto" data-cifras>Página {{ pagina + 1 }} de {{ paginas }}</span>
+              <button type="button" class="preins__pagina-boton" aria-label="Página siguiente" [disabled]="pagina >= paginas - 1"
+                (click)="irAPagina(pagina + 1)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </button>
+            </div>
+            }
+          </nav>
+          }
+        </section>
+
+        <section class="preins__detalle" id="preins-detalle" [attr.aria-labelledby]="seleccion ? 'preins-detalle-titulo' : null"
+          [attr.aria-label]="seleccion ? null : 'Detalle de la preinscripción'">
+          @if (seleccion; as s) {
+          <div class="preins__detalle-cabecera">
+            <button type="button" class="preins__volver" (click)="volver()">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+              <span>Volver a la lista</span>
+            </button>
+            <div class="preins__detalle-titulos">
+              <h2 class="preins__detalle-nombre" id="preins-detalle-titulo" tabindex="-1">{{ nombreCompleto(s) || 'Sin nombre' }}</h2>
+              <span class="preins__pastilla" [attr.data-tono]="tonoEstado(s['estado'])">{{ textoPastilla(s) }}</span>
+            </div>
+            <p class="preins__detalle-meta">
+              <span data-cifras>{{ s['referencia'] }}</span>
+              @if (llegada) {
+              <span>Llegó {{ llegada.charAt(0).toLowerCase() + llegada.slice(1) }} · {{ fechaHora(s['creadaEn']) }}</span>
+              }
+            </p>
+          </div>
+
+          <div class="preins__detalle-cuerpo">
+            <section class="preins__bloque preins__datos" aria-labelledby="preins-datos-titulo">
+              <h3 class="preins__bloque-titulo" id="preins-datos-titulo">Datos</h3>
+              <dl class="preins__pares">
+                <div class="preins__par"><dt>DNI/NIE</dt><dd data-cifras>{{ s['dni'] || 'Sin DNI/NIE' }}</dd></div>
+                <div class="preins__par"><dt>Teléfono</dt><dd data-cifras>{{ s['telefono'] || 'No facilitado' }}</dd></div>
+                <div class="preins__par"><dt>Teléfono secundario</dt><dd data-cifras>{{ s['telefono2'] || 'No facilitado' }}</dd></div>
+                <div class="preins__par"><dt>Discapacidad</dt><dd>{{ discapacidad(s) }}</dd></div>
+                <div class="preins__par"><dt>Deporte</dt><dd>{{ etiquetaDisciplina(s['deporte']) }}</dd></div>
+                <div class="preins__par"><dt>Temporada</dt><dd data-cifras>{{ s['temporada'] }}</dd></div>
+                @if (s['estado'] === 'EN_LISTA_ESPERA') {
+                <div class="preins__par"><dt>Puesto en la lista de espera</dt><dd data-cifras>{{ s['posicionListaEspera'] }}</dd></div>
+                }
+                @if (s['estado'] === 'CANCELADA' && s['motivoCancelacion']) {
+                <div class="preins__par preins__par--ancho"><dt>Motivo de cancelación</dt><dd>{{ s['motivoCancelacion'] }}</dd></div>
+                }
+              </dl>
+            </section>
+
+            <section class="preins__bloque preins__horario" aria-labelledby="preins-horario-titulo">
+              <div class="preins__bloque-cabecera">
+                <h3 class="preins__bloque-titulo" id="preins-horario-titulo">Horario</h3>
+                @if (puedeCambiarAsignacion && !editor) {
+                <button type="button" class="preins__boton-texto" (click)="abrirEditor()">Cambiar la asignación</button>
+                }
+              </div>
+              <dl class="preins__pares preins__pares--columna">
+                <div class="preins__par"><dt>Horario solicitado originalmente</dt><dd>{{ s['grupoOriginal'] || 'Sin dato' }}</dd></div>
+                <div class="preins__par"><dt>Asignación vigente</dt><dd>{{ s['grupo'] || 'Sin dato' }}</dd></div>
+                @if (s['turnosModificadosEn']) {
+                <div class="preins__par"><dt>Turnos modificados</dt><dd data-cifras>{{ fechaHora(s['turnosModificadosEn']) }}</dd></div>
+                }
+              </dl>
+              <div class="preins__observacion" [class.preins__observacion--con]="!!s['observaciones']">
+                <h4 class="preins__observacion-titulo">Observación sobre el horario</h4>
+                <p class="preins__observacion-texto">{{ s['observaciones'] || 'Sin observaciones.' }}</p>
+              </div>
+
+              @if (editor; as ed) {
+              <div class="preins__asignacion" role="group" aria-labelledby="preins-asignacion-titulo">
+                <h4 class="preins__asignacion-titulo" id="preins-asignacion-titulo">Asignación administrativa</h4>
+                <p class="preins__nota">Puede ignorar edad y aforo. Solo se admite un turno por día.</p>
+                @if (ed.cargando) {
+                <p class="preins__nota" role="status">Cargando turnos…</p>
+                } @else {
+                <ul class="preins__turnos">
+                  @for (t of ed.turnos; track t.id) {
+                  <li>
+                    <label class="preins__turno" [class.preins__turno--elegido]="turnoElegido(t)">
+                      <input type="checkbox" [attr.data-turno]="t.id" [checked]="turnoElegido(t)" [disabled]="ed.guardando"
+                        (change)="alternarTurno(t, $any($event.target).checked)" />
+                      <span class="preins__turno-texto">
+                        <strong data-cifras>{{ t.diaSemana }} · {{ t.horaInicio }}–{{ t.horaFin }}</strong>
+                        <small>{{ t.grupo }} · {{ t.rangoEdadMin }}–{{ t.rangoEdadMax }} años</small>
+                        @if (fueraDeEdad(t) || t.completo) {
+                        <span class="preins__turno-marcas">
+                          @if (fueraDeEdad(t)) {
+                          <span class="preins__marca">Fuera de edad</span>
+                          }
+                          @if (t.completo) {
+                          <span class="preins__marca">{{ plazaActual(t) ? 'Plaza actual' : 'Sin plaza' }}</span>
+                          }
+                        </span>
+                        }
+                      </span>
+                    </label>
+                  </li>
+                  }
+                </ul>
+                @if (!ed.ids.length) {
+                <p class="preins__error" role="alert">Selecciona al menos un turno.</p>
+                }
+                <div class="preins__asignacion-acciones">
+                  <button type="button" class="preins__boton-texto" [disabled]="ed.guardando" (click)="cerrarEditor()">Cancelar</button>
+                  <button type="button" pnOcupado class="preins__boton-secundario" [ocupado]="ed.guardando" textoOcupado="Guardando…"
+                    [deshabilitado]="!ed.ids.length || !turnosCambiados" (click)="guardarTurnos()">Guardar turnos</button>
+                </div>
+                }
+              </div>
+              }
+            </section>
+
+            <section class="preins__bloque preins__avisos" aria-labelledby="preins-avisos-titulo">
+              <h3 class="preins__bloque-titulo" id="preins-avisos-titulo">Avisos por correo</h3>
+              <ul class="preins__avisos-lista">
+                <li class="preins__aviso">
+                  <span class="preins__aviso-nombre">Email inicial</span>
+                  <span class="preins__aviso-estado" data-cifras>{{ textoEmailInicial(s) }} · {{ textoIntentos(s['emailIntentos']) }}</span>
+                </li>
+                <li class="preins__aviso">
+                  <span class="preins__aviso-nombre">Aviso de cambio</span>
+                  <span class="preins__aviso-estado" data-cifras [attr.data-estado]="s['estadoEmailCambioTurnos']">{{ etiquetaEmail(s['estadoEmailCambioTurnos']) }} · {{
+                    textoIntentos(s['emailCambioTurnosIntentos']) }}</span>
+                  @if (s['emailCambioTurnosEnviadoEn']) {
+                  <span class="preins__aviso-detalle" data-cifras>Enviado el {{ fechaHora(s['emailCambioTurnosEnviadoEn']) }}</span>
+                  }
+                  @if (s['emailCambioTurnosUltimoError']) {
+                  <span class="preins__aviso-detalle preins__aviso-detalle--error">Error del aviso: {{ s['emailCambioTurnosUltimoError'] }}</span>
+                  }
+                  @if (puedeReenviarCambio) {
+                  <button type="button" pnOcupado class="preins__boton-texto preins__aviso-accion" [ocupado]="accion === 'cambio'" textoOcupado="Reenviando…"
+                    [deshabilitado]="!!accion && accion !== 'cambio'" (click)="reenviarCambio()">Reenviar aviso de cambio</button>
+                  }
+                </li>
+                <li class="preins__aviso">
+                  <span class="preins__aviso-nombre">Confirmación final</span>
+                  <span class="preins__aviso-estado" data-cifras [attr.data-estado]="s['estadoEmailFinalizacion']">{{ etiquetaEmail(s['estadoEmailFinalizacion']) }} · {{
+                    textoIntentos(s['emailFinalizacionIntentos']) }}</span>
+                  @if (s['emailFinalizacionEnviadoEn']) {
+                  <span class="preins__aviso-detalle" data-cifras>Enviada el {{ fechaHora(s['emailFinalizacionEnviadoEn']) }}</span>
+                  }
+                  @if (s['emailFinalizacionUltimoError']) {
+                  <span class="preins__aviso-detalle preins__aviso-detalle--error">Error de confirmación: {{ s['emailFinalizacionUltimoError'] }}</span>
+                  }
+                  @if (s['estado'] === 'FINALIZADA') {
+                  <button type="button" pnOcupado class="preins__boton-texto preins__aviso-accion" [ocupado]="accion === 'confirmacion'"
+                    textoOcupado="Reenviando…" [deshabilitado]="!!accion && accion !== 'confirmacion'" (click)="reenviarConfirmacion()">Reenviar confirmación</button>
+                  }
+                </li>
+                @if (s['estado'] === 'CANCELADA') {
+                <li class="preins__aviso">
+                  <span class="preins__aviso-nombre">Aviso de cancelación</span>
+                  <span class="preins__aviso-estado" data-cifras [attr.data-estado]="s['estadoEmailCancelacion']">{{ etiquetaEmail(s['estadoEmailCancelacion']) }} · {{
+                    textoIntentos(s['emailCancelacionIntentos']) }}</span>
+                  @if (s['emailCancelacionEnviadoEn']) {
+                  <span class="preins__aviso-detalle" data-cifras>Enviado el {{ fechaHora(s['emailCancelacionEnviadoEn']) }}</span>
+                  }
+                  @if (s['emailCancelacionUltimoError']) {
+                  <span class="preins__aviso-detalle preins__aviso-detalle--error">Error del aviso de cancelación: {{ s['emailCancelacionUltimoError'] }}</span>
+                  }
+                </li>
+                }
+              </ul>
+            </section>
+
+            <section class="preins__bloque preins__firma" aria-labelledby="preins-firma-titulo">
+              <h3 class="preins__bloque-titulo" id="preins-firma-titulo">Firma y ficha</h3>
+              <p class="preins__subtitulo-bloque">Firma presentada</p>
+              <div class="preins__firma-marco">
+                @if (firmaEstado === 'lista' && firmaUrl) {
+                <img [src]="firmaUrl" [alt]="'Firma trazada por ' + nombreCompleto(s)" />
+                } @else if (firmaEstado === 'error') {
+                <div class="preins__firma-error" role="alert">
+                  <span>No se pudo cargar la firma.</span>
+                  <button type="button" class="preins__boton-texto" (click)="reintentarFirma()">Reintentar</button>
+                </div>
+                } @else {
+                <span class="preins__nota" role="status">Cargando firma…</span>
+                }
+              </div>
+              <button type="button" pnOcupado class="preins__boton-secundario preins__descargar" [ocupado]="accion === 'descargar'" textoOcupado="Descargando…"
+                [deshabilitado]="!!accion && accion !== 'descargar'" (click)="descargarDocumento()">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+                <span>Descargar solicitud firmada</span>
+              </button>
+
+              @if (s['estado'] === 'PENDIENTE') {
+              <div class="preins__fichas">
+                <p class="preins__subtitulo-bloque">Fichas de alumno compatibles</p>
+                @if (fichasEstado === 'cargando') {
+                <p class="preins__nota" role="status">Buscando fichas compatibles…</p>
+                } @else if (fichasEstado === 'error') {
+                <div class="preins__firma-error" role="alert">
+                  <span>No se pudieron cargar las fichas compatibles.</span>
+                  <button type="button" class="preins__boton-texto" (click)="reintentarFichas()">Reintentar</button>
+                </div>
+                } @else if (numeroFichas) {
+                <p class="preins__fichas-texto"><strong data-cifras>{{ textoFichas }}</strong>
+                  <span>Administración confirmará si se reutiliza una ficha o se crea otra.</span></p>
+                } @else {
+                <p class="preins__fichas-texto"><strong>No se ha encontrado una ficha compatible.</strong>
+                  <span>Se propondrá crear una ficha nueva al aceptar la preinscripción.</span></p>
+                }
+              </div>
+              }
+            </section>
+          </div>
+
+          @if (hayAcciones) {
+          <div class="preins__acciones">
+            @if (s['estado'] === 'PENDIENTE') {
+            <button type="button" class="preins__boton-primario" aria-haspopup="dialog" [disabled]="!puedeFinalizar" (click)="abrirAlta()">Revisar y finalizar alta</button>
+            }
+            @if (s['estado'] === 'PENDIENTE' || s['estado'] === 'EN_LISTA_ESPERA') {
+            <button type="button" pnOcupado class="preins__boton-secundario" [ocupado]="accion === 'reenviar'" textoOcupado="Reenviando…"
+              [deshabilitado]="!!accion && accion !== 'reenviar'" (click)="reenviar()">Reenviar solicitud original</button>
+            }
+            @if (hayMas) {
+            <div class="preins__menu-zona" (focusout)="alSalirDelMenu($event)">
+              <button type="button" class="preins__mas" id="preins-boton-mas" aria-label="Más acciones" aria-haspopup="menu"
+                [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'preins-menu-mas' : null" (click)="alternarMenu()"
+                (keydown)="teclaBotonMenu($event)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle>
+                  <circle cx="19" cy="12" r="1.8"></circle></svg>
+                <span>Más</span>
+              </button>
+              @if (menuAbierto) {
+              <div class="preins__menu" role="menu" id="preins-menu-mas" aria-labelledby="preins-boton-mas" (keydown)="teclaMenu($event)">
+                @if (opcionCancelar; as texto) {
+                <button type="button" role="menuitem" class="preins__menu-opcion preins__menu-opcion--peligro" aria-haspopup="dialog" (click)="cancelar()">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-6 6M9 9l6 6"></path></svg>
+                  <span>{{ texto }}</span>
+                </button>
+                }
+                @if (puedeEliminar) {
+                <button type="button" role="menuitem" class="preins__menu-opcion preins__menu-opcion--peligro" aria-haspopup="dialog" (click)="eliminar()">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+                  <span>Eliminar definitivamente</span>
+                </button>
+                }
+              </div>
+              }
+            </div>
+            }
+          </div>
+          }
+          } @else {
+          <div class="preins__detalle-vacio">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M8 4h8l4 4v12H4V4h4"></path><path d="M8 11h8M8 15h5"></path></svg>
+            <p class="preins__detalle-vacio-titulo">Elige una solicitud para ver su detalle</p>
+            <p class="preins__nota">Verás sus datos, el horario, los avisos por correo, la firma y las acciones.</p>
+          </div>
+          }
+        </section>
+      </div>
+    </div>
+    }
+  </div>
+
+  @if (alta) {
+  <pn-finalizar-alta [alta]="alta" (cerrar)="cerrarAlta()" (finalizada)="alFinalizar()" />
+  }
+</div>
+
+@if (pestana === 'plantillas') {
+<app-preinscripciones-admin id="preins-panel-plantillas" role="tabpanel" aria-labelledby="preins-pestana-plantillas" [soloPlantillas]="true" />
+}

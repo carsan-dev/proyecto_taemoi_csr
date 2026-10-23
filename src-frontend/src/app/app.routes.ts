@@ -243,6 +243,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Preinscripciones nuevas (8b-3h): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'preinscripciones',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/preinscripciones/preinscripciones.component').then(m => m.PreinscripcionesPanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'preinscripciones',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component').then(m => m.PreinscripcionesAdminComponent),

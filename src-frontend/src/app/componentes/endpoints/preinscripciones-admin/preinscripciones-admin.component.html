@@ -1,8 +1,10 @@
 <main class="admin-pre">
+  @if (!soloPlantillas) {
   <nav class="tabs" aria-label="Secciones de preinscripciones">
     <button [class.active]="tab === 'solicitudes'" (click)="cambiarTab('solicitudes')">Solicitudes</button>
     <button [class.active]="tab === 'plantillas'" (click)="cambiarTab('plantillas')">Plantillas PDF</button>
   </nav>
+  }
   @if (tab === 'solicitudes') {
   <header>
     <div><p>Admisiones</p><h1>Preinscripciones</h1></div>

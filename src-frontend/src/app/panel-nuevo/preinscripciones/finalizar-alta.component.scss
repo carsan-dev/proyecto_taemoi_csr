@@ -1,0 +1,205 @@
+// «Revisar y finalizar alta» (8b-3h) en el panel lateral: secciones separadas por la línea, opciones de una o varias
+// elecciones con su control nativo a 20 px (la fila entera es la etiqueta, 44 px de alto como mínimo) y campos de 42 px.
+// Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.alta {
+  display: grid;
+  gap: 20px;
+}
+
+.alta__resumen {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+}
+
+.alta__resumen-fila {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  strong {
+    font: var(--pn-etiqueta);
+    font-size: 0.875rem;
+    color: var(--pn-tinta);
+  }
+
+  span {
+    overflow-wrap: anywhere;
+  }
+}
+
+.alta__resumen-nombre {
+  overflow-wrap: anywhere;
+}
+
+.alta__seccion {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.alta__titulo {
+  margin: 0;
+  padding: 0;
+  font: var(--pn-titulo-bloque);
+  font-size: 1rem;
+  color: var(--pn-tinta);
+}
+
+.alta__nota {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.alta__seccion--pendiente .alta__nota {
+  color: var(--pn-atencion);
+}
+
+.alta__opciones {
+  display: grid;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.alta__opcion {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:has(input:checked) {
+    background: var(--pn-acento-suave);
+  }
+
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 1px 0 0;
+    accent-color: var(--pn-acento);
+    cursor: pointer;
+  }
+}
+
+.alta__opcion-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    font: var(--pn-etiqueta);
+    font-size: 0.9375rem;
+    color: var(--pn-tinta);
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2);
+    overflow-wrap: anywhere;
+  }
+}
+
+.alta__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.alta__campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.alta__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.alta__control {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.alta__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.alta__volver {
+  @include c.boton-texto;
+}
+
+.alta__aceptar {
+  @include c.boton-primario;
+}
+
+.alta__volver,
+.alta__aceptar {
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .alta__pie {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .alta__volver,
+  .alta__aceptar {
+    min-height: 44px;
+  }
+}
