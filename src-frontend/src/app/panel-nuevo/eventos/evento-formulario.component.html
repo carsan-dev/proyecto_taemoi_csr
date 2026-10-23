@@ -1,0 +1,254 @@
+<div class="pn evento-form" pnAcento>
+  <div class="evento-form__pagina">
+    <header class="evento-form__cabecera">
+      <nav class="evento-form__miga" aria-label="Ruta">
+        <a routerLink="/eventosListar">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+          <span>Eventos</span>
+        </a>
+      </nav>
+      <h1 class="evento-form__titulo">{{ titulo }}</h1>
+      <p class="evento-form__subtitulo">{{ subtitulo }}</p>
+    </header>
+
+    @if (estado === 'error') {
+    <pn-bloque-error class="evento-form__bloque-estado" titulo="No se pudo cargar el evento" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="evento-form__cargando" etiqueta="Cargando el evento" aria-busy="true">
+      <div class="evento-form__esqueleto">
+        <div class="evento-form__esqueleto-bloque"><span></span><span></span><span class="evento-form__esqueleto-alto"></span></div>
+        <div class="evento-form__esqueleto-bloque"><span></span><span class="evento-form__esqueleto-imagen"></span></div>
+      </div>
+    </pn-esqueleto>
+    } @else {
+    <form class="evento-form__rejilla" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+      @if (intentado && errores.length) {
+      <div class="evento-form__resumen" role="alert" tabindex="-1" aria-labelledby="evento-resumen-titulo">
+        <h2 id="evento-resumen-titulo">{{ tituloResumen }}</h2>
+        <ul>
+          @for (e of errores; track e.id + e.mensaje) {
+          <li><a [href]="'#' + e.id" (click)="irACampo($event, e.id)">{{ e.mensaje }}</a></li>
+          }
+        </ul>
+      </div>
+      }
+
+      <div class="evento-form__columna">
+        <!-- Información -->
+        <section class="evento-form__seccion" aria-labelledby="evento-seccion-informacion">
+          <div class="evento-form__seccion-cabecera">
+            <h2 id="evento-seccion-informacion">Información</h2>
+          </div>
+
+          <div class="evento-form__campo" [class.evento-form__campo--error]="erroresDe('titulo').length">
+            <label class="evento-form__etiqueta" [for]="ids.titulo">Título <span class="evento-form__marca">obligatorio</span></label>
+            <input type="text" class="evento-form__control" [id]="ids.titulo" formControlName="titulo" autocomplete="off"
+              aria-required="true" [attr.aria-invalid]="erroresDe('titulo').length ? 'true' : null"
+              [attr.aria-describedby]="describirCampo('titulo')" placeholder="Ej.: Campeonato regional" />
+            @if (erroresDe('titulo').length) {
+            <p class="evento-form__error" [id]="ids.titulo + '-error'">{{ erroresDe('titulo').join(' ') }}</p>
+            }
+            <p class="evento-form__ayuda" [id]="ids.titulo + '-ayuda'">
+              <span>Es el título de la tarjeta en la web.</span>
+              <span class="evento-form__cuenta" data-cifras>{{ valorTitulo.length }}/100</span>
+            </p>
+          </div>
+
+          <div class="evento-form__campo" [class.evento-form__campo--error]="erroresDe('descripcion').length">
+            <label class="evento-form__etiqueta" [for]="ids.descripcion">Descripción <span class="evento-form__marca">obligatorio</span></label>
+            <textarea class="evento-form__control evento-form__control--area" [id]="ids.descripcion" formControlName="descripcion"
+              rows="5" aria-required="true" [attr.aria-invalid]="erroresDe('descripcion').length ? 'true' : null"
+              [attr.aria-describedby]="describirCampo('descripcion')" placeholder="Fecha, lugar, participantes…"></textarea>
+            @if (erroresDe('descripcion').length) {
+            <p class="evento-form__error" [id]="ids.descripcion + '-error'">{{ erroresDe('descripcion').join(' ') }}</p>
+            }
+            <p class="evento-form__ayuda" [id]="ids.descripcion + '-ayuda'">
+              <span>Proporciona detalles relevantes sobre el evento para los visitantes del sitio web.</span>
+              <span class="evento-form__cuenta" data-cifras>{{ valorDescripcion.length }}/500</span>
+            </p>
+          </div>
+
+          <div class="evento-form__campo evento-form__campo--corto">
+            <label class="evento-form__etiqueta" for="evento-fecha">Fecha del evento <span class="evento-form__marca evento-form__marca--opcional">opcional</span></label>
+            <input type="date" class="evento-form__control" id="evento-fecha" formControlName="fechaEvento" aria-describedby="evento-fecha-ayuda" />
+            <p class="evento-form__ayuda" id="evento-fecha-ayuda">
+              {{ modo === 'crear' ? 'Si no indicas fecha, el evento se mostrará sin etiqueta temporal.' : 'Permite mostrar si el evento es próximo, de hoy o ya realizado.' }}
+            </p>
+          </div>
+
+          @if (modo === 'crear') {
+          <div class="evento-form__campo">
+            <button type="button" role="switch" class="evento-form__interruptor" [attr.aria-checked]="form.controls.visible.value"
+              aria-describedby="evento-visible-ayuda" (click)="alternarVisible()">
+              <span>Visible en la web</span>
+              <span class="evento-form__pista" aria-hidden="true"><span class="evento-form__bola"></span></span>
+            </button>
+            <p class="evento-form__ayuda" id="evento-visible-ayuda">Si está desactivado, el evento se guardará pero no será visible en la página web.</p>
+          </div>
+          }
+        </section>
+
+        <!-- Imagen -->
+        <section class="evento-form__seccion" aria-labelledby="evento-seccion-imagen">
+          <div class="evento-form__seccion-cabecera">
+            <h2 id="evento-seccion-imagen">Imagen</h2>
+            <span class="evento-form__marca evento-form__marca--opcional">opcional</span>
+          </div>
+          @if (imagenActual; as src) {
+          <div class="evento-form__imagen-actual">
+            <img [src]="src" alt="Imagen del evento" />
+            <div class="evento-form__imagen-datos">
+              <p class="evento-form__imagen-nombre">{{ imagen ? imagen.name : 'Imagen guardada' }}</p>
+              @if (imagen) {
+              <p class="evento-form__imagen-nota" data-cifras>{{ tamanoArchivo(imagen.size) }} · se guarda al pulsar «{{ accion }}»</p>
+              <button type="button" class="evento-form__boton-texto" (click)="quitarImagen()">Quitar</button>
+              } @else {
+              <button type="button" pnOcupado class="evento-form__boton-texto evento-form__boton-peligro" aria-haspopup="dialog"
+                [ocupado]="eliminandoImagen" textoOcupado="Eliminando…" (click)="eliminarImagen()">Eliminar imagen</button>
+              }
+            </div>
+          </div>
+          }
+          <div class="evento-form__elegir-zona">
+            <input type="file" class="evento-form__oculto" id="evento-imagen" accept="image/*"
+              [attr.aria-describedby]="errorImagen ? 'evento-imagen-ayuda evento-imagen-error' : 'evento-imagen-ayuda'"
+              (change)="elegirImagen($event)" />
+            <label class="evento-form__elegir" for="evento-imagen">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m20.5 16-5-5-8.5 8.5"></path></svg>
+              <span>{{ imagenActual ? 'Cambiar imagen' : 'Elegir imagen' }}</span>
+            </label>
+            <p class="evento-form__ayuda evento-form__imagen-ayuda" id="evento-imagen-ayuda">Formatos: JPG, PNG, GIF, WebP (máx. 50 MB)</p>
+          </div>
+          @if (errorImagen) {
+          <p class="evento-form__error" id="evento-imagen-error" role="alert">{{ errorImagen }}</p>
+          }
+        </section>
+
+        <!-- Documentos -->
+        <section class="evento-form__seccion" aria-labelledby="evento-seccion-documentos">
+          <div class="evento-form__seccion-cabecera">
+            <h2 id="evento-seccion-documentos">Documentos</h2>
+            <span class="evento-form__marca evento-form__marca--opcional">opcional</span>
+          </div>
+          <p class="evento-form__ayuda evento-form__documentos-ayuda">Los documentos estarán disponibles públicamente para descarga</p>
+
+          @if (documentosGuardados.length) {
+          <h3 class="evento-form__subtitulo-seccion">Documentos guardados</h3>
+          <ul class="evento-form__documentos">
+            @for (d of documentosGuardados; track d.id) {
+            <li class="evento-form__documento evento-form__documento--guardado">
+              <svg class="evento-form__documento-icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5Z"></path><path d="M14 3.5v5h5"></path></svg>
+              <p class="evento-form__documento-nombre">{{ d.nombre }}</p>
+              <div class="evento-form__documento-acciones">
+                <button type="button" class="evento-form__icono" [attr.aria-label]="'Descargar ' + d.nombre" (click)="descargar(d)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"></path></svg>
+                </button>
+                <button type="button" class="evento-form__icono evento-form__icono--peligro" aria-haspopup="dialog"
+                  [attr.aria-label]="'Eliminar ' + d.nombre" (click)="eliminarDocumento(d)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+                </button>
+              </div>
+            </li>
+            }
+          </ul>
+          }
+
+          @if (documentosNuevos.length) {
+          <h3 class="evento-form__subtitulo-seccion">{{ modo === 'crear' ? 'Se subirán al crear el evento' : 'Documentos por subir' }}</h3>
+          <ul class="evento-form__documentos">
+            @for (d of documentosNuevos; track $index) {
+            <li class="evento-form__documento evento-form__documento--nuevo">
+              <svg class="evento-form__documento-icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V8m0 0-4.5 4.5M12 8l4.5 4.5M5 4.5h14"></path></svg>
+              <div class="evento-form__documento-datos">
+                <p class="evento-form__documento-nombre">{{ d.name }}</p>
+                <p class="evento-form__documento-tamano" data-cifras>{{ tamanoArchivo(d.size) }}</p>
+              </div>
+              <button type="button" class="evento-form__icono" [attr.aria-label]="'Quitar ' + d.name" [disabled]="subiendoDocumentos"
+                (click)="quitarDocumento($index)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M6 6l12 12M18 6 6 18"></path></svg>
+              </button>
+            </li>
+            }
+          </ul>
+          @if (modo === 'editar') {
+          <button type="button" pnOcupado class="evento-form__boton-secundario evento-form__subir" [ocupado]="subiendoDocumentos"
+            textoOcupado="Subiendo…" (click)="subirDocumentos()">{{ textoSubir }}</button>
+          }
+          }
+
+          <div class="evento-form__elegir-zona">
+            <input type="file" class="evento-form__oculto" id="evento-documentos" multiple
+              accept=".pdf,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx,.xls,.xlsx"
+              [attr.aria-describedby]="errorDocumentos ? 'evento-documentos-nota evento-documentos-error' : 'evento-documentos-nota'"
+              (change)="elegirDocumentos($event)" />
+            <label class="evento-form__elegir" for="evento-documentos">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"></path></svg>
+              <span>Añadir documentos</span>
+            </label>
+            <p class="evento-form__ayuda" id="evento-documentos-nota">PDF, imágenes, textos, Word o Excel; puedes elegir varios.</p>
+          </div>
+          @if (errorDocumentos) {
+          <p class="evento-form__error" id="evento-documentos-error" role="alert">{{ errorDocumentos }}</p>
+          }
+        </section>
+      </div>
+
+      <!-- Vista previa de la tarjeta pública -->
+      <aside class="evento-form__previa" aria-labelledby="evento-previa-titulo">
+        <div class="evento-form__previa-cabecera">
+          <h2 id="evento-previa-titulo">Vista previa en la web</h2>
+          <p class="evento-form__previa-estado" [class.evento-form__previa-estado--oculto]="!visibleEnLaWeb">
+            @if (visibleEnLaWeb) {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>Visible en la web</span>
+            } @else {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3 3.7M6.4 6.9A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9 9 0 0 0 4-.9"></path></svg>
+            <span>Oculto: no se verá en la web</span>
+            }
+          </p>
+        </div>
+        <article class="evento-form__tarjeta" [class.evento-form__tarjeta--oculta]="!visibleEnLaWeb" aria-hidden="true">
+          <div class="evento-form__tarjeta-imagen">
+            <img [src]="imagenPrevia" alt="" />
+            @if (fechaPrevia) {
+            <span [class]="'evento-form__previa-fecha evento-form__previa-fecha--' + estadoPrevia">{{ fechaPrevia }}</span>
+            }
+          </div>
+          <div class="evento-form__tarjeta-cuerpo">
+            <p class="evento-form__previa-titulo" [class.evento-form__previa-vacio]="!valorTitulo">{{ valorTitulo || 'Título del evento' }}</p>
+            <p class="evento-form__previa-descripcion" [class.evento-form__previa-vacio]="!valorDescripcion">
+              {{ valorDescripcion || 'La descripción aparecerá aquí.' }}</p>
+            <span class="evento-form__previa-enlace">Ver detalles</span>
+          </div>
+        </article>
+        <p class="evento-form__ayuda">Así se verá la tarjeta en la cartelera de eventos.</p>
+      </aside>
+
+      <!-- Barra fija -->
+      <div class="evento-form__barra" role="region" aria-label="Guardar">
+        <button type="button" class="evento-form__boton-secundario" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="evento-form__boton-primario evento-form__guardar-primario"
+          [attr.aria-disabled]="form.invalid || guardando ? 'true' : null" [attr.aria-busy]="guardando ? 'true' : null">
+          @if (guardando) {
+          <svg class="evento-form__giro" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor"
+            stroke-opacity=".35" stroke-width="2.5"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg>
+          <span>Guardando…</span>
+          } @else {
+          <span>{{ accion }}</span>
+          }
+        </button>
+      </div>
+    </form>
+    }
+  </div>
+</div>

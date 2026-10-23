@@ -150,6 +150,23 @@ export class LecturasPanelService {
     });
   }
 
+  /** Igual que `EndpointsService.obtenerTodosLosEventos` (Eventos, 8b-3f), que no devuelve la petición. */
+  eventosAdmin(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/eventos/admin/todos`, {
+      withCredentials: true,
+      headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
+      context: contextoErrorLocal(),
+    });
+  }
+
+  /** Igual que `EndpointsService.obtenerEventoPorId` (Editar evento, 8b-3f). */
+  evento(eventoId: number): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/eventos/${eventoId}`, {
+      withCredentials: true,
+      context: contextoErrorLocal(),
+    });
+  }
+
   /** Igual que `EndpointsService.obtenerAlumnosDeConvocatoria` (Convocatorias, 8b-3e). */
   alumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/convocatorias/${convocatoriaId}/alumnos`, {

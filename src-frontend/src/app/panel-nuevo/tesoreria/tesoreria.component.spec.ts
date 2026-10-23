@@ -163,6 +163,8 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
   }
 
   beforeEach(async () => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date(2026, 9, 22, 10, 0));
     quitarTokens = ponerTokensDePrueba();

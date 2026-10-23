@@ -6,9 +6,15 @@ import { of } from 'rxjs';
 import { CrearProductoComponent } from './crear-producto.component';
 import { EditarProductoComponent } from '../editar-producto/editar-producto.component';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
+import Swal from 'sweetalert2';
 
 describe('Ficha de producto: «Lo puede vender el profesor»', () => {
   let endpoints: jasmine.SpyObj<EndpointsService>;
+
+  afterEach(() => {
+    Swal.close();
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+  });
 
   beforeEach(() => {
     endpoints = jasmine.createSpyObj<EndpointsService>('EndpointsService', [

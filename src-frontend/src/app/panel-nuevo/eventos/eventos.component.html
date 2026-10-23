@@ -1,0 +1,159 @@
+<div class="pn eventos" pnAcento>
+  <div class="eventos__pagina">
+    <header class="eventos__cabecera">
+      <div class="eventos__titulos">
+        <h1 class="eventos__titulo-pantalla">Eventos</h1>
+        @if (estado === 'listo') {
+        <p class="eventos__resumen" data-cifras>{{ resumen }}</p>
+        }
+      </div>
+      <div class="eventos__cabecera-acciones">
+        <button type="button" class="eventos__boton-secundario eventos__ver-web" aria-haspopup="dialog" [disabled]="estado !== 'listo'"
+          (click)="verWeb = true">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span>Ver cómo queda en la web</span>
+        </button>
+        <a class="eventos__boton-primario" routerLink="/eventosCrear">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14"></path></svg>
+          <span>Crear nuevo evento</span>
+        </a>
+      </div>
+    </header>
+
+    @if (estado === 'error') {
+    <pn-bloque-error class="eventos__bloque-estado" titulo="No se pudieron obtener los eventos" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="eventos__cargando" etiqueta="Cargando eventos" aria-busy="true">
+      <div class="eventos__esqueleto-aviso"></div>
+      <div class="eventos__esqueleto-lista">
+        @for (i of [1, 2, 3, 4]; track i) {
+        <div class="eventos__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (eventos.length === 0) {
+    <pn-bloque-vacio class="eventos__bloque-estado" titulo="No hay eventos disponibles"
+      texto="Parece que no hay eventos registrados. Crea uno nuevo y aparecerá aquí.">
+      <a pnAccionVacio class="eventos__boton-secundario" routerLink="/eventosCrear">Crear nuevo evento</a>
+    </pn-bloque-vacio>
+    } @else {
+    <p id="eventos-ayuda-orden" class="eventos__oculto">Usa las flechas arriba y abajo para moverlo en la lista.</p>
+    @if (ordenPendiente) {
+    <div class="eventos__aviso eventos__aviso--pendiente" role="region" aria-label="Orden sin guardar">
+      <p class="eventos__aviso-texto">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"></path></svg>
+        <span>El orden ha cambiado. Guárdalo para que la web lo use.</span>
+      </p>
+      <button type="button" pnOcupado class="eventos__boton-primario eventos__guardar-orden" [ocupado]="guardandoOrden"
+        textoOcupado="Guardando…" (click)="guardarOrden()">Guardar orden</button>
+    </div>
+    } @else {
+    <p class="eventos__aviso">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5m0-8.5v.01"></path></svg>
+      <span>Arrastra el asa o usa las flechas para cambiar el orden de la web; aparecerá «Guardar orden» para guardarlo.</span>
+    </p>
+    }
+
+    <ol class="eventos__lista" aria-label="Eventos en el orden de la web" cdkDropList cdkDropListLockAxis="y"
+      [cdkDropListData]="eventos" [cdkDropListDisabled]="guardandoOrden" (cdkDropListDropped)="soltar($event)">
+      @for (e of eventos; track e.id; let i = $index, primero = $first, ultimo = $last) {
+      <li class="eventos__fila" cdkDrag cdkDragPreviewContainer="parent" [attr.data-evento]="e.id" [class.eventos__fila--oculta]="!visible(e)"
+        [class.eventos__fila--movida]="movida === e.id">
+        <div class="eventos__orden">
+          <button type="button" cdkDragHandle class="eventos__asa" [attr.aria-label]="'Mover ' + e.titulo"
+            aria-describedby="eventos-ayuda-orden" (keydown)="teclaOrden($event, i, 'asa')">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle>
+              <circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle>
+              <circle cx="15" cy="18" r="1.6"></circle></svg>
+          </button>
+          <button type="button" class="eventos__subir" [attr.aria-label]="'Subir ' + e.titulo" [disabled]="primero || guardandoOrden"
+            (click)="mover(i, -1, 'subir')" (keydown)="teclaOrden($event, i, 'subir')">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></svg>
+          </button>
+          <button type="button" class="eventos__bajar" [attr.aria-label]="'Bajar ' + e.titulo" [disabled]="ultimo || guardandoOrden"
+            (click)="mover(i, 1, 'bajar')" (keydown)="teclaOrden($event, i, 'bajar')">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+        </div>
+
+        <div class="eventos__miniatura">
+          @if (tieneFoto(e)) {
+          <button type="button" aria-haspopup="dialog" [attr.aria-label]="'Ampliar la imagen de ' + e.titulo" (click)="ampliada = e">
+            <img [src]="miniatura(e)" alt="" loading="lazy" decoding="async" />
+          </button>
+          } @else {
+          <img [src]="miniatura(e)" alt="" loading="lazy" decoding="async" />
+          }
+        </div>
+
+        <div class="eventos__texto">
+          <h2 class="eventos__titulo-fila"><span class="eventos__titulo">{{ e.titulo }}</span></h2>
+          <p class="eventos__descripcion">{{ e.descripcion }}</p>
+        </div>
+
+        <p class="eventos__fecha" [attr.title]="tituloFecha(e)">
+          @if (fechaDe(e); as f) {
+          <span class="eventos__dia" data-cifras>{{ f }}</span>{{ ' ' }}
+          <span [class]="'eventos__estado eventos__estado--' + estadoDe(e)">{{ etiquetaEstado(estadoDe(e)) }}</span>
+          } @else {
+          <span class="eventos__sin-fecha">Sin fecha</span>
+          }
+        </p>
+
+        <div class="eventos__acciones">
+          <button type="button" role="switch" class="eventos__interruptor" [attr.aria-checked]="visible(e)"
+            [attr.aria-label]="'Visible en la web: ' + e.titulo" [attr.aria-busy]="ocupadoVisibilidad(e) ? 'true' : null"
+            [attr.aria-disabled]="ocupadoVisibilidad(e) ? 'true' : null" (click)="alternarVisible(e)">
+            <span class="eventos__interruptor-texto">Visible en la web</span>
+            <span class="eventos__pista" aria-hidden="true"><span class="eventos__bola"></span></span>
+          </button>
+          <a class="eventos__editar" [routerLink]="['/eventosEditar', e.id]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+            <span>Editar</span>
+          </a>
+        </div>
+
+        <div class="eventos__menu-zona" (focusout)="alSalirDelMenu($event)">
+          <button type="button" class="eventos__mas" [id]="'eventos-mas-' + e.id" [attr.aria-label]="'Más acciones de ' + e.titulo"
+            aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === e.id" [attr.aria-controls]="menuAbierto === e.id ? 'eventos-menu-' + e.id : null"
+            (click)="alternarMenu(e)" (keydown)="teclaBotonMenu(e, $event)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle>
+              <circle cx="19" cy="12" r="1.8"></circle></svg>
+          </button>
+          @if (menuAbierto === e.id) {
+          <div class="eventos__menu" role="menu" [id]="'eventos-menu-' + e.id" [attr.aria-labelledby]="'eventos-mas-' + e.id"
+            (keydown)="teclaMenu(e, $event)">
+            <button type="button" role="menuitem" class="eventos__menu-opcion" aria-haspopup="dialog" (click)="eliminar(e)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+              <span>Eliminar</span>
+            </button>
+          </div>
+          }
+        </div>
+      </li>
+      }
+    </ol>
+    }
+  </div>
+
+  @if (verWeb) {
+  <pn-eventos-capa titulo="Cómo queda en la web" descripcion="Orden actual de la página pública (solo eventos visibles)."
+    (cerrar)="verWeb = false">
+    <app-eventos-vista [eventos]="eventosWeb" [isLoading]="false" [enableNavigation]="false" />
+  </pn-eventos-capa>
+  }
+
+  @if (ampliada; as a) {
+  <pn-eventos-capa tipo="imagen" [titulo]="a.titulo" (cerrar)="ampliada = null">
+    <img class="eventos__ampliada" [src]="imagenAmpliada(a)" [alt]="'Vista ampliada de ' + a.titulo" />
+  </pn-eventos-capa>
+  }
+</div>

@@ -360,6 +360,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Eventos del panel nuevo (8b-3f): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
+    path: 'eventosListar',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/eventos/eventos.component').then(m => m.EventosPanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'eventosListar',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-eventos/listado-eventos.component').then(m => m.ListadoEventosComponent),
@@ -367,9 +376,27 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Crear evento del panel nuevo (8b-3f), el mismo formulario que editar.
+    path: 'eventosCrear',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/eventos/evento-formulario.component').then(m => m.EventoFormularioComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'eventosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-evento/crear-evento.component').then(m => m.CrearEventoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Editar evento del panel nuevo (8b-3f).
+    path: 'eventosEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/eventos/evento-formulario.component').then(m => m.EventoFormularioComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },

@@ -1,0 +1,791 @@
+// Crear y editar evento del panel nuevo (8b-3f, P2 «vista previa de la web al lado»). Solo tokens de panel-nuevo.scss
+// bajo .pn (DESIGN.md): secciones como bloques blancos con filete, campos de 42 px con su etiqueta encima, el resumen de
+// errores arriba y la barra de guardar fija abajo (la sombra de los menús, como la de la ficha). Desde 1280 px, la vista
+// previa de la tarjeta pública va al lado y se queda a la vista al bajar; por debajo, al final del formulario.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.evento-form {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.evento-form__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.evento-form__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.evento-form__cabecera {
+  max-width: 760px;
+  margin: 0 auto 20px;
+}
+
+.evento-form__miga a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin-left: -6px;
+  padding: 0 8px 0 4px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.evento-form__titulo {
+  margin: 4px 0 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.evento-form__subtitulo {
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ rejilla
+
+.evento-form__rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 760px);
+  grid-template-areas:
+    'resumen'
+    'columna'
+    'previa'
+    'barra';
+  justify-content: center;
+}
+
+.evento-form__resumen {
+  grid-area: resumen;
+}
+
+.evento-form__columna {
+  display: flex;
+  flex-direction: column;
+  grid-area: columna;
+  gap: 20px;
+  min-width: 0;
+}
+
+.evento-form__previa {
+  grid-area: previa;
+  min-width: 0;
+  margin-top: 20px;
+}
+
+.evento-form__barra {
+  grid-area: barra;
+}
+
+@media (min-width: 1280px) {
+  .evento-form__cabecera {
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .evento-form__rejilla {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'resumen previa'
+      'columna previa'
+      'barra previa';
+    column-gap: 32px;
+    justify-content: stretch;
+  }
+
+  .evento-form__previa {
+    position: sticky;
+    top: calc(64px + 24px);
+    align-self: start;
+    margin-top: 0;
+  }
+}
+
+// ------------------------------------------------------------------ resumen de errores
+
+.evento-form__resumen {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-peligro);
+  border-radius: var(--pn-radio-m);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  h2 {
+    margin: 0 0 6px;
+    font: var(--pn-titulo-bloque);
+    font-size: 1rem;
+    color: var(--pn-peligro);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+
+  a {
+    color: var(--pn-peligro);
+    font: var(--pn-cuerpo);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+  }
+}
+
+// ------------------------------------------------------------------ secciones y campos
+
+.evento-form__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 20px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.evento-form__seccion-cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  h2 {
+    margin: 0;
+    font: var(--pn-titulo-bloque);
+    color: var(--pn-tinta);
+  }
+}
+
+.evento-form__subtitulo-seccion {
+  margin: 0 0 -10px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.evento-form__campo--corto {
+  max-width: 280px;
+}
+
+.evento-form__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+// «obligatorio» y «opcional», a la vista junto a la etiqueta.
+.evento-form__marca {
+  margin-left: 6px;
+  font: var(--pn-etiqueta);
+  font-weight: 500;
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__seccion-cabecera .evento-form__marca {
+  margin-left: 0;
+}
+
+.evento-form__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-3);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.evento-form__control--area {
+  min-height: 132px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.evento-form__campo--error .evento-form__control {
+  border-color: var(--pn-peligro);
+}
+
+.evento-form__ayuda {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__cuenta {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.evento-form__error {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-weight: 600;
+  color: var(--pn-peligro);
+}
+
+// Interruptor «Visible en la web» (como el de la lista).
+.evento-form__interruptor {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 8px 0 0;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.evento-form__pista {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.evento-form__bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion), background-color var(--pn-transicion);
+}
+
+[aria-checked='true'] > .evento-form__pista {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento);
+
+  .evento-form__bola {
+    background: var(--pn-superficie);
+    transform: translateX(16px);
+  }
+}
+
+// ------------------------------------------------------------------ imagen y documentos
+
+.evento-form__imagen-actual {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.evento-form__imagen-datos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.evento-form__imagen-nombre {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.evento-form__imagen-nota {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__elegir-zona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.evento-form__elegir {
+  @include c.boton-secundario;
+  margin: 0;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+// El campo de archivo va oculto: su foco se ve en el botón que lo abre.
+.evento-form__oculto:focus-visible + .evento-form__elegir {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+.evento-form__documentos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.evento-form__documento {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 6px 6px 14px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.evento-form__documento-icono {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__documento-datos {
+  flex: 1;
+  min-width: 0;
+}
+
+.evento-form__documento-nombre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.evento-form__documento-tamano {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.evento-form__documento-acciones {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.evento-form__icono {
+  @include c.boton-icono;
+  width: 40px;
+  height: 40px;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.evento-form__icono--peligro:hover:not(:disabled) {
+  color: var(--pn-peligro);
+}
+
+.evento-form__subir {
+  align-self: flex-start;
+}
+
+// ------------------------------------------------------------------ botones
+
+.evento-form__boton-primario {
+  @include c.boton-primario;
+}
+
+.evento-form__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.evento-form__boton-texto {
+  @include c.boton-texto;
+  margin-left: -12px;
+}
+
+.evento-form__boton-peligro {
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+.evento-form__boton-primario,
+.evento-form__boton-secundario,
+.evento-form__boton-texto {
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// Desactivado con errores: aria-disabled (sigue recibiendo el foco y su clic lleva al resumen).
+.evento-form__guardar-primario[aria-disabled='true']:not([aria-busy='true']) {
+  opacity: 0.55;
+}
+
+.evento-form__giro {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  animation: evento-form-giro 0.8s linear infinite;
+}
+
+@keyframes evento-form-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ------------------------------------------------------------------ barra fija de guardar
+
+.evento-form__barra {
+  position: sticky;
+  bottom: var(--pn-espacio-m);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+// ------------------------------------------------------------------ vista previa
+
+.evento-form__previa-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+
+  h2 {
+    margin: 0;
+    font: var(--pn-titulo-bloque);
+    color: var(--pn-tinta);
+  }
+}
+
+.evento-form__previa-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-bien);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.evento-form__previa-estado--oculto {
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__tarjeta {
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.evento-form__tarjeta--oculta {
+  border-style: dashed;
+  border-color: var(--pn-linea-fuerte);
+
+  .evento-form__tarjeta-imagen img {
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+}
+
+.evento-form__tarjeta-imagen {
+  position: relative;
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: var(--pn-serie-pista);
+  }
+}
+
+.evento-form__previa-fecha {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  max-width: calc(100% - 20px);
+  padding: 3px 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-variant-numeric: tabular-nums;
+}
+
+.evento-form__previa-fecha--proximo {
+  color: var(--pn-acento);
+}
+
+.evento-form__previa-fecha--hoy {
+  color: var(--pn-atencion);
+}
+
+.evento-form__tarjeta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 16px;
+}
+
+.evento-form__previa-titulo,
+.evento-form__previa-descripcion {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.evento-form__previa-titulo {
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.evento-form__previa-descripcion {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__previa-vacio {
+  color: var(--pn-tinta-3);
+  font-style: italic;
+}
+
+.evento-form__previa-enlace {
+  font: var(--pn-etiqueta);
+  color: var(--pn-acento);
+}
+
+// ------------------------------------------------------------------ estados
+
+.evento-form__bloque-estado {
+  display: block;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.evento-form__esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.evento-form__esqueleto-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  span {
+    display: block;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    width: 30%;
+    height: 18px;
+  }
+}
+
+.evento-form__esqueleto-alto {
+  height: 120px !important;
+}
+
+.evento-form__esqueleto-imagen {
+  width: 200px;
+  height: 112px !important;
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (max-width: 1023.98px) {
+  // Por encima de la barra inferior del panel (8b-N).
+  .evento-form__barra {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .evento-form__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .evento-form__titulo {
+    font-size: 1.375rem;
+  }
+
+  .evento-form__seccion {
+    padding: 16px;
+  }
+
+  .evento-form__campo--corto {
+    max-width: none;
+  }
+
+  .evento-form__control,
+  .evento-form__boton-primario,
+  .evento-form__boton-secundario,
+  .evento-form__boton-texto,
+  .evento-form__elegir,
+  .evento-form__interruptor,
+  .evento-form__miga a {
+    min-height: 44px;
+  }
+
+  .evento-form__icono {
+    width: 44px;
+    height: 44px;
+  }
+
+  .evento-form__resumen a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .evento-form__imagen-actual {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .evento-form__elegir-zona {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .evento-form__barra {
+    padding: 10px 12px;
+
+    > button {
+      flex: 1 1 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evento-form__pista,
+  .evento-form__bola {
+    transition: none;
+  }
+
+  .evento-form__giro {
+    animation: none;
+  }
+}

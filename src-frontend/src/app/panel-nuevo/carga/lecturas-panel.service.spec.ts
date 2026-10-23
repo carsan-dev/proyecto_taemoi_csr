@@ -126,4 +126,23 @@ describe('LecturasPanelService (8b-D2a)', () => {
       delPanel.flush([]);
     }
   });
+  it('Eventos (8b-3f): todos los eventos (admin) y uno por id, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(EndpointsService);
+    const panel = TestBed.inject(LecturasPanelService);
+    // `obtenerTodosLosEventos` no devuelve el observable: se suscribe solo.
+    hoy.obtenerTodosLosEventos();
+    const deHoyTodos = http.match(() => true)[0];
+    const delPanelTodos = pedir(panel.eventosAdmin());
+    expect(forma(delPanelTodos)).toEqual(forma(deHoyTodos));
+    expect(delPanelTodos.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    deHoyTodos.flush([]);
+    delPanelTodos.flush([]);
+
+    const deHoy = pedir(hoy.obtenerEventoPorId(7));
+    const delPanel = pedir(panel.evento(7));
+    expect(forma(delPanel)).toEqual(forma(deHoy));
+    expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    deHoy.flush({});
+    delPanel.flush({});
+  });
 });

@@ -1,0 +1,687 @@
+// Eventos del panel nuevo (8b-3f, P1 «lista densa ordenable»). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md): un
+// bloque blanco con filete y una fila por evento separada por la línea, como las filas de Alumnos y Tesorería. El acento
+// de la escuela en los mandos de orden, el interruptor encendido, «Editar», los secundarios y el foco; el ocre solo para
+// «Hoy». Sin sombras salvo la del menú, la del aviso fijo y la de la fila que se arrastra.
+//
+// La fila se ordena con consultas de contenedor sobre la lista (y no del viewport): a lo ancho de una línea desde 960 px
+// de lista; por debajo, en tres bandas (miniatura y fecha, texto, acciones) con el control de orden en columna a la
+// izquierda. Así cabe a 360 y 375 px sin desplazamiento horizontal, con el texto al 200 % y con títulos sin espacios.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.eventos {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.eventos__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.eventos__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.eventos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 16px;
+}
+
+.eventos__titulos {
+  min-width: 0;
+}
+
+.eventos__titulo-pantalla {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.eventos__resumen {
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.eventos__cabecera-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.eventos__boton-primario {
+  @include c.boton-primario;
+}
+
+.eventos__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.eventos__boton-primario,
+.eventos__boton-secundario {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ aviso bajo el título
+
+.eventos__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 16px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+// Al reordenar: fijo bajo la cabecera mientras se baja por la lista, con su acción; las filas pasan por debajo y, al
+// moverse con el teclado, dejan su margen para no quedar tapadas.
+.eventos__aviso--pendiente {
+  position: sticky;
+  top: calc(64px + 8px);
+  z-index: 20;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 8px 8px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-acento-borde);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+  color: var(--pn-tinta);
+}
+
+.eventos__aviso-texto {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-cuerpo);
+
+  svg {
+    color: var(--pn-acento);
+  }
+}
+
+// ------------------------------------------------------------------ lista
+
+.eventos__lista {
+  container: eventos-lista / inline-size;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+// Por defecto (lista estrecha, móvil y tableta): tres bandas con el orden en columna a la izquierda.
+.eventos__fila {
+  display: grid;
+  grid-template-columns: 44px 80px minmax(0, 1fr) 44px;
+  grid-template-areas:
+    'orden mini fecha mas'
+    'orden texto texto texto'
+    'acciones acciones acciones acciones';
+  align-items: start;
+  gap: 10px 12px;
+  min-width: 0;
+  padding: 12px 10px 10px 8px;
+  background: var(--pn-superficie);
+  scroll-margin-top: 152px;
+  scroll-margin-bottom: 96px;
+  transition: background-color var(--pn-transicion);
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  &:first-child {
+    border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+  }
+}
+
+.eventos__fila--movida {
+  background: var(--pn-acento-suave);
+}
+
+.eventos__orden {
+  display: flex;
+  flex-direction: column;
+  grid-area: orden;
+  gap: 4px;
+}
+
+.eventos__asa,
+.eventos__subir,
+.eventos__bajar {
+  @include c.boton-icono;
+  width: 44px;
+  height: 44px;
+  color: var(--pn-acento);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -1px;
+    background: var(--pn-acento-suave);
+  }
+
+  &:disabled {
+    color: var(--pn-tinta-3);
+    opacity: 0.45;
+  }
+}
+
+.eventos__asa {
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.eventos__miniatura {
+  grid-area: mini;
+  min-width: 0;
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: var(--pn-radio-s);
+    background: none;
+    cursor: zoom-in;
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+    }
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    min-height: 44px;
+    object-fit: cover;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.eventos__fila--oculta .eventos__miniatura img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.eventos__texto {
+  grid-area: texto;
+  min-width: 0;
+}
+
+.eventos__titulo-fila {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.eventos__descripcion {
+  display: -webkit-box;
+  margin: 2px 0 0;
+  overflow: hidden;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.eventos__fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  grid-area: fecha;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+}
+
+.eventos__dia {
+  font-variant-numeric: tabular-nums;
+}
+
+.eventos__sin-fecha {
+  color: var(--pn-tinta-2);
+}
+
+.eventos__estado {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--pn-radio-pastilla);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.eventos__estado--proximo {
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+}
+
+.eventos__estado--hoy {
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.eventos__estado--realizado {
+  background: var(--pn-superficie-2);
+  box-shadow: inset 0 0 0 1px var(--pn-linea);
+  color: var(--pn-tinta-2);
+}
+
+.eventos__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: acciones;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+// Interruptor «Visible en la web»: la etiqueta a la vista y la pista; encendido, en el acento.
+.eventos__interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover:not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-disabled='true'] {
+    cursor: progress;
+  }
+}
+
+.eventos__interruptor-texto {
+  min-width: 0;
+}
+
+.eventos__pista {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.eventos__bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion), background-color var(--pn-transicion);
+}
+
+[aria-checked='true'] > .eventos__pista {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento);
+
+  .eventos__bola {
+    background: var(--pn-superficie);
+    transform: translateX(16px);
+  }
+}
+
+[aria-busy='true'] > .eventos__pista {
+  opacity: 0.55;
+}
+
+.eventos__editar {
+  @include c.boton-texto;
+  min-height: 44px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.eventos__menu-zona {
+  position: relative;
+  grid-area: mas;
+}
+
+.eventos__mas {
+  @include c.boton-icono;
+  width: 44px;
+  height: 44px;
+
+  &[aria-expanded='true'] {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.eventos__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.eventos__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+    background: var(--pn-acento-suave);
+  }
+}
+
+// Arrastre (CDK): la fila que se arrastra flota con la sombra del menú; su hueco queda marcado.
+.eventos__fila.cdk-drag-preview {
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.eventos__fila.cdk-drag-placeholder {
+  background: var(--pn-acento-suave);
+  opacity: 0.6;
+}
+
+.eventos__lista.cdk-drop-list-dragging .eventos__fila:not(.cdk-drag-placeholder),
+.eventos__fila.cdk-drag-animating {
+  transition: transform 150ms ease-out;
+}
+
+// Lista media (tableta): miniatura mayor.
+@container eventos-lista (min-width: 600px) {
+  .eventos__fila {
+    grid-template-columns: 44px 128px minmax(0, 1fr) 44px;
+    padding: 12px 12px 10px 10px;
+  }
+}
+
+// Lista ancha (escritorio): una línea por evento.
+@container eventos-lista (min-width: 960px) {
+  .eventos__fila {
+    grid-template-columns: 76px 112px minmax(0, 1fr) 132px auto 40px;
+    grid-template-areas: 'orden mini texto fecha acciones mas';
+    align-items: center;
+    gap: 16px;
+    padding: 10px 12px 10px 8px;
+    scroll-margin-top: 136px;
+    scroll-margin-bottom: 24px;
+  }
+
+  .eventos__orden {
+    display: grid;
+    grid-template-columns: 32px 40px;
+    grid-template-rows: 32px 32px;
+    gap: 2px 4px;
+  }
+
+  .eventos__asa {
+    grid-row: span 2;
+    width: 32px;
+    height: 66px;
+  }
+
+  .eventos__subir,
+  .eventos__bajar {
+    width: 40px;
+    height: 32px;
+  }
+
+  .eventos__acciones {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .eventos__interruptor,
+  .eventos__editar {
+    min-height: 40px;
+  }
+
+  .eventos__mas {
+    width: 40px;
+    height: 40px;
+  }
+
+  .eventos__menu-opcion {
+    min-height: 40px;
+  }
+}
+
+// ------------------------------------------------------------------ capas
+
+.eventos__ampliada {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 48px - 56px - 32px);
+  border-radius: var(--pn-radio-s);
+  object-fit: contain;
+}
+
+// La región viva de `LiveAnnouncer` (CDK) va en el body con `cdk-visually-hidden`, cuya hoja (`a11y-prebuilt`) la
+// aplicación no carga: sin esto el anuncio se vería al pie de la página. Solo afecta a ese elemento.
+::ng-deep .cdk-live-announcer-element.cdk-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  outline: 0;
+  appearance: none;
+}
+
+// ------------------------------------------------------------------ estados
+
+.eventos__bloque-estado {
+  display: block;
+}
+
+.eventos__esqueleto-aviso {
+  width: 60%;
+  height: 14px;
+  margin-bottom: 18px;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.eventos__esqueleto-lista {
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.eventos__esqueleto-fila {
+  display: grid;
+  grid-template-columns: 44px 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+
+  span {
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(2) {
+    height: 63px;
+  }
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .eventos__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .eventos__titulo-pantalla {
+    font-size: 1.375rem;
+  }
+
+  .eventos__cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .eventos__cabecera-acciones {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .eventos__boton-primario,
+  .eventos__boton-secundario {
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .eventos__aviso--pendiente {
+    top: calc(56px + 8px);
+
+    .eventos__guardar-orden {
+      flex: 1 1 100%;
+    }
+  }
+
+  .eventos__esqueleto-fila {
+    grid-template-columns: 44px 80px minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eventos__fila,
+  .eventos__interruptor,
+  .eventos__pista,
+  .eventos__bola,
+  .eventos__lista.cdk-drop-list-dragging .eventos__fila:not(.cdk-drag-placeholder),
+  .eventos__fila.cdk-drag-animating {
+    transition: none;
+  }
+}
