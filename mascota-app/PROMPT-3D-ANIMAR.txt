@@ -1,0 +1,17 @@
+RENDER 3D · DAR ÁNIMOS
+
+ESPECIFICACIÓN FINAL
+Puño alzado junto a la cara, ojos felices y sonrisa cerrada amplia con pequeñas comisuras elevadas, sin dientes. Opción 2 seleccionada.
+
+REFERENCIAS DEL PAQUETE
+1. renders-3d/gota-saludar-3d.png: identidad, material e iluminación.
+2. png/gota-animar.png: gesto y sonrisa final.
+
+EDICIÓN APLICADA
+Se sustituyó únicamente la boca del render anterior por la opción 2 de
+la lámina de diez sonrisas: curva cerrada amplia, suave y con comisuras.
+
+PROMPT DE EDICIÓN
+Use case: precise-object-edit. Image 1 is the EDIT TARGET: the full-body ivory drop mascot giving encouragement with a raised fist. Image 2 is ONLY a mouth-design reference sheet. The user selected smile NUMBER 2, TOP ROW SECOND COLUMN. Edit ONLY the mouth in image 1 to use exactly that chosen number 2 smile: a broad, shallow, CLOSED charcoal curved smile, with upturned corners and two tiny rounded dimple/corner flicks. It is a single smooth dark smile line, NOT an open mouth, no teeth, no white fill, no tongue, no lips. Match the graceful curvature and relative width of smile 2 from the sheet, warm and encouraging, not a smirk. Retain EXACTLY the full body, raised fist at viewer LEFT, lowered other arm, happy closed inverted-U eyes, asymmetric droplet tip pointing toward viewer RIGHT, teal woven headband tied at viewer RIGHT, feet, proportions, fine warm ivory clay texture, pose, camera, lighting, shadows, framing and warm ivory studio background of image 1. Do not change or crop the body. One single finished square promotional render, no grid, numbers, text, labels or other accessories. The only design change is replacing the rejected toothy mouth with selected smile 2.
+
+PNG estático con apariencia 3D y fondo marfil, sin modelo tridimensional editable.

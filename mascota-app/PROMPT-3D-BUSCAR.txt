@@ -1,0 +1,21 @@
+RENDER 3D · BUSCAR
+
+ESPECIFICACIÓN FINAL
+Lupa ante un ojo, una ceja levantada y boca horizontal: expresión seria e inquisitiva, sin tristeza.
+
+REFERENCIAS PARA REPRODUCIR EL ESTADO
+1. renders-3d/gota-saludar-3d.png: identidad, textura e iluminación.
+2. png/gota-buscar.png: gesto, expresión y accesorios.
+Mantener la cámara frontal y el fondo de estudio marfil de la serie.
+El render incluido se obtuvo editando su versión anterior con generación de imágenes.
+
+ESTILO DE LA EDICIÓN
+Use case: precise-object-edit. Asset type: 3D promotional mascot render. Edit the mascot in reference image 1, retaining its exact identity, warm ivory clay/plasticine texture, asymmetric pointed droplet silhouette with tip bending toward viewer RIGHT, teal woven sweatband knotted on viewer RIGHT, charcoal face features, tiny oval ivory feet, framing, scale, near-front camera, soft upper-left studio light and pale warm ivory studio background. Full body and props entirely in frame with comfortable margins. One character only. Change only the requested gesture, face and accessories listed below. Keep a simple stylized face without nose, eye whites or eye highlights. No text, collage, watermark, extra limbs or unrelated props. 
+
+DETALLE DEL ESTADO FINAL
+Keep the teal magnifying glass and original pose. An alert serious inquisitive expression like a monocle emoji: eyebrow above magnified eye raised, other eyebrow almost horizontal, solid oval eyes open. A short almost straight horizontal neutral mouth with NO downturned corners. No sad, worried, angry or disappointed expression. Focused inspection rather than a smile. Preserve body, props and proportions.
+
+ÚLTIMA CORRECCIÓN APLICADA
+Use case: precise-object-edit. Edit ONLY the facial expression of this same magnifying-glass mascot. The current downturned mouth looks SAD; remove that sadness completely. Replace the frown with a short almost straight HORIZONTAL charcoal mouth, no downturned ends and no sad arch. A very slight off-center purse is acceptable, not a smile or smirk. Set the eyebrow over the magnifying-glass eye higher with a clear inquisitive lifted arch; make the other eyebrow a calm nearly horizontal short line, NOT diagonally raised at its inner end, NOT a sad worried brow. Keep the oval eyes open and alert, neither drooping nor squinting miserably. Expression is composed, serious and inquisitive, inspecting a clue: 'let me have a look', not angry, worried, unhappy, disappointed or bored. Keep magnifying glass, both arms, body, feet, sweatband, framing, material, lighting and warm ivory background unchanged. No other additions or alterations.
+
+PNG cuadrado con fondo marfil, sin transparencia. Imagen estática con apariencia 3D; no incluye modelo tridimensional editable.

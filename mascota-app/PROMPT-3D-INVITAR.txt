@@ -1,0 +1,18 @@
+RENDER 3D · INVITAR / ACOGER
+
+ESPECIFICACIÓN FINAL
+Gesto asimétrico de «pasa, adelante»: un brazo indica el camino y la otra palma se ofrece hacia quien mira, con sonrisa abierta.
+
+REFERENCIAS PARA REPRODUCIR EL ESTADO
+1. renders-3d/gota-saludar-3d.png: identidad, textura e iluminación.
+2. png/gota-invitar.png: gesto, expresión y accesorios.
+Mantener la cámara frontal y el fondo de estudio marfil de la serie.
+El render incluido se obtuvo editando su versión anterior con generación de imágenes.
+
+ESTILO DE LA EDICIÓN
+Use case: precise-object-edit. Asset type: 3D promotional mascot render. Edit the mascot in reference image 1, retaining its exact identity, warm ivory clay/plasticine texture, asymmetric pointed droplet silhouette with tip bending toward viewer RIGHT, teal woven sweatband knotted on viewer RIGHT, charcoal face features, tiny oval ivory feet, framing, scale, near-front camera, soft upper-left studio light and pale warm ivory studio background. Full body and props entirely in frame with comfortable margins. One character only. Change only the requested gesture, face and accessories listed below. Keep a simple stylized face without nose, eye whites or eye highlights. No text, collage, watermark, extra limbs or unrelated props. 
+
+DETALLE DEL ESTADO FINAL
+Redesign the generic both-arms-open pose as an unmistakable 'come in / this way' welcome gesture. Turn the body slightly three-quarter toward viewer RIGHT (about 15 degrees) while the warm smiling face stays oriented toward the viewer. The arm on viewer RIGHT extends clearly to the right at mid height, palm/rounded open mitten facing UP, indicating the way in. The other arm on viewer LEFT reaches a little forward towards the viewer, elbow bent, open rounded palm up inviting them to follow. Make the two arm gestures ASYMMETRIC and readable, not a symmetric shrug, not both arms spread like wings. Simple tiny thumb cues may make the open palms legible, no complex fingers. Friendly open oval eyes and a wider smile. No doorway, arrows, text, floating icons, new clothes or scenery; communicate the invitation through pose only.
+
+PNG cuadrado con fondo marfil, sin transparencia. Imagen estática con apariencia 3D; no incluye modelo tridimensional editable.

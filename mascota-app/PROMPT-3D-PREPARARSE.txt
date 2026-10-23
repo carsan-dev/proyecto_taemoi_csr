@@ -1,0 +1,18 @@
+RENDER 3D · PREPARARSE
+
+ESPECIFICACIÓN FINAL
+Ajusta la cinta torcida con ambas manos, mirada algo elevada y dos trazos de movimiento junto a cada mano.
+
+REFERENCIAS PARA REPRODUCIR EL ESTADO
+1. renders-3d/gota-saludar-3d.png: identidad, textura e iluminación.
+2. png/gota-prepararse.png: gesto, expresión y accesorios.
+Mantener la cámara frontal y el fondo de estudio marfil de la serie.
+El render incluido se obtuvo editando su versión anterior con generación de imágenes.
+
+ESTILO DE LA EDICIÓN
+Use case: precise-object-edit. Asset type: 3D promotional mascot render. Edit the mascot in reference image 1, retaining its exact identity, warm ivory clay/plasticine texture, asymmetric pointed droplet silhouette with tip bending toward viewer RIGHT, teal woven sweatband knotted on viewer RIGHT, charcoal face features, tiny oval ivory feet, framing, scale, near-front camera, soft upper-left studio light and pale warm ivory studio background. Full body and props entirely in frame with comfortable margins. One character only. Change only the requested gesture, face and accessories listed below. Keep a simple stylized face without nose, eye whites or eye highlights. No text, collage, watermark, extra limbs or unrelated props. 
+
+DETALLE DEL ESTADO FINAL
+Keep both hands touching and adjusting the sweatband and keep their current rounded pose. Make the teal sweatband visibly a little crooked across the forehead, sloping about 7 degrees down toward viewer RIGHT, still wrapped coherently around the head, not floating. The gaze looks slightly UP toward the band: lift the head/chin a little and shift the two simple charcoal oval eyes upward, keeping the minimal all-dark eye style, no whites/pupils/highlights. Keep a tiny concentrated smile. Add exactly two short charcoal curved motion strokes OUTSIDE each hand, four small strokes total resembling motion quotation marks. They float separately beside the hands, do not touch them, and are drawn as simple rounded sculpted graphic marks, no letters. All marks fit in the image margins.
+
+PNG cuadrado con fondo marfil, sin transparencia. Imagen estática con apariencia 3D; no incluye modelo tridimensional editable.

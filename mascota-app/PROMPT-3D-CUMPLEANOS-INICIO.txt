@@ -1,5 +1,20 @@
 PROMPT FINAL · CUMPLEAÑOS, ESTADO INICIAL 3D
-Generado con la herramienta integrada de imágenes.
-Referencia: versión de cumpleaños con confeti y matasuegras extendido.
+Método: herramienta integrada de generación y edición de imágenes.
+Referencia: renders-3d/gota-cumpleanos-3d.png.
+Resultado: renders-3d/gota-cumpleanos-inicio-3d.png.
 
-Edit this exact image as the starting frame for an animation: remove every piece of confetti, open the eyes as two friendly dark vertical ovals, and roll the polka-dot paper of the party blower tightly into a compact coil at the end of its existing teal plastic mouthpiece. Show the paper spiral. Preserve the mascot, pose, hand positions, crooked hat, mouthpiece, lighting, camera and framing exactly. Keep the warm off-white background.
+Use case: precise-object-edit.
+Create the initial anticipation state from the final birthday render.
+Keep the correctly seated cone hat leaning to the VIEWER'S RIGHT, with the
+ivory apex hidden just inside its underside. No intersections or floating hat.
+Change only these four things:
+1. Remove every floating piece of confetti.
+2. Open both eyes into simple solid dark vertical ovals.
+3. Keep the compact rolled paper at the end of the long teal plastic mouthpiece
+exactly as shown in the selected initial-state render. Preserve the visible
+teal-and-ivory paper layers, polka dots, small curved edges and supporting hand.
+The selected PNG is the authoritative reference for the paper construction.
+4. Lower the free arm on the VIEWER'S LEFT so it points outward and down,
+clearly separated from the torso, as if preparing to raise it with excitement.
+Preserve the body, hat, band, other hand, mouthpiece, feet, lighting, camera,
+background and framing. Do not mirror the character or add other elements.

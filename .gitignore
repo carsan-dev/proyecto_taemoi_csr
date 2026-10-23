@@ -80,3 +80,6 @@ temp/
 /Utils.txt
 /package-lock.json
 AUDITORIA-PLAN-COMPLETO-2026-03-15.md
+
+# Renders 3D de la mascota (~24 MB): se quedan en el disco del propietario
+mascota-app/renders-3d/
