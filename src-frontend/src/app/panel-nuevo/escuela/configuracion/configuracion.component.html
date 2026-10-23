@@ -11,7 +11,7 @@
       <nav class="conf__indice" aria-label="Ajustes">
         <div role="tablist" aria-orientation="vertical" aria-label="Ajustes" (keydown)="teclaIndice($event)">
           @for (s of secciones; track s.clave) {
-          <button type="button" role="tab" class="conf__entrada" [id]="'conf-tab-' + s.clave" [attr.aria-controls]="'conf-panel-' + s.clave"
+          <button type="button" role="tab" class="conf__entrada" [id]="'conf-tab-' + s.clave" [attr.aria-controls]="seccion === s.clave ? 'conf-panel-' + s.clave : null"
             [attr.aria-selected]="seccion === s.clave" [attr.tabindex]="seccion === s.clave ? 0 : -1" (click)="elegirSeccion(s.clave)">
             @switch (s.clave) {
             @case ('turno') {

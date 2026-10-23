@@ -10,6 +10,7 @@ import {
   hora,
   numeroFiltrosActivos,
   textoCuenta,
+  textoPersonaDetalle,
   tieneDatosTecnicos,
 } from './registro-vista';
 
@@ -63,6 +64,13 @@ describe('registro-vista (8b-3k)', () => {
     expect(textoCuenta(12)).toBe('Cuenta 12');
     expect(textoCuenta(1044)).toBe('Cuenta 1044');
     expect(textoCuenta(null)).toBe('Sin cuenta');
+  });
+
+  it('persona del detalle: nombre, si no email, si no «Cuenta N»; sin cuenta, «Sin cuenta» (decisión del 24/10)', () => {
+    expect(textoPersonaDetalle({ usuarioId: 12, usuarioNombre: 'Persona Ficticia', usuarioEmail: 'persona@ejemplo.test' })).toBe('Persona Ficticia');
+    expect(textoPersonaDetalle({ usuarioId: 12, usuarioNombre: null, usuarioEmail: 'persona@ejemplo.test' })).toBe('persona@ejemplo.test');
+    expect(textoPersonaDetalle({ usuarioId: 12, usuarioNombre: '', usuarioEmail: null })).toBe('Cuenta 12');
+    expect(textoPersonaDetalle({ usuarioId: null, usuarioNombre: null, usuarioEmail: null })).toBe('Sin cuenta');
   });
 
   it('agrupa por día local en el orden de llegada: Hoy, Ayer y la fecha larga', () => {

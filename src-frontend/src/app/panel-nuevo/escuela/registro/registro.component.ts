@@ -32,6 +32,7 @@ import {
   hora,
   numeroFiltrosActivos,
   textoCuenta,
+  textoPersonaDetalle,
   tieneDatosTecnicos,
 } from './registro-vista';
 
@@ -44,7 +45,7 @@ import {
  * Las MISMAS lecturas que `AuditoriaSistemaComponent` (con `LecturasPanelService`: la misma petición con
  * `ERROR_HANDLED_LOCALLY`): módulos al entrar, la página con `resultado=EXITO` y los filtros de hoy, el detalle al
  * pulsar una acción, «Actualizar ahora» y la relectura cada 30 s. El detalle enseña lo que hoy enseña, tal como llega
- * redactado del backend, salvo la persona, que pasa a «Cuenta N». Nada va a la URL ni al almacenamiento.
+ * redactado del backend, y la persona como hoy (nombre o email; decisión del 24/10). Nada va a la URL ni al almacenamiento.
  */
 @Component({
   selector: 'app-registro-acciones',
@@ -65,6 +66,7 @@ export class RegistroAccionesComponent implements OnInit, OnDestroy {
   readonly moduloSalud = MODULO_SALUD;
   readonly describirAccion = describirAccion;
   readonly textoCuenta = textoCuenta;
+  readonly textoPersonaDetalle = textoPersonaDetalle;
   readonly hora = hora;
   readonly fechaCompleta = fechaCompleta;
   readonly formatearJson = formatearJson;

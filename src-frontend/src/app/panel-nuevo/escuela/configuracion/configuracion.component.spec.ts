@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Component } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -9,10 +10,15 @@ import { environment } from '../../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../../core/http-context';
 import { PermisosSesionService } from '../../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../../avisos/avisos.service';
+import { CLASE_ERROR_HTTP } from '../../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
+import { disenoNuevoGuard } from '../../diseno-nuevo.guard';
 import { EstilosPanelService } from '../../estilos-panel.service';
 import { CuentaConfiguracion } from './configuracion-vista';
 import { ConfiguracionPanelComponent } from './configuracion.component';
+
+@Component({ standalone: true, template: '' })
+class PantallaNueva {}
 
 const API = environment.apiUrl;
 const LIMITE = `${API}/turnos/limite`;
@@ -488,6 +494,55 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     fixture.detectChanges();
     expect(el().querySelector('dialog.pn-panel')).toBeNull();
     expect(avisos()).toEqual([{ tipo: 'info', texto: 'Esta cuenta usa Google. El restablecimiento manual no aplica.' }]);
+  });
+
+  it('a 768 el índice solo apunta con aria-controls al panel que existe (el de la pestaña elegida)', () => {
+    cargar(768);
+    const tabs = Array.from(el().querySelectorAll<HTMLElement>('[role="tab"]'));
+    for (const t of tabs) {
+      const destino = t.getAttribute('aria-controls');
+      if (t.getAttribute('aria-selected') === 'true') {
+        expect(el().querySelector(`#${destino}`)).not.toBeNull();
+      } else {
+        expect(destino).toBeNull();
+      }
+    }
+  });
+
+  it('restablecer contraseña: un error del servidor cierra el SweetAlert2 del interceptor (swal-error-http) y se ve en el panel', async () => {
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: 'configuracion', canMatch: [disenoNuevoGuard], component: PantallaNueva }]);
+    await router.navigateByUrl('/configuracion');
+    cargar(375);
+    boton(fila(2), 'Restablecer contraseña').click();
+    fixture.detectChanges();
+    const panel = el().querySelector<HTMLElement>('dialog.pn-panel')!;
+    escribir(panel.querySelector<HTMLInputElement>('#conf-nueva')!, 'Abcdefg1');
+    escribir(panel.querySelector<HTMLInputElement>('#conf-confirmar')!, 'Abcdefg1');
+    boton(panel, 'Guardar contraseña').click();
+    fixture.detectChanges();
+    void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
+    expect(Swal.isVisible()).toBeTrue();
+    peticiones(contrasena(2), 'PUT')[0].flush({ mensaje: 'Contraseña rechazada.' }, { status: 400, statusText: 'Bad Request' });
+    await esperar();
+    expect(Swal.isVisible()).toBeFalse();
+    expect(texto(el().querySelector('#conf-contrasena-error'))).toBe('Contraseña rechazada.');
+  });
+
+  it('restablecer contraseña: si no cumple las reglas (mayúsculas, minúsculas, números, mínimo 8) no se envía y se ve el mensaje', () => {
+    cargar(375);
+    boton(fila(2), 'Restablecer contraseña').click();
+    fixture.detectChanges();
+    const panel = el().querySelector<HTMLElement>('dialog.pn-panel')!;
+    for (const mala of ['abcdefgh1', 'ABCDEFGH1', 'Abcdefgh', 'Abc1']) {
+      escribir(panel.querySelector<HTMLInputElement>('#conf-nueva')!, mala);
+      escribir(panel.querySelector<HTMLInputElement>('#conf-confirmar')!, mala);
+      boton(panel, 'Guardar contraseña').click();
+      fixture.detectChanges();
+      expect(texto(panel.querySelector('#conf-contrasena-error'))).toBe('La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).');
+      expect(peticiones(contrasena(2), 'PUT').length).toBe(0);
+    }
+    expect(el().querySelector('dialog.pn-panel')).not.toBeNull();
   });
 
   it('a 375 sin desplazamiento horizontal', () => {

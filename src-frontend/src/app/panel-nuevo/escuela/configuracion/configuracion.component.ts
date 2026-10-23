@@ -1,13 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { AcentoEscuelaDirective } from '../../acento-escuela.directive';
 import { AvisosService } from '../../avisos/avisos.service';
-import { CONSULTA_HOJA, anchoDeHoja } from '../../capas/capa-modal';
+import { CONSULTA_HOJA, anchoDeHoja, cerrarSweetAlertAbierto } from '../../capas/capa-modal';
 import { BloqueErrorComponent } from '../../carga/bloque-error.component';
 import { BloqueVacioComponent } from '../../carga/bloque-vacio.component';
 import { BotonOcupadoComponent } from '../../carga/boton-ocupado.component';
@@ -90,6 +90,7 @@ export class ConfiguracionPanelComponent implements OnInit, OnDestroy {
   private readonly endpoints = inject(EndpointsService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
+  private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroy$ = new Subject<void>();
@@ -433,6 +434,8 @@ export class ConfiguracionPanelComponent implements OnInit, OnDestroy {
         if (this.destruido) {
           return;
         }
+        // El error se ve en el panel: el SweetAlert2 del interceptor quedaría detrás del <dialog> modal.
+        cerrarSweetAlertAbierto(this.router);
         form.enviando = false;
         form.error = mensajeErrorContrasena(error);
         this.cdr.detectChanges();

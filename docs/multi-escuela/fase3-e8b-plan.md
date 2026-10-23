@@ -1266,7 +1266,7 @@ Inventario: Anexo A, Configuración y Registro de acciones.
   mismas acciones en 375 y en 768. Con dos ajustes, el índice aporta poco hasta que haya más (riesgo anotado en 8b-B3).
 - **Registro de acciones: P2, cronología por días con detalle.** Días como título y, por acción, hora, pastilla del
   tipo, qué, módulo y «Cuenta N» (el identificador, sin nombre ni email); el detalle (incluidos los datos técnicos
-  desplegables) en un panel al lado. Los filtros (desde, hasta, acción, módulo, persona y buscar) se pliegan en un botón
+  desplegables) en un panel al lado, con la persona como hoy, nombre o email (decisión del 24/10). Los filtros (desde, hasta, acción, módulo, persona y buscar) se pliegan en un botón
   «Filtros»: quedan a un clic (riesgo anotado en 8b-B3).
 
 **Gestión de Roles y nombres visibles (decisión 262).** Las casillas y las pastillas de roles muestran «Familia»,
@@ -1334,8 +1334,8 @@ misma llamada; el detalle del registro no muestra nada que hoy no muestre ni pon
   del panel con textos propios («Límite por turno guardado: 40 alumnos.», «Roles de … actualizados.»); restablecer
   contraseña en el panel lateral, con las reglas de hoy marcadas al escribir, «Mostrar las contraseñas» y el error del
   servidor dentro del panel (hoy un aviso tras cerrar); si falla la lectura del límite o de las cuentas, bloque de error
-  con «Reintentar» (hoy un aviso y el límite por defecto 36 a la vista). En el registro: «Cuenta N» en la lista y en
-  el detalle (hoy nombre o email); hora y día en vez de «hoy 10:42»; el detalle en el panel lateral (hoy bajo la
+  con «Reintentar» (hoy un aviso y el límite por defecto 36 a la vista). En el registro: «Cuenta N» en la lista (hoy nombre o email;
+  el detalle sí enseña nombre o email, decisión del 24/10); hora y día en vez de «hoy 10:42»; el detalle en el panel lateral (hoy bajo la
   tabla); el total en el subtítulo; los filtros se aplican al pulsar «Aplicar filtros» y la relectura usa los aplicados
   (hoy usaba lo escrito aunque no se hubiera aplicado); error de lectura con bloque y «Reintentar».
 - [x] Specs en rojo antes del código (`Can't resolve './configuracion.component'` y `'./registro.component'`), luego
@@ -1349,8 +1349,8 @@ misma llamada; el detalle del registro no muestra nada que hoy no muestre ni pon
   error del límite, roles cambiados, diálogo y contraseña; Registro: lista, filtros y detalle). `impeccable detect` sin
   hallazgos.
 - **Preguntas abiertas:** (1) «Configurar cookies» no se puede abrir desde la sección «Avisos legales y cookies» sin tocar
-  `skeleton` (inicial): la sección enlaza los tres textos legales y remite al menú de la cuenta. (2) El detalle del
-  registro enseña «Cuenta N» como persona (hoy, nombre o email); ¿se quiere el nombre en el detalle? (3) Una acción sin
+  `skeleton` (inicial): la sección enlaza los tres textos legales y remite al menú de la cuenta. (2) (Resuelta el 24/10: el detalle del
+  registro enseña la persona como hoy, nombre o email; la lista sigue con «Cuenta N».) (3) Una acción sin
   cuenta se ve como «Sin cuenta» (hoy «-»).
 
 ## 21 bis. Pieza 8b-D1: diálogos, avisos y carga
@@ -2245,7 +2245,7 @@ Pieza 8b-3k. Rutas de hoy: `auditoriaSistema`. Componentes de hoy: `auditoria-si
 | Módulo | Bajo el texto | Hecho |
 | Quién | Bajo el texto, «Cuenta N» | Hecho (sin nombre ni email) |
 | Ver el detalle | Panel al lado | Hecho (panel lateral; nada en la URL) |
-| Detalle: qué, módulo, ficha afectada, fecha, persona | En el panel | Hecho (persona como «Cuenta N») |
+| Detalle: qué, módulo, ficha afectada, fecha, persona | En el panel | Hecho (persona como hoy, nombre o email; decisión del 24/10) |
 | Datos técnicos: método, estado, endpoint, query params, payload | Desplegable del detalle | Hecho (tal como llegan; sin IP ni navegador, como hoy) |
 | Paginación | Pie de la cronología | Hecho |
 | Aviso sin acciones en el periodo | Igual que hoy | Hecho |

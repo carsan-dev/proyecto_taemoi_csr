@@ -240,7 +240,7 @@ describe('RegistroAccionesComponent (8b-3k, Registro de acciones del panel nuevo
     expect(el().querySelector<HTMLSelectElement>('#reg-accion')!.value).toBe('TODOS');
   });
 
-  it('el detalle se abre en un panel al lado: qué, módulo, ficha afectada, fecha y persona como «Cuenta N»', async () => {
+  it('el detalle se abre en un panel al lado: qué, módulo, ficha afectada, fecha y persona (nombre o email, como hoy)', async () => {
     cargar();
     const p = await verDetalle();
     expect(texto(p.querySelector('.pn-panel__titulo'))).toBe('Detalle de la acción');
@@ -250,9 +250,18 @@ describe('RegistroAccionesComponent (8b-3k, Registro de acciones del panel nuevo
       ['Módulo', 'alumnos'],
       ['Ficha afectada', '7'],
       ['Fecha', '23/10/2026 10:42:00'],
-      ['Persona', 'Cuenta 12'],
+      ['Persona', 'Persona Ficticia'],
     ]);
     expect(accion(1).getAttribute('aria-current')).toBe('true');
+  });
+
+  it('la persona del detalle sin nombre es el email; sin cuenta, «Sin cuenta»', async () => {
+    cargar();
+    const persona = (p: HTMLElement) => texto(Array.from(p.querySelectorAll('.reg__detalle > div')).find((d) => texto(d.querySelector('dt')) === 'Persona')!.querySelector('dd'));
+    let p = await verDetalle(1, detalleVista({ usuarioNombre: null }));
+    expect(persona(p)).toBe('persona@ejemplo.test');
+    p = await verDetalle(2, detalleVista({ usuarioId: null, usuarioNombre: null, usuarioEmail: null }));
+    expect(persona(p)).toBe('Sin cuenta');
   });
 
   it('datos técnicos desplegables: método, estado, endpoint, query params y payload tal como llegan; nada más', async () => {
@@ -269,7 +278,7 @@ describe('RegistroAccionesComponent (8b-3k, Registro de acciones del panel nuevo
       ['Payload', '{\n  "nombre": "[REDACTADO]",\n  "activo": true\n}'],
     ]);
     const todo = texto(p);
-    for (const oculto of ['10.0.0.9', 'NavegadorDePrueba', 'Persona Ficticia', 'persona@ejemplo.test']) {
+    for (const oculto of ['10.0.0.9', 'NavegadorDePrueba', 'persona@ejemplo.test']) {
       expect(todo).not.toContain(oculto);
     }
   });

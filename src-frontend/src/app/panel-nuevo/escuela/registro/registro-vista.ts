@@ -102,6 +102,16 @@ export function textoCuenta(usuarioId: number | null | undefined): string {
   return usuarioId === null || usuarioId === undefined ? 'Sin cuenta' : `Cuenta ${usuarioId}`;
 }
 
+/**
+ * La persona en el detalle, como hoy (`AuditoriaSistemaComponent.persona`): el nombre o, si no, el email. Si no hay
+ * ninguno, «Cuenta N»; una acción sin cuenta, «Sin cuenta». La lista sigue con `textoCuenta`.
+ */
+export function textoPersonaDetalle(
+  evento: Pick<AuditoriaEvento, 'usuarioId' | 'usuarioNombre' | 'usuarioEmail'>
+): string {
+  return evento.usuarioNombre || evento.usuarioEmail || textoCuenta(evento.usuarioId);
+}
+
 function aFecha(valor: string | Date | null | undefined): Date | null {
   if (!valor) {
     return null;
