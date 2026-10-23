@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { Location } from '@angular/common';
 import { Router, RouterOutlet, Routes, provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -49,15 +49,14 @@ function respuesta(url: string, disenoNuevo: boolean): unknown {
 }
 
 describe('Arranque en una pantalla del panel con un fallo de red en el primer /roles', () => {
-  const espera = () => new Promise((r) => setTimeout(r, 10));
-
   afterEach(() => {
     localStorage.removeItem('panelNuevo');
     localStorage.removeItem('cookieConsent');
     sessionStorage.clear();
   });
 
-  async function arrancar(disenoNuevo: boolean): Promise<string> {
+  /** Se llama dentro de `fakeAsync`. */
+  function arrancar(disenoNuevo: boolean): string {
     if (disenoNuevo) {
       localStorage.setItem('panelNuevo', '1');
     } else {
@@ -88,7 +87,9 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
     let rolesFallados = 0;
     let rolesServidos = 0;
     let quietas = 0;
-    // Tiempo real: el reintento espera ~500 ms. Se para cuando /roles ya respondió bien y no queda nada abierto.
+    // Reloj simulado: cada vuelta avanza 10 ms y el reintento de /roles (500 ms) llega hacia la vuelta 50. Con tiempo
+    // real, un parón del navegador en CI disparaba el timeout de Jasmine y dejaba el bucle vivo tras el test.
+    // Se para cuando /roles ya respondió bien y lleva 15 vueltas sin nada abierto.
     for (let i = 0; i < 400 && quietas < 15; i++) {
       const abiertas = ((http as any).open as TestRequest[]).filter((t) => !t.cancelled);
       if (abiertas.length) {
@@ -110,19 +111,20 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
         quietas++;
       }
       fixture.detectChanges();
-      await espera();
+      tick(10);
       fixture.detectChanges();
     }
+    expect(quietas).withContext('quedan peticiones abriéndose sin parar').toBe(15);
     expect(rolesFallados).toBe(1);
     expect(rolesServidos).toBeGreaterThan(0);
     return router.url;
   }
 
-  it('con el diseño nuevo se queda en la pantalla pedida', async () => {
-    expect(await arrancar(true)).toBe('/convocatoriasListar');
-  });
+  it('con el diseño nuevo se queda en la pantalla pedida', fakeAsync(() => {
+    expect(arrancar(true)).toBe('/convocatoriasListar');
+  }));
 
-  it('con el diseño de hoy se queda en la pantalla pedida', async () => {
-    expect(await arrancar(false)).toBe('/convocatoriasListar');
-  });
+  it('con el diseño de hoy se queda en la pantalla pedida', fakeAsync(() => {
+    expect(arrancar(false)).toBe('/convocatoriasListar');
+  }));
 });
