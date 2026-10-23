@@ -1,0 +1,119 @@
+// Capa grande de Eventos (8b-3f): la del visor de PDF de 8b-D2a (diálogo grande con la sombra de diálogo sobre el velo,
+// cabecera de 56 px y, por debajo de 768 px, a pantalla completa). Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.eventos-capa {
+  width: min(1040px, calc(100vw - 48px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+}
+
+.eventos-capa--imagen {
+  width: auto;
+  max-width: min(1040px, calc(100vw - 48px));
+}
+
+.eventos-capa__caja {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+}
+
+.eventos-capa__cabecera {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px 8px 24px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.eventos-capa__titulos {
+  flex: 1;
+  min-width: 0;
+}
+
+.eventos-capa__titulo {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: var(--pn-titulo-dialogo);
+  color: var(--pn-tinta);
+}
+
+.eventos-capa__descripcion {
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.eventos-capa__cerrar {
+  @include c.boton-icono;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.eventos-capa__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--pn-fondo);
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.eventos-capa--imagen .eventos-capa__cuerpo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--pn-superficie-2);
+}
+
+@media (max-width: 767.98px) {
+  .eventos-capa,
+  .eventos-capa--imagen {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .eventos-capa__caja {
+    height: 100%;
+    max-height: none;
+  }
+
+  .eventos-capa__cabecera {
+    padding-left: 16px;
+  }
+
+  .eventos-capa__cerrar {
+    width: 44px;
+    height: 44px;
+  }
+}
