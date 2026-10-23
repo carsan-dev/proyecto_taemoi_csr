@@ -947,6 +947,77 @@ arreglo.
 
 **Notas para la PR:** inventario de la ronda 3 marcado; mismas peticiones que hoy (lista).
 
+**Implementación (rama `feature/e8b-3f`, desde `feature/e8b-3e` en `39e15337`; la PR #102 aún sin fusionar):**
+- Nuevos en `F/panel-nuevo/eventos/`: `eventos.component.*` (`EventosPanelComponent`, `app-eventos-panel`, listado P1),
+  `evento-formulario.component.*` (`EventoFormularioComponent`, `app-evento-formulario`, crear y editar P2),
+  `eventos-capa.component.*` (`pn-eventos-capa`: capa grande para «Ver cómo queda en la web» y la imagen ampliada, con
+  `showModal()`, foco contenido, Esc, velo y vuelta al disparador) y `eventos-vista.ts` (`estadoFecha`, `etiquetaEstado`,
+  `fechaCorta`, `fechaTitulo`, `fechaParaCampo`, `urlImagen`, `moverEn`, `nombreDescarga`, `tamanoArchivo`,
+  `cuerpoCrear`, `cuerpoEditar`, `mensajesError`, `resumenEventos`). `LecturasPanelService`: `eventosAdmin` y `evento`
+  (la misma petición que `obtenerTodosLosEventos` y `obtenerEventoPorId`, con `ERROR_HANDLED_LOCALLY`). Rutas
+  `eventosListar`, `eventosCrear` y `eventosEditar/:id` con `canMatch: [disenoNuevoGuard]` delante de las de hoy (misma
+  data, `roleGuard` y resolve).
+- **Mismas peticiones** que `ListadoEventosComponent`, `CrearEventoComponent` y `EditarEventoComponent`, con los métodos
+  de hoy de `EndpointsService`: orden, `PUT /eventos/orden` con los ids en el orden de la lista (arrastre, flechas y
+  teclado mandan el mismo cuerpo) y, después, la relectura `GET /eventos/admin/todos`; visible, `PUT
+  /eventos/{id}/toggle-visibilidad` sin cuerpo; eliminar, `DELETE /eventos/{id}` con credenciales y la misma limpieza de
+  la caché de eventos públicos (`EndpointsService.eliminarEvento` se suscribe solo y no deja saber si fue bien: la
+  pantalla hace la misma petición y llama a `limpiarCacheEventosPublicos`); crear, `POST /eventos/crear` multipart con
+  `nuevo` = `{titulo, descripcion, fechaEvento o null, visible}` y `file` con su nombre solo si hay imagen y, cuando
+  responde, un `POST /eventos/{id}/documentos` (`archivo`) por documento, a la vez; editar, `PUT /eventos/{id}` con
+  `eventoEditado` = `{titulo, descripcion, fechaEvento o null, fotoEvento: null}` y `file` (el archivo o `"null"`);
+  imagen, `DELETE /eventos/{id}/imagen`; documentos, `POST /eventos/{id}/documentos` por documento al pulsar «Subir N
+  documentos», `DELETE /eventos/{id}/documentos/{doc}` y `GET .../descargar?download=true` (blob; en iOS, la URL directa)
+  con el nombre de hoy. Validaciones de hoy (`prepararFicheroParaSubida` con `SUBIDA_IMAGEN` y `SUBIDA_DOCUMENTO`: HEIC
+  con `MOTIVO_HEIC`, formatos, 50 MB), `required` y máximos 100 y 500 sin recortar. Nada se envía al cancelar; sin doble
+  envío (orden, interruptor, guardar, subir y eliminar imagen).
+- Diálogos con `ConfirmacionService` («Eliminar evento», «Eliminar documento» y «Eliminar imagen», destructivos con
+  `focoEnCancelar`); avisos con `AvisosService`; esqueletos a los 300 ms, `pn-bloque-error` con «Reintentar» (listado y
+  evento) y `pn-bloque-vacio` con «Crear nuevo evento». Sin SweetAlert2 ni cargador global. «⋯» con el patrón de botón de
+  menú (`teclado-menu.ts`). Orden: asa (`cdkDragHandle`, la fila arrastrada dentro de la lista) y botones subir y bajar;
+  flechas arriba y abajo con el foco en el asa o en los botones mueven la fila, el foco sigue en el mismo mando y se
+  anuncia con `LiveAnnouncer` («Exhibición, posición 2 de 5.»; en un extremo, «… ya es la primera.»). La región del
+  anunciador se oculta con su regla en la hoja de la pantalla (la aplicación no carga `a11y-prebuilt`).
+- **Solución del móvil del listado:** la fila se compone con consultas de contenedor sobre la lista (no del viewport). Por
+  debajo de 960 px de lista, tres bandas: miniatura con la fecha y su estado y «⋯» arriba, título y descripción (dos
+  líneas con elipsis) debajo, e interruptor y «Editar» en una banda propia a lo ancho; el asa y las flechas, en una
+  columna de 44 px a la izquierda. Títulos con `overflow-wrap: anywhere`. El aviso «Guardar orden» queda fijo bajo la
+  cabecera mientras se baja (las filas dejan su margen al moverse con el teclado) y no toca la barra inferior. Desde
+  960 px, una línea por evento. Criterios a 375 y 360: una columna; `scrollWidth` igual a `clientWidth` en la página y en
+  cada fila (también con 80 caracteres sin espacios y con el texto al 200 %); sin solapes ni cortes entre las piezas de la
+  fila; objetivos de 44 px; orden con el dedo, con teclado y anunciado; «Guardar orden» a la vista sin tapar la barra.
+- **Cambios a propósito:** el interruptor publica u oculta al momento (hoy, «Mostrar»/«Ocultar» quedaba pendiente hasta
+  «Guardar cambios», que mandaba orden y visibilidad juntos; la llamada es la misma) y el aviso pasa a «Guardar orden»
+  solo con el orden; «Eliminar imagen» pide confirmación (hoy borraba sin preguntar; se borra al momento, como hoy); los
+  errores de imagen y documentos van en línea bajo su sección (hoy, SweetAlert2); sin foto, la miniatura no se amplía
+  (hoy avisaba «Imagen no disponible»); el aviso de borrado sale cuando responde el servidor (hoy, antes); la acción de
+  crear dice «Crear evento» y la de editar «Guardar cambios» (hoy «Crear Evento» y «Actualizar Evento»); títulos
+  «Eventos», «Crear nuevo evento» y «Editar evento»; «Orden guardado.» (hoy «Cambios guardados»); la visibilidad avisa
+  «… ya se ve en la web.» o «… ya no se ve en la web.»; con errores, la acción va con `aria-disabled` y su clic no envía:
+  enseña el resumen y le da el foco; tamaños «17 bytes», «1,5 KB»; «máx. 50 MB» con espacio.
+- [x] Specs en rojo antes del código (`Can't resolve './eventos-vista'`, `'./eventos.component'`,
+  `'./evento-formulario.component'`; `eventosAdmin` y `evento` no existen en `LecturasPanelService`), luego verdes:
+  `eventos-vista.spec.ts` (12), `eventos.component.spec.ts` (21: carga y cabecera; filas; aviso y «Guardar orden»;
+  subir y bajar; teclado en el asa y en los botones con `LiveAnnouncer`; arrastre y teclado con la misma petición;
+  sin doble envío y error; interruptor con la llamada de hoy, sin doble envío y error; «⋯» con teclado; eliminar con
+  foco en «Cancelar», cancelar sin envío y error; capas con foco contenido y Esc; esqueleto, error y vacío; a 375 px sin
+  desplazamiento horizontal con un título de 80 caracteres), `evento-formulario.component.spec.ts` (23: secciones y
+  etiquetas; resumen y botón desactivado; máximos; crear con multipart, documentos después y sin doble envío; errores;
+  cancelar sin envío; imagen HEIC, formato, tamaño y quitar; editar con GET, PUT y «file» "null" o el archivo; eliminar
+  imagen; documentos subir N, quitar, descargar y eliminar; vista previa al escribir y visible u oculto; esqueleto y
+  error), `lecturas-panel.service.spec.ts` y `app.routes.spec.ts` (dos entradas por ruta; apagado no descarga el chunk).
+- **Notas para la PR:** bundle inicial 1.457.342 bytes (+501 frente a 1.456.841 en `39e15337`, las tres entradas de
+  ruta; los dos medidos con las dependencias del `package-lock.json`: con el `node_modules` anterior, la base daba
+  1.456.023); chunks `eventos-component` 40,25 kB (8,80 kB por la red) y `evento-formulario-component` 45,35 kB (9,99
+  kB); karma 1994 SUCCESS; capturas apagado antes (`39e15337`) y después idénticas en bytes, 9/9 (listado, crear y editar
+  a 375, 768 y 1280; el listado de hoy a 768 y 1280 sale en dos o tres variantes por tiempos de carga con cualquiera de
+  los dos builds, y se compara la misma variante); encendido a 360, 375, 768 y 1280 (listado, reordenado con «Guardar
+  orden», «⋯» abierto, «Ver cómo queda en la web», eliminar, vacío, título largo, texto al 200 %, crear con errores y
+  editar con imagen y documentos); objetivos de 44 px como mínimo a 360 y 375, sin desplazamiento horizontal ni solapes
+  en ningún ancho. `impeccable detect`: solo «img sin src» en los `[src]` enlazados (falso positivo).
+- **Pregunta abierta (R4b):** a 375 y 768 px la vista previa va al final del formulario, como el boceto, y deja de verse
+  a la vez que los campos. A confirmar por el propietario.
+
 ## 17. Pieza 8b-3g: Productos
 
 Rama `feature/e8b-3g`. Solo frontend, sin migración: atajo `desplegar`. **Tier careful** (sube de medium): el catálogo
@@ -1767,43 +1838,43 @@ tabla se entienda sola. Configuración lleva dos columnas porque elige una varia
 
 Pieza 8b-3f. Rutas de hoy: `eventosListar`. Componentes de hoy: `listado-eventos`.
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Gestión de eventos» | «Eventos» con total y visibles |
-| Guardar cambios de orden (aparece al reordenar) | Aviso bajo el título que pasa a «Guardar orden» |
-| Mostrar u ocultar la vista previa de la web | «Ver cómo queda en la web» |
-| Crear nuevo evento | Botón principal |
-| Imagen (se amplía) | Miniatura en la fila |
-| Título del evento | Fila |
-| Fecha con su estado (próximo, hoy, pasado) | Columna de fecha con su estado |
-| Visible u oculto | Interruptor «Visible en la web» |
-| Descripción | Bajo el título, dos líneas |
-| Subir, bajar y arrastrar para ordenar | Asa y flechas |
-| Ocultar o mostrar | Interruptor |
-| Editar | Botón en la fila |
-| Eliminar | Menú «⋯» |
-| Aviso sin eventos y estado de carga | Igual que hoy |
+| Hoy | En la pantalla nueva | 8b-3f |
+|---|---|---|
+| Título «Gestión de eventos» | «Eventos» con total y visibles | Hecho (con total y visibles) |
+| Guardar cambios de orden (aparece al reordenar) | Aviso bajo el título que pasa a «Guardar orden» | Hecho (fijo bajo la cabecera al bajar) |
+| Mostrar u ocultar la vista previa de la web | «Ver cómo queda en la web» | Hecho (capa con la vista pública: visibles en el orden actual) |
+| Crear nuevo evento | Botón principal | Hecho |
+| Imagen (se amplía) | Miniatura en la fila | Hecho (la miniatura se amplía en una capa con Esc) |
+| Título del evento | Fila | Hecho |
+| Fecha con su estado (próximo, hoy, pasado) | Columna de fecha con su estado | Hecho (Próximo, Hoy, Realizado y Sin fecha) |
+| Visible u oculto | Interruptor «Visible en la web» | Hecho |
+| Descripción | Bajo el título, dos líneas | Hecho |
+| Subir, bajar y arrastrar para ordenar | Asa y flechas | Hecho (también con teclado, anunciado) |
+| Ocultar o mostrar | Interruptor | Hecho (al momento, con la misma llamada) |
+| Editar | Botón en la fila | Hecho |
+| Eliminar | Menú «⋯» | Hecho (destructivo, foco en «Cancelar») |
+| Aviso sin eventos y estado de carga | Igual que hoy | Hecho (`pn-bloque-vacio` y esqueleto) |
 
 ### Editar evento (P2: vista previa de la web al lado)
 
 Pieza 8b-3f. Rutas de hoy: `eventosCrear`, `eventosEditar/:id`. Componentes de hoy: `crear-evento`, `editar-evento`.
 
-| Hoy | En la pantalla nueva |
-|---|---|
-| Título «Editar evento» y subtítulo | Igual, con enlace «Eventos» |
-| Título del evento (obligatorio, máximo) y sus errores | Campo con ayuda y error debajo |
-| Descripción (obligatoria) y sus errores | Campo con ayuda y error |
-| Fecha del evento (opcional) y su ayuda | Campo |
-| Visible en la web (al crear) | Interruptor y vista previa |
-| Imagen: subir, formatos, vista previa y quitar | Sección «Imagen» |
-| Documentos guardados: descargar y eliminar | Sección «Documentos» |
-| Documentos por subir: nombre, tamaño, quitar y «Subir N» | Sección «Documentos» |
-| Aviso de que los documentos son públicos | Ayuda de «Documentos» |
-| Cancelar | Barra fija de guardar |
-| Actualizar evento (desactivado con errores, «Guardando…») | «Guardar cambios» en la barra fija |
-| Estado de carga | Igual que hoy |
-| Añadido: Resumen de errores con enlaces a cada campo | Arriba |
-| Añadido: Vista previa de la tarjeta pública | Al lado del formulario |
+| Hoy | En la pantalla nueva | 8b-3f |
+|---|---|---|
+| Título «Editar evento» y subtítulo | Igual, con enlace «Eventos» | Hecho («Crear nuevo evento» al crear) |
+| Título del evento (obligatorio, máximo) y sus errores | Campo con ayuda y error debajo | Hecho (con contador) |
+| Descripción (obligatoria) y sus errores | Campo con ayuda y error | Hecho (con contador) |
+| Fecha del evento (opcional) y su ayuda | Campo | Hecho |
+| Visible en la web (al crear) | Interruptor y vista previa | Hecho |
+| Imagen: subir, formatos, vista previa y quitar | Sección «Imagen» | Hecho (HEIC, formato y tamaño en línea; eliminar con confirmación) |
+| Documentos guardados: descargar y eliminar | Sección «Documentos» | Hecho (eliminar destructivo, foco en «Cancelar») |
+| Documentos por subir: nombre, tamaño, quitar y «Subir N» | Sección «Documentos» | Hecho (al crear, se suben tras crear, como hoy) |
+| Aviso de que los documentos son públicos | Ayuda de «Documentos» | Hecho |
+| Cancelar | Barra fija de guardar | Hecho (no envía nada) |
+| Actualizar evento (desactivado con errores, «Guardando…») | «Guardar cambios» en la barra fija | Hecho («Guardar cambios»; «Crear evento» al crear) |
+| Estado de carga | Igual que hoy | Hecho (esqueleto y error con «Reintentar») |
+| Añadido: Resumen de errores con enlaces a cada campo | Arriba | Hecho |
+| Añadido: Vista previa de la tarjeta pública | Al lado del formulario | Hecho (al lado desde 1280 px; al final por debajo) |
 
 ### Productos (P2: agrupados por tipo)
 
