@@ -1,0 +1,1047 @@
+// Preinscripciones del panel nuevo (8b-3h, P1 «lista con detalle al lado»). Solo tokens de panel-nuevo.scss bajo .pn
+// (DESIGN.md): la lista es un bloque blanco con filete y una fila de tres líneas por solicitud separada por la línea; el
+// detalle, otro bloque con sus secciones separadas por la línea y las acciones al pie. El acento de la escuela en la fila
+// elegida, las pestañas, los filtros elegidos, los secundarios y el foco; el ocre solo en «Pendiente»; el peligro en
+// cancelar, eliminar y los avisos de turno. Sin sombras salvo la del menú «Más».
+//
+// La pantalla se compone con consultas de contenedor sobre la página (no del viewport): desde 900 px de página, lista
+// (de 320 a 400 px) y detalle a la vez, el detalle pegado bajo la cabecera con su propio desplazamiento; por debajo, la
+// lista o, al elegir, el detalle con «Volver a la lista». Nombres largos recortados con elipsis (y su `title`).
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.preins {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+// Con la pestaña de hoy debajo, la parte nueva solo lleva la cabecera y las pestañas.
+.preins--plantillas {
+  min-height: 0;
+}
+
+.preins__pagina {
+  container: preins / inline-size;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.preins--plantillas .preins__pagina {
+  padding-bottom: 0;
+}
+
+.preins__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ botones
+
+.preins__boton-primario {
+  @include c.boton-primario;
+}
+
+.preins__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.preins__boton-texto {
+  @include c.boton-texto;
+}
+
+.preins__boton-primario,
+.preins__boton-secundario,
+.preins__boton-texto,
+.preins__volver,
+.preins__mas,
+.preins__pagina-boton,
+.preins__pestana {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ cabecera y pestañas
+
+.preins__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 12px;
+}
+
+.preins__titulos {
+  min-width: 0;
+}
+
+.preins__titulo-pantalla {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.preins__subtitulo {
+  max-width: 75ch;
+  margin: 6px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.preins__pestanas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.preins__pestana {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--pn-transicion), box-shadow var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  // Activa (8b-C): texto y subrayado de 3 px en acento.
+  &[aria-selected='true'] {
+    color: var(--pn-acento);
+    box-shadow: inset 0 -3px 0 var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline-offset: -3px;
+  }
+}
+
+// ------------------------------------------------------------------ filtros
+
+.preins__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.preins__filtro {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.preins__buscador {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 0;
+
+  > svg {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    width: 18px;
+    height: 18px;
+    color: var(--pn-tinta-2);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
+
+.preins__campo {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.preins__campo--select {
+  width: auto;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.preins__campo--buscar {
+  padding-left: 40px;
+}
+
+// Un filtro elegido (8b-C): acento-suave con borde acento-borde y texto acento.
+.preins__campo--elegido {
+  border-color: var(--pn-acento-borde);
+  background-color: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 600;
+}
+
+.preins__filtrar {
+  min-height: 42px;
+}
+
+// ------------------------------------------------------------------ lista y detalle
+
+.preins__espacio {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.preins__columna-lista {
+  min-width: 0;
+}
+
+.preins__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.preins__elemento + .preins__elemento {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.preins__fila {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 0;
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &[aria-current='true'] {
+    background: var(--pn-acento-suave);
+
+    .preins__nombre {
+      color: var(--pn-acento);
+    }
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.preins__fila-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.preins__nombre {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--pn-etiqueta);
+  font-size: 0.9375rem;
+  color: var(--pn-tinta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preins__fila-linea--meta,
+.preins__fila-linea--pie {
+  color: var(--pn-tinta-2);
+}
+
+.preins__ref,
+.preins__dni,
+.preins__disciplina {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preins__ref {
+  color: var(--pn-tinta);
+  font-weight: 600;
+}
+
+.preins__llegada {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+}
+
+.preins__observacion-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+}
+
+// Estado (siempre con su palabra): ocre para «Pendiente», «bien» para «Finalizada», neutras las demás.
+.preins__pastilla {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  overflow-wrap: anywhere;
+
+  &[data-tono='atencion'] {
+    background: var(--pn-atencion-suave);
+    color: var(--pn-atencion);
+  }
+
+  &[data-tono='bien'] {
+    background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+    color: var(--pn-bien);
+  }
+
+  &[data-tono='espera'] {
+    background: var(--pn-superficie);
+    box-shadow: inset 0 0 0 1px var(--pn-linea-fuerte);
+    color: var(--pn-tinta);
+  }
+}
+
+.preins__paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
+.preins__rango {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.preins__paginas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preins__pagina-texto {
+  padding: 0 6px;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.preins__pagina-boton {
+  @include c.boton-icono;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-acento);
+}
+
+.preins__esqueleto {
+  display: grid;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.preins__esqueleto-fila {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  span {
+    display: block;
+    height: 12px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(1) {
+    width: 60%;
+    height: 14px;
+  }
+
+  span:nth-child(2) {
+    width: 80%;
+  }
+
+  span:nth-child(3) {
+    width: 35%;
+  }
+}
+
+// ------------------------------------------------------------------ detalle
+
+.preins__detalle {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.preins__detalle-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 56px 24px;
+  text-align: center;
+
+  svg {
+    width: 32px;
+    height: 32px;
+    color: var(--pn-tinta-3);
+  }
+}
+
+.preins__detalle-vacio-titulo {
+  margin: 4px 0 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.preins__detalle-cabecera {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.preins__volver {
+  @include c.boton-texto;
+  justify-self: start;
+  margin-left: -12px;
+}
+
+.preins__detalle-titulos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.preins__detalle-nombre {
+  min-width: 0;
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  font-size: 1.375rem;
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.preins__detalle-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  > span:first-child {
+    color: var(--pn-tinta);
+    font-weight: 600;
+  }
+}
+
+.preins__detalle-cuerpo {
+  min-width: 0;
+}
+
+.preins__bloque {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px 18px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.preins__bloque-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.preins__bloque-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  font-size: 1rem;
+  color: var(--pn-tinta);
+}
+
+.preins__subtitulo-bloque {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.preins__nota {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.preins__pares {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.preins__pares--columna {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.preins__par {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  dt {
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+  }
+
+  dd {
+    margin: 0;
+    font: var(--pn-cuerpo);
+    color: var(--pn-tinta);
+    overflow-wrap: anywhere;
+  }
+}
+
+.preins__par--ancho {
+  grid-column: 1 / -1;
+}
+
+.preins__observacion {
+  display: grid;
+  gap: 4px;
+}
+
+// Con observación: resaltada en su caja, para leerla antes de tocar el horario.
+.preins__observacion--con {
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+
+  .preins__observacion-texto {
+    color: var(--pn-tinta);
+    font-weight: 500;
+  }
+}
+
+.preins__observacion-titulo {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.preins__observacion-texto {
+  margin: 0;
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.preins__asignacion {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+}
+
+.preins__asignacion-titulo {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  font-size: 0.9375rem;
+  color: var(--pn-tinta);
+}
+
+.preins__turnos {
+  display: grid;
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+
+  li + li {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.preins__turno {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 1px 0 0;
+    accent-color: var(--pn-acento);
+    cursor: pointer;
+  }
+}
+
+.preins__turno--elegido {
+  background: var(--pn-acento-suave);
+}
+
+.preins__turno-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    font: var(--pn-etiqueta);
+    font-size: 0.9375rem;
+    color: var(--pn-tinta);
+  }
+
+  small {
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2);
+    overflow-wrap: anywhere;
+  }
+}
+
+.preins__turno-marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.preins__marca {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--pn-radio-pastilla);
+  background: color-mix(in srgb, var(--pn-peligro) 8%, var(--pn-superficie));
+  color: var(--pn-peligro);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+}
+
+.preins__error {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-peligro);
+}
+
+.preins__asignacion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.preins__avisos-lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preins__aviso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 12px;
+  padding: 10px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.preins__aviso-nombre {
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-tinta);
+}
+
+.preins__aviso-estado {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  text-align: right;
+
+  &[data-estado='ENVIADO'] {
+    color: var(--pn-bien);
+  }
+
+  &[data-estado='ERROR'] {
+    color: var(--pn-peligro);
+    font-weight: 600;
+  }
+}
+
+.preins__aviso-detalle {
+  grid-column: 1 / -1;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.preins__aviso-detalle--error {
+  color: var(--pn-peligro);
+}
+
+.preins__aviso-accion {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-left: -12px;
+}
+
+.preins__firma-marco {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 8px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 104px;
+    object-fit: contain;
+  }
+}
+
+.preins__firma-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
+.preins__descargar {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.preins__fichas {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pn-linea);
+
+  .preins__firma-error {
+    justify-content: flex-start;
+  }
+}
+
+.preins__fichas-texto {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  strong {
+    font: var(--pn-etiqueta);
+    font-size: 0.875rem;
+    color: var(--pn-tinta);
+  }
+}
+
+// Acciones al pie del detalle: el primario, el secundario y «Más». Pegadas al borde inferior de la ventana mientras
+// el detalle se ve, para tenerlas a mano sin bajar hasta el final.
+.preins__acciones {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--pn-linea);
+  border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.preins__menu-zona {
+  position: relative;
+  margin-left: auto;
+}
+
+.preins__mas {
+  @include c.boton-texto;
+  color: var(--pn-tinta);
+
+  &[aria-expanded='true'] {
+    background: var(--pn-acento-suave);
+  }
+}
+
+// El menú se abre hacia arriba: va al pie del detalle.
+.preins__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 40;
+  display: grid;
+  min-width: 240px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.preins__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.preins__menu-opcion--peligro {
+  color: var(--pn-peligro);
+}
+
+// ------------------------------------------------------------------ composición
+
+// Estrecho: la lista o, al elegir, el detalle (con «Volver a la lista»).
+@container preins (max-width: 899.98px) {
+  .preins--con-detalle .preins__columna-lista {
+    display: none;
+  }
+
+  .preins:not(.preins--con-detalle) .preins__detalle {
+    display: none;
+  }
+
+  // Lista estrecha: los desplegables, uno por línea; el buscador con «Filtrar» al lado.
+  .preins__filtro {
+    flex: 1 1 100%;
+  }
+
+  .preins__campo--select {
+    width: 100%;
+  }
+
+  .preins__buscador {
+    flex: 1 1 0;
+  }
+
+  .preins__filtrar {
+    flex: none;
+  }
+}
+
+// Ancho: lista y detalle a la vez; el detalle, pegado bajo la cabecera con su propio desplazamiento.
+@container preins (min-width: 900px) {
+  .preins__espacio {
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+
+  .preins__volver {
+    display: none;
+  }
+
+  .preins__detalle {
+    position: sticky;
+    top: calc(64px + 16px);
+    max-height: calc(100vh - 64px - 32px);
+  }
+
+  .preins__detalle-cuerpo {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+// Con la barra inferior (por debajo de 1024 px), las acciones pegadas quedan encima de ella.
+@media (max-width: 1023.98px) {
+  .preins__acciones {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .preins__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-l);
+  }
+
+  .preins__titulo-pantalla {
+    font-size: 1.375rem;
+  }
+
+  .preins__pestanas .preins__pestana {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .preins__filtrar,
+  .preins__boton-primario,
+  .preins__boton-secundario,
+  .preins__boton-texto,
+  .preins__mas,
+  .preins__menu-opcion {
+    min-height: 44px;
+  }
+
+  .preins__pagina-boton {
+    width: 44px;
+    height: 44px;
+  }
+
+  // Compactas: el primario a lo ancho; debajo, «Reenviar solicitud original» y «Más».
+  .preins__acciones {
+    padding: 8px 12px;
+
+    .preins__boton-primario {
+      flex: 1 1 100%;
+    }
+
+    > .preins__boton-secundario {
+      flex: 1 1 auto;
+    }
+  }
+
+  .preins__detalle-cabecera,
+  .preins__bloque {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}

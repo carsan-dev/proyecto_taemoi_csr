@@ -1,0 +1,181 @@
+<pn-panel-lateral titulo="Finalizar preinscripción" descripcion="Revisa la ficha de destino, la tarifa y el grado antes de completar el alta."
+  [bloqueado]="enviando" (cerrar)="volver()">
+  <div class="alta">
+    <div class="alta__resumen">
+      <p class="alta__resumen-fila">
+        <strong class="alta__resumen-nombre">{{ nombre }}</strong>
+        <span>{{ s['dni'] || 'Sin DNI/NIE' }}</span>
+      </p>
+      <p class="alta__resumen-fila">
+        <strong>{{ numeroTurnos === 1 ? '1 turno en la asignación vigente' : numeroTurnos + ' turnos en la asignación vigente' }}</strong>
+        <span>{{ s['grupo'] }}</span>
+      </p>
+    </div>
+
+    <fieldset class="alta__seccion">
+      <legend class="alta__titulo">Destino de la ficha</legend>
+      <div class="alta__opciones">
+        @for (candidato of alta.candidatos; track candidato.id) {
+        <label class="alta__opcion">
+          <input type="radio" name="preins-destino" [checked]="esElegida(candidato)" [disabled]="enviando" (change)="alta.elegirAlumno(candidato)" />
+          <span class="alta__opcion-texto">
+            <strong>Usar {{ candidato.nombre }} {{ candidato.apellidos }}</strong>
+            <small>{{ candidato.nif || 'Sin DNI/NIE' }} · {{ candidato.activo ? 'Activo' : 'De baja' }}</small>
+          </span>
+        </label>
+        }
+        @if (!alta.tieneCoincidenciaDniExacta) {
+        <label class="alta__opcion">
+          <input type="radio" name="preins-destino" [checked]="alta.accionAlumno === 'CREAR_NUEVO'" [disabled]="enviando" (change)="alta.crearNuevaFicha()" />
+          <span class="alta__opcion-texto">
+            <strong>Crear una ficha nueva</strong>
+            <small>No se reutilizará ninguna coincidencia.</small>
+          </span>
+        </label>
+        }
+      </div>
+      @if (alta.tieneCoincidenciaDniExacta) {
+      <p class="alta__nota">Ya existe una ficha con este DNI/NIE, por lo que debe reutilizarse.</p>
+      }
+      @if (!s['dni']) {
+      <p class="alta__nota">Al no existir DNI/NIE, ninguna coincidencia se vincula automáticamente.</p>
+      }
+    </fieldset>
+
+    @if (alta.accionAlumno === 'VINCULAR_EXISTENTE' && alta.alumnoSeleccionado; as alumno) {
+    <fieldset class="alta__seccion">
+      <legend class="alta__titulo">Ficha existente</legend>
+      <p class="alta__nota">{{ alumno.activo ? 'Alumno activo' : 'Alumno inactivo: se reactivará y se limpiará su fecha de baja.' }}</p>
+      @if (alumno.deporteRegistrado) {
+      <p class="alta__nota">
+        {{ alumno.deporteActivo ? 'Deporte ya activo: se reemplazarán sus horarios y se confirmará la tarifa.' : 'Deporte inactivo: se reactivará conservando grado y antigüedad.' }}
+      </p>
+      }
+      @if (alta.camposDistintos.length) {
+      <div class="alta__opciones">
+        @for (campo of alta.camposDistintos; track campo.clave) {
+        <label class="alta__opcion">
+          <input type="checkbox" [checked]="alta.camposActualizar.has(campo.clave)" [disabled]="enviando"
+            (change)="alta.alternarCampo(campo.clave, $any($event.target).checked)" />
+          <span class="alta__opcion-texto">
+            <strong>{{ campo.etiqueta }}</strong>
+            <small>Ficha: {{ alta.mostrarValor(alumno[campo.alumno], campo.clave) }}</small>
+            <small>Preinscripción: {{ alta.mostrarValor(alta.valorPreinscripcion(campo), campo.clave) }}</small>
+          </span>
+        </label>
+        }
+      </div>
+      }
+      @if (alta.camposActualizar.size === 0) {
+      <p class="alta__nota">No se actualizarán datos personales de la ficha.</p>
+      }
+    </fieldset>
+    @if (alta.correosDiferentes) {
+    <fieldset class="alta__seccion">
+      <legend class="alta__titulo">Correo definitivo de acceso</legend>
+      <p class="alta__nota">Los correos no coinciden. El elegido se guardará en la ficha, recibirá la confirmación y será el usado para acceder al portal.</p>
+      <div class="alta__opciones">
+        <label class="alta__opcion">
+          <input type="radio" name="preins-correo" value="CONSERVAR_FICHA" [checked]="alta.decisionEmail === 'CONSERVAR_FICHA'" [disabled]="enviando"
+            (change)="alta.decisionEmail = 'CONSERVAR_FICHA'" />
+          <span class="alta__opcion-texto"><strong>Conservar correo de la ficha</strong><small class="alta__correo">{{ alumno.email }}</small></span>
+        </label>
+        <label class="alta__opcion">
+          <input type="radio" name="preins-correo" value="USAR_PREINSCRIPCION" [checked]="alta.decisionEmail === 'USAR_PREINSCRIPCION'" [disabled]="enviando"
+            (change)="alta.decisionEmail = 'USAR_PREINSCRIPCION'" />
+          <span class="alta__opcion-texto"><strong>Usar correo de la preinscripción</strong><small class="alta__correo">{{ s['email'] }}</small></span>
+        </label>
+      </div>
+    </fieldset>
+    }
+    } @else if (alta.accionAlumno === 'CREAR_NUEVO') {
+    <section class="alta__seccion">
+      <h3 class="alta__titulo">Nueva ficha</h3>
+      <p class="alta__nota">Se crearán ficha activa, número de expediente y fechas de alta usando los datos recibidos.</p>
+    </section>
+    }
+
+    @if (s['tieneDiscapacidad'] == null) {
+    <fieldset class="alta__seccion alta__seccion--pendiente">
+      <legend class="alta__titulo">Dato pendiente de solicitud antigua</legend>
+      <p class="alta__nota">Esta preinscripción no recogió la discapacidad. Debes confirmarla antes de finalizar.</p>
+      <div class="alta__opciones">
+        <label class="alta__opcion">
+          <input type="radio" name="preins-discapacidad" [checked]="alta.discapacidadHistorica === true" [disabled]="enviando"
+            (change)="alta.confirmarDiscapacidadHistorica(true)" />
+          <span class="alta__opcion-texto"><strong>Sí tiene discapacidad</strong></span>
+        </label>
+        <label class="alta__opcion">
+          <input type="radio" name="preins-discapacidad" [checked]="alta.discapacidadHistorica === false" [disabled]="enviando"
+            (change)="alta.confirmarDiscapacidadHistorica(false)" />
+          <span class="alta__opcion-texto"><strong>No tiene discapacidad</strong></span>
+        </label>
+      </div>
+    </fieldset>
+    }
+
+    @if (alta.accionAlumno) {
+    <section class="alta__seccion">
+      <h3 class="alta__titulo">Tarifa y horarios deportivos</h3>
+      <p class="alta__nota">
+        La cuantía se decide manualmente. Los turnos anteriores de este deporte serán reemplazados por los {{ numeroTurnos }} de la asignación vigente.
+      </p>
+      <div class="alta__campos">
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Tipo de tarifa</span>
+          <select class="alta__control" [(ngModel)]="alta.datosAlta.tipoTarifa" (ngModelChange)="alta.cambiarTarifa()" [disabled]="enviando">
+            @if (!alta.datosAlta.tipoTarifa) {
+            <option value="" disabled>Selecciona una tarifa</option>
+            }
+            @for (tarifa of alta.tarifasDisponibles; track tarifa.codigo) {
+            <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Cuantía mensual (€)</span>
+          <input class="alta__control" type="number" min="0" step="0.01" inputmode="decimal" data-cifras [(ngModel)]="alta.datosAlta.cuantiaTarifa"
+            [disabled]="enviando" />
+        </label>
+        @if (alta.requiereRolFamiliar) {
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Rol familiar</span>
+          <select class="alta__control" [(ngModel)]="alta.datosAlta.rolFamiliar" [disabled]="enviando">
+            <option value="NINGUNO">Seleccionar</option>
+            @for (rol of roles; track rol) {
+            <option [value]="rol">{{ rol }}</option>
+            }
+          </select>
+        </label>
+        }
+        @if (alta.requiereGrupoFamiliar) {
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Grupo familiar</span>
+          <input class="alta__control" maxlength="50" [(ngModel)]="alta.datosAlta.grupoFamiliar" [disabled]="enviando" />
+        </label>
+        }
+        @if (alta.requiereDatosDeporte && alta.requiereGrado) {
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Grado inicial</span>
+          <select class="alta__control" [(ngModel)]="alta.datosAlta.grado" [disabled]="enviando">
+            @for (grado of alta.gradosDisponibles; track grado.codigo) {
+            <option [value]="grado.codigo">{{ grado.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="alta__campo">
+          <span class="alta__etiqueta">Fecha del grado</span>
+          <input class="alta__control" type="date" [(ngModel)]="alta.datosAlta.fechaGrado" [disabled]="enviando" />
+        </label>
+        }
+      </div>
+    </section>
+    }
+  </div>
+
+  <div pnPie class="alta__pie">
+    <button type="button" class="alta__volver" [disabled]="enviando" (click)="volver()">Volver</button>
+    <button type="button" pnOcupado class="alta__aceptar" [ocupado]="enviando" textoOcupado="Finalizando…"
+      [deshabilitado]="!alta.finalizacionValida" (click)="aceptar()">Aceptar y completar alta</button>
+  </div>
+</pn-panel-lateral>
