@@ -480,6 +480,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Caja de sede nueva (8b-3j): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'cajaSede',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/caja-sede/caja-sede.component').then(m => m.CajaSedePanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'cajaSede',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/caja-sede/caja-sede.component').then(m => m.CajaSedeComponent),

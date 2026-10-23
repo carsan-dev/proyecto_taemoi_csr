@@ -1,0 +1,479 @@
+<div class="pn caja" pnAcento>
+  <div class="caja__pagina">
+    <header class="caja__cabecera">
+      <h1 class="caja__titulo">Caja de sede</h1>
+      <p class="caja__subtitulo">El efectivo de la sede: lo que hay en caja, lo que traen los profesores y lo que se ha apuntado.</p>
+    </header>
+
+    @if (cargandoSedes) {
+    <pn-esqueleto etiqueta="Cargando la caja">
+      <div class="caja__esqueleto-filtros"><span></span><span></span></div>
+      <div class="caja__esqueleto-resumen">
+        @for (i of [1, 2, 3, 4]; track i) {
+        <span class="caja__esqueleto-cifra"><span></span><span></span><span></span></span>
+        }
+      </div>
+      <div class="caja__esqueleto-lista">
+        @for (i of [1, 2, 3]; track i) {
+        <div class="caja__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (errorSedes; as error) {
+    <pn-bloque-error titulo="No se han podido cargar las sedes."
+      [texto]="error.mensaje ?? 'Comprueba la conexión y vuelve a intentarlo.'" (reintentar)="cargarSedes()" />
+    } @else if (sedes.length === 0) {
+    <pn-bloque-vacio titulo="No hay ninguna sede cuya caja puedas llevar." />
+    } @else {
+    <div class="caja__filtros">
+      <div class="caja__campo caja__campo--sede">
+        @if (sedes.length > 1) {
+        <label class="caja__etiqueta" for="caja-sede">Sede</label>
+        <select id="caja-sede" class="caja__control" [disabled]="enVuelo" (change)="elegirSede($any($event.target).value)">
+          @for (sede of sedes; track sede.id) {
+          <option [value]="sede.id" [selected]="sede.id === sedeId">{{ sede.nombre }}</option>
+          }
+        </select>
+        } @else {
+        <p class="caja__sede-unica">
+          <span class="caja__etiqueta">Sede</span>
+          <span class="caja__sede-nombre">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"></path><circle cx="12" cy="10" r="2.3"></circle></svg>
+            <span>{{ sedes[0].nombre }}</span>
+          </span>
+        </p>
+        }
+      </div>
+      <div class="caja__campo caja__campo--periodo">
+        <label class="caja__etiqueta" for="caja-periodo">Periodo</label>
+        <select id="caja-periodo" class="caja__control" [disabled]="sedeId === null || enVuelo" (change)="elegirPeriodo($any($event.target).value)">
+          @for (opcion of periodos; track opcion.valor) {
+          <option [value]="opcion.valor" [selected]="opcion.valor === periodo">{{ opcion.etiqueta }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (errorDatos; as error) {
+    <div class="caja__error-datos">
+      <pn-bloque-error titulo="No se han podido cargar los datos de la caja."
+        [texto]="error.mensaje ?? 'Comprueba la conexión y vuelve a intentarlo.'" (reintentar)="recargarTodo()" />
+    </div>
+    }
+
+    <section class="caja__resumen" aria-labelledby="caja-resumen-titulo" [attr.aria-busy]="cargandoResumen ? 'true' : null">
+      <h2 class="caja__oculto" id="caja-resumen-titulo">Resumen de la caja</h2>
+      <dl class="caja__cifras">
+        @for (c of cifras; track c.clave) {
+        <div class="caja__cifra" [attr.data-clave]="c.clave">
+          <dt class="caja__cifra-titulo">{{ c.titulo }}</dt>
+          <dd class="caja__cifra-valor" [attr.data-tono]="c.tono" data-cifras>{{ c.valor }}</dd>
+          <dd class="caja__cifra-detalle">{{ c.detalle }}</dd>
+        </div>
+        }
+      </dl>
+    </section>
+
+    <div class="caja__pestanas" role="tablist" aria-label="Caja de sede" (keydown)="teclaPestanas($event)">
+      @for (opcion of pestanas; track opcion) {
+      <button type="button" role="tab" class="caja__pestana" [id]="'caja-pestana-' + opcion" [attr.aria-controls]="'caja-panel-' + opcion"
+        [attr.aria-selected]="pestana === opcion" [attr.tabindex]="pestana === opcion ? 0 : -1" (click)="elegirPestana(opcion)">
+        <span>{{ etiquetaPestana(opcion) }}</span>
+        @if (numeroDe(opcion) !== null) {
+        <!-- Un espacio de verdad entre el nombre y el número: el nombre accesible es «Por recibir 2». -->
+        &ngsp;<span class="caja__numero" data-cifras>{{ numero(numeroDe(opcion)) }}</span>
+        }
+      </button>
+      }
+    </div>
+
+    <!-- Por recibir -->
+    <section class="caja__panel" role="tabpanel" id="caja-panel-recibir" aria-labelledby="caja-pestana-recibir"
+      [hidden]="pestana !== 'recibir'" [attr.aria-busy]="cargandoPendientes ? 'true' : null">
+      <p class="caja__panel-nota">Cobros en efectivo que los profesores aún no han entregado en la sede.</p>
+      @if (pendientes === null) {
+      @if (!errorPendientes) {
+      <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando el efectivo en mano' }" />
+      }
+      } @else if (pendientes.length === 0) {
+      <pn-bloque-vacio titulo="Ningún profesor tiene efectivo pendiente de entregar." />
+      } @else {
+      <ul class="caja__lista caja__profesores" aria-label="Efectivo en mano de los profesores">
+        @for (p of pendientes; track p.usuarioId) {
+        <li class="caja__profesor" [attr.data-usuario]="p.usuarioId" [class.caja__profesor--abierto]="entregaAbierta(p)">
+          <div class="caja__profesor-fila">
+            <div class="caja__profesor-quien">
+              <p class="caja__nombre">{{ p.nombre }}</p>
+              <p class="caja__profesor-detalle">
+                <span data-cifras>{{ plural(p.numeroCobros, 'cobro', 'cobros') }}</span>
+                @if (textoDesde(p) !== '—') {
+                <span class="caja__desde" [attr.data-aviso]="avisoEfectivo(p) ? 'true' : null">
+                  @if (avisoEfectivo(p)) {
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+                  }
+                  <span>Desde {{ textoDesde(p) }}</span>
+                </span>
+                @if (avisoEfectivo(p)) {
+                <span class="caja__oculto">Más de 7 días con el efectivo en mano</span>
+                }
+                }
+              </p>
+            </div>
+            <p class="caja__profesor-importe" data-cifras>{{ eur(p.importe) }}</p>
+            <button type="button" class="caja__recibir" [attr.aria-expanded]="entregaAbierta(p)"
+              [attr.aria-controls]="entregaAbierta(p) ? 'caja-entrega-' + p.usuarioId : null"
+              [disabled]="cargandoPendientes || (!!formEntrega?.enviando && !entregaAbierta(p))" (click)="alternarEntrega(p, $event)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><path d="M12 4v10M7.5 9.5 12 14l4.5-4.5M5 19.5h14"></path></svg>
+              <span>Recibir entrega</span>
+            </button>
+          </div>
+
+          @if (entregaAbierta(p) && formEntrega; as f) {
+          <section class="caja__entrega" [id]="'caja-entrega-' + p.usuarioId" [attr.aria-labelledby]="'caja-entrega-titulo-' + p.usuarioId"
+            (keydown.escape)="cerrarEntrega()">
+            @if (calculoEntrega; as calc) {
+            <form class="caja__form" novalidate (submit)="$event.preventDefault(); recibirEntrega()">
+              <div class="caja__form-cabecera">
+                <h3 class="caja__form-titulo" [id]="'caja-entrega-titulo-' + p.usuarioId">Recibir entrega de {{ p.nombre }}</h3>
+                <p class="caja__form-nota">Marca los cobros que entrega y cuenta el dinero.</p>
+              </div>
+
+              <fieldset class="caja__cobros">
+                <legend class="caja__oculto">Cobros</legend>
+                <div class="caja__cobros-cabecera">
+                  <span class="caja__etiqueta" aria-hidden="true">Cobros</span>
+                  <label class="caja__todos">
+                    <input type="checkbox" aria-label="Seleccionar todos los cobros" [checked]="estadoSeleccionCobros === 'todos'"
+                      [indeterminate]="estadoSeleccionCobros === 'algunos'" [disabled]="f.enviando || f.profesor.cobros.length === 0"
+                      (change)="alternarTodos($any($event.target).checked)" />
+                    <span>Seleccionar todos</span>
+                  </label>
+                </div>
+                <ul class="caja__cobros-lista">
+                  @for (c of f.profesor.cobros; track c.cobroId) {
+                  <li>
+                    <label class="caja__cobro">
+                      <input type="checkbox" [attr.data-cobro]="c.cobroId" [checked]="f.seleccionados.has(c.cobroId)" [disabled]="f.enviando"
+                        (change)="alternarCobro(c.cobroId, $any($event.target).checked)" />
+                      <span class="caja__cobro-texto">
+                        <span class="caja__cobro-concepto">{{ c.concepto }}</span>
+                        <span class="caja__cobro-detalle">
+                          <span>{{ nombreAlumnoCobro(c) }}</span>
+                          @if (fechaDia(c.fechaCobro)) {
+                          <span data-cifras>{{ fechaDia(c.fechaCobro) }}</span>
+                          }
+                        </span>
+                      </span>
+                      <span class="caja__cobro-importe" data-cifras>{{ eur(c.importe) }}</span>
+                    </label>
+                  </li>
+                  }
+                </ul>
+              </fieldset>
+
+              <div class="caja__cuenta">
+                <p class="caja__deberia" aria-live="polite">Debería entregar <strong data-cifras>{{ eur(calc.declarado) }}</strong></p>
+                <div class="caja__campo caja__campo--contado">
+                  <label class="caja__etiqueta" [for]="'caja-contado-' + p.usuarioId">Has contado</label>
+                  <div class="caja__importe">
+                    <input type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" class="caja__control caja__control--importe caja__contado"
+                      [id]="'caja-contado-' + p.usuarioId" [value]="f.contado" [disabled]="f.enviando"
+                      [attr.aria-invalid]="calc.contado === null ? 'true' : null" [attr.aria-describedby]="'caja-cuadre-' + p.usuarioId"
+                      (input)="onContadoInput($any($event.target).value)" />
+                    <span class="caja__importe-simbolo" aria-hidden="true">€</span>
+                  </div>
+                </div>
+                @if (avisoCuadre(calc); as aviso) {
+                <p class="caja__aviso-cuadre" [id]="'caja-cuadre-' + p.usuarioId" aria-live="polite" [attr.data-tono]="aviso.tono">{{ aviso.texto }}</p>
+                } @else {
+                <p class="caja__aviso-cuadre" [id]="'caja-cuadre-' + p.usuarioId" aria-live="polite"></p>
+                }
+              </div>
+
+              <div class="caja__campo">
+                <label class="caja__etiqueta" [for]="'caja-nota-entrega-' + p.usuarioId">
+                  Nota @if (calc.notaObligatoria) {<span class="caja__marca">obligatoria</span>}
+                </label>
+                <textarea class="caja__control caja__control--area" rows="2" maxlength="500" [id]="'caja-nota-entrega-' + p.usuarioId"
+                  [value]="f.nota" [required]="calc.notaObligatoria" [attr.aria-required]="calc.notaObligatoria ? 'true' : null"
+                  [disabled]="f.enviando" [placeholder]="calc.notaObligatoria ? 'Explica la diferencia' : 'Opcional'"
+                  (input)="onNotaEntrega($any($event.target).value)"></textarea>
+              </div>
+
+              @if (f.error) {
+              <p class="caja__error" role="alert">{{ f.error }}</p>
+              }
+
+              <div class="caja__form-pie">
+                <button type="button" class="caja__boton-texto" [disabled]="f.enviando" (click)="cerrarEntrega()">Cancelar</button>
+                <button type="submit" pnOcupado class="caja__boton-primario caja__recibir-enviar" [ocupado]="f.enviando"
+                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes">Recibir {{ eur(calc.contado ?? 0) }}</button>
+              </div>
+            </form>
+            }
+          </section>
+          }
+        </li>
+        }
+      </ul>
+      }
+    </section>
+
+    <!-- Entregas -->
+    <section class="caja__panel" role="tabpanel" id="caja-panel-entregas" aria-labelledby="caja-pestana-entregas"
+      [hidden]="pestana !== 'entregas'" [attr.aria-busy]="cargandoEntregas ? 'true' : null">
+      <p class="caja__panel-nota">Dinero que los profesores han entregado en la sede, del más reciente al más antiguo.</p>
+      @if (entregas === null) {
+      @if (!errorEntregas) {
+      <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando las entregas' }" />
+      }
+      } @else if (entregas.length === 0) {
+      <pn-bloque-vacio titulo="Todavía no se ha recibido ninguna entrega en esta sede." />
+      } @else {
+      <div class="caja__bloque">
+        <table class="caja__tabla caja__entregas">
+          <caption class="caja__oculto">Entregas de la sede</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">De</th>
+              <th scope="col">Recibió</th>
+              <th scope="col" class="caja__num">Contado</th>
+              <th scope="col">Diferencia</th>
+              <th scope="col">Nota</th>
+              <th scope="col"><span class="caja__oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of entregas; track e.id) {
+            <tr [attr.data-id]="e.id" [attr.data-anulada]="e.estado === 'ANULADA' ? 'true' : null">
+              <td data-label="Fecha" class="caja__celda-fecha"><span class="caja__tachable" data-cifras>{{ fechaHora(e.fecha) }}</span></td>
+              <td data-label="De">
+                <span class="caja__tachable caja__fuerte">{{ e.entregadoPorNombre || '—' }}</span>
+                @if (e.autoentrega) {
+                &ngsp;<span class="caja__pastilla">autoentrega</span>
+                }
+              </td>
+              <td data-label="Recibió"><span class="caja__tachable">{{ e.recibidoPorNombre || '—' }}</span></td>
+              <td data-label="Contado" class="caja__num"><span class="caja__tachable caja__fuerte" data-cifras>{{ eur(e.importeContado) }}</span></td>
+              <td data-label="Diferencia" class="caja__celda-diferencia">
+                <span class="caja__estados">
+                  <span class="caja__pastilla" [attr.data-tono]="cuadre(diferenciaVista(e)).estado" data-cifras>{{ cuadre(diferenciaVista(e)).texto }}</span>
+                  @if (e.estado === 'ANULADA') {
+                  &ngsp;<span class="caja__pastilla" data-tono="anulada">Anulada</span>
+                  }
+                </span>
+                @if (e.estado === 'ANULADA' && e.motivoAnulacion) {
+                <span class="caja__motivo">«{{ e.motivoAnulacion }}»</span>
+                }
+                @if (correcciones(e).length) {
+                <ul class="caja__correcciones" aria-label="Correcciones de la entrega">
+                  @for (m of correcciones(e); track m.id) {
+                  <li [attr.data-anulado]="m.estado === 'ANULADO' ? 'true' : null" [attr.data-tipo]="m.tipo" data-cifras>
+                    {{ textoMovimientoDeCobro(m) }}@if (m.estado === 'ANULADO') {<span class="caja__oculto"> (anulado)</span>}
+                  </li>
+                  }
+                </ul>
+                }
+              </td>
+              <td data-label="Nota" class="caja__nota">{{ e.nota || '—' }}</td>
+              <td class="caja__fila-accion">
+                @switch (accionEntrega(e)) {
+                @case ('anular') {
+                <button type="button" class="caja__accion caja__accion--peligro" (click)="anularEntrega(e)"
+                  [attr.aria-label]="'Anular la entrega de ' + (e.entregadoPorNombre || 'un profesor') + ' del ' + fechaDia(e.fecha)">Anular</button>
+                }
+                @case ('pedir') {
+                <button type="button" class="caja__accion" (click)="pedirAnularEntrega(e)"
+                  [attr.aria-label]="'Pedir al propietario que anule la entrega de ' + (e.entregadoPorNombre || 'un profesor') + ' del ' + fechaDia(e.fecha)">Pedir anulación</button>
+                }
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="caja__pie">
+        <p class="caja__mostrando" data-cifras>{{ textoMostrando(entregas.length, totalEntregas ?? entregas.length) }}</p>
+        @if (totalPaginasEntregas > 1) {
+        <nav class="caja__paginacion" aria-label="Páginas de entregas">
+          <button type="button" class="caja__pagina-paso" [disabled]="paginaEntregas === 1 || cargandoEntregas" (click)="irAPagina(paginaEntregas - 1)">Anterior</button>
+          @for (n of paginas; track $index) {
+          @if (n === null) {
+          <span class="caja__pagina-salto" aria-hidden="true">…</span>
+          } @else {
+          <button type="button" class="caja__pagina-num" data-cifras [disabled]="cargandoEntregas" [attr.aria-current]="n === paginaEntregas ? 'page' : null"
+            [attr.aria-label]="'Página ' + numero(n)" (click)="irAPagina(n)">{{ numero(n) }}</button>
+          }
+          }
+          <button type="button" class="caja__pagina-paso" [disabled]="paginaEntregas === totalPaginasEntregas || cargandoEntregas"
+            (click)="irAPagina(paginaEntregas + 1)">Siguiente</button>
+        </nav>
+        }
+      </div>
+      }
+    </section>
+
+    <!-- Movimientos -->
+    <section class="caja__panel" role="tabpanel" id="caja-panel-movimientos" aria-labelledby="caja-pestana-movimientos"
+      [hidden]="pestana !== 'movimientos'" [attr.aria-busy]="cargandoResumen ? 'true' : null">
+      <div class="caja__panel-cabecera">
+        <p class="caja__panel-nota">Devoluciones, correcciones, sobrantes y faltantes de {{ periodoActual.etiqueta }}.</p>
+        <button type="button" id="caja-apuntar" class="caja__boton-secundario caja__apuntar" aria-controls="caja-mov-form"
+          [attr.aria-expanded]="!!formMovimiento" [disabled]="!!formMovimiento?.enviando" (click)="alternarMovimiento($event)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+          <span>Apuntar movimiento</span>
+        </button>
+      </div>
+
+      @if (formMovimiento; as f) {
+      <section class="caja__mov-form" id="caja-mov-form" aria-labelledby="caja-mov-titulo" (keydown.escape)="cerrarMovimiento()">
+        <form class="caja__form" novalidate (submit)="$event.preventDefault(); apuntarMovimiento()">
+          <div class="caja__form-cabecera">
+            <h3 class="caja__form-titulo" id="caja-mov-titulo">Apuntar movimiento</h3>
+            <p class="caja__form-nota caja__mov-sede">{{ sedeActual?.nombre }}</p>
+          </div>
+          <div class="caja__mov-campos">
+            <div class="caja__campo">
+              <label class="caja__etiqueta" for="caja-mov-tipo">Tipo</label>
+              <select id="caja-mov-tipo" class="caja__control" [disabled]="f.enviando" (change)="cambiarTipo($any($event.target).value)">
+                @for (t of tiposMovimiento; track t.valor) {
+                <option [value]="t.valor" [selected]="t.valor === f.tipo">{{ t.etiqueta }}</option>
+                }
+              </select>
+            </div>
+            <div class="caja__campo">
+              <label class="caja__etiqueta" for="caja-mov-importe">Importe</label>
+              <div class="caja__importe">
+                <input id="caja-mov-importe" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"
+                  class="caja__control caja__control--importe" [value]="f.importe" [disabled]="f.enviando"
+                  [attr.aria-invalid]="importeMovimientoNoValido ? 'true' : null" aria-describedby="caja-mov-importe-ayuda"
+                  (input)="onImporteMovimiento($any($event.target).value)" />
+                <span class="caja__importe-simbolo" aria-hidden="true">€</span>
+              </div>
+              <p id="caja-mov-importe-ayuda" class="caja__ayuda" [attr.data-tono]="importeMovimientoNoValido ? 'error' : null" aria-live="polite">
+                @if (importeMovimientoNoValido) {
+                Escribe un importe distinto de cero con un solo signo delante, por ejemplo 12,50 o -12,50.
+                } @else if (reglaFormMovimiento.signo === -1) {
+                Sale de la caja.
+                } @else if (reglaFormMovimiento.signo === 1) {
+                Entra en la caja.
+                } @else {
+                En positivo si entra dinero en la caja; con un menos delante (-5) si sale.
+                }
+              </p>
+            </div>
+            @if (reglaFormMovimiento.alumno !== 'oculto') {
+            <div class="caja__campo caja__campo--ancho">
+              <label class="caja__etiqueta" for="caja-mov-alumno">
+                Alumno @if (reglaFormMovimiento.alumno === 'opcional') {<span class="caja__opcional">(opcional)</span>}
+              </label>
+              <select appSearchableSelect searchPlaceholder="Buscar alumno…" searchDropdownClass="pn caja-desplegable"
+                [searchDropdownVariables]="variablesDesplegable()" id="caja-mov-alumno" class="caja__control" [disabled]="f.enviando"
+                [required]="reglaFormMovimiento.alumno === 'obligatorio'"
+                [attr.aria-required]="reglaFormMovimiento.alumno === 'obligatorio' ? 'true' : null"
+                (change)="elegirAlumno($any($event.target).value)">
+                <option value="" [selected]="f.alumnoId === null">{{ alumnos.length ? 'Elige un alumno' : 'Cargando alumnos…' }}</option>
+                @for (a of alumnos; track a.id) {
+                <option [value]="a.id" [selected]="a.id === f.alumnoId">{{ a.nombre }}</option>
+                }
+              </select>
+            </div>
+            }
+            <div class="caja__campo caja__campo--ancho">
+              <label class="caja__etiqueta" for="caja-mov-nota">Nota</label>
+              <textarea id="caja-mov-nota" class="caja__control caja__control--area" rows="2" maxlength="500" required aria-required="true"
+                placeholder="Qué ha pasado" [value]="f.nota" [disabled]="f.enviando" (input)="onNotaMovimiento($any($event.target).value)"></textarea>
+            </div>
+          </div>
+
+          @if (f.error) {
+          <p class="caja__error" role="alert">{{ f.error }}</p>
+          }
+
+          <div class="caja__form-pie">
+            <button type="button" class="caja__boton-texto" [disabled]="f.enviando" (click)="cerrarMovimiento()">Cancelar</button>
+            <button type="submit" pnOcupado class="caja__boton-primario caja__mov-enviar" [ocupado]="f.enviando" textoOcupado="Apuntando…"
+              [deshabilitado]="!puedeApuntar()">Apuntar movimiento</button>
+          </div>
+        </form>
+      </section>
+      }
+
+      @if (movimientos === null) {
+      @if (!errorMovimientos) {
+      <ng-container [ngTemplateOutlet]="esqueletoLista" [ngTemplateOutletContext]="{ etiqueta: 'Cargando los movimientos' }" />
+      }
+      } @else if (movimientos.length === 0) {
+      <pn-bloque-vacio [titulo]="'No hay movimientos en ' + periodoActual.etiqueta + '.'" />
+      } @else {
+      <div class="caja__bloque">
+        <table class="caja__tabla caja__movimientos">
+          <caption class="caja__oculto">Movimientos de {{ periodoActual.etiqueta }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Alumno</th>
+              <th scope="col" class="caja__num">Importe</th>
+              <th scope="col">Nota</th>
+              <th scope="col"><span class="caja__oculto">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of movimientos; track m.id) {
+            <tr [attr.data-id]="m.id" [attr.data-anulada]="m.estado === 'ANULADO' ? 'true' : null">
+              <td data-label="Fecha" class="caja__celda-fecha"><span class="caja__tachable" data-cifras>{{ fechaHora(m.fecha) }}</span></td>
+              <td data-label="Tipo">
+                <span class="caja__tachable caja__fuerte">{{ etiquetaTipo(m.tipo) }}</span>
+                @if (m.estado === 'ANULADO') {
+                &ngsp;<span class="caja__pastilla" data-tono="anulada">Anulado</span>
+                }
+              </td>
+              <td data-label="Alumno">{{ nombreAlumno(m.alumnoId) }}</td>
+              <td data-label="Importe" class="caja__num">
+                <span class="caja__tachable caja__fuerte caja__importe-firmado" [attr.data-tono]="tonoImporte(m.importe)" data-cifras>{{ firmado(m.importe) }}</span>
+              </td>
+              <td data-label="Nota" class="caja__nota">
+                {{ m.nota || '—' }}
+                @if (m.estado === 'ANULADO' && m.motivoAnulacion) {
+                <span class="caja__motivo">Anulado: «{{ m.motivoAnulacion }}»</span>
+                }
+              </td>
+              <td class="caja__fila-accion">
+                @switch (accionMovimiento(m)) {
+                @case ('anular') {
+                <button type="button" class="caja__accion caja__accion--peligro" (click)="anularMovimiento(m)"
+                  [attr.aria-label]="'Anular ' + etiquetaTipo(m.tipo) + ' de ' + eur(m.importe)">Anular</button>
+                }
+                @case ('pedir') {
+                <button type="button" class="caja__accion" (click)="pedirAnularMovimiento(m)"
+                  [attr.aria-label]="'Pedir al propietario que anule ' + etiquetaTipo(m.tipo) + ' de ' + eur(m.importe)">Pedir anulación</button>
+                }
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </section>
+    }
+  </div>
+</div>
+
+<ng-template #esqueletoLista let-etiqueta="etiqueta">
+  <pn-esqueleto [etiqueta]="etiqueta">
+    <div class="caja__esqueleto-lista">
+      @for (i of [1, 2, 3]; track i) {
+      <div class="caja__esqueleto-fila"><span></span><span></span><span></span></div>
+      }
+    </div>
+  </pn-esqueleto>
+</ng-template>
