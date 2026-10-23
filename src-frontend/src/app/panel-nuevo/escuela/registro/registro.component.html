@@ -1,0 +1,218 @@
+<div class="pn reg" pnAcento>
+  <div class="reg__pagina">
+    <header class="reg__cabecera">
+      <div class="reg__titulos">
+        <h1 class="reg__titulo">Registro de acciones</h1>
+        <p class="reg__subtitulo">Lo que se ha hecho en tu escuela@if (eventos !== null) {: <span data-cifras>{{ plural(total, 'acción', 'acciones') }}</span>}.</p>
+      </div>
+      <div class="reg__herramientas">
+        <button type="button" id="reg-filtros" class="reg__boton-secundario" aria-controls="reg-panel-filtros"
+          [attr.aria-expanded]="filtrosAbiertos" (click)="alternarFiltros()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <span>Filtros</span>
+          @if (numeroFiltros > 0) {
+          &ngsp;<span class="reg__numero" data-cifras>{{ numero(numeroFiltros) }}</span>
+          }
+        </button>
+        <button type="button" pnOcupado class="reg__boton-texto" [ocupado]="ocupado" textoOcupado="Actualizando…" (click)="actualizarAhora()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"></path><path d="M19.5 4.5v4h-4"></path></svg>
+          <span>Actualizar ahora</span>
+        </button>
+      </div>
+    </header>
+
+    @if (filtrosAbiertos) {
+    <form id="reg-panel-filtros" class="reg__filtros" aria-label="Filtros del registro" novalidate (submit)="aplicarFiltros($event)">
+      <div class="reg__filtros-rejilla">
+        <div class="reg__campo">
+          <label class="reg__etiqueta" for="reg-desde">Desde</label>
+          <input id="reg-desde" class="reg__control" type="date" [value]="filtros.desde ?? ''" (input)="ponerFiltro('desde', $event)"
+            (change)="ponerFiltro('desde', $event)" />
+        </div>
+        <div class="reg__campo">
+          <label class="reg__etiqueta" for="reg-hasta">Hasta</label>
+          <input id="reg-hasta" class="reg__control" type="date" [value]="filtros.hasta ?? ''" (input)="ponerFiltro('hasta', $event)"
+            (change)="ponerFiltro('hasta', $event)" />
+        </div>
+        <div class="reg__campo">
+          <label class="reg__etiqueta" for="reg-accion">Acción</label>
+          <select id="reg-accion" class="reg__control" (change)="ponerAccion($event)">
+            @for (a of acciones; track a.value) {
+            <option [value]="a.value" [selected]="filtros.accion === a.value">{{ a.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="reg__campo">
+          <label class="reg__etiqueta" for="reg-modulo">Módulo</label>
+          @if (filtros.accion === 'READ') {
+          <!-- Las consultas de salud son siempre del módulo salud: el selector queda fijo (como hoy). -->
+          <select id="reg-modulo" class="reg__control" disabled aria-describedby="reg-ayuda-salud">
+            <option>{{ moduloSalud }}</option>
+          </select>
+          <small id="reg-ayuda-salud" class="reg__ayuda">Fijo al filtrar consultas de salud</small>
+          } @else {
+          <select id="reg-modulo" class="reg__control" (change)="ponerFiltro('modulo', $event)">
+            <option value="TODOS" [selected]="filtros.modulo === 'TODOS'">Todos</option>
+            @for (m of modulos; track m) {
+            <option [value]="m" [selected]="filtros.modulo === m">{{ m }}</option>
+            }
+          </select>
+          }
+        </div>
+        <div class="reg__campo">
+          <label class="reg__etiqueta" for="reg-persona">Persona</label>
+          <input id="reg-persona" class="reg__control" type="text" autocomplete="off" placeholder="Nombre o email" [value]="filtros.usuario"
+            (input)="ponerFiltro('usuario', $event)" />
+        </div>
+        <div class="reg__campo reg__campo--ancho">
+          <label class="reg__etiqueta" for="reg-texto">Buscar en el resumen</label>
+          <input id="reg-texto" class="reg__control" type="search" autocomplete="off" placeholder="Por ejemplo, un nombre o un producto"
+            [value]="filtros.texto" (input)="ponerFiltro('texto', $event)" />
+        </div>
+      </div>
+      <div class="reg__filtros-acciones">
+        <button type="submit" class="reg__boton-primario" [disabled]="cargando">Aplicar filtros</button>
+        <button type="button" class="reg__boton-texto" [disabled]="cargando" (click)="restablecer()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4"></path><path d="M4.5 4.5v4h4"></path></svg>
+          <span>Restablecer</span>
+        </button>
+      </div>
+    </form>
+    }
+
+    @if (eventos === null && cargando) {
+    <pn-esqueleto etiqueta="Cargando el registro de acciones">
+      <div class="reg__esqueleto">
+        <span class="reg__esqueleto-dia"></span>
+        @for (i of [1, 2, 3, 4]; track i) {
+        <div class="reg__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (error) {
+    <pn-bloque-error titulo="No se ha podido cargar el registro de acciones." (reintentar)="cargar()" />
+    } @else if (eventos !== null && eventos.length === 0) {
+    <pn-bloque-vacio titulo="Todavía no hay acciones en este periodo"
+      texto="Aquí aparecen las altas, cambios y bajas que coinciden con los filtros. Amplía las fechas o quita algún filtro para ver más." />
+    } @else if (eventos !== null) {
+    <div class="reg__cronologia" [attr.aria-busy]="cargando ? 'true' : null">
+      @for (dia of dias; track dia.clave) {
+      <section class="reg__dia" [attr.aria-labelledby]="'reg-dia-' + dia.clave">
+        <h2 class="reg__dia-cabecera" [id]="'reg-dia-' + dia.clave">
+          <span class="reg__dia-titulo">{{ dia.titulo }}</span>
+          @if (dia.fecha) {
+          <span class="reg__dia-fecha">{{ dia.fecha }}</span>
+          }
+          <span class="reg__dia-numero" data-cifras>{{ plural(dia.eventos.length, 'acción', 'acciones') }}</span>
+        </h2>
+        <ol class="reg__acciones">
+          @for (e of dia.eventos; track e.id) {
+          @let tipo = describirAccion(e.accion, e.modulo);
+          <li>
+            <button type="button" class="reg__accion" [attr.data-id]="e.id" [attr.aria-label]="'Ver el detalle: ' + (e.resumen || tipo.etiqueta) + ' (' + tipo.etiqueta + ', ' + hora(e.fechaEvento) + ', ' + (e.modulo || 'sin módulo') + ', ' + textoCuenta(e.usuarioId) + ')'"
+              [attr.aria-current]="detalle?.id === e.id ? 'true' : null" [attr.aria-busy]="leyendoDetalle === e.id ? 'true' : null"
+              [disabled]="leyendoDetalle !== null && leyendoDetalle !== e.id" (click)="verDetalle(e)">
+              <time class="reg__hora" data-cifras [attr.datetime]="e.fechaEvento">{{ hora(e.fechaEvento) }}</time>
+              <span class="reg__pastilla" [attr.data-tono]="tipo.tono">{{ tipo.etiqueta }}</span>
+              <span class="reg__texto">
+                <span class="reg__que">{{ e.resumen || '-' }}</span>
+                <span class="reg__meta">
+                  <span class="reg__modulo">{{ e.modulo || '-' }}</span>
+                  <span class="reg__cuenta">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"></circle><path d="M5 19.5c.8-3.3 3.5-5 7-5s6.2 1.7 7 5"></path></svg>
+                    <span>{{ textoCuenta(e.usuarioId) }}</span>
+                  </span>
+                </span>
+              </span>
+              <svg class="reg__flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"></path></svg>
+            </button>
+          </li>
+          }
+        </ol>
+      </section>
+      }
+    </div>
+    @if (totalPaginas > 1) {
+    <nav class="reg__paginacion" aria-label="Páginas del registro">
+      <button type="button" class="reg__pagina-paso" [disabled]="pagina === 1 || cargando" (click)="irAPagina(pagina - 1)">Anterior</button>
+      @for (n of paginas; track $index) {
+      @if (n === null) {
+      <span class="reg__pagina-salto" aria-hidden="true">…</span>
+      } @else {
+      <button type="button" class="reg__pagina-num" data-cifras [disabled]="cargando" [attr.aria-current]="n === pagina ? 'page' : null"
+        [attr.aria-label]="'Página ' + numero(n)" (click)="irAPagina(n)">{{ numero(n) }}</button>
+      }
+      }
+      <button type="button" class="reg__pagina-paso" [disabled]="pagina === totalPaginas || cargando" (click)="irAPagina(pagina + 1)">Siguiente</button>
+    </nav>
+    }
+    }
+  </div>
+
+  @if (detalle; as d) {
+  @let tipoDetalle = describirAccion(d.accion, d.modulo);
+  <pn-panel-lateral titulo="Detalle de la acción" [descripcion]="tipoDetalle.etiqueta + ', ' + hora(d.fechaEvento)" (cerrar)="cerrarDetalle()">
+    <dl class="reg__detalle">
+      <div class="reg__detalle-ancho">
+        <dt>Qué</dt>
+        <dd>{{ d.resumen || '-' }}</dd>
+      </div>
+      <div>
+        <dt>Módulo</dt>
+        <dd>{{ d.modulo || '-' }}</dd>
+      </div>
+      <div>
+        <dt>Ficha afectada</dt>
+        <dd data-cifras>{{ d.recursoId ?? '-' }}</dd>
+      </div>
+      <div>
+        <dt>Fecha</dt>
+        <dd data-cifras>{{ fechaCompleta(d.fechaEvento) }}</dd>
+      </div>
+      <div>
+        <dt>Persona</dt>
+        <dd>{{ textoCuenta(d.usuarioId) }}</dd>
+      </div>
+    </dl>
+    @if (tieneDatosTecnicos(d)) {
+    <details class="reg__tecnicos">
+      <summary>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"></path></svg>
+        <span>Datos técnicos</span>
+      </summary>
+      <dl class="reg__tecnico-lista">
+        <div>
+          <dt>Método</dt>
+          <dd class="reg__codigo">{{ d.metodoHttp }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd class="reg__codigo">{{ d.estadoHttp }}</dd>
+        </div>
+        <div class="reg__detalle-ancho">
+          <dt>Endpoint</dt>
+          <dd class="reg__codigo">{{ d.endpoint }}</dd>
+        </div>
+      </dl>
+      <div class="reg__json">
+        <h3>Query params</h3>
+        <pre tabindex="0">{{ formatearJson(d.queryParamsJson) }}</pre>
+      </div>
+      <div class="reg__json">
+        <h3>Payload</h3>
+        <pre tabindex="0">{{ formatearJson(d.payloadJson) }}</pre>
+      </div>
+    </details>
+    }
+    <div pnPie class="reg__pie-panel">
+      <button type="button" class="reg__boton-texto" (click)="cerrarDetalle()">Cerrar</button>
+    </div>
+  </pn-panel-lateral>
+  }
+</div>

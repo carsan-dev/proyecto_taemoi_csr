@@ -17,9 +17,13 @@ import { ProductoFormularioComponent } from './panel-nuevo/productos/producto-fo
 import { PreinscripcionesPanelComponent } from './panel-nuevo/preinscripciones/preinscripciones.component';
 import { SolicitudesPanelComponent } from './panel-nuevo/solicitudes/solicitudes.component';
 import { CajaSedePanelComponent } from './panel-nuevo/caja-sede/caja-sede.component';
+import { ConfiguracionPanelComponent } from './panel-nuevo/escuela/configuracion/configuracion.component';
+import { RegistroAccionesComponent } from './panel-nuevo/escuela/registro/registro.component';
+import { EstilosPanelService } from './panel-nuevo/estilos-panel.service';
+import { AuthenticationService } from './servicios/authentication/authentication.service';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { PermisosSesionService } from './servicios/authentication/permisos-sesion.service';
@@ -43,6 +47,13 @@ describe('app routes', () => {
     expect(configuracionRoute?.canActivate).toEqual([roleGuard, adminOnlyGuard]);
     expect(auditoriaRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
     expect(configuracionRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
+    // 8b-3k: también cada entrada duplicada (la nueva, tras el interruptor, y la de hoy).
+    const todas = routes.filter((route) => route.path === 'auditoriaSistema' || route.path === 'configuracion-sistema');
+    expect(todas.length).toBe(4);
+    for (const route of todas) {
+      expect(route.canActivate).toEqual([roleGuard, adminOnlyGuard]);
+      expect(route.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
+    }
   });
 
   it('protege errores de plataforma con su propio guard, sin roles de escuela ni catálogo', () => {
@@ -350,5 +361,83 @@ describe('app routes', () => {
       expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
       expect(cargar).not.toHaveBeenCalled();
     });
+  }
+  // 8b-3k: las dos rutas del propietario duplicadas conservan roleGuard y adminOnlyGuard (riesgo: perder un guard).
+  for (const [ruta, url, componente] of [
+    ['configuracion-sistema', '/configuracion-sistema', ConfiguracionPanelComponent],
+    ['auditoriaSistema', '/auditoriaSistema', RegistroAccionesComponent],
+  ] as const) {
+    it(`${ruta} (8b-3k): primero la entrada nueva tras disenoNuevoGuard, con roleGuard, adminOnlyGuard, data y resolve de hoy`, async () => {
+      const entradas = routes.filter((route) => route.path === ruta);
+      expect(entradas.length).toBe(2);
+      const [nueva, hoy] = entradas;
+      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+      expect(nueva.canActivate).toEqual(hoy.canActivate!);
+      expect(nueva.canActivate).toEqual([roleGuard, adminOnlyGuard]);
+      expect(nueva.data).toEqual(hoy.data!);
+      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
+      expect(nueva.resolve).toEqual(hoy.resolve!);
+      expect(await nueva.loadComponent!()).toBe(componente);
+      expect(hoy.canMatch).toBeUndefined();
+      expect(await hoy.loadComponent!()).not.toBe(componente);
+    });
+
+    it(`${ruta} (8b-3k): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
+      @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
+      class PantallaDeHoy {}
+      const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;
+      const cargar = jasmine.createSpy('loadComponent nuevo');
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: ruta, component: PantallaDeHoy }]),
+          {
+            provide: PermisosSesionService,
+            useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
+              capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
+          },
+        ],
+      });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(url);
+      expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
+      expect(cargar).not.toHaveBeenCalled();
+    });
+
+    for (const [rolesSesion, entra] of [[['ROLE_MANAGER'], false], [['ROLE_USER'], false], [['ROLE_ADMIN'], true]] as const) {
+      it(`${ruta} (8b-3k): con el interruptor encendido, ${rolesSesion.join(', ')} ${entra ? 'entra' : 'no entra (roleGuard y adminOnlyGuard)'}`, async () => {
+        @Component({ standalone: true, template: '<p class="nueva">nueva</p>' })
+        class PantallaNueva {}
+        @Component({ standalone: true, template: '<p class="portada">portada</p>' })
+        class Portada {}
+        const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;
+        const cargar = jasmine.createSpy('loadComponent nuevo').and.returnValue(Promise.resolve(PantallaNueva));
+        TestBed.configureTestingModule({
+          providers: [
+            // Los guards de verdad (canMatch y canActivate de la entrada nueva); solo se quita el catálogo.
+            provideRouter([{ ...nueva, resolve: {}, loadComponent: cargar }, { path: '', component: Portada }]),
+            {
+              provide: PermisosSesionService,
+              useValue: { obtener: () => of({ roles: [...rolesSesion], esAdminPlataforma: false, sedes: [], variasSedes: false,
+                tieneGrupos: false, capacidades: [], disenoNuevo: { activo: true, permitido: true } }) },
+            },
+            { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+            { provide: AuthenticationService, useValue: { resolverRolesDisponibles: () => of([...rolesSesion]) } },
+          ],
+        });
+        const harness = await RouterTestingHarness.create();
+        await harness.navigateByUrl(url);
+        await harness.fixture.whenStable();
+        const pagina = harness.routeNativeElement as HTMLElement;
+        if (entra) {
+          expect(cargar).toHaveBeenCalled();
+          expect(pagina.querySelector('.nueva')).not.toBeNull();
+          expect(TestBed.inject(Router).url).toBe(url);
+        } else {
+          expect(cargar).not.toHaveBeenCalled();
+          expect(pagina.querySelector('.nueva')).toBeNull();
+          expect(TestBed.inject(Router).url).toBe('/');
+        }
+      });
+    }
   }
 });
