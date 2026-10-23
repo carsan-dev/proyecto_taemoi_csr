@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Observable } from 'rxjs';
 
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { PreinscripcionService } from '../../features/preinscripcion/preinscripcion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { LecturasPanelService } from './lecturas-panel.service';
 
@@ -169,5 +170,42 @@ describe('LecturasPanelService (8b-D2a)', () => {
     expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
     deHoy.flush({});
     delPanel.flush({});
+  });
+
+  it('preinscripciones (8b-3h): la misma petición que PreinscripcionService.listar, con y sin filtros, y con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(PreinscripcionService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const casos: [Record<string, string>, number, number][] = [
+      [{ temporada: '', deporte: '', estado: '', q: '' }, 0, 25],
+      [{ temporada: '2025-2026', deporte: 'TAEKWONDO', estado: 'EN_LISTA_ESPERA', q: ' Ana ' }, 2, 25],
+      [{ temporada: '', deporte: '', estado: 'CANCELADA', q: '12345678Z' }, 1, 25],
+    ];
+    for (const [filtros, page, size] of casos) {
+      const deHoy = pedir(hoy.listar(filtros, page, size));
+      deHoy.flush({});
+      const delPanel = pedir(panel.preinscripciones(filtros, page, size));
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      delPanel.flush({});
+    }
+  });
+
+  it('preinscripcion y firmaPreinscripcion (8b-3h): las mismas que detalle y firma (en blob), con ERROR_HANDLED_LOCALLY', () => {
+    const hoy = TestBed.inject(PreinscripcionService);
+    const panel = TestBed.inject(LecturasPanelService);
+    const pares: [Observable<unknown>, Observable<unknown>][] = [
+      [hoy.detalle('PRE-1'), panel.preinscripcion('PRE-1')],
+      [hoy.firma('PRE-1'), panel.firmaPreinscripcion('PRE-1')],
+    ];
+    for (const [deHoyFuente, delPanelFuente] of pares) {
+      const deHoy = pedir(deHoyFuente);
+      const tipo = deHoy.request.responseType;
+      deHoy.flush(tipo === 'blob' ? new Blob() : {});
+      const delPanel = pedir(delPanelFuente);
+      expect(forma(delPanel)).toEqual(forma(deHoy));
+      expect(delPanel.request.responseType).toBe(tipo);
+      expect(delPanel.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      delPanel.flush(tipo === 'blob' ? new Blob() : {});
+    }
   });
 });

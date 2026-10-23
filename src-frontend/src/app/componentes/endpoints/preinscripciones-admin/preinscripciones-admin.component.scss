@@ -1,4 +1,7 @@
 :host { display: block; min-height: 100vh; background: #f4f5f5; }
+/* 8b-3h: embebida en Preinscripciones del panel nuevo, bajo su cabecera y sus pestañas (sin el hueco de la barra de hoy). */
+:host(.solo-plantillas) { min-height: 0; }
+:host(.solo-plantillas) .admin-pre { padding-top: 1.5rem; }
 .admin-pre { max-width: 1500px; margin: auto; padding: 7rem 2rem 3rem; color: #172126; }
 header { display: flex; align-items: end; justify-content: space-between; margin-bottom: 1.5rem; }
 header p, .kicker { margin: 0; color: #a52229; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }

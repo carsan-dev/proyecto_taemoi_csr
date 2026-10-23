@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, HostBinding, HostListener, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import Swal, { SweetAlertOptions } from 'sweetalert2';
@@ -43,7 +43,11 @@ export class PreinscripcionesAdminComponent implements OnInit, OnDestroy {
   tab:'solicitudes'|'plantillas'='solicitudes'; deportePlantilla=this.catalogo.primeraDisciplinaActiva(); plantilla:any=this.vacia(); historial:any[]=[]; cargandoPlantilla=false; procesandoPlantilla=false; dirty=false;
   get deportes():string[]{return this.catalogo.disciplinasActivas().map(d=>d.codigo);}
   constructor(private readonly api:PreinscripcionService,public readonly auth:AuthenticationService,private readonly route:ActivatedRoute,private readonly router:Router){}
-  ngOnInit(){this.tab=this.route.snapshot.queryParamMap.get('tab')==='plantillas'?'plantillas':'solicitudes';this.buscar();if(this.tab==='plantillas')this.cargarPlantilla();}
+  /** 8b-3h: la pestaña Plantillas PDF sola (sin pestañas ni solicitudes), embebida tal cual en Preinscripciones del panel nuevo. */
+  @Input() @HostBinding('class.solo-plantillas') soloPlantillas=false;
+  ngOnInit(){if(this.soloPlantillas){this.tab='plantillas';this.cargarPlantilla();return;}this.tab=this.route.snapshot.queryParamMap.get('tab')==='plantillas'?'plantillas':'solicitudes';this.buscar();if(this.tab==='plantillas')this.cargarPlantilla();}
+  /** 8b-3h: lo que hoy pregunta al cambiar de pestaña con cambios sin guardar («Cambios sin guardar»). */
+  puedeSalir(){return this.confirmarSalida();}
   ngOnDestroy(){this.liberarFirma();this.detalleSub?.unsubscribe();}
 
   buscar(reiniciarPagina=false){if(reiniciarPagina)this.pagina=0;this.cargando=true;this.api.listar(this.filtros,this.pagina,this.tamanoPagina).subscribe({next:r=>{if(!r.content.length&&this.pagina>0&&r.totalElements>0){this.pagina--;this.buscar();return;}this.items=r.content;this.pagina=r.page;this.totalElementos=r.totalElements;this.totalPaginas=r.totalPages;this.cargando=false;},error:()=>{this.cargando=false;showErrorToast('No se pudieron cargar las preinscripciones.');}});}

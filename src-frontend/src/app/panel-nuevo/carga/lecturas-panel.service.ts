@@ -207,6 +207,31 @@ export class LecturasPanelService {
     });
   }
 
+  /**
+   * Igual que `PreinscripcionService.listar` (Preinscripciones, 8b-3h): `page` y `size` y después los filtros con valor,
+   * en su orden.
+   */
+  preinscripciones(filtros: Record<string, string>, page: number, size: number): Observable<any> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    Object.entries(filtros)
+      .filter(([, v]) => v)
+      .forEach(([k, v]) => (params = params.set(k, v)));
+    return this.http.get<any>(`${environment.apiUrl}/preinscripciones`, { params, context: contextoErrorLocal() });
+  }
+
+  /** Igual que `PreinscripcionService.detalle` (las fichas compatibles de una solicitud, 8b-3h). */
+  preinscripcion(referencia: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/preinscripciones/${referencia}`, { context: contextoErrorLocal() });
+  }
+
+  /** Igual que `PreinscripcionService.firma` (en blob, con la sesión; 8b-3h). */
+  firmaPreinscripcion(referencia: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/preinscripciones/${referencia}/firma`, {
+      responseType: 'blob',
+      context: contextoErrorLocal(),
+    });
+  }
+
   /** Igual que `EndpointsService.obtenerAlumnosDeConvocatoria` (Convocatorias, 8b-3e). */
   alumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/convocatorias/${convocatoriaId}/alumnos`, {
