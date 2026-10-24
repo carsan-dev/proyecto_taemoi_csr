@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnDestroy, Output, inject } from '@angular/cor
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
@@ -18,10 +19,13 @@ import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component'
 export class CrearGrupoPanelComponent implements OnDestroy {
   private readonly endpoints = inject(EndpointsService);
   private readonly avisos = inject(AvisosService);
+  private readonly catalogo = inject(CatalogoService);
+  readonly disciplinas = this.catalogo.disciplinasActivas;
 
   @Output() readonly cerrado = new EventEmitter<void>();
   @Output() readonly creado = new EventEmitter<number>();
   readonly nombre = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] });
+  readonly deporte = new FormControl(this.disciplinas().length === 1 ? this.disciplinas()[0].codigo : '', { nonNullable: true, validators: [Validators.required] });
   enviando = false;
   errorServidor = '';
   private envio?: Subscription;
@@ -32,12 +36,17 @@ export class CrearGrupoPanelComponent implements OnDestroy {
     return this.errorServidor;
   }
 
+  get errorDeporte(): string {
+    return this.deporte.touched && this.deporte.hasError('required') ? 'Elige el deporte del grupo' : '';
+  }
+
   crear(): void {
     this.nombre.markAsTouched();
-    if (this.nombre.invalid || this.enviando) return;
+    this.deporte.markAsTouched();
+    if (this.nombre.invalid || this.deporte.invalid || this.enviando) return;
     this.enviando = true;
     this.errorServidor = '';
-    this.envio = this.endpoints.crearGrupo({ nombre: this.nombre.value }, contextoErrorLocal()).subscribe({
+    this.envio = this.endpoints.crearGrupo({ nombre: this.nombre.value, deporte: this.deporte.value }, contextoErrorLocal()).subscribe({
       next: (grupo: { id: number }) => {
         this.enviando = false;
         this.avisos.exito('Grupo creado');

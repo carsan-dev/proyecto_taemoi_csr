@@ -417,9 +417,14 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     const input = el().querySelector<HTMLInputElement>('input')!;
     input.value = 'Infantiles';
     input.dispatchEvent(new Event('input'));
+    const deporte = el().querySelector<HTMLSelectElement>('#crear-grupo-deporte')!;
+    deporte.value = 'TAEKWONDO';
+    deporte.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     boton(el(), 'Crear grupo').click();
-    http.expectOne(`${API}/grupos`).flush({ id: 81, nombre: 'Infantiles' });
+    const peticion = http.expectOne(`${API}/grupos`);
+    expect(peticion.request.body).toEqual({ nombre: 'Infantiles', deporte: 'TAEKWONDO' });
+    peticion.flush({ id: 81, nombre: 'Infantiles', deporte: 'TAEKWONDO' });
     fixture.detectChanges();
     expect(avisos().some((a) => a.texto === 'Grupo creado')).toBeTrue();
     expect(el().querySelector('pn-crear-grupo')).toBeNull();
@@ -464,11 +469,16 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     const input = el().querySelector<HTMLInputElement>('input')!;
     input.value = 'Infantiles';
     input.dispatchEvent(new Event('input'));
+    const deporte = el().querySelector<HTMLSelectElement>('#crear-grupo-deporte')!;
+    deporte.value = 'TAEKWONDO';
+    deporte.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     boton(el(), 'Crear grupo').click();
-    http.expectOne(`${API}/grupos`).flush({ id: 81, nombre: 'Infantiles' });
+    const peticion = http.expectOne(`${API}/grupos`);
+    expect(peticion.request.body).toEqual({ nombre: 'Infantiles', deporte: 'TAEKWONDO' });
+    peticion.flush({ id: 81, nombre: 'Infantiles', deporte: 'TAEKWONDO' });
     http.expectOne(`${API}/grupos/resumen`).flush([
-      ...datosGrupos(), { id: 81, nombre: 'Infantiles', deporte: null, numAlumnos: 0, turnos: [] },
+      ...datosGrupos(), { id: 81, nombre: 'Infantiles', deporte: 'TAEKWONDO', numAlumnos: 0, turnos: [] },
     ]);
     pintar();
     expect(avisos().some((a) => a.texto === 'Grupo creado')).toBeTrue();
