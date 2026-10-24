@@ -29,6 +29,8 @@
     "src/app/panel-nuevo/grupos/crear-grupo-panel.component.spec.ts",
     "src/app/panel-nuevo/grupos/turno-panel.component.spec.ts",
     "src/app/panel-nuevo/grupos/editar-grupo.component.spec.ts",
+    "src/app/panel-nuevo/grupos/gestionar-alumnos.component.spec.ts",
+    "src/app/panel-nuevo/grupos/seleccionar-alumnos-panel.component.spec.ts",
     "src/app/panel-nuevo/tesoreria/tesoreria-vista.spec.ts",
     "src/app/panel-nuevo/tesoreria/tesoreria.component.spec.ts",
     "src/app/panel-nuevo/convocatorias/convocatorias-vista.spec.ts",

@@ -1,0 +1,41 @@
+@use '../capas/capas' as c;
+
+.alumnos-grupo { box-sizing: border-box; max-width: 1280px; min-height: calc(100vh - 64px); margin: 0 auto; padding: 24px; background: var(--pn-fondo); color: var(--pn-tinta); font: var(--pn-cuerpo); }
+.alumnos-grupo > nav { color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.alumnos-grupo a { color: var(--pn-acento); text-underline-offset: 3px; }
+.alumnos-grupo__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 24px 0; }
+.alumnos-grupo h1 { margin: 0; font: var(--pn-titulo-pantalla); overflow-wrap: anywhere; }
+.alumnos-grupo__cabecera p { margin: 8px 0 0; color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
+.alumnos-grupo__primario { @include c.boton-primario; }
+.alumnos-grupo__texto { @include c.boton-texto; }
+.alumnos-grupo__busqueda { margin-bottom: 20px; max-width: 560px; }
+.alumnos-grupo__busqueda label { display: block; margin-bottom: 8px; font: var(--pn-etiqueta); }
+.alumnos-grupo__campo { display: flex; align-items: center; gap: 8px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); padding: 0 8px; }
+.alumnos-grupo__campo svg { width: 18px; height: 18px; flex: none; color: var(--pn-tinta-2); }
+.alumnos-grupo__campo input { width: 100%; min-width: 0; min-height: 42px; border: 0; background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
+.alumnos-grupo__campo button { @include c.boton-texto; }
+.alumnos-grupo__busqueda p { margin: 8px 0 0; font: var(--pn-secundario); color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
+.alumnos-grupo__lista { margin: 0; padding: 0; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); list-style: none; background: var(--pn-superficie); }
+.alumnos-grupo__fila { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; }
+.alumnos-grupo__fila + .alumnos-grupo__fila { border-top: 1px solid var(--pn-linea); }
+.alumnos-grupo__avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: var(--pn-acento-suave); font: var(--pn-etiqueta); text-decoration: none; }
+.alumnos-grupo__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.alumnos-grupo__nombre { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.alumnos-grupo__menu { position: relative; flex: none; }
+.alumnos-grupo__menu summary { @include c.boton-icono; list-style: none; }
+.alumnos-grupo__menu summary::-webkit-details-marker { display: none; }
+.alumnos-grupo__opciones { position: absolute; right: 0; top: 100%; z-index: 2; padding: 4px; border-radius: var(--pn-radio-m); background: var(--pn-superficie); box-shadow: var(--pn-sombra-menu); }
+.alumnos-grupo__opciones button { @include c.boton-texto; }
+.alumnos-grupo__paginacion { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 16px; font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
+.alumnos-grupo__vacio { padding: 32px 16px; text-align: center; }
+.alumnos-grupo__vacio h2 { margin: 0 0 16px; font: var(--pn-titulo-bloque); overflow-wrap: anywhere; }
+.alumnos-grupo__esqueleto { height: 60px; margin-bottom: 8px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
+@media (max-width: 767.98px) {
+  .alumnos-grupo { padding: 16px; }
+  .alumnos-grupo__cabecera { flex-wrap: wrap; }
+  .alumnos-grupo__primario, .alumnos-grupo__texto, .alumnos-grupo__campo input, .alumnos-grupo__campo button, .alumnos-grupo__menu summary, .alumnos-grupo__opciones button { min-height: 44px; }
+  .alumnos-grupo__menu summary { width: 44px; }
+  .alumnos-grupo__fila { gap: 8px; padding: 10px 8px; }
+  .alumnos-grupo__fila > .alumnos-grupo__texto { padding: 0 4px; }
+  .alumnos-grupo__paginacion { justify-content: space-between; gap: 4px; }
+}

@@ -8,6 +8,7 @@ import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
 import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
+import { GestionarAlumnosComponent } from './panel-nuevo/grupos/gestionar-alumnos.component';
 import { TesoreriaComponent } from './panel-nuevo/tesoreria/tesoreria.component';
 import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatorias.component';
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
@@ -34,6 +35,39 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  for (const path of ['gestionarAlumnos/:id', 'seleccionarAlumnos/:id']) {
+    it(path + ' (3m-4): lazy guarded screen preserves management roles, resolver and legacy fallback', async () => {
+      const [nueva, hoy] = routes.filter((route) => route.path === path);
+      expect(nueva.component).toBeUndefined();
+      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+      expect(nueva.canActivate).toEqual([roleGuard]);
+      expect(nueva.canActivate).toEqual(hoy.canActivate!);
+      expect(nueva.resolve).toEqual(hoy.resolve!);
+      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+      expect(nueva.data).toEqual(path.startsWith('seleccionar') ? { ...hoy.data, seleccionarAlumnos: true } : hoy.data!);
+      expect(await nueva.loadComponent!()).toBe(GestionarAlumnosComponent);
+      expect(hoy.canMatch).toBeUndefined();
+      expect(await hoy.loadComponent!()).not.toBe(GestionarAlumnosComponent);
+    });
+    for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
+      it(path + ` (3m-4): lazy route follows account design settings ${activo}/${permitido}`, async () => {
+        @Component({ standalone: true, template: '<p>legacy</p>' })
+        class LegacyScreen {}
+        @Component({ standalone: true, template: '<p>new</p>' })
+        class NewScreen {}
+        const nueva = routes.find((route) => route.path === path && route.canMatch)!;
+        const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
+        TestBed.configureTestingModule({ providers: [
+          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: LegacyScreen }]),
+          { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
+          { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        ] });
+        const harness = await RouterTestingHarness.create();
+        await harness.navigateByUrl('/' + path.replace(':id', '7'), activo ? NewScreen : LegacyScreen);
+        expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+      });
+    }
+  }
   for (const [path, flag] of [['turnosCrear', 'crearTurno'], ['turnosEditar/:id', 'editarTurno']]) {
     it(path + ' (3m-3): abre Grupos con los mismos roles, resolver y fallback', async () => {
       const [nueva, hoy] = routes.filter((route) => route.path === path);
