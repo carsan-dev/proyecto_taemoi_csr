@@ -280,7 +280,7 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     await esperar();
     const d = dialogo()!;
     expect(texto(d.querySelector('.lote__cargos'))).toBe(
-      'No se pudieron leer sus pagos y cargos. Se borran igualmente con el alumno.'
+      'No se pudieron leer sus pagos y cargos. Si tiene pagos, no se elimina y verás el motivo.'
     );
     boton(d, 'Eliminar definitivamente').click();
     await esperar();
@@ -330,7 +330,8 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     ]);
     await esperar();
     expect(texto(d.querySelector('.lote__cargos')).replace(/[  ]/g, ' ')).toBe(
-      'Tiene 4 cargos: 3 pagados (90,00 €) y 1 pendiente (30,00 €). Se conservan.'
+      'Tiene 4 cargos: 3 pagados (90,00 €) y 1 pendiente (30,00 €). Lo pagado se conserva. ' +
+        'Tiene 1 cargo sin pagar (30,00 €): se cancela.'
     );
     boton(d, 'Eliminar anonimizando').click();
     await esperar();
@@ -375,17 +376,17 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     );
     expect(document.activeElement).toBe(boton(d, 'Cancelar'));
     http.expectOne((r) => r.url === `${API}/alumnos/cargos-resumen`).flush([
-      { alumnoId: 1, cargos: 2, pagados: 2, pendientes: 0, importePagado: 60, importePendiente: 0, pagos: 2 },
+      { alumnoId: 1, cargos: 3, pagados: 2, pendientes: 1, importePagado: 60, importePendiente: 30, pagos: 2 },
       { alumnoId: 2, cargos: 1, pagados: 0, pendientes: 1, importePagado: 0, importePendiente: 20, pagos: 0 },
     ]);
     await esperar();
-    expect(Array.from(d.querySelectorAll('.lote__dato')).map(texto)).toEqual([
-      'se anonimiza (tiene pagos) · 2 cargos',
+    expect(Array.from(d.querySelectorAll('.lote__dato')).map((n) => texto(n).replace(/[  ]/g, ' '))).toEqual([
+      'se anonimiza (tiene pagos) · 3 cargos · 1 sin pagar (30,00 €): se cancela',
       'se elimina · 1 cargo',
     ]);
     expect(texto(d.querySelector('.lote__cargos')).replace(/[  ]/g, ' ')).toBe(
-      'Entre los 2 tienen 3 cargos: 2 pagados (60,00 €) y 1 pendiente (20,00 €). ' +
-        'Los de los alumnos con pagos se conservan; los demás se borran con ellos.'
+      'Entre los 2 tienen 4 cargos: 2 pagados (60,00 €) y 2 pendientes (50,00 €). ' +
+        'De los alumnos con pagos, lo pagado se conserva y lo sin pagar se cancela; los demás se borran con ellos.'
     );
     expect(Array.from(d.querySelectorAll('.pn-dialogo__accion')).map(texto)).toEqual(['Eliminar 2 alumnos']);
     boton(d, 'Eliminar 2 alumnos').click();

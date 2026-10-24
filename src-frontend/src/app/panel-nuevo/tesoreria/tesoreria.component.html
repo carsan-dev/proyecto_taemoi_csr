@@ -189,7 +189,7 @@
           @for (m of movimientos; track m.productoAlumnoId) {
           <li class="tesoreria__fila" [class.tesoreria__fila--pendiente]="!m.pagado" [attr.data-movimiento]="m.productoAlumnoId">
             <div class="tesoreria__quien">
-              @if (m.alumnoId) {
+              @if (m.alumnoId && !m.alumnoEliminado) {
               <a class="tesoreria__alumno" [routerLink]="['/alumnosEditar', m.alumnoId]">{{ m.alumnoNombreCompleto }}</a>
               } @else {
               <span class="tesoreria__alumno">{{ m.alumnoNombreCompleto }}</span>

@@ -1,9 +1,11 @@
 import {
   accionLote,
+  avisoSinPagar,
   destinoAlumno,
   exitoLote,
   filaBaja,
   fraseCargos,
+  sinPagarDe,
   leerEstado,
   lineaDatos,
   mensajeAnonimizar,
@@ -104,9 +106,26 @@ describe('bajas-alumnos-vista (8b-3l)', () => {
     expect(mensajeLoteMixto(1, 3)).toContain('Los que no tienen pagos se borran para siempre.');
     expect(destinoAlumno(true)).toBe('se anonimiza (tiene pagos)');
     expect(destinoAlumno(false)).toBe('se elimina');
+    // Decisión 287 (ronda 2): al anonimizar, lo pagado se conserva y lo sin pagar se cancela.
     expect(fraseCargos([base], 1, 'conservan').replace(/[  ]/g, ' ')).toBe(
-      'Tiene 2 cargos: 1 pagado (30,00 €) y 1 pendiente (20,00 €). Se conservan.'
+      'Tiene 2 cargos: 1 pagado (30,00 €) y 1 pendiente (20,00 €). Lo pagado se conserva. ' +
+        'Tiene 1 cargo sin pagar (20,00 €): se cancela.'
     );
+    expect(
+      fraseCargos([{ ...base, pendientes: 0, importePendiente: 0, cargos: 1 }], 1, 'conservan').replace(/[  ]/g, ' ')
+    ).toBe('Tiene 1 cargo: 1 pagado (30,00 €). Se conserva.');
+    expect(fraseCargos([base, base], 2, 'conservan').replace(/[  ]/g, ' ')).toBe(
+      'Entre los 2 tienen 4 cargos: 2 pagados (60,00 €) y 2 pendientes (40,00 €). Lo pagado se conserva; lo sin pagar ' +
+        'se cancela.'
+    );
+    expect(avisoSinPagar(3, 90).replace(/[  ]/g, ' ')).toBe('Tiene 3 cargos sin pagar (90,00 €): se cancelan.');
+    expect(avisoSinPagar(1, 30).replace(/[  ]/g, ' ')).toBe('Tiene 1 cargo sin pagar (30,00 €): se cancela.');
+    expect(avisoSinPagar(0, 0)).toBe('');
+    expect(sinPagarDe({ ...base, pendientes: 3, importePendiente: 90 }).replace(/[  ]/g, ' ')).toBe(
+      '3 sin pagar (90,00 €): se cancelan'
+    );
+    expect(sinPagarDe({ ...base, pendientes: 0 })).toBe('');
+    expect(sinPagarDe(undefined)).toBe('');
     expect(fraseCargos([base], 1).endsWith('Se borran con el alumno.')).toBeTrue();
     expect(exitoLote('eliminar', 1, 1)).toBe('El alumno ha sido eliminado anonimizando. Sus pagos siguen en Tesorería.');
     expect(exitoLote('eliminar', 2, 1)).toBe('Los alumnos seleccionados han sido eliminados correctamente.');

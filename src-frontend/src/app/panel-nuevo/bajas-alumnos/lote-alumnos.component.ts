@@ -25,6 +25,7 @@ import {
   destinoAlumno,
   fraseCargos,
   mensajeAnonimizar,
+  sinPagarDe,
   mensajeLote,
   mensajeLoteMixto,
   motivoFallo,
@@ -187,7 +188,10 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
       case 'cargando':
         return 'Comprobando sus pagos y cargos…';
       case 'error':
-        return 'No se pudieron leer sus pagos y cargos. Se borran igualmente con el alumno.';
+        // 8b-3l bis: con pagos, el servidor no lo borra (409) y el resumen enseña su motivo.
+        return this.alumnos.length === 1
+          ? 'No se pudieron leer sus pagos y cargos. Si tiene pagos, no se elimina y verás el motivo.'
+          : 'No se pudieron leer sus pagos y cargos. Los que tengan pagos no se eliminan y verás el motivo.';
       case 'listo': {
         const anonimizados = this.cuantosAnonimiza;
         const destino = anonimizados === 0 ? 'borran' : anonimizados === this.alumnos.length ? 'conservan' : 'mixto';
@@ -202,10 +206,13 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
     if (this.alumnos.length < 2) {
       return '';
     }
-    const cargos = this.estadoCargos === 'listo' ? cargosDe(this.resumenes.find((r) => r.alumnoId === id)) : '';
+    const resumen = this.estadoCargos === 'listo' ? this.resumenes.find((r) => r.alumnoId === id) : undefined;
+    const cargos = cargosDe(resumen);
     // 8b-3l bis: al eliminar varios, qué le pasa a cada uno («se elimina» o «se anonimiza (tiene pagos)»).
     const destino = this.tipo === 'eliminar' && this.anonimizar ? destinoAlumno(this.anonimiza(id)) : '';
-    return [destino, cargos].filter(Boolean).join(' · ');
+    // Decisión 287 (ronda 2): al que se anonimiza, sus cargos sin pagar se cancelan.
+    const sinPagar = this.anonimiza(id) ? sinPagarDe(resumen) : '';
+    return [destino, cargos, sinPagar].filter(Boolean).join(' · ');
   }
 
   estadoDe(id: number): EstadoAlumno {

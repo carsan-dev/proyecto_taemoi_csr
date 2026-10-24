@@ -183,7 +183,7 @@
               @for (movimiento of movimientosFiltrados; track trackByMovimientoId($index, movimiento)) {
                 <tr [class.fila-pendiente]="!movimiento.pagado">
                   <td>
-                    @if (movimiento.alumnoId) {
+                    @if (movimiento.alumnoId && !movimiento.alumnoEliminado) {
                       <a [routerLink]="['/alumnosEditar', movimiento.alumnoId]" class="alumno-link">
                         {{ movimiento.alumnoNombreCompleto }}
                       </a>

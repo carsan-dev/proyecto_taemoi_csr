@@ -134,6 +134,27 @@ export function cargosDe(r: ResumenCargos | undefined): string {
 }
 
 /**
+ * Decisión 287 (ronda 2): al eliminar anonimizando, sus cargos sin pagar se cancelan. «Tiene 3 cargos sin pagar
+ * (90,00 €): se cancelan.»; vacío sin ninguno.
+ */
+export function avisoSinPagar(pendientes: number, importe: number): string {
+  if (!pendientes) {
+    return '';
+  }
+  const verbo = pendientes === 1 ? 'se cancela' : 'se cancelan';
+  return `Tiene ${plural(pendientes, 'cargo', 'cargos')} sin pagar (${eur(Number(importe || 0))}): ${verbo}.`;
+}
+
+/** El aviso por alumno en la lista de varios: «3 sin pagar (90,00 €): se cancelan»; vacío sin ninguno. */
+export function sinPagarDe(r: ResumenCargos | undefined): string {
+  if (!r || !r.pendientes) {
+    return '';
+  }
+  const verbo = r.pendientes === 1 ? 'se cancela' : 'se cancelan';
+  return `${numero(r.pendientes)} sin pagar (${eur(Number(r.importePendiente || 0))}): ${verbo}`;
+}
+
+/**
  * P-3: la línea de pagos y cargos del diálogo destructivo. Uno: «Tiene 14 cargos: 12 pagados (360,00 €) y 2 pendientes
  * (60,00 €). Se borran con el alumno.»; varios: «Entre los 3 tienen…». Sin cargos: «No tiene pagos ni cargos.».
  */
@@ -165,12 +186,17 @@ export function fraseCargos(
   }
   const quien = uno ? 'Tiene' : `Entre los ${numero(numAlumnos)} tienen`;
   const inicio = `${quien} ${plural(suma.cargos, 'cargo', 'cargos')}: ${partes.join(' y ')}.`;
-  // 8b-3l bis: los cargos de un alumno con pagos se conservan (se elimina anonimizando).
+  // 8b-3l bis: al eliminar anonimizando, lo pagado se conserva; decisión 287 (ronda 2): lo sin pagar se cancela.
   if (destino === 'conservan') {
-    return `${inicio} ${suma.cargos === 1 ? 'Se conserva' : 'Se conservan'}.`;
+    if (suma.pendientes === 0) {
+      return `${inicio} ${suma.cargos === 1 ? 'Se conserva' : 'Se conservan'}.`;
+    }
+    return uno
+      ? `${inicio} Lo pagado se conserva. ${avisoSinPagar(suma.pendientes, suma.importePendiente)}`
+      : `${inicio} Lo pagado se conserva; lo sin pagar se cancela.`;
   }
   if (destino === 'mixto') {
-    return `${inicio} Los de los alumnos con pagos se conservan; los demás se borran con ellos.`;
+    return `${inicio} De los alumnos con pagos, lo pagado se conserva y lo sin pagar se cancela; los demás se borran con ellos.`;
   }
   const verbo = suma.cargos === 1 ? 'Se borra' : 'Se borran';
   const con = uno ? 'con el alumno' : 'con ellos';
