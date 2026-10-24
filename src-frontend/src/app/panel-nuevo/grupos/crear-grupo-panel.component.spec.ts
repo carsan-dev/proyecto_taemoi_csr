@@ -2,6 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
@@ -9,6 +10,7 @@ import { CatalogoDisciplina } from '../../features/catalogo/catalogo.models';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { errorInterceptor } from '../../core/interceptors/error.interceptor';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { CrearGrupoPanelComponent } from './crear-grupo-panel.component';
@@ -29,7 +31,7 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
     spyOn(Swal, 'fire');
     await TestBed.configureTestingModule({
       imports: [CrearGrupoPanelComponent],
-      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }],
+      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }, { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     cargarPanel();
