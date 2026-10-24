@@ -14,6 +14,7 @@ import {
   leerPrecio,
   paginaValida,
   textoCancelacion,
+  TEXTOS_PRODUCTOS_ALUMNO,
   textoFallosGuardado,
   tieneCobroActivo,
 } from './productos-alumno-vista';
@@ -195,5 +196,12 @@ describe('productos-alumno-vista (8b-3n)', () => {
   it('aviso de fallos del guardado (decisión 296)', () => {
     expect(textoFallosGuardado(1)).toBe('1 cambio no se pudo guardar');
     expect(textoFallosGuardado(3)).toBe('3 cambios no se pudieron guardar');
+  });
+
+  it('ronda 3: errores de fila de un cargo cobrado o cancelado mientras tanto', () => {
+    expect(TEXTOS_PRODUCTOS_ALUMNO.errorCobradoPrecioCantidad).toBe(
+      'Este cargo ya está cobrado: revierte el cobro para cambiar precio o cantidad.'
+    );
+    expect(TEXTOS_PRODUCTOS_ALUMNO.errorCanceladoDescartado).toBe('Este cargo se ha cancelado: sus cambios se han descartado.');
   });
 });

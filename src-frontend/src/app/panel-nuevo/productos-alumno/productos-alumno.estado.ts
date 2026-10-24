@@ -58,6 +58,11 @@ export interface AsignacionNueva {
   deporte: string | null;
   /** El error del servidor del último guardado (decisión 296). */
   error: string | null;
+  /**
+   * Ronda 3: fecha de asignación que se enseña mientras no se guarda, «dd/mm/aaaa» del día local en que se añadió a la
+   * lista. Solo para la vista: no se envía (la fecha real la pone el servidor al crear el cargo, decisión 285).
+   */
+  fechaPrevista: string;
 }
 
 /** Todo lo que la plantilla necesita de un cargo, ya calculado. */
@@ -91,6 +96,11 @@ export interface FilaCargo {
   errorServidor: string | null;
   /** Hay una acción en vuelo sobre este cargo (cobrar, cancelar, reactivar…). */
   ocupada: boolean;
+  /**
+   * Ronda 3: el `PUT` del cobro de este cargo está en vuelo («Cobrando…»). No con el diálogo de cobro abierto, ni al
+   * cancelar, reactivar o releer (para eso, `ocupada`).
+   */
+  cobrando: boolean;
   /** El cargo está pendiente: lleva «Cobrar» (habilitado o no según `puedeCobrar`). */
   muestraCobrar: boolean;
   puedeCobrar: boolean;
@@ -105,6 +115,41 @@ export interface FilaCargo {
 }
 
 export type EstadoCarga = 'cargando' | 'listo' | 'error';
+
+/** Campos de la edición y su clave en el cuerpo del `PUT`. */
+const CAMPOS_CUERPO: ReadonlyArray<[keyof EdicionCargo, keyof CambiosCargo]> = [
+  ['fecha', 'fechaAsignacion'],
+  ['cantidad', 'cantidad'],
+  ['precio', 'precio'],
+  ['notas', 'notas'],
+];
+
+/**
+ * El conjunto que `CobroCargoService` llena con los cargos cuyo `PUT` de cobro está en vuelo (lo añade al lanzar la
+ * llamada y lo quita al acabar): avisa de cada cambio, para que la fila sepa que está «Cobrando…».
+ */
+class ConjuntoAvisado extends Set<number> {
+  private readonly alCambiar?: () => void;
+
+  constructor(alCambiar: () => void) {
+    super();
+    this.alCambiar = alCambiar;
+  }
+
+  override add(id: number): this {
+    super.add(id);
+    this.alCambiar?.();
+    return this;
+  }
+
+  override delete(id: number): boolean {
+    const habia = super.delete(id);
+    if (habia) {
+      this.alCambiar?.();
+    }
+    return habia;
+  }
+}
 
 type Resultado<V> = { ok: true; valor: V } | { ok: false };
 
@@ -138,7 +183,23 @@ export class ProductosAlumnoEstado {
   private refresco?: Subscription;
   private readonly suscripciones = new Subscription();
   /** Los cargos con un cobro en vuelo, para `CobroCargoService`. */
-  private readonly cobrando = new Set<number>();
+  private readonly cobrando = new ConjuntoAvisado(() => this.avisarCobros());
+  /** Los cargos dentro de `cobrar()` (del clic hasta que acaba): solo ellos cuentan como «Cobrando…», no «Deshacer». */
+  private readonly enCobro = new Set<number>();
+
+  /*
+   * Ronda 3 (defecto 1): una relectura que empezó antes de que acabara la última mutación (guardar, cancelar,
+   * reactivar, cobrar) puede traer datos viejos y pisar lo que respondió el servidor (un precio guardado, una
+   * cancelación…). Se marcan en un mismo reloj el inicio de cada relectura y el final de cada mutación: la relectura
+   * solo se aplica si no hay mutaciones en vuelo y ninguna acabó después de que empezara; si no, se vuelve a leer al
+   * acabar la última.
+   */
+  private reloj = 0;
+  private finUltimaMutacion = 0;
+  private mutacionesEnVuelo = 0;
+  private releerAlAcabar = false;
+  /** Cargos que siguen ocupados hasta que se aplique una relectura (tras cobrar), aunque esta se repita. */
+  private readonly ocupadosHastaRelectura = new Set<number>();
 
   // ------------------------------------------------------------------ estado de lectura
 
@@ -162,6 +223,8 @@ export class ProductosAlumnoEstado {
   readonly erroresServidor = signal<ReadonlyMap<number, string>>(new Map());
   readonly guardando = signal(false);
   readonly ocupados = signal<ReadonlySet<number>>(new Set());
+  /** Cargos con el `PUT` de su cobro en vuelo (`FilaCargo.cobrando`). */
+  readonly cobrosEnVuelo = signal<ReadonlySet<number>>(new Set());
   readonly pagina = signal(1);
 
   // ------------------------------------------------------------------ bloque «Asignar producto»
@@ -203,12 +266,13 @@ export class ProductosAlumnoEstado {
     const borrados = this.borrados();
     const errores = this.erroresServidor();
     const ocupados = this.ocupados();
+    const cobros = this.cobrosEnVuelo();
     const guardando = this.guardando();
     const propietario = this.esPropietario();
     const roles = this.rolesCargados();
     return this.cargos().map((cargo) =>
       this.fila(cargo, ediciones.get(cargo.id), borrados.has(cargo.id), errores.get(cargo.id) ?? null,
-        ocupados.has(cargo.id), guardando, propietario, roles)
+        ocupados.has(cargo.id), cobros.has(cargo.id), guardando, propietario, roles)
     );
   });
   readonly totalCargos = computed(() => this.cargos().length);
@@ -271,6 +335,9 @@ export class ProductosAlumnoEstado {
     this.carga?.unsubscribe();
     this.lote?.unsubscribe();
     this.refresco?.unsubscribe();
+    this.mutacionesEnVuelo = 0;
+    this.releerAlAcabar = false;
+    this.ocupadosHastaRelectura.clear();
     this.limpiarPendientes();
     this.guardando.set(false);
     this.ocupados.set(new Set());
@@ -324,54 +391,105 @@ export class ProductosAlumnoEstado {
 
   /**
    * Vuelve a leer los cargos y los mezcla con lo pendiente: lo editado, marcado y nuevo se conserva (decisión 296);
-   * solo cae lo de cargos que ya no existen. `ocupar`: cargo que sigue ocupado hasta que llegue la lectura.
+   * solo cae lo de cargos que ya no existen. `ocupar`: cargo que sigue ocupado hasta que se aplique una relectura.
+   * Ronda 3: una lectura que empezó antes de que acabara la última mutación, o que llega con una en vuelo, no se
+   * aplica y se repite (al momento, o al acabar la mutación en vuelo).
    */
   private refrescar(ocupar?: number): void {
     const revision = this.revision;
     const id = this.alumnoId();
     if (ocupar !== undefined) {
+      this.ocupadosHastaRelectura.add(ocupar);
       this.ocupar(ocupar, true);
     }
+    this.releerAlAcabar = false;
+    const inicio = ++this.reloj;
     this.refresco?.unsubscribe();
-    this.refresco = this.api
-      .cargos(id)
-      .pipe(
-        finalize(() => {
-          if (ocupar !== undefined && revision === this.revision) {
-            this.ocupar(ocupar, false);
+    this.refresco = this.api.cargos(id).subscribe({
+      next: (lista) => {
+        if (revision !== this.revision) {
+          return;
+        }
+        if (this.mutacionesEnVuelo > 0 || this.finUltimaMutacion > inicio) {
+          this.releerAlAcabar = true;
+          if (this.mutacionesEnVuelo === 0) {
+            this.refrescar();
           }
-        })
-      )
-      .subscribe({
-        next: (lista) => {
-          if (revision !== this.revision) {
-            return;
-          }
-          this.cargos.set(this.ordenar(lista));
-          this.depurarPendientes();
-        },
-        error: () => {
-          if (revision === this.revision) {
-            this.avisos.error(T.errorCargos);
-          }
-        },
-      });
+          return;
+        }
+        this.cargos.set(this.ordenar(lista));
+        this.liberarTrasRelectura();
+        this.depurarPendientes();
+      },
+      error: () => {
+        if (revision === this.revision) {
+          this.liberarTrasRelectura();
+          this.avisos.error(T.errorCargos);
+        }
+      },
+    });
   }
 
-  /** Quita lo pendiente de cargos que ya no están y lo editado que ya coincide con lo guardado. */
+  /** Deja libres los cargos que esperaban una relectura (tras cobrar). */
+  private liberarTrasRelectura(): void {
+    for (const id of this.ocupadosHastaRelectura) {
+      this.ocupar(id, false);
+    }
+    this.ocupadosHastaRelectura.clear();
+  }
+
+  /** Empieza una mutación (guardar, cancelar, reactivar): ninguna relectura se aplica hasta que acabe. */
+  private empezarMutacion(): void {
+    this.mutacionesEnVuelo++;
+  }
+
+  /** Acaba una mutación: si una relectura se descartó por ella (o `releer`), se vuelve a leer al acabar la última. */
+  private acabarMutacion(releer = false): void {
+    this.mutacionesEnVuelo = Math.max(0, this.mutacionesEnVuelo - 1);
+    this.finUltimaMutacion = ++this.reloj;
+    if (releer) {
+      this.releerAlAcabar = true;
+    }
+    if (this.mutacionesEnVuelo === 0 && this.releerAlAcabar) {
+      this.refrescar();
+    }
+  }
+
+  /** `CobroCargoService` lanzó o acabó el `PUT` de un cobro: solo cuentan los de `cobrar()` (no «Deshacer»). */
+  private avisarCobros(): void {
+    this.cobrosEnVuelo.set(new Set([...this.cobrando].filter((id) => this.enCobro.has(id))));
+  }
+
+  /**
+   * Quita lo pendiente de cargos que ya no están y lo editado que ya coincide con lo guardado. Ronda 3 (defecto 3): de
+   * un cargo que la relectura trae cancelado se descartan fecha, cantidad y precio (el servidor los rechazaría siempre)
+   * y se conservan las notas; la fila lo dice con `errorCanceladoDescartado`.
+   */
   private depurarPendientes(): void {
     const porId = new Map(this.cargos().map((c) => [c.id, c]));
+    const errores = new Map([...this.erroresServidor()].filter(([id]) => porId.has(id)));
     const ediciones = new Map<number, EdicionCargo>();
     for (const [id, edicion] of this.ediciones()) {
       const cargo = porId.get(id);
-      const limpia = cargo ? this.normalizar(cargo, edicion) : null;
+      if (!cargo) {
+        continue;
+      }
+      let conservada = edicion;
+      if (
+        estaCancelado(cargo) &&
+        (edicion.fecha !== undefined || edicion.cantidad !== undefined || edicion.precio !== undefined)
+      ) {
+        conservada = edicion.notas !== undefined ? { notas: edicion.notas } : {};
+        errores.set(id, T.errorCanceladoDescartado);
+      }
+      const limpia = this.normalizar(cargo, conservada);
       if (limpia) {
         ediciones.set(id, limpia);
       }
     }
     this.ediciones.set(ediciones);
     this.borrados.set(new Set([...this.borrados()].filter((id) => porId.has(id))));
-    this.erroresServidor.set(new Map([...this.erroresServidor()].filter(([id]) => porId.has(id))));
+    this.erroresServidor.set(errores);
     this.irAPagina(this.pagina());
   }
 
@@ -401,6 +519,7 @@ export class ProductosAlumnoEstado {
     marcada: boolean,
     errorServidor: string | null,
     ocupada: boolean,
+    cobrando: boolean,
     guardando: boolean,
     propietario: boolean,
     rolesCargados: boolean
@@ -440,6 +559,7 @@ export class ProductosAlumnoEstado {
       },
       errorServidor,
       ocupada,
+      cobrando,
       muestraCobrar: pendiente,
       puedeCobrar: pendiente && !marcada && !modificada && libre,
       notaCobrar: pendiente && modificada ? T.notaCobrarConCambios : null,
@@ -554,8 +674,13 @@ export class ProductosAlumnoEstado {
 
   // ------------------------------------------------------------------ asignar
 
+  /** Ronda 3 (defecto 4): si la búsqueda deja fuera el producto elegido, se quita la elección (y su deporte). */
   buscarProducto(texto: string): void {
     this.busqueda.set(texto ?? '');
+    const elegido = this.productoElegido();
+    if (elegido !== null && !this.opcionesProducto().some((p) => p.id === elegido)) {
+      this.elegirProducto(null);
+    }
   }
 
   elegirProducto(productoId: number | null): void {
@@ -588,7 +713,7 @@ export class ProductosAlumnoEstado {
       return false;
     }
     this.nuevas.set([
-      { clave: this.siguienteClave++, producto, deporte: matricula ? deporte : null, error: null },
+      { clave: this.siguienteClave++, producto, deporte: matricula ? deporte : null, error: null, fechaPrevista: fecha(new Date()) },
       ...this.nuevas(),
     ]);
     this.productoElegido.set(null);
@@ -660,6 +785,23 @@ export class ProductosAlumnoEstado {
   }
 
   /**
+   * Ronda 3 (defecto 2): por qué no se envía el `PUT` de una fila, o nulo si se envía. Nunca va un cuerpo vacío ni uno
+   * que deje fuera un campo editado (el servidor respondería bien y el cambio se perdería sin aviso): un cargo que se
+   * cobró mientras tanto con precio o cantidad pendientes da `errorCobradoPrecioCantidad`; cualquier otro hueco, el
+   * error genérico. La fila conserva su cambio y cuenta como fallo.
+   */
+  private rechazoActualizacion(cargo: ProductoAlumnoDTO, edicion: EdicionCargo, cuerpo: CambiosCargo): string | null {
+    const faltan = CAMPOS_CUERPO.filter(([campo, clave]) => edicion[campo] !== undefined && !(clave in cuerpo)).map(
+      ([campo]) => campo
+    );
+    if (faltan.length === 0 && Object.keys(cuerpo).length > 0) {
+      return null;
+    }
+    const precioCantidad = faltan.includes('precio') || faltan.includes('cantidad');
+    return precioCantidad && !estaCancelado(cargo) && tieneCobroActivo(cargo) ? T.errorCobradoPrecioCantidad : T.errorGuardarCambio;
+  }
+
+  /**
    * «Guardar cambios», en secuencia: `PUT` de los modificados, `DELETE` de los marcados y `POST` de las asignaciones.
    * Sigue tras cada fallo. Decisión 296: lo que falla conserva su cambio, su punto y el error del servidor en la fila,
    * con el aviso «N cambios no se pudieron guardar»; lo que sale bien se aplica. Volver a guardar reintenta.
@@ -675,15 +817,19 @@ export class ProductosAlumnoEstado {
     const marcados = this.cargos().filter((c) => borrados.has(c.id));
     const nuevas = [...this.nuevas()].reverse();
     let fallos = 0;
+    // Ronda 3 (defecto 1): la relectura en curso es de antes de este guardado; se corta y se relee al acabar.
+    this.refresco?.unsubscribe();
+    this.empezarMutacion();
     this.guardando.set(true);
     this.erroresServidor.set(new Map());
     this.nuevas.set(this.nuevas().map((n) => ({ ...n, error: null })));
 
     const vigente = () => revision === this.revision;
-    const fallo = (id: number, error: unknown) => {
+    const fallo = (id: number, error: unknown, texto?: string) => {
       fallos++;
       if (vigente()) {
-        this.erroresServidor.set(new Map(this.erroresServidor()).set(id, mensajeDeError(error) ?? T.errorGuardarCambio));
+        const mensaje = texto ?? mensajeDeError(error) ?? T.errorGuardarCambio;
+        this.erroresServidor.set(new Map(this.erroresServidor()).set(id, mensaje));
       }
       return EMPTY;
     };
@@ -692,7 +838,13 @@ export class ProductosAlumnoEstado {
       ...modificados.map((f) =>
         defer(() => {
           const edicion = this.ediciones().get(f.id);
-          return edicion ? this.api.actualizar(f.id, this.cuerpoActualizacion(f.cargo, edicion)) : EMPTY;
+          const cargo = this.cargoDe(f.id);
+          if (!edicion || !cargo) {
+            return EMPTY;
+          }
+          const cuerpo = this.cuerpoActualizacion(cargo, edicion);
+          const rechazo = this.rechazoActualizacion(cargo, edicion, cuerpo);
+          return rechazo ? fallo(f.id, null, rechazo) : this.api.actualizar(f.id, cuerpo);
         }).pipe(
           tap((actualizado) => {
             if (!vigente()) {
@@ -757,7 +909,7 @@ export class ProductosAlumnoEstado {
             this.avisos.error(textoFallosGuardado(fallos));
           }
           this.irAPagina(this.pagina());
-          this.refrescar();
+          this.acabarMutacion(true);
         })
       )
       .subscribe();
@@ -809,6 +961,7 @@ export class ProductosAlumnoEstado {
     // Tras cobrar, la relectura deja libre la fila al llegar (no antes: sin ella, la fila seguiría «Pendiente»).
     let releyendo = false;
     this.ocupar(id, true);
+    this.enCobro.add(id);
     try {
       await this.cobro.cobrar(
         {
@@ -820,12 +973,16 @@ export class ProductosAlumnoEstado {
         this.cobrando,
         () => {
           if (revision === this.revision && !this.destruido) {
+            // Ronda 3 (defecto 1): el cobro (o su «Deshacer») acaba de cambiar el cargo; una relectura anterior ya no vale.
+            this.finUltimaMutacion = ++this.reloj;
             releyendo = true;
             this.refrescar(id);
           }
         }
       );
     } finally {
+      this.enCobro.delete(id);
+      this.avisarCobros();
       if (revision === this.revision && !releyendo) {
         this.ocupar(id, false);
       }
@@ -872,6 +1029,7 @@ export class ProductosAlumnoEstado {
       return;
     }
     this.ocupar(id, true);
+    this.empezarMutacion();
     this.suscripciones.add(
       this.api
         .cancelar(id, motivo)
@@ -879,6 +1037,7 @@ export class ProductosAlumnoEstado {
           finalize(() => {
             if (revision === this.revision) {
               this.ocupar(id, false);
+              this.acabarMutacion();
             }
           })
         )
@@ -906,6 +1065,7 @@ export class ProductosAlumnoEstado {
       return;
     }
     const revision = this.revision;
+    let enviado = false;
     const r = await this.confirmacion.confirmar<ProductoAlumnoDTO>({
       titulo: 'Reactivar cargo',
       mensaje: `«${fila.concepto}» vuelve a estar pendiente de pago.`,
@@ -914,6 +1074,10 @@ export class ProductosAlumnoEstado {
       nombre: 'reactivar-cargo',
       ejecutar: () => {
         this.ocupar(id, true);
+        if (revision === this.revision && !enviado) {
+          enviado = true;
+          this.empezarMutacion();
+        }
         return this.api.reactivar(id);
       },
     });
@@ -921,14 +1085,19 @@ export class ProductosAlumnoEstado {
       return;
     }
     this.ocupar(id, false);
-    if (!r.confirmado) {
-      return;
-    }
-    if (r.error !== undefined) {
-      this.avisos.error(mensajeDeError(r.error) ?? 'No se pudo reactivar el cargo');
+    if (!r.confirmado || r.error !== undefined) {
+      if (enviado) {
+        this.acabarMutacion();
+      }
+      if (r.confirmado) {
+        this.avisos.error(mensajeDeError(r.error) ?? 'No se pudo reactivar el cargo');
+      }
       return;
     }
     this.aplicarAccion(r.respuesta, id);
+    if (enviado) {
+      this.acabarMutacion();
+    }
     this.avisos.exito(T.reactivado);
   }
 

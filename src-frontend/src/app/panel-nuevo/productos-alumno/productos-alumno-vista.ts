@@ -31,6 +31,13 @@ export const TEXTOS_PRODUCTOS_ALUMNO = {
   reactivado: 'Cargo reactivado',
   notaPrecioConCobro: 'Revierte el cobro para cambiar precio o cantidad',
   notaCobrarConCambios: 'Guarda los cambios antes de cobrar',
+  /**
+   * Ronda 3: error de la fila al guardar un precio o una cantidad de un cargo que, mientras tanto, se cobró (lo trajo
+   * una relectura). No se envía nada; el cambio se conserva y cuenta como fallo.
+   */
+  errorCobradoPrecioCantidad: 'Este cargo ya está cobrado: revierte el cobro para cambiar precio o cantidad.',
+  /** Ronda 3: una relectura trae el cargo cancelado; sus cambios (salvo las notas) se descartan. */
+  errorCanceladoDescartado: 'Este cargo se ha cancelado: sus cambios se han descartado.',
 } as const;
 
 /** El cuerpo de «¿Salir sin guardar?»: «Tienes N cambios sin guardar. Si sales, se pierden.» (singular con 1). */

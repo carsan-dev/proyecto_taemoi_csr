@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
@@ -842,6 +843,315 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       respuestas.push({ confirmado: false });
       expect(await estado.confirmarSalida()).toBeFalse();
       expect(opciones[0].mensaje).toBe('Tienes 3 cambios sin guardar. Si sales, se pierden.');
+    });
+  });
+
+  // ------------------------------------------------------------------ ronda 3
+
+  describe('ronda 3: relecturas, cargos que cambian por fuera y guardados', () => {
+    const CANCELADO = { canceladoEn: [2026, 10, 24, 10, 0], motivoCancelacion: 'Baja' } as Partial<ProductoAlumnoDTO>;
+
+    /** Cobra `id` (diálogo confirmado) y responde la relectura con `lista`. */
+    async function cobrarYReleer(id: number, lista: ProductoAlumnoDTO[]): Promise<void> {
+      respuestas.push({ confirmado: true, valor: '' });
+      const promesa = estado.cobrar(id);
+      una('PUT', `${API}/productos-alumno/${id}`, false).flush(cargo(id, { pagado: true }));
+      await promesa;
+      una('GET', URL_CARGOS).flush(lista);
+    }
+
+    /** Abre la pantalla en un inyector propio, para poder destruirlo («salir» de la pantalla). */
+    function abrirDestruible(cargos: ProductoAlumnoDTO[]): EnvironmentInjector {
+      const inyector = createEnvironmentInjector([ProductosAlumnoEstado], TestBed.inject(EnvironmentInjector));
+      estado = inyector.get(ProductosAlumnoEstado);
+      estado.iniciar(7);
+      responder(cargos, ALUMNO, CATALOGO);
+      return inyector;
+    }
+
+    it('defecto 1: una relectura vieja no pisa lo guardado en un segundo guardado de varias filas (Cobrar ofrece 40 €)', async () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarNotas(1, 'a');
+      estado.guardar();
+      una('PUT', `${API}/productos-alumno/1`).flush({ ...cargo(1), notas: 'a' });
+      // La relectura del primer guardado sigue sin respuesta (el servidor aún tenía 30 €).
+      const vieja = http.expectOne(URL_CARGOS);
+      estado.cambiarPrecio(2, '40');
+      estado.cambiarNotas(1, 'b');
+      estado.guardar();
+      una('PUT', `${API}/productos-alumno/2`).flush(cargo(2, { precio: 40 }));
+      if (!vieja.cancelled) {
+        vieja.flush([{ ...cargo(1), notas: 'a' }, cargo(2)]);
+      }
+      expect(fila(2).cargo.precio).toBe(40);
+      una('PUT', `${API}/productos-alumno/1`).flush({ ...cargo(1), notas: 'b' });
+      expect(avisos.exito).toHaveBeenCalledWith(T.guardado);
+      expect(fila(2).cargo.precio).toBe(40);
+      expect(fila(2).precio).toBe('40,00');
+      const nueva = una('GET', URL_CARGOS);
+      // Antes de que llegue la relectura nueva, «Cobrar» ya ofrece lo que tiene el servidor.
+      respuestas.push({ confirmado: false });
+      await estado.cobrar(2);
+      expect(opciones[0].destacado).toEqual({ etiqueta: 'Cargo 2', valor: eur(40) });
+      nueva.flush([{ ...cargo(1), notas: 'b' }, cargo(2, { precio: 40 })]);
+      expect(fila(2).cargo.precio).toBe(40);
+      expect(estado.hayCambios()).toBeFalse();
+    });
+
+    it('defecto 1: una relectura que empezó antes de cancelar no devuelve el cargo a pendiente; se vuelve a leer', async () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarNotas(1, 'a');
+      estado.guardar();
+      una('PUT', `${API}/productos-alumno/1`).flush({ ...cargo(1), notas: 'a' });
+      const vieja = http.expectOne(URL_CARGOS);
+      respuestas.push({ confirmado: true, valores: { motivo: 'Duplicado' } });
+      await estado.cancelar(2);
+      const post = una('POST', `${API}/productos-alumno/2/cancelar`);
+      // Llega con la cancelación en vuelo: no se aplica.
+      vieja.flush([{ ...cargo(1), notas: 'a' }, cargo(2)]);
+      expect(abiertas().length).toBe(0);
+      post.flush(cargo(2, CANCELADO));
+      expect(fila(2).estado).toBe('cancelado');
+      expect(fila(2).muestraCobrar).toBeFalse();
+      // Acabada la cancelación, se relee.
+      una('GET', URL_CARGOS).flush([{ ...cargo(1), notas: 'a' }, cargo(2, CANCELADO)]);
+      expect(fila(2).estado).toBe('cancelado');
+      expect(abiertas().length).toBe(0);
+    });
+
+    it('defecto 1: una relectura que llega tras acabar una reactivación que empezó después se descarta y se repite', async () => {
+      abrir([cargo(1), cargo(2, CANCELADO)]);
+      estado.cambiarNotas(1, 'a');
+      estado.guardar();
+      una('PUT', `${API}/productos-alumno/1`).flush({ ...cargo(1), notas: 'a' });
+      const vieja = http.expectOne(URL_CARGOS);
+      respuestas.push({ confirmado: true });
+      const promesa = estado.reactivar(2);
+      una('POST', `${API}/productos-alumno/2/reactivar`).flush(cargo(2));
+      await promesa;
+      expect(fila(2).estado).toBe('pendiente');
+      vieja.flush([{ ...cargo(1), notas: 'a' }, cargo(2, CANCELADO)]);
+      expect(fila(2).estado).toBe('pendiente');
+      una('GET', URL_CARGOS).flush([{ ...cargo(1), notas: 'a' }, cargo(2)]);
+      expect(fila(2).estado).toBe('pendiente');
+    });
+
+    it('defecto 1: dos cobros seguidos: la primera fila sigue ocupada hasta que llegue una relectura (no se cobra dos veces)', async () => {
+      abrir([cargo(1), cargo(2)]);
+      respuestas.push({ confirmado: true, valor: '' });
+      const primero = estado.cobrar(1);
+      una('PUT', `${API}/productos-alumno/1`, false).flush(cargo(1, { pagado: true }));
+      await primero;
+      const relectura1 = http.expectOne(URL_CARGOS);
+      respuestas.push({ confirmado: true, valor: '' });
+      const segundo = estado.cobrar(2);
+      una('PUT', `${API}/productos-alumno/2`, false).flush(cargo(2, { pagado: true }));
+      await segundo;
+      expect(fila(1).ocupada).toBeTrue();
+      expect(fila(1).puedeCobrar).toBeFalse();
+      expect(relectura1.cancelled).toBeTrue();
+      una('GET', URL_CARGOS).flush([cargo(1, { pagado: true }), cargo(2, { pagado: true })]);
+      expect(fila(1).ocupada).toBeFalse();
+      expect(fila(2).ocupada).toBeFalse();
+      expect(fila(1).estado).toBe('pagado');
+    });
+
+    it('defecto 2: cobrado por otra persona con precio pendiente: sin PUT vacío, conserva el cambio con su error y cuenta el fallo', async () => {
+      abrir([cargo(1), cargo(2), cargo(3)]);
+      estado.cambiarPrecio(1, '40');
+      estado.cambiarCantidad(2, '2');
+      estado.cambiarNotas(2, 'Talla M');
+      // Una relectura (tras cobrar la 3) trae la 1 y la 2 cobradas por otra persona.
+      await cobrarYReleer(3, [cargo(1, { pagado: true }), cargo(2, { pagado: true }), cargo(3, { pagado: true })]);
+      expect(fila(1).modificada).toBeTrue();
+      estado.guardar();
+      // Ni `{}` para la 1 ni `{notas}` a medias para la 2: ningún PUT; solo la relectura del final.
+      const relectura = una('GET', URL_CARGOS);
+      expect(avisos.error).toHaveBeenCalledWith('2 cambios no se pudieron guardar');
+      expect(avisos.exito).not.toHaveBeenCalledWith(T.guardado);
+      expect(fila(1).modificada).toBeTrue();
+      expect(fila(1).precio).toBe('40');
+      expect(fila(1).errorServidor).toBe('Este cargo ya está cobrado: revierte el cobro para cambiar precio o cantidad.');
+      expect(estado.ediciones().get(2)).toEqual({ cantidad: '2', notas: 'Talla M' });
+      expect(fila(2).errorServidor).toBe(T.errorCobradoPrecioCantidad);
+      relectura.flush([cargo(1, { pagado: true }), cargo(2, { pagado: true }), cargo(3, { pagado: true })]);
+      expect(fila(1).errorServidor).toBe(T.errorCobradoPrecioCantidad);
+      expect(estado.pendientes()).toBe(2);
+      // «Deshacer» de la fila lo quita.
+      estado.deshacerFila(1);
+      expect(fila(1).modificada).toBeFalse();
+    });
+
+    it('defecto 2: el cuerpo deja fuera precio y cantidad de un cargo cobrado (por eso guardar no lo envía)', () => {
+      abrir([cargo(1, { pagado: true })]);
+      expect(estado.cuerpoActualizacion(cargo(1, { pagado: true }), { precio: '40' })).toEqual({});
+      expect(estado.cuerpoActualizacion(cargo(1), { precio: '40', notas: 'x' })).toEqual({ precio: 40, notas: 'x' });
+    });
+
+    it('defecto 3: cancelado en una relectura: fuera sus cambios salvo las notas, con el aviso en la fila', async () => {
+      abrir([cargo(1), cargo(2), cargo(3), cargo(4)]);
+      estado.cambiarPrecio(1, '40');
+      estado.cambiarNotas(1, 'nota');
+      estado.cambiarFecha(2, '2026-10-05');
+      estado.cambiarNotas(3, 'solo notas');
+      await cobrarYReleer(4, [cargo(1, CANCELADO), cargo(2, CANCELADO), cargo(3, CANCELADO), cargo(4, { pagado: true })]);
+      expect(estado.ediciones().get(1)).toEqual({ notas: 'nota' });
+      expect(estado.ediciones().has(2)).toBeFalse();
+      expect(estado.ediciones().get(3)).toEqual({ notas: 'solo notas' });
+      expect(fila(1).errorServidor).toBe('Este cargo se ha cancelado: sus cambios se han descartado.');
+      expect(fila(2).errorServidor).toBe(T.errorCanceladoDescartado);
+      // A la 3 no se le descartó nada.
+      expect(fila(3).errorServidor).toBeNull();
+      expect(fila(1).precio).toBe('30,00');
+      expect(estado.pendientes()).toBe(2);
+      estado.deshacerFila(1);
+      expect(estado.pendientes()).toBe(1);
+    });
+
+    it('defecto 4: una búsqueda que esconde el producto elegido lo quita; si sigue a la vista, se queda', () => {
+      abrir([]);
+      estado.elegirProducto(2);
+      estado.buscarProducto('matr');
+      expect(estado.productoElegido()).toBe(2);
+      estado.elegirDeporte('TAEKWONDO');
+      estado.buscarProducto('mensu');
+      expect(estado.productoElegido()).toBeNull();
+      expect(estado.deporteElegido()).toBeNull();
+      expect(estado.productoSeleccionado()).toBeNull();
+      expect(estado.puedeAnadir()).toBeFalse();
+      expect(estado.anadirALista()).toBeFalse();
+      expect(estado.nuevas()).toEqual([]);
+    });
+
+    it('defecto 5: doble clic en «Guardar» envía cada petición una sola vez', () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarNotas(2, 'b');
+      estado.marcarBorrar(1);
+      estado.guardar();
+      estado.guardar();
+      una('PUT', `${API}/productos-alumno/2`).flush({ ...cargo(2), notas: 'b' });
+      estado.guardar();
+      una('DELETE', `${API}/productos-alumno/1`).flush(null);
+      estado.guardar();
+      una('GET', URL_CARGOS).flush([{ ...cargo(2), notas: 'b' }]);
+      expect(abiertas().length).toBe(0);
+      expect(avisos.exito).toHaveBeenCalledTimes(1);
+    });
+
+    it('defecto 5: mientras se guarda no se puede cobrar', async () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarNotas(1, 'a');
+      estado.guardar();
+      expect(fila(2).puedeCobrar).toBeFalse();
+      await estado.cobrar(2);
+      expect(confirmar).not.toHaveBeenCalled();
+      una('PUT', `${API}/productos-alumno/1`).flush({ ...cargo(1), notas: 'a' });
+      una('GET', URL_CARGOS).flush([{ ...cargo(1), notas: 'a' }, cargo(2)]);
+      expect(fila(2).puedeCobrar).toBeTrue();
+    });
+
+    it('defecto 5: salir a mitad del guardado corta el lote y no aplica nada ni avisa', () => {
+      const inyector = abrirDestruible([cargo(1), cargo(2)]);
+      estado.cambiarNotas(1, 'a');
+      estado.cambiarNotas(2, 'b');
+      estado.guardar();
+      const put = una('PUT', `${API}/productos-alumno/2`);
+      inyector.destroy();
+      expect(put.cancelled).toBeTrue();
+      expect(abiertas().length).toBe(0);
+      expect(avisos.exito).not.toHaveBeenCalled();
+      expect(avisos.error).not.toHaveBeenCalled();
+    });
+
+    it('defecto 5: salir con una reactivación o un cobro en vuelo: las respuestas tardías no se aplican ni releen', async () => {
+      let inyector = abrirDestruible([cargo(1, CANCELADO)]);
+      respuestas.push({ confirmado: true });
+      const reactivar = estado.reactivar(1);
+      const post = una('POST', `${API}/productos-alumno/1/reactivar`);
+      inyector.destroy();
+      post.flush(cargo(1));
+      await reactivar;
+      expect(estado.cargos()[0].canceladoEn).toBeTruthy();
+      expect(avisos.exito).not.toHaveBeenCalled();
+      expect(abiertas().length).toBe(0);
+
+      inyector = abrirDestruible([cargo(2)]);
+      respuestas.push({ confirmado: true, valor: '' });
+      const cobro = estado.cobrar(2);
+      const put = una('PUT', `${API}/productos-alumno/2`, false);
+      inyector.destroy();
+      put.flush(cargo(2, { pagado: true }));
+      await cobro;
+      // Sin relectura tras salir.
+      expect(abiertas().length).toBe(0);
+    });
+
+    it('6: la asignación nueva enseña hoy (día local) como fecha prevista y no la envía', () => {
+      abrir([]);
+      jasmine.clock().install();
+      try {
+        jasmine.clock().mockDate(new Date(2026, 9, 25, 23, 50));
+        estado.elegirProducto(1);
+        expect(estado.anadirALista()).toBeTrue();
+      } finally {
+        jasmine.clock().uninstall();
+      }
+      expect(estado.nuevas()[0].fechaPrevista).toBe('25/10/2026');
+      estado.guardar();
+      const post = una('POST', `${API}/productos-alumno/alumno/7/producto/1`);
+      expect('fechaPrevista' in post.request.body).toBeFalse();
+      post.flush(cargo(5));
+      una('GET', URL_CARGOS).flush([cargo(5)]);
+    });
+
+    it('7: `cobrando` solo con el PUT del cobro en vuelo; ni con el diálogo abierto, ni al cancelar, ni al releer', async () => {
+      abrir([cargo(1), cargo(2)]);
+      expect(fila(1).cobrando).toBeFalse();
+      let confirmarCobro!: () => void;
+      confirmar.and.callFake(
+        (op: OpcionesConfirmacion) =>
+          new Promise<ResultadoConfirmacion>((resolver) => {
+            confirmarCobro = () =>
+              op.ejecutar!('').subscribe({
+                next: (respuesta) => resolver({ confirmado: true, valor: '', respuesta }),
+                error: (error) => resolver({ confirmado: true, valor: '', error }),
+              });
+          })
+      );
+      const promesa = estado.cobrar(1);
+      // Diálogo abierto: ocupada, pero no cobrando.
+      expect(fila(1).ocupada).toBeTrue();
+      expect(fila(1).cobrando).toBeFalse();
+      confirmarCobro();
+      const put = una('PUT', `${API}/productos-alumno/1`, false);
+      expect(fila(1).cobrando).toBeTrue();
+      expect(fila(2).cobrando).toBeFalse();
+      put.flush(cargo(1, { pagado: true }));
+      await promesa;
+      // Releyendo: sigue ocupada, ya no cobrando.
+      expect(fila(1).ocupada).toBeTrue();
+      expect(fila(1).cobrando).toBeFalse();
+      una('GET', URL_CARGOS).flush([cargo(1, { pagado: true }), cargo(2)]);
+      expect(fila(1).cobrando).toBeFalse();
+
+      // Un cobro que falla: deja de estar cobrando.
+      const fallido = estado.cobrar(2);
+      confirmarCobro();
+      const put2 = una('PUT', `${API}/productos-alumno/2`, false);
+      expect(fila(2).cobrando).toBeTrue();
+      put2.flush({ mensaje: 'fallo' }, { status: 500, statusText: 'Error' });
+      await fallido;
+      expect(fila(2).cobrando).toBeFalse();
+      expect(fila(2).ocupada).toBeFalse();
+
+      // Cancelar: ocupada, nunca cobrando.
+      confirmar.and.callFake(dialogoFalso);
+      respuestas.push({ confirmado: true, valores: { motivo: 'x' } });
+      await estado.cancelar(2);
+      const cancelar = una('POST', `${API}/productos-alumno/2/cancelar`);
+      expect(fila(2).ocupada).toBeTrue();
+      expect(fila(2).cobrando).toBeFalse();
+      cancelar.flush(cargo(2, CANCELADO));
     });
   });
 });
