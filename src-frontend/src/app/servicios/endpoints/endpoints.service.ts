@@ -1,4 +1,4 @@
-﻿import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { HttpContext } from '@angular/common/http';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
@@ -1130,9 +1130,9 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGrupoPorId(id: number): Observable<GrupoDTO> {
+  obtenerGrupoPorId(id: number, context?: HttpContext): Observable<GrupoDTO> {
     return this.http
-      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true })
+      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true, context })
       .pipe(catchError(this.manejarError));
   }
 
@@ -1174,10 +1174,11 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarGrupo(id: number, grupoData: GrupoDTO): Observable<GrupoDTO> {
+  actualizarGrupo(id: number, grupoData: GrupoDTO, context?: HttpContext): Observable<GrupoDTO> {
     return this.http
       .put<GrupoDTO>(`${this.urlBase}/grupos/${id}`, grupoData, {
         withCredentials: true,
+        context,
       })
       .pipe(catchError(this.manejarError));
   }

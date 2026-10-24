@@ -34,6 +34,33 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  it('gruposEditar/:id (3m-2): ruta nueva perezosa antes de la de hoy, mismos roles y resolvers', async () => {
+    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposEditar/:id');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    const componente = (await import('./panel-nuevo/grupos/editar-grupo.component')).EditarGrupoComponent;
+    expect(await nueva.loadComponent!()).toBe(componente);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(componente);
+  });
+
+  it('gruposEditar apagado conserva la pantalla de hoy sin descargar la nueva', async () => {
+    @Component({ standalone: true, template: '<p>hoy</p>' })
+    class PantallaDeHoy {}
+    const nueva = routes.find((route) => route.path === 'gruposEditar/:id' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent EditarGrupo');
+    TestBed.configureTestingModule({ providers: [
+      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposEditar/:id', component: PantallaDeHoy }]),
+      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+    ] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/gruposEditar/7', PantallaDeHoy);
+    expect(cargar).not.toHaveBeenCalled();
+  });
+
   it('gruposCrear (3m-1): abre Grupos mediante data y carga lazy; conserva la ruta de hoy con el interruptor apagado', async () => {
     const [nueva, hoy] = routes.filter((route) => route.path === 'gruposCrear');
     expect(nueva.canMatch).toEqual([disenoNuevoGuard]);

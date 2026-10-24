@@ -1,4 +1,4 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
@@ -351,6 +351,14 @@ export const routes: Routes = [
     path: 'gruposCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'gruposEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/grupos/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
