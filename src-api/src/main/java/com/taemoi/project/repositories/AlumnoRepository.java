@@ -272,7 +272,8 @@ public interface AlumnoRepository
 	 * Ids de los alumnos de la escuela activa (solo activos salvo {@code incluirInactivos}), en orden ascendente:
 	 * los mismos y en el mismo orden que el listado sin paginar ({@code GET /api/alumnos}), sin cargar las fichas.
 	 */
-	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) ORDER BY a.id")
+	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) AND a.anonimizadoEn IS NULL "
+			+ "ORDER BY a.id")
 	List<Long> buscarIdsEnOrganizacionActiva(@Param("incluirInactivos") boolean incluirInactivos);
 
 	/**

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.dtos.response.ResumenCargosAlumnoDTO;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.ResumenCargosAlumnoRepository;
+import com.taemoi.project.repositories.ResumenCargosAlumnoRepository.PagosAlumno;
 import com.taemoi.project.repositories.ResumenCargosAlumnoRepository.ResumenCargos;
 
 /**
@@ -48,15 +49,34 @@ public class ResumenCargosAlumnoService {
 		for (ResumenCargos r : repositorio.resumir(organizacion, pedidos)) {
 			porAlumno.put(r.getAlumnoId(), r);
 		}
+		Map<Long, Long> pagos = new HashMap<>();
+		for (PagosAlumno p : repositorio.contarPagos(organizacion, pedidos)) {
+			pagos.put(p.getAlumnoId(), valor(p.getPagos()));
+		}
 		List<ResumenCargosAlumnoDTO> resultado = new ArrayList<>();
 		for (Long alumno : pedidos) {
 			ResumenCargos r = porAlumno.get(alumno);
 			if (r != null) {
 				resultado.add(new ResumenCargosAlumnoDTO(alumno, valor(r.getCargos()), valor(r.getPagados()),
-						valor(r.getPendientes()), importe(r.getImportePagado()), importe(r.getImportePendiente())));
+						valor(r.getPendientes()), importe(r.getImportePagado()), importe(r.getImportePendiente()),
+						pagos.getOrDefault(alumno, 0L)));
 			}
 		}
 		return resultado;
+	}
+
+	/**
+	 * Pieza 8b-3l bis (decisión 287): cuántos pagos tiene el alumno en la escuela activa (definición en
+	 * {@link ResumenCargosAlumnoRepository#contarPagos}); 0 si no es de esta escuela.
+	 */
+	@Transactional(readOnly = true)
+	public long contarPagos(Long alumnoId) {
+		Long organizacion = TenantContext.get();
+		if (organizacion == null || alumnoId == null) {
+			return 0;
+		}
+		return repositorio.contarPagos(organizacion, List.of(alumnoId)).stream().mapToLong(p -> valor(p.getPagos()))
+				.sum();
 	}
 
 	private static long valor(Long n) {

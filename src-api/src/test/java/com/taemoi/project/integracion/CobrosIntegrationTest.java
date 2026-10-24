@@ -350,8 +350,14 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ otros caminos que borran cargos (ronda 2, D1)
 
+	/**
+	 * Pieza 8b-3l bis, decisión 287 (cambio deliberado): un alumno con pagos no se borra para siempre. Antes daba 200,
+	 * anulaba sus cobros sin entregar («cargo borrado») y dejaba los entregados ACTIVOS sin cargo; ahora da 409 y no
+	 * cambia nada (se da de baja o se elimina anonimizando). La anulación «cargo borrado» de {@code alBorrarCargos} sigue
+	 * cubierta por {@code borrarConvocatoria_…}.
+	 */
 	@Test
-	void borrarAlumno_anulaLosCobrosDeSusCargos_yLosEntregadosSiguenActivosSinBloquear() throws Exception {
+	void borrarAlumno_conCobros_409_yNoCambiaNada() throws Exception {
 		long alumno = e.alumno("E6B1BORRADO" + e.marca, e.sA, true);
 		long cargo = cargo(alumno);
 		long cargoEntregado = cargo(alumno);
@@ -365,16 +371,16 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		long cobroExamen = idCobro(cargoExamen);
 		meterEnEntrega(cobroEntregado);
 
-		// Solo el propietario elimina alumnos (8b-3l, decisión 285).
-		assertEquals(200, estado(delete("/api/alumnos/" + alumno), tokenPropietario));
-		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM alumno WHERE id = ?", Long.class, alumno));
-		assertAnuladoPorBorrado(cobro, propietario);
-		assertAnuladoPorBorrado(cobroExamen, propietario);
-		Map<String, Object> entregado = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobroEntregado);
-		assertEquals("ACTIVO", entregado.get("estado"), "el dinero ya está en una entrega: no se anula");
-		assertNull(entregado.get("producto_alumno_id"));
-		assertNull(entregado.get("alumno_id"));
-		assertNotNull(entregado.get("entrega_caja_id"));
+		List<Map<String, Object>> antes = jdbc.queryForList("SELECT * FROM cobro WHERE id IN (?, ?, ?) ORDER BY id",
+				cobro, cobroEntregado, cobroExamen);
+
+		// Solo el propietario elimina alumnos (8b-3l, decisión 285); con pagos, ni él (decisión 287).
+		assertEquals(409, estado(delete("/api/alumnos/" + alumno), tokenPropietario));
+		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM alumno WHERE id = ?", Long.class, alumno));
+		assertEquals(3L, jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id IN (?, ?, ?)", Long.class,
+				cargo, cargoEntregado, cargoExamen));
+		assertEquals(antes, jdbc.queryForList("SELECT * FROM cobro WHERE id IN (?, ?, ?) ORDER BY id", cobro,
+				cobroEntregado, cobroExamen), "ningún cobro cambia");
 	}
 
 	/**

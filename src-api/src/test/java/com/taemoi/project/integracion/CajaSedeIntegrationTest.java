@@ -605,14 +605,17 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void anularEntrega_unCobroCuyoCargoSeBorroSeAnula_conMotivoCargoBorrado() throws Exception {
 		long alumnoBorrado = s.alumnoEnGrupo("E6B2BORRADO", s.e.sA, s.e.gA);
-		long cobroSinCargo = s.cobrar(s.cargo(alumnoBorrado), s.tProf1);
+		long cargoBorrado = s.cargo(alumnoBorrado);
+		long cobroSinCargo = s.cobrar(cargoBorrado, s.tProf1);
 		long cobroNormal = s.cobrar(s.cargo(aProfA), s.tProf1);
 		long entrega = leer(entrega(s.e.sA, s.prof1, List.of(cobroSinCargo, cobroNormal), "21.00", null), s.tResp, 201)
 				.get("id").asLong();
-		// Borrar el alumno con el cobro ya entregado: el cobro sigue ACTIVO, sin cargo (6b-1). Solo el propietario
-		// elimina alumnos (8b-3l, decisión 285).
-		assertEquals(200, estado(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+		// Un alumno con pagos ya no se borra (8b-3l bis, decisión 287: 409). El cobro entregado sin cargo es un dato de
+		// antes, cuando borrar el alumno borraba sus cargos y dejaba ACTIVO el cobro ya entregado (6b-1): se reproduce
+		// borrando el cargo (la FK del cobro pasa a NULL).
+		assertEquals(409, estado(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 				.delete("/api/alumnos/" + alumnoBorrado), s.tPropietario));
+		jdbc.update("DELETE FROM producto_alumno WHERE id = ?", cargoBorrado);
 		Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobroSinCargo);
 		assertEquals("ACTIVO", antes.get("estado"));
 		assertNull(antes.get("producto_alumno_id"));

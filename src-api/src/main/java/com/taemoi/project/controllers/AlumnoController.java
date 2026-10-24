@@ -738,6 +738,25 @@ public class AlumnoController {
 	}
 
 	/**
+	 * Pieza 8b-3l bis (decisión 287): «Eliminar anonimizando». Para el alumno con pagos, que no se borra para siempre:
+	 * quita sus datos personales y conserva sus cargos y cobros (la tesorería no cambia). Solo el propietario, como el
+	 * borrado (403 con el mismo motivo); un alumno de otra escuela, 404; con una devolución pendiente, 409. Repetirlo
+	 * no hace nada.
+	 */
+	@PostMapping("/{id}/anonimizar")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@HandleAuthorizationDenied(handlerClass = SoloPropietarioEliminaAlumnos.class)
+	public ResponseEntity<?> anonimizarAlumno(@PathVariable @NonNull Long id) {
+		boolean anonimizado = alumnoService.anonimizarAlumno(id);
+		if (!anonimizado) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		// Como la baja: su plaza puede dar paso a una preinscripción en lista de espera.
+		preinscripcionService.promocionarTodas();
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+
+	/**
 	 * Obtiene los turnos asociados a un alumno específico.
 	 *
 	 * @param alumnoId El ID del alumno.

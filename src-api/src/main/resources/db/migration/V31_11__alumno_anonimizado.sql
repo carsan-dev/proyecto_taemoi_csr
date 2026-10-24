@@ -1,0 +1,11 @@
+-- Pieza 8b-3l bis (decisión 287): «Eliminar anonimizando». Un alumno con pagos no se borra para siempre: se le quitan
+-- los datos personales y se conservan sus cargos y cobros (con el mismo alumno_id), para que la tesorería y el
+-- historial de caja no cambien.
+--
+-- SOLO AMPLÍA: una columna nueva, NULL, sin valor por defecto ni índice. No escribe filas. El código anterior sigue
+-- funcionando sobre este esquema: no conoce la columna. Va como V31_11 (detrás de V31_10; V32 sigue reservada).
+--
+--   alumno.anonimizado_en  cuándo se anonimizó la ficha; NULL en todas las demás. Los listados y las búsquedas de
+--                          alumnos dejan fuera las fichas con valor; la tesorería y la caja las siguen leyendo (salen
+--                          como «Alumno eliminado»). Es irreversible: nada la vuelve a NULL.
+ALTER TABLE alumno ADD COLUMN anonimizado_en DATETIME(6) NULL;

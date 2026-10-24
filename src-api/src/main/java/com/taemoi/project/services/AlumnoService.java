@@ -68,6 +68,9 @@ public interface AlumnoService {
 
 	boolean eliminarAlumno(@Valid @NonNull Long id);
 
+	/** Pieza 8b-3l bis (decisión 287): elimina anonimizando; {@code false} si no es de la escuela activa. */
+	boolean anonimizarAlumno(@NonNull Long id);
+
 	List<TurnoDTO> obtenerTurnosDelAlumno(Long alumnoId);
 
 	void asignarAlumnoATurno(Long alumnoId, Long turnoId);

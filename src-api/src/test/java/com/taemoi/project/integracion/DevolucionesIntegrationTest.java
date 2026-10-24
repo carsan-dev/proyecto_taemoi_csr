@@ -501,10 +501,13 @@ class DevolucionesIntegrationTest extends MySqlIntegrationTest {
 
 		leer(devolucionSede(id, null), s.tGestor, 200);
 		BigDecimal antes = s.saldo(s.e.sA);
-		assertEquals(200, estado(delete("/api/alumnos/" + alumno), s.tPropietario));
-		Map<String, Object> filaCobro = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
-		assertEquals("ACTIVO", filaCobro.get("estado"), "un cobro devuelto no se anula al borrar el cargo");
-		assertNull(filaCobro.get("producto_alumno_id"));
+		// Con la devolución hecha, el alumno sigue teniendo pagos: 8b-3l bis (decisión 287), 409 y no cambia nada.
+		Map<String, Object> cobroAntes = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
+		MvcResult conPagos = peticion(delete("/api/alumnos/" + alumno), s.tPropietario);
+		assertEquals(409, conPagos.getResponse().getStatus());
+		assertEquals("Este alumno tiene pagos. Dale de baja o elimínalo anonimizando.", mensaje(conPagos));
+		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM alumno WHERE id = ?", Long.class, alumno));
+		assertEquals(cobroAntes, jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro));
 		assertEquals(1L, devolucionesActivas(cobro));
 		assertEquals(antes, s.saldo(s.e.sA));
 	}
