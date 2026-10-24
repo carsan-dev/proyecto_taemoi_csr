@@ -93,6 +93,15 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
   readonly eliminarUno = (id: number): Observable<unknown> => this.api.eliminar(id);
   readonly darDeBajaUno = (id: number): Observable<unknown> => this.api.darDeBaja(id);
   readonly leerCargos = (ids: number[]) => this.api.resumenCargos(ids);
+  readonly anonimizarUno = (id: number): Observable<unknown> => this.api.anonimizar(id);
+
+  /**
+   * 8b-3l bis (decisión 287): los pagos de cada alumno de la página (solo el propietario, del resumen de cargos). Con
+   * alguno, el «⋯» ofrece «Eliminar anonimizando» en lugar de «Eliminar definitivamente». Sin leerlos (o si fallan),
+   * «Eliminar definitivamente»: el servidor responde 409 con su motivo, que el diálogo enseña.
+   */
+  readonly pagos = new Map<number, number>();
+  private lecturaPagos?: Subscription;
 
   get hayFiltros(): boolean {
     return this.nombre.trim() !== '' || this.todos;
@@ -140,6 +149,7 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.suscripciones.unsubscribe();
     this.carga?.unsubscribe();
+    this.lecturaPagos?.unsubscribe();
     this.busqueda.complete();
   }
 
@@ -164,6 +174,7 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
         }
         this.filas = contenido.map(filaBaja);
         this.estado = 'listo';
+        this.cargarPagos();
         this.cdr.markForCheck();
       },
       error: () => {
@@ -172,6 +183,27 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /** 8b-3l bis: el resumen de cargos de la página, para saber quién tiene pagos (solo el propietario). */
+  private cargarPagos(): void {
+    this.lecturaPagos?.unsubscribe();
+    this.pagos.clear();
+    if (!this.esPropietario || this.filas.length === 0) {
+      return;
+    }
+    this.lecturaPagos = this.api.resumenCargos(this.filas.map((f) => f.id)).subscribe({
+      next: (lista) => {
+        (Array.isArray(lista) ? lista : []).forEach((r) => this.pagos.set(r.alumnoId, r.pagos ?? 0));
+        this.cdr.markForCheck();
+      },
+      error: () => this.cdr.markForCheck(),
+    });
+  }
+
+  /** 8b-3l bis: con pagos, se elimina anonimizando. */
+  conPagos(id: number): boolean {
+    return (this.pagos.get(id) ?? 0) > 0;
   }
 
   private guardarEstado(): void {
@@ -367,7 +399,7 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
       return;
     }
     if (resultado.hechos > 0 && resultado.fallos === 0) {
-      this.avisos.exito(exitoLote(lote.tipo, resultado.hechos));
+      this.avisos.exito(exitoLote(lote.tipo, resultado.hechos, resultado.anonimizados ?? 0));
     }
     if (resultado.hechos > 0 || resultado.fallos > 0) {
       this.cargar();
@@ -455,6 +487,9 @@ export class BajasAlumnosComponent implements OnInit, OnDestroy {
       this.auth.obtenerRoles().subscribe({
         next: () => {
           this.esPropietario = this.auth.tieneRolAdmin();
+          if (this.estado === 'listo') {
+            this.cargarPagos();
+          }
           this.cdr.markForCheck();
         },
         error: () => {

@@ -27,6 +27,14 @@ export class BajasAlumnosApiService {
     return this.http.delete<any>(`${this.base}/alumnos/${id}`, { withCredentials: true, context: contextoErrorLocal() });
   }
 
+  /**
+   * 8b-3l bis (decisión 287): `POST /alumnos/{id}/anonimizar`, eliminar anonimizando al alumno con pagos. Solo el
+   * propietario: al resto, 403 con su motivo.
+   */
+  anonimizar(id: number): Observable<any> {
+    return this.http.post<any>(`${this.base}/alumnos/${id}/anonimizar`, {}, { withCredentials: true, context: contextoErrorLocal() });
+  }
+
   /** `GET /alumnos/cargos-resumen?alumnoIds=…` (P-3): los cargos de los que se van a eliminar. */
   resumenCargos(ids: number[]): Observable<ResumenCargos[]> {
     const params = new HttpParams().set('alumnoIds', ids.join(','));

@@ -81,6 +81,43 @@ export interface ResumenCargos {
   pendientes: number;
   importePagado: number;
   importePendiente: number;
+  /**
+   * 8b-3l bis (decisión 287): cuántos pagos tiene (en cualquier estado). Con alguno no se elimina definitivamente: se
+   * elimina anonimizando.
+   */
+  pagos?: number;
+}
+
+/** 8b-3l bis: con algún pago, el alumno se elimina anonimizando (el servidor responde 409 al borrado definitivo). */
+export function tienePagos(r: ResumenCargos | undefined): boolean {
+  return (r?.pagos ?? 0) > 0;
+}
+
+/** «se elimina» / «se anonimiza (tiene pagos)»: lo que le pasa a cada alumno en el diálogo de varios. */
+export function destinoAlumno(anonimiza: boolean): string {
+  return anonimiza ? 'se anonimiza (tiene pagos)' : 'se elimina';
+}
+
+/** «¿Eliminar anonimizando a Lucía Ortega?». */
+export function tituloAnonimizar(nombre: string): string {
+  return `¿Eliminar anonimizando a ${nombre}?`;
+}
+
+/**
+ * La frase de consecuencia de eliminar anonimizando a un alumno: «Sus datos personales se borran para siempre. Sus 3
+ * pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.».
+ */
+export function mensajeAnonimizar(pagos: number): string {
+  const suyos = pagos === 1 ? 'Su pago se queda' : `Sus ${numero(pagos)} pagos se quedan`;
+  return `Sus datos personales se borran para siempre. ${suyos} en Tesorería como «Alumno eliminado». No se puede deshacer.`;
+}
+
+/** Varios, con alguno con pagos: la frase de consecuencia del diálogo. */
+export function mensajeLoteMixto(anonimizados: number, total: number): string {
+  if (anonimizados === total) {
+    return 'Sus datos personales se borran para siempre. Sus pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.';
+  }
+  return 'Los que no tienen pagos se borran para siempre. De los que tienen pagos se borran sus datos personales y sus pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.';
 }
 
 /** «3 alumnos» o «1 alumno». */
@@ -100,7 +137,11 @@ export function cargosDe(r: ResumenCargos | undefined): string {
  * P-3: la línea de pagos y cargos del diálogo destructivo. Uno: «Tiene 14 cargos: 12 pagados (360,00 €) y 2 pendientes
  * (60,00 €). Se borran con el alumno.»; varios: «Entre los 3 tienen…». Sin cargos: «No tiene pagos ni cargos.».
  */
-export function fraseCargos(resumenes: ResumenCargos[], numAlumnos: number): string {
+export function fraseCargos(
+  resumenes: ResumenCargos[],
+  numAlumnos: number,
+  destino: 'borran' | 'conservan' | 'mixto' = 'borran'
+): string {
   const suma = resumenes.reduce(
     (t, r) => ({
       cargos: t.cargos + (r.cargos || 0),
@@ -123,9 +164,17 @@ export function fraseCargos(resumenes: ResumenCargos[], numAlumnos: number): str
     partes.push(`${plural(suma.pendientes, 'pendiente', 'pendientes')} (${eur(suma.importePendiente)})`);
   }
   const quien = uno ? 'Tiene' : `Entre los ${numero(numAlumnos)} tienen`;
+  const inicio = `${quien} ${plural(suma.cargos, 'cargo', 'cargos')}: ${partes.join(' y ')}.`;
+  // 8b-3l bis: los cargos de un alumno con pagos se conservan (se elimina anonimizando).
+  if (destino === 'conservan') {
+    return `${inicio} ${suma.cargos === 1 ? 'Se conserva' : 'Se conservan'}.`;
+  }
+  if (destino === 'mixto') {
+    return `${inicio} Los de los alumnos con pagos se conservan; los demás se borran con ellos.`;
+  }
   const verbo = suma.cargos === 1 ? 'Se borra' : 'Se borran';
   const con = uno ? 'con el alumno' : 'con ellos';
-  return `${quien} ${plural(suma.cargos, 'cargo', 'cargos')}: ${partes.join(' y ')}. ${verbo} ${con}.`;
+  return `${inicio} ${verbo} ${con}.`;
 }
 
 export type TipoLote = 'baja' | 'eliminar';
@@ -163,8 +212,11 @@ export function tituloFallos(tipo: TipoLote, fallos: number, total: number): str
   return total === 1 ? `No se pudo ${verbo} al alumno` : `No se pudo ${verbo} a ${numero(fallos)} de ${numero(total)}`;
 }
 
-/** El aviso de éxito al terminar sin fallos (los textos de hoy). */
-export function exitoLote(tipo: TipoLote, n: number): string {
+/** El aviso de éxito al terminar sin fallos (los textos de hoy; 8b-3l bis: uno anonimizado, el suyo). */
+export function exitoLote(tipo: TipoLote, n: number, anonimizados = 0): string {
+  if (tipo === 'eliminar' && n === 1 && anonimizados === 1) {
+    return 'El alumno ha sido eliminado anonimizando. Sus pagos siguen en Tesorería.';
+  }
   if (tipo === 'eliminar') {
     return n === 1 ? 'El alumno ha sido eliminado correctamente.' : 'Los alumnos seleccionados han sido eliminados correctamente.';
   }
