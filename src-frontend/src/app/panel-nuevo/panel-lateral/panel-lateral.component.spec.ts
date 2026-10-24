@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CONSULTA_HOJA } from '../capas/capa-modal';
 import { ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { PanelLateralComponent } from './panel-lateral.component';
+import { itSinReloj } from '../../testing/reloj-prueba';
 
 @Component({
   standalone: true,

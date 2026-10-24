@@ -7,6 +7,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { Toast } from '../../../utils/toast.util';
 import { CrearContrasenaComponent } from './crear-contrasena.component';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 describe('CrearContrasenaComponent', () => {
   let fixture: ComponentFixture<CrearContrasenaComponent>;
@@ -136,7 +137,7 @@ describe('CrearContrasenaComponent', () => {
     expect(el().querySelector('form')).toBeNull();
   });
 
-  it('contraseñas distintas o débiles bloquean el envío', async () => {
+  itSinReloj('contraseñas distintas o débiles bloquean el envío', async () => {
     montar();
     await rellenar('Segura123', 'Segura124');
     expect(boton().disabled).toBeTrue();
@@ -148,7 +149,7 @@ describe('CrearContrasenaComponent', () => {
     expect(boton().disabled).toBeFalse();
   });
 
-  it('aceptar con éxito navega donde lo haría el login', async () => {
+  itSinReloj('aceptar con éxito navega donde lo haría el login', async () => {
     montar();
     auth.aceptarInvitacion.and.returnValue(of(['ROLE_PROFESOR']));
     await rellenar();
@@ -158,7 +159,7 @@ describe('CrearContrasenaComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/mis-grupos']);
   });
 
-  it('deshabilita el botón mientras va y no envía dos veces', async () => {
+  itSinReloj('deshabilita el botón mientras va y no envía dos veces', async () => {
     montar();
     const respuesta = new Subject<string[]>();
     auth.aceptarInvitacion.and.returnValue(respuesta);
@@ -171,7 +172,7 @@ describe('CrearContrasenaComponent', () => {
     respuesta.complete();
   });
 
-  it('un 400 al aceptar enseña el mensaje de caducado sin formulario', async () => {
+  itSinReloj('un 400 al aceptar enseña el mensaje de caducado sin formulario', async () => {
     montar();
     auth.aceptarInvitacion.and.returnValue(error(400, 'La contrasena debe contener mayusculas, minusculas y numeros'));
     await rellenar();
@@ -181,7 +182,7 @@ describe('CrearContrasenaComponent', () => {
     expect(router.navigate).not.toHaveBeenCalledWith(['/mis-grupos']);
   });
 
-  it('un 403 al aceptar enseña el mensaje del backend y lleva al login', async () => {
+  itSinReloj('un 403 al aceptar enseña el mensaje del backend y lleva al login', async () => {
     montar();
     const motivo = 'Tu rol en esta escuela todavía no tiene acceso a la aplicación.';
     auth.aceptarInvitacion.and.returnValue(error(403, motivo));

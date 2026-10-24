@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
+import { itSinReloj, leerFicherosEnLaZona } from '../../testing/reloj-prueba';
 import { MOTIVO_HEIC, SUBIDA_DOCUMENTO, SUBIDA_IMAGEN } from '../../utils/subida-archivos.util';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -32,7 +33,8 @@ const EVENTO = {
   ],
 };
 
-const JPG = (): File => new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6, 7, 8])], 'foto.jpg', { type: 'image/jpeg' });
+const BYTES_JPG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6, 7, 8]);
+const JPG = (): File => new File([BYTES_JPG], 'foto.jpg', { type: 'image/jpeg' });
 /** Los nombres de los campos del multipart, en orden (sin `FormData.keys`, que no está en la lib de TS del proyecto). */
 function claves(datos: FormData): string[] {
   const lista: string[] = [];
@@ -60,7 +62,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     fixture.detectChanges();
   }
 
-  /** Deja correr las lecturas de archivo (asíncronas de verdad) y las promesas. */
+  /** Deja correr las lecturas de archivo (servidas desde la zona, `leerFicherosEnLaZona`) y las promesas. */
   async function esperar(veces = 6): Promise<void> {
     for (let i = 0; i < veces; i++) {
       await new Promise((r) => setTimeoutReal(r, 5));
@@ -130,6 +132,18 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     Swal.close();
     document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
     quitarTokens = ponerTokensDePrueba();
+    const pdf = '%PDF-1.4 ficticio';
+    leerFicherosEnLaZona({
+      'foto.jpg': BYTES_JPG,
+      'foto.heic': 'x',
+      'foto.bmp': 'x',
+      'virus.exe': 'MZ',
+      'Horario.pdf': pdf,
+      'Uno.pdf': pdf,
+      'Dos.pdf': pdf,
+      'Tres.pdf': pdf,
+      'Bien.pdf': pdf,
+    });
     loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
     await TestBed.configureTestingModule({
       imports: [EventoFormularioComponent],
@@ -214,7 +228,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(guardar().getAttribute('aria-disabled')).toBeNull();
   });
 
-  it('crear: el MISMO POST /eventos/crear de hoy (multipart «nuevo» y «file» con su nombre), luego cada documento, y vuelve a Eventos', async () => {
+  itSinReloj('crear: el MISMO POST /eventos/crear de hoy (multipart «nuevo» y «file» con su nombre), luego cada documento, y vuelve a Eventos', async () => {
     crear();
     rellenar();
     el().querySelector<HTMLButtonElement>('[role="switch"]')!.click();
@@ -255,7 +269,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(loading.show).not.toHaveBeenCalled();
   });
 
-  it('crear sin imagen ni documentos: «nuevo» solo, con la fecha vacía como null y visible por defecto', async () => {
+  itSinReloj('crear sin imagen ni documentos: «nuevo» solo, con la fecha vacía como null y visible por defecto', async () => {
     crear();
     escribir('evento-titulo', 'T');
     escribir('evento-descripcion', 'D');
@@ -269,7 +283,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(navegar).toHaveBeenCalledOnceWith(['/eventosListar']);
   });
 
-  it('crear: un documento que falla avisa (sin cerrarse solo) con los motivos del servidor, y vuelve a Eventos', async () => {
+  itSinReloj('crear: un documento que falla avisa (sin cerrarse solo) con los motivos del servidor, y vuelve a Eventos', async () => {
     crear();
     rellenar();
     elegir('evento-documentos', [PDF('Uno.pdf'), PDF('Dos.pdf')]);
@@ -285,7 +299,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(navegar).toHaveBeenCalledOnceWith(['/eventosListar']);
   });
 
-  it('crear: un error avisa con el mensaje del servidor (o el de hoy) y deja el formulario como estaba', async () => {
+  itSinReloj('crear: un error avisa con el mensaje del servidor (o el de hoy) y deja el formulario como estaba', async () => {
     crear();
     rellenar();
     guardar().click();
@@ -309,7 +323,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
 
   // ------------------------------------------------------------------ imagen
 
-  it('imagen: HEIC rechazada con el mensaje de hoy, en línea; no queda elegida', async () => {
+  itSinReloj('imagen: HEIC rechazada con el mensaje de hoy, en línea; no queda elegida', async () => {
     crear();
     elegir('evento-imagen', [new File(['x'], 'foto.heic', { type: 'image/heic' })]);
     await esperar();
@@ -319,7 +333,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(Swal.isVisible()).toBeFalse();
   });
 
-  it('imagen: formato y tamaño con las validaciones de hoy', async () => {
+  itSinReloj('imagen: formato y tamaño con las validaciones de hoy', async () => {
     crear();
     elegir('evento-imagen', [new File(['x'], 'foto.bmp', { type: 'image/bmp' })]);
     await esperar();
@@ -333,7 +347,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(texto(el().querySelector('.evento-form__imagen-ayuda'))).toBe('Formatos: JPG, PNG, GIF, WebP (máx. 50 MB)');
   });
 
-  it('imagen al crear: se ve en el campo y en la vista previa; «Quitar» la deja sin imagen sin enviar nada', async () => {
+  itSinReloj('imagen al crear: se ve en el campo y en la vista previa; «Quitar» la deja sin imagen sin enviar nada', async () => {
     crear();
     elegir('evento-imagen', [JPG()]);
     await esperar();
@@ -372,7 +386,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(texto(guardar())).toBe('Guardar cambios');
   });
 
-  it('editar: el MISMO PUT /eventos/{id} de hoy («eventoEditado» y «file» = "null" sin imagen nueva), y vuelve a Eventos', async () => {
+  itSinReloj('editar: el MISMO PUT /eventos/{id} de hoy («eventoEditado» y «file» = "null" sin imagen nueva), y vuelve a Eventos', async () => {
     editar();
     escribir('evento-titulo', 'Campeonato regional 2026');
     escribir('evento-fecha', '');
@@ -394,7 +408,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(navegar).toHaveBeenCalledOnceWith(['/eventosListar']);
   });
 
-  it('editar con imagen nueva: «file» lleva el archivo', async () => {
+  itSinReloj('editar con imagen nueva: «file» lleva el archivo', async () => {
     editar();
     elegir('evento-imagen', [JPG()]);
     await esperar();
@@ -408,7 +422,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(navegar).not.toHaveBeenCalled();
   });
 
-  it('editar: «Eliminar imagen» pide confirmación destructiva y manda el DELETE /eventos/{id}/imagen de hoy', async () => {
+  itSinReloj('editar: «Eliminar imagen» pide confirmación destructiva y manda el DELETE /eventos/{id}/imagen de hoy', async () => {
     editar();
     botonEn(el(), 'Eliminar imagen').click();
     pintar();
@@ -440,7 +454,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
 
   // ------------------------------------------------------------------ documentos
 
-  it('documentos al editar: nombre y tamaño, quitar, «Subir N documentos» con un POST por documento como hoy', async () => {
+  itSinReloj('documentos al editar: nombre y tamaño, quitar, «Subir N documentos» con un POST por documento como hoy', async () => {
     editar();
     elegir('evento-documentos', [PDF('Uno.pdf'), PDF('Dos.pdf'), PDF('Tres.pdf')]);
     await esperar();
@@ -471,7 +485,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(avisos()).toEqual([{ tipo: 'otro', texto: '2 documentos subidos correctamente.' }]);
   });
 
-  it('documentos: los de un tipo no admitido no se añaden y se dice por qué, en línea', async () => {
+  itSinReloj('documentos: los de un tipo no admitido no se añaden y se dice por qué, en línea', async () => {
     crear();
     elegir('evento-documentos', [new File(['MZ'], 'virus.exe', { type: 'application/x-msdownload' }), PDF('Bien.pdf')]);
     await esperar();
@@ -496,7 +510,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(descargas).toEqual(['Autorización.docx']);
   });
 
-  it('eliminar documento: destructivo con el foco en «Cancelar»; cancelar no envía; confirmar, el DELETE de hoy', async () => {
+  itSinReloj('eliminar documento: destructivo con el foco en «Cancelar»; cancelar no envía; confirmar, el DELETE de hoy', async () => {
     editar();
     botonEn(el(), 'Eliminar Circular.pdf').click();
     pintar();
@@ -521,7 +535,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(avisos()).toEqual([{ tipo: 'otro', texto: 'El documento ha sido eliminado.' }]);
   });
 
-  it('eliminar documento: un error avisa y el documento sigue', async () => {
+  itSinReloj('eliminar documento: un error avisa y el documento sigue', async () => {
     editar();
     botonEn(el(), 'Eliminar Circular.pdf').click();
     pintar();
@@ -536,7 +550,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo eliminar el documento.' }]);
   });
 
-  it('eliminar imagen: un error avisa y la imagen sigue', async () => {
+  itSinReloj('eliminar imagen: un error avisa y la imagen sigue', async () => {
     editar();
     botonEn(el(), 'Eliminar imagen').click();
     pintar();
@@ -548,7 +562,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se ha podido eliminar la imagen.' }]);
   });
 
-  it('descargar: un error avisa y no descarga nada', async () => {
+  itSinReloj('descargar: un error avisa y no descarga nada', async () => {
     editar();
     const clic = spyOn(HTMLAnchorElement.prototype, 'click');
     botonEn(el(), 'Descargar Autorización').click();
@@ -558,7 +572,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo descargar el documento.' }]);
   });
 
-  it('documentos al editar: si uno falla, avisa de la subida parcial y los que subieron quedan guardados', async () => {
+  itSinReloj('documentos al editar: si uno falla, avisa de la subida parcial y los que subieron quedan guardados', async () => {
     editar();
     elegir('evento-documentos', [PDF('Uno.pdf'), PDF('Dos.pdf')]);
     await esperar();
@@ -580,7 +594,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
 
   // ------------------------------------------------------------------ salir a mitad de un guardado
 
-  it('crear: salir con el guardado en vuelo no cancela la petición, sube los documentos y no navega', async () => {
+  itSinReloj('crear: salir con el guardado en vuelo no cancela la petición, sube los documentos y no navega', async () => {
     crear();
     rellenar();
     elegir('evento-documentos', [PDF('Uno.pdf')]);
@@ -609,7 +623,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     expect(navegar).not.toHaveBeenCalled();
   });
 
-  it('eliminar imagen y documento: salir con la petición en vuelo no la cancela', async () => {
+  itSinReloj('eliminar imagen y documento: salir con la petición en vuelo no la cancela', async () => {
     editar();
     botonEn(el(), 'Eliminar imagen').click();
     pintar();

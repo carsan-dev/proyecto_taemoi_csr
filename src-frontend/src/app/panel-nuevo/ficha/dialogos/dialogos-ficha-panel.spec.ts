@@ -12,6 +12,7 @@ import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
 import { disenoNuevoGuard } from '../../diseno-nuevo.guard';
 import { EstilosPanelService } from '../../estilos-panel.service';
 import { DialogosFichaPanel, textoDeAviso } from './dialogos-ficha-panel';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 @Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
 class PantallaNueva {}
@@ -104,19 +105,19 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
   });
 
   describe('avisos', () => {
-    it('éxito con temporizador: aviso de éxito con la frase; se resuelve como aceptado sin esperar', async () => {
+    itSinReloj('éxito con temporizador: aviso de éxito con la frase; se resuelve como aceptado sin esperar', async () => {
       const r = await panel.fire({ title: '¡Deporte agregado!', text: 'El deporte Kickboxing ha sido agregado exitosamente', icon: 'success', timer: 2000 });
       expect(avisos.lista().map((a) => [a.tipo, a.texto])).toEqual([['exito', 'El deporte Kickboxing ha sido agregado exitosamente']]);
       expect(r).toEqual(jasmine.objectContaining({ isConfirmed: true, isDenied: false, isDismissed: false }));
       expect(dialogo()).toBeNull();
     });
 
-    it('información: aviso de información', async () => {
+    itSinReloj('información: aviso de información', async () => {
       await panel.fire({ title: 'Información', text: 'El alumno ya está activo (tiene deportes activos)', icon: 'info' });
       expect(avisos.lista().map((a) => [a.tipo, a.texto])).toEqual([['info', 'El alumno ya está activo (tiene deportes activos)']]);
     });
 
-    it('error: aviso de error (role=alert, sin cierre solo); un título que no es «Error» va delante de la frase', async () => {
+    itSinReloj('error: aviso de error (role=alert, sin cierre solo); un título que no es «Error» va delante de la frase', async () => {
       await panel.fire({ title: 'Error', text: 'No se pudieron cargar las convocatorias', icon: 'error' });
       await panel.fire({ title: 'No se pudo subir el documento', text: 'El archivo supera 10 MB.', icon: 'error' });
       expect(avisos.lista().map((a) => [a.tipo, a.texto])).toEqual([
@@ -125,7 +126,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       ]);
     });
 
-    it('aviso sin cancelar con icono de advertencia: error, que no se cierra solo', async () => {
+    itSinReloj('aviso sin cancelar con icono de advertencia: error, que no se cierra solo', async () => {
       await panel.fire({ title: 'No se puede eliminar', text: 'El alumno debe tener al menos un deporte asignado', icon: 'warning' });
       expect(avisos.lista().map((a) => [a.tipo, a.texto])).toEqual([
         ['error', 'No se puede eliminar. El alumno debe tener al menos un deporte asignado'],
@@ -161,7 +162,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       cancelButtonText: 'Cancelar',
     };
 
-    it('título, frase y botones de hoy; foco en la acción; aceptar da isConfirmed', async () => {
+    itSinReloj('título, frase y botones de hoy; foco en la acción; aceptar da isConfirmed', async () => {
       anchoDeMovil(false);
       const p = abrir(ACTUALIZAR);
       const d = dialogo()!;
@@ -175,7 +176,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(document.activeElement).withContext('foco de vuelta al disparador').toBe(disparador);
     });
 
-    it('cancelar, Esc o la X: isDismissed con dismiss «cancel»', async () => {
+    itSinReloj('cancelar, Esc o la X: isDismissed con dismiss «cancel»', async () => {
       let p = abrir(ACTUALIZAR);
       boton('Cancelar').click();
       expect(await p).toEqual({ isConfirmed: false, isDenied: false, isDismissed: true, dismiss: 'cancel' as any });
@@ -184,7 +185,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect((await p).isDismissed).toBeTrue();
     });
 
-    it('destructivo (eliminar, o rojo): acción en peligro y foco en «Cancelar»', async () => {
+    itSinReloj('destructivo (eliminar, o rojo): acción en peligro y foco en «Cancelar»', async () => {
       const p = abrir({
         title: '¿Estás seguro?',
         text: 'Eliminarás este documento permanentemente',
@@ -206,14 +207,14 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       await q;
     });
 
-    it('desactivar (naranja, se puede deshacer) no es destructivo', async () => {
+    itSinReloj('desactivar (naranja, se puede deshacer) no es destructivo', async () => {
       const p = abrir({ title: '¿Desactivar deporte?', text: 'x', icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, desactivar', confirmButtonColor: '#ffa500' });
       expect(dialogo()!.classList).not.toContain('pn-dialogo--peligro');
       boton('Cancelar').click();
       await p;
     });
 
-    it('«denegar» es la segunda acción del diálogo; html con negrita y lista; da isDenied', async () => {
+    itSinReloj('«denegar» es la segunda acción del diálogo; html con negrita y lista; da isDenied', async () => {
       anchoDeMovil(false);
       const p = abrir(BAJA_O_ELIMINAR, 'baja-o-eliminar');
       const d = dialogo()!;
@@ -236,7 +237,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(await p).toEqual(jasmine.objectContaining({ isConfirmed: false, isDenied: true, isDismissed: false }));
     });
 
-    it('«denegar» no destructivo (teléfono secundario): botón secundario', async () => {
+    itSinReloj('«denegar» no destructivo (teléfono secundario): botón secundario', async () => {
       const p = abrir({
         title: 'Seleccionar telefono',
         text: 'A qué número deseas enviar el mensaje de WhatsApp?',
@@ -270,7 +271,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       inputValidator: (value) => (value ? null : 'Debes seleccionar un deporte'),
     };
 
-    it('select de hasta 6 opciones: pastillas (radiogroup); la validación sale en línea bajo el campo, no en un aviso', async () => {
+    itSinReloj('select de hasta 6 opciones: pastillas (radiogroup); la validación sale en línea bajo el campo, no en un aviso', async () => {
       const p = abrir(PARA_QUE_DEPORTE);
       const grupo = dialogo()!.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(document.getElementById(grupo.getAttribute('aria-labelledby')!)!.textContent!.trim()).toBe('Selecciona un deporte');
@@ -292,7 +293,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(r).toEqual(jasmine.objectContaining({ isConfirmed: true, value: 'KICKBOXING' }));
     });
 
-    it('select de más de 6 opciones: un desplegable con el valor de hoy elegido; «Crear nueva» (denegar) da isDenied', async () => {
+    itSinReloj('select de más de 6 opciones: un desplegable con el valor de hoy elegido; «Crear nueva» (denegar) da isDenied', async () => {
       const opciones: Record<string, string> = {};
       for (let i = 1; i <= 8; i++) opciones[String(i)] = `2026-0${i}-10`;
       let p = abrir({
@@ -322,7 +323,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect((await p).isDenied).toBeTrue();
     });
 
-    it('radio con valor de hoy: pastilla elegida; aceptar da su valor', async () => {
+    itSinReloj('radio con valor de hoy: pastilla elegida; aceptar da su valor', async () => {
       const p = abrir({
         title: 'Selecciona cinturon rojo',
         text: 'El alumno pasara a rojo en Taekwondo. Selecciona el tipo de cinturon.',
@@ -340,7 +341,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(await p).toEqual(jasmine.objectContaining({ isConfirmed: true, value: 'normal' }));
     });
 
-    it('fecha: campo con su etiqueta y el valor de hoy; vacío da el error en línea con el foco en el campo', async () => {
+    itSinReloj('fecha: campo con su etiqueta y el valor de hoy; vacío da el error en línea con el foco en el campo', async () => {
       const p = abrir({
         title: 'Nueva convocatoria (Taekwondo)',
         input: 'date',
@@ -370,7 +371,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(await p).toEqual(jasmine.objectContaining({ isConfirmed: true, value: '2026-12-10' }));
     });
 
-    it('textarea con sus atributos y validación', async () => {
+    itSinReloj('textarea con sus atributos y validación', async () => {
       const p = abrir({
         title: 'Cancelar cargo',
         text: '«MATRÍCULA». No se borra.',
@@ -393,7 +394,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(await p).toEqual(jasmine.objectContaining({ isConfirmed: true, value: 'Baja médica' }));
     });
 
-    it('formulario html por id (dar de alta): pastillas con los mismos valores; preConfirm lee el DOM; el aviso de validación sale en línea', async () => {
+    itSinReloj('formulario html por id (dar de alta): pastillas con los mismos valores; preConfirm lee el DOM; el aviso de validación sale en línea', async () => {
       const opciones: SweetAlertOptions = {
         title: 'Selecciona el deporte a activar',
         html: `
@@ -441,7 +442,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect(await p).toEqual(jasmine.objectContaining({ isConfirmed: true, value: 'TODOS' }));
     });
 
-    it('acción larga (preConfirm con promesa): botón ocupado y Esc sin efecto hasta que termina', async () => {
+    itSinReloj('acción larga (preConfirm con promesa): botón ocupado y Esc sin efecto hasta que termina', async () => {
       let soltar!: (v: string) => void;
       const p = abrir({
         title: 'Guardar',
@@ -466,7 +467,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
   });
 
   describe('lo que no se puede traducir', () => {
-    it('un tipo de campo desconocido (file): confirmación genérica con el mismo título y frase, sin campo y sin SweetAlert2', async () => {
+    itSinReloj('un tipo de campo desconocido (file): confirmación genérica con el mismo título y frase, sin campo y sin SweetAlert2', async () => {
       const p = abrir({ title: 'Sube un fichero', text: 'Elige el documento.', input: 'file', showCancelButton: true, confirmButtonText: 'Subir' });
       const d = dialogo()!;
       expect(d.querySelector('h2')!.textContent!.trim()).toBe('Sube un fichero');
@@ -477,7 +478,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
       expect((await p).isConfirmed).toBeTrue();
     });
 
-    it('«OK» de SweetAlert2 pasa a «Aceptar»', async () => {
+    itSinReloj('«OK» de SweetAlert2 pasa a «Aceptar»', async () => {
       const p = abrir({ title: 'Seguro', input: 'range', showCancelButton: true });
       expect(boton('Aceptar')).toBeTruthy();
       boton('Aceptar').click();

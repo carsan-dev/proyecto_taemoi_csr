@@ -11,6 +11,7 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { SolicitudesService } from '../../../../servicios/endpoints/solicitudes.service';
 import { Toast } from '../../../../utils/toast.util';
 import { ProductosAlumnoComponent } from './productos-alumno.component';
+import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 /** Pieza 6c-7 (decisiones 190 y 191): en la ficha, la gestión desmarca un cargo pagado y se abre «Pedir al propietario». */
 describe('ProductosAlumnoComponent: «Pedir al propietario»', () => {
@@ -43,7 +44,7 @@ describe('ProductosAlumnoComponent: «Pedir al propietario»', () => {
     swal = spyOn(Swal, 'fire').and.returnValue(Promise.resolve({ isConfirmed: true, value: 'pagó otro hermano' } as any));
   });
 
-  it('la gestión desmarca un cargo pagado: el checkbox vuelve a marcado y se abre el diálogo', async () => {
+  itSinReloj('la gestión desmarca un cargo pagado: el checkbox vuelve a marcado y se abre el diálogo', async () => {
     const component = crear(false);
     const producto = component.productosAlumno[0];
 
@@ -62,7 +63,7 @@ describe('ProductosAlumnoComponent: «Pedir al propietario»', () => {
     });
   });
 
-  it('en pantalla, el checkbox desmarcado por la gestión vuelve a verse marcado', async () => {
+  itSinReloj('en pantalla, el checkbox desmarcado por la gestión vuelve a verse marcado', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ProductosAlumnoComponent],

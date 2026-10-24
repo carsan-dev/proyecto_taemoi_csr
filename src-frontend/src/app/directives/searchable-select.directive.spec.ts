@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { SearchableSelectDirective } from './searchable-select.directive';
+import { itSinReloj } from '../testing/reloj-prueba';
 
 @Component({
   standalone: true,
@@ -71,7 +72,7 @@ describe('SearchableSelectDirective', () => {
     expect(dropdowns()[0].querySelector('.is-active')?.textContent?.trim()).toBe('Kimono azul');
   });
 
-  it('al escribir filtra por el término y oculta el marcador', async () => {
+  itSinReloj('al escribir filtra por el término y oculta el marcador', async () => {
     const input = inputs()[0];
     input.dispatchEvent(new Event('focus'));
     type(input, 'kimono');
@@ -79,7 +80,7 @@ describe('SearchableSelectDirective', () => {
     expect(visible(0)).toEqual(['Kimono azul']);
   });
 
-  it('con [ngValue]=null seleccionado deja el input vacío y usa su texto de placeholder', async () => {
+  itSinReloj('con [ngValue]=null seleccionado deja el input vacío y usa su texto de placeholder', async () => {
     host.real = null;
     await settle();
     const input = inputs()[0];
@@ -95,13 +96,13 @@ describe('SearchableSelectDirective', () => {
     expect(input.placeholder).toBe('Elige un grupo');
   });
 
-  it('muestra como valor una opción con value real como TODOS', async () => {
+  itSinReloj('muestra como valor una opción con value real como TODOS', async () => {
     host.real = 'TODOS';
     await settle();
     expect(inputs()[0].value).toBe('Todos los Alumnos');
   });
 
-  it('una opción value="" con data-opcion-real se muestra como valor y se encuentra al filtrar', async () => {
+  itSinReloj('una opción value="" con data-opcion-real se muestra como valor y se encuentra al filtrar', async () => {
     const input = inputs()[2];
     expect(input.value).toBe('Sin grupo asignado');
     input.dispatchEvent(new Event('focus'));
@@ -110,7 +111,7 @@ describe('SearchableSelectDirective', () => {
     expect(visible(2)).toEqual(['Sin grupo asignado']);
   });
 
-  it('click en el input tras escribir no pierde el filtro', async () => {
+  itSinReloj('click en el input tras escribir no pierde el filtro', async () => {
     const input = inputs()[0];
     input.dispatchEvent(new Event('focus'));
     type(input, 'kimono');
@@ -119,7 +120,7 @@ describe('SearchableSelectDirective', () => {
     expect(visible(0)).toEqual(['Kimono azul']);
   });
 
-  it('con un filtrado pendiente del debounce, abrir muestra todas las opciones', async () => {
+  itSinReloj('con un filtrado pendiente del debounce, abrir muestra todas las opciones', async () => {
     const input = inputs()[0];
     input.dispatchEvent(new Event('focus'));
     type(input, 'kimono');
@@ -129,7 +130,7 @@ describe('SearchableSelectDirective', () => {
     expect(visible(0).length).toBe(4);
   });
 
-  it('al escribir y cerrar sin elegir restaura la etiqueta de la selección', async () => {
+  itSinReloj('al escribir y cerrar sin elegir restaura la etiqueta de la selección', async () => {
     const input = inputs()[0];
     input.dispatchEvent(new Event('focus'));
     type(input, 'xyz');
@@ -158,7 +159,7 @@ class HostConClaseComponent {
 }
 
 describe('SearchableSelectDirective: clase de la lista flotante (8b-3b)', () => {
-  it('añade las clases pedidas a la lista (que va en el body) y, sin pedirlas, la deja como hoy', async () => {
+  itSinReloj('añade las clases pedidas a la lista (que va en el body) y, sin pedirlas, la deja como hoy', async () => {
     await TestBed.configureTestingModule({ imports: [HostConClaseComponent] }).compileComponents();
     const fixture = TestBed.createComponent(HostConClaseComponent);
     fixture.detectChanges();
@@ -192,7 +193,7 @@ class HostConVariablesComponent {
 }
 
 describe('SearchableSelectDirective: variables de la lista flotante (8b-C)', () => {
-  it('copia las variables pedidas en la lista del body, las cambia y las quita; sin pedirlas, nada', async () => {
+  itSinReloj('copia las variables pedidas en la lista del body, las cambia y las quita; sin pedirlas, nada', async () => {
     await TestBed.configureTestingModule({ imports: [HostConVariablesComponent] }).compileComponents();
     const fixture = TestBed.createComponent(HostConVariablesComponent);
     fixture.detectChanges();

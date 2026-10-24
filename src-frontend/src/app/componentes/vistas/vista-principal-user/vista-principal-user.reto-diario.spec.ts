@@ -1,6 +1,7 @@
 import Swal, { SweetAlertResult } from 'sweetalert2';
 
 import { VistaPrincipalUserComponent } from './vista-principal-user.component';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 /**
  * Decisión 248: con la checklist sin confirmar, «Revisar checklist» y «Marcar de todos modos» son botones propios
@@ -36,7 +37,7 @@ describe('VistaPrincipalUserComponent: checklist del reto diario sin confirmar',
     swal = spyOn(Swal, 'fire');
   });
 
-  it('pregunta con «Revisar checklist», «Marcar de todos modos» y «Cancelar» como botones distintos', async () => {
+  itSinReloj('pregunta con «Revisar checklist», «Marcar de todos modos» y «Cancelar» como botones distintos', async () => {
     responder({ isDismissed: true, dismiss: Swal.DismissReason.esc });
     crear().completarRetoDiario();
     await esperar();
@@ -54,7 +55,7 @@ describe('VistaPrincipalUserComponent: checklist del reto diario sin confirmar',
   });
 
   for (const motivo of ['esc', 'backdrop', 'close', 'cancel'] as const) {
-    it(`cerrar el diálogo (${motivo}) no marca el reto ni cambia el estado`, async () => {
+    itSinReloj(`cerrar el diálogo (${motivo}) no marca el reto ni cambia el estado`, async () => {
       responder({ isDismissed: true, dismiss: Swal.DismissReason[motivo] });
       const c = crear();
       c.completarRetoDiario();
@@ -68,7 +69,7 @@ describe('VistaPrincipalUserComponent: checklist del reto diario sin confirmar',
     });
   }
 
-  it('«Revisar checklist» abre la explicación y no marca el reto', async () => {
+  itSinReloj('«Revisar checklist» abre la explicación y no marca el reto', async () => {
     responder({ isConfirmed: true });
     const c = crear();
     c.completarRetoDiario();
@@ -78,7 +79,7 @@ describe('VistaPrincipalUserComponent: checklist del reto diario sin confirmar',
     expect(endpoints.completarRetoDiario).not.toHaveBeenCalled();
   });
 
-  it('«Marcar de todos modos» marca el reto', async () => {
+  itSinReloj('«Marcar de todos modos» marca el reto', async () => {
     responder({ isDenied: true });
     const c = crear();
     c.completarRetoDiario();

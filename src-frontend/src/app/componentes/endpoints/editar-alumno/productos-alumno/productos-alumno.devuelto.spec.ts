@@ -8,6 +8,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { SolicitudesService } from '../../../../servicios/endpoints/solicitudes.service';
 import { ProductosAlumnoComponent } from './productos-alumno.component';
+import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 /** Pieza 6c-9 (153): en la ficha, el cargo devuelto se ve como devuelto y no se desmarca. */
 describe('ProductosAlumnoComponent: devuelto', () => {
@@ -42,7 +43,7 @@ describe('ProductosAlumnoComponent: devuelto', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('el cargo devuelto lleva la marca en lugar de la casilla de pagado; el resto, como siempre', async () => {
+  itSinReloj('el cargo devuelto lleva la marca en lugar de la casilla de pagado; el resto, como siempre', async () => {
     // Los productos se pintan del más reciente al más antiguo (la lista llega invertida).
     const el = await montar([{ ...base, id: 2, concepto: 'CAMISETA' }, { ...base, devuelto: true }]);
     const [devuelto, normal] = Array.from(el.querySelectorAll<HTMLElement>('tbody tr'));

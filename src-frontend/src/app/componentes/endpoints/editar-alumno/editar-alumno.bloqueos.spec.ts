@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { EditarAlumnoComponent } from './editar-alumno.component';
 import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 /** Pieza 6c-1: la ficha muestra el mensaje del 409 del backend al quitar de una convocatoria (decisión 186). */
 describe('EditarAlumnoComponent: bloqueos del examen pagado', () => {
@@ -33,7 +34,7 @@ describe('EditarAlumnoComponent: bloqueos del examen pagado', () => {
     swal = spyOn(Swal, 'fire').and.returnValue(Promise.resolve({ isConfirmed: true } as any));
   });
 
-  it('quitar de la convocatoria con examen pagado: aviso del backend', async () => {
+  itSinReloj('quitar de la convocatoria con examen pagado: aviso del backend', async () => {
     endpoints.eliminarAlumnoDeConvocatoria.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 409, error: { mensaje: EXAMEN_PAGADO } }))
     );
@@ -46,7 +47,7 @@ describe('EditarAlumnoComponent: bloqueos del examen pagado', () => {
     expect(swal).toHaveBeenCalledWith(jasmine.objectContaining({ icon: 'error', text: EXAMEN_PAGADO }));
   });
 
-  it('sin mensaje del backend, el texto de siempre', async () => {
+  itSinReloj('sin mensaje del backend, el texto de siempre', async () => {
     endpoints.eliminarAlumnoDeConvocatoria.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 500, error: null }))
     );
