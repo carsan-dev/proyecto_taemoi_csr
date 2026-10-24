@@ -13,6 +13,7 @@ import { EstilosPanelService } from '../estilos-panel.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { SIERRA_PRUEBA } from '../tema-prueba';
 import { AvisosService, DURACION_AVISO, MAX_AVISOS, RETRASO_ANUNCIO } from './avisos.service';
+import { itSinReloj } from '../../testing/reloj-prueba';
 
 @Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
 class PantallaNueva {}
@@ -55,6 +56,10 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
       ],
     });
     avisos = TestBed.inject(AvisosService);
+    // El effect del servicio deja pedido un pintado (setTimeout y requestAnimationFrame reales). Si se cancelara ya dentro
+    // de fakeAsync, la zona simulada borraría el temporizador simulado con el mismo número (el retraso del anuncio de la
+    // prueba): pasaba con la prueba primera del navegador, cuando los dos números aún son bajos. Se pinta aquí, fuera.
+    pintar();
   });
 
   afterEach(() => {
@@ -187,7 +192,7 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     flush();
   }));
 
-  it('un error en una pantalla nueva cierra el SweetAlert2 del interceptor (como el aviso de hoy, que lo sustituía)', async () => {
+  itSinReloj('un error en una pantalla nueva cierra el SweetAlert2 del interceptor (como el aviso de hoy, que lo sustituía)', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/alumnosListar');
     void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
@@ -196,7 +201,7 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     expect(Swal.isVisible()).toBeFalse();
   });
 
-  it('un error no cierra un SweetAlert2 que no sea el del interceptor', async () => {
+  itSinReloj('un error no cierra un SweetAlert2 que no sea el del interceptor', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/alumnosListar');
     void Swal.fire({ title: 'Confirmar cobro', showClass: { popup: '' }, hideClass: { popup: '' } });

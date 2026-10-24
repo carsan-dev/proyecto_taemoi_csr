@@ -14,6 +14,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
 import { HerramientaAlumnos, HerramientaPanelComponent } from './herramienta-panel.component';
 import { InformePdfPanelService } from './informe-pdf-panel.service';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 const API = environment.apiUrl;
 
@@ -324,7 +325,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     entrada.blur();
   });
 
-  it('gestión: mensualidad individual con el 409 «confirmar» en el diálogo nuevo y el reintento forzado de hoy', async () => {
+  itSinReloj('gestión: mensualidad individual con el 409 «confirmar» en el diálogo nuevo y el reintento forzado de hoy', async () => {
     const { comp } = hoy();
     const fire = spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as never);
     comp.alumnoSeleccionado = 5;

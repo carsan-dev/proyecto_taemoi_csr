@@ -6,6 +6,7 @@ import Swal, { SweetAlertResult } from 'sweetalert2';
 import { EditarAlumnoComponent } from './editar-alumno.component';
 import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 /**
  * Decisión 248: en «¿Ha sido abonada…?», «Sí» y «No» son botones propios (confirmar y denegar) y cerrar el diálogo
@@ -58,7 +59,7 @@ describe('EditarAlumnoComponent: ¿abonada? al reservar plaza', () => {
 
   for (const caso of casos) {
     describe(caso.nombre, () => {
-      it('pregunta con «Sí», «No» y «Cancelar» como botones distintos', async () => {
+      itSinReloj('pregunta con «Sí», «No» y «Cancelar» como botones distintos', async () => {
         responder({ isDismissed: true, dismiss: Swal.DismissReason.esc });
         caso.abrir(crear());
         await esperar();
@@ -76,7 +77,7 @@ describe('EditarAlumnoComponent: ¿abonada? al reservar plaza', () => {
       });
 
       for (const motivo of ['esc', 'backdrop', 'close', 'cancel'] as const) {
-        it(`cerrar el diálogo (${motivo}) no crea ninguna reserva`, async () => {
+        itSinReloj(`cerrar el diálogo (${motivo}) no crea ninguna reserva`, async () => {
           responder({ isDismissed: true, dismiss: Swal.DismissReason[motivo] });
           const component = crear();
           caso.abrir(component);
@@ -88,7 +89,7 @@ describe('EditarAlumnoComponent: ¿abonada? al reservar plaza', () => {
         });
       }
 
-      it('«Sí» reserva como pagada', async () => {
+      itSinReloj('«Sí» reserva como pagada', async () => {
         responder({ isConfirmed: true });
         caso.abrir(crear());
         await esperar();
@@ -99,7 +100,7 @@ describe('EditarAlumnoComponent: ¿abonada? al reservar plaza', () => {
         }
       });
 
-      it('«No» reserva como no pagada', async () => {
+      itSinReloj('«No» reserva como no pagada', async () => {
         responder({ isDenied: true });
         caso.abrir(crear());
         await esperar();

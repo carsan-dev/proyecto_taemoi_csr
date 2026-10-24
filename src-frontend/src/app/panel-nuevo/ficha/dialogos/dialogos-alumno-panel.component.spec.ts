@@ -5,6 +5,7 @@ import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
 import { CONSULTA_HOJA } from '../../capas/capa-modal';
 import { DialogosAlumnoPanelComponent } from './dialogos-alumno-panel.component';
 import { FotoAmpliadaPanelComponent } from './foto-ampliada-panel.component';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 /** Lo que los diálogos leen y llaman de la ficha (`[ficha]="this"`): el estado y los métodos de la ficha de hoy. */
 function fichaFalsa(): any {
@@ -150,7 +151,7 @@ describe('DialogosAlumnoPanelComponent: los diálogos de la ficha en el panel nu
     expect(panel()!.textContent).toContain('No hay convocatorias disponibles para este deporte');
   });
 
-  it('Esc, la X y «Cerrar» cierran con el método de la ficha y el foco vuelve al disparador', async () => {
+  itSinReloj('Esc, la X y «Cerrar» cierran con el método de la ficha y el foco vuelve al disparador', async () => {
     abrir('mostrarModalConvocatorias');
     panel()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(ficha.cerrarModalConvocatorias).toHaveBeenCalledTimes(1);
@@ -222,7 +223,7 @@ describe('DialogosAlumnoPanelComponent: los diálogos de la ficha en el panel nu
     expect(panel()!.classList).toContain('pn-panel--hoja');
   });
 
-  it('actualizar grado: diálogo con el grado actual, «Nuevo Grado» y «Fecha de Grado»; aceptar pone los valores y llama a la ficha', async () => {
+  itSinReloj('actualizar grado: diálogo con el grado actual, «Nuevo Grado» y «Fecha de Grado»; aceptar pone los valores y llama a la ficha', async () => {
     abrir('mostrarModalActualizarGrado');
     const d = dialogo()!;
     expect(d.querySelector('h2')!.textContent!.trim()).toBe('Actualizar Grado - Taekwondo');
@@ -243,7 +244,7 @@ describe('DialogosAlumnoPanelComponent: los diálogos de la ficha en el panel nu
     expect(ficha.mostrarModalActualizarGrado).toBeFalse();
   });
 
-  it('actualizar grado: cancelar llama a cerrarModalActualizarGrado sin actualizar', async () => {
+  itSinReloj('actualizar grado: cancelar llama a cerrarModalActualizarGrado sin actualizar', async () => {
     abrir('mostrarModalActualizarGrado');
     boton(dialogo()!, 'Cancelar').click();
     await esperar();

@@ -9,6 +9,7 @@ import { ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { SIERRA_PRUEBA } from '../tema-prueba';
 import { DisenoNuevoComponent } from './diseno-nuevo.component';
+import { itSinReloj } from '../../testing/reloj-prueba';
 
 const API = environment.apiUrl;
 
@@ -93,7 +94,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
   const fila = (id: number) => el().querySelector<HTMLElement>(`[data-usuario="${id}"]`)!;
   const boton = (id: number) => fila(id).querySelector<HTMLButtonElement>('button')!;
 
-  it('espera a la hoja del panel nuevo y su raíz lleva la clase pn', async () => {
+  itSinReloj('espera a la hoja del panel nuevo y su raíz lleva la clase pn', async () => {
     fixture.detectChanges();
     expect(el().querySelector('.pn')).not.toBeNull();
     expect(el().querySelector('[data-usuario]')).toBeNull();
@@ -103,7 +104,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(filas().length).toBe(3);
   });
 
-  it('8b-C: «Diseño nuevo» sigue en neutros aunque haya marca aplicada (se abre también con el panel de hoy)', async () => {
+  itSinReloj('8b-C: «Diseño nuevo» sigue en neutros aunque haya marca aplicada (se abre también con el panel de hoy)', async () => {
     const quitarTokens = ponerTokensDePrueba();
     TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
     await listo();
@@ -119,7 +120,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     quitarTokens();
   });
 
-  it('cruza el estado con los miembros: nombre, rol visible y estado; sin nombre, la cuenta por número', async () => {
+  itSinReloj('cruza el estado con los miembros: nombre, rol visible y estado; sin nombre, la cuenta por número', async () => {
     await listo();
     expect(filas().map((f) => f.dataset['usuario'])).toEqual(['4', '8', '9']);
     expect(fila(4).textContent).toContain('Lucía Ferrer Prado');
@@ -133,7 +134,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(boton(8).textContent?.trim()).toBe('Dar permiso');
   });
 
-  it('el estado de cada fila deja claro que con permiso no hay que volver a darlo', async () => {
+  itSinReloj('el estado de cada fila deja claro que con permiso no hay que volver a darlo', async () => {
     await listo();
     const base = { usuarioId: 1, nombre: 'X', rol: '' };
     const texto = (permitido: boolean, activo: boolean) =>
@@ -143,7 +144,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(texto(false, false)).toBe('Sin permiso');
   });
 
-  it('un clic, una petición; al terminar, la fila cambia y los permisos se vuelven a pedir', async () => {
+  itSinReloj('un clic, una petición; al terminar, la fila cambia y los permisos se vuelven a pedir', async () => {
     await listo();
     boton(8).click();
     boton(8).click();
@@ -163,7 +164,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(reiniciar).toHaveBeenCalledTimes(1);
   });
 
-  it('con una petición en vuelo, los botones de TODAS las filas quedan desactivados', async () => {
+  itSinReloj('con una petición en vuelo, los botones de TODAS las filas quedan desactivados', async () => {
     await listo();
     boton(8).click();
     fixture.detectChanges();
@@ -177,7 +178,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect([4, 8, 9].map((id) => boton(id).disabled)).toEqual([false, false, false]);
   });
 
-  it('quitar el permiso manda {permitido: false}', async () => {
+  itSinReloj('quitar el permiso manda {permitido: false}', async () => {
     await listo();
     boton(4).click();
     const peticion = http.expectOne(`${API}/panel/diseno-nuevo/4`);
@@ -187,7 +188,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(fila(4).textContent).toContain('Sin permiso');
   });
 
-  it('un error de la API muestra su mensaje y deja reintentar', async () => {
+  itSinReloj('un error de la API muestra su mensaje y deja reintentar', async () => {
     await listo();
     boton(9).click();
     http
@@ -203,7 +204,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(reiniciar).not.toHaveBeenCalled();
   });
 
-  it('un error sin mensaje dice qué pasó y qué hacer', async () => {
+  itSinReloj('un error sin mensaje dice qué pasó y qué hacer', async () => {
     await listo();
     boton(8).click();
     http.expectOne(`${API}/panel/diseno-nuevo/8`).flush(null, { status: 500, statusText: 'Error' });
@@ -211,7 +212,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(el().querySelector('[role="alert"]')?.textContent).toContain('No se pudo guardar el cambio');
   });
 
-  it('si la carga falla, muestra el mensaje y «Reintentar» vuelve a pedir', async () => {
+  itSinReloj('si la carga falla, muestra el mensaje y «Reintentar» vuelve a pedir', async () => {
     await cargarHoja();
     http.expectOne(`${API}/panel/diseno-nuevo`).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'No' });
     http.match((r) => r.url === `${API}/miembros`).filter((r) => !r.cancelled).forEach((r) => r.flush(pagina([])));
@@ -225,7 +226,7 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(filas().length).toBe(3);
   });
 
-  it('«Para todo el equipo» está construido pero oculto (decisión 258)', async () => {
+  itSinReloj('«Para todo el equipo» está construido pero oculto (decisión 258)', async () => {
     await listo();
     expect(el().textContent).not.toContain('Para todo el equipo');
     expect(fixture.componentInstance.mostrarParaTodo).toBeFalse();

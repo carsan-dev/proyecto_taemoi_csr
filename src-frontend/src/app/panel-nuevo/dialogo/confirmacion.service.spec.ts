@@ -14,6 +14,7 @@ import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { SIERRA_PRUEBA } from '../tema-prueba';
 import { ConfirmacionService } from './confirmacion.service';
 import { OpcionesConfirmacion, ResultadoConfirmacion } from './dialogo.component';
+import { itSinReloj } from '../../testing/reloj-prueba';
 
 const METODOS = [
   { valor: '', texto: 'Sin indicar' },
@@ -134,7 +135,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(radios.map((r) => r.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1']);
   });
 
-  it('al abrirse en una pantalla nueva cierra el SweetAlert2 del interceptor de errores (el 409 de las herramientas)', async () => {
+  itSinReloj('al abrirse en una pantalla nueva cierra el SweetAlert2 del interceptor de errores (el 409 de las herramientas)', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/alumnosListar');
     void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
@@ -143,7 +144,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(Swal.isVisible()).toBeFalse();
   });
 
-  it('al abrirse no cierra otro SweetAlert2 ni, fuera del panel nuevo, el del interceptor', async () => {
+  itSinReloj('al abrirse no cierra otro SweetAlert2 ni, fuera del panel nuevo, el del interceptor', async () => {
     void Swal.fire({ title: 'Error', showClass: { popup: '' }, hideClass: { popup: '' }, customClass: { popup: CLASE_ERROR_HTTP } });
     void abrir(COBRAR);
     expect(Swal.isVisible()).withContext('ruta de hoy').toBeTrue();
@@ -210,7 +211,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     cancelar.click();
   });
 
-  it('Esc cancela sin hacer nada, cierra el diálogo y devuelve el foco al disparador', async () => {
+  itSinReloj('Esc cancela sin hacer nada, cierra el diálogo y devuelve el foco al disparador', async () => {
     const promesa = abrir(COBRAR);
     dialogo()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     const resultado = await promesa;
@@ -219,13 +220,13 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(document.activeElement).toBe(disparador);
   });
 
-  it('el evento «cancel» del navegador también cancela', async () => {
+  itSinReloj('el evento «cancel» del navegador también cancela', async () => {
     const promesa = abrir(COBRAR);
     dialogo()!.dispatchEvent(new Event('cancel', { cancelable: true }));
     expect((await promesa).confirmado).toBeFalse();
   });
 
-  it('clic fuera (en el velo) cancela; un clic dentro no', async () => {
+  itSinReloj('clic fuera (en el velo) cancela; un clic dentro no', async () => {
     const promesa = abrir(COBRAR);
     let terminado = false;
     void promesa.then(() => (terminado = true));
@@ -239,7 +240,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(document.activeElement).toBe(disparador);
   });
 
-  it('la X «Cerrar» y «Cancelar» cancelan', async () => {
+  itSinReloj('la X «Cerrar» y «Cancelar» cancelan', async () => {
     let promesa = abrir(COBRAR);
     boton('Cerrar').click();
     expect((await promesa).confirmado).toBeFalse();
@@ -248,7 +249,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect((await promesa).confirmado).toBeFalse();
   });
 
-  it('confirmar devuelve la pastilla elegida («Sin indicar» por defecto)', async () => {
+  itSinReloj('confirmar devuelve la pastilla elegida («Sin indicar» por defecto)', async () => {
     let promesa = abrir(COBRAR);
     boton('Marcar como pagado').click();
     expect(await promesa).toEqual({ confirmado: true, valor: '' });
@@ -313,7 +314,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(getComputedStyle(d).borderBottomLeftRadius).toBe('0px');
   });
 
-  it('con `ejecutar`: botón ocupado («Cobrando…», aria-disabled, aria-busy) y Esc no cierra hasta que termina', async () => {
+  itSinReloj('con `ejecutar`: botón ocupado («Cobrando…», aria-disabled, aria-busy) y Esc no cierra hasta que termina', async () => {
     const respuesta = new Subject<string>();
     const ejecutar = jasmine.createSpy('ejecutar').and.returnValue(respuesta);
     const promesa = abrir({ ...COBRAR, ejecutar });
@@ -378,7 +379,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(dialogo()).toBeNull();
   });
 
-  it('con `ejecutar` que falla: cierra y devuelve el error a quien lo abrió', async () => {
+  itSinReloj('con `ejecutar` que falla: cierra y devuelve el error a quien lo abrió', async () => {
     const respuesta = new Subject<string>();
     const promesa = abrir({ ...COBRAR, ejecutar: () => respuesta });
     boton('Marcar como pagado').click();
@@ -388,7 +389,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(resultado.error).toEqual({ status: 500 });
   });
 
-  it('campo requerido: sin elección la acción está deshabilitada y el foco va a «Cancelar»', async () => {
+  itSinReloj('campo requerido: sin elección la acción está deshabilitada y el foco va a «Cancelar»', async () => {
     const promesa = abrir({
       titulo: 'Selecciona el deporte a activar',
       campo: { etiqueta: 'Deporte', opciones: [{ valor: 'TODOS', texto: 'Todos los deportes' }], requerido: true },
@@ -403,7 +404,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(await promesa).toEqual({ confirmado: true, valor: 'TODOS' });
   });
 
-  it('con campos de formulario el foco inicial va al primer campo; sin campos, a la acción', async () => {
+  itSinReloj('con campos de formulario el foco inicial va al primer campo; sin campos, a la acción', async () => {
     const promesa = abrir({
       titulo: 'Rango de edad del grupo',
       accion: 'Guardar',
@@ -418,7 +419,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     await promesa;
   });
 
-  it('8b-3d: destructivo con campos y `focoEnCancelar`: el foco inicial en «Cancelar» y el campo sigue ahí', async () => {
+  itSinReloj('8b-3d: destructivo con campos y `focoEnCancelar`: el foco inicial en «Cancelar» y el campo sigue ahí', async () => {
     const promesa = abrir({
       titulo: 'Revertir cobro',
       mensaje: 'El cobro "Mensualidad" pasará a pendiente.',

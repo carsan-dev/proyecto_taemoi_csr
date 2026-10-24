@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { ProductosAlumnoComponent } from './productos-alumno.component';
+import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 function authFalso(admin: boolean): Partial<AuthenticationService> {
   return {
@@ -91,7 +92,7 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
     expect(component.hasPendingChanges()).toBeFalse();
   });
 
-  it('edita en el navegador, confirma y recarga el mismo día local conservando hora y fecha de pago', async () => {
+  itSinReloj('edita en el navegador, confirma y recarga el mismo día local conservando hora y fecha de pago', async () => {
     const original = new Date(stored.fechaAsignacion);
     const pago = stored.fechaPago;
     await changeDate('2026-02-15');
@@ -114,7 +115,7 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
     expect(component.hasPendingChanges()).toBeFalse();
   });
 
-  it('cancelar restaura el timestamp original sin guardar y las filas eliminadas deshabilitan la fecha', async () => {
+  itSinReloj('cancelar restaura el timestamp original sin guardar y las filas eliminadas deshabilitan la fecha', async () => {
     const original = stored.fechaAsignacion;
     await changeDate('2026-02-15');
     component.cancelarCambiosPendientes();
@@ -132,7 +133,7 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
     expect(input().disabled).toBeTrue();
   });
 
-  it('no modifica timestamps al seleccionar el mismo día o editar otro campo', async () => {
+  itSinReloj('no modifica timestamps al seleccionar el mismo día o editar otro campo', async () => {
     const original = stored.fechaAsignacion;
     await changeDate(input().value);
     expect(component.hasPendingChanges()).toBeFalse();
@@ -144,7 +145,7 @@ describe('ProductosAlumnoComponent: fecha de asignación', () => {
     expect(endpoints.actualizarProductoAlumno.calls.mostRecent().args[1].fechaAsignacion).toBe(original);
   });
 
-  it('conserva null legacy al editar cantidad y permite asignarle un día', async () => {
+  itSinReloj('conserva null legacy al editar cantidad y permite asignarle un día', async () => {
     stored.fechaAsignacion = null as unknown as Date;
     component.obtenerProductosAlumno(10);
     fixture.detectChanges();
@@ -190,7 +191,7 @@ describe('ProductosAlumnoComponent: matrícula por deporte', () => {
     expect(endpoints.asignarProductoAAlumno).not.toHaveBeenCalled();
   });
 
-  it('muestra el selector y el deporte pendiente en la plantilla del navegador', async () => {
+  itSinReloj('muestra el selector y el deporte pendiente en la plantilla del navegador', async () => {
     await TestBed.configureTestingModule({
       imports: [ProductosAlumnoComponent],
       providers: [
@@ -349,21 +350,21 @@ describe('ProductosAlumnoComponent: cargos cancelados (6b-3)', () => {
       .map((b) => (b.getAttribute('aria-label') ?? b.textContent ?? '').trim());
   }
 
-  it('gestor: cancela pendientes y reactiva cancelados, pero no ve la papelera', async () => {
+  itSinReloj('gestor: cancela pendientes y reactiva cancelados, pero no ve la papelera', async () => {
     await montar(false);
     expect(botones(fila('MENSUALIDAD MARZO'))).toEqual(['Cancelar cargo MENSUALIDAD MARZO']);
     expect(botones(fila('DOBOK'))).toEqual([]);
     expect(botones(fila('LICENCIA'))).toEqual(['Reactivar cargo LICENCIA']);
   });
 
-  it('propietario: además ve la papelera solo en pendientes no cancelados', async () => {
+  itSinReloj('propietario: además ve la papelera solo en pendientes no cancelados', async () => {
     await montar(true);
     expect(botones(fila('MENSUALIDAD MARZO'))).toEqual(['Cancelar cargo MENSUALIDAD MARZO', 'Marcar para eliminar MENSUALIDAD MARZO']);
     expect(botones(fila('DOBOK'))).toEqual([]);
     expect(botones(fila('LICENCIA'))).toEqual(['Reactivar cargo LICENCIA']);
   });
 
-  it('el cancelado sale tachado, con quién, cuándo y motivo, chip «cancelado» y campos deshabilitados', async () => {
+  itSinReloj('el cancelado sale tachado, con quién, cuándo y motivo, chip «cancelado» y campos deshabilitados', async () => {
     await montar(false);
     const tr = fila('LICENCIA');
     expect(tr.classList).toContain('fila-cancelada');
@@ -374,13 +375,13 @@ describe('ProductosAlumnoComponent: cargos cancelados (6b-3)', () => {
     expect(controles.every((c) => c.disabled)).toBeTrue();
   });
 
-  it('sin nombre: «Cancelado el …»', async () => {
+  itSinReloj('sin nombre: «Cancelado el …»', async () => {
     await montar(false);
     expect(component.textoCancelacion({ ...cancelado, canceladoPorNombre: null, motivoCancelacion: null }))
       .toBe('Cancelado el 04/03/2026');
   });
 
-  it('cancelar pide motivo obligatorio (máx. 500) y aplica la respuesta sin recargar', async () => {
+  itSinReloj('cancelar pide motivo obligatorio (máx. 500) y aplica la respuesta sin recargar', async () => {
     await montar(false);
     const respuesta = { ...pendiente, canceladoEn: '2026-03-05T09:00:00', canceladoPorNombre: 'Gestora Prueba', motivoCancelacion: 'error' };
     endpoints.cancelarProductoAlumno.and.returnValue(of(respuesta));
@@ -401,7 +402,7 @@ describe('ProductosAlumnoComponent: cargos cancelados (6b-3)', () => {
     expect(endpoints.obtenerProductosDelAlumno).toHaveBeenCalledTimes(1);
   });
 
-  it('sin doble clic: mientras cancela, el botón se deshabilita y no se envía otra vez', async () => {
+  itSinReloj('sin doble clic: mientras cancela, el botón se deshabilita y no se envía otra vez', async () => {
     await montar(false);
     const pendienteRespuesta = new Subject<ProductoAlumnoDTO>();
     endpoints.cancelarProductoAlumno.and.returnValue(pendienteRespuesta.asObservable());
@@ -423,7 +424,7 @@ describe('ProductosAlumnoComponent: cargos cancelados (6b-3)', () => {
     expect(component.accionEnCurso(1)).toBeFalse();
   });
 
-  it('reactivar confirma y aplica la respuesta', async () => {
+  itSinReloj('reactivar confirma y aplica la respuesta', async () => {
     await montar(false);
     endpoints.reactivarProductoAlumno.and.returnValue(of({ ...pendiente, id: 3, concepto: 'LICENCIA' }));
     const confirmado = Promise.resolve({ isConfirmed: true } as any);
