@@ -132,6 +132,21 @@ public class AlumnoServiceImplTest {
 		assertFalse(result.isPresent());
 	}
 
+	/** Pieza 8b-3n (decisión 299): la ficha dice si el alumno se eliminó anonimizando. */
+	@Test
+	public void obtenerAlumnoPorIdDTO_alumnoEliminado_soloSiEstaAnonimizado() {
+		Alumno vigente = new Alumno();
+		vigente.setId(1L);
+		Alumno anonimizado = new Alumno();
+		anonimizado.setId(2L);
+		anonimizado.setAnonimizadoEn(java.time.LocalDateTime.of(2026, 10, 24, 10, 0));
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(vigente));
+		when(alumnoRepository.findById(2L)).thenReturn(Optional.of(anonimizado));
+
+		assertEquals(Boolean.FALSE, alumnoService.obtenerAlumnoPorIdDTO(1L).orElseThrow().getAlumnoEliminado());
+		assertEquals(Boolean.TRUE, alumnoService.obtenerAlumnoPorIdDTO(2L).orElseThrow().getAlumnoEliminado());
+	}
+
 	/*
 	 * @Test public void testActualizarAlumno() { Alumno alumnoExistente = new
 	 * Alumno();

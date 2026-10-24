@@ -75,6 +75,23 @@ public class AlumnoDTO {
 	 */
 	private List<AlumnoDeporteDTO> deportes = new ArrayList<>();
 
+	/**
+	 * Pieza 8b-3n (decisión 299), aditivo y solo de salida: el alumno se eliminó anonimizando. Solo lo rellena
+	 * {@code GET /api/alumnos/{id}} (true o false); en las demás respuestas va nulo y no sale ({@code NON_NULL}). Se
+	 * ignora si llega en una petición.
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Boolean alumnoEliminado;
+
+	public Boolean getAlumnoEliminado() {
+		return alumnoEliminado;
+	}
+
+	public void setAlumnoEliminado(Boolean alumnoEliminado) {
+		this.alumnoEliminado = alumnoEliminado;
+	}
+
 	public AlumnoDTO(final Long id, String nombre, String apellidos, Date fechaNacimiento, Integer numeroExpediente,
 			String nif, String direccion, String email, String telefono, String telefono2, String observaciones, Double cuantiaTarifa, String tipoTarifa,
 			RolFamiliar rolFamiliar, String grupoFamiliar, Date fechaAlta, Date fechaAltaInicial, String antiguedad,

@@ -385,6 +385,31 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Alumno eliminado", fila.get("alumnoNombreCompleto").asText());
 	}
 
+	/**
+	 * Pieza 8b-3n (decisión 299): la ficha ({@code GET /api/alumnos/{id}}) dice si se eliminó anonimizando, también al
+	 * responsable de su sede; el listado no cambia (no lleva el campo).
+	 */
+	@Test
+	void ficha_alumnoEliminado_soloTrasAnonimizar_yElListadoNoCambia() throws Exception {
+		String tokenResponsable = e.token(jwtService, usuarios, e.respA);
+		long alumno = e.alumno("IT8B3NFICHA" + e.marca, e.sA, true);
+		long otro = e.alumno("IT8B3NOTRO" + e.marca, e.sA, true);
+		cargo(alumno, "30.00", true);
+
+		JsonNode antes = leer("/api/alumnos/" + alumno, tokenPropietario);
+		assertTrue(antes.has("alumnoEliminado"), antes.toString());
+		assertFalse(antes.get("alumnoEliminado").asBoolean(true));
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+
+		assertTrue(leer("/api/alumnos/" + alumno, tokenPropietario).get("alumnoEliminado").asBoolean(false));
+		assertTrue(leer("/api/alumnos/" + alumno, tokenResponsable).get("alumnoEliminado").asBoolean(false));
+		assertFalse(leer("/api/alumnos/" + otro, tokenPropietario).get("alumnoEliminado").asBoolean(true));
+		JsonNode listado = leer("/api/alumnos?incluirInactivos=true", tokenPropietario);
+		assertTrue(ids(listado).contains(otro));
+		listado.forEach(n -> assertFalse(n.has("alumnoEliminado"), "el listado no lleva el campo"));
+	}
+
 	@Test
 	void anonimizar_quitaLosDatosPersonales_conSusArchivos() throws Exception {
 		long alumno = e.alumno("IT8B3LBISDATOS" + e.marca, e.sA, true);
