@@ -859,6 +859,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private CargoActualizado aplicarCambiosAlCargoBloqueado(ProductoAlumno productoAlumno,
 			ProductoAlumnoDTO detallesDTO, OrigenCobro origen) {
 		boolean viaProfesor = origen == OrigenCobro.PROFESOR;
+		// 8b-3l bis: en un cargo de un alumno eliminado anonimizando solo se cobra o se revierte el cobro (tesorería);
+		// cambiar notas, precio, cantidad, concepto o fecha de asignación → 409.
+		if (cambiaDatosDelCargo(productoAlumno, detallesDTO)) {
+			exigirAlumnoDelCargoNoAnonimizado(productoAlumno);
+		}
 		// Pieza 6b-2c: en un cargo cancelado solo se cambian las notas (cobrarlo, o cambiar precio, cantidad, concepto o
 		// fechas → 409; para cobrarlo, reactivarlo antes). La guarda central está en CobroService.registrar.
 		if (productoAlumno.estaCancelado() && cambiaAlgoMasQueLasNotasDeUnCancelado(productoAlumno, detallesDTO)) {
@@ -922,6 +927,37 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return new CargoActualizado(updatedProductoAlumno, pagadoAntes);
 	}
 
+	private static boolean cambiaPrecioCantidadConceptoOFecha(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		return (cambios.getCantidad() != null && !cambios.getCantidad().equals(cargo.getCantidad()))
+				|| (cambios.getPrecio() != null
+						&& (cargo.getPrecio() == null || Double.compare(cambios.getPrecio(), cargo.getPrecio()) != 0))
+				|| (cambios.getConcepto() != null && !cambios.getConcepto().equals(cargo.getConcepto()))
+				|| (cambios.getFechaAsignacion() != null && !mismoInstante(cambios.getFechaAsignacion(),
+						cargo.getFechaAsignacion()));
+	}
+
+	/** Lo que el PUT cambia del cargo aparte del pago: precio, cantidad, concepto, fecha de asignación o notas. */
+	private static boolean cambiaDatosDelCargo(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
+		return cambiaPrecioCantidadConceptoOFecha(cargo, cambios)
+				|| (cambios.getNotas() != null && !cambios.getNotas().equals(cargo.getNotas()));
+	}
+
+	/**
+	 * 8b-3l bis (decisión 287): el cargo de un alumno eliminado anonimizando (el suyo, el de su inscripción o el de su
+	 * convocatoria) no se reactiva, ni se borra, ni se editan sus datos → 409. Cobrar, revertir un cobro, devolverlo y
+	 * cancelarlo siguen permitidos (el dinero lo gestiona la tesorería).
+	 */
+	private void exigirAlumnoDelCargoNoAnonimizado(ProductoAlumno cargo) {
+		Alumno alumno = cargo.alumnoEfectivo();
+		if (alumno == null && cargo.getId() != null) {
+			alumno = alumnoConvocatoriaRepository.findByProductoAlumnoId(cargo.getId())
+					.map(com.taemoi.project.entities.AlumnoConvocatoria::getAlumno).orElse(null);
+		}
+		if (alumno != null) {
+			alumno.exigirNoAnonimizado();
+		}
+	}
+
 	/** Cargo sin alumno resoluble (ni {@code alumno_id} ni inscripción, pieza 6b-2d; ver D6-20). */
 	private static final String CARGO_SIN_ALUMNO = "El cargo no tiene alumno asociado: lo gestiona la administración.";
 
@@ -948,12 +984,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	}
 
 	private static boolean cambiaAlgoMasQueLasNotas(ProductoAlumno cargo, ProductoAlumnoDTO cambios) {
-		return (cambios.getCantidad() != null && !cambios.getCantidad().equals(cargo.getCantidad()))
-				|| (cambios.getPrecio() != null
-						&& (cargo.getPrecio() == null || Double.compare(cambios.getPrecio(), cargo.getPrecio()) != 0))
-				|| (cambios.getConcepto() != null && !cambios.getConcepto().equals(cargo.getConcepto()))
-				|| (cambios.getFechaAsignacion() != null && !mismoInstante(cambios.getFechaAsignacion(),
-						cargo.getFechaAsignacion()))
+		return cambiaPrecioCantidadConceptoOFecha(cargo, cambios)
 				|| (cambios.getFechaPago() != null && !mismoInstante(cambios.getFechaPago(), cargo.getFechaPago()))
 				|| Boolean.FALSE.equals(cambios.getPagado());
 	}
@@ -1063,6 +1094,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno pa = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			exigirAlumnoDelCargoNoAnonimizado(cargo);
 			exigirSinEncargoEnCurso(id);
 			if (Boolean.TRUE.equals(cargo.getPagado()) || !cobroRepository.findByProductoAlumnoIdOrderByIdAsc(id).isEmpty()) {
 				throw new IllegalStateException(CARGO_CON_COBROS_NO_SE_BORRA);
@@ -1133,6 +1165,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno reactivado = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			exigirAlumnoDelCargoNoAnonimizado(cargo);
 			if (!cargo.estaCancelado()) {
 				throw new IllegalStateException(CARGO_NO_CANCELADO);
 			}
@@ -1155,9 +1188,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	public static final String MOTIVO_ALUMNO_ELIMINADO = "Alumno eliminado";
 
 	/**
-	 * Pieza 8b-3l bis (decisión 287). Sin pagar es: no marcado pagado, sin ningún cobro (en cualquier estado) y sin
-	 * cancelar; lo demás no se toca. El de una convocatoria también se cancela (la inscripción se queda). Un encargo en
-	 * curso → 409 {@code ENCARGO_EN_CURSO} y la transacción de quien anonimiza se deshace entera.
+	 * Pieza 8b-3l bis (decisión 287). Sin pagar es {@code ResumenCargosAlumnoRepository#CARGO_SIN_PAGAR} (lo mismo que
+	 * avisa el resumen de cargos): sin cancelar, no marcado pagado y sin un cobro ACTIVO (uno ANULADO no lo impide, como
+	 * al cancelar a mano); lo demás no se toca. Con el cargo bloqueado se vuelve a comprobar por si cambió entretanto.
+	 * El de una convocatoria también se cancela (la inscripción se queda). Un encargo en curso → 409
+	 * {@code ENCARGO_EN_CURSO} y la transacción de quien anonimiza se deshace entera.
 	 */
 	@Override
 	public List<Long> cancelarSinPagarDeAlumnoEliminado(Long alumnoId) {
@@ -1167,10 +1202,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			return cancelados;
 		}
 		Long usuario = CobroService.usuarioActualId();
-		for (Long id : productoAlumnoRepository.idsCargosDelAlumno(organizacion, alumnoId)) {
+		for (Long id : productoAlumnoRepository.idsCargosSinPagarDelAlumno(organizacion, alumnoId)) {
 			ProductoAlumno cargo = cobros.bloquearCargo(id).orElse(null);
 			if (cargo == null || cargo.estaCancelado() || Boolean.TRUE.equals(cargo.getPagado())
-					|| !cobroRepository.findByProductoAlumnoIdOrderByIdAsc(id).isEmpty()) {
+					|| cobroRepository.findFirstByProductoAlumnoIdAndEstado(id, EstadoCobro.ACTIVO).isPresent()) {
 				continue;
 			}
 			exigirSinEncargoEnCurso(id);

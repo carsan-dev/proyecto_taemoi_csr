@@ -15,20 +15,18 @@ import com.taemoi.project.entities.ProductoAlumno;
 
 public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, Long> {
 	/**
-	 * Pieza 8b-3l bis (decisión 287): ids de los cargos del alumno en la escuela indicada: los suyos, los de sus
-	 * inscripciones y los de sus convocatorias (los mismos que cuenta {@code ResumenCargosAlumnoRepository#contarPagos}).
+	 * Pieza 8b-3l bis (decisión 287): ids de los cargos sin pagar del alumno en la escuela indicada (los suyos, los de
+	 * sus inscripciones y los de sus convocatorias), con la misma regla que avisa el resumen de cargos
+	 * ({@link ResumenCargosAlumnoRepository#CARGO_SIN_PAGAR}).
 	 */
 	@org.springframework.data.jpa.repository.Query(value = """
-			SELECT pa.id FROM producto_alumno pa
-			WHERE pa.organizacion_id = :organizacion
-			  AND (pa.alumno_id = :alumno
-			    OR pa.alumno_deporte_id IN (SELECT ad.id FROM alumno_deporte ad
-			      WHERE ad.alumno_id = :alumno AND ad.organizacion_id = :organizacion)
-			    OR pa.id IN (SELECT ac.producto_alumno_id FROM alumno_convocatoria ac
-			      WHERE ac.alumno_id = :alumno AND ac.producto_alumno_id IS NOT NULL))
+			SELECT pa.id FROM alumno a
+			JOIN producto_alumno pa ON """ + ResumenCargosAlumnoRepository.CARGO_DEL_ALUMNO + """
+			  AND """ + ResumenCargosAlumnoRepository.CARGO_SIN_PAGAR + """
+			WHERE a.organizacion_id = :organizacion AND a.id = :alumno
 			ORDER BY pa.id
 			""", nativeQuery = true)
-	List<Long> idsCargosDelAlumno(@org.springframework.data.repository.query.Param("organizacion") Long organizacion,
+	List<Long> idsCargosSinPagarDelAlumno(@org.springframework.data.repository.query.Param("organizacion") Long organizacion,
 			@org.springframework.data.repository.query.Param("alumno") Long alumno);
 
 	interface TesoreriaPeriodoBaseProjection {
