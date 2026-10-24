@@ -23,6 +23,19 @@ public class TesoreriaMovimientoDTO {
 	 * pagado (decisión 153).
 	 */
 	private boolean devuelto;
+	/**
+	 * Pieza 8b-3l bis (decisión 287), aditivo: el alumno se eliminó anonimizando. La fila sale como «Alumno eliminado»,
+	 * sin enlace a su ficha (es de solo lectura).
+	 */
+	private boolean alumnoEliminado;
+
+	public boolean isAlumnoEliminado() {
+		return alumnoEliminado;
+	}
+
+	public void setAlumnoEliminado(boolean alumnoEliminado) {
+		this.alumnoEliminado = alumnoEliminado;
+	}
 
 	public boolean isDevuelto() {
 		return devuelto;

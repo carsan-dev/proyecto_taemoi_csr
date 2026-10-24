@@ -113,7 +113,7 @@
               <button type="button" class="bajas__menu-opcion bajas__menu-opcion--peligro" role="menuitem" (click)="eliminar(f)">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
-                <span>Eliminar definitivamente</span>
+                <span>{{ conPagos(f.id) ? 'Eliminar anonimizando' : 'Eliminar definitivamente' }}</span>
               </button>
             </div>
             }
@@ -190,7 +190,7 @@
                     <button type="button" class="bajas__menu-opcion bajas__menu-opcion--peligro" role="menuitem" (click)="eliminar(f)">
                       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
-                      <span>Eliminar definitivamente</span>
+                      <span>{{ conPagos(f.id) ? 'Eliminar anonimizando' : 'Eliminar definitivamente' }}</span>
                     </button>
                   </span>
                   }
@@ -214,6 +214,7 @@
 
   @if (lote) {
   <pn-lote-alumnos [tipo]="lote.tipo" [alumnos]="lote.alumnos" [ejecutar]="lote.tipo === 'eliminar' ? eliminarUno : darDeBajaUno"
-    [cargarCargos]="lote.tipo === 'eliminar' ? leerCargos : null" (cerrado)="alCerrarLote($event)" />
+    [cargarCargos]="lote.tipo === 'eliminar' ? leerCargos : null" [pagos]="pagos"
+    [anonimizar]="lote.tipo === 'eliminar' ? anonimizarUno : null" (cerrado)="alCerrarLote($event)" />
   }
 </div>

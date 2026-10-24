@@ -345,7 +345,12 @@ class AceptarSolicitudesIntegrationTest extends MySqlIntegrationTest {
 		long cargo = s.cargoCobrado(alumno);
 		long cobro = cobroActivo(cargo);
 		long id = s.pedir("REVERTIR_COBRO", "cobroId", cobro, "x");
-		assertEquals(200, estado(delete("/api/alumnos/" + alumno), s.tPropietario));
+		// Un alumno con pagos ya no se borra (8b-3l bis, decisión 287: 409). El cobro anulado por «cargo borrado» es un
+		// dato de antes, cuando borrar el alumno anulaba sus cobros sin entregar y borraba sus cargos: se reproduce así.
+		assertEquals(409, estado(delete("/api/alumnos/" + alumno), s.tPropietario));
+		jdbc.update("UPDATE cobro SET estado = 'ANULADO', anulado_en = NOW(6), motivo_anulacion = 'cargo borrado' "
+				+ "WHERE id = ?", cobro);
+		jdbc.update("DELETE FROM producto_alumno WHERE id = ?", cargo);
 		Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
 		assertEquals("ANULADO", antes.get("estado"));
 		assertNull(jdbc.queryForObject("SELECT producto_alumno_id FROM solicitud WHERE id = ?", Long.class, id));

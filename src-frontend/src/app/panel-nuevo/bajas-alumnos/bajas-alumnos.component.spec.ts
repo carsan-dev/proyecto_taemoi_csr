@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { itSinReloj } from '../../testing/reloj-prueba';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
@@ -62,7 +63,26 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     return http.expectOne((r) => r.url === `${API}/alumnos` && r.method === 'GET');
   }
 
-  function crear(propietario: boolean, respuesta = pagina()): TestRequest {
+  /** 8b-3l bis: el resumen de cargos de la página que pide el propietario, con los pagos de cada alumno. */
+  function resumenPagina(pagos: Record<number, number> = {}): void {
+    http.match((r) => r.url === `${API}/alumnos/cargos-resumen`).forEach((r) => {
+      const ids = (r.request.params.get('alumnoIds') ?? '').split(',').filter(Boolean).map(Number);
+      r.flush(
+        ids.map((alumnoId) => ({
+          alumnoId,
+          cargos: 0,
+          pagados: 0,
+          pendientes: 0,
+          importePagado: 0,
+          importePendiente: 0,
+          pagos: pagos[alumnoId] ?? 0,
+        }))
+      );
+    });
+    fixture.detectChanges();
+  }
+
+  function crear(propietario: boolean, respuesta = pagina(), pagos: Record<number, number> = {}): TestRequest {
     TestBed.overrideProvider(AuthenticationService, {
       useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => propietario, obtenerRoles: () => of([]) },
     });
@@ -73,6 +93,7 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     const req = listado();
     req.flush(respuesta);
     fixture.detectChanges();
+    resumenPagina(pagos);
     return req;
   }
 
@@ -193,7 +214,7 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     expect(texto(d.querySelector('.lote__cargos')).replace(/ /g, ' ')).toBe(
       'Entre los 2 tienen 3 cargos: 2 pagados (60,00 €) y 1 pendiente (30,00 €). Se borran con ellos.'
     );
-    expect(Array.from(d.querySelectorAll('.lote__dato')).map(texto)).toEqual(['3 cargos', 'Sin cargos']);
+    expect(Array.from(d.querySelectorAll('.lote__dato')).map(texto)).toEqual(['se elimina · 3 cargos', 'se elimina · Sin cargos']);
 
     boton(d, 'Eliminar 2 alumnos').click();
     await esperar();
@@ -259,7 +280,7 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     await esperar();
     const d = dialogo()!;
     expect(texto(d.querySelector('.lote__cargos'))).toBe(
-      'No se pudieron leer sus pagos y cargos. Se borran igualmente con el alumno.'
+      'No se pudieron leer sus pagos y cargos. Si tiene pagos, no se elimina y verás el motivo.'
     );
     boton(d, 'Eliminar definitivamente').click();
     await esperar();
@@ -269,6 +290,125 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     await esperar();
     expect(texto(d.querySelector('h2'))).toBe('No se pudo eliminar al alumno');
     expect(texto(d.querySelector('.lote__motivo'))).toBe('Solo el propietario puede eliminar alumnos definitivamente.');
+  });
+
+  // ------------------------------------------------------------------ 8b-3l bis (decisión 287): eliminar anonimizando
+
+  it('8b-3l bis: el propietario pide el resumen de cargos de la página; el gestor, no', () => {
+    TestBed.overrideProvider(AuthenticationService, {
+      useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => false, obtenerRoles: () => of([]) },
+    });
+    fixture = TestBed.createComponent(BajasAlumnosComponent);
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    listado().flush(pagina());
+    fixture.detectChanges();
+    http.expectNone((r) => r.url.includes('cargos-resumen'));
+  });
+
+  itSinReloj('con pagos, «⋯» ofrece «Eliminar anonimizando»: diálogo destructivo, foco en «Cancelar» y el POST', async () => {
+    crear(true, pagina(), { 1: 3 });
+    boton(el().querySelector('.bajas__filas')!, 'Más acciones de Lucía Ortega Ramos').click();
+    fixture.detectChanges();
+    expect(texto(el().querySelector('#bajas-menu-fila-1 [role="menuitem"]'))).toBe('Eliminar anonimizando');
+    boton(el().querySelector('.bajas__filas')!, 'Más acciones de Hugo Martín Sanz').click();
+    fixture.detectChanges();
+    expect(texto(el().querySelector('#bajas-menu-fila-2 [role="menuitem"]'))).toBe('Eliminar definitivamente');
+    fixture.componentInstance.eliminar(fixture.componentInstance.filas[0]);
+    fixture.detectChanges();
+    await esperar();
+    const d = dialogo()!;
+    expect(d.getAttribute('role')).toBe('alertdialog');
+    expect(d.classList).toContain('pn-dialogo--peligro');
+    expect(texto(d.querySelector('h2'))).toBe('¿Eliminar anonimizando a Lucía Ortega Ramos?');
+    expect(texto(d.querySelector('.pn-dialogo__mensaje'))).toBe(
+      'Sus datos personales se borran para siempre. Sus 3 pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.'
+    );
+    expect(document.activeElement).toBe(boton(d, 'Cancelar'));
+    http.expectOne((r) => r.url === `${API}/alumnos/cargos-resumen`).flush([
+      { alumnoId: 1, cargos: 4, pagados: 3, pendientes: 1, importePagado: 90, importePendiente: 30, pagos: 3 },
+    ]);
+    await esperar();
+    expect(texto(d.querySelector('.lote__cargos')).replace(/[  ]/g, ' ')).toBe(
+      'Tiene 4 cargos: 3 pagados (90,00 €) y 1 pendiente (30,00 €). Lo pagado se conserva. ' +
+        'Tiene 1 cargo sin pagar (30,00 €): se cancela.'
+    );
+    boton(d, 'Eliminar anonimizando').click();
+    await esperar();
+    http.expectNone((r) => r.method === 'DELETE');
+    const post = http.expectOne(`${API}/alumnos/1/anonimizar`);
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({});
+    expect(post.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    post.flush(null);
+    await esperar();
+    expect(dialogo()).toBeNull();
+    expect(textosAvisos()).toContain('El alumno ha sido eliminado anonimizando. Sus pagos siguen en Tesorería.');
+    listado().flush(pagina());
+  });
+
+  itSinReloj('un pago en singular: «Su pago se queda en Tesorería…»; «Cancelar» no hace nada', async () => {
+    crear(true, pagina(), { 2: 1 });
+    fixture.componentInstance.eliminar(fixture.componentInstance.filas[1]);
+    fixture.detectChanges();
+    await esperar();
+    const d = dialogo()!;
+    expect(texto(d.querySelector('.pn-dialogo__mensaje'))).toBe(
+      'Sus datos personales se borran para siempre. Su pago se queda en Tesorería como «Alumno eliminado». No se puede deshacer.'
+    );
+    boton(d, 'Cancelar').click();
+    await esperar();
+    expect(dialogo()).toBeNull();
+    http.expectNone((r) => r.url.includes('/anonimizar') || r.method === 'DELETE');
+  });
+
+  itSinReloj('en lote con y sin pagos: «se anonimiza (tiene pagos)» o «se elimina», un botón y uno detrás de otro', async () => {
+    crear(true, pagina(), { 1: 2 });
+    elegir(1);
+    elegir(2);
+    boton(el().querySelector('.bajas__seleccion')!, 'Eliminar').click();
+    await esperar();
+    const d = dialogo()!;
+    expect(texto(d.querySelector('h2'))).toBe('¿Eliminar a 2 alumnos?');
+    expect(texto(d.querySelector('.pn-dialogo__mensaje'))).toBe(
+      'Los que no tienen pagos se borran para siempre. De los que tienen pagos se borran sus datos personales y sus pagos ' +
+        'se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.'
+    );
+    expect(document.activeElement).toBe(boton(d, 'Cancelar'));
+    http.expectOne((r) => r.url === `${API}/alumnos/cargos-resumen`).flush([
+      { alumnoId: 1, cargos: 3, pagados: 2, pendientes: 1, importePagado: 60, importePendiente: 30, pagos: 2 },
+      { alumnoId: 2, cargos: 1, pagados: 0, pendientes: 1, importePagado: 0, importePendiente: 20, pagos: 0 },
+    ]);
+    await esperar();
+    expect(Array.from(d.querySelectorAll('.lote__dato')).map((n) => texto(n).replace(/[  ]/g, ' '))).toEqual([
+      'se anonimiza (tiene pagos) · 3 cargos · 1 sin pagar (30,00 €): se cancela',
+      'se elimina · 1 cargo',
+    ]);
+    expect(texto(d.querySelector('.lote__cargos')).replace(/[  ]/g, ' ')).toBe(
+      'Entre los 2 tienen 4 cargos: 2 pagados (60,00 €) y 2 pendientes (50,00 €). ' +
+        'De los alumnos con pagos, lo pagado se conserva y lo sin pagar se cancela; los demás se borran con ellos.'
+    );
+    expect(Array.from(d.querySelectorAll('.pn-dialogo__accion')).map(texto)).toEqual(['Eliminar 2 alumnos']);
+    boton(d, 'Eliminar 2 alumnos').click();
+    await esperar();
+    const primero = http.expectOne(`${API}/alumnos/1/anonimizar`);
+    expect(primero.request.method).toBe('POST');
+    http.expectNone(`${API}/alumnos/2`);
+    primero.flush(null);
+    await esperar();
+    const segundo = http.expectOne(`${API}/alumnos/2`);
+    expect(segundo.request.method).toBe('DELETE');
+    segundo.flush(
+      { mensaje: 'Este alumno tiene pagos. Dale de baja o elimínalo anonimizando.' },
+      { status: 409, statusText: 'Conflict' }
+    );
+    await esperar();
+    expect(texto(d.querySelector('h2'))).toBe('No se pudo eliminar a 1 de 2');
+    expect(Array.from(d.querySelectorAll('.lote__estado')).map(texto)).toEqual(['Anonimizado', 'No se eliminó']);
+    expect(texto(d.querySelector('.lote__motivo'))).toBe('Este alumno tiene pagos. Dale de baja o elimínalo anonimizando.');
+    boton(d, 'Cerrar').click();
+    await esperar();
+    listado().flush(pagina());
   });
 
   it('dar de baja en lote: diálogo normal con el recuento, un PUT por alumno en orden y el aviso de hoy', async () => {

@@ -46,6 +46,13 @@ public interface ProductoAlumnoService {
 	 */
 	ProductoAlumnoDTO cancelarProductoAlumno(Long id, String motivo);
 
+	/**
+	 * Pieza 8b-3l bis (decisión 287): al eliminar anonimizando, cancela (no borra) cada cargo sin pagar del alumno (el
+	 * suyo, el de sus inscripciones y el de sus convocatorias) con el motivo «Alumno eliminado». Dentro de la
+	 * transacción de quien anonimiza. Devuelve los ids cancelados.
+	 */
+	List<Long> cancelarSinPagarDeAlumnoEliminado(Long alumnoId);
+
 	/** Pieza 6b-2c: deja pendiente un cargo cancelado y borra los datos de la cancelación. No cancelado → 409. */
 	ProductoAlumnoDTO reactivarProductoAlumno(Long id);
 

@@ -22,10 +22,15 @@ import {
   TipoLote,
   accionLote,
   cargosDe,
+  destinoAlumno,
   fraseCargos,
+  mensajeAnonimizar,
+  sinPagarDe,
   mensajeLote,
+  mensajeLoteMixto,
   motivoFallo,
   progresoLote,
+  tituloAnonimizar,
   tituloFallos,
   tituloLote,
 } from './bajas-alumnos-vista';
@@ -37,6 +42,8 @@ type EstadoAlumno = 'pendiente' | 'en-curso' | 'hecho' | 'fallo';
 export interface ResultadoLote {
   hechos: number;
   fallos: number;
+  /** 8b-3l bis: de los hechos, cuántos se eliminaron anonimizando. */
+  anonimizados?: number;
 }
 
 let siguienteId = 0;
@@ -70,6 +77,13 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) ejecutar!: (id: number) => Observable<unknown>;
   /** P-3: el resumen de cargos de los elegidos (solo al eliminar). */
   @Input() cargarCargos: ((ids: number[]) => Observable<ResumenCargos[]>) | null = null;
+  /**
+   * 8b-3l bis (decisión 287): los pagos de cada alumno que ya conoce la pantalla (su resumen de cargos). Con alguno, al
+   * eliminar ese alumno se le elimina anonimizando con {@link anonimizar}.
+   */
+  @Input() pagos: ReadonlyMap<number, number> = new Map();
+  /** `POST /alumnos/{id}/anonimizar`, para los que tienen pagos (solo al eliminar). */
+  @Input() anonimizar: ((id: number) => Observable<unknown>) | null = null;
   @Output() readonly cerrado = new EventEmitter<ResultadoLote>();
 
   @ViewChild('dialogo', { static: true }) private dialogoRef!: ElementRef<HTMLDialogElement>;
@@ -85,6 +99,7 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
   actual = 0;
   hechos = 0;
   fallos = 0;
+  anonimizados = 0;
 
   estadoCargos: 'cargando' | 'listo' | 'error' | 'no' = 'no';
   private resumenes: ResumenCargos[] = [];
@@ -108,12 +123,33 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
     return this.fase === 'en-curso';
   }
 
+  /** 8b-3l bis: este alumno se elimina anonimizando (tiene pagos, y hay con qué). */
+  anonimiza(id: number): boolean {
+    if (this.tipo !== 'eliminar' || !this.anonimizar) {
+      return false;
+    }
+    return this.pagosDe(id) > 0;
+  }
+
+  /** Sus pagos: los del resumen del diálogo si ya llegó; si no, los que conoce la pantalla. */
+  private pagosDe(id: number): number {
+    const propio = this.estadoCargos === 'listo' ? this.resumenes.find((r) => r.alumnoId === id) : undefined;
+    return propio?.pagos ?? this.pagos.get(id) ?? 0;
+  }
+
+  private get cuantosAnonimiza(): number {
+    return this.alumnos.filter((a) => this.anonimiza(a.id)).length;
+  }
+
   get titulo(): string {
     if (this.fase === 'resumen') {
       return tituloFallos(this.tipo, this.fallos, this.alumnos.length);
     }
     if (this.fase === 'en-curso') {
       return this.tipo === 'eliminar' ? 'Eliminando alumnos' : 'Dando de baja';
+    }
+    if (this.alumnos.length === 1 && this.anonimiza(this.alumnos[0].id)) {
+      return tituloAnonimizar(this.alumnos[0].nombreCompleto);
     }
     return tituloLote(this.tipo, this.alumnos.map((a) => a.nombreCompleto));
   }
@@ -127,10 +163,19 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
     if (this.fase === 'en-curso') {
       return 'No cierres esta ventana hasta que termine.';
     }
+    const anonimizados = this.cuantosAnonimiza;
+    if (anonimizados > 0) {
+      return this.alumnos.length === 1
+        ? mensajeAnonimizar(this.pagosDe(this.alumnos[0].id))
+        : mensajeLoteMixto(anonimizados, this.alumnos.length);
+    }
     return mensajeLote(this.tipo, this.alumnos.length);
   }
 
   get textoAccion(): string {
+    if (this.alumnos.length === 1 && this.anonimiza(this.alumnos[0].id)) {
+      return 'Eliminar anonimizando';
+    }
     return accionLote(this.tipo, this.alumnos.length);
   }
 
@@ -143,16 +188,31 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
       case 'cargando':
         return 'Comprobando sus pagos y cargos…';
       case 'error':
-        return 'No se pudieron leer sus pagos y cargos. Se borran igualmente con el alumno.';
-      case 'listo':
-        return fraseCargos(this.resumenes, this.alumnos.length);
+        // 8b-3l bis: con pagos, el servidor no lo borra (409) y el resumen enseña su motivo.
+        return this.alumnos.length === 1
+          ? 'No se pudieron leer sus pagos y cargos. Si tiene pagos, no se elimina y verás el motivo.'
+          : 'No se pudieron leer sus pagos y cargos. Los que tengan pagos no se eliminan y verás el motivo.';
+      case 'listo': {
+        const anonimizados = this.cuantosAnonimiza;
+        const destino = anonimizados === 0 ? 'borran' : anonimizados === this.alumnos.length ? 'conservan' : 'mixto';
+        return fraseCargos(this.resumenes, this.alumnos.length, destino);
+      }
       default:
         return '';
     }
   }
 
   cargosAlumno(id: number): string {
-    return this.estadoCargos === 'listo' && this.alumnos.length > 1 ? cargosDe(this.resumenes.find((r) => r.alumnoId === id)) : '';
+    if (this.alumnos.length < 2) {
+      return '';
+    }
+    const resumen = this.estadoCargos === 'listo' ? this.resumenes.find((r) => r.alumnoId === id) : undefined;
+    const cargos = cargosDe(resumen);
+    // 8b-3l bis: al eliminar varios, qué le pasa a cada uno («se elimina» o «se anonimiza (tiene pagos)»).
+    const destino = this.tipo === 'eliminar' && this.anonimizar ? destinoAlumno(this.anonimiza(id)) : '';
+    // Decisión 287 (ronda 2): al que se anonimiza, sus cargos sin pagar se cancelan.
+    const sinPagar = this.anonimiza(id) ? sinPagarDe(resumen) : '';
+    return [destino, cargos, sinPagar].filter(Boolean).join(' · ');
   }
 
   estadoDe(id: number): EstadoAlumno {
@@ -164,7 +224,10 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
       case 'en-curso':
         return 'En curso';
       case 'hecho':
-        return this.tipo === 'eliminar' ? 'Eliminado' : 'Dado de baja';
+        if (this.tipo === 'eliminar') {
+          return this.anonimiza(id) ? 'Anonimizado' : 'Eliminado';
+        }
+        return 'Dado de baja';
       case 'fallo':
         return this.tipo === 'eliminar' ? 'No se eliminó' : 'No se dio de baja';
       default:
@@ -267,7 +330,7 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
       dialogo.close();
     }
     devolverFoco(this.disparador);
-    this.cerrado.emit({ hechos: this.hechos, fallos: this.fallos });
+    this.cerrado.emit({ hechos: this.hechos, fallos: this.fallos, anonimizados: this.anonimizados });
   }
 
   // ------------------------------------------------------------------ lote
@@ -284,8 +347,15 @@ export class LoteAlumnosComponent implements AfterViewInit, OnDestroy {
         this.actual = i + 1;
         this.estados.set(a.id, 'en-curso');
         this.cdr.detectChanges();
-        return this.ejecutar(a.id).pipe(
-          map(() => true),
+        const anonimiza = this.anonimiza(a.id);
+        const peticion = anonimiza && this.anonimizar ? this.anonimizar(a.id) : this.ejecutar(a.id);
+        return peticion.pipe(
+          map(() => {
+            if (anonimiza) {
+              this.anonimizados++;
+            }
+            return true;
+          }),
           catchError((error) => {
             this.motivos.set(a.id, motivoFallo(this.tipo, error));
             return of(false);

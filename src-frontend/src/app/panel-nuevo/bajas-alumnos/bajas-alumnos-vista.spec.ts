@@ -1,13 +1,20 @@
 import {
   accionLote,
+  avisoSinPagar,
+  destinoAlumno,
   exitoLote,
   filaBaja,
   fraseCargos,
+  sinPagarDe,
   leerEstado,
   lineaDatos,
+  mensajeAnonimizar,
   mensajeLote,
+  mensajeLoteMixto,
   motivoFallo,
   progresoLote,
+  tienePagos,
+  tituloAnonimizar,
   tituloFallos,
   tituloLote,
 } from './bajas-alumnos-vista';
@@ -80,5 +87,47 @@ describe('bajas-alumnos-vista (8b-3l)', () => {
     });
     expect(leerEstado(null).paginaActual).toBe(1);
     expect(leerEstado('{roto').mostrarInactivos).toBeFalse();
+  });
+
+  it('8b-3l bis: con pagos se elimina anonimizando; sus textos', () => {
+    const base = { alumnoId: 1, cargos: 2, pagados: 1, pendientes: 1, importePagado: 30, importePendiente: 20 };
+    expect(tienePagos({ ...base, pagos: 1 })).toBeTrue();
+    expect(tienePagos({ ...base, pagos: 0 })).toBeFalse();
+    expect(tienePagos(base)).toBeFalse();
+    expect(tienePagos(undefined)).toBeFalse();
+    expect(tituloAnonimizar('Lucía Ortega')).toBe('¿Eliminar anonimizando a Lucía Ortega?');
+    expect(mensajeAnonimizar(3)).toBe(
+      'Sus datos personales se borran para siempre. Sus 3 pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.'
+    );
+    expect(mensajeAnonimizar(1)).toContain('Su pago se queda en Tesorería');
+    expect(mensajeLoteMixto(2, 2)).toBe(
+      'Sus datos personales se borran para siempre. Sus pagos se quedan en Tesorería como «Alumno eliminado». No se puede deshacer.'
+    );
+    expect(mensajeLoteMixto(1, 3)).toContain('Los que no tienen pagos se borran para siempre.');
+    expect(destinoAlumno(true)).toBe('se anonimiza (tiene pagos)');
+    expect(destinoAlumno(false)).toBe('se elimina');
+    // Decisión 287 (ronda 2): al anonimizar, lo pagado se conserva y lo sin pagar se cancela.
+    expect(fraseCargos([base], 1, 'conservan').replace(/[  ]/g, ' ')).toBe(
+      'Tiene 2 cargos: 1 pagado (30,00 €) y 1 pendiente (20,00 €). Lo pagado se conserva. ' +
+        'Tiene 1 cargo sin pagar (20,00 €): se cancela.'
+    );
+    expect(
+      fraseCargos([{ ...base, pendientes: 0, importePendiente: 0, cargos: 1 }], 1, 'conservan').replace(/[  ]/g, ' ')
+    ).toBe('Tiene 1 cargo: 1 pagado (30,00 €). Se conserva.');
+    expect(fraseCargos([base, base], 2, 'conservan').replace(/[  ]/g, ' ')).toBe(
+      'Entre los 2 tienen 4 cargos: 2 pagados (60,00 €) y 2 pendientes (40,00 €). Lo pagado se conserva; lo sin pagar ' +
+        'se cancela.'
+    );
+    expect(avisoSinPagar(3, 90).replace(/[  ]/g, ' ')).toBe('Tiene 3 cargos sin pagar (90,00 €): se cancelan.');
+    expect(avisoSinPagar(1, 30).replace(/[  ]/g, ' ')).toBe('Tiene 1 cargo sin pagar (30,00 €): se cancela.');
+    expect(avisoSinPagar(0, 0)).toBe('');
+    expect(sinPagarDe({ ...base, pendientes: 3, importePendiente: 90 }).replace(/[  ]/g, ' ')).toBe(
+      '3 sin pagar (90,00 €): se cancelan'
+    );
+    expect(sinPagarDe({ ...base, pendientes: 0 })).toBe('');
+    expect(sinPagarDe(undefined)).toBe('');
+    expect(fraseCargos([base], 1).endsWith('Se borran con el alumno.')).toBeTrue();
+    expect(exitoLote('eliminar', 1, 1)).toBe('El alumno ha sido eliminado anonimizando. Sus pagos siguen en Tesorería.');
+    expect(exitoLote('eliminar', 2, 1)).toBe('Los alumnos seleccionados han sido eliminados correctamente.');
   });
 });

@@ -173,6 +173,14 @@ public class Alumno extends EntidadOrganizacion {
 	private Integer rachaRetoDiario = 0;
 
 	/**
+	 * Pieza 8b-3l bis (decisión 287, V31_11): cuándo se eliminó anonimizando (NULL si no). Irreversible: solo lo escribe
+	 * {@code AlumnoServiceImpl#anonimizarAlumno}. Fuera del JSON y de los listados.
+	 */
+	@JsonIgnore
+	@Column(name = "anonimizado_en")
+	private java.time.LocalDateTime anonimizadoEn;
+
+	/**
 	 * Sede principal (V31, regla D9 del alcance por sede). Se escribe en el ALTA (entrega 6-1b, D6-2) y nunca en un
 	 * {@code UPDATE} de la entidad ({@code updatable = false}): ningún {@code save} de una entidad a medio construir
 	 * la pone a NULL. Los cambios posteriores van por {@code AlumnoRepository.asignarSedePrincipal}. Fuera del JSON.
@@ -487,6 +495,33 @@ public class Alumno extends EntidadOrganizacion {
 
 	public void setRachaRetoDiario(Integer rachaRetoDiario) {
 		this.rachaRetoDiario = rachaRetoDiario;
+	}
+
+	public java.time.LocalDateTime getAnonimizadoEn() {
+		return anonimizadoEn;
+	}
+
+	public void setAnonimizadoEn(java.time.LocalDateTime anonimizadoEn) {
+		this.anonimizadoEn = anonimizadoEn;
+	}
+
+	/** 8b-3l bis (decisión 287): respuesta 409 de cualquier escritura sobre un alumno eliminado anonimizando. */
+	public static final String ALUMNO_ANONIMIZADO_NO_SE_MODIFICA =
+			"Este alumno está eliminado (anonimizado) y no se puede modificar.";
+
+	@JsonIgnore
+	public boolean estaAnonimizado() {
+		return anonimizadoEn != null;
+	}
+
+	/**
+	 * 8b-3l bis (decisión 287): el alumno eliminado anonimizando es de solo lectura. Las escrituras que no pasan por
+	 * una ruta con su id (las cubre {@code AlumnoAnonimizadoInterceptor}) lo comprueban aquí antes de escribir nada.
+	 */
+	public void exigirNoAnonimizado() {
+		if (estaAnonimizado()) {
+			throw new IllegalStateException(ALUMNO_ANONIMIZADO_NO_SE_MODIFICA);
+		}
 	}
 
 	@JsonIgnore

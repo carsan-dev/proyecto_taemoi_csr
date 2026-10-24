@@ -106,6 +106,7 @@ HEAD     /api/alumnos/{id}                                                      
 PUT      /api/alumnos/{id}                                                                        DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # AlumnoController#actualizarAlumno
 DELETE   /api/alumnos/{id}                                                                        DENIEGA DENIEGA DENIEGA PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#eliminarAlumno
 PUT      /api/alumnos/{id}/alta                                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # AlumnoController#darDeAltaAlumno
+POST     /api/alumnos/{id}/anonimizar                                                             DENIEGA DENIEGA DENIEGA PERMITE     DENIEGA         DENIEGA          DENIEGA  # AlumnoController#anonimizarAlumno
 PUT      /api/alumnos/{id}/baja                                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # AlumnoController#darDeBajaAlumno
 GET      /api/alumnos/{id}/completo                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # AlumnoController#obtenerAlumnoCompleto
 HEAD     /api/alumnos/{id}/completo                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # AlumnoController#obtenerAlumnoCompleto

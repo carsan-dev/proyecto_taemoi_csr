@@ -51,4 +51,42 @@ public interface ResumenCargosAlumnoRepository extends Repository<Alumno, Long> 
 			GROUP BY a.id
 			""", nativeQuery = true)
 	List<ResumenCargos> resumir(@Param("organizacion") Long organizacion, @Param("alumnos") Collection<Long> alumnos);
+
+	interface PagosAlumno {
+		Long getAlumnoId();
+
+		Long getPagos();
+	}
+
+	/**
+	 * Pieza 8b-3l bis (decisión 287): cuántos pagos tiene cada alumno indicado de la escuela. «Con pagos» es tener al
+	 * menos uno. Cuenta (1) cada cargo suyo (el suyo, el de su inscripción o el de su convocatoria; cancelado o no)
+	 * marcado pagado o con algún cobro, en cualquier estado (activo, anulado, entregado en caja o devuelto); y (2) cada
+	 * cobro con su {@code alumno_id} (la instantánea del cobro) que no cuelga de uno de esos cargos: el de un cargo ya
+	 * borrado, por ejemplo. Un pago no se cuenta dos veces: un cargo pagado con su cobro es un pago.
+	 */
+	@Query(value = """
+			SELECT a.id AS alumnoId,
+			  (SELECT COUNT(*) FROM producto_alumno pa
+			    WHERE pa.organizacion_id = :organizacion
+			      AND (pa.alumno_id = a.id
+			        OR pa.alumno_deporte_id IN (SELECT ad.id FROM alumno_deporte ad
+			          WHERE ad.alumno_id = a.id AND ad.organizacion_id = :organizacion)
+			        OR pa.id IN (SELECT ac.producto_alumno_id FROM alumno_convocatoria ac
+			          WHERE ac.alumno_id = a.id AND ac.producto_alumno_id IS NOT NULL))
+			      AND (pa.pagado = 1 OR EXISTS (SELECT 1 FROM cobro c
+			        WHERE c.producto_alumno_id = pa.id AND c.organizacion_id = :organizacion)))
+			  + (SELECT COUNT(*) FROM cobro c
+			    WHERE c.organizacion_id = :organizacion AND c.alumno_id = a.id
+			      AND NOT EXISTS (SELECT 1 FROM producto_alumno pa
+			        WHERE pa.id = c.producto_alumno_id AND pa.organizacion_id = :organizacion
+			          AND (pa.alumno_id = a.id
+			            OR pa.alumno_deporte_id IN (SELECT ad.id FROM alumno_deporte ad
+			              WHERE ad.alumno_id = a.id AND ad.organizacion_id = :organizacion)
+			            OR pa.id IN (SELECT ac.producto_alumno_id FROM alumno_convocatoria ac
+			              WHERE ac.alumno_id = a.id AND ac.producto_alumno_id IS NOT NULL)))) AS pagos
+			FROM alumno a
+			WHERE a.organizacion_id = :organizacion AND a.id IN (:alumnos)
+			""", nativeQuery = true)
+	List<PagosAlumno> contarPagos(@Param("organizacion") Long organizacion, @Param("alumnos") Collection<Long> alumnos);
 }

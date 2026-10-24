@@ -185,6 +185,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private DocumentoService documentoService;
 
+	/** Pieza 8b-3l bis (decisión 287): cuántos pagos tiene un alumno (con alguno, no se borra para siempre). */
+	@Autowired
+	private com.taemoi.project.services.ResumenCargosAlumnoService resumenCargosAlumnoService;
+
+	@Autowired
+	private com.taemoi.project.repositories.UsuarioAlumnoRepository usuarioAlumnoRepository;
+
+	/** Decisión 287 (ronda 2): cancela los cargos sin pagar del alumno que se elimina anonimizando. */
+	@Autowired
+	@org.springframework.context.annotation.Lazy
+	private com.taemoi.project.services.ProductoAlumnoService productoAlumnoService;
+
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
@@ -417,8 +429,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (restriccion.isEmpty()) {
 			return alumnoRepository.buscarIdsEnOrganizacionActiva(incluirInactivos);
 		}
-		return alumnoRepository.buscarIds(
-				com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()), incluirInactivos);
+		// 8b-3l bis (decisión 287): los eliminados anonimizando no salen, como en el listado. Aquí y no en buscarIds: el
+		// alcance del responsable (idsAlumnosEnAlcance) los incluye, y con ellos sus inscripciones y su tesorería.
+		org.springframework.data.jpa.domain.Specification<Alumno> noAnonimizados = (root, query, cb) -> cb
+				.isNull(root.get("anonimizadoEn"));
+		return alumnoRepository.buscarIds(noAnonimizados
+				.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get())), incluirInactivos);
 	}
 
 	@Override
@@ -1739,6 +1755,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 			List<Long> cargosDelAlumno = new ArrayList<>();
 			alumno.getProductosAlumno().forEach(pa -> cargosDelAlumno.add(pa.getId()));
 			cobros.exigirSinDevolucionPendiente(alumno.getId(), cargosDelAlumno);
+			// Pieza 8b-3l bis (decisión 287): con algún pago (en cualquier estado), 409 antes de tocar nada: borrarlo haría
+			// desaparecer ese dinero de la tesorería. Se da de baja o se elimina anonimizando.
+			if (resumenCargosAlumnoService.contarPagos(alumno.getId()) > 0) {
+				throw new IllegalStateException(ALUMNO_CON_PAGOS);
+			}
 			// Primero sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos, que se
 			// borran en cascada con el alumno), tutores y salud. Es la supresión completa del alumno.
 			consentimientoRepository.borrarDelAlumno(alumno.getId());
@@ -1803,6 +1824,126 @@ public class AlumnoServiceImpl implements AlumnoService {
 		}).orElse(false);
 	}
 
+	/** Pieza 8b-3l bis (decisión 287): respuesta 409 del borrado definitivo de un alumno con pagos. */
+	public static final String ALUMNO_ANONIMIZADO_SIN_ALTA = "Este alumno se eliminó anonimizando y no se puede dar de alta.";
+
+	public static final String ALUMNO_CON_PAGOS = "Este alumno tiene pagos. Dale de baja o elimínalo anonimizando.";
+
+	/** Nombre y apellidos de la ficha anonimizada: la tesorería y la caja la enseñan como «Alumno eliminado». */
+	public static final String NOMBRE_ANONIMIZADO = "Alumno";
+	public static final String APELLIDOS_ANONIMIZADO = "eliminado";
+	/** Valor neutro de los campos obligatorios sin dato: la dirección (NOT NULL) y la fecha de nacimiento (NOT NULL). */
+	public static final String DIRECCION_ANONIMIZADA = "Sin datos";
+	public static final String FECHA_NACIMIENTO_ANONIMIZADA = "1900-01-01";
+
+	/**
+	 * Pieza 8b-3l bis (decisión 287): «Eliminar anonimizando». Quita para siempre los datos personales del alumno de la
+	 * escuela activa y conserva sus cargos y cobros, con el mismo id de alumno: la tesorería y el historial de caja no
+	 * cambian (salen como «Alumno eliminado»). Lo mismo que el borrado definitivo salvo los cargos, sus inscripciones y
+	 * sus convocatorias, que se quedan. Una sola transacción; una segunda llamada no hace nada. Con un encargo con la
+	 * devolución pendiente, 409 antes de tocar nada (como el borrado).
+	 *
+	 * @return {@code false} si el alumno no es de la escuela activa.
+	 */
+	@Override
+	@Transactional
+	public boolean anonimizarAlumno(@NonNull Long id) {
+		return alumnoRepository.buscarPorIdEnOrganizacionActiva(id).map(alumno -> {
+			if (alumno.getAnonimizadoEn() != null) {
+				return true;
+			}
+			List<Long> cargosDelAlumno = new ArrayList<>();
+			alumno.getProductosAlumno().forEach(pa -> cargosDelAlumno.add(pa.getId()));
+			alumno.getConvocatorias().stream().map(AlumnoConvocatoria::getProductoAlumno).filter(Objects::nonNull)
+					.forEach(pa -> cargosDelAlumno.add(pa.getId()));
+			cobros.exigirSinDevolucionPendiente(alumno.getId(), cargosDelAlumno);
+
+			Long alumnoId = alumno.getId();
+			// Decisión 287 (ronda 2): sus cargos sin pagar se cancelan con el motivo «Alumno eliminado», no se borran; lo
+			// pagado y los cobros no se tocan. Lo primero: con un encargo en curso, 409 antes de escribir nada más.
+			productoAlumnoService.cancelarSinPagarDeAlumnoEliminado(alumnoId);
+			// Sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos), tutores y salud.
+			consentimientoRepository.borrarDelAlumno(alumnoId);
+			tutorRepository.borrarDelAlumno(alumnoId);
+			alumnoSaludRepository.borrarDelAlumno(alumnoId);
+			alumno.getTutores().clear();
+			preinscripcionRepository.desvincularAlumno(alumnoId);
+			alumnoRetoDiarioLogRepository.borrarDelAlumno(alumnoId);
+			registroPendienteRepository.borrarDelAlumno(alumnoId);
+
+			// Sus documentos, con el archivo (ya sin consentimientos que los referencien).
+			for (Documento documento : new ArrayList<>(alumno.getDocumentos())) {
+				documentoService.eliminarDocumento(documento);
+				alumno.getDocumentos().remove(documento);
+			}
+			Imagen imagen = alumno.getFotoAlumno();
+			if (imagen != null) {
+				imagenService.eliminarImagenDeSistema(imagen);
+				alumno.setFotoAlumno(null);
+				imagenRepository.delete(imagen);
+			}
+
+			// El acceso de familia: los vínculos usuario_alumno (en el borrado caen en cascada) y la cuenta propia, como el
+			// borrado: se le quita su acceso de familia a esta escuela y se borra solo si no le queda ninguna membresía.
+			usuarioAlumnoRepository.deleteAll(
+					usuarioAlumnoRepository.findByAlumnoIdAndOrganizacionId(alumnoId, alumno.getOrganizacionId()));
+			if (alumno.getUsuario() != null) {
+				Usuario usuario = alumno.getUsuario();
+				alumno.setUsuario(null);
+				usuario.setAlumno(null);
+				if (membresiaService.retirarFamilia(usuario.getId(), alumno.getOrganizacionId())) {
+					usuarioRepository.save(usuario);
+				} else {
+					usuarioRepository.delete(usuario);
+				}
+			}
+
+			for (Grupo grupo : new ArrayList<>(alumno.getGrupos())) {
+				grupo.getAlumnos().remove(alumno);
+				grupoRepository.save(grupo);
+			}
+			alumno.getGrupos().clear();
+			for (Turno turno : new ArrayList<>(alumno.getTurnos())) {
+				turno.getAlumnos().remove(alumno);
+				turnoRepository.save(turno);
+			}
+			alumno.getTurnos().clear();
+
+			alumno.setNombre(NOMBRE_ANONIMIZADO);
+			alumno.setApellidos(APELLIDOS_ANONIMIZADO);
+			alumno.setNif(null);
+			alumno.setDireccion(DIRECCION_ANONIMIZADA);
+			alumno.setLocalidad(null);
+			alumno.setCodigoPostal(null);
+			alumno.setTelefono(null);
+			alumno.setTelefono2(null);
+			alumno.setEmail(null);
+			alumno.setGenero(null);
+			alumno.setFechaNacimiento(java.sql.Date.valueOf(FECHA_NACIMIENTO_ANONIMIZADA));
+			alumno.setObservaciones(null);
+			alumno.setTieneDiscapacidad(false);
+			alumno.setAutorizacionWeb(false);
+			alumno.setFechaRetoDiarioCompletado(null);
+			alumno.setRachaRetoDiario(0);
+			// De baja, como PUT /{id}/baja (sus deportes activos también); si ya lo estaba, conserva su fecha de baja.
+			Date hoy = new Date();
+			for (AlumnoDeporte alumnoDeporte : alumnoDeporteRepository.findByAlumnoId(alumnoId)) {
+				if (Boolean.TRUE.equals(alumnoDeporte.getActivo())) {
+					alumnoDeporte.setActivo(false);
+					alumnoDeporte.setFechaBaja(hoy);
+					alumnoDeporteRepository.save(alumnoDeporte);
+				}
+			}
+			if (alumno.getFechaBaja() == null || Boolean.TRUE.equals(alumno.getActivo())) {
+				alumno.setFechaBaja(hoy);
+			}
+			alumno.setActivo(false);
+			alumno.setAnonimizadoEn(java.time.LocalDateTime.now());
+			alumnoRepository.save(alumno);
+			return true;
+		}).orElse(false);
+	}
+
 	@Override
 	public Alumno darDeBajaAlumno(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
@@ -1834,6 +1975,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Optional<Alumno> optionalAlumno = alumnoRepository.findById(id);
 		if (optionalAlumno.isPresent()) {
 			Alumno alumno = optionalAlumno.get();
+			// 8b-3l bis (decisión 287): eliminar anonimizando es irreversible.
+			if (alumno.getAnonimizadoEn() != null) {
+				throw new IllegalStateException(ALUMNO_ANONIMIZADO_SIN_ALTA);
+			}
 			Date fechaAltaHoy = new Date();
 
 			// Activar automáticamente el primer deporte inactivo (si existe)
@@ -2599,6 +2744,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			if (!incluirInactivos) {
 				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
 			}
+			// 8b-3l bis (decisión 287): un alumno eliminado anonimizando no sale en ningún listado ni búsqueda.
+			predicates.add(criteriaBuilder.isNull(root.get("anonimizadoEn")));
 
 			// Filter by aptoParaExamen - join with deportes to check if any has aptoParaExamen = true
 			if (aptoParaExamen) {

@@ -268,11 +268,15 @@ public interface AlumnoRepository
 	@Query("SELECT a FROM Alumno a WHERE a.id = :id")
 	Optional<Alumno> buscarPorIdEnOrganizacionActiva(@Param("id") Long id);
 
+	/** 8b-3l bis (decisión 287): si el alumno de la escuela activa se eliminó anonimizando (solo lectura). */
+	boolean existsByIdAndAnonimizadoEnIsNotNull(Long id);
+
 	/**
 	 * Ids de los alumnos de la escuela activa (solo activos salvo {@code incluirInactivos}), en orden ascendente:
 	 * los mismos y en el mismo orden que el listado sin paginar ({@code GET /api/alumnos}), sin cargar las fichas.
 	 */
-	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) ORDER BY a.id")
+	@Query("SELECT a.id FROM Alumno a WHERE (:incluirInactivos = TRUE OR a.activo = TRUE) AND a.anonimizadoEn IS NULL "
+			+ "ORDER BY a.id")
 	List<Long> buscarIdsEnOrganizacionActiva(@Param("incluirInactivos") boolean incluirInactivos);
 
 	/**

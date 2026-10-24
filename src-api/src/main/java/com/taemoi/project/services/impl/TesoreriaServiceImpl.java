@@ -1152,6 +1152,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		dto.setAlumnoId(alumno != null ? alumno.getId() : null);
 		dto.setAlumnoNombreCompleto(obtenerNombreCompletoAlumno(alumno));
 		dto.setAlumnoActivo(alumno != null && !Boolean.FALSE.equals(alumno.getActivo()));
+		dto.setAlumnoEliminado(alumno != null && alumno.estaAnonimizado());
 		dto.setDeporte(obtenerDeporte(productoAlumno, disciplinas));
 		dto.setConcepto(productoAlumno.getConcepto());
 		dto.setCategoria(obtenerCategoria(productoAlumno.getConcepto(), tipoProducto(productoAlumno)));
