@@ -1,0 +1,136 @@
+// Lo que el diálogo de lote añade a la hoja de `pn-dialogo` (8b-3l): la lista de nombres con su foto de 28 px, la línea
+// de pagos y cargos (P-3) y la pastilla de estado de cada alumno mientras corre y en el resumen. Solo tokens del panel.
+
+.lote__cargos {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  border: 1px solid var(--pn-linea);
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+  font-variant-numeric: tabular-nums;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.lote__cargos--leyendo {
+  color: var(--pn-tinta-2);
+}
+
+.lote__nombres {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.lote__alumno {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.lote__avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.6875rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.lote__quien {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lote__nombre {
+  font: var(--pn-cuerpo);
+  color: var(--pn-tinta);
+  overflow-wrap: anywhere;
+}
+
+.lote__motivo {
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
+.lote__dato {
+  flex: none;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+// Pastillas de 24 px: «Pendiente» neutra, «En curso» en el acento, «Eliminado» en bien y el fallo en peligro; siempre
+// con palabra (y con icono las de estado final).
+.lote__estado {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  border: 1px solid var(--pn-linea-fuerte);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+  white-space: nowrap;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+}
+
+.lote__estado--en-curso {
+  border-color: var(--pn-acento-borde);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+}
+
+.lote__estado--hecho {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+  color: var(--pn-bien);
+}
+
+.lote__estado--fallo {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--pn-peligro) 9%, var(--pn-superficie));
+  color: var(--pn-peligro);
+}

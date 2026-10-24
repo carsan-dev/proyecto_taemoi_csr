@@ -1,0 +1,83 @@
+<dialog #dialogo class="pn-dialogo lote" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="peligro"
+  [attr.role]="peligro ? 'alertdialog' : null" [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="id + '-mensaje'"
+  [attr.aria-busy]="ocupado ? 'true' : null" [attr.data-dialogo]="'lote-' + tipo"
+  (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  <div class="pn-dialogo__caja">
+    @if (hoja) {
+    <div class="pn-dialogo__asa" aria-hidden="true"></div>
+    }
+    <div class="pn-dialogo__cabecera">
+      <h2 class="pn-dialogo__titulo" [id]="id + '-titulo'">{{ titulo }}</h2>
+      <button type="button" class="pn-dialogo__cerrar" aria-label="Cerrar" [disabled]="ocupado" (click)="cancelar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="pn-dialogo__cuerpo">
+      <p class="pn-dialogo__mensaje" [id]="id + '-mensaje'">{{ mensaje }}</p>
+
+      @if (lineaCargos && fase === 'confirmar') {
+      <p class="lote__cargos" [class.lote__cargos--leyendo]="estadoCargos === 'cargando'" role="status" data-cifras>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="M3.5 10h17M7.5 14.5h3"></path></svg>
+        <span>{{ lineaCargos }}</span>
+      </p>
+      }
+
+      <ul class="lote__nombres" [attr.aria-label]="tipo === 'eliminar' ? 'Alumnos que se eliminan' : 'Alumnos que se dan de baja'"
+        [attr.aria-live]="ocupado ? 'polite' : null">
+        @for (a of alumnos; track a.id) {
+        <li class="lote__alumno" [attr.data-alumno]="a.id">
+          <span class="lote__avatar" aria-hidden="true">
+            @if (a.foto) {<img [src]="a.foto" alt="" width="28" height="28" loading="lazy" />} @else {<span>{{ a.iniciales }}</span>}
+          </span>
+          <span class="lote__quien">
+            <span class="lote__nombre">{{ a.nombreCompleto }}</span>
+            @if (fase === 'resumen' && estadoDe(a.id) === 'fallo') {
+            <span class="lote__motivo">{{ motivos.get(a.id) }}</span>
+            }
+          </span>
+          @if (fase === 'confirmar') {
+          @if (cargosAlumno(a.id); as c) {<span class="lote__dato" data-cifras>{{ c }}</span>}
+          } @else {
+          <span class="lote__estado" [class]="'lote__estado lote__estado--' + estadoDe(a.id)">
+            @if (estadoDe(a.id) === 'hecho') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            } @else if (estadoDe(a.id) === 'fallo') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            }
+            {{ textoEstado(a.id) }}
+          </span>
+          }
+        </li>
+        }
+      </ul>
+
+      @if (hoja) {
+      <div class="pn-dialogo__pie">
+        @if (fase === 'resumen') {
+        <button #botonCerrarResumen type="button" class="pn-dialogo__cancelar" (click)="cancelar()">Cerrar</button>
+        } @else {
+        <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado" [textoOcupado]="textoProgreso"
+          (click)="confirmar()">{{ textoAccion }}</button>
+        <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">Cancelar</button>
+        }
+      </div>
+      }
+    </div>
+    @if (!hoja) {
+    <div class="pn-dialogo__pie">
+      @if (fase === 'resumen') {
+      <button #botonCerrarResumen type="button" class="pn-dialogo__cancelar" (click)="cancelar()">Cerrar</button>
+      } @else {
+      <button #botonCancelar type="button" class="pn-dialogo__cancelar" [disabled]="ocupado" (click)="cancelar()">Cancelar</button>
+      <button #botonAccion type="button" pnOcupado class="pn-dialogo__accion" [ocupado]="ocupado" [textoOcupado]="textoProgreso"
+        (click)="confirmar()">{{ textoAccion }}</button>
+      }
+    </div>
+    }
+  </div>
+</dialog>

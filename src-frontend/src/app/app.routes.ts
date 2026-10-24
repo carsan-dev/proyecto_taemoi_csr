@@ -290,9 +290,28 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Alta de alumno nueva (8b-3l): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
+    path: 'alumnosCrear',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/alta-alumno/alta-alumno.component').then(m => m.AltaAlumnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'alumnosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-alumno/crear-alumno.component').then(m => m.CrearAlumnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // «Bajas y eliminaciones» nueva (8b-3l): solo con el interruptor encendido; si no, el router pasa a la de hoy sin
+    // descargar el chunk. «Eliminar definitivamente» lo ve solo el propietario (y el servidor solo se lo admite a él).
+    path: 'alumnosEliminar',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/bajas-alumnos/bajas-alumnos.component').then(m => m.BajasAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },

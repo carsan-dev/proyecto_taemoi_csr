@@ -19,6 +19,8 @@ import { SolicitudesPanelComponent } from './panel-nuevo/solicitudes/solicitudes
 import { CajaSedePanelComponent } from './panel-nuevo/caja-sede/caja-sede.component';
 import { ConfiguracionPanelComponent } from './panel-nuevo/escuela/configuracion/configuracion.component';
 import { RegistroAccionesComponent } from './panel-nuevo/escuela/registro/registro.component';
+import { AltaAlumnoComponent } from './panel-nuevo/alta-alumno/alta-alumno.component';
+import { BajasAlumnosComponent } from './panel-nuevo/bajas-alumnos/bajas-alumnos.component';
 import { EstilosPanelService } from './panel-nuevo/estilos-panel.service';
 import { AuthenticationService } from './servicios/authentication/authentication.service';
 import { Component } from '@angular/core';
@@ -326,6 +328,8 @@ describe('app routes', () => {
     ['preinscripciones', '/preinscripciones', PreinscripcionesPanelComponent],
     ['solicitudes', '/solicitudes', SolicitudesPanelComponent],
     ['cajaSede', '/cajaSede', CajaSedePanelComponent],
+    ['alumnosCrear', '/alumnosCrear', AltaAlumnoComponent],
+    ['alumnosEliminar', '/alumnosEliminar', BajasAlumnosComponent],
   ] as const) {
     it(`${ruta} (8b-3f a 8b-3j): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
       const entradas = routes.filter((route) => route.path === ruta);

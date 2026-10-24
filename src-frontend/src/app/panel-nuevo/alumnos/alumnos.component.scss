@@ -100,6 +100,30 @@
   }
 }
 
+// Botón de texto (8b-3l): el enlace a «Bajas y eliminaciones», en el acento y sin fondo.
+.alumnos__enlace-bajas {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--pn-radio-m);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
 .alumnos__chevron-menu {
   font-size: 0.75rem;
   transition: transform var(--pn-transicion);
@@ -1027,6 +1051,7 @@
 
   .alumnos__boton-primario,
   .alumnos__boton-secundario,
+  .alumnos__enlace-bajas,
   .alumnos__filtro,
   .alumnos__campo,
   .alumnos__cobrar,

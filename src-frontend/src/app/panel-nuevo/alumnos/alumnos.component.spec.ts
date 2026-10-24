@@ -225,6 +225,14 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(texto('.alumnos__rango')).toBe('1–25 de 1.044');
   });
 
+  it('8b-3l: enlace «Bajas y eliminaciones» en la cabecera, junto a «Informes» y «Nuevo alumno»', () => {
+    crear();
+    responder(3);
+    const enlace = el().querySelector<HTMLAnchorElement>('.alumnos__enlace-bajas')!;
+    expect(enlace.textContent!.trim()).toBe('Bajas y eliminaciones');
+    expect(enlace.getAttribute('href')).toBe('/alumnosEliminar');
+  });
+
   it('plurales en singular: un alumno, un deporte y un año', () => {
     crear();
     responder(1, [], pagina(1, 1, 1, { 1: { fechaNacimiento: '2025-01-15' } }));
