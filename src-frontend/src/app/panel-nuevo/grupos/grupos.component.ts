@@ -20,6 +20,7 @@ import { ErrorCampo, ValoresDialogo } from '../dialogo/dialogo.component';
 import { frasePlural, numero } from '../formato/formato-es';
 import { AlumnosTipoPanelComponent } from './alumnos-tipo-panel.component';
 import { CrearGrupoPanelComponent } from './crear-grupo-panel.component';
+import { TurnoPanelComponent } from './turno-panel.component';
 import { SeccionDisciplina, rangoEdad, resumenHorario, seccionesPorDisciplina, textoTurno } from './grupos-vista';
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -47,6 +48,7 @@ export const TIPOS_GRUPO: readonly string[] = ['Taekwondo', 'Taekwondo Competici
     BotonOcupadoComponent,
     AlumnosTipoPanelComponent,
     CrearGrupoPanelComponent,
+    TurnoPanelComponent,
   ],
   templateUrl: './grupos.component.html',
   styleUrls: ['./grupos.component.scss'],
@@ -89,6 +91,11 @@ export class GruposComponent implements OnInit, OnDestroy {
   /** Tipo con el panel de alumnos abierto. */
   tipoAbierto: string | null = null;
   crearAbierto = false;
+  turnoAbierto = false;
+  turnoIdAbierto: number | null = null;
+  grupoInicialTurno: number | null = null;
+  private turnoDesdeRuta = false;
+  private disparadorTurno: HTMLElement | null = null;
   private crearDesdeRuta = false;
   grupoResaltado: number | null = null;
   private finResaltado?: ReturnType<typeof setTimeout>;
@@ -137,6 +144,13 @@ export class GruposComponent implements OnInit, OnDestroy {
     this.cargas.add(this.route.data.subscribe((data) => {
       this.crearDesdeRuta = !!data['crearGrupo'];
       if (this.crearDesdeRuta) this.crearAbierto = true;
+      this.turnoDesdeRuta = !!data['crearTurno'] || !!data['editarTurno'];
+      if (this.turnoDesdeRuta) {
+        this.turnoIdAbierto = data['editarTurno'] ? Number(this.route.snapshot.paramMap.get('id')) : null;
+        const grupoId = Number(this.route.snapshot.queryParamMap.get('grupoId'));
+        this.grupoInicialTurno = grupoId > 0 ? grupoId : null;
+        this.turnoAbierto = true;
+      }
     }));
     const estado = this.location.getState() as Record<string, unknown> | null;
     const resaltarId = estado?.['grupoCreadoId'];
@@ -257,6 +271,39 @@ export class GruposComponent implements OnInit, OnDestroy {
     this.cerrarCrear();
     this.filtro = null;
     this.cargarGrupos(true, id);
+  }
+
+  enlaceTurno(id: number | null = null): string {
+    return this.location.prepareExternalUrl(this.router.serializeUrl(this.router.createUrlTree(id === null ? ['/turnosCrear'] : ['/turnosEditar', id])));
+  }
+
+  abrirTurno(evento: MouseEvent, id: number | null = null): void {
+    if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey || evento.button > 0) return;
+    evento.preventDefault();
+    this.disparadorTurno = evento.currentTarget as HTMLElement;
+    this.disparadorTurno.focus();
+    this.turnoIdAbierto = id;
+    this.grupoInicialTurno = null;
+    this.turnoAbierto = true;
+  }
+
+  cerrarTurno(): void {
+    this.turnoAbierto = false;
+    if (this.turnoDesdeRuta) {
+      void this.router.navigate(['/gruposListar'], { replaceUrl: true });
+      return;
+    }
+    this.cdr.detectChanges();
+    const destino = this.disparadorTurno?.isConnected ? this.disparadorTurno
+      : this.host.nativeElement.querySelector<HTMLElement>('.grupos__boton-secundario');
+    destino?.focus();
+  }
+
+  turnoGuardado(): void {
+    this.cerrarTurno();
+    if (this.turnoDesdeRuta) return;
+    this.cargarGrupos(true);
+    this.cargarTurnos(true);
   }
 
   // ------------------------------------------------------------------ alumnos por tipo

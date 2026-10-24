@@ -1,9 +1,46 @@
-import { HttpParams, provideHttpClient } from '@angular/common/http';
+import { HttpContext, HttpParams, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { EndpointsService } from './endpoints.service';
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+
+describe('EndpointsService: contexto opcional de turnos (3m-3)', () => {
+  let servicio: EndpointsService;
+  let http: HttpTestingController;
+  const cuerpo = { diaSemana: 'Lunes', horaInicio: '17:00', horaFin: '18:00' };
+  const casos = [
+    { ruta: '/grupos/resumen', metodo: 'GET', body: null, llamar: (s: EndpointsService, c?: HttpContext) => s.obtenerResumenGrupos(c) },
+    { ruta: '/turnos/7', metodo: 'GET', body: null, llamar: (s: EndpointsService, c?: HttpContext) => s.obtenerTurnoPorId(7, c) },
+    { ruta: '/turnos/crear', metodo: 'POST', body: cuerpo, llamar: (s: EndpointsService, c?: HttpContext) => s.crearTurnoSinGrupo(cuerpo, c) },
+    { ruta: '/turnos/crear-asignando-grupo', metodo: 'POST', body: cuerpo, llamar: (s: EndpointsService, c?: HttpContext) => s.crearTurnoConGrupo(cuerpo, c) },
+    { ruta: '/turnos/7', metodo: 'PUT', body: cuerpo, llamar: (s: EndpointsService, c?: HttpContext) => s.actualizarTurno(7, cuerpo, c) },
+    { ruta: '/grupos/1/turnos/7', metodo: 'POST', body: null, llamar: (s: EndpointsService, c?: HttpContext) => s.agregarTurnoAGrupo(1, 7, c) },
+    { ruta: '/grupos/1/turnos/7', metodo: 'DELETE', body: null, llamar: (s: EndpointsService, c?: HttpContext) => s.eliminarTurnoDeGrupo(1, 7, c) },
+  ];
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    servicio = TestBed.inject(EndpointsService);
+    http = TestBed.inject(HttpTestingController);
+  });
+  afterEach(() => http.verify());
+  for (const caso of casos) {
+    for (const local of [false, true]) {
+      it(`${caso.metodo} ${caso.ruta}: conserva URL, cuerpo y credenciales; contexto local ${local}`, () => {
+        const contexto = local ? new HttpContext().set(ERROR_HANDLED_LOCALLY, true) : undefined;
+        caso.llamar(servicio, contexto).subscribe();
+        const req = http.expectOne((r) => r.url.endsWith(caso.ruta));
+        expect(req.request.method).toBe(caso.metodo);
+        expect(req.request.body).toEqual(caso.body);
+        expect(req.request.withCredentials).toBeTrue();
+        expect(req.request.context.get(ERROR_HANDLED_LOCALLY)).toBe(local);
+        if (caso.ruta === '/grupos/resumen') expect(req.request.headers.get('X-Skip-Loading')).toBe('true');
+        req.flush(caso.ruta === '/grupos/resumen' ? [] : {});
+      });
+    }
+  }
+});
 
 describe('EndpointsService', () => {
   function createService(getSpy: jasmine.Spy = jasmine.createSpy('get')): EndpointsService {

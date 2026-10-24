@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { Component } from '@angular/core';
-import { ActivatedRoute, Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -199,6 +199,65 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     quitarTokens();
   });
 
+
+  it('3m-3: Crear turno abre el panel sin navegar y restaura foco al cancelar', () => {
+    crear(); responder();
+    const navegar = spyOn(TestBed.inject(Router), 'navigate');
+    const enlace = el().querySelector<HTMLAnchorElement>('.grupos__boton-secundario')!;
+    enlace.click(); fixture.detectChanges();
+    http.expectOne(API + '/grupos/resumen').flush(datosGrupos());
+    fixture.detectChanges();
+    expect(fixture.componentInstance.turnoAbierto).toBeTrue();
+    expect(el().querySelector('dialog')?.textContent).toContain('Nuevo turno');
+    boton(el().querySelector('dialog')!, 'Cancelar').click();
+    fixture.detectChanges();
+    expect(el().querySelector('dialog')).toBeNull();
+    expect(document.activeElement).toBe(enlace);
+    expect(navegar).not.toHaveBeenCalled();
+    http.verify();
+  });
+
+  it('3m-3: el enlace del turno de una tarjeta abre edición sin salir de Grupos', () => {
+    crear(); responder();
+    fixture.componentInstance.abiertas.add(1); fixture.detectChanges();
+    const navegar = spyOn(TestBed.inject(Router), 'navigate');
+    el().querySelector<HTMLAnchorElement>('a[title="Editar turno"]')!.click();
+    fixture.detectChanges();
+    http.expectOne(API + '/grupos/resumen').flush(datosGrupos());
+    http.expectOne(API + '/turnos/101').flush({ ...T(101, 'Lunes', '17:00', '18:00'), grupoId: 1, grupoNombre: 'Infantiles A', alumnos: [] });
+    fixture.detectChanges();
+    expect(el().querySelector('dialog')?.textContent).toContain('Editar turno');
+    fixture.componentInstance.turnoGuardado(); fixture.detectChanges();
+    http.expectOne(API + '/grupos/resumen').flush(datosGrupos());
+    http.expectOne(API + '/turnos/resumen').flush(datosTurnos());
+    expect(navegar).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.turnoAbierto).toBeFalse();
+    http.verify();
+  });
+
+  for (const editar of [false, true]) {
+    it('3m-3: enlace directo abre su panel, preselecciona grupo y vuelve al listado con replaceUrl (editar ' + editar + ')', () => {
+      const route = TestBed.inject(ActivatedRoute);
+      route.data = of(editar ? { editarTurno: true } : { crearTurno: true });
+      Object.defineProperty(route.snapshot, 'queryParamMap', { value: convertToParamMap({ grupoId: '1' }) });
+      Object.defineProperty(route.snapshot, 'paramMap', { value: convertToParamMap({ id: '101' }) });
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      crear();
+      const lect = lecturas();
+      expect(lect.grupos.length).toBe(2);
+      lect.grupos.forEach((req) => req.flush(datosGrupos()));
+      lect.turnos.forEach((req) => req.flush(datosTurnos()));
+      lect.conteo.forEach((req) => req.flush(CONTEO));
+      if (editar) http.expectOne(API + '/turnos/101').flush({ ...T(101, 'Lunes', '17:00', '18:00'), grupoId: 1, grupoNombre: 'Infantiles A', alumnos: [] });
+      fixture.detectChanges();
+      expect(el().querySelector('dialog')?.textContent).toContain(editar ? 'Editar turno' : 'Nuevo turno');
+      expect(el().querySelector<HTMLSelectElement>('#turno-grupo')!.value).toBe('1');
+      boton(el().querySelector('dialog')!, 'Cancelar').click();
+      expect(navegar).toHaveBeenCalledWith(['/gruposListar'], { replaceUrl: true });
+      http.verify();
+    });
+  }
+
   // ------------------------------------------------------------------ lecturas, cabecera y estados
 
   it('pide grupos, turnos y conteo una vez, con credenciales y ERROR_HANDLED_LOCALLY (su fallo lo enseña la pantalla)', () => {
@@ -222,7 +281,7 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     expect(texto(el().querySelector('.grupos__subtitulo'))).toBe('4 grupos · 8 turnos');
     const turno = el().querySelector<HTMLAnchorElement>('.grupos__boton-secundario')!;
     const grupo = el().querySelector<HTMLButtonElement>('.grupos__boton-primario')!;
-    expect(texto(turno)).toBe('Nuevo turno');
+    expect(texto(turno)).toBe('Crear turno');
     expect(turno.getAttribute('href')).toBe('/turnosCrear');
     expect(texto(grupo)).toBe('Nuevo grupo');
     expect(grupo.tagName).toBe('BUTTON');

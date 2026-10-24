@@ -34,6 +34,34 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  for (const [path, flag] of [['turnosCrear', 'crearTurno'], ['turnosEditar/:id', 'editarTurno']]) {
+    it(path + ' (3m-3): abre Grupos con los mismos roles, resolver y fallback', async () => {
+      const [nueva, hoy] = routes.filter((route) => route.path === path);
+      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+      expect(nueva.canActivate).toEqual(hoy.canActivate!);
+      expect(nueva.data).toEqual({ ...hoy.data, [flag]: true });
+      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+      expect(nueva.resolve).toEqual(hoy.resolve!);
+      expect(await nueva.loadComponent!()).toBe(GruposComponent);
+      expect(hoy.canMatch).toBeUndefined();
+      expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+    });
+    it(path + ' apagado no descarga Grupos', async () => {
+      @Component({ standalone: true, template: '<p>hoy</p>' })
+      class PantallaDeHoy {}
+      const nueva = routes.find((route) => route.path === path && route.canMatch)!;
+      const cargar = jasmine.createSpy('loadComponent Grupos');
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: PantallaDeHoy }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(path === 'turnosCrear' ? '/turnosCrear?grupoId=1' : '/turnosEditar/7', PantallaDeHoy);
+      expect(cargar).not.toHaveBeenCalled();
+    });
+  }
+
   it('gruposEditar/:id (3m-2): ruta nueva perezosa antes de la de hoy, mismos roles y resolvers', async () => {
     const [nueva, hoy] = routes.filter((route) => route.path === 'gruposEditar/:id');
     expect(nueva.canMatch).toEqual([disenoNuevoGuard]);

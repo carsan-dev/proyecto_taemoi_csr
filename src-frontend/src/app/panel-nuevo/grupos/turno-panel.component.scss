@@ -1,0 +1,40 @@
+@use '../capas/capas' as c;
+
+.turno__campos, .turno__dias { min-width: 0; padding: 0; margin: 0; border: 0; }
+label, legend { color: var(--pn-tinta); font: var(--pn-etiqueta); }
+legend { margin-bottom: 8px; }
+.turno__pastillas { display: flex; gap: 4px; }
+.turno__dia {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  span { display: flex; align-items: center; justify-content: center; min-height: 44px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); }
+  input:checked + span { background: var(--pn-acento-suave); color: var(--pn-acento); border-color: var(--pn-acento-borde); }
+  input:focus-visible + span { outline: 2px solid var(--pn-acento-borde); outline-offset: 2px; }
+  input:disabled + span { opacity: .6; }
+}
+.turno__horas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 24px; }
+.turno__campo {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  caret-color: var(--pn-acento);
+  &[aria-invalid='true'] { border-color: var(--pn-peligro); }
+  &:focus-visible { outline: 2px solid var(--pn-acento-borde); outline-offset: 2px; }
+}
+.turno__grupo { display: block; margin-top: 24px; }
+.turno__ayuda, .turno__aviso { margin: 8px 0 0; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.turno__aviso { margin-top: 24px; padding: 12px; background: var(--pn-atencion-suave); color: var(--pn-atencion); border-radius: var(--pn-radio-m); }
+.turno__error { margin: 8px 0 0; color: var(--pn-peligro); font: var(--pn-secundario); overflow-wrap: anywhere; }
+.turno__pie { display: flex; justify-content: flex-end; gap: 8px; }
+.turno__cancelar { @include c.boton-texto; min-height: 44px; }
+.turno__guardar { @include c.boton-primario; min-height: 44px; }
