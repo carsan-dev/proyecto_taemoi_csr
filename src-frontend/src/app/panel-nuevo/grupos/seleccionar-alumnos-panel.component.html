@@ -26,7 +26,7 @@
               <input type="checkbox" [id]="'seleccionar-alumno-' + alumno.id" [checked]="elegidos.has(alumno.id)" [disabled]="enviando" (change)="alternar(alumno.id)" />
             }
             <span class="seleccionar__avatar" aria-hidden="true">
-              @if (alumno.fotoAlumno?.url) { <img [src]="alumno.fotoAlumno!.url" alt="" loading="lazy" (error)="alumno.fotoAlumno = undefined" /> }
+              @if (fotoPara(alumno); as foto) { <img [src]="foto" width="32" height="32" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
               @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
             </span>
             @if (pertenece(alumno.id)) {

@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { GestionarAlumnosComponent } from './gestionar-alumnos.component';
+import type { AlumnoGrupo } from './seleccionar-alumnos-panel.component';
 
 describe('GestionarAlumnosComponent (3m-4)', () => {
   let fixture: ComponentFixture<GestionarAlumnosComponent>;
@@ -32,7 +33,7 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     fixture.detectChanges();
   });
   afterEach(() => { fixture.destroy(); http.verify(); });
-  function grupo(alumnos = [alumno(1)]): void {
+  function grupo(alumnos: AlumnoGrupo[] = [alumno(1)]): void {
     const req = http.expectOne(`${environment.apiUrl}/grupos/7`);
     expect(req.request.method).toBe('GET');
     req.flush({ id: 7, nombre: 'Infantiles', alumnos });
@@ -53,6 +54,19 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     fixture.componentInstance.buscar(''); tick(300); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.alumnos-grupo__nombre').getAttribute('href')).toBe('/alumnosEditar/1');
   }));
+  it('renders versioned photos and falls back to initials without mutating pupils', () => {
+    grupo([{ ...alumno(1), fotoAlumno: { id: 17, url: '/foto' } }, alumno(2)]);
+    const avatares = fixture.nativeElement.querySelectorAll('.alumnos-grupo__avatar') as NodeListOf<HTMLElement>;
+    const foto = avatares[0].querySelector('img') as HTMLImageElement;
+    expect(foto.getAttribute('src')).toBe('/foto?w=180&v=17');
+    expect(foto.getAttribute('alt')).toBe('');
+    expect(avatares[1].textContent?.trim()).toBe('AP');
+    foto.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(avatares[0].querySelector('img')).toBeNull();
+    expect(avatares[0].textContent?.trim()).toBe('AP');
+    expect(fixture.componentInstance.alumnos[0].fotoAlumno?.url).toBe('/foto');
+  });
   it('paginates ten locally and preserves search/page after refreshing on close', fakeAsync(() => {
     grupo(Array.from({ length: 18 }, (_, i) => alumno(i + 1)));
     fixture.componentInstance.buscar('Alumno'); tick(300);

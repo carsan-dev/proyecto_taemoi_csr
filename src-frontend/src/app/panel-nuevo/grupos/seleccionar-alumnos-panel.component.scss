@@ -2,10 +2,12 @@
 
 .seleccionar__busqueda { position: sticky; top: 0; z-index: 1; background: var(--pn-superficie); padding: 0 0 12px; }
 .seleccionar__busqueda > label { display: block; margin-bottom: 8px; font: var(--pn-etiqueta); }
-.seleccionar__campo { display: flex; align-items: center; gap: 8px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); padding: 0 8px; }
-.seleccionar__campo svg { width: 18px; height: 18px; flex: none; color: var(--pn-tinta-2); }
-.seleccionar__campo input { min-width: 0; width: 100%; min-height: 42px; border: 0; background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
+.seleccionar__campo { position: relative; display: flex; align-items: center; gap: 8px; }
+.seleccionar__campo svg { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); width: 18px; height: 18px; flex: none; color: var(--pn-tinta-2); pointer-events: none; }
+.seleccionar__campo input { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 44px; min-height: 44px; padding: 0 40px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
+.seleccionar__campo input:focus-visible { outline: 2px solid var(--pn-acento); outline-offset: 2px; }
 .seleccionar__campo button, .seleccionar__contador button, .seleccionar__paginacion button, .seleccionar__cancelar { @include c.boton-texto; }
+.seleccionar__campo button { flex: none; }
 .seleccionar__contador, .seleccionar__paginacion { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
 .seleccionar__contador { margin-top: 8px; }
 .seleccionar__lista { margin: 0; padding: 0; list-style: none; }

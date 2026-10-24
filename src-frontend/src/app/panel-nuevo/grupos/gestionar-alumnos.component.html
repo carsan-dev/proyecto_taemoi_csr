@@ -27,7 +27,7 @@
         @for (alumno of visibles; track alumno.id) {
           <li class="alumnos-grupo__fila">
             <a class="alumnos-grupo__avatar" [routerLink]="['/alumnosEditar', alumno.id]" [attr.aria-label]="'Ver ficha de ' + alumno.nombre + ' ' + alumno.apellidos">
-              @if (alumno.fotoAlumno?.url) { <img [src]="alumno.fotoAlumno!.url" alt="" loading="lazy" (error)="alumno.fotoAlumno = undefined" /> }
+              @if (fotoPara(alumno); as foto) { <img [src]="foto" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
               @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
             </a>
             <a class="alumnos-grupo__nombre" [routerLink]="['/alumnosEditar', alumno.id]">{{ alumno.nombre }} {{ alumno.apellidos }}</a>

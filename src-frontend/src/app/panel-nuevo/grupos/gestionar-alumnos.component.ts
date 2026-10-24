@@ -12,6 +12,7 @@ import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
+import { fotoDe } from '../alumnos/alumno-vista';
 import { SeleccionarAlumnosPanelComponent, type AlumnoGrupo, type GrupoAlumnos } from './seleccionar-alumnos-panel.component';
 
 @Component({
@@ -48,7 +49,13 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   errorCarga = '';
   panelAbierto = false;
   readonly quitandos = new Set<number>();
+  readonly fotosFallidas = new Set<number>();
   readonly esqueletos = Array.from({ length: 10 });
+
+  fotoPara(alumno: AlumnoGrupo): string | null {
+    return this.fotosFallidas.has(alumno.id) ? null : fotoDe(alumno);
+  }
+  marcarFotoFallida(id: number): void { this.fotosFallidas.add(id); }
 
   ngOnInit(): void {
     const estado = this.location.getState() as Record<string, unknown> | null;

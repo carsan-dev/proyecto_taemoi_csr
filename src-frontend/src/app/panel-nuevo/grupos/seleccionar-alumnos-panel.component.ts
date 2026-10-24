@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
+import { fotoDe } from '../alumnos/alumno-vista';
 import { AvisosService } from '../avisos/avisos.service';
 import { cerrarSweetAlertAbierto } from '../capas/capa-modal';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
@@ -36,6 +37,7 @@ export class SeleccionarAlumnosPanelComponent implements OnInit, OnDestroy {
   @Output() readonly cerrado = new EventEmitter<void>();
   @Output() readonly anadidos = new EventEmitter<void>();
   readonly elegidos = new Set<number>();
+  readonly fotosFallidas = new Set<number>();
   readonly esqueletos = Array.from({ length: 10 });
   alumnos: AlumnoGrupo[] = [];
   filtro = '';
@@ -86,6 +88,10 @@ export class SeleccionarAlumnosPanelComponent implements OnInit, OnDestroy {
   }
 
   pertenece(id: number): boolean { return this.grupo.alumnos.some((alumno) => alumno.id === id); }
+  fotoPara(alumno: AlumnoGrupo): string | null {
+    return this.fotosFallidas.has(alumno.id) ? null : fotoDe(alumno);
+  }
+  marcarFotoFallida(id: number): void { this.fotosFallidas.add(id); }
   alternar(id: number): void {
     if (this.enviando || this.pertenece(id)) return;
     if (this.elegidos.has(id)) this.elegidos.delete(id);

@@ -42,6 +42,30 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
     fixture.componentInstance.alternar(1);
     expect(fixture.componentInstance.elegidos.size).toBe(0);
   });
+  it('renders 32px photos on dimmed rows and falls back to initials without mutating pupils', () => {
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/alumnos`);
+    req.flush({ content: [
+      { ...alumno(1), fotoAlumno: { id: 22, url: '/foto?token=x' } },
+      alumno(2),
+      { ...alumno(3), fotoAlumno: { id: 23, url: '/foto-rota' } },
+    ], totalElements: 3, totalPages: 1 });
+    fixture.detectChanges();
+    const filas = fixture.nativeElement.querySelectorAll('.seleccionar__fila') as NodeListOf<HTMLElement>;
+    const foto = filas[0].querySelector('img') as HTMLImageElement;
+    expect(filas[0].classList).toContain('seleccionar__fila--existente');
+    expect(foto.getAttribute('src')).toBe('/foto?token=x&w=180&v=22');
+    expect(foto.getAttribute('width')).toBe('32');
+    expect(foto.getAttribute('height')).toBe('32');
+    expect(foto.getAttribute('alt')).toBe('');
+    expect(foto.getAttribute('loading')).toBe('lazy');
+    expect(filas[1].querySelector('.seleccionar__avatar')?.textContent?.trim()).toBe('AP');
+    const rota = filas[2].querySelector('img') as HTMLImageElement;
+    rota.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(filas[2].querySelector('img')).toBeNull();
+    expect(filas[2].querySelector('.seleccionar__avatar')?.textContent?.trim()).toBe('AP');
+    expect(fixture.componentInstance.alumnos[2].fotoAlumno?.url).toBe('/foto-rota');
+  });
   it('keeps search mounted and focused during loading, selection across pages/searches, and cancels stale requests', fakeAsync(() => {
     lista([2], 20);
     fixture.componentInstance.alternar(2);
@@ -77,7 +101,9 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
     fixture.componentInstance.anadir();
     http.expectNone(`${environment.apiUrl}/grupos/7/alumnos`);
     fixture.componentInstance.alternar(2);
-    fixture.componentInstance.anadir();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('1 elegido');
+    expect((fixture.nativeElement.querySelector('.seleccionar__anadir') as HTMLButtonElement).textContent).toContain('Añadir 1 alumno');
     fixture.componentInstance.anadir();
     const req = http.expectOne(`${environment.apiUrl}/grupos/7/alumnos`);
     expect(req.request.method).toBe('POST');
