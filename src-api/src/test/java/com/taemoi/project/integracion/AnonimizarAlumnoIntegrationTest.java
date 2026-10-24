@@ -184,15 +184,19 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void anonimizar_cancelaSoloLosCargosSinPagar_conElMotivo() throws Exception {
+	void anonimizar_cancelaLosCargosSinPagar_losMismosQueAvisa() throws Exception {
 		long alumno = e.alumno("IT8B3LBISCANCELA" + e.marca, e.sA, true);
 		e.taekwondo(alumno, false);
 		long inscripcion = jdbc.queryForObject("SELECT MAX(id) FROM alumno_deporte WHERE alumno_id = ?", Long.class,
 				alumno);
 		long pagado = cargo(alumno, "30.00", true);
 		cobro(alumno, pagado, "30.00", "ACTIVO");
+		// Un cobro ANULADO no impide cancelar (la misma regla que cancelar a mano); uno ACTIVO sí, aunque el cargo no
+		// figure como pagado (datos antiguos).
 		long conCobroAnulado = cargo(alumno, "15.00", false);
 		cobro(alumno, conCobroAnulado, "15.00", "ANULADO");
+		long conCobroActivo = cargo(alumno, "8.00", false);
+		cobro(alumno, conCobroActivo, "8.00", "ACTIVO");
 		long yaCancelado = cargo(alumno, "12.00", false);
 		jdbc.update("UPDATE producto_alumno SET cancelado_en = '2026-09-03 10:00:00', motivo_cancelacion = 'Antes' "
 				+ "WHERE id = ?", yaCancelado);
@@ -204,23 +208,89 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 				INSERT INTO alumno_convocatoria (cuantia_examen, pagado, alumno_id, convocatoria_id, grado_actual,
 				  grado_siguiente, organizacion_id, producto_alumno_id) VALUES (10, 0, ?, ?, NULL, NULL, ?, ?)""",
 				alumno, convocatoria, e.org, deConvocatoria);
-		String intactos = cargoYCobros(pagado) + cargoYCobros(conCobroAnulado) + cargoYCobros(yaCancelado);
+		String intactos = cargoYCobros(pagado) + cargoYCobros(conCobroActivo) + cargoYCobros(yaCancelado);
 		String cobros = jdbc.queryForList("SELECT * FROM cobro WHERE alumno_id = ? ORDER BY id", alumno).toString();
+		JsonNode aviso = leer("/api/alumnos/cargos-resumen?alumnoIds=" + alumno, tokenPropietario).get(0);
 
 		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
 
-		for (long cancelado : List.of(propio, deInscripcion, deConvocatoria)) {
+		List<Long> esperados = List.of(conCobroAnulado, propio, deInscripcion, deConvocatoria);
+		for (long cancelado : esperados) {
 			Map<String, Object> fila = jdbc.queryForMap(
 					"SELECT cancelado_en, motivo_cancelacion, pagado FROM producto_alumno WHERE id = ?", cancelado);
 			assertNotNull(fila.get("cancelado_en"), cancelado + " cancelado");
 			assertEquals("Alumno eliminado", fila.get("motivo_cancelacion"));
 			assertEquals(Boolean.FALSE, toBool(fila.get("pagado")));
 		}
-		assertEquals(intactos, cargoYCobros(pagado) + cargoYCobros(conCobroAnulado) + cargoYCobros(yaCancelado),
-				"lo pagado, lo que tiene un cobro y lo ya cancelado no cambian");
+		assertEquals(esperados.size(), aviso.get("pendientes").asLong(), "el aviso cuenta los que se cancelan");
+		assertEquals(0, new BigDecimal("70.00").compareTo(aviso.get("importePendiente").decimalValue()),
+				"y su importe: " + aviso);
+		assertEquals(intactos, cargoYCobros(pagado) + cargoYCobros(conCobroActivo) + cargoYCobros(yaCancelado),
+				"lo pagado, lo que tiene un cobro activo y lo ya cancelado no cambian");
 		assertEquals(cobros, jdbc.queryForList("SELECT * FROM cobro WHERE alumno_id = ? ORDER BY id", alumno).toString(),
 				"los cobros no cambian");
 		assertEquals(1, contar("SELECT COUNT(*) FROM alumno_convocatoria WHERE producto_alumno_id = ?", deConvocatoria));
+	}
+
+	@Test
+	void anonimizado_susCargosNoSeReactivanNiBorranNiEditan_409_peroSeRevierteLoCobrado() throws Exception {
+		long alumno = e.alumno("IT8B3LBISREACTIVAR" + e.marca, e.sA, true);
+		long pagado = cargo(alumno, "30.00", true);
+		cobro(alumno, pagado, "30.00", "ACTIVO");
+		long pendiente = cargo(alumno, "20.00", false);
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+		String antes = cargoYCobros(pendiente);
+
+		MvcResult reactivar = mvc.perform(post("/api/productos-alumno/" + pendiente + "/reactivar")
+				.cookie(jwt(tokenPropietario))).andReturn();
+		assertEquals(409, reactivar.getResponse().getStatus(), reactivar.getResponse().getContentAsString());
+		assertEquals(ANONIMIZADO, json.readTree(reactivar.getResponse().getContentAsString()).get("mensaje").asText());
+		assertEquals(409, estado(delete("/api/productos-alumno/" + pendiente), tokenPropietario), "ni se borra");
+		assertEquals(409, estado(put("/api/productos-alumno/" + pendiente).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"notas\":\"vuelve\"}"), tokenPropietario), "ni se editan sus notas");
+		assertEquals(409, estado(put("/api/productos-alumno/" + pagado).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"precio\":99}"), tokenPropietario), "ni el precio de lo cobrado");
+		assertEquals(antes, cargoYCobros(pendiente), "el cargo sigue cancelado e igual");
+
+		// La tesorería sí revierte un cobro suyo (devolución del dinero).
+		assertEquals(200, estado(put("/api/productos-alumno/" + pagado).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pagado\":false,\"motivoCambio\":\"devolución\"}"), tokenPropietario));
+		assertEquals(1, contar("SELECT COUNT(*) FROM cobro WHERE producto_alumno_id = ? AND estado = 'ANULADO'", pagado));
+	}
+
+	@Test
+	void anonimizado_propietarioDeOtraEscuela_noRecibe409() throws Exception {
+		long alumno = e.alumno("IT8B3LBISCRUZADO" + e.marca, e.sA, true);
+		long pendiente = cargo(alumno, "20.00", false);
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+		String antes = foto(alumno);
+
+		int observaciones = estado(put("/api/alumnos/" + alumno + "/observaciones")
+				.contentType(MediaType.APPLICATION_JSON).content("{\"observaciones\":\"x\"}"), tokenOtraPropietario);
+		assertTrue(observaciones == 404 || observaciones == 403, "lo normal de otra escuela, no 409: " + observaciones);
+		int reactivar = estado(post("/api/productos-alumno/" + pendiente + "/reactivar"), tokenOtraPropietario);
+		assertTrue(reactivar == 404 || reactivar == 403, "lo normal de otra escuela, no 409: " + reactivar);
+		assertEquals(antes, foto(alumno));
+	}
+
+	@Test
+	void peticionAnonima_conAlumnoAnonimizado_noRecibe409() throws Exception {
+		// Una petición sin sesión va a la escuela por defecto: no debe delatar si un id suyo está anonimizado.
+		long expediente = jdbc.queryForObject("SELECT COALESCE(MAX(numero_expediente), 60000) + 1 FROM alumno",
+				Long.class);
+		jdbc.update("""
+				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
+				  numero_expediente, telefono, tiene_derecho_examen, organizacion_id, anonimizado_en)
+				VALUES (0, 'eliminado', 0, '', '2010-01-01', 'Alumno', ?, '', 0, 1, NOW())""", expediente);
+		long alumno = jdbc.queryForObject(
+				"SELECT id FROM alumno WHERE numero_expediente = ? AND organizacion_id = 1", Long.class, expediente);
+		try {
+			MvcResult r = mvc.perform(post("/api/preinscripciones?alumnoId=" + alumno)
+					.contentType(MediaType.APPLICATION_JSON).content("{}")).andReturn();
+			assertFalse(r.getResponse().getStatus() == 409, r.getResponse().getContentAsString());
+		} finally {
+			jdbc.update("DELETE FROM alumno WHERE id = ?", alumno);
+		}
 	}
 
 	// ------------------------------------------------------------------ anonimizado: solo lectura
