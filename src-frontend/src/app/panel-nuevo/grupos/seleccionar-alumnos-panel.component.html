@@ -1,0 +1,56 @@
+<pn-panel-lateral [titulo]="'Añadir alumnos a ' + grupo.nombre" [bloqueado]="enviando" (cerrar)="cerrar()">
+  <div class="seleccionar__busqueda">
+    <label for="seleccionar-alumnos-busqueda">Buscar alumno por nombre</label>
+    <div class="seleccionar__campo">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+      <input id="seleccionar-alumnos-busqueda" type="search" [ngModel]="filtro" (ngModelChange)="buscar($event)" />
+      @if (filtro) { <button type="button" (click)="buscar('')" aria-label="Quitar búsqueda">Borrar</button> }
+    </div>
+    <div class="seleccionar__contador">
+      <span aria-live="polite" aria-atomic="true">{{ elegidos.size }} {{ elegidos.size === 1 ? 'elegido' : 'elegidos' }}</span>
+      <button type="button" [disabled]="!elegidos.size || enviando" (click)="quitarSeleccion()">Quitar selección</button>
+    </div>
+  </div>
+  <div [attr.aria-busy]="cargando">
+    @if (cargando) {
+      <pn-esqueleto etiqueta="Cargando alumnos…">@for (fila of esqueletos; track $index) { <div class="seleccionar__esqueleto"></div> }</pn-esqueleto>
+    } @else if (errorCarga) {
+      <pn-bloque-error [titulo]="errorCarga" (reintentar)="cargarAlumnos()" />
+    } @else if (!alumnos.length) {
+      <p class="seleccionar__vacio">@if (filtro) { Ningún alumno activo coincide con «{{ filtro }}» } @else { No hay alumnos activos disponibles }</p>
+    } @else {
+      <ul class="seleccionar__lista">
+        @for (alumno of alumnos; track alumno.id) {
+          <li class="seleccionar__fila" [class.seleccionar__fila--existente]="pertenece(alumno.id)">
+            @if (!pertenece(alumno.id)) {
+              <input type="checkbox" [id]="'seleccionar-alumno-' + alumno.id" [checked]="elegidos.has(alumno.id)" [disabled]="enviando" (change)="alternar(alumno.id)" />
+            }
+            <span class="seleccionar__avatar" aria-hidden="true">
+              @if (fotoPara(alumno); as foto) { <img [src]="foto" width="32" height="32" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
+              @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
+            </span>
+            @if (pertenece(alumno.id)) {
+              <span class="seleccionar__nombre">{{ alumno.nombre }} {{ alumno.apellidos }}<span class="seleccionar__estado">Ya está en el grupo</span></span>
+            } @else {
+              <label class="seleccionar__nombre" [for]="'seleccionar-alumno-' + alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</label>
+            }
+          </li>
+        }
+      </ul>
+      @if (totalPaginas > 1) {
+        <nav class="seleccionar__paginacion" aria-label="Páginas de alumnos disponibles">
+          <button type="button" [disabled]="pagina === 1" (click)="cambiarPagina(pagina - 1)">Anterior</button>
+          <span>{{ desde }}-{{ hasta }} de {{ total }}</span>
+          <button type="button" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(pagina + 1)">Siguiente</button>
+        </nav>
+      }
+    }
+  </div>
+  <div pnPie>
+    @if (errorEnvio) { <p class="seleccionar__error" role="alert">{{ errorEnvio }}</p> }
+    <div class="seleccionar__pie">
+      <button class="seleccionar__cancelar" type="button" [disabled]="enviando" (click)="cerrar()">Cancelar</button>
+      <button class="seleccionar__anadir" type="button" pnOcupado [ocupado]="enviando" [deshabilitado]="!elegidos.size" textoOcupado="Añadiendo…" (click)="anadir()">Añadir {{ elegidos.size }} {{ elegidos.size === 1 ? 'alumno' : 'alumnos' }}</button>
+    </div>
+  </div>
+</pn-panel-lateral>

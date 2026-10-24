@@ -1,0 +1,32 @@
+@use '../capas/capas' as c;
+
+.seleccionar__busqueda { position: sticky; top: 0; z-index: 1; background: var(--pn-superficie); padding: 0 0 12px; }
+.seleccionar__busqueda > label { display: block; margin-bottom: 8px; font: var(--pn-etiqueta); }
+.seleccionar__campo { position: relative; display: flex; align-items: center; gap: 8px; }
+.seleccionar__campo svg { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); width: 18px; height: 18px; flex: none; color: var(--pn-tinta-2); pointer-events: none; }
+.seleccionar__campo input { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 44px; min-height: 44px; padding: 0 40px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
+.seleccionar__campo input:focus-visible { outline: 2px solid var(--pn-acento); outline-offset: 2px; }
+.seleccionar__campo button, .seleccionar__contador button, .seleccionar__paginacion button, .seleccionar__cancelar { @include c.boton-texto; }
+.seleccionar__campo button { flex: none; }
+.seleccionar__contador, .seleccionar__paginacion { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
+.seleccionar__contador { margin-top: 8px; }
+.seleccionar__lista { margin: 0; padding: 0; list-style: none; }
+.seleccionar__fila { display: flex; align-items: center; gap: 12px; min-height: 60px; border-bottom: 1px solid var(--pn-linea); }
+.seleccionar__fila input { flex: none; width: 20px; height: 20px; accent-color: var(--pn-acento); cursor: pointer; }
+.seleccionar__fila--existente { color: var(--pn-tinta-2); background: var(--pn-superficie-2); }
+.seleccionar__fila--existente .seleccionar__avatar { filter: grayscale(1); }
+.seleccionar__avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background: var(--pn-acento-suave); color: var(--pn-acento); font: var(--pn-etiqueta); }
+.seleccionar__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.seleccionar__nombre { flex: 1; padding: 12px 0; font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+label.seleccionar__nombre { cursor: pointer; }
+.seleccionar__estado { display: block; margin-top: 4px; font: var(--pn-secundario); }
+.seleccionar__vacio { padding: 24px 0; color: var(--pn-tinta-2); font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+.seleccionar__paginacion { margin-top: 16px; }
+.seleccionar__esqueleto { height: 44px; margin: 8px 0; border-radius: var(--pn-radio-s); background: var(--pn-serie-pista); }
+.seleccionar__error { margin: 0 0 12px; color: var(--pn-peligro); font: var(--pn-secundario); }
+.seleccionar__pie { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.seleccionar__anadir { @include c.boton-primario; }
+@media (max-width: 767.98px) {
+  .seleccionar__busqueda { top: 0; }
+  .seleccionar__campo input, .seleccionar__campo button, .seleccionar__contador button, .seleccionar__paginacion button, .seleccionar__cancelar, .seleccionar__anadir { min-height: 44px; }
+}

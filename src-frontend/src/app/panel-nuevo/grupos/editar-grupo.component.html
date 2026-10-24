@@ -1,0 +1,78 @@
+<div class="pn editar-grupo" pnAcento>
+  <main class="editar-grupo__pagina">
+    <nav aria-label="Miga de pan"><a routerLink="/gruposListar">Grupos</a><span aria-hidden="true"> /</span></nav>
+    @if (cargando) {
+      <pn-esqueleto etiqueta="Cargando grupo…"><div class="editar-grupo__hueso editar-grupo__hueso--titulo"></div><div class="editar-grupo__hueso editar-grupo__hueso--bloque"></div></pn-esqueleto>
+    } @else if (errorCarga) {
+      <pn-bloque-error titulo="No se pudo cargar el grupo" [texto]="errorCarga" (reintentar)="cargarGrupo()" />
+    } @else if (grupo) {
+      <header>
+        <h1>{{ grupo.nombre }}</h1>
+        <div class="editar-grupo__resumen"><span data-resumen>{{ resumen }}</span><a data-ver-alumnos [routerLink]="['/gestionarAlumnos', grupoId]">Ver alumnos</a></div>
+      </header>
+      <section class="editar-grupo__bloque" aria-labelledby="datos-titulo">
+        <h2 id="datos-titulo">Datos del grupo</h2>
+        <p class="editar-grupo__nota">Guardar el nombre no afecta a los profesores.</p>
+        <form (submit)="$event.preventDefault(); guardar()">
+          <label for="grupo-nombre">Nombre del grupo <span>(obligatorio)</span></label>
+          <input id="grupo-nombre" type="text" [formControl]="nombre" maxlength="50" required
+            placeholder="Infantiles cinturón blanco" (input)="errorGuardar = ''" [attr.aria-invalid]="errorNombre ? 'true' : null"
+            [attr.aria-describedby]="'nombre-ayuda nombre-contador' + (errorNombre ? ' nombre-error' : '')" />
+          <p class="editar-grupo__contador" id="nombre-contador">{{ nombre.value.length }} / 50</p>
+          <p id="nombre-ayuda" class="editar-grupo__nota">Elige un nombre descriptivo para identificar el grupo fácilmente</p>
+          @if (errorNombre) { <p class="editar-grupo__error" id="nombre-error" role="alert">{{ errorNombre }}</p> }
+          <div class="editar-grupo__guardar"><button type="submit" pnOcupado class="editar-grupo__primario" [ocupado]="guardando" textoOcupado="Guardando…" [deshabilitado]="nombre.invalid">Guardar cambios</button></div>
+        </form>
+        @if (errorGuardar) { <p class="editar-grupo__error" id="guardar-error" role="alert">{{ errorGuardar }}</p> }
+      </section>
+      <section class="editar-grupo__bloque" aria-labelledby="profesores-titulo">
+        <h2 id="profesores-titulo">Profesores</h2>
+        <p class="editar-grupo__nota">Los cambios de profesores se aplican al momento.</p>
+        @if (profesoresCargando) {
+          <pn-esqueleto etiqueta="Cargando profesores…"><div class="editar-grupo__hueso editar-grupo__hueso--fila"></div><div class="editar-grupo__hueso editar-grupo__hueso--fila"></div></pn-esqueleto>
+        } @else if (profesoresError) {
+          <pn-bloque-error titulo="No se han podido cargar los profesores" [texto]="profesoresError" (reintentar)="cargarProfesores()" />
+        } @else {
+          @for (profesor of profesores; track profesor.usuarioId) {
+            <div class="editar-grupo__profesor">
+              <span class="editar-grupo__avatar" aria-hidden="true">{{ iniciales(profesor) }}</span>
+              <div class="editar-grupo__identidad"><strong>{{ nombreCompleto(profesor) }}</strong><span>{{ profesor.email }}</span>
+                @if (profesor.invitacionPendiente) {
+                  <div class="editar-grupo__invitacion"><span class="editar-grupo__pendiente">Invitación pendiente</span><button type="button" pnOcupado class="editar-grupo__texto" [ocupado]="reenviando.has(profesor.usuarioId)" textoOcupado="Reenviando…" (click)="reenviarInvitacion(profesor)">Reenviar</button></div>
+                }
+              </div>
+              <div class="editar-grupo__segmento" role="group" [attr.aria-label]="'Rol de ' + nombreCompleto(profesor)" [attr.aria-busy]="cambiandoRol.has(profesor.usuarioId)">
+                @for (rol of roles; track rol) { <button type="button" [attr.aria-pressed]="profesor.rol === rol" [disabled]="cambiandoRol.has(profesor.usuarioId) || quitando.has(profesor.usuarioId)" (click)="cambiarRol(profesor, rol)">{{ rol === 'TITULAR' ? 'Titular' : 'Ayudante' }}</button> }
+              </div>
+              <div class="editar-grupo__menu" (keydown.escape)="menuAbierto = null; $event.stopPropagation()" (focusout)="cerrarMenu($event)">
+                <button type="button" class="editar-grupo__mas" [attr.aria-label]="'Acciones de ' + nombreCompleto(profesor)" [attr.aria-expanded]="menuAbierto === profesor.usuarioId" [disabled]="quitando.has(profesor.usuarioId) || cambiandoRol.has(profesor.usuarioId)" (click)="menuAbierto = menuAbierto === profesor.usuarioId ? null : profesor.usuarioId">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </button>
+                @if (menuAbierto === profesor.usuarioId) { <div class="editar-grupo__desplegable"><button type="button" (click)="quitarProfesor(profesor)">Quitar del grupo</button></div> }
+              </div>
+            </div>
+          } @empty { <p class="editar-grupo__vacio" role="status">Este grupo aún no tiene profesores.</p> }
+        }
+        <div class="editar-grupo__alta">
+          <h3>Añadir profesor</h3>
+          <form (submit)="$event.preventDefault(); anadirProfesor()" novalidate>
+            <label for="profesor-email">Email</label>
+            <input id="profesor-email" type="email" name="email" [(ngModel)]="nuevoEmail" [readOnly]="enviandoAlta" (ngModelChange)="emailCambiado()" placeholder="profesor@ejemplo.com" autocomplete="email" />
+            <div class="editar-grupo__segmento editar-grupo__rol-alta" role="group" aria-label="Rol del nuevo profesor">
+              @for (rol of roles; track rol) { <button type="button" [attr.aria-pressed]="nuevoRol === rol" [disabled]="enviandoAlta" (click)="nuevoRol = rol">{{ rol === 'TITULAR' ? 'Titular' : 'Ayudante' }}</button> }
+            </div>
+            @if (modoAlta === 'sinCuenta') {
+              <p class="editar-grupo__aviso" role="status">No hay ninguna cuenta con ese email. Te pedimos su nombre para invitarle.</p>
+              <div class="editar-grupo__nombres"><div><label for="profesor-nombre">Nombre (obligatorio)</label><input id="profesor-nombre" name="nombre" [(ngModel)]="nuevoNombre" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="given-name" /></div><div><label for="profesor-apellidos">Apellidos (obligatorio)</label><input id="profesor-apellidos" name="apellidos" [(ngModel)]="nuevosApellidos" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="family-name" /></div></div>
+            } @else if (modoAlta === 'desactivado') { <p class="editar-grupo__aviso" role="status">Tiene el rol de profesor desactivado en esta escuela.</p> }
+            @if (otrosGrupos.length) {
+              <fieldset><legend>También en estos grupos</legend><div class="editar-grupo__pastillas">@for (otro of otrosGrupos; track otro.id) { <button type="button" class="editar-grupo__pastilla" [attr.aria-pressed]="gruposMarcados.has(otro.id)" [disabled]="enviandoAlta" (click)="alternarGrupo(otro.id)">{{ otro.nombre }}</button> }</div></fieldset>
+            }
+            <button type="submit" pnOcupado class="editar-grupo__secundario" [ocupado]="enviandoAlta" textoOcupado="Enviando…" [deshabilitado]="!puedeEnviarAlta">{{ textoBotonAlta }}</button>
+            @if (errorAlta) { <p class="editar-grupo__error" id="profesores-error" role="alert">{{ errorAlta }}</p> }
+          </form>
+        </div>
+      </section>
+    }
+  </main>
+</div>

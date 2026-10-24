@@ -1,0 +1,38 @@
+<pn-panel-lateral titulo="Nuevo grupo" [bloqueado]="enviando" (cerrar)="cerrado.emit()">
+  <form id="crear-grupo-form" (submit)="$event.preventDefault(); crear()">
+    <label class="crear-grupo__etiqueta" for="crear-grupo-nombre">Nombre del grupo <span>(obligatorio)</span></label>
+    <input id="crear-grupo-nombre" class="crear-grupo__campo" type="text" [formControl]="nombre" required maxlength="50"
+      placeholder="Infantiles cinturón blanco" [readOnly]="enviando" (input)="errorServidor = ''"
+      [attr.aria-invalid]="error ? 'true' : null"
+      [attr.aria-describedby]="'crear-grupo-ayuda crear-grupo-contador' + (error ? ' crear-grupo-error' : '')" />
+    <p class="crear-grupo__contador" id="crear-grupo-contador">{{ nombre.value.length }} / 50</p>
+    <p class="crear-grupo__ayuda" id="crear-grupo-ayuda">Elige un nombre descriptivo para identificar el grupo fácilmente</p>
+    @if (error) {
+    <p class="crear-grupo__error" id="crear-grupo-error" role="alert">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+      <span>{{ error }}</span>
+    </p>
+    }
+    <label class="crear-grupo__etiqueta crear-grupo__etiqueta--deporte" for="crear-grupo-deporte">Deporte <span>(obligatorio)</span></label>
+    <select id="crear-grupo-deporte" class="crear-grupo__campo" [formControl]="deporte" required
+      [attr.disabled]="enviando ? '' : null" (change)="errorServidor = ''"
+      [attr.aria-invalid]="errorDeporte ? 'true' : null"
+      [attr.aria-describedby]="errorDeporte ? 'crear-grupo-deporte-error' : null">
+      <option value="" disabled>Selecciona un deporte…</option>
+      @for (disciplina of disciplinas(); track disciplina.codigo) {
+      <option [value]="disciplina.codigo">{{ disciplina.nombre }}</option>
+      }
+    </select>
+    @if (errorDeporte) {
+    <p class="crear-grupo__error" id="crear-grupo-deporte-error" role="alert">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+      <span>{{ errorDeporte }}</span>
+    </p>
+    }
+  </form>
+  <div pnPie class="crear-grupo__pie">
+    <button type="button" class="crear-grupo__cancelar" [disabled]="enviando" (click)="cerrado.emit()">Cancelar</button>
+    <button type="submit" form="crear-grupo-form" pnOcupado class="crear-grupo__crear" [ocupado]="enviando"
+      textoOcupado="Creando…" [deshabilitado]="nombre.invalid || deporte.invalid">Crear grupo</button>
+  </div>
+</pn-panel-lateral>

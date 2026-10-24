@@ -1,5 +1,6 @@
+import { Location } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
@@ -18,6 +19,8 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ErrorCampo, ValoresDialogo } from '../dialogo/dialogo.component';
 import { frasePlural, numero } from '../formato/formato-es';
 import { AlumnosTipoPanelComponent } from './alumnos-tipo-panel.component';
+import { CrearGrupoPanelComponent } from './crear-grupo-panel.component';
+import { TurnoPanelComponent } from './turno-panel.component';
 import { SeccionDisciplina, rangoEdad, resumenHorario, seccionesPorDisciplina, textoTurno } from './grupos-vista';
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -44,6 +47,8 @@ export const TIPOS_GRUPO: readonly string[] = ['Taekwondo', 'Taekwondo Competici
     BloqueVacioComponent,
     BotonOcupadoComponent,
     AlumnosTipoPanelComponent,
+    CrearGrupoPanelComponent,
+    TurnoPanelComponent,
   ],
   templateUrl: './grupos.component.html',
   styleUrls: ['./grupos.component.scss'],
@@ -55,6 +60,8 @@ export class GruposComponent implements OnInit, OnDestroy {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
+  private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -83,6 +90,16 @@ export class GruposComponent implements OnInit, OnDestroy {
   readonly anadiendo = new Set<number>();
   /** Tipo con el panel de alumnos abierto. */
   tipoAbierto: string | null = null;
+  crearAbierto = false;
+  turnoAbierto = false;
+  turnoIdAbierto: number | null = null;
+  grupoInicialTurno: number | null = null;
+  private turnoDesdeRuta = false;
+  private disparadorTurno: HTMLElement | null = null;
+  private crearDesdeRuta = false;
+  grupoResaltado: number | null = null;
+  private finResaltado?: ReturnType<typeof setTimeout>;
+  private disparadorCrear: HTMLElement | null = null;
 
   private readonly cargas = new Subscription();
   private cargaGrupos?: Subscription;
@@ -124,12 +141,31 @@ export class GruposComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.cargarGrupos();
+    this.cargas.add(this.route.data.subscribe((data) => {
+      this.crearDesdeRuta = !!data['crearGrupo'];
+      if (this.crearDesdeRuta) this.crearAbierto = true;
+      this.turnoDesdeRuta = !!data['crearTurno'] || !!data['editarTurno'];
+      if (this.turnoDesdeRuta) {
+        this.turnoIdAbierto = data['editarTurno'] ? Number(this.route.snapshot.paramMap.get('id')) : null;
+        const grupoId = Number(this.route.snapshot.queryParamMap.get('grupoId'));
+        this.grupoInicialTurno = grupoId > 0 ? grupoId : null;
+        this.turnoAbierto = true;
+      }
+    }));
+    const estado = this.location.getState() as Record<string, unknown> | null;
+    const resaltarId = estado?.['grupoCreadoId'];
+    if (typeof resaltarId === 'number') {
+      const { grupoCreadoId, ...resto } = estado ?? {};
+      // Consumir el estado antes de cargar evita repetir el resaltado al recargar la página.
+      this.location.replaceState(this.location.path(), '', resto);
+    }
+    this.cargarGrupos(false, typeof resaltarId === 'number' ? resaltarId : undefined);
     this.cargarTurnos();
     this.cargarConteo();
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.finResaltado);
     this.cargas.unsubscribe();
     this.cargaGrupos?.unsubscribe();
     this.cargaTurnos?.unsubscribe();
@@ -139,7 +175,7 @@ export class GruposComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ lecturas
 
   /** `GET /api/grupos/resumen`. Con `recargar`, sin esqueleto (tras eliminar un grupo, como hoy, se vuelve a leer). */
-  cargarGrupos(recargar = false): void {
+  cargarGrupos(recargar = false, resaltarId?: number): void {
     this.cargaGrupos?.unsubscribe();
     if (!recargar) {
       this.estadoGrupos = 'cargando';
@@ -148,6 +184,14 @@ export class GruposComponent implements OnInit, OnDestroy {
       next: (grupos) => {
         this.grupos = (grupos ?? []).map((g) => ({ ...g, turnos: [...(g.turnos ?? [])] }));
         this.estadoGrupos = 'listo';
+        if (resaltarId !== undefined) {
+          clearTimeout(this.finResaltado);
+          this.grupoResaltado = resaltarId;
+          this.finResaltado = setTimeout(() => {
+            this.grupoResaltado = null;
+            this.cdr.markForCheck();
+          }, 5000);
+        }
         if (this.filtro !== null && !this.opcionesFiltro.some((o) => o.codigo === this.filtro)) {
           this.filtro = null;
         }
@@ -197,6 +241,69 @@ export class GruposComponent implements OnInit, OnDestroy {
 
   activosDe(tipo: string): number {
     return this.conteo[tipo]?.active ?? 0;
+  }
+
+  abrirCrear(evento: Event): void {
+    this.disparadorCrear = evento.currentTarget as HTMLElement;
+    this.disparadorCrear.focus();
+    this.crearAbierto = true;
+  }
+
+  cerrarCrear(): void {
+    this.crearAbierto = false;
+    if (this.crearDesdeRuta) {
+      void this.router.navigate(['/gruposListar'], { replaceUrl: true });
+      return;
+    }
+    this.cdr.detectChanges();
+    const destino = this.disparadorCrear?.isConnected
+      ? this.disparadorCrear
+      : this.host.nativeElement.querySelector<HTMLElement>('.grupos__boton-primario');
+    destino?.focus();
+  }
+
+  grupoCreado(id: number): void {
+    if (this.crearDesdeRuta) {
+      this.crearAbierto = false;
+      void this.router.navigate(['/gruposListar'], { replaceUrl: true, state: { grupoCreadoId: id } });
+      return;
+    }
+    this.cerrarCrear();
+    this.filtro = null;
+    this.cargarGrupos(true, id);
+  }
+
+  enlaceTurno(id: number | null = null): string {
+    return this.location.prepareExternalUrl(this.router.serializeUrl(this.router.createUrlTree(id === null ? ['/turnosCrear'] : ['/turnosEditar', id])));
+  }
+
+  abrirTurno(evento: MouseEvent, id: number | null = null): void {
+    if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey || evento.button > 0) return;
+    evento.preventDefault();
+    this.disparadorTurno = evento.currentTarget as HTMLElement;
+    this.disparadorTurno.focus();
+    this.turnoIdAbierto = id;
+    this.grupoInicialTurno = null;
+    this.turnoAbierto = true;
+  }
+
+  cerrarTurno(): void {
+    this.turnoAbierto = false;
+    if (this.turnoDesdeRuta) {
+      void this.router.navigate(['/gruposListar'], { replaceUrl: true });
+      return;
+    }
+    this.cdr.detectChanges();
+    const destino = this.disparadorTurno?.isConnected ? this.disparadorTurno
+      : this.host.nativeElement.querySelector<HTMLElement>('.grupos__boton-secundario');
+    destino?.focus();
+  }
+
+  turnoGuardado(): void {
+    this.cerrarTurno();
+    if (this.turnoDesdeRuta) return;
+    this.cargarGrupos(true);
+    this.cargarTurnos(true);
   }
 
   // ------------------------------------------------------------------ alumnos por tipo

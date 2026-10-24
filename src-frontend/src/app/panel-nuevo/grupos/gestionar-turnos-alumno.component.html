@@ -1,0 +1,37 @@
+<section class="pn turnos-alumno" pnAcento>
+  <nav aria-label="Migas de pan"><button class="turnos-alumno__texto" type="button" (click)="volver()">Alumnos del grupo</button><span aria-hidden="true"> / </span></nav>
+  <header>
+    <h1>Turnos de {{ alumno ? alumno.nombre + ' ' + alumno.apellidos : 'alumno' }}</h1>
+    @if (alumno) { <a [routerLink]="['/alumnosEditar', alumnoId]">Ver ficha</a> }
+  </header>
+  @if (cargando) {
+    <pn-esqueleto etiqueta="Cargando turnos del alumno…">@for (fila of esqueletos; track $index) { <div class="turnos-alumno__esqueleto"></div> }</pn-esqueleto>
+  } @else if (errorCarga) {
+    <pn-bloque-error [titulo]="errorCarga" (reintentar)="cargar()" />
+  } @else if (alumno) {
+    @if (turnos.length) {
+      <ul class="turnos-alumno__lista" aria-label="Turnos asignados">
+        @for (turno of turnos; track turno.id) {
+          <li>
+            <div class="turnos-alumno__detalle"><div class="turnos-alumno__horario"><strong>{{ turno.diaSemana }}</strong><span>{{ horario(turno) }}</span></div><p>{{ turno.tipoGrupo }}{{ turno.tipoGrupo && turno.grupoNombre ? ' · ' : '' }}{{ turno.grupoNombre }}</p></div>
+            <button pnOcupado class="turnos-alumno__texto" type="button" [ocupado]="quitando === turno.id" textoOcupado="Quitando…" [deshabilitado]="ocupado" [attr.aria-label]="'Quitar turno del ' + turno.diaSemana.toLowerCase() + ' ' + horario(turno)" (click)="quitar(turno)">Quitar</button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="turnos-alumno__vacio" role="status">{{ alumno.nombre }} no tiene turnos asignados.</p>
+    }
+    <form class="turnos-alumno__asignar" (ngSubmit)="asignar()">
+      <h2>Asignar turno</h2>
+      <div class="turnos-alumno__controles">
+        <div><label for="turno-alumno">Seleccione un turno</label>
+          <select id="turno-alumno" name="turno" [(ngModel)]="seleccion" [disabled]="ocupado" required>
+            <option value="">Seleccione un turno</option>
+            @for (turno of disponibles; track turno.id) { <option [value]="turno.id" [disabled]="asignado(turno.id)">{{ turno.diaSemana }} · {{ horario(turno) }}{{ turno.tipoGrupo ? ' · ' + turno.tipoGrupo : '' }}{{ asignado(turno.id) ? ' · ya asignado' : '' }}</option> }
+          </select>
+        </div>
+        <button pnOcupado class="turnos-alumno__secundario" type="submit" [ocupado]="asignando" textoOcupado="Asignando…" [deshabilitado]="!seleccion || ocupado || asignado(+seleccion)">Asignar turno</button>
+      </div>
+    </form>
+  }
+</section>

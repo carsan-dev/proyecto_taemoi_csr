@@ -1,4 +1,4 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
@@ -339,9 +339,26 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Crear grupo (3m-1): reutiliza Grupos y abre su panel; con el diseño apagado sigue la ruta de hoy.
+    path: 'gruposCrear',
+    canMatch: [disenoNuevoGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearGrupo: true },
+    loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'gruposCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'gruposEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/grupos/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
@@ -354,8 +371,24 @@ export const routes: Routes = [
   },
   {
     path: 'gestionarAlumnos/:id',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'gestionarAlumnos/:id',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'seleccionarAlumnos/:id',
+    canMatch: [disenoNuevoGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), seleccionarAlumnos: true },
+    loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
@@ -368,6 +401,14 @@ export const routes: Routes = [
   },
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/grupos/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'gestionarTurnosAlumno/:alumnoId',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
@@ -375,8 +416,24 @@ export const routes: Routes = [
   },
   {
     path: 'turnosCrear',
+    canMatch: [disenoNuevoGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearTurno: true },
+    loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'turnosCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'turnosEditar/:id',
+    canMatch: [disenoNuevoGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), editarTurno: true },
+    loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },

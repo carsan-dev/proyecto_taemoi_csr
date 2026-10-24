@@ -8,6 +8,7 @@ import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
 import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
+import { GestionarAlumnosComponent } from './panel-nuevo/grupos/gestionar-alumnos.component';
 import { TesoreriaComponent } from './panel-nuevo/tesoreria/tesoreria.component';
 import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatorias.component';
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
@@ -34,6 +35,151 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  for (const path of ['gestionarAlumnos/:id', 'seleccionarAlumnos/:id']) {
+    it(path + ' (3m-4): lazy guarded screen preserves management roles, resolver and legacy fallback', async () => {
+      const [nueva, hoy] = routes.filter((route) => route.path === path);
+      expect(nueva.component).toBeUndefined();
+      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+      expect(nueva.canActivate).toEqual([roleGuard]);
+      expect(nueva.canActivate).toEqual(hoy.canActivate!);
+      expect(nueva.resolve).toEqual(hoy.resolve!);
+      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+      expect(nueva.data).toEqual(path.startsWith('seleccionar') ? { ...hoy.data, seleccionarAlumnos: true } : hoy.data!);
+      expect(await nueva.loadComponent!()).toBe(GestionarAlumnosComponent);
+      expect(hoy.canMatch).toBeUndefined();
+      expect(await hoy.loadComponent!()).not.toBe(GestionarAlumnosComponent);
+    });
+    for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
+      it(path + ` (3m-4): lazy route follows account design settings ${activo}/${permitido}`, async () => {
+        @Component({ standalone: true, template: '<p>legacy</p>' })
+        class LegacyScreen {}
+        @Component({ standalone: true, template: '<p>new</p>' })
+        class NewScreen {}
+        const nueva = routes.find((route) => route.path === path && route.canMatch)!;
+        const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
+        TestBed.configureTestingModule({ providers: [
+          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: LegacyScreen }]),
+          { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
+          { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        ] });
+        const harness = await RouterTestingHarness.create();
+        await harness.navigateByUrl('/' + path.replace(':id', '7'), activo ? NewScreen : LegacyScreen);
+        expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+      });
+    }
+  }
+  for (const [path, flag] of [['turnosCrear', 'crearTurno'], ['turnosEditar/:id', 'editarTurno']]) {
+    it(path + ' (3m-3): abre Grupos con los mismos roles, resolver y fallback', async () => {
+      const [nueva, hoy] = routes.filter((route) => route.path === path);
+      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+      expect(nueva.canActivate).toEqual(hoy.canActivate!);
+      expect(nueva.data).toEqual({ ...hoy.data, [flag]: true });
+      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+      expect(nueva.resolve).toEqual(hoy.resolve!);
+      expect(await nueva.loadComponent!()).toBe(GruposComponent);
+      expect(hoy.canMatch).toBeUndefined();
+      expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+    });
+    it(path + ' apagado no descarga Grupos', async () => {
+      @Component({ standalone: true, template: '<p>hoy</p>' })
+      class PantallaDeHoy {}
+      const nueva = routes.find((route) => route.path === path && route.canMatch)!;
+      const cargar = jasmine.createSpy('loadComponent Grupos');
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: PantallaDeHoy }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(path === 'turnosCrear' ? '/turnosCrear?grupoId=1' : '/turnosEditar/7', PantallaDeHoy);
+      expect(cargar).not.toHaveBeenCalled();
+    });
+  }
+
+  it('gruposEditar/:id (3m-2): ruta nueva perezosa antes de la de hoy, mismos roles y resolvers', async () => {
+    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposEditar/:id');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    const componente = (await import('./panel-nuevo/grupos/editar-grupo.component')).EditarGrupoComponent;
+    expect(await nueva.loadComponent!()).toBe(componente);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(componente);
+  });
+
+  it('gruposEditar apagado conserva la pantalla de hoy sin descargar la nueva', async () => {
+    @Component({ standalone: true, template: '<p>hoy</p>' })
+    class PantallaDeHoy {}
+    const nueva = routes.find((route) => route.path === 'gruposEditar/:id' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent EditarGrupo');
+    TestBed.configureTestingModule({ providers: [
+      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposEditar/:id', component: PantallaDeHoy }]),
+      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+    ] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/gruposEditar/7', PantallaDeHoy);
+    expect(cargar).not.toHaveBeenCalled();
+  });
+
+  it('gruposCrear (3m-1): abre Grupos mediante data y carga lazy; conserva la ruta de hoy con el interruptor apagado', async () => {
+    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposCrear');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual({ ...hoy.data, crearGrupo: true });
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(GruposComponent);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+  });
+
+  it('gruposCrear apagado no descarga Grupos ni sustituye el formulario de hoy', async () => {
+    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
+    class PantallaDeHoy {}
+    const nueva = routes.find((route) => route.path === 'gruposCrear' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent Grupos');
+    TestBed.configureTestingModule({ providers: [
+      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposCrear', component: PantallaDeHoy }]),
+      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+    ] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/gruposCrear', PantallaDeHoy);
+    expect(cargar).not.toHaveBeenCalled();
+  });
+
+  it('gestionarTurnosAlumno (3m-5): new lazy page precedes untouched legacy route with identical roles', async () => {
+    const [nueva, hoy] = routes.filter(route => route.path === 'gestionarTurnosAlumno/:alumnoId');
+    const componente = (await import('./panel-nuevo/grupos/gestionar-turnos-alumno.component')).GestionarTurnosAlumnoComponent;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(componente);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(componente);
+  });
+  for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
+    it(`gestionarTurnosAlumno (3m-5): design toggle ${activo}/${permitido}`, async () => {
+      @Component({ standalone: true, template: '<p>legacy</p>' })
+      class LegacyScreen {}
+      @Component({ standalone: true, template: '<p>new</p>' })
+      class NewScreen {}
+      const nueva = routes.find(route => route.path === 'gestionarTurnosAlumno/:alumnoId' && route.canMatch)!;
+      const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gestionarTurnosAlumno/:alumnoId', component: LegacyScreen }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/gestionarTurnosAlumno/7', activo ? NewScreen : LegacyScreen);
+      expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+    });
+  }
+
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
     const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
 

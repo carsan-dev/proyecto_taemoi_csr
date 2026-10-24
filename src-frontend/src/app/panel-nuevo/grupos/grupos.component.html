@@ -6,16 +6,16 @@
         <p class="grupos__subtitulo" data-cifras>{{ subtitulo }}</p>
       </div>
       <div class="grupos__acciones">
-        <a class="grupos__boton-secundario" routerLink="/turnosCrear">
+        <a class="grupos__boton-secundario" [href]="enlaceTurno()" aria-haspopup="dialog" (click)="abrirTurno($event)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
-          <span>Nuevo turno</span>
+          <span>Crear turno</span>
         </a>
-        <a class="grupos__boton-primario" routerLink="/gruposCrear">
+        <button type="button" class="grupos__boton-primario" aria-haspopup="dialog" (click)="abrirCrear($event)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M12 5v14M5 12h14"></path></svg>
           <span>Nuevo grupo</span>
-        </a>
+        </button>
       </div>
     </header>
 
@@ -56,7 +56,7 @@
     </div>
     } @else if (grupos.length === 0) {
     <pn-bloque-vacio pose="esperar" class="grupos__bloque-estado" titulo="Todavía no hay grupos">
-      <a pnAccionVacio class="grupos__boton-secundario" routerLink="/gruposCrear">Nuevo grupo</a>
+      <button type="button" pnAccionVacio class="grupos__boton-secundario" aria-haspopup="dialog" (click)="abrirCrear($event)">Nuevo grupo</button>
     </pn-bloque-vacio>
     } @else {
     <div class="grupos__filtro" role="radiogroup" aria-label="Filtrar por disciplina" (keydown)="teclaFiltro($event)">
@@ -87,7 +87,7 @@
       } @else {
       <ul class="grupos__rejilla" [attr.aria-label]="'Grupos de ' + s.nombre">
         @for (g of s.grupos; track g.id) {
-        <li class="grupos__tarjeta" [attr.data-grupo]="g.id">
+        <li class="grupos__tarjeta" [class.grupos__tarjeta--creada]="grupoResaltado === g.id" [attr.data-grupo]="g.id">
           <h3 class="grupos__cabeza">
             <a class="grupos__nombre" [routerLink]="['/gruposEditar', g.id]">{{ g.nombre }}</a>
           </h3>
@@ -120,8 +120,8 @@
                 @for (t of g.turnos; track t.id) {
                 <li class="grupos__turno">
                   <span class="grupos__turno-texto" data-cifras>{{ textoTurno(t) }}</span>
-                  <a class="grupos__turno-icono" [routerLink]="['/turnosEditar', t.id]" [attr.aria-label]="'Editar turno ' + textoTurno(t)"
-                    title="Editar turno">
+                  <a class="grupos__turno-icono" [href]="enlaceTurno(t.id)" [attr.aria-label]="'Editar turno ' + textoTurno(t)"
+                    title="Editar turno" aria-haspopup="dialog" (click)="abrirTurno($event, t.id)">
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                       stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
                   </a>
@@ -184,7 +184,7 @@
         @for (t of turnosSinGrupo; track t.id) {
         <li class="grupos__sin-grupo-fila">
           <span class="grupos__turno-texto" data-cifras>{{ textoTurno(t) }}</span>
-          <a class="grupos__accion grupos__accion--borde" [routerLink]="['/turnosEditar', t.id]">Editar</a>
+          <a class="grupos__accion grupos__accion--borde" [href]="enlaceTurno(t.id)" aria-haspopup="dialog" (click)="abrirTurno($event, t.id)">Editar</a>
         </li>
         }
       </ul>
@@ -194,5 +194,11 @@
 
   @if (tipoAbierto) {
   <pn-alumnos-tipo [grupoNombre]="tipoAbierto" (cerrado)="cerrarTipo()" />
+  }
+  @if (crearAbierto) {
+  <pn-crear-grupo (cerrado)="cerrarCrear()" (creado)="grupoCreado($event)" />
+  }
+  @if (turnoAbierto) {
+  <pn-turno-panel [turnoId]="turnoIdAbierto" [grupoInicialId]="grupoInicialTurno" (cerrado)="cerrarTurno()" (guardado)="turnoGuardado()" />
   }
 </div>

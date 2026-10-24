@@ -1,0 +1,54 @@
+<section class="pn alumnos-grupo" pnAcento>
+  <nav aria-label="Migas de pan"><a routerLink="/gruposListar">Grupos</a><span aria-hidden="true"> / </span><span>Alumnos del grupo</span></nav>
+  <header class="alumnos-grupo__cabecera">
+    <div><h1>Alumnos de {{ grupo?.nombre || 'grupo' }}</h1><p aria-live="polite" aria-atomic="true">{{ alumnos.length }} {{ alumnos.length === 1 ? 'alumno' : 'alumnos' }}</p></div>
+    @if (grupo && alumnos.length) { <button #anadir class="alumnos-grupo__primario" type="button" (click)="abrirPanel(anadir)">Añadir alumnos</button> }
+  </header>
+  @if (cargando) {
+    <pn-esqueleto etiqueta="Cargando grupo…">@for (fila of esqueletos; track $index) { <div class="alumnos-grupo__esqueleto"></div> }</pn-esqueleto>
+  } @else if (errorCarga) {
+    <pn-bloque-error [titulo]="errorCarga" (reintentar)="cargarGrupo()" />
+  } @else if (!alumnos.length) {
+    <div class="alumnos-grupo__vacio"><h2>Aún no hay alumnos en este grupo</h2><button #anadirVacio class="alumnos-grupo__primario" type="button" (click)="abrirPanel(anadirVacio)">Añadir alumnos</button></div>
+  } @else {
+    <div class="alumnos-grupo__busqueda">
+      <label for="alumnos-grupo-busqueda">Buscar alumno por nombre</label>
+      <div class="alumnos-grupo__campo">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input id="alumnos-grupo-busqueda" type="search" [ngModel]="filtro" (ngModelChange)="buscar($event)" />
+        @if (filtro) { <button type="button" aria-label="Quitar búsqueda" (click)="buscar('')">Borrar</button> }
+      </div>
+      <p aria-live="polite">Mostrando {{ filtrados.length }} de {{ alumnos.length }}</p>
+    </div>
+    @if (!filtrados.length) {
+      <div class="alumnos-grupo__vacio"><h2>Ningún alumno coincide con «{{ filtro }}»</h2><button class="alumnos-grupo__texto" type="button" (click)="buscar('')">Quitar búsqueda</button></div>
+    } @else {
+      <ul class="alumnos-grupo__lista">
+        @for (alumno of visibles; track alumno.id) {
+          <li class="alumnos-grupo__fila">
+            <a class="alumnos-grupo__avatar" [routerLink]="['/alumnosEditar', alumno.id]" [attr.aria-label]="'Ver ficha de ' + alumno.nombre + ' ' + alumno.apellidos">
+              @if (fotoPara(alumno); as foto) { <img [src]="foto" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
+              @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
+            </a>
+            <a class="alumnos-grupo__nombre" [routerLink]="['/alumnosEditar', alumno.id]">{{ alumno.nombre }} {{ alumno.apellidos }}</a>
+            <a class="alumnos-grupo__texto" [routerLink]="['/gestionarTurnosAlumno', alumno.id]" [attr.aria-label]="'Turnos de ' + alumno.nombre + ' ' + alumno.apellidos">Turnos</a>
+            <details class="alumnos-grupo__menu" (keydown.escape)="menu.removeAttribute('open'); resumen.focus()" #menu>
+              <summary #resumen [attr.aria-label]="'Más acciones para ' + alumno.nombre + ' ' + alumno.apellidos">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              </summary>
+              <div class="alumnos-grupo__opciones"><button type="button" [disabled]="quitandos.has(alumno.id)" (click)="menu.removeAttribute('open'); resumen.focus(); quitar(alumno)">Quitar del grupo</button></div>
+            </details>
+          </li>
+        }
+      </ul>
+      @if (totalPaginas > 1) {
+        <nav class="alumnos-grupo__paginacion" aria-label="Páginas de alumnos del grupo">
+          <button class="alumnos-grupo__texto" type="button" [disabled]="pagina === 1" (click)="cambiarPagina(pagina - 1)">Anterior</button>
+          <span aria-live="polite">{{ desde }}-{{ hasta }} de {{ filtrados.length }}</span>
+          <button class="alumnos-grupo__texto" type="button" [disabled]="pagina >= totalPaginas" (click)="cambiarPagina(pagina + 1)">Siguiente</button>
+        </nav>
+      }
+    }
+  }
+  @if (panelAbierto && grupo) { <pn-seleccionar-alumnos [grupo]="grupo" (cerrado)="cerrarPanel()" (anadidos)="alumnosAnadidos()" /> }
+</section>

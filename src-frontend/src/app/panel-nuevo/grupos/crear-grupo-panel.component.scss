@@ -1,0 +1,60 @@
+@use '../capas/capas' as c;
+
+.crear-grupo__etiqueta {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+
+  span { color: var(--pn-tinta-2); font-weight: 400; }
+}
+
+.crear-grupo__etiqueta--deporte { margin-top: 24px; }
+
+.crear-grupo__campo {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  caret-color: var(--pn-acento);
+
+  &::placeholder { color: var(--pn-tinta-2); }
+  &[aria-invalid='true'] { border-color: var(--pn-peligro); }
+}
+
+.crear-grupo__contador,
+.crear-grupo__ayuda {
+  margin: 8px 0 0;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+.crear-grupo__contador { text-align: right; font-variant-numeric: tabular-nums; }
+.crear-grupo__ayuda { margin-top: 16px; }
+
+.crear-grupo__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+  overflow-wrap: anywhere;
+
+  svg { width: 18px; height: 18px; flex: none; }
+}
+
+.crear-grupo__pie { display: flex; justify-content: flex-end; gap: 8px; }
+.crear-grupo__cancelar { @include c.boton-texto; }
+.crear-grupo__crear { @include c.boton-primario; }
+
+@media (max-width: 767.98px) {
+  .crear-grupo__campo,
+  .crear-grupo__cancelar,
+  .crear-grupo__crear { min-height: 44px; }
+}

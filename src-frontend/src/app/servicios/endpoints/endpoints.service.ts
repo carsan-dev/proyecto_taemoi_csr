@@ -1,4 +1,4 @@
-﻿import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { HttpContext } from '@angular/common/http';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
@@ -1121,18 +1121,19 @@ export class EndpointsService {
    * Grupos en versión ligera (sin alumnos): para listados y selectores. Mismo alcance que `obtenerTodosLosGrupos`;
    * el detalle con alumnos se pide con `obtenerGrupoPorId`.
    */
-  obtenerResumenGrupos(): Observable<GrupoResumen[]> {
+  obtenerResumenGrupos(context?: HttpContext): Observable<GrupoResumen[]> {
     return this.http
       .get<GrupoResumen[]>(`${this.urlBase}/grupos/resumen`, {
         withCredentials: true,
+        context,
         headers: this.skipLoadingHeaders
       })
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerGrupoPorId(id: number): Observable<GrupoDTO> {
+  obtenerGrupoPorId(id: number, context?: HttpContext): Observable<GrupoDTO> {
     return this.http
-      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true })
+      .get<GrupoDTO>(`${this.urlBase}/grupos/${id}`, { withCredentials: true, context })
       .pipe(catchError(this.manejarError));
   }
 
@@ -1165,18 +1166,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  crearGrupo(grupoData: any): Observable<any> {
+  crearGrupo(grupoData: any, context?: HttpContext): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos`, grupoData, {
         withCredentials: true,
+        context,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  actualizarGrupo(id: number, grupoData: GrupoDTO): Observable<GrupoDTO> {
+  actualizarGrupo(id: number, grupoData: GrupoDTO, context?: HttpContext): Observable<GrupoDTO> {
     return this.http
       .put<GrupoDTO>(`${this.urlBase}/grupos/${id}`, grupoData, {
         withCredentials: true,
+        context,
       })
       .pipe(catchError(this.manejarError));
   }
@@ -1241,10 +1244,11 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  agregarTurnoAGrupo(grupoId: number, turnoId: number): Observable<any> {
+  agregarTurnoAGrupo(grupoId: number, turnoId: number, context?: HttpContext): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, null, {
         withCredentials: true,
+        context,
       })
       .pipe(
         tap(() => this.limpiarCacheTurnosDTO()),
@@ -1252,10 +1256,11 @@ export class EndpointsService {
       );
   }
 
-  eliminarTurnoDeGrupo(grupoId: number, turnoId: number): Observable<any> {
+  eliminarTurnoDeGrupo(grupoId: number, turnoId: number, context?: HttpContext): Observable<any> {
     return this.http
       .delete<any>(`${this.urlBase}/grupos/${grupoId}/turnos/${turnoId}`, {
         withCredentials: true,
+        context,
       })
       .pipe(
         tap(() => this.limpiarCacheTurnosDTO()),
@@ -1335,18 +1340,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTurnoPorId(turnoId: number): Observable<any> {
+  obtenerTurnoPorId(turnoId: number, context?: HttpContext): Observable<any> {
     return this.http
       .get<any>(`${this.urlBase}/turnos/${turnoId}`, {
         withCredentials: true,
+        context,
       })
       .pipe(catchError(this.manejarError));
   }
 
-  crearTurnoSinGrupo(turnoData: any): Observable<any> {
+  crearTurnoSinGrupo(turnoData: any, context?: HttpContext): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/turnos/crear`, turnoData, {
         withCredentials: true,
+        context,
       })
       .pipe(
         tap(() => this.limpiarCacheTurnosDTO()),
@@ -1354,10 +1361,11 @@ export class EndpointsService {
       );
   }
 
-  crearTurnoConGrupo(turnoData: any): Observable<any> {
+  crearTurnoConGrupo(turnoData: any, context?: HttpContext): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/turnos/crear-asignando-grupo`, turnoData, {
         withCredentials: true,
+        context,
       })
       .pipe(
         tap(() => this.limpiarCacheTurnosDTO()),
@@ -1365,10 +1373,11 @@ export class EndpointsService {
       );
   }
 
-  actualizarTurno(turnoId: number, turnoData: any): Observable<any> {
+  actualizarTurno(turnoId: number, turnoData: any, context?: HttpContext): Observable<any> {
     return this.http
       .put<any>(`${this.urlBase}/turnos/${turnoId}`, turnoData, {
         withCredentials: true,
+        context,
       })
       .pipe(
         tap(() => this.limpiarCacheTurnosDTO()),
