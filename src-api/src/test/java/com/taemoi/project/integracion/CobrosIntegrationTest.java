@@ -365,10 +365,11 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		long cobroExamen = idCobro(cargoExamen);
 		meterEnEntrega(cobroEntregado);
 
-		assertEquals(200, estado(delete("/api/alumnos/" + alumno), tokenGestor));
+		// Solo el propietario elimina alumnos (8b-3l, decisión 285).
+		assertEquals(200, estado(delete("/api/alumnos/" + alumno), tokenPropietario));
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM alumno WHERE id = ?", Long.class, alumno));
-		assertAnuladoPorBorrado(cobro);
-		assertAnuladoPorBorrado(cobroExamen);
+		assertAnuladoPorBorrado(cobro, propietario);
+		assertAnuladoPorBorrado(cobroExamen, propietario);
 		Map<String, Object> entregado = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobroEntregado);
 		assertEquals("ACTIVO", entregado.get("estado"), "el dinero ya está en una entrega: no se anula");
 		assertNull(entregado.get("producto_alumno_id"));
@@ -422,7 +423,7 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(estado >= 200 && estado < 300, "estado " + estado);
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM convocatoria WHERE id = ?", Long.class,
 				convocatoria));
-		assertAnuladoPorBorrado(cobro);
+		assertAnuladoPorBorrado(cobro, e.gestor);
 		assertActivoSinCargo(cobroEntregado);
 	}
 
@@ -570,11 +571,11 @@ class CobrosIntegrationTest extends MySqlIntegrationTest {
 		return numero(filas.get(0), "id");
 	}
 
-	private void assertAnuladoPorBorrado(long cobro) {
+	private void assertAnuladoPorBorrado(long cobro, long anuladoPor) {
 		Map<String, Object> fila = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobro);
 		assertEquals("ANULADO", fila.get("estado"));
 		assertEquals("cargo borrado", fila.get("motivo_anulacion"));
-		assertEquals(e.gestor, numero(fila, "anulado_por_usuario_id"));
+		assertEquals(anuladoPor, numero(fila, "anulado_por_usuario_id"));
 		assertNotNull(fila.get("anulado_en"));
 		assertNull(fila.get("producto_alumno_id"));
 		assertEquals(1L, numero(fila, "version"), "el UPDATE sube la versión");
