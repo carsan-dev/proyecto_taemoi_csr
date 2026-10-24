@@ -1,6 +1,6 @@
 # E8b, ronda 4: bocetos de las pantallas de gestión que faltaban (8b-B4)
 
-Estado: bocetos para elegir. Boceto: (enlace al publicar).
+Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV37N32eY
 
 ## Método
 
