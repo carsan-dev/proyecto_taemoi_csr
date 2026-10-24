@@ -4,6 +4,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
@@ -176,6 +177,39 @@ describe('app routes', () => {
       ] });
       const harness = await RouterTestingHarness.create();
       await harness.navigateByUrl('/gestionarTurnosAlumno/7', activo ? NewScreen : LegacyScreen);
+      expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+    });
+  }
+
+  it('alumnos/:id/productos (8b-3n): new lazy page with leave guard precedes untouched legacy route', async () => {
+    const [nueva, hoy] = routes.filter(route => route.path === 'alumnos/:id/productos');
+    const componente = (await import('./panel-nuevo/productos-alumno/productos-alumno-panel.component')).ProductosAlumnoPanelComponent;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.canDeactivate).toEqual([salirSinGuardarGuard]);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(componente);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(hoy.canDeactivate).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(componente);
+  });
+  for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
+    it(`alumnos/:id/productos (8b-3n): design toggle ${activo}/${permitido}`, async () => {
+      @Component({ standalone: true, template: '<p>legacy</p>' })
+      class LegacyScreen {}
+      @Component({ standalone: true, template: '<p>new</p>' })
+      class NewScreen {}
+      const nueva = routes.find(route => route.path === 'alumnos/:id/productos' && route.canMatch)!;
+      const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], canDeactivate: [], resolve: {}, loadComponent: cargar }, { path: 'alumnos/:id/productos', component: LegacyScreen }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/alumnos/7/productos', activo ? NewScreen : LegacyScreen);
       expect(cargar.calls.count()).toBe(activo ? 1 : 0);
     });
   }
