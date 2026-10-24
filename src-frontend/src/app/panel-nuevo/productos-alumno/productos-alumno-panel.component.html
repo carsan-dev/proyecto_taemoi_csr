@@ -1,20 +1,19 @@
-<!-- Plantilla PROVISIONAL sin estilos (8b-3n, capa de lógica): la del boceto P1 la sustituye con la misma API. -->
 @let e = estado;
-<main class="pn" aria-labelledby="productos-alumno-titulo">
-  <header>
+<main class="pn productos-alumno" pnAcento aria-labelledby="productos-alumno-titulo">
+  <div class="productos-alumno__pagina"><header class="cabecera">
     <a [routerLink]="e.rutaFicha()" [queryParams]="e.parametrosFicha">Volver a la ficha</a>
     @if (e.estado() === 'listo') {
-    <p>{{ e.nombreAlumno() }}</p>
+    @let alumno = e.alumno()!; <div class="identidad">@if (foto) { <img class="foto" [src]="foto" alt="" /> } @else { <span class="foto iniciales" aria-hidden="true">{{ iniciales(alumno.nombre, alumno.apellidos) }}</span> }<p>{{ e.nombreAlumno() }}</p></div>
     }
     <h1 id="productos-alumno-titulo">Productos y cargos</h1>
   </header>
 
   @if (e.estado() === 'cargando') {
-  <pn-esqueleto etiqueta="Cargando productos del alumno…"><div></div></pn-esqueleto>
+  <pn-esqueleto etiqueta="Cargando productos del alumno…">@for (n of [1, 2, 3, 4]; track n) { <div class="esqueleto"></div> }</pn-esqueleto>
   } @else if (e.estado() === 'error') {
   <pn-bloque-error [titulo]="e.errorCarga()" (reintentar)="e.cargar()" />
   } @else {
-  <section aria-labelledby="asignar-titulo">
+  <section class="asignar" aria-labelledby="asignar-titulo"><fieldset [disabled]="e.guardando()"><legend class="oculto">Asignar producto</legend>
     <h2 id="asignar-titulo">Asignar producto</h2>
     <label for="asignar-buscar">Buscar producto</label>
     <input id="asignar-buscar" type="search" [value]="e.busqueda()" (input)="e.buscarProducto(valor($event))" />
@@ -48,106 +47,81 @@
     <p id="asignar-deporte-error">{{ textos.sinDeporte }}</p>
     }
     }
-    <button type="button" (click)="e.anadirALista()" [disabled]="e.guardando()">Añadir a la lista</button>
-  </section>
+    <button class="secundario" type="button" (click)="e.anadirALista()" [disabled]="!e.puedeAnadir()">Añadir a la lista</button>
+  </fieldset></section>
 
   @if (e.nuevas().length > 0) {
-  <ul aria-label="Asignaciones nuevas">
+  <ul class="nuevas" aria-label="Asignaciones nuevas">
     @for (n of e.nuevas(); track n.clave) {
     <li>
-      <span>Nuevo</span> {{ etiquetaProducto(n.producto) }}@if (n.deporte) { · {{ n.deporte }} }
+      <span class="pastilla nuevo">Nuevo</span> {{ etiquetaProducto(n.producto) }}@if (n.deporte) { · {{ n.deporte }} }
       @if (n.error) { <span role="alert">{{ n.error }}</span> }
       <button type="button" [attr.aria-label]="'Quitar ' + n.producto.concepto" (click)="e.quitarNueva(n.clave)"
-        [disabled]="e.guardando()">X</button>
+        [disabled]="e.guardando()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </li>
     }
   </ul>
   }
 
   @if (e.totalCargos() === 0) {
-  <p>{{ textos.vacio }}</p>
+  <p class="vacio" role="status">{{ textos.vacio }}</p>
   } @else {
   <table>
-    <caption>Cargos del alumno</caption>
-    <thead>
-      <tr>
-        <th scope="col">Concepto</th>
-        <th scope="col">Asignado</th>
-        <th scope="col">Cant.</th>
-        <th scope="col">Precio</th>
-        <th scope="col">Total</th>
-        <th scope="col">Pagado</th>
-        <th scope="col">Fecha de pago</th>
-        <th scope="col">Notas</th>
-        <th scope="col">Acciones</th>
-      </tr>
-    </thead>
+    <caption class="oculto">Cargos del alumno</caption>
+    <thead><tr><th scope="col">Concepto</th><th scope="col">Asignado</th><th scope="col">Cant.</th><th scope="col">Precio</th><th scope="col">Total</th><th scope="col">Pagado</th><th scope="col">Fecha de pago</th><th scope="col">Notas</th><th scope="col"><span class="oculto">Acciones</span><span aria-hidden="true">⋯</span></th></tr></thead>
     <tbody>
       @for (f of e.filasPagina(); track f.id) {
-      <tr [attr.data-cargo]="f.id" [attr.data-modificada]="f.modificada ? '' : null">
-        <th scope="row">
-          @if (f.modificada) { <span aria-label="Cambios sin guardar">•</span> }
-          {{ f.concepto }}
-          @if (f.textoCancelacion) { <span>{{ f.textoCancelacion }}</span> }
-          @if (f.marcadaBorrar) { <span>Pendiente de eliminar</span> }
-          @if (f.errorServidor) { <span role="alert">{{ f.errorServidor }}</span> }
+      <tr [attr.data-cargo]="f.id" [attr.data-modificada]="f.modificada ? '' : null" [class.abierta]="desplegadas.has(f.id)" [class.borrar]="f.marcadaBorrar" [class.cancelada]="f.estado === 'cancelado'" [attr.aria-busy]="f.ocupada">
+        <th scope="row" class="concepto">
+          <span class="concepto-nombre">@if (f.modificada) { <span class="punto" aria-label="Cambios sin guardar"></span> }{{ f.concepto || '—' }}</span>
+          <span class="nota nota-precio-escritorio" [id]="'precio-nota-escritorio-' + f.id" [title]="f.notaPrecioCantidad || ''">{{ f.notaPrecioCantidad }}</span>
+          <span class="resumen">Asignado {{ fecha(f.fecha) || '—' }} · {{ f.cantidad || '—' }} × {{ precioResumen(f.precio) }} <span class="pastilla" [class]="'pastilla ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">{{ textosEstado[f.estado] }}</span></span>
+          @if (f.textoCancelacion) { <span class="nota cancelacion">{{ f.textoCancelacion }}</span> }
+          @if (f.marcadaBorrar) { <span class="nota">Pendiente de eliminar</span> }
         </th>
-        <td>
-          <input type="date" [attr.aria-label]="'Asignado, ' + f.concepto" [value]="f.fecha" [disabled]="!f.editable"
-            (change)="e.cambiarFecha(f.id, valor($event))" />
+        <td class="campo"><label class="etiqueta-movil" [for]="'fecha-' + f.id">Asignado</label><input [id]="'fecha-' + f.id" type="date" [attr.aria-label]="'Asignado, ' + f.concepto" [value]="f.fecha" [disabled]="!f.editable" (change)="e.cambiarFecha(f.id, valor($event))" /></td>
+        <td class="campo"><label class="etiqueta-movil" [for]="'cantidad-' + f.id">Cantidad</label><input [id]="'cantidad-' + f.id" type="number" min="1" step="1" [attr.aria-label]="'Cantidad, ' + f.concepto" [value]="f.cantidad" [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.cantidad ? 'true' : null" [attr.aria-describedby]="'cantidad-error-' + f.id + ' precio-nota-escritorio-' + f.id + ' precio-nota-movil-' + f.id" (input)="e.cambiarCantidad(f.id, valor($event))" /><span class="error" [id]="'cantidad-error-' + f.id">{{ f.errores.cantidad ? 'Pon una cantidad entera de 1 o más.' : '' }}</span></td>
+        <td class="campo"><label class="etiqueta-movil" [for]="'precio-' + f.id">Precio</label><input [id]="'precio-' + f.id" type="text" inputmode="decimal" [attr.aria-label]="'Precio, ' + f.concepto" [value]="f.precio" [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.precio ? 'true' : null" [attr.aria-describedby]="'precio-error-' + f.id + ' precio-nota-escritorio-' + f.id + ' precio-nota-movil-' + f.id" (input)="e.cambiarPrecio(f.id, valor($event))" /><span class="error" [id]="'precio-error-' + f.id">{{ f.errores.precio ? 'Pon un precio de 0 o más, con dos decimales como mucho.' : '' }}</span><span class="nota nota-precio-movil" [id]="'precio-nota-movil-' + f.id">{{ f.notaPrecioCantidad }}</span></td>
+        <td class="total">{{ f.total === null ? '—' : eur(f.total) }}</td>
+        <td class="pago campo"><span class="pastilla estado-escritorio" [class]="'pastilla estado-escritorio ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">{{ textosEstado[f.estado] }}</span>
+          @if (f.muestraCobrar) { <button pnOcupado class="texto" type="button" [ocupado]="f.ocupada" textoOcupado="Cobrando…" [deshabilitado]="!f.puedeCobrar" [attr.aria-describedby]="'cobrar-nota-' + f.id" (click)="e.cobrar(f.id)">Cobrar</button><span class="nota" [id]="'cobrar-nota-' + f.id">{{ f.notaCobrar }}</span> }
         </td>
-        <td>
-          <input type="number" min="1" step="1" [attr.aria-label]="'Cantidad, ' + f.concepto" [value]="f.cantidad"
-            [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.cantidad ? 'true' : null"
-            (input)="e.cambiarCantidad(f.id, valor($event))" />
-          @if (f.errores.cantidad) { <span>{{ f.errores.cantidad }}</span> }
-        </td>
-        <td>
-          <input type="text" inputmode="decimal" [attr.aria-label]="'Precio, ' + f.concepto" [value]="f.precio"
-            [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.precio ? 'true' : null"
-            (input)="e.cambiarPrecio(f.id, valor($event))" />
-          @if (f.errores.precio) { <span>{{ f.errores.precio }}</span> }
-          @if (f.notaPrecioCantidad) { <span>{{ f.notaPrecioCantidad }}</span> }
-        </td>
-        <td>{{ f.total === null ? '' : eur(f.total) }}</td>
-        <td>
-          {{ f.estado }}
-          @if (f.muestraCobrar) {
-          <button type="button" (click)="e.cobrar(f.id)" [disabled]="!f.puedeCobrar">Cobrar</button>
-          @if (f.notaCobrar) { <span>{{ f.notaCobrar }}</span> }
-          }
-        </td>
-        <td>{{ f.fechaPago || '-' }}</td>
-        <td>
-          <textarea [attr.aria-label]="'Notas, ' + f.concepto" [value]="f.notas" [disabled]="!f.puedeEditarNotas"
-            (input)="e.cambiarNotas(f.id, valor($event))"></textarea>
-        </td>
-        <td>
-          @if (f.puedeCancelar) { <button type="button" (click)="e.cancelar(f.id)">Cancelar cargo</button> }
-          @if (f.puedeReactivar) { <button type="button" (click)="e.reactivar(f.id)">Reactivar</button> }
-          @if (f.puedeEliminar) { <button type="button" (click)="e.marcarBorrar(f.id)">Eliminar</button> }
-          @if (f.puedeDeshacerBorrar) { <button type="button" (click)="e.deshacerBorrar(f.id)">Deshacer</button> }
-          @if (f.puedePedirReversion) {
-          <button type="button" (click)="e.pedirReversion(f.id)">Pedir que se revierta el cobro</button>
-          }
+        <td class="campo fecha-pago"><span class="etiqueta-movil">Fecha de pago</span>{{ f.fechaPago || '—' }}</td>
+        <td class="campo notas"><span class="etiqueta-movil">Notas</span><span class="notas-texto" [title]="f.notas">{{ f.notas || '—' }}</span></td>
+        <td class="acciones">
+          <button class="icono expandir" type="button" data-expandir [attr.aria-label]="'Detalle de ' + f.concepto" [attr.aria-expanded]="desplegadas.has(f.id)" (click)="alternarDetalle(f.id)"><i class="bi" [class.bi-chevron-down]="!desplegadas.has(f.id)" [class.bi-chevron-up]="desplegadas.has(f.id)" aria-hidden="true"></i></button>
+          @if (f.puedeDeshacerBorrar) { <button class="texto" type="button" (click)="e.deshacerBorrar(f.id)">Deshacer</button> }
+          @if (f.puedeEditarNotas || f.puedeCancelar || f.puedeReactivar || f.puedeEliminar || f.puedePedirReversion) {
+          <div class="menu-zona"><button #disparador class="icono" type="button" [attr.aria-label]="'Acciones de ' + f.concepto" aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === f.id" [attr.aria-controls]="'menu-' + f.id" (click)="alternarMenu(f.id, disparador)" (keydown.arrowdown)="$event.preventDefault(); alternarMenu(f.id, disparador)" (keydown.arrowup)="$event.preventDefault(); alternarMenu(f.id, disparador, true)"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+            @if (menuAbierto === f.id) { <div #menu class="menu" role="menu" [id]="'menu-' + f.id" [attr.aria-label]="'Acciones de ' + f.concepto" (keydown)="teclaMenu($event, menu)">
+              @if (f.puedeEditarNotas) { <button role="menuitem" type="button" (click)="editarNotas(f)">Editar notas</button> }
+              @if (f.puedeCancelar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.cancelar(f.id)">Cancelar cargo</button> }
+              @if (f.puedeReactivar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.reactivar(f.id)">Reactivar</button> }
+              @if (f.puedeEliminar) { <button class="peligro" role="menuitem" type="button" (click)="cerrarMenu(); e.marcarBorrar(f.id)">Eliminar</button> }
+              @if (f.puedePedirReversion) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.pedirReversion(f.id)">Pedir que se revierta el cobro</button> }
+            </div> }
+          </div> }
         </td>
       </tr>
+      @if (f.errorServidor) { <tr class="error-fila"><td colspan="9"><p role="alert">{{ f.errorServidor }}</p></td></tr> }
       }
     </tbody>
   </table>
-  <nav aria-label="Páginas de cargos">
+  @if (e.totalPaginas() > 1) {
+  <nav class="paginacion" aria-label="Páginas de cargos">
     <button type="button" (click)="e.paginaAnterior()" [disabled]="e.pagina() <= 1">Anterior</button>
     <span aria-live="polite">{{ e.desde() }}-{{ e.hasta() }} de {{ e.totalCargos() }}</span>
     <button type="button" (click)="e.paginaSiguiente()" [disabled]="e.pagina() >= e.totalPaginas()">Siguiente</button>
   </nav>
   }
+  }
 
   @if (e.hayCambios()) {
-  <div role="region" aria-label="Cambios sin guardar">
-    <span aria-live="polite">{{ e.pendientes() }} cambios sin guardar</span>
+  <div class="pendientes" role="region" aria-label="Cambios sin guardar">
+    <span aria-live="polite">{{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar</span>
     <button type="button" (click)="e.descartar()" [disabled]="e.guardando()">Descartar</button>
-    <button type="button" (click)="e.guardar()" [disabled]="!e.puedeGuardar()">Guardar cambios</button>
+    <button pnOcupado class="primario" type="button" [ocupado]="e.guardando()" textoOcupado="Guardando…" (click)="e.guardar()" [deshabilitado]="!e.puedeGuardar()">Guardar cambios</button>
   </div>
   }
   }
-</main>
+</div></main>

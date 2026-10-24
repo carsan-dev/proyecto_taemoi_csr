@@ -78,9 +78,9 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     sessionStorage.clear();
   });
 
-  async function abrir(alumno: unknown, status = 200): Promise<ProductosAlumnoPanelComponent> {
+  async function abrir(alumno: unknown, status = 200, cargos = [cargo(1), cargo(2)]): Promise<ProductosAlumnoPanelComponent> {
     const pantalla = await harness.navigateByUrl('/alumnos/7/productos', ProductosAlumnoPanelComponent);
-    http.expectOne(`${API}/productos-alumno/alumno/7`).flush([cargo(1), cargo(2)]);
+    http.expectOne(`${API}/productos-alumno/alumno/7`).flush(cargos);
     http.expectOne(`${API}/productos/todos`).flush([{ id: 1, concepto: 'Mensualidad', precio: 30 }]);
     const peticion = http.expectOne(`${API}/alumnos/7`);
     if (status === 200) {
@@ -120,6 +120,110 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     await abrir(ALUMNO);
     await harness.navigateByUrl('/alumnosEditar/7', FichaFalsa);
     expect(confirmar).not.toHaveBeenCalled();
+  });
+
+  it('formatea el precio del resumen en euros y conserva las fechas de pago formateadas', async () => {
+    const pantalla = await abrir(ALUMNO, 200, [{ ...cargo(1), fechaPago: new Date(2026, 9, 5) }]);
+    expect(pantalla.precioResumen('1.010,50')).toBe(pantalla.eur(1010.5));
+    expect(pantalla.precioResumen('30')).toBe(pantalla.eur(30));
+    expect(pantalla.precioResumen('')).toBe('—');
+    expect(pantalla.precioResumen('1.234')).toBe('—');
+    expect(el().querySelector('.resumen')!.textContent).toContain(`1 × ${pantalla.eur(30)}`);
+    expect(el().querySelector('.fecha-pago')!.textContent).toContain('05/10/2026');
+    expect(el().querySelector('.notas-texto')!.textContent).toBe('—');
+  });
+
+  it('presenta los errores de cantidad y precio con los textos aprobados y sus descripciones', async () => {
+    const pantalla = await abrir(ALUMNO);
+    pantalla.estado.cambiarCantidad(1, '0');
+    pantalla.estado.cambiarPrecio(1, '1,001');
+    harness.detectChanges();
+    const cantidad = el().querySelector<HTMLInputElement>('#cantidad-1')!;
+    const precio = el().querySelector<HTMLInputElement>('#precio-1')!;
+    expect(cantidad.getAttribute('aria-invalid')).toBe('true');
+    expect(precio.getAttribute('aria-invalid')).toBe('true');
+    expect(cantidad.getAttribute('aria-describedby')).toContain('cantidad-error-1');
+    expect(precio.getAttribute('aria-describedby')).toContain('precio-error-1');
+    expect(el().querySelector('#cantidad-error-1')!.textContent).toBe('Pon una cantidad entera de 1 o más.');
+    expect(el().querySelector('#precio-error-1')!.textContent).toBe('Pon un precio de 0 o más, con dos decimales como mucho.');
+    pantalla.estado.descartar();
+  });
+
+  it('oculta la paginación con una página y la muestra con más de diez cargos', async () => {
+    await abrir(ALUMNO);
+    expect(el().querySelector('nav.paginacion')).toBeNull();
+    await harness.navigateByUrl('/alumnosEditar/7', FichaFalsa);
+    await abrir(ALUMNO, 200, Array.from({ length: 11 }, (_, indice) => cargo(indice + 1)));
+    expect(el().querySelector('nav.paginacion')).not.toBeNull();
+  });
+
+  it('despliega la fila sin cambiar el cargo y permite cerrar el menú con Escape', async () => {
+    const pantalla = await abrir(ALUMNO);
+    const expandir = el().querySelector<HTMLButtonElement>('[data-expandir]')!;
+    expect(expandir.getAttribute('aria-expanded')).toBe('false');
+    expandir.click();
+    harness.detectChanges();
+    expect(expandir.getAttribute('aria-expanded')).toBe('true');
+    expect(pantalla.estado.hayCambios()).toBeFalse();
+    const boton = el().querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!;
+    boton.click();
+    harness.detectChanges();
+    const menu = el().querySelector<HTMLElement>('[role="menu"]')!;
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    harness.detectChanges();
+    expect(el().querySelector('[role="menu"]')).toBeNull();
+    expect(document.activeElement).toBe(boton);
+  });
+
+  it('edita notas con el diálogo compartido y las mantiene pendientes de guardar', async () => {
+    const pantalla = await abrir(ALUMNO);
+    confirmar.and.resolveTo({ confirmado: true, valores: { 'cargo-notas': 'Nota nueva' } });
+    await pantalla.editarNotas(pantalla.estado.filasPagina()[0]);
+    harness.detectChanges();
+    expect(confirmar.calls.mostRecent().args[0].titulo).toBe('Editar notas');
+    expect(pantalla.estado.filasPagina()[0].notas).toBe('Nota nueva');
+    expect(el().textContent).toContain('1 cambio sin guardar');
+    pantalla.estado.descartar();
+  });
+
+  it('edita notas solo desde el menú y conserva su disparador para devolver el foco', async () => {
+    const pantalla = await abrir(ALUMNO);
+    const filas = pantalla.estado.filasPagina();
+    const botonMenu = el().querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!;
+    pantalla.alternarMenu(filas[0].id, botonMenu);
+    harness.detectChanges();
+    expect(el().querySelector('.notas button')).toBeNull();
+    const botonNotas = el().querySelector<HTMLButtonElement>('[role="menuitem"]')!;
+    expect(botonNotas.textContent).toContain('Editar notas');
+    botonNotas.focus();
+    let disparadorDialogo: Element | null = null;
+    confirmar.and.callFake(async () => {
+      // El diálogo compartido conserva el disparador y devuelve el foco al cerrarse.
+      disparadorDialogo = document.activeElement;
+      (disparadorDialogo as HTMLElement)?.focus();
+      return { confirmado: false, valor: null };
+    });
+    botonNotas.click();
+    await Promise.resolve();
+    expect<Element | null>(disparadorDialogo).toBe(botonMenu);
+    expect(document.activeElement).toBe(botonMenu);
+    expect(pantalla.menuAbierto).toBeNull();
+  });
+
+  it('describe cantidad y precio pagados con notas únicas en concepto y junto a los campos', async () => {
+    await abrir(ALUMNO, 200, [{ ...cargo(1), pagado: true }]);
+    const escritorio = el().querySelector<HTMLElement>('.concepto #precio-nota-escritorio-1')!;
+    const movil = el().querySelector<HTMLElement>('.campo #precio-nota-movil-1')!;
+    expect(escritorio.textContent).toBe('Revierte el cobro para cambiar precio o cantidad');
+    expect(movil.textContent).toBe(escritorio.textContent);
+    expect(el().querySelectorAll('#precio-nota-escritorio-1').length).toBe(1);
+    expect(el().querySelectorAll('#precio-nota-movil-1').length).toBe(1);
+    for (const campo of ['cantidad', 'precio']) {
+      const entrada = el().querySelector<HTMLInputElement>(`#${campo}-1`)!;
+      expect(entrada.disabled).toBeTrue();
+      expect(entrada.getAttribute('aria-describedby')).toContain(escritorio.id);
+      expect(entrada.getAttribute('aria-describedby')).toContain(movil.id);
+    }
   });
 
   it('con cambios pregunta al salir: «Seguir editando» se queda y «Salir sin guardar» sale', async () => {
