@@ -296,6 +296,8 @@ public class GrupoServiceImpl implements GrupoService {
 		if (grupoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
 			List<Alumno> alumnos = alumnoRepository.findAllById(alumnosIds);
+			// 8b-3l bis (decisión 287): un alumno eliminado anonimizando no se añade (409 antes de escribir nada).
+			alumnos.forEach(Alumno::exigirNoAnonimizado);
 
 			for (Alumno alumno : alumnos) {
 				// Añadir alumno al grupo si no está ya en el grupo

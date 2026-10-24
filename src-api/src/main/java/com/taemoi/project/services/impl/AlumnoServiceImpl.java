@@ -192,6 +192,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.repositories.UsuarioAlumnoRepository usuarioAlumnoRepository;
 
+	/** Decisión 287 (ronda 2): cancela los cargos sin pagar del alumno que se elimina anonimizando. */
+	@Autowired
+	@org.springframework.context.annotation.Lazy
+	private com.taemoi.project.services.ProductoAlumnoService productoAlumnoService;
+
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
@@ -424,8 +429,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 		if (restriccion.isEmpty()) {
 			return alumnoRepository.buscarIdsEnOrganizacionActiva(incluirInactivos);
 		}
-		return alumnoRepository.buscarIds(
-				com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()), incluirInactivos);
+		// 8b-3l bis (decisión 287): los eliminados anonimizando no salen, como en el listado. Aquí y no en buscarIds: el
+		// alcance del responsable (idsAlumnosEnAlcance) los incluye, y con ellos sus inscripciones y su tesorería.
+		org.springframework.data.jpa.domain.Specification<Alumno> noAnonimizados = (root, query, cb) -> cb
+				.isNull(root.get("anonimizadoEn"));
+		return alumnoRepository.buscarIds(noAnonimizados
+				.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get())), incluirInactivos);
 	}
 
 	@Override
@@ -1850,6 +1859,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			cobros.exigirSinDevolucionPendiente(alumno.getId(), cargosDelAlumno);
 
 			Long alumnoId = alumno.getId();
+			// Decisión 287 (ronda 2): sus cargos sin pagar se cancelan con el motivo «Alumno eliminado», no se borran; lo
+			// pagado y los cobros no se tocan. Lo primero: con un encargo en curso, 409 antes de escribir nada más.
+			productoAlumnoService.cancelarSinPagarDeAlumnoEliminado(alumnoId);
 			// Sus datos de personas (V25): consentimientos (pueden apuntar a sus documentos), tutores y salud.
 			consentimientoRepository.borrarDelAlumno(alumnoId);
 			tutorRepository.borrarDelAlumno(alumnoId);

@@ -26,8 +26,6 @@ public class AlumnoIdsRepositoryImpl implements AlumnoIdsRepository {
 		CriteriaQuery<Long> consulta = cb.createQuery(Long.class);
 		Root<Alumno> alumno = consulta.from(Alumno.class);
 		List<Predicate> condiciones = new ArrayList<>();
-		// 8b-3l bis (decisión 287): los eliminados anonimizando no salen, como en el listado.
-		condiciones.add(cb.isNull(alumno.get("anonimizadoEn")));
 		if (!incluirInactivos) {
 			condiciones.add(cb.isTrue(alumno.get("activo")));
 		}

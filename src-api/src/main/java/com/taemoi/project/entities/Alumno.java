@@ -505,6 +505,25 @@ public class Alumno extends EntidadOrganizacion {
 		this.anonimizadoEn = anonimizadoEn;
 	}
 
+	/** 8b-3l bis (decisión 287): respuesta 409 de cualquier escritura sobre un alumno eliminado anonimizando. */
+	public static final String ALUMNO_ANONIMIZADO_NO_SE_MODIFICA =
+			"Este alumno está eliminado (anonimizado) y no se puede modificar.";
+
+	@JsonIgnore
+	public boolean estaAnonimizado() {
+		return anonimizadoEn != null;
+	}
+
+	/**
+	 * 8b-3l bis (decisión 287): el alumno eliminado anonimizando es de solo lectura. Las escrituras que no pasan por
+	 * una ruta con su id (las cubre {@code AlumnoAnonimizadoInterceptor}) lo comprueban aquí antes de escribir nada.
+	 */
+	public void exigirNoAnonimizado() {
+		if (estaAnonimizado()) {
+			throw new IllegalStateException(ALUMNO_ANONIMIZADO_NO_SE_MODIFICA);
+		}
+	}
+
 	@JsonIgnore
 	public Long getSedePrincipalId() {
 		return sedePrincipalId;

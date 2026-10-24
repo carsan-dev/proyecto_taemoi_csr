@@ -1151,6 +1151,37 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return convertirADTO(reactivado);
 	}
 
+	/** Pieza 8b-3l bis (decisión 287): motivo de los cargos sin pagar que se cancelan al eliminar anonimizando. */
+	public static final String MOTIVO_ALUMNO_ELIMINADO = "Alumno eliminado";
+
+	/**
+	 * Pieza 8b-3l bis (decisión 287). Sin pagar es: no marcado pagado, sin ningún cobro (en cualquier estado) y sin
+	 * cancelar; lo demás no se toca. El de una convocatoria también se cancela (la inscripción se queda). Un encargo en
+	 * curso → 409 {@code ENCARGO_EN_CURSO} y la transacción de quien anonimiza se deshace entera.
+	 */
+	@Override
+	public List<Long> cancelarSinPagarDeAlumnoEliminado(Long alumnoId) {
+		Long organizacion = com.taemoi.project.organizacion.TenantContext.get();
+		List<Long> cancelados = new ArrayList<>();
+		if (organizacion == null || alumnoId == null) {
+			return cancelados;
+		}
+		Long usuario = CobroService.usuarioActualId();
+		for (Long id : productoAlumnoRepository.idsCargosDelAlumno(organizacion, alumnoId)) {
+			ProductoAlumno cargo = cobros.bloquearCargo(id).orElse(null);
+			if (cargo == null || cargo.estaCancelado() || Boolean.TRUE.equals(cargo.getPagado())
+					|| !cobroRepository.findByProductoAlumnoIdOrderByIdAsc(id).isEmpty()) {
+				continue;
+			}
+			exigirSinEncargoEnCurso(id);
+			ProductoAlumno guardado = marcarCancelado(cargo, usuario, MOTIVO_ALUMNO_ELIMINADO);
+			registroCargos.registrar(com.taemoi.project.services.RegistroAccionesCargos.Accion.CARGO_CANCELADO,
+					"/api/alumnos/" + alumnoId + "/anonimizar", guardado.getSedeId(), id);
+			cancelados.add(id);
+		}
+		return cancelados;
+	}
+
 	/** Dentro de la transacción, con el cargo bloqueado y no pagado: lo marca cancelado y lo guarda. */
 	private ProductoAlumno marcarCancelado(ProductoAlumno cargo, Long usuarioId, String motivo) {
 		cargo.setCanceladoEn(java.time.LocalDateTime.now());
@@ -1276,6 +1307,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (anonimizado(alumno)) {
+				continue;
+			}
 			if (enSedeInactiva(alumno, sedesInactivas)) {
 				omitidos.add(alumno.getId());
 				continue;
@@ -1351,6 +1385,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (anonimizado(alumno)) {
+				continue;
+			}
 			if (enSedeInactiva(alumno, sedesInactivas)) {
 				omitidos.add(alumno.getId());
 				continue;
@@ -1523,6 +1560,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (anonimizado(alumno)) {
+				continue;
+			}
 			if (enSedeInactiva(alumno, sedesInactivas)) {
 				omitidos.add(alumno.getId());
 				continue;
@@ -1728,6 +1768,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * esa sede está inactiva, 400. Sin sede principal no se comprueba. Cobrar los cargos existentes sigue permitido.
 	 */
 	private void exigirSedeActivaParaCargo(Alumno alumno) {
+		// 8b-3l bis (decisión 287): a un alumno eliminado anonimizando no se le crean cargos (409).
+		alumno.exigirNoAnonimizado();
 		gestionPorSede.exigirSedeActiva(alumno.getSedePrincipalId());
 	}
 
@@ -1735,6 +1777,14 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private static boolean enSedeInactiva(Alumno alumno, Set<Long> sedesInactivas) {
 		return !sedesInactivas.isEmpty() && alumno != null && alumno.getSedePrincipalId() != null
 				&& sedesInactivas.contains(alumno.getSedePrincipalId());
+	}
+
+	/**
+	 * 8b-3l bis (decisión 287): las generaciones masivas saltan al alumno eliminado anonimizando aunque le quede una
+	 * inscripción activa (datos antiguos); no cuenta como omitido por sede inactiva.
+	 */
+	private static boolean anonimizado(Alumno alumno) {
+		return alumno != null && alumno.estaAnonimizado();
 	}
 
 	private Date resolverFechaAsignacion(LocalDate fechaAsignacion) {
@@ -2001,6 +2051,9 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Set<Long> omitidos = new java.util.HashSet<>();
 		for (com.taemoi.project.entities.AlumnoDeporte alumnoDeporte : alumnosDeportes) {
 			Alumno alumno = alumnoDeporte.getAlumno();
+			if (anonimizado(alumno)) {
+				continue;
+			}
 			if (enSedeInactiva(alumno, sedesInactivas)) {
 				omitidos.add(alumno.getId());
 				continue;

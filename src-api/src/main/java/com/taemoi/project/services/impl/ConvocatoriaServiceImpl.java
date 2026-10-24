@@ -212,6 +212,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	        .orElseThrow(() -> new IllegalArgumentException("Convocatoria no encontrada"));
 
 	    for (AlumnoConvocatoria ac : convocatoria.getAlumnosConvocatoria()) {
+	        // 8b-3l bis (decisión 287): al alumno eliminado anonimizando no se le cambia nada.
+	        if (ac.getAlumno() != null && ac.getAlumno().estaAnonimizado()) {
+	        	continue;
+	        }
 	        AlumnoDeporte alumnoDeporte = ac.getAlumnoDeporte();
 	        if (alumnoDeporte == null && ac.getAlumno() != null) {
 	        	alumnoDeporte = alumnoDeporteService.obtenerDeportesDelAlumno(ac.getAlumno().getId()).stream()
@@ -248,6 +252,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	public void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+		// 8b-3l bis (decisión 287): la inscripción de un alumno eliminado anonimizando no se modifica (409).
+		if (alumnoConvocatoria.getAlumno() != null) {
+			alumnoConvocatoria.getAlumno().exigirNoAnonimizado();
+		}
 		// Pieza 6b-1: revertir el pago de un examen cuyo cobro ya va en una entrega de caja → 409 antes de cambiar nada.
 		if (alumnoConvocatoria.getProductoAlumno() != null && !Boolean.TRUE.equals(alumnoConvocatoriaDTO.getPagado())) {
 			cobros.exigirSinEntrega(alumnoConvocatoria.getProductoAlumno().getId());

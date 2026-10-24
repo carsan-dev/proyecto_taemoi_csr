@@ -26,6 +26,10 @@ public class WebConfig implements WebMvcConfigurer {
 	@Value("${cors.allowed.origin}")
 	private String allowedOrigin;
 
+	/** 8b-3l bis (decisión 287): el alumno eliminado anonimizando es de solo lectura. */
+	@org.springframework.beans.factory.annotation.Autowired
+	private com.taemoi.project.acceso.AlumnoAnonimizadoInterceptor alumnoAnonimizado;
+
 	/**
 	 * Agrega la configuración de CORS (Cross-Origin Resource Sharing) para permitir
 	 * solicitudes desde el origen especificado.
@@ -64,6 +68,7 @@ public class WebConfig implements WebMvcConfigurer {
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(new RegistroPeticionesInterceptor());
+		registry.addInterceptor(alumnoAnonimizado).addPathPatterns("/api/**");
 	}
 
 	/**
