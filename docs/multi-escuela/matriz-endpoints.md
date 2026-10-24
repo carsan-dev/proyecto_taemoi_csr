@@ -507,8 +507,10 @@ Decisiones en orden A/F/G/P/SP = ANONIMO/FAMILIA/GESTOR/PROPIETARIO/SOLO_PLATAFO
    límite por sede (188 líneas no públicas con G=P). Estos ejemplos los niega §3 al profesor, que ya no pasa:
    - `GET /api/tesoreria/movimientos`, `GET /api/informes/deudas`, `POST /api/productos-alumno/mensualidades/general`
      (D/D/P/P/D): §3 «Tesorería»: PROFESOR —.
-   - `GET|PUT /api/alumnos/{alumnoId}/salud`, `DELETE /api/alumnos/{id}`, `POST /api/alumnos/crear` (D/D/P/P/D):
-     §3: PROFESOR — en alta/edición/baja y solo sus grupos en salud.
+   - `GET|PUT /api/alumnos/{alumnoId}/salud`, `POST /api/alumnos/crear` (D/D/P/P/D):
+     §3: PROFESOR — en alta/edición/baja y solo sus grupos en salud. `DELETE /api/alumnos/{id}` es ya D/D/D/P/D
+     (8b-3l, decisión 285: solo el propietario elimina alumnos; al gestor, 403 con el motivo), como
+     `GET /api/alumnos/cargos-resumen`, su aviso de cargos.
    - `POST /api/preinscripciones/{referencia}/finalizar`, `POST /api/eventos/crear` (D/D/P/P/D): PROFESOR — en §3.
 
    Las entregas 6 y 7 abrirán a RESPONSABLE_SEDE y PROFESOR solo lo que §3 les da, con alcance por sede o grupo.
