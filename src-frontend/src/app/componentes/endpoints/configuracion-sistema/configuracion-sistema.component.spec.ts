@@ -1,6 +1,7 @@
 import { throwError, of } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ConfiguracionSistemaComponent } from './configuracion-sistema.component';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 describe('ConfiguracionSistemaComponent roles', () => {
   const component = new ConfiguracionSistemaComponent({} as any);
@@ -42,7 +43,7 @@ describe('ConfiguracionSistemaComponent guardar roles', () => {
 
   const espera = () => new Promise((r) => setTimeout(r, 50));
 
-  it('409 con mensaje: muestra el mensaje y restaura las casillas', async () => {
+  itSinReloj('409 con mensaje: muestra el mensaje y restaura las casillas', async () => {
     const c = preparar(
       throwError(() => ({ status: 409, error: { mensaje: 'La escuela se quedaría sin propietario.' } }))
     );
@@ -52,7 +53,7 @@ describe('ConfiguracionSistemaComponent guardar roles', () => {
     expect(c.rolesSeleccionados.get(7)!.ROLE_ADMIN).toBeTrue();
   });
 
-  it('error sin mensaje: aviso genérico y casillas restauradas', async () => {
+  itSinReloj('error sin mensaje: aviso genérico y casillas restauradas', async () => {
     const c = preparar(throwError(() => ({ status: 500 })));
     c.guardarCambios(usuario);
     await espera();
@@ -60,7 +61,7 @@ describe('ConfiguracionSistemaComponent guardar roles', () => {
     expect(c.rolesSeleccionados.get(7)!.ROLE_ADMIN).toBeTrue();
   });
 
-  it('éxito: recarga usuarios sin restaurar', async () => {
+  itSinReloj('éxito: recarga usuarios sin restaurar', async () => {
     const c = preparar(of({}));
     c.guardarCambios(usuario);
     await espera();

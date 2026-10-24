@@ -11,6 +11,7 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { Toast } from '../../../utils/toast.util';
 import { EditarGrupoComponent } from './editar-grupo.component';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 describe('EditarGrupoComponent · profesores', () => {
   let fixture: ComponentFixture<EditarGrupoComponent>;
@@ -119,7 +120,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(el().querySelector('#seccionProfesores')).toBeNull();
   });
 
-  it('añade con éxito: un POST a /api/miembros con este grupo, refresca la lista, vacía el campo y avisa', async () => {
+  itSinReloj('añade con éxito: un POST a /api/miembros con este grupo, refresca la lista, vacía el campo y avisa', async () => {
     montar();
     http.expectOne(url).flush([]);
     fixture.detectChanges();
@@ -162,7 +163,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(el().querySelector('fieldset.grupos-chips')).toBeNull();
   });
 
-  it('«Añadir a 3 grupos» manda una sola petición con los tres grupos y el mismo rol', async () => {
+  itSinReloj('«Añadir a 3 grupos» manda una sola petición con los tres grupos y el mismo rol', async () => {
     montar();
     http.expectOne(url).flush([]);
     fixture.detectChanges();
@@ -191,7 +192,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(boton().textContent!.trim()).toBe('Añadir');
   });
 
-  it('deshabilita el botón mientras va la petición y un doble envío manda una sola', async () => {
+  itSinReloj('deshabilita el botón mientras va la petición y un doble envío manda una sola', async () => {
     montar();
     http.expectOne(url).flush([]);
     fixture.detectChanges();
@@ -205,7 +206,7 @@ describe('EditarGrupoComponent · profesores', () => {
     http.expectOne(url).flush([beto]);
   });
 
-  it('404 sin cuenta: pide nombre y apellidos y «Enviar invitación» los manda', async () => {
+  itSinReloj('404 sin cuenta: pide nombre y apellidos y «Enviar invitación» los manda', async () => {
     montar();
     http.expectOne(url).flush([]);
     fixture.detectChanges();
@@ -245,7 +246,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(toast).toHaveBeenCalledWith(jasmine.objectContaining({ title: 'Invitación enviada' }));
   });
 
-  it('cambiar el email tras el 404 vuelve al alta normal', async () => {
+  itSinReloj('cambiar el email tras el 404 vuelve al alta normal', async () => {
     montar();
     http.expectOne(url).flush([]);
     await escribirEmail('nueva@ejemplo.test');
@@ -257,7 +258,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(boton().textContent!.trim()).toBe('Añadir');
   });
 
-  it('409 de rol desactivado: ofrece «Reactivar y añadir» y manda reactivar: true', async () => {
+  itSinReloj('409 de rol desactivado: ofrece «Reactivar y añadir» y manda reactivar: true', async () => {
     montar();
     http.expectOne(url).flush([]);
     await escribirEmail('ana@ejemplo.test');
@@ -281,7 +282,7 @@ describe('EditarGrupoComponent · profesores', () => {
     http.expectOne(url).flush([ana]);
   });
 
-  it('otros 404 y 409 muestran el mensaje del backend y conservan el email', async () => {
+  itSinReloj('otros 404 y 409 muestran el mensaje del backend y conservan el email', async () => {
     montar();
     http.expectOne(url).flush([]);
     await escribirEmail('ana@ejemplo.test');
@@ -367,7 +368,7 @@ describe('EditarGrupoComponent · profesores', () => {
     expect(el().querySelectorAll('.profesor-fila').length).toBe(1);
   });
 
-  it('quitar pide confirmación y envía DELETE', async () => {
+  itSinReloj('quitar pide confirmación y envía DELETE', async () => {
     montar();
     http.expectOne(url).flush([ana]);
     fixture.detectChanges();
@@ -381,7 +382,7 @@ describe('EditarGrupoComponent · profesores', () => {
     http.expectOne(url).flush([]);
   });
 
-  it('quitar cancelado no envía nada', async () => {
+  itSinReloj('quitar cancelado no envía nada', async () => {
     montar();
     http.expectOne(url).flush([ana]);
     fixture.detectChanges();

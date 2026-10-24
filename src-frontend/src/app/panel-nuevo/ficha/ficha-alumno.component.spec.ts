@@ -15,6 +15,7 @@ import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
+import { itSinReloj, leerFicherosEnLaZona } from '../../testing/reloj-prueba';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
@@ -350,7 +351,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   // ---------------------------------------------------------------- carnet
 
   describe('carnet', () => {
-    it('nombre en dos líneas como título, expediente, edad, alta y estado con los ayudantes es-ES', async () => {
+    itSinReloj('nombre en dos líneas como título, expediente, edad, alta y estado con los ayudantes es-ES', async () => {
       const m = await montar(FichaAlumnoComponent);
       const h1 = m.el().querySelector('h1.ficha__nombre')!;
       expect(texto(h1, '.ficha__nombre-nombre')).toBe('Rubén');
@@ -365,7 +366,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().textContent).not.toContain('Visualiza y gestiona');
     });
 
-    it('una línea por disciplina activa (la principal primero) con su cinturón, «principal», grado y tiempo', async () => {
+    itSinReloj('una línea por disciplina activa (la principal primero) con su cinturón, «principal», grado y tiempo', async () => {
       const m = await montar(FichaAlumnoComponent);
       const lineas = Array.from(m.el().querySelectorAll('.ficha__disciplina'));
       expect(lineas.length).toBe(2);
@@ -377,7 +378,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(lineas[1], '.ficha__grado-linea')).toMatch(/^Naranja, /);
     });
 
-    it('franja: un tramo por disciplina con grado y cada cinturón con el borde cinto-borde, que llega a 3:1', async () => {
+    itSinReloj('franja: un tramo por disciplina con grado y cada cinturón con el borde cinto-borde, que llega a 3:1', async () => {
       const m = await montar(FichaAlumnoComponent);
       // Tokens de DESIGN.md, como los declara panel-nuevo.scss (que el test no carga).
       const tokens = document.createElement('style');
@@ -403,7 +404,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       }
     });
 
-    it('pendiente: importe vencido, cargos y el más antiguo; «Cobrar» con varios abre el panel de cada cargo', async () => {
+    itSinReloj('pendiente: importe vencido, cargos y el más antiguo; «Cobrar» con varios abre el panel de cada cargo', async () => {
       const m = await montar(FichaAlumnoComponent);
       expect(texto(m.el(), '.ficha__importe')).toBe(`85,00${NBSP}€`);
       expect(texto(m.el(), '.ficha__resumen-cargos')).toBe('3 cargos, el más antiguo vencido desde 06/09/2026');
@@ -444,7 +445,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       pintarCapas();
     }
 
-    it('«Cobrar» de un cargo del panel: el diálogo nuevo y el PUT de la tesorería; refresca el pendiente y los pagos (8b-D1)', async () => {
+    itSinReloj('«Cobrar» de un cargo del panel: el diálogo nuevo y el PUT de la tesorería; refresca el pendiente y los pagos (8b-D1)', async () => {
       const m = await montar(FichaAlumnoComponent);
       m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!.click();
       await m.asentar();
@@ -465,7 +466,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(document.querySelector('.pn-aviso')!.textContent).toContain('Cobro registrado: 30,00');
     });
 
-    it('«Cobrar» con un cargo: el diálogo nuevo sin panel; cancelado (Esc) no envía nada y sin método no envía metodoPago', async () => {
+    itSinReloj('«Cobrar» con un cargo: el diálogo nuevo sin panel; cancelado (Esc) no envía nada y sin método no envía metodoPago', async () => {
       const datos = { ...datosPorDefecto(), pendientes: [UN_CARGO] };
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
       const cobrar = m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!;
@@ -485,7 +486,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m.el(), '.ficha__al-dia')).toBe('Al día');
     });
 
-    it('pendiente cargando: esqueleto con su forma a partir de los 300 ms (8b-D1)', async () => {
+    itSinReloj('pendiente cargando: esqueleto con su forma a partir de los 300 ms (8b-D1)', async () => {
       const m = await montar(FichaAlumnoComponent);
       // Al pasar a otro alumno, su pendiente aún no ha llegado.
       m.retener = (req) => req.request.url.endsWith('/tesoreria/pendientes-por-alumno');
@@ -504,7 +505,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m.el(), '.ficha__importe')).toBe(`85,00${NBSP}€`);
     });
 
-    it('la lectura del pendiente del carnet (su fallo lo dice el carnet con «Reintentar») va con ERROR_HANDLED_LOCALLY (8b-D2a)', async () => {
+    itSinReloj('la lectura del pendiente del carnet (su fallo lo dice el carnet con «Reintentar») va con ERROR_HANDLED_LOCALLY (8b-D2a)', async () => {
       const m = await montar(FichaAlumnoComponent);
       m.retener = (req) => req.request.url.endsWith('/tesoreria/pendientes-por-alumno');
       m.el().querySelector<HTMLButtonElement>('.ficha__siguiente')!.click();
@@ -517,14 +518,14 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m.el(), '.ficha__resumen-cargos')).toBe('No se pudo leer el pendiente.');
     });
 
-    it('sin nada vencido: «Al día» y sin «Cobrar»; la pestaña Pagos sin insignia', async () => {
+    itSinReloj('sin nada vencido: «Al día» y sin «Cobrar»; la pestaña Pagos sin insignia', async () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', { ...datosPorDefecto(), pendientes: [] });
       expect(texto(m.el(), '.ficha__al-dia')).toBe('Al día');
       expect(m.el().querySelector('.ficha__cobrar')).toBeNull();
       expect(m.el().querySelector('[role="tab"] .ficha__insignia')).toBeNull();
     });
 
-    it('licencia federativa de la principal con su pastilla, junto al carnet', async () => {
+    itSinReloj('licencia federativa de la principal con su pastilla, junto al carnet', async () => {
       const m = await montar(FichaAlumnoComponent);
       expect(texto(m.el(), '.ficha__licencia .ficha__pastilla')).toBe('Con licencia');
       const sin = datosPorDefecto();
@@ -534,7 +535,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m2.el(), '.ficha__licencia .ficha__pastilla')).toBe('Sin licencia');
     });
 
-    it('foto: se amplía al pulsar en la caja de luz del panel (8b-D2b); «Cambiar foto» abre el selector y «Quitar» va desactivado sin foto', async () => {
+    itSinReloj('foto: se amplía al pulsar en la caja de luz del panel (8b-D2b); «Cambiar foto» abre el selector y «Quitar» va desactivado sin foto', async () => {
       const m = await montar(FichaAlumnoComponent);
       const img = m.el().querySelector<HTMLImageElement>('.ficha__foto img')!;
       expect(img.getAttribute('width')).toBe('240');
@@ -562,7 +563,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   // ---------------------------------------------------------------- barra
 
   describe('barra', () => {
-    it('«Alumnos» lleva al listado; «1 de N» con anterior y siguiente; «Incluir inactivos» pide los ids con inactivos', async () => {
+    itSinReloj('«Alumnos» lleva al listado; «1 de N» con anterior y siguiente; «Incluir inactivos» pide los ids con inactivos', async () => {
       const m = await montar(FichaAlumnoComponent);
       expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toBe('/alumnosListar');
       expect(texto(m.el(), '.ficha__posicion')).toBe('2 de 3');
@@ -586,7 +587,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(ids.some((u) => u.includes('incluirInactivos=true'))).toBeTrue();
     });
 
-    it('números grandes con miles: «1.044 de 1.200»', async () => {
+    itSinReloj('números grandes con miles: «1.044 de 1.200»', async () => {
       const datos = { ...datosPorDefecto(), ids: Array.from({ length: 1200 }, (_, i) => (i === 1043 ? 7 : 10000 + i)) };
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
       expect(texto(m.el(), '.ficha__posicion')).toBe('1.044 de 1.200');
@@ -596,7 +597,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   // ---------------------------------------------------------------- pestañas
 
   describe('pestañas', () => {
-    it('tablist con Deportes, Pagos (con insignia de los cargos pendientes), Datos y contacto, Documentos y notas', async () => {
+    itSinReloj('tablist con Deportes, Pagos (con insignia de los cargos pendientes), Datos y contacto, Documentos y notas', async () => {
       const m = await montar(FichaAlumnoComponent);
       const lista = m.el().querySelector('[role="tablist"]')!;
       const tabs = Array.from(lista.querySelectorAll<HTMLElement>('[role="tab"]'));
@@ -616,7 +617,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(panel.getAttribute('aria-labelledby')).toBe(tabs[0].id);
     });
 
-    it('8b-C: con la marca, la pestaña activa y los secundarios llevan el acento; el principal, la tinta de la escuela', async () => {
+    itSinReloj('8b-C: con la marca, la pestaña activa y los secundarios llevan el acento; el principal, la tinta de la escuela', async () => {
       const m = await montar(FichaAlumnoComponent);
       TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
       await m.asentar();
@@ -634,7 +635,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         .toBe('#1B2B2E');
     });
 
-    it('8b-C: las listas flotantes de Deportes (en el body) llevan el tema y el acento de la escuela', async () => {
+    itSinReloj('8b-C: las listas flotantes de Deportes (en el body) llevan el tema y el acento de la escuela', async () => {
       const m = await montar(FichaAlumnoComponent);
       TestBed.inject(AcentoEscuelaActual).poner(MOISKIMDO_PRUEBA);
       await m.asentar();
@@ -658,7 +659,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(listas[0].style.getPropertyValue('--pn-acento')).withContext('sin marca: las quita').toBe('');
     });
 
-    it('flechas, Inicio y Fin mueven la pestaña y el foco; la pestaña queda en la dirección', async () => {
+    itSinReloj('flechas, Inicio y Fin mueven la pestaña y el foco; la pestaña queda en la dirección', async () => {
       const m = await montar(FichaAlumnoComponent);
       document.body.appendChild(m.el());
       const router = TestBed.inject(Router);
@@ -686,7 +687,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       m.el().remove();
     });
 
-    it('se vuelve a la pestaña de la dirección y se conserva al pasar al alumno siguiente', async () => {
+    itSinReloj('se vuelve a la pestaña de la dirección y se conserva al pasar al alumno siguiente', async () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
       expect(m.el().querySelector('[role="tab"][aria-selected="true"]')!.id).toBe('ficha-pestana-pagos');
       expect(m.el().querySelector('[role="tabpanel"] app-ficha-pagos')).not.toBeNull();
@@ -696,7 +697,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().querySelector('[role="tab"][aria-selected="true"]')!.id).toBe('ficha-pestana-pagos');
     });
 
-    it('una pestaña desconocida en la dirección abre Deportes', async () => {
+    itSinReloj('una pestaña desconocida en la dirección abre Deportes', async () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=otra');
       expect(m.el().querySelector('[role="tab"][aria-selected="true"]')!.id).toBe('ficha-pestana-deportes');
     });
@@ -719,7 +720,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       esperado.forEach((e, i) => expect(r.nueva.escrituras[i]).toEqual(jasmine.objectContaining(e)));
     }
 
-    it('agregar deporte (panel lateral del panel nuevo, 8b-D2b)', async () => {
+    itSinReloj('agregar deporte (panel lateral del panel nuevo, 8b-D2b)', async () => {
       await igual(
         async (m) => {
           m.comp.abrirModalAgregarDeporte();
@@ -739,7 +740,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('marcar principal', async () => {
+    itSinReloj('marcar principal', async () => {
       await igual(
         (m) => m.comp.marcarDeportePrincipal('KICKBOXING'),
         (m) => boton(bloque(m, 'KICKBOXING'), 'Marcar principal').click(),
@@ -748,7 +749,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('desactivar deporte', async () => {
+    itSinReloj('desactivar deporte', async () => {
       await igual(
         (m) => m.comp.desactivarDeporte('KICKBOXING'),
         (m) => boton(bloque(m, 'KICKBOXING'), 'Desactivar').click(),
@@ -757,7 +758,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('activar deporte', async () => {
+    itSinReloj('activar deporte', async () => {
       await igual(
         (m) => m.comp.activarDeporte('PILATES'),
         (m) => boton(bloque(m, 'PILATES'), 'Activar').click(),
@@ -766,7 +767,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('eliminar deporte (elegir «Eliminar completamente»)', async () => {
+    itSinReloj('eliminar deporte (elegir «Eliminar completamente»)', async () => {
       await igual(
         (m) => m.comp.removerDeporte('KICKBOXING'),
         (m) => boton(bloque(m, 'KICKBOXING'), 'Eliminar deporte').click(),
@@ -775,7 +776,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('dar de baja desde la cabecera de Deportes y desde «⋯»', async () => {
+    itSinReloj('dar de baja desde la cabecera de Deportes y desde «⋯»', async () => {
       await igual(
         (m) => m.comp.eliminarODarDeBajaAlumno(),
         (m) => boton(m.el().querySelector('.deportes__cabecera')!, 'Dar de baja').click(),
@@ -794,7 +795,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('eliminar alumno desde «⋯» con las dos confirmaciones de hoy', async () => {
+    itSinReloj('eliminar alumno desde «⋯» con las dos confirmaciones de hoy', async () => {
       await igual(
         (m) => m.comp.eliminarODarDeBajaAlumno(),
         async (m) => {
@@ -807,7 +808,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('dar de alta a un alumno de baja', async () => {
+    itSinReloj('dar de alta a un alumno de baja', async () => {
       const deBaja = (): Datos => {
         const d = datosPorDefecto();
         d.deportes = d.deportes.map((x) => ({ ...x, activo: false }));
@@ -823,7 +824,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('actualizar grado (diálogo del panel nuevo, 8b-D2b)', async () => {
+    itSinReloj('actualizar grado (diálogo del panel nuevo, 8b-D2b)', async () => {
       await igual(
         async (m) => {
           m.comp.abrirModalActualizarGrado('TAEKWONDO');
@@ -848,7 +849,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('apto para examen', async () => {
+    itSinReloj('apto para examen', async () => {
       await igual(
         (m) => m.comp.actualizarAptoParaExamen('TAEKWONDO', { target: { checked: true } }),
         (m) => bloque(m, 'TAEKWONDO').querySelector<HTMLInputElement>('input[id^="aptoExamen-"]')!.click(),
@@ -857,7 +858,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('agregar a convocatoria, pasar por recompensa y añadir derecho de examen', async () => {
+    itSinReloj('agregar a convocatoria, pasar por recompensa y añadir derecho de examen', async () => {
       await igual(
         (m) => m.comp.abrirModalConvocatoriasPorDeporte('KICKBOXING'),
         (m) => boton(bloque(m, 'KICKBOXING'), 'Agregar a convocatoria').click(),
@@ -884,7 +885,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('fecha de grado, tarifa, licencia y alta con «Aplicar cambios»', async () => {
+    itSinReloj('fecha de grado, tarifa, licencia y alta con «Aplicar cambios»', async () => {
       const cambiar = (raiz: ParentNode, selector: string, valor: string, evento = 'change') => {
         const campo = raiz.querySelector<HTMLInputElement | HTMLSelectElement>(selector)!;
         campo.value = valor;
@@ -950,7 +951,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('competidor (con licencia) y cancelar cambios sin enviar nada', async () => {
+    itSinReloj('competidor (con licencia) y cancelar cambios sin enviar nada', async () => {
       await igual(
         (m) => {
           m.comp.onCompetidorChange('TAEKWONDO', { target: { checked: true } } as any);
@@ -975,7 +976,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.comp.hasPendingGradoChanges('TAEKWONDO')).toBeFalse();
     });
 
-    it('grupos y turnos: quitar y añadir', async () => {
+    itSinReloj('grupos y turnos: quitar y añadir', async () => {
       await igual(
         (m) => m.comp.eliminarGrupoAlumno(1),
         (m) => boton(bloque(m, 'TAEKWONDO'), 'Quitar el grupo Taekwondo Lunes y Miércoles').click(),
@@ -1010,7 +1011,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('foto: quitar y cambiar', async () => {
+    itSinReloj('foto: quitar y cambiar', async () => {
       const conFoto = (): Datos => {
         const d = datosPorDefecto();
         d.alumno = { ...d.alumno, fotoAlumno: { id: 5, nombre: 'f.webp', url: `${API}/alumnos/7/imagen` } };
@@ -1023,7 +1024,9 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         [{ metodo: 'DELETE', url: '/alumnos/7/imagen' }],
         conFoto
       );
-      const png = () => new File([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], 'foto-ficticia.png', { type: 'image/png' });
+      const bytesPng = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+      leerFicherosEnLaZona({ 'foto-ficticia.png': bytesPng });
+      const png = () => new File([bytesPng], 'foto-ficticia.png', { type: 'image/png' });
       const elegir = async (input: HTMLInputElement, m: Montaje<any>) => {
         const dt = new DataTransfer();
         dt.items.add(png());
@@ -1040,8 +1043,10 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('documentos: subir, eliminar, descargar, ver y ver más', async () => {
-      const pdf = () => new File(['%PDF-1.4 ficticio'], 'documento-ficticio.pdf', { type: 'application/pdf' });
+    itSinReloj('documentos: subir, eliminar, descargar, ver y ver más', async () => {
+      const bytesPdf = new TextEncoder().encode('%PDF-1.4 ficticio');
+      leerFicherosEnLaZona({ 'documento-ficticio.pdf': bytesPdf });
+      const pdf = () => new File([bytesPdf], 'documento-ficticio.pdf', { type: 'application/pdf' });
       const subir = async (input: HTMLInputElement, m: Montaje<any>) => {
         const dt = new DataTransfer();
         dt.items.add(pdf());
@@ -1082,7 +1087,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().querySelectorAll('.documentos__documento').length).toBe(6);
     });
 
-    it('WhatsApp desde el carnet y desde Documentos: el selector de teléfono y su panel lateral (8b-D2b)', async () => {
+    itSinReloj('WhatsApp desde el carnet y desde Documentos: el selector de teléfono y su panel lateral (8b-D2b)', async () => {
       await igual(
         (m) => m.comp.abrirWhatsApp(),
         (m) => m.el().querySelector<HTMLButtonElement>('.ficha__accion--whatsapp')!.click(),
@@ -1097,7 +1102,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(document.querySelector('dialog.pn-panel h2')?.textContent?.trim()).withContext('panel de WhatsApp').toBe('Enviar WhatsApp');
     });
 
-    it('información adicional: guardar observaciones', async () => {
+    itSinReloj('información adicional: guardar observaciones', async () => {
       await igual(
         (m) => {
           m.comp.observacionesDraft = 'Otra nota inventada';
@@ -1116,7 +1121,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    it('datos y contacto: «Editar datos» abre la edición; guardar envía lo mismo que hoy y cancelar no envía nada', async () => {
+    itSinReloj('datos y contacto: «Editar datos» abre la edición; guardar envía lo mismo que hoy y cancelar no envía nada', async () => {
       await igual(
         (m) => {
           m.comp.toggleEditBasicInfo();
@@ -1158,7 +1163,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().querySelector('#email')).toBeNull();
     });
 
-    it('pagos: «Cobrar» de la tabla con el diálogo y el PUT de la ficha de hoy, paginación, gestionar productos y reservar plaza', async () => {
+    itSinReloj('pagos: «Cobrar» de la tabla con el diálogo y el PUT de la ficha de hoy, paginación, gestionar productos y reservar plaza', async () => {
       await igual(
         (m) => m.comp.pagarProducto(m.comp.productosPaginados.find((p) => p.id === 801)!),
         async (m) => {
@@ -1193,7 +1198,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(TestBed.inject(Router).url).toBe('/alumnos/7/productos');
     });
 
-    it('«Vista de familia» lleva a la vista de la familia con el alumno', async () => {
+    itSinReloj('«Vista de familia» lleva a la vista de la familia con el alumno', async () => {
       const m = await montar(FichaAlumnoComponent);
       expect(m.el().querySelector('a.ficha__accion--familia')!.getAttribute('href')).toBe('/userpage?alumnoId=7');
     });
@@ -1204,7 +1209,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   describe('el pendiente es siempre del alumno que se ve', () => {
     const esPendiente = (r: TestRequest) => r.request.url.endsWith('/tesoreria/pendientes-por-alumno');
 
-    it('al pasar de 7 a 9 sin respuesta del pendiente de 9: sin importe, «Cobrar», panel ni insignia; la del 7 que llega tarde se ignora', async () => {
+    itSinReloj('al pasar de 7 a 9 sin respuesta del pendiente de 9: sin importe, «Cobrar», panel ni insignia; la del 7 que llega tarde se ignora', async () => {
       const m = await montar(FichaAlumnoComponent);
       m.el().querySelector<HTMLButtonElement>('.ficha__cobrar')!.click();
       await m.asentar();
@@ -1228,7 +1233,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(texto(m.el(), '.ficha__al-dia')).toBe('Al día');
     });
 
-    it('la respuesta del alumno anterior que llega cuando ya se ve otro no lo pinta', async () => {
+    itSinReloj('la respuesta del alumno anterior que llega cuando ya se ve otro no lo pinta', async () => {
       const datos = datosPorDefecto();
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
       m.retener = esPendiente;
@@ -1248,7 +1253,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   });
 
   describe('buscador en los desplegables de Deportes (el de hoy)', () => {
-    it('tarifa, rol familiar, categoría, añadir turno y añadir grupo llevan el buscador de hoy, con su lista en .pn', async () => {
+    itSinReloj('tarifa, rol familiar, categoría, añadir turno y añadir grupo llevan el buscador de hoy, con su lista en .pn', async () => {
       const datos = datosPorDefecto();
       datos.deportes[0] = { ...datos.deportes[0], tipoTarifa: 'PADRES_HIJOS', competidor: true };
       datos.alumno.deportes = datos.deportes;
@@ -1271,7 +1276,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(lista.classList).withContext('la lista flotante usa los tokens del panel').toContain('pn');
     });
 
-    it('filtra las tarifas al escribir', async () => {
+    itSinReloj('filtra las tarifas al escribir', async () => {
       const m = await montar(FichaAlumnoComponent);
       const combo = bloque(m, 'TAEKWONDO').querySelector('select[id^="tipoTarifa-"]')!.closest('.admin-select-combobox')!;
       const entrada = combo.querySelector<HTMLInputElement>('input.admin-select-input')!;
@@ -1288,7 +1293,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   });
 
   describe('«← Alumnos» vuelve al listado como estaba', () => {
-    it('si se vino del listado, con su búsqueda, filtros, página y vista', async () => {
+    itSinReloj('si se vino del listado, con su búsqueda, filtros, página y vista', async () => {
       const m = await montar(
         FichaAlumnoComponent,
         '/alumnosEditar/7',
@@ -1304,13 +1309,13 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toContain('pagina=2');
     });
 
-    it('si se vino de otra pantalla, al listado sin filtros', async () => {
+    itSinReloj('si se vino de otra pantalla, al listado sin filtros', async () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datosPorDefecto(), '/adminpage?pagina=3');
       expect(m.el().querySelector('a.ficha__volver')!.getAttribute('href')).toBe('/alumnosListar');
     });
   });
 
-  it('cada aria-controls de las pestañas apunta a un panel que existe', async () => {
+  itSinReloj('cada aria-controls de las pestañas apunta a un panel que existe', async () => {
     const m = await montar(FichaAlumnoComponent);
     const tabs = Array.from(m.el().querySelectorAll<HTMLElement>('[role="tab"]'));
     for (const tab of tabs) {
@@ -1324,7 +1329,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
 
   // ---------------------------------------------------------------- cinturón (sin grados)
 
-  it('disciplina sin grados: sin caja Grado ni Licencia, como hoy; los diálogos (8b-D2b) van dentro de .pn', async () => {
+  itSinReloj('disciplina sin grados: sin caja Grado ni Licencia, como hoy; los diálogos (8b-D2b) van dentro de .pn', async () => {
     const m = await montar(FichaAlumnoComponent);
     const pilates = bloque(m, 'PILATES');
     expect(pilates.querySelector('[data-caja="grado"]')).toBeNull();
@@ -1375,7 +1380,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     document.querySelectorAll('pn-dialogo, pn-avisos').forEach((n) => n.remove());
   });
 
-  it('la ficha nueva da a sus diálogos el puerto del panel; la de hoy, el de SweetAlert2', async () => {
+  itSinReloj('la ficha nueva da a sus diálogos el puerto del panel; la de hoy, el de SweetAlert2', async () => {
     const hoy = await montar(EditarAlumnoComponent);
     expect(hoy.harness.routeDebugElement!.injector.get(DIALOGOS_FICHA)).toBe(DIALOGOS_SWEETALERT);
     hoy.harness.fixture.destroy();
@@ -1383,7 +1388,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(nueva.harness.routeDebugElement!.injector.get(DIALOGOS_FICHA)).toEqual(jasmine.any(DialogosFichaPanel));
   });
 
-  it('eliminar documento: diálogo destructivo con el foco en «Cancelar», el mismo DELETE que hoy y un aviso', async () => {
+  itSinReloj('eliminar documento: diálogo destructivo con el foco en «Cancelar», el mismo DELETE que hoy y un aviso', async () => {
     const r = await comparar(
       (m) => m.comp.eliminarDocumento(900),
       async (m) => {
@@ -1402,7 +1407,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(avisos()).toEqual([['exito', 'Documento eliminado correctamente.']]);
   });
 
-  it('«Dar de baja o eliminar…» de «⋯»: una sola capa con «Dar de baja» y «Eliminar completamente»; dar de baja como hoy', async () => {
+  itSinReloj('«Dar de baja o eliminar…» de «⋯»: una sola capa con «Dar de baja» y «Eliminar completamente»; dar de baja como hoy', async () => {
     const r = await comparar(
       (m) => m.comp.eliminarODarDeBajaAlumno(),
       async (m) => {
@@ -1421,7 +1426,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(r.nueva.swal).toEqual([]);
   });
 
-  it('eliminar alumno: «Eliminar completamente» y la segunda confirmación destructiva; el mismo DELETE', async () => {
+  itSinReloj('eliminar alumno: «Eliminar completamente» y la segunda confirmación destructiva; el mismo DELETE', async () => {
     const r = await comparar(
       (m) => m.comp.eliminarODarDeBajaAlumno(),
       async (m) => {
@@ -1440,7 +1445,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(r.hoy.escrituras).toEqual([jasmine.objectContaining({ metodo: 'DELETE', url: '/alumnos/7' })]);
   });
 
-  it('reservar plaza: pastillas del deporte, las dos confirmaciones y el mismo POST que hoy', async () => {
+  itSinReloj('reservar plaza: pastillas del deporte, las dos confirmaciones y el mismo POST que hoy', async () => {
     const r = await comparar(
       (m) => m.comp.reservarPlaza(7),
       async (m) => {
@@ -1463,7 +1468,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(r.nueva.swal).toEqual([]);
   });
 
-  it('un error (las convocatorias no cargan): aviso de error y nada de SweetAlert2', async () => {
+  itSinReloj('un error (las convocatorias no cargan): aviso de error y nada de SweetAlert2', async () => {
     const m = await montar(FichaAlumnoComponent);
     m.retener = (req) => req.request.method === 'GET' && req.request.url.endsWith('/convocatorias');
     boton(bloque(m, 'KICKBOXING'), 'Agregar a convocatoria').click();
@@ -1474,7 +1479,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(fire).not.toHaveBeenCalled();
   });
 
-  it('sin convocatorias: la fecha de la nueva en un campo con su etiqueta; «Crear y añadir» crea la convocatoria', async () => {
+  itSinReloj('sin convocatorias: la fecha de la nueva en un campo con su etiqueta; «Crear y añadir» crea la convocatoria', async () => {
     const m = await montar(FichaAlumnoComponent);
     m.retener = (req) => req.request.method === 'GET' && req.request.url.endsWith('/convocatorias');
     boton(bloque(m, 'KICKBOXING'), 'Agregar a convocatoria').click();
@@ -1491,7 +1496,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
     expect(fire).not.toHaveBeenCalled();
   });
 
-  it('marcar principal: el toast de hoy es un aviso de éxito', async () => {
+  itSinReloj('marcar principal: el toast de hoy es un aviso de éxito', async () => {
     const m = await montar(FichaAlumnoComponent);
     boton(bloque(m, 'KICKBOXING'), 'Marcar principal').click();
     await m.asentar();

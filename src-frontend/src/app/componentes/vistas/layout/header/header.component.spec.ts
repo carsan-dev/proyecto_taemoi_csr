@@ -10,6 +10,7 @@ import { Capacidad, DisenoNuevoSesion, PermisosSesionService } from '../../../..
 import { DisenoPanelService } from '../../../../panel-nuevo/diseno-panel.service';
 import { RECARGAR_PAGINA } from '../../../../core/recargar-pagina';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
+import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 /** El contador de solicitudes (6c-7) sin HTTP: lo prueba header.solicitudes.spec.ts. */
 const contadorSolicitudesSimulado = { total: () => 0, refrescar: () => undefined, reiniciar: () => undefined };
@@ -137,7 +138,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
   const enlacesMenu = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('#admin-sidebar a.menu-link')).map((a) => a.textContent?.trim());
 
-  it('muestra la sección Superadmin con Errores de plataforma al administrador de plataforma', async () => {
+  itSinReloj('muestra la sección Superadmin con Errores de plataforma al administrador de plataforma', async () => {
     const el = await renderizar(true);
 
     expect(el.querySelector('#admin-sidebar')?.textContent).toContain('Superadmin');
@@ -148,7 +149,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(enlacesMenu(el)).toContain('Registro de acciones');
   });
 
-  it('incluye «Caja de sede» en el menú de administración, enlazada a /cajaSede', async () => {
+  itSinReloj('incluye «Caja de sede» en el menú de administración, enlazada a /cajaSede', async () => {
     const el = await renderizar(false);
 
     const enlace = el.querySelector<HTMLAnchorElement>('#admin-sidebar a.menu-link[href="/cajaSede"]');
@@ -156,7 +157,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(enlacesMenu(el)).toContain('Tesorería y Cobros');
   });
 
-  it('la fila de accesos rápidos lleva «Caja de sede» justo después de Tesorería', async () => {
+  itSinReloj('la fila de accesos rápidos lleva «Caja de sede» justo después de Tesorería', async () => {
     const el = await renderizar(false);
 
     const enlaces = Array.from(el.querySelectorAll<HTMLAnchorElement>('.admin-quick-nav a.quick-link'));
@@ -168,7 +169,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(hrefs[posicion - 1]).toBe('/tesoreriaCobros');
   });
 
-  it('«Mi caja» aparece en la barra solo si la sesión de gestión es también profesor', async () => {
+  itSinReloj('«Mi caja» aparece en la barra solo si la sesión de gestión es también profesor', async () => {
     let el = await renderizar(false);
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')).toBeNull();
 
@@ -176,7 +177,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
   });
 
-  it('gestión + profesor sin MIS_GRUPOS (sin asignaciones) no ve «Mis grupos»', async () => {
+  itSinReloj('gestión + profesor sin MIS_GRUPOS (sin asignaciones) no ve «Mis grupos»', async () => {
     let el = await renderizar(false, ['ROLE_ADMIN', 'ROLE_PROFESOR']);
     expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
     expect(el.querySelector('#admin-sidebar a.menu-link[href="/mi-caja"]')).not.toBeNull();
@@ -185,7 +186,7 @@ describe('HeaderComponent: menú lateral de administración', () => {
     expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
   });
 
-  it('la oculta cuando el sondeo de plataforma es false', async () => {
+  itSinReloj('la oculta cuando el sondeo de plataforma es false', async () => {
     const el = await renderizar(false);
 
     expect(el.querySelector('#admin-sidebar')?.textContent).not.toContain('Superadmin');
@@ -234,7 +235,7 @@ describe('HeaderComponent: cabecera móvil', () => {
 
   const textoDe = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim();
 
-  it('el visitante ve «Preinscríbete» y «Alumnos» con texto y sin redes en la cabecera', async () => {
+  itSinReloj('el visitante ve «Preinscríbete» y «Alumnos» con texto y sin redes en la cabecera', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
     const acciones = el.querySelector('.header-actions-mobile');
@@ -244,7 +245,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(acciones?.querySelector('a[href*="facebook"], a[href*="instagram"], a[href*="tiktok"]')).toBeNull();
   });
 
-  it('las redes sociales están en el menú móvil del visitante', async () => {
+  itSinReloj('las redes sociales están en el menú móvil del visitante', async () => {
     const fixture = await renderizar('visitante');
     fixture.componentInstance.toggleMobileMenu();
     fixture.detectChanges();
@@ -258,7 +259,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     });
   });
 
-  it('la familia ve «Mi cuenta» y al pulsarlo se abre el menú con «Cerrar sesión»', async () => {
+  itSinReloj('la familia ve «Mi cuenta» y al pulsarlo se abre el menú con «Cerrar sesión»', async () => {
     const fixture = await renderizar('familia');
     const el = fixture.nativeElement as HTMLElement;
     const boton = el.querySelector<HTMLButtonElement>('.btn-cuenta-mobile');
@@ -277,7 +278,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(textoDe(panel)).toContain('Cerrar sesión');
   });
 
-  it('la familia tiene las redes y la preinscripción en el menú móvil', async () => {
+  itSinReloj('la familia tiene las redes y la preinscripción en el menú móvil', async () => {
     const fixture = await renderizar('familia');
     fixture.componentInstance.toggleMobileMenu();
     fixture.detectChanges();
@@ -288,7 +289,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(panel?.querySelector('a[href="/preinscripcion"]')).not.toBeNull();
   });
 
-  it('en escritorio el visitante ve «Preinscríbete» y «Acceso alumnos», sin «Iniciar Sesión»', async () => {
+  itSinReloj('en escritorio el visitante ve «Preinscríbete» y «Acceso alumnos», sin «Iniciar Sesión»', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
     const escritorio = el.querySelector('.navbar-collapse');
@@ -301,7 +302,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(escritorio?.querySelector('a.btn-login')?.getAttribute('aria-label')).toBe('Acceso para alumnos');
   });
 
-  it('en escritorio la familia ve la pastilla «Mi cuenta» y abre el mismo menú', async () => {
+  itSinReloj('en escritorio la familia ve la pastilla «Mi cuenta» y abre el mismo menú', async () => {
     const fixture = await renderizar('familia');
     const el = fixture.nativeElement as HTMLElement;
     const boton = el.querySelector<HTMLButtonElement>('.navbar-collapse .user-menu-toggle');
@@ -321,7 +322,7 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(textoDe(panel)).toContain('Cerrar sesión');
   });
 
-  it('en escritorio solo hay una pastilla rellena (Preinscríbete) junto a las de contorno', async () => {
+  itSinReloj('en escritorio solo hay una pastilla rellena (Preinscríbete) junto a las de contorno', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
     const acciones = el.querySelectorAll('.navbar-collapse a.nav-link-join, .navbar-collapse a.btn-login');
@@ -335,14 +336,14 @@ describe('HeaderComponent: cabecera móvil', () => {
     expect(relleno(el.querySelector('.navbar-collapse a.btn-login'))).toBeFalse();
   });
 
-  it('las redes siguen en el DOM de escritorio (se ocultan por CSS en tablet apaisada)', async () => {
+  itSinReloj('las redes siguen en el DOM de escritorio (se ocultan por CSS en tablet apaisada)', async () => {
     const fixture = await renderizar('visitante');
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelectorAll('.navbar-right .nav-item-social a.social-link').length).toBe(3);
   });
 
-  it('el título móvil tiene corte fijo «MOI\'S» / «KIM DO» con líneas indivisibles y nunca se oculta', async () => {
+  itSinReloj('el título móvil tiene corte fijo «MOI\'S» / «KIM DO» con líneas indivisibles y nunca se oculta', async () => {
     for (const rol of ['visitante', 'familia'] as const) {
       const fixture = await renderizar(rol);
       const titulo = (fixture.nativeElement as HTMLElement).querySelector('.header-title-mobile .title-main');
@@ -400,7 +401,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     return { fixture, esAdminPlataforma, permisos };
   }
 
-  it('solo profesor: sin cabecera de gestión ni de familia y sin sondear la plataforma', async () => {
+  itSinReloj('solo profesor: sin cabecera de gestión ni de familia y sin sondear la plataforma', async () => {
     const { fixture, esAdminPlataforma } = await renderizar(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']);
     const el = fixture.nativeElement as HTMLElement;
 
@@ -411,7 +412,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     expect(esAdminPlataforma).not.toHaveBeenCalled();
   });
 
-  it('familia + profesor: «Mi caja» en el menú de cuenta de escritorio y móvil', async () => {
+  itSinReloj('familia + profesor: «Mi caja» en el menú de cuenta de escritorio y móvil', async () => {
     const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR']);
     const componente = fixture.componentInstance;
     const el = fixture.nativeElement as HTMLElement;
@@ -426,7 +427,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     expect(el.querySelector('.mobile-user-quick-menu-panel a[href="/mi-caja"]')?.textContent?.trim()).toBe('Mi caja');
   });
 
-  it('familia + profesor: «Mis grupos» en el menú de cuenta y en el menú móvil (D7-7)', async () => {
+  itSinReloj('familia + profesor: «Mis grupos» en el menú de cuenta y en el menú móvil (D7-7)', async () => {
     const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR']);
     const componente = fixture.componentInstance;
     const el = fixture.nativeElement as HTMLElement;
@@ -446,7 +447,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     expect(el.querySelector('.mobile-header-link[href="/mis-grupos"]')?.textContent?.trim()).toBe('Mis grupos');
   });
 
-  it('gestión + familia + profesor sin MIS_GRUPOS: ni el menú de cuenta ni el móvil ofrecen «Mis grupos»', async () => {
+  itSinReloj('gestión + familia + profesor sin MIS_GRUPOS: ni el menú de cuenta ni el móvil ofrecen «Mis grupos»', async () => {
     const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_USER', 'ROLE_PROFESOR']);
     const componente = fixture.componentInstance;
     const el = fixture.nativeElement as HTMLElement;
@@ -464,7 +465,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     const enlaces = (el: HTMLElement) =>
       Array.from(el.querySelectorAll<HTMLAnchorElement>('.admin-sidebar a.menu-link')).map((a) => a.getAttribute('href'));
 
-    it('propietario + profesor con MIS_GRUPOS: «Mis grupos» justo debajo de «Mi caja»', async () => {
+    itSinReloj('propietario + profesor con MIS_GRUPOS: «Mis grupos» justo debajo de «Mi caja»', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
       const el = fixture.nativeElement as HTMLElement;
       const hrefs = enlaces(el);
@@ -476,12 +477,12 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(fixture.componentInstance.veMisGrupos).toBeTrue();
     });
 
-    it('gestor + profesor con MIS_GRUPOS lo ve igual', async () => {
+    itSinReloj('gestor + profesor con MIS_GRUPOS lo ve igual', async () => {
       const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
       expect(enlaces(fixture.nativeElement)).toContain('/mis-grupos');
     });
 
-    it('propietario + profesor sin asignaciones: «Mi caja» sí, «Mis grupos» no', async () => {
+    itSinReloj('propietario + profesor sin asignaciones: «Mi caja» sí, «Mis grupos» no', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
       const hrefs = enlaces(fixture.nativeElement);
       expect(hrefs).toContain('/mi-caja');
@@ -489,7 +490,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(fixture.componentInstance.veMisGrupos).toBeFalse();
     });
 
-    it('gestión sin ROLE_PROFESOR: ni «Mi caja» ni «Mis grupos»; pide los permisos una vez (8b-I)', async () => {
+    itSinReloj('gestión sin ROLE_PROFESOR: ni «Mi caja» ni «Mis grupos»; pide los permisos una vez (8b-I)', async () => {
       const { fixture, permisos } = await renderizar(['ROLE_ADMIN']);
       const hrefs = enlaces(fixture.nativeElement);
       expect(hrefs).not.toContain('/mi-caja');
@@ -498,7 +499,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(permisos.capacidades).toHaveBeenCalled();
     });
 
-    it('pedir permisos con gestión no cambia los menús: sin PROFESOR, «Mis grupos» nunca aparece', async () => {
+    itSinReloj('pedir permisos con gestión no cambia los menús: sin PROFESOR, «Mis grupos» nunca aparece', async () => {
       for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER'], ['ROLE_MANAGER', 'ROLE_USER']]) {
         const { fixture } = await renderizar(roles, ['MIS_GRUPOS', 'MI_CAJA']);
         const hrefs = enlaces(fixture.nativeElement);
@@ -508,7 +509,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       }
     });
 
-    it('propietario que también es profesor (Moiskimdo): «Mi caja» como antes y la misma barra que hoy', async () => {
+    itSinReloj('propietario que también es profesor (Moiskimdo): «Mi caja» como antes y la misma barra que hoy', async () => {
       const { fixture, permisos } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
       const hrefs = enlaces(fixture.nativeElement);
       expect(hrefs).toContain('/mi-caja');
@@ -517,14 +518,14 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(permisos.capacidades).toHaveBeenCalled();
     });
 
-    it('si los permisos fallan, la cabecera sigue y no ofrece «Mis grupos»', async () => {
+    itSinReloj('si los permisos fallan, la cabecera sigue y no ofrece «Mis grupos»', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], 'error');
       const hrefs = enlaces(fixture.nativeElement);
       expect(hrefs).toContain('/mi-caja');
       expect(hrefs).not.toContain('/mis-grupos');
     });
 
-    it('propietario + familia + profesor con MIS_GRUPOS: «Mis grupos» también en el menú de cuenta', async () => {
+    itSinReloj('propietario + familia + profesor con MIS_GRUPOS: «Mis grupos» también en el menú de cuenta', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_USER', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS']);
       const componente = fixture.componentInstance;
       componente.isUserRoute = true;
@@ -538,7 +539,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     const entrada = (el: HTMLElement) =>
       el.querySelector<HTMLAnchorElement>('.admin-account-menu-panel a[href="/panel/diseno-nuevo"]');
 
-    it('el propietario la ve en su menú de cuenta', async () => {
+    itSinReloj('el propietario la ve en su menú de cuenta', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN']);
       fixture.componentInstance.toggleAdminAccountMenu();
       fixture.detectChanges();
@@ -546,14 +547,14 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       expect(entrada(fixture.nativeElement)?.getAttribute('role')).toBe('menuitem');
     });
 
-    it('el propietario que también es profesor, igual', async () => {
+    itSinReloj('el propietario que también es profesor, igual', async () => {
       const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
       fixture.componentInstance.toggleAdminAccountMenu();
       fixture.detectChanges();
       expect(entrada(fixture.nativeElement)).not.toBeNull();
     });
 
-    it('el gestor no la ve', async () => {
+    itSinReloj('el gestor no la ve', async () => {
       for (const roles of [['ROLE_MANAGER'], ['ROLE_MANAGER', 'ROLE_PROFESOR'], ['ROLE_MANAGER', 'ROLE_USER']]) {
         const { fixture } = await renderizar(roles);
         fixture.componentInstance.toggleAdminAccountMenu();
@@ -574,7 +575,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     });
   });
 
-  it('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
+  itSinReloj('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
     const { fixture, permisos } = await renderizar(['ROLE_USER']);
     expect(permisos.capacidades).not.toHaveBeenCalled();
     fixture.componentInstance.toggleDesktopUserMenu();
@@ -640,14 +641,14 @@ describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de ge
     );
   const esperar = () => new Promise<void>((r) => setTimeout(r, 50));
 
-  it('visible con permiso y diseño anterior (permitido y no activo)', async () => {
+  itSinReloj('visible con permiso y diseño anterior (permitido y no activo)', async () => {
     for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
       const fixture = await renderizar(roles, { activo: false, permitido: true });
       expect(entrada(fixture)).withContext(roles.join()).toBeDefined();
     }
   });
 
-  it('oculta sin permiso, ya encendido, sin dato, y con sesión solo-profesor o de familia', async () => {
+  itSinReloj('oculta sin permiso, ya encendido, sin dato, y con sesión solo-profesor o de familia', async () => {
     const casos: [string[], DisenoNuevoSesion | undefined][] = [
       [['ROLE_ADMIN'], { activo: false, permitido: false }],
       [['ROLE_ADMIN'], { activo: true, permitido: true }],
@@ -661,7 +662,7 @@ describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de ge
     }
   });
 
-  it('el clic llama a cambiarMiDiseno(true), reinicia los permisos y recarga; un clic, una petición', async () => {
+  itSinReloj('el clic llama a cambiarMiDiseno(true), reinicia los permisos y recarga; un clic, una petición', async () => {
     const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
     entrada(fixture)!.click();
     entrada(fixture)?.click();
@@ -671,7 +672,7 @@ describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de ge
     expect(recargar).toHaveBeenCalledTimes(1);
   });
 
-  it('si falla, avisa y no recarga', async () => {
+  itSinReloj('si falla, avisa y no recarga', async () => {
     const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
     diseno.cambiarMiDiseno.and.returnValue(throwError(() => new Error('403')));
     entrada(fixture)!.click();

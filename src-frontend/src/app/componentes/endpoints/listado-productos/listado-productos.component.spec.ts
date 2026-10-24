@@ -5,6 +5,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { ListadoProductosComponent } from './listado-productos.component';
 import { EndpointsService } from '../../../servicios/endpoints/endpoints.service';
 import { Toast } from '../../../utils/toast.util';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 describe('ListadoProductosComponent', () => {
   let component: ListadoProductosComponent;
@@ -316,7 +317,7 @@ describe('ListadoProductosComponent', () => {
       expect(textoChips()).toEqual(['"dobok"', 'Tipo: Examen', 'Mi caja: No']);
     });
 
-    it('«Limpiar» resetea los tres filtros, vuelve a la página 1 y recarga', async () => {
+    itSinReloj('«Limpiar» resetea los tres filtros, vuelve a la página 1 y recarga', async () => {
       component.conceptoFiltro = 'dobok';
       component.paginaActual = 2;
       elegir(selectTipo(), 'LICENCIA');
@@ -418,7 +419,7 @@ describe('ListadoProductosComponent', () => {
       expect(estado.paginaActual).toBe(1);
     });
 
-    it('restaura los filtros guardados y pide la lista con ellos', async () => {
+    itSinReloj('restaura los filtros guardados y pide la lista con ellos', async () => {
       sessionStorage.setItem(
         'listadoProductosEstado',
         JSON.stringify({

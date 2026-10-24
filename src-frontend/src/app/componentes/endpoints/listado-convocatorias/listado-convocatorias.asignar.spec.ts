@@ -6,6 +6,7 @@ import { ListadoConvocatoriasComponent } from './listado-convocatorias.component
 import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
 import { InformePdfService } from '../../../servicios/generales/informe-pdf.service';
+import { itSinReloj } from '../../../testing/reloj-prueba';
 
 /**
  * Decisión 235: al añadir un alumno a la convocatoria, «Por Recompensa» y «Por Antigüedad» son botones propios
@@ -45,7 +46,7 @@ describe('ListadoConvocatoriasComponent: tipo de precio al añadir un alumno', (
     swal = spyOn(Swal, 'fire');
   });
 
-  it('pregunta con «Por Recompensa», «Por Antigüedad» y «Cancelar» como botones distintos', async () => {
+  itSinReloj('pregunta con «Por Recompensa», «Por Antigüedad» y «Cancelar» como botones distintos', async () => {
     responder({ isDismissed: true, dismiss: Swal.DismissReason.esc });
     crear().agregarAlumnoAConvocatoria();
     await esperar();
@@ -63,7 +64,7 @@ describe('ListadoConvocatoriasComponent: tipo de precio al añadir un alumno', (
   });
 
   for (const motivo of ['esc', 'backdrop', 'close', 'cancel'] as const) {
-    it(`cerrar el diálogo (${motivo}) no llama al backend`, async () => {
+    itSinReloj(`cerrar el diálogo (${motivo}) no llama al backend`, async () => {
       responder({ isDismissed: true, dismiss: Swal.DismissReason[motivo] });
       crear().agregarAlumnoAConvocatoria();
       await esperar();
@@ -73,7 +74,7 @@ describe('ListadoConvocatoriasComponent: tipo de precio al añadir un alumno', (
     });
   }
 
-  it('«Por Recompensa» asigna por recompensa', async () => {
+  itSinReloj('«Por Recompensa» asigna por recompensa', async () => {
     responder({ isConfirmed: true });
     crear().agregarAlumnoAConvocatoria();
     await esperar();
@@ -81,7 +82,7 @@ describe('ListadoConvocatoriasComponent: tipo de precio al añadir un alumno', (
     expect(endpoints.agregarAlumnoAConvocatoria).toHaveBeenCalledWith(10, 7, true, false);
   });
 
-  it('«Por Antigüedad» asigna por antigüedad', async () => {
+  itSinReloj('«Por Antigüedad» asigna por antigüedad', async () => {
     responder({ isDenied: true });
     crear().agregarAlumnoAConvocatoria();
     await esperar();

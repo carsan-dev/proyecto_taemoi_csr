@@ -13,6 +13,7 @@ import { SolicitudesContadorService } from '../../servicios/endpoints/solicitude
 import { MarcaPanel } from '../marca-escuela-panel.service';
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
 import { CabeceraPanelComponent, RECARGAR_PAGINA, fondoActivoCabecera, iniciales } from './cabecera-panel.component';
+import { itSinReloj } from '../../testing/reloj-prueba';
 
 const API = environment.apiUrl;
 
@@ -159,7 +160,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     destino.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
 
   describe('Ver la web', () => {
-    it('el enlace navega a la portada con el estado verWeb', async () => {
+    itSinReloj('el enlace navega a la portada con el estado verWeb', async () => {
       await montar();
       responderMarca();
       entrada('escuela').click();
@@ -176,7 +177,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('antes de pintar', () => {
-    it('no pinta la cabecera hasta tener la marca; luego la escribe en el .pn de la raíz', async () => {
+    itSinReloj('no pinta la cabecera hasta tener la marca; luego la escribe en el .pn de la raíz', async () => {
       await montar();
       const raiz = el().querySelector<HTMLElement>('.pn')!;
       expect(raiz).withContext('raíz .pn').not.toBeNull();
@@ -189,7 +190,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(document.documentElement.style.getPropertyValue('--pn-marca-primario')).toBe('');
     });
 
-    it('si la marca falla, pinta igual con los colores por defecto y sin logo', async () => {
+    itSinReloj('si la marca falla, pinta igual con los colores por defecto y sin logo', async () => {
       await montar();
       http.expectOne(`${API}/escuela/marca`).flush('no', { status: 500, statusText: 'Error' });
       fixture.detectChanges();
@@ -201,7 +202,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('logo (plan B)', () => {
-    it('LEGADO: el SVG de siempre', async () => {
+    itSinReloj('LEGADO: el SVG de siempre', async () => {
       await montar();
       responderMarca(marca({ logo: 'LEGADO' }));
       expect(el().querySelector<HTMLImageElement>('img.pn-cab__logo')?.getAttribute('src')).toBe(
@@ -210,14 +211,14 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Club Ficticio del Sur');
     });
 
-    it('NINGUNO: el nombre de la escuela sin logo', async () => {
+    itSinReloj('NINGUNO: el nombre de la escuela sin logo', async () => {
       await montar();
       responderMarca(marca({ logo: 'NINGUNO' }));
       expect(el().querySelector('img.pn-cab__logo')).toBeNull();
       expect(el().querySelector('.pn-cab__nombre')?.textContent?.trim()).toBe('Club Ficticio del Sur');
     });
 
-    it('SUBIDO que da error (404): se quita la imagen y queda el nombre', async () => {
+    itSinReloj('SUBIDO que da error (404): se quita la imagen y queda el nombre', async () => {
       await montar();
       responderMarca(marca({ logo: 'SUBIDO', logoVersion: 31 }));
       const img = el().querySelector<HTMLImageElement>('img.pn-cab__logo')!;
@@ -232,7 +233,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('entradas', () => {
-    it('seis con icono y nombre; cuatro con desplegable (aria-haspopup y aria-expanded)', async () => {
+    itSinReloj('seis con icono y nombre; cuatro con desplegable (aria-haspopup y aria-expanded)', async () => {
       await montar();
       responderMarca();
       const entradas = Array.from(el().querySelectorAll<HTMLElement>('nav.pn-cab__nav .pn-cab__entrada'));
@@ -250,7 +251,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       conMenu.forEach((e) => expect(e.getAttribute('aria-expanded')).toBe('false'));
     });
 
-    it('aria-current en la entrada actual', async () => {
+    itSinReloj('aria-current en la entrada actual', async () => {
       await montar('/alumnosEditar/4');
       responderMarca();
       expect(entrada('alumnos').getAttribute('aria-current')).toBe('true');
@@ -262,7 +263,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(entrada('alumnos').hasAttribute('aria-current')).toBeFalse();
     });
 
-    it('menú con teclado: flechas, Inicio/Fin y Esc, que cierra y devuelve el foco', async () => {
+    itSinReloj('menú con teclado: flechas, Inicio/Fin y Esc, que cierra y devuelve el foco', async () => {
       await montar();
       responderMarca();
       const disparador = entrada('alumnos');
@@ -294,7 +295,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(document.activeElement).toBe(disparador);
     });
 
-    it('aria-current en la opción de la página actual, y solo en ella', async () => {
+    itSinReloj('aria-current en la opción de la página actual, y solo en ella', async () => {
       await montar('/alumnosListar');
       responderMarca();
       entrada('alumnos').click();
@@ -305,7 +306,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(actuales[0].getAttribute('aria-current')).toBe('page');
     });
 
-    it('flechas a los lados entre entradas; un clic fuera cierra el menú', async () => {
+    itSinReloj('flechas a los lados entre entradas; un clic fuera cierra el menú', async () => {
       await montar();
       responderMarca();
       entrada('grupos').focus();
@@ -322,7 +323,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(el().querySelector('#pn-menu-grupos')).toBeNull();
     });
 
-    it('el propietario de Moiskimdo (ADMIN y PROFESOR con grupos) ve «Mi caja» y «Mis grupos»', async () => {
+    itSinReloj('el propietario de Moiskimdo (ADMIN y PROFESOR con grupos) ve «Mi caja» y «Mis grupos»', async () => {
       await montar();
       responderMarca();
       entrada('grupos').click();
@@ -336,7 +337,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(el().querySelector('#pn-menu-escuela a[href="/auditoriaSistema"]')).not.toBeNull();
     });
 
-    it('un gestor sin profesor no ve «Mi caja», «Mis grupos» ni lo solo del propietario', async () => {
+    itSinReloj('un gestor sin profesor no ve «Mi caja», «Mis grupos» ni lo solo del propietario', async () => {
       roles = ['ROLE_MANAGER'];
       datosPermisos = permisos({ roles: ['ADMINISTRADOR'], capacidades: [] });
       await montar();
@@ -353,7 +354,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('contador de solicitudes', () => {
-    it('se refresca al entrar y al navegar, y se ve en la entrada', async () => {
+    itSinReloj('se refresca al entrar y al navegar, y se ve en la entrada', async () => {
       await montar();
       responderMarca();
       expect(refrescar).toHaveBeenCalledTimes(1);
@@ -372,7 +373,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(solicitudes.querySelector('.pn-contador')?.textContent?.trim()).toBe('99+');
     });
 
-    it('tras destruir la cabecera, navegar no refresca el contador', async () => {
+    itSinReloj('tras destruir la cabecera, navegar no refresca el contador', async () => {
       await montar();
       responderMarca();
       expect(refrescar).toHaveBeenCalledTimes(1);
@@ -392,7 +393,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       return el().querySelector<HTMLElement>('#pn-menu-cuenta')!;
     }
 
-    it('iniciales y nombre visible', async () => {
+    itSinReloj('iniciales y nombre visible', async () => {
       await montar();
       responderMarca();
       const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
@@ -401,7 +402,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(boton.getAttribute('aria-haspopup')).toBe('menu');
     });
 
-    it('«Diseño nuevo» solo para el propietario; enlaces legales y «Configurar cookies»', async () => {
+    itSinReloj('«Diseño nuevo» solo para el propietario; enlaces legales y «Configurar cookies»', async () => {
       await montar();
       responderMarca();
       let configurar = 0;
@@ -418,7 +419,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(configurar).toBe(1);
     });
 
-    it('Esc en el menú de cuenta lo cierra y devuelve el foco al botón', async () => {
+    itSinReloj('Esc en el menú de cuenta lo cierra y devuelve el foco al botón', async () => {
       await montar();
       responderMarca();
       const boton = el().querySelector<HTMLElement>('#pn-cuenta-boton')!;
@@ -436,14 +437,14 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(document.activeElement).toBe(boton);
     });
 
-    it('un gestor no ve «Diseño nuevo»', async () => {
+    itSinReloj('un gestor no ve «Diseño nuevo»', async () => {
       roles = ['ROLE_MANAGER'];
       await montar();
       responderMarca();
       expect(abrirCuenta().querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
     });
 
-    it('«Cambiar a familia» solo con acceso doble, como «Cambiar a usuario» de hoy', async () => {
+    itSinReloj('«Cambiar a familia» solo con acceso doble, como «Cambiar a usuario» de hoy', async () => {
       roles = ['ROLE_ADMIN', 'ROLE_USER'];
       await montar();
       responderMarca();
@@ -456,7 +457,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(auth.guardarVistaPreferida).toHaveBeenCalledWith('user');
     });
 
-    it('«Volver al diseño anterior» pide PUT /api/panel/mi-diseno {activo:false}, reinicia los permisos y recarga', async () => {
+    itSinReloj('«Volver al diseño anterior» pide PUT /api/panel/mi-diseno {activo:false}, reinicia los permisos y recarga', async () => {
       await montar();
       responderMarca();
       const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
@@ -474,7 +475,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(recargar).toHaveBeenCalledTimes(1);
     });
 
-    it('si falla, lo dice y no recarga', async () => {
+    itSinReloj('si falla, lo dice y no recarga', async () => {
       await montar();
       responderMarca();
       const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
@@ -490,7 +491,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       );
     });
 
-    it('«Cerrar sesión» cierra la sesión', async () => {
+    itSinReloj('«Cerrar sesión» cierra la sesión', async () => {
       await montar();
       responderMarca();
       const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
@@ -500,7 +501,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(logout).toHaveBeenCalled();
     });
 
-    it('«Cerrar sesión» sin SweetAlert2: lleva a la web y no monta los avisos del panel nuevo fuera de él (8b-D2a)', async () => {
+    itSinReloj('«Cerrar sesión» sin SweetAlert2: lleva a la web y no monta los avisos del panel nuevo fuera de él (8b-D2a)', async () => {
       await montar();
       responderMarca();
       const fire = spyOn(Swal, 'fire').and.callThrough();
@@ -518,7 +519,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('barra inferior', () => {
-    it('«Más» lleva aria-current cuando la página no está en la barra (Grupos, Solicitudes, Escuela)', async () => {
+    itSinReloj('«Más» lleva aria-current cuando la página no está en la barra (Grupos, Solicitudes, Escuela)', async () => {
       await montar('/solicitudes');
       responderMarca();
       const mas = el().querySelector<HTMLElement>('.pn-barra__mas')!;
@@ -529,7 +530,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(mas.hasAttribute('aria-current')).toBeFalse();
     });
 
-    it('Inicio, Alumnos, Tesorería y Más; «Más» lleva todo, lo legal y «Configurar cookies»', async () => {
+    itSinReloj('Inicio, Alumnos, Tesorería y Más; «Más» lleva todo, lo legal y «Configurar cookies»', async () => {
       await montar('/tesoreriaCobros');
       responderMarca();
       total.set(2);
