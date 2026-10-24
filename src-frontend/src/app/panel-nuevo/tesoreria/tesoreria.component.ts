@@ -23,6 +23,7 @@ import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
+import { MascotaComponent } from '../mascota/mascota.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -69,6 +70,7 @@ const SUBTITULO = 'Control de deudas, pagos pendientes y estado mensual por depo
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    MascotaComponent,
     PanelLateralComponent,
     VisorPdfComponent,
   ],
@@ -130,6 +132,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     alumnosConPendientes: 0,
   };
   movimientos: TesoreriaMovimiento[] = [];
+  /** 8b-M: el último cobro dejó el mes sin nada pendiente (una de las dos veces que la mascota celebra con dinero). */
+  mesCobradoEntero = false;
   pagina = 1;
   totalPaginas = 0;
   totalMovimientos = 0;
@@ -314,6 +318,17 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       movimientos: movimientos$,
     }).subscribe({
       next: ({ resumen, movimientos }) => {
+        // 8b-M: «mes cobrado entero» solo en el instante en que un cobro deja el mes sin nada pendiente.
+        const anterior = this.resumen;
+        this.mesCobradoEntero =
+          silencioso &&
+          this.estado === 'listo' &&
+          resumen.mes !== null &&
+          anterior.mes === resumen.mes &&
+          anterior.ano === resumen.ano &&
+          anterior.importePendiente > 0 &&
+          resumen.importePendiente === 0 &&
+          resumen.totalPagados > 0;
         this.resumen = resumen;
         this.ponerMovimientos(movimientos);
         this.fechaCarga = new Date();

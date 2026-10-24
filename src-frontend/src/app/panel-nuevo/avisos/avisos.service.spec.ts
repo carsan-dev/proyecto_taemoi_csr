@@ -90,6 +90,22 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     expect(tarjetas().length).toBe(0);
   }));
 
+  it('8b-M: un éxito con mascota (cierre de tarea larga) lleva la gota de 32 px decorativa en lugar del icono; sin ella, el icono', fakeAsync(() => {
+    avisos.exito('Mensualidades asignadas a todos los alumnos activos', undefined, { mascota: 'celebrar' });
+    avisos.exito('Guardado');
+    pintar();
+    const [conMascota, sinMascota] = tarjetas();
+    const gota = conMascota.querySelector<HTMLElement>('pn-mascota')!;
+    expect(gota.classList).toContain('pn-mascota--sm');
+    expect(gota.getAttribute('aria-hidden')).toBe('true');
+    expect(conMascota.querySelector('.pn-aviso__icono')).toBeNull();
+    expect(conMascota.querySelector('.pn-aviso__texto')!.textContent).toContain('Mensualidades asignadas');
+    expect(sinMascota.querySelector('pn-mascota')).toBeNull();
+    expect(sinMascota.querySelector('.pn-aviso__icono')).not.toBeNull();
+    tick(DURACION_AVISO);
+    flush();
+  }));
+
   it('información: role=status y también se cierra a los 5 s', fakeAsync(() => {
     avisos.info('Lista de asistencia preparada');
     pintar();

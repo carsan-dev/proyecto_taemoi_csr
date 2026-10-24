@@ -69,7 +69,7 @@
       <div class="preins__espacio">
         <section class="preins__columna-lista" aria-label="Solicitudes">
           @if (estado === 'error') {
-          <pn-bloque-error titulo="No se pudieron cargar las preinscripciones" (reintentar)="cargar()" />
+          <pn-bloque-error pose="dudar" titulo="No se pudieron cargar las preinscripciones" (reintentar)="cargar()" />
           } @else if (estado === 'cargando') {
           <pn-esqueleto class="preins__cargando" etiqueta="Cargando preinscripciones" aria-busy="true">
             <div class="preins__esqueleto">
@@ -80,10 +80,10 @@
           </pn-esqueleto>
           } @else if (filas.length === 0) {
           @if (hayFiltros) {
-          <pn-bloque-vacio titulo="No hay solicitudes con estos filtros" texto="Prueba con otra temporada, deporte o estado, o quita los filtros."
+          <pn-bloque-vacio pose="buscar" titulo="No hay solicitudes con estos filtros" texto="Prueba con otra temporada, deporte o estado, o quita los filtros."
             accion="Quitar filtros" (accionar)="quitarFiltros()" />
           } @else {
-          <pn-bloque-vacio titulo="Todavía no ha llegado ninguna preinscripción" texto="Las solicitudes que se envíen desde la web aparecerán aquí." />
+          <pn-bloque-vacio pose="esperar" titulo="Todavía no ha llegado ninguna preinscripción" texto="Las solicitudes que se envíen desde la web aparecerán aquí." />
           }
           } @else {
           <ul class="preins__lista">

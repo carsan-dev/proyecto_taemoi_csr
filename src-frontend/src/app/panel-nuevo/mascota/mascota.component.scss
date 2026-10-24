@@ -1,0 +1,199 @@
+// La gota de esfuerzo en el panel nuevo (pieza 8b-M). Las animaciones solo tocan transform y opacity; el hueco del
+// tamaño final existe antes de que llegue el SVG (sin salto de maquetación); con prefers-reduced-motion, nada se mueve.
+
+:host {
+  // La cinta, el gorro y el confeti del SVG leen --school-accent: aquí es el acento de la escuela (8b-C).
+  --school-accent: var(--pn-acento, #198b7b);
+  --pn-mascota-lado: 96px;
+
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--pn-mascota-lado);
+  height: var(--pn-mascota-lado);
+  line-height: 0;
+  vertical-align: middle;
+}
+
+:host(.pn-mascota--sm) {
+  --pn-mascota-lado: 32px;
+}
+
+:host(.pn-mascota--md) {
+  --pn-mascota-lado: 96px;
+}
+
+:host(.pn-mascota--lg) {
+  --pn-mascota-lado: 144px;
+}
+
+.pn-mascota__lienzo {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  // Los pies apoyados: el balanceo y la respiración salen de abajo, no del centro.
+  transform-origin: 50% 92%;
+}
+
+.pn-mascota__capa {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// El SVG entra por innerHTML y no lleva el atributo de encapsulación de Angular.
+.pn-mascota__capa ::ng-deep svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+// aparecer: 240 ms, ease-out.
+.pn-mascota__lienzo--aparecer {
+  animation: pn-mascota-aparecer 240ms ease-out both;
+}
+
+// saludar: una vez, dos ciclos de ±6° en 600 ms.
+.pn-mascota__lienzo--saludar {
+  animation: pn-mascota-saludar 600ms ease-in-out 1 both;
+}
+
+// celebrar: escala 1 → 1,06 → 1 en 700 ms (el confeti va aparte).
+.pn-mascota__lienzo--celebrar {
+  animation: pn-mascota-celebrar 700ms ease-in-out 1 both;
+}
+
+// dudar: inclinación de ±4° en 500 ms.
+.pn-mascota__lienzo--dudar {
+  animation: pn-mascota-dudar 500ms ease-in-out 1 both;
+}
+
+// descansar: respiración de 3 s, el único bucle permitido.
+.pn-mascota__lienzo--descansar {
+  animation: pn-mascota-descansar 3s ease-in-out infinite;
+}
+
+// cumpleaños: el fotograma final aparece sobre el inicial en 400 ms.
+.pn-mascota__lienzo--cumpleanos .pn-mascota__capa--final {
+  animation: pn-mascota-fundido 400ms ease-out both;
+}
+
+.pn-mascota__confeti {
+  position: absolute;
+  top: 24%;
+  left: 50%;
+  width: calc(var(--pn-mascota-lado) * 0.07);
+  height: calc(var(--pn-mascota-lado) * 0.11);
+  margin-left: calc(var(--pn-mascota-lado) * -0.035);
+  border-radius: 1px;
+  background: var(--school-accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: pn-mascota-confeti 600ms ease-out 1 both;
+}
+
+@keyframes pn-mascota-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pn-mascota-saludar {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  12.5%,
+  62.5% {
+    transform: rotate(-6deg);
+  }
+
+  37.5%,
+  87.5% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes pn-mascota-celebrar {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes pn-mascota-dudar {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  30% {
+    transform: rotate(-4deg);
+  }
+
+  70% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes pn-mascota-descansar {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pn-mascota-fundido {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pn-mascota-confeti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0) scale(0.6);
+  }
+
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * var(--pn-mascota-lado)), calc(var(--dy) * var(--pn-mascota-lado))) rotate(var(--giro))
+      scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pn-mascota__lienzo,
+  .pn-mascota__capa--final {
+    animation: none !important;
+  }
+
+  .pn-mascota__confeti {
+    display: none;
+  }
+}

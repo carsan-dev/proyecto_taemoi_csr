@@ -417,6 +417,16 @@ select.tesoreria__control {
   background: var(--pn-atencion);
 }
 
+// 8b-M: cierre del mes (la gota de 32 px celebra; el texto dice lo mismo).
+.tesoreria__cierre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+}
+
 .tesoreria__leyenda-vacia {
   margin: 10px 0 0;
   font: var(--pn-secundario);

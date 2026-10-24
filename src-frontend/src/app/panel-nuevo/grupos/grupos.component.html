@@ -52,10 +52,10 @@
     </pn-esqueleto>
     } @else if (estadoGrupos === 'error') {
     <div class="grupos__lista-estado">
-      <pn-bloque-error class="grupos__bloque-estado" titulo="No se pudieron cargar los grupos" (reintentar)="cargarGrupos()" />
+      <pn-bloque-error pose="dudar" class="grupos__bloque-estado" titulo="No se pudieron cargar los grupos" (reintentar)="cargarGrupos()" />
     </div>
     } @else if (grupos.length === 0) {
-    <pn-bloque-vacio class="grupos__bloque-estado" titulo="Todavía no hay grupos">
+    <pn-bloque-vacio pose="esperar" class="grupos__bloque-estado" titulo="Todavía no hay grupos">
       <a pnAccionVacio class="grupos__boton-secundario" routerLink="/gruposCrear">Nuevo grupo</a>
     </pn-bloque-vacio>
     } @else {
@@ -69,7 +69,7 @@
     </div>
 
     @if (seccionesVisibles.length === 0) {
-    <pn-bloque-vacio class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + nombreFiltro" accion="Ver todas"
+    <pn-bloque-vacio pose="buscar" class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + nombreFiltro" accion="Ver todas"
       (accionar)="elegirFiltro(null)" />
     }
 
@@ -82,7 +82,7 @@
         <p class="grupos__seccion-total" data-cifras>{{ numero(s.alumnos) }} {{ s.alumnos === 1 ? 'alumno' : 'alumnos' }}</p>
       </div>
       @if (s.grupos.length === 0) {
-      <pn-bloque-vacio class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + s.nombre" accion="Ver todas"
+      <pn-bloque-vacio pose="buscar" class="grupos__bloque-estado" [titulo]="'No hay grupos de ' + s.nombre" accion="Ver todas"
         (accionar)="elegirFiltro(null)" />
       } @else {
       <ul class="grupos__rejilla" [attr.aria-label]="'Grupos de ' + s.nombre">

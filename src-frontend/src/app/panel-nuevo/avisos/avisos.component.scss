@@ -51,6 +51,11 @@
   color: var(--pn-tinta-2);
 }
 
+// 8b-M: la gota de 32 px del cierre de una tarea larga ocupa el sitio del icono (el texto dice lo mismo).
+.pn-aviso__mascota {
+  margin: -6px 0 -6px -4px;
+}
+
 .pn-aviso--exito .pn-aviso__icono {
   color: var(--pn-bien);
 }

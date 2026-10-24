@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 
 import { seguirAcento } from '../acento-escuela.directive';
 import { menosMovimiento } from '../capas/capa-modal';
+import { MascotaComponent } from '../mascota/mascota.component';
 import { Aviso, AvisosService, DURACION_AVISO } from './avisos.service';
 
 /**
@@ -14,6 +15,7 @@ import { Aviso, AvisosService, DURACION_AVISO } from './avisos.service';
 @Component({
   selector: 'pn-avisos',
   standalone: true,
+  imports: [MascotaComponent],
   templateUrl: './avisos.component.html',
   styleUrls: ['./avisos.component.scss'],
   host: { class: 'pn pn-capa' },

@@ -7,8 +7,12 @@
     (mouseleave)="avisos.seguir(a.id)" (focusin)="avisos.pausar(a.id)" (focusout)="avisos.seguir(a.id)">
     @switch (a.tipo) {
     @case ('exito') {
+    @if (a.mascota; as pose) {
+    <pn-mascota class="pn-aviso__mascota" [pose]="pose" tamano="sm" animacion="celebrar" />
+    } @else {
     <svg class="pn-aviso__icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
       stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16 9.8"></path></svg>
+    }
     }
     @case ('error') {
     <svg class="pn-aviso__icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"

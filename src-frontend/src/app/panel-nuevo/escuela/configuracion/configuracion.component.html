@@ -190,7 +190,7 @@
     } @else if ((cuentas ?? []).length === 0) {
     <pn-bloque-vacio titulo="No hay usuarios registrados en el sistema." />
     } @else if (filtradas.length === 0) {
-    <pn-bloque-vacio titulo="Ninguna cuenta coincide con la búsqueda." [texto]="'Nada con «' + filtro + '» en el nombre ni en el correo.'"
+    <pn-bloque-vacio pose="buscar" titulo="Ninguna cuenta coincide con la búsqueda." [texto]="'Nada con «' + filtro + '» en el nombre ni en el correo.'"
       accion="Borrar la búsqueda" (accionar)="limpiarBusqueda()" />
     } @else {
     <ul class="conf__cuentas" [attr.aria-busy]="cargandoCuentas ? 'true' : null">

@@ -273,6 +273,11 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     expect(generalHoy[0]).toEqual({ metodo: 'POST', url: '/productos-alumno/mensualidades/general?fechaAsignacion=2026-10-01', cuerpo: '2026-10' });
     expect(fixture.componentInstance.asignados).toBe(1);
     expect(document.querySelector('.pn-aviso')!.textContent).toContain('Mensualidades asignadas a todos los alumnos activos');
+    // 8b-M: el cierre de la tarea larga lleva la gota de 32 px celebrando en lugar del icono; el texto sigue diciendo lo mismo.
+    const mascota = document.querySelector<HTMLElement>('.pn-aviso pn-mascota')!;
+    expect(mascota.classList).toContain('pn-mascota--sm');
+    expect(mascota.getAttribute('aria-hidden')).toBe('true');
+    expect(document.querySelector('.pn-aviso .pn-aviso__icono')).toBeNull();
     elegir('#pn-deporte-mensualidad-general', 'TAEKWONDO');
     botonPie('Cargar mensualidades').click();
     pintar();
