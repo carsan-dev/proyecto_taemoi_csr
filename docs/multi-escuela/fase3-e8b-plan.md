@@ -1740,6 +1740,15 @@ Decisión del propietario del 23/10: los formularios que quedaron fuera de la 25
 - **8b-3n, productos de un alumno:** la pantalla «Gestionar productos» que hoy abre la ficha (pestaña Pagos): asignar,
   editar fecha de asignación, cantidad y precio, cobrar con el mismo diálogo y llamada que Tesorería, quitar; mismos
   cuerpos que hoy.
+- **Decisión 285 (24/10): elecciones de la ronda 4.** El propietario elige la P1 en las nueve pantallas del boceto
+  (inventarios en el Anexo A). Alcance que añade a las piezas: **8b-3l** suma la sede en el alta (obligatoria si la
+  escuela tiene varias), la validación «fecha de alta ≥ fecha de nacimiento», «Dar de alta» activo con el formulario
+  inválido para mostrar el resumen de errores, el aviso de pagos y cargos antes del borrado definitivo (pide un dato
+  nuevo del servidor) y «Eliminar definitivamente» solo para el propietario (ADMIN). **8b-3m** suma el tipo de grupo del
+  turno desde el catálogo de disciplinas de la escuela y, al cambiar el grupo de un turno, el aviso con el número de
+  alumnos apuntados y su grupo de origen (los alumnos siguen apuntados; el turno ya deja el grupo anterior porque tiene
+  uno solo). El rango de edad del grupo sigue oculto y se reenvía sin tocar; los alumnos que ya están en el grupo salen
+  atenuados. **8b-3n** sin cambios: el servidor ya pone el precio del catálogo al asignar un producto.
 - Siguen fuera: pantallas de plataforma (superadmin) y, por la 260, Mis grupos y Mi caja hasta 8b-Z.
 
 ## 21 sexies. Pieza 8b-M: mascota en el panel (decisiones 274 y 275)
@@ -1860,12 +1869,20 @@ Recogidas en el roadmap como decisiones pendientes 278 a 281. Se planifican como
 Dónde queda en la pantalla nueva cada cosa que se ve hoy, según los bocetos aprobados (ronda 1: Alumnos, Tesorería y
 Convocatorias de C; ronda 2: Inicio I1, Ficha F1 y Grupos; ronda 3: Eventos, Editar evento, Productos,
 Preinscripciones, Solicitudes, Caja de sede, Configuración y Registro de acciones, con la variante elegida en la decisión
-261). «Añadido» es lo nuevo. Cada PR de pantalla lo copia y lo marca fila a fila.
+261; ronda 4: Alta de alumno, Eliminar alumnos, Crear grupo, Editar grupo, Crear y editar turno, Alumnos del grupo,
+Seleccionar alumnos, Turnos de un alumno y Productos de un alumno, con la P1 elegida en las nueve, decisión 285).
+«Añadido» es lo nuevo. Cada PR de pantalla lo copia y lo marca fila a fila.
 
 Los inventarios de la ronda 3 salen de la página de comparación de 8b-B3
 (https://claude.ai/artifact/5ynw1nWRYKQDJ8LdVqfq1w), columna de la variante elegida, sin quitar ninguna fila. Donde la
 página dice «Igual» sobre la variante, aquí se copia el texto de la otra variante o «Igual que hoy», para que cada
 tabla se entienda sola. Configuración lleva dos columnas porque elige una variante por ancho.
+
+Los inventarios de la ronda 4 (8b-B4, decisión 285) salen de la página del boceto
+(https://claude.ai/artifact/KwoSC7Mirs8k6FV37N32eY), columna P1, sin quitar ninguna fila. Donde la página dice «Igual»
+sobre la otra variante, aquí se copia el texto de P1, para que cada tabla se entienda sola. Las filas que dependían de
+una pregunta («Sin cambios hasta responder P-n») se reescriben con la respuesta del propietario, y las respuestas que
+añaden algo llevan además su fila «Añadido».
 
 ### Inicio (I1)
 
@@ -2249,3 +2266,306 @@ Pieza 8b-3k. Rutas de hoy: `auditoriaSistema`. Componentes de hoy: `auditoria-si
 | Datos técnicos: método, estado, endpoint, query params, payload | Desplegable del detalle | Hecho (tal como llegan; sin IP ni navegador, como hoy) |
 | Paginación | Pie de la cronología | Hecho |
 | Aviso sin acciones en el periodo | Igual que hoy | Hecho |
+
+### Alta de alumno (P1: una columna por secciones con resumen al lado)
+
+Pieza 8b-3l. Ruta de hoy: `/alumnosCrear`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /alumnosCrear; roles ADMIN y MANAGER (el servidor admite también al responsable de sede) | Misma ruta y mismos roles; sin cambios de acceso |
+| Entradas: «Crear nuevo alumno» del listado, «Dar de alta el primero», menú de cabecera, vista principal | Se conservan; el botón del listado nuevo abre esta pantalla |
+| Cabecera «Crear Nuevo Alumno» + subtítulo | Título «Dar de alta un alumno» |
+| Tarjeta única de 4 secciones (datos personales, deportes, imagen, autorizaciones) | Bloques: Datos personales, Contacto, Responsable legal, Deportes, Foto y permisos |
+| Nombre: texto, obligatorio, «El nombre del alumno es obligatorio» | Datos personales; mismo mensaje bajo el campo y en el resumen |
+| Apellidos: texto, obligatorio, «Los apellidos del alumno son obligatorios» | Datos personales; mismo mensaje |
+| Fecha de nacimiento: fecha, obligatoria, «La fecha de nacimiento es obligatoria»; al cambiar pide los grados por edad y recalcula la categoría | Datos personales; sigue pidiendo los grados y recalculando; la edad y la categoría se ven al lado |
+| Error al cargar los grados disponibles (aviso «No se pudieron cargar los grados disponibles.») | Aviso de error del panel nuevo con el mismo texto |
+| NIF / DNI: opcional, 8 números y una letra, «Formato inválido (8 números y una letra)»; recorta y pasa a mayúsculas; vacío = null | Datos personales; mismos mensaje y tratamiento |
+| NIF duplicado: el servidor responde 409 | Mensaje bajo el campo NIF / DNI con el texto del servidor |
+| Dirección: obligatoria, «La dirección es obligatoria» | Contacto; mismo mensaje |
+| Teléfono principal: obligatorio, solo dígitos, máx. 9; «El teléfono es obligatorio», «Solo números permitidos», «Máximo 9 caracteres» | Contacto; mismos tres mensajes |
+| Teléfono secundario: opcional, mismo patrón y máx. 9 | Contacto; mismos mensajes de patrón |
+| Email: obligatorio, «El email es obligatorio» / «Formato de email inválido» | Contacto; mismos mensajes |
+| Responsable legal: texto opcional, máx. 180, siempre visible | Bloque Responsable legal; sigue opcional y siempre visible |
+| DNI/NIE del responsable: opcional, máx. 9, patrón DNI/NIE, «Introduce un DNI/NIE válido.»; recorta y mayúsculas; vacío = null | Bloque Responsable legal; mismo patrón, mensaje y tratamiento |
+| Añadido: Nota «Recomendado: es menor de edad» cuando la fecha da menos de 18 años | Bajo el título del bloque Responsable legal, en tinta secundaria; no obliga |
+| Añadido: Edad y categoría calculadas junto a la fecha de nacimiento («9 años · categoría infantil») | Al lado del campo de fecha |
+| Bloque «Deporte N» (de 1 a 4) con «Eliminar»; deshabilitado con 1 («Acción no permitida / Un alumno debe tener al menos 1 deporte») | Sub-bloque con cabecera «Taekwondo · amarillo» y botón de texto «Quitar»; con 1 deporte «Quitar» va desactivado y el aviso conserva el texto |
+| Deporte: selector con buscador, obligatorio, «Selecciona el deporte»; al cambiar reinicia tarifa, grado y fecha de grado, licencia y competición según la disciplina | Campo «Deporte» del sub-bloque; mismos reinicios |
+| Deporte repetido o fuera de la escuela: el servidor responde «El deporte X está repetido en el alta.» o error | Mensaje bajo el campo Deporte con el texto del servidor |
+| Grado inicial: selector con buscador, obligatorio solo si el deporte tiene grados; opciones por disciplina y edad; sin mensaje propio | «Grado inicial» en el sub-bloque; se oculta sin grados; se añade el mensaje «Selecciona el grado» al faltar |
+| Fecha de grado: fecha, obligatoria si hay grado, defecto hoy | «Fecha de grado» junto al grado |
+| Fecha de alta en el deporte: fecha, obligatoria, defecto hoy | «Fecha de alta en el deporte» |
+| Fecha alta inicial (antigüedad): fecha opcional, ayuda «Dejarlo vacío usa la Fecha de Alta» | «Antigüedad» con la ayuda «Vacía, usa la fecha de alta» |
+| Tipo de tarifa: selector con buscador, obligatorio; al cambiar autorrellena la cuantía y activa rol o grupo familiar | «Tipo de tarifa» (p. ej. «Mensual infantil»); mismo comportamiento |
+| Cuantía (€): número ≥ 0, paso 0,01, opcional, autorrelleno editable | «Cuantía (€)» con la nota «Precio de la tarifa: 30,00 €. Puedes cambiarlo.» |
+| Rol familiar: selector, obligatorio solo si la tarifa lo pide; al cambiar recalcula la cuantía | Aparece en el sub-bloque solo si la tarifa lo pide |
+| Grupo familiar: texto, obligatorio solo si la tarifa lo pide, ejemplo «FAMILIA_GARCIA» | Aparece solo si la tarifa lo pide |
+| ¿Tiene licencia federativa?: interruptor, solo si el deporte la admite; apagarlo limpia competidor, categoría, fechas y peso | Interruptor «Licencia federativa» en el sub-bloque; mismo efecto al apagarlo |
+| Número y fecha de licencia: opcionales, solo con licencia; fecha por defecto hoy | Campos que se abren bajo el interruptor |
+| ¿Es competidor?: interruptor, si el deporte permite competir y hay licencia (o no la pide) | Interruptor «Competidor» en el sub-bloque |
+| Aviso «El alumno debe tener una licencia federativa activa para poder ser marcado como competidor.» | Aviso bajo el interruptor de competidor cuando falta la licencia |
+| Con competidor: fecha alta competición, fecha alta competidor inicial, categoría, peso, fecha de peso; todos opcionales | Campos que se abren bajo «Competidor»; mismos defectos y autorrelleno por edad y deporte |
+| «Agregar Otro Deporte»; deshabilitado con 4 («Límite alcanzado / Un alumno puede tener un máximo de 4 deportes») | Botón secundario «Añadir otro deporte (1 de 4)»; con 4 queda desactivado y lo explica el contador |
+| Nota fija «Nota: Puedes gestionar los deportes del alumno en la página de edición.» | Nota del bloque Deportes, mismo texto |
+| Imagen del alumno: archivo de imagen opcional, arrastrar o clic, «JPG, PNG, GIF, WebP (máx. 50MB)» | Bloque Foto y permisos: zona de arrastre con el mismo texto |
+| Imagen no válida (aviso «No se pudo usar la imagen» + motivo) | Aviso de error con el motivo |
+| Vista previa de la imagen («Imagen del alumno seleccionada / Vista previa disponible») y «Eliminar» | Vista previa en la zona de arrastre y botón de texto «Quitar foto» |
+| Autorización web: Sí/No, defecto Sí, «Autorización para publicar imágenes del alumno en la web»; el servidor registra el consentimiento (origen APP) | «Autorización para publicar imágenes en la web» con Sí/No y Sí por defecto |
+| ¿Tiene discapacidad?: interruptor, defecto No | «Tiene discapacidad», interruptor, defecto No |
+| «Cancelar»: va al listado sin confirmar | «Cancelar» secundario en la barra fija |
+| Añadido: Confirmación «¿Salir sin dar de alta?» al cancelar con datos | Diálogo del panel nuevo; solo si hay datos |
+| «Crear Alumno»: envío multipart (datos + imagen opcional); deshabilitado si el formulario es inválido | «Dar de alta» primario en la barra fija; se queda activo con el formulario inválido y, si falta algo, muestra el resumen de errores (decisión 285) |
+| Formulario inválido (aviso «Formulario incompleto / Por favor completa todos los campos requeridos») | Resumen «Faltan 3 datos» con enlaces a cada campo |
+| Error del servidor: sube la página y avisa «Error en la petición» con su texto o «No has completado todos los campos requeridos» | Aviso de error con el texto del servidor y el resumen arriba |
+| Éxito: aviso «Alumno creado con N deporte(s)» y salto a la ficha (sin id, al listado) | Mismo aviso y mismo salto |
+| Carga de grados al abrir; error «No se pudieron cargar los grados» | Aviso de error del panel nuevo |
+| Sede: no hay campo | Campo «Sede» en Datos personales, obligatorio cuando la escuela tiene varias sedes (P-1, decisión 285); ver la fila añadida |
+| Cargos iniciales: ningún campo; el servidor asigna la mensualidad general y la licencia nunca se cobra en el alta | Sin cambios; el resumen muestra tarifa y cuantía |
+| Duplicados solo por NIF; la validación «fecha de alta ≥ nacimiento» existe en la ficha y no en el alta | Duplicados solo por NIF, sin cambios; se añade la validación «fecha de alta ≥ nacimiento» (P-2, decisión 285); ver la fila añadida |
+| Añadido: Campo «Sede»: obligatorio si la escuela tiene varias sedes, «Indica la sede.» | Bloque Datos personales; con una sola sede no se pide; el mensaje es el que responde el servidor hoy (P-1) |
+| Añadido: Validación «fecha de alta ≥ fecha de nacimiento» | Mismo criterio que la ficha del alumno; el mensaje sale bajo «Fecha de alta en el deporte» y en el resumen de errores (P-2) |
+| Añadido: Resumen del alta (foto, nombre, edad, deportes con grado, tarifa y cuantía, autorización) | Columna fija de 380 px desde 1280; al final en 768 y 375 |
+| Añadido: Indicador de pasos y botones «Anterior» / «Siguiente» | No aplica |
+
+### Eliminar alumnos (P1: bajas y eliminaciones)
+
+Pieza 8b-3l. Ruta de hoy: `/alumnosEliminar`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /alumnosEliminar; ADMIN y MANAGER (el servidor limita el borrado a gestión, no al responsable de sede) | Misma ruta y roles; «Eliminar definitivamente» queda solo para el propietario (P-4, decisión 285) |
+| Entradas: menú de cabecera y vista principal; sin enlace desde los listados nuevos | Se conservan y se añade un enlace desde Alumnos |
+| Barra «Gestión de Bajas y Eliminaciones» | Título «Bajas y eliminaciones» |
+| Alerta amarilla «¡Atención! Esta página permite dar de baja o eliminar alumnos permanentemente…» | Aviso neutro con icono de peligro y el texto reescrito |
+| Buscador «Filtrar por nombre…» (espera 500 ms, filtra en el servidor) | Buscador con icono y botón de borrar; misma espera y mismo filtro |
+| Botón «Mostrar todos» / «Mostrar solo activos» (defecto solo activos) | Segmento «Activos | Todos» (defecto Activos) |
+| Casilla por fila y casilla maestra («Seleccionar todos»), solo la página visible | Casilla por fila y botón de texto «Seleccionar los de esta página» |
+| Columna Foto | Foto de 40 px en la fila; en la tabla de 1280 columna propia |
+| Columna Nombre y columna Apellidos | Una línea «Nombre Apellidos»; en la tabla de 1280, dos columnas |
+| Añadido: Nombre como enlace a la ficha del alumno | En la fila y en la tabla |
+| Columna Nº Expediente | Línea 2 «Exp. 1042»; columna propia en 1280 |
+| Columna DNI | Línea 2 «DNI 12345678Z»; columna propia en 1280 |
+| Columna Estado (activo / de baja) | Pastilla «Activo» (bien, con icono) o «De baja» (neutra) |
+| «Baja» por fila (en móvil solo icono); aviso «¿Estás seguro? / El alumno será dado de baja» | «Dar de baja» en texto (con nombre en móvil); confirmación en diálogo del panel nuevo con la misma frase |
+| Resultado de la baja: «Alumno dado de baja / El alumno ha sido dado de baja correctamente.» o «Error al dar de baja al alumno / Ha ocurrido un error al intentar dar de baja al alumno.» | Aviso de éxito o de error con los mismos textos |
+| «Alta» por fila: consulta los deportes; sin deportes inactivos «El alumno ya tiene todos sus deportes activos.»; con uno lo activa; con varios abre «Selecciona el deporte a activar» | «Dar de alta» en texto; los mismos tres casos; con varios, diálogo con una opción por deporte y «Todos los deportes» |
+| Validación «Por favor selecciona un deporte» y botón «Dar de Alta» del selector | Mensaje bajo las opciones y botón «Dar de alta» |
+| Resultados del alta: «Alumno dado de alta / El alumno ha sido dado de alta en {deporte}» (o «…en todos sus deportes: …»); errores del servidor, «Error al dar de alta al alumno», «Error al activar algunos deportes», «Error al obtener los deportes del alumno» | Avisos de éxito y de error con los mismos textos |
+| «Eliminar» por fila; aviso «¿Estás seguro? / El alumno será eliminado permanentemente» («Sí, eliminar» / «Cancelar») | «⋯» con «Eliminar definitivamente» en peligro; diálogo destructivo con el nombre del alumno, foco en «Cancelar» |
+| Resultado del borrado: «Alumno eliminado / El alumno ha sido eliminado correctamente.» o «Error al eliminar alumno / Ha ocurrido un error al intentar eliminar al alumno.» | Aviso de éxito o de error con los mismos textos |
+| «Dar de Baja Seleccionados» y «Eliminar Seleccionados» en la barra superior | Barra «3 elegidos · Quitar selección · Dar de baja · Eliminar», solo con selección |
+| Sin selección: «No hay alumnos seleccionados / Por favor, seleccione al menos un alumno…» | La barra no existe sin selección, así que el caso desaparece |
+| Confirmación masiva «Los alumnos seleccionados serán dados de baja / eliminados permanentemente» («Sí, darlos de baja» / «Sí, eliminarlos») | Dar de baja: diálogo normal con el recuento. Eliminar: «¿Eliminar a 3 alumnos?», «Se borran para siempre. No se puede deshacer.», «Eliminar 3 alumnos» en peligro |
+| Añadido: Lista de los nombres que se van a eliminar | Dentro del diálogo destructivo |
+| Ejecución masiva: una petición por alumno, del último al primero; un fallo avisa con nombre y apellidos y sigue; al final «Alumnos dados de baja / eliminados» y recarga | Botón ocupado «Eliminando 2 de 3…»; no se puede cerrar mientras corre; recarga al final |
+| Añadido: Resumen final de los que fallaron (nombre y motivo) | Dentro del mismo diálogo, tras el último |
+| Paginación de 10 desde el servidor; estado (página, filtro, activos/todos) en sessionStorage; si la página queda fuera de rango, retrocede | Paginación «Anterior · 1-10 de N · Siguiente»; mismo estado guardado y mismo retroceso |
+| Estado vacío con imagen «No se encontraron alumnos que coincidan con los criterios de búsqueda.» | Vacío del panel nuevo con el mismo texto y «Quitar filtros» |
+| Error de carga «Error en la petición / No hemos podido conectar con el servidor» | Error de bloque con «Reintentar» |
+| Sin esqueleto de carga | Esqueleto del panel nuevo con la forma de las filas |
+| Borrado definitivo sin aviso de dependencias (pagos, cargos) | Aviso de pagos y cargos antes del borrado definitivo (P-3, decisión 285); ver la fila añadida |
+| Añadido: Aviso de pagos y cargos antes del borrado definitivo | Línea en el diálogo destructivo con los pagos y cargos del alumno (en el lote, de los elegidos); pide un dato nuevo del servidor, en la pieza 8b-3l (P-3) |
+| ADMIN y MANAGER pueden ambos eliminar definitivamente | «Eliminar definitivamente» solo para el propietario (ADMIN), también en el lote; MANAGER no lo ve (P-4, decisión 285) |
+
+### Crear grupo (P1: panel lateral desde Grupos)
+
+Pieza 8b-3m. Ruta de hoy: `/gruposCrear`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /gruposCrear; ADMIN y MANAGER (el servidor admite también al responsable de sede) | Abre Grupos con el panel «Nuevo grupo»; mismos roles |
+| Entradas: «Crear grupo» del listado de grupos, menú de cabecera, vista principal | Se conservan; «Crear grupo» abre el panel sin salir de Grupos |
+| Cabecera «Crear Nuevo Grupo» + subtítulo | Título del panel «Nuevo grupo» |
+| Tarjeta «Información del Grupo» con un campo | Cuerpo del panel; el campo va solo |
+| Nombre del Grupo: texto, obligatorio, máx. 50 | «Nombre del grupo» con «obligatorio» y contador «23 / 50» |
+| Mensajes «El nombre del grupo es obligatorio» / «Máximo 50 caracteres» | Bajo el campo, en peligro con icono |
+| Ejemplo «Ej: Infantiles Cinturón Blanco» | Ejemplo «Infantiles cinturón blanco» en el campo vacío |
+| Ayuda «Elige un nombre descriptivo para identificar el grupo fácilmente» | Bajo el campo, mismo texto |
+| «Cancelar» (vuelve atrás) | «Cancelar» de texto en el pie; cierra el panel y deja Grupos como estaba |
+| «Crear Grupo»: deshabilitado si es inválido; envía el nombre | «Crear grupo» primario en el pie; mismo envío |
+| Éxito: «Has creado un nuevo grupo» y salto al listado | Aviso «Grupo creado», panel cerrado y grupo nuevo resaltado |
+| Error: aviso genérico «No has completado todos los campos requeridos» para cualquier fallo | Error bajo el campo con el texto real del servidor; el genérico solo si no hay texto |
+| Rango de edad, deporte y sede: el alta no los pide | Sin cambios |
+
+### Editar grupo (P1: dos bloques)
+
+Pieza 8b-3m. Ruta de hoy: `/gruposEditar/:id`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /gruposEditar/:id; ADMIN y MANAGER; el bloque Profesores sale siempre en esta ruta | Misma ruta y roles |
+| Entrada: «Editar» de cada grupo en el listado | Se conserva |
+| Cabecera «Editar Grupo» + «Modifica el nombre del grupo» | Título con el nombre del grupo y la miga «Grupos /» |
+| Añadido: Línea «18 alumnos · 2 turnos» con «Ver alumnos» | Bajo el título; «Ver alumnos» abre Alumnos del grupo |
+| Esqueleto de tarjeta mientras carga; error al cargar el grupo («No se pudo cargar el grupo») | Esqueleto del panel nuevo; error de bloque con «Reintentar» |
+| Tarjeta «Información del Grupo» con el Nombre del grupo (obligatorio, máx. 50, mismos mensajes) | Bloque «Datos del grupo»; mismo campo, contador y mensajes |
+| Rango de edad mínimo y máximo: sin control, se cargan y se reenvían en el PUT | Siguen sin mostrarse y se reenvían sin tocar en el PUT (P-5, decisión 285: no se muestran) |
+| «Cancelar» (vuelve atrás) | Se sustituye por la miga «Grupos /» |
+| «Actualizar Grupo» (deshabilitado si es inválido); éxito «El grupo se ha actualizado correctamente» y salto al listado; error «Error al actualizar el grupo» | «Guardar cambios» primario; aviso de éxito y la pantalla se queda en el grupo; mismo aviso de error |
+| Profesores: lista del grupo; cargando con barra esqueleto | Filas con iniciales, nombre y email; esqueleto del panel nuevo |
+| Vacío «Este grupo aún no tiene profesores.» | Mismo texto como vacío del bloque |
+| Error de lista («No se han podido cargar los profesores. Inténtalo de nuevo.» o el del servidor) con «Reintentar» | Error de bloque con el mismo texto y «Reintentar» |
+| Selector de rol por profesor (Titular / Ayudante); si falla, vuelve al rol real y muestra el error bajo el formulario | Segmento «Titular | Ayudante» en la fila; mismo regreso y mismo error |
+| Marca «Invitación pendiente» | Pastilla neutra «Invitación pendiente» |
+| «Reenviar» (solo con invitación pendiente); aviso «Invitación reenviada» | «Reenviar» de texto en la fila; mismo aviso |
+| «Quitar» por profesor; aviso «¿Quitar a {nombre} de este grupo? / Seguirá teniendo el rol de profesor en la escuela.» («Quitar» rojo / «Cancelar»); recarga sin aviso de éxito | «⋯» con «Quitar del grupo»; diálogo normal con la misma frase; aviso de éxito «Profesor quitado del grupo» |
+| Añadir profesor: email (placeholder «profesor@ejemplo.com»); botón deshabilitado si está vacío; cambiarlo reinicia el modo | Campo «Email» con el mismo ejemplo; mismo reinicio |
+| Añadir profesor: rol Titular / Ayudante (defecto Titular) | Segmento de rol, defecto Titular |
+| «También en estos grupos»: chips con los demás grupos; ocultos si no hay o si falla la carga | Pastillas elegibles «Adultos tarde», «Kickboxing jóvenes»…; mismo ocultado |
+| Botón de alta con texto variable: «Añadir», «Añadir a N grupos», «Enviar invitación», «Reactivar y añadir» | Botón secundario con el mismo texto variable |
+| Avisos «Profesor añadido» / «Invitación enviada» | Avisos de éxito con los mismos textos |
+| Modo «sin cuenta» (404): «No hay ninguna cuenta con ese email. Te pedimos su nombre para invitarle.» + Nombre y Apellidos (máx. 50, obligatorios) | Aviso en el bloque y dos campos «Nombre» y «Apellidos»; botón «Enviar invitación» |
+| Modo «desactivado» (409): «Tiene el rol de profesor desactivado en esta escuela.» | Aviso en el bloque con el mismo texto; botón «Reactivar y añadir» |
+| Otros errores: mensaje rojo o «No se ha podido añadir al profesor. Inténtalo de nuevo.» | Mensaje de error bajo el formulario con el mismo texto |
+| Con una acción en curso se bloquean los demás controles | Botón ocupado en la acción y el resto desactivado |
+| Sin alumnos ni turnos del grupo en pantalla; sin «Eliminar grupo» | Solo se añade el enlace «Ver alumnos»; «Eliminar grupo» sigue fuera |
+
+### Crear y editar turno (P1: panel lateral desde Grupos)
+
+Pieza 8b-3m. Ruta de hoy: `/turnosCrear` y `/turnosEditar/:id`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Rutas /turnosCrear (acepta ?grupoId=N) y /turnosEditar/:id; ADMIN y MANAGER | Mismas rutas; abren Grupos con el panel; ?grupoId=N sigue preseleccionando grupo y tipo |
+| Entradas: «Crear turno» del listado de grupos, menú, vista principal; enlace a cada turno en las tarjetas de grupo | Se conservan: «Crear turno» y el turno abren el panel sin salir de Grupos |
+| Cabeceras «Crear Nuevo Turno» + «Define un horario…» y «Editar Turno» + «Modifica el horario del turno» | Títulos del panel «Nuevo turno» y «Editar turno» |
+| Tarjeta «Información del Horario» | Cuerpo del panel |
+| Día de la semana: selector con buscador, obligatorio, «El día de la semana es obligatorio» (Lunes a Domingo) | Pastillas L M X J V S D (radiogroup); sin selección, el mismo mensaje |
+| Hora de inicio y hora de fin: obligatorias, formato HH:mm, «La hora de inicio o fin es obligatoria» / «Formato HH:mm requerido» | Dos campos de hora lado a lado, mismos mensajes |
+| Validación cruzada: «La hora de inicio debe ser anterior a la hora de fin»; deshabilita el botón | Mensaje bajo los dos campos; el botón se desactiva |
+| Añadido: Duración calculada «1 h 30 min» | Bajo los campos de hora, solo si son válidas |
+| Switch «Asignar a un grupo existente» (ayuda «Puedes asociar este turno a un grupo específico…») | Desaparece: elegir un grupo equivale a asignar |
+| Grupo (crear): selector con buscador, «Selecciona un grupo…», sin validador aunque el interruptor esté activo | Desplegable «Grupo» con «Sin grupo» primero y los grupos de la escuela |
+| Grupo (editar): selector opcional con «Sin grupo asignado» primero y ayuda «Puedes asignar este turno a un grupo o dejarlo sin grupo» | Mismo desplegable, con el grupo actual elegido; ayuda conservada |
+| Tipo de grupo: selector con buscador, obligatorio solo con el interruptor, lista fija de 7, «El tipo de grupo es obligatorio»; no existe al editar | Desplegable «Tipo de grupo», solo al crear y con grupo elegido; sus opciones salen del catálogo de disciplinas de la escuela, no de la lista fija de la plantilla (P-6, decisión 285); mismo mensaje |
+| «Cancelar» (crear: al listado; editar: atrás) | «Cancelar» de texto en el pie; cierra el panel |
+| «Crear Turno»: sin grupo envía «crear»; con grupo, «crear asignando grupo» | «Crear turno» primario; mismas dos llamadas según haya grupo |
+| Resultado de crear: «Has creado un nuevo turno» y salto al listado; error genérico «No has completado todos los campos requeridos» | Aviso «Turno creado» y panel cerrado; el error muestra el texto real si lo hay |
+| «Actualizar Turno»: guarda día y horas | «Guardar cambios» primario |
+| Cambio de grupo: nuevo grupo → «Turno actualizado y asignado al grupo» o «Turno actualizado pero error al asignar grupo»; sin grupo → «Turno actualizado y desvinculado del grupo» o «…error al desvincular grupo» | Mismos cuatro avisos |
+| Sin cambio de grupo: «Turno actualizado correctamente»; error del PUT «No hemos podido actualizar el turno» | Mismos avisos |
+| Al pasar un turno de A a B se asigna a B y deja A: un turno tiene un solo grupo (Turno.grupo) | Sin cambios; no hay nada que corregir (P-7, decisión 285) |
+| Añadido: Aviso al cambiar el grupo de un turno con alumnos apuntados | Antes de guardar, el panel dice cuántos alumnos tiene el turno y de qué grupo vienen: «Este turno tiene 8 alumnos de Infantiles A. Seguirán apuntados.»; los alumnos del turno no cambian (P-7) |
+| Carga de grupos sin indicador; error «No hemos podido conectar con el servidor para obtener los grupos» / «Error al cargar los grupos» | Desplegable con estado «Cargando grupos…»; error de bloque con «Reintentar» |
+| Carga del turno al editar: esqueleto; error «Error en la carga del turno / No hemos podido cargar los detalles del turno» | Esqueleto del panel nuevo; error de bloque con «Reintentar» |
+| Se puede enviar con el interruptor activo y el grupo vacío | Desaparece con el interruptor |
+| Sin «Eliminar turno» ni alumnos del turno | Sin cambios |
+
+### Alumnos del grupo (P1: lista del grupo)
+
+Pieza 8b-3m. Ruta de hoy: `/gestionarAlumnos/:id`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /gestionarAlumnos/:id; ADMIN y MANAGER (el servidor admite al responsable de sede en quitar) | Misma ruta y roles |
+| Entrada: «Gestionar alumnos» de cada grupo; vuelve aquí tras añadir alumnos | Se conserva; «Ver alumnos» de Editar grupo también llega |
+| Tarjeta «Gestionar Alumnos del Grupo» + «Volver» (atrás) | Título «Alumnos de Infantiles A» con la miga «Grupos /»; «Volver» pasa a la miga |
+| Añadido: Nombre del grupo en el título y «18 alumnos» | Título y línea de recuento |
+| Buscador «Buscar alumno por nombre…» (espera 300 ms, filtra en el navegador por «nombre apellidos») | Buscador con icono y borrar; misma espera y mismo filtro |
+| «Mostrando X de Y alumnos» (solo con texto) | «Mostrando 3 de 18» junto al buscador, solo con texto |
+| Foto enlazada a la ficha (por defecto: imagen genérica) | Foto de 40 px enlazada; iniciales si no hay foto |
+| Nombre enlazado a la ficha | Línea 1 de la fila, enlace |
+| Añadido: Turnos del alumno en la línea 2 («L y X 17:30»), si el servidor da el dato | Línea 2 de la fila; se omite si no hay dato |
+| «Gestionar Turnos» → turnos del alumno | «Turnos» de texto en la fila |
+| «Eliminar» → «¿Estás seguro? / No podrás revertir esta acción» («Sí, eliminarlo» / «Cancelar»); quita del grupo | «⋯» con «Quitar del grupo»; diálogo normal «¿Quitar a Hugo Martín del grupo? Sigue siendo alumno de la escuela y puedes volver a añadirlo.» |
+| Resultados: «Alumno eliminado del grupo» / «No se pudo eliminar el alumno» | Avisos «Alumno quitado del grupo» / «No se pudo quitar al alumno del grupo» |
+| «Agregar Alumnos» (botón central) → seleccionar alumnos | «Añadir alumnos» primario arriba; lleva a la pantalla siguiente |
+| Carga del grupo con todos los alumnos; error «Error en la petición / No hemos podido conectar con el servidor» | Esqueleto de filas; error de bloque con «Reintentar» |
+| Esqueleto de 10 filas | Esqueleto del panel nuevo con la forma de las filas |
+| Vacío «No hay alumnos en este grupo» | Vacío «Aún no hay alumnos en este grupo» + «Añadir alumnos» |
+| Vacío con búsqueda «No se encontraron alumnos que coincidan con la búsqueda» | «Ningún alumno coincide con «…»» + «Quitar búsqueda» |
+| Paginación local de 10, solo con más de una página | «Anterior», «1-10 de 18», «Siguiente», solo con más de una página |
+| Solo alumnos activos; sin acciones masivas | Sin cambios |
+
+### Seleccionar alumnos (P1: panel lateral sobre Alumnos del grupo)
+
+Pieza 8b-3m. Ruta de hoy: `/seleccionarAlumnos/:id`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /seleccionarAlumnos/:id (id del grupo); ADMIN y MANAGER | Misma ruta; abre Alumnos del grupo con el panel |
+| Entrada: «Agregar Alumnos» de Alumnos del grupo | «Añadir alumnos» de Alumnos del grupo |
+| Tarjeta «Seleccionar Alumnos» + «Volver» (atrás) | Título del panel «Añadir alumnos a Infantiles A»; «Volver» pasa a la X y «Cancelar» |
+| Filtrar por nombre (espera 500 ms, servidor, vuelve a la página 1) | Buscador fijo arriba; misma espera y mismo filtro |
+| El campo se oculta al cargar y puede perder el foco | El buscador no se oculta nunca; el esqueleto solo sustituye a la lista |
+| Lista de casillas «nombre apellidos» | Filas con casilla, foto de 32 px y nombre |
+| Añadido: Los alumnos que ya están en el grupo salen atenuados con «Ya está en el grupo» y sin casilla | En la misma lista, en su sitio |
+| Ocultar los que ya están, después de paginar (páginas cortas o vacías) | Ya no se ocultan: salen atenuados (P-8, decisión 285) |
+| Selección en un array de ids; se conserva al paginar y buscar; sin contador | Contador «3 elegidos» con «Quitar selección»; la selección se conserva igual |
+| «Agregar Alumnos Seleccionados»: sin selección no hace nada y no se deshabilita | «Añadir 3 alumnos» primario en el pie, desactivado con 0 |
+| Éxito «Alumnos agregados al grupo» y vuelta a Alumnos del grupo | Aviso «Alumnos añadidos al grupo»; el panel se cierra y la lista se refresca |
+| Error «No se pudieron agregar los alumnos» | Aviso de error con el mismo texto |
+| Solo alumnos activos (el parámetro de inactivos es fijo) | Sin cambios; el texto de vacío lo dice |
+| Paginación del servidor, 10 por página | «Anterior», «1-10 de 142», «Siguiente» |
+| Sin texto de vacío | «Ningún alumno activo coincide con «…»» |
+| Error de carga «Error en la petición / No hemos podido conectar con el servidor» | Error de bloque con «Reintentar» |
+| Esqueleto en cada carga | Esqueleto de filas bajo el buscador fijo |
+| Etiqueta de casilla sin «for» | Cada fila es una etiqueta asociada a su casilla |
+| Sin foto, deporte ni sede; sin aviso de otros grupos | Foto añadida; el resto sin cambios |
+
+### Turnos de un alumno (P1: lista por día)
+
+Pieza 8b-3m. Ruta de hoy: `/gestionarTurnosAlumno/:alumnoId`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /gestionarTurnosAlumno/:alumnoId; ADMIN y MANAGER (el servidor admite al responsable de sede) | Misma ruta y roles |
+| Entrada: «Gestionar Turnos» de cada alumno en Alumnos del grupo; ningún otro | Se conserva; el enlace «Ver ficha» vuelve a la ficha |
+| Tarjeta «Gestionar Turnos de {nombre} {apellidos}» | Título «Turnos de Lucía Ortega» |
+| Lista de turnos «tipoGrupo - HH:mm a HH:mm» | Fila por día: día + horas en la línea 1; tipo de grupo y grupo en la línea 2 |
+| Añadido: Día de la semana de cada turno | Línea 1 de la fila («Lunes») |
+| Añadido: Grupo del turno | Línea 2 de la fila |
+| «Remover Turno»; aviso «¿Estás seguro? / El turno será removido del alumno. Esta acción no se puede deshacer.» («Sí, remover» / «Cancelar») | «Quitar» de texto; diálogo normal «¿Quitar el turno del lunes 17:30 – 18:30 a Lucía? Puedes volver a asignarlo.» |
+| Resultados: «Turno removido del alumno» / «No se pudo remover el turno» | Avisos «Turno quitado» / «No se pudo quitar el turno» |
+| Bloque «Agregar Turno» | Bloque «Asignar turno» |
+| Seleccione un turno: selector con buscador, obligatorio, opciones «{tipoGrupo} - {inicio} a {fin}», sin opción inicial | Desplegable con «Seleccione un turno» inicial y opciones «Lunes · 17:30 – 18:30 · Taekwondo infantil» por día |
+| Añadido: Turnos ya asignados desactivados con «ya asignado» | Dentro del desplegable |
+| «Asignar Turno» (deshabilitado si el selector está vacío) | Botón secundario «Asignar turno», desactivado sin elección |
+| Resultados: «Turno asignado al alumno»; error con el texto del servidor o «No hemos podido asignar el turno al alumno» | Avisos «Turno asignado»; error con el texto del servidor o el mismo genérico |
+| «Volver» (atrás) | Se sustituye por la miga «Alumnos del grupo /» y «Ver ficha» |
+| Carga del alumno con esqueleto; error «Error en la petición / No hemos podido obtener los datos del alumno» | Esqueleto del panel nuevo; error de bloque con «Reintentar» |
+| Vacío «Este alumno no tiene turnos asignados.» (no llega a verse) | «Lucía no tiene turnos asignados.» siempre que la lista esté vacía |
+| Datos compartidos entre alumnos (parpadeo del dato de otro alumno) | Cada pantalla carga y guarda su propio dato |
+| Sin paginación ni búsqueda | Sin cambios |
+
+### Productos de un alumno (P1: cargos con edición en lote)
+
+Pieza 8b-3n. Ruta de hoy: `/alumnos/:id/productos`.
+
+| Hoy | En la pantalla nueva |
+|---|---|
+| Ruta /alumnos/:id/productos; ADMIN y MANAGER (el servidor admite al responsable de sede salvo el borrado) | Misma ruta y roles |
+| Entrada: engranaje «Gestionar productos» de la pestaña Pagos de la ficha, y la ficha de hoy | Se conserva |
+| Barra «Productos del Alumno» + «Volver» (atrás) | Cabecera con foto, nombre y «Productos y cargos»; enlace «Volver a la ficha» |
+| Tabla de 9 columnas: Concepto, Fecha asignación, Cantidad, Precio, Total, Pagado, Fecha pago, Notas, Acciones | 1280: tabla con las 9 columnas (Concepto, Asignado, Cant., Precio, Total, Pagado, Fecha de pago, Notas, ⋯); 768 y 375: filas de dos líneas desplegables |
+| Concepto (tachado con «Cancelado por X el dd/mm/aaaa · «motivo»» si está cancelado; insignia «Pendiente de eliminar») | Concepto en la línea 1; la nota de cancelación en la línea 2; fila atenuada con «Pendiente de eliminar» |
+| Fecha de asignación: fecha editable (cambia el día y conserva la hora) | Campo en línea; en las filas, dentro del desplegable; «Asignado 01/10/2026» en la línea 2 |
+| Cantidad: número ≥ 1, editable | Campo en línea o del desplegable |
+| Precio: número ≥ 0, paso 0,01, editable | Campo en línea o del desplegable |
+| Los tres campos se deshabilitan si el cargo está pendiente de borrar o cancelado | Igual |
+| Total = precio × cantidad en euros (verde o rojo según pagado; tachado si cancelado) | Total «30,00 €» alineado a la derecha; el estado lo dice la pastilla, no el color |
+| Pagado: casilla, o chip «cancelado» / «devuelto» (tooltip «Pagado y devuelto: su cobro tiene una devolución registrada») | Pastilla «Pagado» / «Pendiente» / «Cancelado» / «Devuelto» con el mismo tooltip |
+| Desmarcar un cargo pagado como gestor: vuelve a marcarse y abre «Pedir al propietario que revierta este cobro» (concepto, importe, fecha de pago; «Mientras tanto el pago sigue marcado.») | «⋯» → «Pedir que se revierta el cobro» (solo gestor, en cargos pagados); mismo diálogo y misma nota |
+| Añadido: «Cobrar» en los cargos pendientes, con el cobro de Tesorería (no marca la casilla) | Texto «Cobrar» en la pastilla de pendientes; abre el diálogo de cobro |
+| Fecha de pago: solo lectura («dd/MM/yyyy» o «-») | Columna «Fecha de pago»; en las filas, dentro del desplegable |
+| Notas: texto truncado + lápiz «Editar notas» (modal; cuenta como cambio pendiente) | Columna «Notas» y «⋯» → «Editar notas»; cuenta como cambio pendiente |
+| Asignar: «Seleccionar Producto:» (selector con buscador, «concepto - precio») | Buscador «Producto» con opciones «Matrícula taekwondo · 25,00 €» |
+| Deporte de la matrícula: solo si el concepto contiene MATRICULA; obligatorio; sin deportes «No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar la matrícula.» | Campo «Deporte» solo para matrículas; obligatorio; mismo mensaje sin deportes |
+| «Asignar Producto» (deshabilitado sin producto o sin deporte; avisos «Seleccione un producto» / «Seleccione un deporte») | Secundario «Añadir a la lista»; mismos dos mensajes bajo los campos |
+| Lista «Pendientes de asignar» con X «Quitar de pendientes» | Filas arriba de la lista con pastilla «Nuevo» y X |
+| Cancelar cargo (no pagados ni cancelados): «Cancelar cargo» + «Motivo» obligatorio, máx. 500 («Indica el motivo de la cancelación» / «El motivo admite como mucho 500 caracteres»); aviso «Cargo cancelado» | «⋯» → «Cancelar cargo»; diálogo con motivo, mismos mensajes y aviso |
+| Reactivar (cargos cancelados): «Reactivar cargo / «{concepto}» vuelve a estar pendiente de pago.»; aviso «Cargo reactivado» | «⋯» → «Reactivar»; mismo diálogo y aviso |
+| Papelera «Marcar para eliminar» (solo ADMIN, no pagados ni cancelados); fila atenuada; «Deshacer eliminación» | «⋯» → «Eliminar» (solo propietario); marca la fila con «Pendiente de eliminar» y «Deshacer» |
+| Barra flotante «Tienes cambios pendientes» (Cancelar / Confirmar) | Barra fija «3 cambios sin guardar · Descartar · Guardar cambios» |
+| Añadido: Punto de acento en las filas cambiadas | En la fila, junto al concepto |
+| Confirmar: actualiza, borra y asigna en secuencia (detalles con cantidad 1, precio 0, pagado no, fecha de hoy) | «Guardar cambios» hace lo mismo; el servidor pone el precio del catálogo en los cargos nuevos (P-9 comprobado) y el 0 que envía el cliente se ignora |
+| Errores de confirmar: «No se pudo actualizar, eliminar o asignar un producto» (o el del servidor); continúa con el resto; éxito «Cambios aplicados correctamente» | Mismos avisos; los fallos listan qué filas quedan sin guardar |
+| «Cancelar» de la barra flotante: descarta y recarga | «Descartar» |
+| Añadido: Aviso al salir con cambios sin guardar | Diálogo «¿Salir sin guardar?» al salir de la pantalla |
+| Cargas: productos del alumno (más reciente primero), catálogo y deportes; errores «No se han podido obtener los productos del alumno / los productos / los deportes del alumno» | Esqueletos; error de bloque con «Reintentar» y los mismos textos |
+| Vacío con imagen «No hay productos asignados a este alumno» | Vacío del panel nuevo con el mismo texto y «Añadir a la lista» a la vista |
+| Paginación local de 10, con estado en sessionStorage | «Anterior», «1-10 de N», «Siguiente»; mismo estado guardado |
+| Precio 0 en los cargos nuevos | Sin cambios; el servidor pone el precio del producto al asignarlo (P-9 comprobado) |
+| Sin sede del cargo ni deuda total | Sin cambios |
