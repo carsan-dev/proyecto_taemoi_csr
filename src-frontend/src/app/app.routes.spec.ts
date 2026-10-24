@@ -34,6 +34,32 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  it('gruposCrear (3m-1): abre Grupos mediante data y carga lazy; conserva la ruta de hoy con el interruptor apagado', async () => {
+    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposCrear');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual({ ...hoy.data, crearGrupo: true });
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(GruposComponent);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+  });
+
+  it('gruposCrear apagado no descarga Grupos ni sustituye el formulario de hoy', async () => {
+    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
+    class PantallaDeHoy {}
+    const nueva = routes.find((route) => route.path === 'gruposCrear' && route.canMatch)!;
+    const cargar = jasmine.createSpy('loadComponent Grupos');
+    TestBed.configureTestingModule({ providers: [
+      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposCrear', component: PantallaDeHoy }]),
+      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
+      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+    ] });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/gruposCrear', PantallaDeHoy);
+    expect(cargar).not.toHaveBeenCalled();
+  });
+
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
     const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
 

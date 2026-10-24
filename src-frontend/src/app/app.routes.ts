@@ -339,6 +339,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Crear grupo (3m-1): reutiliza Grupos y abre su panel; con el diseño apagado sigue la ruta de hoy.
+    path: 'gruposCrear',
+    canMatch: [disenoNuevoGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearGrupo: true },
+    loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'gruposCrear',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),

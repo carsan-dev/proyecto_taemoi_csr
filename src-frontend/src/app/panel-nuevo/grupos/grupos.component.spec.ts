@@ -1,8 +1,9 @@
+import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { Component } from '@angular/core';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
@@ -214,17 +215,18 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     expect(loading.show).not.toHaveBeenCalled();
   });
 
-  it('cabecera: «Grupos», «N grupos · M turnos» con plurales y «Nuevo turno» / «Nuevo grupo» a las rutas de hoy', () => {
+  it('cabecera: «Grupos», «N grupos · M turnos», «Nuevo turno» y botón «Nuevo grupo»', () => {
     crear();
     responder();
     expect(texto(el().querySelector('h1'))).toBe('Grupos');
     expect(texto(el().querySelector('.grupos__subtitulo'))).toBe('4 grupos · 8 turnos');
     const turno = el().querySelector<HTMLAnchorElement>('.grupos__boton-secundario')!;
-    const grupo = el().querySelector<HTMLAnchorElement>('.grupos__boton-primario')!;
+    const grupo = el().querySelector<HTMLButtonElement>('.grupos__boton-primario')!;
     expect(texto(turno)).toBe('Nuevo turno');
     expect(turno.getAttribute('href')).toBe('/turnosCrear');
     expect(texto(grupo)).toBe('Nuevo grupo');
-    expect(grupo.getAttribute('href')).toBe('/gruposCrear');
+    expect(grupo.tagName).toBe('BUTTON');
+    expect(grupo.getAttribute('aria-haspopup')).toBe('dialog');
     expect(el().querySelectorAll('.grupos__boton-primario').length).toBe(1);
   });
 
@@ -305,8 +307,121 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     responder([], []);
     const vacio = el().querySelector('pn-bloque-vacio')!;
     expect(texto(vacio)).toContain('Todavía no hay grupos');
-    expect(vacio.querySelector('a')!.getAttribute('href')).toBe('/gruposCrear');
+    expect(vacio.querySelector('button')!.textContent).toContain('Nuevo grupo');
   });
+
+  it('abre Nuevo grupo, enfoca el nombre y cierra con Cancelar y Escape devolviendo el foco al botón', () => {
+    const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    crear();
+    responder();
+    const abrir = el().querySelector<HTMLButtonElement>('.grupos__boton-primario')!;
+    abrir.click();
+    fixture.detectChanges();
+    expect(document.activeElement?.id).toBe('crear-grupo-nombre');
+    boton(el(), 'Cancelar').click();
+    fixture.detectChanges();
+    expect(el().querySelector('pn-crear-grupo')).toBeNull();
+    expect(document.activeElement).toBe(abrir);
+    abrir.click();
+    fixture.detectChanges();
+    el().querySelector('dialog')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(el().querySelector('pn-crear-grupo')).toBeNull();
+    expect(document.activeElement).toBe(abrir);
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  for (const cierre of ['Cancelar', 'Escape']) {
+    it(`el deep link cierra con ${cierre} y reemplaza la ruta por gruposListar`, () => {
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      TestBed.inject(ActivatedRoute).data = of({ crearGrupo: true });
+      crear();
+      responder();
+      expect(el().querySelector('dialog')?.textContent).toContain('Nuevo grupo');
+      expect(document.activeElement?.id).toBe('crear-grupo-nombre');
+      if (cierre === 'Cancelar') {
+        boton(el(), 'Cancelar').click();
+      } else {
+        el().querySelector('dialog')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      }
+      fixture.detectChanges();
+      expect(el().querySelector('pn-crear-grupo')).toBeNull();
+      expect(navegar).toHaveBeenCalledOnceWith(['/gruposListar'], { replaceUrl: true });
+    });
+  }
+
+  it('crear desde el deep link reemplaza la ruta y lleva el id al listado sin recargar la pantalla de origen', () => {
+    const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    TestBed.inject(ActivatedRoute).data = of({ crearGrupo: true });
+    crear();
+    responder();
+    const input = el().querySelector<HTMLInputElement>('input')!;
+    input.value = 'Infantiles';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    boton(el(), 'Crear grupo').click();
+    http.expectOne(`${API}/grupos`).flush({ id: 81, nombre: 'Infantiles' });
+    fixture.detectChanges();
+    expect(avisos().some((a) => a.texto === 'Grupo creado')).toBeTrue();
+    expect(el().querySelector('pn-crear-grupo')).toBeNull();
+    expect(navegar).toHaveBeenCalledOnceWith(['/gruposListar'], { replaceUrl: true, state: { grupoCreadoId: 81 } });
+    http.expectNone(`${API}/grupos/resumen`);
+  });
+
+  it('el listado consume el resaltado una vez y recargar no reabre el panel ni repite el resaltado', fakeAsync(() => {
+    const location = TestBed.inject(Location);
+    const estadoAnterior: unknown = location.getState();
+    const rutaAnterior = location.path();
+    location.replaceState('/gruposListar', '', { grupoCreadoId: 81, navigationId: 7, otro: 'conservado' });
+    const grupos: GrupoResumen[] = [...datosGrupos(), { id: 81, nombre: 'Infantiles', numAlumnos: 0, turnos: [] }];
+    try {
+      crear();
+      responder(grupos);
+      expect(tarjeta(81).classList.contains('grupos__tarjeta--creada')).toBeTrue();
+      expect(el().querySelector('pn-crear-grupo')).toBeNull();
+      expect(location.getState()).toEqual({ navigationId: 7, otro: 'conservado' });
+      tick(5000);
+      pintar();
+      expect(tarjeta(81).classList.contains('grupos__tarjeta--creada')).toBeFalse();
+      fixture.destroy();
+      crear();
+      responder(grupos);
+      expect(el().querySelector('pn-crear-grupo')).toBeNull();
+      expect(fixture.componentInstance.grupoResaltado).toBeNull();
+      expect(tarjeta(81).classList.contains('grupos__tarjeta--creada')).toBeFalse();
+    } finally {
+      location.replaceState(rutaAnterior, '', estadoAnterior);
+    }
+    flush();
+  }));
+
+  it('crea, avisa, cierra y recarga: el nuevo grupo queda visible y resaltado durante cinco segundos', fakeAsync(() => {
+    const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    crear();
+    responder();
+    fixture.componentInstance.filtro = 'KICKBOXING';
+    el().querySelector<HTMLButtonElement>('.grupos__boton-primario')!.click();
+    fixture.detectChanges();
+    const input = el().querySelector<HTMLInputElement>('input')!;
+    input.value = 'Infantiles';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    boton(el(), 'Crear grupo').click();
+    http.expectOne(`${API}/grupos`).flush({ id: 81, nombre: 'Infantiles' });
+    http.expectOne(`${API}/grupos/resumen`).flush([
+      ...datosGrupos(), { id: 81, nombre: 'Infantiles', deporte: null, numAlumnos: 0, turnos: [] },
+    ]);
+    pintar();
+    expect(avisos().some((a) => a.texto === 'Grupo creado')).toBeTrue();
+    expect(el().querySelector('pn-crear-grupo')).toBeNull();
+    expect(fixture.componentInstance.filtro).toBeNull();
+    expect(navegar).not.toHaveBeenCalled();
+    expect(tarjeta(81).classList.contains('grupos__tarjeta--creada')).toBeTrue();
+    tick(5000);
+    pintar();
+    expect(tarjeta(81).classList.contains('grupos__tarjeta--creada')).toBeFalse();
+    flush();
+  }));
 
   // ------------------------------------------------------------------ alumnos por tipo
 

@@ -1165,10 +1165,11 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  crearGrupo(grupoData: any): Observable<any> {
+  crearGrupo(grupoData: any, context?: HttpContext): Observable<any> {
     return this.http
       .post<any>(`${this.urlBase}/grupos`, grupoData, {
         withCredentials: true,
+        context,
       })
       .pipe(catchError(this.manejarError));
   }
