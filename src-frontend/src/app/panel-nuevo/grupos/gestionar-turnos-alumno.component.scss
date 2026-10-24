@@ -1,0 +1,33 @@
+@use '../capas/capas' as c;
+
+.turnos-alumno { box-sizing: border-box; max-width: 1280px; min-height: calc(100vh - 64px); margin: 0 auto; padding: 24px; background: var(--pn-fondo); color: var(--pn-tinta); font: var(--pn-cuerpo); }
+.turnos-alumno nav { color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.turnos-alumno header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 24px 0; }
+.turnos-alumno h1 { margin: 0; font: var(--pn-titulo-pantalla); overflow-wrap: anywhere; }
+.turnos-alumno a { color: var(--pn-acento); text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; flex-shrink: 0; }
+.turnos-alumno a:focus-visible, .turnos-alumno select:focus-visible { outline: 2px solid var(--pn-acento-borde); outline-offset: 2px; }
+.turnos-alumno__texto { @include c.boton-texto; min-height: 44px; }
+.turnos-alumno__secundario { @include c.boton-secundario; min-height: 44px; }
+.turnos-alumno__lista { margin: 0; padding: 0; list-style: none; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
+.turnos-alumno__lista li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px 10px 16px; }
+.turnos-alumno__lista li + li { border-top: 1px solid var(--pn-linea); }
+.turnos-alumno__detalle { min-width: 0; overflow-wrap: anywhere; }
+.turnos-alumno__horario { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.turnos-alumno__horario strong { font: var(--pn-titulo-bloque); }
+.turnos-alumno__horario span { font-variant-numeric: tabular-nums; }
+.turnos-alumno__detalle p { margin: 4px 0 0; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.turnos-alumno__vacio { padding: 24px 0; }
+.turnos-alumno__asignar { margin-top: 32px; padding: 18px 20px 16px; border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
+.turnos-alumno h2 { margin: 0 0 16px; font: var(--pn-titulo-bloque); }
+.turnos-alumno__controles { display: flex; align-items: flex-end; gap: 16px; }
+.turnos-alumno__controles > div { flex: 1; min-width: 0; }
+.turnos-alumno label { display: block; margin-bottom: 8px; font: var(--pn-etiqueta); }
+.turnos-alumno select { box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); color: var(--pn-tinta); background: var(--pn-superficie); font: var(--pn-cuerpo); }
+.turnos-alumno select:disabled { opacity: .6; cursor: not-allowed; }
+.turnos-alumno__esqueleto { height: 64px; margin-bottom: 8px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
+@media (max-width: 767.98px) {
+  .turnos-alumno { padding: 16px; }
+  .turnos-alumno header { flex-wrap: wrap; }
+  .turnos-alumno__controles { flex-direction: column; align-items: stretch; }
+  .turnos-alumno__asignar { padding: 16px; }
+}

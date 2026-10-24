@@ -401,6 +401,14 @@ export const routes: Routes = [
   },
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/grupos/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'gestionarTurnosAlumno/:alumnoId',
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],

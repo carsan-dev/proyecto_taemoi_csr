@@ -149,6 +149,37 @@ describe('app routes', () => {
     expect(cargar).not.toHaveBeenCalled();
   });
 
+  it('gestionarTurnosAlumno (3m-5): new lazy page precedes untouched legacy route with identical roles', async () => {
+    const [nueva, hoy] = routes.filter(route => route.path === 'gestionarTurnosAlumno/:alumnoId');
+    const componente = (await import('./panel-nuevo/grupos/gestionar-turnos-alumno.component')).GestionarTurnosAlumnoComponent;
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
+    expect(nueva.resolve).toEqual(hoy.resolve!);
+    expect(await nueva.loadComponent!()).toBe(componente);
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await hoy.loadComponent!()).not.toBe(componente);
+  });
+  for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
+    it(`gestionarTurnosAlumno (3m-5): design toggle ${activo}/${permitido}`, async () => {
+      @Component({ standalone: true, template: '<p>legacy</p>' })
+      class LegacyScreen {}
+      @Component({ standalone: true, template: '<p>new</p>' })
+      class NewScreen {}
+      const nueva = routes.find(route => route.path === 'gestionarTurnosAlumno/:alumnoId' && route.canMatch)!;
+      const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gestionarTurnosAlumno/:alumnoId', component: LegacyScreen }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/gestionarTurnosAlumno/7', activo ? NewScreen : LegacyScreen);
+      expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+    });
+  }
+
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
     const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
 
