@@ -217,6 +217,12 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
   // ------------------------------------------------------------------ avisos, confirmaciones y carga del panel nuevo
 
   protected override avisarExito(texto: string): void {
+    // 8b-M: «mensualidades generadas» cierra una tarea larga, y es de las pocas veces que la mascota celebra. Las
+    // mensualidades sueltas y las licencias llevan el aviso de siempre.
+    if (texto.startsWith('Mensualidades asignadas a ')) {
+      this.avisos.exito(texto, undefined, { mascota: 'celebrar' });
+      return;
+    }
     this.avisos.exito(texto);
   }
 

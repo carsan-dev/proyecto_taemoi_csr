@@ -13,7 +13,7 @@
     </header>
 
     @if (estado === 'error') {
-    <pn-bloque-error class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias" (reintentar)="cargar()" />
+    <pn-bloque-error pose="dudar" class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias" (reintentar)="cargar()" />
     } @else if (estado === 'cargando') {
     <pn-esqueleto class="convocatorias__cargando" etiqueta="Cargando convocatorias" aria-busy="true">
       <div class="convocatorias__esqueleto-pestanas"><span></span><span></span></div>
@@ -42,10 +42,10 @@
     <div class="convocatorias__panel" id="convocatorias-panel" role="tabpanel"
       [attr.aria-labelledby]="pestanaActual ? 'convocatorias-pestana-' + pestanaActual.codigo : null">
       @if (sinNumero.has(deporte)) {
-      <pn-bloque-error class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias"
+      <pn-bloque-error pose="dudar" class="convocatorias__bloque-estado" titulo="No se pudieron obtener las convocatorias"
         (reintentar)="reintentarDisciplina(deporte)" />
       } @else if (convocatorias.length === 0) {
-      <pn-bloque-vacio class="convocatorias__bloque-estado" titulo="No hay convocatorias disponibles"
+      <pn-bloque-vacio pose="esperar" class="convocatorias__bloque-estado" titulo="No hay convocatorias disponibles"
         [texto]="'No hay convocatorias registradas para ' + etiquetaDisciplina(deporte) + '.'"
         accion="Crear primera convocatoria" (accionar)="crearConvocatoria()" />
       } @else {
@@ -102,7 +102,7 @@
             <pn-bloque-error titulo="No se pudieron obtener los alumnos de la convocatoria" (reintentar)="leerBloque(false)" />
             } @else {
             @if (alumnos.length === 0) {
-            <pn-bloque-vacio class="convocatorias__vacio-alumnos" titulo="No hay alumnos inscritos en esta convocatoria"
+            <pn-bloque-vacio pose="esperar" class="convocatorias__vacio-alumnos" titulo="No hay alumnos inscritos en esta convocatoria"
               texto="Agrega alumnos con el desplegable de abajo." />
             } @else {
             <div class="convocatorias__columnas" aria-hidden="true"><span>Alumno</span><span>Cuantía</span><span>Pago</span></div>

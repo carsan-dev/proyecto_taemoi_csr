@@ -60,7 +60,7 @@
       }
     </ul>
     } @else {
-    <pn-bloque-vacio
+    <pn-bloque-vacio [pose]="nombreFiltro ? 'buscar' : 'esperar'"
       [titulo]="nombreFiltro ? 'No se encontraron alumnos que coincidan con la búsqueda' : 'No hay alumnos en este grupo'" />
     }
     @if (totalPaginas > 1) {

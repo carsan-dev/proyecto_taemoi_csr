@@ -58,7 +58,7 @@
     <p id="productos-ayuda-mi-caja" class="productos__oculto">Lo puede vender el profesor desde Mi caja.</p>
 
     @if (estado === 'error') {
-    <pn-bloque-error class="productos__bloque-estado" titulo="No se pudieron cargar los productos" (reintentar)="cargar()" />
+    <pn-bloque-error pose="dudar" class="productos__bloque-estado" titulo="No se pudieron cargar los productos" (reintentar)="cargar()" />
     } @else if (estado === 'cargando') {
     <pn-esqueleto class="productos__cargando" etiqueta="Cargando productos" aria-busy="true">
       @for (g of [[1, 2, 3, 4], [1, 2, 3]]; track $index) {
@@ -72,10 +72,10 @@
     </pn-esqueleto>
     } @else if (grupos.length === 0) {
     @if (hayFiltros) {
-    <pn-bloque-vacio class="productos__bloque-estado" titulo="Ningún producto coincide con los filtros"
+    <pn-bloque-vacio pose="buscar" class="productos__bloque-estado" titulo="Ningún producto coincide con los filtros"
       texto="Prueba con otro concepto o quita los filtros de tipo y Mi caja." accion="Limpiar filtros" (accionar)="limpiarFiltros()" />
     } @else {
-    <pn-bloque-vacio class="productos__bloque-estado" titulo="No hay productos disponibles"
+    <pn-bloque-vacio pose="esperar" class="productos__bloque-estado" titulo="No hay productos disponibles"
       texto="Crea los productos que se cobran en la escuela y aparecerán aquí, agrupados por tipo.">
       <a pnAccionVacio class="productos__boton-secundario" routerLink="/productosCrear">Crear producto</a>
     </pn-bloque-vacio>

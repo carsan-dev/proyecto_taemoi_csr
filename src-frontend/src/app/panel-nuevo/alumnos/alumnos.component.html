@@ -88,14 +88,14 @@
       </div>
     </pn-esqueleto>
     } @else if (estado === 'error') {
-    <pn-bloque-error class="alumnos__estado" titulo="No se pudo cargar el listado" (reintentar)="cargar()" />
+    <pn-bloque-error pose="dudar" class="alumnos__estado" titulo="No se pudo cargar el listado" (reintentar)="cargar()" />
     } @else if (filas.length === 0) {
     @if (hayFiltros) {
-    <pn-bloque-vacio titulo="Ningún alumno coincide con la búsqueda"
+    <pn-bloque-vacio pose="buscar" titulo="Ningún alumno coincide con la búsqueda"
       texto="Prueba con otro nombre o quita los filtros de disciplina e inactivos." accion="Quitar filtros"
       (accionar)="quitarFiltros()" />
     } @else {
-    <pn-bloque-vacio titulo="Todavía no hay alumnos en la escuela">
+    <pn-bloque-vacio pose="esperar" titulo="Todavía no hay alumnos en la escuela">
       <a pnAccionVacio class="alumnos__boton-secundario alumnos__accion-vacio" routerLink="/alumnosCrear">Dar de alta el primero</a>
     </pn-bloque-vacio>
     }

@@ -13,6 +13,7 @@ import {
 import { Router } from '@angular/router';
 
 import { PilaCapas, cerrarSweetAlertAbierto } from '../capas/capa-modal';
+import { PoseMascota } from '../mascota/poses';
 import { AvisosComponent } from './avisos.component';
 
 export type TipoAviso = 'exito' | 'error' | 'info';
@@ -28,6 +29,14 @@ export interface Aviso {
   tipo: TipoAviso;
   texto: string;
   accion?: AccionAviso;
+  /** 8b-M: la mascota celebrando en lugar del icono, solo en el cierre de una tarea larga. */
+  mascota?: PoseMascota;
+}
+
+/** Opciones de un aviso de éxito. */
+export interface OpcionesAviso {
+  /** Cierre de una tarea larga (mensualidades generadas): la gota de 32 px con «celebrar» en lugar del icono. */
+  mascota?: PoseMascota;
 }
 
 /** Éxito e información se cierran solos a los 5 s; el error, no. */
@@ -80,8 +89,8 @@ export class AvisosService {
     });
   }
 
-  exito(texto: string, accion?: AccionAviso): number {
-    return this.mostrar('exito', texto, accion);
+  exito(texto: string, accion?: AccionAviso, opciones?: OpcionesAviso): number {
+    return this.mostrar('exito', texto, accion, opciones?.mascota);
   }
 
   /** Sustituye al SweetAlert2 del interceptor de errores, como el aviso de hoy. */
@@ -137,9 +146,9 @@ export class AvisosService {
     aviso.accion?.alPulsar();
   }
 
-  private mostrar(tipo: TipoAviso, texto: string, accion?: AccionAviso): number {
+  private mostrar(tipo: TipoAviso, texto: string, accion?: AccionAviso, mascota?: PoseMascota): number {
     this.asegurarRegion();
-    const aviso: Aviso = { id: ++this.siguiente, tipo, texto, accion };
+    const aviso: Aviso = { id: ++this.siguiente, tipo, texto, accion, ...(mascota ? { mascota } : {}) };
     const actuales = this.lista();
     actuales.slice(0, Math.max(actuales.length - (MAX_AVISOS - 1), 0)).forEach((a) => this.cerrar(a.id));
     this.lista.update((lista) => [...lista, aviso]);

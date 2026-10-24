@@ -95,7 +95,7 @@
     } @else if (error) {
     <pn-bloque-error titulo="No se ha podido cargar el registro de acciones." (reintentar)="cargar()" />
     } @else if (eventos !== null && eventos.length === 0) {
-    <pn-bloque-vacio titulo="Todavía no hay acciones en este periodo"
+    <pn-bloque-vacio pose="esperar" titulo="Todavía no hay acciones en este periodo"
       texto="Aquí aparecen las altas, cambios y bajas que coinciden con los filtros. Amplía las fechas o quita algún filtro para ver más." />
     } @else if (eventos !== null) {
     <div class="reg__cronologia" [attr.aria-busy]="cargando ? 'true' : null">

@@ -163,3 +163,63 @@ describe('Carga del panel nuevo (8b-D1): esqueleto, botón ocupado, error y vac�
     expect(fixture.componentInstance.quitados).toBe(1);
   });
 });
+
+@Component({
+  standalone: true,
+  imports: [BloqueErrorComponent, BloqueVacioComponent],
+  template: `
+    <div class="pn">
+      <pn-bloque-vacio pose="buscar" titulo="Ningún alumno coincide con la búsqueda" texto="Prueba con otro nombre." />
+      <pn-bloque-error pose="dudar" titulo="No se pudo cargar el listado" />
+    </div>
+  `,
+})
+class AnfitrionConMascota {}
+
+describe('Carga del panel nuevo con mascota (8b-M)', () => {
+  let quitarTokens: () => void;
+
+  beforeEach(() => {
+    quitarTokens = ponerTokensDePrueba();
+    TestBed.configureTestingModule({ imports: [AnfitrionConMascota, Anfitrion] });
+  });
+
+  afterEach(() => {
+    quitarTokens();
+  });
+
+  it('el vacío con pose cambia el icono por la gota de 96 px decorativa; el título y el texto siguen diciendo lo mismo', () => {
+    const fixture = TestBed.createComponent(AnfitrionConMascota);
+    fixture.detectChanges();
+    const vacio = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('pn-bloque-vacio')!;
+    const gota = vacio.querySelector<HTMLElement>('pn-mascota')!;
+    expect(gota.classList).toContain('pn-mascota--md');
+    expect(gota.getAttribute('aria-hidden')).toBe('true');
+    expect(vacio.querySelector('.pn-bloque-vacio__icono')).toBeNull();
+    expect(vacio.querySelector('[role="status"]')!.textContent).toContain('Ningún alumno coincide con la búsqueda');
+    expect(vacio.querySelector('[role="status"]')!.textContent).toContain('Prueba con otro nombre.');
+    fixture.destroy();
+  });
+
+  it('el error con pose cambia el icono por la gota de 144 px decorativa; el aviso sigue siendo role=alert con su texto', () => {
+    const fixture = TestBed.createComponent(AnfitrionConMascota);
+    fixture.detectChanges();
+    const error = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('pn-bloque-error')!;
+    const gota = error.querySelector<HTMLElement>('pn-mascota')!;
+    expect(gota.classList).toContain('pn-mascota--lg');
+    expect(gota.getAttribute('aria-hidden')).toBe('true');
+    expect(error.querySelector('.pn-bloque-error__icono')).toBeNull();
+    expect(error.querySelector('[role="alert"]')!.textContent).toContain('No se pudo cargar el listado');
+    fixture.destroy();
+  });
+
+  it('sin pose siguen con el icono de siempre (dinero, bajas y errores serios no llevan mascota)', () => {
+    const base = TestBed.createComponent(Anfitrion);
+    base.detectChanges();
+    const el = base.nativeElement as HTMLElement;
+    expect(el.querySelector('pn-mascota')).toBeNull();
+    expect(el.querySelector('.pn-bloque-vacio__icono')).not.toBeNull();
+    expect(el.querySelector('.pn-bloque-error__icono')).not.toBeNull();
+    base.destroy();
+  });
+});

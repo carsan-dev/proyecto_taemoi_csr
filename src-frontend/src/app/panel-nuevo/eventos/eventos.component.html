@@ -23,7 +23,7 @@
     </header>
 
     @if (estado === 'error') {
-    <pn-bloque-error class="eventos__bloque-estado" titulo="No se pudieron obtener los eventos" (reintentar)="cargar()" />
+    <pn-bloque-error pose="dudar" class="eventos__bloque-estado" titulo="No se pudieron obtener los eventos" (reintentar)="cargar()" />
     } @else if (estado === 'cargando') {
     <pn-esqueleto class="eventos__cargando" etiqueta="Cargando eventos" aria-busy="true">
       <div class="eventos__esqueleto-aviso"></div>
@@ -34,7 +34,7 @@
       </div>
     </pn-esqueleto>
     } @else if (eventos.length === 0) {
-    <pn-bloque-vacio class="eventos__bloque-estado" titulo="No hay eventos disponibles"
+    <pn-bloque-vacio pose="esperar" class="eventos__bloque-estado" titulo="No hay eventos disponibles"
       texto="Parece que no hay eventos registrados. Crea uno nuevo y aparecerá aquí.">
       <a pnAccionVacio class="eventos__boton-secundario" routerLink="/eventosCrear">Crear nuevo evento</a>
     </pn-bloque-vacio>

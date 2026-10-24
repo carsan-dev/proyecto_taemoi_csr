@@ -133,6 +133,12 @@
           <span class="tesoreria__barra-pendiente" [style.width.%]="b.pendiente" [attr.title]="'Pendiente ' + eur(resumen.importePendiente)"></span>
           }
         </div>
+        @if (mesCobradoEntero) {
+        <p class="tesoreria__cierre" role="status">
+          <pn-mascota pose="confirmar" tamano="sm" animacion="celebrar" />
+          <span>{{ etiquetaPeriodo(resumen.mes, resumen.ano) }} está cobrado entero.</span>
+        </p>
+        }
         @if (b.vacia) {
         <p class="tesoreria__leyenda-vacia">{{ b.texto }}</p>
         } @else {

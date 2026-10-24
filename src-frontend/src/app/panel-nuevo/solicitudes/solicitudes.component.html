@@ -41,7 +41,7 @@
         </div>
       </pn-esqueleto>
       } @else if (estado[opcion].lista!.length === 0) {
-      <pn-bloque-vacio [titulo]="vacio(opcion).titulo" [texto]="vacio(opcion).texto" />
+      <pn-bloque-vacio pose="esperar" [titulo]="vacio(opcion).titulo" [texto]="vacio(opcion).texto" />
       } @else {
       <ul class="sol__lista sol__lista--principal" [attr.aria-label]="etiquetaSegmento(opcion)">
         @for (s of estado[opcion].lista; track s.id) {

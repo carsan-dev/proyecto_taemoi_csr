@@ -571,6 +571,42 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     expect(loading.show).not.toHaveBeenCalled();
   });
 
+  it('8b-M: el cobro que deja el mes sin nada pendiente lo anuncia con la gota de 32 px celebrando, y el texto dice lo mismo', async () => {
+    crear();
+    responder([PENDIENTE], 1, { ...RESUMEN, importePendiente: 1250, totalPendientes: 1 });
+    expect(el().querySelector('.tesoreria__cierre')).toBeNull();
+    botonEn(fila(1000), 'Cobrar 1.250,00 € de Mensualidad octubre 1000 a Alumna1000 Ficticia').click();
+    pintar();
+    Array.from(dialogo()!.querySelectorAll<HTMLButtonElement>('[role="radio"]')).find((b) => texto(b) === 'Efectivo')!.click();
+    botonEn(dialogo()!, 'Marcar como pagado').click();
+    pintar();
+    http.expectOne(`${API}/productos-alumno/1000`).flush({});
+    await esperar();
+    const p = pendientes();
+    p.resumen[0].flush({ ...RESUMEN, importePendiente: 0, totalPendientes: 0, alumnosConPendientes: 0 });
+    p.movimientos[0].flush(pagina([]));
+    await esperar();
+    const cierre = el().querySelector<HTMLElement>('.tesoreria__cierre')!;
+    expect(cierre.getAttribute('role')).toBe('status');
+    expect(texto(cierre)).toBe('Octubre 2026 está cobrado entero.');
+    const mascota = cierre.querySelector<HTMLElement>('pn-mascota')!;
+    expect(mascota.classList).toContain('pn-mascota--sm');
+    expect(mascota.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('8b-M: un mes que se abre ya sin nada pendiente no celebra (solo el cobro que lo cierra)', () => {
+    crear();
+    responder([], 0, { ...RESUMEN, importePendiente: 0, totalPendientes: 0, alumnosConPendientes: 0 });
+    expect(el().querySelector('.tesoreria__cierre')).toBeNull();
+    expect(el().querySelector('pn-mascota')).toBeNull();
+  });
+
+  it('8b-M: la tesorería no lleva mascota si el mes sigue con cobros pendientes', async () => {
+    crear();
+    responder();
+    expect(el().querySelector('pn-mascota')).toBeNull();
+  });
+
   it('«Cobrar» cancelado no envía nada', async () => {
     crear();
     responder();
