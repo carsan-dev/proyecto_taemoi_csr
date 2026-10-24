@@ -123,6 +123,45 @@ describe('Editar grupo (3m-2)', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('#profesores-error[role="alert"]').textContent).toContain('No permitido');
   });
+  it('blocks removal of the same professor during a role change', async () => {
+    cargar(); component.cambiarRol(profesor, 'AYUDANTE'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.editar-grupo__mas').disabled).toBeTrue();
+    await component.quitarProfesor(profesor);
+    expect(confirmacion.confirmar).not.toHaveBeenCalled();
+    http.expectNone(`${api}/grupos/7/profesores/9`);
+    http.expectOne(`${api}/grupos/7/profesores`).flush({ ...profesor, rol: 'AYUDANTE' });
+    http.expectOne(`${api}/grupos/7/profesores`).flush([{ ...profesor, rol: 'AYUDANTE' }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.editar-grupo__mas').disabled).toBeFalse();
+  });
+  it('blocks role changes during removal confirmation and the pending DELETE', async () => {
+    cargar();
+    let resolver!: (resultado: { confirmado: boolean; valor: null }) => void;
+    confirmacion.confirmar.and.returnValue(new Promise((resolve) => { resolver = resolve; }));
+    const quitar = component.quitarProfesor(profesor);
+    fixture.detectChanges();
+    const roles = fixture.nativeElement.querySelectorAll('.editar-grupo__profesor .editar-grupo__segmento button') as NodeListOf<HTMLButtonElement>;
+    expect(roles.length).toBe(2);
+    expect(Array.from(roles).every((boton) => boton.disabled)).toBeTrue();
+    component.cambiarRol(profesor, 'AYUDANTE');
+    http.expectNone(`${api}/grupos/7/profesores`);
+    resolver({ confirmado: true, valor: null }); await quitar;
+    component.cambiarRol(profesor, 'AYUDANTE');
+    http.expectNone(`${api}/grupos/7/profesores`);
+    http.expectOne(`${api}/grupos/7/profesores/9`).flush(null);
+    http.expectOne(`${api}/grupos/7/profesores`).flush([]);
+  });
+  it('releases the role controls when removal is cancelled', async () => {
+    cargar(); confirmacion.confirmar.and.resolveTo({ confirmado: false, valor: null });
+    await component.quitarProfesor(profesor);
+    fixture.detectChanges();
+    const roles = fixture.nativeElement.querySelectorAll('.editar-grupo__profesor .editar-grupo__segmento button') as NodeListOf<HTMLButtonElement>;
+    expect(roles.length).toBe(2);
+    expect(Array.from(roles).every((boton) => !boton.disabled)).toBeTrue();
+    component.cambiarRol(profesor, 'AYUDANTE');
+    http.expectOne(`${api}/grupos/7/profesores`).flush({ ...profesor, rol: 'AYUDANTE' });
+    http.expectOne(`${api}/grupos/7/profesores`).flush([{ ...profesor, rol: 'AYUDANTE' }]);
+  });
   it('reenvía invitación sin cuerpo y con aviso', () => {
     cargar(); component.reenviarInvitacion(profesor);
     const req = http.expectOne(`${api}/miembros/9/invitacion`);

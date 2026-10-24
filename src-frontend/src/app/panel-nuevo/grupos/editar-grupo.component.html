@@ -42,10 +42,10 @@
                 }
               </div>
               <div class="editar-grupo__segmento" role="group" [attr.aria-label]="'Rol de ' + nombreCompleto(profesor)" [attr.aria-busy]="cambiandoRol.has(profesor.usuarioId)">
-                @for (rol of roles; track rol) { <button type="button" [attr.aria-pressed]="profesor.rol === rol" [disabled]="cambiandoRol.has(profesor.usuarioId)" (click)="cambiarRol(profesor, rol)">{{ rol === 'TITULAR' ? 'Titular' : 'Ayudante' }}</button> }
+                @for (rol of roles; track rol) { <button type="button" [attr.aria-pressed]="profesor.rol === rol" [disabled]="cambiandoRol.has(profesor.usuarioId) || quitando.has(profesor.usuarioId)" (click)="cambiarRol(profesor, rol)">{{ rol === 'TITULAR' ? 'Titular' : 'Ayudante' }}</button> }
               </div>
               <div class="editar-grupo__menu" (keydown.escape)="menuAbierto = null; $event.stopPropagation()" (focusout)="cerrarMenu($event)">
-                <button type="button" class="editar-grupo__mas" [attr.aria-label]="'Acciones de ' + nombreCompleto(profesor)" [attr.aria-expanded]="menuAbierto === profesor.usuarioId" [disabled]="quitando.has(profesor.usuarioId)" (click)="menuAbierto = menuAbierto === profesor.usuarioId ? null : profesor.usuarioId">
+                <button type="button" class="editar-grupo__mas" [attr.aria-label]="'Acciones de ' + nombreCompleto(profesor)" [attr.aria-expanded]="menuAbierto === profesor.usuarioId" [disabled]="quitando.has(profesor.usuarioId) || cambiandoRol.has(profesor.usuarioId)" (click)="menuAbierto = menuAbierto === profesor.usuarioId ? null : profesor.usuarioId">
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                 </button>
                 @if (menuAbierto === profesor.usuarioId) { <div class="editar-grupo__desplegable"><button type="button" (click)="quitarProfesor(profesor)">Quitar del grupo</button></div> }

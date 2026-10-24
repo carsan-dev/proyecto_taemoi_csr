@@ -67,7 +67,7 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
     this.busqueda.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.filtrar());
     combineLatest([this.route.params, this.route.data]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([params, data]) => {
       const id = Number(params['id']);
-      if (id !== this.grupoId) {
+      if (id !== this.grupoId || !this.carga) {
         this.grupoId = id;
         this.grupo = null;
         this.alumnos = [];
@@ -89,6 +89,9 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
     this.carga?.unsubscribe();
     this.cargando = !this.grupo;
     this.errorCarga = '';
+    if (!Number.isSafeInteger(this.grupoId) || this.grupoId <= 0) {
+      this.cargando = false; this.errorCarga = 'No se pudo cargar el grupo'; return;
+    }
     this.carga = this.endpoints.obtenerGrupoPorId(this.grupoId, contextoErrorLocal()).subscribe({
       next: (grupo) => {
         this.grupo = grupo;

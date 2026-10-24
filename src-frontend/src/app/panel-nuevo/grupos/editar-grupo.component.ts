@@ -145,7 +145,7 @@ export class EditarGrupoComponent implements OnInit {
   nombreCompleto(profesor: ProfesorDeGrupo): string { return `${profesor.nombre} ${profesor.apellidos}`.trim(); }
   iniciales(profesor: ProfesorDeGrupo): string { return `${profesor.nombre.charAt(0)}${profesor.apellidos.charAt(0)}`.toUpperCase(); }
   cambiarRol(profesor: ProfesorDeGrupo, rol: RolAsignacionProfesor): void {
-    if (this.cambiandoRol.has(profesor.usuarioId) || rol === profesor.rol) return;
+    if (this.cambiandoRol.has(profesor.usuarioId) || this.quitando.has(profesor.usuarioId) || rol === profesor.rol) return;
     this.cambiandoRol.add(profesor.usuarioId);
     this.errorAlta = '';
     this.profesoresService.asignar(this.grupoId, profesor.email, rol)
@@ -165,7 +165,7 @@ export class EditarGrupoComponent implements OnInit {
       });
   }
   async quitarProfesor(profesor: ProfesorDeGrupo): Promise<void> {
-    if (this.quitando.has(profesor.usuarioId)) return;
+    if (this.quitando.has(profesor.usuarioId) || this.cambiandoRol.has(profesor.usuarioId)) return;
     const grupoId = this.grupoId;
     this.menuAbierto = null;
     this.quitando.add(profesor.usuarioId);

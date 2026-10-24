@@ -39,6 +39,22 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     req.flush({ id: 7, nombre: 'Infantiles', alumnos });
     fixture.detectChanges();
   }
+  for (const seleccionarAlumnos of [false, true]) {
+    it(`rejects zero on the first ${seleccionarAlumnos ? 'selection' : 'management'} route emission without leaving a skeleton`, () => {
+      fixture.destroy();
+      http.match(() => true);
+      params.next({ id: '0' });
+      data.next({ seleccionarAlumnos });
+      fixture = TestBed.createComponent(GestionarAlumnosComponent);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.cargando).toBeFalse();
+      expect(fixture.componentInstance.errorCarga).toBe('No se pudo cargar el grupo');
+      expect(fixture.nativeElement.querySelector('pn-esqueleto')).toBeNull();
+      expect(fixture.nativeElement.querySelector('pn-bloque-error')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('pn-seleccionar-alumnos')).toBeNull();
+      http.expectNone(() => true);
+    });
+  }
   it('shows empty with one primary action, then local search/no-match and active pupils only', fakeAsync(() => {
     grupo([]);
     expect(fixture.nativeElement.textContent).toContain('Aún no hay alumnos en este grupo');
