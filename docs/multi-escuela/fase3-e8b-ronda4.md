@@ -1,6 +1,6 @@
 # E8b, ronda 4: bocetos de las pantallas de gestión que faltaban (8b-B4)
 
-Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV37N32eY
+Estado: elegido el 24/10 (decisión 285), P1 en las nueve pantallas; los inventarios elegidos están en el Anexo A del plan. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV37N32eY
 
 ## Método
 
@@ -30,7 +30,7 @@ Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV3
 - Se pinta el paso 2 en el estado normal (con licencia y competición abiertas) y el paso 1 con errores.
 - El resto de campos, textos y límites son los de P1.
 
-**Riesgo.** P2 esconde los errores de otros pasos y suma clics al gestor en escritorio. P1 es larga en 375. En P1, «Dar de alta» deja de estar deshabilitado con el formulario inválido para poder mostrar el resumen de errores; hay que confirmarlo.
+**Riesgo.** P2 esconde los errores de otros pasos y suma clics al gestor en escritorio. P1 es larga en 375. En P1, «Dar de alta» deja de estar deshabilitado con el formulario inválido para poder mostrar el resumen de errores; confirmado en la decisión 285.
 
 **Preguntas.** P-1, P-2.
 
@@ -100,7 +100,7 @@ Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV3
 - «Tipo de grupo» sale solo al crear y con grupo elegido, con la lista fija de hoy y obligatorio.
 - Pie: «Cancelar» y «Crear turno» o «Guardar cambios».
 
-**Riesgo.** Quitar el interruptor cambia cuándo se pide el tipo de grupo: antes dependía del interruptor, ahora de haber elegido grupo. Al mover un turno de A a B, hoy solo se asigna a B y no se quita de A; la maqueta no lo corrige.
+**Riesgo.** Quitar el interruptor cambia cuándo se pide el tipo de grupo: antes dependía del interruptor, ahora de haber elegido grupo. Al mover un turno de A a B no hay nada que corregir: un turno tiene un solo grupo (`Turno.grupo`, columna `grupo_id`) y `GrupoServiceImpl.agregarTurnoAGrupo` fija el grupo nuevo, así que deja el anterior. Lo que se queda son los alumnos apuntados al turno (`alumno_turno`): siguen apuntados. Decisión 285: antes de guardar, el panel avisa de cuántos alumnos tiene el turno y de qué grupo vienen («Este turno tiene 8 alumnos de Infantiles A. Seguirán apuntados.»), como fila añadida.
 
 **Preguntas.** P-6, P-7.
 
@@ -237,7 +237,7 @@ Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV3
 ### Crear y editar turno
 
 - El interruptor «Asignar a un grupo existente» no obliga a elegir grupo: se puede enviar con el interruptor activo y el grupo vacío (solo exige el tipo).
-- Al mover un turno de A a B solo se llama a «asignar a B»; no se quita de A.
+- Al mover un turno de A a B, el turno deja A (tiene un solo grupo), pero sus alumnos apuntados siguen apuntados y nada lo avisa.
 - «Tipo de grupo» es una lista fija en la plantilla (Taekwondo infantil… Competición), no sale del catálogo de disciplinas.
 - Editar no tiene «Tipo de grupo»; crear sí, y solo con el interruptor.
 - Cualquier error al crear sale con el aviso genérico «No has completado todos los campos requeridos».
@@ -290,17 +290,57 @@ Estado: bocetos para elegir. Boceto: https://claude.ai/artifact/KwoSC7Mirs8k6FV3
 - Tabla de 9 columnas con campos en línea: en móvil obliga a comprimir u ocultar columnas.
 - Cancelar y Reactivar cargo actúan al momento, mezclados con un modelo de lote.
 
+## Decisión del propietario (24/10, decisión 285)
+
+Elegida la P1 en las nueve pantallas. Los inventarios elegidos, con las respuestas aplicadas, están en el Anexo A de `fase3-e8b-plan.md`.
+
+| Pantalla | Versión elegida |
+|---|---|
+| 1. Alta de alumno | P1, una columna por secciones con resumen al lado |
+| 2. Eliminar alumnos | P1, bajas y eliminaciones |
+| 3. Crear grupo | P1, panel lateral desde Grupos |
+| 4. Editar grupo | P1, dos bloques |
+| 5. Crear y editar turno | P1, panel lateral desde Grupos |
+| 6. Alumnos del grupo | P1, lista del grupo |
+| 7. Seleccionar alumnos | P1, panel lateral sobre Alumnos del grupo |
+| 8. Turnos de un alumno | P1, lista por día |
+| 9. Productos de un alumno | P1, cargos con edición en lote |
+
+Respuestas:
+
+- **P-1, sí.** «Sede» en el alta, obligatoria cuando la escuela tiene varias sedes.
+- **P-2, sí.** El alta valida «fecha de alta ≥ fecha de nacimiento».
+- **P-3, sí.** Aviso de pagos y cargos antes del borrado definitivo; pide un dato nuevo del servidor (pieza 8b-3l).
+- **P-4.** «Eliminar definitivamente» solo para el propietario (ADMIN); hoy pueden ADMIN y MANAGER.
+- **P-5, no.** El rango de edad del grupo sigue oculto y se reenvía sin tocar.
+- **P-6, sí.** El tipo de grupo del turno sale del catálogo de disciplinas de la escuela, no de la lista fija de la plantilla.
+- **P-7, reescrita.** Mover un turno de A a B ya lo quita de A (un turno tiene un solo grupo). Los alumnos apuntados al turno siguen apuntados, y antes de guardar el panel avisa: «Este turno tiene 8 alumnos de Infantiles A. Seguirán apuntados.»
+- **P-8.** Los alumnos que ya están en el grupo salen atenuados con «Ya está en el grupo» y sin casilla.
+- **P-9, comprobado.** El servidor pone el precio del catálogo al asignar un producto; el 0 del cliente se ignora.
+- **«Dar de alta»** sigue activo con el formulario inválido para mostrar el resumen de errores.
+
 ## Preguntas para el propietario
 
+Todas respondidas el 24/10 (decisión 285); los inventarios con las respuestas aplicadas están en el Anexo A del plan.
+
 - **P-1** (Alta de alumno). ¿Añadimos «Sede» al alta? Hoy no existe; Sierra Sur la necesita y, con varias sedes, el servidor responde «Indica la sede.»
+  - Respondida: sí. Se añade «Sede» al alta, obligatoria cuando la escuela tiene varias (hoy el servidor responde «Indica la sede.»).
 - **P-2** (Alta de alumno). ¿Validamos «fecha de alta ≥ fecha de nacimiento» en el alta, como ya hace la ficha?
+  - Respondida: sí. El alta valida «fecha de alta ≥ fecha de nacimiento», como la ficha.
 - **P-3** (Eliminar alumnos). ¿Avisamos de pagos y cargos antes del borrado definitivo? Pide un dato nuevo del servidor.
+  - Respondida: sí. Antes del borrado definitivo se avisa de los pagos y cargos del alumno; necesita un dato nuevo del servidor (pieza 8b-3l).
 - **P-4** (Eliminar alumnos). ¿Dejamos «Eliminar definitivamente» solo al propietario? Hoy pueden ambos, ADMIN y MANAGER.
+  - Respondida: solo el propietario (ADMIN) podrá «Eliminar definitivamente»; MANAGER ya no.
 - **P-5** (Editar grupo). ¿Mostramos y dejamos editar el rango de edad del grupo? Hoy está oculto y se reenvía sin tocar.
+  - Respondida: no. El rango de edad del grupo sigue oculto y se reenvía sin tocar.
 - **P-6** (Crear y editar turno). ¿El tipo de grupo del turno pasa a salir del catálogo de disciplinas? Hoy es una lista fija en la plantilla.
-- **P-7** (Crear y editar turno). ¿Corregimos el cambio de grupo de un turno para que lo quite del grupo anterior? Hoy solo lo asigna al nuevo.
+  - Respondida: sí. El tipo de grupo del turno sale del catálogo de disciplinas de la escuela.
+- **P-7** (Crear y editar turno). Pregunta reescrita: la premisa original era falsa, porque mover un turno de A a B ya lo quita de A (un turno tiene un solo grupo). La duda real: los alumnos apuntados al turno, ¿siguen apuntados? ¿Avisamos al guardar?
+  - Respondida: los alumnos del turno siguen apuntados y, antes de guardar, el panel avisa de cuántos son y de qué grupo vienen.
 - **P-8** (Seleccionar alumnos). ¿Los alumnos que ya están en el grupo se ven atenuados o se ocultan? Hoy se ocultan después de paginar y dejan páginas cortas.
+  - Respondida: los alumnos que ya están en el grupo salen atenuados con «Ya está en el grupo» y sin casilla (como dice P1).
 - **P-9** (Productos de un alumno). Hoy los cargos nuevos viajan con precio 0: ¿confirmamos que el servidor pone el del producto antes de 8b-3n?
+  - Respondida: comprobado. El servidor pone el precio del catálogo al asignar un producto (`ProductoAlumnoServiceImpl.crearCargoDeProducto`, `setPrecio(producto.getPrecio())`); el 0 que envía el cliente se ignora.
 
 ## Cómo responder
 
