@@ -118,6 +118,9 @@ class AlumnoSubidasWebMvcTest {
 	private ProgresionGradosService progresionGrados;
 
 	@MockitoBean
+	private com.taemoi.project.services.ResumenCargosAlumnoService resumenCargosAlumno;
+
+	@MockitoBean
 	private UsuarioService usuarioService;
 
 	@MockitoBean

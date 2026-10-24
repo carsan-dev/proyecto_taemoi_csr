@@ -1,0 +1,219 @@
+<div class="pn bajas" pnAcento>
+  <div class="bajas__pagina">
+    <header class="bajas__cabecera">
+      <nav class="bajas__miga" aria-label="Ruta">
+        <a routerLink="/alumnosListar">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+          <span>Alumnos</span>
+        </a>
+      </nav>
+      <h1 class="bajas__titulo">Bajas y eliminaciones</h1>
+    </header>
+
+    <div class="bajas__aviso" role="note">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round"><path d="M12 4 2.5 20h19L12 4Z"></path><path d="M12 10v4.5M12 17.5h.01"></path></svg>
+      <span>{{ aviso }}</span>
+    </div>
+
+    <div class="bajas__barra" role="search" aria-label="Buscar alumnos">
+      <div class="bajas__buscador">
+        <svg class="bajas__lupa" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <label class="bajas__oculto" for="bajas-buscar">Buscar por nombre</label>
+        <input id="bajas-buscar" type="search" class="bajas__campo" autocomplete="off" placeholder="Buscar por nombre"
+          [value]="nombre" (input)="buscar($any($event.target).value)" />
+        @if (nombre) {
+        <button type="button" class="bajas__borrar" aria-label="Borrar la búsqueda" (click)="borrarBusqueda()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6 6 18"></path></svg>
+        </button>
+        }
+      </div>
+      <div class="bajas__segmento" role="group" aria-label="Qué alumnos se ven">
+        <button type="button" [attr.aria-pressed]="!todos" (click)="elegirTodos(false)">Activos</button>
+        <button type="button" [attr.aria-pressed]="todos" (click)="elegirTodos(true)">Todos</button>
+      </div>
+      @if (estado === 'listo' && filas.length) {
+      <button type="button" class="bajas__boton-texto bajas__pagina-entera" (click)="alternarPagina()">
+        {{ todosLosDeLaPagina ? 'Quitar los de esta página' : 'Seleccionar los de esta página' }}</button>
+      }
+    </div>
+
+    @if (elegidos.size > 0) {
+    <div class="bajas__seleccion" role="region" aria-label="Alumnos elegidos">
+      <p class="bajas__seleccion-cuenta" data-cifras aria-live="polite"><strong>{{ textoElegidos }}</strong></p>
+      <button type="button" class="bajas__boton-texto" (click)="quitarSeleccion()">Quitar selección</button>
+      <span class="bajas__seleccion-acciones">
+        <button type="button" class="bajas__boton-secundario" aria-haspopup="dialog" (click)="darDeBajaElegidos()">Dar de baja</button>
+        @if (esPropietario) {
+        <button type="button" class="bajas__boton-secundario bajas__boton-secundario--peligro" aria-haspopup="dialog"
+          (click)="eliminarElegidos()">Eliminar</button>
+        }
+      </span>
+    </div>
+    }
+
+    @if (estado === 'cargando') {
+    <pn-esqueleto class="bajas__cargando" etiqueta="Cargando alumnos" aria-busy="true">
+      <div class="bajas__lista">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="bajas__esqueleto">
+          <span class="bajas__esqueleto-casilla"></span>
+          <span class="bajas__esqueleto-avatar"></span>
+          <span class="bajas__esqueleto-lineas"><span></span><span></span></span>
+          <span class="bajas__esqueleto-pastilla"></span>
+        </div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (estado === 'error') {
+    <pn-bloque-error class="bajas__estado" titulo="No hemos podido conectar con el servidor" (reintentar)="cargar()" />
+    } @else if (filas.length === 0) {
+    <pn-bloque-vacio class="bajas__estado" titulo="No se encontraron alumnos que coincidan con los criterios de búsqueda."
+      [texto]="hayFiltros ? 'Prueba con otro nombre o vuelve a ver solo los activos.' : ''" [accion]="hayFiltros ? 'Quitar filtros' : ''"
+      (accionar)="quitarFiltros()" />
+    } @else {
+    <!-- Filas de dos líneas (por debajo de 1280 px) -->
+    <ul class="bajas__lista bajas__filas" aria-label="Alumnos">
+      @for (f of filas; track f.id) {
+      <li class="bajas__fila" [class.bajas__fila--elegida]="estaElegido(f.id)" [attr.data-alumno]="f.id">
+        <input type="checkbox" class="bajas__casilla" [id]="'bajas-casilla-fila-' + f.id" [checked]="estaElegido(f.id)"
+          (change)="alternar(f.id)" [attr.aria-label]="'Elegir a ' + f.nombreCompleto" />
+        <a class="bajas__avatar" [routerLink]="['/alumnosEditar', f.id]" tabindex="-1" aria-hidden="true">
+          @if (f.foto) {<img [src]="f.foto" alt="" width="40" height="40" loading="lazy" decoding="async" />} @else {<span>{{ f.iniciales }}</span>}
+        </a>
+        <div class="bajas__datos">
+          <a class="bajas__nombre" [routerLink]="['/alumnosEditar', f.id]">{{ f.nombreCompleto }}</a>
+          @if (lineaDatos(f)) {<p class="bajas__linea2" data-cifras>{{ lineaDatos(f) }}</p>}
+        </div>
+        <div class="bajas__acciones">
+          @if (f.activo) {
+          <span class="bajas__pastilla bajas__pastilla--bien">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>Activo</span>
+          <button type="button" class="bajas__boton-texto" aria-haspopup="dialog" [attr.aria-label]="'Dar de baja a ' + f.nombreCompleto"
+            (click)="darDeBaja(f)">Dar de baja</button>
+          } @else {
+          <span class="bajas__pastilla">De baja</span>
+          <button type="button" class="bajas__boton-texto" [attr.aria-label]="'Dar de alta a ' + f.nombreCompleto" (click)="darDeAlta(f)">Dar de alta</button>
+          }
+          @if (esPropietario) {
+          <div class="bajas__menu-zona" (focusout)="alSalirDelMenu($event)">
+            <button type="button" class="bajas__boton-icono" [attr.data-menu-boton]="'fila-' + f.id" aria-haspopup="menu"
+              [attr.aria-expanded]="menuAbierto(f.id, 'fila')" [attr.aria-controls]="menuAbierto(f.id, 'fila') ? 'bajas-menu-fila-' + f.id : null"
+              [attr.aria-label]="'Más acciones de ' + f.nombreCompleto" (click)="alternarMenu(f.id, 'fila')"
+              (keydown)="teclaBotonMenu($event, f.id, 'fila')">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"></circle>
+                <circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg>
+            </button>
+            @if (menuAbierto(f.id, 'fila')) {
+            <div class="bajas__menu" role="menu" [id]="'bajas-menu-fila-' + f.id" (keydown)="teclaMenu($event)">
+              <button type="button" class="bajas__menu-opcion bajas__menu-opcion--peligro" role="menuitem" (click)="eliminar(f)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+                <span>Eliminar definitivamente</span>
+              </button>
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </li>
+      }
+    </ul>
+
+    <!-- Tabla (desde 1280 px), con las columnas de hoy -->
+    <div class="bajas__tabla-zona">
+      <table class="bajas__tabla">
+        <caption class="bajas__oculto">Alumnos</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="bajas__col-casilla">
+              <input type="checkbox" class="bajas__casilla" [checked]="todosLosDeLaPagina" (change)="alternarPagina()"
+                aria-label="Seleccionar los de esta página" />
+            </th>
+            <th scope="col"><span class="bajas__oculto">Foto</span></th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Apellidos</th>
+            <th scope="col">Expediente</th>
+            <th scope="col">DNI</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="bajas__col-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filas; track f.id) {
+          <tr [class.bajas__fila--elegida]="estaElegido(f.id)" [attr.data-alumno-tabla]="f.id">
+            <td class="bajas__col-casilla">
+              <input type="checkbox" class="bajas__casilla" [checked]="estaElegido(f.id)" (change)="alternar(f.id)"
+                [attr.aria-label]="'Elegir a ' + f.nombreCompleto" />
+            </td>
+            <td>
+              <span class="bajas__avatar bajas__avatar--tabla" aria-hidden="true">
+                @if (f.foto) {<img [src]="f.foto" alt="" width="36" height="36" loading="lazy" decoding="async" />} @else {<span>{{ f.iniciales }}</span>}
+              </span>
+            </td>
+            <td><a class="bajas__nombre" [routerLink]="['/alumnosEditar', f.id]">{{ f.nombre }}</a></td>
+            <td>{{ f.apellidos }}</td>
+            <td data-cifras>{{ f.expediente }}</td>
+            <td data-cifras>{{ f.dni }}</td>
+            <td>
+              @if (f.activo) {
+              <span class="bajas__pastilla bajas__pastilla--bien">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>Activo</span>
+              } @else {
+              <span class="bajas__pastilla">De baja</span>
+              }
+            </td>
+            <td class="bajas__col-acciones">
+              <span class="bajas__acciones">
+                @if (f.activo) {
+                <button type="button" class="bajas__boton-texto" aria-haspopup="dialog" [attr.aria-label]="'Dar de baja a ' + f.nombreCompleto"
+                  (click)="darDeBaja(f)">Dar de baja</button>
+                } @else {
+                <button type="button" class="bajas__boton-texto" [attr.aria-label]="'Dar de alta a ' + f.nombreCompleto" (click)="darDeAlta(f)">Dar de alta</button>
+                }
+                @if (esPropietario) {
+                <span class="bajas__menu-zona" (focusout)="alSalirDelMenu($event)">
+                  <button type="button" class="bajas__boton-icono" [attr.data-menu-boton]="'tabla-' + f.id" aria-haspopup="menu"
+                    [attr.aria-expanded]="menuAbierto(f.id, 'tabla')" [attr.aria-controls]="menuAbierto(f.id, 'tabla') ? 'bajas-menu-tabla-' + f.id : null"
+                    [attr.aria-label]="'Más acciones de ' + f.nombreCompleto" (click)="alternarMenu(f.id, 'tabla')"
+                    (keydown)="teclaBotonMenu($event, f.id, 'tabla')">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.6"></circle>
+                      <circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg>
+                  </button>
+                  @if (menuAbierto(f.id, 'tabla')) {
+                  <span class="bajas__menu" role="menu" [id]="'bajas-menu-tabla-' + f.id" (keydown)="teclaMenu($event)">
+                    <button type="button" class="bajas__menu-opcion bajas__menu-opcion--peligro" role="menuitem" (click)="eliminar(f)">
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+                      <span>Eliminar definitivamente</span>
+                    </button>
+                  </span>
+                  }
+                </span>
+                }
+              </span>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="bajas__paginacion" aria-label="Páginas de la lista">
+      <button type="button" class="bajas__boton-texto" [disabled]="pagina <= 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+      <p class="bajas__rango" data-cifras>{{ rango }}</p>
+      <button type="button" class="bajas__boton-texto" [disabled]="pagina >= totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+    </nav>
+    }
+  </div>
+
+  @if (lote) {
+  <pn-lote-alumnos [tipo]="lote.tipo" [alumnos]="lote.alumnos" [ejecutar]="lote.tipo === 'eliminar' ? eliminarUno : darDeBajaUno"
+    [cargarCargos]="lote.tipo === 'eliminar' ? leerCargos : null" (cerrado)="alCerrarLote($event)" />
+  }
+</div>

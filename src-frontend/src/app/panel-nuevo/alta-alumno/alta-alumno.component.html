@@ -1,0 +1,414 @@
+<div class="pn alta" pnAcento>
+  <div class="alta__pagina">
+    <header class="alta__cabecera">
+      <nav class="alta__miga" aria-label="Ruta">
+        <a routerLink="/alumnosListar">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+          <span>Alumnos</span>
+        </a>
+      </nav>
+      <h1 class="alta__titulo">Dar de alta un alumno</h1>
+    </header>
+
+    <form class="alta__rejilla" [formGroup]="form" (ngSubmit)="darDeAlta()" novalidate>
+      <div class="alta__columna">
+        @if (intentado && errores.length) {
+        <div class="alta__resumen-errores" role="alert" tabindex="-1" aria-labelledby="alta-resumen-errores-titulo">
+          <svg class="alta__resumen-icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <div>
+            <h2 id="alta-resumen-errores-titulo">{{ tituloResumen }}</h2>
+            <ul>
+              @for (e of errores; track e.id + e.mensaje) {
+              <li><a [href]="'#' + e.id" (click)="irACampo($event, e.id)">{{ e.etiqueta }}</a><span class="alta__resumen-mensaje">: {{ e.mensaje }}</span></li>
+              }
+            </ul>
+          </div>
+        </div>
+        }
+
+        <!-- Datos personales -->
+        <section class="alta__bloque" aria-labelledby="alta-bloque-personales">
+          <div class="alta__bloque-cabecera"><h2 id="alta-bloque-personales">Datos personales</h2></div>
+          <div class="alta__campos">
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('nombre').length">
+              <label class="alta__etiqueta" [for]="idPersona('nombre')">Nombre <span class="alta__marca">obligatorio</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('nombre')" formControlName="nombre" autocomplete="off"
+                aria-required="true" [attr.aria-invalid]="erroresPersona('nombre').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('nombre'), !!erroresPersona('nombre').length)" />
+              @if (erroresPersona('nombre').length) {<p class="alta__error" [id]="idPersona('nombre') + '-error'">{{ erroresPersona('nombre').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('apellidos').length">
+              <label class="alta__etiqueta" [for]="idPersona('apellidos')">Apellidos <span class="alta__marca">obligatorio</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('apellidos')" formControlName="apellidos" autocomplete="off"
+                aria-required="true" [attr.aria-invalid]="erroresPersona('apellidos').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('apellidos'), !!erroresPersona('apellidos').length)" />
+              @if (erroresPersona('apellidos').length) {<p class="alta__error" [id]="idPersona('apellidos') + '-error'">{{ erroresPersona('apellidos').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('fechaNacimiento').length">
+              <label class="alta__etiqueta" [for]="idPersona('fechaNacimiento')">Fecha de nacimiento <span class="alta__marca">obligatorio</span></label>
+              <div class="alta__linea">
+                <input type="date" class="alta__control alta__control--fecha" [id]="idPersona('fechaNacimiento')" formControlName="fechaNacimiento"
+                  aria-required="true" [attr.aria-invalid]="erroresPersona('fechaNacimiento').length ? 'true' : null"
+                  [attr.aria-describedby]="describir(idPersona('fechaNacimiento'), !!erroresPersona('fechaNacimiento').length, !!textoEdad)" />
+                @if (textoEdad) {<span class="alta__edad" [id]="idPersona('fechaNacimiento') + '-ayuda'" data-cifras>{{ textoEdad }}</span>}
+              </div>
+              @if (erroresPersona('fechaNacimiento').length) {<p class="alta__error" [id]="idPersona('fechaNacimiento') + '-error'">{{ erroresPersona('fechaNacimiento').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('nif').length">
+              <label class="alta__etiqueta" [for]="idPersona('nif')">NIF / DNI <span class="alta__marca">opcional</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('nif')" formControlName="nif" autocomplete="off" placeholder="12345678A"
+                maxlength="9" [attr.aria-invalid]="erroresPersona('nif').length ? 'true' : null" (input)="alEditar('nif')"
+                [attr.aria-describedby]="describir(idPersona('nif'), !!erroresPersona('nif').length)" />
+              @if (erroresPersona('nif').length) {<p class="alta__error" [id]="idPersona('nif') + '-error'">{{ erroresPersona('nif').join(' ') }}</p>}
+            </div>
+
+            @if (pedirSede) {
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('sede').length">
+              <label class="alta__etiqueta" [for]="idPersona('sede')">Sede <span class="alta__marca">obligatorio</span></label>
+              <select class="alta__control alta__control--select" [id]="idPersona('sede')" formControlName="sede" aria-required="true"
+                [attr.aria-invalid]="erroresPersona('sede').length ? 'true' : null" (change)="alEditar('sede')"
+                [attr.aria-describedby]="describir(idPersona('sede'), !!erroresPersona('sede').length)">
+                <option value="">Elige una sede</option>
+                @for (s of sedes; track s.id) {<option [value]="s.id">{{ s.nombre }}</option>}
+              </select>
+              @if (erroresPersona('sede').length) {<p class="alta__error" [id]="idPersona('sede') + '-error'">{{ erroresPersona('sede').join(' ') }}</p>}
+            </div>
+            }
+          </div>
+        </section>
+
+        <!-- Contacto -->
+        <section class="alta__bloque" aria-labelledby="alta-bloque-contacto">
+          <div class="alta__bloque-cabecera"><h2 id="alta-bloque-contacto">Contacto</h2></div>
+          <div class="alta__campos">
+            <div class="alta__campo alta__campo--ancho" [class.alta__campo--error]="erroresPersona('direccion').length">
+              <label class="alta__etiqueta" [for]="idPersona('direccion')">Dirección <span class="alta__marca">obligatorio</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('direccion')" formControlName="direccion" autocomplete="off"
+                placeholder="Calle, número, piso…" aria-required="true" [attr.aria-invalid]="erroresPersona('direccion').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('direccion'), !!erroresPersona('direccion').length)" />
+              @if (erroresPersona('direccion').length) {<p class="alta__error" [id]="idPersona('direccion') + '-error'">{{ erroresPersona('direccion').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('telefono').length">
+              <label class="alta__etiqueta" [for]="idPersona('telefono')">Teléfono principal <span class="alta__marca">obligatorio</span></label>
+              <input type="tel" inputmode="numeric" class="alta__control" [id]="idPersona('telefono')" formControlName="telefono" autocomplete="off"
+                placeholder="600123456" aria-required="true" [attr.aria-invalid]="erroresPersona('telefono').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('telefono'), !!erroresPersona('telefono').length)" />
+              @if (erroresPersona('telefono').length) {<p class="alta__error" [id]="idPersona('telefono') + '-error'">{{ erroresPersona('telefono').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('telefono2').length">
+              <label class="alta__etiqueta" [for]="idPersona('telefono2')">Teléfono secundario <span class="alta__marca">opcional</span></label>
+              <input type="tel" inputmode="numeric" class="alta__control" [id]="idPersona('telefono2')" formControlName="telefono2" autocomplete="off"
+                placeholder="600123456" [attr.aria-invalid]="erroresPersona('telefono2').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('telefono2'), !!erroresPersona('telefono2').length)" />
+              @if (erroresPersona('telefono2').length) {<p class="alta__error" [id]="idPersona('telefono2') + '-error'">{{ erroresPersona('telefono2').join(' ') }}</p>}
+            </div>
+
+            <div class="alta__campo alta__campo--ancho" [class.alta__campo--error]="erroresPersona('email').length">
+              <label class="alta__etiqueta" [for]="idPersona('email')">Email <span class="alta__marca">obligatorio</span></label>
+              <input type="email" class="alta__control" [id]="idPersona('email')" formControlName="email" autocomplete="off"
+                placeholder="email@ejemplo.com" aria-required="true" [attr.aria-invalid]="erroresPersona('email').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('email'), !!erroresPersona('email').length)" />
+              @if (erroresPersona('email').length) {<p class="alta__error" [id]="idPersona('email') + '-error'">{{ erroresPersona('email').join(' ') }}</p>}
+            </div>
+          </div>
+        </section>
+
+        <!-- Responsable legal -->
+        <section class="alta__bloque" aria-labelledby="alta-bloque-responsable" [attr.aria-describedby]="esMenor ? 'alta-nota-menor' : null">
+          <div class="alta__bloque-cabecera">
+            <h2 id="alta-bloque-responsable">Responsable legal</h2>
+            @if (esMenor) {<p class="alta__nota" id="alta-nota-menor">Recomendado: es menor de edad. Sigue siendo opcional.</p>}
+          </div>
+          <div class="alta__campos">
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('responsableLegalNombre').length">
+              <label class="alta__etiqueta" [for]="idPersona('responsableLegalNombre')">Nombre del responsable <span class="alta__marca">opcional</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('responsableLegalNombre')" formControlName="responsableLegalNombre"
+                autocomplete="off" maxlength="180" placeholder="Nombre y apellidos"
+                [attr.aria-invalid]="erroresPersona('responsableLegalNombre').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('responsableLegalNombre'), !!erroresPersona('responsableLegalNombre').length)" />
+              @if (erroresPersona('responsableLegalNombre').length) {<p class="alta__error" [id]="idPersona('responsableLegalNombre') + '-error'">{{ erroresPersona('responsableLegalNombre').join(' ') }}</p>}
+            </div>
+            <div class="alta__campo" [class.alta__campo--error]="erroresPersona('responsableLegalNif').length">
+              <label class="alta__etiqueta" [for]="idPersona('responsableLegalNif')">DNI/NIE del responsable <span class="alta__marca">opcional</span></label>
+              <input type="text" class="alta__control" [id]="idPersona('responsableLegalNif')" formControlName="responsableLegalNif"
+                autocomplete="off" maxlength="9" placeholder="12345678Z"
+                [attr.aria-invalid]="erroresPersona('responsableLegalNif').length ? 'true' : null"
+                [attr.aria-describedby]="describir(idPersona('responsableLegalNif'), !!erroresPersona('responsableLegalNif').length)" />
+              @if (erroresPersona('responsableLegalNif').length) {<p class="alta__error" [id]="idPersona('responsableLegalNif') + '-error'">{{ erroresPersona('responsableLegalNif').join(' ') }}</p>}
+            </div>
+          </div>
+        </section>
+
+        <!-- Deportes -->
+        <section class="alta__bloque" aria-labelledby="alta-bloque-deportes" formArrayName="deportesInicial">
+          <div class="alta__bloque-cabecera">
+            <h2 id="alta-bloque-deportes">Deportes</h2>
+            <p class="alta__nota">Nota: Puedes gestionar los deportes del alumno en la página de edición.</p>
+          </div>
+
+          @for (d of deportes.controls; track d; let i = $index) {
+          <div class="alta__deporte" [formGroupName]="i" role="group" [attr.aria-labelledby]="'alta-deporte-titulo-' + i" [attr.data-deporte]="i">
+            <div class="alta__deporte-cabecera">
+              <h3 [id]="'alta-deporte-titulo-' + i">{{ cabeceraDeporte(i) }}</h3>
+              <button type="button" class="alta__boton-texto alta__boton-peligro" [attr.aria-disabled]="deportes.length === 1 ? 'true' : null"
+                [attr.aria-label]="'Quitar ' + cabeceraDeporte(i)" (click)="quitarDeporte(i)">Quitar</button>
+            </div>
+            <div class="alta__campos">
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('deporte', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('deporte', i)">Deporte <span class="alta__marca">obligatorio</span></label>
+                <select appSearchableSelect searchPlaceholder="Buscar deporte…" searchDropdownClass="pn alta-desplegable"
+                  [searchDropdownVariables]="variablesDesplegable()" class="alta__control alta__control--select" [id]="idDeporte('deporte', i)"
+                  formControlName="deporte" aria-required="true" [attr.aria-invalid]="erroresDeporte('deporte', i).length ? 'true' : null"
+                  (change)="alCambiarDeporte(i)">
+                  <option value="" disabled>Selecciona el deporte</option>
+                  @for (disciplina of catalogo.disciplinasActivas(); track disciplina.codigo) {
+                  <option [value]="disciplina.codigo">{{ disciplina.nombre }}</option>
+                  }
+                </select>
+                @if (erroresDeporte('deporte', i).length) {<p class="alta__error" [id]="idDeporte('deporte', i) + '-error'">{{ erroresDeporte('deporte', i).join(' ') }}</p>}
+              </div>
+
+              @if (tieneGrados(i)) {
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('grado', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('grado', i)">Grado inicial <span class="alta__marca">obligatorio</span></label>
+                <select appSearchableSelect searchPlaceholder="Buscar grado…" searchDropdownClass="pn alta-desplegable"
+                  [searchDropdownVariables]="variablesDesplegable()" class="alta__control alta__control--select" [id]="idDeporte('grado', i)"
+                  formControlName="grado" aria-required="true" [attr.aria-invalid]="erroresDeporte('grado', i).length ? 'true' : null">
+                  <option value="" disabled>Selecciona el grado</option>
+                  @for (grado of gradosDe(i); track grado.id) {
+                  <option [value]="grado.tipoGrado">{{ nombreGrado(grado, i) }}</option>
+                  }
+                </select>
+                @if (erroresDeporte('grado', i).length) {<p class="alta__error" [id]="idDeporte('grado', i) + '-error'">{{ erroresDeporte('grado', i).join(' ') }}</p>}
+              </div>
+
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('fechaGrado', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('fechaGrado', i)">Fecha de grado <span class="alta__marca">obligatorio</span></label>
+                <input type="date" class="alta__control" [id]="idDeporte('fechaGrado', i)" formControlName="fechaGrado" aria-required="true"
+                  [attr.aria-invalid]="erroresDeporte('fechaGrado', i).length ? 'true' : null"
+                  [attr.aria-describedby]="describir(idDeporte('fechaGrado', i), !!erroresDeporte('fechaGrado', i).length)" />
+                @if (erroresDeporte('fechaGrado', i).length) {<p class="alta__error" [id]="idDeporte('fechaGrado', i) + '-error'">{{ erroresDeporte('fechaGrado', i).join(' ') }}</p>}
+              </div>
+              }
+
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('fechaAlta', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('fechaAlta', i)">Fecha de alta en el deporte <span class="alta__marca">obligatorio</span></label>
+                <input type="date" class="alta__control" [id]="idDeporte('fechaAlta', i)" formControlName="fechaAlta" aria-required="true"
+                  [attr.aria-invalid]="erroresDeporte('fechaAlta', i).length ? 'true' : null"
+                  [attr.aria-describedby]="describir(idDeporte('fechaAlta', i), !!erroresDeporte('fechaAlta', i).length)" />
+                @if (erroresDeporte('fechaAlta', i).length) {<p class="alta__error" [id]="idDeporte('fechaAlta', i) + '-error'">{{ erroresDeporte('fechaAlta', i).join(' ') }}</p>}
+              </div>
+
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-fechaAltaInicial-' + i">Antigüedad <span class="alta__marca">opcional</span></label>
+                <input type="date" class="alta__control" [id]="'alta-fechaAltaInicial-' + i" formControlName="fechaAltaInicial"
+                  [attr.aria-describedby]="'alta-fechaAltaInicial-' + i + '-ayuda'" />
+                <p class="alta__ayuda" [id]="'alta-fechaAltaInicial-' + i + '-ayuda'">Vacía, usa la fecha de alta</p>
+              </div>
+
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('tipoTarifa', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('tipoTarifa', i)">Tipo de tarifa <span class="alta__marca">obligatorio</span></label>
+                <select appSearchableSelect searchPlaceholder="Buscar tarifa…" searchDropdownClass="pn alta-desplegable"
+                  [searchDropdownVariables]="variablesDesplegable()" class="alta__control alta__control--select" [id]="idDeporte('tipoTarifa', i)"
+                  formControlName="tipoTarifa" aria-required="true" [attr.aria-invalid]="erroresDeporte('tipoTarifa', i).length ? 'true' : null"
+                  (change)="alCambiarTarifa(i)">
+                  <option value="" disabled>Selecciona una tarifa</option>
+                  @for (tarifa of tarifasDe(i); track tarifa.codigo) {
+                  <option [value]="tarifa.codigo">{{ tarifa.nombre }}</option>
+                  }
+                </select>
+                @if (erroresDeporte('tipoTarifa', i).length) {<p class="alta__error" [id]="idDeporte('tipoTarifa', i) + '-error'">{{ erroresDeporte('tipoTarifa', i).join(' ') }}</p>}
+              </div>
+
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-cuantia-' + i">Cuantía (€) <span class="alta__marca">opcional</span></label>
+                <input type="number" class="alta__control" [id]="'alta-cuantia-' + i" formControlName="cuantiaTarifa" min="0" step="0.01"
+                  inputmode="decimal" [attr.aria-describedby]="'alta-cuantia-' + i + '-ayuda'" />
+                <p class="alta__ayuda" [id]="'alta-cuantia-' + i + '-ayuda'" data-cifras>{{ notaCuantia(i) }}</p>
+              </div>
+
+              @if (pideRol(i)) {
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('rolFamiliar', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('rolFamiliar', i)">Rol familiar <span class="alta__marca">obligatorio</span></label>
+                <select class="alta__control alta__control--select" [id]="idDeporte('rolFamiliar', i)" formControlName="rolFamiliar"
+                  aria-required="true" [attr.aria-invalid]="erroresDeporte('rolFamiliar', i).length ? 'true' : null" (change)="alCambiarRol(i)">
+                  <option value="" disabled>Selecciona un rol</option>
+                  @for (rol of rolesFamiliares; track rol) {<option [value]="rol">{{ rol.charAt(0) + rol.slice(1).toLowerCase() }}</option>}
+                </select>
+                @if (erroresDeporte('rolFamiliar', i).length) {<p class="alta__error" [id]="idDeporte('rolFamiliar', i) + '-error'">{{ erroresDeporte('rolFamiliar', i).join(' ') }}</p>}
+              </div>
+              }
+
+              @if (pideGrupo(i)) {
+              <div class="alta__campo" [class.alta__campo--error]="erroresDeporte('grupoFamiliar', i).length">
+                <label class="alta__etiqueta" [for]="idDeporte('grupoFamiliar', i)">Grupo familiar <span class="alta__marca">obligatorio</span></label>
+                <input type="text" class="alta__control" [id]="idDeporte('grupoFamiliar', i)" formControlName="grupoFamiliar" autocomplete="off"
+                  placeholder="Ej: FAMILIA_GARCIA" aria-required="true" [attr.aria-invalid]="erroresDeporte('grupoFamiliar', i).length ? 'true' : null" />
+                @if (erroresDeporte('grupoFamiliar', i).length) {<p class="alta__error" [id]="idDeporte('grupoFamiliar', i) + '-error'">{{ erroresDeporte('grupoFamiliar', i).join(' ') }}</p>}
+              </div>
+              }
+            </div>
+
+            @if (pideLicencia(i)) {
+            <button type="button" role="switch" class="alta__interruptor" [attr.aria-checked]="!!valorDeporte(i, 'tieneLicencia')"
+              (click)="alternarLicencia(i)">
+              <span class="alta__pista" aria-hidden="true"><span class="alta__bola"></span></span>
+              <span>Licencia federativa</span>
+            </button>
+            @if (valorDeporte(i, 'tieneLicencia')) {
+            <div class="alta__campos alta__campos--abiertos">
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-numeroLicencia-' + i">Número de licencia <span class="alta__marca">opcional</span></label>
+                <input type="number" class="alta__control" [id]="'alta-numeroLicencia-' + i" formControlName="numeroLicencia" inputmode="numeric" />
+              </div>
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-fechaLicencia-' + i">Fecha de licencia <span class="alta__marca">opcional</span></label>
+                <input type="date" class="alta__control" [id]="'alta-fechaLicencia-' + i" formControlName="fechaLicencia" />
+              </div>
+            </div>
+            }
+            }
+
+            @if (permiteCompetir(i)) {
+            @if (puedeCompetir(i)) {
+            <button type="button" role="switch" class="alta__interruptor" [attr.aria-checked]="!!valorDeporte(i, 'competidor')"
+              (click)="alternarCompetidor(i)">
+              <span class="alta__pista" aria-hidden="true"><span class="alta__bola"></span></span>
+              <span>Competidor</span>
+            </button>
+            @if (valorDeporte(i, 'competidor')) {
+            <div class="alta__campos alta__campos--abiertos">
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-fechaAltaCompeticion-' + i">Fecha de alta en competición <span class="alta__marca">opcional</span></label>
+                <input type="date" class="alta__control" [id]="'alta-fechaAltaCompeticion-' + i" formControlName="fechaAltaCompeticion" />
+              </div>
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-fechaAltaCompetidorInicial-' + i">Fecha de alta como competidor <span class="alta__marca">opcional</span></label>
+                <input type="date" class="alta__control" [id]="'alta-fechaAltaCompetidorInicial-' + i" formControlName="fechaAltaCompetidorInicial" />
+              </div>
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-categoria-' + i">Categoría <span class="alta__marca">opcional</span></label>
+                <select class="alta__control alta__control--select" [id]="'alta-categoria-' + i" formControlName="categoria">
+                  <option value="">Sin categoría</option>
+                  @for (cat of categorias; track cat) {<option [value]="cat">{{ cat }}</option>}
+                </select>
+              </div>
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-peso-' + i">Peso (kg) <span class="alta__marca">opcional</span></label>
+                <input type="number" class="alta__control" [id]="'alta-peso-' + i" formControlName="peso" min="0" step="0.1" inputmode="decimal" />
+              </div>
+              <div class="alta__campo">
+                <label class="alta__etiqueta" [for]="'alta-fechaPeso-' + i">Fecha de peso <span class="alta__marca">opcional</span></label>
+                <input type="date" class="alta__control" [id]="'alta-fechaPeso-' + i" formControlName="fechaPeso" />
+              </div>
+            </div>
+            }
+            } @else {
+            <p class="alta__ayuda alta__ayuda--bloque">El alumno debe tener una licencia federativa activa para poder ser marcado como competidor.</p>
+            }
+            }
+          </div>
+          }
+
+          <div>
+            <button type="button" class="alta__boton-secundario" [disabled]="deportes.length >= maxDeportes" (click)="anadirDeporte()">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"></path></svg>
+              <span data-cifras>{{ textoAnadir }}</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Foto y permisos -->
+        <section class="alta__bloque" aria-labelledby="alta-bloque-foto">
+          <div class="alta__bloque-cabecera"><h2 id="alta-bloque-foto">Foto y permisos</h2></div>
+          <div class="alta__campo">
+            <span class="alta__etiqueta" id="alta-foto-etiqueta">Foto del alumno <span class="alta__marca">opcional</span></span>
+            <div class="alta__soltar" [class.alta__soltar--encima]="arrastrando" (dragover)="alArrastrar($event, true)"
+              (dragleave)="alArrastrar($event, false)" (drop)="alSoltar($event)">
+              <div class="alta__soltar-previa" aria-hidden="true">
+                @if (imagenPreview) {<img [src]="imagenPreview" alt="" />} @else {<span>{{ inicialesAlumno }}</span>}
+              </div>
+              <div class="alta__soltar-texto">
+                <input type="file" class="alta__oculto" id="alta-foto" accept="image/*" aria-labelledby="alta-foto-etiqueta alta-foto-boton"
+                  aria-describedby="alta-foto-ayuda" (change)="elegirFoto($event)" />
+                <p class="alta__soltar-titulo">
+                  @if (imagen) {Imagen del alumno seleccionada} @else {Arrastra una foto o <label for="alta-foto" id="alta-foto-boton" class="alta__enlace">elige un archivo</label>}
+                </p>
+                <p class="alta__ayuda" id="alta-foto-ayuda">{{ imagen ? 'Vista previa disponible' : 'JPG, PNG, GIF, WebP (máx. 50MB)' }}</p>
+              </div>
+              @if (imagen) {
+              <button type="button" class="alta__boton-texto alta__boton-peligro" (click)="quitarFoto()">Quitar foto</button>
+              }
+            </div>
+          </div>
+
+          <fieldset class="alta__campo alta__grupo">
+            <legend class="alta__etiqueta">Autorización para publicar imágenes en la web <span class="alta__marca">obligatorio</span></legend>
+            <div class="alta__segmento">
+              <input type="radio" class="alta__oculto" id="alta-autorizacion-si" formControlName="autorizacionWeb" [value]="true" />
+              <label for="alta-autorizacion-si">Sí</label>
+              <input type="radio" class="alta__oculto" id="alta-autorizacion-no" formControlName="autorizacionWeb" [value]="false" />
+              <label for="alta-autorizacion-no">No</label>
+            </div>
+          </fieldset>
+
+          <button type="button" role="switch" class="alta__interruptor" [attr.aria-checked]="!!valor('tieneDiscapacidad')"
+            (click)="alternarDiscapacidad()">
+            <span class="alta__pista" aria-hidden="true"><span class="alta__bola"></span></span>
+            <span>Tiene discapacidad</span>
+          </button>
+        </section>
+      </div>
+
+      <!-- Resumen del alta -->
+      <aside class="alta__resumen" aria-labelledby="alta-resumen-titulo">
+        <h2 id="alta-resumen-titulo">Resumen del alta</h2>
+        <div class="alta__resumen-quien">
+          <span class="alta__avatar" aria-hidden="true">
+            @if (imagenPreview) {<img [src]="imagenPreview" alt="" />} @else {<span>{{ inicialesAlumno }}</span>}
+          </span>
+          <div>
+            <p class="alta__resumen-nombre" [class.alta__resumen-vacio]="!nombreCompleto">{{ nombreCompleto || 'Sin nombre todavía' }}</p>
+            @if (textoEdad) {<p class="alta__resumen-sec" data-cifras>{{ textoEdad }}</p>}
+          </div>
+        </div>
+        <dl class="alta__resumen-datos">
+          @if (pedirSede) {
+          <div><dt>Sede</dt><dd>{{ nombreSede || '—' }}</dd></div>
+          }
+          <div>
+            <dt>Deportes</dt>
+            <dd>
+              @for (d of deportes.controls; track d; let i = $index) {
+              <span class="alta__resumen-linea">{{ valorDeporte(i, 'deporte') ? cabeceraDeporte(i) : '—' }}</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Tarifa</dt>
+            <dd data-cifras>
+              @for (d of deportes.controls; track d; let i = $index) {
+              <span class="alta__resumen-linea">{{ tarifaResumen(i) || '—' }}</span>
+              }
+            </dd>
+          </div>
+          <div><dt>Autorización web</dt><dd>{{ valor('autorizacionWeb') ? 'Sí' : 'No' }}</dd></div>
+        </dl>
+      </aside>
+
+      <!-- Barra fija -->
+      <div class="alta__barra" role="region" aria-label="Dar de alta">
+        <button type="button" class="alta__boton-secundario" [disabled]="enviando" (click)="cancelar()">Cancelar</button>
+        <button type="submit" id="alta-dar-de-alta" pnOcupado class="alta__boton-primario" [ocupado]="enviando" textoOcupado="Dando de alta…">Dar de alta</button>
+      </div>
+    </form>
+  </div>
+</div>

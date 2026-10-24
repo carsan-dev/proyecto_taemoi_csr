@@ -53,6 +53,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,10 +74,12 @@ import com.taemoi.project.archivos.UrlArchivoSerializer;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
+import com.taemoi.project.acceso.SoloPropietarioEliminaAlumnos;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
+import com.taemoi.project.dtos.response.ResumenCargosAlumnoDTO;
 import com.taemoi.project.dtos.response.RetoDiarioEstadoDTO;
 import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingSemanalResponse;
@@ -95,6 +98,7 @@ import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.services.MaterialExamenService;
+import com.taemoi.project.services.ResumenCargosAlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.utils.DocumentoSecurityUtils;
 
@@ -146,6 +150,9 @@ public class AlumnoController {
 
 	@Autowired
 	private ImagenService imagenService;
+
+	@Autowired
+	private ResumenCargosAlumnoService resumenCargosAlumnoService;
 
 	@Autowired
 	private DocumentoService documentoService;
@@ -241,6 +248,17 @@ public class AlumnoController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<Long>> obtenerIdsAlumnos(@RequestParam(required = false) Boolean incluirInactivos) {
 		return ResponseEntity.ok(alumnoService.obtenerIdsAlumnos(incluirInactivos != null && incluirInactivos));
+	}
+
+	/**
+	 * Pieza 8b-3l (P-3, decisión 285): los cargos de los alumnos que se van a eliminar para siempre (cuántos, pagados y
+	 * pendientes, con sus importes), para el aviso del diálogo de borrado. Solo lectura y solo el propietario, el único
+	 * que elimina. Solo alumnos de la escuela activa: los ids ajenos se ignoran; entre 1 y 25 ids (si no, 400).
+	 */
+	@GetMapping("/cargos-resumen")
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	public ResponseEntity<List<ResumenCargosAlumnoDTO>> obtenerResumenCargos(@RequestParam List<Long> alumnoIds) {
+		return ResponseEntity.ok(resumenCargosAlumnoService.resumir(alumnoIds));
 	}
 
 	/**
@@ -710,8 +728,10 @@ public class AlumnoController {
 	 * @return ResponseEntity con el estado de la operación.
 	 */
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<Void> eliminarAlumno(@Valid @PathVariable @NonNull Long id) {
+	// Pieza 8b-3l (P-4, decisión 285): solo el propietario; al resto, 403 con el motivo (SoloPropietarioEliminaAlumnos).
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@HandleAuthorizationDenied(handlerClass = SoloPropietarioEliminaAlumnos.class)
+	public ResponseEntity<?> eliminarAlumno(@Valid @PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: eliminarAlumno");
 		boolean eliminado = alumnoService.eliminarAlumno(id);
 		return eliminado ? new ResponseEntity<>(HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);

@@ -6,6 +6,8 @@
         <p class="alumnos__subtitulo" data-cifras>{{ subtitulo }}</p>
       </div>
       <div class="alumnos__acciones">
+        <!-- 8b-3l: el enlace que faltaba desde los listados nuevos a «Bajas y eliminaciones». -->
+        <a class="alumnos__enlace-bajas" routerLink="/alumnosEliminar">Bajas y eliminaciones</a>
         <div class="alumnos__menu-zona" (focusout)="alSalirDelMenu($event)">
           <button #botonInformes type="button" id="alumnos-informes" class="alumnos__boton-secundario"
             aria-haspopup="menu" [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'alumnos-menu-informes' : null"

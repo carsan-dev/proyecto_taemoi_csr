@@ -335,6 +335,12 @@ final class EvaluadorAutorizacion {
 		RegistradorConsultaAcceso.reiniciar();
 		try {
 			invocacion.proceed();
+			if (!invocacion.alcanzado && AnnotatedElementUtils.hasAnnotation(metodo,
+					org.springframework.security.authorization.method.HandleAuthorizationDenied.class)) {
+				// 8b-3l: con @HandleAuthorizationDenied la denegación no lanza; su manejador responde en lugar del método
+				// (p. ej. el 403 con motivo de SoloPropietarioEliminaAlumnos). No llegar al método es denegar.
+				return Decision.DENIEGA;
+			}
 			if (!invocacion.alcanzado) {
 				throw new IllegalStateException("La cadena de seguridad de " + metodo + " terminó sin conceder ni denegar");
 			}

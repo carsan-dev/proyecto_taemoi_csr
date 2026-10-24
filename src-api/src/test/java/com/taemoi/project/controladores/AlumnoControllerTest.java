@@ -122,7 +122,7 @@ class AlumnoControllerTest {
 		Long id = 1L;
 		when(alumnoService.eliminarAlumno(id)).thenReturn(true);
 
-		ResponseEntity<Void> result = alumnoController.eliminarAlumno(id);
+		ResponseEntity<?> result = alumnoController.eliminarAlumno(id);
 
 		assertEquals(HttpStatus.OK, result.getStatusCode());
 	}

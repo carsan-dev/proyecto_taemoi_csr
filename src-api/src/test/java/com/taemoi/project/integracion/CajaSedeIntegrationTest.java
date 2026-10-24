@@ -609,9 +609,10 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		long cobroNormal = s.cobrar(s.cargo(aProfA), s.tProf1);
 		long entrega = leer(entrega(s.e.sA, s.prof1, List.of(cobroSinCargo, cobroNormal), "21.00", null), s.tResp, 201)
 				.get("id").asLong();
-		// Borrar el alumno con el cobro ya entregado: el cobro sigue ACTIVO, sin cargo (6b-1).
+		// Borrar el alumno con el cobro ya entregado: el cobro sigue ACTIVO, sin cargo (6b-1). Solo el propietario
+		// elimina alumnos (8b-3l, decisión 285).
 		assertEquals(200, estado(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-				.delete("/api/alumnos/" + alumnoBorrado), s.tGestor));
+				.delete("/api/alumnos/" + alumnoBorrado), s.tPropietario));
 		Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM cobro WHERE id = ?", cobroSinCargo);
 		assertEquals("ACTIVO", antes.get("estado"));
 		assertNull(antes.get("producto_alumno_id"));

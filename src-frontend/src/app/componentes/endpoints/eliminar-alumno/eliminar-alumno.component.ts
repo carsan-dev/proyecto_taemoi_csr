@@ -155,10 +155,11 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
             });
             this.obtenerAlumnos();
           },
-          error: () => {
+          error: (error) => {
             Swal.fire({
               title: 'Error al eliminar alumno',
-              text: 'Ha ocurrido un error al intentar eliminar al alumno.',
+              // 8b-3l: el motivo del servidor si lo da («Solo el propietario puede eliminar alumnos definitivamente.»).
+              text: mensajeDelServidor(error) ?? 'Ha ocurrido un error al intentar eliminar al alumno.',
               icon: 'error',
             });
           },
@@ -270,10 +271,11 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
       next: () => {
         this.eliminarAlumnoSecuencial(alumnosSeleccionados);
       },
-      error: () => {
+      error: (error) => {
+        const motivo = mensajeDelServidor(error);
         Swal.fire({
           title: 'Error al eliminar alumno',
-          text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.`,
+          text: `Ha ocurrido un error al intentar eliminar al alumno ${alumno.nombre} ${alumno.apellidos}.${motivo ? ` ${motivo}` : ''}`,
           icon: 'error',
         });
         this.eliminarAlumnoSecuencial(alumnosSeleccionados);
@@ -446,4 +448,14 @@ export class EliminarAlumnoComponent implements OnInit, OnDestroy {
       },
     });
   }
+}
+
+/** El texto del servidor (`{mensaje}` o texto plano), si lo hay. */
+export function mensajeDelServidor(error: any): string | null {
+  const cuerpo = error?.error;
+  if (typeof cuerpo === 'string' && cuerpo.trim()) {
+    return cuerpo.trim();
+  }
+  const mensaje = cuerpo?.mensaje ?? cuerpo?.message;
+  return typeof mensaje === 'string' && mensaje.trim() ? mensaje.trim() : null;
 }
