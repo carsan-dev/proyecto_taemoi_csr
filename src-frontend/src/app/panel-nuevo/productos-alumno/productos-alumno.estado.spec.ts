@@ -723,7 +723,7 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       expect(fila(1).ocupada).toBeFalse();
     });
 
-    it('295: con cambios sin guardar en la fila, «Cobrar» deshabilitado con su nota', async () => {
+    it('295: bloquea el cobro y proporciona la nota para la barra', async () => {
       abrir([cargo(1), cargo(2)]);
       estado.cambiarPrecio(1, '25');
       expect(fila(1).muestraCobrar).toBeTrue();
