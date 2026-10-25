@@ -102,7 +102,7 @@
         <td class="campo campo-precio"><label class="etiqueta-movil" [for]="'precio-' + f.id">Precio (€)</label><span class="precio-control"><input [id]="'precio-' + f.id" type="text" inputmode="decimal" [attr.aria-label]="'Precio, ' + f.concepto" [value]="f.precio" [disabled]="!f.precioCantidadEditables" [attr.title]="f.notaPrecioCantidad" [attr.aria-invalid]="f.errores.precio ? 'true' : null" [attr.aria-describedby]="'precio-error-' + f.id + (f.notaPrecioCantidad ? ' precio-nota-pagados' : '')" (input)="e.cambiarPrecio(f.id, valor($event))" /><span class="precio-sufijo" aria-hidden="true">€</span></span><span class="error" [id]="'precio-error-' + f.id">{{ f.errores.precio ? 'Pon un precio de 0 o más, con dos decimales como mucho.' : '' }}</span><span class="nota nota-precio-movil" aria-hidden="true" [id]="'precio-nota-movil-' + f.id">{{ f.notaPrecioCantidad }}</span></td>
         <td class="total">{{ f.total === null ? '—' : eur(f.total) }}</td>
         <td class="pago campo"><div class="pago-linea"><span class="pastilla" [class]="'pastilla ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">@if (f.estado === 'pagado') { <i class="bi bi-check-lg" aria-hidden="true"></i> }{{ textosEstado[f.estado] }}</span>
-          @if (f.muestraCobrar) { <button pnOcupado class="texto" type="button" [ocupado]="f.cobrando" textoOcupado="Cobrando…" [deshabilitado]="!f.puedeCobrar" [attr.aria-describedby]="'cobrar-nota-' + f.id" (click)="e.cobrar(f.id)">Cobrar</button> }</div><span class="nota" [id]="'cobrar-nota-' + f.id">{{ f.notaCobrar }}</span>
+          @if (f.muestraCobrar) { <button pnOcupado class="texto" type="button" [ocupado]="f.cobrando" textoOcupado="Cobrando…" [deshabilitado]="!f.puedeCobrar" [attr.aria-describedby]="f.notaCobrar ? 'cobrar-nota-cambios' : null" [attr.title]="f.notaCobrar" (click)="e.cobrar(f.id)">Cobrar</button> }</div>
         </td>
         <td class="campo fecha-pago"><span class="etiqueta-movil">Fecha de pago</span>{{ f.fechaPago || '—' }}</td>
         <td class="campo notas"><span class="etiqueta-movil">Notas</span><span class="notas-texto" [title]="f.notas">{{ f.notas || '—' }}</span></td>
@@ -139,6 +139,7 @@
   @if (e.hayCambios()) {
   <div class="pendientes" role="region" aria-label="Cambios sin guardar">
     <strong class="pendientes-aviso">{{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar</strong>
+    @if (hayNotaCobrar()) { <span class="pendientes-nota" id="cobrar-nota-cambios">{{ textos.notaCobrarConCambios }}</span> }
     <button class="texto" type="button" (click)="e.descartar()" [disabled]="e.guardando()">Descartar</button>
     <button pnOcupado class="primario" type="button" [ocupado]="e.guardando()" textoOcupado="Guardando…" (click)="e.guardar()" [deshabilitado]="!e.puedeGuardar()">Guardar cambios</button>
   </div>

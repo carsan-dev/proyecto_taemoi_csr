@@ -39,6 +39,7 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   private readonly temaActual = inject(AcentoEscuelaActual);
   readonly variablesDesplegable = computed(() => variablesDelTema(this.temaActual.aplicado()));
   readonly hayCargosPagados = computed(() => this.estado.filasPagina().some((fila) => fila.cargo.pagado === true));
+  readonly hayNotaCobrar = computed(() => this.estado.filas().some((fila) => fila.muestraCobrar && fila.notaCobrar !== null));
   readonly iniciales = iniciales;
   readonly desplegadas = new Set<number>();
   menuAbierto: number | null = null;

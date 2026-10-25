@@ -309,6 +309,71 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     expect(el().querySelector('[role="region"][aria-label="Cambios sin guardar"]')).toBeNull();
   });
 
+  for (const campo of ['precio', 'cantidad']) {
+    it('muestra una sola nota de cobro en la barra al editar ' + campo, async () => {
+      const pantalla = await abrir(ALUMNO);
+      const boton = (id: number) => el().querySelector<HTMLButtonElement>('[data-cargo="' + id + '"] .pago button')!;
+      expect(el().querySelector('#cobrar-nota-cambios')).toBeNull();
+      expect(boton(1).getAttribute('aria-describedby')).toBeNull();
+      expect(boton(1).getAttribute('title')).toBeNull();
+      const entrada = el().querySelector<HTMLInputElement>('#' + campo + '-1')!;
+      entrada.value = campo === 'precio' ? '25' : '2';
+      entrada.dispatchEvent(new Event('input', { bubbles: true }));
+      harness.detectChanges();
+      const nota = el().querySelector('.pendientes #cobrar-nota-cambios')!;
+      expect(nota.textContent).toBe(pantalla.textos.notaCobrarConCambios);
+      expect(el().querySelector('.pendientes-aviso')!.nextElementSibling).toBe(nota);
+      expect(boton(1).disabled).toBeTrue();
+      expect(boton(1).getAttribute('aria-describedby')).toBe(nota.id);
+      expect(boton(1).getAttribute('title')).toBe(nota.textContent);
+      expect(boton(2).disabled).toBeFalse();
+      expect(boton(2).getAttribute('aria-describedby')).toBeNull();
+      expect(boton(2).getAttribute('title')).toBeNull();
+      pantalla.estado.cambiarCantidad(2, '2');
+      harness.detectChanges();
+      expect(el().querySelectorAll('#cobrar-nota-cambios').length).toBe(1);
+      expect(boton(2).getAttribute('aria-describedby')).toBe(nota.id);
+      expect(el().querySelector('tbody [id^="cobrar-nota-"]')).toBeNull();
+      expect(el().querySelector('tbody')!.textContent).not.toContain(nota.textContent!);
+      if (campo === 'precio') pantalla.estado.cambiarPrecio(1, '30');
+      else pantalla.estado.cambiarCantidad(1, '1');
+      harness.detectChanges();
+      expect(boton(1).disabled).toBeFalse();
+      expect(boton(1).getAttribute('aria-describedby')).toBeNull();
+      expect(el().querySelector('#cobrar-nota-cambios')).not.toBeNull();
+      pantalla.estado.cambiarCantidad(2, '1');
+      harness.detectChanges();
+      expect(el().querySelector('#cobrar-nota-cambios')).toBeNull();
+      expect(boton(2).getAttribute('aria-describedby')).toBeNull();
+      expect(el().querySelector('.pendientes')).toBeNull();
+    });
+  }
+
+  it('mantiene la barra sin nota con altas, borrados o cambios de un cargo pagado', async () => {
+    const pantalla = await abrir(ALUMNO, 200, [cargo(1), { ...cargo(2), pagado: true }]);
+    pantalla.estado.elegirProducto(1);
+    pantalla.estado.anadirALista();
+    pantalla.estado.marcarBorrar(1);
+    pantalla.estado.cambiarNotas(2, 'Nota pendiente');
+    harness.detectChanges();
+    expect(el().querySelector('.pendientes')).not.toBeNull();
+    expect(el().querySelector('#cobrar-nota-cambios')).toBeNull();
+    expect(el().querySelector('[data-cargo="1"] .pago button')!.getAttribute('aria-describedby')).toBeNull();
+    pantalla.estado.descartar();
+  });
+
+  it('conserva la nota global aunque la fila modificada este en otra pagina', async () => {
+    const pantalla = await abrir(ALUMNO, 200, Array.from({ length: 11 }, (_, i) => cargo(i + 1)));
+    const id = pantalla.estado.filasPagina()[0].id;
+    pantalla.estado.cambiarPrecio(id, '25');
+    pantalla.estado.paginaSiguiente();
+    harness.detectChanges();
+    expect(el().querySelector('[data-cargo="' + id + '"]')).toBeNull();
+    expect(el().querySelector('.pendientes #cobrar-nota-cambios')).not.toBeNull();
+    expect(el().querySelector('.pago button')!.getAttribute('aria-describedby')).toBeNull();
+    pantalla.estado.descartar();
+  });
+
   it('formatea el precio del resumen en euros y conserva las fechas de pago formateadas', async () => {
     const pantalla = await abrir(ALUMNO, 200, [{ ...cargo(1), fechaPago: new Date(2026, 9, 5) }]);
     expect(pantalla.precioResumen('1.010,50')).toBe(pantalla.eur(1010.5));
