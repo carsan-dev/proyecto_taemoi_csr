@@ -287,7 +287,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Optional<AlumnoDTO> obtenerAlumnoPorIdDTO(@NonNull Long id) {
 		Optional<Alumno> optionalAlumno = obtenerAlumnoPorId(id);
-		return optionalAlumno.map(AlumnoDTO::deAlumno);
+		return optionalAlumno.map(alumno -> {
+			AlumnoDTO dto = AlumnoDTO.deAlumno(alumno);
+			// Pieza 8b-3n (decisión 299): solo la ficha lo dice; el panel lo enseña como un alumno que no existe.
+			dto.setAlumnoEliminado(alumno.estaAnonimizado());
+			return dto;
+		});
 	}
 	
 	@Override
