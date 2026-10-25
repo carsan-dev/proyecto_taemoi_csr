@@ -167,9 +167,11 @@ class MoiskimdoGestionIdenticaIntegrationTest extends MySqlIntegrationTest {
 		for (boolean incluir : List.of(false, true)) {
 			List<Long> antes = enOrg1(() -> alumnos.buscarIdsEnOrganizacionActiva(incluir));
 			assertTrue(antes.containsAll(incluir ? fichas : fichas.subList(0, 3)));
-			// La consulta nueva de ids (Criteria) con alcance total da lo mismo que la JPQL de siempre.
+			// La consulta nueva de ids (Criteria) con alcance total da lo mismo que la JPQL de siempre si se le añade la
+			// exclusión de los anonimizados (decisión 287), que buscarIds no aplica: el alcance del responsable los necesita.
+			Specification<Alumno> noAnonimizados = (root, query, cb) -> cb.isNull(root.get("anonimizadoEn"));
 			assertEquals(antes, enOrg1(() -> alumnos.buscarIds(
-					PredicadosAlcance.alumnosDeSusSedes(AlcanceSesion.TOTAL), incluir)));
+					noAnonimizados.and(PredicadosAlcance.alumnosDeSusSedes(AlcanceSesion.TOTAL)), incluir)));
 			for (String token : List.of(tokenPropietario, tokenGestor)) {
 				assertEquals(antes, numeros(leer("/api/alumnos/ids?incluirInactivos=" + incluir, token)));
 				assertEquals(antes, ids(leer("/api/alumnos?incluirInactivos=" + incluir, token)));

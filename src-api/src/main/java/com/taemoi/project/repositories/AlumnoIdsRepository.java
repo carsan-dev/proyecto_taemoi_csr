@@ -11,8 +11,10 @@ public interface AlumnoIdsRepository {
 
 	/**
 	 * Ids de los alumnos de la escuela activa que cumplen {@code predicado} (solo activos salvo
-	 * {@code incluirInactivos}), en orden ascendente de id. Mismo resultado que
-	 * {@link AlumnoRepository#buscarIdsEnOrganizacionActiva} con un predicado sin restricción.
+	 * {@code incluirInactivos}), en orden ascendente de id. A diferencia de
+	 * {@link AlumnoRepository#buscarIdsEnOrganizacionActiva}, NO excluye a los eliminados anonimizando (decisión 287):
+	 * el alcance del responsable de sede ({@code GestionPorSede#idsAlumnosEnAlcance}) los necesita para sus
+	 * inscripciones y su tesorería. Los listados que no deben mostrarlos lo añaden al predicado.
 	 */
 	List<Long> buscarIds(Specification<Alumno> predicado, boolean incluirInactivos);
 }
