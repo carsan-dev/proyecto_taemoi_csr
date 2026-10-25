@@ -210,6 +210,11 @@ export class InicioComponent implements OnInit, OnDestroy {
     return this.estado === 'cargando' || this.estadoPendiente === 'cargando';
   }
 
+  /** Las cifras llegan por dos vías (datos y eventos): no se pintan hasta tener las dos; el error de datos manda. */
+  get cifrasCargando(): boolean {
+    return this.estado === 'cargando' || (this.estado === 'listo' && this.estadoEventos === 'cargando');
+  }
+
   get alumnosInactivos(): number {
     return Math.max(this.alumnosTotales - this.alumnosActivos, 0);
   }
