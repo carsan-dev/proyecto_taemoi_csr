@@ -36,6 +36,8 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
     const fila = fixture.nativeElement.querySelector('.seleccionar__fila--existente') as HTMLElement;
     expect(fila.textContent).toContain('Ya está en el grupo');
     expect(fila.querySelector('input')).toBeNull();
+    expect(fila.firstElementChild?.classList).toContain('seleccionar__casilla-vacia');
+    expect(fila.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
     expect(fixture.nativeElement.querySelector('.seleccionar__anadir').disabled).toBeTrue();
     const checkbox = fixture.nativeElement.querySelector('input[type=checkbox]') as HTMLInputElement;
     expect(fixture.nativeElement.querySelector(`label[for="${checkbox.id}"]`)).not.toBeNull();
@@ -88,6 +90,11 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
     nueva.flush({ content: [], totalElements: 0, totalPages: 0 });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Ningún alumno activo coincide con «Eva»');
+    expect(fixture.nativeElement.querySelector('.seleccionar__vacio h2')?.textContent).toContain('«Eva»');
+    expect(fixture.nativeElement.querySelector('.seleccionar__vacio p')?.textContent).toContain('Los 2 elegidos se conservan. Cambia la búsqueda para elegir más.');
+    fixture.componentInstance.elegidos.delete(3); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.seleccionar__vacio p')?.textContent).toContain('El alumno elegido se conserva.');
+    fixture.componentInstance.elegidos.add(3);
     expect([...fixture.componentInstance.elegidos]).toEqual([2, 3]);
     fixture.componentInstance.quitarSeleccion();
     expect(fixture.componentInstance.elegidos.size).toBe(0);
@@ -112,6 +119,16 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
     req.flush({});
     expect(guardado).toHaveBeenCalledTimes(1);
   });
+  it('keeps the no-match message accurate without a retained selection', fakeAsync(() => {
+    lista([]);
+    fixture.componentInstance.buscar('Zoe'); tick(500);
+    lista([]);
+    const vacio = fixture.nativeElement.querySelector('.seleccionar__vacio') as HTMLElement;
+    expect(vacio.getAttribute('role')).toBe('status');
+    expect(vacio.querySelector('h2')?.textContent).toContain('Ningún alumno activo coincide con «Zoe»');
+    expect(vacio.querySelector('p')?.textContent?.trim()).toBe('Cambia la búsqueda para elegir más.');
+    expect(vacio.querySelector('button')).toBeNull();
+  }));
   it('recovers list and submit errors without losing selection', () => {
     http.expectOne((r) => r.url.endsWith('/alumnos')).flush('fallo', { status: 500, statusText: 'Error' });
     fixture.detectChanges();

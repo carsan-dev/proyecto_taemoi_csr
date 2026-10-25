@@ -43,6 +43,42 @@ describe('Editar grupo (3m-2)', () => {
     ]);
     fixture.detectChanges();
   }
+  it('sitúa el error antes de la fila de ayuda completa y contador sin estrechar la página', () => {
+    cargar(); component.nombre.setValue(''); component.nombre.markAsTouched(); fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    const ayuda = host.querySelector('#nombre-ayuda')!;
+    const contador = host.querySelector('#nombre-contador')!;
+    expect(ayuda.textContent).toBe('Elige un nombre descriptivo para identificar el grupo fácilmente. Ejemplo: Infantiles cinturón blanco.');
+    expect(host.querySelector('#nombre-error')!.nextElementSibling).toBe(ayuda.parentElement);
+    expect(ayuda.parentElement).toBe(contador.parentElement);
+    expect(getComputedStyle(ayuda.parentElement!).display).toBe('flex');
+    expect(getComputedStyle(ayuda.parentElement!).gap).toBe('12px');
+    expect(getComputedStyle(contador).whiteSpace).toBe('nowrap');
+    expect(getComputedStyle(host.querySelector('.editar-grupo__pagina')!).maxWidth).toBe('none');
+  });
+
+  it('marca con acento y verificación los grupos elegidos y cuenta también el actual', () => {
+    cargar();
+    const host = fixture.nativeElement as HTMLElement;
+    const pill = host.querySelector<HTMLButtonElement>('.editar-grupo__pastilla')!;
+    const boton = host.querySelector<HTMLButtonElement>('.editar-grupo__alta button[type="submit"]')!;
+    expect(pill.getAttribute('aria-pressed')).toBe('false');
+    expect(pill.querySelector('svg')).toBeNull();
+    pill.click(); fixture.detectChanges();
+    expect(pill.getAttribute('aria-pressed')).toBe('true');
+    expect(pill.classList.contains('es-elegida')).toBeTrue();
+    expect(pill.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(boton.textContent?.trim()).toBe('Añadir a 2 grupos');
+    component.modoAlta = 'sinCuenta'; fixture.detectChanges();
+    expect(boton.textContent?.trim()).toBe('Enviar invitación');
+    component.modoAlta = 'desactivado'; fixture.detectChanges();
+    expect(boton.textContent?.trim()).toBe('Reactivar y añadir');
+    component.modoAlta = 'normal'; pill.click(); fixture.detectChanges();
+    expect(pill.classList.contains('es-elegida')).toBeFalse();
+    expect(pill.querySelector('svg')).toBeNull();
+    expect(boton.textContent?.trim()).toBe('Añadir');
+  });
+
   it('carga con esqueleto, reutiliza el resumen y enlaza alumnos y listado', () => {
     expect(fixture.nativeElement.querySelector('pn-esqueleto')).not.toBeNull();
     cargar();

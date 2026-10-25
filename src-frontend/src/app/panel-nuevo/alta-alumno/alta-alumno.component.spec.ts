@@ -127,6 +127,19 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     quitarTokens();
   });
 
+  it('mantiene la autorización web como un segmento compacto y conserva el valor booleano', () => {
+    crear();
+    const segmento = el().querySelector<HTMLElement>('.alta__segmento')!;
+    expect(texto(segmento.closest('fieldset')?.querySelector('legend'))).toBe('Autorización para publicar imágenes en la web obligatorio');
+    expect(segmento.getBoundingClientRect().width).toBeGreaterThan(0);
+    expect(segmento.getBoundingClientRect().width).toBeLessThan(120);
+    expect(segmento.querySelectorAll('input[type="radio"]').length).toBe(2);
+    const no = segmento.querySelector<HTMLInputElement>('#alta-autorizacion-no')!;
+    no.click(); fixture.detectChanges();
+    expect(comp().form.get('autorizacionWeb')!.value).toBeFalse();
+    expect(no.checked).toBeTrue();
+  });
+
   it('bloques, título y etiquetas «obligatorio» u «opcional»; con una sede no se pide «Sede»', () => {
     crear();
     expect(texto(el().querySelector('h1'))).toBe('Dar de alta un alumno');

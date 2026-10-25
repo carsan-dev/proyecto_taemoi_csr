@@ -30,7 +30,10 @@
               @if (fotoPara(alumno); as foto) { <img [src]="foto" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
               @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
             </a>
-            <a class="alumnos-grupo__nombre" [routerLink]="['/alumnosEditar', alumno.id]">{{ alumno.nombre }} {{ alumno.apellidos }}</a>
+            <div class="alumnos-grupo__identidad">
+              <a class="alumnos-grupo__nombre" [routerLink]="['/alumnosEditar', alumno.id]">{{ alumno.nombre }} {{ alumno.apellidos }}</a>
+              @if (turnosPorAlumno.get(alumno.id); as turnos) { <span class="alumnos-grupo__turnos">{{ turnos }}</span> }
+            </div>
             <a class="alumnos-grupo__texto" [routerLink]="['/gestionarTurnosAlumno', alumno.id]" [attr.aria-label]="'Turnos de ' + alumno.nombre + ' ' + alumno.apellidos">Turnos</a>
             <details class="alumnos-grupo__menu" (keydown.escape)="menu.removeAttribute('open'); resumen.focus()" #menu>
               <summary #resumen [attr.aria-label]="'Más acciones para ' + alumno.nombre + ' ' + alumno.apellidos">

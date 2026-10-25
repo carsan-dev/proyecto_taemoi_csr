@@ -7,7 +7,7 @@
   <form id="turno-form" [formGroup]="form" (submit)="$event.preventDefault(); guardar()">
     <fieldset [disabled]="enviando" class="turno__campos">
       <fieldset class="turno__dias" role="radiogroup" aria-labelledby="turno-dia-etiqueta" [attr.aria-invalid]="errorCampo('diaSemana') ? 'true' : null" [attr.aria-describedby]="errorCampo('diaSemana') ? 'turno-dia-error' : null">
-        <legend id="turno-dia-etiqueta">Día de la semana</legend>
+        <legend id="turno-dia-etiqueta">Día de la semana <span class="turno__metadato">obligatorio</span></legend>
         <div class="turno__pastillas">
           @for (dia of dias; track dia.nombre) {
           <label class="turno__dia"><input type="radio" formControlName="diaSemana" [value]="dia.nombre" [attr.aria-label]="dia.nombre" /><span aria-hidden="true">{{ dia.letra }}</span></label>
@@ -17,14 +17,14 @@
       @if (errorCampo('diaSemana')) { <p id="turno-dia-error" class="turno__error" role="alert">{{ errorCampo('diaSemana') }}</p> }
       <div class="turno__horas">
         <div>
-          <label for="turno-inicio">Hora de inicio</label>
+          <label for="turno-inicio">Hora de inicio <span class="turno__metadato">obligatorio</span></label>
           <input id="turno-inicio" class="turno__campo" type="time" formControlName="horaInicio" required
             [attr.aria-invalid]="errorCampo('horaInicio') || form.hasError('horasInvalidas') ? 'true' : null"
             [attr.aria-describedby]="errorCampo('horaInicio') ? 'turno-inicio-error' : form.hasError('horasInvalidas') ? 'turno-horas-error' : null" />
           @if (errorCampo('horaInicio')) { <p id="turno-inicio-error" class="turno__error" role="alert">{{ errorCampo('horaInicio') }}</p> }
         </div>
         <div>
-          <label for="turno-fin">Hora de fin</label>
+          <label for="turno-fin">Hora de fin <span class="turno__metadato">obligatorio</span></label>
           <input id="turno-fin" class="turno__campo" type="time" formControlName="horaFin" required
             [attr.aria-invalid]="errorCampo('horaFin') || form.hasError('horasInvalidas') ? 'true' : null"
             [attr.aria-describedby]="errorCampo('horaFin') ? 'turno-fin-error' : form.hasError('horasInvalidas') ? 'turno-horas-error' : null" />
@@ -33,20 +33,21 @@
       </div>
       @if (duracion) { <p class="turno__ayuda" aria-live="polite">Duración: {{ duracion }}</p> }
       @if (form.hasError('horasInvalidas')) { <p id="turno-horas-error" class="turno__error" role="alert">La hora de inicio debe ser anterior a la hora de fin</p> }
-      <label class="turno__grupo" for="turno-grupo">Grupo</label>
+      <label class="turno__grupo" for="turno-grupo">Grupo <span class="turno__metadato">opcional</span></label>
       <select id="turno-grupo" class="turno__campo" formControlName="grupoId" aria-describedby="turno-grupo-ayuda">
         <option value="">Sin grupo</option>
         @if (grupoActualAusente) { <option [value]="turno!.grupoId">{{ turno!.grupoNombre }}</option> }
         @for (grupo of grupos; track grupo.id) { <option [value]="grupo.id">{{ grupo.nombre }}</option> }
       </select>
-      <p id="turno-grupo-ayuda" class="turno__ayuda">Puedes asignar este turno a un grupo o dejarlo sin grupo</p>
+      <p id="turno-grupo-ayuda" class="turno__ayuda">Puedes asignar este turno a un grupo o dejarlo sin grupo. «Sin grupo» es la primera opción.</p>
       @if (!editando && form.controls.grupoId.value) {
-      <label class="turno__grupo" for="turno-tipo">Tipo de grupo</label>
+      <label class="turno__grupo" for="turno-tipo">Tipo de grupo <span class="turno__metadato">obligatorio</span></label>
       <select id="turno-tipo" class="turno__campo" formControlName="tipoGrupo" required
-        [attr.aria-invalid]="errorCampo('tipoGrupo') ? 'true' : null" [attr.aria-describedby]="errorCampo('tipoGrupo') ? 'turno-tipo-error' : null">
+        [attr.aria-invalid]="errorCampo('tipoGrupo') ? 'true' : null" [attr.aria-describedby]="'turno-tipo-ayuda' + (errorCampo('tipoGrupo') ? ' turno-tipo-error' : '')">
         <option value="">Selecciona un tipo…</option>
         @for (tipo of tipos; track tipo) { <option [value]="tipo">{{ tipo }}</option> }
       </select>
+      <p id="turno-tipo-ayuda" class="turno__ayuda">Elige el tipo del turno. Solo se pide al crear.</p>
       @if (errorCampo('tipoGrupo')) { <p id="turno-tipo-error" class="turno__error" role="alert">{{ errorCampo('tipoGrupo') }}</p> }
       }
       @if (avisoAlumnos) { <p class="turno__aviso" role="status">{{ avisoAlumnos }}</p> }
