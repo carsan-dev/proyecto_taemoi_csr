@@ -94,6 +94,7 @@ import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
+import com.taemoi.project.services.EstadoAlumnos;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.ImagenService;
@@ -178,6 +179,8 @@ public class AlumnoController {
 	 * @param categoriaId ID de la categoría del alumno para filtrar (opcional).
 	 * @param deporte     código de la disciplina (opcional, R2-P6): el filtro por deporte del listado, con el
 	 *                    criterio que aplicaba el navegador (ver {@link AlumnoService#obtenerAlumnosPorDeporte}).
+	 * @param estado      {@code activos}, {@code inactivos} o {@code todos} (opcional, sin distinguir mayúsculas):
+	 *                    manda sobre {@code incluirInactivos}; otro valor, 400.
 	 * @return ResponseEntity que contiene una lista paginada o filtrada de alumnos.
 	 * @throws ListaAlumnosVaciaException si no se encuentran alumnos en el sistema.
 	 */
@@ -189,7 +192,8 @@ public class AlumnoController {
 			@RequestParam(required = false) Long gradoId, @RequestParam(required = false) Long categoriaId,
 			@RequestParam(required = false) Boolean incluirInactivos,
 			@RequestParam(required = false) Boolean aptoParaExamen,
-			@RequestParam(required = false) String deporte) {
+			@RequestParam(required = false) String deporte,
+			@RequestParam(required = false) String estado) {
 
 		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 		logger.info(
@@ -204,12 +208,23 @@ public class AlumnoController {
 				? PageRequest.of(page - 1, size, orden)
 				: Pageable.unpaged();
 		boolean isPaged = page != null && size != null;
-		boolean incluir = incluirInactivos != null ? incluirInactivos : false;
+		// estado manda sobre incluirInactivos; sin él (o en blanco), el de siempre: por defecto, solo activos.
+		EstadoAlumnos estadoFichas;
+		if (estado != null && !estado.isBlank()) {
+			try {
+				estadoFichas = EstadoAlumnos.desdeParametro(estado);
+			} catch (IllegalArgumentException e) {
+				return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
+			}
+		} else {
+			estadoFichas = EstadoAlumnos.desdeIncluirInactivos(incluirInactivos != null && incluirInactivos);
+		}
 		boolean soloAptos = aptoParaExamen != null && aptoParaExamen;
 
 		Page<Alumno> alumnos = porDeporte
-				? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, incluir, soloAptos, pageable)
-				: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, incluir, soloAptos, pageable);
+				? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, estadoFichas, soloAptos,
+						pageable)
+				: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estadoFichas, soloAptos, pageable);
 
 		if (porDeporte && isPaged) {
 			// Página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).

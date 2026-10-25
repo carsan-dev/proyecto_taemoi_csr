@@ -46,6 +46,13 @@ export const POR_PAGINA = 25;
 
 type Vista = 'filas' | 'tarjetas';
 type Estado = 'cargando' | 'listo' | 'error';
+type FiltroEstado = 'activos' | 'inactivos' | 'todos';
+
+const OPCIONES_ESTADO: ReadonlyArray<{ valor: FiltroEstado; etiqueta: string }> = [
+  { valor: 'activos', etiqueta: 'Activos' },
+  { valor: 'inactivos', etiqueta: 'Inactivos' },
+  { valor: 'todos', etiqueta: 'Todos' },
+];
 
 interface DeporteFila {
   codigo: string;
@@ -150,7 +157,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   // Filtros (al servidor).
   nombre = '';
   deporte = '';
-  inactivos = false;
+  /** Qué alumnos lista la pantalla: solo activos (por defecto), solo inactivos o todos. */
+  filtroEstado: FiltroEstado = 'activos';
   aptos = false;
   pagina = 1;
 
@@ -185,12 +193,19 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   /** Botón «Cobrar» que abrió el panel: recibe el foco al cerrarlo. */
   private disparadorPanel: HTMLElement | null = null;
 
+  readonly opcionesEstado = OPCIONES_ESTADO;
+
+  /** Con «Inactivos» o «Todos» salen alumnos dados de baja. */
+  get inactivos(): boolean {
+    return this.filtroEstado !== 'activos';
+  }
+
   get hayFiltros(): boolean {
     return this.nombre.trim() !== '' || this.deporte !== '' || this.inactivos || this.aptos;
   }
 
   get contador(): string {
-    return plural(this.total, 'alumno', 'alumnos');
+    return this.filtroEstado === 'inactivos' ? plural(this.total, 'inactivo', 'inactivos') : plural(this.total, 'alumno', 'alumnos');
   }
 
   get subtitulo(): string {
@@ -227,7 +242,14 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     const parametros = this.route.snapshot?.queryParamMap;
     this.nombre = (parametros?.get('nombre') ?? '').trim();
     this.deporte = parametros?.get('deporte') ?? '';
-    this.inactivos = parametros?.get('inactivos') === 'true';
+    // `inactivos=true` es el parámetro de antes de existir `estado`: abría todos los alumnos.
+    const estadoUrl = parametros?.get('estado');
+    this.filtroEstado =
+      estadoUrl === 'inactivos' || estadoUrl === 'todos'
+        ? estadoUrl
+        : estadoUrl === null && parametros?.get('inactivos') === 'true'
+          ? 'todos'
+          : 'activos';
     this.aptos = parametros?.get('aptoParaExamen') === 'true';
     const pagina = Number(parametros?.get('pagina'));
     this.pagina = Number.isInteger(pagina) && pagina > 1 ? pagina : 1;
@@ -267,7 +289,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       this.escribirEstado();
     }
     this.carga = this.lecturas
-      .alumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null)
+      .alumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null, this.filtroEstado)
       .subscribe({
         next: (respuesta) => {
           this.alumnos = Array.isArray(respuesta?.content) ? respuesta.content : [];
@@ -351,8 +373,11 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.cargar();
   }
 
-  alternarInactivos(): void {
-    this.inactivos = !this.inactivos;
+  elegirEstado(estado: FiltroEstado): void {
+    if (estado === this.filtroEstado) {
+      return;
+    }
+    this.filtroEstado = estado;
     this.pagina = 1;
     this.cargar();
   }
@@ -372,7 +397,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.busqueda.next('');
     this.nombre = '';
     this.deporte = '';
-    this.inactivos = false;
+    this.filtroEstado = 'activos';
     if (this.aptos) {
       this.alternarAptos();
       return;
@@ -396,7 +421,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Búsqueda, disciplina, «Inactivos», «Solo aptos», página y vista en la dirección (sin apilar historial): al volver
+   * Búsqueda, disciplina, «Activos | Inactivos | Todos», «Solo aptos», página y vista en la dirección (sin apilar historial): al volver
    * desde la ficha («← Alumnos») el listado sale como estaba. Solo los valores que no son los de por defecto.
    */
   private escribirEstado(): void {
@@ -405,7 +430,9 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       queryParams: {
         nombre: this.nombre.trim() || null,
         deporte: this.deporte || null,
-        inactivos: this.inactivos ? 'true' : null,
+        estado: this.filtroEstado === 'activos' ? null : this.filtroEstado,
+        // Se limpia el parámetro de antes (`inactivos=true`) al reescribir la dirección.
+        inactivos: null,
         aptoParaExamen: this.aptos ? 'true' : null,
         pagina: this.pagina > 1 ? String(this.pagina) : null,
         vista: this.vista === 'tarjetas' ? 'tarjetas' : null,

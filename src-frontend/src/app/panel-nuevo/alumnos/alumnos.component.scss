@@ -195,7 +195,7 @@
 
 .alumnos__buscador {
   position: relative;
-  flex: 1 1 320px;
+  flex: 1 1 280px;
   min-width: 0;
 
   > i {
@@ -1077,6 +1077,15 @@
   .alumnos__buscador,
   .alumnos__campo--select {
     flex: 1 1 100%;
+  }
+
+  // «Activos | Inactivos | Todos»: ocupa su línea, con las tres opciones a partes iguales.
+  .alumnos__filtro-estado {
+    flex: 1 1 100%;
+
+    .alumnos__vista-opcion {
+      flex: 1 1 0;
+    }
   }
 
   .alumnos__filtros {
