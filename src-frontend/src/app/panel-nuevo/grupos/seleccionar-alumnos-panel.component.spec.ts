@@ -34,7 +34,9 @@ describe('SeleccionarAlumnosPanelComponent (3m-4)', () => {
   it('keeps existing pupils dimmed without a checkbox and disables zero selection', () => {
     lista([1, 2]);
     const fila = fixture.nativeElement.querySelector('.seleccionar__fila--existente') as HTMLElement;
-    expect(fila.textContent).toContain('Ya está en el grupo');
+    expect(fila.querySelector(':scope > .seleccionar__estado')?.textContent).toBe('Ya está en el grupo');
+    expect(fila.querySelector('.seleccionar__nombre')?.textContent?.trim()).toBe('Alumno 1 Prueba');
+    expect(fixture.nativeElement.querySelector('.seleccionar__fila:not(.seleccionar__fila--existente) .seleccionar__estado')).toBeNull();
     expect(fila.querySelector('input')).toBeNull();
     expect(fila.firstElementChild?.classList).toContain('seleccionar__casilla-vacia');
     expect(fila.firstElementChild?.getAttribute('aria-hidden')).toBe('true');

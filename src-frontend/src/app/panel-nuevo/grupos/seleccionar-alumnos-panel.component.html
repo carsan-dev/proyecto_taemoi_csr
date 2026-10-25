@@ -37,7 +37,8 @@
               @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
             </span>
             @if (pertenece(alumno.id)) {
-              <span class="seleccionar__nombre">{{ alumno.nombre }} {{ alumno.apellidos }}<span class="seleccionar__estado">Ya está en el grupo</span></span>
+              <span class="seleccionar__nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+              <span class="seleccionar__estado">Ya está en el grupo</span>
             } @else {
               <label class="seleccionar__nombre" [for]="'seleccionar-alumno-' + alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</label>
             }

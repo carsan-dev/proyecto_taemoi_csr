@@ -417,10 +417,13 @@
     box-sizing: border-box;
     min-width: 44px;
     min-height: 40px;
-    padding: 0 12px;
+    margin: 0;
+    padding: 0 14px;
     background: var(--pn-superficie);
-    color: var(--pn-tinta);
+    color: var(--pn-tinta-2);
     font: var(--pn-etiqueta);
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color var(--pn-transicion), color var(--pn-transicion);
   }
