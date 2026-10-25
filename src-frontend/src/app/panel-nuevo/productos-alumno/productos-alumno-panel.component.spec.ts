@@ -148,7 +148,7 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     expect(campo.value).toBe('Mensualidad');
   });
 
-  it('conserva la consulta con un producto elegido y muestra su etiqueta al volver a seleccionarlo', async () => {
+  it('conserva la consulta al filtrar, muestra la etiqueta al elegir y borra la selección al vaciar el campo', async () => {
     const pantalla = await abrir(ALUMNO, 200, [], [
       { id: 1, concepto: 'Mensualidad', precio: 30 },
       { id: 2, concepto: 'Camiseta', precio: 12 },
@@ -175,9 +175,76 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     campo.dispatchEvent(new Event('input', { bubbles: true }));
     harness.detectChanges();
     await new Promise<void>((resolver) => setTimeout(resolver));
-    expect(campo.value).toContain('Mensualidad');
+    expect(campo.value).toBe('');
     expect(pantalla.estado.busqueda()).toBe('');
+    expect(pantalla.estado.productoElegido()).toBeNull();
+    expect(pantalla.estado.opcionesProducto().length).toBe(2);
+  });
+
+  for (const cierre of ['Escape', 'blur']) {
+    it(`restablece el catálogo al cerrar la búsqueda visible con ${cierre} sin elegir`, async () => {
+      const pantalla = await abrir(ALUMNO, 200, [], [
+        { id: 1, concepto: 'Mensualidad', precio: 30 },
+        { id: 2, concepto: 'Camiseta', precio: 12 },
+      ]);
+      const campo = el().querySelector<HTMLInputElement>('[role="combobox"]')!;
+      campo.focus();
+      campo.value = 'cam';
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+      harness.detectChanges();
+      await new Promise<void>((resolver) => setTimeout(resolver));
+      expect(pantalla.estado.opcionesProducto().map((producto) => producto.concepto)).toEqual(['Camiseta']);
+      expect(campo.value).toBe('cam');
+      if (cierre === 'Escape') {
+        campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      } else {
+        campo.blur();
+        await new Promise<void>((resolver) => setTimeout(resolver, 180));
+      }
+      harness.detectChanges();
+      await new Promise<void>((resolver) => setTimeout(resolver));
+      expect(pantalla.estado.busqueda()).toBe('');
+      expect(pantalla.estado.productoElegido()).toBeNull();
+      expect(campo.value).toBe('');
+      expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
+      campo.focus();
+      campo.click();
+      const lista = document.getElementById(campo.getAttribute('aria-controls')!)!;
+      const opciones = Array.from(lista.querySelectorAll<HTMLElement>('[role="option"]'))
+        .filter((opcion) => opcion.style.display !== 'none');
+      expect(opciones.some((opcion) => opcion.textContent!.includes('Mensualidad'))).toBeTrue();
+      expect(opciones.some((opcion) => opcion.textContent!.includes('Camiseta'))).toBeTrue();
+    });
+  }
+
+  it('anuncia la opción activa del selector visible y la elige con el teclado', async () => {
+    const pantalla = await abrir(ALUMNO, 200, [], [
+      { id: 1, concepto: 'Mensualidad', precio: 30 },
+      { id: 2, concepto: 'Camiseta', precio: 12 },
+    ]);
+    const campo = el().querySelector<HTMLInputElement>('[role="combobox"]')!;
+    const tecla = (key: string) => campo.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    const activa = () => document.getElementById(campo.getAttribute('aria-activedescendant')!)!;
+    campo.focus();
+    tecla('ArrowDown');
+    const primera = activa();
+    expect(primera.textContent).toContain('Mensualidad');
+    expect(primera.classList.contains('is-active')).toBeTrue();
+    tecla('ArrowDown');
+    expect(activa().textContent).toContain('Camiseta');
+    tecla('ArrowUp');
+    expect(activa().id).toBe(primera.id);
+    tecla('Enter');
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
     expect(pantalla.estado.productoElegido()).toBe(1);
+    expect(campo.value).toContain('Mensualidad');
+    expect(campo.getAttribute('aria-expanded')).toBe('false');
+    expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
+    campo.click();
+    tecla('Escape');
+    expect(campo.getAttribute('aria-expanded')).toBe('false');
+    expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
   });
 
   it('la etiqueta Producto apunta al campo visible y lo enfoca al pulsarla', async () => {
@@ -214,9 +281,10 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
 
   it('mantiene el contador vivo y reserva Cobrando para la petición, no para el diálogo abierto', async () => {
     const pantalla = await abrir(ALUMNO);
-    const aviso = el().querySelector('.pendientes-aviso');
+    const aviso = el().querySelector('[role="status"].pendientes-estado');
     expect(aviso).not.toBeNull();
     expect(aviso!.textContent!.trim()).toBe('');
+    expect(el().querySelector('[role="region"][aria-label="Cambios sin guardar"]')).toBeNull();
     const filas = pantalla.estado.filasPagina();
     const lectura = spyOn(pantalla.estado, 'filasPagina').and.returnValue([
       { ...filas[0], ocupada: true, cobrando: false, puedeCobrar: false },
@@ -229,7 +297,16 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     lectura.and.returnValue([{ ...filas[0], ocupada: true, cobrando: true, puedeCobrar: false }]);
     harness.detectChanges();
     expect(boton.textContent).toContain('Cobrando');
-    expect(el().querySelector('.pendientes-aviso')).toBe(aviso);
+    expect(el().querySelector('.pendientes-estado')).toBe(aviso);
+    pantalla.estado.cambiarNotas(filas[0].id, 'Nota pendiente');
+    harness.detectChanges();
+    expect(el().querySelector('[role="region"][aria-label="Cambios sin guardar"]')).not.toBeNull();
+    expect(aviso!.textContent).toContain('1 cambio sin guardar');
+    pantalla.estado.descartar();
+    harness.detectChanges();
+    expect(el().querySelector('.pendientes-estado')).toBe(aviso);
+    expect(aviso!.textContent!.trim()).toBe('');
+    expect(el().querySelector('[role="region"][aria-label="Cambios sin guardar"]')).toBeNull();
   });
 
   it('formatea el precio del resumen en euros y conserva las fechas de pago formateadas', async () => {

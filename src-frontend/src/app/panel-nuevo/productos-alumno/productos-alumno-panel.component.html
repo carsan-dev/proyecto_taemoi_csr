@@ -26,10 +26,11 @@
     <fieldset [disabled]="e.guardando()">
       <legend class="oculto">Asignar producto</legend>
       <div class="asignar-campos">
-        <div class="producto" (input)="buscarProducto($event)" (focusout)="terminarBusquedaProducto()" (keydown.escape)="terminarBusquedaProducto()">
+        <div class="producto" (input)="buscarProducto($event)">
           <label for="asignar-producto-input">Producto <span class="obligatorio">obligatorio</span></label>
           <div class="buscador-producto"><i class="bi bi-search" aria-hidden="true"></i>
           <select id="asignar-producto" appSearchableSelect searchPlaceholder="Buscar producto…"
+            [searchConservarConsulta]="true" (searchCerrado)="terminarBusquedaProducto()"
             searchDropdownClass="pn productos-desplegable" [searchDropdownVariables]="variablesDesplegable()"
             [disabled]="e.guardando()" (change)="elegirProducto($event)"
             [attr.aria-invalid]="e.errorAsignacion() === 'producto' ? 'true' : null"
@@ -134,11 +135,12 @@
   }
 
   }
-  <div [class.pendientes]="e.hayCambios()" [class.oculto]="!e.hayCambios()" role="region" aria-label="Cambios sin guardar">
-    <strong class="pendientes-aviso" aria-live="polite">@if (e.hayCambios()) { {{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar }</strong>
-    @if (e.hayCambios()) {
+  <span class="oculto pendientes-estado" role="status" aria-live="polite">@if (e.hayCambios()) { {{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar }</span>
+  @if (e.hayCambios()) {
+  <div class="pendientes" role="region" aria-label="Cambios sin guardar">
+    <strong class="pendientes-aviso">{{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar</strong>
     <button class="texto" type="button" (click)="e.descartar()" [disabled]="e.guardando()">Descartar</button>
     <button pnOcupado class="primario" type="button" [ocupado]="e.guardando()" textoOcupado="Guardando…" (click)="e.guardar()" [deshabilitado]="!e.puedeGuardar()">Guardar cambios</button>
-    }
   </div>
+  }
 </div></main>

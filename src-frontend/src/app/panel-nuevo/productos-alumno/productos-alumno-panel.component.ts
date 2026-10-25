@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, NgZone, OnInit, afterEveryRender, computed, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, afterEveryRender, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -36,9 +36,7 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly detectorCambios = inject(ChangeDetectorRef);
   private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly zona = inject(NgZone);
   private readonly temaActual = inject(AcentoEscuelaActual);
-  private consultaProductoActiva = false;
   readonly variablesDesplegable = computed(() => variablesDelTema(this.temaActual.aplicado()));
   readonly hayCargosPagados = computed(() => this.estado.filasPagina().some((fila) => fila.cargo.pagado === true));
   readonly iniciales = iniciales;
@@ -50,7 +48,7 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   readonly precioParaCampo = precioParaCampo;
 
   constructor() {
-    afterEveryRender(() => this.zona.runOutsideAngular(() => queueMicrotask(() => this.sincronizarBuscador())));
+    afterEveryRender(() => this.sincronizarBuscador());
   }
 
   private sincronizarBuscador(): void {
@@ -61,22 +59,18 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
     campo.setAttribute('aria-describedby', 'asignar-producto-error');
     campo.setAttribute('aria-invalid', String(this.estado.errorAsignacion() === 'producto'));
     campo.disabled = this.estado.guardando();
-    // El selector reconstruye sus opciones: conserva la consulta mientras se está escribiendo.
-    if (campo.ownerDocument.activeElement === campo && this.consultaProductoActiva &&
-        (this.estado.busqueda() !== '' || this.estado.productoElegido() === null)) {
-      campo.value = this.estado.busqueda();
-    }
   }
 
   buscarProducto(evento: Event): void {
     if ((evento.target as HTMLElement).getAttribute('role') === 'combobox') {
-      this.consultaProductoActiva = true;
-      this.estado.buscarProducto(this.valor(evento));
+      const texto = this.valor(evento);
+      if (texto === '') this.estado.elegirProducto(null);
+      this.estado.buscarProducto(texto);
     }
   }
 
   terminarBusquedaProducto(): void {
-    this.consultaProductoActiva = false;
+    this.estado.buscarProducto('');
   }
 
   marcarBorrar(id: number): void {
@@ -174,8 +168,8 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   }
 
   elegirProducto(evento: Event): void {
-    this.terminarBusquedaProducto();
     const valor = this.valor(evento);
     this.estado.elegirProducto(valor ? Number(valor) : null);
+    this.terminarBusquedaProducto();
   }
 }
