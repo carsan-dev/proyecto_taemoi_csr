@@ -81,6 +81,7 @@ import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.TutorService;
 import com.taemoi.project.services.ConsentimientoService;
+import com.taemoi.project.services.EstadoAlumnos;
 import com.taemoi.project.services.AlumnoService;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
@@ -324,8 +325,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			boolean aptoParaExamen, @NonNull Pageable pageable) {
+		return obtenerAlumnosFiltrados(nombre, gradoId, categoriaId,
+				EstadoAlumnos.desdeIncluirInactivos(incluirInactivos), aptoParaExamen, pageable);
+	}
+
+	@Override
+	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado,
+			boolean aptoParaExamen, @NonNull Pageable pageable) {
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, aptoParaExamen);
+				buildAlumnoSpecification(nombre, gradoId, categoriaId, estado, aptoParaExamen);
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		if (restriccion.isPresent()) {
 			// Responsable de sede (entrega 6-1c): D9 por sus sedes.
@@ -355,7 +363,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos) {
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
-				buildAlumnoSpecification(nombre, gradoId, categoriaId, incluirInactivos, false);
+				buildAlumnoSpecification(nombre, gradoId, categoriaId,
+						EstadoAlumnos.desdeIncluirInactivos(incluirInactivos), false);
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		if (restriccion.isEmpty()) {
 			return alumnoRepository.findAll(filtro);
@@ -368,10 +377,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos, boolean aptoParaExamen, @NonNull Pageable pageable) {
+		return obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId,
+				EstadoAlumnos.desdeIncluirInactivos(incluirInactivos), aptoParaExamen, pageable);
+	}
+
+	@Override
+	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
+			EstadoAlumnos estado, boolean aptoParaExamen, @NonNull Pageable pageable) {
 		// El nombre no va al filtro común (que busca también en «nombre apellidos» y sin distinguir tildes).
+		// El estado lo resuelve el filtro del deporte (solo inactivos es el complemento de solo activos): el común solo
+		// filtra la ficha para solo activos, como siempre.
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
-				buildAlumnoSpecification(null, gradoId, categoriaId, incluirInactivos, aptoParaExamen)
-						.and(filtroDeporteComoElNavegador(deporte, nombre, incluirInactivos));
+				buildAlumnoSpecification(null, gradoId, categoriaId,
+						estado == EstadoAlumnos.ACTIVOS ? EstadoAlumnos.ACTIVOS : EstadoAlumnos.TODOS, aptoParaExamen)
+						.and(filtroDeporteComoElNavegador(deporte, nombre, estado));
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		if (restriccion.isPresent()) {
 			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
@@ -380,11 +399,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Criterio del navegador en el filtro por deporte (R2-P6, ver {@link AlumnoService#obtenerAlumnosPorDeporte}).
-	 * La ficha activa sin inactivos ya la pide el filtro común; aquí, el resto.
+	 * Filtro por deporte del listado (R2-P6, ver {@link AlumnoService#obtenerAlumnosPorDeporte}). Decisión del
+	 * propietario del 25/10 (sustituye a D5): con disciplina, «activo» es activo EN ESA disciplina. La ficha activa de
+	 * solo activos ya la pide el filtro común; aquí, el resto. Solo inactivos es el complemento exacto de solo activos
+	 * entre los que tienen el deporte: ficha no activa (o nula) o el deporte de baja.
 	 */
 	private static org.springframework.data.jpa.domain.Specification<Alumno> filtroDeporteComoElNavegador(
-			String deporte, String nombre, boolean incluirInactivos) {
+			String deporte, String nombre, EstadoAlumnos estado) {
 		// JavaScript trim(): también el espacio duro y el BOM, que String.strip() no quita.
 		String texto = nombre == null ? "" : nombre.replaceAll("^[\\s\\u00A0\\uFEFF\\p{Z}]+|[\\s\\u00A0\\uFEFF\\p{Z}]+$", "")
 				.toLowerCase(java.util.Locale.ROOT);
@@ -404,14 +425,24 @@ public class AlumnoServiceImpl implements AlumnoService {
 					cb.equal(cb.function(com.taemoi.project.config.FuncionesSqlContributor.UTF8MB4_BIN, String.class,
 							codigo), deporte));
 			predicados.add(cb.exists(conDeporte));
-			if (!incluirInactivos) {
-				// isAlumnoActivo del navegador: al menos un deporte activo (cualquiera).
+			if (estado != EstadoAlumnos.TODOS) {
+				// Activo en ese deporte: alguna fila suya activa (uk_alumno_deporte_alumno_disciplina deja una por deporte).
 				jakarta.persistence.criteria.Subquery<Long> conActivo = query.subquery(Long.class);
 				jakarta.persistence.criteria.Root<com.taemoi.project.entities.AlumnoDeporte> activo =
 						conActivo.from(com.taemoi.project.entities.AlumnoDeporte.class);
+				jakarta.persistence.criteria.Path<String> codigoActivo = activo.get("disciplina").get("codigo");
 				conActivo.select(activo.get("id")).where(cb.equal(activo.get("alumno"), root),
+						cb.equal(codigoActivo, deporte),
+						cb.equal(cb.function(com.taemoi.project.config.FuncionesSqlContributor.UTF8MB4_BIN, String.class,
+								codigoActivo), deporte),
 						cb.equal(activo.get("activo"), true));
-				predicados.add(cb.exists(conActivo));
+				if (estado == EstadoAlumnos.ACTIVOS) {
+					predicados.add(cb.exists(conActivo));
+				} else {
+					// NOT (ficha activa AND activo en el deporte); una ficha con activo nulo tampoco es activa.
+					predicados.add(cb.or(cb.isNull(root.get("activo")), cb.notEqual(root.get("activo"), true),
+							cb.not(cb.exists(conActivo))));
+				}
 			}
 			if (!texto.isEmpty()) {
 				// includes() del navegador: binario tras pasar a minúsculas (distingue tildes) y sin comodines (LOCATE).
@@ -2691,12 +2722,12 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * @param nombre          Name filter (searches in nombre, apellidos, and full name)
 	 * @param gradoId         Grado ID filter
 	 * @param categoriaId     Categoria ID filter
-	 * @param incluirInactivos Whether to include inactive students
+	 * @param estado          Qué fichas: solo activas, solo inactivas o todas
 	 * @param aptoParaExamen  Whether to filter only students eligible for exam
 	 * @return Specification for filtering Alumno
 	 */
 	private org.springframework.data.jpa.domain.Specification<Alumno> buildAlumnoSpecification(
-			String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos, boolean aptoParaExamen) {
+			String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado, boolean aptoParaExamen) {
 		// El filtro por grado compara por codigo: el id que envía la aplicación es el de
 		// /api/grados (taekwondo) y debe encontrar también a los alumnos de kickboxing, cuyos
 		// grados están en su propio sistema (V26). Un id que no existe en la escuela no encuentra a nadie.
@@ -2749,8 +2780,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 				predicates.add(criteriaBuilder.exists(subquery));
 			}
 
-			if (!incluirInactivos) {
+			if (estado == EstadoAlumnos.ACTIVOS) {
 				predicates.add(criteriaBuilder.equal(root.get("activo"), true));
+			} else if (estado == EstadoAlumnos.INACTIVOS) {
+				predicates.add(criteriaBuilder.equal(root.get("activo"), false));
 			}
 			// 8b-3l bis (decisión 287): un alumno eliminado anonimizando no sale en ningún listado ni búsqueda.
 			predicates.add(criteriaBuilder.isNull(root.get("anonimizadoEn")));

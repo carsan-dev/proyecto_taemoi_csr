@@ -37,12 +37,14 @@ import com.taemoi.project.services.JwtService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * R2-P6 (decisión D5): red de seguridad del filtro por deporte del listado de alumnos, que pasa del navegador al
- * servidor. Compara {@code GET /api/alumnos?page&size&incluirInactivos&nombre&deporte} con lo que hacía
- * listado-alumnos ({@code actualizarAlumnosPaginadosCliente}) sobre {@code GET /api/alumnos/con-deportes}, que aquí se
- * reproduce tal cual:
+ * R2-P6: red de seguridad del filtro por deporte del listado de alumnos, que pasa del navegador al servidor. Compara
+ * {@code GET /api/alumnos?page&size&incluirInactivos&nombre&deporte} con lo que hacía listado-alumnos
+ * ({@code actualizarAlumnosPaginadosCliente}) sobre {@code GET /api/alumnos/con-deportes}, que aquí se reproduce tal
+ * cual salvo en un punto:
  * <ul>
- * <li>sin inactivos, solo los que tienen algún deporte con {@code activo !== false} ({@code isAlumnoActivo});</li>
+ * <li>sin inactivos, solo los activos EN ESE deporte ({@code activo !== false} en su fila). Decisión del propietario
+ * del 25/10, que sustituye a D5: con disciplina, activo es activo en esa disciplina; antes bastaba con algún deporte
+ * activo ({@code isAlumnoActivo} del navegador) y el de baja en ese deporte pero activo en otro salía;</li>
  * <li>los que tienen el deporte, activo o de baja ({@code practicaDeporte});</li>
  * <li>nombre: {@code trim().toLowerCase()} contenido en {@code nombre} o {@code apellidos} en minúsculas;</li>
  * <li>orden estable por {@code nombre} en minúsculas ({@code localeCompare}, aquí el {@link Collator} español) sobre
@@ -221,7 +223,10 @@ class FiltroDeporteAlumnosEquivalenciaIntegrationTest extends MySqlIntegrationTe
 		return ids;
 	}
 
-	/** Los datos cubren lo que importa: de baja en el deporte pero activos en otro (D5), sin deportes, inactivos. */
+	/**
+	 * Los datos cubren lo que importa: de baja en el deporte pero activos en otro (ya no salen sin inactivos, decisión
+	 * del 25/10), sin deportes, inactivos.
+	 */
 	@Test
 	void losDatosCubrenLosCasosDelCriterio() {
 		Integer deBajaEnKbActivosEnOtro = jdbc.queryForObject("""
@@ -256,7 +261,7 @@ class FiltroDeporteAlumnosEquivalenciaIntegrationTest extends MySqlIntegrationTe
 		}
 	}
 
-	// ------------------------------------------------------------------ el navegador, tal cual
+	// ------------------------------------------------------- el navegador, con la regla del 25/10 para el deporte
 
 	private static List<Long> comoElNavegador(JsonNode conDeportes, boolean inactivos, String deporte, String busqueda) {
 		String termino = busqueda.strip().toLowerCase(Locale.ROOT);
@@ -264,10 +269,12 @@ class FiltroDeporteAlumnosEquivalenciaIntegrationTest extends MySqlIntegrationTe
 		for (JsonNode alumno : conDeportes) {
 			List<JsonNode> deportes = new ArrayList<>();
 			alumno.path("deportes").forEach(deportes::add);
-			if (!inactivos && deportes.stream().noneMatch(d -> !d.path("activo").isBoolean() || d.get("activo").asBoolean())) {
+			List<JsonNode> delDeporte = deportes.stream().filter(d -> deporte.equals(d.path("deporte").asText(null))).toList();
+			if (delDeporte.isEmpty()) {
 				continue;
 			}
-			if (deportes.stream().noneMatch(d -> deporte.equals(d.path("deporte").asText(null)))) {
+			// Decisión del 25/10 (sustituye a D5 e isAlumnoActivo): sin inactivos, activo en ESE deporte.
+			if (!inactivos && delDeporte.stream().noneMatch(d -> !d.path("activo").isBoolean() || d.get("activo").asBoolean())) {
 				continue;
 			}
 			if (!termino.isEmpty() && !contiene(alumno.path("nombre"), termino) && !contiene(alumno.path("apellidos"), termino)) {

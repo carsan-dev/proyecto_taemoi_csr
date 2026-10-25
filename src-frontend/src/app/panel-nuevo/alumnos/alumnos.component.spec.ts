@@ -202,6 +202,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     const [peticion] = listados();
     expect(peticion.request.params.get('page')).toBe('1');
     expect(peticion.request.params.get('size')).toBe('25');
+    expect(peticion.request.params.get('estado')).toBe('activos');
     expect(peticion.request.params.get('incluirInactivos')).toBe('false');
     expect(peticion.request.params.has('nombre')).toBeFalse();
     expect(peticion.request.params.has('deporte')).toBeFalse();
@@ -290,13 +291,15 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     http.match(() => true).forEach((r) => r.flush([]));
     fixture.detectChanges();
 
-    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    el().querySelector<HTMLButtonElement>('[data-estado="todos"]')!.click();
     [p] = listados();
+    expect(p.request.params.get('estado')).toBe('todos');
     expect(p.request.params.get('incluirInactivos')).toBe('true');
     p.flush(pagina(3, 3));
     http.match(() => true).forEach((r) => r.flush([]));
     fixture.detectChanges();
-    expect(el().querySelector('.alumnos__filtro--inactivos')!.getAttribute('aria-pressed')).toBe('true');
+    expect(el().querySelector('[data-estado="todos"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(el().querySelector('[data-estado="activos"]')!.getAttribute('aria-pressed')).toBe('false');
 
     el().querySelector<HTMLButtonElement>('.alumnos__filtro--aptos')!.click();
     [p] = listados();
@@ -632,14 +635,15 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
   it('vacío por filtros: «Ningún alumno coincide…» con «Quitar filtros» (8b-D1)', fakeAsync(() => {
     crear();
     responder();
-    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    el().querySelector<HTMLButtonElement>('[data-estado="inactivos"]')!.click();
     listados()[0].flush(pagina(0, 0));
     fixture.detectChanges();
     const vacio = el().querySelector<HTMLElement>('pn-bloque-vacio [role="status"]')!;
     expect(vacio.textContent).toContain('Ningún alumno coincide con la búsqueda');
-    expect(vacio.textContent).toContain('Prueba con otro nombre o quita los filtros de disciplina e inactivos.');
+    expect(vacio.textContent).toContain('Prueba con otro nombre o quita los filtros de disciplina y estado.');
     vacio.querySelector<HTMLButtonElement>('button')!.click();
     const [peticion] = listados();
+    expect(peticion.request.params.get('estado')).toBe('activos');
     expect(peticion.request.params.get('incluirInactivos')).toBe('false');
     flush();
   }));
@@ -859,7 +863,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
 
   // ---------------------------------------------------------------- 8b-3b: estado en la dirección y carreras
 
-  it('búsqueda, disciplina, «Inactivos», «Solo aptos», página y vista quedan en la dirección sin repetir cargas', fakeAsync(() => {
+  it('búsqueda, disciplina, «Estado», «Solo aptos», página y vista quedan en la dirección sin repetir cargas', fakeAsync(() => {
     crear();
     responder();
     const router = TestBed.inject(Router);
@@ -877,7 +881,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     disciplina.dispatchEvent(new Event('change'));
     listados()[0].flush(pagina(60, 25));
     http.match(() => true).forEach((r) => r.flush([]));
-    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    el().querySelector<HTMLButtonElement>('[data-estado="inactivos"]')!.click();
     listados()[0].flush(pagina(60, 25));
     http.match(() => true).forEach((r) => r.flush([]));
     el().querySelector<HTMLButtonElement>('.alumnos__filtro--aptos')!.click();
@@ -894,7 +898,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(params).toEqual({
       nombre: 'garcía',
       deporte: 'PILATES',
-      inactivos: 'true',
+      estado: 'inactivos',
       aptoParaExamen: 'true',
       pagina: '2',
       vista: 'tarjetas',
@@ -911,12 +915,13 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
 
   it('al entrar lee de la dirección la búsqueda, los filtros, la página y la vista', async () => {
     await TestBed.inject(Router).navigateByUrl(
-      '/?nombre=garc%C3%ADa&deporte=PILATES&inactivos=true&aptoParaExamen=true&pagina=2&vista=tarjetas'
+      '/?nombre=garc%C3%ADa&deporte=PILATES&estado=inactivos&aptoParaExamen=true&pagina=2&vista=tarjetas'
     );
     crear();
     const [p] = listados();
     expect(p.request.params.get('nombre')).toBe('garcía');
     expect(p.request.params.get('deporte')).toBe('PILATES');
+    expect(p.request.params.get('estado')).toBe('inactivos');
     expect(p.request.params.get('incluirInactivos')).toBe('true');
     expect(p.request.params.get('aptoParaExamen')).toBe('true');
     expect(p.request.params.get('page')).toBe('2');
@@ -925,7 +930,90 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     fixture.detectChanges();
     expect(el().querySelector<HTMLInputElement>('#alumnos-buscar')!.value).toBe('garcía');
     expect(el().querySelector('.alumnos__lista--tarjetas')).not.toBeNull();
-    expect(el().querySelector('.alumnos__filtro--inactivos')!.getAttribute('aria-pressed')).toBe('true');
+    expect(el().querySelector('[data-estado="inactivos"]')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('una dirección vieja con inactivos=true (sin estado) abre «Todos»', async () => {
+    await TestBed.inject(Router).navigateByUrl('/?inactivos=true');
+    crear();
+    const [p] = listados();
+    expect(p.request.params.get('estado')).toBe('todos');
+    expect(p.request.params.get('incluirInactivos')).toBe('true');
+    p.flush(pagina(812));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    expect(el().querySelector('[data-estado="todos"]')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('estado en la dirección gana al inactivos=true heredado', async () => {
+    await TestBed.inject(Router).navigateByUrl('/?estado=activos&inactivos=true');
+    crear();
+    expect(listados()[0].request.params.get('estado')).toBe('activos');
+  });
+
+  it('control «Estado»: grupo con el mismo marcado que «Vista», «Activos» por defecto', () => {
+    crear();
+    listados()[0].flush(pagina(812));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    const grupo = el().querySelector<HTMLElement>('.alumnos__filtro-estado')!;
+    expect(grupo.getAttribute('role')).toBe('group');
+    expect(grupo.getAttribute('aria-label')).toBe('Estado');
+    expect(grupo.classList.contains('alumnos__vista')).toBeTrue();
+    const botones = Array.from(grupo.querySelectorAll<HTMLButtonElement>('button'));
+    expect(botones.map((b) => b.textContent!.trim())).toEqual(['Activos', 'Inactivos', 'Todos']);
+    expect(botones.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false']);
+    expect(botones.every((b) => b.classList.contains('alumnos__vista-opcion'))).toBeTrue();
+  });
+
+  it('el grupo «Estado» se pinta igual que el de «Vista» (display y fondo calculados)', () => {
+    crear();
+    listados()[0].flush(pagina(812));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    const estado = getComputedStyle(el().querySelector('.alumnos__filtro-estado')!);
+    const vista = getComputedStyle(el().querySelector('.alumnos__vista[aria-label="Vista"]')!);
+    expect(estado.display).toBe(vista.display);
+    expect(estado.backgroundColor).toBe(vista.backgroundColor);
+  });
+
+  it('el contador dice «N inactivos» / «1 inactivo» con Inactivos y «N alumnos» con Activos y Todos', () => {
+    crear();
+    listados()[0].flush(pagina(1200));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    const contador = () => el().querySelector('.alumnos__contador')!.textContent!.trim();
+    expect(contador()).toBe('1.200 alumnos');
+    el().querySelector<HTMLButtonElement>('[data-estado="inactivos"]')!.click();
+    listados()[0].flush(pagina(1200));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    expect(contador()).toBe('1.200 inactivos');
+    el().querySelector<HTMLButtonElement>('[data-estado="inactivos"]')!.click();
+    expect(listados().length).withContext('misma opción: no recarga').toBe(0);
+    fixture.componentInstance.elegirEstado('todos');
+    listados()[0].flush(pagina(1200));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    expect(contador()).toBe('1.200 alumnos');
+    fixture.componentInstance.elegirEstado('inactivos');
+    listados()[0].flush(pagina(1, 1));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.detectChanges();
+    expect(contador()).toBe('1 inactivo');
+  });
+
+  it('cambiar el estado vuelve a la página 1', () => {
+    crear();
+    listados()[0].flush(pagina(812));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.componentInstance.irAPagina(3);
+    listados()[0].flush(pagina(812, 25, 51));
+    http.match(() => true).forEach((r) => r.flush([]));
+    fixture.componentInstance.elegirEstado('inactivos');
+    const [p] = listados();
+    expect(p.request.params.get('page')).toBe('1');
+    expect(p.request.params.get('estado')).toBe('inactivos');
   });
 
   it('una página inválida en la dirección empieza en la 1', async () => {
@@ -966,7 +1054,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(enVuelo.cancelled).toBeTrue();
     listados()[0].flush(pagina(812, 25, 26));
     const [otra] = http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`);
-    fixture.componentInstance.alternarInactivos();
+    fixture.componentInstance.elegirEstado('inactivos');
     expect(otra.cancelled).toBeTrue();
   });
 
@@ -981,13 +1069,13 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     const raiz = el().querySelector<HTMLElement>('.pn')!;
     expect(raiz.style.getPropertyValue('--pn-acento')).toBe('#01707F');
 
-    el().querySelector<HTMLButtonElement>('.alumnos__filtro--inactivos')!.click();
+    el().querySelector<HTMLButtonElement>('.alumnos__filtro--aptos')!.click();
     const [p] = listados();
     p.flush(pagina(60));
     http.match(() => true).forEach((r) => r.flush([DOS_CARGOS, UN_CARGO]));
     fixture.detectChanges();
 
-    const filtro = getComputedStyle(el().querySelector('.alumnos__filtro--inactivos')!);
+    const filtro = getComputedStyle(el().querySelector('.alumnos__filtro--aptos')!);
     expect(filtro.backgroundColor).withContext('filtro activo: fondo').toBe(SUAVE);
     expect(filtro.borderTopColor).withContext('filtro activo: borde').toBe(BORDE);
     expect(filtro.color).withContext('filtro activo: texto').toBe(ACENTO);
@@ -999,7 +1087,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(cobrar.borderTopColor).withContext('«Cobrar» de fila: borde').toBe(BORDE);
     expect(cobrar.color).withContext('«Cobrar» de fila: texto').toBe(ACENTO);
 
-    const vista = getComputedStyle(el().querySelector('.alumnos__vista-opcion[aria-pressed="true"]')!);
+    const vista = getComputedStyle(el().querySelector('.alumnos__vista[aria-label="Vista"] .alumnos__vista-opcion[aria-pressed="true"]')!);
     expect(vista.backgroundColor).withContext('segmento elegido: fondo').toBe(SUAVE);
     expect(vista.color).withContext('segmento elegido: texto').toBe(ACENTO);
     expect(vista.boxShadow).withContext('segmento elegido: borde').toContain(BORDE);

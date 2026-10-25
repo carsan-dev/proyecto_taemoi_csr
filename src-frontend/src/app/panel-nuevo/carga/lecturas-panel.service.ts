@@ -37,12 +37,17 @@ export class LecturasPanelService {
     nombre = '',
     incluirInactivos = false,
     aptoParaExamen = false,
-    deporte: string | null = null
+    deporte: string | null = null,
+    estado: 'activos' | 'inactivos' | 'todos' | null = null
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString())
       .set('incluirInactivos', incluirInactivos.toString());
+    if (estado) {
+      // `estado` manda sobre `incluirInactivos` en el servidor; aquí se mantiene coherente con él.
+      params = params.set('estado', estado).set('incluirInactivos', (estado !== 'activos').toString());
+    }
     if (nombre) {
       params = params.set('nombre', nombre);
     }
