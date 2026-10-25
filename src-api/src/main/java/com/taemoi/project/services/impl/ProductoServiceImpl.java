@@ -27,6 +27,7 @@ import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.ProductoService;
+import com.taemoi.project.utils.ImporteCargo;
 
 @Service
 public class ProductoServiceImpl implements ProductoService {
@@ -88,9 +89,14 @@ public class ProductoServiceImpl implements ProductoService {
 	 */
 	@Override
 	public Producto guardarProducto(Producto producto) {
-		if (producto.getVendibleProfesor() == null && producto.getId() != null) {
-			productoRepository.findById(producto.getId())
-					.ifPresent(actual -> producto.setVendibleProfesor(actual.getVendibleProfesor()));
+		Optional<Producto> existente = producto.getId() != null ? productoRepository.findById(producto.getId())
+				: Optional.empty();
+		// Decisión 297 (ronda 2): precio con 2 decimales como mucho y no negativo (400); el de uno existente que no cambia
+		// (precio antiguo con más decimales) no impide guardar lo demás.
+		ImporteCargo.exigirPrecioValidoSiCambia(producto.getPrecio(),
+				existente.map(Producto::getPrecio).orElse(null));
+		if (producto.getVendibleProfesor() == null) {
+			existente.ifPresent(actual -> producto.setVendibleProfesor(actual.getVendibleProfesor()));
 		}
 		return productoRepository.save(producto);
 	}
@@ -102,6 +108,8 @@ public class ProductoServiceImpl implements ProductoService {
 		if (productoActual.isPresent()) {
 			Producto producto = productoActual.get();
 			validarCambioDeNombre(producto, productoDetalles.getConcepto());
+			// Decisión 297 (ronda 2): un precio nuevo, con 2 decimales como mucho y no negativo (400).
+			ImporteCargo.exigirPrecioValidoSiCambia(productoDetalles.getPrecio(), producto.getPrecio());
 			// Actualiza los campos necesarios
 			producto.setConcepto(productoDetalles.getConcepto());
 			producto.setPrecio(productoDetalles.getPrecio());

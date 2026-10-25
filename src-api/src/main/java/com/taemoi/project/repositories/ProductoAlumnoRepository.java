@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.utils.ImporteCargo;
 
 public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, Long> {
 	/**
@@ -35,7 +36,10 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 		Date getFechaAsignacion();
 		Date getFechaPago();
 		Boolean getPagado();
+		/** Precio unitario; el importe es {@code ImporteCargo.sinRedondear(getPrecio(), getCantidad())} (decisión 297). */
 		Double getPrecio();
+		/** Cantidad del cargo (decisión 297): nula o menor que 1 cuenta como 1. */
+		Integer getCantidad();
 		Long getAlumnoId();
 		/** Tipo del producto cobrado (NULL si el producto se borró). */
 		com.taemoi.project.entities.TipoProducto getProductoTipo();
@@ -295,7 +299,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			@Param("sedes") Collection<Long> sedes);
 
 	@Query("SELECT pa.id AS id, pa.concepto AS concepto, pa.fechaAsignacion AS fechaAsignacion, " +
-			"pa.fechaPago AS fechaPago, pa.pagado AS pagado, pa.precio AS precio, p.tipo AS productoTipo, p.codigo AS productoCodigo, " +
+			"pa.fechaPago AS fechaPago, pa.pagado AS pagado, pa.precio AS precio, pa.cantidad AS cantidad, p.tipo AS productoTipo, p.codigo AS productoCodigo, " +
 			"COALESCE(a.id, adAlumno.id) AS alumnoId, pa.sedeId AS sedeId " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
@@ -394,7 +398,7 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 			@Param("todasLasSedes") Boolean todasLasSedes,
 			@Param("sedes") Collection<Long> sedes);
 
-	@Query("SELECT COALESCE(SUM(COALESCE(pa.precio, 0)), 0) " +
+	@Query("SELECT COALESCE(SUM(" + ImporteCargo.SQL + "), 0) " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.disciplina adDisc " +
@@ -526,9 +530,9 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@Query("SELECT pa.sedeId AS sedeId, COUNT(pa) AS totalMovimientos, " +
 			"SUM(CASE WHEN pa.pagado = true THEN 1 ELSE 0 END) AS totalPagados, " +
 			"SUM(CASE WHEN pa.pagado = true THEN 0 ELSE 1 END) AS totalPendientes, " +
-			"COALESCE(SUM(COALESCE(pa.precio, 0)), 0) AS importeTotal, " +
-			"COALESCE(SUM(CASE WHEN pa.pagado = true THEN COALESCE(pa.precio, 0) ELSE 0 END), 0) AS importePagado, " +
-			"COALESCE(SUM(CASE WHEN pa.pagado = true THEN 0 ELSE COALESCE(pa.precio, 0) END), 0) AS importePendiente " +
+			"COALESCE(SUM(" + ImporteCargo.SQL + "), 0) AS importeTotal, " +
+			"COALESCE(SUM(CASE WHEN pa.pagado = true THEN " + ImporteCargo.SQL + " ELSE 0 END), 0) AS importePagado, " +
+			"COALESCE(SUM(CASE WHEN pa.pagado = true THEN 0 ELSE " + ImporteCargo.SQL + " END), 0) AS importePendiente " +
 			"FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.alumnoDeporte ad " +
 			"LEFT JOIN ad.disciplina adDisc " +

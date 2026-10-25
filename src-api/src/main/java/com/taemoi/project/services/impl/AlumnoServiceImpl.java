@@ -86,6 +86,7 @@ import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.EmailUtils;
+import com.taemoi.project.utils.ImporteCargo;
 import com.taemoi.project.utils.MensualidadUtils;
 import com.taemoi.project.utils.NifUtils;
 import com.taemoi.project.utils.TelefonoUtils;
@@ -632,6 +633,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 							"El grado " + tipoGrado + " no está configurado en la escuela.");
 				}
 			}
+			// Decisión 297 (ronda 3): la cuantía pasa tal cual al precio de las mensualidades; 2 decimales como mucho.
+			ImporteCargo.exigirPrecioValido(deporteDTO.getCuantiaTarifa());
 			if (Boolean.TRUE.equals(deporteDTO.getCompetidor()) && !Boolean.TRUE.equals(deporteDTO.getTieneLicencia())) {
 				throw new DatosAlumnoInvalidosException("El alumno debe tener una licencia federativa activa para "
 						+ "ser marcado como competidor en " + deporte + ".");

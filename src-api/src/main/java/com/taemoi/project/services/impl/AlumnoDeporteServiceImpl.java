@@ -29,6 +29,7 @@ import com.taemoi.project.services.CatalogoDisciplinasService;
 import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.services.TarifasService;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.ImporteCargo;
 
 @Service
 @Transactional
@@ -126,6 +127,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 			String rolFamiliar, String grupoFamiliar, String categoria, Boolean competidor,
 			Date fechaAltaCompeticion, Date fechaAltaCompetidorInicial, Double peso,
 			Date fechaPeso, Boolean tieneLicencia, Integer numeroLicencia, Date fechaLicencia) {
+		// Decisión 297 (ronda 3): la cuantía pasa tal cual al precio de las mensualidades; 2 decimales como mucho (400).
+		ImporteCargo.exigirPrecioValido(cuantiaTarifa);
 		// Verificar que el alumno existe
 		Alumno alumno = alumnoRepository.findById(alumnoId)
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado con ID: " + alumnoId));
@@ -492,6 +495,8 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no tiene asignado el deporte: " + deporte));
 
+		// Decisión 297 (ronda 3): una cuantía nueva, con 2 decimales como mucho y no negativa (400 sin guardar nada).
+		ImporteCargo.exigirPrecioValidoSiCambia(cuantiaTarifa, alumnoDeporte.getCuantiaTarifa());
 		alumnoDeporte.setCuantiaTarifa(cuantiaTarifa);
 		return alumnoDeporteRepository.save(alumnoDeporte);
 	}

@@ -9,13 +9,14 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.utils.ImporteCargo;
 
 /**
  * Pieza 8b-3l (P-3, decisión 285): los cargos de cada alumno indicado, para avisar antes del borrado definitivo.
  * Consulta nativa con {@code organizacion_id} explícito en cada tabla (no pasa por el filtro {@code @TenantId}), como
  * {@link PendienteVencidoRepository}: un id de otra escuela no casa con ningún alumno de esta y no sale. Cuenta los
  * cargos sin cancelar del alumno ({@link #CARGO_DEL_ALUMNO}); pendiente es {@link #CARGO_SIN_PAGAR} (lo que se cancela
- * al eliminar anonimizando) e importe es {@code precio}, como la tesorería. Un alumno sin cargos sale con ceros.
+ * al eliminar anonimizando) e importe es {@link ImporteCargo#SQL} (precio × cantidad, decisión 297), como la tesorería. Un alumno sin cargos sale con ceros.
  */
 public interface ResumenCargosAlumnoRepository extends Repository<Alumno, Long> {
 
@@ -63,10 +64,11 @@ public interface ResumenCargosAlumnoRepository extends Repository<Alumno, Long> 
 			  COALESCE(SUM(CASE WHEN pa.pagado = 1 THEN 1 ELSE 0 END), 0) AS pagados,
 			  COALESCE(SUM(CASE WHEN pa.id IS NOT NULL AND (""" + CARGO_SIN_PAGAR + """
 			    ) THEN 1 ELSE 0 END), 0) AS pendientes,
-			  CAST(COALESCE(SUM(CASE WHEN pa.pagado = 1 THEN COALESCE(pa.precio, 0) ELSE 0 END), 0) AS DECIMAL(12, 2))
-			    AS importePagado,
+			  CAST(COALESCE(SUM(CASE WHEN pa.pagado = 1 THEN """ + ImporteCargo.SQL + """
+			    ELSE 0 END), 0) AS DECIMAL(12, 2)) AS importePagado,
 			  CAST(COALESCE(SUM(CASE WHEN pa.id IS NOT NULL AND (""" + CARGO_SIN_PAGAR + """
-			    ) THEN COALESCE(pa.precio, 0) ELSE 0 END), 0) AS DECIMAL(12, 2)) AS importePendiente
+			    ) THEN """ + ImporteCargo.SQL + """
+			    ELSE 0 END), 0) AS DECIMAL(12, 2)) AS importePendiente
 			FROM alumno a
 			LEFT JOIN producto_alumno pa ON pa.cancelado_en IS NULL AND """ + CARGO_DEL_ALUMNO + """
 			WHERE a.organizacion_id = :organizacion AND a.id IN (:alumnos)

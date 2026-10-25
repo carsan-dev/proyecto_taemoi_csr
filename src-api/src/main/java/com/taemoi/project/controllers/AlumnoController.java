@@ -532,6 +532,9 @@ public class AlumnoController {
 			// Retornar la respuesta con el Alumno creado en formato JSON
 			return new ResponseEntity<>(creadoDTO, HttpStatus.CREATED);
 
+		} catch (com.taemoi.project.exceptions.PrecioNoValidoException e) {
+			// Decisión 297 (ronda 3): cuantía de tarifa no válida → 400 con el mensaje.
+			return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
 		} catch (AlumnoDuplicadoException e) {
 			logger.error("Error de duplicado de alumno: {}", e.getMessage(), e);
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
@@ -1534,6 +1537,9 @@ public class AlumnoController {
 					.deAlumnoDeporte(alumnoDeporte);
 
 			return ResponseEntity.ok(dto);
+		} catch (com.taemoi.project.exceptions.PrecioNoValidoException e) {
+			// Decisión 297 (ronda 3): cuantía no válida → 400 con {mensaje} (los demás argumentos, como antes).
+			return ResponseEntity.badRequest().body(Map.of("mensaje", e.getMessage()));
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(e.getMessage());
 		} catch (Exception e) {

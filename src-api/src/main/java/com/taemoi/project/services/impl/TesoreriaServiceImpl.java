@@ -57,6 +57,7 @@ import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.TesoreriaService;
+import com.taemoi.project.utils.ImporteCargo;
 
 @Service
 public class TesoreriaServiceImpl implements TesoreriaService {
@@ -242,15 +243,15 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				.count();
 		long totalPendientes = totalMovimientos - totalPagados;
 		double importeTotal = movimientos.stream()
-				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad()))
 				.sum();
 		double importePagado = movimientos.stream()
 				.filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
-				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad()))
 				.sum();
 		double importePendiente = movimientos.stream()
 				.filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
-				.mapToDouble(pa -> valorSeguro(pa.getPrecio()))
+				.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad()))
 				.sum();
 		long alumnosConPendientes = movimientos.stream()
 				.filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
@@ -518,7 +519,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 					movimiento.getFechaAsignacion(),
 					movimiento.getFechaPago());
 			if (periodo != null && Objects.equals(periodo.ano, ano) && periodo.mes != null && periodo.mes >= 1 && periodo.mes <= 12) {
-				importesPorMes[periodo.mes - 1] += valorSeguro(movimiento.getPrecio());
+				importesPorMes[periodo.mes - 1] += ImporteCargo.sinRedondear(movimiento);
 			}
 		}
 
@@ -909,11 +910,12 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			dto.setTotalMovimientos((long) deLaSede.size());
 			dto.setTotalPagados(pagados);
 			dto.setTotalPendientes(deLaSede.size() - pagados);
-			dto.setImporteTotal(deLaSede.stream().mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+			dto.setImporteTotal(deLaSede.stream()
+					.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad())).sum());
 			dto.setImportePagado(deLaSede.stream().filter(pa -> Boolean.TRUE.equals(pa.getPagado()))
-					.mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+					.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad())).sum());
 			dto.setImportePendiente(deLaSede.stream().filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
-					.mapToDouble(pa -> valorSeguro(pa.getPrecio())).sum());
+					.mapToDouble(pa -> ImporteCargo.sinRedondear(pa.getPrecio(), pa.getCantidad())).sum());
 			dto.setAlumnosConPendientes(deLaSede.stream().filter(pa -> !Boolean.TRUE.equals(pa.getPagado()))
 					.map(ProductoAlumnoRepository.TesoreriaPeriodoBaseProjection::getAlumnoId).filter(Objects::nonNull)
 					.distinct().count());
@@ -1159,7 +1161,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		dto.setFechaAsignacion(productoAlumno.getFechaAsignacion());
 		dto.setPagado(Boolean.TRUE.equals(productoAlumno.getPagado()));
 		dto.setFechaPago(productoAlumno.getFechaPago());
-		dto.setPrecio(productoAlumno.getPrecio() != null ? productoAlumno.getPrecio() : 0.0);
+		// Decisión 297: «precio» del movimiento es su importe (precio × cantidad); con cantidad 1, el precio como antes.
+		dto.setPrecio(ImporteCargo.sinRedondear(productoAlumno));
 		dto.setNotas(productoAlumno.getNotas());
 		dto.setSedeId(productoAlumno.getSedeId());
 		return dto;
