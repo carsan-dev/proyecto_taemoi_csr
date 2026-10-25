@@ -153,6 +153,8 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     grupos?: unknown[];
     /** Número del límite o 'error' para que falle la petición. */
     limite?: number | 'error';
+    /** Si es true, no responde la petición de eventos (llegan por su cuenta, más tarde). */
+    sinEventos?: boolean;
   }
 
   function responder(dto: PendienteVencido = pendiente(), opciones: Respuestas = {}): void {
@@ -171,12 +173,14 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     );
     http.match(`${API}/alumnos/aptos`).forEach((r) => r.flush([{ id: 1 }]));
     http.match(`${API}/alumnos/deportes/distribucion`).forEach((r) => r.flush({ TAEKWONDO: 6, PILATES: 1 }));
-    http.match(`${API}/eventos/admin/todos`).forEach((r) =>
-      r.flush([
-        { id: 1, titulo: 'Examen de diciembre', visible: true },
-        { id: 2, titulo: 'Torneo', visible: false },
-      ])
-    );
+    if (!opciones.sinEventos) {
+      http.match(`${API}/eventos/admin/todos`).forEach((r) =>
+        r.flush([
+          { id: 1, titulo: 'Examen de diciembre', visible: true },
+          { id: 2, titulo: 'Torneo', visible: false },
+        ])
+      );
+    }
     http.match(`${API}/tesoreria/pendiente-vencido`).forEach((r) => r.flush(dto));
     fixture.detectChanges();
   }
@@ -329,6 +333,31 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(elemento().querySelector('.inicio__ocupacion-nota')).toBeNull();
     responder();
     expect(elemento().querySelector('pn-esqueleto')).toBeNull();
+  });
+
+  it('las cifras esperan a los eventos: sin ellos siguen en carga y no pintan «0»', () => {
+    responder(pendiente(), { sinEventos: true });
+    jasmine.clock().tick(300);
+    fixture.detectChanges();
+    const cifras = elemento().querySelector('.inicio__cifras')!;
+    expect(cifras.querySelector('pn-esqueleto')?.textContent).toContain('Cargando las cifras');
+    expect(cifras.querySelector('.inicio__totales')).toBeNull();
+    expect(cifras.textContent).not.toContain('Eventos');
+    http.match(`${API}/eventos/admin/todos`).forEach((r) =>
+      r.flush([
+        { id: 1, titulo: 'A', visible: true },
+        { id: 2, titulo: 'B', visible: true },
+        { id: 3, titulo: 'C', visible: true },
+        { id: 4, titulo: 'D', visible: false },
+      ])
+    );
+    fixture.detectChanges();
+    expect(elemento().querySelector('.inicio__cifras pn-esqueleto')).toBeNull();
+    const eventos = Array.from(elemento().querySelectorAll('.inicio__cifras .inicio__total')).find((a) =>
+      a.textContent!.includes('Eventos')
+    )!;
+    expect(eventos.querySelector('.inicio__total-cifra')!.textContent!.trim()).toBe('4');
+    expect(eventos.querySelector('.inicio__total-detalle')!.textContent!.trim()).toBe('3 visibles');
   });
 
   it('error de los datos: bloques de error con «Reintentar», que vuelve a pedirlos (8b-D1)', () => {

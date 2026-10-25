@@ -308,7 +308,7 @@
         <div class="inicio__bloque-cabecera">
           <h2 id="inicio-cifras" class="inicio__subtitulo">La escuela en cifras</h2>
         </div>
-        @if (estado === 'cargando') {
+        @if (cifrasCargando) {
         <pn-esqueleto etiqueta="Cargando las cifras">
           <div class="inicio__esqueleto-cifras">
             @for (i of [1, 2, 3, 4]; track i) {
