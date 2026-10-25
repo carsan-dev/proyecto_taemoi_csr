@@ -40,6 +40,7 @@
 
 .lote__alumno {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
   min-height: 44px;
@@ -78,7 +79,7 @@
 .lote__nombre {
   font: var(--pn-cuerpo);
   color: var(--pn-tinta);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .lote__motivo {
@@ -87,7 +88,7 @@
 }
 
 .lote__dato {
-  flex: none;
+  overflow-wrap: break-word;
   font: var(--pn-secundario);
   color: var(--pn-tinta-2);
   font-variant-numeric: tabular-nums;
