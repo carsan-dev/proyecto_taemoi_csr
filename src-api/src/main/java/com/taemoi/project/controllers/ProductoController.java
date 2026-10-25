@@ -107,6 +107,9 @@ public class ProductoController {
 			return ResponseEntity.ok(productoActualizado);
 		} catch (org.springframework.web.server.ResponseStatusException e) {
 			return ResponseEntity.status(e.getStatusCode()).body(java.util.Map.of("mensaje", e.getReason()));
+		} catch (IllegalArgumentException e) {
+			// Decisión 297 (ronda 2): precio no válido → 400 con el mensaje (no 404).
+			return ResponseEntity.badRequest().body(java.util.Map.of("mensaje", e.getMessage()));
 		} catch (RuntimeException e) {
 			return ResponseEntity.notFound().build();
 		}

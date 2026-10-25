@@ -10,6 +10,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.utils.ImporteCargo;
 
 /**
  * Pieza 8b-2 (decisiones 242 y 267): los cargos candidatos a «pendiente vencido» de una escuela. Consulta nativa con
@@ -52,7 +53,8 @@ public interface PendienteVencidoRepository extends Repository<ProductoAlumno, L
 	/** Consulta común: la de {@link #candidatos} y, con el filtro por alumno, la de {@link #candidatosDeAlumnos}. */
 	String CANDIDATOS = """
 			SELECT pa.id AS id, pa.concepto AS concepto,
-			  CAST(COALESCE(pa.precio, 0) AS DECIMAL(12, 2)) AS importe,
+			  CAST(""" + ImporteCargo.SQL + """
+			    AS DECIMAL(12, 2)) AS importe,
 			  DATE(pa.fecha_asignacion) AS fechaAsignacion, DATE(pa.fecha_pago) AS fechaPago,
 			  (SELECT MIN(c.fecha_convocatoria) FROM alumno_convocatoria ac
 			     JOIN convocatoria c ON c.id = ac.convocatoria_id AND c.organizacion_id = :organizacion

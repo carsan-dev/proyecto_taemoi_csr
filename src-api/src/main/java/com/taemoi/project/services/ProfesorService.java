@@ -2,7 +2,6 @@ package com.taemoi.project.services;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.time.Period;
@@ -36,6 +35,7 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AsignacionProfesorRepository;
 import com.taemoi.project.repositories.TutorRepository;
+import com.taemoi.project.utils.ImporteCargo;
 
 import jakarta.persistence.EntityManager;
 
@@ -360,10 +360,7 @@ public class ProfesorService {
 		registro.registrar(porRecompensa ? RegistroAccionesProfesor.Accion.PASE_RECOMPENSA
 				: RegistroAccionesProfesor.Accion.PASE_EXAMEN,
 				ruta(alumnoId, deporte, porRecompensa ? "pase-recompensa" : "pase-examen"), valores);
-		BigDecimal importe = cargo.getPrecio() == null ? null
-				: BigDecimal.valueOf(cargo.getPrecio())
-						.multiply(BigDecimal.valueOf(cargo.getCantidad() == null ? 1 : cargo.getCantidad()))
-						.setScale(2, RoundingMode.HALF_UP);
+		BigDecimal importe = cargo.getPrecio() == null ? null : ImporteCargo.de(cargo);
 		return new ProfesorDTOs.PaseCreado(deporteDelAlumno(inscripcion),
 				new ProfesorDTOs.CargoDelPase(cargo.getId(), cargo.getConcepto(), importe));
 	}

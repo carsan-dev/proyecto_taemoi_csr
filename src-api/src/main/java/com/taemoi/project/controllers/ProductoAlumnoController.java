@@ -255,7 +255,7 @@ public class ProductoAlumnoController {
 	 */
 	@PostMapping("/alumno/{alumnoId}/producto/{productoId}/deporte/{deporte}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
-	public ResponseEntity<ProductoAlumnoDTO> asignarProductoAAlumnoDeporte(
+	public ResponseEntity<?> asignarProductoAAlumnoDeporte(
 			@PathVariable Long alumnoId,
 			@PathVariable Long productoId,
 			@PathVariable String deporte,
@@ -266,7 +266,9 @@ public class ProductoAlumnoController {
 				alumnoId, productoId, deporte, detallesDTO);
 			return ResponseEntity.ok(productoAlumnoDTO);
 		} catch (IllegalArgumentException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			// Decisión 297 (ronda 3): el 400 lleva su mensaje (antes, vacío), como el GlobalExceptionHandler.
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("mensaje", e.getMessage() != null ? e.getMessage() : "Petición no válida."));
 		}
 	}
 

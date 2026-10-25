@@ -37,6 +37,7 @@ import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.EntregaCajaRepository;
 import com.taemoi.project.repositories.MovimientoCajaRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
+import com.taemoi.project.utils.ImporteCargo;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -195,7 +196,8 @@ public class CobroService {
 
 	/**
 	 * Registra el cobro ACTIVO del cargo (ya guardado y pagado). Si ya tiene uno, lo devuelve sin crear otro. Importe: lo
-	 * que la tesorería suma para el cargo ({@code COALESCE(precio, 0)}); sede, alumno y concepto, copiados del cargo.
+	 * que la tesorería suma para el cargo (precio × cantidad, decisión 297: {@link #importeDe}); sede, alumno y concepto,
+	 * copiados del cargo.
 	 */
 	public Cobro registrar(ProductoAlumno cargo, MetodoPago metodo, Date fechaCobro, OrigenCobro origen) {
 		// Pieza 6b-2c, guarda CENTRAL del invariante «cancelado ⇒ no pagado y sin cobro ACTIVO»: ninguna vía (PUT del
@@ -436,10 +438,12 @@ public class CobroService {
 
 	// ------------------------------------------------------------------ utilidades
 
-	/** Lo que suma la tesorería para el cargo: {@code COALESCE(pa.precio, 0)}, con dos decimales. */
+	/**
+	 * Lo que suma la tesorería para el cargo: precio × cantidad, con dos decimales (decisión 297, {@link ImporteCargo};
+	 * en las consultas, {@link ImporteCargo#SQL}).
+	 */
 	public static BigDecimal importeDe(ProductoAlumno cargo) {
-		double precio = cargo.getPrecio() != null ? cargo.getPrecio() : 0.0;
-		return BigDecimal.valueOf(precio).setScale(2, RoundingMode.HALF_UP);
+		return ImporteCargo.de(cargo);
 	}
 
 	/** El alumno del cargo como lo resuelve la tesorería: {@code COALESCE(alumno, alumnoDeporte.alumno)}. */

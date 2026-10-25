@@ -15,14 +15,18 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.legado.Deporte;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
+import com.taemoi.project.repositories.ProductoAlumnoRepository;
+import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.services.impl.PDFServiceImpl;
 
 class PDFServiceImplTest {
     private final AlumnoDeporteRepository repository = mock(AlumnoDeporteRepository.class);
+    private final ProductoAlumnoRepository cargos = mock(ProductoAlumnoRepository.class);
     private final PDFServiceImpl service = new PDFServiceImpl();
 
     PDFServiceImplTest() {
         ReflectionTestUtils.setField(service, "alumnoDeporteRepository", repository);
+        ReflectionTestUtils.setField(service, "productoAlumnoRepository", cargos);
         ReflectionTestUtils.setField(service, "marcaEscuela", MarcaEscuelaPruebas.soloMoiskimdo());
     }
 
@@ -68,6 +72,38 @@ class PDFServiceImplTest {
         assertArrayEquals(bytes, response.getBody());
         assertEquals("application/pdf", response.getHeaders().getContentType().toString());
         assertEquals("inline", response.getHeaders().getContentDisposition().getType());
+    }
+
+    /**
+     * Decisión 297: en el informe de mensualidades la columna por fila es «Importe» (precio × cantidad), para que las
+     * filas sumen el total; un cargo de 12,50 con cantidad 3 muestra 37,50 y no el precio unitario.
+     */
+    @Test
+    void informeDeMensualidades_columnaImporte_precioPorCantidad() throws Exception {
+        Alumno alumno = new Alumno();
+        alumno.setId(297L);
+        alumno.setNombre("Lucia");
+        alumno.setApellidos("Prueba");
+        alumno.setActivo(true);
+        alumno.setNumeroExpediente(29701);
+        ProductoAlumno cargo = new ProductoAlumno();
+        cargo.setAlumno(alumno);
+        cargo.setConcepto("MENSUALIDAD ENERO 2026 - TAEKWONDO");
+        cargo.setPrecio(12.5);
+        cargo.setCantidad(3);
+        cargo.setPagado(false);
+        cargo.setFechaAsignacion(new java.util.Date());
+        when(cargos.findAllMensualidadesYTarifasCompetidorWithAlumno()).thenReturn(List.of(cargo));
+
+        String texto = text(service.generarInformeMensualidades(false));
+
+        // La cabecera de la tabla sale en mayúsculas (CSS).
+        assertTrue(texto.toUpperCase().contains("IMPORTE"), texto);
+        assertFalse(texto.toUpperCase().contains("PRECIO"), texto);
+        assertFalse(texto.contains("12.50") || texto.contains("12,50"), "sin el precio unitario: " + texto);
+        // La fila: fecha de asignación, importe y estado (el concepto ocupa sus propias líneas).
+        String fila = texto.lines().filter(l -> l.contains(" PENDIENTE")).findFirst().orElseThrow(() -> new AssertionError(texto));
+        assertTrue(fila.contains("37.50 €") || fila.contains("37,50 €"), "la fila muestra el importe: " + fila);
     }
 
     private AlumnoDeporte membership(String name, String surnames, boolean active) {

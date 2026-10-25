@@ -49,6 +49,7 @@ import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.ColoresGrado;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.ImporteCargo;
 
 @Service
 public class PDFServiceImpl implements PDFService {
@@ -1674,8 +1675,8 @@ public class PDFServiceImpl implements PDFService {
 				Alumno alumno = entry.getKey();
 				List<com.taemoi.project.entities.ProductoAlumno> deudas = entry.getValue();
 
-				double totalAlumno = deudas.stream().mapToDouble(pa -> pa.getPrecio() != null ? pa.getPrecio() : 0.0)
-						.sum();
+				// Decisión 297: el total suma el importe (precio × cantidad); la columna «Precio» sigue siendo el unitario.
+				double totalAlumno = deudas.stream().mapToDouble(ImporteCargo::sinRedondear).sum();
 				totalGeneral += totalAlumno;
 
 				html.append("<div class='alumno-section'>");
@@ -1800,7 +1801,7 @@ public class PDFServiceImpl implements PDFService {
 				csv.append(pa.getCantidad() != null ? pa.getCantidad() : 1).append(',');
 
 				double precio = pa.getPrecio() != null ? pa.getPrecio() : 0.0;
-				totalGeneral += precio;
+				totalGeneral += ImporteCargo.sinRedondear(pa);
 				csv.append(String.format("%.2f", precio)).append(',');
 
 				csv.append('"').append(escapeCSV(pa.getNotas() != null ? pa.getNotas() : "")).append('"');
@@ -2329,9 +2330,9 @@ public class PDFServiceImpl implements PDFService {
 				int pagas = (int) vigentes.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
 				int pendientes = vigentes.size() - pagas;
 				double importePagado = vigentes.stream().filter(m -> Boolean.TRUE.equals(m.getPagado()))
-						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
+						.mapToDouble(ImporteCargo::sinRedondear).sum();
 				double importePendiente = vigentes.stream().filter(m -> !Boolean.TRUE.equals(m.getPagado()))
-						.mapToDouble(m -> m.getPrecio() != null ? m.getPrecio() : 0.0).sum();
+						.mapToDouble(ImporteCargo::sinRedondear).sum();
 
 				totalPagadas += pagas;
 				totalPendientes += pendientes;
@@ -2375,7 +2376,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<thead><tr>");
 				html.append("<th>Concepto</th>");
 				html.append("<th>Fecha Asignación</th>");
-				html.append("<th>Precio</th>");
+				html.append("<th>Importe</th>");
 				html.append("<th>Estado</th>");
 				html.append("<th>Fecha Pago</th>");
 				html.append("<th>Notas</th>");
@@ -2397,8 +2398,8 @@ public class PDFServiceImpl implements PDFService {
 					}
 					html.append("<td>").append(fechaAsignacion).append("</td>");
 
-					html.append("<td>").append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
-							.append(" €</td>");
+					// Decisión 297: la fila muestra el importe del cargo (precio × cantidad), para que las filas sumen el total.
+					html.append("<td>").append(String.format("%.2f", ImporteCargo.de(pa))).append(" €</td>");
 
 					boolean cancelado = pa.estaCancelado();
 					String estadoClass = cancelado ? "status-cancelado" : (pagado ? "status-pagado" : "status-pendiente");
@@ -2664,7 +2665,7 @@ public class PDFServiceImpl implements PDFService {
 						cuantia = "Cancelado";
 					} else if (!productosAlumno.isEmpty()) {
 						double totalCuantia = productosAlumno.stream().filter(p -> p.getPrecio() != null)
-								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
+								.mapToDouble(ImporteCargo::sinRedondear).sum();
 						cuantia = String.format("%.2f EUR", totalCuantia);
 					} else {
 						Double esperada = cuantias.cuantiaMensualidad(ad, mesListado);
@@ -2689,7 +2690,7 @@ public class PDFServiceImpl implements PDFService {
 							return concepto != null
 									&& concepto.toUpperCase(Locale.ROOT).startsWith("TARIFA COMPETIDOR");
 						}).filter(p -> p.getPrecio() != null)
-								.mapToDouble(com.taemoi.project.entities.ProductoAlumno::getPrecio).sum();
+								.mapToDouble(ImporteCargo::sinRedondear).sum();
 						if (competidorCuantia > 0) {
 							comp = String.format("%.2f", competidorCuantia);
 						}

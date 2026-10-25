@@ -59,6 +59,7 @@ import com.taemoi.project.services.RegistroAccionesCaja;
 import com.taemoi.project.services.ResolutorCuantiaMensualidad;
 import com.taemoi.project.services.ResultadoGeneracionMensualidades;
 import com.taemoi.project.services.TarifaSedeService;
+import com.taemoi.project.utils.ImporteCargo;
 import com.taemoi.project.utils.MensualidadUtils;
 
 @Service
@@ -318,6 +319,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"Seleccione un deporte del alumno para asignar la matrícula.");
 		}
+		// Decisión 297 (ronda 2): el precio del catálogo que se copia al cargo, con 2 decimales como mucho (400 si no).
+		ImporteCargo.exigirPrecioValido(producto.getPrecio());
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -879,6 +882,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (cambiaPrecioOCantidad(productoAlumno, detallesDTO) && cobros.tieneCobroActivo(productoAlumno.getId())) {
 			throw new IllegalStateException(CobroService.PRECIO_CON_COBRO_ACTIVO);
 		}
+		// Decisión 297 (ronda 2): un precio nuevo, con 2 decimales como mucho y no negativo (400 antes de cambiar nada).
+		ImporteCargo.exigirPrecioValidoSiCambia(detallesDTO.getPrecio(), productoAlumno.getPrecio());
 
 		if (detallesDTO.getCantidad() != null) {
 			productoAlumno.setCantidad(detallesDTO.getCantidad());
@@ -1255,6 +1260,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Producto productoReserva = productosCatalogo.resolverProductoReservaPlaza(null)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
+		ImporteCargo.exigirPrecioValido(productoReserva.getPrecio());
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(productoReserva);
@@ -1304,6 +1310,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		Producto productoReserva = productosCatalogo.resolverProductoReservaPlaza(deporteEnum)
 				.orElseThrow(() -> new ProductoNoEncontradoException("Producto 'RESERVA DE PLAZA' no encontrado"));
 
+		ImporteCargo.exigirPrecioValido(productoReserva.getPrecio());
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setAlumnoDeporte(alumnoDeporte);
@@ -1652,6 +1659,12 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		boolean algunoCreado = false;
 		StringBuilder mensajesExistentes = new StringBuilder();
 
+		// Decisión 297 (ronda 2): los precios del catálogo que se copian, comprobados antes de crear ninguna licencia.
+		for (AlumnoDeporte alumnoDeporte : deportesObjetivo) {
+			ImporteCargo.exigirPrecioValido(
+					obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano).getPrecio());
+		}
+
 		for (AlumnoDeporte alumnoDeporte : deportesObjetivo) {
 			Producto productoLicencia = obtenerProductoLicencia(alumno, esSegundaMitadDelAno, alumnoDeporte.getDeporte(), ano);
 			String concepto = construirConceptoLicencia(
@@ -1768,6 +1781,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		if (precio == null) {
 			precio = calcularPrecioLicenciaFallback(alumno, esSegundaMitadDelAno, deporteLicencia, fechaActual.getYear());
 		}
+		ImporteCargo.exigirPrecioValido(precio);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2053,6 +2067,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 			concepto += " - " + deporteEnum;
 		}
 		productoAlumno.setConcepto(concepto);
+		ImporteCargo.exigirPrecioValido(producto.getPrecio());
 		productoAlumno.setPrecio(producto.getPrecio());
 		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
 		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);

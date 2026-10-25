@@ -51,6 +51,7 @@ import com.taemoi.project.repositories.EntregaCajaRepository;
 import com.taemoi.project.repositories.MovimientoCajaRepository;
 import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.repositories.SolicitudRepository;
+import com.taemoi.project.utils.ImporteCargo;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -173,7 +174,8 @@ public class CajaService {
 			return List.of();
 		}
 		List<Object[]> filas = em.createQuery("""
-				SELECT pa.id, a.id, a.nombre, a.apellidos, pa.concepto, pa.precio, pa.fechaAsignacion, pa.sedeId, s.nombre
+				SELECT pa.id, a.id, a.nombre, a.apellidos, pa.concepto, pa.precio, pa.fechaAsignacion, pa.sedeId, s.nombre,
+				  pa.cantidad
 				FROM ProductoAlumno pa JOIN pa.alumno a LEFT JOIN Sede s ON s.id = pa.sedeId
 				WHERE (pa.pagado IS NULL OR pa.pagado = FALSE) AND pa.canceladoEn IS NULL
 				  AND EXISTS (SELECT g.id FROM Grupo g JOIN g.alumnos m WHERE m.id = a.id AND g.id IN :grupos)
@@ -182,7 +184,8 @@ public class CajaService {
 		List<CajaDTOs.CargoPendienteProfesor> resultado = new ArrayList<>(filas.size());
 		for (Object[] f : filas) {
 			resultado.add(new CajaDTOs.CargoPendienteProfesor((Long) f[0], (Long) f[1], (String) f[2], (String) f[3],
-					(String) f[4], importe((Double) f[5]), (Date) f[6], (Long) f[7], (String) f[8]));
+					(String) f[4], ImporteCargo.de((Double) f[5], (Integer) f[9]), (Date) f[6], (Long) f[7],
+					(String) f[8]));
 		}
 		return resultado;
 	}

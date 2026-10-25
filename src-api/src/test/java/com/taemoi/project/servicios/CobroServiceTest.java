@@ -126,6 +126,26 @@ class CobroServiceTest {
 	}
 
 	@Test
+	void importeDe_esPrecioPorCantidad_decision297() {
+		assertEquals(new BigDecimal("37.50"), CobroService.importeDe(cargo(1L, 12.5, 3)));
+		assertEquals(new BigDecimal("12.50"), CobroService.importeDe(cargo(1L, 12.5, 1)), "cantidad 1, como antes");
+		assertEquals(new BigDecimal("12.50"), CobroService.importeDe(cargo(1L, 12.5, null)), "cantidad nula = 1");
+		assertEquals(new BigDecimal("12.50"), CobroService.importeDe(cargo(1L, 12.5, 0)), "cantidad 0 = 1");
+		assertEquals(new BigDecimal("12.50"), CobroService.importeDe(cargo(1L, 12.5, -2)), "cantidad negativa = 1");
+		assertEquals(new BigDecimal("0.00"), CobroService.importeDe(cargo(1L, null, 3)), "sin precio, 0");
+		// Redondeo HALF_UP sobre el producto, no sobre el precio: 3 × 3,335 = 10,005 → 10,01 (no 3 × 3,34 = 10,02).
+		assertEquals(new BigDecimal("10.01"), CobroService.importeDe(cargo(1L, 3.335, 3)));
+	}
+
+	@Test
+	void registrar_conCantidad_registraPrecioPorCantidad() {
+		when(cobros.findFirstByProductoAlumnoIdAndEstado(any(), any())).thenReturn(Optional.empty());
+		when(cobros.save(any())).thenAnswer(i -> i.getArgument(0));
+		Cobro cobro = servicio.registrar(cargo(10L, 12.5, 3), MetodoPago.EFECTIVO, null, OrigenCobro.TESORERIA);
+		assertEquals(new BigDecimal("37.50"), cobro.getImporte());
+	}
+
+	@Test
 	void anular_conEntrega_409SinCambios() {
 		Cobro entregado = new Cobro();
 		entregado.setEntregaCajaId(3L);
@@ -151,6 +171,12 @@ class CobroServiceTest {
 		cargo.setId(id);
 		cargo.setPrecio(precio);
 		cargo.setPagado(true);
+		return cargo;
+	}
+
+	private static ProductoAlumno cargo(Long id, Double precio, Integer cantidad) {
+		ProductoAlumno cargo = cargo(id, precio);
+		cargo.setCantidad(cantidad);
 		return cargo;
 	}
 

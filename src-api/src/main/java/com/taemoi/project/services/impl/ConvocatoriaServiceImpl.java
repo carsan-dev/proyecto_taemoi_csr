@@ -28,6 +28,7 @@ import com.taemoi.project.services.CobroService;
 import com.taemoi.project.services.ConvocatoriaService;
 import com.taemoi.project.services.ProgresionGradosService;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.ImporteCargo;
 
 @Service
 public class ConvocatoriaServiceImpl implements ConvocatoriaService {
@@ -297,6 +298,10 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 					throw new IllegalStateException(CobroService.CUANTIA_EXAMEN_PAGADO);
 				}
 				if (!sigueComoPagado) {
+					// Decisión 297 (ronda 2): la cuantía pasa a ser el precio del cargo; si cambia, con 2 decimales como
+					// mucho y no negativa (400; la transacción se deshace y no se cambia nada).
+					ImporteCargo.exigirPrecioValidoSiCambia(alumnoConvocatoriaDTO.getCuantiaExamen(),
+							productoAlumno.getPrecio());
 					productoAlumno.setPrecio(alumnoConvocatoriaDTO.getCuantiaExamen());
 				}
 				productoAlumno.setPagado(alumnoConvocatoriaDTO.getPagado());
