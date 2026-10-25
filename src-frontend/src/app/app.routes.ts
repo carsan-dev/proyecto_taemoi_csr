@@ -5,6 +5,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
@@ -281,6 +282,16 @@ export const routes: Routes = [
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
     pathMatch: 'full',
+  },
+  {
+    // Productos y cargos nueva (8b-3n): solo con el interruptor encendido; si no, la de hoy sin descargar el chunk.
+    path: 'alumnos/:id/productos',
+    canMatch: [disenoNuevoGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/productos-alumno/productos-alumno-panel.component').then(m => m.ProductosAlumnoPanelComponent),
+    canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnos/:id/productos',

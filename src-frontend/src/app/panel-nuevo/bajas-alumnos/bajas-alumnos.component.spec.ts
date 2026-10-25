@@ -388,6 +388,32 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
       'Entre los 2 tienen 4 cargos: 2 pagados (60,00 €) y 2 pendientes (50,00 €). ' +
         'De los alumnos con pagos, lo pagado se conserva y lo sin pagar se cancela; los demás se borran con ellos.'
     );
+    const lista = d.querySelector<HTMLElement>('.lote__nombres')!;
+    const estiloLista = getComputedStyle(lista);
+    expect(estiloLista.maxHeight).not.toBe('none');
+    expect(estiloLista.overflowY).toBe('auto');
+    lista.querySelectorAll<HTMLElement>('.lote__alumno').forEach((fila) => {
+      const quien = fila.querySelector<HTMLElement>('.lote__quien')!;
+      const nombre = quien.querySelector<HTMLElement>('.lote__nombre')!;
+      const dato = quien.querySelector<HTMLElement>('.lote__dato');
+      expect(fila.firstElementChild?.classList).toContain('lote__avatar');
+      expect(dato).not.toBeNull();
+      expect(nombre.nextElementSibling).toBe(dato);
+      expect(getComputedStyle(fila).flexShrink).toBe('0');
+      const estiloQuien = getComputedStyle(quien);
+      expect(estiloQuien.flexDirection).toBe('column');
+      expect(estiloQuien.flexGrow).toBe('1');
+      expect(estiloQuien.minWidth).toBe('0px');
+      [nombre, dato!].forEach((linea) => {
+        const estilo = getComputedStyle(linea);
+        expect(estilo.width).toBe(estiloQuien.width);
+        expect(estilo.overflowWrap).toBe('break-word');
+        expect(estilo.whiteSpace).toBe('normal');
+        expect(estilo.wordBreak).toBe('normal');
+        expect(estilo.overflowX).toBe('visible');
+        expect(estilo.maxWidth).toBe('none');
+      });
+    });
     expect(Array.from(d.querySelectorAll('.pn-dialogo__accion')).map(texto)).toEqual(['Eliminar 2 alumnos']);
     boton(d, 'Eliminar 2 alumnos').click();
     await esperar();

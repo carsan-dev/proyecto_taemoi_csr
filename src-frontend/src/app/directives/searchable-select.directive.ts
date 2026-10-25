@@ -1,4 +1,4 @@
-import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy, Renderer2 } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, Renderer2 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { esOpcionMarcador } from '../utils/opcion-marcador';
 
@@ -9,6 +9,9 @@ import { esOpcionMarcador } from '../utils/opcion-marcador';
 export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   @Input() searchPlaceholder = 'Buscar...';
   @Input() debounceMs = 250;
+  /** Conserva la consulta al reconstruir opciones filtradas por el consumidor; desactivado por defecto. */
+  @Input() searchConservarConsulta = false;
+  @Output() readonly searchCerrado = new EventEmitter<void>();
   /**
    * Clases extra para la lista flotante (que va en el body, fuera del componente). Vacío por defecto: las pantallas de
    * hoy no la usan. El panel nuevo pasa `pn …` para que la lista tome sus tokens.
@@ -36,6 +39,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
   private emptyEl?: HTMLDivElement;
   private optionEls: HTMLDivElement[] = [];
   private activeIndex = -1;
+  private consultaActiva = false;
+  private textoConsulta = '';
   private isOpen = false;
   private debounceHandle?: number;
   private stableSub?: Subscription;
@@ -236,6 +241,8 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
 
     this.detachListeners.push(
       this.renderer.listen(this.inputEl, 'input', () => {
+        this.consultaActiva = true;
+        this.textoConsulta = this.inputEl?.value ?? '';
         this.scheduleFilter();
       })
     );
@@ -257,6 +264,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
 
     this.detachListeners.push(
       this.renderer.listen(select, 'change', () => {
+        this.consultaActiva = false;
         this.syncFromSelect();
       })
     );
@@ -300,6 +308,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
         if (shouldRebuild) {
           this.buildOptions();
           this.syncFromSelect();
+          if (this.isOpen) {
+            this.filterOptions(this.searchConservarConsulta && this.consultaActiva ? this.textoConsulta : '');
+          }
         }
       });
 
@@ -332,8 +343,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       return;
     }
     const select = this.elRef.nativeElement;
+    this.clearActive();
     this.dropdownEl.innerHTML = '';
     this.optionEls = [];
+    const repeticiones = new Map<string, number>();
 
     Array.from(select.options).forEach((option, index) => {
       const optionEl = this.renderer.createElement('div') as HTMLDivElement;
@@ -342,6 +355,10 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       optionEl.dataset['visible'] = 'true';
       this.renderer.addClass(optionEl, 'admin-select-option');
       this.renderer.setAttribute(optionEl, 'role', 'option');
+      const repeticion = repeticiones.get(option.value) ?? 0;
+      repeticiones.set(option.value, repeticion + 1);
+      const id = `${this.dropdownEl!.id}-opcion-${encodeURIComponent(option.value)}-${repeticion}`;
+      this.renderer.setAttribute(optionEl, 'id', id);
 
       if (option.disabled) {
         this.renderer.addClass(optionEl, 'is-disabled');
@@ -377,7 +394,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     const selected = select.selectedOptions[0] ?? select.options[select.selectedIndex];
     const placeholderText = this.getPlaceholderText(select);
 
-    if (selected && !this.isPlaceholderOption(selected)) {
+    if (this.searchConservarConsulta && this.consultaActiva && this.isOpen) {
+      this.inputEl.value = this.textoConsulta;
+    } else if (selected && !this.isPlaceholderOption(selected)) {
       this.inputEl.value = (selected.textContent ?? '').trim();
     } else {
       this.inputEl.value = '';
@@ -542,6 +561,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     const optionEl = this.optionEls[index];
     if (optionEl) {
       this.renderer.addClass(optionEl, 'is-active');
+      if (this.isOpen && this.inputEl) {
+        this.renderer.setAttribute(this.inputEl, 'aria-activedescendant', optionEl.id);
+      }
       optionEl.scrollIntoView({ block: 'nearest' });
     }
   }
@@ -551,6 +573,9 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       this.renderer.removeClass(optionEl, 'is-active');
     });
     this.activeIndex = -1;
+    if (this.inputEl) {
+      this.renderer.removeAttribute(this.inputEl, 'aria-activedescendant');
+    }
   }
 
   private selectActive(): void {
@@ -613,6 +638,12 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     if (!this.dropdownEl || !this.inputEl) {
       return;
     }
+    this.consultaActiva = false;
+    if (this.debounceHandle !== undefined) {
+      window.clearTimeout(this.debounceHandle);
+      this.debounceHandle = undefined;
+    }
+    this.clearActive();
     if (!this.isOpen) {
       this.stopDropdownPositionTracking();
       if (this.positionRafId !== undefined) {
@@ -649,6 +680,7 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     if (restoreValue) {
       this.syncFromSelect();
     }
+    this.searchCerrado.emit();
   }
 
   private syncDisabled(): void {

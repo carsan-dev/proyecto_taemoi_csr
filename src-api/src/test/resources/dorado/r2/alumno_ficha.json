@@ -1,5 +1,6 @@
 {
   "activo" : true,
+  "alumnoEliminado" : false,
   "antiguedad" : "<texto>",
   "apellidos" : "ApellidoJ Sintetico",
   "aptoParaExamen" : true,

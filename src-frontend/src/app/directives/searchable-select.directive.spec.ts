@@ -8,7 +8,7 @@ import { itSinReloj } from '../testing/reloj-prueba';
   standalone: true,
   imports: [FormsModule, SearchableSelectDirective],
   template: `
-    <select id="real" appSearchableSelect [(ngModel)]="real">
+    <select id="real" appSearchableSelect [searchConservarConsulta]="conservarConsulta" (searchCerrado)="cierres = cierres + 1" [(ngModel)]="real">
       <option [ngValue]="null">Seleccione un producto</option>
       <option value="TODOS">Todos los Alumnos</option>
       <option value="a">Kimono azul</option>
@@ -25,6 +25,8 @@ import { itSinReloj } from '../testing/reloj-prueba';
   `,
 })
 class HostComponent {
+  conservarConsulta = false;
+  cierres = 0;
   real: string | null = 'a';
   vacio = '';
   realVacio = '';
@@ -70,6 +72,56 @@ describe('SearchableSelectDirective', () => {
     input.dispatchEvent(new Event('click'));
     expect(visible(0).length).toBe(4);
     expect(dropdowns()[0].querySelector('.is-active')?.textContent?.trim()).toBe('Kimono azul');
+  });
+
+  it('vincula las flechas a la opción activa y limpia su anuncio al elegir o cerrar', () => {
+    const campo = inputs()[0];
+    const tecla = (key: string) => campo.dispatchEvent(new KeyboardEvent('keydown', { key }));
+    const activa = () => document.getElementById(campo.getAttribute('aria-activedescendant')!)!;
+    campo.dispatchEvent(new Event('focus'));
+    const kimono = activa();
+    expect(kimono.textContent).toBe('Kimono azul');
+    tecla('ArrowDown');
+    expect(activa().textContent).toBe('Cinturón negro');
+    expect(activa().classList.contains('is-active')).toBeTrue();
+    tecla('ArrowUp');
+    expect(activa().id).toBe(kimono.id);
+    tecla('ArrowDown');
+    tecla('Enter');
+    expect(host.real).toBe('b');
+    expect(campo.value).toBe('Cinturón negro');
+    expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
+    expect(campo.getAttribute('aria-expanded')).toBe('false');
+    expect(host.cierres).toBe(1);
+    campo.dispatchEvent(new Event('focus'));
+    tecla('Escape');
+    expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
+    expect(campo.getAttribute('aria-expanded')).toBe('false');
+    expect(host.cierres).toBe(2);
+  });
+
+  it('conserva la consulta explícita y los ids de las opciones al reconstruir la lista', async () => {
+    host.conservarConsulta = true;
+    await settle();
+    const campo = inputs()[0];
+    campo.dispatchEvent(new Event('focus'));
+    const lista = dropdowns()[0];
+    const idKimono = Array.from(lista.querySelectorAll<HTMLElement>('[role="option"]'))
+      .find((opcion) => opcion.textContent === 'Kimono azul')!.id;
+    type(campo, 'kim');
+    await wait(300);
+    expect(visible(0)).toEqual(['Kimono azul']);
+    const selector = fixture.nativeElement.querySelector('#real') as HTMLSelectElement;
+    selector.appendChild(new Option('Otro', 'c'));
+    // El observador nativo necesita ceder al navegador, no solo vaciar las promesas de Zone.
+    await wait(0);
+    expect(lista.querySelectorAll('[role="option"]').length).toBe(5);
+    expect(campo.value).toBe('kim');
+    expect(document.getElementById(campo.getAttribute('aria-activedescendant')!)!.id).toBe(idKimono);
+    expect(visible(0)).toEqual(['Kimono azul']);
+    campo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(campo.value).toBe('Kimono azul');
+    expect(campo.hasAttribute('aria-activedescendant')).toBeFalse();
   });
 
   itSinReloj('al escribir filtra por el término y oculta el marcador', async () => {
