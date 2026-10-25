@@ -13,7 +13,8 @@
       <ul class="turnos-alumno__lista" aria-label="Turnos asignados">
         @for (turno of turnos; track turno.id) {
           <li>
-            <div class="turnos-alumno__detalle"><div class="turnos-alumno__horario"><strong>{{ turno.diaSemana }}</strong><span>{{ horario(turno) }}</span></div><p>{{ turno.tipoGrupo }}{{ turno.tipoGrupo && turno.grupoNombre ? ' · ' : '' }}{{ turno.grupoNombre }}</p></div>
+            <strong class="turnos-alumno__dia">{{ turno.diaSemana }}</strong>
+            <div class="turnos-alumno__detalle"><div class="turnos-alumno__horario">{{ horario(turno) }}</div><p>{{ turno.tipoGrupo }}{{ turno.tipoGrupo && turno.grupoNombre ? ' · ' : '' }}{{ turno.grupoNombre }}</p></div>
             <button pnOcupado class="turnos-alumno__texto" type="button" [ocupado]="quitando === turno.id" textoOcupado="Quitando…" [deshabilitado]="ocupado" [attr.aria-label]="'Quitar turno del ' + turno.diaSemana.toLowerCase() + ' ' + horario(turno)" (click)="quitar(turno)">Quitar</button>
           </li>
         }
@@ -24,11 +25,20 @@
     <form class="turnos-alumno__asignar" (ngSubmit)="asignar()">
       <h2>Asignar turno</h2>
       <div class="turnos-alumno__controles">
-        <div><label for="turno-alumno">Seleccione un turno</label>
-          <select id="turno-alumno" name="turno" [(ngModel)]="seleccion" [disabled]="ocupado" required>
-            <option value="">Seleccione un turno</option>
-            @for (turno of disponibles; track turno.id) { <option [value]="turno.id" [disabled]="asignado(turno.id)">{{ turno.diaSemana }} · {{ horario(turno) }}{{ turno.tipoGrupo ? ' · ' + turno.tipoGrupo : '' }}{{ asignado(turno.id) ? ' · ya asignado' : '' }}</option> }
-          </select>
+        <div #campoTurno (focusout)="salirCampo($event)"><label id="turno-alumno-etiqueta" for="turno-alumno">Turno <span class="turnos-alumno__obligatorio">obligatorio</span></label>
+          <button id="turno-alumno" class="turnos-alumno__selector" type="button" role="combobox" aria-haspopup="listbox" aria-required="true" aria-labelledby="turno-alumno-etiqueta turno-alumno-valor" [attr.aria-expanded]="listaAbierta" [attr.aria-controls]="listaAbierta ? 'turno-alumno-opciones' : null" [attr.aria-activedescendant]="listaAbierta && opcionActiva >= 0 ? 'turno-alumno-opcion-' + disponibles[opcionActiva].id : null" [disabled]="ocupado" (click)="alternarLista()" (keydown)="tecladoTurno($event)">
+            <span id="turno-alumno-valor" [class.turnos-alumno__marcador]="!seleccion">@if (turnoSeleccionado; as seleccionado) { {{ etiquetaTurno(seleccionado) }} } @else { Seleccione un turno }</span>
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6" /></svg>
+          </button>
+          @if (listaAbierta) {
+            <div id="turno-alumno-opciones" class="turnos-alumno__opciones" role="listbox" aria-labelledby="turno-alumno-etiqueta">
+              @for (turno of disponibles; track turno.id; let indice = $index) {
+                <div [id]="'turno-alumno-opcion-' + turno.id" class="turnos-alumno__opcion" role="option" [attr.aria-selected]="seleccion === '' + turno.id" [attr.aria-disabled]="asignado(turno.id)" [class.turnos-alumno__opcion--activa]="opcionActiva === indice" (mousedown)="$event.preventDefault()" (click)="elegirTurno(turno)">
+                  <span>{{ etiquetaTurno(turno) }}</span>@if (asignado(turno.id)) { <span class="turnos-alumno__ya">ya asignado</span> }
+                </div>
+              } @empty { <p class="turnos-alumno__sin-opciones" role="status">No hay turnos disponibles.</p> }
+            </div>
+          }
         </div>
         <button pnOcupado class="turnos-alumno__secundario" type="submit" [ocupado]="asignando" textoOcupado="Asignando…" [deshabilitado]="!seleccion || ocupado || asignado(+seleccion)">Asignar turno</button>
       </div>

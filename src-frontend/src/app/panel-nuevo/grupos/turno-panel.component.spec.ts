@@ -48,6 +48,31 @@ describe('TurnoPanelComponent (3m-3)', () => {
     panel.form.patchValue({ diaSemana: 'Lunes', horaInicio: '17:00', horaFin: '18:30' });
   }
 
+  it('muestra metadatos obligatorios y ayuda enlazada al crear', () => {
+    iniciar(false, 1);
+    const host = fixture.nativeElement as HTMLElement;
+    for (const selector of ['#turno-dia-etiqueta', 'label[for="turno-inicio"]', 'label[for="turno-fin"]', 'label[for="turno-tipo"]']) {
+      expect(host.querySelector(selector)!.textContent).toContain('obligatorio');
+    }
+    expect(host.querySelector('label[for="turno-grupo"]')!.textContent).toBe('Grupo opcional');
+    expect(host.querySelector('#turno-grupo-ayuda')!.textContent).toBe('Puedes asignar este turno a un grupo o dejarlo sin grupo. «Sin grupo» es la primera opción.');
+    expect(host.querySelector('#turno-tipo-ayuda')!.textContent).toBe('Elige el tipo del turno. Solo se pide al crear.');
+    expect(host.querySelector('#turno-tipo')!.getAttribute('aria-describedby')).toBe('turno-tipo-ayuda');
+    fixture.componentInstance.form.controls.tipoGrupo.markAsTouched(); fixture.detectChanges();
+    expect(host.querySelector('#turno-tipo')!.getAttribute('aria-describedby')).toBe('turno-tipo-ayuda turno-tipo-error');
+  });
+
+  it('conserva los metadatos de horario y grupo opcional al editar sin pedir tipo', () => {
+    iniciar(true);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('#turno-dia-etiqueta')!.textContent).toBe('Día de la semana obligatorio');
+    for (const selector of ['label[for="turno-inicio"]', 'label[for="turno-fin"]']) {
+      expect(host.querySelector(selector)!.textContent).toContain('obligatorio');
+    }
+    expect(host.querySelector('label[for="turno-grupo"]')!.textContent).toBe('Grupo opcional');
+    expect(host.querySelector('#turno-tipo')).toBeNull();
+  });
+
   it('conserva los siete valores exactos y exige tipo solo al crear con grupo', () => {
     const panel = iniciar();
     expect(TIPOS_TURNO).toEqual(['Taekwondo Infantil', 'Taekwondo Joven', 'Taekwondo Adulto', 'Kickboxing',

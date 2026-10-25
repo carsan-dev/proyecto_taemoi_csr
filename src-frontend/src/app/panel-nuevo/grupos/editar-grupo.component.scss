@@ -1,7 +1,7 @@
 @use '../capas/capas' as c;
 
 .editar-grupo { min-height: calc(100vh - 64px); background: var(--pn-fondo); color: var(--pn-tinta); font: var(--pn-cuerpo); }
-.editar-grupo__pagina { max-width: 960px; margin: 0 auto; padding: 24px 24px 40px; }
+.editar-grupo__pagina { padding: 24px 24px 40px; }
 nav { margin-bottom: 16px; color: var(--pn-tinta-2); font: var(--pn-secundario); }
 a { color: var(--pn-acento); text-underline-offset: 3px; }
 h1 { margin: 0; font: var(--pn-titulo-pantalla); overflow-wrap: anywhere; }
@@ -15,7 +15,9 @@ label span { color: var(--pn-tinta-2); font-weight: 400; }
 input { width: 100%; min-height: 42px; box-sizing: border-box; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); padding: 8px 12px; background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
 input::placeholder { color: var(--pn-tinta-2); }
 input[aria-invalid='true'] { border-color: var(--pn-peligro); }
-.editar-grupo__contador { margin: 8px 0; text-align: right; color: var(--pn-tinta-2); font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
+.editar-grupo__ayuda-fila { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 8px 0 20px; }
+.editar-grupo__ayuda-fila .editar-grupo__nota { min-width: 0; margin: 0; }
+.editar-grupo__contador { flex: none; margin: 0; white-space: nowrap; text-align: right; color: var(--pn-tinta-2); font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
 .editar-grupo__guardar { display: flex; justify-content: flex-end; }
 .editar-grupo__primario { @include c.boton-primario; }
 .editar-grupo__secundario { @include c.boton-secundario; margin-top: 20px; }

@@ -3,6 +3,7 @@
 .turno__campos, .turno__dias { min-width: 0; padding: 0; margin: 0; border: 0; }
 label, legend { color: var(--pn-tinta); font: var(--pn-etiqueta); }
 legend { margin-bottom: 8px; }
+.turno__metadato { color: var(--pn-tinta-2); font-weight: 400; }
 .turno__pastillas { display: flex; gap: 4px; }
 .turno__dia {
   position: relative;

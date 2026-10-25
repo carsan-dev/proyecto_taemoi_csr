@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -33,6 +33,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private carga?: Subscription;
   private envio?: Subscription;
   private revision = 0;
@@ -41,12 +42,16 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   turnos: TurnoResumen[] = [];
   disponibles: TurnoResumen[] = [];
   seleccion = '';
+  listaAbierta = false;
+  opcionActiva = -1;
+  @ViewChild('campoTurno') private campoTurno?: ElementRef<HTMLElement>;
   cargando = true;
   errorCarga = '';
   asignando = false;
   quitando: number | null = null;
   readonly esqueletos = Array.from({ length: 3 });
   get ocupado(): boolean { return this.asignando || this.quitando !== null; }
+  get turnoSeleccionado(): TurnoResumen | undefined { return this.disponibles.find(turno => String(turno.id) === this.seleccion); }
 
   ngOnInit(): void {
     this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
@@ -57,6 +62,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
     });
   }
   cargar(): void {
+    this.cerrarLista();
     this.revision++;
     this.carga?.unsubscribe(); this.envio?.unsubscribe();
     this.alumno = null; this.turnos = []; this.disponibles = []; this.seleccion = '';
@@ -86,6 +92,59 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   }
   horario(turno: TurnoResumen): string { return `${turno.horaInicio.slice(0, 5)} – ${turno.horaFin.slice(0, 5)}`; }
   asignado(id: number): boolean { return this.turnos.some(turno => turno.id === id); }
+  etiquetaTurno(turno: TurnoResumen): string { return `${turno.diaSemana} · ${this.horario(turno)}${turno.tipoGrupo ? ' · ' + turno.tipoGrupo : ''}`; }
+  alternarLista(): void {
+    if (this.ocupado) return;
+    if (this.listaAbierta) { this.cerrarLista(); return; }
+    this.listaAbierta = true;
+    this.opcionActiva = this.disponibles.findIndex(turno => String(turno.id) === this.seleccion && !this.asignado(turno.id));
+    if (this.opcionActiva < 0) this.opcionActiva = this.disponibles.findIndex(turno => !this.asignado(turno.id));
+    this.revelarOpcion();
+  }
+  cerrarLista(): void { this.listaAbierta = false; this.opcionActiva = -1; }
+  elegirTurno(turno: TurnoResumen): void {
+    if (this.ocupado || this.asignado(turno.id)) return;
+    this.seleccion = String(turno.id); this.cerrarLista();
+  }
+  tecladoTurno(event: KeyboardEvent): void {
+    if (this.ocupado) return;
+    if (event.key === 'Tab') { this.cerrarLista(); return; }
+    if (event.key === 'Escape') {
+      if (this.listaAbierta) { event.preventDefault(); event.stopPropagation(); this.cerrarLista(); }
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!this.listaAbierta) this.alternarLista();
+      else if (this.disponibles[this.opcionActiva]) this.elegirTurno(this.disponibles[this.opcionActiva]);
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const abierta = this.listaAbierta;
+    if (!abierta) this.alternarLista();
+    const habilitados = this.disponibles.map((turno, indice) => this.asignado(turno.id) ? -1 : indice).filter(indice => indice >= 0);
+    if (!habilitados.length) return;
+    if (event.key === 'Home') this.opcionActiva = habilitados[0];
+    else if (event.key === 'End' || (!abierta && event.key === 'ArrowUp')) this.opcionActiva = habilitados[habilitados.length - 1];
+    else if (abierta) {
+      const posicion = habilitados.indexOf(this.opcionActiva) + (event.key === 'ArrowDown' ? 1 : -1);
+      this.opcionActiva = habilitados[Math.max(0, Math.min(habilitados.length - 1, posicion))];
+    }
+    this.revelarOpcion();
+  }
+  private revelarOpcion(): void {
+    if (this.opcionActiva < 0) return;
+    this.changeDetector.detectChanges();
+    this.campoTurno?.nativeElement.querySelector<HTMLElement>(`#turno-alumno-opcion-${this.disponibles[this.opcionActiva].id}`)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }
+  salirCampo(event: FocusEvent): void {
+    if (!(event.relatedTarget instanceof Node) || !this.campoTurno?.nativeElement.contains(event.relatedTarget)) this.cerrarLista();
+  }
+  @HostListener('document:click', ['$event'])
+  clicFuera(event: MouseEvent): void {
+    if (!(event.target instanceof Node) || !this.campoTurno?.nativeElement.contains(event.target)) this.cerrarLista();
+  }
   volver(): void {
     // TODO(3m-5): la entrada no proporciona el grupo de origen; conservar la vuelta atrás sin inventar su id.
     this.location.back();
@@ -93,6 +152,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   asignar(): void {
     const turno = this.disponibles.find(item => String(item.id) === this.seleccion);
     if (this.ocupado || this.cargando || this.errorCarga || !this.alumno || !turno || this.asignado(turno.id)) return;
+    this.cerrarLista();
     this.asignando = true;
     this.envio = this.http.post<unknown>(`${environment.apiUrl}/alumnos/${this.alumnoId}/turnos/${turno.id}`, {},
       { withCredentials: true, context: contextoErrorLocal() }).subscribe({
@@ -108,6 +168,7 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   }
   async quitar(turno: TurnoResumen): Promise<void> {
     if (this.ocupado || this.cargando || !this.alumno || !this.asignado(turno.id)) return;
+    this.cerrarLista();
     const revision = this.revision;
     this.quitando = turno.id;
     const { confirmado } = await this.confirmacion.confirmar({

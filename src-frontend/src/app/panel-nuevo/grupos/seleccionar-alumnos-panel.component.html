@@ -17,20 +17,28 @@
     } @else if (errorCarga) {
       <pn-bloque-error [titulo]="errorCarga" (reintentar)="cargarAlumnos()" />
     } @else if (!alumnos.length) {
-      <p class="seleccionar__vacio">@if (filtro) { Ningún alumno activo coincide con «{{ filtro }}» } @else { No hay alumnos activos disponibles }</p>
+      <div class="seleccionar__vacio" role="status">
+        <h2>@if (filtro) { Ningún alumno activo coincide con «{{ filtro }}» } @else { No hay alumnos activos disponibles }</h2>
+        @if (filtro) {
+          <p>@if (elegidos.size === 1) {El alumno elegido se conserva. }@else if (elegidos.size > 1) {Los {{ elegidos.size }} elegidos se conservan. }Cambia la búsqueda para elegir más.</p>
+        }
+      </div>
     } @else {
       <ul class="seleccionar__lista">
         @for (alumno of alumnos; track alumno.id) {
           <li class="seleccionar__fila" [class.seleccionar__fila--existente]="pertenece(alumno.id)">
             @if (!pertenece(alumno.id)) {
               <input type="checkbox" [id]="'seleccionar-alumno-' + alumno.id" [checked]="elegidos.has(alumno.id)" [disabled]="enviando" (change)="alternar(alumno.id)" />
+            } @else {
+              <span class="seleccionar__casilla-vacia" aria-hidden="true"></span>
             }
             <span class="seleccionar__avatar" aria-hidden="true">
               @if (fotoPara(alumno); as foto) { <img [src]="foto" width="32" height="32" alt="" loading="lazy" (error)="marcarFotoFallida(alumno.id)" /> }
               @else { {{ alumno.nombre.charAt(0) }}{{ alumno.apellidos.charAt(0) }} }
             </span>
             @if (pertenece(alumno.id)) {
-              <span class="seleccionar__nombre">{{ alumno.nombre }} {{ alumno.apellidos }}<span class="seleccionar__estado">Ya está en el grupo</span></span>
+              <span class="seleccionar__nombre">{{ alumno.nombre }} {{ alumno.apellidos }}</span>
+              <span class="seleccionar__estado">Ya está en el grupo</span>
             } @else {
               <label class="seleccionar__nombre" [for]="'seleccionar-alumno-' + alumno.id">{{ alumno.nombre }} {{ alumno.apellidos }}</label>
             }

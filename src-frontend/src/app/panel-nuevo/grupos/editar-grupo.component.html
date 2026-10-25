@@ -18,9 +18,11 @@
           <input id="grupo-nombre" type="text" [formControl]="nombre" maxlength="50" required
             placeholder="Infantiles cinturón blanco" (input)="errorGuardar = ''" [attr.aria-invalid]="errorNombre ? 'true' : null"
             [attr.aria-describedby]="'nombre-ayuda nombre-contador' + (errorNombre ? ' nombre-error' : '')" />
-          <p class="editar-grupo__contador" id="nombre-contador">{{ nombre.value.length }} / 50</p>
-          <p id="nombre-ayuda" class="editar-grupo__nota">Elige un nombre descriptivo para identificar el grupo fácilmente</p>
           @if (errorNombre) { <p class="editar-grupo__error" id="nombre-error" role="alert">{{ errorNombre }}</p> }
+          <div class="editar-grupo__ayuda-fila">
+            <p id="nombre-ayuda" class="editar-grupo__nota">Elige un nombre descriptivo para identificar el grupo fácilmente. Ejemplo: Infantiles cinturón blanco.</p>
+            <p class="editar-grupo__contador" id="nombre-contador">{{ nombre.value.length }} / 50</p>
+          </div>
           <div class="editar-grupo__guardar"><button type="submit" pnOcupado class="editar-grupo__primario" [ocupado]="guardando" textoOcupado="Guardando…" [deshabilitado]="nombre.invalid">Guardar cambios</button></div>
         </form>
         @if (errorGuardar) { <p class="editar-grupo__error" id="guardar-error" role="alert">{{ errorGuardar }}</p> }
@@ -66,7 +68,7 @@
               <div class="editar-grupo__nombres"><div><label for="profesor-nombre">Nombre (obligatorio)</label><input id="profesor-nombre" name="nombre" [(ngModel)]="nuevoNombre" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="given-name" /></div><div><label for="profesor-apellidos">Apellidos (obligatorio)</label><input id="profesor-apellidos" name="apellidos" [(ngModel)]="nuevosApellidos" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="family-name" /></div></div>
             } @else if (modoAlta === 'desactivado') { <p class="editar-grupo__aviso" role="status">Tiene el rol de profesor desactivado en esta escuela.</p> }
             @if (otrosGrupos.length) {
-              <fieldset><legend>También en estos grupos</legend><div class="editar-grupo__pastillas">@for (otro of otrosGrupos; track otro.id) { <button type="button" class="editar-grupo__pastilla" [attr.aria-pressed]="gruposMarcados.has(otro.id)" [disabled]="enviandoAlta" (click)="alternarGrupo(otro.id)">{{ otro.nombre }}</button> }</div></fieldset>
+              <fieldset><legend>También en estos grupos</legend><div class="editar-grupo__pastillas">@for (otro of otrosGrupos; track otro.id) { <button type="button" class="editar-grupo__pastilla" [class.es-elegida]="gruposMarcados.has(otro.id)" [attr.aria-pressed]="gruposMarcados.has(otro.id)" [disabled]="enviandoAlta" (click)="alternarGrupo(otro.id)">@if (gruposMarcados.has(otro.id)) { <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6" /></svg> }{{ otro.nombre }}</button> }</div></fieldset>
             }
             <button type="submit" pnOcupado class="editar-grupo__secundario" [ocupado]="enviandoAlta" textoOcupado="Enviando…" [deshabilitado]="!puedeEnviarAlta">{{ textoBotonAlta }}</button>
             @if (errorAlta) { <p class="editar-grupo__error" id="profesores-error" role="alert">{{ errorAlta }}</p> }

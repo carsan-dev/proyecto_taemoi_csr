@@ -72,6 +72,20 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
     return select;
   }
 
+  it('sitúa el error antes de la fila de ayuda completa y contador', () => {
+    nombre('');
+    const host = fixture.nativeElement as HTMLElement;
+    const error = host.querySelector('#crear-grupo-error')!;
+    const ayuda = host.querySelector('#crear-grupo-ayuda')!;
+    const contador = host.querySelector('#crear-grupo-contador')!;
+    expect(ayuda.textContent).toBe('Elige un nombre descriptivo para identificar el grupo fácilmente. Ejemplo: Infantiles cinturón blanco.');
+    expect(error.nextElementSibling).toBe(ayuda.parentElement);
+    expect(ayuda.parentElement).toBe(contador.parentElement);
+    expect(getComputedStyle(ayuda.parentElement!).display).toBe('flex');
+    expect(getComputedStyle(ayuda.parentElement!).gap).toBe('12px');
+    expect(getComputedStyle(contador).whiteSpace).toBe('nowrap');
+  });
+
   it('muestra solo disciplinas activas en el orden del catálogo y exige deporte para habilitar crear', () => {
     const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
     const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;

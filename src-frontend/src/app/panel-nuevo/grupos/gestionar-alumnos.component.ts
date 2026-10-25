@@ -1,9 +1,12 @@
 import { Location } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription, combineLatest, debounceTime } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import type { TurnoResumen } from '../../interfaces/turno-resumen';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
@@ -15,6 +18,9 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { fotoDe } from '../alumnos/alumno-vista';
 import { SeleccionarAlumnosPanelComponent, type AlumnoGrupo, type GrupoAlumnos } from './seleccionar-alumnos-panel.component';
 
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const INICIALES_DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
 @Component({
   selector: 'pn-gestionar-alumnos',
   standalone: true,
@@ -23,6 +29,7 @@ import { SeleccionarAlumnosPanelComponent, type AlumnoGrupo, type GrupoAlumnos }
   styleUrl: './gestionar-alumnos.component.scss',
 })
 export class GestionarAlumnosComponent implements OnInit, OnDestroy {
+  private readonly http = inject(HttpClient);
   private readonly endpoints = inject(EndpointsService);
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
@@ -34,6 +41,8 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly busqueda = new Subject<void>();
   private carga?: Subscription;
+  private cargaTurnos = new Subscription();
+  readonly turnosPorAlumno = new Map<number, string>();
   private disparador: HTMLElement | null = null;
   private desdeRuta = false;
   private rutaConsumida = false;
@@ -87,6 +96,9 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
 
   cargarGrupo(): void {
     this.carga?.unsubscribe();
+    this.cargaTurnos.unsubscribe();
+    this.cargaTurnos = new Subscription();
+    this.turnosPorAlumno.clear();
     this.cargando = !this.grupo;
     this.errorCarga = '';
     if (!Number.isSafeInteger(this.grupoId) || this.grupoId <= 0) {
@@ -117,12 +129,39 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
     const filtro = this.filtro.trim().toLowerCase();
     this.filtrados = this.alumnos.filter((alumno) => `${alumno.nombre} ${alumno.apellidos}`.toLowerCase().includes(filtro));
     this.pagina = reiniciar ? 1 : Math.min(this.pagina, this.totalPaginas);
+    this.cargarTurnosVisibles();
+  }
+  private cargarTurnosVisibles(): void {
+    const grupoId = this.grupoId;
+    for (const alumno of this.visibles) {
+      if (this.turnosPorAlumno.has(alumno.id)) continue;
+      this.turnosPorAlumno.set(alumno.id, '');
+      this.cargaTurnos.add(this.http.get<TurnoResumen[]>(`${environment.apiUrl}/grupos/${grupoId}/alumnos/${alumno.id}/turnos`, {
+        withCredentials: true, context: contextoErrorLocal(),
+      }).subscribe({
+        next: (turnos) => {
+          const porHora = new Map<string, string[]>();
+          for (const turno of turnos.filter(t => t.grupoId === grupoId).sort((a, b) => DIAS.indexOf(a.diaSemana.toLowerCase()) - DIAS.indexOf(b.diaSemana.toLowerCase()))) {
+            const hora = turno.horaInicio.slice(0, 5);
+            const dias = porHora.get(hora) ?? [];
+            const dia = INICIALES_DIAS[DIAS.indexOf(turno.diaSemana.toLowerCase())] ?? turno.diaSemana;
+            if (!dias.includes(dia)) dias.push(dia);
+            porHora.set(hora, dias);
+          }
+          this.turnosPorAlumno.set(alumno.id, [...porHora].map(([hora, dias]) => `${new Intl.ListFormat('es').format(dias)} ${hora}`).join(' · '));
+        },
+        // Missing schedules (including the endpoint's 404) must not hide the pupil list.
+        error: () => this.turnosPorAlumno.set(alumno.id, ''),
+      }));
+    }
   }
   get totalPaginas(): number { return Math.max(1, Math.ceil(this.filtrados.length / 10)); }
   get visibles(): AlumnoGrupo[] { return this.filtrados.slice((this.pagina - 1) * 10, this.pagina * 10); }
   get desde(): number { return this.filtrados.length ? (this.pagina - 1) * 10 + 1 : 0; }
   get hasta(): number { return Math.min(this.pagina * 10, this.filtrados.length); }
-  cambiarPagina(pagina: number): void { if (pagina >= 1 && pagina <= this.totalPaginas) this.pagina = pagina; }
+  cambiarPagina(pagina: number): void {
+    if (pagina >= 1 && pagina <= this.totalPaginas) { this.pagina = pagina; this.cargarTurnosVisibles(); }
+  }
 
   abrirPanel(disparador: HTMLElement): void {
     this.disparador = disparador;
@@ -170,5 +209,5 @@ export class GestionarAlumnosComponent implements OnInit, OnDestroy {
       },
     });
   }
-  ngOnDestroy(): void { this.carga?.unsubscribe(); this.busqueda.complete(); }
+  ngOnDestroy(): void { this.carga?.unsubscribe(); this.cargaTurnos.unsubscribe(); this.busqueda.complete(); }
 }

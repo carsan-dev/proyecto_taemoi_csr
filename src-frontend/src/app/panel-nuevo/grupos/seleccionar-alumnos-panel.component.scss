@@ -11,16 +11,19 @@
 .seleccionar__contador, .seleccionar__paginacion { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
 .seleccionar__contador { margin-top: 8px; }
 .seleccionar__lista { margin: 0; padding: 0; list-style: none; }
-.seleccionar__fila { display: flex; align-items: center; gap: 12px; min-height: 60px; border-bottom: 1px solid var(--pn-linea); }
-.seleccionar__fila input { flex: none; width: 20px; height: 20px; accent-color: var(--pn-acento); cursor: pointer; }
+.seleccionar__fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 60px; padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--pn-linea); }
+.seleccionar__fila input { flex: none; width: 22px; height: 20px; margin: 0; accent-color: var(--pn-acento); cursor: pointer; }
+.seleccionar__casilla-vacia { flex: none; width: 22px; }
 .seleccionar__fila--existente { color: var(--pn-tinta-2); background: var(--pn-superficie-2); }
 .seleccionar__fila--existente .seleccionar__avatar { filter: grayscale(1); }
 .seleccionar__avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background: var(--pn-acento-suave); color: var(--pn-acento); font: var(--pn-etiqueta); }
 .seleccionar__avatar img { width: 100%; height: 100%; object-fit: cover; }
-.seleccionar__nombre { flex: 1; padding: 12px 0; font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+.seleccionar__nombre { flex: 1 1 170px; margin: 0; padding: 0; font: var(--pn-cuerpo); font-weight: 600; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
 label.seleccionar__nombre { cursor: pointer; }
-.seleccionar__estado { display: block; margin-top: 4px; font: var(--pn-secundario); }
-.seleccionar__vacio { padding: 24px 0; color: var(--pn-tinta-2); font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+.seleccionar__estado { margin-left: auto; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.seleccionar__vacio { display: grid; gap: 10px; justify-items: center; padding: 28px 16px; text-align: center; background: var(--pn-superficie); border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); overflow-wrap: anywhere; }
+.seleccionar__vacio h2 { margin: 0; color: var(--pn-tinta); font: var(--pn-titulo-bloque); }
+.seleccionar__vacio p { margin: 0; max-width: 44ch; color: var(--pn-tinta-2); font: var(--pn-cuerpo); }
 .seleccionar__paginacion { margin-top: 16px; }
 .seleccionar__esqueleto { height: 44px; margin: 8px 0; border-radius: var(--pn-radio-s); background: var(--pn-serie-pista); }
 .seleccionar__error { margin: 0 0 12px; color: var(--pn-peligro); font: var(--pn-secundario); }

@@ -33,12 +33,57 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     fixture.detectChanges();
   });
   afterEach(() => { fixture.destroy(); http.verify(); });
-  function grupo(alumnos: AlumnoGrupo[] = [alumno(1)]): void {
+  function grupo(alumnos: AlumnoGrupo[] = [alumno(1)], resolverTurnos = true): void {
     const req = http.expectOne(`${environment.apiUrl}/grupos/7`);
     expect(req.request.method).toBe('GET');
     req.flush({ id: 7, nombre: 'Infantiles', alumnos });
+    if (resolverTurnos) vaciarTurnos();
     fixture.detectChanges();
   }
+  function vaciarTurnos(): void {
+    http.match((r) => /\/grupos\/7\/alumnos\/\d+\/turnos$/.test(r.url)).forEach(req => req.flush([]));
+  }
+  it('shows only the pupil schedules in this group, grouped by start time and ordered by weekday', () => {
+    grupo([alumno(1), alumno(2)], false);
+    http.expectOne(`${environment.apiUrl}/grupos/7/alumnos/1/turnos`).flush([
+      { grupoId: 7, diaSemana: 'Miércoles', horaInicio: '17:30:00' },
+      { grupoId: 7, diaSemana: 'Lunes', horaInicio: '17:30:00' },
+      { grupoId: 7, diaSemana: 'Viernes', horaInicio: '18:00' },
+      { grupoId: 8, diaSemana: 'Martes', horaInicio: '20:00' },
+    ]);
+    http.expectOne(`${environment.apiUrl}/grupos/7/alumnos/2/turnos`).flush('sin turnos', { status: 404, statusText: 'Not Found' });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.alumnos-grupo__turnos')?.textContent).toBe('L y X 17:30 · V 18:00');
+    expect(fixture.nativeElement.querySelectorAll('.alumnos-grupo__turnos').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.alumnos-grupo__fila').length).toBe(2);
+    expect(fixture.componentInstance.errorCarga).toBe('');
+  });
+  it('loads only visible schedules, caches revisited pages and resets cancelled requests on refresh', () => {
+    const alumnos = Array.from({ length: 11 }, (_, i) => alumno(i + 1));
+    grupo(alumnos, false);
+    const pendientes = http.match(r => /\/grupos\/7\/alumnos\/\d+\/turnos$/.test(r.url));
+    expect(pendientes.length).toBe(10);
+    fixture.componentInstance.cargarGrupo();
+    expect(pendientes.every(req => req.cancelled)).toBeTrue();
+    grupo(alumnos);
+    fixture.componentInstance.cambiarPagina(2);
+    http.expectOne(`${environment.apiUrl}/grupos/7/alumnos/11/turnos`).flush([]);
+    fixture.componentInstance.cambiarPagina(1);
+    fixture.componentInstance.cambiarPagina(2);
+    http.expectNone(r => r.url.endsWith('/turnos'));
+  });
+  it('cancels schedule reads on group navigation and reloads the same pupil in the new group', () => {
+    grupo([alumno(1)], false);
+    const anterior = http.expectOne(`${environment.apiUrl}/grupos/7/alumnos/1/turnos`);
+    params.next({ id: '8' });
+    expect(anterior.cancelled).toBeTrue();
+    http.expectOne(`${environment.apiUrl}/grupos/8`).flush({ id: 8, nombre: 'Adultos', alumnos: [alumno(1)] });
+    const nuevo = http.expectOne(`${environment.apiUrl}/grupos/8/alumnos/1/turnos`);
+    expect(nuevo.request.withCredentials).toBeTrue();
+    nuevo.flush([{ grupoId: 8, diaSemana: 'Martes', horaInicio: '19:00:00' }]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.alumnos-grupo__turnos')?.textContent).toBe('M 19:00');
+  });
   for (const seleccionarAlumnos of [false, true]) {
     it(`rejects zero on the first ${seleccionarAlumnos ? 'selection' : 'management'} route emission without leaving a skeleton`, () => {
       fixture.destroy();
@@ -87,6 +132,7 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     grupo(Array.from({ length: 18 }, (_, i) => alumno(i + 1)));
     fixture.componentInstance.buscar('Alumno'); tick(300);
     fixture.componentInstance.cambiarPagina(2); fixture.detectChanges();
+    vaciarTurnos();
     expect(fixture.nativeElement.textContent).toContain('11-18 de 18');
     fixture.componentInstance.cerrarPanel();
     grupo(Array.from({ length: 17 }, (_, i) => alumno(i + 1)));

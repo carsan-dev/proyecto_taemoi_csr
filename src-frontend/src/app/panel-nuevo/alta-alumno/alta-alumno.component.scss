@@ -404,6 +404,7 @@
 // Sí / No: el segmento elegido como un control elegido (acento-suave, acento-borde y acento, 8b-C).
 .alta__segmento {
   display: inline-flex;
+  width: fit-content;
   align-self: flex-start;
   border: 1px solid var(--pn-borde-control);
   border-radius: var(--pn-radio-m);
@@ -413,12 +414,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 64px;
+    box-sizing: border-box;
+    min-width: 44px;
     min-height: 40px;
-    padding: 0 16px;
+    margin: 0;
+    padding: 0 14px;
     background: var(--pn-superficie);
-    color: var(--pn-tinta);
+    color: var(--pn-tinta-2);
     font: var(--pn-etiqueta);
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color var(--pn-transicion), color var(--pn-transicion);
   }
