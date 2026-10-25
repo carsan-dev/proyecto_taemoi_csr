@@ -78,10 +78,10 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     sessionStorage.clear();
   });
 
-  async function abrir(alumno: unknown, status = 200, cargos = [cargo(1), cargo(2)]): Promise<ProductosAlumnoPanelComponent> {
+  async function abrir(alumno: unknown, status = 200, cargos = [cargo(1), cargo(2)], catalogo = [{ id: 1, concepto: 'Mensualidad', precio: 30 }]): Promise<ProductosAlumnoPanelComponent> {
     const pantalla = await harness.navigateByUrl('/alumnos/7/productos', ProductosAlumnoPanelComponent);
     http.expectOne(`${API}/productos-alumno/alumno/7`).flush(cargos);
-    http.expectOne(`${API}/productos/todos`).flush([{ id: 1, concepto: 'Mensualidad', precio: 30 }]);
+    http.expectOne(`${API}/productos/todos`).flush(catalogo);
     const peticion = http.expectOne(`${API}/alumnos/7`);
     if (status === 200) {
       peticion.flush(alumno as object);
@@ -120,6 +120,116 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     await abrir(ALUMNO);
     await harness.navigateByUrl('/alumnosEditar/7', FichaFalsa);
     expect(confirmar).not.toHaveBeenCalled();
+  });
+
+  it('usa el nombre como título y un único selector de producto con búsqueda', async () => {
+    await abrir(ALUMNO);
+    expect(el().querySelector('h1')!.textContent).toBe('Lucía Ortega');
+    expect(el().querySelector('.subtitulo')!.textContent).toBe('Productos y cargos');
+    expect(el().querySelector('#asignar-buscar')).toBeNull();
+    expect(el().querySelectorAll('[role="combobox"]').length).toBe(1);
+  });
+
+  it('vincula la búsqueda y la descripción del error al campo visible del selector reutilizado', async () => {
+    const pantalla = await abrir(ALUMNO);
+    pantalla.estado.anadirALista();
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
+    const campo = el().querySelector<HTMLInputElement>('.producto [role="combobox"]')!;
+    expect(campo.getAttribute('aria-label')).toBe('Producto');
+    expect(campo.getAttribute('aria-describedby')).toBe('asignar-producto-error');
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    campo.focus();
+    campo.value = 'Mensualidad';
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
+    expect(pantalla.estado.busqueda()).toBe('Mensualidad');
+    expect(campo.value).toBe('Mensualidad');
+  });
+
+  it('conserva la consulta con un producto elegido y muestra su etiqueta al volver a seleccionarlo', async () => {
+    const pantalla = await abrir(ALUMNO, 200, [], [
+      { id: 1, concepto: 'Mensualidad', precio: 30 },
+      { id: 2, concepto: 'Camiseta', precio: 12 },
+    ]);
+    const selector = el().querySelector<HTMLSelectElement>('#asignar-producto')!;
+    selector.value = '1';
+    selector.dispatchEvent(new Event('change', { bubbles: true }));
+    harness.detectChanges();
+    const campo = el().querySelector<HTMLInputElement>('[role="combobox"]')!;
+    campo.focus();
+    campo.value = 'Mens';
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
+    expect(pantalla.estado.productoElegido()).toBe(1);
+    expect(pantalla.estado.opcionesProducto().length).toBe(1);
+    expect(campo.value).toBe('Mens');
+    selector.dispatchEvent(new Event('change', { bubbles: true }));
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
+    expect(campo.value).toContain('Mensualidad');
+    expect(campo.value).not.toBe('Mens');
+    campo.value = '';
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+    harness.detectChanges();
+    await new Promise<void>((resolver) => setTimeout(resolver));
+    expect(campo.value).toContain('Mensualidad');
+    expect(pantalla.estado.busqueda()).toBe('');
+    expect(pantalla.estado.productoElegido()).toBe(1);
+  });
+
+  it('la etiqueta Producto apunta al campo visible y lo enfoca al pulsarla', async () => {
+    await abrir(ALUMNO);
+    const etiqueta = el().querySelector<HTMLLabelElement>('.producto label')!;
+    const campo = el().querySelector<HTMLInputElement>('[role="combobox"]')!;
+    expect(etiqueta.htmlFor).toBe(campo.id);
+    etiqueta.click();
+    expect(document.activeElement).toBe(campo);
+  });
+
+  it('pinta las nuevas asignaciones como primeras filas aunque no haya cargos guardados', async () => {
+    const pantalla = await abrir(ALUMNO, 200, []);
+    pantalla.estado.elegirProducto(1);
+    pantalla.estado.anadirALista();
+    harness.detectChanges();
+    const nueva = pantalla.estado.nuevas()[0];
+    const fila = el().querySelector('tbody tr')!;
+    expect(fila.textContent).toContain('Nuevo');
+    expect(fila.textContent).toContain(nueva.fechaPrevista);
+    expect(fila.textContent).toContain(pantalla.eur(30));
+    expect(fila.querySelector('.fecha-prevista')!.textContent).toBe(nueva.fechaPrevista);
+    expect(fila.querySelector('.fecha-prevista input')).toBeNull();
+    expect(fila.querySelector('[aria-label="Quitar de la lista"]')).not.toBeNull();
+    pantalla.estado.descartar();
+  });
+
+  it('al marcar para eliminar devuelve el foco al Deshacer de esa fila', async () => {
+    const pantalla = await abrir(ALUMNO);
+    pantalla.marcarBorrar(1);
+    expect(document.activeElement).toBe(el().querySelector('[data-cargo="1"] [data-deshacer]'));
+    pantalla.estado.descartar();
+  });
+
+  it('mantiene el contador vivo y reserva Cobrando para la petición, no para el diálogo abierto', async () => {
+    const pantalla = await abrir(ALUMNO);
+    const aviso = el().querySelector('.pendientes-aviso');
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent!.trim()).toBe('');
+    const filas = pantalla.estado.filasPagina();
+    const lectura = spyOn(pantalla.estado, 'filasPagina').and.returnValue([
+      { ...filas[0], ocupada: true, cobrando: false, puedeCobrar: false },
+    ]);
+    harness.detectChanges();
+    const boton = el().querySelector<HTMLButtonElement>('.pago button')!;
+    expect(boton.textContent).toContain('Cobrar');
+    expect(boton.textContent).not.toContain('Cobrando');
+    expect(boton.disabled).toBeTrue();
+    lectura.and.returnValue([{ ...filas[0], ocupada: true, cobrando: true, puedeCobrar: false }]);
+    harness.detectChanges();
+    expect(boton.textContent).toContain('Cobrando');
+    expect(el().querySelector('.pendientes-aviso')).toBe(aviso);
   });
 
   it('formatea el precio del resumen en euros y conserva las fechas de pago formateadas', async () => {
@@ -210,20 +320,34 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     expect(pantalla.menuAbierto).toBeNull();
   });
 
-  it('describe cantidad y precio pagados con notas únicas en concepto y junto a los campos', async () => {
-    await abrir(ALUMNO, 200, [{ ...cargo(1), pagado: true }]);
-    const escritorio = el().querySelector<HTMLElement>('.concepto #precio-nota-escritorio-1')!;
+  it('describe los campos pagados con un único aviso de tabla y conserva la nota móvil', async () => {
+    await abrir(ALUMNO, 200, [{ ...cargo(1), pagado: true }, { ...cargo(2), pagado: true }]);
+    const escritorio = el().querySelector<HTMLElement>('#precio-nota-pagados')!;
     const movil = el().querySelector<HTMLElement>('.campo #precio-nota-movil-1')!;
     expect(escritorio.textContent).toBe('Revierte el cobro para cambiar precio o cantidad');
     expect(movil.textContent).toBe(escritorio.textContent);
-    expect(el().querySelectorAll('#precio-nota-escritorio-1').length).toBe(1);
+    expect(el().querySelectorAll('#precio-nota-pagados').length).toBe(1);
+    expect(el().querySelector('.concepto .nota-precio-escritorio')).toBeNull();
     expect(el().querySelectorAll('#precio-nota-movil-1').length).toBe(1);
     for (const campo of ['cantidad', 'precio']) {
       const entrada = el().querySelector<HTMLInputElement>(`#${campo}-1`)!;
       expect(entrada.disabled).toBeTrue();
       expect(entrada.getAttribute('aria-describedby')).toContain(escritorio.id);
-      expect(entrada.getAttribute('aria-describedby')).toContain(movil.id);
+      expect(entrada.getAttribute('aria-describedby')).not.toContain(movil.id);
+      expect(entrada.title).toBe(escritorio.textContent);
     }
+  });
+
+  it('conserva el precio editable sin símbolo y presenta el sufijo euro dentro del control', async () => {
+    await abrir(ALUMNO);
+    const entrada = el().querySelector<HTMLInputElement>('#precio-1')!;
+    expect(entrada.value).toBe('30,00');
+    expect(entrada.parentElement!.querySelector('.precio-sufijo')!.textContent).toBe('€');
+    expect(el().querySelector('thead th:last-child')!.textContent).toBe('Acciones');
+    expect(el().querySelector('.lista table')).not.toBeNull();
+    expect(el().querySelector('#precio-nota-pagados')).toBeNull();
+    expect(el().querySelectorAll('[data-cargo="1"] .pago button').length).toBe(1);
+    expect(el().querySelector('.cobrar-resumen')).toBeNull();
   });
 
   it('con cambios pregunta al salir: «Seguir editando» se queda y «Salir sin guardar» sale', async () => {

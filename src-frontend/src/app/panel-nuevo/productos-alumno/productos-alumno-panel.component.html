@@ -1,104 +1,121 @@
 @let e = estado;
 <main class="pn productos-alumno" pnAcento aria-labelledby="productos-alumno-titulo">
-  <div class="productos-alumno__pagina"><header class="cabecera">
-    <a [routerLink]="e.rutaFicha()" [queryParams]="e.parametrosFicha">Volver a la ficha</a>
-    @if (e.estado() === 'listo') {
-    @let alumno = e.alumno()!; <div class="identidad">@if (foto) { <img class="foto" [src]="foto" alt="" /> } @else { <span class="foto iniciales" aria-hidden="true">{{ iniciales(alumno.nombre, alumno.apellidos) }}</span> }<p>{{ e.nombreAlumno() }}</p></div>
-    }
-    <h1 id="productos-alumno-titulo">Productos y cargos</h1>
-  </header>
+  <div class="productos-alumno__pagina">
+    <header class="cabecera">
+      @if (e.estado() === 'listo') {
+        @let alumno = e.alumno()!;
+        @if (foto) { <img class="foto" [src]="foto" alt="" /> }
+        @else { <span class="foto iniciales" aria-hidden="true">{{ iniciales(alumno.nombre, alumno.apellidos) }}</span> }
+        <div class="identidad">
+          <h1 id="productos-alumno-titulo">{{ e.nombreAlumno() }}</h1>
+          <p class="subtitulo">Productos y cargos</p>
+        </div>
+      } @else { <h1 id="productos-alumno-titulo">Productos y cargos</h1> }
+      <a class="texto volver" [routerLink]="e.rutaFicha()" [queryParams]="e.parametrosFicha">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>Volver a la ficha
+      </a>
+    </header>
 
   @if (e.estado() === 'cargando') {
   <pn-esqueleto etiqueta="Cargando productos del alumno…">@for (n of [1, 2, 3, 4]; track n) { <div class="esqueleto"></div> }</pn-esqueleto>
   } @else if (e.estado() === 'error') {
   <pn-bloque-error [titulo]="e.errorCarga()" (reintentar)="e.cargar()" />
   } @else {
-  <section class="asignar" aria-labelledby="asignar-titulo"><fieldset [disabled]="e.guardando()"><legend class="oculto">Asignar producto</legend>
+  <section class="asignar" aria-labelledby="asignar-titulo">
     <h2 id="asignar-titulo">Asignar producto</h2>
-    <label for="asignar-buscar">Buscar producto</label>
-    <input id="asignar-buscar" type="search" [value]="e.busqueda()" (input)="e.buscarProducto(valor($event))" />
-    <label for="asignar-producto">Producto</label>
-    <select id="asignar-producto" (change)="elegirProducto($event)"
-      [attr.aria-invalid]="e.errorAsignacion() === 'producto' ? 'true' : null"
-      [attr.aria-describedby]="e.errorAsignacion() === 'producto' ? 'asignar-producto-error' : null">
-      <option value="" [selected]="e.productoElegido() === null">{{ textos.sinProducto }}</option>
-      @for (p of e.opcionesProducto(); track p.id) {
-      <option [value]="p.id" [selected]="e.productoElegido() === p.id">{{ etiquetaProducto(p) }}</option>
-      }
-    </select>
-    @if (e.errorAsignacion() === 'producto') {
-    <p id="asignar-producto-error">{{ textos.sinProducto }}</p>
-    }
-    @if (e.matriculaElegida()) {
-    <label for="asignar-deporte">Deporte</label>
-    @if (e.sinDeportes()) {
-    <p>{{ textos.sinDeportes }}</p>
-    } @else {
-    <select id="asignar-deporte" (change)="e.elegirDeporte(valor($event))"
-      [attr.aria-invalid]="e.errorAsignacion() === 'deporte' ? 'true' : null"
-      [attr.aria-describedby]="e.errorAsignacion() === 'deporte' ? 'asignar-deporte-error' : null">
-      <option value="" [selected]="e.deporteElegido() === null">{{ textos.sinDeporte }}</option>
-      @for (d of e.deportes(); track d) {
-      <option [value]="d" [selected]="e.deporteElegido() === d">{{ d }}</option>
-      }
-    </select>
-    }
-    @if (e.errorAsignacion() === 'deporte') {
-    <p id="asignar-deporte-error">{{ textos.sinDeporte }}</p>
-    }
-    }
-    <button class="secundario" type="button" (click)="e.anadirALista()" [disabled]="!e.puedeAnadir()">Añadir a la lista</button>
-  </fieldset></section>
+    <fieldset [disabled]="e.guardando()">
+      <legend class="oculto">Asignar producto</legend>
+      <div class="asignar-campos">
+        <div class="producto" (input)="buscarProducto($event)" (focusout)="terminarBusquedaProducto()" (keydown.escape)="terminarBusquedaProducto()">
+          <label for="asignar-producto-input">Producto <span class="obligatorio">obligatorio</span></label>
+          <div class="buscador-producto"><i class="bi bi-search" aria-hidden="true"></i>
+          <select id="asignar-producto" appSearchableSelect searchPlaceholder="Buscar producto…"
+            searchDropdownClass="pn productos-desplegable" [searchDropdownVariables]="variablesDesplegable()"
+            [disabled]="e.guardando()" (change)="elegirProducto($event)"
+            [attr.aria-invalid]="e.errorAsignacion() === 'producto' ? 'true' : null"
+            aria-describedby="asignar-producto-error">
+            <option value="" [selected]="e.productoElegido() === null">{{ textos.sinProducto }}</option>
+            @for (p of e.opcionesProducto(); track p.id) {
+              <option [value]="p.id" [selected]="e.productoElegido() === p.id">{{ etiquetaProducto(p) }}</option>
+            }
+          </select></div>
+          <p id="asignar-producto-error" class="error">{{ e.errorAsignacion() === 'producto' ? textos.sinProducto : '' }}</p>
+        </div>
+        @if (e.matriculaElegida()) {
+          <div>
+            <label for="asignar-deporte">Deporte de la matrícula <span class="obligatorio">obligatorio</span></label>
+            @if (e.sinDeportes()) { <p class="error">{{ textos.sinDeportes }}</p> }
+            @else {
+              <select id="asignar-deporte" (change)="e.elegirDeporte(valor($event))"
+                [attr.aria-invalid]="e.errorAsignacion() === 'deporte' ? 'true' : null"
+                aria-describedby="asignar-deporte-error">
+                <option value="" [selected]="e.deporteElegido() === null">{{ textos.sinDeporte }}</option>
+                @for (d of e.deportes(); track d) {
+                  <option [value]="d" [selected]="e.deporteElegido() === d">{{ d }}</option>
+                }
+              </select>
+            }
+            <p id="asignar-deporte-error" class="error">{{ e.errorAsignacion() === 'deporte' ? textos.sinDeporte : '' }}</p>
+          </div>
+        }
+      </div>
+      <button class="secundario" type="button" (click)="e.anadirALista()" [disabled]="!e.puedeAnadir()">Añadir a la lista</button>
+    </fieldset>
+  </section>
 
-  @if (e.nuevas().length > 0) {
-  <ul class="nuevas" aria-label="Asignaciones nuevas">
-    @for (n of e.nuevas(); track n.clave) {
-    <li>
-      <span class="pastilla nuevo">Nuevo</span> {{ etiquetaProducto(n.producto) }}@if (n.deporte) { · {{ n.deporte }} }
-      @if (n.error) { <span role="alert">{{ n.error }}</span> }
-      <button type="button" [attr.aria-label]="'Quitar ' + n.producto.concepto" (click)="e.quitarNueva(n.clave)"
-        [disabled]="e.guardando()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-    </li>
-    }
-  </ul>
-  }
-
-  @if (e.totalCargos() === 0) {
+  @if (e.totalCargos() === 0 && e.nuevas().length === 0) {
   <p class="vacio" role="status">{{ textos.vacio }}</p>
   } @else {
-  <table>
+  @if (hayCargosPagados()) { <p class="nota aviso-precio" id="precio-nota-pagados">{{ textos.notaPrecioConCobro }}</p> }
+  <div class="lista"><table>
     <caption class="oculto">Cargos del alumno</caption>
-    <thead><tr><th scope="col">Concepto</th><th scope="col">Asignado</th><th scope="col">Cant.</th><th scope="col">Precio</th><th scope="col">Total</th><th scope="col">Pagado</th><th scope="col">Fecha de pago</th><th scope="col">Notas</th><th scope="col"><span class="oculto">Acciones</span><span aria-hidden="true">⋯</span></th></tr></thead>
+    <thead><tr><th scope="col">Concepto</th><th scope="col">Asignado</th><th scope="col">Cant.</th><th scope="col">Precio</th><th scope="col">Total</th><th scope="col">Pagado</th><th scope="col">Fecha de pago</th><th scope="col">Notas</th><th scope="col"><span class="oculto">Acciones</span></th></tr></thead>
     <tbody>
+      @for (n of e.nuevas(); track n.clave) {
+        <tr class="fila-nueva">
+          <th scope="row" class="concepto">
+            <span class="concepto-nombre">{{ n.producto.concepto }} <span class="pastilla nuevo">Nuevo</span></span>
+            <span class="resumen">Asignado {{ n.fechaPrevista }} · 1 × {{ eur(n.producto.precio) || '—' }}</span>
+            @if (n.deporte) { <span class="nota">{{ n.deporte }}</span> }
+          </th>
+          <td class="campo fecha-prevista">{{ n.fechaPrevista }}</td>
+          <td class="campo"><span class="mini cantidad">1</span></td>
+          <td class="campo"><span class="mini precio">{{ precioParaCampo(n.producto.precio) || '—' }}</span></td>
+          <td class="total">{{ eur(n.producto.precio) || '—' }}</td>
+          <td class="pago campo"><span class="pastilla pendiente">Pendiente</span></td>
+          <td class="campo">—</td><td class="campo">—</td>
+          <td class="acciones"><button class="icono quitar-nueva" type="button" aria-label="Quitar de la lista" (click)="e.quitarNueva(n.clave)" [disabled]="e.guardando()"><i class="bi bi-x-lg" aria-hidden="true"></i></button></td>
+        </tr>
+        @if (n.error) { <tr class="error-fila"><td colspan="9"><p role="alert">{{ n.error }}</p></td></tr> }
+      }
       @for (f of e.filasPagina(); track f.id) {
       <tr [attr.data-cargo]="f.id" [attr.data-modificada]="f.modificada ? '' : null" [class.abierta]="desplegadas.has(f.id)" [class.borrar]="f.marcadaBorrar" [class.cancelada]="f.estado === 'cancelado'" [attr.aria-busy]="f.ocupada">
         <th scope="row" class="concepto">
-          <span class="concepto-nombre">@if (f.modificada) { <span class="punto" aria-label="Cambios sin guardar"></span> }{{ f.concepto || '—' }}</span>
-          <span class="nota nota-precio-escritorio" [id]="'precio-nota-escritorio-' + f.id" [title]="f.notaPrecioCantidad || ''">{{ f.notaPrecioCantidad }}</span>
-          <span class="resumen">Asignado {{ fecha(f.fecha) || '—' }} · {{ f.cantidad || '—' }} × {{ precioResumen(f.precio) }} <span class="pastilla" [class]="'pastilla ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">{{ textosEstado[f.estado] }}</span></span>
+          <span class="concepto-nombre">@if (f.modificada) { <span class="punto" aria-hidden="true"></span><span class="oculto">Cambios sin guardar: </span> }{{ f.concepto || '—' }}</span>
+          <span class="resumen">Asignado {{ fecha(f.fecha) || '—' }} · {{ f.cantidad || '—' }} × {{ precioResumen(f.precio) }}</span>
           @if (f.textoCancelacion) { <span class="nota cancelacion">{{ f.textoCancelacion }}</span> }
           @if (f.marcadaBorrar) { <span class="nota">Pendiente de eliminar</span> }
         </th>
-        <td class="campo"><label class="etiqueta-movil" [for]="'fecha-' + f.id">Asignado</label><input [id]="'fecha-' + f.id" type="date" [attr.aria-label]="'Asignado, ' + f.concepto" [value]="f.fecha" [disabled]="!f.editable" (change)="e.cambiarFecha(f.id, valor($event))" /></td>
-        <td class="campo"><label class="etiqueta-movil" [for]="'cantidad-' + f.id">Cantidad</label><input [id]="'cantidad-' + f.id" type="number" min="1" step="1" [attr.aria-label]="'Cantidad, ' + f.concepto" [value]="f.cantidad" [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.cantidad ? 'true' : null" [attr.aria-describedby]="'cantidad-error-' + f.id + ' precio-nota-escritorio-' + f.id + ' precio-nota-movil-' + f.id" (input)="e.cambiarCantidad(f.id, valor($event))" /><span class="error" [id]="'cantidad-error-' + f.id">{{ f.errores.cantidad ? 'Pon una cantidad entera de 1 o más.' : '' }}</span></td>
-        <td class="campo"><label class="etiqueta-movil" [for]="'precio-' + f.id">Precio</label><input [id]="'precio-' + f.id" type="text" inputmode="decimal" [attr.aria-label]="'Precio, ' + f.concepto" [value]="f.precio" [disabled]="!f.precioCantidadEditables" [attr.aria-invalid]="f.errores.precio ? 'true' : null" [attr.aria-describedby]="'precio-error-' + f.id + ' precio-nota-escritorio-' + f.id + ' precio-nota-movil-' + f.id" (input)="e.cambiarPrecio(f.id, valor($event))" /><span class="error" [id]="'precio-error-' + f.id">{{ f.errores.precio ? 'Pon un precio de 0 o más, con dos decimales como mucho.' : '' }}</span><span class="nota nota-precio-movil" [id]="'precio-nota-movil-' + f.id">{{ f.notaPrecioCantidad }}</span></td>
+        <td class="campo campo-fecha"><label class="etiqueta-movil" [for]="'fecha-' + f.id">Fecha de asignación</label><input [id]="'fecha-' + f.id" type="date" [attr.aria-label]="'Fecha de asignación, ' + f.concepto" [value]="f.fecha" [disabled]="!f.editable" (change)="e.cambiarFecha(f.id, valor($event))" /></td>
+        <td class="campo campo-cantidad"><label class="etiqueta-movil" [for]="'cantidad-' + f.id">Cantidad</label><input [id]="'cantidad-' + f.id" type="number" min="1" step="1" [attr.aria-label]="'Cantidad, ' + f.concepto" [value]="f.cantidad" [disabled]="!f.precioCantidadEditables" [attr.title]="f.notaPrecioCantidad" [attr.aria-invalid]="f.errores.cantidad ? 'true' : null" [attr.aria-describedby]="'cantidad-error-' + f.id + (f.notaPrecioCantidad ? ' precio-nota-pagados' : '')" (input)="e.cambiarCantidad(f.id, valor($event))" /><span class="error" [id]="'cantidad-error-' + f.id">{{ f.errores.cantidad ? 'Pon una cantidad entera de 1 o más.' : '' }}</span></td>
+        <td class="campo campo-precio"><label class="etiqueta-movil" [for]="'precio-' + f.id">Precio (€)</label><span class="precio-control"><input [id]="'precio-' + f.id" type="text" inputmode="decimal" [attr.aria-label]="'Precio, ' + f.concepto" [value]="f.precio" [disabled]="!f.precioCantidadEditables" [attr.title]="f.notaPrecioCantidad" [attr.aria-invalid]="f.errores.precio ? 'true' : null" [attr.aria-describedby]="'precio-error-' + f.id + (f.notaPrecioCantidad ? ' precio-nota-pagados' : '')" (input)="e.cambiarPrecio(f.id, valor($event))" /><span class="precio-sufijo" aria-hidden="true">€</span></span><span class="error" [id]="'precio-error-' + f.id">{{ f.errores.precio ? 'Pon un precio de 0 o más, con dos decimales como mucho.' : '' }}</span><span class="nota nota-precio-movil" aria-hidden="true" [id]="'precio-nota-movil-' + f.id">{{ f.notaPrecioCantidad }}</span></td>
         <td class="total">{{ f.total === null ? '—' : eur(f.total) }}</td>
-        <td class="pago campo"><span class="pastilla estado-escritorio" [class]="'pastilla estado-escritorio ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">{{ textosEstado[f.estado] }}</span>
-          @if (f.muestraCobrar) { <button pnOcupado class="texto" type="button" [ocupado]="f.ocupada" textoOcupado="Cobrando…" [deshabilitado]="!f.puedeCobrar" [attr.aria-describedby]="'cobrar-nota-' + f.id" (click)="e.cobrar(f.id)">Cobrar</button><span class="nota" [id]="'cobrar-nota-' + f.id">{{ f.notaCobrar }}</span> }
+        <td class="pago campo"><div class="pago-linea"><span class="pastilla" [class]="'pastilla ' + f.estado" [attr.title]="f.estado === 'devuelto' ? 'Pagado y devuelto: su cobro tiene una devolución registrada' : null">@if (f.estado === 'pagado') { <i class="bi bi-check-lg" aria-hidden="true"></i> }{{ textosEstado[f.estado] }}</span>
+          @if (f.muestraCobrar) { <button pnOcupado class="texto" type="button" [ocupado]="f.cobrando" textoOcupado="Cobrando…" [deshabilitado]="!f.puedeCobrar" [attr.aria-describedby]="'cobrar-nota-' + f.id" (click)="e.cobrar(f.id)">Cobrar</button> }</div><span class="nota" [id]="'cobrar-nota-' + f.id">{{ f.notaCobrar }}</span>
         </td>
         <td class="campo fecha-pago"><span class="etiqueta-movil">Fecha de pago</span>{{ f.fechaPago || '—' }}</td>
         <td class="campo notas"><span class="etiqueta-movil">Notas</span><span class="notas-texto" [title]="f.notas">{{ f.notas || '—' }}</span></td>
         <td class="acciones">
           <button class="icono expandir" type="button" data-expandir [attr.aria-label]="'Detalle de ' + f.concepto" [attr.aria-expanded]="desplegadas.has(f.id)" (click)="alternarDetalle(f.id)"><i class="bi" [class.bi-chevron-down]="!desplegadas.has(f.id)" [class.bi-chevron-up]="desplegadas.has(f.id)" aria-hidden="true"></i></button>
-          @if (f.puedeDeshacerBorrar) { <button class="texto" type="button" (click)="e.deshacerBorrar(f.id)">Deshacer</button> }
+          @if (f.puedeDeshacerBorrar) { <button class="texto" type="button" data-deshacer (click)="e.deshacerBorrar(f.id)">Deshacer</button> }
           @if (f.puedeEditarNotas || f.puedeCancelar || f.puedeReactivar || f.puedeEliminar || f.puedePedirReversion) {
           <div class="menu-zona"><button #disparador class="icono" type="button" [attr.aria-label]="'Acciones de ' + f.concepto" aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === f.id" [attr.aria-controls]="'menu-' + f.id" (click)="alternarMenu(f.id, disparador)" (keydown.arrowdown)="$event.preventDefault(); alternarMenu(f.id, disparador)" (keydown.arrowup)="$event.preventDefault(); alternarMenu(f.id, disparador, true)"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
             @if (menuAbierto === f.id) { <div #menu class="menu" role="menu" [id]="'menu-' + f.id" [attr.aria-label]="'Acciones de ' + f.concepto" (keydown)="teclaMenu($event, menu)">
-              @if (f.puedeEditarNotas) { <button role="menuitem" type="button" (click)="editarNotas(f)">Editar notas</button> }
-              @if (f.puedeCancelar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.cancelar(f.id)">Cancelar cargo</button> }
-              @if (f.puedeReactivar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.reactivar(f.id)">Reactivar</button> }
-              @if (f.puedeEliminar) { <button class="peligro" role="menuitem" type="button" (click)="cerrarMenu(); e.marcarBorrar(f.id)">Eliminar</button> }
-              @if (f.puedePedirReversion) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.pedirReversion(f.id)">Pedir que se revierta el cobro</button> }
+              @if (f.puedeEditarNotas) { <button role="menuitem" type="button" (click)="editarNotas(f)"><i class="bi bi-pencil" aria-hidden="true"></i>Editar notas</button> }
+              @if (f.puedeCancelar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.cancelar(f.id)"><i class="bi bi-x-lg" aria-hidden="true"></i>Cancelar cargo</button> }
+              @if (f.puedeReactivar) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.reactivar(f.id)"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reactivar</button> }
+              @if (f.puedeEliminar) { <button class="peligro" role="menuitem" type="button" (click)="marcarBorrar(f.id)"><i class="bi bi-trash" aria-hidden="true"></i>Eliminar</button> }
+              @if (f.puedePedirReversion) { <button role="menuitem" type="button" (click)="cerrarMenu(); e.pedirReversion(f.id)"><i class="bi bi-arrow-return-left" aria-hidden="true"></i>Pedir que se revierta el cobro</button> }
             </div> }
           </div> }
         </td>
@@ -106,7 +123,7 @@
       @if (f.errorServidor) { <tr class="error-fila"><td colspan="9"><p role="alert">{{ f.errorServidor }}</p></td></tr> }
       }
     </tbody>
-  </table>
+  </table></div>
   @if (e.totalPaginas() > 1) {
   <nav class="paginacion" aria-label="Páginas de cargos">
     <button type="button" (click)="e.paginaAnterior()" [disabled]="e.pagina() <= 1">Anterior</button>
@@ -116,12 +133,12 @@
   }
   }
 
-  @if (e.hayCambios()) {
-  <div class="pendientes" role="region" aria-label="Cambios sin guardar">
-    <span aria-live="polite">{{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar</span>
-    <button type="button" (click)="e.descartar()" [disabled]="e.guardando()">Descartar</button>
+  }
+  <div [class.pendientes]="e.hayCambios()" [class.oculto]="!e.hayCambios()" role="region" aria-label="Cambios sin guardar">
+    <strong class="pendientes-aviso" aria-live="polite">@if (e.hayCambios()) { {{ e.pendientes() }} {{ e.pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar }</strong>
+    @if (e.hayCambios()) {
+    <button class="texto" type="button" (click)="e.descartar()" [disabled]="e.guardando()">Descartar</button>
     <button pnOcupado class="primario" type="button" [ocupado]="e.guardando()" textoOcupado="Guardando…" (click)="e.guardar()" [deshabilitado]="!e.puedeGuardar()">Guardar cambios</button>
+    }
   </div>
-  }
-  }
 </div></main>

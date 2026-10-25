@@ -1,11 +1,13 @@
-import { ChangeDetectorRef, Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, NgZone, OnInit, afterEveryRender, computed, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
-import { AcentoEscuelaDirective } from '../acento-escuela.directive';
+import { AcentoEscuelaActual, AcentoEscuelaDirective } from '../acento-escuela.directive';
+import { SearchableSelectDirective } from '../../directives/searchable-select.directive';
+import { variablesDelTema } from '../tema-escuela';
 import { fotoDe, iniciales } from '../alumnos/alumno-vista';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
@@ -13,7 +15,7 @@ import type { FilaCargo } from './productos-alumno.estado';
 import { eur, fecha } from '../formato/formato-es';
 import { ProductosAlumnoEstado } from './productos-alumno.estado';
 import { ConCambiosSinGuardar } from './salir-sin-guardar.guard';
-import { TEXTOS_PRODUCTOS_ALUMNO, etiquetaProducto, leerPrecio } from './productos-alumno-vista';
+import { TEXTOS_PRODUCTOS_ALUMNO, etiquetaProducto, leerPrecio, precioParaCampo } from './productos-alumno-vista';
 
 /**
  * «Productos y cargos» de un alumno (8b-3n) en `/alumnos/:id/productos`, con el interruptor del diseño nuevo. Toda la
@@ -22,7 +24,7 @@ import { TEXTOS_PRODUCTOS_ALUMNO, etiquetaProducto, leerPrecio } from './product
 @Component({
   selector: 'pn-productos-alumno',
   standalone: true,
-  imports: [RouterLink, BloqueErrorComponent, EsqueletoComponent, BotonOcupadoComponent, AcentoEscuelaDirective],
+  imports: [RouterLink, BloqueErrorComponent, EsqueletoComponent, BotonOcupadoComponent, AcentoEscuelaDirective, SearchableSelectDirective],
   providers: [ProductosAlumnoEstado],
   templateUrl: './productos-alumno-panel.component.html',
   styleUrl: './productos-alumno-panel.component.scss',
@@ -33,12 +35,56 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly detectorCambios = inject(ChangeDetectorRef);
+  private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly zona = inject(NgZone);
+  private readonly temaActual = inject(AcentoEscuelaActual);
+  private consultaProductoActiva = false;
+  readonly variablesDesplegable = computed(() => variablesDelTema(this.temaActual.aplicado()));
+  readonly hayCargosPagados = computed(() => this.estado.filasPagina().some((fila) => fila.cargo.pagado === true));
   readonly iniciales = iniciales;
   readonly desplegadas = new Set<number>();
   menuAbierto: number | null = null;
   private botonMenu: HTMLButtonElement | null = null;
   readonly textosEstado = { pagado: 'Pagado', pendiente: 'Pendiente', cancelado: 'Cancelado', devuelto: 'Devuelto' };
   readonly fecha = fecha;
+  readonly precioParaCampo = precioParaCampo;
+
+  constructor() {
+    afterEveryRender(() => this.zona.runOutsideAngular(() => queueMicrotask(() => this.sincronizarBuscador())));
+  }
+
+  private sincronizarBuscador(): void {
+    const campo = this.elemento.nativeElement.querySelector<HTMLInputElement>('.producto [role="combobox"]');
+    if (!campo) return;
+    campo.setAttribute('aria-label', 'Producto');
+    campo.setAttribute('aria-required', 'true');
+    campo.setAttribute('aria-describedby', 'asignar-producto-error');
+    campo.setAttribute('aria-invalid', String(this.estado.errorAsignacion() === 'producto'));
+    campo.disabled = this.estado.guardando();
+    // El selector reconstruye sus opciones: conserva la consulta mientras se está escribiendo.
+    if (campo.ownerDocument.activeElement === campo && this.consultaProductoActiva &&
+        (this.estado.busqueda() !== '' || this.estado.productoElegido() === null)) {
+      campo.value = this.estado.busqueda();
+    }
+  }
+
+  buscarProducto(evento: Event): void {
+    if ((evento.target as HTMLElement).getAttribute('role') === 'combobox') {
+      this.consultaProductoActiva = true;
+      this.estado.buscarProducto(this.valor(evento));
+    }
+  }
+
+  terminarBusquedaProducto(): void {
+    this.consultaProductoActiva = false;
+  }
+
+  marcarBorrar(id: number): void {
+    this.cerrarMenu(false);
+    if (!this.estado.marcarBorrar(id)) return;
+    this.detectorCambios.detectChanges();
+    this.elemento.nativeElement.querySelector<HTMLButtonElement>(`[data-cargo="${id}"] [data-deshacer]`)?.focus();
+  }
 
   precioResumen(texto: string): string {
     const lectura = leerPrecio(texto);
@@ -128,6 +174,7 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   }
 
   elegirProducto(evento: Event): void {
+    this.terminarBusquedaProducto();
     const valor = this.valor(evento);
     this.estado.elegirProducto(valor ? Number(valor) : null);
   }
