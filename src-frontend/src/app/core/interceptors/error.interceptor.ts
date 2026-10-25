@@ -82,6 +82,17 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             console.error('Service unavailable:', error.message);
             break;
 
+          case 429:
+            // Límite de peticiones de nginx: el cuerpo es HTML de nginx, no se muestra.
+            // Las de /api/auth/ (p. ej. /auth/roles) se reintentan en el servicio: sin aviso.
+            if (esSolicitudAutenticacion(req.url)) {
+              return throwError(() => error);
+            }
+            errorTitle = 'Demasiadas peticiones';
+            errorMessage = 'Has hecho muchas peticiones seguidas. Espera unos segundos y vuelve a intentarlo.';
+            console.error('Too many requests:', error.url);
+            break;
+
           case 0:
             if (esSolicitudAutenticacion(req.url)) {
               return throwError(() => error);

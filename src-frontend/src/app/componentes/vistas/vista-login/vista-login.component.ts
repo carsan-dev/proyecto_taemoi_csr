@@ -297,6 +297,13 @@ export class VistaLoginComponent implements OnInit {
         message: 'El correo o la contraseña no son correctos.',
       };
     }
+    // Límite de intentos de nginx: su cuerpo es HTML, no un mensaje del servidor.
+    if (status === 429) {
+      return {
+        title: 'Demasiados intentos',
+        message: 'Espera un minuto y vuelve a intentarlo.',
+      };
+    }
     return {
       title: 'No se pudo iniciar sesion',
       message: backendMessage || 'Revisa tus datos e intentalo de nuevo.',

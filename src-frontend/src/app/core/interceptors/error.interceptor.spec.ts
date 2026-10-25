@@ -47,6 +47,21 @@ describe('Errores de informes parciales', () => {
     expect(Swal.fire).toHaveBeenCalledWith(jasmine.objectContaining({ title: 'Sesión Expirada' }));
     expect(navegar).toHaveBeenCalledWith(['/login']);
   });
+  it('429: aviso fijo «Demasiadas peticiones» sin mostrar el HTML de nginx', () => {
+    TestBed.inject(HttpClient).get('/api/otra').subscribe({ error: () => {} });
+    TestBed.inject(HttpTestingController).expectOne('/api/otra')
+      .flush('<html><body>429 Too Many Requests nginx</body></html>', { status: 429, statusText: 'Too Many Requests' });
+    expect(Swal.fire).toHaveBeenCalledWith(jasmine.objectContaining({
+      title: 'Demasiadas peticiones',
+      text: 'Has hecho muchas peticiones seguidas. Espera unos segundos y vuelve a intentarlo.',
+    }));
+  });
+  it('429 en /api/auth/ no abre aviso y devuelve el error (el servicio lo reintenta)', () => {
+    const error = jasmine.createSpy('error');
+    TestBed.inject(HttpClient).get('/api/auth/roles').subscribe({ error });
+    TestBed.inject(HttpTestingController).expectOne('/api/auth/roles').flush('<html></html>', { status: 429, statusText: 'Too Many Requests' });
+    expect(error).toHaveBeenCalled(); expect(Swal.fire).not.toHaveBeenCalled();
+  });
   it('su SweetAlert2 lleva la clase «swal-error-http» (sin estilos): el panel nuevo cierra solo ese (8b-D1)', () => {
     TestBed.inject(HttpClient).get('/otra').subscribe({ error: () => {} });
     TestBed.inject(HttpTestingController).expectOne('/otra').flush({}, { status: 500, statusText: 'Error' });
