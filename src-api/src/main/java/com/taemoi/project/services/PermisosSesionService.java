@@ -1,5 +1,8 @@
 package com.taemoi.project.services;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -14,14 +17,19 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.dtos.response.DisenoPanelDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO.Capacidad;
+import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.RelacionUsuarioAlumno;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Sede;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.AlcanceActual;
 import com.taemoi.project.organizacion.AlcanceSesion;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.plataforma.AutoridadPlataforma;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.SedeRepository;
+import com.taemoi.project.repositories.UsuarioAlumnoRepository;
 
 /**
  * Permisos de la sesión para menús y guards del frontend (pieza E8-1, D8-14; {@code GET /api/auth/permisos}). Solo
@@ -41,6 +49,9 @@ import com.taemoi.project.repositories.SedeRepository;
  * <li>{@code disenoNuevo} (pieza 8b-I): con gestión (ROLE_ADMIN o ROLE_MANAGER) fuera de la sesión solo-profesor, el de
  * {@link DisenoPanelService#estadoPropio} (dos consultas pequeñas más); el resto, apagado sin consultar.</li>
  * <li>{@code nombreVisible} (pieza 8b-T): «Nombre A.» de la cuenta de la sesión, sin consulta ni registro.</li>
+ * <li>{@code cumpleanos} (pieza 8b-M2): hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno con relación
+ * {@code PROPIO} de la cuenta, en la organización de la sesión; sin ficha, anonimizada o sin fecha, false. Solo el
+ * booleano.</li>
  * </ul>
  * Reutiliza el alcance de la petición ({@link AlcanceActual}): como mucho dos consultas pequeñas de sedes, sin N+1.
  */
@@ -50,11 +61,18 @@ public class PermisosSesionService {
 	private final AlcanceActual alcanceActual;
 	private final SedeRepository sedes;
 	private final DisenoPanelService diseno;
+	private final UsuarioAlumnoRepository usuarioAlumnos;
+	private final AlumnoRepository alumnos;
+	private final Clock reloj;
 
-	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes, DisenoPanelService diseno) {
+	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes, DisenoPanelService diseno,
+			UsuarioAlumnoRepository usuarioAlumnos, AlumnoRepository alumnos, Clock reloj) {
 		this.alcanceActual = alcanceActual;
 		this.sedes = sedes;
 		this.diseno = diseno;
+		this.usuarioAlumnos = usuarioAlumnos;
+		this.alumnos = alumnos;
+		this.reloj = reloj;
 	}
 
 	@Transactional(readOnly = true)
@@ -64,7 +82,7 @@ public class PermisosSesionService {
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
-					DisenoPanelDTO.Propio.APAGADO, nombreVisible(autenticacion));
+					DisenoPanelDTO.Propio.APAGADO, nombreVisible(autenticacion), false);
 		}
 		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -88,7 +106,36 @@ public class PermisosSesionService {
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
 				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo,
-				nombreVisible(autenticacion));
+				nombreVisible(autenticacion), cumpleanos(CobroService.usuarioActualId(), TenantContext.get()));
+	}
+
+	/**
+	 * Pieza 8b-M2: si hoy es el cumpleaños de alguna ficha PROPIA de la cuenta en la organización. {@code
+	 * usuario_alumno} no tiene tenant automático: se filtra por organización a mano; el alumno sí (@TenantId).
+	 */
+	boolean cumpleanos(Long usuarioId, Long organizacionId) {
+		if (usuarioId == null || organizacionId == null) {
+			return false;
+		}
+		LocalDate hoy = LocalDate.now(reloj);
+		return usuarioAlumnos
+				.findByUsuarioIdAndOrganizacionIdAndRelacion(usuarioId, organizacionId, RelacionUsuarioAlumno.PROPIO)
+				.stream()
+				.map(ua -> alumnos.buscarPorIdEnOrganizacionActiva(ua.getAlumnoId()).orElse(null))
+				.anyMatch(a -> a != null && !a.estaAnonimizado() && esCumpleanos(a.getFechaNacimiento(), hoy));
+	}
+
+	/** Cumple en {@code hoy}; los nacidos el 29-feb lo celebran el 28-feb en años no bisiestos. Fecha nula → false. */
+	static boolean esCumpleanos(java.util.Date nacimiento, LocalDate hoy) {
+		if (nacimiento == null) {
+			return false;
+		}
+		LocalDate fecha = new java.sql.Date(nacimiento.getTime()).toLocalDate();
+		int dia = fecha.getDayOfMonth();
+		if (fecha.getMonth() == Month.FEBRUARY && dia == 29 && !hoy.isLeapYear()) {
+			dia = 28;
+		}
+		return hoy.getMonth() == fecha.getMonth() && hoy.getDayOfMonth() == dia;
 	}
 
 	/**

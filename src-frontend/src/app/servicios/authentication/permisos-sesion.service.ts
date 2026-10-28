@@ -32,6 +32,8 @@ export interface PermisosSesion {
   disenoNuevo?: DisenoNuevoSesion;
   /** «Nombre A.» de la cuenta (8b-T), para el botón de cuenta del panel nuevo; null sin nombre. */
   nombreVisible?: string | null;
+  /** Hoy es el cumpleaños de la ficha propia de la cuenta (8b-M2); solo el booleano. Opcional: servidor anterior. */
+  cumpleanos?: boolean;
 }
 
 /**

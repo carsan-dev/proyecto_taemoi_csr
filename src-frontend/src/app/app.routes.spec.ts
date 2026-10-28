@@ -4,6 +4,8 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
+import { NoEncontradaPanelComponent } from './panel-nuevo/no-encontrada/no-encontrada.component';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
@@ -307,6 +309,19 @@ describe('app routes', () => {
     const publicRoutes = routes.filter((route) => !route.canActivate?.includes(roleGuard));
 
     expect(publicRoutes.some((route) => route.resolve?.['catalogo'])).toBeFalse();
+  });
+
+  it('404 del panel (8b-M2b): ** con disenoNuevoGuard y gestionPanelGuard va antes del comodín público', async () => {
+    const comodines = routes.filter((route) => route.path === '**');
+    expect(comodines.length).toBe(2);
+    expect(routes[routes.length - 1]).toBe(comodines[1]);
+    const [panel, publico] = comodines;
+    expect(panel.canMatch).toEqual([disenoNuevoGuard, gestionPanelGuard]);
+    expect(panel.canActivate).toBeUndefined();
+    expect(panel.data?.['panelNuevo']).toBeTrue();
+    expect(await panel.loadComponent!()).toBe(NoEncontradaPanelComponent);
+    expect(publico.canMatch).toBeUndefined();
+    expect(await publico.loadComponent!()).not.toBe(NoEncontradaPanelComponent);
   });
 
   it('adminpage (8b-2): primero el Inicio nuevo tras disenoNuevoGuard y después la pantalla de hoy, los dos con roleGuard', async () => {

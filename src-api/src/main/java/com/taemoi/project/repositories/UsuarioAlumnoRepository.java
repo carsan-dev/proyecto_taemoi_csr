@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.taemoi.project.entities.RelacionUsuarioAlumno;
 import com.taemoi.project.entities.UsuarioAlumno;
 
 /**
@@ -13,6 +14,9 @@ import com.taemoi.project.entities.UsuarioAlumno;
 public interface UsuarioAlumnoRepository extends JpaRepository<UsuarioAlumno, UsuarioAlumno.Clave> {
 
 	List<UsuarioAlumno> findByUsuarioIdAndOrganizacionId(Long usuarioId, Long organizacionId);
+
+	List<UsuarioAlumno> findByUsuarioIdAndOrganizacionIdAndRelacion(Long usuarioId, Long organizacionId,
+			RelacionUsuarioAlumno relacion);
 
 	List<UsuarioAlumno> findByAlumnoIdAndOrganizacionId(Long alumnoId, Long organizacionId);
 

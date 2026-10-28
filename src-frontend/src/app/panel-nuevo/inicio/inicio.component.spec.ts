@@ -2,13 +2,16 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
+import { By } from '@angular/platform-browser';
 
 import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { MascotaComponent } from '../mascota/mascota.component';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { MOISKIMDO_PRUEBA } from '../tema-prueba';
@@ -78,9 +81,12 @@ function pendiente(parcial: Partial<PendienteVencido> = {}): PendienteVencido {
 describe('InicioComponent (8b-2, Inicio I1)', () => {
   let fixture: ComponentFixture<InicioComponent>;
   let http: HttpTestingController;
+  let permisos$: BehaviorSubject<Partial<PermisosSesion>>;
 
   beforeEach(async () => {
+    sessionStorage.removeItem('pn-inicio-saludado');
     quitarTokens = ponerTokensDePrueba();
+    permisos$ = new BehaviorSubject<Partial<PermisosSesion>>({ cumpleanos: false });
     jasmine.clock().install();
     // Miércoles 21/10/2026 a las 08:00: las dos clases del día están por llegar.
     jasmine.clock().mockDate(new Date(2026, 9, 21, 8, 0));
@@ -88,6 +94,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
       imports: [InicioComponent],
       providers: [
         { provide: MASCOTA_CARGADORES, useValue: {
+          cumpleanos: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           saludar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           descansar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
@@ -96,6 +103,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true, tieneAccesoAdmin: () => true } },
+        { provide: PermisosSesionService, useValue: { obtener: () => permisos$ } },
         { provide: PlataformaService, useValue: { esAdminPlataforma: () => of(false) } },
         {
           provide: CatalogoService,
@@ -116,6 +124,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
   });
 
   afterEach(() => {
+    sessionStorage.removeItem('pn-inicio-saludado');
     fixture.destroy();
     TestBed.inject(AvisosService).cerrarTodos();
     pintarCapas();
@@ -208,6 +217,83 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     return partes.join(' ');
   }
 
+  function poseCabecera(): string | undefined {
+    const el = fixture.debugElement.query(By.css('.inicio__bienvenida pn-mascota'));
+    return (el?.componentInstance as MascotaComponent | undefined)?.pose;
+  }
+
+  describe('saludo del título', () => {
+    function titulo(): string {
+      return fixture.nativeElement.querySelector('h1.inicio__titulo').textContent.trim();
+    }
+
+    function abrir(): void {
+      fixture.destroy();
+      fixture = TestBed.createComponent(InicioComponent);
+      fixture.detectChanges();
+    }
+
+    it('primera visita con nombre: «Hola, Nombre»', () => {
+      fixture.destroy();
+      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      abrir();
+      expect(titulo()).toBe('Hola, Nombre');
+    });
+
+    it('primera visita en cumpleaños: «¡Feliz cumpleaños, Nombre!»', () => {
+      fixture.destroy();
+      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: true });
+      abrir();
+      expect(titulo()).toBe('¡Feliz cumpleaños, Nombre!');
+    });
+
+    it('segunda visita de la sesión: «Inicio»', () => {
+      fixture.destroy();
+      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      abrir();
+      expect(titulo()).toBe('Hola, Nombre');
+      abrir();
+      expect(titulo()).toBe('Inicio');
+    });
+
+    it('sin nombre: «Inicio» y no marca la sesión', () => {
+      fixture.destroy();
+      permisos$.next({ nombreVisible: null, cumpleanos: true });
+      abrir();
+      expect(titulo()).toBe('Inicio');
+      expect(sessionStorage.getItem('pn-inicio-saludado')).toBeNull();
+    });
+
+    it('el texto no cambia a mitad de visita', () => {
+      fixture.destroy();
+      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      abrir();
+      permisos$.next({ nombreVisible: 'Otro B.', cumpleanos: true });
+      fixture.detectChanges();
+      expect(titulo()).toBe('Hola, Nombre');
+    });
+
+    it('si sessionStorage lanza, no rompe y saluda', () => {
+      spyOn(Storage.prototype, 'getItem').and.throwError('bloqueado');
+      spyOn(Storage.prototype, 'setItem').and.throwError('bloqueado');
+      fixture.destroy();
+      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      expect(() => abrir()).not.toThrow();
+      expect(titulo()).toBe('Hola, Nombre');
+    });
+  });
+
+  it('8b-M2: el día del cumpleaños la mascota de la cabecera pone la pose cumpleanos; el resto, saludar', () => {
+    responder();
+    expect(poseCabecera()).withContext('sin cumpleaños').toBe('saludar');
+    permisos$.next({ cumpleanos: true });
+    fixture.detectChanges();
+    expect(poseCabecera()).withContext('cumpleaños').toBe('cumpleanos');
+    permisos$.next({ cumpleanos: false });
+    fixture.detectChanges();
+    expect(poseCabecera()).withContext('otra vez sin cumpleaños').toBe('saludar');
+  });
+
   it('shows the greeting and only the approved empty-state mascot', () => {
     responder(pendiente(), { grupos: [] });
     const c = fixture.componentInstance;
@@ -215,7 +301,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     c.eventos = [];
     fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.inicio__bienvenida pn-mascota')?.getAttribute('pose')).toBe('saludar');
+    expect(poseCabecera()).toBe('saludar');
     const empty = root.querySelector('.inicio__hoy pn-mascota')!;
     expect(empty.getAttribute('pose')).toBe('descansar');
     expect(empty.getAttribute('tamano')).toBe('md');

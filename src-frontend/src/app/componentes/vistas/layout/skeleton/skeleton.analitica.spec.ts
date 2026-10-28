@@ -29,7 +29,8 @@ describe('SkeletonComponent · analítica sin token', () => {
     eventos = new Subject();
     TestBed.configureTestingModule({
       imports: [SkeletonComponent],
-      providers: [{ provide: Router, useValue: { events: eventos } }],
+      // `routerState` hace falta desde el 404 del panel (8b-M2b): la cáscara mira `data.panelNuevo` de la ruta activa.
+      providers: [{ provide: Router, useValue: { events: eventos, routerState: { snapshot: { root: { data: {} } } } } }],
     });
     TestBed.overrideComponent(SkeletonComponent, { set: { imports: [], template: '' } });
     const fixture = TestBed.createComponent(SkeletonComponent);
