@@ -1,0 +1,10 @@
+# Contenido del PDF «kickboxing-por-grado» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Listado de Alumnos por Grado
+~ MOI'S KIM DO TAEKWONDO
+~ Kickboxing por Grado
+VERDE Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Bruno Prueba Dos 102 N/A 01/02/2026
+~ jueves, 15 de octubre de 2026 Página 1 de 1

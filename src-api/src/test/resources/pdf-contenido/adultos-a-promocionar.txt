@@ -1,0 +1,22 @@
+# Contenido del PDF «adultos-a-promocionar» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Edad y grupo infantil/adulto calculados con HOY.
+~ Alumnos Adultos a Promocionar
+~ MOI'S KIM DO TAEKWONDO
+~ Adultos a Promocionar
+Taekwondo
+Promocionan a ROJO
+NOMBRE Y GRADO A
+Nº EXPEDIENTE GRADO ACTUAL EDAD
+APELLIDOS PROMOCIONAR
+Bruno Prueba Dos 102 36
+AZUL ROJO
+Kickboxing
+Promocionan a AZUL
+NOMBRE Y GRADO A
+Nº EXPEDIENTE GRADO ACTUAL EDAD
+APELLIDOS PROMOCIONAR
+Bruno Prueba Dos 102 36
+VERDE AZUL
+~ jueves, 15 de octubre de 2026 Página 1 de 1

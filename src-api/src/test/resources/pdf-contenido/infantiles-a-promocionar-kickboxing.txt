@@ -1,0 +1,9 @@
+# Contenido del PDF «infantiles-a-promocionar-kickboxing» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Sin infantiles de kickboxing en los datos: fija el texto del informe vacío.
+~ Alumnos Infantiles a Promocionar - Kickboxing
+~ MOI'S KIM DO TAEKWONDO
+~ Infantiles a Promocionar - Kickboxing
+No se encontraron alumnos infantiles de Kickboxing aptos para promocionar.
+~ jueves, 15 de octubre de 2026 Página 1 de 1

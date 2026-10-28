@@ -1,0 +1,27 @@
+# Contenido del PDF «preinscripcion-firmada» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# «Firmado por … el <fecha>»: LocalDate.now(Europe/Madrid) sin Clock, fijada a 2026-10-15 (presentación).
+SOLICITUD DE PREINSCRIPCIÓN PRE-2026-CONTENIDO
+~ Escuela Moi Kim Do · Calle Ficticia 1 · Temporada 2026-2027
+Preinscripción recibida. Plaza asignada; esta solicitud ya cuenta en el aforo del grupo.
+Datos de la persona solicitante
+NOMBRE Y APELLIDOS DNI/NIE
+Lucía Prueba Ficticia 12345678Z
+FECHA DE NACIMIENTO CORREO ELECTRÓNICO
+2012-04-09 lucia@example.test
+TELÉFONO PRINCIPAL TELÉFONO SECUNDARIO
+600000000 611111111
+DISCAPACIDAD DIRECCIÓN
+No indicado Calle Ficticia 1, Villaprueba
+Actividad solicitada
+Taekwondo · 10-14 años · Lunes 17:00-18:00
+Consentimiento fotográfico (opcional)
+[X] Autorizado.
+Normas de la escuela
+1. Primera norma de prueba.
+2. Segunda norma de prueba.
+[X] Me comprometo a cumplir las normas establecidas por el club.
+Importes y pago
+Firma
+~ Firmado por Marta Prueba Ficticia el 2026-10-15.
+Documento generado electrónicamente. Referencia PRE-2026-CONTENIDO. Versión documental preservada con la solicitud.

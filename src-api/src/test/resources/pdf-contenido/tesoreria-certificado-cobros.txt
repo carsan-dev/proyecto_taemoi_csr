@@ -1,0 +1,39 @@
+# Contenido del PDF «tesoreria-certificado-cobros» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Ana, ejercicio 2026: enero, octubre y la reserva de plaza (junio). Escuela ficticia con datos legales.
+# Campo fechaGeneracion: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test.
+~ CERTIFICADO DE COBROS
+Ejercicio 2026 - Club Deportivo Ficticio Sierra
+Laura Prueba Ficticia, CON DNI 00000000T, en calidad de Secretaria del
+Club Deportivo Ficticio Sierra con C.I.F.: G00000000, hago constar que ha recibido de
+D/Dña. la cantidad de
+durante el ejercicio 2026, en concepto de matricula, mensualidades o reserva de plaza del menor
+.
+Se desglosa el importe total del ejercicio 2026 en los siguientes importes:
+ENERO JULIO
+FEBRERO AGOSTO
+MARZO SEPTIEMBRE
+ABRIL OCTUBRE
+MAYO NOVIEMBRE
+JUNIO DICIEMBRE
+Firmado:
+Laura Prueba Ficticia
+SECRETARIA
+CLUB DEPORTIVO FICTICIO SIERRA
+C.I.F.: G00000000
+@campo pagador=ANA PRUEBA UNO
+@campo totalImporte=84,00 €
+@campo alumno=ANA PRUEBA UNO
+@campo mes_1=26,00 €
+@campo mes_2=0,00 €
+@campo mes_3=0,00 €
+@campo mes_4=0,00 €
+@campo mes_5=0,00 €
+@campo mes_6=30,00 €
+@campo mes_7=0,00 €
+@campo mes_8=0,00 €
+@campo mes_9=0,00 €
+@campo mes_10=28,00 €
+@campo mes_11=0,00 €
+@campo mes_12=0,00 €
+@campo fechaGeneracion=En Villaficticia, a 15 de octubre de 2026.

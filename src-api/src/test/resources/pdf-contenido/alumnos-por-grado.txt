@@ -1,0 +1,26 @@
+# Contenido del PDF «alumnos-por-grado» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Listado de Alumnos por Grado
+~ MOI'S KIM DO TAEKWONDO
+~ Listado de Alumnos por Grado
+Taekwondo
+NEGRO 1º DAN Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Eva Prueba Cinco 105 5005 05/05/2024
+AZUL Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Bruno Prueba Dos 102 5002 01/06/2025
+AMARILLO Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Ana Prueba Uno 101 5001 01/03/2026
+BLANCO-AMARILLO Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Carla Prueba Tres 103 N/A 01/12/2025
+~ jueves, 15 de octubre de 2026 Página 1 de 2
+~ Listado de Alumnos por Grado
+Kickboxing
+VERDE Alumnos: 1
+NOMBRE Y APELLIDOS Nº EXPEDIENTE LICENCIA FED. FECHA DEL GRADO
+Bruno Prueba Dos 102 N/A 01/02/2026
+~ jueves, 15 de octubre de 2026 Página 2 de 2
