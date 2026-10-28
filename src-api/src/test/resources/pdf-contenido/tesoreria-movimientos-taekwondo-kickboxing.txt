@@ -1,7 +1,7 @@
 # Contenido del PDF «tesoreria-movimientos-taekwondo-kickboxing» (caracterización, decisión 314).
 # Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
 # Filtro: octubre de 2026, todas las disciplinas y estados (solo cargos de taekwondo y kickboxing).
-~ Informe de Tesoreria
+~ Informe de Tesorería
 Periodo: OCTUBRE 2026 | Deporte: TODOS | Estado: Todos
 Total movimientos: 4 Pagados: 2 Pendientes: 2 Importe total: 113.00 EUR
 FECHA FECHA

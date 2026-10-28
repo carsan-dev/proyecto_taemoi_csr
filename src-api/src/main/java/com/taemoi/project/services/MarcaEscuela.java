@@ -18,9 +18,16 @@ import java.util.Locale;
  * @param legal            datos legales de la escuela para el certificado (solo los de una escuela sin legado)
  * @param remitente        nombre visible del remitente de sus correos; {@code null} en Moiskimdo (el de siempre,
  *                         {@code app.mail.from-name})
+ * @param colorPrimario    decisiones 309 y 315: {@code organizacion.color_primario} en {@code #rrggbb} (minúsculas), el
+ *                         filete bajo la cabecera de los PDF; si falta o no es {@code #RRGGBB}, {@value #COLOR_POR_DEFECTO}
  */
 public record MarcaEscuela(Long organizacionId, boolean legado, String nombre, String logoInformes,
-		String logoSolicitud, byte[] logoCertificado, DatosLegales legal, String remitente) {
+		String logoSolicitud, byte[] logoCertificado, DatosLegales legal, String remitente, String colorPrimario) {
+
+	/** Color de una escuela sin color guardado (o con uno inválido): la tinta del panel (decisión 257). */
+	public static final String COLOR_POR_DEFECTO = "#1a2230";
+
+	private static final java.util.regex.Pattern COLOR = java.util.regex.Pattern.compile("^#[0-9A-Fa-f]{6}$");
 
 	/** Textos de Moiskimdo, idénticos a los que había fijos en el código antes de la E7-7a. */
 	static final String LEGADO_CABECERA_INFORMES = "Moi's Kim Do Taekwondo";
@@ -41,16 +48,38 @@ public record MarcaEscuela(Long organizacionId, boolean legado, String nombre, S
 		logoSolicitud = logoSolicitud == null ? "" : logoSolicitud;
 		// Remitente: Moiskimdo, null (el de siempre); otra escuela, el suyo si está lleno o su nombre.
 		remitente = legado ? null : remitente == null || remitente.isBlank() ? nombre : remitente.trim();
+		colorPrimario = colorPrimario != null && COLOR.matcher(colorPrimario.trim()).matches()
+				? colorPrimario.trim().toLowerCase(Locale.ROOT)
+				: COLOR_POR_DEFECTO;
 	}
 
-	/** Nombre de la cabecera de los informes (en mayúsculas por CSS). */
+	/** Sin color de escuela (tests y llamadas anteriores a las decisiones 309 y 315): {@value #COLOR_POR_DEFECTO}. */
+	public MarcaEscuela(Long organizacionId, boolean legado, String nombre, String logoInformes, String logoSolicitud,
+			byte[] logoCertificado, DatosLegales legal, String remitente) {
+		this(organizacionId, legado, nombre, logoInformes, logoSolicitud, logoCertificado, legal, remitente, null);
+	}
+
+	/** Nombre de la cabecera de los informes, sin escapar (también el del pie de página). */
+	public String cabeceraInformes() {
+		return legado ? LEGADO_CABECERA_INFORMES : nombre;
+	}
+
+	/** Nombre de la cabecera de los informes. */
 	public String cabeceraInformesHtml() {
 		return legado ? LEGADO_CABECERA_INFORMES : esc(nombre);
 	}
 
-	/** Primera línea de la hoja de asistencia. */
+	/** Nombre de la cabecera de la hoja de asistencia, sin escapar (también el del pie de página). */
+	public String asistenciaPrincipal() {
+		return legado ? LEGADO_ASISTENCIA_PRINCIPAL : nombre;
+	}
+
+	/**
+	 * Nombre de la cabecera de la hoja de asistencia: Moiskimdo, el de siempre; otra escuela, su nombre tal cual (desde
+	 * la decisión 315 sin pasarlo a mayúsculas, como en el resto de cabeceras).
+	 */
 	public String asistenciaPrincipalHtml() {
-		return legado ? LEGADO_ASISTENCIA_PRINCIPAL : esc(nombre.toUpperCase(Locale.of("es", "ES")));
+		return legado ? LEGADO_ASISTENCIA_PRINCIPAL : esc(nombre);
 	}
 
 	/** Segunda línea de la hoja de asistencia; {@code null} (no se pinta) fuera de Moiskimdo. */

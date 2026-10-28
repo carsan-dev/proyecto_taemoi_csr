@@ -93,9 +93,10 @@ class TesoreriaPdfContenidoTest {
 	}
 
 	/**
-	 * Hoy, con un cargo de DEFENSA_PERSONAL_FEMENINA (palabra sin cortes) la tabla desborda la página y las columnas
-	 * «Importe» y parte de «Fecha pago» quedan fuera (el informe de arriba no las lleva). Sin esa disciplina caben: este
-	 * dorado fija también el importe de cada movimiento.
+	 * Antes de la decisión 315, con un cargo de DEFENSA_PERSONAL_FEMENINA (palabra sin cortes) la tabla desbordaba la
+	 * página y las columnas «Importe» y parte de «Fecha pago» quedaban fuera; desde entonces (A4 apaisado) caben y el
+	 * dorado del informe de arriba lleva también los importes. Sin esa disciplina ya cabían: este dorado fija también el
+	 * importe de cada movimiento.
 	 */
 	@Test
 	void informeDeMovimientosQueCabeEnLaPagina() throws Exception {

@@ -1,6 +1,7 @@
 # Contenido del PDF «mensualidades» (caracterización, decisión 314).
 # Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
 # Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Decisión 315: con el diseño común el informe cabe en una página (antes, dos).
 ~ Informe de Mensualidades
 ~ MOI'S KIM DO TAEKWONDO
 ~ Informe de Mensualidades
@@ -29,7 +30,7 @@ ASIGNACIÓN PAGO
 MENSUALIDAD OCTUBRE 2026 - 03/10
 01/10/2026 30.00 € PAGADO
 KICKBOXING /2026
-~ jueves, 15 de octubre de 2026 Página 1 de 2
+~ jueves, 15 de octubre de 2026 Página 1 de 1
 ~ Informe de Mensualidades
 Bruno Prueba Dos (Exp. 102) [Taekwondo]
 Total mensualidades: 2 | Pagadas: 0 (0.00 €) | Pendientes: 2 (55.00 €)
@@ -56,4 +57,4 @@ Total de mensualidades: 6
 Mensualidades pagadas: 3 (84.00 €)
 Mensualidades pendientes: 3 (83.00 €)
 TOTAL GENERAL: 167.00 €
-~ jueves, 15 de octubre de 2026 Página 2 de 2
+~ jueves, 15 de octubre de 2026 Página 1 de 1

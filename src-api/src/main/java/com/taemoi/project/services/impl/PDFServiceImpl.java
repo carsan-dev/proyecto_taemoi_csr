@@ -144,11 +144,20 @@ public class PDFServiceImpl implements PDFService {
 		String titulo=campoPlantilla(contenidoPlantilla,"titulo","Solicitud de preinscripción");
 		String consentimiento=campoPlantilla(contenidoPlantilla,"consentimiento","");
 		String importes=campoPlantilla(contenidoPlantilla,"importes","");
+		// Decisión 315: fuentes, cabecera, pie y tablas comunes; la estructura, el orden y los textos legales, los de siempre.
+		String contextoCabecera = contexto(esc(contacto), "Temporada " + esc(p.getTemporada()));
 		String html = "<!DOCTYPE html><html><head><meta charset='UTF-8'/><style>"
-				+ "@page{size:A4;margin:10mm 12mm 11mm}body{font-family:Arial,sans-serif;color:#172126;font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
-				+ ".head{border-bottom:2px solid #b7272d;padding-bottom:6px;margin-bottom:9px}.head-table{width:100%;border-collapse:collapse}.head-table td{padding:0;vertical-align:middle}.logo-cell{width:24mm}.head img{display:block;width:19mm}.title-cell{padding:0 4mm!important}h1{font-size:15pt;margin:0 0 2px;text-transform:uppercase;line-height:1.08}h2{font-size:10pt;color:#b7272d;margin:0}.ref-cell{width:34mm;text-align:right;font-weight:bold;white-space:nowrap}.section{margin:9px 0}.keep{page-break-inside:avoid}.section h3{font-size:10pt;margin:7px 0 4px;border-bottom:1px solid #aeb6b9;padding-bottom:3px}.grid{width:100%;border-collapse:collapse}.grid td{border:1px solid #ccd2d4;padding:4px;text-align:left}.label{font-size:7pt;color:#59666b;text-transform:uppercase}.notice{background:#f4f1e9;border-left:3px solid #b7272d;padding:6px}.signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:#59666b;margin-top:6px}"
-				+ "</style></head><body><div class='head'><table class='head-table'><tr><td class='logo-cell'>" + (!logoSolicitud.isEmpty()?"<img src='"+logoSolicitud+"'/>":"")
-				+ "</td><td class='title-cell'><h1>"+esc(titulo)+"</h1><h2>"+esc(cabecera)+" · "+esc(contacto)+" · Temporada "+esc(p.getTemporada())+"</h2></td><td class='ref-cell'>"+esc(p.getReferencia())+"</td></tr></table></div>"
+				+ EstiloPdf.pie(cabecera, titulo) + EstiloPdf.cssComun()
+				+ "@page{margin:10mm 12mm 11mm}body{font-size:9.2pt;line-height:1.24}p{margin:5px 0}ol{margin:5px 0;padding-left:20px}li{margin:0 0 1.5px}"
+				+ ".cab{margin-bottom:3mm;padding-bottom:2mm}.section{margin:9px 0}.keep{page-break-inside:avoid}"
+				+ ".section h3{font-family:" + EstiloPdf.TITULOS + ";font-weight:700;font-size:10pt;color:" + EstiloPdf.TINTA + ";margin:7px 0 3px;padding:0}"
+				+ ".grid{width:100%;border-collapse:collapse;margin:0}.grid td{border:none;border-bottom:0.5pt solid " + EstiloPdf.FILETE + ";padding:3px 4px 3px 0;text-align:left;font-size:9.2pt}"
+				+ ".label{font-size:7pt;font-weight:600;color:" + EstiloPdf.GRIS + "}"
+				+ ".notice{background:" + EstiloPdf.FONDO_CABECERA_TABLA + ";border-left:2pt solid " + EstiloPdf.FILETE_CABECERA_TABLA + ";padding:6px}"
+				+ ".signature{height:20mm;max-width:66mm;object-fit:contain;border-bottom:1px solid #555}.foot{font-size:7pt;color:" + EstiloPdf.GRIS + ";margin-top:6px}"
+				+ "</style></head><body>"
+				+ EstiloPdf.cabecera(marca.colorPrimario(), logoSolicitud, esc(cabecera), null, esc(titulo), contextoCabecera,
+						"<strong>" + esc(p.getReferencia()) + "</strong>")
 				+ "<div class='notice'><strong>Preinscripción recibida.</strong> "+(p.getEstado()==com.taemoi.project.entities.EstadoPreinscripcion.EN_LISTA_ESPERA?"Solicitud incorporada a la lista de espera. Se notificará la asignación automática cuando exista aforo.":"Plaza asignada; esta solicitud ya cuenta en el aforo del grupo.")+"</div>"
 				+ "<div class='section'><h3>Datos de la persona solicitante</h3><table class='grid'><tr><td><span class='label'>Nombre y apellidos</span><br/>"+esc(p.getNombre()+" "+p.getApellidos())+"</td><td><span class='label'>DNI/NIE</span><br/>"+esc(p.getDni()==null||p.getDni().isBlank()?"No facilitado":p.getDni())+"</td></tr>"
 				+ "<tr><td><span class='label'>Fecha de nacimiento</span><br/>"+p.getFechaNacimiento()+"</td><td><span class='label'>Correo electrónico</span><br/>"+esc(p.getEmail())+"</td></tr><tr><td><span class='label'>Teléfono principal</span><br/>"+esc(p.getTelefono())+"</td><td><span class='label'>Teléfono secundario</span><br/>"+esc(p.getTelefono2()==null||p.getTelefono2().isBlank()?"No facilitado":p.getTelefono2())+"</td></tr><tr><td><span class='label'>Discapacidad</span><br/>"+(p.getTieneDiscapacidad()==null?"No indicado":Boolean.TRUE.equals(p.getTieneDiscapacidad())?"Sí":"No")+"</td><td><span class='label'>Dirección</span><br/>"+esc(p.getDireccion())+"</td></tr></table></div>"
@@ -158,7 +167,7 @@ public class PDFServiceImpl implements PDFService {
 				+ "<div class='section keep'><h3>Importes y pago</h3><p>"+esc(importes)+"</p></div>"
 				+ "<div class='section keep'><h3>Firma</h3><img class='signature' src='"+firma+"'/><p>Firmado por "+esc(p.getFirmanteNombre())+" el "+LocalDate.now(ZoneId.of("Europe/Madrid"))+".</p></div>"
 				+ "<div class='foot'>Documento generado electrónicamente. Referencia "+esc(p.getReferencia())+". Versión documental preservada con la solicitud.</div></body></html>";
-		try { ByteArrayOutputStream out=new ByteArrayOutputStream(); PdfRendererBuilder builder=new PdfRendererBuilder(); builder.withHtmlContent(html,null); builder.toStream(out); builder.run(); return out.toByteArray(); }
+		try { ByteArrayOutputStream out=new ByteArrayOutputStream(); PdfRendererBuilder builder=EstiloPdf.builder(); builder.withHtmlContent(html,null); builder.toStream(out); builder.run(); return out.toByteArray(); }
 		catch(Exception e){throw new IllegalStateException("No se pudo generar la solicitud PDF",e);}
 	}
 
@@ -201,107 +210,69 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * Generates a standard header section with logo for PDF reports. The logo is
-	 * converted to PNG and embedded as base64 for full compatibility.
+	 * Decisiones 309, 314 y 315: cabecera común de los informes (logo, nombre de la escuela, título, contexto y fecha
+	 * de generación; filete en el color de la escuela). Los textos llegan ya listos para HTML.
 	 *
-	 * @param titulo Main title for the report
-	 * @return HTML string with header section
+	 * @param titulo   título del informe
+	 * @param contexto filtros o contexto del informe (deporte, temporada, solo activos…); nulo o vacío si no hay
 	 */
-	private String generarCabeceraConLogo(String titulo) {
-		return generarCabeceraConLogo(titulo, "#007bff"); // Default blue
+	private String cabeceraInforme(String titulo, String contexto) {
+		return EstiloPdf.cabeceraInforme(marcaEscuela.deActiva(), titulo, contexto);
+	}
+
+	/** Contexto «Solo alumnos activos» de los informes con ese filtro; nulo si se piden todos. */
+	private static String contextoActivos(boolean soloActivos) {
+		return soloActivos ? "Solo alumnos activos" : null;
+	}
+
+	/** Une las partes no vacías del contexto de la cabecera con « · ». */
+	private static String contexto(String... partes) {
+		String unido = Arrays.stream(partes).filter(p -> p != null && !p.isBlank())
+				.collect(Collectors.joining(" · "));
+		return unido.isEmpty() ? null : unido;
 	}
 
 	/**
-	 * Generates a standard header section with logo and custom border color.
+	 * Estilos de los informes: el pie de página («Escuela · Informe», «Página X de Y»), los estilos comunes de
+	 * {@link EstiloPdf} y los de las piezas propias de estos informes (rótulos de grupo con su cinturón, secciones
+	 * por disciplina y resúmenes), sin colores fijos por informe.
 	 *
-	 * @param titulo      Main title for the report
-	 * @param borderColor Border color for the header
-	 * @return HTML string with header section
+	 * @param informe nombre del informe en el pie de página
 	 */
-	private String generarCabeceraConLogo(String titulo, String borderColor) {
-		MarcaEscuela marca = marcaEscuela.deActiva();
-		String logoPng = marca.logoInformes();
-		StringBuilder header = new StringBuilder();
-
-		header.append("<div class='pdf-header' style='border-bottom-color: ").append(borderColor).append(";'>");
-
-		if (!logoPng.isEmpty()) {
-			header.append("<div class='logo-container'>");
-			header.append("<img src='").append(logoPng).append("' alt='Logo' />");
-			header.append("</div>");
-		}
-
-		header.append("<div class='header-content'>");
-		header.append("<h1 class='club-name'>").append(marca.cabeceraInformesHtml()).append("</h1>");
-		if (titulo != null && !titulo.isEmpty()) {
-			header.append("<h2 class='report-title'>").append(titulo).append("</h2>");
-		}
-		header.append("</div>");
-		header.append("</div>");
-
-		return header.toString();
-	}
-
-	/**
-	 * Generates modern CSS styles matching the website design. Uses Montserrat
-	 * font, website colors, and modern design principles.
-	 *
-	 * @param pageTitle       Title to display in the header
-	 * @param fechaGeneracion Date string to display in footer
-	 * @return CSS style string
-	 */
-	private String generarEstilosModernos(String pageTitle, String fechaGeneracion) {
-		return "@page {" + "  margin: 18mm 15mm 20mm 15mm;" + "  @top-center {" + "    content: '" + pageTitle + "';"
-				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 13pt;"
-				+ "    font-weight: 700;" + "    color: #1b2b2e;" + "    text-align: center;" + "  }"
-				+ "  @bottom-left {" + "    content: '" + fechaGeneracion + "';"
-				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 9pt;"
-				+ "    color: #6c757d;" + "  }" + "  @bottom-right {"
-				+ "    content: 'Página ' counter(page) ' de ' counter(pages);"
-				+ "    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "    font-size: 9pt;"
-				+ "    color: #6c757d;" + "  }" + "}" + "* { box-sizing: border-box; }" + "body {"
-				+ "  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;" + "  color: #212529;"
-				+ "  line-height: 1.6;" + "  background: #ffffff;" + "}" + ".pdf-header {" + "  text-align: center;"
-				+ "  margin-bottom: 5mm;" + "  padding-bottom: 3mm;" + "  border-bottom: 2px solid #007bff;"
-				+ "  page-break-inside: avoid;" + "}" + ".logo-container {" + "  text-align: center;"
-				+ "  margin-bottom: 2mm;" + "}" + ".logo-container img {" + "  width: 26mm;" + "  height: auto;"
-				+ "  max-height: 26mm;" + "}" + ".header-content {" + "  text-align: center;" + "}" + ".club-name {"
-				+ "  font-size: 15pt;" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 1mm 0;"
-				+ "  text-transform: uppercase;" + "  letter-spacing: 1px;" + "}" + ".report-title {"
-				+ "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #007bff;" + "  margin: 1mm 0 0 0;" + "}"
-				+ "h1, h2, h3 {" + "  font-weight: 700;" + "  color: #1b2b2e;" + "  margin: 8mm 0 5mm 0;" + "}"
-				+ "h1 { font-size: 22pt; }" + "h2 {" + "  font-size: 16pt;" + "  padding-bottom: 2mm;"
-				+ "  border-bottom: 2px solid #007bff;" + "  display: inline-block;" + "  min-width: 40%;" + "}"
-				+ ".grupo {" + "  margin-top: 6mm;" + "  margin-bottom: 6mm;" + "  page-break-inside: avoid;" + "}"
-				+ ".encabezado-grupo {" + "  background-color: #f8f9fa;" + "  padding: 4mm 3mm;"
-				+ "  border-radius: 3mm;" + "  border: 1px solid #dee2e6;" + "  margin-bottom: 3mm;" + "}"
-				+ ".encabezado-grupo .izquierda {" + "  display: inline-block;" + "  width: 70%;"
-				+ "  vertical-align: middle;" + "}" + ".encabezado-grupo .derecha {" + "  display: inline-block;"
-				+ "  width: 28%;" + "  text-align: right;" + "  font-weight: 600;" + "  color: #007bff;"
-				+ "  font-size: 11pt;" + "  vertical-align: middle;" + "}" + ".cinturon {" + "  display: inline-block;"
-				+ "  vertical-align: middle;" + "  width: 28mm;" + "  height: 6mm;" + "  margin-right: 3mm;"
-				+ "  border: 1.5px solid #495057;" + "  border-radius: 1mm;" + "  position: relative;" + "}"
-				+ ".cinturon.doble .superior, .cinturon.doble .inferior {" + "  width: 100%;" + "  height: 50%;"
-				+ "  position: absolute;" + "}" + ".cinturon.doble .superior {" + "  top: 0;"
-				+ "  border-top-left-radius: 0.5mm;" + "  border-top-right-radius: 0.5mm;" + "}"
-				+ ".cinturon.doble .inferior {" + "  bottom: 0;" + "  border-bottom-left-radius: 0.5mm;"
-				+ "  border-bottom-right-radius: 0.5mm;" + "}" + ".grado-nombre {" + "  display: inline-block;"
-				+ "  vertical-align: middle;" + "  font-size: 12pt;" + "  font-weight: 600;" + "  color: #1b2b2e;"
-				+ "  white-space: nowrap;" + "}" + ".raya {" + "  position: absolute;" + "  top: 50%;"
-				+ "  transform: translateY(-50%);" + "  height: 80%;" + "  background-color: #FFD700;"
-				+ "  z-index: 10;" + "}" + "table {" + "  width: 100%;" + "  border-collapse: collapse;"
-				+ "  margin-top: 2mm;" + "  border-radius: 2mm;" + "  overflow: hidden;" + "}" + "th, td {"
-				+ "  border: 1px solid #dee2e6;" + "  padding: 3mm 2mm;" + "  text-align: center;"
-				+ "  font-size: 10pt;" + "}" + "th {" + "  background-color: #007bff;" + "  color: #ffffff;"
-				+ "  font-weight: 600;" + "  font-size: 10pt;" + "  text-transform: uppercase;"
-				+ "  letter-spacing: 0.5px;" + "}" + "tbody tr:nth-child(even) {" + "  background-color: #f8f9fa;" + "}"
-				+ "tbody tr:nth-child(odd) {" + "  background-color: #ffffff;" + "}" + "tbody tr:hover {"
-				+ "  background-color: #e7f3ff;" + "}" + "tbody tr { page-break-inside: avoid; }"
-				+ "thead { display: table-header-group; }" + "table { page-break-inside: auto; }" + ".kickboxing {"
-				+ "  padding-top: 10mm;" + "  border-top: 3px solid #ff4500;" + "  margin-top: 10mm;" + "}"
-				+ ".section-header {" + "  background-color: #1b2b2e;" + "  color: #ffffff;" + "  padding: 5mm;"
-				+ "  border-radius: 2mm;" + "  margin-bottom: 5mm;" + "  font-size: 14pt;" + "  font-weight: 700;"
-				+ "  text-align: center;" + "}";
+	private String estilosInforme(String informe) {
+		return EstiloPdf.pie(marcaEscuela.deActiva().cabeceraInformes(), informe) + EstiloPdf.cssComun()
+				+ " h1, h2, h3 { font-family: " + EstiloPdf.TITULOS + "; font-weight: 700; color: " + EstiloPdf.TINTA
+				+ "; line-height: 1.25; margin: 5mm 0 1.5mm 0; page-break-after: avoid; }"
+				+ " h1 { font-size: 12pt; } h2 { font-size: 10.5pt; } h3 { font-size: 10.5pt; }"
+				// Sección por disciplina o estado (Taekwondo, Licencias en vigor…): rótulo mayor.
+				+ " .section-header { font-family: " + EstiloPdf.TITULOS + "; font-weight: 700; font-size: 12pt;"
+				+ " color: " + EstiloPdf.TINTA + "; margin: 6mm 0 1mm 0; padding: 0; page-break-after: avoid; }"
+				// Grupo (grado, categoría): cinturón y nombre a la izquierda, recuento en gris a la derecha.
+				+ " .grupo { margin: 0 0 3mm 0; page-break-inside: avoid; }"
+				+ " .encabezado-grupo { margin: 4.5mm 0 0.5mm 0; page-break-after: avoid; }"
+				+ " .encabezado-grupo .izquierda { display: inline-block; width: 72%; vertical-align: middle; }"
+				+ " .encabezado-grupo .derecha { display: inline-block; width: 27%; text-align: right;"
+				+ " vertical-align: middle; font-size: 8pt; color: " + EstiloPdf.GRIS + "; }"
+				+ " .cinturon { display: inline-block; vertical-align: middle; width: 28mm; height: 6mm; margin-right: 3mm;"
+				+ " border: 1.5px solid #495057; border-radius: 1mm; position: relative; }"
+				+ " .cinturon.doble .superior, .cinturon.doble .inferior { width: 100%; height: 50%; position: absolute; }"
+				+ " .cinturon.doble .superior { top: 0; border-top-left-radius: 0.5mm; border-top-right-radius: 0.5mm; }"
+				+ " .cinturon.doble .inferior { bottom: 0; border-bottom-left-radius: 0.5mm;"
+				+ " border-bottom-right-radius: 0.5mm; }"
+				+ " .raya { position: absolute; top: 50%; transform: translateY(-50%); height: 80%;"
+				+ " background-color: #FFD700; z-index: 10; }"
+				+ " .grado-nombre, .categoria-nombre { display: inline-block; vertical-align: middle; font-family: "
+				+ EstiloPdf.TITULOS + "; font-weight: 700; font-size: 10.5pt; color: " + EstiloPdf.TINTA
+				+ "; white-space: nowrap; }"
+				// Celdas con cinturón dibujado (licencias, promociones).
+				+ " .grado-cell { vertical-align: middle; }"
+				+ " .grado-belt { margin: 0 0 1mm 0; }"
+				+ " .grado-text { font-size: 8pt; font-weight: 600; line-height: 1.2; }"
+				// Resúmenes al final de un informe.
+				+ " .resumen-general { margin-top: 6mm; padding-top: 2mm; border-top: 1pt solid "
+				+ EstiloPdf.FILETE_CABECERA_TABLA + "; page-break-inside: avoid; }"
+				+ " .resumen-general h3 { margin: 0 0 1.5mm 0; }"
+				+ " .resumen-general p { margin: 0.8mm 0; }";
 	}
 
 	@Override
@@ -333,44 +304,39 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 		}
 
-		LocalDate now = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = now.format(formatter);
-
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
 		html.append("<html>");
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Listado de Alumnos por Grado", fechaGeneracion));
+		html.append(estilosInforme("Listado de Alumnos por Grado"));
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
 		// Add header with logo
 		if (deportes.size() == 2 && deportes.contains(CatalogoLegadoTaemoi.TAEKWONDO) && deportes.contains(CatalogoLegadoTaemoi.KICKBOXING)) {
-			html.append(generarCabeceraConLogo("Listado de Alumnos por Grado"));
+			html.append(cabeceraInforme("Listado de Alumnos por Grado", contextoActivos(soloActivos)));
 
 			List<AlumnoDeporte> alumnosTaekwondo = alumnos.stream().filter(a -> CatalogoLegadoTaemoi.TAEKWONDO.equals(a.getDeporte()))
 					.collect(Collectors.toList());
-			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
+			html.append("<div class='section-header'>");
 			html.append("Taekwondo");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosTaekwondo));
 
 			List<AlumnoDeporte> alumnosKickboxing = alumnos.stream().filter(a -> CatalogoLegadoTaemoi.KICKBOXING.equals(a.getDeporte()))
 					.collect(Collectors.toList());
-			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
+			html.append("<div class='section-header'>");
 			html.append("Kickboxing");
 			html.append("</div>");
 			html.append(generarSeccion(alumnosKickboxing));
 		} else {
-			// Use sport-specific colors for the header border
 			if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deportes.get(0))) {
-				html.append(generarCabeceraConLogo("Taekwondo por Grado", "#0D47A1"));
+				html.append(cabeceraInforme("Taekwondo por Grado", contextoActivos(soloActivos)));
 			} else {
-				html.append(generarCabeceraConLogo("Kickboxing por Grado", "#ff4500"));
+				html.append(cabeceraInforme("Kickboxing por Grado", contextoActivos(soloActivos)));
 			}
 			html.append(generarSeccion(alumnos));
 		}
@@ -379,7 +345,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -432,12 +398,12 @@ public class PDFServiceImpl implements PDFService {
 			html.append("</div>");
 			html.append("</div>");
 
-			html.append("<table>");
+			html.append("<table class='tabla-grado'>");
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
-			html.append("<th>N&#186; Expediente</th>");
-			html.append("<th>Licencia Fed.</th>");
-			html.append("<th>Fecha del Grado</th>");
+			html.append("<th class='num'>N&#186; Expediente</th>");
+			html.append("<th class='num'>Licencia Fed.</th>");
+			html.append("<th class='num'>Fecha del Grado</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
 			DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -449,11 +415,11 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<tr>");
 				html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 						.append("</td>");
-				html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+				html.append("<td class='num'>").append(alumno.getNumeroExpediente()).append("</td>");
 				String licencia = alumnoDeporte.getNumeroLicencia() != null
 						? alumnoDeporte.getNumeroLicencia().toString()
 						: "N/A";
-				html.append("<td>").append(licencia).append("</td>");
+				html.append("<td class='num'>").append(licencia).append("</td>");
 				// Format date as dd/MM/yyyy
 				String fechaGrado = "N/A";
 				if (alumnoDeporte.getFechaGrado() != null) {
@@ -461,7 +427,8 @@ public class PDFServiceImpl implements PDFService {
 							.atZone(ZoneId.systemDefault()).toLocalDate();
 					fechaGrado = fecha.format(dateFormatter);
 				}
-				html.append("<td>").append(fechaGrado).append("</td>");
+				html.append("<td class='num'>").append(fechaGrado).append("</td>");
+
 				html.append("</tr>");
 			}
 			html.append("</tbody>");
@@ -487,8 +454,6 @@ public class PDFServiceImpl implements PDFService {
 				.collect(Collectors.toList());
 
 		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		List<AlumnoDeporte> licenciasVigor = new ArrayList<>();
 		List<AlumnoDeporte> licenciasCaducadas = new ArrayList<>();
@@ -518,21 +483,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Informe de Licencias de Alumnos", fechaGeneracion));
-		html.append(".status-badge {");
-		html.append("  display: inline-block;");
-		html.append("  padding: 1mm 3mm;");
-		html.append("  border-radius: 2mm;");
-		html.append("  font-weight: 600;");
-		html.append("  font-size: 9pt;");
-		html.append("}");
-		html.append(".status-vigente { background: #d4edda; color: #155724; }");
-		html.append(".status-caducada { background: #fff3cd; color: #856404; }");
-		html.append(".status-sin { background: #f8d7da; color: #721c24; }");
-		// Estilos para el cinturón en la columna de grado
-		html.append(".grado-cell { text-align: center; vertical-align: middle; }");
-		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
-		html.append(".grado-text { font-size: 8pt; font-weight: 600; line-height: 1.2; }");
+		html.append(estilosInforme("Informe de Licencias de Alumnos"));
 		// Ajustar anchos de columnas para la tabla de licencias
 		html.append(".licencias-table { table-layout: fixed; }");
 		html.append(".licencias-table th:nth-child(1), .licencias-table td:nth-child(1) { width: 28%; }");
@@ -547,19 +498,19 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<body>");
 
 		// Add header with logo
-		html.append(generarCabeceraConLogo("Informe de Licencias"));
+		html.append(cabeceraInforme("Informe de Licencias", contextoActivos(soloActivos)));
 
-		html.append("<div class='section-header' style='background-color: #28a745;'>");
+		html.append("<div class='section-header'>");
 		html.append("Licencias en Vigor (" + licenciasVigor.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasVigor));
 
-		html.append("<div class='section-header' style='background-color: #ffc107; margin-top: 5mm;'>");
+		html.append("<div class='section-header'>");
 		html.append("Licencias Caducadas (" + licenciasCaducadas.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(licenciasCaducadas));
 
-		html.append("<div class='section-header' style='background-color: #dc3545; margin-top: 5mm;'>");
+		html.append("<div class='section-header'>");
 		html.append("Sin Licencia (" + sinLicencia.size() + ")");
 		html.append("</div>");
 		html.append(generarTablaAlumnos(sinLicencia));
@@ -568,7 +519,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -588,9 +539,9 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<thead><tr>");
 		html.append("<th>Nombre y Apellidos</th>");
 		html.append("<th>Deporte</th>");
-		html.append("<th>EXP.</th>");
-		html.append("<th>N&#186; Lic.</th>");
-		html.append("<th>Fecha Lic.</th>");
+		html.append("<th class='num'>EXP.</th>");
+		html.append("<th class='num'>N&#186; Lic.</th>");
+		html.append("<th class='num'>Fecha Lic.</th>");
 		html.append("<th>Grado</th>");
 		html.append("</tr></thead>");
 		html.append("<tbody>");
@@ -600,11 +551,11 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<tr>");
 			html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append("</td>");
 			html.append("<td>").append(getDeporteNombre(alumnoDeporte.getDeporte())).append("</td>");
-			html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+			html.append("<td class='num'>").append(alumno.getNumeroExpediente()).append("</td>");
 			String numLicencia = (alumnoDeporte.getNumeroLicencia() != null)
 					? alumnoDeporte.getNumeroLicencia().toString()
 					: "N/A";
-			html.append("<td>").append(numLicencia).append("</td>");
+			html.append("<td class='num'>").append(numLicencia).append("</td>");
 			// Format date as dd/MM/yyyy
 			String fechaLic = "N/A";
 			if (alumnoDeporte.getFechaLicencia() != null) {
@@ -612,7 +563,8 @@ public class PDFServiceImpl implements PDFService {
 						.atZone(ZoneId.systemDefault()).toLocalDate();
 				fechaLic = fechaLicencia.format(dateFormatter);
 			}
-			html.append("<td>").append(fechaLic).append("</td>");
+			html.append("<td class='num'>").append(fechaLic).append("</td>");
+
 			// Use belt drawing for grade
 			html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 			html.append("</tr>");
@@ -670,9 +622,6 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 		}
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		// Map<String, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
 		Map<String, Map<String, List<AlumnoPromotionInfo>>> deporteGradoMap = new java.util.LinkedHashMap<>();
@@ -713,26 +662,21 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Alumnos Infantiles a Promocionar", fechaGeneracion));
-		html.append(".promotion-group { margin-bottom: 8mm; }");
-		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
-		html.append(
-				".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+		html.append(estilosInforme("Alumnos Infantiles a Promocionar"));
+		html.append(".promotion-group { margin-bottom: 4mm; }");
+		html.append(".sport-section { margin-bottom: 6mm; page-break-inside: avoid; }");
 		html.append(".promotion-table { table-layout: fixed; }");
 		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
-		html.append(".grado-cell { text-align: center; }");
-		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
-		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
 		// Add header with logo
-		html.append(generarCabeceraConLogo("Infantiles a Promocionar"));
+		html.append(cabeceraInforme("Infantiles a Promocionar", contextoActivos(soloActivos)));
 
 		// If no students found
 		if (deporteGradoMap.isEmpty()) {
-			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
+			html.append("<p class='vacio'>");
 			html.append("No se encontraron alumnos infantiles aptos para promocionar.");
 			html.append("</p>");
 		} else {
@@ -742,7 +686,7 @@ public class PDFServiceImpl implements PDFService {
 				String deporte = deporteEntry.getKey();
 
 				html.append("<div class='sport-section'>");
-				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
+				html.append("<div class='section-header'>").append(getDeporteNombre(deporte)).append("</div>");
 
 				// Iterate through promotion grades for this sport
 				for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
@@ -755,10 +699,10 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<table class='promotion-table'>");
 					html.append("<thead><tr>");
 					html.append("<th>Nombre y Apellidos</th>");
-					html.append("<th>N&#186; Expediente</th>");
+					html.append("<th class='num'>N&#186; Expediente</th>");
 					html.append("<th>Grado Actual</th>");
 					html.append("<th>Grado a Promocionar</th>");
-					html.append("<th>Edad</th>");
+					html.append("<th class='num'>Edad</th>");
 					html.append("</tr></thead>");
 					html.append("<tbody>");
 
@@ -771,7 +715,7 @@ public class PDFServiceImpl implements PDFService {
 						html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 								.append("</td>");
 
-						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+						html.append("<td class='num'>").append(alumno.getNumeroExpediente()).append("</td>");
 
 						html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
@@ -780,7 +724,7 @@ public class PDFServiceImpl implements PDFService {
 								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-						html.append("<td>").append(edad).append("</td>");
+						html.append("<td class='num'>").append(edad).append("</td>");
 
 						html.append("</tr>");
 					}
@@ -798,7 +742,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 
@@ -821,9 +765,6 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 		}
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		// Create a structure to hold alumno-deporte-promotion info
 		// Map<String, Map<PromotionGrade, List<AlumnoPromotionInfo>>>
@@ -864,26 +805,21 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Alumnos Adultos a Promocionar", fechaGeneracion));
-		html.append(".promotion-group { margin-bottom: 8mm; }");
-		html.append(".sport-section { margin-bottom: 12mm; page-break-inside: avoid; }");
-		html.append(
-				".sport-title { color: #2c3e50; font-size: 18pt; margin-top: 8mm; margin-bottom: 4mm; border-bottom: 2px solid #3498db; padding-bottom: 2mm; }");
+		html.append(estilosInforme("Alumnos Adultos a Promocionar"));
+		html.append(".promotion-group { margin-bottom: 4mm; }");
+		html.append(".sport-section { margin-bottom: 6mm; page-break-inside: avoid; }");
 		html.append(".promotion-table { table-layout: fixed; }");
 		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
-		html.append(".grado-cell { text-align: center; }");
-		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
-		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
 		// Add header with logo
-		html.append(generarCabeceraConLogo("Adultos a Promocionar"));
+		html.append(cabeceraInforme("Adultos a Promocionar", contextoActivos(soloActivos)));
 
 		// If no students found
 		if (deporteGradoMap.isEmpty()) {
-			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
+			html.append("<p class='vacio'>");
 			html.append("No se encontraron alumnos adultos aptos para promocionar.");
 			html.append("</p>");
 		} else {
@@ -891,7 +827,7 @@ public class PDFServiceImpl implements PDFService {
 			for (Map.Entry<String, Map<String, List<AlumnoPromotionInfo>>> deporteEntry : deporteGradoMap.entrySet()) {
 				String deporte = deporteEntry.getKey();
 				html.append("<div class='sport-section'>");
-				html.append("<h1 class='sport-title'>").append(getDeporteNombre(deporte)).append("</h1>");
+				html.append("<div class='section-header'>").append(getDeporteNombre(deporte)).append("</div>");
 
 				// Iterate through promotion grades for this sport
 				for (Map.Entry<String, List<AlumnoPromotionInfo>> gradeEntry : deporteEntry.getValue().entrySet()) {
@@ -903,10 +839,10 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<table class='promotion-table'>");
 					html.append("<thead><tr>");
 					html.append("<th>Nombre y Apellidos</th>");
-					html.append("<th>N&#186; Expediente</th>");
+					html.append("<th class='num'>N&#186; Expediente</th>");
 					html.append("<th>Grado Actual</th>");
 					html.append("<th>Grado a Promocionar</th>");
-					html.append("<th>Edad</th>");
+					html.append("<th class='num'>Edad</th>");
 					html.append("</tr></thead>");
 					html.append("<tbody>");
 
@@ -916,7 +852,7 @@ public class PDFServiceImpl implements PDFService {
 						html.append("<tr>");
 						html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 								.append("</td>");
-						html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+						html.append("<td class='num'>").append(alumno.getNumeroExpediente()).append("</td>");
 
 						html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
@@ -926,7 +862,7 @@ public class PDFServiceImpl implements PDFService {
 								progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 						int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-						html.append("<td>").append(edad).append("</td>");
+						html.append("<td class='num'>").append(edad).append("</td>");
 						html.append("</tr>");
 					}
 
@@ -942,7 +878,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</body></html>");
 
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(os);
 		try {
@@ -993,9 +929,6 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 		}
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		// Map<PromotionGrade, List<AlumnoPromotionInfo>>
 		Map<String, List<AlumnoPromotionInfo>> gradoMap = new java.util.LinkedHashMap<>();
@@ -1042,24 +975,20 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Alumnos " + categoriaTexto + " a Promocionar - " + deporteTexto,
-				fechaGeneracion));
-		html.append(".promotion-group { margin-bottom: 8mm; }");
+		html.append(estilosInforme("Alumnos " + categoriaTexto + " a Promocionar - " + deporteTexto));
+		html.append(".promotion-group { margin-bottom: 4mm; }");
 		html.append(".promotion-table { table-layout: fixed; }");
 		html.append(".promotion-table th, .promotion-table td { word-wrap: break-word; }");
-		html.append(".grado-cell { text-align: center; }");
-		html.append(".grado-belt { margin: 0 auto 1.5mm auto; }");
-		html.append(".grado-text { font-size: 9pt; font-weight: 600; line-height: 1.2; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
 		// Add header with logo
-		html.append(generarCabeceraConLogo(titulo));
+		html.append(cabeceraInforme(titulo, contextoActivos(soloActivos)));
 
 		// If no students found
 		if (gradoMap.isEmpty()) {
-			html.append("<p style='text-align: center; color: #7f8c8d; margin-top: 20mm;'>");
+			html.append("<p class='vacio'>");
 			html.append("No se encontraron alumnos ").append(categoriaTexto.toLowerCase()).append(" de ")
 					.append(deporteTexto).append(" aptos para promocionar.");
 			html.append("</p>");
@@ -1074,10 +1003,10 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<table class='promotion-table'>");
 				html.append("<thead><tr>");
 				html.append("<th>Nombre y Apellidos</th>");
-				html.append("<th>N&#186; Expediente</th>");
+				html.append("<th class='num'>N&#186; Expediente</th>");
 				html.append("<th>Grado Actual</th>");
 				html.append("<th>Grado a Promocionar</th>");
-				html.append("<th>Edad</th>");
+				html.append("<th class='num'>Edad</th>");
 				html.append("</tr></thead>");
 				html.append("<tbody>");
 
@@ -1087,7 +1016,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<tr>");
 					html.append("<td>").append(alumno.getNombre()).append(" ").append(alumno.getApellidos())
 							.append("</td>");
-					html.append("<td>").append(alumno.getNumeroExpediente()).append("</td>");
+					html.append("<td class='num'>").append(alumno.getNumeroExpediente()).append("</td>");
 
 					html.append(generarCeldaGrado(alumnoDeporte.getGrado(), nombreGrado(alumnoDeporte)));
 
@@ -1097,7 +1026,7 @@ public class PDFServiceImpl implements PDFService {
 							progresionGrados.obtenerNombreVisible(gradoPromocion)));
 
 					int edad = FechaUtils.calcularEdad(alumno.getFechaNacimiento());
-					html.append("<td>").append(edad).append("</td>");
+					html.append("<td class='num'>").append(edad).append("</td>");
 					html.append("</tr>");
 				}
 
@@ -1111,7 +1040,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -1185,7 +1114,7 @@ public class PDFServiceImpl implements PDFService {
 		StringBuilder html = new StringBuilder();
 
 		// HTML Header with styles
-		abrirHtmlAsistencia(html);
+		abrirHtmlAsistencia(html, marca);
 
 		boolean firstPage = true;
 
@@ -1300,7 +1229,7 @@ public class PDFServiceImpl implements PDFService {
 		Map<String, List<AlumnoDeporte>> activosPorDeporte = new java.util.HashMap<>();
 		MarcaEscuela marca = marcaEscuela.deActiva();
 		StringBuilder html = new StringBuilder();
-		abrirHtmlAsistencia(html);
+		abrirHtmlAsistencia(html, marca);
 		boolean firstPage = true;
 		for (com.taemoi.project.entities.Turno turno : turnos) {
 			String deporte = turno.getGrupo().getDeporte();
@@ -1338,39 +1267,31 @@ public class PDFServiceImpl implements PDFService {
 		}
 	}
 
-	/** Cabecera HTML y estilos del listado de asistencia (el de gestión y el del profesor, E7-2). */
-	private static void abrirHtmlAsistencia(StringBuilder html) {
+	/**
+	 * Cabecera HTML y estilos del listado de asistencia (el de gestión y el del profesor, E7-2). Decisión 315: la
+	 * cabecera, el pie y la tipografía comunes; conserva su rejilla densa, sus márgenes estrechos y los colores que
+	 * codifican información (cinturón, licencia, apto para examen).
+	 */
+	private static void abrirHtmlAsistencia(StringBuilder html, MarcaEscuela marca) {
 		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8'/>");
 		html.append("<style>");
+		html.append(EstiloPdf.pie(marca.asistenciaPrincipal(), "Listado de asistencia"));
+		html.append(EstiloPdf.cssComun());
 		html.append("@page { margin: 8.5mm; }");
-		html.append("* { box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }");
 		html.append("body { margin: 0; padding: 0; }");
 		html.append(".page-break { page-break-after: always; }");
-		html.append(
-				".header-section { text-align: center; margin-bottom: 3.2mm; border-bottom: 1.5px solid #007bff; padding-bottom: 2.2mm; }");
-		html.append(".logo-container { text-align: center; margin-bottom: 1.6mm; }");
-		html.append(".logo-container img { width: 22mm; height: auto; max-height: 22mm; }");
-		html.append(".header-titles .main { font-size: 14.5pt; color: #1b2b2e; font-weight: 700; margin: 1.1mm 0; }");
-		html.append(".header-titles .sub { font-size: 10.5pt; color: #007bff; margin: 0 0 1.1mm; font-weight: 600; }");
-		html.append("h2 { font-size: 9.5pt; margin: 1.1mm 0; font-weight: 700; color: #1b2b2e; text-align: center; }");
-		html.append(
-				"p.info { text-align: center; font-size: 7.2pt; margin: 0.7mm 0; font-weight: 600; color: #495057; }");
-		html.append(
-				".deporte-label { text-align: center; font-size: 9.2pt; margin: 1.1mm 0; font-weight: 700; color: #007bff; text-transform: uppercase; }");
+		html.append(".cab { margin-bottom: 3mm; padding-bottom: 2mm; }");
 		html.append(".table-container { width: 100%; overflow: visible; }");
 		html.append(".table-wrapper { display: table; width: auto; table-layout: fixed; margin-left: auto; margin-right: auto; padding-left: 4mm; padding-right: 4mm; }");
 		html.append(".table-cell { display: table-cell; vertical-align: top; overflow: visible; }");
-		html.append(".main-table { border-collapse: collapse; width: 100%; table-layout: fixed; }");
+		html.append(".main-table { border-collapse: collapse; width: 100%; table-layout: fixed; margin-top: 0; }");
 		html.append(
-				".main-table th, .main-table td, .side-table th, .side-table td { border: 1px solid #dee2e6; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
+				".main-table th, .main-table td, .side-table th, .side-table td { border: 0.5pt solid #cfcfc8; text-align: center; font-size: 8pt; vertical-align: middle; box-sizing: border-box; }");
 		html.append(".main-table th, .side-table th { padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
 		html.append(
 				".main-table tbody td, .side-table tbody td { padding: 0; height: 6.5mm; max-height: 6.5mm; min-height: 6.5mm; line-height: 6.5mm; overflow: hidden; }");
 		html.append(
-				".main-table thead th, .side-table thead th { background-color: #007bff; color: #ffffff; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; }");
-		html.append(".main-table thead th { text-transform: uppercase; letter-spacing: 0.2px; }");
-		html.append(".main-table tbody tr:nth-child(even) { background: #f8f9fa; }");
-		html.append(".main-table tbody tr:nth-child(odd) { background: #ffffff; }");
+				".main-table thead th, .side-table thead th { background-color: #fafaf8; color: #5d6573; font-weight: 600; height: 8mm; min-height: 8mm; max-height: 8mm; overflow: hidden; vertical-align: middle; border-bottom: 1pt solid #cfcfc8; }");
 		html.append(
 				".compact .main-table tbody td, .compact .side-table tbody td { height: 5.4mm; max-height: 5.4mm; min-height: 5.4mm; line-height: 5.4mm; font-size: 7.2pt; }");
 		html.append(
@@ -1380,7 +1301,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append(".main-table th:nth-child(3), .main-table td:nth-child(3) { width: 11mm; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(4), .main-table td:nth-child(4) { width: 9mm; font-size: 7.5pt; }");
 		html.append(
-				".main-table th:nth-child(5) { width: 75mm; text-align: center; padding: 1.2mm 0.6mm; font-size: 7.5pt; }");
+				".main-table th:nth-child(5) { width: 75mm; text-align: left; padding: 1.2mm 0.6mm 1.2mm 1mm; font-size: 7.5pt; }");
 		html.append(
 				".main-table td:nth-child(5) { width: 75mm; text-align: left; padding-left: 1mm; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 7.5pt; }");
 		html.append(".main-table th:nth-child(6), .main-table td:nth-child(6) { width: 13mm; font-size: 7.5pt; }");
@@ -1402,13 +1323,11 @@ public class PDFServiceImpl implements PDFService {
 		html.append(
 				".no-apto-examen { background-color: #ffffff; color: #6c757d; font-size: 7pt; vertical-align: middle; }");
 		html.append(
-				".side-table { margin-left: 3.3mm; border: 1px solid #dee2e6; table-layout: fixed; font-size: 6.5pt; max-width: 95%; width: auto; display: inline-table; border-collapse: collapse; }");
+				".side-table { margin-left: 3.3mm; margin-top: 0; border: 0.5pt solid #cfcfc8; table-layout: fixed; font-size: 6.5pt; max-width: 95%; width: auto; display: inline-table; border-collapse: collapse; }");
 		html.append(
 				".side-table th, .side-table td { width: 6mm; padding: 0.8mm 0.3mm; text-align: center; box-sizing: border-box; }");
 		html.append(
-				".side-table th:last-child, .side-table td:last-child { border-right: 1px solid #dee2e6 !important; }");
-		html.append(
-				".side-table tfoot td { background: #e9ecef; font-weight: 600; text-align: center; font-size: 6.5pt; }");
+				".side-table tfoot td { background: #fafaf8; color: #5d6573; font-weight: 600; text-align: center; font-size: 6.5pt; }");
 		html.append(".main-table tbody tr, .side-table tbody tr { page-break-inside: avoid; }");
 		html.append(".main-table thead, .side-table thead { display: table-header-group; }");
 		html.append("</style>");
@@ -1437,27 +1356,14 @@ public class PDFServiceImpl implements PDFService {
 		int totalAlumnos = alumnos.size();
 		String turnoStr = turno.getHoraInicio() + " a " + turno.getHoraFin();
 
-		// Header
-		html.append("<div class='header-section'>");
-		if (!marca.logoInformes().isEmpty()) {
-			html.append("<div class='logo-container'><img src='").append(marca.logoInformes())
-					.append("' alt='Logo' /></div>");
-		}
-		html.append("<div class='header-titles'>");
-		html.append("<p class='main'>").append(marca.asistenciaPrincipalHtml()).append("</p>");
-		if (marca.asistenciaSubtituloHtml() != null) {
-			html.append("<p class='sub'>").append(marca.asistenciaSubtituloHtml()).append("</p>");
-		}
-		html.append("</div>");
-		html.append("<h2>LISTADO DE ASISTENCIA - ")
-				.append(Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es")).toUpperCase())
-				.append(" ").append(year).append("</h2>");
-		html.append("<p class='deporte-label'>").append(deporte.replace("_", " "))
-				.append("</p>");
-		html.append("<p class='info'>Total: ").append(totalAlumnos).append(" alumnos</p>");
-		html.append("<p class='info'>").append(dia.toUpperCase()).append(" - Turno de ").append(turnoStr)
-				.append("</p>");
-		html.append("</div>");
+		// Cabecera común (decisión 315): el mes en el título; disciplina, alumnos, día y turno como contexto.
+		String nombreMes = Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es"));
+		String titulo = "Listado de asistencia - " + conMayuscula(nombreMes) + " " + year;
+		// El día, con mayúscula inicial en los dos listados (gestión lo recibe como venga escrito: «lunes»).
+		String contexto = contexto(EstiloPdf.esc(deporte.replace("_", " ")), "Total: " + totalAlumnos + " alumnos",
+				EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr));
+		html.append(EstiloPdf.cabecera(marca.colorPrimario(), marca.logoInformes(), marca.asistenciaPrincipalHtml(),
+				marca.asistenciaSubtituloHtml(), titulo, contexto, EstiloPdf.esc(EstiloPdf.fechaGeneracion())));
 
 		// Tables
 		boolean compact = totalAlumnos >= 32;
@@ -1554,9 +1460,15 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</div>");
 	}
 
+	/** Primera letra en mayúscula («lunes» → «Lunes», «septiembre» → «Septiembre»); el resto, igual. */
+	private static String conMayuscula(String texto) {
+		return texto == null || texto.isEmpty() ? ""
+				: texto.substring(0, 1).toUpperCase(Locale.of("es")) + texto.substring(1);
+	}
+
 	private static byte[] renderizarAsistencia(String html) {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.useFastMode();
 		builder.withHtmlContent(html, null);
 		builder.toStream(os);
@@ -1598,9 +1510,6 @@ public class PDFServiceImpl implements PDFService {
 					.collect(Collectors.toList());
 		}
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		// Group debts by student
 		Map<Alumno, List<com.taemoi.project.entities.ProductoAlumno>> deudasPorAlumno = productosImpagados.stream()
@@ -1612,25 +1521,9 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Informe de Deudas de Alumnos", fechaGeneracion));
-		html.append(".deuda-total {");
-		html.append("  font-weight: 700;");
-		html.append("  color: #dc3545;");
-		html.append("  font-size: 11pt;");
-		html.append("}");
-		html.append(".total-general {");
-		html.append("  margin-top: 8mm;");
-		html.append("  padding: 4mm;");
-		html.append("  background: #f8f9fa;");
-		html.append("  border: 2px solid #dc3545;");
-		html.append("  border-radius: 2mm;");
-		html.append("  text-align: center;");
-		html.append("}");
-		html.append(".total-general h3 {");
-		html.append("  margin: 0;");
-		html.append("  font-size: 14pt;");
-		html.append("  color: #dc3545;");
-		html.append("}");
+		html.append(estilosInforme("Informe de Deudas de Alumnos"));
+		html.append(".total-general { margin-top: 6mm; padding-top: 2mm; border-top: 1pt solid #cfcfc8; }");
+		html.append(".total-general h3 { margin: 0; }");
 		html.append(".alumno-section {");
 		html.append("  page-break-inside: avoid;");
 		html.append("  margin-bottom: 8mm;");
@@ -1650,16 +1543,16 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<body>");
 
 		// Add header with logo
-		html.append(generarCabeceraConLogo("Informe de Deudas", "#dc3545"));
+		html.append(cabeceraInforme("Informe de Deudas", contextoActivos(soloActivos)));
 
 		double totalGeneral = 0.0;
 
 		if (deudasPorAlumno.isEmpty()) {
-			html.append("<div class='section-header' style='background-color: #28a745;'>");
+			html.append("<div class='section-header'>");
 			html.append("No hay deudas pendientes");
 			html.append("</div>");
 		} else {
-			html.append("<div class='section-header' style='background-color: #dc3545;'>");
+			html.append("<div class='section-header'>");
 			html.append("Deudas Pendientes (" + deudasPorAlumno.size() + " alumnos)");
 			html.append("</div>");
 
@@ -1680,19 +1573,19 @@ public class PDFServiceImpl implements PDFService {
 				totalGeneral += totalAlumno;
 
 				html.append("<div class='alumno-section'>");
-				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
+				html.append("<h3>")
 						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append(" (Exp. ")
 						.append(alumno.getNumeroExpediente()).append(")");
-				html.append(" - <span class='deuda-total'>Total: ").append(String.format("%.2f", totalAlumno))
+				html.append(" - <span class='pendiente-dinero'>Total: ").append(String.format("%.2f", totalAlumno))
 						.append(" €</span>");
 				html.append("</h3>");
 
 				html.append("<table>");
 				html.append("<thead><tr>");
 				html.append("<th>Concepto</th>");
-				html.append("<th>Fecha Asignación</th>");
-				html.append("<th>Cantidad</th>");
-				html.append("<th>Precio</th>");
+				html.append("<th class='num'>Fecha Asignación</th>");
+				html.append("<th class='num'>Cantidad</th>");
+				html.append("<th class='num'>Precio</th>");
 				html.append("<th>Notas</th>");
 				html.append("</tr></thead>");
 				html.append("<tbody>");
@@ -1708,10 +1601,11 @@ public class PDFServiceImpl implements PDFService {
 						DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 						fechaAsignacion = fecha.format(dateFormatter);
 					}
-					html.append("<td>").append(fechaAsignacion).append("</td>");
+					html.append("<td class='num'>").append(fechaAsignacion).append("</td>");
 
-					html.append("<td>").append(pa.getCantidad() != null ? pa.getCantidad() : 1).append("</td>");
-					html.append("<td>").append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
+					html.append("<td class='num'>").append(pa.getCantidad() != null ? pa.getCantidad() : 1).append("</td>");
+					html.append("<td class='num'>")
+							.append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
 							.append(" €</td>");
 					html.append("<td>").append(pa.getNotas() != null ? pa.getNotas() : "").append("</td>");
 					html.append("</tr>");
@@ -1724,7 +1618,8 @@ public class PDFServiceImpl implements PDFService {
 
 			// Add total general
 			html.append("<div class='total-general'>");
-			html.append("<h3>TOTAL GENERAL: ").append(String.format("%.2f", totalGeneral)).append(" €</h3>");
+			html.append("<h3>TOTAL GENERAL: <span class='pendiente-dinero'>").append(String.format("%.2f", totalGeneral))
+					.append(" €</span></h3>");
 			html.append("</div>");
 		}
 
@@ -1732,7 +1627,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -1822,9 +1717,6 @@ public class PDFServiceImpl implements PDFService {
 		productos.sort(Comparator.comparing(
 				p -> p.getConcepto() == null ? "" : p.getConcepto().toLowerCase(Locale.ROOT)));
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
@@ -1832,50 +1724,32 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Listado de Productos", fechaGeneracion));
-		html.append("@page { margin: 14mm 15mm 20mm 15mm;");
-		html.append("  @top-center { content: ''; }");
-		html.append("  @bottom-left { content: '" + fechaGeneracion + "';");
-		html.append("    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;");
-		html.append("    font-size: 9pt; color: #6c757d; }");
-		html.append("  @bottom-right { content: 'PÃ¡gina ' counter(page) ' de ' counter(pages);");
-		html.append("    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;");
-		html.append("    font-size: 9pt; color: #6c757d; }");
-		html.append("}");
-		html.append("body { font-size: 8.5pt; }");
-		html.append(".pdf-header { margin-bottom: 2mm; padding-bottom: 1.5mm; border-bottom-width: 1.5px; }");
-		html.append(".logo-container { margin-bottom: 1mm; }");
-		html.append(".logo-container img { width: 18mm; max-height: 18mm; }");
-		html.append(".club-name { font-size: 11.5pt; margin: 0.5mm 0; }");
-		html.append(".report-title { font-size: 9.5pt; margin-top: 0.4mm; }");
-		html.append(".section-header { padding: 2mm; margin-bottom: 2mm; font-size: 9.5pt; }");
+		// Decisión 315: el pie común sustituye al propio, que salía mal codificado («PÃ¡gina X de Y»).
+		html.append(estilosInforme("Listado de Productos"));
 		html.append(".productos-table { margin-top: 0.5mm; }");
-		html.append(".productos-table th, .productos-table td { font-size: 7.5pt; padding: 1.1mm 1.2mm; line-height: 1.2; }");
-		html.append(".productos-table th { letter-spacing: 0.2px; }");
 		html.append(".productos-table { table-layout: fixed; }");
-		html.append(".productos-table th:nth-child(1) { width: 70%; }");
-		html.append(".productos-table td:nth-child(1) { width: 70%; text-align: left; }");
+		html.append(".productos-table th:nth-child(1), .productos-table td:nth-child(1) { width: 70%; }");
 		html.append(".productos-table th:nth-child(2), .productos-table td:nth-child(2) { width: 30%; }");
-		html.append(".precio-cell { font-weight: 600; color: #1b2b2e; }");
+		html.append(".precio-cell { font-weight: 600; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
-		html.append(generarCabeceraConLogo("Listado de Productos"));
+		html.append(cabeceraInforme("Listado de Productos", null));
 
 		if (productos.isEmpty()) {
-			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("<div class='section-header'>");
 			html.append("No hay productos registrados");
 			html.append("</div>");
 		} else {
-			html.append("<div class='section-header' style='background-color: #17a2b8;'>");
+			html.append("<div class='section-header'>");
 			html.append("Productos (" + productos.size() + ")");
 			html.append("</div>");
 
 			html.append("<table class='productos-table'>");
 			html.append("<thead><tr>");
 			html.append("<th>Concepto</th>");
-			html.append("<th>Precio</th>");
+			html.append("<th class='num'>Precio</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
 
@@ -1887,7 +1761,7 @@ public class PDFServiceImpl implements PDFService {
 
 				html.append("<tr>");
 				html.append("<td>").append(concepto).append("</td>");
-				html.append("<td class='precio-cell'>").append(precio).append("</td>");
+				html.append("<td class='precio-cell num'>").append(precio).append("</td>");
 				html.append("</tr>");
 			}
 
@@ -1899,7 +1773,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -1949,9 +1823,6 @@ public class PDFServiceImpl implements PDFService {
 		List<com.taemoi.project.entities.ProductoAlumno> reservas = productoAlumnoRepository
 				.findReservasPlazaByTemporada(temporada, soloActivos);
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		Map<String, List<com.taemoi.project.entities.ProductoAlumno>> reservasPorDeporte = new java.util.LinkedHashMap<>();
 		for (com.taemoi.project.entities.ProductoAlumno reserva : reservas) {
@@ -1966,20 +1837,17 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Informe de Reservas de Plaza", fechaGeneracion));
-		html.append(".status-badge { display: inline-block; padding: 1mm 3mm; border-radius: 2mm; font-weight: 600; font-size: 9pt; }");
-		html.append(".status-pagado { background: #d4edda; color: #155724; }");
-		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
-		html.append(".resumen-general { margin-top: 8mm; padding: 4mm; background: #f8f9fa; border: 2px solid #007bff; border-radius: 2mm; text-align: center; }");
-		html.append(".sport-section { page-break-inside: avoid; margin-bottom: 8mm; }");
+		html.append(estilosInforme("Informe de Reservas de Plaza"));
+		html.append(".sport-section { page-break-inside: avoid; margin-bottom: 4mm; }");
 		html.append(".sport-section tr { page-break-inside: avoid; page-break-after: auto; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
-		html.append(generarCabeceraConLogo("Informe de Reservas de Plaza - " + temporada, "#007bff"));
+		html.append(cabeceraInforme("Informe de Reservas de Plaza",
+				contexto("Temporada " + temporada, contextoActivos(soloActivos))));
 
 		if (reservasPorDeporte.isEmpty()) {
-			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("<div class='section-header'>");
 			html.append("No hay reservas de plaza registradas para la temporada ").append(temporada);
 			html.append("</div>");
 		} else {
@@ -1991,10 +1859,8 @@ public class PDFServiceImpl implements PDFService {
 				List<com.taemoi.project.entities.ProductoAlumno> reservasDeporte = entry.getValue();
 				String deporte = obtenerDeporteReserva(reservasDeporte.get(0));
 				String deporteNombre = deporte != null ? getDeporteNombre(deporte) : "Sin deporte";
-				String color = getColorDeporte(deporte);
-
 				html.append("<div class='sport-section'>");
-				html.append("<div class='section-header' style='background-color: ").append(color).append(";'>");
+				html.append("<div class='section-header'>");
 				html.append(deporteNombre).append(" (").append(reservasDeporte.size()).append(" reservas)");
 				html.append("</div>");
 				html.append("<table>");
@@ -2018,8 +1884,8 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<tr>");
 					html.append("<td>").append(formatearNombreAlumno(alumno)).append("</td>");
 					html.append("<td>").append(reserva.getConcepto() != null ? reserva.getConcepto() : "N/A").append("</td>");
-					html.append("<td><span class='status-badge ").append(pagado ? "status-pagado" : "status-pendiente")
-							.append("'>").append(pagado ? "Pagado" : "Sin Pagar").append("</span></td>");
+					html.append("<td><span class='").append(pagado ? "estado" : "pendiente-dinero").append("'>")
+							.append(pagado ? "Pagado" : "Sin Pagar").append("</span></td>");
 					html.append("</tr>");
 				}
 
@@ -2032,8 +1898,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<h3>RESUMEN GENERAL</h3>");
 			html.append("<p><strong>Temporada:</strong> ").append(temporada).append("</p>");
 			html.append("<p><strong>Total reservas:</strong> ").append(totalReservas).append("</p>");
-			html.append("<p style='color: #28a745;'><strong>Pagadas:</strong> ").append(totalPagadas).append("</p>");
-			html.append("<p style='color: #dc3545;'><strong>Sin pagar:</strong> ").append(totalPendientes).append("</p>");
+			html.append("<p><strong>Pagadas:</strong> ").append(totalPagadas).append("</p>");
+			html.append("<p><strong>Sin pagar:</strong> ").append(totalPendientes).append("</p>");
 			html.append("</div>");
 		}
 
@@ -2041,7 +1907,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -2082,22 +1948,6 @@ public class PDFServiceImpl implements PDFService {
 			return 1;
 		}
 		return 2;
-	}
-
-	private String getColorDeporte(String deporte) {
-		if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
-			return "#0D47A1";
-		}
-		if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
-			return "#ff4500";
-		}
-		if (CatalogoLegadoTaemoi.PILATES.equals(deporte)) {
-			return "#57A2A8";
-		}
-		if (CatalogoLegadoTaemoi.DEFENSA_PERSONAL_FEMENINA.equals(deporte)) {
-			return "#c2185b";
-		}
-		return "#007bff";
 	}
 
 	private Alumno obtenerAlumnoReserva(com.taemoi.project.entities.ProductoAlumno reserva) {
@@ -2173,9 +2023,6 @@ public class PDFServiceImpl implements PDFService {
 			}).collect(Collectors.toList());
 		}
 
-		LocalDate today = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = today.format(formatter);
 
 		class MensualidadGroup {
 			private final Alumno alumno;
@@ -2219,17 +2066,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Informe de Mensualidades", fechaGeneracion));
-		html.append(".status-badge {");
-		html.append("  display: inline-block;");
-		html.append("  padding: 1mm 3mm;");
-		html.append("  border-radius: 2mm;");
-		html.append("  font-weight: 600;");
-		html.append("  font-size: 9pt;");
-		html.append("}");
-		html.append(".status-pagado { background: #d4edda; color: #155724; }");
-		html.append(".status-pendiente { background: #f8d7da; color: #721c24; }");
-		html.append(".status-cancelado { background: #e2e3e5; color: #383d41; }");
+		html.append(estilosInforme("Informe de Mensualidades"));
 		html.append(".alumno-section {");
 		html.append("  page-break-inside: avoid;");
 		html.append("  margin-bottom: 8mm;");
@@ -2244,46 +2081,26 @@ public class PDFServiceImpl implements PDFService {
 		html.append("  page-break-inside: avoid;");
 		html.append("  page-break-after: auto;");
 		html.append("}");
-		html.append(".resumen-alumno {");
-		html.append("  font-size: 10pt;");
-		html.append("  margin-top: 2mm;");
-		html.append("  padding: 2mm;");
-		html.append("  background: #f8f9fa;");
-		html.append("  border-radius: 2mm;");
-		html.append("}");
-		html.append(".resumen-general {");
-		html.append("  margin-top: 8mm;");
-		html.append("  padding: 4mm;");
-		html.append("  background: #f8f9fa;");
-		html.append("  border: 2px solid #007bff;");
-		html.append("  border-radius: 2mm;");
-		html.append("  text-align: center;");
-		html.append("}");
-		html.append(".resumen-general h3 {");
-		html.append("  margin: 2mm 0;");
-		html.append("  font-size: 12pt;");
-		html.append("  color: #1b2b2e;");
-		html.append("}");
+		html.append(".alumno-section { page-break-inside: avoid; margin-bottom: 5mm; }");
+		html.append(".alumno-section h3 { page-break-after: avoid; }");
+		html.append(".alumno-section table { page-break-inside: auto; }");
+		html.append(".alumno-section tr { page-break-inside: avoid; page-break-after: auto; }");
+		html.append(".resumen-alumno { font-size: 8pt; color: #5d6573; margin: 0 0 1mm 0; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
-		// Determine title and color based on sport filter
+		// Título según la disciplina filtrada
 		String titulo;
-		String colorPrincipal;
 		if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporteFiltro)) {
 			titulo = "Informe de Mensualidades - Taekwondo";
-			colorPrincipal = "#0D47A1"; // Blue for Taekwondo
 		} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporteFiltro)) {
 			titulo = "Informe de Mensualidades - Kickboxing";
-			colorPrincipal = "#ff4500"; // Orange for Kickboxing
 		} else {
 			titulo = "Informe de Mensualidades";
-			colorPrincipal = "#007bff"; // Default blue
 		}
 
-		// Add header with logo
-		html.append(generarCabeceraConLogo(titulo, colorPrincipal));
+		html.append(cabeceraInforme(titulo, contextoActivos(soloActivos)));
 
 		int totalAlumnos = mensualidadesPorAlumno.size();
 		// Pieza 6b-2c: un cargo cancelado sigue saliendo (fila «CANCELADO») pero no suma en ningún total.
@@ -2294,7 +2111,7 @@ public class PDFServiceImpl implements PDFService {
 		double totalImportePendiente = 0.0;
 
 		if (mensualidadesPorAlumno.isEmpty()) {
-			html.append("<div class='section-header' style='background-color: #6c757d;'>");
+			html.append("<div class='section-header'>");
 			html.append("No hay mensualidades registradas");
 			html.append("</div>");
 		} else {
@@ -2307,7 +2124,7 @@ public class PDFServiceImpl implements PDFService {
 				tituloSeccion = "Mensualidades de Alumnos (" + totalAlumnos + " alumnos)";
 			}
 
-			html.append("<div class='section-header' style='background-color: ").append(colorPrincipal).append(";'>");
+			html.append("<div class='section-header'>");
 			html.append(tituloSeccion);
 			html.append("</div>");
 
@@ -2339,46 +2156,34 @@ public class PDFServiceImpl implements PDFService {
 				totalImportePagado += importePagado;
 				totalImportePendiente += importePendiente;
 
-				// Determine color based on student's sport (for general PDF with all sports)
-				String colorAlumno = "#007bff"; // Default
+				// En el informe general, la disciplina del alumno junto a su nombre.
 				String deporteNombre = "";
 				if (deporteFiltro == null) {
-					// In general PDF, color-code by sport
-					if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
-						colorAlumno = "#0D47A1"; // Blue
-						deporteNombre = " <span style='color: #0D47A1; font-weight: bold;'>[Taekwondo]</span>";
-					} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
-						colorAlumno = "#ff4500"; // Orange
-						deporteNombre = " <span style='color: #ff4500; font-weight: bold;'>[Kickboxing]</span>";
-					} else if (deporte != null) {
-						deporteNombre = " <span style='font-weight: bold;'>[" + getDeporteNombre(deporte) + "]</span>";
-					} else {
-						deporteNombre = " <span style='font-weight: bold;'>[Sin deporte]</span>";
-					}
+					String nombre = deporte == null ? "Sin deporte" : getDeporteNombre(deporte);
+					deporteNombre = " <span class='recuento'>[" + nombre + "]</span>";
 				}
 
 				html.append("<div class='alumno-section'>");
-				html.append("<h3 style='margin-top: 6mm; margin-bottom: 2mm; color: #212529;'>")
+				html.append("<h3>")
 						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append(" (Exp. ")
 						.append(alumno.getNumeroExpediente()).append(")").append(deporteNombre);
 				html.append("</h3>");
 
-				html.append("<div class='resumen-alumno' style='border-left: 4px solid ").append(colorAlumno)
-						.append(";'>");
+				html.append("<div class='resumen-alumno'>");
 				html.append("<strong>Total mensualidades:</strong> ").append(vigentes.size());
-				html.append(" | <strong style='color: #28a745;'>Pagadas:</strong> ").append(pagas);
+				html.append(" | <strong>Pagadas:</strong> ").append(pagas);
 				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
-				html.append(" | <strong style='color: #dc3545;'>Pendientes:</strong> ").append(pendientes);
-				html.append(" (").append(String.format("%.2f", importePendiente)).append(" €)");
+				html.append(" | <strong>Pendientes:</strong> ").append(pendientes);
+				html.append(" (").append(importePendiente(importePendiente)).append(")");
 				html.append("</div>");
 
 				html.append("<table>");
 				html.append("<thead><tr>");
 				html.append("<th>Concepto</th>");
-				html.append("<th>Fecha Asignación</th>");
-				html.append("<th>Importe</th>");
+				html.append("<th class='num'>Fecha Asignación</th>");
+				html.append("<th class='num'>Importe</th>");
 				html.append("<th>Estado</th>");
-				html.append("<th>Fecha Pago</th>");
+				html.append("<th class='num'>Fecha Pago</th>");
 				html.append("<th>Notas</th>");
 				html.append("</tr></thead>");
 				html.append("<tbody>");
@@ -2396,15 +2201,16 @@ public class PDFServiceImpl implements PDFService {
 						DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 						fechaAsignacion = fecha.format(dateFormatter);
 					}
-					html.append("<td>").append(fechaAsignacion).append("</td>");
+					html.append("<td class='num'>").append(fechaAsignacion).append("</td>");
 
 					// Decisión 297: la fila muestra el importe del cargo (precio × cantidad), para que las filas sumen el total.
-					html.append("<td>").append(String.format("%.2f", ImporteCargo.de(pa))).append(" €</td>");
+					html.append("<td class='num'>").append(String.format("%.2f", ImporteCargo.de(pa))).append(" €</td>");
 
 					boolean cancelado = pa.estaCancelado();
-					String estadoClass = cancelado ? "status-cancelado" : (pagado ? "status-pagado" : "status-pendiente");
+					// Decisión 315: ocre solo para lo pendiente de cobro; pagado y cancelado, neutros.
+					String estadoClass = cancelado || pagado ? "estado" : "pendiente-dinero";
 					String estadoTexto = cancelado ? "CANCELADO" : (pagado ? "PAGADO" : "PENDIENTE");
-					html.append("<td><span class='status-badge ").append(estadoClass).append("'>").append(estadoTexto)
+					html.append("<td><span class='").append(estadoClass).append("'>").append(estadoTexto)
 							.append("</span></td>");
 
 					String fechaPago = "N/A";
@@ -2414,7 +2220,7 @@ public class PDFServiceImpl implements PDFService {
 						DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 						fechaPago = fecha.format(dateFormatter);
 					}
-					html.append("<td>").append(fechaPago).append("</td>");
+					html.append("<td class='num'>").append(fechaPago).append("</td>");
 
 					html.append("<td>").append(pa.getNotas() != null ? pa.getNotas() : "").append("</td>");
 					html.append("</tr>");
@@ -2428,17 +2234,13 @@ public class PDFServiceImpl implements PDFService {
 			// Add general summary
 			html.append("<div class='resumen-general'>");
 			html.append("<h3>RESUMEN GENERAL</h3>");
-			html.append("<p style='margin: 2mm 0;'><strong>Total de alumnos:</strong> ").append(totalAlumnos)
-					.append("</p>");
-			html.append("<p style='margin: 2mm 0;'><strong>Total de mensualidades:</strong> ")
-					.append(totalMensualidades).append("</p>");
-			html.append("<p style='margin: 2mm 0; color: #28a745;'><strong>Mensualidades pagadas:</strong> ")
-					.append(totalPagadas).append(" (").append(String.format("%.2f", totalImportePagado))
-					.append(" €)</p>");
-			html.append("<p style='margin: 2mm 0; color: #dc3545;'><strong>Mensualidades pendientes:</strong> ")
-					.append(totalPendientes).append(" (").append(String.format("%.2f", totalImportePendiente))
-					.append(" €)</p>");
-			html.append("<p style='margin: 2mm 0; font-size: 12pt;'><strong>TOTAL GENERAL:</strong> ")
+			html.append("<p><strong>Total de alumnos:</strong> ").append(totalAlumnos).append("</p>");
+			html.append("<p><strong>Total de mensualidades:</strong> ").append(totalMensualidades).append("</p>");
+			html.append("<p><strong>Mensualidades pagadas:</strong> ").append(totalPagadas).append(" (")
+					.append(String.format("%.2f", totalImportePagado)).append(" €)</p>");
+			html.append("<p><strong>Mensualidades pendientes:</strong> ").append(totalPendientes).append(" (")
+					.append(importePendiente(totalImportePendiente)).append(")</p>");
+			html.append("<p><strong>TOTAL GENERAL:</strong> ")
 					.append(String.format("%.2f", totalImportePagado + totalImportePendiente)).append(" €</p>");
 			html.append("</div>");
 		}
@@ -2447,7 +2249,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -2458,6 +2260,12 @@ public class PDFServiceImpl implements PDFService {
 			throw new RuntimeException("Error al generar el informe PDF de mensualidades", e);
 		}
 		return outputStream.toByteArray();
+	}
+
+	/** Importe pendiente («28.00 €»): en ocre si hay algo pendiente (decisión 315); sin pendiente, neutro. */
+	private static String importePendiente(double importe) {
+		String texto = String.format("%.2f", importe) + " €";
+		return importe > 0 ? "<span class='pendiente-dinero'>" + texto + "</span>" : texto;
 	}
 
 	/** Pieza 6b-2c: los cargos no cancelados de la lista (vacía si es nula). */
@@ -2522,7 +2330,6 @@ public class PDFServiceImpl implements PDFService {
 						.groupingBy(pa -> pa.getAlumno().getId() + "_" + pa.getAlumnoDeporte().getDeporte()));
 
 		// Build HTML for PDF
-		String fechaGeneracion = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
 		html.append("<html>");
@@ -2530,24 +2337,15 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
 
-		// Use modern styles with portrait page for more rows per page
-		html.append("@page { size: A4; margin: 12mm 10mm 12mm 10mm; }");
-		html.append(generarEstilosModernos("Listado Mensualidad " + nombreMes + " " + anio, fechaGeneracion));
+		html.append(estilosInforme("Listado Mensualidad " + nombreMes + " " + anio));
 		// Additional styles for this report
 		html.append(".deporte-cell { font-weight: 600; }");
-		html.append(".deporte-taekwondo { color: #0D47A1; }");
-		html.append(".deporte-kickboxing { color: #ff4500; }");
-		html.append(".grado-cell { text-align: center; }");
-		html.append(".comp-cell { text-align: center; }");
 		html.append(".nombre-cell { vertical-align: middle; }");
 		html.append(".line-item { margin: 0; padding: 0; }");
 		html.append(".line-item + .line-item { margin-top: 1mm; }");
-		html.append(".grado-cell .line-item { display: flex; justify-content: center; align-items: center; }");
 		html.append(".grado-cell .line-item + .line-item { margin-top: 2mm; }");
 		html.append(".grado-cell .line-item:first-child { margin-top: 1mm; }");
 		html.append(".grado-cell .line-item:last-child { margin-bottom: 1mm; }");
-		html.append("td { font-size: 9pt; padding: 2mm 1.5mm; vertical-align: middle; }");
-		html.append("th { font-size: 9pt; padding: 2mm 1.5mm; }");
 		html.append("tr { page-break-inside: avoid; }");
 		html.append("table { -fs-table-paginate: paginate; }");
 		html.append("thead { display: table-header-group; }");
@@ -2557,7 +2355,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<body>");
 
 		// Header with logo and title below it
-		html.append(generarCabeceraConLogo("Listado Mensualidad " + nombreMes + " " + anio, "#721c24"));
+		html.append(cabeceraInforme("Listado Mensualidad " + nombreMes + " " + anio, contextoActivos(soloActivos)));
 
 		// Table
 		html.append("<table>");
@@ -2565,15 +2363,15 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<th style='width: 28%;'>APELLIDOS Y NOMBRE</th>");
 		html.append("<th style='width: 12%;'>DEPORTE</th>");
 		html.append("<th style='width: 14%;'>DESCUENTO</th>");
-		html.append("<th style='width: 12%;'>CUANTÍA</th>");
-		html.append("<th style='width: 8%;'>COMP</th>");
+		html.append("<th class='num' style='width: 12%;'>CUANTÍA</th>");
+		html.append("<th class='num' style='width: 8%;'>COMP</th>");
 		html.append("<th style='width: 12%;'>GRADO</th>");
-		html.append("<th style='width: 14%;'>FECHA DE PAGO</th>");
+		html.append("<th class='num' style='width: 14%;'>FECHA DE PAGO</th>");
 		html.append("</tr></thead>");
 		html.append("<tbody>");
 
 		if (alumnoDeportes.isEmpty()) {
-			html.append("<tr><td colspan='7' style='text-align: center; padding: 10mm; color: #999;'>");
+			html.append("<tr><td colspan='7' class='vacio'>");
 			html.append("No hay alumnos activos de Taekwondo o Kickboxing");
 			html.append("</td></tr>");
 		} else {
@@ -2629,18 +2427,15 @@ public class PDFServiceImpl implements PDFService {
 				// DEPORTE
 				html.append("<td class='deporte-cell'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
-					String deporteClass = "";
 					String deporteNombre = "";
 					if (CatalogoLegadoTaemoi.TAEKWONDO.equals(ad.getDeporte())) {
-						deporteClass = "deporte-taekwondo";
 						deporteNombre = "Taekwondo";
 					} else if (CatalogoLegadoTaemoi.KICKBOXING.equals(ad.getDeporte())) {
-						deporteClass = "deporte-kickboxing";
 						deporteNombre = "Kickboxing";
 					} else if (ad.getDeporte() != null) {
 						deporteNombre = getDeporteNombre(ad.getDeporte());
 					}
-					html.append("<div class='line-item " + deporteClass + "'>")
+					html.append("<div class='line-item'>")
 							.append(deporteNombre.isEmpty() ? "-" : deporteNombre).append("</div>");
 				}
 				html.append("</td>");
@@ -2655,7 +2450,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("</td>");
 
 				// CUANTIA
-				html.append("<td>");
+				html.append("<td class='num'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> delMes = productosPorAlumnoDeporte.get(mapKey);
@@ -2678,7 +2473,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("</td>");
 
 				// COMP
-				html.append("<td class='comp-cell'>");
+				html.append("<td class='num'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = vigentes(
@@ -2713,7 +2508,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("</td>");
 
 				// FECHA DE PAGO
-				html.append("<td>");
+				html.append("<td class='num'>");
 				for (AlumnoDeporte ad : deportesAlumno) {
 					String mapKey = alumno.getId() + "_" + ad.getDeporte();
 					List<com.taemoi.project.entities.ProductoAlumno> productosAlumno = vigentes(
@@ -2750,7 +2545,7 @@ public class PDFServiceImpl implements PDFService {
 
 		// Generate PDF
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -2774,13 +2569,11 @@ public class PDFServiceImpl implements PDFService {
 						+ (alumno.getApellidos() == null ? "" : alumno.getApellidos())), String.CASE_INSENSITIVE_ORDER))
 				.collect(Collectors.toList());
 		String titulo = "Informe de Alumnas de D.P.F";
-		String fecha = LocalDate.now().format(
-				DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES")));
 		StringBuilder html = new StringBuilder("<!DOCTYPE html><html><head><meta charset='UTF-8' /><style>");
-		html.append(generarEstilosModernos(titulo, fecha)).append("</style></head><body>")
-				.append(generarCabeceraConLogo(titulo));
+		html.append(estilosInforme(titulo)).append("</style></head><body>")
+				.append(cabeceraInforme(titulo, contextoActivos(soloActivos)));
 		if (alumnas.isEmpty()) {
-			html.append("<p>No hay alumnas de D.P.F. para los filtros seleccionados.</p>");
+			html.append("<p class='vacio'>No hay alumnas de D.P.F. para los filtros seleccionados.</p>");
 		} else {
 			html.append("<table><thead><tr><th>Nombre</th><th>Apellidos</th></tr></thead><tbody>");
 			for (Alumno alumna : alumnas) {
@@ -2791,7 +2584,7 @@ public class PDFServiceImpl implements PDFService {
 		}
 		html.append("</body></html>");
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -2808,9 +2601,6 @@ public class PDFServiceImpl implements PDFService {
 		List<AlumnoDeporte> competidores = alumnoDeporteRepository
 				.findCompetidoresActivosByDeporteIn(catalogoDisciplinas.codigosQuePermitenCompeticion());
 
-		LocalDate now = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = now.format(formatter);
 
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html>");
@@ -2818,15 +2608,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Listado de Competidores", fechaGeneracion));
-		html.append(".badge-categoria {").append(" display: inline-block;").append(" padding: 1.2mm 3mm;")
-				.append(" border-radius: 999px;").append(" border: 1.5px solid #007bff;")
-				.append(" background: #ffffff;").append(" font-weight: 700;").append(" font-size: 11pt;")
-				.append(" color: #1b2b2e;").append(" }");
-
-		html.append(".badge-categoria.badge-muted {").append(" border-color: #6c757d;").append(" color: #6c757d;")
-				.append(" }");
-
+		html.append(estilosInforme("Listado de Competidores"));
 		html.append(".grado-celda { white-space: nowrap; }");
 		html.append(
 				".grado-label { margin-left: 2mm; font-size: 9pt; font-weight: 600; vertical-align: middle; white-space: nowrap; }");
@@ -2836,7 +2618,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<body>");
 
 		// Header with logo
-		html.append(generarCabeceraConLogo("Listado de Competidores"));
+		html.append(cabeceraInforme("Listado de Competidores", null));
 
 		// Separate by sport
 		List<AlumnoDeporte> competidoresTaekwondo = competidores.stream()
@@ -2847,7 +2629,7 @@ public class PDFServiceImpl implements PDFService {
 
 		// Taekwondo section
 		if (!competidoresTaekwondo.isEmpty()) {
-			html.append("<div class='section-header' style='background-color: #0D47A1;'>");
+			html.append("<div class='section-header'>");
 			html.append("Taekwondo (").append(competidoresTaekwondo.size()).append(" competidores)");
 			html.append("</div>");
 			html.append(generarSeccionCompetidores(competidoresTaekwondo));
@@ -2855,21 +2637,21 @@ public class PDFServiceImpl implements PDFService {
 
 		// Kickboxing section
 		if (!competidoresKickboxing.isEmpty()) {
-			html.append("<div class='section-header kickboxing' style='background-color: #ff4500; margin-top: 10mm;'>");
+			html.append("<div class='section-header'>");
 			html.append("Kickboxing (").append(competidoresKickboxing.size()).append(" competidores)");
 			html.append("</div>");
 			html.append(generarSeccionCompetidores(competidoresKickboxing));
 		}
 
 		if (competidores.isEmpty()) {
-			html.append("<p style='text-align: center; color: #999; padding: 20mm;'>No hay competidores activos</p>");
+			html.append("<p class='vacio'>No hay competidores activos</p>");
 		}
 
 		html.append("</body>");
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {
@@ -2889,18 +2671,6 @@ public class PDFServiceImpl implements PDFService {
 	 */
 	private String generarSeccionCompetidores(List<AlumnoDeporte> competidores) {
 		StringBuilder html = new StringBuilder();
-
-		String deporte = competidores.isEmpty() ? CatalogoLegadoTaemoi.TAEKWONDO : competidores.get(0).getDeporte();
-
-		// Color según deporte para la badge
-		String colorAcento;
-		if (CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
-			colorAcento = "#ff4500";
-		} else if (CatalogoLegadoTaemoi.TAEKWONDO.equals(deporte)) {
-			colorAcento = "#0D47A1";
-		} else {
-			colorAcento = "#007bff";
-		}
 
 		final String SIN_CATEGORIA = "Sin categoría";
 
@@ -2934,23 +2704,12 @@ public class PDFServiceImpl implements PDFService {
 			grupo.sort(Comparator
 					.comparing(ad -> (ad.getAlumno().getNombre() + " " + ad.getAlumno().getApellidos()).toLowerCase()));
 
-			boolean esSinCategoria = SIN_CATEGORIA.equals(nombreCategoria);
-
-			// Encabezado de grupo con badge (sin rectángulo azul)
+			// Rótulo de grupo: la categoría y, a la derecha, el recuento.
 			html.append("<div class='grupo'>");
 			html.append("<div class='encabezado-grupo'>");
 
 			html.append("<div class='izquierda'>");
-			html.append("<span class='badge-categoria");
-			if (esSinCategoria) {
-				html.append(" badge-muted");
-			}
-			html.append("' style='border-color: ").append(esSinCategoria ? "#6c757d" : colorAcento).append(";");
-
-			if (!esSinCategoria) {
-				html.append(" color: ").append(colorAcento).append(";");
-			}
-			html.append("'>").append(nombreCategoria).append("</span>");
+			html.append("<span class='categoria-nombre'>").append(nombreCategoria).append("</span>");
 			html.append("</div>");
 
 			html.append("<div class='derecha'>");
@@ -2964,8 +2723,8 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<thead><tr>");
 			html.append("<th>Nombre y Apellidos</th>");
 			html.append("<th>Grado</th>");
-			html.append("<th>Peso</th>");
-			html.append("<th>Fecha Peso</th>");
+			html.append("<th class='num'>Peso</th>");
+			html.append("<th class='num'>Fecha Peso</th>");
 			html.append("</tr></thead>");
 			html.append("<tbody>");
 
@@ -3002,8 +2761,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<span class='grado-label'>").append(nombreGrado).append("</span>");
 				html.append("</td>");
 
-				html.append("<td>").append(peso).append("</td>");
-				html.append("<td>").append(fechaPeso).append("</td>");
+				html.append("<td class='num'>").append(peso).append("</td>");
+				html.append("<td class='num'>").append(fechaPeso).append("</td>");
 				html.append("</tr>");
 			}
 
@@ -3026,10 +2785,6 @@ public class PDFServiceImpl implements PDFService {
 		List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO> alumnosReporte = convocatoriaService
 				.obtenerReporteDeConvocatoria(convocatoriaId);
 
-		LocalDate now = LocalDate.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", Locale.of("es", "ES"));
-		String fechaGeneracion = now.format(formatter);
-
 		// Format convocatoria date
 		String fechaConvocatoria = "";
 		if (convocatoria.getFechaConvocatoria() != null) {
@@ -3044,32 +2799,26 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<head>");
 		html.append("<meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append(generarEstilosModernos("Convocatoria a Exámen " + fechaConvocatoria, fechaGeneracion));
-		html.append(
-				".convocatoria-title { text-align: center; font-size: 18pt; font-weight: 700; margin: 5mm 0 2mm 0; text-transform: uppercase; }");
-		html.append(".convocatoria-subtitle { text-align: center; font-size: 10pt; margin: 0 0 3mm 0; color: #666; }");
-		html.append(".total-alumnos { text-align: center; font-size: 12pt; font-weight: 600; margin: 3mm 0 5mm 0; }");
-		html.append(
-				".grade-transition-box { margin: 5mm 0 2mm 0; padding: 2mm 3mm; background: #f8f9fa; border-left: 4px solid #007bff; }");
-		html.append(".grade-transition-table { width: 100%; border-collapse: collapse; }");
-		html.append(".grade-from { text-align: left; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
-		html.append(".grade-to { text-align: right; vertical-align: middle; font-weight: 600; font-size: 11pt; }");
-		html.append(
-				".student-count { text-align: center; font-size: 10pt; color: #666; font-weight: 600; vertical-align: middle; }");
+		html.append(estilosInforme("Convocatoria a examen " + fechaConvocatoria));
+		// Rótulo de cada paso de grado: cinturón y grado de origen, cinturón y grado de destino, recuento a la derecha.
+		html.append(".grade-transition-box { margin: 5mm 0 0.5mm 0; page-break-after: avoid; }");
+		html.append(".grade-transition-table { width: 100%; border-collapse: collapse; margin: 0; }");
+		html.append(".grade-transition-table td { border: none; padding: 0; vertical-align: middle; font-family: "
+				+ EstiloPdf.TITULOS + "; font-weight: 700; font-size: 10.5pt; }");
+		html.append(".grade-transition-table td.grade-from { width: 36%; }");
+		html.append(".grade-transition-table td.grade-to { width: 40%; }");
+		html.append(".grade-transition-table td.student-count { text-align: right; font-family: " + EstiloPdf.TEXTO
+				+ "; font-weight: 400; font-size: 8pt; color: " + EstiloPdf.GRIS + "; }");
 		html.append(".belt-with-text { vertical-align: middle; }");
-		html.append(".belt-text { margin-left: 3mm; vertical-align: middle; white-space: nowrap; }");
+		html.append(".belt-text { margin: 0 3mm; vertical-align: middle; white-space: nowrap; }");
 		html.append("</style>");
 		html.append("</head>");
 		html.append("<body>");
 
-		// Header
-		html.append(generarCabeceraConLogo(""));
-
-		// Convocatoria Title
-		html.append("<div class='convocatoria-title'>CONVOCATORIA A EXÁMEN ").append(fechaConvocatoria)
-				.append("</div>");
-		html.append("<div class='convocatoria-subtitle'>(SOLO ALUMNOS CON DERECHO A EXAMEN)</div>");
-		html.append("<div class='total-alumnos'>TOTAL ALUMNOS: ").append(alumnosReporte.size()).append("</div>");
+		// Cabecera común: la convocatoria en el título; disciplina y alumnos como contexto.
+		html.append(cabeceraInforme("Convocatoria a examen " + fechaConvocatoria,
+				contexto(convocatoria.getDeporte() == null ? null : getDeporteNombre(convocatoria.getDeporte()),
+						"(Solo alumnos con derecho a examen)", "Total alumnos: " + alumnosReporte.size())));
 
 		// Group students by grade transition
 		Map<String, List<com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO>> groupedByGrade = alumnosReporte
@@ -3102,7 +2851,7 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<table class='grade-transition-table'>");
 			html.append("<tr>");
 
-			// Left: DE [GRADE]
+			// DE [GRADO]
 			html.append("<td class='grade-from'>");
 			html.append("<span class='belt-with-text'>");
 			html.append(CinturonesPdf.inline(cinturonDe(convocatoria.getDeporte(), gradoActual), 50, 15));
@@ -3113,20 +2862,20 @@ public class PDFServiceImpl implements PDFService {
 			html.append("</span>");
 			html.append("</td>");
 
-			// Center: Student count
-			html.append("<td class='student-count' style='width: 30%;'>");
-			html.append(alumnos.size()).append(" Alumnos");
-			html.append("</td>");
-
-			// Right: A [GRADE]
+			// A [GRADO]
 			html.append("<td class='grade-to'>");
 			html.append("<span class='belt-with-text'>");
-			html.append("<span class='belt-text' style='margin-right: 3mm;'>A ").append(
+			html.append(CinturonesPdf.inline(cinturonDe(convocatoria.getDeporte(), gradoSiguiente), 50, 15));
+			html.append("<span class='belt-text'>A ").append(
 					progresionGrados.obtenerNombreVisible(convocatoria.getDeporte(),
 							gradoSiguiente == null ? null : gradoSiguiente).toUpperCase())
 					.append("</span>");
-			html.append(CinturonesPdf.inline(cinturonDe(convocatoria.getDeporte(), gradoSiguiente), 50, 15));
 			html.append("</span>");
+			html.append("</td>");
+
+			// Recuento, en gris a la derecha
+			html.append("<td class='student-count'>");
+			html.append(alumnos.size()).append(" Alumnos");
 			html.append("</td>");
 
 			html.append("</tr>");
@@ -3138,11 +2887,11 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<thead>");
 			html.append("<tr>");
 			html.append("<th>NOMBRE</th>");
-			html.append("<th>EXP</th>");
-			html.append("<th>LIC. FEDERATIVA</th>");
-			html.append("<th>EDAD</th>");
+			html.append("<th class='num'>EXP</th>");
+			html.append("<th class='num'>LIC. FEDERATIVA</th>");
+			html.append("<th class='num'>EDAD</th>");
 			html.append("<th>CATEGORÍA</th>");
-			html.append("<th>PESO</th>");
+			html.append("<th class='num'>PESO</th>");
 			html.append("<th>PAGADO</th>");
 			html.append("</tr>");
 			html.append("</thead>");
@@ -3151,20 +2900,19 @@ public class PDFServiceImpl implements PDFService {
 			for (com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO alumno : alumnos) {
 				html.append("<tr>");
 				html.append("<td>").append(alumno.getNombreCompleto().toUpperCase()).append("</td>");
-				html.append("<td>").append(alumno.getNumeroExpediente() != null ? alumno.getNumeroExpediente() : "")
-						.append("</td>");
-				html.append("<td>").append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "")
-						.append("</td>");
-				html.append("<td>").append(alumno.getEdad()).append("</td>");
+				html.append("<td class='num'>")
+						.append(alumno.getNumeroExpediente() != null ? alumno.getNumeroExpediente() : "").append("</td>");
+				html.append("<td class='num'>")
+						.append(alumno.getNumeroLicencia() != null ? alumno.getNumeroLicencia() : "").append("</td>");
+				html.append("<td class='num'>").append(alumno.getEdad()).append("</td>");
 				html.append("<td>").append(alumno.getCategoria() != null ? alumno.getCategoria() : "").append("</td>");
-				html.append("<td>").append(alumno.getPeso() != null ? alumno.getPeso() : "").append("</td>");
-				html.append("<td style='font-weight: 600;");
+				html.append("<td class='num'>").append(alumno.getPeso() != null ? alumno.getPeso() : "").append("</td>");
+				// Decisión 315: el pago pendiente, en ocre; el pagado, neutro.
 				if (alumno.getPagado() != null && alumno.getPagado()) {
-					html.append(" color: #28a745;'>SI");
+					html.append("<td><span class='estado'>SI</span></td>");
 				} else {
-					html.append(" color: #dc3545;'>NO");
+					html.append("<td><span class='pendiente-dinero'>NO</span></td>");
 				}
-				html.append("</td>");
 				html.append("</tr>");
 			}
 
@@ -3176,7 +2924,7 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</html>");
 
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		PdfRendererBuilder builder = new PdfRendererBuilder();
+		PdfRendererBuilder builder = EstiloPdf.builder();
 		builder.withHtmlContent(html.toString(), null);
 		builder.toStream(outputStream);
 		try {

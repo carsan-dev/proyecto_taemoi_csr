@@ -1,18 +1,21 @@
 # Contenido del PDF «tesoreria-movimientos» (caracterización, decisión 314).
 # Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
 # Filtro: año 2026, todas las disciplinas y estados. Sin fecha de generación.
-~ Informe de Tesoreria
+# Decisión 315: en A4 apaisado caben todas las columnas; se añaden «IMPORTE» y el importe de cada movimiento (antes se salían de la página con el cargo de DEFENSA_PERSONAL_FEMENINA).
+~ Informe de Tesorería
 Periodo: Año 2026 | Deporte: TODOS | Estado: Todos
 Total movimientos: 9 Pagados: 4 Pendientes: 5 Importe total: 257.00 EUR
 FECHA FECHA
 ALUMNO DEPORTE CONCEPTO CATEGORIA ESTADO
 CARGO PAGO
+IMPORTE
 MENSUALIDAD
 Ana
 OCTUBRE 01/10 05/10
 Prueba TAEKWONDO MENSUALIDAD PAGADO
 2026 - /2026 /2026
 Uno
+28.00 EUR
 TAEKWONDO
 MENSUALIDAD
 Ana
@@ -20,6 +23,7 @@ SEPTIEMBRE 01/09
 Prueba TAEKWONDO MENSUALIDAD PENDIENTE -
 2026 - /2026
 Uno
+28.00 EUR
 TAEKWONDO
 MENSUALIDAD
 Bruno
@@ -27,6 +31,7 @@ OCTUBRE 01/10
 Prueba TAEKWONDO MENSUALIDAD PENDIENTE -
 2026 - /2026
 Dos
+30.00 EUR
 TAEKWONDO
 MENSUALIDAD
 Bruno
@@ -34,6 +39,7 @@ OCTUBRE 01/10 03/10
 Prueba KICKBOXING MENSUALIDAD PAGADO
 2026 - /2026 /2026
 Dos
+30.00 EUR
 KICKBOXING
 TARIFA
 Bruno COMPETIDOR
@@ -41,18 +47,21 @@ Bruno COMPETIDOR
 Prueba TAEKWONDO OCTUBRE TARIFA_COMPETIDOR PENDIENTE -
 /2026
 Dos 2026 -
+25.00 EUR
 TAEKWONDO
 Ana MENSUALIDAD
 01/01 08/01
 Prueba TAEKWONDO ENERO 2026 - MENSUALIDAD PAGADO
 /2026 /2026
 Uno TAEKWONDO
+26.00 EUR
 RESERVA DE
 Ana
 PLAZA 2026 15/06 16/06
 Prueba TAEKWONDO RESERVA_PLAZA PAGADO
 /2027 - /2026 /2026
 Uno
+30.00 EUR
 TAEKWONDO
 RESERVA DE
 Bruno
@@ -60,9 +69,11 @@ PLAZA 2026 20/06
 Prueba KICKBOXING RESERVA_PLAZA PENDIENTE -
 /2027 - /2026
 Dos
+30.00 EUR
 KICKBOXING
 Diana
 Camiseta 10/09
 Prueba DEFENSA_PERSONAL_FEMENINA OTRO PENDIENTE -
 escuela /2026
 Cuatro
+30.00 EUR

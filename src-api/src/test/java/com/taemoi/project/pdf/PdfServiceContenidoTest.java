@@ -2,6 +2,8 @@ package com.taemoi.project.pdf;
 
 import static com.taemoi.project.pdf.ContenidoPdf.comprobar;
 import static com.taemoi.project.pdf.ContenidoPdf.conHoy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -220,9 +222,13 @@ class PdfServiceContenidoTest {
 
 	@Test
 	void productos() throws Exception {
-		comprobar("productos", conHoy(servicio::generarInformeProductos),
-				Presentacion.de(ESCUELA, "Listado de Productos"), FECHA,
-				"El pie sale hoy como «PÃ¡gina X de Y» (texto mal codificado en el generador).");
+		byte[] pdf = conHoy(servicio::generarInformeProductos);
+		comprobar("productos", pdf, Presentacion.de(ESCUELA, "Listado de Productos"), FECHA,
+				"Antes de la decisión 315 el pie salía como «PÃ¡gina X de Y» (texto mal codificado); con el pie común, «Página X de Y».");
+		// Decisión 315: el pie bien codificado.
+		String texto = String.join(" | ", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("Página 1 de 1"), texto);
+		assertFalse(texto.contains("PÃ"), texto);
 	}
 
 	@Test

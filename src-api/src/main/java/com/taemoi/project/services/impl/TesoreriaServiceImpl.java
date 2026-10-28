@@ -445,7 +445,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		String html = generarHtmlInformeTesoreria(movimientos, filtro, pagado);
 
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-			PdfRendererBuilder builder = new PdfRendererBuilder();
+			PdfRendererBuilder builder = EstiloPdf.builder();
 			builder.withHtmlContent(html, null);
 			builder.toStream(outputStream);
 			builder.run();
@@ -1312,27 +1312,28 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		long totalPagados = movimientos.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
 		long totalPendientes = movimientos.size() - totalPagados;
 
-		String titulo = "Informe de Tesoreria";
+		String titulo = "Informe de Tesorería";
 		String estadoLabel = pagado == null ? "Todos" : (Boolean.TRUE.equals(pagado) ? "Pagados" : "Pendientes");
 		String deporteLabel = filtro.deporte != null ? filtro.deporte : "TODOS";
 		String periodoLabel = obtenerPeriodoLabel(filtro.mes, filtro.ano);
 
+		// Decisiones 309 y 315: cabecera, pie y tablas comunes, con logo, nombre de la escuela y los filtros. A4 apaisado:
+		// en vertical, un cargo de DEFENSA_PERSONAL_FEMENINA (palabra sin cortes) desbordaba la tabla y se perdían las
+		// columnas «Fecha pago» e «Importe»; en apaisado caben las ocho columnas sin partir ni cambiar ningún dato.
+		MarcaEscuela marca = marcaEscuela.deActiva();
+		String filtros = "<strong>Periodo:</strong> " + escapeHtml(periodoLabel) + " | <strong>Deporte:</strong> "
+				+ escapeHtml(deporteLabel) + " | <strong>Estado:</strong> " + escapeHtml(estadoLabel);
+
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("body { font-family: Arial, sans-serif; color: #1f2937; font-size: 12px; }");
-		html.append("h1 { margin-bottom: 4px; }");
-		html.append(".meta { margin: 0 0 10px; color: #4b5563; }");
-		html.append(".resumen { margin: 10px 0 14px; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; }");
-		html.append(".resumen span { display: inline-block; margin-right: 16px; font-weight: 600; }");
-		html.append("table { width: 100%; border-collapse: collapse; }");
-		html.append("th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; }");
-		html.append("th { background: #f3f4f6; text-transform: uppercase; font-size: 11px; }");
+		html.append(EstiloPdf.pie(marca.cabeceraInformes(), titulo));
+		html.append(EstiloPdf.cssComun());
+		html.append("@page { size: A4 landscape; }");
+		html.append(".resumen { margin: 0 0 3mm; }");
+		html.append(".resumen span { display: inline-block; margin-right: 6mm; font-weight: 600; }");
 		html.append("</style></head><body>");
-		html.append("<h1>").append(escapeHtml(titulo)).append("</h1>");
-		html.append("<p class='meta'><strong>Periodo:</strong> ").append(escapeHtml(periodoLabel))
-				.append(" | <strong>Deporte:</strong> ").append(escapeHtml(deporteLabel))
-				.append(" | <strong>Estado:</strong> ").append(escapeHtml(estadoLabel)).append("</p>");
+		html.append(EstiloPdf.cabeceraInforme(marca, escapeHtml(titulo), filtros));
 		html.append("<div class='resumen'>");
 		html.append("<span>Total movimientos: ").append(movimientos.size()).append("</span>");
 		html.append("<span>Pagados: ").append(totalPagados).append("</span>");
@@ -1342,11 +1343,12 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 		html.append("<table><thead><tr>");
 		html.append("<th>Alumno</th><th>Deporte</th><th>Concepto</th><th>Categoria</th>");
-		html.append("<th>Fecha cargo</th><th>Estado</th><th>Fecha pago</th><th>Importe</th>");
+		html.append("<th class='num'>Fecha cargo</th><th>Estado</th><th class='num'>Fecha pago</th>");
+		html.append("<th class='num'>Importe</th>");
 		html.append("</tr></thead><tbody>");
 
 		if (movimientos.isEmpty()) {
-			html.append("<tr><td colspan='8' style='text-align:center;'>No hay movimientos para los filtros seleccionados.</td></tr>");
+			html.append("<tr><td colspan='8' class='vacio'>No hay movimientos para los filtros seleccionados.</td></tr>");
 		} else {
 			for (TesoreriaMovimientoDTO movimiento : movimientos) {
 				html.append("<tr>");
@@ -1354,10 +1356,15 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				html.append("<td>").append(escapeHtml(movimiento.getDeporte())).append("</td>");
 				html.append("<td>").append(escapeHtml(movimiento.getConcepto())).append("</td>");
 				html.append("<td>").append(escapeHtml(movimiento.getCategoria())).append("</td>");
-				html.append("<td>").append(escapeHtml(formatearFecha(movimiento.getFechaAsignacion()))).append("</td>");
-				html.append("<td>").append(Boolean.TRUE.equals(movimiento.getPagado()) ? "PAGADO" : "PENDIENTE").append("</td>");
-				html.append("<td>").append(escapeHtml(formatearFecha(movimiento.getFechaPago()))).append("</td>");
-				html.append("<td>").append(String.format(Locale.ROOT, "%.2f", movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
+				html.append("<td class='num'>").append(escapeHtml(formatearFecha(movimiento.getFechaAsignacion())))
+						.append("</td>");
+				// Decisión 315: el cargo pendiente de cobro, en ocre; el pagado, neutro.
+				html.append(Boolean.TRUE.equals(movimiento.getPagado()) ? "<td><span class='estado'>PAGADO</span></td>"
+						: "<td><span class='pendiente-dinero'>PENDIENTE</span></td>");
+				html.append("<td class='num'>").append(escapeHtml(formatearFecha(movimiento.getFechaPago())))
+						.append("</td>");
+				html.append("<td class='num'>")
+						.append(String.format(Locale.ROOT, "%.2f", movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
 						.append(" EUR</td>");
 				html.append("</tr>");
 			}

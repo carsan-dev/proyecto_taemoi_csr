@@ -1,9 +1,9 @@
 # Contenido del PDF «convocatoria» (caracterización, decisión 314).
 # Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
 # Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
-~ Convocatoria a Exámen 20/11/2026
+~ Convocatoria a examen 20/11/2026
 ~ MOI'S KIM DO TAEKWONDO
-~ CONVOCATORIA A EXÁMEN 20/11/2026
+~ CONVOCATORIA A EXAMEN 20/11/2026
 (SOLO ALUMNOS CON DERECHO A EXAMEN)
 TOTAL ALUMNOS: 3
 DE AZUL 1 Alumnos A ROJO

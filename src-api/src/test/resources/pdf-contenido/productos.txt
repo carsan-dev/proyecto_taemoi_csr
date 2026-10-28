@@ -1,7 +1,7 @@
 # Contenido del PDF «productos» (caracterización, decisión 314).
 # Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
 # Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
-# El pie sale hoy como «PÃ¡gina X de Y» (texto mal codificado en el generador).
+# Antes de la decisión 315 el pie salía como «PÃ¡gina X de Y» (texto mal codificado); con el pie común, «Página X de Y».
 ~ MOI'S KIM DO TAEKWONDO
 ~ Listado de Productos
 Productos (4)
@@ -10,4 +10,4 @@ Camiseta escuela 15.00 €
 Cinturón 8.50 €
 Dobok N/A
 Mensualidad adulto 30.00 €
-~ jueves, 15 de octubre de 2026 PÃ¡gina 1 de 1
+~ jueves, 15 de octubre de 2026 Página 1 de 1
