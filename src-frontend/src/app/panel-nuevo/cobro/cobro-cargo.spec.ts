@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { ReciboPagoService } from './recibo-pago.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { CargoACobrar, CobroCargoService, textosCobro } from './cobro-cargo';
 
@@ -28,6 +29,7 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
   let http: HttpTestingController;
   let servicio: CobroCargoService;
   let esAdmin: boolean;
+  let esGestion: boolean;
   let quitarTokens: () => void;
 
   function pintar(): void {
@@ -65,11 +67,12 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
     esAdmin = false;
+    esGestion = false;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin } },
+        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esAdmin || esGestion } },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -162,8 +165,10 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
     http.expectOne(`${API}/productos-alumno/801`).flush({});
     await promesa;
     await esperar();
-    const deshacer = avisos()[0].querySelector<HTMLButtonElement>('.pn-aviso__accion')!;
-    expect(deshacer.textContent!.trim()).toBe('Deshacer');
+    const deshacer = Array.from(avisos()[0].querySelectorAll<HTMLButtonElement>('.pn-aviso__accion')).find(
+      (b) => b.textContent!.trim() === 'Deshacer'
+    )!;
+    expect(deshacer).toBeDefined();
     deshacer.click();
     const revertir = http.expectOne(`${API}/productos-alumno/801`);
     expect(revertir.request.method).toBe('PUT');
@@ -198,5 +203,64 @@ describe('CobroCargoService (8b-D1, «Cobrar» con el diálogo nuevo)', () => {
     await servicio.cobrar(CARGO, cobrando, () => undefined);
     expect(dialogo()).toBeNull();
     http.expectNone(`${API}/productos-alumno/801`);
+  });
+
+  describe('«Recibo» en el aviso de éxito (pieza 279)', () => {
+    async function cobrarCargo(): Promise<void> {
+      const promesa = servicio.cobrar(CARGO, new Set(), () => undefined);
+      pintar();
+      botonDialogo('Marcar como pagado').click();
+      http.expectOne(`${API}/productos-alumno/801`).flush({});
+      await promesa;
+      await esperar();
+    }
+
+    function acciones(): string[] {
+      return Array.from(avisos()[0].querySelectorAll('.pn-aviso__accion')).map((b) => b.textContent!.trim());
+    }
+
+    it('administración (no propietario): solo «Recibo», que descarga el recibo del cargo', async () => {
+      esGestion = true;
+      const descargar = spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+      await cobrarCargo();
+      expect(acciones()).toEqual(['Recibo']);
+      avisos()[0].querySelector<HTMLButtonElement>('.pn-aviso__accion')!.click();
+      expect(descargar).toHaveBeenCalledOnceWith(801);
+      expect(avisos().length).toBe(1);
+    });
+
+    it('propietario: «Recibo» antes de «Deshacer»', async () => {
+      esAdmin = true;
+      spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+      await cobrarCargo();
+      expect(acciones()).toEqual(['Recibo', 'Deshacer']);
+      avisos()[0].querySelector<HTMLButtonElement>('.pn-aviso__accion')!.click();
+      expect(acciones()).toEqual(['Recibo', 'Deshacer']);
+    });
+
+    it('sin acceso de gestión: ni «Recibo» ni «Deshacer»', async () => {
+      await cobrarCargo();
+      expect(avisos()[0].querySelector('.pn-aviso__accion')).toBeNull();
+    });
+
+    it('tras «Deshacer» la acción «Recibo» del aviso ya no pide el recibo (bandera deshecho)', async () => {
+      esAdmin = true;
+      const descargar = spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+      await cobrarCargo();
+      // El aviso y su acción «Recibo» se guardan antes de «Deshacer», que cierra el aviso y quita los botones del DOM:
+      // así se invoca la misma acción después, como un clic que llegara tarde.
+      const servicioAvisos = TestBed.inject(AvisosService);
+      const aviso = servicioAvisos.lista()[0];
+      const recibo = aviso.accionPrevia!;
+      expect(recibo.texto).toBe('Recibo');
+      const deshacer = Array.from(avisos()[0].querySelectorAll<HTMLButtonElement>('.pn-aviso__accion')).find(
+        (b) => b.textContent!.trim() === 'Deshacer'
+      )!;
+      deshacer.click();
+      http.expectOne(`${API}/productos-alumno/801`).flush({});
+      await esperar();
+      servicioAvisos.pulsarAccion(aviso, recibo);
+      expect(descargar).not.toHaveBeenCalled();
+    });
   });
 });

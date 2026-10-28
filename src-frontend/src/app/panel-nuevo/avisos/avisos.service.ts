@@ -22,6 +22,8 @@ export type TipoAviso = 'exito' | 'error' | 'info';
 export interface AccionAviso {
   texto: string;
   alPulsar: () => void;
+  /** `false`: pulsarla no cierra el aviso (sigue su temporizador y la otra acción). Por defecto cierra. */
+  cierra?: boolean;
 }
 
 export interface Aviso {
@@ -29,6 +31,8 @@ export interface Aviso {
   tipo: TipoAviso;
   texto: string;
   accion?: AccionAviso;
+  /** Segunda acción, que se pinta antes de `accion` («Recibo» antes de «Deshacer»). */
+  accionPrevia?: AccionAviso;
   /** 8b-M: la mascota celebrando en lugar del icono, solo en el cierre de una tarea larga. */
   mascota?: PoseMascota;
 }
@@ -37,6 +41,8 @@ export interface Aviso {
 export interface OpcionesAviso {
   /** Cierre de una tarea larga (mensualidades generadas): la gota de 32 px con «celebrar» en lugar del icono. */
   mascota?: PoseMascota;
+  /** Una segunda acción, antes de la principal: «Recibo» antes de «Deshacer». */
+  accionPrevia?: AccionAviso;
 }
 
 /** Éxito e información se cierran solos a los 5 s; el error, no. */
@@ -90,7 +96,7 @@ export class AvisosService {
   }
 
   exito(texto: string, accion?: AccionAviso, opciones?: OpcionesAviso): number {
-    return this.mostrar('exito', texto, accion, opciones?.mascota);
+    return this.mostrar('exito', texto, accion, opciones?.mascota, opciones?.accionPrevia);
   }
 
   /** Sustituye al SweetAlert2 del interceptor de errores, como el aviso de hoy. */
@@ -141,14 +147,29 @@ export class AvisosService {
     this.programar(id, t);
   }
 
-  pulsarAccion(aviso: Aviso): void {
-    this.cerrar(aviso.id);
-    aviso.accion?.alPulsar();
+  pulsarAccion(aviso: Aviso, accion: AccionAviso | undefined = aviso.accion): void {
+    if (accion?.cierra !== false) {
+      this.cerrar(aviso.id);
+    }
+    accion?.alPulsar();
   }
 
-  private mostrar(tipo: TipoAviso, texto: string, accion?: AccionAviso, mascota?: PoseMascota): number {
+  private mostrar(
+    tipo: TipoAviso,
+    texto: string,
+    accion?: AccionAviso,
+    mascota?: PoseMascota,
+    accionPrevia?: AccionAviso
+  ): number {
     this.asegurarRegion();
-    const aviso: Aviso = { id: ++this.siguiente, tipo, texto, accion, ...(mascota ? { mascota } : {}) };
+    const aviso: Aviso = {
+      id: ++this.siguiente,
+      tipo,
+      texto,
+      accion,
+      ...(accionPrevia ? { accionPrevia } : {}),
+      ...(mascota ? { mascota } : {}),
+    };
     const actuales = this.lista();
     actuales.slice(0, Math.max(actuales.length - (MAX_AVISOS - 1), 0)).forEach((a) => this.cerrar(a.id));
     this.lista.update((lista) => [...lista, aviso]);

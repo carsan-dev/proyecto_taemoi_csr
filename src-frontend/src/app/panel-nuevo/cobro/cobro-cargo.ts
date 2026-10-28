@@ -10,6 +10,7 @@ import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { eur } from '../formato/formato-es';
+import { ReciboPagoService } from './recibo-pago.service';
 
 export type TipoCargo = 'MENSUALIDAD' | 'EXAMEN';
 
@@ -49,6 +50,7 @@ export class CobroCargoService {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly auth = inject(AuthenticationService);
+  private readonly recibo = inject(ReciboPagoService);
 
   /**
    * `cobrando` guarda los cargos con un cobro en vuelo (no se cobra dos veces); `alCambiar` se llama tras cobrar y tras
@@ -88,11 +90,22 @@ export class CobroCargoService {
       return;
     }
     const texto = `Cobro registrado: ${eur(cargo.importe)}${nombre ? ` · ${nombre}` : ''}`;
-    if (this.auth.tieneRolAdmin()) {
-      this.avisos.exito(texto, { texto: 'Deshacer', alPulsar: () => this.deshacer(cargo, cobrando, alCambiar) });
-    } else {
-      this.avisos.exito(texto);
-    }
+    // Gestión (propietario y administración) tiene «Recibo»; «Deshacer», solo el propietario. Tras deshacer, «Recibo» no
+    // descarga (el aviso se cierra al pulsar «Deshacer»; esto cubre además un clic que llegara después).
+    let deshecho = false;
+    const previa = this.auth.tieneAccesoAdmin()
+      ? { texto: 'Recibo', cierra: false, alPulsar: () => (deshecho ? undefined : void this.recibo.descargar(id)) }
+      : undefined;
+    const deshacer = this.auth.tieneRolAdmin()
+      ? {
+          texto: 'Deshacer',
+          alPulsar: () => {
+            deshecho = true;
+            this.deshacer(cargo, cobrando, alCambiar);
+          },
+        }
+      : undefined;
+    this.avisos.exito(texto, deshacer, previa ? { accionPrevia: previa } : undefined);
     alCambiar();
   }
 

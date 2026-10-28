@@ -6,7 +6,10 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +29,7 @@ import com.taemoi.project.dtos.ProductoAlumnoDTO;
 import com.taemoi.project.dtos.response.CuantiaPersonalizadaSuperiorDTO;
 import com.taemoi.project.exceptions.producto.MensualidadIncompletaException;
 import com.taemoi.project.services.ProductoAlumnoService;
+import com.taemoi.project.services.ReciboPagoService;
 import com.taemoi.project.services.ResultadoGeneracionMensualidades;
 
 /**
@@ -41,6 +45,9 @@ public class ProductoAlumnoController {
 
 	@Autowired
 	private ProductoAlumnoService productoAlumnoService;
+
+	@Autowired
+	private ReciboPagoService reciboPagoService;
 
 	@PostMapping("/alumno/{alumnoId}/producto/{productoId}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#alumnoId,'EDITAR')")
@@ -96,6 +103,23 @@ public class ProductoAlumnoController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#id,'EDITAR')")
 	public ResponseEntity<ProductoAlumnoDTO> reactivarProductoAlumno(@PathVariable Long id) {
 		return ResponseEntity.ok(productoAlumnoService.reactivarProductoAlumno(id));
+	}
+
+	/**
+	 * Pieza 279: recibo de pago en PDF del cobro ACTIVO del cargo, generado al momento (descarga). Solo la gestión, con
+	 * la regla de {@code GET /api/tesoreria/pendiente-vencido}: propietario y administrador; ni el responsable de sede,
+	 * ni la familia, ni la sesión solo-profesor (que la cadena de seguridad ya limita a su caja). Cargo de otra escuela
+	 * o inexistente → 404; sin cobrar, o con el cobro anulado o devuelto → 409 ({@code ReciboPagoService}).
+	 */
+	@GetMapping("/{productoAlumnoId}/recibo")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<byte[]> descargarRecibo(@PathVariable Long productoAlumnoId) {
+		ReciboPagoService.ReciboPago recibo = reciboPagoService.generar(productoAlumnoId);
+		return ResponseEntity.ok()
+				.contentType(MediaType.APPLICATION_PDF)
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						ContentDisposition.builder("attachment").filename(recibo.nombreFichero()).build().toString())
+				.body(recibo.pdf());
 	}
 
 	@PostMapping("/{alumnoId}/reservar-plaza")

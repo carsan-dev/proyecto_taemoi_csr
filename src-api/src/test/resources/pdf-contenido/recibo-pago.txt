@@ -1,0 +1,16 @@
+# Contenido del PDF «recibo-pago» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Pieza 279: cobro 123 de Ana (transferencia, 28 €, sede Norte) del 02/10/2026. Escuela ficticia.
+# Emisión: Clock fijo el 2026-10-15 (presentación). Ni DNI ni correo de la alumna.
+Escuela Ficticia Sierra Recibo
+Club Deportivo Ficticio Sierra · CIF: G00000000 R-2026-000123
+Calle Inventada 12, 41999 Villaficticia (Sevilla) Fecha del cobro 02/10/2026
+contacto@escuela-ficticia.example · 955000000
+Alumno Ana Prueba Uno
+Importe
+Concepto MENSUALIDAD OCTUBRE 2026 - TAEKWONDO 28,00 €
+Forma de pago Transferencia
+Sede Sede Ficticia Norte
+Este documento justifica el pago del concepto indicado. No es una factura.
+~ Emitido el 15/10/2026
+~ Escuela Ficticia Sierra · Recibo R-2026-000123

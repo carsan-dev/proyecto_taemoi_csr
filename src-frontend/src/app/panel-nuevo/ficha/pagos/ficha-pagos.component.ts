@@ -1,6 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 
 import { ProductoAlumnoDTO } from '../../../interfaces/producto-alumno-dto';
+import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
+import { ReciboPagoService } from '../../cobro/recibo-pago.service';
 import { eur, fecha, numero, plural } from '../../formato/formato-es';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 
@@ -18,6 +20,9 @@ import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 export class FichaPagosComponent {
   @Input({ required: true }) ficha!: FichaAlumnoComponent;
 
+  private readonly auth = inject(AuthenticationService);
+  readonly recibos = inject(ReciboPagoService);
+
   readonly eur = eur;
   readonly fecha = fecha;
   readonly numero = numero;
@@ -33,6 +38,17 @@ export class FichaPagosComponent {
       .reduce((suma, p) => suma + this.ficha.calcularTotal(p.precio, p.cantidad), 0);
     const cargos = plural(productos.length, 'cargo', 'cargos');
     return pendiente > 0 ? `${cargos}, ${eur(pendiente)} pendiente` : `${cargos}, todo pagado`;
+  }
+
+  /** «Descargar recibo» (pieza 279): gestión (propietario y administración) y cargo cobrado, no cancelado ni devuelto. */
+  puedeDescargarRecibo(p: ProductoAlumnoDTO): boolean {
+    return this.auth.tieneAccesoAdmin() && !!p.pagado && !p.canceladoEn && !p.devuelto;
+  }
+
+  descargarRecibo(p: ProductoAlumnoDTO): void {
+    if (this.puedeDescargarRecibo(p)) {
+      void this.recibos.descargar(p.id);
+    }
   }
 
   total(p: ProductoAlumnoDTO): string {

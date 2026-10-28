@@ -71,6 +71,7 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
   let opciones: OpcionesConfirmacion[];
   let respuestas: Respuesta[];
   let admin: boolean;
+  let gestion: boolean;
 
   /** El diálogo de prueba: devuelve la siguiente respuesta; si hay `ejecutar` y se confirma, lo lanza como el real. */
   function dialogoFalso(op: OpcionesConfirmacion): Promise<ResultadoConfirmacion> {
@@ -94,6 +95,7 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
   beforeEach(() => {
     sessionStorage.clear();
     admin = true;
+    gestion = true;
     opciones = [];
     respuestas = [];
     avisos = jasmine.createSpyObj('Avisos', ['exito', 'error', 'info']);
@@ -107,7 +109,7 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
         { provide: ConfirmacionService, useValue: { confirmar } },
         {
           provide: AuthenticationService,
-          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => admin, obtenerRoles: () => of([]) },
+          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => admin, tieneAccesoAdmin: () => gestion, obtenerRoles: () => of([]) },
         },
       ],
     });
@@ -745,6 +747,24 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       una('GET', URL_CARGOS).flush([cargo(1, { pagado: true }), cargo(2)]);
       expect(fila(2).notas).toBe('x');
       expect(estado.pendientes()).toBe(1);
+    });
+  });
+
+  describe('descargar recibo (pieza 279)', () => {
+    it('gestión: solo en cargos pagados, no en pendientes, cancelados ni devueltos', () => {
+      abrir([
+        cargo(1, { pagado: true }),
+        cargo(2),
+        cargo(3, { pagado: true, canceladoEn: [2026, 10, 2, 9, 0] }),
+        cargo(4, { pagado: true, devuelto: true }),
+      ]);
+      expect([1, 2, 3, 4].map((id) => fila(id).puedeDescargarRecibo)).toEqual([true, false, false, false]);
+    });
+
+    it('sin gestión (solo profesor o familias) no hay recibo en ningún cargo', () => {
+      gestion = false;
+      abrir([cargo(1, { pagado: true })]);
+      expect(fila(1).puedeDescargarRecibo).toBeFalse();
     });
   });
 

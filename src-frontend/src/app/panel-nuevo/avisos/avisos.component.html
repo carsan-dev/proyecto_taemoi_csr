@@ -25,8 +25,15 @@
     }
     <div class="pn-aviso__cuerpo">
       <p class="pn-aviso__texto">{{ a.texto }}</p>
-      @if (a.accion; as accion) {
-      <button type="button" class="pn-aviso__accion" (click)="avisos.pulsarAccion(a)">{{ accion.texto }}</button>
+      @if (a.accion || a.accionPrevia) {
+      <div class="pn-aviso__acciones">
+        @if (a.accionPrevia; as previa) {
+        <button type="button" class="pn-aviso__accion" (click)="avisos.pulsarAccion(a, previa)">{{ previa.texto }}</button>
+        }
+        @if (a.accion; as accion) {
+        <button type="button" class="pn-aviso__accion" (click)="avisos.pulsarAccion(a)">{{ accion.texto }}</button>
+        }
+      </div>
       }
     </div>
     <button type="button" class="pn-aviso__cerrar" aria-label="Cerrar aviso" (click)="avisos.cerrar(a.id)">

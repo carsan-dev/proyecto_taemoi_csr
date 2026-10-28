@@ -9,6 +9,7 @@ import { AcentoEscuelaActual, AcentoEscuelaDirective } from '../acento-escuela.d
 import { SearchableSelectDirective } from '../../directives/searchable-select.directive';
 import { variablesDelTema } from '../tema-escuela';
 import { fotoDe, iniciales } from '../alumnos/alumno-vista';
+import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import type { FilaCargo } from './productos-alumno.estado';
@@ -34,6 +35,7 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
   private readonly ruta = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly confirmacion = inject(ConfirmacionService);
+  private readonly recibo = inject(ReciboPagoService);
   private readonly detectorCambios = inject(ChangeDetectorRef);
   private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly temaActual = inject(AcentoEscuelaActual);
@@ -133,6 +135,12 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
       campos: [{ id: 'cargo-notas', tipo: 'textarea', etiqueta: 'Notas', valor: fila.notas }],
     });
     if (resultado.confirmado) this.estado.cambiarNotas(fila.id, resultado.valores?.['cargo-notas'] ?? fila.notas);
+  }
+
+  /** «Descargar recibo» (gestión, cargo pagado): `GET /productos-alumno/{id}/recibo`. */
+  descargarRecibo(fila: FilaCargo): void {
+    this.cerrarMenu();
+    if (fila.puedeDescargarRecibo) void this.recibo.descargar(fila.id);
   }
 
   readonly textos = TEXTOS_PRODUCTOS_ALUMNO;

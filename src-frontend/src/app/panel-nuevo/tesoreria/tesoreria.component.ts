@@ -26,6 +26,7 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { MascotaComponent } from '../mascota/mascota.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
+import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ParteMensaje } from '../dialogo/dialogo.component';
 import { eur, fecha, frasePlural, numero } from '../formato/formato-es';
@@ -86,6 +87,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly cobro = inject(CobroCargoService);
+  private readonly recibo = inject(ReciboPagoService);
   private readonly auth = inject(AuthenticationService);
   private readonly solicitudes = inject(SolicitudesService);
   private readonly route = inject(ActivatedRoute);
@@ -118,6 +120,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   /** La lista sola (página, búsqueda). */
   estadoLista: Estado = 'listo';
   isAdmin = false;
+  /** Propietario o administración (no «solo profesor» ni familias): ve «Descargar recibo» (pieza 279). */
+  esGestion = false;
   fechaCarga = new Date();
   resumen: TesoreriaResumen = {
     mes: this.filtroMes,
@@ -553,7 +557,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   }
 
   /** Cada opción cierra el menú y deja el foco en «⋯», para que el diálogo lo devuelva allí al cerrarse. */
-  opcionFila(m: TesoreriaMovimiento, opcion: 'notas' | 'fecha' | 'revertir' | 'pedir'): void {
+  opcionFila(m: TesoreriaMovimiento, opcion: 'notas' | 'fecha' | 'recibo' | 'revertir' | 'pedir'): void {
     this.cerrarMenuFila(true);
     switch (opcion) {
       case 'notas':
@@ -561,6 +565,9 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
         break;
       case 'fecha':
         void this.editarFechaPago(m);
+        break;
+      case 'recibo':
+        void this.descargarRecibo(m);
         break;
       case 'revertir':
         void this.revertir(m);
@@ -613,6 +620,14 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     }
     const fechaPago = new Date(`${valor}T12:00:00`);
     this.actualizar(m, { fechaPago } as Partial<ProductoAlumnoDTO>, 'Fecha de pago actualizada', 'No se pudo actualizar la fecha de pago');
+  }
+
+  /** «Descargar recibo» (gestión) de un cobro: `GET /productos-alumno/{id}/recibo`. */
+  async descargarRecibo(m: TesoreriaMovimiento): Promise<void> {
+    if (!this.esGestion || !m.pagado || m.devuelto || this.sinId(m)) {
+      return;
+    }
+    await this.recibo.descargar(m.productoAlumnoId);
   }
 
   /** «Revertir» (propietario): destructivo, motivo opcional y `{pagado: false, motivoCambio}`, como hoy. */
@@ -947,14 +962,21 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   private resolverPermisos(): void {
     if (this.auth.rolesEstanCargados()) {
       this.isAdmin = this.auth.tieneRolAdmin();
+      this.esGestion = this.auth.tieneAccesoAdmin();
       return;
     }
     this.auth
       .obtenerRoles()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => (this.isAdmin = this.auth.tieneRolAdmin()),
-        error: () => (this.isAdmin = false),
+        next: () => {
+          this.isAdmin = this.auth.tieneRolAdmin();
+          this.esGestion = this.auth.tieneAccesoAdmin();
+        },
+        error: () => {
+          this.isAdmin = false;
+          this.esGestion = false;
+        },
       });
   }
 }

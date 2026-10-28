@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { FichaPagosComponent } from './pagos/ficha-pagos.component';
+import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import Swal from 'sweetalert2';
@@ -14,6 +16,7 @@ import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno
 import { DIALOGOS_FICHA, DIALOGOS_SWEETALERT } from '../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
+import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { itSinReloj, leerFicherosEnLaZona } from '../../testing/reloj-prueba';
@@ -194,6 +197,8 @@ interface Montaje<C> {
 }
 
 let fire: jasmine.Spy;
+/** Pieza 279: la sesión es de gestión (propietario o administración). */
+let gestionFicha = false;
 let actual: Montaje<any> | null = null;
 
 function configurar(): void {
@@ -213,7 +218,7 @@ function configurar(): void {
       proveerCatalogoTesting(CATALOGO_TAEMOI),
       { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
       // 8b-D1: «Cobrar» del carnet mira si la sesión puede «Deshacer» (el propietario); la ficha no usa nada más.
-      { provide: AuthenticationService, useValue: { tieneRolAdmin: () => false } },
+      { provide: AuthenticationService, useValue: { tieneRolAdmin: () => false, tieneAccesoAdmin: () => gestionFicha } },
     ],
   });
 }
@@ -334,6 +339,7 @@ const contestar = ((opciones: any) => {
 
 describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   beforeEach(() => {
+    gestionFicha = false;
     fire = spyOn(Swal, 'fire').and.callFake(contestar);
     // 8b-D2b: la ficha nueva abre sus diálogos con el puerto del panel (no con SweetAlert2). Aquí se comparan las
     // opciones que recibe el puerto con las del SweetAlert2 de hoy y se contestan igual; cómo se pintan, en
@@ -1212,6 +1218,36 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       boton(m.el(), 'Gestionar productos').click();
       await m.asentar();
       expect(TestBed.inject(Router).url).toBe('/alumnos/7/productos');
+    });
+
+    itSinReloj('pagos: «Descargar recibo» solo para gestión y solo en cargos pagados; pide el recibo de ese cargo (pieza 279)', async () => {
+      gestionFicha = true;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
+      const descargar = spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+      const filas = Array.from(m.el().querySelectorAll('.pagos__fila'));
+      const conRecibo = filas.filter((f) => f.querySelector('.pagos__recibo'));
+      expect(conRecibo.length).toBeGreaterThan(0);
+      for (const f of filas) {
+        expect(!!f.querySelector('.pagos__recibo')).toBe(f.textContent!.includes('Pagado'));
+        expect(!!f.querySelector('.pagos__recibo') && !!f.querySelector('.pagos__cobrar:not(.pagos__recibo)')).toBeFalse();
+      }
+      boton(m.el(), 'Descargar recibo de MENSUALIDAD AGOSTO 2026 - TAEKWONDO').click();
+      expect(descargar).toHaveBeenCalledOnceWith(803);
+    });
+
+    itSinReloj('pagos: un cargo devuelto no ofrece recibo', async () => {
+      gestionFicha = true;
+      await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
+      const pagos = TestBed.runInInjectionContext(() => new FichaPagosComponent());
+      expect(pagos.puedeDescargarRecibo({ id: 1, pagado: true } as ProductoAlumnoDTO)).toBeTrue();
+      expect(pagos.puedeDescargarRecibo({ id: 1, pagado: true, devuelto: true } as ProductoAlumnoDTO)).toBeFalse();
+    });
+
+    itSinReloj('pagos: sin gestión no hay «Descargar recibo» (pieza 279)', async () => {
+      gestionFicha = false;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
+      expect(m.el().querySelectorAll('.pagos__fila').length).toBeGreaterThan(0);
+      expect(m.el().querySelector('.pagos__recibo')).toBeNull();
     });
 
     itSinReloj('«Vista de familia» lleva a la vista de la familia con el alumno', async () => {

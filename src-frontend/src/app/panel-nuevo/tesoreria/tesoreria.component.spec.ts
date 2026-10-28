@@ -15,6 +15,7 @@ import { PermisosSesionService } from '../../servicios/authentication/permisos-s
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
+import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { TesoreriaComponent } from './tesoreria.component';
 
@@ -67,6 +68,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
   let quitarTokens: () => void;
   let loading: jasmine.SpyObj<LoadingService>;
   let esAdmin: boolean;
+  let esGestion: boolean;
   let parametros: Record<string, string>;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -170,6 +172,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     quitarTokens = ponerTokensDePrueba();
     loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
     esAdmin = true;
+    esGestion = false;
     parametros = {};
     await TestBed.configureTestingModule({
       imports: [TesoreriaComponent],
@@ -181,7 +184,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
         { provide: LoadingService, useValue: loading },
         {
           provide: AuthenticationService,
-          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, obtenerRoles: () => of([]) },
+          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esGestion, obtenerRoles: () => of([]) },
         },
         { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
@@ -639,6 +642,32 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     crear();
     responder([PAGADO]);
     expect(opciones(abrirMenuFila(1001))).toEqual(['Notas', 'Cambiar fecha de pago', 'Pedir revertir']);
+  });
+
+  it('«⋯» recibo (pieza 279): «Descargar recibo» solo para gestión y solo en cobrados', () => {
+    esGestion = true;
+    crear();
+    responder([PENDIENTE, PAGADO, DEVUELTO], 3);
+    expect(opciones(abrirMenuFila(1000))).toEqual(['Notas']);
+    expect(opciones(abrirMenuFila(1001))).toEqual(['Notas', 'Cambiar fecha de pago', 'Descargar recibo', 'Revertir']);
+    expect(opciones(abrirMenuFila(1002))).not.toContain('Descargar recibo');
+  });
+
+  it('«⋯» recibo: sin gestión (solo profesor o familias) no hay «Descargar recibo»', () => {
+    esGestion = false;
+    esAdmin = false;
+    crear();
+    responder([PAGADO]);
+    expect(opciones(abrirMenuFila(1001))).not.toContain('Descargar recibo');
+  });
+
+  it('«Descargar recibo» pide el recibo del cargo de esa fila', () => {
+    esGestion = true;
+    crear();
+    responder([PENDIENTE, PAGADO], 2);
+    const descargar = spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+    elegirMenu(abrirMenuFila(1001), 'Descargar recibo');
+    expect(descargar).toHaveBeenCalledOnceWith(1001);
   });
 
   it('«⋯» con teclado: foco en la primera, flechas con vuelta, Inicio, Fin y Esc cierra devolviendo el foco', () => {
