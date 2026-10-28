@@ -59,6 +59,7 @@ import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.services.TesoreriaService;
+import com.taemoi.project.utils.FormatoImporte;
 import com.taemoi.project.utils.ImporteCargo;
 
 @Service
@@ -1567,7 +1568,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		html.append("<span>Total movimientos: ").append(movimientos.size()).append("</span>");
 		html.append("<span>Pagados: ").append(totalPagados).append("</span>");
 		html.append("<span>Pendientes: ").append(totalPendientes).append("</span>");
-		html.append("<span>Importe total: ").append(String.format(Locale.ROOT, "%.2f", totalImporte)).append(" EUR</span>");
+		html.append("<span>Importe total: ").append(FormatoImporte.eur(totalImporte)).append("</span>");
 		html.append("</div>");
 
 		html.append("<table><thead><tr>");
@@ -1593,8 +1594,8 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				html.append("<td class='num'>").append(escapeHtml(formatearFecha(movimiento.getFechaPago())))
 						.append("</td>");
 				html.append("<td class='num'>")
-						.append(String.format(Locale.ROOT, "%.2f", movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
-						.append(" EUR</td>");
+						.append(FormatoImporte.eur(movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
+						.append("</td>");
 				html.append("</tr>");
 			}
 		}

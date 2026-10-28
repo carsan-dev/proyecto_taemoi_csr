@@ -4,9 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -41,6 +38,7 @@ import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.services.MarcaEscuela;
 import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.ReciboPagoService;
+import com.taemoi.project.utils.FormatoImporte;
 import com.taemoi.project.utils.ImporteCargo;
 
 /**
@@ -197,9 +195,7 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 
 	/** Importe en formato es-ES, sin depender del locale de la JVM: «28,00 €», «1.234,56 €». */
 	public static String importe(BigDecimal importe) {
-		DecimalFormat formato = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(ES));
-		formato.setRoundingMode(RoundingMode.HALF_UP);
-		return formato.format(importe) + " €";
+		return FormatoImporte.eur(importe);
 	}
 
 	/** Forma de pago legible, con los rótulos del panel («Confirmar cobro»). */

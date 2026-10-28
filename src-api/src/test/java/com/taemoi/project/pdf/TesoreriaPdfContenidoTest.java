@@ -2,6 +2,8 @@ package com.taemoi.project.pdf;
 
 import static com.taemoi.project.pdf.ContenidoPdf.comprobar;
 import static com.taemoi.project.pdf.ContenidoPdf.conHoy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -101,10 +103,14 @@ class TesoreriaPdfContenidoTest {
 	@Test
 	void informeDeMovimientosQueCabeEnLaPagina() throws Exception {
 		movimientos(datos.mensualidades);
-		comprobar("tesoreria-movimientos-taekwondo-kickboxing",
-				conHoy(() -> servicio.exportarMovimientosPDF(10, 2026, "TODOS", null, null, null, null)),
-				Presentacion.de("Informe de Tesoreria"),
+		byte[] pdf = conHoy(() -> servicio.exportarMovimientosPDF(10, 2026, "TODOS", null, null, null, null));
+		comprobar("tesoreria-movimientos-taekwondo-kickboxing", pdf, Presentacion.de("Informe de Tesoreria"),
 				"Filtro: octubre de 2026, todas las disciplinas y estados (solo cargos de taekwondo y kickboxing).");
+		// Importes en es-ES («113,00 €»), no «113.00 EUR»: el dorado compara por palabras y no ve la coma ni el símbolo.
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("Importe total: 113,00 €"), texto);
+		assertTrue(texto.contains("28,00 €"), texto);
+		assertFalse(texto.contains("EUR"), texto);
 	}
 
 	@Test
