@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild,
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
-import { PreinscripcionesAdminComponent } from '../../componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component';
+import { PlantillasPdfComponent } from './plantillas/plantillas-pdf.component';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import {
   MOTIVO_CANCELACION_MAX,
@@ -74,8 +74,8 @@ interface Editor {
  * Las MISMAS peticiones, cuerpos y confirmaciones que `PreinscripcionesAdminComponent` (con `PreinscripcionService` para
  * las escrituras), con el diálogo, los avisos y los estados de carga del panel nuevo. La selección vive en el estado del
  * componente: ningún dato personal va a la URL ni al almacenamiento del navegador; la firma se pide con la sesión y se
- * enseña con una URL `blob:` en memoria que se libera al cambiar de solicitud. La pestaña Plantillas PDF es la de hoy,
- * sin cambios (`PreinscripcionesAdminComponent` con `soloPlantillas`). Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * enseña con una URL `blob:` en memoria que se libera al cambiar de solicitud. Plantillas PDF usa el editor del panel.
+ * Va en su propio chunk detrás de `disenoNuevoGuard`.
  */
 @Component({
   selector: 'app-preinscripciones-panel',
@@ -87,7 +87,7 @@ interface Editor {
     BloqueVacioComponent,
     BotonOcupadoComponent,
     FinalizarAltaComponent,
-    PreinscripcionesAdminComponent,
+    PlantillasPdfComponent,
   ],
   templateUrl: './preinscripciones.component.html',
   styleUrls: ['./preinscripciones.component.scss'],
@@ -104,8 +104,8 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** La pestaña de hoy, embebida tal cual: su «Cambios sin guardar» se pregunta al salir de ella. */
-  @ViewChild(PreinscripcionesAdminComponent) plantillas?: PreinscripcionesAdminComponent;
+  /** El editor de plantillas pregunta por los cambios sin publicar antes de salir de la pestaña. */
+  @ViewChild(PlantillasPdfComponent) plantillas?: PlantillasPdfComponent;
 
   readonly estados = ESTADOS;
   readonly tamanoPagina = TAMANO_PAGINA;
@@ -234,6 +234,11 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
   }
 
   // ------------------------------------------------------------------ pestañas
+
+  /** `canDeactivate` (`salirSinGuardarGuard`): salir de la pantalla con cambios sin publicar en la plantilla pregunta antes. */
+  puedeSalir(): boolean | Promise<boolean> {
+    return this.pestana === 'plantillas' && this.plantillas ? this.plantillas.puedeSalir() : true;
+  }
 
   /** Como hoy: con cambios sin guardar en la plantilla, se pregunta antes de salir; la pestaña va a `?tab=`. */
   async cambiarPestana(pestana: Pestana): Promise<void> {

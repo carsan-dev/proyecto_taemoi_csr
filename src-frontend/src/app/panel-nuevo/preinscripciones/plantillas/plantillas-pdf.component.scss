@@ -1,0 +1,595 @@
+// Plantillas PDF de Preinscripciones (panel nuevo). Va debajo de la cabecera y las pestañas de la pantalla y sigue su
+// misma rejilla: página de 1280 px con 24 px de margen (16 en el móvil). Botones, pastillas e iconos salen de las piezas
+// comunes de las capas (`_capas.scss`). Gramática de los formularios de la ronda 4 (Editar grupo, Alta): una tarjeta por
+// bloque con su título dentro, marca «obligatorio» en gris junto a la etiqueta y contador «actual / máximo» siempre a la
+// derecha bajo el campo. Las versiones, otra tarjeta al lado, fija al bajar en escritorio. Los cambios sin publicar y el
+// botón de publicar van en la barra fija inferior de Productos de un alumno (8b-3n), con sus mismas reglas.
+@use '../../capas/capas' as c;
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.plantillas {
+  background: var(--pn-fondo);
+}
+
+.plantillas__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+// Hueco para que la barra fija inferior no tape el último campo (mismas cifras que Productos de un alumno).
+.plantillas__pagina--pendientes {
+  padding-bottom: 140px;
+}
+
+.sr-only {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ botones
+
+.primario {
+  @include c.boton-primario;
+}
+
+.secundario {
+  @include c.boton-secundario;
+}
+
+.texto {
+  @include c.boton-texto;
+}
+
+.icono {
+  @include c.boton-icono;
+}
+
+.icono--peligro:hover:not(:disabled) {
+  color: var(--pn-peligro);
+}
+
+.primario,
+.secundario,
+.texto {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+:focus-visible {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+// ------------------------------------------------------------------ disciplinas y acciones
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.disciplinas,
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.disciplina {
+  @include c.pastilla;
+}
+
+// ------------------------------------------------------------------ cambios sin publicar (barra de 8b-3n)
+
+.pendientes {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px max(24px, calc((100vw - 1232px) / 2));
+  background: var(--pn-superficie);
+  border-top: 1px solid var(--pn-linea);
+  box-shadow: var(--pn-sombra-barra);
+}
+
+.pendientes > strong {
+  margin-right: auto;
+}
+
+.pendientes button {
+  flex: none;
+  min-height: 44px;
+}
+
+.sin-plantilla,
+.diseno-fijo {
+  margin: 0 0 16px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.diseno-fijo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+.versiones-movil {
+  display: none;
+}
+
+// ------------------------------------------------------------------ rejilla, editor y tarjetas
+
+.rejilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 20px;
+}
+
+.contenido {
+  min-width: 0;
+}
+
+// El fieldset solo agrupa (para deshabilitar todo a la vez); cada bloque es su tarjeta, separadas como en Editar grupo.
+.editor {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.bloque {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.bloque__titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+// Ayuda bajo el título, como `editar-grupo__nota`: h2 → ayuda 8 px (come 8 del hueco de 16) y ayuda → etiqueta 20 px.
+.bloque__ayuda {
+  margin: -8px 0 4px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// Como la marca de Alta (`alta__marca`).
+.marca {
+  margin-left: 6px;
+  font: var(--pn-etiqueta);
+  font-weight: 500;
+  color: var(--pn-tinta-2);
+}
+
+.bloque__cuenta {
+  font: var(--pn-secundario);
+  font-weight: 600;
+  color: var(--pn-tinta-2);
+}
+
+.campo {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.campo__etiqueta {
+  display: block;
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  caret-color: var(--pn-acento);
+  transition: border-color var(--pn-transicion);
+
+  &:disabled {
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-2);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+}
+
+.control--area {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.ayuda {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  font: var(--pn-secundario);
+}
+
+.error {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-peligro);
+}
+
+.contador {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.lectura {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--pn-tinta);
+}
+
+// ------------------------------------------------------------------ normas
+
+.normas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: norma;
+}
+
+.norma {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 0;
+  counter-increment: norma;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  &:first-child {
+    padding-top: 0;
+  }
+}
+
+// Solo lectura: el número en su columna, alineado con la primera línea.
+.normas:not(.normas--edicion) .norma {
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 8px;
+
+  &::before {
+    content: counter(norma) '.';
+    font: var(--pn-etiqueta);
+    line-height: inherit;
+    color: var(--pn-tinta-2);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
+
+.norma__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.orden {
+  display: flex;
+  gap: 2px;
+  margin-right: -8px;
+}
+
+.anadir {
+  justify-self: start;
+}
+
+// ------------------------------------------------------------------ versiones
+
+.versiones-escritorio {
+  position: sticky;
+  top: calc(64px + 16px);
+  max-height: calc(100vh - 64px - 32px);
+  overflow-y: auto;
+  min-width: 0;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.versiones-escritorio__titulo {
+  margin: 0;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--pn-linea);
+  font: var(--pn-titulo-bloque);
+  font-size: 1rem;
+  color: var(--pn-tinta);
+}
+
+.versiones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.version {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 10px 20px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.version--borrador {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background: var(--pn-superficie-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-tinta);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--pn-acento);
+  }
+}
+
+.version__datos {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.version-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+
+  strong {
+    font: var(--pn-etiqueta);
+    font-size: 0.875rem;
+    color: var(--pn-tinta);
+  }
+}
+
+// Como la pastilla «bien» de Solicitudes.
+.activa {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 8px;
+  border-radius: var(--pn-radio-pastilla);
+  background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+  color: var(--pn-bien);
+  font: var(--pn-etiqueta);
+  font-size: 0.75rem;
+}
+
+.fecha {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.version .texto {
+  min-height: 32px;
+}
+
+// En el panel lateral del móvil, la lista ocupa el cuerpo sin márgenes propios.
+.versiones-panel .version {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.versiones-panel .version--borrador {
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: var(--pn-radio-s);
+}
+
+// ------------------------------------------------------------------ carga
+
+.esqueleto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  align-items: start;
+  gap: 20px;
+
+  span {
+    display: block;
+    height: 12px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+.esqueleto__editor {
+  display: grid;
+  gap: 24px;
+}
+
+.esqueleto__bloque,
+.esqueleto__versiones {
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+}
+
+.esqueleto__bloque {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+
+  span:nth-child(1) {
+    width: 30%;
+    height: 16px;
+  }
+
+  span:nth-child(2) {
+    height: 42px;
+  }
+
+  span:nth-child(3) {
+    width: 60%;
+  }
+}
+
+.esqueleto__versiones {
+  display: grid;
+  gap: 14px;
+  padding: 16px 20px;
+
+  span:nth-child(1) {
+    width: 50%;
+    height: 16px;
+  }
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (max-width: 1023.98px) {
+  .versiones-escritorio {
+    max-height: calc(100vh - 64px - 64px - 32px);
+  }
+
+  // Encima de la barra de navegación inferior, como en Productos de un alumno.
+  .pendientes {
+    bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .plantillas__pagina--pendientes {
+    padding-bottom: 200px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .plantillas__pagina {
+    padding-right: var(--pn-espacio-m);
+    padding-left: var(--pn-espacio-m);
+  }
+
+  .rejilla,
+  .esqueleto {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .versiones-escritorio,
+  .esqueleto__versiones {
+    display: none;
+  }
+
+  .versiones-movil {
+    display: inline-flex;
+    margin-bottom: 16px;
+  }
+
+  .primario,
+  .secundario,
+  .texto,
+  .disciplina,
+  .control {
+    min-height: 44px;
+  }
+
+  .icono {
+    width: 44px;
+    height: 44px;
+  }
+
+  .orden {
+    margin-right: -10px;
+  }
+
+  .bloque,
+  .esqueleto__bloque {
+    padding: 16px;
+  }
+
+  .version .texto {
+    min-height: 44px;
+  }
+}
+
+// Barra de publicar en el móvil, con las mismas reglas que la de Productos de un alumno a 375 px.
+@media (max-width: 599px) {
+  .plantillas__pagina--pendientes {
+    padding-bottom: 180px;
+  }
+
+  .pendientes {
+    padding: 8px 16px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .pendientes > strong {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .pendientes button {
+    flex: none;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}

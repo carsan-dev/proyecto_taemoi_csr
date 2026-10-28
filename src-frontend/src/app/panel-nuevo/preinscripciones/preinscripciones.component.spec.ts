@@ -13,6 +13,7 @@ import { MOTIVO_CANCELACION_POR_DEFECTO, PreinscripcionService } from '../../fea
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { PreinscripcionesPanelComponent } from './preinscripciones.component';
@@ -892,26 +893,27 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
 
   // ------------------------------------------------------------------ Plantillas PDF
 
-  it('Plantillas PDF: la pestaña de hoy, sin cambios (su plantilla, sin volver a leer solicitudes), con ?tab=plantillas', async () => {
+  it('Plantillas PDF: editor del panel nuevo sin volver a leer solicitudes, con ?tab=plantillas', async () => {
     cargar();
     boton(el(), 'Plantillas PDF').click();
     await esperar();
-    const hoy = el().querySelector('app-preinscripciones-admin');
+    const hoy = el().querySelector('pn-plantillas-pdf');
     expect(hoy).not.toBeNull();
     const r = http.expectOne(`${BASE}/plantillas/TAEKWONDO`);
     r.flush({
       activa: { version: 4, contenido: { cabecera: 'C', contacto: 'C', titulo: 'T', consentimiento: 'C', normas: ['N'], importes: 'I' }, instrucciones: 'I' },
       historial: [{ id: 4, version: 4, activa: true, creadaEn: 1760000000 }],
     });
-    fixture.detectChanges();
-    expect(texto(hoy)).toContain('Versión activa 4');
+    await esperar();
+    expect(texto(hoy)).toContain('Versión 4');
+    expect(hoy!.querySelector('#plantilla-cabecera')).not.toBeNull();
     expect(hoy!.querySelector('nav.tabs')).toBeNull();
     expect(lecturasLista().length).toBe(0);
     expect(TestBed.inject(Router).url).toBe('/?tab=plantillas');
     expect(el().querySelector('[role="tab"][aria-selected="true"]')!.textContent).toContain('Plantillas PDF');
   });
 
-  it('en la pestaña de hoy con cambios sin guardar, volver a Solicitudes pide confirmación como hoy', async () => {
+  it('con cambios sin publicar, volver a Solicitudes pide confirmación del panel', async () => {
     cargar();
     boton(el(), 'Plantillas PDF').click();
     await esperar();
@@ -919,14 +921,32 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
       activa: { version: 1, contenido: { normas: ['N'] }, instrucciones: '' },
       historial: [],
     });
-    fixture.detectChanges();
-    const alerta = spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: false } as any);
-    fixture.componentInstance.plantillas!.dirty = true;
+    await esperar();
+    const alerta = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo({ confirmado: false, valor: null });
+    fixture.componentInstance.plantillas!.borrador.cabecera = 'Cambio';
     boton(el(), 'Solicitudes').click();
     await esperar();
     expect(alerta).toHaveBeenCalled();
-    expect((alerta.calls.mostRecent().args[0] as any).title).toBe('Cambios sin guardar');
-    expect(el().querySelector('app-preinscripciones-admin')).not.toBeNull();
+    expect(alerta.calls.mostRecent().args[0].titulo).toBe('¿Descartar los cambios?');
+    expect(el().querySelector('pn-plantillas-pdf')).not.toBeNull();
+  });
+
+  it('salir de la pantalla (canDeactivate) pregunta al editor de plantillas y deja salir desde Solicitudes', async () => {
+    cargar();
+    expect(await fixture.componentInstance.puedeSalir()).toBeTrue();
+    boton(el(), 'Plantillas PDF').click();
+    await esperar();
+    http.expectOne(`${BASE}/plantillas/TAEKWONDO`).flush({
+      activa: { version: 1, contenido: { normas: ['N'] }, instrucciones: '' },
+      historial: [],
+    });
+    await esperar();
+    const alerta = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo({ confirmado: false, valor: null });
+    expect(await fixture.componentInstance.puedeSalir()).toBeTrue();
+    expect(alerta).not.toHaveBeenCalled();
+    fixture.componentInstance.plantillas!.borrador.cabecera = 'Cambio';
+    expect(await fixture.componentInstance.puedeSalir()).toBeFalse();
+    expect(alerta.calls.mostRecent().args[0].titulo).toBe('¿Descartar los cambios?');
   });
 
   // ------------------------------------------------------------------ a 375 px

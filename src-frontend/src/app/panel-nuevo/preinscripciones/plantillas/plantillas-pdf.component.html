@@ -1,0 +1,153 @@
+<div class="pn plantillas" pnAcento>
+  <div class="plantillas__pagina" [class.plantillas__pagina--pendientes]="hayBarraPublicar">
+    <div class="barra">
+      <div class="disciplinas" role="radiogroup" aria-label="Disciplina" (keydown)="teclaDisciplinas($event)">
+        @for (d of disciplinas; track d.codigo) {
+        <button type="button" class="disciplina" role="radio" [attr.aria-checked]="disciplina === d.codigo"
+          [attr.tabindex]="disciplina === d.codigo ? 0 : -1" [disabled]="ocupado || estado === 'loading'"
+          (click)="cambiarDisciplina(d.codigo)">@if (disciplina === d.codigo) {<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>}{{ d.nombre }}</button>
+        }
+      </div>
+      <div class="acciones">
+        <button type="button" class="secundario" pnOcupado [ocupado]="previsualizando" textoOcupado="Generando…"
+          [deshabilitado]="ocupado || estado !== 'ready' || !disciplina || (!esAdmin && !activa)" (click)="previsualizar($event.currentTarget)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Previsualizar</span>
+        </button>
+      </div>
+    </div>
+
+    @if (!disciplinas.length) {
+    <pn-bloque-vacio titulo="No hay disciplinas activas." />
+    } @else if (estado === 'loading') {
+    <pn-esqueleto etiqueta="Cargando plantilla…">
+      <div class="esqueleto">
+        <div class="esqueleto__editor">
+          @for (i of [1, 2, 3]; track i) {
+          <div class="esqueleto__bloque"><span></span><span></span><span></span></div>
+          }
+        </div>
+        <div class="esqueleto__versiones"><span></span><span></span><span></span></div>
+      </div>
+    </pn-esqueleto>
+    } @else if (estado === 'error') {
+    <pn-bloque-error titulo="No se pudo cargar la plantilla." (reintentar)="cargar()" />
+    } @else if (!activa && !esAdmin) {
+    <pn-bloque-vacio titulo="Esta disciplina aún no tiene plantilla." />
+    } @else {
+      @if (!activa) {
+      <p class="sin-plantilla">Esta disciplina aún no tiene plantilla. Escribe los textos y publica la versión 1.</p>
+      }
+      <button class="versiones-movil secundario" type="button" (click)="versionesAbiertas = true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+        <span>Versiones ({{ historial.length }})</span>
+      </button>
+      <div class="rejilla">
+        <div class="contenido">
+          <p class="diseno-fijo"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>El diseño del PDF es fijo: aquí cambias los textos, en el orden en que salen.</p>
+          <fieldset class="editor" [disabled]="ocupado">
+            <section class="bloque" aria-labelledby="plantilla-encabezado" aria-describedby="plantilla-encabezado-ayuda">
+              <h2 class="bloque__titulo" id="plantilla-encabezado">Encabezado</h2>
+              <p class="bloque__ayuda" id="plantilla-encabezado-ayuda">Cabecera, contacto y título de la hoja.</p>
+              @for (f of headerFields; track f.key) {
+              <div class="campo">
+                @if (esAdmin) {
+                <label class="campo__etiqueta" [for]="'plantilla-' + f.key">{{ f.label }} <span class="marca">obligatorio</span></label>
+                <input class="control" [id]="'plantilla-' + f.key" [name]="f.key" [(ngModel)]="borrador[f.key]" (ngModelChange)="actualizarErrores()"
+                  [maxlength]="f.max" required [attr.aria-invalid]="!!errores[f.key]" [attr.aria-describedby]="'ayuda-' + f.key" />
+                <ng-container [ngTemplateOutlet]="ayuda" [ngTemplateOutletContext]="{ key: f.key, value: borrador[f.key], max: f.max }" />
+                } @else {<h3 class="campo__etiqueta">{{ f.label }}</h3><p class="lectura">{{ borrador[f.key] }}</p>}
+              </div>
+              }
+            </section>
+            <section class="bloque" aria-labelledby="plantilla-normas" aria-describedby="plantilla-normas-ayuda">
+              <h2 class="bloque__titulo" id="plantilla-normas">Normas <span class="bloque__cuenta" data-cifras>· {{ borrador.normas.length }} de 30</span></h2>
+              <p class="bloque__ayuda" id="plantilla-normas-ayuda">Salen numeradas en el PDF, en este orden.</p>
+              @if (errores['normas']) {<p id="error-normas" class="error">{{ errores['normas'] }}</p>}
+              <ol class="normas" [class.normas--edicion]="esAdmin" tabindex="-1" aria-labelledby="plantilla-normas"
+                [attr.aria-invalid]="errores['normas'] ? true : null" [attr.aria-describedby]="errores['normas'] ? 'error-normas' : null">
+                @for (norma of borrador.normas; track $index; let i = $index) {
+                <li class="norma">
+                  @if (esAdmin) {
+                  <div class="norma__cabecera">
+                    <label class="campo__etiqueta" [for]="'plantilla-norma-' + i" data-cifras>Norma {{ i + 1 }} <span class="marca">obligatorio</span></label>
+                    <div class="orden">
+                      <button type="button" class="icono" [disabled]="i === 0" [attr.aria-label]="'Subir norma ' + (i + 1)" (click)="moverNorma(i, -1)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
+                      <button type="button" class="icono" [disabled]="i === borrador.normas.length - 1" [attr.aria-label]="'Bajar norma ' + (i + 1)" (click)="moverNorma(i, 1)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                      <button type="button" class="icono icono--peligro" [disabled]="borrador.normas.length === 1" [attr.aria-label]="'Quitar norma ' + (i + 1)" (click)="quitarNorma(i)"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>
+                    </div>
+                  </div>
+                  <textarea class="control control--area" [id]="'plantilla-norma-' + i" [name]="'norma-' + i" [(ngModel)]="borrador.normas[i]" (ngModelChange)="actualizarErrores()"
+                    maxlength="2000" required rows="3" [attr.aria-invalid]="!!errores['norma-' + i]" [attr.aria-describedby]="'ayuda-norma-' + i"></textarea>
+                  <ng-container [ngTemplateOutlet]="ayuda" [ngTemplateOutletContext]="{ key: 'norma-' + i, value: norma, max: 2000 }" />
+                  } @else {<p class="lectura">{{ norma }}</p>}
+                </li>
+                }
+              </ol>
+              @if (esAdmin) {
+              <button type="button" class="secundario anadir" [disabled]="borrador.normas.length >= 30" (click)="agregarNorma()"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Añadir norma</button>
+              }
+            </section>
+            @for (f of bodyFields; track f.key) {
+            <section class="bloque" [attr.aria-labelledby]="'titulo-' + f.key" [attr.aria-describedby]="'ayuda-bloque-' + f.key">
+              <h2 class="bloque__titulo" [id]="'titulo-' + f.key">{{ f.label }} @if (esAdmin) {<span class="marca">obligatorio</span>}</h2>
+              <p class="bloque__ayuda" [id]="'ayuda-bloque-' + f.key">{{ ayudasBloque[f.key] }}</p>
+              @if (esAdmin) {
+              <label class="sr-only" [for]="'plantilla-' + f.key">{{ f.label }}</label>
+              <textarea class="control control--area" [id]="'plantilla-' + f.key" [name]="f.key" [(ngModel)]="borrador[f.key]" (ngModelChange)="actualizarErrores()"
+                [maxlength]="f.max" required rows="6" [attr.aria-invalid]="!!errores[f.key]" [attr.aria-describedby]="'ayuda-' + f.key"></textarea>
+              <ng-container [ngTemplateOutlet]="ayuda" [ngTemplateOutletContext]="{ key: f.key, value: borrador[f.key], max: f.max }" />
+              } @else {<p class="lectura">{{ borrador[f.key] }}</p>}
+            </section>
+            }
+          </fieldset>
+        </div>
+        <aside class="versiones-escritorio" aria-labelledby="plantilla-versiones">
+          <h2 class="versiones-escritorio__titulo" id="plantilla-versiones">Versiones</h2>
+          <ng-container [ngTemplateOutlet]="versiones" />
+        </aside>
+      </div>
+    }
+  </div>
+  @if (esAdmin) {
+  <span class="sr-only pendientes-estado" role="status" aria-live="polite">@if (cambios) { {{ textoPendientes }} }</span>
+  }
+  @if (hayBarraPublicar) {
+  <div class="pendientes" role="region" aria-label="Cambios sin publicar">
+    <strong class="pendientes-aviso">{{ textoPendientes }}</strong>
+    @if (activa) {<button class="texto" type="button" [disabled]="ocupado" (click)="descartar()">Descartar</button>}
+    <button class="primario" type="button" pnOcupado [ocupado]="publicando" textoOcupado="Publicando…"
+      [deshabilitado]="ocupado || estado !== 'ready' || !disciplina" (click)="publicar()">Publicar versión {{ siguienteVersion }}</button>
+  </div>
+  }
+  @if (versionesAbiertas) {
+  <pn-panel-lateral [titulo]="'Versiones (' + historial.length + ')'" [bloqueado]="ocupado" (cerrar)="versionesAbiertas = false">
+    <div class="pn versiones-panel" pnAcento><ng-container [ngTemplateOutlet]="versiones" /></div>
+  </pn-panel-lateral>
+  }
+  @if (documentos.length) {
+  <pn-visor-pdf [documentos]="documentos" aviso="Vista previa sin publicar" [focoRetorno]="focoRetorno" (cerrar)="documentos = []" />
+  }
+</div>
+
+<ng-template #ayuda let-key="key" let-value="value" let-max="max">
+  <div class="ayuda" [id]="'ayuda-' + key">
+    @if (errores[key]) {<span class="error">{{ errores[key] }}</span>}
+    <span class="contador" data-cifras>{{ numero(value.length) }} / {{ numero(max) }}</span>
+  </div>
+</ng-template>
+
+<ng-template #versiones>
+  <ol class="versiones">
+    @if (cambios) {<li class="version version--borrador"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Borrador · sin publicar</span></li>}
+    @for (v of historial; track v.version) {
+    <li class="version">
+      <div class="version__datos">
+        <div class="version-titulo"><strong data-cifras>Versión {{ v.version }}</strong>@if (v.version === activa?.version) {<span class="activa">Activa</span>}</div>
+        <span class="fecha" data-cifras>{{ fecha(v.creadaEn) }}</span>
+      </div>
+      @if (esAdmin && v.version !== activa?.version) {<button class="texto" type="button" [disabled]="ocupado" (click)="restaurar(v)">Restaurar<span class="sr-only"> versión {{ v.version }}</span></button>}
+    </li>
+    }
+  </ol>
+</ng-template>
