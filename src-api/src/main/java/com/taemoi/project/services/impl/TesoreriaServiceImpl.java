@@ -962,7 +962,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 	}
 
 	private String formatearEuros(double importe) {
-		return String.format(Locale.forLanguageTag("es-ES"), "%.2f €", importe);
+		return FormatoImporte.eur(importe);
 	}
 
 	private String sanitizarPdfText(String value) {

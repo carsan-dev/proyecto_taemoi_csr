@@ -342,7 +342,7 @@ class CargosCanceladosIntegrationTest extends MySqlIntegrationTest {
 			assertTrue(listado.contains("PRUEBA" + nombreUno), listado);
 			assertTrue(listado.contains("Cancelado"), listado);
 			assertTrue(listado.contains("PRUEBAE6CLECDOS" + e.marca), listado);
-			assertTrue(listado.contains("35.00EUR") || listado.contains("35,00EUR"), listado);
+			assertTrue(listado.contains("35,00€"), listado);
 			// Informe de mensualidades: la fila «CANCELADO», una pendiente menos y 35 € menos en el total.
 			String informe = pdf("/api/informes/mensualidades?soloActivos=false");
 			assertTrue(informe.contains(nombreUno), "el alumno sigue apareciendo");

@@ -2,6 +2,7 @@ package com.taemoi.project.pdf;
 
 import static com.taemoi.project.pdf.ContenidoPdf.comprobar;
 import static com.taemoi.project.pdf.ContenidoPdf.conHoy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,9 +118,23 @@ class TesoreriaPdfContenidoTest {
 	void certificadoDeCobros() throws Exception {
 		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(datos.ana));
 		movimientos(datos.pagados);
-		comprobar("tesoreria-certificado-cobros", conHoy(() -> servicio.generarCertificadoCobrosAlumno(1L, 2026)),
+		byte[] pdf = conHoy(() -> servicio.generarCertificadoCobrosAlumno(1L, 2026));
+		comprobar("tesoreria-certificado-cobros", pdf,
 				Presentacion.de("CERTIFICADO DE COBROS"),
 				"Ana, ejercicio 2026: enero, octubre y la reserva de plaza (junio). Escuela ficticia con datos legales.",
 				"Campo fechaGeneracion: LocalDate.now() sin Clock, fijada a " + ContenidoPdf.HOY + " en el test.");
+		assertEquals("84,00 €", ContenidoPdf.campos(pdf).get("totalImporte"));
+		assertEquals("28,00 €", ContenidoPdf.campos(pdf).get("mes_10"));
+	}
+
+	@Test
+	void certificadoDeCobrosConMiles() throws Exception {
+		when(alumnoRepository.findById(1L)).thenReturn(Optional.of(datos.ana));
+		ProductoAlumno cargo = datos.pagados.get(0);
+		cargo.setPrecio(1234.5);
+		cargo.setCantidad(1);
+		movimientos(List.of(cargo));
+		byte[] pdf = conHoy(() -> servicio.generarCertificadoCobrosAlumno(1L, 2026));
+		assertEquals("1.234,50 €", ContenidoPdf.campos(pdf).get("totalImporte"));
 	}
 }

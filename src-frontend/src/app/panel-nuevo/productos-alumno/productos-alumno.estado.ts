@@ -7,6 +7,7 @@ import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
 import { SolicitudesService } from '../../servicios/endpoints/solicitudes.service';
+import { importeCargo } from '../../utils/importe-cargo';
 import { AvisosService } from '../avisos/avisos.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -76,7 +77,7 @@ export interface FilaCargo {
   cantidad: string;
   precio: string;
   notas: string;
-  /** precio × cantidad con los valores de los campos; nulo si alguno no vale. */
+  /** Regla 297 con los valores guardados o editados; nulo si un campo editado no vale. */
   total: number | null;
   /** «dd/mm/aaaa» o vacío. */
   fechaPago: string;
@@ -548,7 +549,13 @@ export class ProductosAlumnoEstado {
       precio,
       notas: edicion?.notas ?? cargo.notas ?? '',
       total:
-        lecturaCantidad.valor !== null && lecturaPrecio.valor !== null ? lecturaPrecio.valor * lecturaCantidad.valor : null,
+        (edicion?.cantidad !== undefined && lecturaCantidad.valor === null) ||
+        (edicion?.precio !== undefined && lecturaPrecio.valor === null)
+          ? null
+          : importeCargo(
+              edicion?.precio !== undefined ? lecturaPrecio.valor : cargo.precio,
+              edicion?.cantidad !== undefined ? lecturaCantidad.valor : cargo.cantidad
+            ),
       fechaPago: cargo.fechaPago ? fecha(new Date(cargo.fechaPago)) : '',
       estado,
       textoCancelacion: textoCancelacion(cargo),
@@ -591,8 +598,11 @@ export class ProductosAlumnoEstado {
     if (limpia.fecha !== undefined && limpia.fecha === diaLocal(cargo.fechaAsignacion)) {
       delete limpia.fecha;
     }
-    if (limpia.cantidad !== undefined && leerCantidad(limpia.cantidad).valor === cargo.cantidad) {
-      delete limpia.cantidad;
+    if (limpia.cantidad !== undefined) {
+      const valor = leerCantidad(limpia.cantidad).valor;
+      if (valor !== null && valor === cargo.cantidad) {
+        delete limpia.cantidad;
+      }
     }
     if (limpia.precio !== undefined) {
       const valor = leerPrecio(limpia.precio).valor;

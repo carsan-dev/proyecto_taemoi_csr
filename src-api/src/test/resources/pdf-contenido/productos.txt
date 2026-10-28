@@ -6,8 +6,8 @@
 ~ Listado de Productos
 Productos (4)
 CONCEPTO PRECIO
-Camiseta escuela 15.00 €
-Cinturón 8.50 €
+Camiseta escuela 15,00 €
+Cinturón 8,50 €
 Dobok N/A
-Mensualidad adulto 30.00 €
+Mensualidad adulto 30,00 €
 ~ jueves, 15 de octubre de 2026 Página 1 de 1

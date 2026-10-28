@@ -283,26 +283,36 @@ class PdfServiceContenidoTest {
 				"Antes de la decisión 315 el pie salía como «PÃ¡gina X de Y» (texto mal codificado); con el pie común, «Página X de Y».");
 		// Decisión 315: el pie bien codificado.
 		String texto = String.join(" | ", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("8,50 €"), texto);
 		assertTrue(texto.contains("Página 1 de 1"), texto);
 		assertFalse(texto.contains("PÃ"), texto);
 	}
 
 	@Test
 	void mensualidades() throws Exception {
-		comprobar("mensualidades", conHoy(() -> servicio.generarInformeMensualidades(false)),
+		byte[] pdf = conHoy(() -> servicio.generarInformeMensualidades(false));
+		comprobar("mensualidades", pdf,
 				Presentacion.de(ESCUELA, "Informe de Mensualidades"), FECHA);
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("TOTAL GENERAL: 167,00 €"), texto);
 	}
 
 	@Test
 	void mensualidadesTaekwondo() throws Exception {
-		comprobar("mensualidades-taekwondo", conHoy(() -> servicio.generarInformeMensualidadesTaekwondo(false)),
+		byte[] pdf = conHoy(() -> servicio.generarInformeMensualidadesTaekwondo(false));
+		comprobar("mensualidades-taekwondo", pdf,
 				Presentacion.de(ESCUELA, "Informe de Mensualidades", "Informe de Mensualidades - Taekwondo"), FECHA);
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("TOTAL GENERAL: 137,00 €"), texto);
 	}
 
 	@Test
 	void mensualidadesKickboxing() throws Exception {
-		comprobar("mensualidades-kickboxing", conHoy(() -> servicio.generarInformeMensualidadesKickboxing(false)),
+		byte[] pdf = conHoy(() -> servicio.generarInformeMensualidadesKickboxing(false));
+		comprobar("mensualidades-kickboxing", pdf,
 				Presentacion.de(ESCUELA, "Informe de Mensualidades", "Informe de Mensualidades - Kickboxing"), FECHA);
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("TOTAL GENERAL: 30,00 €"), texto);
 	}
 
 	@Test
@@ -315,10 +325,14 @@ class PdfServiceContenidoTest {
 
 	@Test
 	void listadoMensualidadMensual() throws Exception {
-		comprobar("listado-mensualidad-mensual",
-				conHoy(() -> servicio.generarListadoMensualidadMensual("2026-10", false)),
+		byte[] pdf = conHoy(() -> servicio.generarListadoMensualidadMensual("2026-10", false));
+		comprobar("listado-mensualidad-mensual", pdf,
 				Presentacion.de(ESCUELA, "Listado Mensualidad OCTUBRE 2026"), FECHA,
 				"Sin tarifas por sede (cuantía esperada = la de la inscripción).");
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("55,00 €"), texto);
+		assertTrue(texto.contains("25,00 €"), texto);
+		assertFalse(texto.contains("EUR"), texto);
 	}
 
 	// ------------------------------------------------------------------ otros

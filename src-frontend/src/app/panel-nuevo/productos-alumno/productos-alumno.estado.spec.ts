@@ -289,6 +289,41 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
   // ------------------------------------------------------------------ campos
 
   describe('campos y decisión 292', () => {
+    it('decisión 297: cantidad nula del servidor cuenta como una unidad', () => {
+      abrir([cargo(1, { cantidad: null as unknown as number, precio: 12.5 })]);
+      expect(fila(1).total).toBe(12.5);
+      estado.cambiarNotas(1, 'Talla M');
+      expect(fila(1).total).toBe(12.5);
+      estado.cambiarPrecio(1, '15');
+      expect(fila(1).total).toBe(15);
+    });
+
+    it('decisión 297: precio nulo del servidor cuenta como cero', () => {
+      abrir([cargo(1, { precio: null as unknown as number, cantidad: 3 })]);
+      expect(fila(1).total).toBe(0);
+      estado.cambiarCantidad(1, '2');
+      expect(fila(1).total).toBe(0);
+      estado.cambiarPrecio(1, '-1');
+      expect(fila(1).total).toBeNull();
+      expect(estado.puedeGuardar()).toBeFalse();
+    });
+
+    it('un cargo con cantidad guardada nula, editado a una cantidad no válida, conserva la edición y su total es null', () => {
+      abrir([cargo(1, { cantidad: null as unknown as number, precio: 12.5 })]);
+      estado.cambiarCantidad(1, '');
+      expect(estado.ediciones().get(1)).toEqual({ cantidad: '' });
+      expect(fila(1).modificada).toBeTrue();
+      expect(fila(1).errores.cantidad).not.toBeNull();
+      expect(fila(1).total).toBeNull();
+      expect(estado.hayErrores()).toBeTrue();
+      estado.cambiarCantidad(1, '0');
+      expect(estado.ediciones().get(1)).toEqual({ cantidad: '0' });
+      expect(fila(1).modificada).toBeTrue();
+      expect(fila(1).errores.cantidad).toBe('min');
+      expect(fila(1).total).toBeNull();
+      expect(estado.puedeGuardar()).toBeFalse();
+    });
+
     it('editar marca la fila y volver al valor guardado la desmarca', () => {
       abrir([cargo(1)]);
       expect(estado.cambiarPrecio(1, '35,50')).toBeTrue();
