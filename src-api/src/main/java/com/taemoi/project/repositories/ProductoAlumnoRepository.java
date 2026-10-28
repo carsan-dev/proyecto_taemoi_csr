@@ -76,6 +76,13 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 
 	List<ProductoAlumno> findByAlumnoId(Long alumnoId);
 
+	/**
+	 * Pieza 279 (recibo de un cargo de legado): por id con una consulta (filtrada por la escuela activa), no con
+	 * {@code findById}, como {@code SedeRepository#buscarEnEscuelaActiva}.
+	 */
+	@Query("SELECT pa FROM ProductoAlumno pa WHERE pa.id = :id")
+	Optional<ProductoAlumno> buscarEnEscuelaActiva(@Param("id") Long id);
+
 	/** Entrega 6-3: el cargo (de la escuela activa) es de una de esas sedes ({@code @acceso.productoAlumnoEnSede}). */
 	boolean existsByIdAndSedeIdIn(Long id, java.util.Collection<Long> sedeIds);
 
