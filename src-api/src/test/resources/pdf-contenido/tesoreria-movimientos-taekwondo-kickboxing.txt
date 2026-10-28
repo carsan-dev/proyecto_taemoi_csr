@@ -1,0 +1,31 @@
+# Contenido del PDF «tesoreria-movimientos-taekwondo-kickboxing» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Filtro: octubre de 2026, todas las disciplinas y estados (solo cargos de taekwondo y kickboxing).
+~ Informe de Tesorería
+Periodo: OCTUBRE 2026 | Deporte: TODOS | Estado: Todos
+Total movimientos: 4 Pagados: 2 Pendientes: 2 Importe total: 113.00 EUR
+FECHA FECHA
+ALUMNO DEPORTE CONCEPTO CATEGORIA ESTADO IMPORTE
+CARGO PAGO
+Ana MENSUALIDAD
+01/10 05/10 28.00
+Prueba TAEKWONDO OCTUBRE 2026 - MENSUALIDAD PAGADO
+/2026 /2026 EUR
+Uno TAEKWONDO
+Bruno MENSUALIDAD
+01/10 30.00
+Prueba TAEKWONDO OCTUBRE 2026 - MENSUALIDAD PENDIENTE -
+/2026 EUR
+Dos TAEKWONDO
+Bruno MENSUALIDAD
+01/10 03/10 30.00
+Prueba KICKBOXING OCTUBRE 2026 - MENSUALIDAD PAGADO
+/2026 /2026 EUR
+Dos KICKBOXING
+TARIFA
+Bruno
+COMPETIDOR 02/10 25.00
+Prueba TAEKWONDO TARIFA_COMPETIDOR PENDIENTE -
+OCTUBRE 2026 - /2026 EUR
+Dos
+TAEKWONDO

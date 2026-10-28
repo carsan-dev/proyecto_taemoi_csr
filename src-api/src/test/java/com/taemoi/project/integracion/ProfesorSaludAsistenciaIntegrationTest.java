@@ -277,8 +277,8 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 				r.getResponse().getHeader("Content-Disposition"));
 		String texto = texto(r.getResponse().getContentAsByteArray());
 		assertTrue(texto.contains("E72TUTELADO" + e.marca), "alumno de gA en su turno: " + texto);
-		assertTrue(texto.contains("LISTADODEASISTENCIA-SEPTIEMBRE2026"), texto);
-		assertTrue(texto.contains("LUNES-Turnode18:00a19:00"), texto);
+		assertTrue(texto.contains("Listadodeasistencia-Septiembre2026"), texto);
+		assertTrue(texto.contains("Lunes-Turnode18:00a19:00"), texto);
 		assertTrue(texto.contains("Total:1alumnos"), texto);
 		assertFalse(texto.contains("E72HOMONIMO" + e.marca), "grupo homónimo de otra sede, mismo lunes y hora");
 		assertFalse(texto.contains("E6B" + e.marca), "turno de gB, el mismo lunes");
@@ -333,7 +333,16 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 				pagina(List.of(new Fila(e.aA, "E6A"), new Fila(tutelado, "E72TUTELADO"))),
 				pagina(List.of(new Fila(e.aB, "E6B"))),
 				pagina(List.of(new Fila(homonimo, "E72HOMONIMO")))));
-		List<String> reales = new ArrayList<>(paginas);
+		// Decisión 315: cada página lleva el pie común («Escuela · Listado de asistencia», «Página X de 3»); se
+		// comprueba y se quita para comparar el resto de la página.
+		List<String> reales = new ArrayList<>();
+		String escuela = jdbc.queryForObject("SELECT nombre FROM organizacion WHERE id = ?", String.class, e.org)
+				.replaceAll("\\s+", "");
+		for (int i = 0; i < paginas.size(); i++) {
+			String pie = escuela + "·ListadodeasistenciaPágina" + (i + 1) + "de" + paginas.size();
+			assertTrue(paginas.get(i).startsWith(pie), paginas.get(i));
+			reales.add(paginas.get(i).substring(pie.length()));
+		}
 		esperadas.sort(null);
 		reales.sort(null);
 		assertEquals(esperadas, reales);
@@ -346,13 +355,17 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	/** Texto de una página del PDF de asistencia de gestión (septiembre de 2026, lunes, taekwondo). */
 	private String pagina(List<Fila> filas) {
-		// Pieza E7-7a (decisión 211): la escuela sale con su nombre (en mayúsculas, sin el «Tae Kwon Do» de Moiskimdo);
-		// el resto de la página, igual que se fijó antes de la E7-2.
+		// Pieza E7-7a (decisión 211): la escuela sale con su nombre (sin el «Tae Kwon Do» de Moiskimdo); el resto de la
+		// página, igual que se fijó antes de la E7-2. Decisión 315: la misma información con la cabecera común (sin
+		// mayúsculas forzadas; disciplina, alumnos, día y turno en la línea de contexto; fecha de generación a la
+		// derecha).
 		String escuela = jdbc.queryForObject("SELECT nombre FROM organizacion WHERE id = ?", String.class, e.org)
-				.toUpperCase(java.util.Locale.of("es", "ES")).replaceAll("\\s+", "");
-		StringBuilder s = new StringBuilder(escuela + "LISTADODEASISTENCIA-SEPTIEMBRE2026TAEKWONDO");
-		s.append("Total:").append(filas.size()).append("alumnosLUNES-Turnode18:00a19:00");
-		s.append("APTOGRADOLIC.FEDEDADNOMBREYAPELLIDOSNºEXP."); // cabecera en mayúsculas (CSS)
+				.replaceAll("\\s+", "");
+		String hoy = LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("d'de'MMMM'de'yyyy",
+				java.util.Locale.of("es", "ES")));
+		StringBuilder s = new StringBuilder(escuela + "Listadodeasistencia-Septiembre2026TAEKWONDO");
+		s.append("·Total:").append(filas.size()).append("alumnos·Lunes-Turnode18:00a19:00").append(hoy);
+		s.append("AptoGradoLic.FedEdadNombreyApellidosNºExp.");
 		for (Fila f : filas) {
 			var datos = jdbc.queryForMap("SELECT nombre, apellidos, fecha_nacimiento, numero_expediente FROM alumno WHERE id = ?",
 					f.alumno());

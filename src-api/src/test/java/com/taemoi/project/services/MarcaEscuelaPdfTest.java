@@ -3,6 +3,7 @@ package com.taemoi.project.services;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -31,12 +32,20 @@ import javax.imageio.ImageIO;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.PNGTranscoder;
+import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -67,6 +76,12 @@ import com.taemoi.project.services.impl.TesoreriaServiceImpl;
  * hoja de asistencia, solicitud de preinscripción firmada y certificado de cobros). {@code moiskimdoPdfsIdenticos} se
  * fijó y pasó ANTES del cambio: el texto de cabecera y el logo (píxel a píxel) que lleva hoy cada camino. Desde la
  * E7-8 (decisión 213), Moiskimdo con un logo subido lo lleva en los cuatro caminos, con sus textos de siempre.
+ *
+ * <p>Decisión 315 (estética común de los PDF): los textos y logos son los mismos, pero cambia su forma: sin mayúsculas
+ * forzadas por CSS (el nombre de los informes sale como está escrito; el de otra escuela en la asistencia, también),
+ * «Tae Kwon Do» va en la misma línea que «CLUB MOI'S KIM DO», el contexto de la solicitud (contacto y temporada) va
+ * en su propia línea bajo el nombre y el título, y el pie de página repite el nombre. Además: el filete de la cabecera
+ * lleva el color de la escuela y las fuentes van embebidas.
  */
 class MarcaEscuelaPdfTest {
 
@@ -150,16 +165,11 @@ class MarcaEscuelaPdfTest {
 
 	/** Moiskimdo con su logo subido: ese logo en los cuatro caminos; los textos y datos legales, los de siempre. */
 	private static void comprobarMoiskimdoConLogo(Pdfs pdfs, int[] esperado) throws IOException {
-		List<String> lineas = lineas(pdfs.informe());
-		assertEquals(List.of("MOI'S KIM DO TAEKWONDO", "Informe de Alumnas de D.P.F"), lineas.subList(2, 4),
-				String.join("|", lineas));
+		cabecera(pdfs.informe(), "Moi's Kim Do Taekwondo", "Informe de Alumnas de D.P.F");
 		assertArrayEquals(esperado, pixeles(unicaImagen(pdfs.informe())));
-		List<String> lineasAsistencia = lineas(pdfs.asistencia());
-		assertEquals(List.of("CLUB MOI'S KIM DO", "Tae Kwon Do"), lineasAsistencia.subList(0, 2),
-				String.join("|", lineasAsistencia));
+		cabecera(pdfs.asistencia(), "CLUB MOI'S KIM DO Tae Kwon Do", "Listado de asistencia - Septiembre 2026");
 		assertArrayEquals(esperado, pixeles(unicaImagen(pdfs.asistencia())));
-		String texto = texto(pdfs.solicitud());
-		assertTrue(texto.contains("Escuela Moi Kim Do · Calle Ficticia · Temporada 2026-2027"), texto);
+		cabeceraSolicitud(pdfs.solicitud(), "Escuela Moi Kim Do", "Calle Ficticia · Temporada 2026-2027");
 		List<BufferedImage> logos = sinFirma(imagenes(pdfs.solicitud()));
 		assertEquals(1, logos.size(), "logo (además de la firma)");
 		assertArrayEquals(esperado, pixeles(logos.get(0)));
@@ -178,22 +188,16 @@ class MarcaEscuelaPdfTest {
 	private static void comprobarMoiskimdoDeSiempre(Pdfs pdfs) throws Exception {
 		int[] logoEscuela = pixeles(logoEscuelaHoy());
 
-		// 1. Cabecera común (generarCabeceraConLogo, 12+ informes): nombre fijo y logo_escuela.svg a 300x300.
-		List<String> lineas = lineas(pdfs.informe());
-		// Título del pie de página, fecha y página; después la cabecera (club-name en mayúsculas por CSS) y el título.
-		assertEquals(List.of("MOI'S KIM DO TAEKWONDO", "Informe de Alumnas de D.P.F"), lineas.subList(2, 4),
-				String.join("|", lineas));
+		// 1. Cabecera común (cabeceraInforme, 12+ informes): nombre fijo y logo_escuela.svg a 300x300.
+		cabecera(pdfs.informe(), "Moi's Kim Do Taekwondo", "Informe de Alumnas de D.P.F");
 		assertArrayEquals(logoEscuela, pixeles(unicaImagen(pdfs.informe())));
 
-		// 2. Hoja de asistencia (paginaAsistencia): «CLUB MOI'S KIM DO / Tae Kwon Do» y el mismo logo.
-		List<String> lineasAsistencia = lineas(pdfs.asistencia());
-		assertEquals(List.of("CLUB MOI'S KIM DO", "Tae Kwon Do"), lineasAsistencia.subList(0, 2),
-				String.join("|", lineasAsistencia));
+		// 2. Hoja de asistencia (paginaAsistencia): «CLUB MOI'S KIM DO» y «Tae Kwon Do», y el mismo logo.
+		cabecera(pdfs.asistencia(), "CLUB MOI'S KIM DO Tae Kwon Do", "Listado de asistencia - Septiembre 2026");
 		assertArrayEquals(logoEscuela, pixeles(unicaImagen(pdfs.asistencia())));
 
 		// 3. Solicitud de preinscripción: logo_tkd_kick.jpeg y «Escuela Moi Kim Do» si la plantilla no trae cabecera.
-		String texto = texto(pdfs.solicitud());
-		assertTrue(texto.contains("Escuela Moi Kim Do · Calle Ficticia · Temporada 2026-2027"), texto);
+		cabeceraSolicitud(pdfs.solicitud(), "Escuela Moi Kim Do", "Calle Ficticia · Temporada 2026-2027");
 		List<BufferedImage> logos = sinFirma(imagenes(pdfs.solicitud()));
 		assertEquals(1, logos.size(), "logo (además de la firma)");
 		assertArrayEquals(pixeles(ImageIO.read(clase("static/logo_tkd_kick.jpeg"))), pixeles(logos.get(0)));
@@ -220,13 +224,12 @@ class MarcaEscuelaPdfTest {
 		Pdfs pdfs = generar(2L, MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService,
 				MarcaEscuelaPruebas.moiskimdo(), MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Norte & Sur")));
 
-		List<String> lineas = lineas(pdfs.informe());
-		assertEquals(List.of("ESCUELA FICTICIA NORTE & SUR", "Informe de Alumnas de D.P.F"), lineas.subList(2, 4),
-				String.join("|", lineas));
-		List<String> lineasAsistencia = lineas(pdfs.asistencia());
-		assertEquals("ESCUELA FICTICIA NORTE & SUR", lineasAsistencia.get(0));
-		assertTrue(lineasAsistencia.get(1).startsWith("LISTADO DE ASISTENCIA"), String.join("|", lineasAsistencia));
-		assertTrue(texto(pdfs.solicitud()).contains("Escuela Ficticia Norte & Sur · Calle Ficticia · Temporada"));
+		cabecera(pdfs.informe(), "Escuela Ficticia Norte & Sur", "Informe de Alumnas de D.P.F");
+		cabecera(pdfs.asistencia(), "Escuela Ficticia Norte & Sur", "Listado de asistencia - Septiembre 2026");
+		// El pie lleva el nombre tal cual (el «&» escapado en el CSS del pie no se come el espacio).
+		assertTrue(lineas(pdfs.informe()).get(0).startsWith("Escuela Ficticia Norte & Sur · Informe de Alumnas"),
+				String.join("|", lineas(pdfs.informe())));
+		cabeceraSolicitud(pdfs.solicitud(), "Escuela Ficticia Norte & Sur", "Calle Ficticia · Temporada 2026-2027");
 		String certificado = texto(pdfs.certificado());
 		assertTrue(certificado.contains("Ejercicio 2026 - Escuela Ficticia Norte & Sur"), certificado);
 		assertTrue(certificado.contains("________, CON DNI ________, en calidad de ________ del"), certificado);
@@ -283,7 +286,7 @@ class MarcaEscuelaPdfTest {
 		assertArrayEquals(pixeles(azul), pixeles(unicaImagen(deLaTres.informe())));
 		assertArrayEquals(pixeles(azul), pixeles(unicaImagen(deLaTres.asistencia())));
 		assertArrayEquals(pixeles(logoEscuelaHoy()), pixeles(unicaImagen(deMoiskimdo.informe())));
-		assertEquals("ESCUELA FICTICIA AZUL", lineas(deLaTres.asistencia()).get(0));
+		cabecera(deLaTres.asistencia(), "Escuela Ficticia Azul", "Listado de asistencia - Septiembre 2026");
 		// Una lectura por escuela para sus cuatro documentos.
 		verify(organizaciones, times(1)).findById(2L);
 		verify(organizaciones, times(1)).findById(3L);
@@ -293,6 +296,144 @@ class MarcaEscuelaPdfTest {
 		escribirLogo(501L, 2L, verde);
 		marca.invalidar(2L);
 		assertArrayEquals(pixeles(verde), pixeles(unicaImagen(generar(2L, marca).informe())));
+	}
+
+	// ------------------------------------------------------------------ decisión 315: color y fuentes
+
+	@Test
+	void fileteDeLaCabeceraConElColorDeLaEscuela() throws Exception {
+		Organizacion roja = MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Roja");
+		roja.setColorPrimario("#C0392B");
+		Organizacion sinColor = MarcaEscuelaPruebas.escuela(3L, "Escuela Ficticia Sin Color");
+		Organizacion colorInvalido = MarcaEscuelaPruebas.escuela(4L, "Escuela Ficticia Color Mal");
+		colorInvalido.setColorPrimario("rojo");
+		Organizacion moiskimdo = MarcaEscuelaPruebas.moiskimdo();
+		moiskimdo.setColorPrimario("#0057B8");
+		MarcaEscuelaService marca = MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService, moiskimdo,
+				roja, sinColor, colorInvalido);
+
+		float[] rojo = rgb("#c0392b");
+		float[] porDefecto = rgb(MarcaEscuela.COLOR_POR_DEFECTO);
+		float[] azul = rgb("#0057b8");
+		Pdfs deLaRoja = generar(2L, marca);
+		for (byte[] documento : deLaRoja.todos()) {
+			assertTrue(usaColor(documento, rojo), "filete en el color de la escuela");
+		}
+		Pdfs deLaSinColor = generar(3L, marca);
+		Pdfs deLaDelColorMal = generar(4L, marca);
+		for (byte[] documento : List.of(deLaSinColor.informe(), deLaSinColor.asistencia(), deLaSinColor.solicitud(),
+				deLaSinColor.certificado(), deLaDelColorMal.informe(), deLaDelColorMal.asistencia(),
+				deLaDelColorMal.solicitud(), deLaDelColorMal.certificado())) {
+			assertTrue(usaColor(documento, porDefecto), "sin color (o inválido), el de por defecto");
+			assertFalse(usaColor(documento, rojo), "el color de otra escuela");
+		}
+		// Moiskimdo: su color en el filete; sus textos y logos, los de siempre (comprobados arriba).
+		Pdfs deMoiskimdo = generar(1L, marca);
+		for (byte[] documento : deMoiskimdo.todos()) {
+			assertTrue(usaColor(documento, azul), "filete en el color de Moiskimdo");
+		}
+	}
+
+	@Test
+	void fuentesEmbebidas() throws Exception {
+		Pdfs pdfs = generar(2L, MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService,
+				MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Fuentes")));
+		for (byte[] documento : pdfs.todos()) {
+			List<String> fuentes = fuentes(documento);
+			assertTrue(fuentes.stream().anyMatch(f -> f.endsWith("Montserrat-Bold")), "Montserrat Bold: " + fuentes);
+			assertTrue(fuentes.stream().anyMatch(f -> f.contains("PublicSans-")), "Public Sans: " + fuentes);
+			assertTrue(fuentes.stream().allMatch(f -> f.contains("Montserrat") || f.contains("PublicSans")),
+					"solo las fuentes del panel (sin la de reserva): " + fuentes);
+		}
+	}
+
+	/**
+	 * Decisión 315: el certificado de cobros sigue siendo editable con la estética nueva. Una página y sus 16 campos con
+	 * su apariencia generada (sin NeedAppearances); la fuente de los campos (recurso DR del formulario y DA de cada
+	 * campo) es Public Sans Regular embebida ENTERA (sin prefijo de subconjunto), de modo que el campo admite cualquier
+	 * carácter de la fuente aunque no salga en el documento; y las apariencias se regeneran con valores nuevos.
+	 */
+	@Test
+	void certificadoEditableConLaFuenteCompleta() throws Exception {
+		Pdfs pdfs = generar(2L, MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService,
+				MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Campos")));
+		String valorNuevo = "Ñoño Çé Ü ł ß € 1.234,56";
+		ByteArrayOutputStream editado = new ByteArrayOutputStream();
+		try (PDDocument documento = PDDocument.load(pdfs.certificado())) {
+			assertEquals(1, documento.getNumberOfPages());
+			// Sin el arreglo de PDFBox al leer (añade Helv y ZaDb al DR en memoria): el formulario tal como se guardó.
+			PDAcroForm formulario = documento.getDocumentCatalog().getAcroForm(null);
+			assertFalse(formulario.getNeedAppearances());
+			PDResources dr = formulario.getDefaultResources();
+			List<COSName> nombres = new ArrayList<>();
+			dr.getFontNames().forEach(nombres::add);
+			assertEquals(1, nombres.size(), "una sola fuente en el DR: " + nombres);
+			PDFont fuenteCampos = dr.getFont(nombres.get(0));
+			assertTrue(fuenteCampos instanceof PDType0Font, fuenteCampos.getClass().getName());
+			assertTrue(fuenteCampos.isEmbedded());
+			assertEquals("PublicSans-Regular", fuenteCampos.getName(), "embebida entera, sin subconjunto");
+			List<String> campos = new ArrayList<>();
+			for (PDField campo : formulario.getFieldTree()) {
+				campos.add(campo.getFullyQualifiedName());
+				PDTextField texto = (PDTextField) campo;
+				assertTrue(texto.getDefaultAppearance().startsWith("/" + nombres.get(0).getName() + " "),
+						campo.getFullyQualifiedName() + ": " + texto.getDefaultAppearance());
+				assertNotNull(campo.getWidgets().get(0).getNormalAppearanceStream(), campo.getFullyQualifiedName());
+				texto.setValue(valorNuevo);
+			}
+			assertEquals(16, campos.size(), campos.toString());
+			documento.save(editado);
+		}
+		try (PDDocument documento = PDDocument.load(editado.toByteArray())) {
+			for (PDField campo : documento.getDocumentCatalog().getAcroForm().getFieldTree()) {
+				assertEquals(valorNuevo, campo.getValueAsString());
+				assertTrue(campo.getWidgets().get(0).getNormalAppearanceStream().getContentStream().toByteArray().length > 0,
+						campo.getFullyQualifiedName());
+			}
+		}
+	}
+
+	/** Nombres de las fuentes EMBEBIDAS de la primera página (falla si alguna no lo está). */
+	static List<String> fuentes(byte[] pdf) throws IOException {
+		try (PDDocument documento = PDDocument.load(pdf)) {
+			List<String> nombres = new ArrayList<>();
+			PDResources recursos = documento.getPage(0).getResources();
+			for (COSName nombre : recursos.getFontNames()) {
+				PDFont fuente = recursos.getFont(nombre);
+				assertTrue(fuente.isEmbedded(), fuente.getName() + " no está embebida");
+				nombres.add(fuente.getName());
+			}
+			return nombres;
+		}
+	}
+
+	/** Si la primera página fija ese color de relleno o de trazo ({@code rg}/{@code RG}), con tolerancia de 1/255. */
+	static boolean usaColor(byte[] pdf, float[] color) throws IOException {
+		try (PDDocument documento = PDDocument.load(pdf)) {
+			PDFStreamParser parser = new PDFStreamParser(documento.getPage(0));
+			parser.parse();
+			List<Object> fichas = parser.getTokens();
+			for (int i = 3; i < fichas.size(); i++) {
+				if (fichas.get(i) instanceof Operator operador
+						&& ("rg".equals(operador.getName()) || "RG".equals(operador.getName()))) {
+					boolean igual = true;
+					for (int c = 0; c < 3; c++) {
+						Object valor = fichas.get(i - 3 + c);
+						igual &= valor instanceof COSNumber numero
+								&& Math.abs(numero.floatValue() - color[c]) <= 1f / 255f + 1e-4f;
+					}
+					if (igual) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+	}
+
+	static float[] rgb(String hex) {
+		int valor = Integer.parseInt(hex.substring(1), 16);
+		return new float[] { ((valor >> 16) & 0xFF) / 255f, ((valor >> 8) & 0xFF) / 255f, (valor & 0xFF) / 255f };
 	}
 
 	// ------------------------------------------------------------------ generación
@@ -479,6 +620,23 @@ class MarcaEscuelaPdfTest {
 
 	static List<String> lineas(byte[] pdf) throws IOException {
 		return texto(pdf).lines().map(String::trim).filter(l -> !l.isEmpty()).toList();
+	}
+
+	/** La cabecera común: el nombre de la escuela y, en la línea siguiente, el título del documento. */
+	static void cabecera(byte[] pdf, String nombre, String titulo) throws IOException {
+		List<String> lineas = lineas(pdf);
+		int i = lineas.indexOf(nombre);
+		assertTrue(i >= 0 && i + 1 < lineas.size(), "falta «" + nombre + "» en: " + String.join("|", lineas));
+		assertEquals(List.of(nombre, titulo), lineas.subList(i, i + 2), String.join("|", lineas));
+	}
+
+	/** La cabecera de la solicitud: el nombre, el título y la línea de contexto (contacto y temporada). */
+	static void cabeceraSolicitud(byte[] pdf, String nombre, String contexto) throws IOException {
+		List<String> lineas = lineas(pdf);
+		int i = lineas.indexOf(nombre);
+		assertTrue(i >= 0 && i + 2 < lineas.size(), "falta «" + nombre + "» en: " + String.join("|", lineas));
+		assertEquals(List.of(nombre, "Solicitud de preinscripción", contexto), lineas.subList(i, i + 3),
+				String.join("|", lineas));
 	}
 
 	static String campo(byte[] pdf, String nombre) throws IOException {

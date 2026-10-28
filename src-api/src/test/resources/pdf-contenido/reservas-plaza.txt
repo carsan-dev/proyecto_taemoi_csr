@@ -1,0 +1,18 @@
+# Contenido del PDF «reservas-plaza» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Informe de Reservas de Plaza
+~ MOI'S KIM DO TAEKWONDO
+~ Informe de Reservas de Plaza - 2026/2027
+Taekwondo (1 reservas)
+ALUMNO CONCEPTO ESTADO
+Ana Prueba Uno RESERVA DE PLAZA 2026/2027 - TAEKWONDO Pagado
+Kickboxing (1 reservas)
+ALUMNO CONCEPTO ESTADO
+Bruno Prueba Dos RESERVA DE PLAZA 2026/2027 - KICKBOXING Sin Pagar
+RESUMEN GENERAL
+Temporada: 2026/2027
+Total reservas: 2
+Pagadas: 1
+Sin pagar: 1
+~ jueves, 15 de octubre de 2026 Página 1 de 1

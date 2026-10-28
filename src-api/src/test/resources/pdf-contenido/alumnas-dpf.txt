@@ -1,0 +1,10 @@
+# Contenido del PDF «alumnas-dpf» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Informe de Alumnas de D.P.F
+~ MOI'S KIM DO TAEKWONDO
+~ Informe de Alumnas de D.P.F
+NOMBRE APELLIDOS
+Carla Prueba Tres
+Diana Prueba Cuatro
+~ jueves, 15 de octubre de 2026 Página 1 de 1

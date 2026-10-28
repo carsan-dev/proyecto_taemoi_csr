@@ -26,12 +26,14 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDVariableText;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -445,7 +447,7 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		String html = generarHtmlInformeTesoreria(movimientos, filtro, pagado);
 
 		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-			PdfRendererBuilder builder = new PdfRendererBuilder();
+			PdfRendererBuilder builder = EstiloPdf.builder();
 			builder.withHtmlContent(html, null);
 			builder.toStream(outputStream);
 			builder.run();
@@ -563,24 +565,43 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return comportamientoLegado.activo();
 	}
 
+	/**
+	 * Certificado de cobros en PDFBox directo, editable (AcroForm con 16 campos), con la estética común de los PDF
+	 * (decisión 315, {@link EstiloPdf}): cabecera con logo, nombre de la escuela, título, contexto y filete en el color de
+	 * la escuela; tabla de meses con el estilo de tablas común; pie «Escuela · Certificado de cobros» y «Página 1 de 1».
+	 *
+	 * <p>Fuentes: las del panel, embebidas. Public Sans Regular va ENTERA (sin subconjunto) porque es también la de los
+	 * campos (recurso DR del formulario y DA de cada campo): quien edite un campo puede escribir cualquier carácter de la
+	 * fuente, salga o no en el documento. Public Sans SemiBold y Montserrat Bold, solo como subconjunto. Las apariencias de
+	 * los campos se generan aquí ({@code NeedAppearances} a falso, como antes).
+	 */
 	private byte[] generarPdfCertificadoCobros(CertificadoCobrosData certificado) {
 		try (PDDocument document = new PDDocument();
 				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 			PDPage page = new PDPage(PDRectangle.A4);
 			document.addPage(page);
 
+			FuentesCertificado fuentes = new FuentesCertificado(
+					PDType0Font.load(document, EstiloPdf.fuente("PublicSans-Regular.ttf"), false),
+					PDType0Font.load(document, EstiloPdf.fuente("PublicSans-SemiBold.ttf"), true),
+					PDType0Font.load(document, EstiloPdf.fuente("Montserrat-Bold.ttf"), true));
+
 			PDAcroForm acroForm = new PDAcroForm(document);
 			PDResources resources = new PDResources();
-			resources.put(COSName.getPDFName("Helv"), PDType1Font.HELVETICA);
+			resources.put(COSName.getPDFName(FUENTE_CAMPOS), fuentes.regular());
 			acroForm.setDefaultResources(resources);
-			acroForm.setDefaultAppearance("/Helv 10 Tf 0 g");
+			acroForm.setDefaultAppearance(aparienciaCampo(CUERPO_CERTIFICADO));
 			acroForm.setNeedAppearances(false);
 			document.getDocumentCatalog().setAcroForm(acroForm);
 
 			MarcaEscuela marca = marcaEscuela.deActiva();
+			DatosCertificado legal = datosCertificado(marca);
 			try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-				dibujarLogo(document, content, marca);
-				dibujarTextoCertificado(content, acroForm, page, certificado, datosCertificado(marca));
+				// El pie primero, como en los PDF HTML: el texto del documento acaba en los datos legales de la firma.
+				dibujarPieCertificado(content, page, fuentes, marca);
+				float inicioCuerpo = dibujarCabeceraCertificado(document, content, page, fuentes, marca,
+						certificado.ano, legal);
+				dibujarTextoCertificado(content, acroForm, page, fuentes, certificado, legal, inicioCuerpo);
 			}
 
 			acroForm.refreshAppearances();
@@ -591,15 +612,157 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		}
 	}
 
-	/** Logo de la escuela (Moiskimdo: Logo_nuevo_sin_vectorizar.jpeg, como siempre); sin logo, nada. */
-	private void dibujarLogo(PDDocument document, PDPageContentStream content, MarcaEscuela marca) throws IOException {
+	/** Fuentes del certificado, cargadas en su documento. */
+	private record FuentesCertificado(PDType0Font regular, PDType0Font semiBold, PDType0Font titulos) {
+	}
+
+	/** Puntos por milímetro. */
+	private static final float MM = 72f / 25.4f;
+	/** Márgenes de la página, los de {@code EstiloPdf.pie}: 14 mm y 16 mm abajo (donde va el pie). */
+	private static final float MARGEN_CERTIFICADO = 14 * MM;
+	private static final float MARGEN_INFERIOR_CERTIFICADO = 16 * MM;
+	/** Nombre de la fuente de los campos en el recurso DR del formulario. */
+	private static final String FUENTE_CAMPOS = "PubSans";
+	private static final float CUERPO_CERTIFICADO = 10f;
+	private static final float INTERLINEA_CERTIFICADO = 21f;
+	private static final float ALTO_CAMPO = 17f;
+	/** Relleno interior de la apariencia que genera PDFBox (1 pt más el borde de 0,4 pt). */
+	private static final float RELLENO_CAMPO = 1.4f;
+	private static final String TITULO_CERTIFICADO = "Certificado de cobros";
+
+	/** DA de un campo: Public Sans Regular a ese tamaño, en la tinta del panel. */
+	private static String aparienciaCampo(float tamano) {
+		float[] tinta = rgb(EstiloPdf.TINTA);
+		String tamanoTexto = tamano == (int) tamano ? String.valueOf((int) tamano) : String.valueOf(tamano);
+		return String.format(Locale.ROOT, "/%s %s Tf %.3f %.3f %.3f rg", FUENTE_CAMPOS, tamanoTexto, tinta[0],
+				tinta[1], tinta[2]);
+	}
+
+	/** Componentes de un color {@code #rrggbb} entre 0 y 1. */
+	private static float[] rgb(String hex) {
+		int valor = Integer.parseInt(hex.substring(1), 16);
+		return new float[] { ((valor >> 16) & 0xFF) / 255f, ((valor >> 8) & 0xFF) / 255f, (valor & 0xFF) / 255f };
+	}
+
+	private static void relleno(PDPageContentStream content, String hex) throws IOException {
+		float[] color = rgb(hex);
+		content.setNonStrokingColor(color[0], color[1], color[2]);
+	}
+
+	private static void trazo(PDPageContentStream content, String hex) throws IOException {
+		float[] color = rgb(hex);
+		content.setStrokingColor(color[0], color[1], color[2]);
+	}
+
+	/** Ancho de un texto en puntos. */
+	private static float ancho(PDFont fuente, float tamano, String texto) throws IOException {
+		return fuente.getStringWidth(texto) / 1000f * tamano;
+	}
+
+	/**
+	 * Línea base de un texto en una caja de línea de CSS: la caja empieza en {@code arriba} y mide {@code alto}; el
+	 * texto (ascendente más descendente de la fuente) va centrado en ella.
+	 */
+	private static float lineaBase(float arriba, float alto, PDFont fuente, float tamano) {
+		float ascendente = fuente.getFontDescriptor().getAscent() / 1000f * tamano;
+		float descendente = -fuente.getFontDescriptor().getDescent() / 1000f * tamano;
+		return arriba - (alto - ascendente - descendente) / 2 - ascendente;
+	}
+
+	/** Línea base que centra las mayúsculas en una franja (como PDFBox centra el texto de un campo). */
+	private static float lineaBaseCentrada(float abajo, float alto, PDFont fuente, float tamano) {
+		float mayusculas = fuente.getFontDescriptor().getCapHeight() / 1000f * tamano;
+		return abajo + (alto - mayusculas) / 2;
+	}
+
+	private void escribirTexto(PDPageContentStream content, PDFont fuente, float tamano, String color, float x,
+			float y, String texto) throws IOException {
+		relleno(content, color);
+		content.beginText();
+		content.setFont(fuente, tamano);
+		content.newLineAtOffset(x, y);
+		content.showText(sanitizarPdfText(texto));
+		content.endText();
+	}
+
+	private void escribirTextoDerecha(PDPageContentStream content, PDFont fuente, float tamano, String color,
+			float derecha, float y, String texto) throws IOException {
+		escribirTexto(content, fuente, tamano, color, derecha - ancho(fuente, tamano, sanitizarPdfText(texto)), y,
+				texto);
+	}
+
+	/** Pie de {@code EstiloPdf.pie}: filete de 0,5 pt; «Escuela · Certificado de cobros» y «Página 1 de 1», 7 pt. */
+	private void dibujarPieCertificado(PDPageContentStream content, PDPage page, FuentesCertificado fuentes,
+			MarcaEscuela marca) throws IOException {
+		float derecha = page.getMediaBox().getWidth() - MARGEN_CERTIFICADO;
+		float borde = MARGEN_INFERIOR_CERTIFICADO;
+		trazo(content, EstiloPdf.FILETE);
+		content.setLineWidth(0.5f);
+		content.moveTo(MARGEN_CERTIFICADO, borde - 0.25f);
+		content.lineTo(derecha, borde - 0.25f);
+		content.stroke();
+
+		float tamano = 7f;
+		float base = lineaBase(borde - 0.5f - 1.6f * MM, tamano * 1.35f, fuentes.regular(), tamano);
+		String escuela = marca.cabeceraInformes();
+		String izquierda = escuela == null || escuela.isBlank() ? TITULO_CERTIFICADO
+				: escuela + " · " + TITULO_CERTIFICADO;
+		escribirTexto(content, fuentes.regular(), tamano, EstiloPdf.GRIS_PIE, MARGEN_CERTIFICADO, base, izquierda);
+		escribirTextoDerecha(content, fuentes.regular(), tamano, EstiloPdf.GRIS_PIE, derecha, base, "Página 1 de 1");
+	}
+
+	/**
+	 * Cabecera de {@code EstiloPdf.cabecera}: logo de 14 mm a la izquierda (si lo hay), nombre de la escuela
+	 * (Montserrat Bold 13 pt), título (Public Sans SemiBold 10,5 pt) y contexto en gris (8 pt: el ejercicio y el
+	 * nombre legal, el dato que llevaba la cabecera anterior); debajo, el filete de 2 pt en el color de la escuela.
+	 *
+	 * @return la altura (desde abajo) donde empieza el cuerpo, 5 mm bajo el filete
+	 */
+	private float dibujarCabeceraCertificado(PDDocument document, PDPageContentStream content, PDPage page,
+			FuentesCertificado fuentes, MarcaEscuela marca, Integer ano, DatosCertificado legal) throws IOException {
+		float anchoPagina = page.getMediaBox().getWidth();
+		float arriba = page.getMediaBox().getHeight() - MARGEN_CERTIFICADO;
+
+		float altoEscuela = 13f * 1.2f;
+		float altoTitulo = 10.5f * 1.3f;
+		float altoContexto = 8f * 1.3f;
+		float altoTextos = altoEscuela + 0.8f * MM + altoTitulo + 0.6f * MM + altoContexto;
+
+		PDImageXObject logo = logoCertificado(document, marca);
+		float altoLogo = 14 * MM;
+		float altoFila = Math.max(altoTextos, logo != null ? altoLogo : 0);
+		float x = MARGEN_CERTIFICADO;
+		if (logo != null) {
+			float anchoLogo = altoLogo * logo.getWidth() / logo.getHeight();
+			content.drawImage(logo, x, arriba - (altoFila + altoLogo) / 2, anchoLogo, altoLogo);
+			x += anchoLogo + 3.5f * MM;
+		}
+
+		float linea = arriba - (altoFila - altoTextos) / 2;
+		escribirTexto(content, fuentes.titulos(), 13f, EstiloPdf.TINTA, x,
+				lineaBase(linea, altoEscuela, fuentes.titulos(), 13f), marca.cabeceraInformes());
+		linea -= altoEscuela + 0.8f * MM;
+		escribirTexto(content, fuentes.semiBold(), 10.5f, EstiloPdf.TINTA, x,
+				lineaBase(linea, altoTitulo, fuentes.semiBold(), 10.5f), TITULO_CERTIFICADO + " · " + ano);
+		linea -= altoTitulo + 0.6f * MM;
+		escribirTexto(content, fuentes.regular(), 8f, EstiloPdf.GRIS, x,
+				lineaBase(linea, altoContexto, fuentes.regular(), 8f), "Ejercicio " + ano + " - " + legal.nombreLegal());
+
+		float filete = arriba - altoFila - 2.4f * MM - 2f;
+		relleno(content, marca.colorPrimario());
+		content.addRect(MARGEN_CERTIFICADO, filete, anchoPagina - 2 * MARGEN_CERTIFICADO, 2f);
+		content.fill();
+		return filete - 5 * MM;
+	}
+
+	/** Logo de la escuela (Moiskimdo: Logo_nuevo_sin_vectorizar.jpeg, como siempre); sin logo, nulo. */
+	private PDImageXObject logoCertificado(PDDocument document, MarcaEscuela marca) throws IOException {
 		byte[] logoBytes = marca.logoCertificado();
 		if (logoBytes == null) {
-			return;
+			return null;
 		}
-		PDImageXObject logo = PDImageXObject.createFromByteArray(document, logoBytes,
+		return PDImageXObject.createFromByteArray(document, logoBytes,
 				marca.legado() ? "Logo_nuevo_sin_vectorizar.jpeg" : "logo.png");
-		content.drawImage(logo, 458, 718, 92, 92);
 	}
 
 	private static DatosCertificado datosCertificado(MarcaEscuela marca) {
@@ -622,88 +785,149 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		return lleno(valor) ? valor.trim() : DATO_LEGAL_VACIO;
 	}
 
+	/**
+	 * Cuerpo del certificado: los mismos textos y campos de siempre, en el mismo orden, en Public Sans 10 pt; la tabla
+	 * de meses con el estilo de tablas común; la fecha (campo) y la firma.
+	 */
 	private void dibujarTextoCertificado(
 			PDPageContentStream content,
 			PDAcroForm acroForm,
 			PDPage page,
+			FuentesCertificado fuentes,
 			CertificadoCobrosData certificado,
-			DatosCertificado legal) throws IOException {
+			DatosCertificado legal,
+			float inicioCuerpo) throws IOException {
 		String alumnoNombre = obtenerNombreCompletoAlumno(certificado.alumno);
 		String fecha = FECHA_CERTIFICADO_FORMATTER.format(LocalDate.now());
 		String fechaGeneracion = legal.localidad() != null ? "En " + legal.localidad() + ", a " + fecha + "."
 				: "A " + fecha + ".";
+		PDType0Font texto = fuentes.regular();
+		float cuerpo = CUERPO_CERTIFICADO;
+		float x = MARGEN_CERTIFICADO;
+		String tinta = EstiloPdf.TINTA;
 
-		content.setNonStrokingColor(245, 248, 252);
-		content.addRect(52, 729, 380, 42);
-		content.fill();
-		content.setNonStrokingColor(31, 77, 134);
-		content.addRect(52, 725, 380, 4);
-		content.fill();
-		content.setNonStrokingColor(0, 0, 0);
-		escribirTexto(content, 72, 751, "CERTIFICADO DE COBROS", 13, true);
-		escribirTexto(content, 72, 735, "Ejercicio " + certificado.ano + " - " + legal.nombreLegal(), 9, false);
+		float y = inicioCuerpo - 30f;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, legal.responsable() + ", CON DNI " + legal.responsableNif()
+				+ ", en calidad de " + legal.cargo() + " del");
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, legal.nombreLegal() + " con C.I.F.: " + legal.cif()
+				+ ", hago constar que ha recibido de");
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, "D/Dña.");
+		float xPagador = x + ancho(texto, cuerpo, "D/Dña. ");
+		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), xPagador - RELLENO_CAMPO,
+				y - 5f, 250f, ALTO_CAMPO, cuerpo, false);
+		float xCantidad = xPagador + 250f + 6f;
+		escribirTexto(content, texto, cuerpo, tinta, xCantidad, y, "la cantidad de");
+		float xTotal = xCantidad + ancho(texto, cuerpo, "la cantidad de ");
+		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), xTotal - RELLENO_CAMPO,
+				y - 5f, 80f, ALTO_CAMPO, cuerpo, false);
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, "durante el ejercicio " + certificado.ano
+				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor");
+		y -= INTERLINEA_CERTIFICADO;
+		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), x - RELLENO_CAMPO, y - 5f,
+				330f, ALTO_CAMPO, cuerpo, false);
+		escribirTexto(content, texto, cuerpo, tinta, x + 330f, y, ".");
 
-		escribirTexto(content, 72, 655, legal.responsable() + ", CON DNI " + legal.responsableNif()
-				+ ", en calidad de " + legal.cargo() + " del", 10, false);
-		escribirTexto(content, 72, 634, legal.nombreLegal() + " con C.I.F.: " + legal.cif()
-				+ ", hago constar que ha recibido de", 10, false);
-		escribirTexto(content, 72, 613, "D/Dña.", 10, false);
-		aniadirCampoTexto(acroForm, page, "pagador", alumnoNombre.toUpperCase(Locale.ROOT), 109, 607, 235, 17);
-		escribirTexto(content, 350, 613, "la cantidad de", 10, false);
-		aniadirCampoTexto(acroForm, page, "totalImporte", formatearEuros(certificado.total), 429, 607, 72, 17);
-		escribirTexto(content, 72, 592, "durante el ejercicio " + certificado.ano
-				+ ", en concepto de matricula, mensualidades o reserva de plaza del menor", 10, false);
-		aniadirCampoTexto(acroForm, page, "alumno", alumnoNombre.toUpperCase(Locale.ROOT), 72, 565, 325, 17);
-		escribirTexto(content, 402, 571, ".", 10, false);
+		y -= 36f;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, "Se desglosa el importe total del ejercicio "
+				+ certificado.ano + " en los siguientes importes:");
 
-		escribirTexto(content, 72, 528, "Se desglosa el importe total del ejercicio " + certificado.ano
-				+ " en los siguientes importes:", 10, false);
+		float finTabla = dibujarTablaMeses(content, acroForm, page, fuentes, certificado, y - 10f);
 
-		dibujarTablaMeses(content);
-		for (int i = 0; i < 6; i++) {
-			float y = 496 - (i * 28);
-			escribirTexto(content, 80, y, MESES_ES[i], 9, true);
-			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 177, y - 7, 75, 17);
-		}
-		for (int i = 6; i < 12; i++) {
-			float y = 496 - ((i - 6) * 28);
-			escribirTexto(content, 310, y, MESES_ES[i], 9, true);
-			aniadirCampoTexto(acroForm, page, "mes_" + (i + 1), formatearEuros(certificado.importesPorMes[i]), 408, y - 7, 75, 17);
-		}
-
-		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, 72, 240, 250, 17);
-		escribirTexto(content, 72, 185, "Firmado:", 10, true);
-		escribirTexto(content, 72, 164, legal.responsable(), 10, false);
-		escribirTexto(content, 72, 109, legal.cargo().toUpperCase(new Locale("es", "ES")), 10, false);
-		escribirTexto(content, 72, 88, legal.clubFirma(), 10, false);
-		escribirTexto(content, 72, 67, "C.I.F.: " + legal.cif(), 10, false);
+		y = finTabla - 50f;
+		aniadirCampoTexto(acroForm, page, "fechaGeneracion", fechaGeneracion, x - RELLENO_CAMPO, y - 5f, 300f,
+				ALTO_CAMPO, cuerpo, false);
+		y -= 55f;
+		escribirTexto(content, fuentes.semiBold(), cuerpo, tinta, x, y, "Firmado:");
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, legal.responsable());
+		y -= 55f;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, legal.cargo().toUpperCase(new Locale("es", "ES")));
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, legal.clubFirma());
+		y -= INTERLINEA_CERTIFICADO;
+		escribirTexto(content, texto, cuerpo, tinta, x, y, "C.I.F.: " + legal.cif());
 	}
 
-	private void dibujarTablaMeses(PDPageContentStream content) throws IOException {
-		content.setStrokingColor(210, 221, 234);
-		content.setLineWidth(0.6f);
-		for (int row = 0; row <= 6; row++) {
-			float y = 510 - (row * 28);
-			content.moveTo(72, y);
-			content.lineTo(257, y);
-			content.moveTo(302, y);
-			content.lineTo(487, y);
+	/**
+	 * Importes por mes en dos tablas (enero a junio y julio a diciembre) con el estilo de tablas común: cabecera
+	 * («Mes», «Importe») en gris sobre {@code #fafaf8} con filete de 1 pt, filas con filete fino, importes a la derecha.
+	 * Cada importe es un campo editable ({@code mes_1} a {@code mes_12}).
+	 *
+	 * @param arriba altura del borde superior de las tablas
+	 * @return altura del borde inferior
+	 */
+	private float dibujarTablaMeses(PDPageContentStream content, PDAcroForm acroForm, PDPage page,
+			FuentesCertificado fuentes, CertificadoCobrosData certificado, float arriba) throws IOException {
+		float anchoUtil = page.getMediaBox().getWidth() - 2 * MARGEN_CERTIFICADO;
+		float separacion = 8 * MM;
+		float anchoTabla = (anchoUtil - separacion) / 2;
+		float rellenoCelda = 2 * MM;
+		float tamanoCabecera = 7.5f;
+		float tamanoCelda = 8.5f;
+		float altoCabecera = tamanoCabecera * 1.25f + 2 * 1.5f * MM;
+		float altoFila = tamanoCelda * 1.35f + 2 * 1.4f * MM;
+		float altoCampo = 14f;
+		float abajo = arriba - altoCabecera - 6 * altoFila;
+
+		for (int tabla = 0; tabla < 2; tabla++) {
+			float izquierda = MARGEN_CERTIFICADO + tabla * (anchoTabla + separacion);
+			float derecha = izquierda + anchoTabla;
+
+			relleno(content, EstiloPdf.FONDO_CABECERA_TABLA);
+			content.addRect(izquierda, arriba - altoCabecera, anchoTabla, altoCabecera);
+			content.fill();
+			trazo(content, EstiloPdf.FILETE_CABECERA_TABLA);
+			content.setLineWidth(1f);
+			content.moveTo(izquierda, arriba - altoCabecera + 0.5f);
+			content.lineTo(derecha, arriba - altoCabecera + 0.5f);
+			content.stroke();
+
+			trazo(content, EstiloPdf.FILETE);
+			content.setLineWidth(0.5f);
+			for (int fila = 0; fila < 6; fila++) {
+				float pie = arriba - altoCabecera - (fila + 1) * altoFila;
+				content.moveTo(izquierda, pie + 0.25f);
+				content.lineTo(derecha, pie + 0.25f);
+			}
+			content.stroke();
 		}
-		for (float x : new float[] { 72, 168, 257, 302, 398, 487 }) {
-			content.moveTo(x, 510);
-			content.lineTo(x, 342);
+
+		// Cabeceras de columna (vertical-align: bottom) y meses de las dos tablas fila a fila (enero y julio, febrero y
+		// agosto…), como en el certificado anterior.
+		float baseCabecera = arriba - altoCabecera + 1.5f * MM
+				- fuentes.semiBold().getFontDescriptor().getDescent() / 1000f * tamanoCabecera;
+		for (int tabla = 0; tabla < 2; tabla++) {
+			float izquierda = MARGEN_CERTIFICADO + tabla * (anchoTabla + separacion);
+			escribirTexto(content, fuentes.semiBold(), tamanoCabecera, EstiloPdf.GRIS, izquierda + rellenoCelda,
+					baseCabecera, "Mes");
+			escribirTextoDerecha(content, fuentes.semiBold(), tamanoCabecera, EstiloPdf.GRIS,
+					izquierda + anchoTabla - rellenoCelda, baseCabecera, "Importe");
 		}
-		content.stroke();
-		content.setStrokingColor(0, 0, 0);
+		for (int fila = 0; fila < 6; fila++) {
+			float pie = arriba - altoCabecera - (fila + 1) * altoFila;
+			float base = lineaBaseCentrada(pie, altoFila, fuentes.regular(), tamanoCelda);
+			for (int tabla = 0; tabla < 2; tabla++) {
+				int mes = tabla * 6 + fila;
+				float izquierda = MARGEN_CERTIFICADO + tabla * (anchoTabla + separacion);
+				float derecha = izquierda + anchoTabla;
+				escribirTexto(content, fuentes.regular(), tamanoCelda, EstiloPdf.TINTA, izquierda + rellenoCelda, base,
+						nombreMes(mes));
+				float anchoCampo = anchoTabla / 2;
+				aniadirCampoTexto(acroForm, page, "mes_" + (mes + 1), formatearEuros(certificado.importesPorMes[mes]),
+						derecha - rellenoCelda + RELLENO_CAMPO - anchoCampo, pie + (altoFila - altoCampo) / 2,
+						anchoCampo, altoCampo, tamanoCelda, true);
+			}
+		}
+		return abajo;
 	}
 
-	private void escribirTexto(PDPageContentStream content, float x, float y, String texto, int size, boolean bold)
-			throws IOException {
-		content.beginText();
-		content.setFont(bold ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA, size);
-		content.newLineAtOffset(x, y);
-		content.showText(sanitizarPdfText(texto));
-		content.endText();
+	/** «Enero», «Febrero»… */
+	private static String nombreMes(int indice) {
+		String mes = MESES_ES[indice];
+		return mes.charAt(0) + mes.substring(1).toLowerCase(new Locale("es", "ES"));
 	}
 
 	private void aniadirCampoTexto(
@@ -714,10 +938,15 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 			float x,
 			float y,
 			float width,
-			float height) throws IOException {
+			float height,
+			float tamano,
+			boolean derecha) throws IOException {
 		PDTextField field = new PDTextField(acroForm);
 		field.setPartialName(nombre);
-		field.setDefaultAppearance("/Helv 10 Tf 0 g");
+		field.setDefaultAppearance(aparienciaCampo(tamano));
+		if (derecha) {
+			field.setQ(PDVariableText.QUADDING_RIGHT);
+		}
 
 		PDAnnotationWidget widget = field.getWidgets().get(0);
 		widget.setRectangle(new PDRectangle(x, y, width, height));
@@ -1312,27 +1541,28 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 		long totalPagados = movimientos.stream().filter(m -> Boolean.TRUE.equals(m.getPagado())).count();
 		long totalPendientes = movimientos.size() - totalPagados;
 
-		String titulo = "Informe de Tesoreria";
+		String titulo = "Informe de Tesorería";
 		String estadoLabel = pagado == null ? "Todos" : (Boolean.TRUE.equals(pagado) ? "Pagados" : "Pendientes");
 		String deporteLabel = filtro.deporte != null ? filtro.deporte : "TODOS";
 		String periodoLabel = obtenerPeriodoLabel(filtro.mes, filtro.ano);
 
+		// Decisiones 309 y 315: cabecera, pie y tablas comunes, con logo, nombre de la escuela y los filtros. A4 apaisado:
+		// en vertical, un cargo de DEFENSA_PERSONAL_FEMENINA (palabra sin cortes) desbordaba la tabla y se perdían las
+		// columnas «Fecha pago» e «Importe»; en apaisado caben las ocho columnas sin partir ni cambiar ningún dato.
+		MarcaEscuela marca = marcaEscuela.deActiva();
+		String filtros = "<strong>Periodo:</strong> " + escapeHtml(periodoLabel) + " | <strong>Deporte:</strong> "
+				+ escapeHtml(deporteLabel) + " | <strong>Estado:</strong> " + escapeHtml(estadoLabel);
+
 		StringBuilder html = new StringBuilder();
 		html.append("<!DOCTYPE html><html><head><meta charset='UTF-8' />");
 		html.append("<style>");
-		html.append("body { font-family: Arial, sans-serif; color: #1f2937; font-size: 12px; }");
-		html.append("h1 { margin-bottom: 4px; }");
-		html.append(".meta { margin: 0 0 10px; color: #4b5563; }");
-		html.append(".resumen { margin: 10px 0 14px; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f9fafb; }");
-		html.append(".resumen span { display: inline-block; margin-right: 16px; font-weight: 600; }");
-		html.append("table { width: 100%; border-collapse: collapse; }");
-		html.append("th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; }");
-		html.append("th { background: #f3f4f6; text-transform: uppercase; font-size: 11px; }");
+		html.append(EstiloPdf.pie(marca.cabeceraInformes(), titulo));
+		html.append(EstiloPdf.cssComun());
+		html.append("@page { size: A4 landscape; }");
+		html.append(".resumen { margin: 0 0 3mm; }");
+		html.append(".resumen span { display: inline-block; margin-right: 6mm; font-weight: 600; }");
 		html.append("</style></head><body>");
-		html.append("<h1>").append(escapeHtml(titulo)).append("</h1>");
-		html.append("<p class='meta'><strong>Periodo:</strong> ").append(escapeHtml(periodoLabel))
-				.append(" | <strong>Deporte:</strong> ").append(escapeHtml(deporteLabel))
-				.append(" | <strong>Estado:</strong> ").append(escapeHtml(estadoLabel)).append("</p>");
+		html.append(EstiloPdf.cabeceraInforme(marca, escapeHtml(titulo), filtros));
 		html.append("<div class='resumen'>");
 		html.append("<span>Total movimientos: ").append(movimientos.size()).append("</span>");
 		html.append("<span>Pagados: ").append(totalPagados).append("</span>");
@@ -1342,11 +1572,12 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 		html.append("<table><thead><tr>");
 		html.append("<th>Alumno</th><th>Deporte</th><th>Concepto</th><th>Categoria</th>");
-		html.append("<th>Fecha cargo</th><th>Estado</th><th>Fecha pago</th><th>Importe</th>");
+		html.append("<th class='num'>Fecha cargo</th><th>Estado</th><th class='num'>Fecha pago</th>");
+		html.append("<th class='num'>Importe</th>");
 		html.append("</tr></thead><tbody>");
 
 		if (movimientos.isEmpty()) {
-			html.append("<tr><td colspan='8' style='text-align:center;'>No hay movimientos para los filtros seleccionados.</td></tr>");
+			html.append("<tr><td colspan='8' class='vacio'>No hay movimientos para los filtros seleccionados.</td></tr>");
 		} else {
 			for (TesoreriaMovimientoDTO movimiento : movimientos) {
 				html.append("<tr>");
@@ -1354,10 +1585,15 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 				html.append("<td>").append(escapeHtml(movimiento.getDeporte())).append("</td>");
 				html.append("<td>").append(escapeHtml(movimiento.getConcepto())).append("</td>");
 				html.append("<td>").append(escapeHtml(movimiento.getCategoria())).append("</td>");
-				html.append("<td>").append(escapeHtml(formatearFecha(movimiento.getFechaAsignacion()))).append("</td>");
-				html.append("<td>").append(Boolean.TRUE.equals(movimiento.getPagado()) ? "PAGADO" : "PENDIENTE").append("</td>");
-				html.append("<td>").append(escapeHtml(formatearFecha(movimiento.getFechaPago()))).append("</td>");
-				html.append("<td>").append(String.format(Locale.ROOT, "%.2f", movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
+				html.append("<td class='num'>").append(escapeHtml(formatearFecha(movimiento.getFechaAsignacion())))
+						.append("</td>");
+				// Decisión 315: el cargo pendiente de cobro, en ocre; el pagado, neutro.
+				html.append(Boolean.TRUE.equals(movimiento.getPagado()) ? "<td><span class='estado'>PAGADO</span></td>"
+						: "<td><span class='pendiente-dinero'>PENDIENTE</span></td>");
+				html.append("<td class='num'>").append(escapeHtml(formatearFecha(movimiento.getFechaPago())))
+						.append("</td>");
+				html.append("<td class='num'>")
+						.append(String.format(Locale.ROOT, "%.2f", movimiento.getPrecio() != null ? movimiento.getPrecio() : 0.0))
 						.append(" EUR</td>");
 				html.append("</tr>");
 			}

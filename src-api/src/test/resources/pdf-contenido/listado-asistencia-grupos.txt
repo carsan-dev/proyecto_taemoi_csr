@@ -1,0 +1,35 @@
+# Contenido del PDF «listado-asistencia-grupos» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Octubre de 2026, días Lunes y Miércoles, todas las disciplinas. Edad y meses en el grado con HOY.
+~ CLUB MOI'S KIM DO
+~ Tae Kwon Do
+LISTADO DE ASISTENCIA - OCTUBRE 2026
+TAEKWONDO
+Total: 2 alumnos
+LUNES - Turno de 17:00 a 18:00
+APTO GRADO LIC. EDAD NOMBRE Y APELLIDOS Nº EXP. 5 12 19 26
+FED
+7m 5001 11 Ana Prueba Uno 101
+10m NO 13 Carla Prueba Tres 103
+5 12 19 26
+~ CLUB MOI'S KIM DO
+~ Tae Kwon Do
+LISTADO DE ASISTENCIA - OCTUBRE 2026
+TAEKWONDO
+Total: 2 alumnos
+LUNES - Turno de 20:00 a 21:00
+APTO GRADO LIC. EDAD NOMBRE Y APELLIDOS Nº EXP. 5 12 19 26
+FED
+16m 5002 36 Bruno Prueba Dos 102
+29m 1º 5005 26 Eva Prueba Cinco 105
+5 12 19 26
+~ CLUB MOI'S KIM DO
+~ Tae Kwon Do
+LISTADO DE ASISTENCIA - OCTUBRE 2026
+KICKBOXING
+Total: 1 alumnos
+MIÉRCOLES - Turno de 19:00 a 20:00
+APTO GRADO LIC. EDAD NOMBRE Y APELLIDOS Nº EXP. 7 14 21 28
+FED
+8m NO 36 Bruno Prueba Dos 102
+7 14 21 28

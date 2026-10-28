@@ -1,0 +1,18 @@
+# Contenido del PDF «convocatoria» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Convocatoria a examen 20/11/2026
+~ MOI'S KIM DO TAEKWONDO
+~ CONVOCATORIA A EXAMEN 20/11/2026
+(SOLO ALUMNOS CON DERECHO A EXAMEN)
+TOTAL ALUMNOS: 3
+DE AZUL 1 Alumnos A ROJO
+NOMBRE EXP LIC. FEDERATIVA EDAD CATEGORÍA PESO PAGADO
+BRUNO PRUEBA DOS 102 5002 36 Senior -80 kg 79.0 NO
+DE AMARILLO 1 Alumnos A AMARILLO-NARANJA
+NOMBRE EXP LIC. FEDERATIVA EDAD CATEGORÍA PESO PAGADO
+ANA PRUEBA UNO 101 5001 11 Infantil -40 kg 38.5 SI
+DE BLANCO-AMARILLO 1 Alumnos A AMARILLO
+NOMBRE EXP LIC. FEDERATIVA EDAD CATEGORÍA PESO PAGADO
+CARLA PRUEBA TRES 103 13 NO
+~ jueves, 15 de octubre de 2026 Página 1 de 1

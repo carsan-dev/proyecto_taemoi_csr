@@ -1,0 +1,26 @@
+# Contenido del PDF «preinscripcion-preview» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Vista previa con los datos de ejemplo fijos del generador; fecha de firma = HOY (presentación).
+SOLICITUD DE PREINSCRIPCIÓN PREVIEW
+~ Escuela Moi Kim Do · Calle Ficticia 1 · Temporada 2026/2027
+Preinscripción recibida. Plaza asignada; esta solicitud ya cuenta en el aforo del grupo.
+Datos de la persona solicitante
+NOMBRE Y APELLIDOS DNI/NIE
+María García López 12345678Z
+FECHA DE NACIMIENTO CORREO ELECTRÓNICO
+2000-01-15 maria@example.org
+TELÉFONO PRINCIPAL TELÉFONO SECUNDARIO
+600 000 000 611 111 111
+DISCAPACIDAD DIRECCIÓN
+No Calle Ejemplo, 1, Umbrete
+Actividad solicitada
+Grupo de ejemplo · lunes y miércoles 18:00–19:00
+Consentimiento fotográfico (opcional)
+[X] Autorizado.
+Normas de la escuela
+1. Norma de vista previa.
+[X] Me comprometo a cumplir las normas establecidas por el club.
+Importes y pago
+Firma
+~ Firmado por María García López el 2026-10-15.
+Documento generado electrónicamente. Referencia PREVIEW. Versión documental preservada con la solicitud.

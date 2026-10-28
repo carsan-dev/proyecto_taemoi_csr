@@ -140,18 +140,20 @@ public class MarcaEscuelaService {
 			// E7-8 (decisión 213): con logo subido, ese en sus tres huecos (como en otra escuela); sin él, los de siempre.
 			if (logo != null) {
 				return new MarcaEscuela(organizacionId, true, organizacion.getNombre(), dataUri, dataUri, logo, null,
-						null);
+						null, organizacion.getColorPrimario());
 			}
 			LogosLegado logos = logosLegado();
 			return new MarcaEscuela(organizacionId, true, organizacion.getNombre(), logos.informes(), logos.solicitud(),
-					logos.certificado(), null, null);
+					logos.certificado(), null, null, organizacion.getColorPrimario());
 		}
 		return new MarcaEscuela(organizacionId, false, organizacion.getNombre(), dataUri, dataUri, logo,
 				new MarcaEscuela.DatosLegales(organizacion.getNombreLegal(), organizacion.getCif(),
 						organizacion.getLocalidad(), organizacion.getFirmanteNombre(), organizacion.getFirmanteNif(),
 						organizacion.getFirmanteCargo()),
 				// Remitente: organizacion.email_remitente_nombre si está lleno; si no, su nombre.
-				organizacion.getEmailRemitenteNombre());
+				organizacion.getEmailRemitenteNombre(),
+				// Decisiones 309 y 315: el filete de la cabecera de sus PDF (MarcaEscuela lo valida).
+				organizacion.getColorPrimario());
 	}
 
 	/**

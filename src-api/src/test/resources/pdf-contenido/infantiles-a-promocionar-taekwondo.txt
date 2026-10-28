@@ -1,0 +1,22 @@
+# Contenido del PDF «infantiles-a-promocionar-taekwondo» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Edad y grupo infantil/adulto calculados con HOY.
+~ Alumnos Infantiles a Promocionar - Taekwondo
+~ MOI'S KIM DO TAEKWONDO
+~ Infantiles a Promocionar - Taekwondo
+Promocionan a AMARILLO-NARANJA
+NOMBRE Y GRADO A
+Nº EXPEDIENTE GRADO ACTUAL EDAD
+APELLIDOS PROMOCIONAR
+Ana Prueba Uno 101 AMARILLO- 11
+AMARILLO
+NARANJA
+Promocionan a AMARILLO
+NOMBRE Y GRADO A
+Nº EXPEDIENTE GRADO ACTUAL EDAD
+APELLIDOS PROMOCIONAR
+Carla Prueba Tres 103 BLANCO- 13
+AMARILLO
+AMARILLO
+~ jueves, 15 de octubre de 2026 Página 1 de 1

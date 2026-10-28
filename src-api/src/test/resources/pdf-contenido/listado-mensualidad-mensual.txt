@@ -1,0 +1,17 @@
+# Contenido del PDF «listado-mensualidad-mensual» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Sin tarifas por sede (cuantía esperada = la de la inscripción).
+~ Listado Mensualidad OCTUBRE 2026
+~ MOI'S KIM DO TAEKWONDO
+~ Listado Mensualidad OCTUBRE 2026
+FECHA DE
+APELLIDOS Y NOMBRE DEPORTE DESCUENTO CUANTÍA COMP GRADO
+PAGO
+Prueba Cinco Eva Taekwondo ADULTO 30.00 EUR -
+Taekwondo ADULTO 55.00 EUR 25.00
+Prueba Dos Bruno 03/10/2026
+Kickboxing KICKBOXING 30.00 EUR -
+Prueba Tres Carla Taekwondo INFANTIL Cancelado -
+Prueba Uno Ana Taekwondo INFANTIL 28.00 EUR - 05/10/2026
+~ 15/10/2026 Página 1 de 1

@@ -1,0 +1,18 @@
+# Contenido del PDF «competidores» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+~ Listado de Competidores
+~ MOI'S KIM DO TAEKWONDO
+~ Listado de Competidores
+Taekwondo (2 competidores)
+Infantil -40 kg Competidores: 1
+NOMBRE Y APELLIDOS GRADO PESO FECHA PESO
+Ana Prueba Uno AMARILLO 38.5 kg 01/09/2026
+Senior -80 kg Competidores: 1
+NOMBRE Y APELLIDOS GRADO PESO FECHA PESO
+Bruno Prueba Dos AZUL 79.0 kg 02/09/2026
+Kickboxing (1 competidores)
+Sin categoría Competidores: 1
+NOMBRE Y APELLIDOS GRADO PESO FECHA PESO
+Bruno Prueba Dos VERDE
+~ jueves, 15 de octubre de 2026 Página 1 de 1

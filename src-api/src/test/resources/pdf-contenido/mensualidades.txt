@@ -1,0 +1,60 @@
+# Contenido del PDF «mensualidades» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Fecha de generación: LocalDate.now() sin Clock, fijada a 2026-10-15 en el test (presentación).
+# Decisión 315: con el diseño común el informe cabe en una página (antes, dos).
+~ Informe de Mensualidades
+~ MOI'S KIM DO TAEKWONDO
+~ Informe de Mensualidades
+Mensualidades de Alumnos (4 alumnos)
+Ana Prueba Uno (Exp. 101) [Taekwondo]
+Total mensualidades: 3 | Pagadas: 2 (54.00 €) | Pendientes: 1 (28.00 €)
+FECHA FECHA
+CONCEPTO IMPORTE ESTADO NOTAS
+ASIGNACIÓN PAGO
+Pagado
+MENSUALIDAD OCTUBRE 2026 - 05/10
+01/10/2026 28.00 € PAGADO por
+TAEKWONDO /2026
+Bizum
+MENSUALIDAD SEPTIEMBRE
+01/09/2026 28.00 € PENDIENTE N/A
+2026 - TAEKWONDO
+MENSUALIDAD ENERO 2026 - 08/01
+01/01/2026 26.00 € PAGADO
+TAEKWONDO /2026
+Bruno Prueba Dos (Exp. 102) [Kickboxing]
+Total mensualidades: 1 | Pagadas: 1 (30.00 €) | Pendientes: 0 (0.00 €)
+FECHA FECHA
+CONCEPTO IMPORTE ESTADO NOTAS
+ASIGNACIÓN PAGO
+MENSUALIDAD OCTUBRE 2026 - 03/10
+01/10/2026 30.00 € PAGADO
+KICKBOXING /2026
+~ jueves, 15 de octubre de 2026 Página 1 de 1
+~ Informe de Mensualidades
+Bruno Prueba Dos (Exp. 102) [Taekwondo]
+Total mensualidades: 2 | Pagadas: 0 (0.00 €) | Pendientes: 2 (55.00 €)
+FECHA FECHA
+CONCEPTO IMPORTE ESTADO NOTAS
+ASIGNACIÓN PAGO
+MENSUALIDAD OCTUBRE 2026 -
+01/10/2026 30.00 € PENDIENTE N/A
+TAEKWONDO
+TARIFA COMPETIDOR OCTUBRE Dos
+02/10/2026 25.00 € PENDIENTE N/A
+2026 - TAEKWONDO plazos
+Carla Prueba Tres (Exp. 103) [Taekwondo]
+Total mensualidades: 0 | Pagadas: 0 (0.00 €) | Pendientes: 0 (0.00 €)
+FECHA FECHA
+CONCEPTO IMPORTE ESTADO NOTAS
+ASIGNACIÓN PAGO
+MENSUALIDAD OCTUBRE 2026
+01/10/2026 28.00 € CANCELADO N/A
+- TAEKWONDO
+RESUMEN GENERAL
+Total de alumnos: 4
+Total de mensualidades: 6
+Mensualidades pagadas: 3 (84.00 €)
+Mensualidades pendientes: 3 (83.00 €)
+TOTAL GENERAL: 167.00 €
+~ jueves, 15 de octubre de 2026 Página 1 de 1

@@ -266,7 +266,7 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Escuela Ficticia Sin Logo", marca.nombre());
 		byte[] informe = TenantContext.calcularCon(escuela, () -> pdfService.generarInformeAlumnasDpf(true));
 		String texto = texto(informe);
-		assertTrue(texto.contains("ESCUELA FICTICIA SIN LOGO"), texto);
+		assertTrue(texto.contains("Escuela Ficticia Sin Logo"), texto); // decisión 315: sin mayúsculas forzadas
 		assertFalse(texto.toUpperCase().contains("KIM DO"), texto);
 		assertEquals(0, imagenesDelPdf(informe));
 
@@ -355,7 +355,7 @@ class LogoEscuelaIntegrationTest extends MySqlIntegrationTest {
 			assertEquals("Moi's Kim Do Taekwondo", conLogo.cabeceraInformesHtml());
 			assertNull(conLogo.remitente());
 			byte[] informe = TenantContext.calcularCon(ORG1, () -> pdfService.generarInformeAlumnasDpf(true));
-			assertTrue(texto(informe).contains("MOI'S KIM DO TAEKWONDO"));
+			assertTrue(texto(informe).contains("Moi's Kim Do Taekwondo")); // decisión 315: sin mayúsculas forzadas
 			assertEquals(1, imagenesDelPdf(informe));
 
 			// Previsualización: el subido.
