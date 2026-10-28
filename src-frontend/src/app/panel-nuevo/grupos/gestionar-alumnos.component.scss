@@ -31,6 +31,7 @@
 .alumnos-grupo__opciones button { @include c.boton-texto; }
 .alumnos-grupo__paginacion { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 16px; font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
 .alumnos-grupo__vacio { padding: 32px 16px; text-align: center; }
+.alumnos-grupo__vacio pn-mascota { display: flex; margin: 0 auto var(--pn-espacio-s); }
 .alumnos-grupo__vacio h2 { margin: 0 0 16px; font: var(--pn-titulo-bloque); overflow-wrap: anywhere; }
 .alumnos-grupo__esqueleto { height: 60px; margin-bottom: 8px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
 @media (max-width: 767.98px) {

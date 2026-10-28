@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Observable, Subscription, forkJoin, interval, of } from 'rxjs';
 import { catchError, map, skip, switchMap, take } from 'rxjs/operators';
 
+import { MascotaComponent } from '../mascota/mascota.component';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -144,7 +145,7 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [RouterLink, EsqueletoComponent, BloqueErrorComponent, AcentoEscuelaDirective],
+  imports: [MascotaComponent, RouterLink, EsqueletoComponent, BloqueErrorComponent, AcentoEscuelaDirective],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss'],
 })

@@ -60,8 +60,16 @@
 }
 
 .deportes__vacio {
+  display: grid;
+  justify-items: center;
+  gap: var(--pn-espacio-s);
+  text-align: center;
   margin: var(--pn-espacio-m) 0;
   color: var(--pn-tinta-2);
+
+  p {
+    margin: 0;
+  }
 }
 
 .deportes__bloque {

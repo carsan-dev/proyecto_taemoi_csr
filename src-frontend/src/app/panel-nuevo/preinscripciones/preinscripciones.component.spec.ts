@@ -5,6 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
@@ -194,6 +195,10 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
     await TestBed.configureTestingModule({
       imports: [PreinscripcionesPanelComponent],
       providers: [
+        { provide: MASCOTA_CARGADORES, useValue: {
+          explicar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+          compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
@@ -365,6 +370,14 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
     cargar();
     expect(texto(el().querySelector('.preins__detalle-vacio'))).toContain('Elige una solicitud');
     http.expectNone(() => true);
+  });
+
+  it('shows explicar above the unselected request detail', () => {
+    cargar();
+    const mascot = el().querySelector('.preins__detalle-vacio pn-mascota')!;
+    expect(mascot.getAttribute('pose')).toBe('explicar');
+    expect(mascot.getAttribute('aria-hidden')).toBe('true');
+    expect(mascot.nextElementSibling?.classList).toContain('preins__detalle-vacio-titulo');
   });
 
   it('al abrir una pendiente: pide el detalle (fichas compatibles) y la firma, como hoy; datos, horario y avisos', () => {

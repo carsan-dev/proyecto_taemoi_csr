@@ -447,19 +447,13 @@
 .preins__detalle-vacio {
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: var(--pn-espacio-s);
   padding: 56px 24px;
   text-align: center;
-
-  svg {
-    width: 32px;
-    height: 32px;
-    color: var(--pn-tinta-3);
-  }
 }
 
 .preins__detalle-vacio-titulo {
-  margin: 4px 0 0;
+  margin: 0;
   font: var(--pn-titulo-bloque);
   color: var(--pn-tinta);
 }

@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
@@ -130,6 +131,9 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
     await TestBed.configureTestingModule({
       imports: [EventosPanelComponent],
       providers: [
+        { provide: MASCOTA_CARGADORES, useValue: {
+          compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
@@ -336,6 +340,7 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
     expect(interruptor(1).getAttribute('aria-checked')).toBe('false');
     expect(texto(el().querySelector('.eventos__resumen'))).toBe('4 eventos, 2 visibles en la web');
     expect(avisos()).toEqual([{ tipo: 'otro', texto: 'Campeonato regional ya no se ve en la web.' }]);
+    expect(TestBed.inject(AvisosService).lista().at(-1)?.mascota).toBeUndefined();
     // Publicar el oculto: la misma llamada.
     interruptor(3).click();
     fixture.detectChanges();
@@ -343,6 +348,7 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
     await esperar();
     expect(interruptor(3).getAttribute('aria-checked')).toBe('true');
     expect(avisos().pop()).toEqual({ tipo: 'otro', texto: 'Seminario ya se ve en la web.' });
+    expect(TestBed.inject(AvisosService).lista().at(-1)?.mascota).toBe('confirmar');
   });
 
   it('interruptor: no toca el orden pendiente; un error deja el estado de antes y avisa', async () => {

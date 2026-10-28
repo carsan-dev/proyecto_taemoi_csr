@@ -289,7 +289,11 @@ export class EventosPanelComponent implements OnInit, OnDestroy {
           this.cambiandoVisibilidad.delete(e.id);
           const visible = !this.visible(e);
           this.eventos = this.eventos.map((x) => (x.id === e.id ? { ...x, visible } : x));
-          this.avisos.exito(visible ? `${e.titulo} ya se ve en la web.` : `${e.titulo} ya no se ve en la web.`);
+          this.avisos.exito(
+            visible ? `${e.titulo} ya se ve en la web.` : `${e.titulo} ya no se ve en la web.`,
+            undefined,
+            visible ? { mascota: 'confirmar' } : undefined,
+          );
           this.cdr.markForCheck();
         },
         error: () => {

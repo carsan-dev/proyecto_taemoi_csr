@@ -9,7 +9,7 @@
   } @else if (errorCarga) {
     <pn-bloque-error [titulo]="errorCarga" (reintentar)="cargarGrupo()" />
   } @else if (!alumnos.length) {
-    <div class="alumnos-grupo__vacio"><h2>Aún no hay alumnos en este grupo</h2><button #anadirVacio class="alumnos-grupo__primario" type="button" (click)="abrirPanel(anadirVacio)">Añadir alumnos</button></div>
+    <div class="alumnos-grupo__vacio"><pn-mascota pose="esperar" tamano="md" animacion="aparecer" /><h2>Aún no hay alumnos en este grupo</h2><button #anadirVacio class="alumnos-grupo__primario" type="button" (click)="abrirPanel(anadirVacio)">Añadir alumnos</button></div>
   } @else {
     <div class="alumnos-grupo__busqueda">
       <label for="alumnos-grupo-busqueda">Buscar alumno por nombre</label>
@@ -21,7 +21,7 @@
       <p aria-live="polite">Mostrando {{ filtrados.length }} de {{ alumnos.length }}</p>
     </div>
     @if (!filtrados.length) {
-      <div class="alumnos-grupo__vacio"><h2>Ningún alumno coincide con «{{ filtro }}»</h2><button class="alumnos-grupo__texto" type="button" (click)="buscar('')">Quitar búsqueda</button></div>
+      <div class="alumnos-grupo__vacio"><pn-mascota pose="buscar" tamano="md" animacion="aparecer" /><h2>Ningún alumno coincide con «{{ filtro }}»</h2><button class="alumnos-grupo__texto" type="button" (click)="buscar('')">Quitar búsqueda</button></div>
     } @else {
       <ul class="alumnos-grupo__lista">
         @for (alumno of visibles; track alumno.id) {

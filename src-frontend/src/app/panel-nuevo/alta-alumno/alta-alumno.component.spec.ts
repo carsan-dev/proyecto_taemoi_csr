@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { fijarCatalogoActual, restablecerCatalogoActual } from '../../features/catalogo/testing/catalogo-actual.testing';
@@ -108,6 +109,9 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     await TestBed.configureTestingModule({
       imports: [AltaAlumnoComponent],
       providers: [
+        { provide: MASCOTA_CARGADORES, useValue: {
+          compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
@@ -256,6 +260,7 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     await esperar();
     expect(navegar).toHaveBeenCalledWith(['/alumnosEditar', 55]);
     expect(textosAvisos()).toContain('Alumno creado con 1 deporte(s)');
+    expect(TestBed.inject(AvisosService).lista().find(a => a.texto === 'Alumno creado con 1 deporte(s)')?.mascota).toBe('celebrar');
   });
 
   it('con la foto: va como «file» con su nombre; sin id en la respuesta, al listado', async () => {

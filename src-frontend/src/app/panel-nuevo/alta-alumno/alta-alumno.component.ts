@@ -667,7 +667,7 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
       next: (respuesta) => {
         this.enviando = false;
         const n = cuerpo['deportesInicial']?.length || 0;
-        this.avisos.exito(`Alumno creado con ${n} deporte(s)`);
+        this.avisos.exito(`Alumno creado con ${n} deporte(s)`, undefined, { mascota: 'celebrar' });
         this.form.markAsPristine();
         if (!this.destruido) {
           void this.router.navigate(respuesta?.id ? ['/alumnosEditar', respuesta.id] : ['/alumnosListar']);

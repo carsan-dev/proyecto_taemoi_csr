@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
@@ -86,6 +87,11 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     await TestBed.configureTestingModule({
       imports: [InicioComponent],
       providers: [
+        { provide: MASCOTA_CARGADORES, useValue: {
+          saludar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+          descansar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+          compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
@@ -201,6 +207,27 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     }
     return partes.join(' ');
   }
+
+  it('shows the greeting and only the approved empty-state mascot', () => {
+    responder(pendiente(), { grupos: [] });
+    const c = fixture.componentInstance;
+    c.disciplinas = [];
+    c.eventos = [];
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.inicio__bienvenida pn-mascota')?.getAttribute('pose')).toBe('saludar');
+    const empty = root.querySelector('.inicio__hoy pn-mascota')!;
+    expect(empty.getAttribute('pose')).toBe('descansar');
+    expect(empty.getAttribute('tamano')).toBe('md');
+    expect(empty.getAttribute('animacion')).toBe('aparecer');
+    expect(empty.getAttribute('aria-hidden')).toBe('true');
+    for (const message of ['Aún no hay turnos con grupo', 'No hay datos de inscripciones.', 'No hay eventos activos.']) {
+      const text = Array.from(root.querySelectorAll('.inicio__vacio')).find(node => node.textContent?.includes(message));
+      expect(text).withContext(message).toBeDefined();
+      expect(text!.parentElement!.querySelector('pn-mascota')).withContext(message).toBeNull();
+    }
+    expect(root.querySelectorAll('pn-mascota').length).toBe(2);
+  });
 
   it('pide los datos de hoy: grupos, turnos, límite, aptos, eventos y el pendiente vencido', () => {
     expect(http.match(`${API}/grupos/resumen`).length).toBe(1);

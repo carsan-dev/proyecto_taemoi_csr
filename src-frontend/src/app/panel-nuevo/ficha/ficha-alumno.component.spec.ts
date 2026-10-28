@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import Swal from 'sweetalert2';
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { pintarCapas } from '../capas/tokens-prueba';
 
 import { environment } from '../../../environments/environment';
@@ -199,6 +200,10 @@ function configurar(): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      { provide: MASCOTA_CARGADORES, useValue: {
+        esperar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+      } },
       provideHttpClient(),
       provideHttpClientTesting(),
       provideRouter([
@@ -346,6 +351,17 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     document.querySelectorAll('.swal2-container').forEach((n) => n.remove());
     TestBed.inject(AvisosService).cerrarTodos();
     document.querySelectorAll('pn-dialogo, pn-avisos').forEach((n) => n.remove());
+  });
+
+  itSinReloj('shows esperar when the pupil has no disciplines', async () => {
+    const datos = datosPorDefecto();
+    datos.deportes = [];
+    datos.alumno.deportes = [];
+    const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+    const mascot = m.el().querySelector('.deportes__vacio pn-mascota')!;
+    expect(mascot.getAttribute('pose')).toBe('esperar');
+    expect(mascot.getAttribute('aria-hidden')).toBe('true');
+    expect(mascot.nextElementSibling?.textContent).toBe('Este alumno no tiene disciplinas todavía.');
   });
 
   // ---------------------------------------------------------------- carnet
