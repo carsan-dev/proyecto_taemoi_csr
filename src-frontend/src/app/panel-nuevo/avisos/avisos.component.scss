@@ -78,6 +78,13 @@
   overflow-wrap: anywhere;
 }
 
+.pn-aviso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 16px;
+}
+
 .pn-aviso__accion {
   align-self: flex-start;
   min-height: 24px;

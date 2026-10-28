@@ -248,6 +248,11 @@
                   <button type="button" class="tesoreria__menu-opcion" role="menuitem" aria-haspopup="dialog" (click)="opcionFila(m, 'fecha')">
                     <i class="bi bi-calendar-event" aria-hidden="true"></i><span>Cambiar fecha de pago</span>
                   </button>
+                  @if (esGestion && !m.devuelto) {
+                  <button type="button" class="tesoreria__menu-opcion" role="menuitem" (click)="opcionFila(m, 'recibo')">
+                    <i class="bi bi-download" aria-hidden="true"></i><span>Descargar recibo</span>
+                  </button>
+                  }
                   @if (!m.devuelto) {
                   @if (isAdmin) {
                   <button type="button" class="tesoreria__menu-opcion tesoreria__menu-opcion--peligro" role="menuitem" aria-haspopup="dialog"

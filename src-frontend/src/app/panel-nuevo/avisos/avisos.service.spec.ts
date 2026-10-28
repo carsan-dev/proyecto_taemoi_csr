@@ -223,6 +223,46 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     flush();
   }));
 
+  it('segunda acción (accionPrevia): va antes de la principal y cada botón llama a la suya', fakeAsync(() => {
+    const recibo = jasmine.createSpy('recibo');
+    const deshacer = jasmine.createSpy('deshacer');
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: deshacer }, { accionPrevia: { texto: 'Recibo', alPulsar: recibo } });
+    pintar();
+    const botones = Array.from(tarjetas()[0].querySelectorAll<HTMLButtonElement>('.pn-aviso__accion'));
+    expect(botones.map((b) => b.textContent!.trim())).toEqual(['Recibo', 'Deshacer']);
+    botones[0].click();
+    pintar();
+    expect(recibo).toHaveBeenCalledTimes(1);
+    expect(deshacer).not.toHaveBeenCalled();
+    expect(tarjetas().length).toBe(0);
+    flush();
+  }));
+
+  it('accionPrevia con cierra: false no cierra el aviso y «Deshacer» sigue disponible y cierra', fakeAsync(() => {
+    const recibo = jasmine.createSpy('recibo');
+    const deshacer = jasmine.createSpy('deshacer');
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: deshacer }, { accionPrevia: { texto: 'Recibo', cierra: false, alPulsar: recibo } });
+    pintar();
+    tarjetas()[0].querySelectorAll<HTMLButtonElement>('.pn-aviso__accion')[0].click();
+    pintar();
+    expect(recibo).toHaveBeenCalledTimes(1);
+    expect(tarjetas().length).toBe(1);
+    const botones = Array.from(tarjetas()[0].querySelectorAll<HTMLButtonElement>('.pn-aviso__accion'));
+    expect(botones.map((b) => b.textContent!.trim())).toEqual(['Recibo', 'Deshacer']);
+    botones[1].click();
+    pintar();
+    expect(deshacer).toHaveBeenCalledTimes(1);
+    expect(tarjetas().length).toBe(0);
+    flush();
+  }));
+
+  it('un aviso con una sola acción sigue pintando un único botón', fakeAsync(() => {
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined });
+    pintar();
+    expect(tarjetas()[0].querySelectorAll('.pn-aviso__accion').length).toBe(1);
+    flush();
+  }));
+
   it('8b-C: con la marca, la acción del aviso va en el acento de la escuela', fakeAsync(() => {
     TestBed.inject(AcentoEscuelaActual).poner(SIERRA_PRUEBA);
     avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined });

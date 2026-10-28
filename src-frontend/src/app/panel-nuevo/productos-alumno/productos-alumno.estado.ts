@@ -112,6 +112,8 @@ export interface FilaCargo {
   puedeEliminar: boolean;
   puedeDeshacerBorrar: boolean;
   puedePedirReversion: boolean;
+  /** Gestión, cargo pagado (no devuelto) y no cancelado: «Descargar recibo». */
+  puedeDescargarRecibo: boolean;
 }
 
 export type EstadoCarga = 'cargando' | 'listo' | 'error';
@@ -214,6 +216,8 @@ export class ProductosAlumnoEstado {
   /** Propietario (`ROLE_ADMIN`): el único que elimina cargos. Falla cerrado. */
   readonly esPropietario = signal(false);
   readonly rolesCargados = signal(false);
+  /** Propietario o administración (`ROLE_ADMIN` o `ROLE_MANAGER`): ve «Descargar recibo» (pieza 279). */
+  readonly esGestion = signal(false);
 
   // ------------------------------------------------------------------ cambios pendientes
 
@@ -569,6 +573,7 @@ export class ProductosAlumnoEstado {
       puedeEliminar: propietario && !cancelado && !cargo.pagado && !marcada && libre,
       puedeDeshacerBorrar: marcada && libre,
       puedePedirReversion: rolesCargados && !propietario && estado === 'pagado' && libre,
+      puedeDescargarRecibo: rolesCargados && this.esGestion() && estado === 'pagado' && libre,
     };
   }
 
@@ -1184,6 +1189,7 @@ export class ProductosAlumnoEstado {
   private resolverPropietario(): void {
     if (this.auth.rolesEstanCargados()) {
       this.esPropietario.set(this.auth.tieneRolAdmin());
+      this.esGestion.set(this.auth.tieneAccesoAdmin());
       this.rolesCargados.set(true);
       return;
     }
@@ -1191,10 +1197,12 @@ export class ProductosAlumnoEstado {
       this.auth.obtenerRoles().subscribe({
         next: () => {
           this.esPropietario.set(this.auth.tieneRolAdmin());
+          this.esGestion.set(this.auth.tieneAccesoAdmin());
           this.rolesCargados.set(true);
         },
         error: () => {
           this.esPropietario.set(false);
+          this.esGestion.set(false);
           this.rolesCargados.set(false);
         },
       })

@@ -169,7 +169,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
-        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin } },
+        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esAdmin } },
         {
           provide: CatalogoService,
           useValue: {
@@ -436,8 +436,10 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     http.expectOne(`${API}/productos-alumno/801`).flush({});
     await esperar();
     http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`).forEach((r) => r.flush([]));
-    const deshacer = document.querySelector<HTMLButtonElement>('.pn-aviso__accion')!;
-    expect(deshacer.textContent!.trim()).toBe('Deshacer');
+    const deshacer = Array.from(document.querySelectorAll<HTMLButtonElement>('.pn-aviso__accion')).find(
+      (b) => b.textContent!.trim() === 'Deshacer'
+    )!;
+    expect(deshacer).toBeDefined();
     deshacer.click();
     const revertir = http.expectOne(`${API}/productos-alumno/801`);
     expect(revertir.request.body).toEqual({ pagado: false, motivoCambio: null });

@@ -95,7 +95,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true } },
+        { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true, tieneAccesoAdmin: () => true } },
         { provide: PlataformaService, useValue: { esAdminPlataforma: () => of(false) } },
         {
           provide: CatalogoService,

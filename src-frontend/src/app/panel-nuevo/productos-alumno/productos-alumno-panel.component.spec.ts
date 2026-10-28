@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ProductosAlumnoPanelComponent } from './productos-alumno-panel.component';
 import { salirSinGuardarGuard } from './salir-sin-guardar.guard';
@@ -49,9 +50,11 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
   let http: HttpTestingController;
   let confirmar: jasmine.Spy;
   let harness: RouterTestingHarness;
+  let gestion: boolean;
 
   beforeEach(async () => {
     sessionStorage.clear();
+    gestion = true;
     confirmar = jasmine.createSpy('confirmar').and.resolveTo({ confirmado: false, valor: null });
     TestBed.configureTestingModule({
       providers: [
@@ -65,7 +68,7 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
         { provide: AvisosService, useValue: jasmine.createSpyObj('Avisos', ['exito', 'error', 'info']) },
         {
           provide: AuthenticationService,
-          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => true, obtenerRoles: () => of([]) },
+          useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => true, tieneAccesoAdmin: () => gestion, obtenerRoles: () => of([]) },
         },
       ],
     });
@@ -460,6 +463,31 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     expect<Element | null>(disparadorDialogo).toBe(botonMenu);
     expect(document.activeElement).toBe(botonMenu);
     expect(pantalla.menuAbierto).toBeNull();
+  });
+
+  function opcionesDelMenu(pantalla: ProductosAlumnoPanelComponent, id: number): string[] {
+    const fila = el().querySelector<HTMLElement>(`[data-cargo="${id}"]`)!;
+    pantalla.alternarMenu(id, fila.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!);
+    harness.detectChanges();
+    return Array.from(fila.querySelectorAll('[role="menuitem"]')).map((b) => b.textContent!.trim());
+  }
+
+  it('recibo (pieza 279): «Descargar recibo» en el menú de un cargo pagado y descarga el de ese cargo', async () => {
+    const pantalla = await abrir(ALUMNO, 200, [{ ...cargo(1), pagado: true }, cargo(2)]);
+    const descargar = spyOn(TestBed.inject(ReciboPagoService), 'descargar').and.resolveTo();
+    expect(opcionesDelMenu(pantalla, 1)).toContain('Descargar recibo');
+    el().querySelector<HTMLElement>('[data-cargo="1"]')!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]').forEach((b) => {
+      if (b.textContent!.includes('Descargar recibo')) b.click();
+    });
+    expect(descargar).toHaveBeenCalledOnceWith(1);
+    expect(pantalla.menuAbierto).toBeNull();
+    expect(opcionesDelMenu(pantalla, 2)).not.toContain('Descargar recibo');
+  });
+
+  it('recibo: sin gestión no hay «Descargar recibo» en un cargo pagado', async () => {
+    gestion = false;
+    const pantalla = await abrir(ALUMNO, 200, [{ ...cargo(1), pagado: true }]);
+    expect(opcionesDelMenu(pantalla, 1)).not.toContain('Descargar recibo');
   });
 
   it('describe los campos pagados con un único aviso de tabla y conserva la nota móvil', async () => {

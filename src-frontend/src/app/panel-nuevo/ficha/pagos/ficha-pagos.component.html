@@ -39,6 +39,9 @@
           @if (!p.pagado) {
           <button type="button" class="pagos__cobrar" [attr.aria-label]="'Cobrar ' + p.concepto"
             [disabled]="ficha.isPagandoProducto(p.id)" (click)="ficha.pagarProducto(p)">Cobrar</button>
+          } @else if (puedeDescargarRecibo(p)) {
+          <button type="button" class="pagos__cobrar pagos__recibo" [attr.aria-label]="'Descargar recibo de ' + p.concepto"
+            [disabled]="recibos.descargando(p.id)" (click)="descargarRecibo(p)">Descargar recibo</button>
           }
         </td>
       </tr>
