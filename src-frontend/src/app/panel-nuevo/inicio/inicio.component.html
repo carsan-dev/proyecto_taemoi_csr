@@ -2,9 +2,9 @@
   <div class="inicio__pagina">
     <header class="inicio__cabecera">
       <div class="inicio__bienvenida">
-        <pn-mascota pose="saludar" tamano="md" animacion="aparecer" />
+        <pn-mascota [pose]="cumpleanos ? 'cumpleanos' : 'saludar'" tamano="md" animacion="aparecer" />
         <div>
-          <h1 class="inicio__titulo">Inicio</h1>
+          <h1 class="inicio__titulo">{{ titulo }}</h1>
           <p class="inicio__fecha">{{ fechaHoy }}</p>
         </div>
       </div>
