@@ -38,7 +38,8 @@
         </select>
         <i class="bi bi-chevron-down" aria-hidden="true"></i>
       </label>
-      <button type="button" class="btn-asistencia" [disabled]="descargando" (click)="descargarAsistencia()">
+      <button #botonAsistencia type="button" class="btn-asistencia" [disabled]="descargando"
+        [attr.aria-busy]="descargando" (click)="descargarAsistencia(botonAsistencia)">
         @if (descargando) {
           <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
         } @else {
@@ -92,5 +93,11 @@
         </ul>
       }
     }
+  }
+</div>
+
+<div class="pn" pnAcento>
+  @if (documentos.length) {
+    <pn-visor-pdf [documentos]="documentos" aviso="" [focoRetorno]="focoRetorno" (cerrar)="cerrarVisor()" />
   }
 </div>

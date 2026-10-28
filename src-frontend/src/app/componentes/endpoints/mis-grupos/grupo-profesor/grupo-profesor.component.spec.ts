@@ -1,5 +1,8 @@
-import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
-import { HttpErrorResponse } from '@angular/common/http';
+import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -7,6 +10,19 @@ import { GrupoProfesorComponent, esApto } from './grupo-profesor.component';
 import { AlumnoDeGrupo, GrupoProfesor } from '../../../../interfaces/profesor';
 import { ProfesorService } from '../../../../servicios/endpoints/profesor.service';
 import { mesesAsistencia } from '../profesor-textos';
+import { environment } from '../../../../../environments/environment';
+import type { DocumentoInforme } from '../../../../servicios/generales/informe-pdf.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
+import { VisorPdfComponent } from '../../../../panel-nuevo/visor-pdf/visor-pdf.component';
+import { Toast } from '../../../../utils/toast.util';
+
+@Component({ selector: 'pn-visor-pdf', standalone: true, template: '' })
+class ViewerStub {
+  @Input() documentos: DocumentoInforme[] = [];
+  @Input() aviso = '';
+  @Input() focoRetorno: HTMLElement | null = null;
+  @Output() readonly cerrar = new EventEmitter<void>();
+}
 
 const GRUPO: GrupoProfesor = {
   id: 4, nombre: 'Infantil lunes y miércoles', sede: { id: 1, nombre: 'Sede Centro' }, rol: 'TITULAR', alumnosActivos: 3, disciplina: null,
@@ -93,24 +109,220 @@ describe('GrupoProfesorComponent', () => {
     expect(texto('.estado-error p')).toBe('No tienes acceso a este grupo');
   });
 
-  it('la hoja de asistencia sale por defecto del mes actual y se descarga con el nombre del servidor', fakeAsync(() => {
-    crear();
+});
+
+describe('GrupoProfesorComponent — vista previa de asistencia', () => {
+  let fixture: ComponentFixture<GrupoProfesorComponent>;
+  let http: HttpTestingController;
+  let estilos: jasmine.SpyObj<EstilosPanelService>;
+  const BASE = `${environment.apiUrl}/profesor/grupos`;
+  const root = (): HTMLElement => fixture.nativeElement;
+  const boton = () => root().querySelector<HTMLButtonElement>('.btn-asistencia')!;
+  const visor = () => fixture.debugElement.query(By.directive(ViewerStub));
+  const solicitud = () => http.expectOne(r => r.url === `${BASE}/4/asistencia`);
+  const blob = new Blob(['%PDF'], { type: 'application/pdf' });
+
+  beforeEach(() => {
+    estilos = jasmine.createSpyObj<EstilosPanelService>('EstilosPanelService', ['cargar']);
+    estilos.cargar.and.resolveTo();
+    TestBed.configureTestingModule({
+      imports: [GrupoProfesorComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+        { provide: EstilosPanelService, useValue: estilos },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ grupoId: '4' }) } } },
+      ],
+    }).overrideComponent(GrupoProfesorComponent, {
+      remove: { imports: [VisorPdfComponent] }, add: { imports: [ViewerStub] },
+    });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(GrupoProfesorComponent);
+    fixture.detectChanges();
+    http.expectOne(BASE).flush([GRUPO]);
+    http.expectOne(`${BASE}/4/alumnos`).flush(ALUMNOS);
+    fixture.detectChanges();
+  });
+
+  afterEach(() => { fixture.destroy(); http.verify(); });
+
+  it('abre el visor con el blob y Content-Disposition, sin descarga directa, y conecta el cierre y el foco', fakeAsync(() => {
     const actual = mesesAsistencia()[0];
-    expect((el().querySelector('#mesAsistencia') as HTMLSelectElement | null)).not.toBeNull();
     expect(fixture.componentInstance.mes).toBe(actual.valor);
-
-    const blob = new Blob(['%PDF'], { type: 'application/pdf' });
-    profesor.hojaAsistencia.and.returnValue(of({ blob, nombre: 'Asistencia-grupo-4.pdf' }));
-    spyOn(URL, 'createObjectURL').and.returnValue('blob:prueba');
-    spyOn(URL, 'revokeObjectURL');
     const clic = spyOn(HTMLAnchorElement.prototype, 'click');
-
-    (el().querySelector('.btn-asistencia') as HTMLButtonElement).click();
+    const url = spyOn(URL, 'createObjectURL');
+    const disparador = boton();
+    disparador.click();
+    const request = solicitud();
+    expect(request.request.responseType).toBe('blob');
+    expect(request.request.params.get('year')).toBe(String(actual.year));
+    expect(request.request.params.get('month')).toBe(String(actual.month));
+    request.flush(blob, { headers: { 'Content-Disposition': 'attachment; filename="Asistencia-grupo-4.pdf"' } });
     flushMicrotasks();
-    expect(profesor.hojaAsistencia).toHaveBeenCalledWith(4, actual.year, actual.month);
-    expect(clic).toHaveBeenCalled();
-    expect((clic.calls.mostRecent().object as HTMLAnchorElement).download).toBe('Asistencia-grupo-4.pdf');
-    tick(1000);
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:prueba');
+    fixture.detectChanges();
+
+    const viewer = visor().componentInstance as ViewerStub;
+    expect(viewer.documentos).toEqual([{ blob, nombreArchivo: 'Asistencia-grupo-4.pdf', titulo: 'Hoja de asistencia' }]);
+    expect(viewer.documentos[0].blob).toBe(blob);
+    expect(viewer.focoRetorno).toBe(disparador);
+    expect(viewer.aviso).toBe('');
+    expect(visor().nativeElement.closest('.pn[pnAcento]')).not.toBeNull();
+    expect(estilos.cargar).toHaveBeenCalledTimes(1);
+    expect(clic).not.toHaveBeenCalled();
+    expect(url).not.toHaveBeenCalled();
+    viewer.cerrar.emit();
+    fixture.detectChanges();
+    expect(visor()).toBeNull();
+    expect(fixture.componentInstance.focoRetorno).toBeNull();
+    expect(boton().disabled).toBeFalse();
   }));
+
+  it('mantiene el mes y año elegidos y bloquea el doble clic incluso antes de actualizar la vista', fakeAsync(() => {
+    const elegido = fixture.componentInstance.meses[2];
+    const select = root().querySelector<HTMLSelectElement>('#mesAsistencia')!;
+    select.value = elegido.valor;
+    select.dispatchEvent(new Event('change'));
+    boton().click();
+    expect(fixture.componentInstance.descargando).toBeTrue();
+    boton().click();
+    fixture.detectChanges();
+    // NgModel aplica disabled en una microtarea; el HTTP sigue pendiente aunque el CSS ya esté listo.
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(boton().disabled).toBeTrue();
+    expect(boton().getAttribute('aria-busy')).toBe('true');
+    expect(root().querySelector('.spinner-border')).not.toBeNull();
+    expect(select.disabled).toBeTrue();
+    const request = solicitud();
+    expect(request.request.params.get('year')).toBe(String(elegido.year));
+    expect(request.request.params.get('month')).toBe(String(elegido.month));
+    request.flush(blob);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.mes).toBe(elegido.valor);
+    expect(boton().disabled).toBeFalse();
+    expect(estilos.cargar).toHaveBeenCalledTimes(1);
+  }));
+
+  it('conserva el aviso de error HTTP y permite reintentar y abrir el visor', fakeAsync(() => {
+    const aviso = spyOn(Toast, 'fire');
+    boton().click();
+    const primera = solicitud();
+    primera.flush(null, { status: 500, statusText: 'Server Error' });
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(aviso).toHaveBeenCalledWith(jasmine.objectContaining({ icon: 'error', title: 'No se ha podido descargar la hoja de asistencia.' }));
+    expect(visor()).toBeNull();
+    expect(boton().disabled).toBeFalse();
+
+    boton().click();
+    expect(fixture.componentInstance.descargando).toBeTrue();
+    const segunda = solicitud();
+    expect(segunda).not.toBe(primera);
+    segunda.flush(blob, { headers: { 'Content-Disposition': 'attachment; filename="Reintento.pdf"' } });
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect((visor().componentInstance as ViewerStub).documentos).toEqual([
+      { blob, nombreArchivo: 'Reintento.pdf', titulo: 'Hoja de asistencia' },
+    ]);
+    expect(boton().disabled).toBeFalse();
+    expect(estilos.cargar).toHaveBeenCalledTimes(2);
+    expect(aviso).toHaveBeenCalledTimes(1);
+  }));
+
+  it('mantiene el mensaje del servidor cuando el error llega como blob JSON', async () => {
+    const aviso = spyOn(Toast, 'fire');
+    // Blob.text() no forma parte de la estabilidad de Angular: esperamos la entrega real del aviso.
+    const mostrado = new Promise<void>(resolve => {
+      aviso.and.callFake(() => {
+        resolve();
+        return Promise.resolve({ isConfirmed: false, isDenied: false, isDismissed: true });
+      });
+    });
+    boton().click();
+    solicitud().flush(new Blob([JSON.stringify({ mensaje: 'No tienes acceso a este grupo' })], { type: 'application/json' }),
+      { status: 403, statusText: 'Forbidden' });
+    await mostrado;
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(aviso).toHaveBeenCalledWith(jasmine.objectContaining({ icon: 'error', title: 'No tienes acceso a este grupo' }));
+    expect(visor()).toBeNull();
+    expect(boton().disabled).toBeFalse();
+  });
+
+  it('espera al CSS del panel antes de abrir el visor', fakeAsync(() => {
+    let terminar!: () => void;
+    estilos.cargar.and.returnValue(new Promise<void>(resolve => { terminar = resolve; }));
+    boton().click();
+    solicitud().flush(blob);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(visor()).toBeNull();
+    expect(boton().disabled).toBeTrue();
+    terminar();
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(visor()).not.toBeNull();
+    expect(boton().disabled).toBeFalse();
+  }));
+
+  it('si falla el CSS, muestra el aviso y permite reintentar sin abrir un visor sin estilos', fakeAsync(() => {
+    estilos.cargar.and.rejectWith(new Error('No se pudo cargar panel-nuevo.css'));
+    const aviso = spyOn(Toast, 'fire');
+    boton().click();
+    const primera = solicitud();
+    primera.flush(blob);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(aviso).toHaveBeenCalledWith(jasmine.objectContaining({ icon: 'error', title: 'No se ha podido descargar la hoja de asistencia.' }));
+    expect(visor()).toBeNull();
+    expect(boton().disabled).toBeFalse();
+
+    estilos.cargar.and.resolveTo();
+    boton().click();
+    expect(fixture.componentInstance.descargando).toBeTrue();
+    const segunda = solicitud();
+    expect(segunda).not.toBe(primera);
+    segunda.flush(blob, { headers: { 'Content-Disposition': 'attachment; filename="Reintento.pdf"' } });
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect((visor().componentInstance as ViewerStub).documentos).toEqual([
+      { blob, nombreArchivo: 'Reintento.pdf', titulo: 'Hoja de asistencia' },
+    ]);
+    expect(boton().disabled).toBeFalse();
+    expect(estilos.cargar).toHaveBeenCalledTimes(2);
+    expect(aviso).toHaveBeenCalledTimes(1);
+  }));
+
+  for (const pendientes of ['HTTP', 'CSS', 'HTTP y CSS']) {
+    it(`al destruir con ${pendientes} pendiente cancela la carga e ignora respuestas tardías`, fakeAsync(() => {
+      let terminarCss: (() => void) | undefined;
+      if (pendientes.includes('CSS')) {
+        estilos.cargar.and.returnValue(new Promise<void>(resolve => { terminarCss = resolve; }));
+      }
+      boton().click();
+      const request = solicitud();
+      expect(request.cancelled).toBeFalse();
+      if (pendientes === 'CSS') {
+        request.flush(blob);
+      }
+      flushMicrotasks();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.descargando).toBeTrue();
+      expect(visor()).toBeNull();
+
+      fixture.destroy();
+      expect(request.cancelled).toBeTrue();
+      expect(fixture.componentInstance.descargando).toBeFalse();
+      expect(fixture.componentInstance.documentos).toEqual([]);
+
+      if (pendientes !== 'CSS') {
+        expect(() => request.flush(blob)).toThrowError('Cannot flush a cancelled request.');
+      }
+      terminarCss?.();
+      flushMicrotasks();
+      expect(fixture.componentInstance.descargando).toBeFalse();
+      expect(fixture.componentInstance.documentos).toEqual([]);
+      expect(root().querySelector('pn-visor-pdf')).toBeNull();
+    }));
+  }
 });
