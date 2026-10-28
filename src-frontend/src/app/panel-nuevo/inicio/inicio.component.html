@@ -1,8 +1,13 @@
 <div class="pn inicio" pnAcento>
   <div class="inicio__pagina">
     <header class="inicio__cabecera">
-      <h1 class="inicio__titulo">Inicio</h1>
-      <p class="inicio__fecha">{{ fechaHoy }}</p>
+      <div class="inicio__bienvenida">
+        <pn-mascota pose="saludar" tamano="md" animacion="aparecer" />
+        <div>
+          <h1 class="inicio__titulo">Inicio</h1>
+          <p class="inicio__fecha">{{ fechaHoy }}</p>
+        </div>
+      </div>
       <button type="button" class="inicio__boton-texto inicio__actualizar" (click)="actualizar()" [disabled]="cargando"
         [attr.aria-busy]="cargando ? 'true' : null">
         <i class="bi bi-arrow-clockwise" [class.inicio__girando]="cargando" aria-hidden="true"></i>
@@ -34,7 +39,10 @@
         <pn-bloque-error titulo="No se pudieron cargar las clases"
           texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else if (clases.length === 0) {
-        <p class="inicio__vacio">Hoy no hay clases.</p>
+        <div class="inicio__vacio-con-mascota">
+          <pn-mascota pose="descansar" tamano="md" animacion="aparecer" />
+          <p class="inicio__vacio">Hoy no hay clases.</p>
+        </div>
         } @else {
         <ol class="inicio__lista">
           @for (c of clases; track c.turnoId) {

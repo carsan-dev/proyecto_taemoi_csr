@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { PlantillasPdfComponent } from './plantillas/plantillas-pdf.component';
+import { MascotaComponent } from '../mascota/mascota.component';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import {
   MOTIVO_CANCELACION_MAX,
@@ -81,6 +82,7 @@ interface Editor {
   selector: 'app-preinscripciones-panel',
   standalone: true,
   imports: [
+    MascotaComponent,
     AcentoEscuelaDirective,
     EsqueletoComponent,
     BloqueErrorComponent,

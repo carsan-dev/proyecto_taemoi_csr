@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
+import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -22,7 +23,12 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     confirmar.confirmar.and.resolveTo({ confirmado: false, valor: null });
     await TestBed.configureTestingModule({
       imports: [GestionarAlumnosComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+      providers: [
+        { provide: MASCOTA_CARGADORES, useValue: {
+          esperar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+          buscar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
+        } },
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
         { provide: ActivatedRoute, useValue: { params, data } },
         { provide: ConfirmacionService, useValue: confirmar },
         { provide: AvisosService, useValue: jasmine.createSpyObj('Avisos', ['exito', 'error']) }],
@@ -43,6 +49,24 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
   function vaciarTurnos(): void {
     http.match((r) => /\/grupos\/7\/alumnos\/\d+\/turnos$/.test(r.url)).forEach(req => req.flush([]));
   }
+  it('shows esperar above the empty group heading', () => {
+    grupo([]);
+    const mascot = fixture.nativeElement.querySelector('.alumnos-grupo__vacio pn-mascota') as HTMLElement;
+    expect(mascot.getAttribute('pose')).toBe('esperar');
+    expect(mascot.getAttribute('aria-hidden')).toBe('true');
+    expect(mascot.nextElementSibling?.tagName).toBe('H2');
+  });
+
+  it('shows buscar when no pupil matches the search', fakeAsync(() => {
+    grupo();
+    fixture.componentInstance.buscar('Nobody');
+    tick(300);
+    fixture.detectChanges();
+    const mascot = fixture.nativeElement.querySelector('.alumnos-grupo__vacio pn-mascota') as HTMLElement;
+    expect(mascot.getAttribute('pose')).toBe('buscar');
+    expect(mascot.nextElementSibling?.tagName).toBe('H2');
+  }));
+
   it('shows only the pupil schedules in this group, grouped by start time and ordered by weekday', () => {
     grupo([alumno(1), alumno(2)], false);
     http.expectOne(`${environment.apiUrl}/grupos/7/alumnos/1/turnos`).flush([

@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription, combineLatest, debounceTime } from 'rxjs';
+import { MascotaComponent } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import type { TurnoResumen } from '../../interfaces/turno-resumen';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
@@ -24,7 +25,7 @@ const INICIALES_DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 @Component({
   selector: 'pn-gestionar-alumnos',
   standalone: true,
-  imports: [FormsModule, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent, SeleccionarAlumnosPanelComponent],
+  imports: [MascotaComponent, FormsModule, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent, SeleccionarAlumnosPanelComponent],
   templateUrl: './gestionar-alumnos.component.html',
   styleUrl: './gestionar-alumnos.component.scss',
 })

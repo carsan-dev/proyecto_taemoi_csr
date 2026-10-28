@@ -25,7 +25,10 @@
   </header>
 
   @if (ficha.deportesDelAlumno.length === 0) {
-  <p class="deportes__vacio">Este alumno no tiene disciplinas todavía.</p>
+  <div class="deportes__vacio">
+    <pn-mascota pose="esperar" tamano="md" animacion="aparecer" />
+    <p>Este alumno no tiene disciplinas todavía.</p>
+  </div>
   }
 
   @for (d of ficha.deportesDelAlumno; track d.deporte) {

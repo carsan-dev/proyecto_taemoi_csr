@@ -1,10 +1,8 @@
 /**
- * Las poses de la gota de esfuerzo (pieza 8b-M, `mascota-app/`). Cada una es un módulo TypeScript con su SVG como cadena
- * y se pide con un `import()` propio: Angular lo parte en un chunk por pose y ninguna entra en el bundle inicial ni en el
- * de la pantalla que la usa; solo viaja la que se pinta.
- *
- * `cumpleanos-inicio` es el fotograma de partida de la animación de cumpleaños y `compacta` el dibujo de 32 px (sin
- * brazos y con el trazo reforzado: no es una reducción de saludar). Ninguno de los dos es una pose que se pida por nombre.
+ * Las 14 poses animadas de la gota de esfuerzo (pieza 8b-M2, mascota-app/animaciones/).
+ * Cada SVG conserva su gesto y reposo en un módulo con import() propio: un chunk por pose,
+ * sin dibujos en el bundle inicial. Solo viaja la pose que se pinta.
+ * compacta es el dibujo estático de 32 px, no una pose que se pida por nombre.
  */
 export const POSES_MASCOTA = [
   'saludar',
@@ -25,7 +23,7 @@ export const POSES_MASCOTA = [
 
 export type PoseMascota = (typeof POSES_MASCOTA)[number];
 
-export type ClaveSvgMascota = PoseMascota | 'cumpleanos-inicio' | 'compacta';
+export type ClaveSvgMascota = PoseMascota | 'compacta';
 
 export type CargadoresMascota = Record<ClaveSvgMascota, () => Promise<string>>;
 
@@ -36,7 +34,6 @@ export const CARGADORES_MASCOTA: CargadoresMascota = {
   dudar: () => import('./svg/dudar').then((m) => m.SVG),
   descansar: () => import('./svg/descansar').then((m) => m.SVG),
   cumpleanos: () => import('./svg/cumpleanos').then((m) => m.SVG),
-  'cumpleanos-inicio': () => import('./svg/cumpleanos-inicio').then((m) => m.SVG),
   prepararse: () => import('./svg/prepararse').then((m) => m.SVG),
   animar: () => import('./svg/animar').then((m) => m.SVG),
   leer: () => import('./svg/leer').then((m) => m.SVG),
