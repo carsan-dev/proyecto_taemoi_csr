@@ -19,7 +19,8 @@ import com.taemoi.project.services.MarcaEscuela;
  * Decisiones 309, 314 y 315: estética común de los PDF generados con HTML (OpenHTMLtoPDF). Reúne lo que comparten
  * todos: las fuentes embebidas, la cabecera (logo, nombre de la escuela, título, contexto y fecha de generación, con el
  * filete en el color de la escuela), el pie de cada página («Escuela · Informe» y «Página X de Y») y los estilos de
- * tablas, rótulos y estados. El certificado de cobros (PDFBox directo) no pasa por aquí.
+ * tablas, rótulos y estados. El certificado de cobros (PDFBox directo, editable) no pasa por el renderizador: dibuja
+ * lo mismo con estas fuentes ({@link #fuente}) y estos colores en {@code TesoreriaServiceImpl}.
  *
  * <p>Fuentes: Montserrat Bold (títulos y rótulos) y Public Sans Regular, SemiBold y Bold (texto), TTF estáticos con
  * licencia OFL en {@code resources/fonts}. Familia de reserva: Helvetica (la estándar de PDF) para cualquier carácter
@@ -74,6 +75,11 @@ final class EstiloPdf {
 					true);
 		}
 		return builder;
+	}
+
+	/** TTF de una fuente del panel ({@code resources/fonts}) para cargarla con PDFBox (certificado de cobros). */
+	static InputStream fuente(String fichero) {
+		return new ByteArrayInputStream(bytes(fichero));
 	}
 
 	private static byte[] bytes(String fichero) {

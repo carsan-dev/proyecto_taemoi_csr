@@ -3,6 +3,7 @@ package com.taemoi.project.services;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -38,9 +39,13 @@ import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDResources;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.PDXObject;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.interactive.form.PDTextField;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -311,19 +316,20 @@ class MarcaEscuelaPdfTest {
 		float[] porDefecto = rgb(MarcaEscuela.COLOR_POR_DEFECTO);
 		float[] azul = rgb("#0057b8");
 		Pdfs deLaRoja = generar(2L, marca);
-		for (byte[] documento : List.of(deLaRoja.informe(), deLaRoja.asistencia(), deLaRoja.solicitud())) {
+		for (byte[] documento : deLaRoja.todos()) {
 			assertTrue(usaColor(documento, rojo), "filete en el color de la escuela");
 		}
 		Pdfs deLaSinColor = generar(3L, marca);
 		Pdfs deLaDelColorMal = generar(4L, marca);
 		for (byte[] documento : List.of(deLaSinColor.informe(), deLaSinColor.asistencia(), deLaSinColor.solicitud(),
-				deLaDelColorMal.informe(), deLaDelColorMal.asistencia(), deLaDelColorMal.solicitud())) {
+				deLaSinColor.certificado(), deLaDelColorMal.informe(), deLaDelColorMal.asistencia(),
+				deLaDelColorMal.solicitud(), deLaDelColorMal.certificado())) {
 			assertTrue(usaColor(documento, porDefecto), "sin color (o inválido), el de por defecto");
 			assertFalse(usaColor(documento, rojo), "el color de otra escuela");
 		}
 		// Moiskimdo: su color en el filete; sus textos y logos, los de siempre (comprobados arriba).
 		Pdfs deMoiskimdo = generar(1L, marca);
-		for (byte[] documento : List.of(deMoiskimdo.informe(), deMoiskimdo.asistencia(), deMoiskimdo.solicitud())) {
+		for (byte[] documento : deMoiskimdo.todos()) {
 			assertTrue(usaColor(documento, azul), "filete en el color de Moiskimdo");
 		}
 	}
@@ -332,12 +338,58 @@ class MarcaEscuelaPdfTest {
 	void fuentesEmbebidas() throws Exception {
 		Pdfs pdfs = generar(2L, MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService,
 				MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Fuentes")));
-		for (byte[] documento : List.of(pdfs.informe(), pdfs.asistencia(), pdfs.solicitud())) {
+		for (byte[] documento : pdfs.todos()) {
 			List<String> fuentes = fuentes(documento);
 			assertTrue(fuentes.stream().anyMatch(f -> f.endsWith("Montserrat-Bold")), "Montserrat Bold: " + fuentes);
 			assertTrue(fuentes.stream().anyMatch(f -> f.contains("PublicSans-")), "Public Sans: " + fuentes);
 			assertTrue(fuentes.stream().allMatch(f -> f.contains("Montserrat") || f.contains("PublicSans")),
 					"solo las fuentes del panel (sin la de reserva): " + fuentes);
+		}
+	}
+
+	/**
+	 * Decisión 315: el certificado de cobros sigue siendo editable con la estética nueva. Una página y sus 16 campos con
+	 * su apariencia generada (sin NeedAppearances); la fuente de los campos (recurso DR del formulario y DA de cada
+	 * campo) es Public Sans Regular embebida ENTERA (sin prefijo de subconjunto), de modo que el campo admite cualquier
+	 * carácter de la fuente aunque no salga en el documento; y las apariencias se regeneran con valores nuevos.
+	 */
+	@Test
+	void certificadoEditableConLaFuenteCompleta() throws Exception {
+		Pdfs pdfs = generar(2L, MarcaEscuelaPruebas.real(organizaciones, imagenesRepo, imagenService,
+				MarcaEscuelaPruebas.escuela(2L, "Escuela Ficticia Campos")));
+		String valorNuevo = "Ñoño Çé Ü ł ß € 1.234,56";
+		ByteArrayOutputStream editado = new ByteArrayOutputStream();
+		try (PDDocument documento = PDDocument.load(pdfs.certificado())) {
+			assertEquals(1, documento.getNumberOfPages());
+			// Sin el arreglo de PDFBox al leer (añade Helv y ZaDb al DR en memoria): el formulario tal como se guardó.
+			PDAcroForm formulario = documento.getDocumentCatalog().getAcroForm(null);
+			assertFalse(formulario.getNeedAppearances());
+			PDResources dr = formulario.getDefaultResources();
+			List<COSName> nombres = new ArrayList<>();
+			dr.getFontNames().forEach(nombres::add);
+			assertEquals(1, nombres.size(), "una sola fuente en el DR: " + nombres);
+			PDFont fuenteCampos = dr.getFont(nombres.get(0));
+			assertTrue(fuenteCampos instanceof PDType0Font, fuenteCampos.getClass().getName());
+			assertTrue(fuenteCampos.isEmbedded());
+			assertEquals("PublicSans-Regular", fuenteCampos.getName(), "embebida entera, sin subconjunto");
+			List<String> campos = new ArrayList<>();
+			for (PDField campo : formulario.getFieldTree()) {
+				campos.add(campo.getFullyQualifiedName());
+				PDTextField texto = (PDTextField) campo;
+				assertTrue(texto.getDefaultAppearance().startsWith("/" + nombres.get(0).getName() + " "),
+						campo.getFullyQualifiedName() + ": " + texto.getDefaultAppearance());
+				assertNotNull(campo.getWidgets().get(0).getNormalAppearanceStream(), campo.getFullyQualifiedName());
+				texto.setValue(valorNuevo);
+			}
+			assertEquals(16, campos.size(), campos.toString());
+			documento.save(editado);
+		}
+		try (PDDocument documento = PDDocument.load(editado.toByteArray())) {
+			for (PDField campo : documento.getDocumentCatalog().getAcroForm().getFieldTree()) {
+				assertEquals(valorNuevo, campo.getValueAsString());
+				assertTrue(campo.getWidgets().get(0).getNormalAppearanceStream().getContentStream().toByteArray().length > 0,
+						campo.getFullyQualifiedName());
+			}
 		}
 	}
 
