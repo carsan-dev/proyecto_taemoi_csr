@@ -10,7 +10,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, PRIMARY_OUTLET, Router } from '@angular/router';
+import { filter } from 'rxjs';
+
+import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
 
 import { PilaCapas, cerrarSweetAlertAbierto } from '../capas/capa-modal';
 import { PoseMascota } from '../mascota/poses';
@@ -93,6 +97,25 @@ export class AvisosService {
         (capa ?? this.documento.body).appendChild(host);
       }
     });
+    // Al cerrar o caducar la sesión (logout, limpiarEstadoLocal, forzarCierreSesion) no queda ningún aviso ni temporizador.
+    sesionCerrada.pipe(takeUntilDestroyed()).subscribe(() => this.cerrarTodos());
+    // Los errores se quedan mientras se sigue en la pantalla y se van al cambiar a otra (otra ruta; no al cambiar solo la
+    // query string o el fragmento, que son pestañas internas). Éxito e información siguen su temporizador.
+    let pantalla = this.rutaSinParametros(this.router.url);
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed()
+      )
+      .subscribe((e) => {
+        const nueva = this.rutaSinParametros(e.urlAfterRedirects);
+        if (nueva !== pantalla) {
+          this.lista()
+            .filter((a) => a.tipo === 'error')
+            .forEach((a) => this.cerrar(a.id));
+        }
+        pantalla = nueva;
+      });
   }
 
   exito(texto: string, accion?: AccionAviso, opciones?: OpcionesAviso): number {
@@ -195,6 +218,12 @@ export class AvisosService {
   private programar(id: number, t: Temporizador): void {
     t.desde = Date.now();
     t.id = setTimeout(() => this.zona.run(() => this.cerrar(id)), t.restante);
+  }
+
+  /** La ruta de la pantalla, sin query string ni fragmento. */
+  private rutaSinParametros(url: string): string {
+    const grupo = this.router.parseUrl(url).root.children[PRIMARY_OUTLET];
+    return grupo ? grupo.toString() : '';
   }
 
   private asegurarRegion(): void {
