@@ -29,6 +29,7 @@ import { AlumnoService } from '../../../features/alumno/services/alumno.service'
 import { PageScrollService } from '../../../servicios/generales/page-scroll.service';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { attachSwalSelectSearch } from '../../../utils/swal-search.util';
+import { importeCargo } from '../../../utils/importe-cargo';
 import {
   SUBIDA_DOCUMENTO,
   SUBIDA_IMAGEN,
@@ -1644,10 +1645,10 @@ export class EditarAlumnoComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Utilidad: calcular el total = precio * cantidad
+   * Importe del cargo con la regla de la API (decisión 297): precio nulo = 0, cantidad nula o < 1 = 1.
    */
-  calcularTotal(precio: number, cantidad: number): number {
-    return precio * cantidad;
+  calcularTotal(precio: number | null | undefined, cantidad: number | null | undefined): number {
+    return importeCargo(precio, cantidad);
   }
 
   /**
