@@ -1,10 +1,14 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subject, finalize, forkJoin, takeUntil } from 'rxjs';
+import { Subject, finalize, forkJoin, from, takeUntil } from 'rxjs';
 
 import { AlumnoDeGrupo, GrupoProfesor } from '../../../../interfaces/profesor';
 import { ProfesorService, mensajeDeErrorBlob } from '../../../../servicios/endpoints/profesor.service';
+import type { DocumentoInforme } from '../../../../servicios/generales/informe-pdf.service';
+import { AcentoEscuelaDirective } from '../../../../panel-nuevo/acento-escuela.directive';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
+import { VisorPdfComponent } from '../../../../panel-nuevo/visor-pdf/visor-pdf.component';
 import { showErrorToast } from '../../../../utils/toast.util';
 import { NavegacionProfesorComponent } from '../navegacion-profesor/navegacion-profesor.component';
 import { MesAsistencia, etiquetaRol, mensajeDelServidor, mesesAsistencia, nombreCompleto } from '../profesor-textos';
@@ -20,13 +24,14 @@ export function esApto(alumno: AlumnoDeGrupo): boolean {
 @Component({
   selector: 'app-grupo-profesor',
   standalone: true,
-  imports: [FormsModule, RouterLink, NavegacionProfesorComponent],
+  imports: [FormsModule, RouterLink, NavegacionProfesorComponent, AcentoEscuelaDirective, VisorPdfComponent],
   templateUrl: './grupo-profesor.component.html',
   styleUrl: './grupo-profesor.component.scss',
 })
 export class GrupoProfesorComponent implements OnInit, OnDestroy {
   private readonly profesor = inject(ProfesorService);
   private readonly ruta = inject(ActivatedRoute);
+  private readonly estilos = inject(EstilosPanelService);
   private readonly destroy$ = new Subject<void>();
 
   readonly etiquetaRol = etiquetaRol;
@@ -43,6 +48,8 @@ export class GrupoProfesorComponent implements OnInit, OnDestroy {
   filtro: FiltroAlumnos = 'todos';
   mes = this.meses[0].valor;
   descargando = false;
+  documentos: DocumentoInforme[] = [];
+  focoRetorno: HTMLElement | null = null;
 
   ngOnInit(): void {
     this.grupoId = Number(this.ruta.snapshot.paramMap.get('grupoId'));
@@ -84,17 +91,23 @@ export class GrupoProfesorComponent implements OnInit, OnDestroy {
     this.filtro = filtro;
   }
 
-  descargarAsistencia(): void {
+  descargarAsistencia(boton: HTMLElement): void {
+    if (this.descargando) { return; }
     const mes = this.meses.find((m) => m.valor === this.mes) ?? this.meses[0];
+    this.focoRetorno = boton;
     this.descargando = true;
-    this.profesor
-      .hojaAsistencia(this.grupoId, mes.year, mes.month)
+    forkJoin({
+      hoja: this.profesor.hojaAsistencia(this.grupoId, mes.year, mes.month),
+      estilos: from(this.estilos.cargar()),
+    })
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => (this.descargando = false))
       )
       .subscribe({
-        next: ({ blob, nombre }) => this.guardar(blob, nombre),
+        next: ({ hoja: { blob, nombre } }) => {
+          this.documentos = [{ blob, nombreArchivo: nombre, titulo: 'Hoja de asistencia' }];
+        },
         error: async (e) => {
           const mensaje = (await mensajeDeErrorBlob(e)) ?? mensajeDelServidor(e, 'No se ha podido descargar la hoja de asistencia.');
           showErrorToast(mensaje);
@@ -102,14 +115,8 @@ export class GrupoProfesorComponent implements OnInit, OnDestroy {
       });
   }
 
-  private guardar(blob: Blob, nombre: string): void {
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = nombre;
-    document.body.appendChild(enlace);
-    enlace.click();
-    enlace.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  cerrarVisor(): void {
+    this.documentos = [];
+    this.focoRetorno = null;
   }
 }
