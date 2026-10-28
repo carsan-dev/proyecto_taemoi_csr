@@ -49,6 +49,7 @@ import com.taemoi.project.utils.AlumnoDeporteUtils;
 import com.taemoi.project.utils.ColoresGrado;
 import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.utils.FechaUtils;
+import com.taemoi.project.utils.FormatoImporte;
 import com.taemoi.project.utils.ImporteCargo;
 
 @Service
@@ -1576,8 +1577,8 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<h3>")
 						.append(alumno.getNombre()).append(" ").append(alumno.getApellidos()).append(" (Exp. ")
 						.append(alumno.getNumeroExpediente()).append(")");
-				html.append(" - <span class='pendiente-dinero'>Total: ").append(String.format("%.2f", totalAlumno))
-						.append(" €</span>");
+				html.append(" - <span class='pendiente-dinero'>Total: ").append(FormatoImporte.eur(totalAlumno))
+						.append("</span>");
 				html.append("</h3>");
 
 				html.append("<table>");
@@ -1605,8 +1606,8 @@ public class PDFServiceImpl implements PDFService {
 
 					html.append("<td class='num'>").append(pa.getCantidad() != null ? pa.getCantidad() : 1).append("</td>");
 					html.append("<td class='num'>")
-							.append(String.format("%.2f", pa.getPrecio() != null ? pa.getPrecio() : 0.0))
-							.append(" €</td>");
+							.append(FormatoImporte.eur(pa.getPrecio() != null ? pa.getPrecio() : 0.0))
+							.append("</td>");
 					html.append("<td>").append(pa.getNotas() != null ? pa.getNotas() : "").append("</td>");
 					html.append("</tr>");
 				}
@@ -1618,8 +1619,8 @@ public class PDFServiceImpl implements PDFService {
 
 			// Add total general
 			html.append("<div class='total-general'>");
-			html.append("<h3>TOTAL GENERAL: <span class='pendiente-dinero'>").append(String.format("%.2f", totalGeneral))
-					.append(" €</span></h3>");
+			html.append("<h3>TOTAL GENERAL: <span class='pendiente-dinero'>").append(FormatoImporte.eur(totalGeneral))
+					.append("</span></h3>");
 			html.append("</div>");
 		}
 
@@ -1697,7 +1698,7 @@ public class PDFServiceImpl implements PDFService {
 
 				double precio = pa.getPrecio() != null ? pa.getPrecio() : 0.0;
 				totalGeneral += ImporteCargo.sinRedondear(pa);
-				csv.append(String.format("%.2f", precio)).append(',');
+				csv.append(String.format(Locale.ROOT, "%.2f", precio)).append(',');
 
 				csv.append('"').append(escapeCSV(pa.getNotas() != null ? pa.getNotas() : "")).append('"');
 				csv.append('\n');
@@ -1706,7 +1707,7 @@ public class PDFServiceImpl implements PDFService {
 
 		// Add total row
 		csv.append("\n");
-		csv.append("TOTAL GENERAL,,,,,").append(String.format("%.2f", totalGeneral)).append(",\n");
+		csv.append("TOTAL GENERAL,,,,,").append(String.format(Locale.ROOT, "%.2f", totalGeneral)).append(",\n");
 
 		return csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 	}

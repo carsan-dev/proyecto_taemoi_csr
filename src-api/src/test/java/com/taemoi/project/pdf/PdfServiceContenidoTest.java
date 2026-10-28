@@ -2,6 +2,7 @@ package com.taemoi.project.pdf;
 
 import static com.taemoi.project.pdf.ContenidoPdf.comprobar;
 import static com.taemoi.project.pdf.ContenidoPdf.conHoy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -10,8 +11,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -216,8 +219,61 @@ class PdfServiceContenidoTest {
 
 	@Test
 	void deudas() throws Exception {
-		comprobar("deudas", conHoy(() -> servicio.generarInformeDeudas(false)),
-				Presentacion.de(ESCUELA, "Informe de Deudas de Alumnos", "Informe de Deudas"), FECHA);
+		byte[] pdf = conHoy(() -> servicio.generarInformeDeudas(false));
+		comprobar("deudas", pdf, Presentacion.de(ESCUELA, "Informe de Deudas de Alumnos", "Informe de Deudas"), FECHA);
+		// Importes en es-ES («143,00 €»): el dorado compara por palabras y no ve la coma.
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertTrue(texto.contains("TOTAL GENERAL: 143,00 €"), texto);
+		assertTrue(texto.contains("12,50 €"), texto);
+	}
+
+	@Test
+	void deudasCsv_conLaJvmEnEspanol_importesConPuntoYMismasColumnas() {
+		Locale original = Locale.getDefault();
+		String csv;
+		try {
+			Locale.setDefault(Locale.of("es", "ES"));
+			csv = new String(servicio.generarInformeDeudasCSV(false), StandardCharsets.UTF_8);
+		} finally {
+			Locale.setDefault(original);
+		}
+		List<String> lineas = csv.lines().toList();
+		assertEquals("\ufeffAlumno,Nº Expediente,Concepto,Fecha Asignación,Cantidad,Precio (€),Notas", lineas.get(0));
+		List<String> filas = lineas.subList(1, lineas.size()).stream().filter(l -> !l.isEmpty()).toList();
+		assertFalse(filas.isEmpty(), csv);
+		for (String fila : filas) {
+			List<String> campos = camposCsv(fila);
+			assertEquals(7, campos.size(), fila);
+			assertTrue(campos.get(5).matches("\\d+\\.\\d{2}"), fila);
+		}
+		assertTrue(filas.stream().anyMatch(f -> camposCsv(f).get(5).equals("12.50")), csv);
+		String total = filas.get(filas.size() - 1);
+		assertEquals("TOTAL GENERAL,,,,,143.00,", total);
+	}
+
+	/** Campos de una fila del CSV (comas fuera de comillas; {@code ""} dentro de comillas es una comilla). */
+	private static List<String> camposCsv(String fila) {
+		List<String> campos = new ArrayList<>();
+		StringBuilder campo = new StringBuilder();
+		boolean entreComillas = false;
+		for (int i = 0; i < fila.length(); i++) {
+			char c = fila.charAt(i);
+			if (c == '"') {
+				if (entreComillas && i + 1 < fila.length() && fila.charAt(i + 1) == '"') {
+					campo.append('"');
+					i++;
+				} else {
+					entreComillas = !entreComillas;
+				}
+			} else if (c == ',' && !entreComillas) {
+				campos.add(campo.toString());
+				campo.setLength(0);
+			} else {
+				campo.append(c);
+			}
+		}
+		campos.add(campo.toString());
+		return campos;
 	}
 
 	@Test

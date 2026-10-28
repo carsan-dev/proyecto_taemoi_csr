@@ -17,6 +17,7 @@ import { Observable, concat, of } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { SearchableSelectDirective } from '../../../../directives/searchable-select.directive';
 import { fechaApi } from '../../../../utils/fecha-api';
+import { importeCargo } from '../../../../utils/importe-cargo';
 import { SolicitudesService } from '../../../../servicios/endpoints/solicitudes.service';
 import { euros, pedirAlPropietario } from '../../../generales/pedir-al-propietario/pedir-al-propietario';
 
@@ -344,8 +345,8 @@ export class ProductosAlumnoComponent implements OnInit {
     this.cerrarModalNotas();
   }
 
-  calcularTotal(precio: number, cantidad: number): number {
-    return precio * cantidad;
+  calcularTotal(precio: number | null | undefined, cantidad: number | null | undefined): number {
+    return importeCargo(precio, cantidad);
   }
 
   volver() {
