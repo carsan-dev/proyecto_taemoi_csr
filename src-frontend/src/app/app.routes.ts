@@ -250,6 +250,7 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/preinscripciones/preinscripciones.component').then(m => m.PreinscripcionesPanelComponent),
     canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
