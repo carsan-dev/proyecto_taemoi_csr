@@ -8,10 +8,10 @@
 FECHA DE
 APELLIDOS Y NOMBRE DEPORTE DESCUENTO CUANTÍA COMP GRADO
 PAGO
-Prueba Cinco Eva Taekwondo ADULTO 30.00 EUR -
-Taekwondo ADULTO 55.00 EUR 25.00
+Prueba Cinco Eva Taekwondo ADULTO 30,00 € -
+Taekwondo ADULTO 55,00 € 25,00 €
 Prueba Dos Bruno 03/10/2026
-Kickboxing KICKBOXING 30.00 EUR -
+Kickboxing KICKBOXING 30,00 € -
 Prueba Tres Carla Taekwondo INFANTIL Cancelado -
-Prueba Uno Ana Taekwondo INFANTIL 28.00 EUR - 05/10/2026
+Prueba Uno Ana Taekwondo INFANTIL 28,00 € - 05/10/2026
 ~ 15/10/2026 Página 1 de 1

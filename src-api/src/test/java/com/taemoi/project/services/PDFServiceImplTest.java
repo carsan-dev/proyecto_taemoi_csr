@@ -103,7 +103,7 @@ class PDFServiceImplTest {
         assertFalse(texto.contains("12.50") || texto.contains("12,50"), "sin el precio unitario: " + texto);
         // La fila: fecha de asignación, importe y estado (el concepto ocupa sus propias líneas).
         String fila = texto.lines().filter(l -> l.contains(" PENDIENTE")).findFirst().orElseThrow(() -> new AssertionError(texto));
-        assertTrue(fila.contains("37.50 €") || fila.contains("37,50 €"), "la fila muestra el importe: " + fila);
+        assertTrue(fila.contains("37,50 €"), "la fila muestra el importe: " + fila);
     }
 
     private AlumnoDeporte membership(String name, String surnames, boolean active) {

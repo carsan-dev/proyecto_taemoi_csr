@@ -316,7 +316,7 @@ class TarifaSedeGeneracionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private static int treintas(String texto) {
-		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?<![0-9])30[.,]00EUR").matcher(texto);
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?<![0-9])30,00€").matcher(texto);
 		int n = 0;
 		while (m.find()) {
 			n++;

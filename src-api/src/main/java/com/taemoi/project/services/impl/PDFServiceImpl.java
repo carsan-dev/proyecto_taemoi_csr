@@ -1757,7 +1757,7 @@ public class PDFServiceImpl implements PDFService {
 			for (Producto producto : productos) {
 				String concepto = producto.getConcepto() != null ? producto.getConcepto() : "N/A";
 				String precio = producto.getPrecio() != null
-						? String.format("%.2f", producto.getPrecio()) + " &#8364;"
+						? FormatoImporte.eur(producto.getPrecio())
 						: "N/A";
 
 				html.append("<tr>");
@@ -2173,7 +2173,7 @@ public class PDFServiceImpl implements PDFService {
 				html.append("<div class='resumen-alumno'>");
 				html.append("<strong>Total mensualidades:</strong> ").append(vigentes.size());
 				html.append(" | <strong>Pagadas:</strong> ").append(pagas);
-				html.append(" (").append(String.format("%.2f", importePagado)).append(" €)");
+				html.append(" (").append(FormatoImporte.eur(importePagado)).append(")");
 				html.append(" | <strong>Pendientes:</strong> ").append(pendientes);
 				html.append(" (").append(importePendiente(importePendiente)).append(")");
 				html.append("</div>");
@@ -2205,7 +2205,7 @@ public class PDFServiceImpl implements PDFService {
 					html.append("<td class='num'>").append(fechaAsignacion).append("</td>");
 
 					// Decisión 297: la fila muestra el importe del cargo (precio × cantidad), para que las filas sumen el total.
-					html.append("<td class='num'>").append(String.format("%.2f", ImporteCargo.de(pa))).append(" €</td>");
+					html.append("<td class='num'>").append(FormatoImporte.eur(ImporteCargo.de(pa))).append("</td>");
 
 					boolean cancelado = pa.estaCancelado();
 					// Decisión 315: ocre solo para lo pendiente de cobro; pagado y cancelado, neutros.
@@ -2238,11 +2238,11 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<p><strong>Total de alumnos:</strong> ").append(totalAlumnos).append("</p>");
 			html.append("<p><strong>Total de mensualidades:</strong> ").append(totalMensualidades).append("</p>");
 			html.append("<p><strong>Mensualidades pagadas:</strong> ").append(totalPagadas).append(" (")
-					.append(String.format("%.2f", totalImportePagado)).append(" €)</p>");
+					.append(FormatoImporte.eur(totalImportePagado)).append(")</p>");
 			html.append("<p><strong>Mensualidades pendientes:</strong> ").append(totalPendientes).append(" (")
 					.append(importePendiente(totalImportePendiente)).append(")</p>");
 			html.append("<p><strong>TOTAL GENERAL:</strong> ")
-					.append(String.format("%.2f", totalImportePagado + totalImportePendiente)).append(" €</p>");
+					.append(FormatoImporte.eur(totalImportePagado + totalImportePendiente)).append("</p>");
 			html.append("</div>");
 		}
 
@@ -2263,9 +2263,9 @@ public class PDFServiceImpl implements PDFService {
 		return outputStream.toByteArray();
 	}
 
-	/** Importe pendiente («28.00 €»): en ocre si hay algo pendiente (decisión 315); sin pendiente, neutro. */
+	/** Importe pendiente («28,00 €»): en ocre si hay algo pendiente (decisión 315); sin pendiente, neutro. */
 	private static String importePendiente(double importe) {
-		String texto = String.format("%.2f", importe) + " €";
+		String texto = FormatoImporte.eur(importe);
 		return importe > 0 ? "<span class='pendiente-dinero'>" + texto + "</span>" : texto;
 	}
 
@@ -2462,11 +2462,11 @@ public class PDFServiceImpl implements PDFService {
 					} else if (!productosAlumno.isEmpty()) {
 						double totalCuantia = productosAlumno.stream().filter(p -> p.getPrecio() != null)
 								.mapToDouble(ImporteCargo::sinRedondear).sum();
-						cuantia = String.format("%.2f EUR", totalCuantia);
+						cuantia = FormatoImporte.eur(totalCuantia);
 					} else {
 						Double esperada = cuantias.cuantiaMensualidad(ad, mesListado);
 						if (esperada != null) {
-							cuantia = String.format("%.2f EUR", esperada);
+							cuantia = FormatoImporte.eur(esperada);
 						}
 					}
 					html.append("<div class='line-item'>").append(cuantia).append("</div>");
@@ -2488,7 +2488,7 @@ public class PDFServiceImpl implements PDFService {
 						}).filter(p -> p.getPrecio() != null)
 								.mapToDouble(ImporteCargo::sinRedondear).sum();
 						if (competidorCuantia > 0) {
-							comp = String.format("%.2f", competidorCuantia);
+							comp = FormatoImporte.eur(competidorCuantia);
 						}
 					}
 					html.append("<div class='line-item'>").append(comp).append("</div>");
