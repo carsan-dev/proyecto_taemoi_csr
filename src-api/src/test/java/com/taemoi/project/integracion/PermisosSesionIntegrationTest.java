@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,6 +67,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired Clock reloj;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -137,9 +140,10 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void permisos_propietario() throws Exception {
 		JsonNode p = permisos(tPropietario);
 		assertEquals(Set.of("roles", "esAdminPlataforma", "sedes", "variasSedes", "tieneGrupos", "capacidades",
-				"disenoNuevo", "nombreVisible"),
+				"disenoNuevo", "nombreVisible", "cumpleanos"),
 				campos(p), "claves del DTO");
 		assertEquals("Usuario P.", p.get("nombreVisible").asText(), "8b-T: nombre e inicial del primer apellido");
+		assertFalse(p.get("cumpleanos").asBoolean(), "8b-M2: sin ficha propia, nunca cumpleaños");
 		assertEquals(List.of("PROPIETARIO"), textos(p.get("roles")));
 		assertFalse(p.get("esAdminPlataforma").asBoolean());
 		assertEquals(List.of(e.sA, e.sB, e.sC), ids(p.get("sedes")), "todas las de la escuela, por id: " + p);
@@ -292,7 +296,54 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 				"/api/auth/** no se audita");
 	}
 
+	// ------------------------------------------------------------------ cumpleaños (8b-M2)
+
+	@Test
+	void permisos_cumpleanos_fichaPropiaQueCumpleHoyEnLaEscuelaActiva_true() throws Exception {
+		long cuenta = cuentaFamiliaConFicha("cumple-propio", e, "PROPIO", hoyHaceAnios());
+		assertTrue(permisos(e.token(jwtService, usuarios, cuenta)).get("cumpleanos").asBoolean());
+	}
+
+	@Test
+	void permisos_cumpleanos_fichaPropiaDeOtraEscuela_false() throws Exception {
+		long cuenta = cuentaFamiliaConFicha("cumple-otra-org", otra, "PROPIO", hoyHaceAnios());
+		assertFalse(permisos(e.token(jwtService, usuarios, cuenta)).get("cumpleanos").asBoolean(),
+				"la ficha que cumple hoy es de otra organización; la activa no tiene ninguna");
+	}
+
+	@Test
+	void permisos_cumpleanos_fichaDeTutor_false() throws Exception {
+		long cuenta = cuentaFamiliaConFicha("cumple-tutor", e, "TUTOR", hoyHaceAnios());
+		assertFalse(permisos(e.token(jwtService, usuarios, cuenta)).get("cumpleanos").asBoolean(),
+				"solo cuenta la relación PROPIO");
+	}
+
 	// ------------------------------------------------------------------ utilidades
+
+	/** Hoy según el {@code Clock} del contexto, 8 años atrás (múltiplo de 4: un 29-feb sigue existiendo). */
+	private LocalDate hoyHaceAnios() {
+		return LocalDate.now(reloj).minusYears(8);
+	}
+
+	/** Cuenta con membresía FAMILIA en {@code e} y una sola ficha en {@code escuelaFicha} con esa relación. */
+	private long cuentaFamiliaConFicha(String nombre, EscuelaConSedesDePrueba escuelaFicha, String relacion,
+			LocalDate nacimiento) {
+		long cuenta = e.cuenta(usuarios, nombre);
+		membresia(e, cuenta, "FAMILIA");
+		if (escuelaFicha != e) {
+			// Puerta de entrada de familia: sin ficha en la escuela activa la sesión es 401. Esta no cumple hoy (2010-01-01).
+			long deLaActiva = e.alumno("E8M2ACT" + nombre.toUpperCase() + e.marca, null, true);
+			jdbc.update("""
+					INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+					VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", cuenta, deLaActiva, e.org);
+		}
+		long ficha = escuelaFicha.alumno("E8M2" + nombre.toUpperCase() + escuelaFicha.marca, null, true);
+		jdbc.update("UPDATE alumno SET fecha_nacimiento = ? WHERE id = ?", java.sql.Date.valueOf(nacimiento), ficha);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, ?, 'MANUAL')""", cuenta, ficha, escuelaFicha.org, relacion);
+		return cuenta;
+	}
 
 	private JsonNode permisos(String token) throws Exception {
 		MvcResult r = peticion(RUTA, token);

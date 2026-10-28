@@ -8,6 +8,7 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { PlataformaService } from '../../servicios/plataforma/plataforma.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
@@ -130,6 +131,24 @@ const SECCIONES: readonly Acceso[] = [
   },
 ];
 
+const CLAVE_SALUDADO = 'pn-inicio-saludado';
+
+function leerMarcaSaludo(): boolean {
+  try {
+    return sessionStorage.getItem(CLAVE_SALUDADO) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function marcarSaludo(): void {
+  try {
+    sessionStorage.setItem(CLAVE_SALUDADO, '1');
+  } catch {
+    // Sin sessionStorage se comporta como primera vez, sin romper.
+  }
+}
+
 const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 
 /**
@@ -155,6 +174,7 @@ export class InicioComponent implements OnInit, OnDestroy {
   private readonly lecturas = inject(LecturasPanelService);
   private readonly auth = inject(AuthenticationService);
   private readonly plataforma = inject(PlataformaService);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly catalogo = inject(CatalogoService);
   private readonly cobros = inject(CobroCargoService);
   private readonly suscripciones = new Subscription();
@@ -232,7 +252,24 @@ export class InicioComponent implements OnInit, OnDestroy {
     return SECCIONES.filter((s) => !s.soloAdmin || this.esAdmin);
   }
 
+  /** Hoy es el cumpleaños de la cuenta (8b-M2): la mascota de la cabecera celebra; si no se puede saber, saluda. */
+  cumpleanos = false;
+
+  /** Texto del `<h1>`: «Inicio», o el saludo la primera vez por sesión del navegador. Se decide una sola vez. */
+  titulo = 'Inicio';
+  private primeraVisita = true;
+
   ngOnInit(): void {
+    this.primeraVisita = !leerMarcaSaludo();
+    this.suscripciones.add(
+      this.permisos
+        .obtener()
+        .pipe(catchError(() => of(null)))
+        .subscribe((p) => {
+          this.cumpleanos = p?.cumpleanos === true;
+          this.saludar(p?.nombreVisible);
+        })
+    );
     this.suscripciones.add(this.auth.getRoles().subscribe((roles) => (this.esAdmin = (roles ?? []).includes('ROLE_ADMIN'))));
     this.suscripciones.add(
       this.endpoints.eventos$.pipe(skip(1)).subscribe((eventos) => this.leerEventos(Array.isArray(eventos) ? eventos : []))
@@ -245,6 +282,17 @@ export class InicioComponent implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  /** Pinta el saludo solo en la primera visita de la sesión y lo marca; después el texto no cambia. */
+  private saludar(nombreVisible: string | null | undefined): void {
+    const nombre = (nombreVisible ?? '').trim().split(/\s+/)[0];
+    if (!this.primeraVisita || !nombre) {
+      return;
+    }
+    this.titulo = this.cumpleanos ? `¡Feliz cumpleaños, ${nombre}!` : `Hola, ${nombre}`;
+    this.primeraVisita = false;
+    marcarSaludo();
   }
 
   ngOnDestroy(): void {

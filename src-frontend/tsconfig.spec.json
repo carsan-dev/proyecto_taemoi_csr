@@ -61,6 +61,8 @@
     "src/app/panel-nuevo/alta-alumno/alta-alumno.component.spec.ts",
     "src/app/panel-nuevo/bajas-alumnos/bajas-alumnos-vista.spec.ts",
     "src/app/panel-nuevo/bajas-alumnos/bajas-alumnos.component.spec.ts",
+    "src/app/panel-nuevo/no-encontrada/no-encontrada.component.spec.ts",
+    "src/app/panel-nuevo/no-encontrada/gestion-panel.guard.spec.ts",
     "src/app/componentes/endpoints/eliminar-alumno/eliminar-alumno.mensaje.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",

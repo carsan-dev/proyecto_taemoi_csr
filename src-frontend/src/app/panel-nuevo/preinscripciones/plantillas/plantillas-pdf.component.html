@@ -17,9 +17,11 @@
       </div>
     </div>
 
-    @if (!disciplinas.length) {
+    @if (catalogoConError && !disciplinas.length) {
+    <pn-bloque-error titulo="No se pudo cargar la configuración de la escuela." (reintentar)="recargarCatalogo()" />
+    } @else if (!disciplinas.length && !esperandoCatalogo) {
     <pn-bloque-vacio titulo="No hay disciplinas activas." />
-    } @else if (estado === 'loading') {
+    } @else if (esperandoCatalogo || estado === 'loading') {
     <pn-esqueleto etiqueta="Cargando plantilla…">
       <div class="esqueleto">
         <div class="esqueleto__editor">
@@ -33,7 +35,7 @@
     } @else if (estado === 'error') {
     <pn-bloque-error titulo="No se pudo cargar la plantilla." (reintentar)="cargar()" />
     } @else if (!activa && !esAdmin) {
-    <pn-bloque-vacio titulo="Esta disciplina aún no tiene plantilla." />
+    <pn-bloque-vacio pose="invitar" titulo="Esta disciplina aún no tiene plantilla." />
     } @else {
       @if (!activa) {
       <p class="sin-plantilla">Esta disciplina aún no tiene plantilla. Escribe los textos y publica la versión 1.</p>

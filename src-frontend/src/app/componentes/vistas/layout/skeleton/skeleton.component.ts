@@ -114,8 +114,17 @@ export class SkeletonComponent implements OnInit {
     this.showCookieBanner = true;
   }
 
+  /** Una ruta sin prefijo de gestión que se declara del panel con `data.panelNuevo` (el 404 del panel, 8b-M2b). */
+  private rutaMarcadaComoPanel(): boolean {
+    let ruta = this.router.routerState.snapshot.root;
+    while (ruta.firstChild) {
+      ruta = ruta.firstChild;
+    }
+    return ruta.data?.['panelNuevo'] === true;
+  }
+
   private alCambiarDeRuta(url: string): void {
-    this.rutaPanel.set(esRutaDelPanel(url));
+    this.rutaPanel.set(esRutaDelPanel(url) || this.rutaMarcadaComoPanel());
     if (this.rutaPanel()) {
       this.evaluarInterruptor();
     }
