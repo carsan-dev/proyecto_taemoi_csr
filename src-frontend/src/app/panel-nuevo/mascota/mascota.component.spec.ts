@@ -22,7 +22,7 @@ class Anfitrion {
 function cargadoresFalsos(): CargadoresMascota {
   const falsos = {} as Record<string, () => Promise<string>>;
   for (const pose of [...POSES_MASCOTA, 'compacta']) {
-    falsos[pose] = () => Promise.resolve(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="prueba-mascota modo-vivo" data-pose="${pose}" viewBox="0 0 320 320" aria-labelledby="titulo"><title id="titulo">Mascota</title><style>.prueba-mascota.modo-vivo{--gota-idle-count:infinite}.prueba-mascota path{animation:prueba-mascota 1s infinite}@keyframes prueba-mascota{to{opacity:.5}}</style><defs><linearGradient id="tinta"/><path id="trazo" d="M0 0"/></defs><path fill="url(#tinta)" d="M0 0"/><use href="#trazo"/><use xlink:href="#trazo"/></svg>`);
+    falsos[pose] = () => Promise.resolve(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="prueba-mascota modo-vivo" data-pose="${pose}" viewBox="0 0 320 320" aria-labelledby="titulo"><title id="titulo">Mascota</title><style>.prueba-mascota.modo-vivo{--gota-idle-count:infinite}.prueba-mascota path{animation:prueba-mascota 1s var(--gota-idle-count)}@keyframes prueba-mascota{to{opacity:.5}}</style><defs><linearGradient id="tinta"/><path id="trazo" d="M0 0"/></defs><path fill="url(#tinta)" d="M0 0"/><use href="#trazo"/><use xlink:href="#trazo"/></svg>`);
   }
   falsos['leer'] = () => Promise.reject(new Error('chunk perdido'));
   return falsos as CargadoresMascota;
@@ -189,6 +189,8 @@ describe('MascotaComponent (8b-M)', () => {
     pintar();
     const svg = mascota().querySelector('svg')!;
     expect(getComputedStyle(svg).getPropertyValue('--gota-idle-count').trim()).toBe('1');
+    // La animación del trazo lee la variable: sin el límite, el SVG falso daría «infinite».
+    expect(getComputedStyle(svg.querySelector('path')!).animationIterationCount).toBe('1');
     expect(getComputedStyle(svg).getPropertyValue('--school-accent').trim()).toBe('rgb(70, 99, 150)');
     el().remove();
   }));
@@ -251,8 +253,9 @@ describe('MascotaComponent (8b-M)', () => {
         pintar();
         expect(el().querySelector('[class*="pn-mascota__lienzo--"]')).toBeNull();
         expect(mascota().classList).toContain('pn-mascota--quieta');
-        mascota().querySelectorAll('svg path').forEach((nodo) =>
-          expect(getComputedStyle(nodo).animationName).toBe('none'));
+        const trazos = mascota().querySelectorAll('svg path');
+        expect(trazos.length).toBeGreaterThan(0);
+        trazos.forEach((nodo) => expect(getComputedStyle(nodo).animationName).toBe('none'));
         el().remove();
       }));
     }
