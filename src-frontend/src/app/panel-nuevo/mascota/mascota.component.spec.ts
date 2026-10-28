@@ -2,14 +2,15 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 
 import { MASCOTA_CARGADORES, MascotaComponent } from './mascota.component';
-import { CARGADORES_MASCOTA, CargadoresMascota, POSES_MASCOTA, PoseMascota } from './poses';
+import { CARGADORES_MASCOTA, CargadoresMascota, POSES_MASCOTA } from './poses';
 
 @Component({
   standalone: true,
   imports: [MascotaComponent],
-  template: `<pn-mascota [pose]="pose" [tamano]="tamano" [animacion]="animacion" [decorativa]="decorativa" [etiqueta]="etiqueta" />`,
+  template: `<pn-mascota [pose]="pose" [tamano]="tamano" [animacion]="animacion" [decorativa]="decorativa" [etiqueta]="etiqueta" />@if (segunda) {<pn-mascota [pose]="pose" />}`,
 })
 class Anfitrion {
+  segunda = false;
   pose: string = 'saludar';
   tamano: 'sm' | 'md' | 'lg' | undefined = undefined;
   animacion: 'aparecer' | 'saludar' | 'celebrar' | 'dudar' | 'descansar' | 'cumpleanos' | null = null;
@@ -20,8 +21,8 @@ class Anfitrion {
 /** Cargadores falsos y síncronos: `<svg data-pose="…">`; la pose «rota» rechaza como un chunk que no llega. */
 function cargadoresFalsos(): CargadoresMascota {
   const falsos = {} as Record<string, () => Promise<string>>;
-  for (const pose of [...POSES_MASCOTA, 'cumpleanos-inicio', 'compacta']) {
-    falsos[pose] = () => Promise.resolve(`<svg data-pose="${pose}" viewBox="0 0 320 320"><path d="M0 0"/></svg>`);
+  for (const pose of [...POSES_MASCOTA, 'compacta']) {
+    falsos[pose] = () => Promise.resolve(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="prueba-mascota modo-vivo" data-pose="${pose}" viewBox="0 0 320 320" aria-labelledby="titulo"><title id="titulo">Mascota</title><style>.prueba-mascota.modo-vivo{--gota-idle-count:infinite}.prueba-mascota path{animation:prueba-mascota 1s infinite}@keyframes prueba-mascota{to{opacity:.5}}</style><defs><linearGradient id="tinta"/><path id="trazo" d="M0 0"/></defs><path fill="url(#tinta)" d="M0 0"/><use href="#trazo"/><use xlink:href="#trazo"/></svg>`);
   }
   falsos['leer'] = () => Promise.reject(new Error('chunk perdido'));
   return falsos as CargadoresMascota;
@@ -169,129 +170,120 @@ describe('MascotaComponent (8b-M)', () => {
     el().remove();
   }));
 
-  it('el CSS de verdad: duraciones y bucle de cada animación, y la cinta toma el acento de la escuela', fakeAsync(() => {
+  it('aparecer conserva su clase y la entrada de 240 ms', fakeAsync(() => {
     montar();
     document.body.appendChild(el());
-    const esperadas: Record<string, [string, string, string]> = {
-      aparecer: ['pn-mascota-aparecer', '0.24s', '1'],
-      saludar: ['pn-mascota-saludar', '0.6s', '1'],
-      celebrar: ['pn-mascota-celebrar', '0.7s', '1'],
-      dudar: ['pn-mascota-dudar', '0.5s', '1'],
-      descansar: ['pn-mascota-descansar', '3s', 'infinite'],
-    };
-    for (const [nombre, [clave, duracion, iteraciones]] of Object.entries(esperadas)) {
-      anfitrion.animacion = nombre as typeof anfitrion.animacion;
-      pintar();
-      const lienzo = el().querySelector<HTMLElement>('.pn-mascota__lienzo')!;
-      const estilo = getComputedStyle(lienzo);
-      // Angular antepone el atributo de encapsulación al nombre de los keyframes.
-      expect(estilo.animationName).withContext(nombre).toContain(clave);
-      expect(estilo.animationDuration).withContext(nombre).toBe(duracion);
-      expect(estilo.animationIterationCount).withContext(nombre).toBe(iteraciones);
-    }
-    // Solo el descansar es un bucle.
-    anfitrion.animacion = 'celebrar';
+    anfitrion.animacion = 'aparecer';
     pintar();
-    const pieza = el().querySelector<HTMLElement>('.pn-mascota__confeti')!;
-    expect(getComputedStyle(pieza).animationDuration).toBe('0.6s');
-    expect(getComputedStyle(pieza).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
-    // El acento de la escuela (--pn-acento) llega como --school-accent a la cinta del SVG.
-    el().style.setProperty('--pn-acento', 'rgb(70, 99, 150)');
-    anfitrion.animacion = null;
-    pintar();
-    const cinta = mascota().querySelector('svg')!;
-    expect(getComputedStyle(mascota()).getPropertyValue('--school-accent').trim()).toBe('rgb(70, 99, 150)');
-    expect(cinta).not.toBeNull();
+    const lienzo = mascota().querySelector<HTMLElement>('.pn-mascota__lienzo--aparecer')!;
+    expect(lienzo).not.toBeNull();
+    expect(getComputedStyle(lienzo).animationName).toContain('pn-mascota-aparecer');
+    expect(getComputedStyle(lienzo).animationDuration).toBe('0.24s');
     el().remove();
   }));
 
-  describe('animaciones', () => {
-    const nombres = ['aparecer', 'saludar', 'celebrar', 'dudar', 'descansar'] as const;
+  it('limita el reposo aunque la raíz del SVG pida un bucle', fakeAsync(() => {
+    montar();
+    document.body.appendChild(el());
+    el().style.setProperty('--pn-acento', 'rgb(70, 99, 150)');
+    pintar();
+    const svg = mascota().querySelector('svg')!;
+    expect(getComputedStyle(svg).getPropertyValue('--gota-idle-count').trim()).toBe('1');
+    expect(getComputedStyle(svg).getPropertyValue('--school-accent').trim()).toBe('rgb(70, 99, 150)');
+    el().remove();
+  }));
 
+  it('dos instancias no comparten IDs y todas sus referencias son locales', fakeAsync(() => {
+    montar();
+    anfitrion.segunda = true;
+    pintar();
+    const dibujos = Array.from(el().querySelectorAll('pn-mascota svg'));
+    expect(dibujos.length).toBe(2);
+    const todos = new Set<string>();
+    for (const dibujo of dibujos) {
+      const ids = new Set(Array.from(dibujo.querySelectorAll('[id]'), (nodo) => nodo.id));
+      expect(ids.size).toBe(3);
+      ids.forEach((id) => {
+        expect(todos.has(id)).toBeFalse();
+        todos.add(id);
+      });
+      const referencias: string[] = [];
+      dibujo.querySelectorAll('*').forEach((nodo) => {
+        for (const atributo of Array.from(nodo.attributes)) {
+          for (const coincidencia of atributo.value.matchAll(/url\(#([^)]+)\)/g)) {
+            referencias.push(coincidencia[1]);
+          }
+          if (['href', 'xlink:href'].includes(atributo.name)) {
+            referencias.push(atributo.value.slice(1));
+          }
+        }
+      });
+      referencias.push(dibujo.getAttribute('aria-labelledby')!);
+      expect(referencias.length).toBe(4);
+      referencias.forEach((id) => expect(ids.has(id)).withContext(id).toBeTrue());
+    }
+  }));
+
+  describe('animaciones compatibles', () => {
+    const nombres = ['saludar', 'celebrar', 'dudar', 'descansar', 'cumpleanos'] as const;
     for (const nombre of nombres) {
-      it(`«${nombre}» pone su clase en el lienzo`, fakeAsync(() => {
+      it(nombre + ' no agrega clase, confeti ni capas dobles', fakeAsync(() => {
         montar();
+        anfitrion.pose = nombre;
         anfitrion.animacion = nombre;
         pintar();
-        expect(el().querySelector(`.pn-mascota__lienzo--${nombre}`)).not.toBeNull();
+        expect(el().querySelector('[class*="pn-mascota__lienzo--"]')).toBeNull();
+        expect(el().querySelector('.pn-mascota__confeti')).toBeNull();
+        expect(mascota().querySelectorAll('svg').length).toBe(1);
       }));
     }
-
     it('sin animación no hay clase de animación', fakeAsync(() => {
       montar();
       pintar();
       expect(el().querySelector('[class*="pn-mascota__lienzo--"]')).toBeNull();
     }));
-
-    it('celebrar suelta el confeti, aria-hidden', fakeAsync(() => {
-      montar();
-      anfitrion.animacion = 'celebrar';
-      pintar();
-      const confeti = el().querySelectorAll('.pn-mascota__confeti');
-      expect(confeti.length).toBeGreaterThan(0);
-      confeti.forEach((c) => expect(c.getAttribute('aria-hidden')).toBe('true'));
-    }));
-
-    it('cumpleaños apila el fotograma inicial y el final', fakeAsync(() => {
-      montar();
-      anfitrion.pose = 'cumpleanos';
-      anfitrion.animacion = 'cumpleanos';
-      pintar();
-      const capas = el().querySelectorAll('.pn-mascota__lienzo svg');
-      expect(capas.length).toBe(2);
-      expect(capas[0].getAttribute('data-pose')).toBe('cumpleanos-inicio');
-      expect(capas[1].getAttribute('data-pose')).toBe('cumpleanos');
-      expect(el().querySelector('.pn-mascota__capa--final')).not.toBeNull();
-    }));
-
-    describe('con prefers-reduced-motion: reduce', () => {
-      beforeEach(() => {
+    for (const nombre of ['aparecer', ...nombres] as const) {
+      it(nombre + ' con menos movimiento queda sin clase ni animaciones SVG', fakeAsync(() => {
         reducido = true;
-      });
-
-      for (const nombre of [...nombres, 'cumpleanos' as const]) {
-        it(`«${nombre}» deja la pose quieta, sin clase de animación`, fakeAsync(() => {
-          montar();
-          anfitrion.animacion = nombre;
-          pintar();
-          expect(el().querySelector('[class*="pn-mascota__lienzo--"]')).toBeNull();
-          expect(el().querySelector('.pn-mascota__confeti')).toBeNull();
-          expect(el().querySelector('svg')).not.toBeNull();
-        }));
-      }
-
-      it('cumpleaños pinta directamente la pose final', fakeAsync(() => {
         montar();
-        anfitrion.pose = 'cumpleanos';
-        anfitrion.animacion = 'cumpleanos';
+        document.body.appendChild(el());
+        anfitrion.animacion = nombre;
         pintar();
-        const capas = el().querySelectorAll('.pn-mascota__lienzo svg');
-        expect(capas.length).toBe(1);
-        expect(capas[0].getAttribute('data-pose')).toBe('cumpleanos');
+        expect(el().querySelector('[class*="pn-mascota__lienzo--"]')).toBeNull();
+        expect(mascota().classList).toContain('pn-mascota--quieta');
+        mascota().querySelectorAll('svg path').forEach((nodo) =>
+          expect(getComputedStyle(nodo).animationName).toBe('none'));
+        el().remove();
       }));
-    });
+    }
   });
 });
 
-describe('Poses de la mascota (8b-M), con los chunks de verdad', () => {
-  it('cada pose y la compacta cargan un SVG inline sano', async () => {
-    const claves = [...POSES_MASCOTA, 'compacta', 'cumpleanos-inicio'];
-    for (const clave of claves) {
-      const cargador = (CARGADORES_MASCOTA as Record<string, () => Promise<string>>)[clave];
-      expect(cargador).withContext(clave).toBeDefined();
-      const svg = await cargador();
+describe('Poses animadas de la mascota (8b-M2), con los chunks de verdad', () => {
+  it('cada pose y la compacta cargan un SVG inline propio', async () => {
+    for (const clave of [...POSES_MASCOTA, 'compacta'] as const) {
+      const svg = await CARGADORES_MASCOTA[clave]();
       expect(svg.startsWith('<svg')).withContext(clave).toBeTrue();
       expect(svg).withContext(clave).toContain('viewBox="0 0 320 320"');
-      expect(svg).withContext(clave).not.toContain('<title');
-      expect(svg).withContext(clave).not.toMatch(/<(script|image|foreignObject|style)\b|href=|onload/i);
+      expect(svg).withContext(clave).not.toMatch(/<(script|image|foreignObject)\b|\bon\w+=/i);
+      const documento = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      expect(documento.querySelector('parsererror')).withContext(clave).toBeNull();
+      const ids = new Set(Array.from(documento.querySelectorAll('[id]'), (nodo) => nodo.id));
+      for (const referencia of svg.matchAll(/url\(#([^)]+)\)|(?:href|xlink:href)="#([^"]+)"/g)) {
+        expect(ids.has(referencia[1] || referencia[2])).withContext(clave).toBeTrue();
+      }
+      if (clave === 'compacta') {
+        expect(svg).not.toContain('@keyframes');
+      } else {
+        expect(svg).withContext(clave).toContain('<style>');
+        expect(svg).withContext(clave).toContain('@keyframes');
+        expect(svg).withContext(clave).toContain('prefers-reduced-motion');
+        expect(svg).withContext(clave).toContain('--gota-idle-count');
+      }
     }
   });
-
-  it('las poses de mascota-app están todas, incluidos los 8 estados del 23/10', () => {
-    const esperadas: PoseMascota[] = [
-      'saludar', 'explicar', 'celebrar', 'dudar', 'descansar', 'cumpleanos', 'prepararse', 'animar', 'leer',
-      'confirmar', 'buscar', 'esperar', 'invitar', 'agradecer',
-    ];
-    expect([...POSES_MASCOTA].sort()).toEqual([...esperadas].sort());
+  it('mantiene las 14 poses y solo el compacto adicional', () => {
+    expect(POSES_MASCOTA.length).toBe(14);
+    expect(Object.keys(CARGADORES_MASCOTA).sort()).toEqual([...POSES_MASCOTA, 'compacta'].sort());
   });
 });

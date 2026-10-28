@@ -25,27 +25,15 @@ export const MASCOTA_CARGADORES = new InjectionToken<CargadoresMascota>('MASCOTA
 /** Etiqueta cuando la mascota no es decorativa y quien la usa no da ninguna. */
 const ETIQUETA_POR_DEFECTO = 'Gota de esfuerzo, la mascota';
 
-/** Piezas de confeti de «celebrar»: a dónde va cada una (en fracciones del lado) y cuánto gira. */
-const CONFETI = [
-  { dx: -0.46, dy: -0.4, giro: -200, retraso: 0 },
-  { dx: -0.22, dy: -0.58, giro: 160, retraso: 40 },
-  { dx: 0.04, dy: -0.64, giro: -120, retraso: 0 },
-  { dx: 0.28, dy: -0.56, giro: 220, retraso: 60 },
-  { dx: 0.5, dy: -0.38, giro: -180, retraso: 20 },
-  { dx: 0.36, dy: -0.2, giro: 140, retraso: 80 },
-];
+let siguienteInstancia = 0;
 
 /**
- * La gota de esfuerzo, mascota de la plataforma (pieza 8b-M; `mascota-app/LEEME.txt` fija sus usos). SVG inline, para que
- * la cinta (y el gorro y el confeti de cumpleaños) tomen `--school-accent`, que aquí es el acento de la escuela
- * (`--pn-acento`, 8b-C). Cada pose es un chunk aparte (`poses.ts`): nada entra en el bundle inicial. Mientras llega, el
- * hueco ya tiene el tamaño final.
- *
- * - `tamano`: `sm` 32 px (con el dibujo compacto, que no es la pose reducida), `md` 96 px, `lg` 144 px.
- * - `animacion`: solo CSS y solo `transform` y `opacity`; con `prefers-reduced-motion` la pose queda quieta (y la de
- *   cumpleaños, directamente en su fotograma final).
- * - `decorativa` (por defecto): `aria-hidden`. La mascota nunca es el único portador de un mensaje; si lo fuera,
- *   `decorativa=false` la pone como `role="img"` con `etiqueta`.
+ * La gota de esfuerzo: 14 SVG animados inline con IDs únicos por instancia y acento --school-accent.
+ * Cada pose llega en su propio chunk; el hueco conserva el tamaño mientras carga.
+ * sm usa el dibujo compacto estático de 32 px; md mide 96 px y lg, 144 px.
+ * El SVG ejecuta su gesto y como máximo un reposo; con menos movimiento queda quieto.
+ * animacion se conserva por compatibilidad: solo aparecer añade una entrada de 240 ms.
+ * Decorativa por defecto; si no, role="img" y etiqueta accesible.
  */
 @Component({
   selector: 'pn-mascota',
@@ -53,6 +41,7 @@ const CONFETI = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'pn-mascota',
+    '[class.pn-mascota--quieta]': 'quieta',
     '[class.pn-mascota--sm]': "tam === 'sm'",
     '[class.pn-mascota--md]': "tam === 'md'",
     '[class.pn-mascota--lg]': "tam === 'lg'",
@@ -60,11 +49,11 @@ const CONFETI = [
     '[attr.role]': 'decorativa ? null : "img"',
     '[attr.aria-label]': 'decorativa ? null : (etiqueta || etiquetaPorDefecto)',
   },
-  template: `@if (capas().length) {<span class="pn-mascota__lienzo" [class]="claseLienzo">@for (capa of capas(); track $index) {<span class="pn-mascota__capa" [class.pn-mascota__capa--final]="capas().length > 1 && $last" [innerHTML]="capa"></span>}</span>@if (confeti) {@for (c of piezasConfeti; track $index) {<span class="pn-mascota__confeti" aria-hidden="true" [style.--dx]="c.dx" [style.--dy]="c.dy" [style.--giro]="c.giro + 'deg'" [style.animation-delay]="c.retraso + 'ms'"></span>}}}`,
+  template: `@if (svg(); as dibujo) {<span class="pn-mascota__lienzo" [class]="claseLienzo" [innerHTML]="dibujo"></span>}`,
   styleUrls: ['./mascota.component.scss'],
 })
 export class MascotaComponent implements OnInit, OnChanges {
-  /** Nombre de la pose (`mascota-app/svg/gota-<pose>.svg`). Una que no exista deja el hueco vacío. */
+  /** Nombre de la pose (`mascota-app/animaciones/gota-<pose>-animada.svg`). Una que no exista deja el hueco vacío. */
   @Input() pose: PoseMascota | (string & {}) = 'saludar';
   @Input() tamano: TamanoMascota = 'md';
   @Input() animacion: AnimacionMascota | null = null;
@@ -72,13 +61,12 @@ export class MascotaComponent implements OnInit, OnChanges {
   @Input() etiqueta = '';
 
   readonly etiquetaPorDefecto = ETIQUETA_POR_DEFECTO;
-  readonly piezasConfeti = CONFETI;
-  /** Una capa, o dos (inicio y final) en la animación de cumpleaños. */
-  readonly capas = signal<SafeHtml[]>([]);
+  readonly svg = signal<SafeHtml | null>(null);
 
   private readonly cargadores = inject(MASCOTA_CARGADORES);
   private readonly saneador = inject(DomSanitizer);
-  private readonly quieta = menosMovimiento();
+  readonly quieta = menosMovimiento();
+  private readonly prefijo = `pn-mascota-${++siguienteInstancia}-`;
   private version = 0;
   private iniciado = false;
 
@@ -89,15 +77,7 @@ export class MascotaComponent implements OnInit, OnChanges {
 
   /** Clase de la animación, o nada con `prefers-reduced-motion`. */
   get claseLienzo(): string {
-    return this.animacionActiva ? `pn-mascota__lienzo--${this.animacionActiva}` : '';
-  }
-
-  get confeti(): boolean {
-    return this.animacionActiva === 'celebrar';
-  }
-
-  private get animacionActiva(): AnimacionMascota | null {
-    return this.quieta ? null : this.animacion;
+    return !this.quieta && this.animacion === 'aparecer' ? 'pn-mascota__lienzo--aparecer' : '';
   }
 
   ngOnInit(): void {
@@ -111,7 +91,7 @@ export class MascotaComponent implements OnInit, OnChanges {
     }
   }
 
-  /** Qué SVG hacen falta: el compacto con `sm`; cumpleaños animado, los dos fotogramas; si no, la pose. */
+  /** El compacto con sm; en los demás tamaños, la pose animada. */
   private claves(): ClaveSvgMascota[] {
     if (this.tam === 'sm') {
       return ['compacta'];
@@ -119,10 +99,17 @@ export class MascotaComponent implements OnInit, OnChanges {
     if (!esPoseMascota(this.pose)) {
       return [];
     }
-    if (this.pose === 'cumpleanos' && this.animacionActiva === 'cumpleanos') {
-      return ['cumpleanos-inicio', 'cumpleanos'];
-    }
     return [this.pose];
+  }
+
+  /** Los fragmentos y el título accesible deben apuntar solo a esta instancia. */
+  private identificar(svg: string): string {
+    return svg
+      .replace(/\bid="([^"]+)"/g, (_, id: string) => `id="${this.prefijo}${id}"`)
+      .replace(/url\(#([^)]+)\)/g, (_, id: string) => `url(#${this.prefijo}${id})`)
+      .replace(/\b(href|xlink:href)="#([^"]+)"/g, (_, atributo: string, id: string) => `${atributo}="#${this.prefijo}${id}"`)
+      .replace(/\b(aria-labelledby|aria-describedby)="([^"]+)"/g, (_, atributo: string, ids: string) =>
+        `${atributo}="${ids.split(/\s+/).map((id) => this.prefijo + id).join(' ')}"`);
   }
 
   private async cargar(): Promise<void> {
@@ -133,12 +120,12 @@ export class MascotaComponent implements OnInit, OnChanges {
       if (version === this.version) {
         // Son los SVG propios de `mascota-app/`, empaquetados con la aplicación: el saneador de Angular quitaría los
         // elementos SVG y los `style` que llevan la variable del acento.
-        this.capas.set(svgs.map((svg) => this.saneador.bypassSecurityTrustHtml(svg)));
+        this.svg.set(svgs.length ? this.saneador.bypassSecurityTrustHtml(this.identificar(svgs[0])) : null);
       }
     } catch {
       // Sin el chunk (sin conexión) o sin pose: se queda el hueco; la mascota nunca lleva el mensaje.
       if (version === this.version) {
-        this.capas.set([]);
+        this.svg.set(null);
       }
     }
   }
