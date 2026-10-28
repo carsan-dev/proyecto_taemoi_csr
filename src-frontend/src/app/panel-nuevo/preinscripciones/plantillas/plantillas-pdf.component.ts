@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, effect, inject, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -82,6 +82,27 @@ export class PlantillasPdfComponent implements OnInit {
   documentos: DocumentoInforme[] = [];
   focoRetorno: HTMLElement | null = null;
   private cambiandoDisciplina = false;
+  /** Número de la última lectura pedida: una respuesta de una anterior se descarta (la última elección manda). */
+  private lectura = 0;
+
+  constructor() {
+    // El catálogo puede llegar después de abrir la pestaña (p. ej. al recargar, mientras se resuelve la sesión):
+    // cuando aparece la primera disciplina se elige y se lee su plantilla.
+    effect(() => {
+      const primera = this.catalogo.primeraDisciplinaActiva();
+      if (primera && !untracked(() => this.disciplina)) {
+        this.disciplina = primera;
+        untracked(() => { void this.cargar(); });
+      }
+    });
+  }
+
+  /** Aún no se sabe qué disciplinas hay: el catálogo sin llegar, o llegado y sin haber elegido disciplina. */
+  get esperandoCatalogo(): boolean {
+    return this.catalogo.cargando() || this.catalogo.estado().estado === 'vacio' || (!!this.disciplinas.length && !this.disciplina);
+  }
+  get catalogoConError(): boolean { return this.catalogo.hayError(); }
+  recargarCatalogo(): void { this.catalogo.recargar().subscribe({ error: () => undefined }); }
 
   get esAdmin(): boolean { return this.auth.tieneRolAdmin(); }
   get disciplinas() { return this.catalogo.disciplinasActivas(); }
@@ -105,19 +126,20 @@ export class PlantillasPdfComponent implements OnInit {
   ngOnInit(): void { this.cargar(); }
 
   async cargar(): Promise<void> {
+    const lectura = ++this.lectura;
     if (!this.disciplina) { this.estado = STATUS.ready; return; }
     this.estado = STATUS.loading;
     try {
       // Panel-local requests keep legacy behavior and its initial bundle unchanged.
       const data = await firstValueFrom(this.http.get<Templates>(this.url(), { context: contextoErrorLocal() })
         .pipe(takeUntilDestroyed(this.destroyRef)));
-      if (this.destroyRef.destroyed) return;
+      if (this.destroyRef.destroyed || lectura !== this.lectura) return;
       this.activa = data.activa;
       this.historial = data.historial;
       this.descartar();
       this.estado = STATUS.ready;
     } catch (error) {
-      if (this.destroyRef.destroyed) return;
+      if (this.destroyRef.destroyed || lectura !== this.lectura) return;
       if (error instanceof HttpErrorResponse && error.status === 404) {
         this.activa = null;
         this.historial = [];

@@ -1,13 +1,17 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpClient } from '@angular/common/http';
 import { Component, Input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { By } from '@angular/platform-browser';
+import { Subject, of } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../../core/http-context';
 import { CATALOGO_TAEMOI } from '../../../features/catalogo/testing/catalogo.fixtures';
+import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { BloqueVacioComponent } from '../../carga/bloque-vacio.component';
 import { proveerCatalogoTesting } from '../../../features/catalogo/testing/catalogo-service.testing';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { DocumentoInforme } from '../../../servicios/generales/informe-pdf.service';
@@ -552,5 +556,110 @@ describe('PlantillasPdfComponent', () => {
     expect(confirm).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: '¿Descartar los cambios?' }));
     confirm.and.resolveTo({ confirmado: true, valor: null });
     expect(await guard()).toBeTrue();
+  });
+  describe('empty and loading states', () => {
+    const SIN_PLANTILLA = 'aún no tiene plantilla';
+    const vacio = () => fixture.debugElement.query(By.directive(BloqueVacioComponent))?.componentInstance as BloqueVacioComponent | undefined;
+
+    it('does not show «sin plantilla» while the response is pending', async () => {
+      await settle();
+      expect(root().querySelector('pn-esqueleto')).not.toBeNull();
+      expect(root().textContent).not.toContain(SIN_PLANTILLA);
+      expect(root().querySelector('pn-bloque-vacio')).toBeNull();
+      expect(root().querySelector('.sin-plantilla')).toBeNull();
+      http.expectOne(`${BASE}/TAEKWONDO`).flush({}, { status: 404, statusText: 'Not found' });
+      await settle();
+    });
+
+    it('shows the empty block with the invitar pose after a 404 for managers', async () => {
+      admin = false;
+      http.expectOne(`${BASE}/TAEKWONDO`).flush({}, { status: 404, statusText: 'Not found' });
+      await settle();
+      expect(vacio()!.pose).toBe('invitar');
+      expect(root().querySelector('pn-bloque-vacio')!.textContent).toContain(SIN_PLANTILLA);
+      expect(root().querySelectorAll('.sin-plantilla').length).toBe(0);
+    });
+
+    it('shows one single message to admins on a 404 (hint above the editor, no empty block)', async () => {
+      http.expectOne(`${BASE}/TAEKWONDO`).flush({}, { status: 404, statusText: 'Not found' });
+      await settle();
+      expect(root().querySelector('pn-bloque-vacio')).toBeNull();
+      expect(root().querySelectorAll('.sin-plantilla').length).toBe(1);
+    });
+
+    it('shows the editor and no empty state when the discipline has a template', async () => {
+      await load();
+      expect(root().querySelector('pn-bloque-vacio')).toBeNull();
+      expect(root().textContent).not.toContain(SIN_PLANTILLA);
+      expect(root().querySelector('#plantilla-cabecera')).not.toBeNull();
+    });
+
+    it('the last chosen discipline wins when the first response arrives late', async () => {
+      await load();
+      const first = component().cambiarDisciplina('KICKBOXING');
+      await settle();
+      const late = http.expectOne(`${BASE}/KICKBOXING`);
+      component().disciplina = 'PILATES';
+      const second = component().cargar();
+      const latest = http.expectOne(`${BASE}/PILATES`);
+      latest.flush({ activa: version(2), historial: [version(2)] });
+      await second;
+      late.flush({ activa: version(3), historial: [version(3)] });
+      await first;
+      await settle();
+      expect(component().activa!.version).toBe(2);
+      expect(component().estado).toBe('ready');
+      expect(root().textContent).toContain('Versión 2');
+    });
+
+    it('shows the error block, never «sin plantilla», when loading fails', async () => {
+      http.expectOne(`${BASE}/TAEKWONDO`).flush({}, { status: 500, statusText: 'Server error' });
+      await settle();
+      expect(root().querySelector('pn-bloque-error')).not.toBeNull();
+      expect(root().querySelector('pn-bloque-vacio')).toBeNull();
+      expect(root().textContent).not.toContain(SIN_PLANTILLA);
+    });
+  });
+});
+
+describe('PlantillasPdfComponent with the catalogue still loading', () => {
+  it('waits for the catalogue (skeleton, no empty state) and then reads the first discipline', async () => {
+    const respuesta = new Subject<unknown>();
+    let catalogo!: CatalogoService;
+    await TestBed.configureTestingModule({
+      imports: [PlantillasPdfComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: CatalogoService, useFactory: () => catalogo },
+        { provide: AuthenticationService, useValue: { tieneRolAdmin: () => true } },
+        { provide: ConfirmacionService, useValue: { confirmar: () => Promise.resolve({ confirmado: true, valor: null }) } },
+        { provide: AvisosService, useValue: jasmine.createSpyObj<AvisosService>('avisos', ['exito', 'error']) }],
+    }).overrideComponent(PlantillasPdfComponent, {
+      remove: { imports: [VisorPdfComponent] }, add: { imports: [ViewerStub] },
+    }).compileComponents();
+    catalogo = TestBed.runInInjectionContext(() => new CatalogoService({ get: () => respuesta } as unknown as HttpClient,
+      { usuarioLogueadoCambio: of(false), emailCambio: of(null) } as unknown as AuthenticationService));
+    catalogo.cargar().subscribe({ error: () => undefined });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(PlantillasPdfComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('pn-esqueleto')).not.toBeNull();
+    expect(root.querySelector('pn-bloque-vacio')).toBeNull();
+    expect(root.textContent).not.toContain('aún no tiene plantilla');
+    http.expectNone(r => r.url.startsWith(BASE));
+    respuesta.next(CATALOGO_TAEMOI);
+    respuesta.complete();
+    fixture.detectChanges();
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(root.querySelector('pn-bloque-vacio')).toBeNull();
+    http.expectOne(`${BASE}/TAEKWONDO`).flush({ activa: version(), historial: [version()] });
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Versión 4');
+    expect(root.querySelector('pn-bloque-vacio')).toBeNull();
+    fixture.destroy();
+    http.verify();
   });
 });
