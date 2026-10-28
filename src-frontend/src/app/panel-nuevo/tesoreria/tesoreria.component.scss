@@ -263,6 +263,8 @@ select.tesoreria__control {
   align-items: center;
   gap: 10px;
   min-height: 42px;
+  /* Es un <label>: anula el margin-bottom global de las etiquetas, que la subía 8 px sobre los controles. */
+  margin: 0;
   padding: 0 4px;
   font: var(--pn-secundario);
   color: var(--pn-tinta);
