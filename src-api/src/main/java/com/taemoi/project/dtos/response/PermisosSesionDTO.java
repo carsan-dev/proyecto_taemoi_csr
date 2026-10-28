@@ -19,9 +19,12 @@ import java.util.List;
  *                          fuera de la sesión solo-profesor (decisión 260); el resto, apagado.
  * @param nombreVisible     pieza 8b-T: «Nombre A.» de la cuenta de la sesión (nombre e inicial del primer apellido),
  *                          para el botón de cuenta; {@code null} sin nombre. Solo el propio.
+ * @param cumpleanos     pieza 8b-M2: hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno PROPIA de la cuenta en
+ *                          la escuela activa (29-feb → 28-feb en años no bisiestos). Solo el booleano, nunca la fecha.
  */
 public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, List<Sede> sedes, boolean variasSedes,
-		boolean tieneGrupos, List<Capacidad> capacidades, DisenoPanelDTO.Propio disenoNuevo, String nombreVisible) {
+		boolean tieneGrupos, List<Capacidad> capacidades, DisenoPanelDTO.Propio disenoNuevo, String nombreVisible,
+		boolean cumpleanos) {
 
 	public PermisosSesionDTO {
 		roles = List.copyOf(roles);
