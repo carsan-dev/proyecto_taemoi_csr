@@ -44,6 +44,11 @@ import jakarta.servlet.http.Cookie;
  * apellidos), el concepto, el importe, la forma de pago, la sede y el pie; ni DNI, ni contacto del alumno, ni quién
  * cobró. Escuelas sintéticas de {@link EscuelaConSedesDePrueba}; datos inventados. «Hoy»: 15/10/2026 (Europe/Madrid)
  * con un {@code Clock} simulado.
+ *
+ * <p>Cargos de legado (pagados antes de V31_5, sin ninguna fila de cobro): el recibo sale del propio cargo, con la
+ * serie {@code R-{año del pago}-C{id del cargo con 6 cifras}}, el importe precio × cantidad ({@code ImporteCargo}), la
+ * fecha de pago y la sede del cargo, sin forma de pago (el cargo no la guarda). Cancelado, devuelto (DEVOLUCION ACTIVA
+ * enlazada al cargo en la caja) o sin fecha de pago, 409.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -67,7 +72,9 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 	EscuelaConSedesDePrueba otra;
 	String tokenGestor, tokenPropietario, tokenResponsable, tokenFamilia, tokenProfesor, tokenOtraGestor;
 	long cargoCobrado, cobroCobrado, cargoSinCobrar, cargoAnulado, cargoDevuelto, cargoDevolucionAnulada, cargoOtra;
-	String nombreAlumno;
+	long legado, legadoCantidadNula, legadoSinSede, legadoDevuelto, legadoDevolucionAnulada, legadoSinFecha,
+			legadoCancelado, legadoAnuladoPagado, legadoOtra;
+	String nombreAlumno, nombreSede;
 
 	@BeforeAll
 	void preparar() {
@@ -101,9 +108,33 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 		devolucion(e, cargoDevolucionAnulada,
 				cobro(e, cargoDevolucionAnulada, "MENSUALIDAD JULIO 2026 - TAEKWONDO", "EFECTIVO", "ACTIVO"), "ANULADO");
 
+		nombreSede = jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sA);
+		legado = legado(e, producto, "CAMISETA LEGADO IT", 14.50, 2, "2025-03-10 19:00:00", e.sA);
+		legadoCantidadNula = legado(e, producto, "MENSUALIDAD MARZO 2025 - TAEKWONDO", 28.00, null,
+				"2025-03-05 10:00:00", e.sA);
+		legadoSinSede = legado(e, producto, "MENSUALIDAD FEBRERO 2025 - TAEKWONDO", 28.00, 1, "2025-02-05 10:00:00",
+				null);
+		legadoDevuelto = legado(e, producto, "MENSUALIDAD ENERO 2025 - TAEKWONDO", 28.00, 1, "2025-01-05 10:00:00",
+				e.sA);
+		devolucion(e, legadoDevuelto, null, "ACTIVO");
+		legadoDevolucionAnulada = legado(e, producto, "MENSUALIDAD DICIEMBRE 2024 - TAEKWONDO", 28.00, 1,
+				"2024-12-05 10:00:00", e.sA);
+		devolucion(e, legadoDevolucionAnulada, null, "ANULADO");
+		legadoSinFecha = legado(e, producto, "MENSUALIDAD NOVIEMBRE 2024 - TAEKWONDO", 28.00, 1, null, e.sA);
+		legadoCancelado = legado(e, producto, "MENSUALIDAD OCTUBRE 2024 - TAEKWONDO", 28.00, 1, "2024-10-05 10:00:00",
+				e.sA);
+		jdbc.update("UPDATE producto_alumno SET cancelado_en = '2024-10-06 10:00:00', motivo_cancelacion = 'IT' "
+				+ "WHERE id = ?", legadoCancelado);
+		legadoAnuladoPagado = legado(e, producto, "MENSUALIDAD SEPTIEMBRE 2024 - TAEKWONDO", 28.00, 1,
+				"2024-09-05 10:00:00", e.sA);
+		cobro(e, legadoAnuladoPagado, "MENSUALIDAD SEPTIEMBRE 2024 - TAEKWONDO", "EFECTIVO", "ANULADO");
+
 		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-279-otra");
-		cargoOtra = cargo(otra, producto(otra), "MENSUALIDAD OCTUBRE 2026 - TAEKWONDO", true);
+		long productoOtra = producto(otra);
+		cargoOtra = cargo(otra, productoOtra, "MENSUALIDAD OCTUBRE 2026 - TAEKWONDO", true);
 		cobro(otra, cargoOtra, "MENSUALIDAD OCTUBRE 2026 - TAEKWONDO", "EFECTIVO", "ACTIVO");
+		legadoOtra = legado(otra, productoOtra, "MENSUALIDAD MARZO 2025 - TAEKWONDO", 28.00, 1, "2025-03-05 10:00:00",
+				otra.sA);
 
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 		tokenPropietario = e.token(jwtService, usuarios, propietario);
@@ -203,6 +234,96 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(401, mvc.perform(get(ruta(cargoCobrado))).andReturn().getResponse().getStatus(), "sin sesión");
 	}
 
+	// ------------------------------------------------------------------ cargos de legado (sin ninguna fila de cobro)
+
+	@Test
+	void legado_reciboDelCargo() throws Exception {
+		MvcResult r = pedir(legado, tokenGestor);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals("application/pdf", r.getResponse().getContentType());
+		String numero = String.format("R-2025-C%06d", legado);
+		assertEquals("attachment; filename=\"recibo-" + numero + ".pdf\"",
+				r.getResponse().getHeader(HttpHeaders.CONTENT_DISPOSITION));
+
+		String texto = texto(r.getResponse().getContentAsByteArray());
+		for (String esperado : new String[] { "Recibo", numero, "10/03/2025", nombreAlumno, "CAMISETA LEGADO IT",
+				"29,00 €", nombreSede, "IT E6 A " + e.marca, "Club Deportivo Recibo IT", "G11111111",
+				"Este documento justifica el pago del concepto indicado. No es una factura.",
+				"Emitido el 15/10/2026" }) {
+			assertTrue(texto.contains(esperado), "falta «" + esperado + "» en:\n" + texto);
+		}
+		for (String prohibido : new String[] { DNI_ALUMNO, EMAIL_ALUMNO, TELEFONO_ALUMNO, "Calle 1",
+				"it-e6-gestor-" + e.marca, "Usuario", "Forma de pago", "Sin indicar", "14,50 €" }) {
+			assertFalse(texto.contains(prohibido), "el recibo no debe llevar «" + prohibido + "»:\n" + texto);
+		}
+		assertEquals(texto, texto(pedir(legado, tokenPropietario).getResponse().getContentAsByteArray()),
+				"regenerarlo da el mismo recibo");
+	}
+
+	@Test
+	void legado_cantidadNulaCuentaComoUna_ySinSedeNoHayFilaSede() throws Exception {
+		MvcResult r = pedir(legadoCantidadNula, tokenGestor);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		String texto = texto(r.getResponse().getContentAsByteArray());
+		assertTrue(texto.contains("28,00 €"), texto);
+		assertTrue(texto.contains("05/03/2025"), texto);
+
+		MvcResult sinSede = pedir(legadoSinSede, tokenGestor);
+		assertEquals(200, sinSede.getResponse().getStatus(), sinSede.getResponse().getContentAsString());
+		String textoSinSede = texto(sinSede.getResponse().getContentAsByteArray());
+		assertTrue(textoSinSede.contains(String.format("R-2025-C%06d", legadoSinSede)), textoSinSede);
+		assertFalse(textoSinSede.contains("Sede"), "sin sede: sin fila «Sede»:\n" + textoSinSede);
+	}
+
+	@Test
+	void legadoDevuelto_409() throws Exception {
+		MvcResult r = pedir(legadoDevuelto, tokenGestor);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals("Este cargo está devuelto: no tiene recibo.",
+				json.readTree(r.getResponse().getContentAsString()).get("mensaje").asText());
+		assertEquals(200, pedir(legadoDevolucionAnulada, tokenGestor).getResponse().getStatus(),
+				"una devolución anulada no cuenta");
+	}
+
+	@Test
+	void legadoSinFechaDePago_409() throws Exception {
+		MvcResult r = pedir(legadoSinFecha, tokenGestor);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals("Este cargo no tiene fecha de pago: no se puede emitir el recibo.",
+				json.readTree(r.getResponse().getContentAsString()).get("mensaje").asText());
+	}
+
+	@Test
+	void legadoCancelado_409() throws Exception {
+		MvcResult r = pedir(legadoCancelado, tokenGestor);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals("Este cargo está cancelado: no tiene recibo.",
+				json.readTree(r.getResponse().getContentAsString()).get("mensaje").asText());
+	}
+
+	@Test
+	void pagadoConSoloCobrosAnulados_noEsLegado_409() throws Exception {
+		MvcResult r = pedir(legadoAnuladoPagado, tokenGestor);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals("El cobro de este cargo está anulado: no se puede emitir el recibo.",
+				json.readTree(r.getResponse().getContentAsString()).get("mensaje").asText());
+	}
+
+	@Test
+	void legadoDeOtraEscuela_404() throws Exception {
+		assertEquals(404, pedir(legadoOtra, tokenGestor).getResponse().getStatus(), "un cargo de otra escuela");
+		assertEquals(404, pedir(legado, tokenOtraGestor).getResponse().getStatus(), "y al revés");
+		assertEquals(200, pedir(legadoOtra, tokenOtraGestor).getResponse().getStatus(), "en su escuela, sí");
+	}
+
+	@Test
+	void legado_soloGestion() throws Exception {
+		assertEquals(403, pedir(legado, tokenProfesor).getResponse().getStatus(), "sesión solo-profesor");
+		assertEquals(403, pedir(legado, tokenFamilia).getResponse().getStatus(), "familia");
+		assertEquals(403, pedir(legado, tokenResponsable).getResponse().getStatus(), "responsable de sede");
+		assertEquals(401, mvc.perform(get(ruta(legado))).andReturn().getResponse().getStatus(), "sin sesión");
+	}
+
 	// ------------------------------------------------------------------ ayudantes
 
 	private static String ruta(long cargo) {
@@ -234,7 +355,20 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 				escuela.org);
 	}
 
-	private void devolucion(EscuelaConSedesDePrueba escuela, long cargo, long cobro, String estado) {
+	/** Cargo pagado de legado (como los anteriores a V31_5): sin ninguna fila de cobro. */
+	private long legado(EscuelaConSedesDePrueba escuela, long producto, String concepto, double precio,
+			Integer cantidad, String fechaPago, Long sede) {
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, producto_id, concepto, precio, cantidad, pagado, fecha_pago,
+				  fecha_asignacion, organizacion_id, sede_id)
+				VALUES (?, ?, ?, ?, ?, TRUE, ?, '2024-09-01 12:00:00', ?, ?)""", escuela.aA, producto, concepto, precio,
+				cantidad, fechaPago, escuela.org, sede);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class,
+				escuela.org);
+	}
+
+	/** DEVOLUCION en la caja enlazada al cargo; {@code cobro} nulo en un cargo de legado. */
+	private void devolucion(EscuelaConSedesDePrueba escuela, long cargo, Long cobro, String estado) {
 		jdbc.update("""
 				INSERT INTO movimiento_caja (organizacion_id, sede_id, tipo, importe, alumno_id, nota, fecha, estado,
 				  cobro_id, producto_alumno_id, metodo)

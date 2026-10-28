@@ -31,6 +31,13 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
 	 */
 	boolean existsByCobroIdAndTipoAndEstado(Long cobroId, TipoMovimientoCaja tipo, EstadoMovimientoCaja estado);
 
+	/**
+	 * Pieza 279: si hay un movimiento de ese tipo y estado enlazado al cargo ({@code producto_alumno_id}). El recibo de un
+	 * cargo de legado (sin ninguna fila de cobro) lo mira con DEVOLUCION ACTIVA: el cargo está devuelto.
+	 */
+	boolean existsByProductoAlumnoIdAndTipoAndEstado(Long productoAlumnoId, TipoMovimientoCaja tipo,
+			EstadoMovimientoCaja estado);
+
 	/** Movimientos (de cualquier estado) de esas entregas. */
 	List<MovimientoCaja> findByEntregaCajaIdInOrderByIdAsc(Collection<Long> entregaIds);
 

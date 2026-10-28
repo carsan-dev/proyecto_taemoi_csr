@@ -1,0 +1,15 @@
+# Contenido del PDF «recibo-pago-legado» (caracterización, decisión 314).
+# Regla de comparación y formato: ContenidoPdf. «~ » = presentación (comprobación laxa).
+# Pieza 279, cargo de legado: cargo 14192 de Ana (14,50 € × 2, sede Norte) pagado el 10/03/2025, sin ninguna fila de cobro. Escuela ficticia.
+# Sin forma de pago (el cargo no la guarda). Emisión: Clock fijo el 2026-10-15 (presentación). Ni DNI ni correo de la alumna.
+Escuela Ficticia Sierra Recibo
+Club Deportivo Ficticio Sierra · CIF: G00000000 R-2025-C014192
+Calle Inventada 12, 41999 Villaficticia (Sevilla) Fecha del cobro 10/03/2025
+contacto@escuela-ficticia.example · 955000000
+Alumno Ana Prueba Uno
+Importe
+Concepto MENSUALIDAD MARZO 2025 - TAEKWONDO 29,00 €
+Sede Sede Ficticia Norte
+Este documento justifica el pago del concepto indicado. No es una factura.
+~ Emitido el 15/10/2026
+~ Escuela Ficticia Sierra · Recibo R-2025-C014192

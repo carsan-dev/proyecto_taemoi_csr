@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, defer, finalize, map, Observable, of, retry, shareReplay, switchMap, take, tap, throwError, timer } from 'rxjs';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { PermisosSesionService } from './permisos-sesion.service';
+import { sesionCerrada } from './sesion-cerrada';
 
 export type PortalPreferido = 'admin' | 'user';
 
@@ -260,6 +261,7 @@ export class AuthenticationService {
     if (globalThis.document) {
       globalThis.document.cookie = 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     }
+    sesionCerrada.next();
   }
 
   /**

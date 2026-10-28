@@ -1,10 +1,13 @@
 import { Component } from '@angular/core';
 import { TestBed, discardPeriodicTasks, fakeAsync, flush, tick } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { CLASE_ERROR_HTTP, PilaCapas } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -47,10 +50,16 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     quitarTokens = ponerTokensDePrueba();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva }]),
+        provideRouter([
+          { path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva },
+          { path: 'pantalla-a', component: PantallaNueva },
+          { path: 'pantalla-b', component: PantallaNueva },
+        ]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: PermisosSesionService,
-          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },
+          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }), reiniciar: () => undefined },
         },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
@@ -307,4 +316,130 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     capa.remove();
     discardPeriodicTasks();
   }));
+
+  it('éxito con acción, con mascota y con «Recibo» (cierra: false) se cierran solos a los 5 s; información con acción también', fakeAsync(() => {
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined });
+    avisos.exito('Mensualidades generadas', undefined, { mascota: 'celebrar' });
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined }, { accionPrevia: { texto: 'Recibo', cierra: false, alPulsar: () => undefined } });
+    pintar();
+    expect(tarjetas().length).toBe(3);
+    tick(DURACION_AVISO - 1);
+    pintar();
+    expect(tarjetas().length).toBe(3);
+    tick(1);
+    pintar();
+    expect(tarjetas().length).toBe(0);
+    avisos.info('PDF preparado', { texto: 'Abrir', alPulsar: () => undefined });
+    pintar();
+    tick(DURACION_AVISO);
+    pintar();
+    expect(tarjetas().length).toBe(0);
+  }));
+
+  it('«Recibo» (cierra: false): pulsarlo no cierra el aviso, pero el tiempo sí', fakeAsync(() => {
+    const recibo = jasmine.createSpy('recibo');
+    avisos.exito('Cobro registrado', undefined, { accionPrevia: { texto: 'Recibo', cierra: false, alPulsar: recibo } });
+    pintar();
+    tick(1000);
+    tarjetas()[0].querySelector<HTMLButtonElement>('.pn-aviso__accion')!.click();
+    pintar();
+    expect(recibo).toHaveBeenCalledTimes(1);
+    expect(tarjetas().length).toBe(1);
+    tick(DURACION_AVISO - 1000);
+    pintar();
+    expect(tarjetas().length).toBe(0);
+  }));
+
+  it('con el foco dentro el tiempo se para y, al salir el foco, el aviso se cierra con lo que le quedaba', fakeAsync(() => {
+    avisos.exito('Cobro registrado', { texto: 'Deshacer', alPulsar: () => undefined });
+    pintar();
+    const aviso = tarjetas()[0];
+    tick(1000);
+    aviso.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    tick(30_000);
+    pintar();
+    expect(tarjetas().length).toBe(1);
+    aviso.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    tick(DURACION_AVISO - 1000);
+    pintar();
+    expect(tarjetas().length).toBe(0);
+  }));
+
+  describe('al cerrar o caducar la sesión se vacían todos los avisos', () => {
+    function mostrarVarios(): void {
+      avisos.exito('Guardado');
+      avisos.info('Preparado');
+      avisos.error('No se pudo generar el recibo');
+      pintar();
+      expect(tarjetas().length).toBe(3);
+    }
+
+    it('limpiarEstadoLocal', fakeAsync(() => {
+      mostrarVarios();
+      TestBed.inject(AuthenticationService).limpiarEstadoLocal();
+      pintar();
+      expect(tarjetas().length).toBe(0);
+      expect(avisos.lista()).toEqual([]);
+      // Sin temporizadores colgando: ni el cierre ni el anuncio.
+      tick(DURACION_AVISO);
+      expect(avisos.anuncios()).toEqual([]);
+    }));
+
+    it('logout (tras la respuesta del servidor)', fakeAsync(() => {
+      mostrarVarios();
+      TestBed.inject(AuthenticationService).logout();
+      TestBed.inject(HttpTestingController).expectOne((r) => r.url.endsWith('/auth/logout')).flush({});
+      pintar();
+      expect(tarjetas().length).toBe(0);
+      tick(DURACION_AVISO);
+    }));
+
+    it('forzarCierreSesion (sesión caducada)', fakeAsync(() => {
+      mostrarVarios();
+      void TestBed.inject(AuthenticationService).forzarCierreSesion();
+      pintar();
+      expect(tarjetas().length).toBe(0);
+      TestBed.inject(HttpTestingController).expectOne((r) => r.url.endsWith('/auth/logout')).flush({});
+      tick(DURACION_AVISO);
+    }));
+  });
+
+  describe('los errores se cierran al cambiar de pantalla', () => {
+    it('navegar a otra ruta quita los errores; el éxito en curso sigue su temporizador', fakeAsync(() => {
+      const router = TestBed.inject(Router);
+      void router.navigateByUrl('/pantalla-a');
+      tick();
+      avisos.error('No se pudo generar el recibo');
+      tick(1000);
+      avisos.exito('Guardado');
+      pintar();
+      void router.navigateByUrl('/pantalla-b');
+      tick();
+      pintar();
+      expect(tarjetas().map((t) => t.querySelector('.pn-aviso__texto')!.textContent!.trim())).toEqual(['Guardado']);
+      tick(DURACION_AVISO - 1);
+      pintar();
+      expect(tarjetas().length).toBe(1);
+      tick(1);
+      pintar();
+      expect(tarjetas().length).toBe(0);
+    }));
+
+    it('cambiar solo la query string o el fragmento (pestaña interna) no quita el error', fakeAsync(() => {
+      const router = TestBed.inject(Router);
+      void router.navigateByUrl('/pantalla-a');
+      tick();
+      avisos.error('No se pudo generar el recibo');
+      pintar();
+      void router.navigateByUrl('/pantalla-a?pestana=pagos');
+      tick();
+      void router.navigateByUrl('/pantalla-a?pestana=pagos#cobros');
+      tick();
+      pintar();
+      expect(tarjetas().length).toBe(1);
+      tick(60_000);
+      pintar();
+      expect(tarjetas().length).toBe(1);
+    }));
+  });
 });

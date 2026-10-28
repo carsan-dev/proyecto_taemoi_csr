@@ -23,11 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.taemoi.project.config.ValidacionRelojConfig;
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Cobro;
 import com.taemoi.project.entities.EstadoCobro;
 import com.taemoi.project.entities.EstadoMovimientoCaja;
 import com.taemoi.project.entities.MetodoPago;
 import com.taemoi.project.entities.Organizacion;
+import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Sede;
 import com.taemoi.project.entities.TipoMovimientoCaja;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -39,6 +41,7 @@ import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.services.MarcaEscuela;
 import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.ReciboPagoService;
+import com.taemoi.project.utils.ImporteCargo;
 
 /**
  * Pieza 279: recibo de pago en PDF del cobro ACTIVO de un cargo, generado al momento (sin tabla ni fichero) con la
@@ -54,6 +57,12 @@ import com.taemoi.project.services.ReciboPagoService;
  * DEVOLUCION ACTIVA enlazada en la caja (devuelto, pieza 6c; decisión del propietario: «cobro deshecho o devuelto → no
  * se genera»).
  *
+ * <p>Cargo de legado (decisión del propietario): V31_5 no rellenó los cobros, así que los cargos pagados antes no
+ * tienen NINGUNA fila de {@code cobro}. Para un cargo pagado sin ninguna fila de cobro el recibo sale del propio cargo
+ * ({@code producto_alumno}): fecha de pago, alumno, concepto, precio × cantidad ({@link ImporteCargo}) y sede, sin
+ * forma de pago (el cargo no la guarda), con la serie {@code R-{año del pago}-C{id del cargo}}. Cancelado, devuelto o
+ * sin fecha de pago → 409. Misma tarjeta: los datos se reúnen en {@code DatosRecibo} y se pintan igual.
+ *
  * <p>Escuela: los repositorios filtran por la organización activa ({@code @TenantId}): un cargo de otra escuela no
  * existe para esta (404).
  */
@@ -64,6 +73,9 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 	static final String SIN_COBRO = "Este cargo no tiene ningún cobro registrado: no se puede emitir el recibo.";
 	static final String COBRO_ANULADO = "El cobro de este cargo está anulado: no se puede emitir el recibo.";
 	static final String COBRO_DEVUELTO = "El cobro de este cargo está devuelto: no se puede emitir el recibo.";
+	static final String CARGO_CANCELADO = "Este cargo está cancelado: no tiene recibo.";
+	static final String CARGO_DEVUELTO = "Este cargo está devuelto: no tiene recibo.";
+	static final String SIN_FECHA_PAGO = "Este cargo no tiene fecha de pago: no se puede emitir el recibo.";
 	static final String AVISO = "Este documento justifica el pago del concepto indicado. No es una factura.";
 	private static final String TITULO = "Recibo";
 
@@ -99,26 +111,73 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 		if (productoAlumnoId == null || !cargos.existsById(productoAlumnoId)) {
 			throw new NoSuchElementException(CARGO_NO_ENCONTRADO);
 		}
-		Cobro cobro = cobros.findFirstByProductoAlumnoIdAndEstado(productoAlumnoId, EstadoCobro.ACTIVO)
-				.orElseThrow(() -> new IllegalStateException(
-						cobros.findByProductoAlumnoIdOrderByIdAsc(productoAlumnoId).isEmpty() ? SIN_COBRO
-								: COBRO_ANULADO));
+		DatosRecibo datos = cobros.findFirstByProductoAlumnoIdAndEstado(productoAlumnoId, EstadoCobro.ACTIVO)
+				.map(this::delCobro).orElseGet(() -> sinCobroActivo(productoAlumnoId));
+
+		MarcaEscuela marca = marcaEscuela.deActiva();
+		Organizacion escuela = organizaciones.findById(marca.organizacionId()).orElse(null);
+		LocalDate emision = LocalDate.ofInstant(reloj.instant(), ValidacionRelojConfig.ZONA);
+		return new ReciboPago(datos.numero(), renderizar(html(marca, escuela, datos, emision)));
+	}
+
+	// ------------------------------------------------------------------ datos del recibo
+
+	/**
+	 * Lo que pinta la tarjeta, salga del cobro o del cargo de legado. {@code formaDePago} nula: sin la fila; {@code sede}
+	 * nula o vacía: sin la fila.
+	 */
+	private record DatosRecibo(String numero, LocalDate fecha, String alumno, String concepto, String formaDePago,
+			String sede, BigDecimal importe) {
+	}
+
+	/** Recibo del cobro ACTIVO (su instantánea): 409 si tiene una DEVOLUCION ACTIVA enlazada. */
+	private DatosRecibo delCobro(Cobro cobro) {
 		if (movimientosCaja.existsByCobroIdAndTipoAndEstado(cobro.getId(), TipoMovimientoCaja.DEVOLUCION,
 				EstadoMovimientoCaja.ACTIVO)) {
 			throw new IllegalStateException(COBRO_DEVUELTO);
 		}
+		LocalDate fecha = fechaCobro(cobro.getFechaCobro());
+		return new DatosRecibo(numero(fecha, cobro.getId()), fecha, nombreAlumno(cobro.getAlumnoId()),
+				cobro.getConcepto(), formaDePago(cobro.getMetodo()), nombreSede(cobro.getSedeId()), cobro.getImporte());
+	}
 
-		LocalDate fechaCobro = fechaCobro(cobro.getFechaCobro());
-		String numero = numero(fechaCobro, cobro.getId());
-		MarcaEscuela marca = marcaEscuela.deActiva();
-		Organizacion escuela = organizaciones.findById(marca.organizacionId()).orElse(null);
-		String sede = cobro.getSedeId() == null ? null
-				: sedes.findById(cobro.getSedeId()).map(Sede::getNombre).orElse(null);
-		LocalDate emision = LocalDate.ofInstant(reloj.instant(), ValidacionRelojConfig.ZONA);
+	/**
+	 * Cargo sin cobro ACTIVO. Con algún cobro (todos ANULADOS) → 409 como siempre. Sin NINGUNA fila de cobro: los cargos
+	 * pagados antes de V31_5 (sin relleno) son de legado y el recibo sale del propio cargo; sin pagar → 409.
+	 */
+	private DatosRecibo sinCobroActivo(Long productoAlumnoId) {
+		if (!cobros.findByProductoAlumnoIdOrderByIdAsc(productoAlumnoId).isEmpty()) {
+			throw new IllegalStateException(COBRO_ANULADO);
+		}
+		ProductoAlumno cargo = cargos.buscarEnEscuelaActiva(productoAlumnoId)
+				.orElseThrow(() -> new NoSuchElementException(CARGO_NO_ENCONTRADO));
+		if (!Boolean.TRUE.equals(cargo.getPagado())) {
+			throw new IllegalStateException(SIN_COBRO);
+		}
+		return delCargoDeLegado(cargo);
+	}
 
-		String html = html(marca, escuela, numero, fechaCobro, nombreAlumno(cobro.getAlumnoId()), cobro, sede,
-				emision);
-		return new ReciboPago(numero, renderizar(html));
+	/**
+	 * Recibo de un cargo pagado de legado (sin ninguna fila de cobro): fecha = {@code fecha_pago}; importe = precio ×
+	 * cantidad ({@link ImporteCargo#de(ProductoAlumno)}, lo mismo que cobraría hoy {@code CobroService}); alumno del
+	 * cargo como la tesorería ({@link ProductoAlumno#alumnoEfectivo()}); sede del cargo si la tiene; sin forma de pago
+	 * (el cargo no la guarda). Cancelado, devuelto (DEVOLUCION ACTIVA enlazada al cargo en la caja) o sin fecha de pago
+	 * → 409.
+	 */
+	private DatosRecibo delCargoDeLegado(ProductoAlumno cargo) {
+		if (cargo.estaCancelado()) {
+			throw new IllegalStateException(CARGO_CANCELADO);
+		}
+		if (movimientosCaja.existsByProductoAlumnoIdAndTipoAndEstado(cargo.getId(), TipoMovimientoCaja.DEVOLUCION,
+				EstadoMovimientoCaja.ACTIVO)) {
+			throw new IllegalStateException(CARGO_DEVUELTO);
+		}
+		if (cargo.getFechaPago() == null) {
+			throw new IllegalStateException(SIN_FECHA_PAGO);
+		}
+		LocalDate fecha = fechaCobro(cargo.getFechaPago());
+		return new DatosRecibo(numeroDeCargo(fecha, cargo.getId()), fecha, nombreAlumno(cargo.alumnoEfectivo()),
+				cargo.getConcepto(), null, nombreSede(cargo.getSedeId()), ImporteCargo.de(cargo));
 	}
 
 	// ------------------------------------------------------------------ formatos
@@ -126,6 +185,14 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 	/** Número del recibo: {@code R-{año del cobro}-{id del cobro con al menos 6 cifras}} (R-2026-000123). */
 	public static String numero(LocalDate fechaCobro, Long cobroId) {
 		return String.format(Locale.ROOT, "R-%d-%06d", fechaCobro.getYear(), cobroId);
+	}
+
+	/**
+	 * Número del recibo de un cargo de legado, en otra serie para no chocar con la de los cobros: {@code R-{año del
+	 * pago}-C{id del cargo con al menos 6 cifras}} (R-2025-C014192).
+	 */
+	public static String numeroDeCargo(LocalDate fechaPago, Long cargoId) {
+		return String.format(Locale.ROOT, "R-%d-C%06d", fechaPago.getYear(), cargoId);
 	}
 
 	/** Importe en formato es-ES, sin depender del locale de la JVM: «28,00 €», «1.234,56 €». */
@@ -152,6 +219,7 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 	/**
 	 * Día del cobro. {@code fecha_cobro} es un DATETIME sin zona que Hibernate lee en la zona de la JVM: se vuelve a esa
 	 * zona para recuperar el día guardado, como la tesorería. {@code getTime()} vale también para {@code java.sql.Date}.
+	 * Vale igual para {@code producto_alumno.fecha_pago} (mismo tipo) en los cargos de legado.
 	 */
 	static LocalDate fechaCobro(Date fecha) {
 		return Instant.ofEpochMilli(fecha.getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
@@ -162,8 +230,21 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 		if (alumnoId == null) {
 			return null;
 		}
-		return alumnos.findById(alumnoId).map(a -> unir(" ", a.getNombre(), a.getApellidos()))
-				.filter(nombre -> !nombre.isEmpty()).orElse(null);
+		return alumnos.findById(alumnoId).map(ReciboPagoServiceImpl::nombreAlumno).orElse(null);
+	}
+
+	/** SOLO nombre y apellidos; {@code null} si no hay alumno o no tiene ninguno de los dos. */
+	private static String nombreAlumno(Alumno alumno) {
+		if (alumno == null) {
+			return null;
+		}
+		String nombre = unir(" ", alumno.getNombre(), alumno.getApellidos());
+		return nombre.isEmpty() ? null : nombre;
+	}
+
+	/** Nombre de la sede; {@code null} si no hay o ya no existe. */
+	private String nombreSede(Long sedeId) {
+		return sedeId == null ? null : sedes.findById(sedeId).map(Sede::getNombre).orElse(null);
 	}
 
 	// ------------------------------------------------------------------ PDF
@@ -174,8 +255,7 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 	 * etiqueta/valor a la izquierda y el importe destacado a la derecha; y el pie de la tarjeta («No es una factura» y
 	 * la fecha de emisión). Las columnas son tablas: OpenHTMLtoPDF no maqueta con flex.
 	 */
-	private static String html(MarcaEscuela marca, Organizacion escuela, String numero, LocalDate fechaCobro,
-			String alumno, Cobro cobro, String sede, LocalDate emision) {
+	private static String html(MarcaEscuela marca, Organizacion escuela, DatosRecibo datos, LocalDate emision) {
 		StringBuilder cuerpo = new StringBuilder();
 		cuerpo.append("<div class='cab' style='border-bottom-color: ").append(marca.colorPrimario()).append(";'>");
 		cuerpo.append("<table class='banda'><tr>");
@@ -191,20 +271,22 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 		}
 		cuerpo.append("</td><td class='banda-recibo'>");
 		cuerpo.append("<div class='titulo'>").append(TITULO).append("</div>");
-		cuerpo.append("<div class='numero'>").append(EstiloPdf.esc(numero)).append("</div>");
-		cuerpo.append("<div class='fecha'>Fecha del cobro ").append(fechaCobro.format(FECHA)).append("</div>");
+		cuerpo.append("<div class='numero'>").append(EstiloPdf.esc(datos.numero())).append("</div>");
+		cuerpo.append("<div class='fecha'>Fecha del cobro ").append(datos.fecha().format(FECHA)).append("</div>");
 		cuerpo.append("</td></tr></table></div>");
 
 		cuerpo.append("<table class='cuerpo'><tr><td class='cuerpo-datos'><table class='datos'>");
-		fila(cuerpo, "Alumno", alumno);
-		fila(cuerpo, "Concepto", cobro.getConcepto());
-		fila(cuerpo, "Forma de pago", formaDePago(cobro.getMetodo()));
-		if (lleno(sede)) {
-			fila(cuerpo, "Sede", sede);
+		fila(cuerpo, "Alumno", datos.alumno());
+		fila(cuerpo, "Concepto", datos.concepto());
+		if (datos.formaDePago() != null) {
+			fila(cuerpo, "Forma de pago", datos.formaDePago());
+		}
+		if (lleno(datos.sede())) {
+			fila(cuerpo, "Sede", datos.sede());
 		}
 		cuerpo.append("</table></td><td class='cuerpo-importe'><div class='importe'>");
 		cuerpo.append("<div class='importe-etiqueta'>Importe</div>");
-		cuerpo.append("<div class='importe-valor'>").append(EstiloPdf.esc(importe(cobro.getImporte()))).append("</div>");
+		cuerpo.append("<div class='importe-valor'>").append(EstiloPdf.esc(importe(datos.importe()))).append("</div>");
 		cuerpo.append("</div></td></tr></table>");
 
 		cuerpo.append("<div class='pie-tarjeta'>");
@@ -212,7 +294,8 @@ public class ReciboPagoServiceImpl implements ReciboPagoService {
 		cuerpo.append("<p class='emision'>Emitido el ").append(emision.format(FECHA)).append("</p>");
 		cuerpo.append("</div>");
 
-		return EstiloPdf.documento(marca.cabeceraInformes(), TITULO + " " + numero, estilos(), cuerpo.toString());
+		return EstiloPdf.documento(marca.cabeceraInformes(), TITULO + " " + datos.numero(), estilos(),
+				cuerpo.toString());
 	}
 
 	/**

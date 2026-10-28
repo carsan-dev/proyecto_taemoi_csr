@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -28,6 +29,7 @@ import com.taemoi.project.entities.Cobro;
 import com.taemoi.project.entities.EstadoCobro;
 import com.taemoi.project.entities.MetodoPago;
 import com.taemoi.project.entities.Organizacion;
+import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.Sede;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.pdf.ContenidoPdf.Presentacion;
@@ -46,6 +48,9 @@ import com.taemoi.project.services.impl.ReciboPagoServiceImpl;
  * Pieza 279: contenido del recibo de pago contra su dorado {@code pdf-contenido/recibo-pago.txt} (regla en
  * {@link ContenidoPdf}). PDF nuevo: el dorado se regeneró con la tarjeta A5 apaisada (los mismos datos que la
  * primera versión, en el orden de la tarjeta). Escuela ficticia con todos sus datos; alumna ficticia con DNI y correo, que NO deben salir. Emisión: reloj fijo el {@link ContenidoPdf#HOY}.
+ *
+ * <p>Recibo de un cargo de legado (pagado sin ninguna fila de cobro) contra {@code pdf-contenido/recibo-pago-legado.txt}:
+ * la misma tarjeta, con la serie {@code R-{año}-C{id del cargo}}, precio × cantidad y sin forma de pago.
  */
 class ReciboPagoContenidoTest {
 
@@ -56,6 +61,8 @@ class ReciboPagoContenidoTest {
 	private final OrganizacionRepository organizaciones = mock(OrganizacionRepository.class);
 	private ReciboPagoServiceImpl servicio;
 	private Cobro cobro;
+	private Alumno ana;
+	private Sede sede;
 
 	@BeforeEach
 	void montar() {
@@ -75,12 +82,12 @@ class ReciboPagoContenidoTest {
 						escuela),
 				reloj);
 
-		Alumno ana = new Alumno();
+		ana = new Alumno();
 		ana.setNombre("Ana");
 		ana.setApellidos("Prueba Uno");
 		ana.setNif("00000000T");
 		ana.setEmail("ana.prueba@example.test");
-		Sede sede = new Sede();
+		sede = new Sede();
 		sede.setNombre("Sede Ficticia Norte");
 		cobro = new Cobro();
 		ReflectionTestUtils.setField(cobro, "id", 123L);
@@ -111,6 +118,39 @@ class ReciboPagoContenidoTest {
 				Presentacion.de("Escuela Ficticia Sierra", "Recibo"),
 				"Pieza 279: cobro 123 de Ana (transferencia, 28 €, sede Norte) del 02/10/2026. Escuela ficticia.",
 				"Emisión: Clock fijo el " + ContenidoPdf.HOY + " (presentación). Ni DNI ni correo de la alumna.");
+	}
+
+	@Test
+	void reciboDeUnCargoDeLegado() throws Exception {
+		ProductoAlumno cargo = new ProductoAlumno();
+		cargo.setId(14_192L);
+		cargo.setAlumno(ana);
+		cargo.setConcepto("MENSUALIDAD MARZO 2025 - TAEKWONDO");
+		cargo.setPrecio(14.5);
+		cargo.setCantidad(2);
+		cargo.setPagado(true);
+		cargo.setFechaPago(Date.from(LocalDateTime.parse("2025-03-10T19:00").atZone(ZoneId.systemDefault())
+				.toInstant()));
+		cargo.setSedeId(3L);
+		when(cargos.existsById(14_192L)).thenReturn(true);
+		when(cobros.findFirstByProductoAlumnoIdAndEstado(14_192L, EstadoCobro.ACTIVO)).thenReturn(Optional.empty());
+		when(cobros.findByProductoAlumnoIdOrderByIdAsc(14_192L)).thenReturn(List.of());
+		when(cargos.buscarEnEscuelaActiva(14_192L)).thenReturn(Optional.of(cargo));
+		byte[] pdf = conHoy(() -> servicio.generar(14_192L).pdf());
+		comprobar("recibo-pago-legado", pdf, Presentacion.de("Escuela Ficticia Sierra", "Recibo"),
+				"Pieza 279, cargo de legado: cargo 14192 de Ana (14,50 € × 2, sede Norte) pagado el 10/03/2025, sin"
+						+ " ninguna fila de cobro. Escuela ficticia.",
+				"Sin forma de pago (el cargo no la guarda). Emisión: Clock fijo el " + ContenidoPdf.HOY
+						+ " (presentación). Ni DNI ni correo de la alumna.");
+		try (PDDocument documento = PDDocument.load(pdf)) {
+			assertEquals(1, documento.getNumberOfPages());
+			PDRectangle pagina = documento.getPage(0).getMediaBox();
+			assertEquals(PDRectangle.A5.getHeight(), pagina.getWidth(), 1f, "la misma tarjeta A5 apaisada");
+		}
+		String texto = String.join("\n", ContenidoPdf.lineas(pdf));
+		assertFalse(texto.contains("Forma de pago"), texto);
+		assertFalse(texto.contains("00000000T"), texto);
+		assertFalse(texto.contains("ana.prueba@example.test"), texto);
 	}
 
 	@Test
