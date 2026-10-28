@@ -1,0 +1,24 @@
+// 404 del panel nuevo (8b-M2b). Solo tokens --pn-* bajo .pn; el bloque vacío ya trae mascota, texto y botón.
+:host {
+  display: block;
+}
+
+.no-encontrada {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.no-encontrada__pagina {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-xl) var(--pn-espacio-l);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+// Sitio para la barra inferior fija (visible por debajo de 1024 px).
+@media (max-width: 1023.98px) {
+  .no-encontrada__pagina {
+    padding-bottom: calc(var(--pn-espacio-xl) + 72px);
+  }
+}

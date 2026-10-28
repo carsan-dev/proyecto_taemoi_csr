@@ -5,6 +5,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
@@ -686,6 +687,14 @@ export const routes: Routes = [
     data: { seo: SEO_ROUTES.noIndex },
     loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),
     canActivate: [misGruposGuard],
+  },
+  {
+    // 404 dentro del panel (8b-M2b): solo con una sesión de gestión y el diseño nuevo encendido; el resto cae al 404 público.
+    // `panelNuevo` avisa a la cáscara (SkeletonComponent) de que debe pintar la cabecera del panel aunque la URL sea desconocida.
+    path: '**',
+    canMatch: [disenoNuevoGuard, gestionPanelGuard],
+    data: { seo: SEO_ROUTES.noIndex, panelNuevo: true },
+    loadComponent: () => import('./panel-nuevo/no-encontrada/no-encontrada.component').then(m => m.NoEncontradaPanelComponent),
   },
   {
     path: '**',
