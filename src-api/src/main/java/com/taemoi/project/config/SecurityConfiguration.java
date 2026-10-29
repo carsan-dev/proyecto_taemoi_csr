@@ -228,7 +228,11 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G
-						// (R DENIEGA hasta la E9). Misma posición y motivo que /api/panel; fuera de la lista blanca solo-profesor.
+						// (R DENIEGA hasta la E9). Misma posición y motivo que /api/panel. Pieza 8b-3o (decisión 326): leer la marca
+						// y el logo, también la sesión solo-profesor (en su lista blanca, solo GET; HEAD cuenta como GET);
+						// la familia, también la que además es profesor, no. El resto de /api/escuela, fuera de su lista blanca.
+						.requestMatchers(HttpMethod.GET, "/api/escuela/marca", "/api/escuela/logo")
+						.access(SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor())
 						.requestMatchers("/api/escuela", "/api/escuela/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la

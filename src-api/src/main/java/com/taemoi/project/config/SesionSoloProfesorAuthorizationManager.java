@@ -30,7 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * <ul>
  * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), sus rutas de la entrega 7
  * ({@code /api/profesor/**}), lo imprescindible de sesión (roles, quién es,
- * si es de plataforma, selector y cambio de escuela) y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
+ * si es de plataforma, selector y cambio de escuela), leer la marca y el logo de su escuela activa (pieza 8b-3o) y
+ * {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
  * de plataforma que también es profesor no la pierde);</li>
  * <li>lo público: lo que esas mismas reglas conceden a un anónimo.</li>
  * </ul>
@@ -105,6 +106,41 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 		return publico != null && publico.isGranted() ? publico : DENEGADA;
 	}
 
+	/**
+	 * Pieza 8b-3o (decisión 326): regla de URL de la marca y el logo de la escuela activa ({@code GET} de
+	 * {@code /api/escuela/marca} y {@code /api/escuela/logo}). Concede a gestión ({@code ROLE_ADMIN} o
+	 * {@code ROLE_MANAGER}) y a la sesión solo-profesor ({@link #esSesionSoloProfesor}, también responsable + profesor);
+	 * la familia (también la que además es profesor), el responsable solo, el superadmin sin membresía y el anónimo, no.
+	 */
+	static <T> AuthorizationManager<T> gestionOSesionSoloProfesor() {
+		return new AuthorizationManager<>() {
+			@Override
+			@Deprecated
+			@SuppressWarnings("deprecation")
+			public AuthorizationDecision check(Supplier<Authentication> autenticacion, T objeto) {
+				return new AuthorizationDecision(concede(autenticacion.get()));
+			}
+
+			@Override
+			public AuthorizationResult authorize(Supplier<Authentication> autenticacion, T objeto) {
+				return new AuthorizationDecision(concede(autenticacion.get()));
+			}
+
+			private boolean concede(Authentication sesion) {
+				if (sesion == null || !sesion.isAuthenticated() || sesion instanceof AnonymousAuthenticationToken) {
+					return false;
+				}
+				for (GrantedAuthority autoridad : sesion.getAuthorities()) {
+					String nombre = autoridad.getAuthority();
+					if (Roles.ROLE_ADMIN.name().equals(nombre) || Roles.ROLE_MANAGER.name().equals(nombre)) {
+						return true;
+					}
+				}
+				return esSesionSoloProfesor(sesion);
+			}
+		};
+	}
+
 	static boolean esSesionSoloProfesor(Authentication sesion) {
 		if (sesion == null || !sesion.isAuthenticated() || sesion instanceof AnonymousAuthenticationToken) {
 			return false;
@@ -148,6 +184,10 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				// Pieza E8-1 (D8-14): sus permisos para menús y guards (roles [PROFESOR], MIS_GRUPOS y MI_CAJA, sin las
 				// sedes del responsable). Solo GET (HEAD cuenta como GET); solo lee la sesión y las sedes de la escuela.
 				rutas.matcher(HttpMethod.GET, "/api/auth/permisos"),
+				// Pieza 8b-3o (decisión 326): la cabecera del panel nuevo (nombre, logo y tema de su escuela activa) y el
+				// PNG del logo. Solo GET (HEAD cuenta como GET); escribir u otra ruta de /api/escuela sigue cerrado.
+				rutas.matcher(HttpMethod.GET, "/api/escuela/marca"),
+				rutas.matcher(HttpMethod.GET, "/api/escuela/logo"),
 				// Administrador de plataforma que además es profesor: su regla exige ROLE_ADMIN_PLATAFORMA.
 				rutas.matcher("/api/plataforma/**"));
 	}

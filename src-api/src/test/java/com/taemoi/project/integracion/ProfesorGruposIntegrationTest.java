@@ -15,6 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
 
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.servlet.http.Cookie;
 
 /**
@@ -73,6 +76,7 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired EntityManagerFactory emf;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -184,12 +188,53 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("AYUDANTE", gSin.get("rol").asText());
 		assertTrue(gSin.get("sede").isNull(), "grupo sin sede");
 		assertEquals(0, gSin.get("alumnosActivos").asLong());
-		assertEquals(Set.of("id", "nombre", "sede", "rol", "alumnosActivos", "disciplina"), campos(gA));
+		assertEquals(Set.of("id", "nombre", "sede", "rol", "alumnosActivos", "disciplina", "turnos"), campos(gA));
 
 		assertEquals(Set.of(e.gB), ids(leer(get("/api/profesor/grupos"), tProfB, 200), "id"));
 		assertEquals(Set.of(otra.gA), ids(leer(get("/api/profesor/grupos"), tProfOtra, 200), "id"),
 				"otra escuela, solo el suyo");
 		assertEquals(200, estado(head("/api/profesor/grupos"), tProfA));
+	}
+
+	/**
+	 * Pieza 8b-3o: cada grupo trae sus turnos con la forma de {@code GET /api/grupos/resumen} ({@code id},
+	 * {@code diaSemana}, {@code horaInicio}, {@code horaFin}), por id; sin turnos, lista vacía. Ni los de otro grupo ni
+	 * los sin grupo.
+	 */
+	@Test
+	void misGrupos_conSusTurnos_comoElResumenDeGestion() throws Exception {
+		long sentenciasConUno = sentencias(tProfA);
+		jdbc.update("""
+				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
+				VALUES ('Miércoles', '19:30', '20:30', NULL, ?, ?)""", e.gA, e.org);
+		long segundo = jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE organizacion_id = ?", Long.class, e.org);
+		try {
+			// Sin N+1: los turnos de todos sus grupos en una consulta; más turnos o más grupos, las mismas sentencias.
+			assertEquals(sentenciasConUno, sentencias(tProfA), "un turno más no añade consultas");
+			assertEquals(sentencias(tProfB), sentencias(tProfA), "dos grupos (profA) o uno (profB), las mismas");
+			JsonNode grupos = leer(get("/api/profesor/grupos"), tProfA, 200);
+			JsonNode turnos = fila(grupos, "id", e.gA).get("turnos");
+			assertEquals(2, turnos.size(), turnos.toString());
+			assertEquals(e.tA, turnos.get(0).get("id").asLong());
+			assertEquals("Lunes", turnos.get(0).get("diaSemana").asText());
+			assertEquals("18:00", turnos.get(0).get("horaInicio").asText());
+			assertEquals("19:00", turnos.get(0).get("horaFin").asText());
+			assertEquals(segundo, turnos.get(1).get("id").asLong());
+			assertEquals("Miércoles", turnos.get(1).get("diaSemana").asText());
+			assertEquals("19:30", turnos.get(1).get("horaInicio").asText());
+			assertEquals("20:30", turnos.get(1).get("horaFin").asText());
+			assertEquals(Set.of("id", "diaSemana", "horaInicio", "horaFin"), campos(turnos.get(0)));
+
+			JsonNode sinTurnos = fila(grupos, "id", e.gSin).get("turnos");
+			assertTrue(sinTurnos.isArray() && sinTurnos.isEmpty(), "gSin no tiene turnos: " + sinTurnos);
+
+			// El de gB (de otro profesor) y el sin grupo no salen; profB solo ve el de gB.
+			JsonNode deB = fila(leer(get("/api/profesor/grupos"), tProfB, 200), "id", e.gB).get("turnos");
+			assertEquals(1, deB.size());
+			assertEquals(e.tB, deB.get(0).get("id").asLong());
+		} finally {
+			jdbc.update("DELETE FROM turno WHERE id = ?", segundo);
+		}
 	}
 
 	@Test
@@ -484,6 +529,24 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = peticion(peticion, token);
 		assertEquals(esperado, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		return json.readTree(r.getResponse().getContentAsString());
+	}
+
+	/** Sentencias preparadas por Hibernate en {@code GET /api/profesor/grupos} (la menor de tres, por si salta un job). */
+	private long sentencias(String token) throws Exception {
+		Statistics estadisticas = emf.unwrap(SessionFactory.class).getStatistics();
+		boolean antes = estadisticas.isStatisticsEnabled();
+		estadisticas.setStatisticsEnabled(true);
+		try {
+			long menor = Long.MAX_VALUE;
+			for (int i = 0; i < 3; i++) {
+				estadisticas.clear();
+				assertEquals(200, estado(get("/api/profesor/grupos"), token));
+				menor = Math.min(menor, estadisticas.getPrepareStatementCount());
+			}
+			return menor;
+		} finally {
+			estadisticas.setStatisticsEnabled(antes);
+		}
 	}
 
 	private int estado(MockHttpServletRequestBuilder peticion, String token) throws Exception {

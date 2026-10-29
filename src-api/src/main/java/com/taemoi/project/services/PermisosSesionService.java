@@ -100,9 +100,10 @@ public class PermisosSesionService {
 			activas = sedes.countByActivaTrue();
 		}
 		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
-		DisenoPanelDTO.Propio disenoNuevo = gestion && !soloProfesor
-				? diseno.estadoPropio(CobroService.usuarioActualId())
-				: DisenoPanelDTO.Propio.APAGADO;
+		// Gestión: su interruptor. Solo-profesor: sigue el valor «para todo el equipo» sin interruptor (decisión 326).
+		DisenoPanelDTO.Propio disenoNuevo = soloProfesor
+				? diseno.estadoProfesor(CobroService.usuarioActualId())
+				: gestion ? diseno.estadoPropio(CobroService.usuarioActualId()) : DisenoPanelDTO.Propio.APAGADO;
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
 				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo,

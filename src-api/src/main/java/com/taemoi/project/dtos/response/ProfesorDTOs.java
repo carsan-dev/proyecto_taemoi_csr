@@ -32,9 +32,11 @@ public final class ProfesorDTOs {
 	/**
 	 * Un grupo del profesor (§5.1). {@code sede} nula si el grupo no tiene sede; {@code rol} es el suyo en el grupo
 	 * (titular y ayudante tienen los mismos permisos, D7-4); {@code alumnosActivos} no cuenta los dados de baja.
+	 * {@code turnos} (pieza 8b-3o): los del grupo, por id y con la misma forma que en {@code GET /api/grupos/resumen}
+	 * (día y horas, sin alumnos), para el «Horario» del panel nuevo; sin turnos, lista vacía.
 	 */
 	public record Grupo(Long id, String nombre, Sede sede, RolAsignacionProfesor rol, long alumnosActivos,
-			Disciplina disciplina) {
+			Disciplina disciplina, List<TurnoDeGrupoResumenDTO> turnos) {
 	}
 
 	/** Un alumno activo del grupo (§5.2), con sus deportes activos. */

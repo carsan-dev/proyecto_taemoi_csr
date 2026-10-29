@@ -112,6 +112,25 @@ public class DisenoPanelService {
 		return new DisenoPanelDTO.Propio(regla(fila, porDefecto), puedeCambiarPropio(fila, porDefecto));
 	}
 
+	/**
+	 * {@code disenoNuevo} de la sesión solo-profesor (pieza 8b-3o, decisión 326): el profesor sigue el valor «para todo
+	 * el equipo» de la escuela y no tiene interruptor ni permiso propios ({@code permitido} siempre false). Sin
+	 * membresía activa PROFESOR en la escuela, o si además tiene gestión, apagado (la gestión usa
+	 * {@link #estadoPropio}). Dos consultas: sus roles y la clave de la escuela.
+	 */
+	@Transactional(readOnly = true)
+	public DisenoPanelDTO.Propio estadoProfesor(Long usuarioId) {
+		Long organizacion = TenantContext.get();
+		if (usuarioId == null || organizacion == null) {
+			return DisenoPanelDTO.Propio.APAGADO;
+		}
+		List<RolMembresia> roles = membresias.findRolesActivos(usuarioId, organizacion);
+		if (!roles.contains(RolMembresia.PROFESOR) || roles.stream().anyMatch(GESTION::contains)) {
+			return DisenoPanelDTO.Propio.APAGADO;
+		}
+		return new DisenoPanelDTO.Propio(porDefectoNuevo(), false);
+	}
+
 	/** El valor por defecto y el interruptor de la gestión activa de la escuela, por id. Tres consultas. */
 	@Transactional(readOnly = true)
 	public DisenoPanelDTO listar() {

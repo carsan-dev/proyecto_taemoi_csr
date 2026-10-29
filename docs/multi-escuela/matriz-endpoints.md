@@ -368,6 +368,8 @@ Pieza 8b-T (tema por escuela, fase3-e8b-plan.md §4): 5 líneas nuevas; ninguna 
   logo: SUBIDO|LEGADO|NINGUNO, logoVersion, tema{primario, sobrePrimario, sobrePrimario2, primarioTinta,
   primarioSuave, ajustado}}`; `logo`, el PNG subido con `Cache-Control: private, max-age=300` y `ETag` (304 si
   coincide, sin leer el fichero); sin logo subido (también Moiskimdo, `LEGADO`), 404.
+  Pieza 8b-3o (decisión 326): la sesión solo-profesor también puede leerlos (solo `GET`/`HEAD`; el resto de métodos y
+  de rutas de `/api/escuela` siguen siendo solo de gestión).
 - `PUT /api/plataforma/escuelas/{organizacionId}/marca` (`PlataformaController#cambiarMarca`, `{colorPrimario:
   '#RRGGBB' | null}`): solo SOLO_PLATAFORMA `PERMITE` (regla `/api/plataforma/**` y `@PreAuthorize` de clase, como el
   logo). La clave `colorPrimario` es obligatoria (`null` explícito para quitar): sin ella, 400 con `mensaje`.
