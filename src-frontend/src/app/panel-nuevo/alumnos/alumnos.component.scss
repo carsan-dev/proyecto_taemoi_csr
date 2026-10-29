@@ -1021,6 +1021,25 @@
   text-align: center;
 }
 
+// ------------------------------------------------------------------ escritorio estrecho (1024 a 1280 px)
+
+// La barra de filtros cabe en una línea: encogen el buscador (que sigue creciendo con el ancho que sobre) y la
+// disciplina, y se aprieta un poco el hueco. Los bloques de estado, aptos, contador y vista no cambian.
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .alumnos__barra {
+    gap: 8px;
+  }
+
+  .alumnos__buscador {
+    flex: 1 1 150px;
+    min-width: 150px;
+  }
+
+  .alumnos__campo--select {
+    flex: 0 1 190px;
+  }
+}
+
 // ------------------------------------------------------------------ tableta
 
 @media (max-width: 1023.98px) {

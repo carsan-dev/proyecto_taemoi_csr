@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component } from '@angular/core';
 import { DeferBlockBehavior, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -8,7 +9,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { PermisosSesion, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { HeaderComponent } from '../header/header.component';
-import { RECORDATORIO_PANEL, SkeletonComponent, esRutaDelPanel } from './skeleton.component';
+import { RECORDATORIO_PANEL, SkeletonComponent, esRutaConocida, esRutaDelPanel } from './skeleton.component';
 import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 @Component({ selector: 'app-header', standalone: true, template: '' })
@@ -248,6 +249,97 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     raiz.detectar();
     expect(cabeceraDeHoy(raiz)).toBeNull();
     expect(pie(raiz)).toBeNull();
+  });
+
+  describe('carga directa, antes del primer NavigationEnd', () => {
+    /**
+     * Monta la cáscara con la barra en `ruta` sin haber navegado todavía (F5 o URL pegada): el router de la prueba
+     * tiene el comodín del panel (`data.panelNuevo`) para cuando se navegue.
+     */
+    function montarSinNavegar(ruta: string): HTMLElement & { detectar: () => void; fixture: any } {
+      TestBed.configureTestingModule({
+        imports: [SkeletonComponent],
+        providers: [
+          provideRouter([
+            { path: '', component: PantallaFalsaComponent },
+            { path: '**', component: PantallaFalsaComponent, data: { panelNuevo: true } },
+          ]),
+          { provide: PermisosSesionService, useValue: { obtener } },
+          { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
+          { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion } },
+        ],
+        deferBlockBehavior: DeferBlockBehavior.Manual,
+      });
+      TestBed.overrideComponent(SkeletonComponent, {
+        remove: { imports: [HeaderComponent, BotonscrollComponent] },
+        add: { imports: [HeaderFalsoComponent, BotonscrollFalsoComponent] },
+      });
+      spyOn(TestBed.inject(Location), 'path').and.returnValue(ruta);
+      const fixture = TestBed.createComponent(SkeletonComponent);
+      fixture.detectChanges();
+      const raiz = fixture.nativeElement as HTMLElement & { detectar: () => void; fixture: any };
+      raiz.detectar = () => fixture.detectChanges();
+      raiz.fixture = fixture;
+      return raiz;
+    }
+
+    itSinReloj('URL inexistente con el recordatorio: ni un fotograma de la cabecera de hoy, y tras navegar sigue sin ella', async () => {
+      localStorage.setItem(RECORDATORIO_PANEL, '1');
+      obtener.and.returnValue(NEVER);
+      const raiz = montarSinNavegar('/no-existe');
+
+      expect(cabeceraDeHoy(raiz)).withContext('antes del NavigationEnd').toBeNull();
+      expect(pie(raiz)).toBeNull();
+      expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+
+      await TestBed.inject(Router).navigateByUrl('/no-existe');
+      raiz.detectar();
+      expect(cabeceraDeHoy(raiz)).withContext('404 del panel, interruptor aún sin respuesta').toBeNull();
+      expect(obtener).toHaveBeenCalled();
+    });
+
+    itSinReloj('URL inexistente con el recordatorio que resuelve a la 404 pública: vuelve lo de hoy al navegar', async () => {
+      localStorage.setItem(RECORDATORIO_PANEL, '1');
+      const raiz = montarSinNavegar('/no-existe');
+      expect(cabeceraDeHoy(raiz)).toBeNull();
+
+      TestBed.inject(Router).resetConfig([{ path: '**', component: PantallaFalsaComponent }]);
+      await TestBed.inject(Router).navigateByUrl('/no-existe');
+      raiz.detectar();
+      esperarHoy(raiz);
+    });
+
+    itSinReloj('«/» con el recordatorio: la cabecera de hoy desde el primer fotograma', async () => {
+      localStorage.setItem(RECORDATORIO_PANEL, '1');
+      esperarHoy(montarSinNavegar('/'));
+      expect(obtener).not.toHaveBeenCalled();
+    });
+
+    itSinReloj('ruta pública o de familia conocida con el recordatorio: la cabecera de hoy desde el primer fotograma', async () => {
+      localStorage.setItem(RECORDATORIO_PANEL, '1');
+      esperarHoy(montarSinNavegar('/horarios'));
+      TestBed.resetTestingModule();
+      esperarHoy(montarSinNavegar('/userpage/turnos?x=1'));
+    });
+
+    itSinReloj('URL inexistente sin recordatorio: lo de hoy desde el primer fotograma, como siempre', async () => {
+      esperarHoy(montarSinNavegar('/no-existe'));
+      expect(obtener).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('esRutaConocida', () => {
+  it('las rutas declaradas (con parámetros y con hijas perezosas) sí', () => {
+    for (const ruta of ['/', '', '/horarios', '/userpage/turnos', '/login?x=1', '/mis-grupos/4', '/adminpage']) {
+      expect(esRutaConocida(ruta)).withContext(ruta).toBeTrue();
+    }
+  });
+
+  it('las que solo casan con el comodín, no', () => {
+    for (const ruta of ['/no-existe', '/horarios/extra', '/adminpage/zzz/yyy']) {
+      expect(esRutaConocida(ruta)).withContext(ruta).toBeFalse();
+    }
   });
 });
 

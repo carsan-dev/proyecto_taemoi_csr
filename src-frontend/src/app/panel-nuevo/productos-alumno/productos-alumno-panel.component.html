@@ -108,7 +108,7 @@
         <td class="campo notas"><span class="etiqueta-movil">Notas</span><span class="notas-texto" [title]="f.notas">{{ f.notas || '—' }}</span></td>
         <td class="acciones">
           <button class="icono expandir" type="button" data-expandir [attr.aria-label]="'Detalle de ' + f.concepto" [attr.aria-expanded]="desplegadas.has(f.id)" (click)="alternarDetalle(f.id)"><i class="bi" [class.bi-chevron-down]="!desplegadas.has(f.id)" [class.bi-chevron-up]="desplegadas.has(f.id)" aria-hidden="true"></i></button>
-          @if (f.puedeDeshacerBorrar) { <button class="texto" type="button" data-deshacer (click)="e.deshacerBorrar(f.id)">Deshacer</button> }
+          @if (f.puedeDeshacerBorrar || f.puedeDeshacerCambios) { <button class="texto" type="button" data-deshacer [attr.aria-label]="(f.puedeDeshacerBorrar ? 'Deshacer la eliminación de ' : 'Deshacer los cambios de ') + f.concepto" (click)="deshacer(f)">Deshacer</button> }
           @if (f.puedeEditarNotas || f.puedeCancelar || f.puedeReactivar || f.puedeEliminar || f.puedePedirReversion || f.puedeDescargarRecibo) {
           <div class="menu-zona"><button #disparador class="icono" type="button" [attr.aria-label]="'Acciones de ' + f.concepto" aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === f.id" [attr.aria-controls]="'menu-' + f.id" (click)="alternarMenu(f.id, disparador)" (keydown.arrowdown)="$event.preventDefault(); alternarMenu(f.id, disparador)" (keydown.arrowup)="$event.preventDefault(); alternarMenu(f.id, disparador, true)"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
             @if (menuAbierto === f.id) { <div #menu class="menu" role="menu" [id]="'menu-' + f.id" [attr.aria-label]="'Acciones de ' + f.concepto" (keydown)="teclaMenu($event, menu)">

@@ -476,4 +476,46 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     panel().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     expect(fixture.componentInstance.cerrada).toBeTrue();
   });
+
+  describe('alumnos seleccionables según «Activos | Inactivos | Todos»', () => {
+    const TODOS = [
+      { id: 1, activo: true },
+      { id: 2, activo: false },
+      { id: 3, activo: true },
+    ];
+
+    /** Carga la lista como lo hace la pestaña individual y devuelve los ids y la petición que hizo. */
+    function cargar(estado: 'activos' | 'inactivos' | 'todos' | null | undefined, inactivos: boolean): { ids: number[]; url: string } {
+      const { comp } = hoy();
+      comp.mostrarInactivos = inactivos;
+      if (estado !== undefined) {
+        comp.estadoAlumnos = estado;
+      }
+      comp.cargarTodosLosAlumnos();
+      const [peticion] = http.match((r) => r.method === 'GET' && r.url === `${API}/alumnos`);
+      const url = peticion.request.urlWithParams.replace(API, '');
+      peticion.flush(TODOS);
+      return { ids: comp.alumnosSeleccionables.map((a) => a.id), url };
+    }
+
+    it('«Activos»: solo los activos', () => {
+      expect(cargar('activos', false).ids).toEqual([1, 3]);
+    });
+
+    it('«Inactivos»: solo los inactivos (pide con incluirInactivos=true)', () => {
+      const r = cargar('inactivos', true);
+      expect(r.url).toBe('/alumnos?incluirInactivos=true');
+      expect(r.ids).toEqual([2]);
+    });
+
+    it('«Todos»: activos e inactivos', () => {
+      expect(cargar('todos', true).ids).toEqual([1, 2, 3]);
+    });
+
+    it('la pantalla de hoy (sin estado): la misma petición y la lista entera, sin filtrar', () => {
+      expect(hoy().comp.estadoAlumnos).toBeNull();
+      expect(cargar(undefined, true)).toEqual({ ids: [1, 2, 3], url: '/alumnos?incluirInactivos=true' });
+      expect(cargar(undefined, false)).toEqual({ ids: [1, 2, 3], url: '/alumnos?incluirInactivos=false' });
+    });
+  });
 });

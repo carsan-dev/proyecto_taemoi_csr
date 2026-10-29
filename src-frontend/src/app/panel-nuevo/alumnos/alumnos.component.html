@@ -291,7 +291,7 @@
   </div>
 
   @if (herramientaAbierta) {
-  <pn-herramienta-alumnos [herramienta]="herramientaAbierta" [mostrarInactivos]="inactivos" [aptoParaExamen]="aptos"
+  <pn-herramienta-alumnos [herramienta]="herramientaAbierta" [mostrarInactivos]="inactivos" [estadoAlumnos]="filtroEstado" [aptoParaExamen]="aptos"
     (asignado)="cargar()" (cerrar)="cerrarHerramienta()" />
   }
 

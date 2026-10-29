@@ -112,6 +112,11 @@ export interface FilaCargo {
   puedeReactivar: boolean;
   puedeEliminar: boolean;
   puedeDeshacerBorrar: boolean;
+  /**
+   * «Deshacer» de los cambios de los campos de una fila modificada (también si ya está cobrada o cancelada). Una fila
+   * marcada para eliminar no cuenta como modificada: lleva solo el «Deshacer» del borrado, que le devuelve sus cambios.
+   */
+  puedeDeshacerCambios: boolean;
   puedePedirReversion: boolean;
   /** Gestión, cargo pagado (no devuelto) y no cancelado: «Descargar recibo». */
   puedeDescargarRecibo: boolean;
@@ -579,6 +584,7 @@ export class ProductosAlumnoEstado {
       puedeReactivar: cancelado && libre,
       puedeEliminar: propietario && !cancelado && !cargo.pagado && !marcada && libre,
       puedeDeshacerBorrar: marcada && libre,
+      puedeDeshacerCambios: modificada && libre,
       puedePedirReversion: rolesCargados && !propietario && estado === 'pagado' && libre,
       puedeDescargarRecibo: rolesCargados && this.esGestion() && estado === 'pagado' && libre,
     };
@@ -660,14 +666,22 @@ export class ProductosAlumnoEstado {
     return this.editar(id, 'notas', texto ?? '');
   }
 
-  /** Deshace los cambios de los campos de un cargo. */
+  /**
+   * «Deshacer» de una fila modificada: la devuelve a lo guardado (fuera su edición y el error de su último guardado) y
+   * conserva los demás cambios. No en filas marcadas para eliminar (ahí manda `deshacerBorrar`).
+   */
   deshacerFila(id: number): void {
-    if (this.guardando() || !this.ediciones().has(id)) {
+    if (!this.filaDe(id)?.puedeDeshacerCambios) {
       return;
     }
     const ediciones = new Map(this.ediciones());
     ediciones.delete(id);
     this.ediciones.set(ediciones);
+    if (this.erroresServidor().has(id)) {
+      const errores = new Map(this.erroresServidor());
+      errores.delete(id);
+      this.erroresServidor.set(errores);
+    }
   }
 
   /** «Eliminar»: solo el propietario, en cargos sin pagar ni cancelados. Marca la fila; se borra al guardar. */

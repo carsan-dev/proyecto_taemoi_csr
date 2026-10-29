@@ -282,6 +282,45 @@ describe('ProductosAlumnoPanelComponent (8b-3n)', () => {
     pantalla.estado.descartar();
   });
 
+  it('una fila editada lleva el mismo «Deshacer»: devuelve esa fila a lo guardado y conserva el resto', async () => {
+    const pantalla = await abrir(ALUMNO);
+    expect(el().querySelector('[data-deshacer]')).toBeNull();
+    pantalla.estado.cambiarPrecio(1, '40');
+    pantalla.estado.cambiarNotas(2, 'Talla M');
+    harness.detectChanges();
+    const deshacer = el().querySelector<HTMLButtonElement>('[data-cargo="1"] [data-deshacer]')!;
+    expect(deshacer.textContent!.trim()).toBe('Deshacer');
+    expect(deshacer.className).toBe('texto');
+    expect(deshacer.getAttribute('aria-label')).toBe('Deshacer los cambios de Cargo 1');
+    expect(el().querySelector('[data-cargo="2"] [data-deshacer]')!.getAttribute('aria-label')).toBe('Deshacer los cambios de Cargo 2');
+    expect(el().querySelector('.pendientes-aviso')!.textContent).toContain('2 cambios sin guardar');
+    deshacer.focus();
+    deshacer.click();
+    harness.detectChanges();
+    expect(el().querySelector('[data-cargo="1"] [data-deshacer]')).toBeNull();
+    expect(el().querySelector<HTMLInputElement>('#precio-1')!.value).toBe('30,00');
+    expect(el().querySelector('[data-cargo="1"] .total')!.textContent).toBe(pantalla.eur(30));
+    expect(document.activeElement).toBe(el().querySelector('[data-cargo="1"] [data-expandir]'));
+    expect(el().querySelector('.pendientes-aviso')!.textContent).toContain('1 cambio sin guardar');
+    el().querySelector<HTMLButtonElement>('[data-cargo="2"] [data-deshacer]')!.click();
+    harness.detectChanges();
+    expect(el().querySelector('.pendientes')).toBeNull();
+  });
+
+  it('una fila editada y marcada para eliminar enseña un solo «Deshacer», el del borrado', async () => {
+    const pantalla = await abrir(ALUMNO);
+    pantalla.estado.cambiarNotas(1, 'nota');
+    pantalla.marcarBorrar(1);
+    const botones = el().querySelectorAll<HTMLButtonElement>('[data-cargo="1"] [data-deshacer]');
+    expect(botones.length).toBe(1);
+    expect(botones[0].getAttribute('aria-label')).toBe('Deshacer la eliminación de Cargo 1');
+    botones[0].click();
+    harness.detectChanges();
+    expect(pantalla.estado.borrados().size).toBe(0);
+    expect(el().querySelector('[data-cargo="1"] [data-deshacer]')!.getAttribute('aria-label')).toBe('Deshacer los cambios de Cargo 1');
+    pantalla.estado.descartar();
+  });
+
   it('mantiene el contador vivo y reserva Cobrando para la petición, no para el diálogo abierto', async () => {
     const pantalla = await abrir(ALUMNO);
     const aviso = el().querySelector('[role="status"].pendientes-estado');
