@@ -22,7 +22,6 @@ import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-co
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { Capacidad, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
-import { DisenoPanelService } from '../diseno-panel.service';
 import { etiquetaRol } from '../formato/roles';
 import { MarcaEscuelaPanelService, MarcaPanel } from '../marca-escuela-panel.service';
 import { BarraInferiorComponent } from './barra-inferior.component';
@@ -87,12 +86,10 @@ export function iniciales(nombre: string | null | undefined): string {
 
 type IdMenu = IdSeccion | 'cuenta';
 
-const ERROR_VOLVER = 'No se pudo volver al diseño anterior. Inténtalo de nuevo.';
-
 /**
  * Cabecera C del panel nuevo (8b-N, fase3-e8b-plan.md §8; DESIGN.md, Navigation): color y logo de la escuela, seis
  * entradas (cuatro con desplegable) y la cuenta; por debajo de 1024 px, la barra inferior. Se carga en un `@defer`
- * de `skeleton` solo con el interruptor encendido y en una ruta de gestión.
+ * de `skeleton` solo con una sesión del panel (gestión o profesor) y en una ruta de gestión.
  *
  * - Antes de pintar espera a la marca (`GET /api/escuela/marca`, una vez por sesión) y la escribe en su raíz `.pn`;
  *   mientras tanto, el hueco de 64 px que deja `skeleton`. Si falla, pinta con el tema por defecto.
@@ -116,12 +113,10 @@ export class CabeceraPanelComponent implements OnInit {
   private readonly auth = inject(AuthenticationService);
   private readonly permisos = inject(PermisosSesionService);
   private readonly marcaServicio = inject(MarcaEscuelaPanelService);
-  private readonly diseno = inject(DisenoPanelService);
   private readonly contadorSolicitudes = inject(SolicitudesContadorService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly recargar = inject(RECARGAR_PAGINA);
 
   readonly legales = ENLACES_LEGALES;
 
@@ -131,8 +126,6 @@ export class CabeceraPanelComponent implements OnInit {
   readonly logoFallo = signal(false);
   readonly abierto = signal<IdMenu | null>(null);
   readonly url = signal(this.router.url);
-  readonly volviendo = signal(false);
-  readonly errorVolver = signal<string | null>(null);
 
   private readonly roles = toSignal(this.auth.getRoles(), { initialValue: [] as string[] });
   readonly soloProfesor = computed(() => {
@@ -258,7 +251,6 @@ export class CabeceraPanelComponent implements OnInit {
   }
 
   private abrir(id: IdMenu, foco: 'primera' | 'ultima' | null): void {
-    this.errorVolver.set(null);
     this.abierto.set(id);
     if (foco) {
       this.cdr.detectChanges();
@@ -352,25 +344,6 @@ export class CabeceraPanelComponent implements OnInit {
     this.cerrar(false);
     this.auth.guardarVistaPreferida('user');
     this.router.navigate(['/userpage']);
-  }
-
-  /** Decisión 256: la cuenta lo apaga para sí; se reinician los permisos y se recarga para volver a lo de hoy. */
-  volverAlDisenoAnterior(): void {
-    if (this.volviendo()) {
-      return;
-    }
-    this.volviendo.set(true);
-    this.errorVolver.set(null);
-    this.diseno.cambiarMiDiseno(false).subscribe({
-      next: () => {
-        this.permisos.reiniciar();
-        this.recargar();
-      },
-      error: () => {
-        this.volviendo.set(false);
-        this.errorVolver.set(ERROR_VOLVER);
-      },
-    });
   }
 
   /**

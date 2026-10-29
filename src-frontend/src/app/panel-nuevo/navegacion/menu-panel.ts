@@ -60,7 +60,6 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Preinscripciones', ruta: '/preinscripciones', icono: 'bi-clipboard2-check' },
       { etiqueta: 'Convocatorias', ruta: '/convocatoriasListar', icono: 'bi-clipboard-check' },
       { etiqueta: 'Crear alumno', ruta: '/alumnosCrear', icono: 'bi-person-plus', grupo: 'Fichas' },
-      { etiqueta: 'Editar alumno', ruta: '/alumnosEditar', icono: 'bi-pencil-square' },
       { etiqueta: 'Eliminar alumno', ruta: '/alumnosEliminar', icono: 'bi-trash' },
     ],
     prefijos: [
@@ -152,10 +151,8 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
 /** La barra inferior del móvil (por debajo de 1024 px), además de «Más». */
 export const BARRA_INFERIOR: readonly IdSeccion[] = ['inicio', 'alumnos', 'tesoreria'];
 
-/** Menú de cuenta: «Diseño nuevo», solo para el propietario como hoy (decisión 256). */
-export const CUENTA_PANEL: readonly EntradaMenu[] = [
-  { etiqueta: 'Diseño nuevo', ruta: '/panel/diseno-nuevo', icono: 'bi-window-sidebar', condicion: 'propietario' },
-];
+/** Menú de cuenta: sin entradas propias desde 8b-Z (se quitó «Diseño nuevo», decisión 256). */
+export const CUENTA_PANEL: readonly EntradaMenu[] = [];
 
 /** Los enlaces legales del pie público (decisión 259): en «Más» y en la cuenta, junto a «Configurar cookies». */
 export const ENLACES_LEGALES: readonly EntradaMenu[] = [

@@ -74,7 +74,7 @@ const NEGATIVAS: ReadonlySet<AccionSolicitud> = new Set(['denegar', 'rechazar'])
  * `SolicitudesService`, que ya lee y escribe con `ERROR_HANDLED_LOCALLY`), con el diálogo, los avisos y los estados de
  * carga del panel nuevo. Tras cada escritura (salga bien o mal) se releen los segmentos cargados y el contador de la
  * cabecera (`SolicitudesContadorService.refrescar`), como hoy. Nada va a la URL ni al almacenamiento del navegador. Va en
- * su propio chunk detrás de `disenoNuevoGuard`.
+ * su propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-solicitudes-panel',

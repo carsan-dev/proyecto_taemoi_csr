@@ -48,7 +48,7 @@ interface LoteAbierto {
  *
  * P-4: «Eliminar definitivamente» y «Eliminar» solo los ve el propietario (`ROLE_ADMIN`); el servidor tampoco se lo
  * admite a nadie más. Las MISMAS llamadas que `EliminarAlumnoComponent` (listado paginado de 10, baja, borrado y el alta
- * por deporte) y el mismo estado en sessionStorage. Va en su chunk detrás de `disenoNuevoGuard`.
+ * por deporte) y el mismo estado en sessionStorage. Va en su chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-bajas-alumnos',

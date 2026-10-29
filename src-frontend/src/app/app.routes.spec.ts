@@ -3,15 +3,18 @@ import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
-import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { NoEncontradaPanelComponent } from './panel-nuevo/no-encontrada/no-encontrada.component';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
+import { ProductosAlumnoPanelComponent } from './panel-nuevo/productos-alumno/productos-alumno-panel.component';
 import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
+import { EditarGrupoComponent } from './panel-nuevo/grupos/editar-grupo.component';
 import { GestionarAlumnosComponent } from './panel-nuevo/grupos/gestionar-alumnos.component';
+import { GestionarTurnosAlumnoComponent } from './panel-nuevo/grupos/gestionar-turnos-alumno.component';
 import { TesoreriaComponent } from './panel-nuevo/tesoreria/tesoreria.component';
 import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatorias.component';
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
@@ -25,9 +28,10 @@ import { ConfiguracionPanelComponent } from './panel-nuevo/escuela/configuracion
 import { RegistroAccionesComponent } from './panel-nuevo/escuela/registro/registro.component';
 import { AltaAlumnoComponent } from './panel-nuevo/alta-alumno/alta-alumno.component';
 import { BajasAlumnosComponent } from './panel-nuevo/bajas-alumnos/bajas-alumnos.component';
+import { MiCajaPanelComponent } from './panel-nuevo/mi-caja/mi-caja.component';
 import { EstilosPanelService } from './panel-nuevo/estilos-panel.service';
 import { AuthenticationService } from './servicios/authentication/authentication.service';
-import { Component } from '@angular/core';
+import { Component, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -37,257 +41,187 @@ import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
+/** Pantalla de gestión rediseñada: su ruta, el componente nuevo, los guards de `canActivate` y la data propia. */
+type Rediseno = [ruta: string, componente: Type<unknown>, canActivate: unknown[], extra?: Record<string, unknown>];
+
+const GESTION = [roleGuard];
+const PROPIETARIO = [roleGuard, adminOnlyGuard];
+
+/** Las 27 rutas de gestión que tenían dos entradas (la nueva tras el interruptor y la de hoy) hasta 8b-Z. */
+const REDISENADAS: Rediseno[] = [
+  ['adminpage', InicioComponent, GESTION],
+  ['alumnosListar', AlumnosComponent, GESTION],
+  ['preinscripciones', PreinscripcionesPanelComponent, GESTION],
+  ['alumnosEditar/:id', FichaAlumnoComponent, GESTION],
+  ['alumnos/:id/productos', ProductosAlumnoPanelComponent, GESTION],
+  ['alumnosCrear', AltaAlumnoComponent, GESTION],
+  ['alumnosEliminar', BajasAlumnosComponent, GESTION],
+  ['gruposListar', GruposComponent, GESTION],
+  ['gruposCrear', GruposComponent, GESTION, { crearGrupo: true }],
+  ['gruposEditar/:id', EditarGrupoComponent, GESTION],
+  ['gestionarAlumnos/:id', GestionarAlumnosComponent, GESTION],
+  ['seleccionarAlumnos/:id', GestionarAlumnosComponent, GESTION, { seleccionarAlumnos: true }],
+  ['gestionarTurnosAlumno/:alumnoId', GestionarTurnosAlumnoComponent, GESTION],
+  ['turnosCrear', GruposComponent, GESTION, { crearTurno: true }],
+  ['turnosEditar/:id', GruposComponent, GESTION, { editarTurno: true }],
+  ['eventosListar', EventosPanelComponent, GESTION],
+  ['eventosCrear', EventoFormularioComponent, GESTION],
+  ['eventosEditar/:id', EventoFormularioComponent, GESTION],
+  ['productosListar', ProductosComponent, GESTION],
+  ['productosCrear', ProductoFormularioComponent, GESTION],
+  ['productosEditar/:id', ProductoFormularioComponent, GESTION],
+  ['tesoreriaCobros', TesoreriaComponent, GESTION],
+  ['cajaSede', CajaSedePanelComponent, GESTION],
+  ['solicitudes', SolicitudesPanelComponent, GESTION],
+  ['auditoriaSistema', RegistroAccionesComponent, PROPIETARIO],
+  ['convocatoriasListar', ConvocatoriasComponent, GESTION],
+  ['configuracion-sistema', ConfiguracionPanelComponent, PROPIETARIO],
+];
+
+/** Permisos de una sesión (sin el interruptor del diseño, que desde 8b-Z no cuenta). */
+function permisos(roles: string[]) {
+  return { roles, esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false, capacidades: [] };
+}
+
 describe('app routes', () => {
-  it('Mis grupos: ruta nueva antes de la de hoy, mismo permiso e hijas diferidas sin catálogo', async () => {
-    const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mis-grupos');
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual([misGruposGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toBeUndefined();
-    expect(hoy.canMatch).toBeUndefined();
-    const hijas = await (nueva.loadChildren as () => Promise<Routes>)();
-    expect(hijas.map(hija => hija.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
-    expect(hijas.every(hija => !hija.resolve && !!hija.loadComponent)).toBeTrue();
-    expect(await hijas[0].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/mis-grupos.component')).MisGruposPanelComponent);
-    expect(await hijas[1].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/ficha-profesor-panel.component')).FichaProfesorPanelComponent);
-    expect(await hijas[2].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/grupo.component')).GrupoPanelComponent);
-    const antiguas = await (hoy.loadChildren as () => Promise<Routes>)();
-    expect(await antiguas[0].loadComponent!()).not.toBe(await hijas[0].loadComponent!());
-  });
-
-  it('Mi caja: ruta nueva antes de la de hoy, mismo permiso, diferida y sin catálogo', async () => {
-    const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mi-caja');
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual([profesorGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toBeUndefined();
-    expect(nueva.component).toBeUndefined();
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await nueva.loadComponent!()).toBe((await import('./panel-nuevo/mi-caja/mi-caja.component')).MiCajaPanelComponent);
-    expect(await hoy.loadComponent!()).toBe((await import('./componentes/endpoints/mi-caja/mi-caja.component')).MiCajaComponent);
-  });
-
-  for (const activo of [false, true]) {
-    it(`Mi caja con diseño ${activo ? 'encendido' : 'apagado'}: solo descarga la pantalla elegida`, async () => {
-      @Component({ standalone: true, template: '<p>Nueva</p>' })
-      class PantallaNueva {}
-      @Component({ standalone: true, template: '<p>Actual</p>' })
-      class PantallaActual {}
-      const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mi-caja');
-      const cargarNueva = jasmine.createSpy('cargar pantalla nueva').and.resolveTo(PantallaNueva);
-      const cargarHoy = jasmine.createSpy('cargar pantalla actual').and.resolveTo(PantallaActual);
-      TestBed.configureTestingModule({ providers: [
-        provideRouter([{ ...nueva, canActivate: [], loadComponent: cargarNueva }, { ...hoy, canActivate: [], loadComponent: cargarHoy }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido: true } }) } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-      ] });
-      const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl('/mi-caja', activo ? PantallaNueva : PantallaActual);
-      expect(cargarNueva.calls.count()).toBe(activo ? 1 : 0);
-      expect(cargarHoy.calls.count()).toBe(activo ? 0 : 1);
-    });
-  }
-
-  for (const activo of [false, true]) {
-    it(`Mis grupos con diseño ${activo ? 'encendido' : 'apagado'}: solo descarga las rutas elegidas`, async () => {
-      @Component({ standalone: true, template: '<p>Nueva</p>' })
-      class PantallaNueva {}
-      @Component({ standalone: true, template: '<p>Actual</p>' })
-      class PantallaActual {}
-      const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mis-grupos');
-      const cargarNueva = jasmine.createSpy('cargar rutas nuevas').and.resolveTo([{ path: '', component: PantallaNueva }]);
-      const cargarHoy = jasmine.createSpy('cargar rutas actuales').and.resolveTo([{ path: '', component: PantallaActual }]);
-      TestBed.configureTestingModule({ providers: [
-        provideRouter([{ ...nueva, canActivate: [], loadChildren: cargarNueva }, { ...hoy, canActivate: [], loadChildren: cargarHoy }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido: true } }) } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-      ] });
-      const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl('/mis-grupos', activo ? PantallaNueva : PantallaActual);
-      expect(cargarNueva.calls.count()).toBe(activo ? 1 : 0);
-      expect(cargarHoy.calls.count()).toBe(activo ? 0 : 1);
-    });
-  }
-
-  for (const path of ['gestionarAlumnos/:id', 'seleccionarAlumnos/:id']) {
-    it(path + ' (3m-4): lazy guarded screen preserves management roles, resolver and legacy fallback', async () => {
-      const [nueva, hoy] = routes.filter((route) => route.path === path);
-      expect(nueva.component).toBeUndefined();
-      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-      expect(nueva.canActivate).toEqual([roleGuard]);
-      expect(nueva.canActivate).toEqual(hoy.canActivate!);
-      expect(nueva.resolve).toEqual(hoy.resolve!);
-      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
-      expect(nueva.data).toEqual(path.startsWith('seleccionar') ? { ...hoy.data, seleccionarAlumnos: true } : hoy.data!);
-      expect(await nueva.loadComponent!()).toBe(GestionarAlumnosComponent);
-      expect(hoy.canMatch).toBeUndefined();
-      expect(await hoy.loadComponent!()).not.toBe(GestionarAlumnosComponent);
-    });
-    for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
-      it(path + ` (3m-4): lazy route follows account design settings ${activo}/${permitido}`, async () => {
-        @Component({ standalone: true, template: '<p>legacy</p>' })
-        class LegacyScreen {}
-        @Component({ standalone: true, template: '<p>new</p>' })
-        class NewScreen {}
-        const nueva = routes.find((route) => route.path === path && route.canMatch)!;
-        const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
-        TestBed.configureTestingModule({ providers: [
-          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: LegacyScreen }]),
-          { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
-          { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-        ] });
-        const harness = await RouterTestingHarness.create();
-        await harness.navigateByUrl('/' + path.replace(':id', '7'), activo ? NewScreen : LegacyScreen);
-        expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+  describe('8b-Z: una sola entrada por pantalla rediseñada, la nueva, sin interruptor', () => {
+    for (const [ruta, componente, canActivate, extra] of REDISENADAS) {
+      it(`${ruta}: una entrada con la pantalla nueva, la hoja del panel y sus guards`, async () => {
+        const entradas = routes.filter((route) => route.path === ruta);
+        expect(entradas.length).toBe(1);
+        const [entrada] = entradas;
+        expect(entrada.canMatch).toEqual([estilosPanelGuard]);
+        expect(entrada.canActivate).toEqual(canActivate as any);
+        expect(entrada.resolve).toEqual({ catalogo: catalogoResolver });
+        expect(entrada.data?.['portalContext']).toBe('admin');
+        expect(entrada.data?.['requiredRoles']).toEqual(
+          canActivate === PROPIETARIO ? ['ROLE_ADMIN'] : ['ROLE_ADMIN', 'ROLE_MANAGER']
+        );
+        for (const [clave, valor] of Object.entries(extra ?? {})) {
+          expect(entrada.data?.[clave]).withContext(clave).toBe(valor);
+        }
+        expect(entrada.component).toBeUndefined();
+        expect(await entrada.loadComponent!()).toBe(componente);
       });
     }
-  }
-  for (const [path, flag] of [['turnosCrear', 'crearTurno'], ['turnosEditar/:id', 'editarTurno']]) {
-    it(path + ' (3m-3): abre Grupos con los mismos roles, resolver y fallback', async () => {
-      const [nueva, hoy] = routes.filter((route) => route.path === path);
-      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-      expect(nueva.canActivate).toEqual(hoy.canActivate!);
-      expect(nueva.data).toEqual({ ...hoy.data, [flag]: true });
-      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
-      expect(nueva.resolve).toEqual(hoy.resolve!);
-      expect(await nueva.loadComponent!()).toBe(GruposComponent);
-      expect(hoy.canMatch).toBeUndefined();
-      expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
+
+    it('ninguna ruta repite camino salvo los dos comodines (404 del panel y el público)', () => {
+      const caminos = routes.map((route) => route.path).filter((path) => path !== '**');
+      expect(caminos.length).toBe(new Set(caminos).size);
+      expect(routes.filter((route) => route.path === '**').length).toBe(2);
     });
-    it(path + ' apagado no descarga Grupos', async () => {
-      @Component({ standalone: true, template: '<p>hoy</p>' })
-      class PantallaDeHoy {}
-      const nueva = routes.find((route) => route.path === path && route.canMatch)!;
-      const cargar = jasmine.createSpy('loadComponent Grupos');
-      TestBed.configureTestingModule({ providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path, component: PantallaDeHoy }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-      ] });
+
+    it('la salida sin guardar sigue en Preinscripciones y en Productos y cargos', () => {
+      expect(routes.find((route) => route.path === 'preinscripciones')!.canDeactivate).toEqual([salirSinGuardarGuard]);
+      expect(routes.find((route) => route.path === 'alumnos/:id/productos')!.canDeactivate).toEqual([salirSinGuardarGuard]);
+    });
+
+    it('alumnosEditar sin id (decisión 333): redirige al listado, solo con la ruta exacta', () => {
+      const entradas = routes.filter((route) => route.path === 'alumnosEditar');
+      expect(entradas.length).toBe(1);
+      expect(entradas[0]).toEqual({ path: 'alumnosEditar', redirectTo: '/alumnosListar', pathMatch: 'full' });
+    });
+
+    it('alumnosEditar sin id: al navegar acaba en /alumnosListar; con id sigue en la ficha', async () => {
+      @Component({ standalone: true, template: '<p class="listado">listado</p>' })
+      class Listado {}
+      @Component({ standalone: true, template: '<p class="ficha">ficha</p>' })
+      class Ficha {}
+      const redireccion = routes.find((route) => route.path === 'alumnosEditar')!;
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([
+            redireccion,
+            { path: 'alumnosEditar/:id', component: Ficha },
+            { path: 'alumnosListar', component: Listado },
+          ]),
+        ],
+      });
       const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl(path === 'turnosCrear' ? '/turnosCrear?grupoId=1' : '/turnosEditar/7', PantallaDeHoy);
-      expect(cargar).not.toHaveBeenCalled();
+      await harness.navigateByUrl('/alumnosEditar');
+      expect(TestBed.inject(Router).url).toBe('/alumnosListar');
+      expect((harness.routeNativeElement as HTMLElement).querySelector('.listado')).not.toBeNull();
+      await harness.navigateByUrl('/alumnosEditar/7');
+      expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7');
+      expect((harness.routeNativeElement as HTMLElement).querySelector('.ficha')).not.toBeNull();
     });
-  }
 
-  it('gruposEditar/:id (3m-2): ruta nueva perezosa antes de la de hoy, mismos roles y resolvers', async () => {
-    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposEditar/:id');
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    const componente = (await import('./panel-nuevo/grupos/editar-grupo.component')).EditarGrupoComponent;
-    expect(await nueva.loadComponent!()).toBe(componente);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(componente);
-  });
-
-  it('gruposEditar apagado conserva la pantalla de hoy sin descargar la nueva', async () => {
-    @Component({ standalone: true, template: '<p>hoy</p>' })
-    class PantallaDeHoy {}
-    const nueva = routes.find((route) => route.path === 'gruposEditar/:id' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent EditarGrupo');
-    TestBed.configureTestingModule({ providers: [
-      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposEditar/:id', component: PantallaDeHoy }]),
-      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
-      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-    ] });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/gruposEditar/7', PantallaDeHoy);
-    expect(cargar).not.toHaveBeenCalled();
-  });
-
-  it('gruposCrear (3m-1): abre Grupos mediante data y carga lazy; conserva la ruta de hoy con el interruptor apagado', async () => {
-    const [nueva, hoy] = routes.filter((route) => route.path === 'gruposCrear');
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.data).toEqual({ ...hoy.data, crearGrupo: true });
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(GruposComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
-  });
-
-  it('gruposCrear apagado no descarga Grupos ni sustituye el formulario de hoy', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class PantallaDeHoy {}
-    const nueva = routes.find((route) => route.path === 'gruposCrear' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent Grupos');
-    TestBed.configureTestingModule({ providers: [
-      provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposCrear', component: PantallaDeHoy }]),
-      { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: false, permitido: true } }) } },
-      { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-    ] });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/gruposCrear', PantallaDeHoy);
-    expect(cargar).not.toHaveBeenCalled();
-  });
-
-  it('gestionarTurnosAlumno (3m-5): new lazy page precedes untouched legacy route with identical roles', async () => {
-    const [nueva, hoy] = routes.filter(route => route.path === 'gestionarTurnosAlumno/:alumnoId');
-    const componente = (await import('./panel-nuevo/grupos/gestionar-turnos-alumno.component')).GestionarTurnosAlumnoComponent;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(componente);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(componente);
-  });
-  for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
-    it(`gestionarTurnosAlumno (3m-5): design toggle ${activo}/${permitido}`, async () => {
-      @Component({ standalone: true, template: '<p>legacy</p>' })
-      class LegacyScreen {}
-      @Component({ standalone: true, template: '<p>new</p>' })
-      class NewScreen {}
-      const nueva = routes.find(route => route.path === 'gestionarTurnosAlumno/:alumnoId' && route.canMatch)!;
-      const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
-      TestBed.configureTestingModule({ providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gestionarTurnosAlumno/:alumnoId', component: LegacyScreen }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-      ] });
+    it('la pantalla del panel espera a la hoja panel-nuevo.css antes de abrirse', async () => {
+      @Component({ standalone: true, template: '<p class="nueva">nueva</p>' })
+      class PantallaNueva {}
+      let resolverHoja!: () => void;
+      const cargarHoja = jasmine.createSpy('cargar').and.returnValue(new Promise<void>((r) => (resolverHoja = r)));
+      const entrada = routes.find((route) => route.path === 'alumnosListar')!;
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([{ ...entrada, canActivate: [], resolve: {}, loadComponent: () => Promise.resolve(PantallaNueva) }]),
+          { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
+        ],
+      });
       const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl('/gestionarTurnosAlumno/7', activo ? NewScreen : LegacyScreen);
-      expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+      const navegacion = harness.navigateByUrl('/alumnosListar');
+      await new Promise((r) => setTimeout(r));
+      expect(cargarHoja).toHaveBeenCalledTimes(1);
+      expect(TestBed.inject(Router).url).toBe('/');
+      resolverHoja();
+      await navegacion;
+      expect(TestBed.inject(Router).url).toBe('/alumnosListar');
+      expect((harness.routeNativeElement as HTMLElement).querySelector('.nueva')).not.toBeNull();
     });
-  }
-
-  it('alumnos/:id/productos (8b-3n): new lazy page with leave guard precedes untouched legacy route', async () => {
-    const [nueva, hoy] = routes.filter(route => route.path === 'alumnos/:id/productos');
-    const componente = (await import('./panel-nuevo/productos-alumno/productos-alumno-panel.component')).ProductosAlumnoPanelComponent;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canDeactivate).toEqual([salirSinGuardarGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(componente);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(hoy.canDeactivate).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(componente);
   });
-  for (const [activo, permitido] of [[false, true], [true, false], [true, true]]) {
-    it(`alumnos/:id/productos (8b-3n): design toggle ${activo}/${permitido}`, async () => {
-      @Component({ standalone: true, template: '<p>legacy</p>' })
-      class LegacyScreen {}
-      @Component({ standalone: true, template: '<p>new</p>' })
-      class NewScreen {}
-      const nueva = routes.find(route => route.path === 'alumnos/:id/productos' && route.canMatch)!;
-      const cargar = jasmine.createSpy('new lazy screen').and.returnValue(Promise.resolve(NewScreen));
-      TestBed.configureTestingModule({ providers: [
-        provideRouter([{ ...nueva, canActivate: [], canDeactivate: [], resolve: {}, loadComponent: cargar }, { path: 'alumnos/:id/productos', component: LegacyScreen }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido } }) } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-      ] });
-      const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl('/alumnos/7/productos', activo ? NewScreen : LegacyScreen);
-      expect(cargar.calls.count()).toBe(activo ? 1 : 0);
+
+  describe('8b-Z (decisión 332): la sesión solo-profesor va a las pantallas nuevas', () => {
+    it('Mi caja: una entrada, la nueva, con su guard de profesor, sin catálogo', async () => {
+      const entradas = routes.filter((route) => route.path === 'mi-caja');
+      expect(entradas.length).toBe(1);
+      const [ruta] = entradas;
+      expect(ruta.canMatch).toEqual([estilosPanelGuard]);
+      expect(ruta.canActivate).toEqual([profesorGuard]);
+      expect(ruta.resolve).toBeUndefined();
+      expect(ruta.component).toBeUndefined();
+      expect(await ruta.loadComponent!()).toBe(MiCajaPanelComponent);
+      expect(routes.indexOf(ruta)).toBeLessThan(routes.findIndex((route) => route.path === '**'));
     });
-  }
+
+    it('Mis grupos: una entrada, la nueva, con su guard, hijas diferidas del panel sin catálogo', async () => {
+      const entradas = routes.filter((route) => route.path === 'mis-grupos');
+      expect(entradas.length).toBe(1);
+      const [ruta] = entradas;
+      expect(ruta.canMatch).toEqual([estilosPanelGuard]);
+      expect(ruta.canActivate).toEqual([misGruposGuard]);
+      expect(ruta.resolve).toBeUndefined();
+      expect(routes.indexOf(ruta)).toBeLessThan(routes.findIndex((route) => route.path === '**'));
+      const hijas = await (ruta.loadChildren as () => Promise<Routes>)();
+      expect(hijas.map((hija) => hija.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
+      expect(hijas.every((hija) => !hija.resolve && typeof hija.loadComponent === 'function')).toBeTrue();
+      expect(await hijas[0].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/mis-grupos.component')).MisGruposPanelComponent);
+      expect(await hijas[1].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/ficha-profesor-panel.component')).FichaProfesorPanelComponent);
+      expect(await hijas[2].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/grupo.component')).GrupoPanelComponent);
+    });
+
+    for (const [camino, url] of [['mi-caja', '/mi-caja'], ['mis-grupos', '/mis-grupos']] as const) {
+      it(`${url} con una sesión solo-profesor (sin interruptor en sus permisos): abre la pantalla nueva`, async () => {
+        @Component({ standalone: true, template: '<p class="nueva">nueva</p>' })
+        class PantallaNueva {}
+        const ruta = routes.find((route) => route.path === camino)!;
+        const carga =
+          camino === 'mi-caja'
+            ? { loadComponent: jasmine.createSpy('nueva').and.resolveTo(PantallaNueva) }
+            : { loadChildren: jasmine.createSpy('nuevas').and.resolveTo([{ path: '', component: PantallaNueva }]) };
+        TestBed.configureTestingModule({
+          providers: [
+            provideRouter([{ ...ruta, canActivate: [], ...carga }]),
+            { provide: PermisosSesionService, useValue: { obtener: () => of(permisos(['PROFESOR'])) } },
+            { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+          ],
+        });
+        const harness = await RouterTestingHarness.create();
+        await harness.navigateByUrl(url);
+        expect(TestBed.inject(Router).url).toBe(url);
+        expect((harness.routeNativeElement as HTMLElement).querySelector('.nueva')).not.toBeNull();
+      });
+    }
+  });
 
   it('declara requiredRoles en todas las rutas protegidas por roleGuard', () => {
     const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
@@ -297,16 +231,8 @@ describe('app routes', () => {
   });
 
   it('protege auditoría y configuración con guard de admin', () => {
-    const auditoriaRoute = routes.find((route) => route.path === 'auditoriaSistema');
-    const configuracionRoute = routes.find((route) => route.path === 'configuracion-sistema');
-
-    expect(auditoriaRoute?.canActivate).toEqual([roleGuard, adminOnlyGuard]);
-    expect(configuracionRoute?.canActivate).toEqual([roleGuard, adminOnlyGuard]);
-    expect(auditoriaRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
-    expect(configuracionRoute?.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
-    // 8b-3k: también cada entrada duplicada (la nueva, tras el interruptor, y la de hoy).
     const todas = routes.filter((route) => route.path === 'auditoriaSistema' || route.path === 'configuracion-sistema');
-    expect(todas.length).toBe(4);
+    expect(todas.length).toBe(2);
     for (const route of todas) {
       expect(route.canActivate).toEqual([roleGuard, adminOnlyGuard]);
       expect(route.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
@@ -336,30 +262,6 @@ describe('app routes', () => {
     expect(resolverPortalContexto('/plataformaLogos')).not.toBe('user');
   });
 
-  it('«Mi caja» es lazy, con su guard de profesor y sin catálogo (una sesión solo profesor recibiría 403)', () => {
-    const indice = routes.findIndex((route) => route.path === 'mi-caja');
-    const ruta = routes[indice];
-
-    expect(ruta?.canActivate).toEqual([profesorGuard]);
-    expect(typeof ruta?.loadComponent).toBe('function');
-    expect(ruta?.resolve).toBeUndefined();
-    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
-  });
-
-  it('«Mis grupos» es lazy, con el guard de solo profesor y sin catálogo; sus hijas tampoco lo piden', async () => {
-    const indice = routes.findIndex((route) => route.path === 'mis-grupos');
-    const ruta = routes[indice];
-
-    expect(ruta?.canActivate).toEqual([misGruposGuard]);
-    expect(typeof ruta?.loadChildren).toBe('function');
-    expect(ruta?.resolve).toBeUndefined();
-    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
-
-    const hijas = (await (ruta!.loadChildren as () => Promise<Routes>)()) as Routes;
-    expect(hijas.map((h) => h.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
-    expect(hijas.every((h) => !h.resolve && typeof h.loadComponent === 'function')).toBeTrue();
-  });
-
   it('mantiene el portal user accesible para cuentas duales y usuarios finales', () => {
     const userRoute = routes.find((route) => route.path === 'userpage');
 
@@ -384,314 +286,56 @@ describe('app routes', () => {
     expect(publicRoutes.some((route) => route.resolve?.['catalogo'])).toBeFalse();
   });
 
-  it('404 del panel (8b-M2b): ** con disenoNuevoGuard y gestionPanelGuard va antes del comodín público', async () => {
+  it('404 del panel (8b-M2b): ** con gestionPanelGuard (y la hoja al activarse) va antes del comodín público', async () => {
     const comodines = routes.filter((route) => route.path === '**');
     expect(comodines.length).toBe(2);
     expect(routes[routes.length - 1]).toBe(comodines[1]);
     const [panel, publico] = comodines;
-    expect(panel.canMatch).toEqual([disenoNuevoGuard, gestionPanelGuard]);
-    expect(panel.canActivate).toBeUndefined();
+    expect(panel.canMatch).toEqual([gestionPanelGuard]);
+    expect(panel.canActivate).toEqual([estilosPanelGuard]);
     expect(panel.data?.['panelNuevo']).toBeTrue();
     expect(await panel.loadComponent!()).toBe(NoEncontradaPanelComponent);
     expect(publico.canMatch).toBeUndefined();
+    expect(publico.canActivate).toBeUndefined();
     expect(await publico.loadComponent!()).not.toBe(NoEncontradaPanelComponent);
   });
 
-  it('adminpage (8b-2): primero el Inicio nuevo tras disenoNuevoGuard y después la pantalla de hoy, los dos con roleGuard', async () => {
-    const entradas = routes.filter((route) => route.path === 'adminpage');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER']);
-    expect(await nueva.loadComponent!()).toBe(InicioComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(hoy.canActivate).toEqual([roleGuard]);
-    expect(hoy.loadComponent).toBeDefined();
-    expect(await hoy.loadComponent!()).not.toBe(InicioComponent);
-  });
-
-  it('alumnosListar (8b-3a): primero el listado nuevo tras disenoNuevoGuard, con la misma data, guards y resolve que el de hoy', async () => {
-    const entradas = routes.filter((route) => route.path === 'alumnosListar');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(AlumnosComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(AlumnosComponent);
-  });
-
-  it('alumnosListar (8b-3a): con el interruptor apagado no se descarga el chunk nuevo', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class PantallaDeHoy {}
-    const nueva = routes.find((route) => route.path === 'alumnosListar' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent nuevo');
+  it('404: una sesión de familia cae al público sin cargar la hoja del panel', async () => {
+    @Component({ standalone: true, template: '<p class="publico">404</p>' })
+    class Publico {}
+    const [panel] = routes.filter((route) => route.path === '**');
+    const cargarHoja = jasmine.createSpy('cargar').and.resolveTo();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'alumnosListar', component: PantallaDeHoy }]),
-        {
-          provide: PermisosSesionService,
-          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-        },
+        provideRouter([{ ...panel, loadComponent: () => Promise.resolve(NoEncontradaPanelComponent) }, { path: '**', component: Publico }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of(permisos(['FAMILIA'])) } },
+        { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
       ],
     });
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/alumnosListar');
-    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-    expect(cargar).not.toHaveBeenCalled();
+    await harness.navigateByUrl('/no-existe');
+    expect((harness.routeNativeElement as HTMLElement).querySelector('.publico')).not.toBeNull();
+    expect(cargarHoja).not.toHaveBeenCalled();
   });
 
-  it('alumnosEditar/:id (8b-3b): primero la ficha nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy', async () => {
-    const entradas = routes.filter((route) => route.path === 'alumnosEditar/:id');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(FichaAlumnoComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(FichaAlumnoComponent);
-    // La ruta sin id sigue siendo solo la de hoy (redirige al primer alumno con /alumnosEditar/:id).
-    expect(routes.filter((route) => route.path === 'alumnosEditar').every((route) => !route.canMatch)).toBeTrue();
-  });
-
-  it('alumnosEditar/:id (8b-3b): con el interruptor apagado no se descarga el chunk nuevo', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class FichaDeHoy {}
-    const nueva = routes.find((route) => route.path === 'alumnosEditar/:id' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent nuevo');
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'alumnosEditar/:id', component: FichaDeHoy }]),
-        {
-          provide: PermisosSesionService,
-          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-        },
-      ],
-    });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/alumnosEditar/7');
-    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-    expect(cargar).not.toHaveBeenCalled();
-  });
-
-  it('gruposListar (8b-3c): primero Grupos nuevo tras disenoNuevoGuard, con la misma data, guards y resolve que el de hoy', async () => {
-    const entradas = routes.filter((route) => route.path === 'gruposListar');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(GruposComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(GruposComponent);
-  });
-
-  it('gruposListar (8b-3c): con el interruptor apagado no se descarga el chunk nuevo', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class GruposDeHoy {}
-    const nueva = routes.find((route) => route.path === 'gruposListar' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent nuevo');
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'gruposListar', component: GruposDeHoy }]),
-        {
-          provide: PermisosSesionService,
-          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-        },
-      ],
-    });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/gruposListar');
-    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-    expect(cargar).not.toHaveBeenCalled();
-  });
-  it('tesoreriaCobros (8b-3d): primero Tesorería nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy', async () => {
-    const entradas = routes.filter((route) => route.path === 'tesoreriaCobros');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(TesoreriaComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(TesoreriaComponent);
-  });
-
-  it('tesoreriaCobros (8b-3d): con el interruptor apagado no se descarga el chunk nuevo', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class TesoreriaDeHoy {}
-    const nueva = routes.find((route) => route.path === 'tesoreriaCobros' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent nuevo');
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'tesoreriaCobros', component: TesoreriaDeHoy }]),
-        {
-          provide: PermisosSesionService,
-          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-        },
-      ],
-    });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/tesoreriaCobros');
-    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-    expect(cargar).not.toHaveBeenCalled();
-  });
-
-  it('convocatoriasListar (8b-3e): primero Convocatorias nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy', async () => {
-    const entradas = routes.filter((route) => route.path === 'convocatoriasListar');
-    expect(entradas.length).toBe(2);
-    const [nueva, hoy] = entradas;
-    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-    expect(nueva.canActivate).toEqual(hoy.canActivate!);
-    expect(nueva.canActivate).toEqual([roleGuard]);
-    expect(nueva.data).toEqual(hoy.data!);
-    expect(nueva.resolve).toEqual(hoy.resolve!);
-    expect(await nueva.loadComponent!()).toBe(ConvocatoriasComponent);
-    expect(hoy.canMatch).toBeUndefined();
-    expect(await hoy.loadComponent!()).not.toBe(ConvocatoriasComponent);
-  });
-
-  it('convocatoriasListar (8b-3e): con el interruptor apagado no se descarga el chunk nuevo', async () => {
-    @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-    class ConvocatoriasDeHoy {}
-    const nueva = routes.find((route) => route.path === 'convocatoriasListar' && route.canMatch)!;
-    const cargar = jasmine.createSpy('loadComponent nuevo');
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: 'convocatoriasListar', component: ConvocatoriasDeHoy }]),
-        {
-          provide: PermisosSesionService,
-          useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-            capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-        },
-      ],
-    });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/convocatoriasListar');
-    expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-    expect(cargar).not.toHaveBeenCalled();
-  });
-  for (const [ruta, url, componente] of [
-    ['eventosListar', '/eventosListar', EventosPanelComponent],
-    ['eventosCrear', '/eventosCrear', EventoFormularioComponent],
-    ['eventosEditar/:id', '/eventosEditar/7', EventoFormularioComponent],
-    ['productosListar', '/productosListar', ProductosComponent],
-    ['productosCrear', '/productosCrear', ProductoFormularioComponent],
-    ['productosEditar/:id', '/productosEditar/7', ProductoFormularioComponent],
-    ['preinscripciones', '/preinscripciones', PreinscripcionesPanelComponent],
-    ['solicitudes', '/solicitudes', SolicitudesPanelComponent],
-    ['cajaSede', '/cajaSede', CajaSedePanelComponent],
-    ['alumnosCrear', '/alumnosCrear', AltaAlumnoComponent],
-    ['alumnosEliminar', '/alumnosEliminar', BajasAlumnosComponent],
+  // 8b-3k: las dos rutas del propietario conservan roleGuard y adminOnlyGuard (riesgo: perder un guard).
+  for (const [ruta, url] of [
+    ['configuracion-sistema', '/configuracion-sistema'],
+    ['auditoriaSistema', '/auditoriaSistema'],
   ] as const) {
-    it(`${ruta} (8b-3f a 8b-3j): primero la entrada nueva tras disenoNuevoGuard, con la misma data, guards y resolve que la de hoy`, async () => {
-      const entradas = routes.filter((route) => route.path === ruta);
-      expect(entradas.length).toBe(2);
-      const [nueva, hoy] = entradas;
-      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-      expect(nueva.canActivate).toEqual(hoy.canActivate!);
-      expect(nueva.canActivate).toEqual([roleGuard]);
-      expect(nueva.data).toEqual(hoy.data!);
-      expect(nueva.resolve).toEqual(hoy.resolve!);
-      expect(await nueva.loadComponent!()).toBe(componente);
-      expect(hoy.canMatch).toBeUndefined();
-      expect(await hoy.loadComponent!()).not.toBe(componente);
-    });
-
-    it(`${ruta} (8b-3f a 8b-3j): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
-      @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-      class EventosDeHoy {}
-      const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;
-      const cargar = jasmine.createSpy('loadComponent nuevo');
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: ruta, component: EventosDeHoy }]),
-          {
-            provide: PermisosSesionService,
-            useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-              capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-          },
-        ],
-      });
-      const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl(url);
-      expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-      expect(cargar).not.toHaveBeenCalled();
-    });
-  }
-  // 8b-3k: las dos rutas del propietario duplicadas conservan roleGuard y adminOnlyGuard (riesgo: perder un guard).
-  for (const [ruta, url, componente] of [
-    ['configuracion-sistema', '/configuracion-sistema', ConfiguracionPanelComponent],
-    ['auditoriaSistema', '/auditoriaSistema', RegistroAccionesComponent],
-  ] as const) {
-    it(`${ruta} (8b-3k): primero la entrada nueva tras disenoNuevoGuard, con roleGuard, adminOnlyGuard, data y resolve de hoy`, async () => {
-      const entradas = routes.filter((route) => route.path === ruta);
-      expect(entradas.length).toBe(2);
-      const [nueva, hoy] = entradas;
-      expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
-      expect(nueva.canActivate).toEqual(hoy.canActivate!);
-      expect(nueva.canActivate).toEqual([roleGuard, adminOnlyGuard]);
-      expect(nueva.data).toEqual(hoy.data!);
-      expect(nueva.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
-      expect(nueva.resolve).toEqual(hoy.resolve!);
-      expect(await nueva.loadComponent!()).toBe(componente);
-      expect(hoy.canMatch).toBeUndefined();
-      expect(await hoy.loadComponent!()).not.toBe(componente);
-    });
-
-    it(`${ruta} (8b-3k): con el interruptor apagado no se descarga el chunk nuevo`, async () => {
-      @Component({ standalone: true, template: '<p class="hoy">hoy</p>' })
-      class PantallaDeHoy {}
-      const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;
-      const cargar = jasmine.createSpy('loadComponent nuevo');
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([{ ...nueva, canActivate: [], resolve: {}, loadComponent: cargar }, { path: ruta, component: PantallaDeHoy }]),
-          {
-            provide: PermisosSesionService,
-            useValue: { obtener: () => of({ roles: [], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-              capacidades: [], disenoNuevo: { activo: false, permitido: false } }) },
-          },
-        ],
-      });
-      const harness = await RouterTestingHarness.create();
-      await harness.navigateByUrl(url);
-      expect((harness.routeNativeElement as HTMLElement).querySelector('.hoy')).not.toBeNull();
-      expect(cargar).not.toHaveBeenCalled();
-    });
-
     for (const [rolesSesion, entra] of [[['ROLE_MANAGER'], false], [['ROLE_USER'], false], [['ROLE_ADMIN'], true]] as const) {
-      it(`${ruta} (8b-3k): con el interruptor encendido, ${rolesSesion.join(', ')} ${entra ? 'entra' : 'no entra (roleGuard y adminOnlyGuard)'}`, async () => {
+      it(`${ruta} (8b-3k): ${rolesSesion.join(', ')} ${entra ? 'entra' : 'no entra (roleGuard y adminOnlyGuard)'}`, async () => {
         @Component({ standalone: true, template: '<p class="nueva">nueva</p>' })
         class PantallaNueva {}
         @Component({ standalone: true, template: '<p class="portada">portada</p>' })
         class Portada {}
-        const nueva = routes.find((route) => route.path === ruta && route.canMatch)!;
+        const entrada = routes.find((route) => route.path === ruta)!;
         const cargar = jasmine.createSpy('loadComponent nuevo').and.returnValue(Promise.resolve(PantallaNueva));
         TestBed.configureTestingModule({
           providers: [
-            // Los guards de verdad (canMatch y canActivate de la entrada nueva); solo se quita el catálogo.
-            provideRouter([{ ...nueva, resolve: {}, loadComponent: cargar }, { path: '', component: Portada }]),
-            {
-              provide: PermisosSesionService,
-              useValue: { obtener: () => of({ roles: [...rolesSesion], esAdminPlataforma: false, sedes: [], variasSedes: false,
-                tieneGrupos: false, capacidades: [], disenoNuevo: { activo: true, permitido: true } }) },
-            },
+            // Los guards de verdad (canMatch y canActivate de la entrada); solo se quita el catálogo.
+            provideRouter([{ ...entrada, resolve: {}, loadComponent: cargar }, { path: '', component: Portada }]),
+            { provide: PermisosSesionService, useValue: { obtener: () => of(permisos([...rolesSesion])) } },
             { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
             { provide: AuthenticationService, useValue: { resolverRolesDisponibles: () => of([...rolesSesion]) } },
           ],

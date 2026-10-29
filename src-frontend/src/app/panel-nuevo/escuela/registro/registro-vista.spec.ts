@@ -1,4 +1,3 @@
-import { describirAccion as describirAccionDeHoy } from '../../../componentes/endpoints/auditoria-sistema/auditoria-sistema.component';
 import { AuditoriaEvento } from '../../../interfaces/auditoria-evento';
 import {
   agruparPorDia,
@@ -34,13 +33,20 @@ export function eventoVista(cambios: Partial<AuditoriaEvento> = {}): AuditoriaEv
 }
 
 describe('registro-vista (8b-3k)', () => {
-  it('la pastilla de cada acción es la de hoy', () => {
-    const casos: [string | null, string | null][] = [
-      ['CREATE', 'alumnos'], ['UPDATE', null], ['DELETE', 'grupos'], ['READ', 'salud'], ['READ', 'SALUD'], ['READ', 'alumnos'],
-      ['otra', 'x'], [null, null], ['create', 'x'],
+  it('la pastilla de cada acción es la de hoy (los valores de la pantalla anterior, retirada en 8b-Z)', () => {
+    const casos: [string | null, string | null, { etiqueta: string; tono: string }][] = [
+      ['CREATE', 'alumnos', { etiqueta: 'Alta', tono: 'alta' }],
+      ['UPDATE', null, { etiqueta: 'Cambio', tono: 'cambio' }],
+      ['DELETE', 'grupos', { etiqueta: 'Baja', tono: 'baja' }],
+      ['READ', 'salud', { etiqueta: 'Salud', tono: 'salud' }],
+      ['READ', 'SALUD', { etiqueta: 'Salud', tono: 'salud' }],
+      ['READ', 'alumnos', { etiqueta: 'Consulta', tono: 'neutro' }],
+      ['otra', 'x', { etiqueta: 'otra', tono: 'neutro' }],
+      [null, null, { etiqueta: '-', tono: 'neutro' }],
+      ['create', 'x', { etiqueta: 'Alta', tono: 'alta' }],
     ];
-    for (const [accion, modulo] of casos) {
-      expect(describirAccion(accion, modulo)).toEqual(describirAccionDeHoy(accion, modulo));
+    for (const [accion, modulo, esperado] of casos) {
+      expect(describirAccion(accion, modulo)).withContext(`${accion} ${modulo}`).toEqual(esperado as any);
     }
   });
 

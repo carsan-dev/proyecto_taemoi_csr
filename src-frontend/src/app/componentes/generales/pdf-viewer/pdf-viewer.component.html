@@ -64,7 +64,7 @@
         <p class="materials-state is-error" role="alert">{{ errorVisorPdf }}</p>
         }
 
-        <div class="pdf-canvas-wrap">
+        <div class="pdf-canvas-wrap" tabindex="0" role="region" aria-label="Página del PDF">
           <canvas #pdfCanvasRef class="pdf-canvas" role="img" [attr.aria-label]="titulo + ' — página ' + paginaActualPdf" (contextmenu)="onBloquearDescargaContenido($event)"></canvas>
           @if (cargandoPaginaPdf) {
           <div class="pdf-canvas-loading">

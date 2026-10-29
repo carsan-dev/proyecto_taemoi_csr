@@ -82,6 +82,7 @@
             <span class="pn-menu__quien-nombre">{{ nombreVisible() }}</span>
             <span class="pn-menu__quien-rol">{{ rol() }}</span>
           </div>
+          @if (cuenta().length || accesoDual()) {
           <div class="pn-menu__grupo" role="group" aria-label="Panel">
             @for (entrada of cuenta(); track entrada.ruta) {
             <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined"
@@ -96,17 +97,8 @@
               <span>Cambiar a familia</span>
             </button>
             }
-            @if (!soloProfesor()) {
-            <button type="button" class="pn-menu__opcion" role="menuitem" [disabled]="volviendo()"
-              [attr.aria-busy]="volviendo() ? 'true' : null" (click)="volverAlDisenoAnterior()">
-              <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-              <span>Volver al diseño anterior</span>
-            </button>
-            @if (errorVolver(); as error) {
-            <p class="pn-menu__error" role="alert">{{ error }}</p>
-            }
-            }
           </div>
+          }
           <div class="pn-menu__grupo" role="group" aria-label="Legal">
             <div class="pn-menu__titulo" aria-hidden="true">Legal</div>
             @for (entrada of legales; track entrada.ruta) {

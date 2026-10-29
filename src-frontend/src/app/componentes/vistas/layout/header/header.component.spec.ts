@@ -7,8 +7,6 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { Capacidad, DisenoNuevoSesion, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
-import { DisenoPanelService } from '../../../../panel-nuevo/diseno-panel.service';
-import { RECARGAR_PAGINA } from '../../../../core/recargar-pagina';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { itSinReloj } from '../../../../testing/reloj-prueba';
 
@@ -43,9 +41,7 @@ describe('HeaderComponent', () => {
       pageScroll as any,
       scrollLock as any,
       contadorSolicitudesSimulado as any,
-      { capacidades: () => of([]), obtener: () => of({}) } as any,
-      {} as any,
-      () => undefined
+      { capacidades: () => of([]), obtener: () => of({}) } as any
     );
   }
 
@@ -535,44 +531,18 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     });
   });
 
-  describe('«Diseño nuevo» en el menú de cuenta (8b-I, decisión 256)', () => {
-    const entrada = (el: HTMLElement) =>
-      el.querySelector<HTMLAnchorElement>('.admin-account-menu-panel a[href="/panel/diseno-nuevo"]');
-
-    itSinReloj('el propietario la ve en su menú de cuenta', async () => {
-      const { fixture } = await renderizar(['ROLE_ADMIN']);
-      fixture.componentInstance.toggleAdminAccountMenu();
-      fixture.detectChanges();
-      expect(entrada(fixture.nativeElement)?.textContent?.trim()).toBe('Diseño nuevo');
-      expect(entrada(fixture.nativeElement)?.getAttribute('role')).toBe('menuitem');
-    });
-
-    itSinReloj('el propietario que también es profesor, igual', async () => {
-      const { fixture } = await renderizar(['ROLE_ADMIN', 'ROLE_PROFESOR'], ['MI_CAJA']);
-      fixture.componentInstance.toggleAdminAccountMenu();
-      fixture.detectChanges();
-      expect(entrada(fixture.nativeElement)).not.toBeNull();
-    });
-
-    itSinReloj('el gestor no la ve', async () => {
-      for (const roles of [['ROLE_MANAGER'], ['ROLE_MANAGER', 'ROLE_PROFESOR'], ['ROLE_MANAGER', 'ROLE_USER']]) {
-        const { fixture } = await renderizar(roles);
+  describe('8b-Z: sin «Diseño nuevo» en el menú de cuenta (el interruptor se retiró)', () => {
+    for (const roles of [['ROLE_ADMIN'], ['ROLE_ADMIN', 'ROLE_PROFESOR'], ['ROLE_MANAGER']]) {
+      itSinReloj(`${roles.join(', ')}: ni el enlace a /panel/diseno-nuevo ni «Diseño nuevo»`, async () => {
+        const { fixture } = await renderizar(roles, roles.includes('ROLE_PROFESOR') ? ['MI_CAJA'] : []);
         fixture.componentInstance.toggleAdminAccountMenu();
         fixture.detectChanges();
-        expect(entrada(fixture.nativeElement)).withContext(roles.join()).toBeNull();
-        expect((fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel')).not.toBeNull();
-      }
-    });
-
-    it('al pulsarla se cierra el menú', async () => {
-      const { fixture } = await renderizar(['ROLE_ADMIN']);
-      const componente = fixture.componentInstance;
-      componente.toggleAdminAccountMenu();
-      fixture.detectChanges();
-      entrada(fixture.nativeElement)!.click();
-      fixture.detectChanges();
-      expect(componente.isAdminAccountMenuOpen).toBeFalse();
-    });
+        const panel = (fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel');
+        expect(panel).not.toBeNull();
+        expect(panel!.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
+        expect(panel!.textContent).not.toContain('Diseño nuevo');
+      });
+    }
   });
 
   itSinReloj('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
@@ -585,21 +555,10 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
   });
 });
 
-describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de gestión', () => {
-  let diseno: { cambiarMiDiseno: jasmine.Spy };
-  let reiniciar: jasmine.Spy;
-  let recargar: jasmine.Spy;
-
+describe('HeaderComponent: sin «Usar el diseño nuevo» (8b-Z)', () => {
   async function renderizar(roles: string[], disenoNuevo?: DisenoNuevoSesion) {
-    diseno = { cambiarMiDiseno: jasmine.createSpy('cambiarMiDiseno').and.returnValue(of({ activo: true, permitido: true })) };
-    reiniciar = jasmine.createSpy('reiniciar');
-    recargar = jasmine.createSpy('recargar');
     const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
-    const permisos = {
-      capacidades: () => of([]),
-      obtener: () => of({ roles, disenoNuevo }),
-      reiniciar,
-    };
+    const permisos = { capacidades: () => of([]), obtener: () => of({ roles, disenoNuevo }), reiniciar: () => undefined };
     const authServiceMock = {
       usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
       usernameCambio: new BehaviorSubject<string | null>('cuenta'),
@@ -624,8 +583,6 @@ describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de ge
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
         { provide: PermisosSesionService, useValue: permisos },
-        { provide: DisenoPanelService, useValue: diseno },
-        { provide: RECARGAR_PAGINA, useValue: recargar },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(HeaderComponent);
@@ -635,53 +592,13 @@ describe('HeaderComponent: «Usar el diseño nuevo» en el menú de cuenta de ge
     return fixture;
   }
 
-  const entrada = (fixture: { nativeElement: unknown }) =>
-    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.admin-account-menu-panel button')).find(
-      (b) => b.textContent?.trim() === 'Usar el diseño nuevo'
-    );
-  const esperar = () => new Promise<void>((r) => setTimeout(r, 50));
-
-  itSinReloj('visible con permiso y diseño anterior (permitido y no activo)', async () => {
+  itSinReloj('ni con permiso y el diseño anterior en sus permisos (permitido y no activo)', async () => {
     for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
       const fixture = await renderizar(roles, { activo: false, permitido: true });
-      expect(entrada(fixture)).withContext(roles.join()).toBeDefined();
+      const panel = (fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel');
+      expect(panel).withContext(roles.join()).not.toBeNull();
+      expect(panel!.textContent).withContext(roles.join()).not.toContain('Usar el diseño nuevo');
+      expect(panel!.querySelector('[role="alert"]')).withContext(roles.join()).toBeNull();
     }
-  });
-
-  itSinReloj('oculta sin permiso, ya encendido, sin dato, y con sesión solo-profesor o de familia', async () => {
-    const casos: [string[], DisenoNuevoSesion | undefined][] = [
-      [['ROLE_ADMIN'], { activo: false, permitido: false }],
-      [['ROLE_ADMIN'], { activo: true, permitido: true }],
-      [['ROLE_ADMIN'], undefined],
-      [['ROLE_PROFESOR'], { activo: false, permitido: true }],
-      [['ROLE_USER'], { activo: false, permitido: true }],
-    ];
-    for (const [roles, dato] of casos) {
-      const fixture = await renderizar(roles, dato);
-      expect(entrada(fixture)).withContext(JSON.stringify([roles, dato])).toBeUndefined();
-    }
-  });
-
-  itSinReloj('el clic llama a cambiarMiDiseno(true), reinicia los permisos y recarga; un clic, una petición', async () => {
-    const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
-    entrada(fixture)!.click();
-    entrada(fixture)?.click();
-    await esperar();
-    expect(diseno.cambiarMiDiseno).toHaveBeenCalledOnceWith(true);
-    expect(reiniciar).toHaveBeenCalledTimes(1);
-    expect(recargar).toHaveBeenCalledTimes(1);
-  });
-
-  itSinReloj('si falla, avisa y no recarga', async () => {
-    const fixture = await renderizar(['ROLE_ADMIN'], { activo: false, permitido: true });
-    diseno.cambiarMiDiseno.and.returnValue(throwError(() => new Error('403')));
-    entrada(fixture)!.click();
-    await esperar();
-    fixture.detectChanges();
-    expect(recargar).not.toHaveBeenCalled();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel [role="alert"]')?.textContent).toContain(
-      'No se pudo cambiar al diseño nuevo'
-    );
-    expect(entrada(fixture)!.disabled).toBeFalse();
   });
 });

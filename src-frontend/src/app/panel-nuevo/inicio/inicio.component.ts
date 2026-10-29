@@ -154,8 +154,8 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 /**
  * Inicio I1 del panel nuevo (8b-2; decisiones 238, 242, 244, 245, 254 y 267). Base C con la ocupación día × franja de
  * B: ocupación de la semana, «Hoy», pendiente de cobro vencido con «Cobrar», accesos con cifra, la escuela en cifras,
- * eventos activos y operaciones y accesos. Va en su propio chunk detrás de `disenoNuevoGuard`: con el interruptor
- * apagado sigue la pantalla de hoy. Lee los mismos datos que la de hoy y, además, `GET /api/tesoreria/pendiente-vencido`.
+ * eventos activos y operaciones y accesos. Va en su propio chunk detrás de `estilosPanelGuard`. Lee los mismos datos
+ * que la de hoy y, además, `GET /api/tesoreria/pendiente-vencido`.
  * «Cobrar» hace el mismo PUT que la tesorería de hoy.
  *
  * 8b-D1: esqueletos con la forma de cada bloque mientras carga, errores de bloque comunes con «Reintentar» (el del

@@ -25,7 +25,7 @@ import {
   diaMes,
   nombreCompleto,
   normalizarBusqueda,
-} from '../../componentes/endpoints/mi-caja/mi-caja-cargos';
+} from './mi-caja-cargos';
 import {
   ETIQUETA_COBRO,
   MAX_MOTIVO,
@@ -44,7 +44,7 @@ import {
   puedeRegistrarDevolucion,
   puedeRetirar,
   requiereAccion,
-} from '../../componentes/endpoints/mi-caja/mi-caja-pedidos';
+} from './mi-caja-pedidos';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';

@@ -1,7 +1,8 @@
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 
-// Solo para las pantallas del panel nuevo: el LOCALE_ID global no se toca hasta 8b-Z.
+// El LOCALE_ID global es es-ES desde 8b-Z (app.config.ts); se registra también aquí para las pruebas, que no cargan
+// app.config. Registrar dos veces los mismos datos no cambia nada.
 registerLocaleData(localeEs, 'es-ES');
 
 const LOCALE = 'es-ES';

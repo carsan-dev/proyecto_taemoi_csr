@@ -11,7 +11,7 @@ import { AuthenticationService } from '../../servicios/authentication/authentica
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { CLASE_ERROR_HTTP, PilaCapas } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
-import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../estilos-panel.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { SIERRA_PRUEBA } from '../tema-prueba';
@@ -51,7 +51,7 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
-          { path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva },
+          { path: 'alumnosListar', canMatch: [estilosPanelGuard], component: PantallaNueva },
           { path: 'pantalla-a', component: PantallaNueva },
           { path: 'pantalla-b', component: PantallaNueva },
         ]),

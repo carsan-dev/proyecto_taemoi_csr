@@ -12,7 +12,7 @@ import { PermisosSesionService } from '../../../servicios/authentication/permiso
 import { AvisosService } from '../../avisos/avisos.service';
 import { CLASE_ERROR_HTTP } from '../../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
-import { disenoNuevoGuard } from '../../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../../estilos-panel.guard';
 import { EstilosPanelService } from '../../estilos-panel.service';
 import { CuentaConfiguracion } from './configuracion-vista';
 import { ConfiguracionPanelComponent } from './configuracion.component';
@@ -511,7 +511,7 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
 
   it('restablecer contraseña: un error del servidor cierra el SweetAlert2 del interceptor (swal-error-http) y se ve en el panel', async () => {
     const router = TestBed.inject(Router);
-    router.resetConfig([{ path: 'configuracion', canMatch: [disenoNuevoGuard], component: PantallaNueva }]);
+    router.resetConfig([{ path: 'configuracion', canMatch: [estilosPanelGuard], component: PantallaNueva }]);
     await router.navigateByUrl('/configuracion');
     cargar(375);
     boton(fila(2), 'Restablecer contraseña').click();

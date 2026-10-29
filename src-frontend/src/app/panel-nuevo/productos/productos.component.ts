@@ -80,7 +80,7 @@ const TIPOS = TIPOS_PRODUCTO.map((t) => t.valor);
  * en un menú de cada grupo; buscador, «Tipo», «Mi caja», «Limpiar filtros», total y chips. Las MISMAS escrituras que
  * `ListadoProductosComponent` (Mi caja de uno al momento y en lote, borrar uno y en lote), con el diálogo, los avisos y
  * los estados de carga del panel nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de
- * `disenoNuevoGuard`.
+ * `estilosPanelGuard`.
  */
 /** Lo que acepta de una vez el PATCH de «Mi caja» en lote. */
 const MAXIMO_LOTE = 200;

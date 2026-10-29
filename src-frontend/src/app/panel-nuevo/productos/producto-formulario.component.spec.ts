@@ -6,8 +6,8 @@ import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { CrearProductoComponent } from '../../componentes/endpoints/crear-producto/crear-producto.component';
-import { EditarProductoComponent } from '../../componentes/endpoints/editar-producto/editar-producto.component';
+import { valorDeHoy } from '../../testing/oraculo-hoy';
+import { HOY } from './producto-formulario.component.hoy';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
@@ -161,22 +161,10 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
   });
 
   /**
-   * Crea con la pantalla de hoy y con la nueva y devuelve las dos peticiones. La de hoy va primero: `createComponent`
-   * saca del documento las raíces anteriores (la de hoy solo necesita sus eventos; la nueva, el envío del formulario).
+   * Crea con la pantalla nueva y devuelve la petición. La de hoy (retirada en 8b-Z) va grabada en `HOY`
+   * (producto-formulario.component.hoy.ts): la petición que hacía con el mismo concepto y el precio escrito como ella.
    */
-  function crearConLasDos(concepto: string, precioHoy: string, precioNuevo: string, marcar: boolean): [TestRequest, TestRequest] {
-    const hoy = TestBed.createComponent(CrearProductoComponent);
-    hoy.detectChanges();
-    const raizHoy = hoy.nativeElement as HTMLElement;
-    escribirEn(raizHoy, '#concepto', concepto);
-    escribirEn(raizHoy, '#precio', precioHoy);
-    if (marcar) {
-      raizHoy.querySelector<HTMLInputElement>('#vendibleProfesor')!.click();
-    }
-    hoy.detectChanges();
-    hoy.componentInstance.onSubmit();
-    const deHoy = http.expectOne(`${API}/productos`);
-
+  function crearConLaNueva(concepto: string, precioNuevo: string, marcar: boolean): TestRequest {
     crear();
     escribir('producto-concepto', concepto);
     escribir('producto-precio', precioNuevo);
@@ -186,9 +174,7 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
     }
     guardar().click();
     fixture.detectChanges();
-    const nueva = http.expectOne(`${API}/productos`);
-    hoy.destroy();
-    return [deHoy, nueva];
+    return http.expectOne(`${API}/productos`);
   }
 
   it('crear: el MISMO POST /productos de hoy, campo a campo (precio es-ES «1.010,50» = hoy «1010.50»)', () => {
@@ -199,11 +185,10 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
       ['Seguro', '1.5', '1.5', true],
       ['Gratis', '0', '0', false],
     ];
-    for (const [concepto, hoy, nuevo, marcar] of casos) {
-      const [deHoy, nueva] = crearConLasDos(concepto, hoy, nuevo, marcar);
-      expect(forma(nueva)).withContext(nuevo).toEqual(forma(deHoy));
+    for (const [concepto, , nuevo, marcar] of casos) {
+      const nueva = crearConLaNueva(concepto, nuevo, marcar);
+      expect(forma(nueva)).withContext(nuevo).toEqual(valorDeHoy(HOY));
       expect(Object.keys(nueva.request.body)).toEqual(['concepto', 'precio', 'vendibleProfesor']);
-      deHoy.flush({ id: 1 });
       nueva.flush({ id: 2 });
       fixture.destroy();
     }
@@ -341,26 +326,8 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
     expect(vendible().checked).toBeFalse();
   });
 
-  /** Edita con la pantalla de hoy y con la nueva el mismo producto y devuelve las dos peticiones. */
-  function editarConLasDos(cambios: { concepto?: string; precioHoy?: string; precioNuevo?: string; alternar?: boolean }): [TestRequest, TestRequest] {
-    const hoy = TestBed.createComponent(EditarProductoComponent);
-    hoy.detectChanges();
-    http.expectOne(`${API}/productos/7`).flush(PRODUCTO);
-    hoy.detectChanges();
-    const raizHoy = hoy.nativeElement as HTMLElement;
-    if (cambios.concepto !== undefined) {
-      escribirEn(raizHoy, '#concepto', cambios.concepto);
-    }
-    if (cambios.precioHoy !== undefined) {
-      escribirEn(raizHoy, '#precio', cambios.precioHoy);
-    }
-    if (cambios.alternar) {
-      raizHoy.querySelector<HTMLInputElement>('#vendibleProfesor')!.click();
-    }
-    hoy.detectChanges();
-    hoy.componentInstance.onSubmit();
-    const deHoy = http.expectOne(`${API}/productos/7`);
-
+  /** Edita el producto con la pantalla nueva y devuelve la petición (la de hoy, grabada en `HOY`). */
+  function editarConLaNueva(cambios: { concepto?: string; precioHoy?: string; precioNuevo?: string; alternar?: boolean }): TestRequest {
     editar();
     if (cambios.concepto !== undefined) {
       escribir('producto-concepto', cambios.concepto);
@@ -374,9 +341,7 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
     }
     guardar().click();
     fixture.detectChanges();
-    const nueva = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/productos/7`);
-    hoy.destroy();
-    return [deHoy, nueva];
+    return http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/productos/7`);
   }
 
   it('editar: el MISMO PUT /productos/{id} de hoy, campo a campo, sin tocar nada y cambiando cada campo', () => {
@@ -390,11 +355,9 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
     ];
     for (const cambios of casos) {
       idRuta = '7';
-      const [deHoy, nueva] = editarConLasDos(cambios);
-      expect(deHoy.request.method).toBe('PUT');
-      expect(forma(nueva)).withContext(JSON.stringify(cambios)).toEqual(forma(deHoy));
+      const nueva = editarConLaNueva(cambios);
+      expect(forma(nueva)).withContext(JSON.stringify(cambios)).toEqual(valorDeHoy(HOY));
       expect(Object.keys(nueva.request.body)).toEqual(['concepto', 'precio', 'vendibleProfesor']);
-      deHoy.flush({});
       nueva.flush({});
       fixture.destroy();
     }

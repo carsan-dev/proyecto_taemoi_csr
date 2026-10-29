@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, DoCheck, Input, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import type { EditarAlumnoComponent } from '../../../componentes/endpoints/editar-alumno/editar-alumno.component';
+import type { FichaAlumnoBase } from '../ficha-alumno-base';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { CampoDialogo } from '../../dialogo/dialogo.component';
 import { PanelLateralComponent } from '../../panel-lateral/panel-lateral.component';
@@ -25,7 +25,7 @@ import { MAX_PASTILLAS } from './dialogos-ficha-panel';
 export class DialogosAlumnoPanelComponent implements DoCheck {
   private readonly confirmacion = inject(ConfirmacionService);
 
-  @Input({ required: true }) ficha!: EditarAlumnoComponent;
+  @Input({ required: true }) ficha!: FichaAlumnoBase;
 
   /** El diálogo de «Actualizar grado» está abierto (se abre cuando la ficha pone su bandera). */
   private gradoAbierto = false;

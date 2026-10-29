@@ -12,8 +12,8 @@ import { pintarCapas } from '../capas/tokens-prueba';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
-import { DIALOGOS_FICHA, DIALOGOS_SWEETALERT } from '../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
+import { DIALOGOS_FICHA, DIALOGOS_SWEETALERT } from './dialogos-ficha.port';
+import { FichaAlumnoBase } from './ficha-alumno-base';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { ReciboPagoService } from '../cobro/recibo-pago.service';
@@ -27,6 +27,21 @@ import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { DialogosFichaPanel } from './dialogos/dialogos-ficha-panel';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
+
+/**
+ * Referencia de «lo de hoy» para las pruebas de paridad: la lógica de la ficha (`FichaAlumnoBase`) con el puerto de
+ * diálogos por defecto (SweetAlert2), sin la plantilla del panel. La plantilla de hoy se retiró en 8b-Z (decisión 333);
+ * aquí solo quedan los dos selectores de archivo que usan las pruebas de foto y documentos, con sus mismos enlaces.
+ */
+@Component({
+  selector: 'app-ficha-base-prueba',
+  standalone: true,
+  template: `
+    <input #inputFile type="file" id="inputFile" (change)="onFileSelected($event)" accept="image/*" />
+    <input type="file" id="docFile" (change)="onDocumentoSelected($event)" />
+  `,
+})
+class FichaBasePrueba extends FichaAlumnoBase {}
 
 const API = environment.apiUrl;
 const NBSP = '\u00a0';
@@ -312,12 +327,12 @@ async function pestana(m: Montaje<any>, nombre: string): Promise<void> {
  * plantilla) con las mismas respuestas del usuario, y devuelve lo enviado y los diálogos de cada una.
  */
 async function comparar(
-  hoy: (m: Montaje<EditarAlumnoComponent>) => void | Promise<void>,
+  hoy: (m: Montaje<FichaBasePrueba>) => void | Promise<void>,
   nueva: (m: Montaje<FichaAlumnoComponent>) => void | Promise<void>,
   resultados: any[] = [],
   datos: () => Datos = datosPorDefecto
 ): Promise<{ hoy: { escrituras: Escritura[]; swal: unknown[] }; nueva: { escrituras: Escritura[]; swal: unknown[] } }> {
-  const a = await montar(EditarAlumnoComponent, '/alumnosEditar/7', datos());
+  const a = await montar(FichaBasePrueba, '/alumnosEditar/7', datos());
   a.resultados = [...resultados];
   await hoy(a);
   await a.asentar();
@@ -729,7 +744,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
 
   describe('cada acción, igual que hoy (mismo endpoint, cuerpo y diálogos)', () => {
     async function igual(
-      hoy: (m: Montaje<EditarAlumnoComponent>) => void | Promise<void>,
+      hoy: (m: Montaje<FichaBasePrueba>) => void | Promise<void>,
       nueva: (m: Montaje<FichaAlumnoComponent>) => void | Promise<void>,
       resultados: any[],
       esperado: Partial<Escritura>[],
@@ -1433,7 +1448,7 @@ describe('FichaAlumnoComponent: diálogos en el panel nuevo (8b-D2b)', () => {
   });
 
   itSinReloj('la ficha nueva da a sus diálogos el puerto del panel; la de hoy, el de SweetAlert2', async () => {
-    const hoy = await montar(EditarAlumnoComponent);
+    const hoy = await montar(FichaBasePrueba);
     expect(hoy.harness.routeDebugElement!.injector.get(DIALOGOS_FICHA)).toBe(DIALOGOS_SWEETALERT);
     hoy.harness.fixture.destroy();
     const nueva = await montar(FichaAlumnoComponent);

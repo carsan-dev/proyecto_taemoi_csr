@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { CLASE_ERROR_HTTP, CONSULTA_HOJA } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
-import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../estilos-panel.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { SIERRA_PRUEBA } from '../tema-prueba';
@@ -90,7 +90,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     quitarTokens = ponerTokensDePrueba();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva }]),
+        provideRouter([{ path: 'alumnosListar', canMatch: [estilosPanelGuard], component: PantallaNueva }]),
         {
           provide: PermisosSesionService,
           useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },

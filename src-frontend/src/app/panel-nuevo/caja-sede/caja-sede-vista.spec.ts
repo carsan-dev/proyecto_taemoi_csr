@@ -1,14 +1,6 @@
-import {
-  CLAVE_ULTIMA_SEDE as CLAVE_ULTIMA_SEDE_HOY,
-  CajaSedeComponent,
-  construirPeriodos as construirPeriodosHoy,
-} from '../../componentes/endpoints/caja-sede/caja-sede.component';
-import {
-  calcularEntrega,
-  etiquetaTipoMovimiento,
-  formatearEuros,
-  importeConSignoTexto,
-} from '../../componentes/endpoints/caja-sede/caja-calculos';
+import { calcularEntrega, formatearEuros, importeConSignoTexto } from '../../componentes/endpoints/caja-sede/caja-calculos';
+import { valorDeHoy } from '../../testing/oraculo-hoy';
+import { HOY } from './caja-sede-vista.hoy';
 import { CobroCaja, EntregaCaja, MovimientoCaja, MovimientoDeEntrega, PendienteCobrador } from '../../interfaces/caja';
 import {
   CLAVE_ULTIMA_SEDE,
@@ -63,13 +55,7 @@ export const movimientoVista = (cambios: Partial<MovimientoCaja> = {}): Movimien
   fecha: '2026-10-13T08:00:00.000Z', estado: 'ACTIVO', anuladoPorUsuarioId: null, anuladoEn: null, motivoAnulacion: null, ...cambios,
 });
 
-/** La pantalla de hoy sin plantilla ni inyecciones: solo sus reglas (los campos que no van en el prototipo, a mano). */
-function deHoy(esPropietario: boolean): CajaSedeComponent {
-  const hoy = Object.create(CajaSedeComponent.prototype) as CajaSedeComponent & Record<string, unknown>;
-  Object.assign(hoy, { esPropietario, euros: formatearEuros, importeFirmado: importeConSignoTexto, etiquetaTipo: etiquetaTipoMovimiento });
-  return hoy;
-}
-
+// «De hoy»: lo que daba la pantalla anterior (retirada en 8b-Z), grabado con ella en `HOY` (caja-sede-vista.hoy.ts).
 const IMPORTES = [0, 0.004, 0.005, 0.01, 0.1, 0.105, 1, 1.005, 9.99, 12.345, 45.5, 999.995, 1000, 1240, 12345.6, 1234567.89, -0.01, -1, -1240.5];
 
 describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
@@ -119,16 +105,13 @@ describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
 
   it('el tono de las diferencias del resumen sigue el de hoy (claseDiferenciasResumen) en céntimos', () => {
     for (const d of IMPORTES) {
-      const hoy = deHoy(false);
-      (hoy as any).resumen = { diferenciasEnPeriodo: d };
-      const clase = hoy.claseDiferenciasResumen();
+      const clase = valorDeHoy<string>(HOY);
       const tono = cifrasResumen({ sedeId: 1, desde: '', hasta: '', pendienteDeEntregar: 0, recibidoEnPeriodo: 0, diferenciasEnPeriodo: d, saldoCaja: 0 }, '')[3].tono;
       expect(tono).withContext(String(d)).toBe(clase === 'valor-negativo' ? 'peligro' : clase === 'valor-positivo' ? 'bien' : null);
     }
   });
 
   it('la diferencia de cada entrega: la de hoy (descontando la devolución activa) con «cuadra», «falta» y «sobra»', () => {
-    const hoy = deHoy(false);
     const casos: EntregaCaja[] = [
       entregaVista(),
       entregaVista({ diferencia: 0 }),
@@ -142,16 +125,15 @@ describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
     ];
     for (const e of casos) {
       const d = diferenciaVista(e);
-      expect(d).withContext(JSON.stringify(e.movimientosDeCobro)).toBe(hoy.diferenciaVista(e));
-      expect(plano(cuadre(d).texto)).toBe(plano(hoy.textoDiferencia(d)));
-      const clase = hoy.claseDiferencia(d);
+      expect(d).withContext(JSON.stringify(e.movimientosDeCobro)).toBe(valorDeHoy(HOY));
+      expect(plano(cuadre(d).texto)).toBe(plano(valorDeHoy(HOY)));
+      const clase = valorDeHoy<string>(HOY);
       expect(cuadre(d).estado).toBe(clase === 'chip-cuadra' ? 'cuadra' : clase === 'chip-falta' ? 'falta' : 'sobra');
     }
     expect(plano(cuadre(-1).texto)).toBe('falta 1,00 €');
   });
 
   it('las correcciones de una entrega, con el texto de hoy', () => {
-    const hoy = deHoy(false);
     const movs: MovimientoDeEntrega[] = [
       { id: 1, tipo: 'ERROR', importe: 12, cobroId: 9, estado: 'ACTIVO' },
       { id: 2, tipo: 'DEVOLUCION', importe: -25, cobroId: 10, estado: 'ACTIVO' },
@@ -159,7 +141,7 @@ describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
       { id: 4, tipo: 'OTRO', importe: -3.5, cobroId: null, estado: 'ACTIVO' },
     ];
     for (const m of movs) {
-      expect(plano(textoMovimientoDeCobro(m))).toBe(plano(hoy.textoMovimientoDeCobro(m)));
+      expect(plano(textoMovimientoDeCobro(m))).toBe(plano(valorDeHoy(HOY)));
     }
     expect(plano(textoMovimientoDeCobro(movs[0]))).toBe('Cobro deshecho +12,00 €');
   });
@@ -183,17 +165,16 @@ describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
   it('anular frente a pedir anular, por rol y estado: la tabla de hoy en todos los casos', () => {
     let casos = 0;
     for (const propietario of [true, false]) {
-      const hoy = deHoy(propietario);
       for (const estado of ['ACTIVA', 'ANULADA'] as const) {
         const e = entregaVista({ estado });
-        const esperada = hoy.puedeAnularEntrega(e) ? 'anular' : hoy.puedePedirAnularEntrega(e) ? 'pedir' : null;
+        const esperada = valorDeHoy(HOY);
         expect(accionEntrega(e, propietario)).withContext(`${propietario} ${estado}`).toBe(esperada);
         casos++;
       }
       for (const estado of ['ACTIVO', 'ANULADO'] as const) {
         for (const entregaCajaId of [null, 7]) {
           const m = movimientoVista({ estado, entregaCajaId });
-          const esperada = hoy.puedeAnularMovimiento(m) ? 'anular' : hoy.puedePedirAnularMovimiento(m) ? 'pedir' : null;
+          const esperada = valorDeHoy(HOY);
           expect(accionMovimiento(m, propietario)).withContext(`${propietario} ${estado} ${entregaCajaId}`).toBe(esperada);
           casos++;
         }
@@ -225,27 +206,17 @@ describe('Caja de sede del panel nuevo: vista pura (8b-3j)', () => {
 
   it('periodos y clave de la última sede: los de hoy', () => {
     for (const fecha of [new Date(2026, 0, 15), new Date(2026, 9, 31), new Date(2024, 1, 29)]) {
-      expect(construirPeriodos(fecha)).toEqual(construirPeriodosHoy(fecha));
+      expect(construirPeriodos(fecha)).toEqual(valorDeHoy(HOY));
     }
     expect(construirPeriodos(new Date(2026, 0, 15), 3).map((p) => p.etiqueta)).toEqual(['Enero 2026', 'Diciembre 2025', 'Noviembre 2025']);
-    expect(CLAVE_ULTIMA_SEDE).toBe(CLAVE_ULTIMA_SEDE_HOY);
+    expect(CLAVE_ULTIMA_SEDE).toBe(valorDeHoy(HOY));
   });
 
   it('confirmaciones: los textos de anular de hoy', () => {
-    const hoy = deHoy(true);
-    const swal = { textos: [] as string[] };
-    (hoy as any).pedirMotivo = (_t: string, texto: string) => {
-      swal.textos.push(texto);
-      return Promise.resolve(null);
-    };
-    (hoy as any).puedeAnularEntrega = () => true;
-    (hoy as any).puedeAnularMovimiento = () => true;
     const e = entregaVista({ entregadoPorNombre: null, importeContado: 1240 });
     const m = movimientoVista({ tipo: 'FALTANTE', importe: -1 });
-    hoy.anularEntrega(e);
-    hoy.anularMovimiento(m);
-    expect(plano(mensajeAnularEntrega(e))).toBe(plano(swal.textos[0]));
-    expect(plano(mensajeAnularMovimiento(m))).toBe(plano(swal.textos[1]));
+    expect(plano(mensajeAnularEntrega(e))).toBe(plano(valorDeHoy(HOY)));
+    expect(plano(mensajeAnularMovimiento(m))).toBe(plano(valorDeHoy(HOY)));
   });
 
   it('pedir anulación: los datos de hoy (fecha en es-ES)', () => {

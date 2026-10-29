@@ -59,7 +59,7 @@ const SUBTITULO = 'Control de deudas, pagos pendientes y estado mensual por depo
  * cambiar fecha de pago y revertir o pedir revertir, y «Exportar» en un menú. Las MISMAS peticiones que la pantalla de
  * hoy (`TesoreriaCobrosComponent`): parámetros, cuerpos, nombres de archivo y regla del rol; con el diálogo, los avisos,
  * el panel lateral, el visor de PDF y los estados de carga del panel nuevo, sin SweetAlert2 ni cargador global. Va en su
- * propio chunk detrás de `disenoNuevoGuard`: con el interruptor apagado sigue la pantalla de hoy.
+ * propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-tesoreria',

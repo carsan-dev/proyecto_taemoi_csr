@@ -29,6 +29,14 @@ async function preparar(page: Page) {
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/roles')) { await route.fulfill({ json: ['ROLE_ADMIN'] }); }
+    else if (url.pathname.endsWith('/escuela/marca')) {
+      await route.fulfill({ json: {
+        nombre: 'Escuela E2E', logo: 'NINGUNO', logoVersion: null,
+        tema: { primario: '#1A2230', sobrePrimario: '#FFFFFF', sobrePrimario2: '#C6CACB',
+          primarioTinta: '#1A2230', primarioSuave: '#E8EAEA', ajustado: false },
+      } });
+    }
+    else if (url.pathname.endsWith('/permisos')) { await route.fulfill({ json: { roles: ['PROPIETARIO'], capacidades: [], esAdminPlataforma: false } }); }
     else if (url.pathname.endsWith('/user')) { await route.fulfill({ json: { id: 1, nombre: 'Admin', email: 'admin@example.test', roles: ['ROLE_ADMIN'] } }); }
     else if (url.pathname.endsWith('/temporadas')) { await route.fulfill({ json: ['2026/2027'] }); }
     else if (url.pathname.includes('/informes/')) {
@@ -38,32 +46,37 @@ async function preparar(page: Page) {
     else { await route.fulfill({ json: [] }); }
   });
   await page.goto('/alumnosListar');
-  await expect(page.getByRole('heading', { name: 'Gestión de Alumnos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Alumnos', exact: true })).toBeVisible();
   return requests;
 }
 
+async function abrirGenerador(page: Page) {
+  await page.getByRole('button', { name: 'Informes', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Generar informe…' }).click();
+  return page.getByRole('dialog', { name: 'Generar informe', exact: true });
+}
+
 async function abrirInforme(page: Page) {
-  await page.getByRole('button', { name: 'Generar informe de alumnos' }).click();
-  await page.getByText('Informe de Alumnos por Grado General', { exact: true }).click();
-  const trigger = page.locator('app-informe-modal').getByRole('button', { name: 'Ver PDF', exact: true });
+  const panel = await abrirGenerador(page);
+  const fila = panel.getByRole('listitem').filter({ hasText: 'Informe de Alumnos por Grado General' });
+  const trigger = fila.getByRole('button', { name: 'Ver PDF', exact: true });
   await trigger.click();
-  const dialog = page.locator('app-informe-pdf-modal dialog');
+  const dialog = page.locator('pn-visor-pdf').getByRole('dialog');
   await expect(dialog).toBeVisible();
   return { dialog, trigger };
 }
 
 test('listados de alumnos: DPF respeta filtro, vista previa y descarga', async ({ page }) => {
   const requests = await preparar(page);
-  await page.getByRole('button', { name: 'Generar informe de alumnos' }).click();
-  const modal = page.locator('app-informe-modal');
-  const lists = modal.locator('.informe-category').filter({ hasText: 'Listados de Alumnos' });
-  await expect(lists.locator('.informe-option')).toHaveCount(5);
+  const modal = await abrirGenerador(page);
+  const lists = modal.getByRole('region', { name: /Listados de Alumnos/ });
+  await expect(lists.getByRole('listitem')).toHaveCount(5);
   await expect(lists).toContainText('Competidores activos de Taekwondo y Kickboxing');
   await expect(lists).toContainText('nombres y apellidos');
-  await lists.getByText('Informe de Alumnas de D.P.F', { exact: true }).click();
+  const dpf = lists.getByRole('listitem').filter({ hasText: 'Informe de Alumnas de D.P.F' });
   await modal.getByLabel('Solo alumnos activos').uncheck();
-  await modal.getByRole('button', { name: 'Ver PDF', exact: true }).click();
-  const dialog = page.locator('app-informe-pdf-modal dialog');
+  await dpf.getByRole('button', { name: 'Ver PDF', exact: true }).click();
+  const dialog = page.locator('pn-visor-pdf').getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('.pdf-canvas-loading')).toHaveCount(0);
   expect(requests).toEqual(['/api/informes/alumnas-dpf?soloActivos=false']);
@@ -74,14 +87,14 @@ test('listados de alumnos: DPF respeta filtro, vista previa y descarga', async (
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await modal.getByLabel('Solo alumnos activos').check();
   const directDownload = page.waitForEvent('download');
-  await modal.getByRole('button', { name: 'Descargar PDF', exact: true }).click();
+  await dpf.getByRole('button', { name: 'Descargar PDF', exact: true }).click();
   expect((await directDownload).suggestedFilename()).toBe('informe_alumnas_dpf.pdf');
   expect(requests).toEqual([
     '/api/informes/alumnas-dpf?soloActivos=false', '/api/informes/alumnas-dpf?soloActivos=true'
   ]);
 });
 
-test('PDF real: ver, navegar, zoom, expansión, teclado, descargar sin regenerar y restaurar foco/scroll', async ({ page }, testInfo) => {
+test('PDF real: ver, navegar, zoom, teclado, descargar sin regenerar y restaurar foco/scroll', async ({ page }, testInfo) => {
   const requests = await preparar(page);
   let downloads = 0; page.on('download', () => downloads++);
   const { dialog, trigger } = await abrirInforme(page);
@@ -97,10 +110,6 @@ test('PDF real: ver, navegar, zoom, expansión, teclado, descargar sin regenerar
   await expect(dialog.locator('.pdf-canvas-zoom')).toHaveText('115%');
   await expect(dialog.locator('.pdf-canvas-loading')).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('visor.png'), fullPage: true });
-  await dialog.getByRole('button', { name: /Expandir/ }).click();
-  await expect(dialog.locator('.is-expanded')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(dialog.locator('.is-expanded')).toHaveCount(0); await expect(dialog).toBeVisible();
   // Native modal contains keyboard focus even after repeated tab cycles.
   for (let n = 0; n < 14; n++) {
     await page.keyboard.press('Tab');
@@ -112,8 +121,8 @@ test('PDF real: ver, navegar, zoom, expansión, teclado, descargar sin regenerar
   expect(requests).toHaveLength(1);
   await page.keyboard.press('Escape'); await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  await page.locator('app-informe-modal').getByRole('button', { name: 'Cancelar', exact: true }).click();
-  await expect(page.locator('app-informe-modal')).toHaveCount(0);
+  await page.getByRole('dialog', { name: 'Generar informe', exact: true }).getByRole('button', { name: 'Cerrar', exact: true }).first().click();
+  await expect(page.locator('pn-generar-informe')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => document.body.style.position)).not.toBe('fixed');
 });
 
@@ -137,16 +146,19 @@ test('asistencia múltiple: fallos parciales, selector, descarga visible y scrol
       ? route.fulfill({ status: 500, json: { mensaje: 'Error de prueba' } })
       : route.fulfill({ contentType: 'application/pdf', body: pdfFixture() });
   });
-  const section = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Listado de Asistencia' }) });
-  await section.locator('summary').click();
-  await section.locator('#mesAnoAsis-ano').selectOption('2026');
-  await section.locator('#mesAnoAsis').selectOption('09');
-  for (const dia of ['viernes', 'lunes', 'martes']) { await section.locator('.dia-chip').filter({ hasText: new RegExp(dia, 'i') }).click(); }
+  await page.getByRole('button', { name: 'Informes', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Listado de asistencia', exact: true }).click();
+  const section = page.getByRole('dialog', { name: 'Listado de asistencia', exact: true });
+  await section.getByLabel('Año', { exact: true }).selectOption('2026');
+  await section.getByLabel('Mes', { exact: true }).selectOption('09');
+  for (const dia of ['Viernes', 'Lunes', 'Martes']) { await section.getByRole('checkbox', { name: dia, exact: true }).check(); }
   const trigger = section.getByRole('button', { name: /Ver PDF/ });
   await trigger.scrollIntoViewIfNeeded();
   const scroll = await page.evaluate(() => window.scrollY);
+  const panelBody = section.locator('.pn-panel__cuerpo');
+  const panelScroll = await panelBody.evaluate(element => element.scrollTop);
   await trigger.click();
-  const dialog = page.locator('app-informe-pdf-modal dialog');
+  const dialog = page.locator('pn-visor-pdf').getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('alert')).toContainText('lunes');
   await expect(dialog.locator('option')).toHaveText(['Asistencia viernes — 2026-09', 'Asistencia martes — 2026-09']);
@@ -162,4 +174,15 @@ test('asistencia múltiple: fallos parciales, selector, descarga visible y scrol
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(scroll, 0);
+  await expect.poll(() => panelBody.evaluate(element => element.scrollTop)).toBeCloseTo(panelScroll, 0);
+});
+
+// The new viewer sets permitirExpandir=false; expansion has no equivalent in this panel.
+test.skip('PDF real: expandir y Escape vuelve al visor sin cerrarlo', async ({ page }) => {
+  await preparar(page);
+  const { dialog } = await abrirInforme(page);
+  await dialog.getByRole('button', { name: /Expandir/ }).click();
+  await expect(dialog.locator('.is-expanded')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog.locator('.is-expanded')).toHaveCount(0); await expect(dialog).toBeVisible();
 });

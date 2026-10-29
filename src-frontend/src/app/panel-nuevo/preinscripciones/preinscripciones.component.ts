@@ -76,7 +76,7 @@ interface Editor {
  * las escrituras), con el diálogo, los avisos y los estados de carga del panel nuevo. La selección vive en el estado del
  * componente: ningún dato personal va a la URL ni al almacenamiento del navegador; la firma se pide con la sesión y se
  * enseña con una URL `blob:` en memoria que se libera al cambiar de solicitud. Plantillas PDF usa el editor del panel.
- * Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * Va en su propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-preinscripciones-panel',
