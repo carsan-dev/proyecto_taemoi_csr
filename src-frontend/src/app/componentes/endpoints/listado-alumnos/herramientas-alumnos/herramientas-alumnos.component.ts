@@ -43,6 +43,11 @@ export class HerramientasAlumnosComponent implements OnChanges {
   /** Los del listado: con ellos cambia la lista de alumnos seleccionables, como hoy. */
   @Input() mostrarInactivos = false;
   @Input() aptoParaExamen = false;
+  /**
+   * Solo el listado nuevo lo pasa («Activos | Inactivos | Todos»): acota los alumnos seleccionables a ese estado.
+   * Por defecto `null`: sin acotar, exactamente lo de siempre (la pantalla de hoy no lo pasa).
+   */
+  @Input() estadoAlumnos: 'activos' | 'inactivos' | 'todos' | null = null;
   @Output() readonly asignado = new EventEmitter<void>();
 
   alumnosSeleccionables: any[] = [];
@@ -93,7 +98,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
   }
 
   ngOnChanges(cambios: SimpleChanges): void {
-    const cambio = cambios['mostrarInactivos'] ?? cambios['aptoParaExamen'];
+    const cambio = cambios['mostrarInactivos'] ?? cambios['aptoParaExamen'] ?? cambios['estadoAlumnos'];
     if (cambio && !cambio.firstChange) {
       this.refrescarAlumnosSeleccionablesSiNecesario();
     }
@@ -133,13 +138,24 @@ export class HerramientasAlumnosComponent implements OnChanges {
       .pipe(finalize(() => (this.cargandoAlumnosSeleccionables = false)))
       .subscribe({
         next: (response) => {
-          this.alumnosSeleccionables = response;
+          this.alumnosSeleccionables = this.acotarPorEstado(response);
           this.alumnosSeleccionablesCargados = true;
         },
         error: () => {
           this.alertarError('No se pudo cargar la lista completa de alumnos.');
         },
       });
+  }
+
+  /** `GET /alumnos?incluirInactivos=true` trae activos e inactivos: con «Activos» o «Inactivos» se queda con ese estado (`activo` del alumno). */
+  private acotarPorEstado(alumnos: any[]): any[] {
+    if (this.estadoAlumnos === 'activos') {
+      return alumnos.filter((a) => a?.activo !== false);
+    }
+    if (this.estadoAlumnos === 'inactivos') {
+      return alumnos.filter((a) => a?.activo === false);
+    }
+    return alumnos;
   }
 
   private refrescarAlumnosSeleccionablesSiNecesario(): void {
