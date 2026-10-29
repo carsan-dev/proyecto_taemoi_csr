@@ -14,7 +14,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.taemoi.project.dtos.response.DisenoPanelDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO.Capacidad;
 import com.taemoi.project.entities.Alumno;
@@ -46,8 +45,6 @@ import com.taemoi.project.repositories.UsuarioAlumnoRepository;
  * {@code COUNT}). {@code tieneGrupos}: {@code alcance.grupos()} no vacío.</li>
  * <li>Sesión solo-plataforma (ninguna autoridad de escuela): roles, sedes y capacidades vacíos y sin consultar la
  * escuela.</li>
- * <li>{@code disenoNuevo} (pieza 8b-I): con gestión (ROLE_ADMIN o ROLE_MANAGER) fuera de la sesión solo-profesor, el de
- * {@link DisenoPanelService#estadoPropio} (dos consultas pequeñas más); el resto, apagado sin consultar.</li>
  * <li>{@code nombreVisible} (pieza 8b-T): «Nombre A.» de la cuenta de la sesión, sin consulta ni registro.</li>
  * <li>{@code cumpleanos} (pieza 8b-M2): hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno con relación
  * {@code PROPIO} de la cuenta, en la organización de la sesión; sin ficha, anonimizada o sin fecha, false. Solo el
@@ -60,16 +57,14 @@ public class PermisosSesionService {
 
 	private final AlcanceActual alcanceActual;
 	private final SedeRepository sedes;
-	private final DisenoPanelService diseno;
 	private final UsuarioAlumnoRepository usuarioAlumnos;
 	private final AlumnoRepository alumnos;
 	private final Clock reloj;
 
-	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes, DisenoPanelService diseno,
+	public PermisosSesionService(AlcanceActual alcanceActual, SedeRepository sedes,
 			UsuarioAlumnoRepository usuarioAlumnos, AlumnoRepository alumnos, Clock reloj) {
 		this.alcanceActual = alcanceActual;
 		this.sedes = sedes;
-		this.diseno = diseno;
 		this.usuarioAlumnos = usuarioAlumnos;
 		this.alumnos = alumnos;
 		this.reloj = reloj;
@@ -82,7 +77,7 @@ public class PermisosSesionService {
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
-					DisenoPanelDTO.Propio.APAGADO, nombreVisible(autenticacion), false);
+					nombreVisible(autenticacion), false);
 		}
 		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -99,14 +94,9 @@ public class PermisosSesionService {
 					: List.of();
 			activas = sedes.countByActivaTrue();
 		}
-		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
-		// Gestión: su interruptor. Solo-profesor: sigue el valor «para todo el equipo» sin interruptor (decisión 326).
-		DisenoPanelDTO.Propio disenoNuevo = soloProfesor
-				? diseno.estadoProfesor(CobroService.usuarioActualId())
-				: gestion ? diseno.estadoPropio(CobroService.usuarioActualId()) : DisenoPanelDTO.Propio.APAGADO;
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
-				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos), disenoNuevo,
+				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos),
 				nombreVisible(autenticacion), cumpleanos(CobroService.usuarioActualId(), TenantContext.get()));
 	}
 

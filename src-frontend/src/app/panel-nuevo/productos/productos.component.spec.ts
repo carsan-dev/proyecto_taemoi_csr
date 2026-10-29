@@ -176,7 +176,7 @@ describe('ProductosComponent (8b-3g, listado de Productos del panel nuevo, P2 ag
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

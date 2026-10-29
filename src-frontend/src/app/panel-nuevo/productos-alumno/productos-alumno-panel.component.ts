@@ -19,7 +19,7 @@ import { ConCambiosSinGuardar } from './salir-sin-guardar.guard';
 import { TEXTOS_PRODUCTOS_ALUMNO, etiquetaProducto, leerPrecio, precioParaCampo } from './productos-alumno-vista';
 
 /**
- * «Productos y cargos» de un alumno (8b-3n) en `/alumnos/:id/productos`, con el interruptor del diseño nuevo. Toda la
+ * «Productos y cargos» de un alumno (8b-3n) en `/alumnos/:id/productos`. Toda la
  * lógica está en `ProductosAlumnoEstado` (`estado`), uno por pantalla. Esta capa solo gestiona la vista P1.
  */
 @Component({

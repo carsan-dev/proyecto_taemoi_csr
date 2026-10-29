@@ -170,7 +170,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
           useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, obtenerRoles: () => of([]) },
         },
         { provide: EndpointsService, useValue: { obtenerTodosLosAlumnosSinPaginar: alumnos } },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

@@ -171,7 +171,7 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         {
           provide: CatalogoService,

@@ -128,8 +128,6 @@ describe('menu-panel: nada se pierde (decisión 232)', () => {
     for (const ruta of ['/mi-caja', '/mis-grupos', '/auditoriaSistema', '/configuracion-sistema']) {
       expect(rutas).withContext(ruta).toContain(ruta);
     }
-    // 8b-Z: «Diseño nuevo» salió del menú de cuenta.
-    expect(rutas).not.toContain('/panel/diseno-nuevo');
   });
 
   it('sin contexto (todo falso) no sale nada condicionado', () => {
@@ -139,7 +137,6 @@ describe('menu-panel: nada se pierde (decisión 232)', () => {
       '/mis-grupos',
       '/auditoriaSistema',
       '/configuracion-sistema',
-      '/panel/diseno-nuevo',
       '/plataformaErrores',
       '/plataformaLogos',
     ]) {

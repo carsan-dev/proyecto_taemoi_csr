@@ -21,7 +21,7 @@ class BotonscrollFalsoComponent {}
 @Component({ standalone: true, template: '' })
 class PantallaFalsaComponent {}
 
-function permisos(activo: boolean, roles: string[] = ['PROPIETARIO', 'PROFESOR']): PermisosSesion {
+function permisos(roles: string[] = ['PROPIETARIO', 'PROFESOR']): PermisosSesion {
   return {
     roles,
     esAdminPlataforma: false,
@@ -29,15 +29,13 @@ function permisos(activo: boolean, roles: string[] = ['PROPIETARIO', 'PROFESOR']
     variasSedes: false,
     tieneGrupos: false,
     capacidades: [],
-    disenoNuevo: { activo, permitido: activo },
   };
 }
 
 /**
  * Cabecera del panel nuevo en `skeleton` (8b-N, fase3-e8b-plan.md §3 «Cabecera» y §8). Desde 8b-Z sin interruptor: una
  * sesión de gestión o de profesor en una ruta del panel ve la cabecera nueva (`@defer`) y sin pie; con error de permisos,
- * sin la hoja, una sesión de familia o en las rutas públicas y de familia, la cabecera y el pie de hoy. El campo
- * `disenoNuevo` de los permisos ya no cuenta (la API lo sigue mandando hasta la contracción).
+ * sin la hoja, una sesión de familia o en las rutas públicas y de familia, la cabecera y el pie de hoy.
  */
 describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   let obtener: jasmine.Spy<() => Observable<PermisosSesion>>;
@@ -98,8 +96,8 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
   }
 
-  itSinReloj('8b-Z: gestión con el interruptor apagado en sus permisos: la cabecera nueva igualmente', async () => {
-    obtener.and.returnValue(of(permisos(false)));
+  itSinReloj('gestión en una ruta del panel: la cabecera nueva', async () => {
+    obtener.and.returnValue(of(permisos()));
     esperarNuevo(await montar('/adminpage'));
     expect(cargarHoja).toHaveBeenCalledTimes(1);
   });
@@ -109,22 +107,15 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     esperarHoy(await montar('/alumnosListar'));
   });
 
-  itSinReloj('8b-Z: sin el campo disenoNuevo: la cabecera nueva', async () => {
-    const p = permisos(true);
-    delete (p as Partial<PermisosSesion>).disenoNuevo;
-    obtener.and.returnValue(of(p));
-    esperarNuevo(await montar('/adminpage'));
-  });
-
   itSinReloj('encendido pero la hoja panel-nuevo.css no carga: lo de hoy', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     cargarHoja.and.rejectWith(new Error('hoja'));
     esperarHoy(await montar('/adminpage'));
   });
 
   for (const ruta of ['/mi-caja', '/mis-grupos', '/mis-grupos/4']) {
     itSinReloj(`encendido en la sesión solo-profesor (decisión 326, R6): marco nuevo en ${ruta}`, async () => {
-      obtener.and.returnValue(of(permisos(true, ['PROFESOR'])));
+      obtener.and.returnValue(of(permisos(['PROFESOR'])));
       const raiz = await montar(ruta);
       expect(cabeceraDeHoy(raiz)).toBeNull();
       expect(pie(raiz)).toBeNull();
@@ -133,35 +124,35 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     });
   }
 
-  itSinReloj('8b-Z (decisión 332): profesor con el interruptor apagado en sus permisos: el marco nuevo', async () => {
-    obtener.and.returnValue(of(permisos(false, ['PROFESOR'])));
+  itSinReloj('profesor en una ruta del panel: el marco nuevo', async () => {
+    obtener.and.returnValue(of(permisos(['PROFESOR'])));
     esperarNuevo(await montar('/mis-grupos'));
   });
 
   itSinReloj('sesión de plataforma sin membresía de gestión ni de profesor: lo de hoy en sus pantallas', async () => {
-    obtener.and.returnValue(of(permisos(true, [])));
+    obtener.and.returnValue(of(permisos([])));
     esperarHoy(await montar('/plataformaErrores'));
   });
 
-  itSinReloj('solo familia: ni siquiera un interruptor activo abre el marco nuevo', async () => {
-    obtener.and.returnValue(of(permisos(true, ['FAMILIA'])));
+  itSinReloj('solo familia: no abre el marco nuevo', async () => {
+    obtener.and.returnValue(of(permisos(['FAMILIA'])));
     esperarHoy(await montar('/mi-caja'));
     expect(cargarHoja).not.toHaveBeenCalled();
   });
 
   itSinReloj('encendido en una ruta pública: la cabecera y el pie de hoy, sin pedir permisos', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     esperarHoy(await montar('/'));
     expect(obtener).not.toHaveBeenCalled();
   });
 
   itSinReloj('encendido en una ruta de familia (/userpage): la cabecera y el pie de hoy', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     esperarHoy(await montar('/userpage'));
   });
 
   itSinReloj('encendido en gestión: la cabecera nueva en @defer, raíz del panel y sin pie', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     const raiz = await montar('/adminpage');
 
     expect(cabeceraDeHoy(raiz)).toBeNull();
@@ -175,11 +166,11 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   });
 
   itSinReloj('el botón «volver arriba» solo con el diseño de hoy: encendido en gestión no está (taparía la barra inferior)', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     const nuevo = await montar('/adminpage');
     expect(nuevo.querySelector('app-botonscroll')).toBeNull();
     TestBed.resetTestingModule();
-    obtener.and.returnValue(of(permisos(true, ['FAMILIA'])));
+    obtener.and.returnValue(of(permisos(['FAMILIA'])));
     const hoy = await montar('/adminpage');
     expect(hoy.querySelector('app-botonscroll')).not.toBeNull();
   });
@@ -201,13 +192,13 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
 
   itSinReloj('con el recordatorio y una sesión que no es del panel (familia): lo de hoy, y se borra el recordatorio', async () => {
     localStorage.setItem(RECORDATORIO_PANEL, '1');
-    obtener.and.returnValue(of(permisos(true, ['FAMILIA'])));
+    obtener.and.returnValue(of(permisos(['FAMILIA'])));
     esperarHoy(await montar('/adminpage'));
     expect(localStorage.getItem(RECORDATORIO_PANEL)).toBeNull();
   });
 
   itSinReloj('sesión del panel: se guarda el recordatorio (un booleano global, sin cuenta)', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     await montar('/adminpage');
     expect(localStorage.getItem(RECORDATORIO_PANEL)).toBe('1');
   });
@@ -225,7 +216,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
       spyOn(Storage.prototype, 'setItem').and.throwError('bloqueado'),
       spyOn(Storage.prototype, 'removeItem').and.throwError('bloqueado'),
     ];
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     const raiz = await montar('/adminpage');
     expect(cabeceraDeHoy(raiz)).toBeNull();
     expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
@@ -238,7 +229,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   });
 
   itSinReloj('al cerrar sesión se borra el recordatorio y vuelve lo de hoy', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     const raiz = await montar('/adminpage');
     expect(localStorage.getItem(RECORDATORIO_PANEL)).toBe('1');
 
@@ -251,12 +242,12 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   });
 
   itSinReloj('se vuelve a leer al navegar a una ruta del panel (tras reiniciar los permisos)', async () => {
-    obtener.and.returnValue(of(permisos(true, ['FAMILIA'])));
+    obtener.and.returnValue(of(permisos(['FAMILIA'])));
     const raiz = await montar('/adminpage');
     esperarHoy(raiz);
 
-    obtener.and.returnValue(of(permisos(true)));
-    await TestBed.inject(Router).navigateByUrl('/panel/diseno-nuevo');
+    obtener.and.returnValue(of(permisos()));
+    await TestBed.inject(Router).navigateByUrl('/alumnosListar');
     await (raiz as any).fixture.whenStable();
     raiz.detectar();
 
@@ -265,7 +256,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   });
 
   itSinReloj('gestión: al pasar a una ruta pública vuelve lo de hoy, y al volver, lo nuevo', async () => {
-    obtener.and.returnValue(of(permisos(true)));
+    obtener.and.returnValue(of(permisos()));
     const raiz = await montar('/adminpage');
     const router = TestBed.inject(Router);
 
@@ -373,7 +364,7 @@ describe('esRutaConocida', () => {
 
 describe('esRutaDelPanel', () => {
   it('las rutas de gestión y las del panel sin portal de gestión', () => {
-    for (const ruta of ['/adminpage', '/alumnosListar', '/mi-caja', '/mis-grupos', '/mis-grupos/4', '/plataformaErrores', '/plataformaLogos', '/panel/diseno-nuevo']) {
+    for (const ruta of ['/adminpage', '/alumnosListar', '/mi-caja', '/mis-grupos', '/mis-grupos/4', '/plataformaErrores', '/plataformaLogos']) {
       expect(esRutaDelPanel(ruta)).withContext(ruta).toBeTrue();
     }
   });

@@ -9,7 +9,7 @@ import { DialogoComponent, OpcionesConfirmacion, ResultadoConfirmacion } from '.
  * Confirmaciones del panel nuevo (8b-D1, decisión 269): sustituye a SweetAlert2 en las pantallas nuevas. Pinta un
  * `DialogoComponent` en el `body` (con su raíz `.pn`), lo abre como modal y resuelve con `{confirmado, valor}` al
  * cerrarse: Esc, el clic fuera, la X y «Cancelar» dan `confirmado: false` y no hacen nada. Al cerrar, el foco vuelve a
- * quien lo abrió. Vive en los chunks del panel nuevo: con el interruptor apagado nadie lo carga.
+ * quien lo abrió. Vive en los chunks del panel nuevo.
  */
 @Injectable({ providedIn: 'root' })
 export class ConfirmacionService {

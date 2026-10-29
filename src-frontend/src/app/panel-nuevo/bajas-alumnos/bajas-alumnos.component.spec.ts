@@ -114,7 +114,7 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: AuthenticationService, useValue: {} },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

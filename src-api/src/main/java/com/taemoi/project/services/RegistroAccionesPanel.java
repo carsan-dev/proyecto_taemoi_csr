@@ -23,7 +23,10 @@ public class RegistroAccionesPanel {
 
 	public static final String MODULO = "panel";
 
-	/** Tipo de acción registrada ({@code sinCambios=SI} si no cambió nada). */
+	/**
+	 * Tipo de acción registrada ({@code sinCambios=SI} si no cambió nada). Solo histórico (interruptor retirado en
+	 * V31_13): nada las registra ya; los nombres quedan como referencia de las filas «PANEL DISENO_*» del registro.
+	 */
 	public enum Accion {
 		/** El propietario da el permiso ({@code usuario=#id}). */
 		DISENO_PERMITIR,

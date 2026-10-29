@@ -140,7 +140,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void permisos_propietario() throws Exception {
 		JsonNode p = permisos(tPropietario);
 		assertEquals(Set.of("roles", "esAdminPlataforma", "sedes", "variasSedes", "tieneGrupos", "capacidades",
-				"disenoNuevo", "nombreVisible", "cumpleanos"),
+				"nombreVisible", "cumpleanos"),
 				campos(p), "claves del DTO");
 		assertEquals("Usuario P.", p.get("nombreVisible").asText(), "8b-T: nombre e inicial del primer apellido");
 		assertFalse(p.get("cumpleanos").asBoolean(), "8b-M2: sin ficha propia, nunca cumpleaños");

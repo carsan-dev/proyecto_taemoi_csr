@@ -24,8 +24,7 @@ export interface MarcaPanel {
 export const LOGO_LEGADO = 'assets/media/Logo_escuela.svg';
 
 /**
- * Marca de la escuela en el panel nuevo (pieza 8b-T, fase3-e8b-plan.md §4). Vive en el chunk de `panel-nuevo`: con el
- * interruptor apagado nadie la carga ni la pide.
+ * Marca de la escuela en el panel nuevo (pieza 8b-T, fase3-e8b-plan.md §4). Vive en el chunk de `panel-nuevo`.
  *
  * - Una petición por sesión: la respuesta se comparte; un error no se guarda (la siguiente llamada vuelve a pedir) y
  *   cambiar de cuenta (cierre de sesión o entrada de otra) la descarta.

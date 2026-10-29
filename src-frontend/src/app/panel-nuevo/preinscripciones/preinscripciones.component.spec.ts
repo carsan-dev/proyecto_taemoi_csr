@@ -204,7 +204,7 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin } },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

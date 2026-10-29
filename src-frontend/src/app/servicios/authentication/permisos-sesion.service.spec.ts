@@ -83,7 +83,7 @@ describe('pidePermisos: quién pide GET /api/auth/permisos (8b-I)', () => {
     expect(pidePermisos(['ROLE_USER', 'ROLE_PROFESOR'])).toBeTrue();
   });
 
-  it('gestión también pide: ROLE_ADMIN o ROLE_MANAGER (el interruptor del diseño nuevo va en los permisos)', () => {
+  it('gestión también pide: ROLE_ADMIN o ROLE_MANAGER', () => {
     expect(pidePermisos(['ROLE_ADMIN'])).toBeTrue();
     expect(pidePermisos(['ROLE_MANAGER'])).toBeTrue();
     expect(pidePermisos(['ROLE_MANAGER', 'ROLE_USER'])).toBeTrue();
