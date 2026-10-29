@@ -1,7 +1,11 @@
 package com.taemoi.project.controladores;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -33,6 +38,7 @@ import com.taemoi.project.config.MethodSecurityCompatibilityConfig;
 import com.taemoi.project.config.OAuth2AuthenticationSuccessHandler;
 import com.taemoi.project.config.SecurityConfiguration;
 import com.taemoi.project.controllers.PreinscripcionController;
+import com.taemoi.project.dtos.request.FinalizarPreinscripcionRequest;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.entities.EstadoEmailCancelacion;
 import com.taemoi.project.entities.EstadoPreinscripcion;
@@ -275,6 +281,72 @@ class PreinscripcionControllerSecurityWebMvcTest {
 				.andExpect(jsonPath("$.fechaNacimiento[1]").value(4))
 				.andExpect(jsonPath("$.fechaNacimiento[2]").value(12))
 				.andExpect(jsonPath("$.alumnosCoincidentes[0].fechaNacimiento").value(1_397_260_800_000L));
+	}
+
+	@Test
+	void finalizarConCuantiaNegativaDevuelve400SinInvocarElServicio() throws Exception {
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/finalizar")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER"))
+				.contentType(MediaType.APPLICATION_JSON).content("""
+						{"accionAlumno":"CREAR_NUEVO","datosDeporte":{
+						 "tipoTarifa":"ADULTO","cuantiaTarifa":-1,"rolFamiliar":"NINGUNO",
+						 "grado":"BLANCO","fechaGrado":"2026-01-01"}}
+						"""))
+				.andExpect(status().isBadRequest());
+
+		verifyNoInteractions(preinscripciones);
+	}
+
+	@Test
+	void finalizarConCuantiaCeroSuperaLaValidacionYLlegaAlServicio() throws Exception {
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/finalizar")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER"))
+				.contentType(MediaType.APPLICATION_JSON).content("""
+						{"accionAlumno":"CREAR_NUEVO","datosDeporte":{
+						 "tipoTarifa":"ADULTO","cuantiaTarifa":0,"rolFamiliar":"NINGUNO",
+						 "grado":"BLANCO","fechaGrado":"2026-01-01"}}
+						"""))
+				.andExpect(status().isOk());
+
+		ArgumentCaptor<FinalizarPreinscripcionRequest> peticion = ArgumentCaptor.forClass(FinalizarPreinscripcionRequest.class);
+		verify(preinscripciones).finalizar(eq("PRE-1"), peticion.capture());
+		assertEquals(Double.valueOf(0.0), peticion.getValue().datosDeporte().cuantiaTarifa());
+	}
+
+	@Test
+	void finalizarConCuantiaPositivaDevuelve200YConservaElImporteExacto() throws Exception {
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/finalizar")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER"))
+				.contentType(MediaType.APPLICATION_JSON).content("""
+						{"accionAlumno":"CREAR_NUEVO","datosDeporte":{
+						 "tipoTarifa":"ADULTO","cuantiaTarifa":28.0,"rolFamiliar":"NINGUNO",
+						 "grado":"BLANCO","fechaGrado":"2026-01-01"}}
+						"""))
+				.andExpect(status().isOk());
+
+		ArgumentCaptor<FinalizarPreinscripcionRequest> peticion = ArgumentCaptor.forClass(FinalizarPreinscripcionRequest.class);
+		verify(preinscripciones).finalizar(eq("PRE-1"), peticion.capture());
+		assertEquals(Double.valueOf(28.0), peticion.getValue().datosDeporte().cuantiaTarifa());
+	}
+
+	@Test
+	void finalizarSinCuantiaDevuelve400PorLaExcepcionDelServicio() throws Exception {
+		String mensaje = "Tipo y cuantía de tarifa son obligatorios para el alta deportiva.";
+		doThrow(new IllegalArgumentException(mensaje)).when(preinscripciones).finalizar(eq("PRE-1"), any());
+
+		mockMvc.perform(post("/api/preinscripciones/PRE-1/finalizar")
+				.with(user("manager@example.com").authorities(() -> "ROLE_MANAGER"))
+				.contentType(MediaType.APPLICATION_JSON).content("""
+						{"accionAlumno":"CREAR_NUEVO","datosDeporte":{
+						 "tipoTarifa":"ADULTO","rolFamiliar":"NINGUNO",
+						 "grado":"BLANCO","fechaGrado":"2026-01-01"}}
+						"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.mensaje").value(mensaje));
+
+		ArgumentCaptor<FinalizarPreinscripcionRequest> peticion = ArgumentCaptor.forClass(FinalizarPreinscripcionRequest.class);
+		verify(preinscripciones).finalizar(eq("PRE-1"), peticion.capture());
+		assertNull(peticion.getValue().datosDeporte().cuantiaTarifa());
 	}
 
 	@TestConfiguration
