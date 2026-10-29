@@ -73,4 +73,11 @@ describe('MisGruposPanelComponent', () => {
     expect(elemento().querySelector('.grupos__disc')?.getAttribute('title')).toBe('Taekwondo');
     expect(elemento().querySelector('.grupos__disc .mis-grupos__oculto')?.textContent).toBe('Taekwondo');
   });
+
+  it('un grupo sin el campo `turnos` se lee como «Sin turnos» y no rompe la lista', () => {
+    http.expectOne(url).flush([{ id: 9, nombre: 'Sin horario', sede: null, rol: 'TITULAR', alumnosActivos: 2, disciplina: null }]);
+    fixture.detectChanges();
+    expect(elemento().querySelector('h2')?.textContent).toContain('Sin horario');
+    expect(elemento().querySelector('dl > div:nth-child(2) dd')?.textContent).toContain('Sin turnos');
+  });
 });

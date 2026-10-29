@@ -70,7 +70,7 @@
   </div>
   @if (alumnoAbierto; as abierto) {
     <pn-panel-lateral [titulo]="nombreCompleto(abierto.nombre, abierto.apellidos)" [ancho]="anchoPanelFicha" [modal]="false" (cerrar)="cerrarAlumno()">
-      <pn-ficha-profesor [embebida]="true" [alumnoId]="abierto.id" [grupoOrigen]="grupoId" />
+      <pn-ficha-profesor [embebida]="true" [alumnoId]="abierto.id" [grupoOrigen]="grupoId" (aptoCambiado)="alCambiarApto($event)" />
     </pn-panel-lateral>
   }
   @if (documentos.length) { <pn-visor-pdf [documentos]="documentos" aviso="" [focoRetorno]="focoRetorno" (cerrar)="cerrarVisor()" /> }

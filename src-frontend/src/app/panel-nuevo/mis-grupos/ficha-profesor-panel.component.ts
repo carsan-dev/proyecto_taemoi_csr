@@ -90,6 +90,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   @Input() grupoOrigen: number | null = null;
   /** Emite al cargar el nombre del alumno, por si quien la aloja quiere titularse con él. */
   @Output() readonly cargada = new EventEmitter<FichaAlumnoProfesor>();
+  /** Emite tras guardar con éxito un cambio de «Apto para examen», para que la lista de al lado se ponga al día. */
+  @Output() readonly aptoCambiado = new EventEmitter<{ alumnoId: number; deporte: string; apto: boolean }>();
 
   readonly fechaCorta = fechaCorta;
   readonly enlaceTelefono = enlaceTelefono;
@@ -224,6 +226,7 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
       return;
     }
     this.cambiandoApto.add(d.deporte);
+    const alumnoId = this.alumnoId;
     this.profesor
       .actualizarApto(this.alumnoId, d.deporte, !d.apto)
       .pipe(
@@ -231,7 +234,10 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
         finalize(() => this.cambiandoApto.delete(d.deporte))
       )
       .subscribe({
-        next: (actualizado) => this.reemplazarDeporte(actualizado),
+        next: (actualizado) => {
+          this.reemplazarDeporte(actualizado);
+          this.aptoCambiado.emit({ alumnoId, deporte: actualizado.deporte, apto: actualizado.apto });
+        },
         error: (e) => this.avisos.error(mensajeDelServidor(e, 'No se ha podido cambiar el apto.')),
       });
   }

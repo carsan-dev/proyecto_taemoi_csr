@@ -165,7 +165,6 @@
     "src/app/componentes/endpoints/caja-sede/caja-calculos.spec.ts",
     "src/app/componentes/endpoints/caja-sede/caja-sede.component.spec.ts",
     "src/app/servicios/endpoints/caja-profesor.service.spec.ts",
-    "src/app/servicios/endpoints/solicitudes-contador.service.spec.ts",
     "src/app/guards/profesor.guard.spec.ts",
     "src/app/guards/mis-grupos.guard.spec.ts",
     "src/app/servicios/authentication/authentication.mi-caja.spec.ts",

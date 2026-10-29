@@ -13,7 +13,7 @@ import { itSinReloj } from '../../testing/reloj-prueba';
     <div class="pn">
       <button type="button" class="disparador" (click)="abierto = true">Listado de asistencia</button>
       @if (abierto) {
-      <pn-panel-lateral titulo="Listado de asistencia" descripcion="Genera un PDF por cada día elegido." [bloqueado]="bloqueado"
+      <pn-panel-lateral titulo="Listado de asistencia" descripcion="Genera un PDF por cada día elegido." [bloqueado]="bloqueado" [modal]="modal"
         (cerrar)="cerrados = cerrados + 1; abierto = false">
         <label for="campo">Mes</label><select id="campo"><option>Octubre</option></select>
         <div pnPie><button type="button" class="ver">Ver PDF</button><button type="button" class="descargar">Descargar PDF</button></div>
@@ -25,6 +25,7 @@ import { itSinReloj } from '../../testing/reloj-prueba';
 class Anfitrion {
   abierto = false;
   bloqueado = false;
+  modal = true;
   cerrados = 0;
   @ViewChild(PanelLateralComponent) panel?: PanelLateralComponent;
 }
@@ -163,6 +164,35 @@ describe('PanelLateralComponent (8b-D1, panel lateral de 480 px y hoja en el mó
     d.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     fixture.detectChanges();
     expect(fixture.componentInstance.cerrados).toBe(1);
+  });
+
+  it('sin modal, Esc en el documento cierra el panel, salvo que ya se atendiera o haya un desplegable abierto', () => {
+    ancho(false);
+    fixture = TestBed.createComponent(Anfitrion);
+    fixture.componentInstance.modal = false;
+    fixture.componentInstance.abierto = true;
+    document.body.appendChild(el());
+    fixture.detectChanges();
+    const esc = (cambios: { prevenido?: boolean } = {}) => {
+      const e = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      if (cambios.prevenido) e.preventDefault();
+      document.dispatchEvent(e);
+      fixture.detectChanges();
+    };
+    esc({ prevenido: true });
+    expect(fixture.componentInstance.cerrados).toBe(0);
+
+    const menu = document.createElement('button');
+    menu.setAttribute('aria-haspopup', 'menu');
+    menu.setAttribute('aria-expanded', 'true');
+    document.body.appendChild(menu);
+    esc();
+    expect(fixture.componentInstance.cerrados).toBe(0);
+
+    menu.setAttribute('aria-expanded', 'false');
+    esc();
+    expect(fixture.componentInstance.cerrados).toBe(1);
+    menu.remove();
   });
 
   it('bloqueado: si el navegador cierra el <dialog> igualmente (segundo Esc), se vuelve a abrir como modal', async () => {

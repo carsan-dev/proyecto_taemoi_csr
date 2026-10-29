@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Subscription, finalize } from 'rxjs';
 
+import { TurnoDeGrupoResumen } from '../../interfaces/grupo-resumen';
 import { GrupoProfesor } from '../../interfaces/profesor';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
 import { etiquetaRol, mensajeDelServidor } from '../../componentes/endpoints/mis-grupos/profesor-textos';
@@ -26,7 +27,6 @@ export class MisGruposPanelComponent implements OnInit {
   private carga?: Subscription;
   readonly etiquetaRol = etiquetaRol;
   readonly numero = numero;
-  readonly resumenHorario = resumenHorario;
   readonly esqueletos = [0, 1, 2];
   grupos: GrupoProfesor[] = [];
   cargando = true;
@@ -45,6 +45,11 @@ export class MisGruposPanelComponent implements OnInit {
       next: grupos => (this.grupos = grupos),
       error: e => (this.error = mensajeDelServidor(e, 'No se han podido cargar tus grupos.')),
     });
+  }
+
+  /** Una API sin `turnos` no rompe la lista: se lee como «Sin turnos». */
+  horario(turnos: TurnoDeGrupoResumen[] | undefined): string {
+    return resumenHorario(turnos ?? []);
   }
 
   colorDisciplina(codigo: string): string {

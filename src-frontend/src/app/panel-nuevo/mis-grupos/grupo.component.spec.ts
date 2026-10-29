@@ -2,11 +2,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { AlumnoDeGrupo } from '../../interfaces/profesor';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { FichaProfesorPanelComponent } from './ficha-profesor-panel.component';
 import { GrupoPanelComponent } from './grupo.component';
 
 describe('GrupoPanelComponent', () => {
@@ -158,6 +160,27 @@ describe('GrupoPanelComponent', () => {
       fixture.detectChanges();
       expect(panel!.querySelector('pn-ficha-profesor')).not.toBeNull();
       expect(elemento().querySelectorAll('.grupo-profesor__alumno').length).toBe(2);
+    });
+
+    it('cambiar «Apto» en la ficha actualiza el chip de la fila y el contador «Aptos»', () => {
+      cargar();
+      spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
+      consulta.next(convertToParamMap({ alumno: '22' }));
+      fixture.detectChanges();
+      http.expectOne(`${api}/alumnos/22`).flush({ ...ficha, id: 22 });
+      fixture.detectChanges();
+      const aptos = () => elemento().querySelector('[data-filtro="aptos"]')!.textContent!.replace(/\s+/g, ' ').trim();
+      const chips = () => elemento().querySelectorAll('.grupo-profesor__apto').length;
+      expect(aptos()).toBe('Aptos 1');
+      expect(chips()).toBe(1);
+      const anterior = fixture.componentInstance.alumnos;
+      fixture.debugElement.query(By.directive(FichaProfesorPanelComponent)).componentInstance
+        .aptoCambiado.emit({ alumnoId: 22, deporte: 'TAEKWONDO', apto: true });
+      fixture.detectChanges();
+      expect(aptos()).toBe('Aptos 2');
+      expect(chips()).toBe(2);
+      expect(fixture.componentInstance.alumnos).not.toBe(anterior);
+      expect(anterior[1].deportes[0].apto).toBeFalse();
     });
 
     it('el panel no es modal: sin velo, la lista sigue activa, la fila abierta queda marcada y el contenido se estrecha', () => {

@@ -248,6 +248,17 @@ describe('FichaProfesorPanelComponent', () => {
       expect(accion!.texto).toBe('Ir a Mi caja');
     });
 
+    it('con la confirmación pendiente, pulsar «Proponer pase» varias veces abre un solo diálogo y no envía nada', async () => {
+      crear();
+      const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.returnValue(new Promise(() => undefined));
+      boton('Proponer pase')!.click();
+      boton('Proponer pase')!.click();
+      void componente.proponerPase(componente.ficha!.deportes[0]);
+      await fixture.whenStable();
+      expect(confirmar).toHaveBeenCalledTimes(1);
+      expect(profesor.pasarGrado).not.toHaveBeenCalled();
+    });
+
     it('«Por recompensa» usa el mismo endpoint con el tipo recompensa', async () => {
       crear();
       profesor.pasarGrado.and.returnValue(of(PASE));

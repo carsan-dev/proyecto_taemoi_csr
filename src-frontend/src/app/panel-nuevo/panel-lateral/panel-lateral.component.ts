@@ -128,16 +128,21 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
 
   /**
    * Sin modal, Esc cierra el panel aunque el foco esté en la lista de al lado. Si hay una capa modal encima (un diálogo
-   * de confirmación) o Esc ya se atendió, no hace nada.
+   * de confirmación), Esc ya se atendió o hay un desplegable abierto (Esc es para cerrarlo), no hace nada.
    */
   @HostListener('document:keydown.escape', ['$event'])
   alEscapeEnElDocumento(evento: Event): void {
-    if (this.modal || evento.defaultPrevented || this.pila.arriba()) {
+    if (this.modal || evento.defaultPrevented || this.pila.arriba() || this.hayMenuAbierto()) {
       return;
     }
     if (!this.panelRef.nativeElement.contains(evento.target as Node)) {
       this.pedirCierre();
     }
+  }
+
+  /** ¿Hay un desplegable de menú abierto en la página (cualquier disparador con `aria-expanded="true"`)? */
+  private hayMenuAbierto(): boolean {
+    return !!this.panelRef.nativeElement.ownerDocument.querySelector('[aria-haspopup="menu"][aria-expanded="true"]');
   }
 
   alClic(evento: MouseEvent): void {
