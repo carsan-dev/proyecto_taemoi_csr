@@ -93,28 +93,7 @@
 // ------------------------------------------------------------------ cambios sin publicar (barra de 8b-3n)
 
 .pendientes {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 35;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px max(24px, calc((100vw - 1232px) / 2));
-  background: var(--pn-superficie);
-  border-top: 1px solid var(--pn-linea);
-  box-shadow: var(--pn-sombra-barra);
-}
-
-.pendientes > strong {
-  margin-right: auto;
-}
-
-.pendientes button {
-  flex: none;
-  min-height: 44px;
+  @include c.barra-cambios;
 }
 
 .sin-plantilla,
@@ -511,7 +490,7 @@
 
   // Encima de la barra de navegación inferior, como en Productos de un alumno.
   .pendientes {
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    @include c.barra-cambios-sobre-navegacion;
   }
 
   .plantillas__pagina--pendientes {
@@ -537,7 +516,6 @@
 
   .versiones-movil {
     display: inline-flex;
-    margin-bottom: 16px;
   }
 
   .primario,
@@ -574,22 +552,6 @@
   }
 
   .pendientes {
-    padding: 8px 16px;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .pendientes > strong {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.75rem;
-    line-height: 1.25;
-  }
-
-  .pendientes button {
-    flex: none;
-    padding: 0 6px;
-    font-size: 0.75rem;
-    white-space: nowrap;
+    @include c.barra-cambios-compacta;
   }
 }

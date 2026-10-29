@@ -161,3 +161,57 @@
     opacity: 0.55;
   }
 }
+
+// Barra fija inferior de cambios sin guardar o sin publicar (8b-3n): ancho completo con la rejilla de 1232 px, aviso
+// (`> strong`) a la izquierda y botones a la derecha. Sirve a Productos de un alumno y a Plantillas PDF; cada pantalla
+// añade solo lo suyo (huecos de página, notas, `order`).
+@mixin barra-cambios {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px max(24px, calc((100vw - 1232px) / 2));
+  background: var(--pn-superficie);
+  border-top: 1px solid var(--pn-linea);
+  box-shadow: var(--pn-sombra-barra);
+
+  > strong {
+    margin-right: auto;
+  }
+
+  button {
+    flex: none;
+    min-height: 44px;
+  }
+}
+
+// En tableta y móvil la barra sube por encima de la navegación inferior (64 px + zona segura).
+@mixin barra-cambios-sobre-navegacion {
+  bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+// Móvil estrecho (≤ 599 px): relleno y huecos reducidos, aviso en 12 px que ocupa el resto y botones compactos.
+@mixin barra-cambios-compacta {
+  padding: 8px 16px;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  > strong {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  button {
+    flex: none;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
