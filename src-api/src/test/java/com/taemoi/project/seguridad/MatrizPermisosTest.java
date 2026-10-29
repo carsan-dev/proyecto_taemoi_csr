@@ -433,6 +433,9 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/auth/plataforma", "si además es administrador de plataforma (sin un 403 de sondeo)");
 			m.put(metodo + " /api/auth/permisos",
 					"E8-1 (D8-14): menús y guards con roles [PROFESOR], MIS_GRUPOS y MI_CAJA, sin sus sedes");
+			m.put(metodo + " /api/escuela/marca",
+					"8b-3o (decisión 326): nombre, logo y tema de su escuela activa para la cabecera del panel nuevo");
+			m.put(metodo + " /api/escuela/logo", "8b-3o (decisión 326): el PNG del logo subido de su escuela activa");
 		}
 		m.put("POST /api/auth/organizacion", "cambio de escuela");
 		return Map.copyOf(m);

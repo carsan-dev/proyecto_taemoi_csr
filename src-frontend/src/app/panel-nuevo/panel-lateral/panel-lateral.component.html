@@ -1,4 +1,4 @@
-<dialog #panel class="pn-panel" [class.pn-panel--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'"
+<dialog #panel class="pn-panel" [class.pn-panel--hoja]="hoja" [class.pn-panel--sin-velo]="!modal" [style.width.px]="hoja ? null : ancho" [attr.aria-labelledby]="id + '-titulo'"
   [attr.aria-describedby]="descripcion ? id + '-descripcion' : null" (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)"
   (keydown)="alTeclear($event)">
   <div class="pn-panel__caja">

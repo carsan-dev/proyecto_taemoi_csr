@@ -1,6 +1,11 @@
 // «Mi caja» del profesor (pieza 6b-3b). Mismo mundo que la Caja de sede, pensado para una mano y la puerta del
 // tatami: una columna, objetivos de 44 px, cifras tabulares y una sola pieza con peso (lo que llevas encima).
 
+// La cuenta de la cabecera nueva ya permite cerrar sesión (decisión 326, R6).
+:host-context(.marco-panel) .btn-salir {
+  display: none;
+}
+
 $azul: #2b6cb0;
 $azul-hondo: #1f4d86;
 $verde: #2f855a;

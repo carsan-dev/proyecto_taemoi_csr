@@ -147,6 +147,26 @@ describe('menu-panel: nada se pierde (decisión 232)', () => {
 });
 
 describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
+  for (const misGrupos of [true, false]) {
+    it(`solo-profesor con MIS_GRUPOS=${misGrupos}: solo enlaces directos de profesor`, () => {
+      const contexto: ContextoMenu = { propietario: false, profesor: true, soloProfesor: true, misGrupos, plataforma: false };
+      const secciones = menuVisible(contexto);
+      expect(secciones.map((s) => s.etiqueta)).toEqual(misGrupos ? ['Mis grupos', 'Mi caja'] : ['Mi caja']);
+      expect(secciones.map((s) => s.ruta)).toEqual(misGrupos ? ['/mis-grupos', '/mi-caja'] : ['/mi-caja']);
+      expect(secciones.every((s) => s.entradas.length === 0 && !s.contador)).toBeTrue();
+      expect(CUENTA_PANEL.filter((e) => !e.condicion || contexto[e.condicion])).toEqual([]);
+    });
+  }
+
+  for (const propietario of [true, false]) {
+    it(`cuenta mixta con propietario=${propietario}: mantiene ambos enlaces en sus desplegables`, () => {
+      const secciones = menuVisible({ propietario, profesor: true, soloProfesor: false, misGrupos: true, plataforma: false });
+      expect(secciones.length).toBe(6);
+      expect(secciones.find((s) => s.id === 'grupos')?.entradas.some((e) => e.ruta === '/mis-grupos')).toBeTrue();
+      expect(secciones.find((s) => s.id === 'tesoreria')?.entradas.some((e) => e.ruta === '/mi-caja')).toBeTrue();
+    });
+  }
+
   const todo: ContextoMenu = { propietario: true, profesor: true, misGrupos: true, plataforma: true };
 
   it('seis entradas en orden, con icono y nombre; cuatro con desplegable', () => {

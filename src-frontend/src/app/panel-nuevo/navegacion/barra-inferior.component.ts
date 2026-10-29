@@ -33,6 +33,7 @@ export class BarraInferiorComponent implements OnChanges {
   @Input() activa: IdSeccion | null = null;
   @Input() url = '';
   @Input() contador = 0;
+  @Input() soloProfesor = false;
   @Output() readonly configurarCookies = new EventEmitter<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -49,6 +50,9 @@ export class BarraInferiorComponent implements OnChanges {
   }
 
   get principales(): SeccionMenu[] {
+    if (this.soloProfesor) {
+      return this.secciones;
+    }
     return BARRA_INFERIOR.map((id) => this.secciones.find((s) => s.id === id)).filter(
       (s): s is SeccionMenu => !!s
     );

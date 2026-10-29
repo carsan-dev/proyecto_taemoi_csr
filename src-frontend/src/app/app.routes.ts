@@ -682,6 +682,14 @@ export const routes: Routes = [
     canActivate: [profesorGuard],
   },
   {
+    // Mis grupos del panel nuevo: carga diferida y el mismo permiso, sin catálogo.
+    path: 'mis-grupos',
+    canMatch: [disenoNuevoGuard],
+    data: { seo: SEO_ROUTES.noIndex },
+    loadChildren: () => import('./panel-nuevo/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_PANEL_ROUTES),
+    canActivate: [misGruposGuard],
+  },
+  {
     // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Guard propio (capacidad MIS_GRUPOS, E8-5: con grupos asignados), sin catálogo.
     path: 'mis-grupos',
     data: { seo: SEO_ROUTES.noIndex },

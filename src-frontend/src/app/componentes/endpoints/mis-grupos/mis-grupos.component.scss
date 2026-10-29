@@ -2,6 +2,11 @@
 
 @include p.pantalla;
 
+// La cuenta de la cabecera nueva ya permite cerrar sesión (decisión 326, R6).
+:host-context(.marco-panel) .btn-salir {
+  display: none;
+}
+
 .cabecera {
   display: flex;
   align-items: center;

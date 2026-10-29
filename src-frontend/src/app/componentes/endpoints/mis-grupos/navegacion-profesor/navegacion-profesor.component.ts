@@ -30,6 +30,11 @@ export type SeccionProfesor = 'grupos' | 'caja';
       display: block;
     }
 
+    // El marco nuevo ya ofrece esta navegación (decisión 326, R6).
+    :host-context(.marco-panel) {
+      display: none;
+    }
+
     .nav-profesor {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));

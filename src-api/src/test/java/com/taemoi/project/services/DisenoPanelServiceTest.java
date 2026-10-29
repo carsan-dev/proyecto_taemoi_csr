@@ -130,6 +130,50 @@ class DisenoPanelServiceTest {
 		assertEquals(new DisenoPanelDTO.Propio(false, false), servicio.estadoPropio(null));
 	}
 
+	// ------------------------------------------------------------------ profesor sigue el por defecto (decisión 326)
+
+	@Test
+	void profesor_porDefectoNuevo_activoSinPermiso() {
+		porDefecto("NUEVO");
+		when(membresias.findRolesActivos(USUARIO, ESCUELA)).thenReturn(List.of(RolMembresia.PROFESOR));
+		assertEquals(new DisenoPanelDTO.Propio(true, false),
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)));
+	}
+
+	@Test
+	void profesor_porDefectoViejoOSinClave_apagado() {
+		when(membresias.findRolesActivos(USUARIO, ESCUELA)).thenReturn(List.of(RolMembresia.PROFESOR));
+		assertEquals(new DisenoPanelDTO.Propio(false, false),
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)), "sin clave");
+		porDefecto("VIEJO");
+		assertEquals(new DisenoPanelDTO.Propio(false, false),
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)), "VIEJO");
+	}
+
+	@Test
+	void profesor_ignoraSuFilaPropia() {
+		porDefecto("NUEVO");
+		fila(true, false);
+		when(membresias.findRolesActivos(USUARIO, ESCUELA)).thenReturn(List.of(RolMembresia.PROFESOR));
+		assertEquals(new DisenoPanelDTO.Propio(true, false),
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)));
+	}
+
+	@Test
+	void profesor_sinMembresiaProfesorOConGestion_apagado() {
+		porDefecto("NUEVO");
+		when(membresias.findRolesActivos(USUARIO, ESCUELA)).thenReturn(List.of(RolMembresia.FAMILIA));
+		assertEquals(DisenoPanelDTO.Propio.APAGADO,
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)), "familia");
+		when(membresias.findRolesActivos(USUARIO, ESCUELA))
+				.thenReturn(List.of(RolMembresia.PROFESOR, RolMembresia.ADMINISTRADOR));
+		assertEquals(DisenoPanelDTO.Propio.APAGADO,
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(USUARIO)), "con gestión usa estadoPropio");
+		assertEquals(DisenoPanelDTO.Propio.APAGADO, servicio.estadoProfesor(USUARIO), "sin escuela activa");
+		assertEquals(DisenoPanelDTO.Propio.APAGADO,
+				TenantContext.calcularCon(ESCUELA, () -> servicio.estadoProfesor(null)), "sin usuario");
+	}
+
 	// ------------------------------------------------------------------ mi-diseno no da permiso
 
 	@Test

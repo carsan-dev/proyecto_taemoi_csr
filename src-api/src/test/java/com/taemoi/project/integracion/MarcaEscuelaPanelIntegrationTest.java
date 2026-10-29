@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -19,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.imageio.ImageIO;
 
@@ -88,8 +91,9 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 	@Value("${app.imagenes.directorio.windows}") String raizImagenes;
 
 	EscuelaConSedesDePrueba e;
-	long orgB, propietarioA, profesorA, familiaA, dosEscuelas, gestorOrg1;
-	String tGestorA, tPropietarioA, tProfesorA, tFamiliaA, tResponsableA, tDosEnA, tDosEnB, tGestorOrg1;
+	long orgB, propietarioA, profesorA, familiaA, dosEscuelas, gestorOrg1, familiaProfesorA, profesorDosEscuelas;
+	String tGestorA, tPropietarioA, tProfesorA, tFamiliaA, tResponsableA, tDosEnA, tDosEnB, tGestorOrg1,
+			tFamiliaProfesorA, tProfesorEnB;
 	Usuario superadmin;
 	Cookie cookieSuperadmin;
 
@@ -110,6 +114,12 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 		membresia(orgB, dosEscuelas, "ADMINISTRADOR");
 		gestorOrg1 = e.cuenta(usuarios, "gestor-org1-8bt");
 		membresia(ORG1, gestorOrg1, "ADMINISTRADOR");
+		// Pieza 8b-3o: familia + profesor (entra como familia) y un profesor de las dos escuelas (sesión en B).
+		familiaProfesorA = e.cuentaFamilia(usuarios, "familia-profesor-8bt");
+		membresia(e.org, familiaProfesorA, "PROFESOR");
+		profesorDosEscuelas = e.cuenta(usuarios, "profesor-dos-escuelas-8bt");
+		membresia(e.org, profesorDosEscuelas, "PROFESOR");
+		membresia(orgB, profesorDosEscuelas, "PROFESOR");
 
 		tGestorA = e.token(jwtService, usuarios, e.gestor);
 		tPropietarioA = e.token(jwtService, usuarios, propietarioA);
@@ -119,6 +129,8 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 		tDosEnA = e.token(jwtService, usuarios, dosEscuelas);
 		tDosEnB = token(dosEscuelas, orgB);
 		tGestorOrg1 = token(gestorOrg1, ORG1);
+		tFamiliaProfesorA = e.token(jwtService, usuarios, familiaProfesorA);
+		tProfesorEnB = token(profesorDosEscuelas, orgB);
 
 		superadmin = crearSuperadmin("it-8bt-superadmin-" + e.marca + "@example.test");
 		cookieSuperadmin = new Cookie("jwt", login(superadmin.getEmail()));
@@ -187,9 +199,13 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 		mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tGestorOrg1))).andExpect(status().isNotFound());
 	}
 
+	/**
+	 * Gestión y, desde la pieza 8b-3o (decisión 326), la sesión solo-profesor (solo leer). La familia, también la que
+	 * además es profesor (entra como familia), el responsable de sede y el superadmin sin membresía, 403.
+	 */
 	@Test
-	void marca_soloGestion() throws Exception {
-		for (String token : List.of(tFamiliaA, tResponsableA, tProfesorA)) {
+	void marca_soloGestionYSesionSoloProfesor() throws Exception {
+		for (String token : List.of(tFamiliaA, tResponsableA, tFamiliaProfesorA)) {
 			for (String ruta : List.of("/api/escuela/marca", "/api/escuela/logo")) {
 				mvc.perform(get(ruta).cookie(new Cookie("jwt", token))).andExpect(status().isForbidden());
 			}
@@ -198,6 +214,36 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 			mvc.perform(get(ruta).cookie(cookieSuperadmin)).andExpect(status().isForbidden());
 			mvc.perform(get(ruta)).andExpect(status().isUnauthorized());
 		}
+	}
+
+	/** Pieza 8b-3o (decisión 326): la sesión solo-profesor lee la marca de SU escuela activa, y nada más bajo /api/escuela. */
+	@Test
+	void marca_sesionSoloProfesor_soloLectura_deSuEscuelaActiva() throws Exception {
+		conColor(e.org, "#3E9B4F", () -> conColor(orgB, "#1B2B2E", () -> {
+			JsonNode enA = leer(get("/api/escuela/marca"), tProfesorA, 200);
+			assertEquals("Escuela IT sedes", enA.get("nombre").asText());
+			assertEquals("NINGUNO", enA.get("logo").asText());
+			assertTrue(enA.get("logoVersion").isNull());
+			assertTema(ReglaContraste.tema("#3E9B4F"), enA.get("tema"));
+			assertEquals(Set.of("nombre", "logo", "logoVersion", "tema"), campos(enA), "solo la marca");
+			mvc.perform(head("/api/escuela/marca").cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isOk());
+
+			// La misma cuenta, profesor también en B y con la sesión en B: la de B.
+			JsonNode enB = leer(get("/api/escuela/marca"), tProfesorEnB, 200);
+			assertEquals("Escuela Ficticia Marca B", enB.get("nombre").asText());
+			assertEquals("#1B2B2E", enB.get("tema").get("primario").asText());
+		}));
+		// Sin logo subido: 404 (no 403) en su escuela.
+		mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isNotFound());
+		// Escribir, o cualquier otra ruta bajo /api/escuela, sigue cerrado.
+		for (String ruta : List.of("/api/escuela/marca", "/api/escuela/logo")) {
+			mvc.perform(put(ruta).contentType(MediaType.APPLICATION_JSON).content("{}")
+					.cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isForbidden());
+			mvc.perform(post(ruta).contentType(MediaType.APPLICATION_JSON).content("{}")
+					.cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isForbidden());
+			mvc.perform(delete(ruta).cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isForbidden());
+		}
+		mvc.perform(get("/api/escuela/otra").cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -245,6 +291,14 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 
 			// La misma cuenta, en B (sin logo): no ve el de A.
 			mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tDosEnB))).andExpect(status().isNotFound());
+
+			// Pieza 8b-3o: la sesión solo-profesor lee el logo de su escuela (200 y 304); con la sesión en B, 404.
+			mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isOk());
+			mvc.perform(get("/api/escuela/logo").header("If-None-Match", etag).cookie(new Cookie("jwt", tProfesorA)))
+					.andExpect(status().isNotModified());
+			assertEquals("SUBIDO", leer(get("/api/escuela/marca"), tProfesorA, 200).get("logo").asText());
+			mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tProfesorEnB)))
+					.andExpect(status().isNotFound());
 			assertEquals("NINGUNO", leer(get("/api/escuela/marca"), tDosEnB, 200).get("logo").asText());
 		} finally {
 			mvc.perform(delete("/api/plataforma/escuelas/" + e.org + "/logo").cookie(cookieSuperadmin));
@@ -453,6 +507,12 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 
 	private long ultimoEvento() {
 		return jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM auditoria_evento", Long.class);
+	}
+
+	private static Set<String> campos(JsonNode nodo) {
+		Set<String> claves = new TreeSet<>();
+		nodo.fieldNames().forEachRemaining(claves::add);
+		return claves;
 	}
 
 	private void membresia(long organizacion, long usuario, String rol) {

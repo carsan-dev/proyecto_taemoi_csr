@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
-import { catchError, filter, map, of, take } from 'rxjs';
+import { catchError, filter, map, of, switchMap, take } from 'rxjs';
 
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -135,10 +135,18 @@ export class CabeceraPanelComponent implements OnInit {
   readonly errorVolver = signal<string | null>(null);
 
   private readonly roles = toSignal(this.auth.getRoles(), { initialValue: [] as string[] });
+  readonly soloProfesor = computed(() => {
+    const roles = this.roles();
+    return roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
+  });
   private readonly capacidades = toSignal<readonly Capacidad[], readonly Capacidad[]>(this.permisos.capacidades(), {
     initialValue: [],
   });
-  private readonly plataforma = toSignal(this.auth.esAdminPlataforma().pipe(catchError(() => of(false))), {
+  private readonly plataforma = toSignal(this.auth.getRoles().pipe(
+    filter((roles) => roles.length > 0),
+    switchMap((roles) => roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER')
+      ? of(false) : this.auth.esAdminPlataforma()),
+    catchError(() => of(false))), {
     initialValue: false,
   });
   private readonly nombreSesion = toSignal(
@@ -155,6 +163,7 @@ export class CabeceraPanelComponent implements OnInit {
     const profesor = roles.includes('ROLE_PROFESOR');
     return {
       propietario: roles.includes('ROLE_ADMIN'),
+      soloProfesor: this.soloProfesor(),
       profesor,
       misGrupos: profesor && this.capacidades().includes('MIS_GRUPOS'),
       plataforma: this.plataforma(),
@@ -165,7 +174,7 @@ export class CabeceraPanelComponent implements OnInit {
   readonly cuenta = computed<EntradaMenu[]>(() => CUENTA_PANEL.filter((e) => visible(e, this.contexto())));
   readonly accesoDual = computed(() => this.auth.tieneAccesoDual(this.roles()));
   readonly activa = computed(() => seccionActiva(this.url()));
-  readonly contador = computed(() => this.contadorSolicitudes.total());
+  readonly contador = computed(() => this.soloProfesor() ? 0 : this.contadorSolicitudes.total());
 
   readonly nombreEscuela = computed(() => this.marca()?.nombre || 'Panel de gestión');
   readonly logo = computed(() => {
@@ -174,7 +183,8 @@ export class CabeceraPanelComponent implements OnInit {
   });
   readonly nombreVisible = computed(() => this.nombreSesion() || this.usuario() || 'Mi cuenta');
   readonly iniciales = computed(() => iniciales(this.nombreSesion() || this.usuario()));
-  readonly rol = computed(() => etiquetaRol(this.roles().includes('ROLE_ADMIN') ? 'ROLE_ADMIN' : 'ROLE_MANAGER'));
+  readonly rol = computed(() => this.soloProfesor() ? 'Profesor'
+    : etiquetaRol(this.roles().includes('ROLE_ADMIN') ? 'ROLE_ADMIN' : 'ROLE_MANAGER'));
 
   ngOnInit(): void {
     const raiz = this.raiz.nativeElement;
@@ -192,14 +202,19 @@ export class CabeceraPanelComponent implements OnInit {
         error: () => this.lista.set(true),
       });
 
-    this.contadorSolicitudes.refrescar();
+    this.auth.getRoles().pipe(
+      filter((roles) => roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.contadorSolicitudes.refrescar());
     this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((evento) => {
       if (evento instanceof NavigationStart) {
         this.abierto.set(null);
       }
       if (evento instanceof NavigationEnd) {
         this.url.set(evento.urlAfterRedirects || evento.url);
-        this.contadorSolicitudes.refrescar();
+        if (this.roles().includes('ROLE_ADMIN') || this.roles().includes('ROLE_MANAGER')) {
+          this.contadorSolicitudes.refrescar();
+        }
       }
     });
   }

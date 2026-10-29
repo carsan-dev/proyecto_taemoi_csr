@@ -1,0 +1,425 @@
+@use '../capas/capas' as c;
+
+// Ficha reducida del profesor (boceto R6, sección 6). Funciona como pantalla propia (.pn) o dentro del panel lateral.
+.ficha {
+  color: var(--pn-tinta);
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.ficha--pagina {
+  display: block;
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.ficha__pagina {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.ficha__migas {
+  display: flex;
+  gap: 6px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  a {
+    color: var(--pn-acento);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.ficha__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h1 {
+    margin: 0;
+    font: var(--pn-titulo-pantalla);
+    letter-spacing: var(--pn-titulo-pantalla-espaciado);
+    overflow-wrap: anywhere;
+  }
+}
+
+.ficha__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--pn-superficie-2);
+  border: 1px solid var(--pn-linea);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.9375rem;
+}
+
+.ficha__secundario {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.ficha__secundario--suelto {
+  margin-top: -4px;
+}
+
+[data-cifras] {
+  font-variant-numeric: tabular-nums;
+}
+
+// ---------------------------------------------------------------- bloques
+.ficha__bloque {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+// En el panel lateral la ficha ocupa todo el cuerpo (que tiene su relleno) sobre el fondo, como en el boceto.
+.ficha--embebida {
+  margin: -24px;
+  padding: 24px;
+  min-height: calc(100% + 48px);
+  background: var(--pn-fondo);
+}
+
+.ficha__bloque-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ficha__titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  overflow-wrap: anywhere;
+}
+
+.ficha__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie-2);
+  border: 1px solid var(--pn-linea);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.ficha__vacio,
+.ficha__pista {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ---------------------------------------------------------------- contacto
+.ficha__contactos {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ficha__contacto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+
+  & + & {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.ficha__contacto-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ficha__contacto-nombre {
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+// ---------------------------------------------------------------- botones
+.ficha__boton {
+  @include c.boton-secundario;
+  min-height: 44px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.ficha__primario {
+  @include c.boton-primario;
+  min-height: 44px;
+}
+
+.ficha__secundario-boton {
+  @include c.boton-secundario;
+  min-height: 44px;
+  white-space: normal;
+  text-align: center;
+}
+
+.ficha__texto {
+  @include c.boton-texto;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.ficha__boton:focus-visible,
+.ficha__primario:focus-visible,
+.ficha__secundario-boton:focus-visible,
+.ficha__texto:focus-visible,
+.ficha__migas a:focus-visible,
+.ficha__apto:focus-visible,
+.ficha__control:focus-visible {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+// ---------------------------------------------------------------- datos de un deporte
+.ficha__datos {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+
+  > div {
+    display: grid;
+    gap: 2px;
+  }
+
+  dt {
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin: 0;
+    font: var(--pn-cuerpo);
+    overflow-wrap: anywhere;
+  }
+}
+
+.ficha__detalle {
+  flex-basis: 100%;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+// ---------------------------------------------------------------- fecha de grado
+.ficha__fecha {
+  display: grid;
+  gap: 8px;
+}
+
+.ficha__campo {
+  display: grid;
+  gap: 6px;
+}
+
+.ficha__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+// «obligatorio» a la vista junto a la etiqueta (gramática de la ronda 4).
+.ficha__marca {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--pn-tinta-2);
+}
+
+.ficha__control {
+  width: 100%;
+  max-width: 220px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:disabled {
+    color: var(--pn-tinta-2);
+    cursor: not-allowed;
+  }
+}
+
+.ficha__control--error {
+  border-color: var(--pn-peligro);
+}
+
+.ficha__error {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
+.ficha__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// ---------------------------------------------------------------- apto (interruptor) y pases
+.ficha__apto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-top: 1px solid var(--pn-linea);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.ficha__interruptor {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-borde-control);
+  transition: background-color var(--pn-transicion);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left var(--pn-transicion);
+  }
+}
+
+.ficha__apto[aria-checked='true'] .ficha__interruptor {
+  background: var(--pn-acento);
+
+  &::after {
+    left: 19px;
+  }
+}
+
+.ficha__pases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// ---------------------------------------------------------------- cinturón y flecha de «Ver salud»
+.ficha__cinto {
+  display: inline-block;
+  width: 16px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 2px;
+  border: 1px solid var(--pn-cinto-borde);
+}
+
+.ficha__flecha {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform var(--pn-transicion);
+}
+
+.ficha__texto[aria-expanded='true'] .ficha__flecha {
+  transform: rotate(90deg);
+}
+
+// ---------------------------------------------------------------- carga
+.ficha__esqueleto {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+
+  span {
+    width: 60%;
+    height: 16px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span + span {
+    width: 40%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ficha--embebida {
+    margin: -16px;
+    padding: 16px;
+    min-height: calc(100% + 32px);
+  }
+
+  .ficha__pagina {
+    padding: var(--pn-espacio-m);
+  }
+
+  .ficha__cabecera h1 {
+    font-size: 1.375rem;
+  }
+
+  .ficha__pases > button,
+  .ficha__acciones > button {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha__interruptor,
+  .ficha__interruptor::after,
+  .ficha__flecha {
+    transition: none;
+  }
+}

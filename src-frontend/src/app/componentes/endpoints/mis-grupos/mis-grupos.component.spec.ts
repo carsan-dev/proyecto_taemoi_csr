@@ -9,8 +9,8 @@ import { AuthenticationService } from '../../../servicios/authentication/authent
 import { ProfesorService } from '../../../servicios/endpoints/profesor.service';
 
 const GRUPOS: GrupoProfesor[] = [
-  { id: 4, nombre: 'Infantil lunes y miércoles', sede: { id: 1, nombre: 'Sede Centro' }, rol: 'TITULAR', alumnosActivos: 18, disciplina: null },
-  { id: 9, nombre: 'Adultos martes', sede: null, rol: 'AYUDANTE', alumnosActivos: 1, disciplina: null },
+  { id: 4, nombre: 'Infantil lunes y miércoles', sede: { id: 1, nombre: 'Sede Centro' }, rol: 'TITULAR', alumnosActivos: 18, disciplina: null, turnos: [] },
+  { id: 9, nombre: 'Adultos martes', sede: null, rol: 'AYUDANTE', alumnosActivos: 1, disciplina: null, turnos: [] },
 ];
 
 describe('MisGruposComponent', () => {
@@ -72,6 +72,20 @@ describe('MisGruposComponent', () => {
     expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/mis-grupos', '/mi-caja']);
     expect(enlaces[0].getAttribute('aria-current')).toBe('page');
     expect(enlaces[1].getAttribute('aria-current')).toBeNull();
+  });
+
+  it('el marco nuevo oculta la navegación duplicada y la salida; el de hoy las conserva', () => {
+    crear();
+    const navegacion = el().querySelector<HTMLElement>('app-navegacion-profesor')!;
+    const salir = el().querySelector<HTMLElement>('.btn-salir')!;
+    expect(getComputedStyle(navegacion).display).not.toBe('none');
+    expect(getComputedStyle(salir).display).not.toBe('none');
+    el().classList.add('marco-panel');
+    expect(getComputedStyle(navegacion).display).toBe('none');
+    expect(getComputedStyle(salir).display).toBe('none');
+    el().classList.remove('marco-panel');
+    expect(getComputedStyle(navegacion).display).not.toBe('none');
+    expect(getComputedStyle(salir).display).not.toBe('none');
   });
 
   it('solo la sesión solo-profesor ve «Cerrar sesión» (no tiene cabecera global)', () => {

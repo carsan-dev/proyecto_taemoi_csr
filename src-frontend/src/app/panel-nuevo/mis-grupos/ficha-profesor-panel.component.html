@@ -1,0 +1,195 @@
+@if (embebida) {
+  <div class="ficha ficha--embebida">
+    <ng-container *ngTemplateOutlet="contenido" />
+  </div>
+} @else {
+  <section class="pn ficha ficha--pagina" pnAcento>
+    <div class="ficha__pagina">
+      <nav class="ficha__migas" aria-label="Ruta">
+        <a [routerLink]="miga.ruta">{{ miga.texto }}</a><span aria-hidden="true">/</span>
+      </nav>
+      @if (ficha) {
+        <header class="ficha__cabecera">
+          <span class="ficha__avatar" aria-hidden="true">{{ iniciales }}</span>
+          <div>
+            <h1>{{ nombre }}</h1>
+            @if (edad || gruposCompartidos) {
+              <p class="ficha__secundario">{{ edad }}@if (edad && gruposCompartidos) { · }{{ gruposCompartidos }}</p>
+            }
+          </div>
+        </header>
+      }
+      <ng-container *ngTemplateOutlet="contenido" />
+    </div>
+  </section>
+}
+
+<ng-template #contenido>
+  @if (error) {
+    <pn-bloque-error [titulo]="error" (reintentar)="cargar()" />
+  } @else if (cargando && !ficha) {
+    <pn-esqueleto etiqueta="Cargando la ficha…">
+      @for (fila of esqueletos; track fila) { <div class="ficha__esqueleto"><span></span><span></span></div> }
+    </pn-esqueleto>
+  } @else if (ficha) {
+    @if (embebida && (edad || gruposCompartidos)) {
+      <p class="ficha__secundario ficha__secundario--suelto">{{ edad }}@if (edad && gruposCompartidos) { · }{{ gruposCompartidos }}</p>
+    }
+
+    <!-- ============================================================ Contacto -->
+    <section class="ficha__bloque" aria-labelledby="ficha-contacto">
+      <h2 id="ficha-contacto" class="ficha__titulo">Contacto</h2>
+      @if (ficha.contacto.length === 0) {
+        <p class="ficha__vacio">Sin teléfonos de contacto.</p>
+      } @else {
+        <ul class="ficha__contactos">
+          @for (c of ficha.contacto; track $index) {
+            <li class="ficha__contacto">
+              <span class="ficha__contacto-texto">
+                <span class="ficha__contacto-nombre">{{ nombreContacto(c) }}</span>
+                <span class="ficha__secundario">{{ etiquetaContacto(c) }} · <span data-cifras>{{ c.telefono || 'Sin teléfono' }}</span></span>
+              </span>
+              @if (c.telefono) {
+                <a class="ficha__boton" [href]="enlaceTelefono(c.telefono)" [attr.aria-label]="'Llamar a ' + nombreContacto(c)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" /></svg>Llamar
+                </a>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- ============================================================ Deportes de sus grupos -->
+    @for (d of deportesPropios; track d.deporte) {
+      <section class="ficha__bloque" [attr.aria-labelledby]="'ficha-deporte-' + d.deporte">
+        <div class="ficha__bloque-cabeza">
+          <h2 class="ficha__titulo" [id]="'ficha-deporte-' + d.deporte">{{ d.deporteNombre }}</h2>
+        </div>
+
+        <dl class="ficha__datos">
+          <div>
+            <dt>Grado actual</dt>
+            <dd>
+              @if (gradoDe(d); as grado) {
+                <span class="ficha__cinto" [style.background]="grado.fondo" aria-hidden="true"></span>{{ grado.texto }}
+              } @else {
+                Sin grado
+              }
+            </dd>
+          </div>
+        </dl>
+
+        <form class="ficha__fecha" (ngSubmit)="guardarFecha(d)">
+          @let edicion = edicionDe(d);
+          <label class="ficha__campo" [for]="'fecha-' + d.deporte">
+            <span class="ficha__etiqueta">Fecha de grado <span class="ficha__marca">obligatorio</span></span>
+            <input type="date" class="ficha__control" [class.ficha__control--error]="edicion.error" [id]="'fecha-' + d.deporte"
+              [name]="'fecha-' + d.deporte" [max]="hoy" [(ngModel)]="edicion.valor" [disabled]="edicion.guardando" required
+              [attr.aria-invalid]="edicion.error ? 'true' : null" [attr.aria-describedby]="edicion.error ? 'error-fecha-' + d.deporte : null" />
+          </label>
+          @if (edicion.error) {
+            <p class="ficha__error" role="alert" [id]="'error-fecha-' + d.deporte">{{ edicion.error }}</p>
+          }
+          @if (fechaCambiada(d)) {
+            <div class="ficha__acciones">
+              <button type="submit" class="ficha__primario" [disabled]="edicion.guardando" [attr.aria-busy]="edicion.guardando">
+                {{ edicion.guardando ? 'Guardando…' : 'Guardar' }}
+              </button>
+              <button type="button" class="ficha__secundario-boton" [disabled]="edicion.guardando" (click)="cancelarFecha(d)">Cancelar</button>
+            </div>
+          }
+        </form>
+
+        <button type="button" class="ficha__apto" role="switch" [attr.aria-checked]="d.apto"
+          [disabled]="cambiandoApto.has(d.deporte)" (click)="conmutarApto(d)">
+          <span class="ficha__interruptor" aria-hidden="true"></span>
+          <span>Apto para examen</span>
+        </button>
+
+        @if (d.admitePases && d.apto) {
+          <div>
+            <button type="button" class="ficha__secundario-boton" [disabled]="pasando" (click)="proponerPase(d)">Proponer pase</button>
+          </div>
+        } @else if (d.admitePases) {
+          <p class="ficha__pista">Marca «Apto para examen» para poder hacer un pase.</p>
+        } @else if (!d.grado) {
+          <p class="ficha__pista">Sin grado: no se puede hacer un pase en este deporte.</p>
+        } @else {
+          <p class="ficha__pista">No hay un grado siguiente al actual.</p>
+        }
+      </section>
+    }
+
+    <!-- ============================================================ Salud (D7-3) -->
+    <section class="ficha__bloque" aria-labelledby="ficha-titulo-salud">
+      <div class="ficha__bloque-cabeza">
+        <h2 id="ficha-titulo-salud" class="ficha__titulo">Salud</h2>
+      </div>
+      <p class="ficha__secundario">Tu consulta queda registrada.</p>
+      <div>
+        <button type="button" id="ficha-boton-salud" class="ficha__texto" aria-controls="ficha-panel-salud"
+          [attr.aria-expanded]="saludAbierta" (click)="conmutarSalud()">
+          {{ saludAbierta ? 'Ocultar salud' : 'Ver salud' }}
+          <svg class="ficha__flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7" /></svg>
+        </button>
+      </div>
+      <div id="ficha-panel-salud" [hidden]="!saludAbierta" [attr.aria-busy]="cargandoSalud">
+        @if (saludAbierta) {
+          @if (cargandoSalud) {
+            <p class="ficha__vacio" role="status">Cargando…</p>
+          } @else if (errorSalud) {
+            <pn-bloque-error [titulo]="errorSalud" (reintentar)="pedirSalud()" />
+          } @else if (salud && !salud.registrado) {
+            <p class="ficha__vacio">Sin datos de salud registrados.</p>
+          } @else if (salud) {
+            <dl class="ficha__datos">
+              <div>
+                <dt>Lesión o enfermedad</dt>
+                <dd>{{ salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="ficha__detalle">{{ salud.descripcion }}</span>}</dd>
+              </div>
+              <div>
+                <dt>Le impide alguna actividad</dt>
+                <dd>{{ salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="ficha__detalle">{{ salud.impideDetalle }}</span>}</dd>
+              </div>
+              <div>
+                <dt>Alergias</dt>
+                <dd>{{ salud.alergias || 'Ninguna indicada' }}</dd>
+              </div>
+            </dl>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- ============================================================ Deportes de solo lectura -->
+    @for (d of deportesAjenos; track d.deporte) {
+      <section class="ficha__bloque" [attr.aria-labelledby]="'ficha-deporte-' + d.deporte">
+        <div class="ficha__bloque-cabeza">
+          <h2 class="ficha__titulo" [id]="'ficha-deporte-' + d.deporte">{{ d.deporteNombre }}</h2>
+          <span class="ficha__chip">Solo lectura</span>
+        </div>
+        <dl class="ficha__datos">
+          <div>
+            <dt>Grado actual</dt>
+            <dd>
+              @if (gradoDe(d); as grado) {
+                <span class="ficha__cinto" [style.background]="grado.fondo" aria-hidden="true"></span>{{ grado.texto }}
+              } @else {
+                Sin grado
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Fecha de grado</dt>
+            <dd data-cifras>{{ d.fechaGrado ? fechaCorta(d.fechaGrado) : 'Sin fecha de grado' }}</dd>
+          </div>
+          <div>
+            <dt>Apto para examen</dt>
+            <dd>{{ d.apto ? 'Sí' : 'No' }}</dd>
+          </div>
+        </dl>
+      </section>
+    }
+  }
+</ng-template>

@@ -1,0 +1,39 @@
+<section class="pn mis-grupos" pnAcento>
+  <div class="mis-grupos__pagina">
+    <h1>Mis grupos</h1>
+    @if (cargando) {
+      <pn-esqueleto etiqueta="Cargando tus grupos…">
+        <div class="mis-grupos__rejilla">
+          @for (fila of esqueletos; track fila) {
+            <div class="mis-grupos__esqueleto"><span></span><span></span><span></span></div>
+          }
+        </div>
+      </pn-esqueleto>
+    } @else if (error) {
+      <pn-bloque-error [titulo]="error" (reintentar)="cargar()" />
+    } @else if (!grupos.length) {
+      <pn-bloque-vacio titulo="Aún no tienes grupos asignados." texto="Pídeselo a tu escuela." />
+    } @else {
+      <ul class="mis-grupos__rejilla" aria-label="Mis grupos">
+        @for (grupo of grupos; track grupo.id) {
+          <li class="grupos__tarjeta">
+            <a class="mis-grupos__enlace" [routerLink]="['/mis-grupos', grupo.id]">
+              <div class="mis-grupos__nombre">
+                @if (grupo.disciplina; as disciplina) {
+                  <span [class]="'grupos__disc grupos__disc--' + colorDisciplina(disciplina.codigo)" [title]="disciplina.nombre"><span class="mis-grupos__oculto">{{ disciplina.nombre }}</span></span>
+                }
+                <h2>{{ grupo.nombre }}</h2>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7" /></svg>
+              </div>
+              <p class="mis-grupos__secundario">@if (grupo.sede) { {{ grupo.sede.nombre }} · }{{ etiquetaRol(grupo.rol) }}</p>
+              <dl>
+                <div><dt>Alumnos</dt><dd data-cifras>{{ numero(grupo.alumnosActivos) }}</dd></div>
+                <div><dt>Horario</dt><dd data-cifras>{{ horario(grupo.turnos) }}</dd></div>
+              </dl>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>

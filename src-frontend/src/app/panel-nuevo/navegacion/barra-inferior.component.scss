@@ -24,6 +24,12 @@
   list-style: none;
 }
 
+.pn-barra__lista--profesor {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
 .pn-barra__entrada {
   position: relative;
   display: flex;

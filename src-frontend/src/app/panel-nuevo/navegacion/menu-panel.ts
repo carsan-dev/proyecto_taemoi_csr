@@ -16,7 +16,7 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  */
 export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma';
 
-export type ContextoMenu = Readonly<Record<Condicion, boolean>>;
+export type ContextoMenu = Readonly<Record<Condicion, boolean> & { soloProfesor?: boolean }>;
 
 export interface EntradaMenu {
   etiqueta: string;
@@ -168,8 +168,21 @@ export function visible(entrada: EntradaMenu, contexto: ContextoMenu): boolean {
   return !entrada.condicion || contexto[entrada.condicion] === true;
 }
 
-/** Las seis entradas con sus opciones visibles para la sesión. */
+/** Las entradas visibles: dos accesos directos para solo-profesor o las seis secciones de gestión. */
 export function menuVisible(contexto: ContextoMenu): SeccionMenu[] {
+  // Decisión 326 (R6): el profesor sin gestión navega directamente, sin menús administrativos.
+  if (contexto.soloProfesor) {
+    return [
+      ...(contexto.misGrupos ? [{
+        id: 'grupos' as const, etiqueta: 'Mis grupos', icono: 'bi-people',
+        ruta: '/mis-grupos', entradas: [], prefijos: ['/mis-grupos'],
+      }] : []),
+      {
+        id: 'tesoreria', etiqueta: 'Mi caja', icono: 'bi-wallet2',
+        ruta: '/mi-caja', entradas: [], prefijos: ['/mi-caja'],
+      },
+    ];
+  }
   return MENU_PANEL.map((seccion) => ({
     ...seccion,
     entradas: seccion.entradas.filter((e) => visible(e, contexto)),

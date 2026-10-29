@@ -16,14 +16,23 @@ import com.taemoi.project.dtos.response.MarcaPanelDTO;
 import com.taemoi.project.marca.MarcaPanelService;
 
 /**
- * Pieza 8b-T (fase3-e8b-plan.md §4): la marca de la escuela ACTIVA para el panel nuevo. Solo gestión (propietario y
- * gestor); el responsable de sede, la familia, la sesión solo-profesor y el superadmin sin membresía, 403. Protegido dos
- * veces: la regla de {@code /api/escuela/**} de {@code SecurityConfiguration} y {@code @PreAuthorize} aquí.
+ * Pieza 8b-T (fase3-e8b-plan.md §4): la marca de la escuela ACTIVA para el panel nuevo. Gestión (propietario y
+ * gestor) y, desde la pieza 8b-3o (decisión 326), la sesión solo-profesor, que solo lee ({@link #LEER}); el responsable
+ * de sede, la familia (también la que además es profesor) y el superadmin sin membresía, 403. Protegido dos veces: la
+ * regla de URL de {@code SecurityConfiguration} (y la lista blanca de la sesión solo-profesor) y {@code @PreAuthorize}
+ * aquí. Una ruta nueva bajo esta clase queda solo para gestión.
  */
 @RestController
 @RequestMapping("/api/escuela")
 @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER')")
 public class EscuelaMarcaController {
+
+	/**
+	 * Lectura de la marca y el logo: gestión o la sesión solo-profesor (PROFESOR sin ADMIN, MANAGER ni USER; también
+	 * con RESPONSABLE_SEDE), como {@code SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor}.
+	 */
+	static final String LEER = "hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER') "
+			+ "or (hasAuthority('ROLE_PROFESOR') and !hasAuthority('ROLE_USER'))";
 
 	static final CacheControl CACHE_LOGO = CacheControl.maxAge(Duration.ofSeconds(300)).cachePrivate();
 
@@ -35,6 +44,7 @@ public class EscuelaMarcaController {
 
 	/** Nombre, origen del logo ({@code SUBIDO}, {@code LEGADO} o {@code NINGUNO}), su versión y el tema calculado. */
 	@GetMapping("/marca")
+	@PreAuthorize(LEER)
 	public ResponseEntity<MarcaPanelDTO> marca() {
 		return ResponseEntity.ok(marca.marcaActiva());
 	}
@@ -46,6 +56,7 @@ public class EscuelaMarcaController {
 	 * Sin {@code produces}: así el error sale como JSON aunque la petición acepte solo imágenes.
 	 */
 	@GetMapping("/logo")
+	@PreAuthorize(LEER)
 	public ResponseEntity<byte[]> logo(@RequestHeader(value = "If-None-Match", required = false) String siNoCoincide) {
 		if (siNoCoincide != null && !siNoCoincide.isBlank()) {
 			String vigente = etiqueta(marca.versionLogoActiva());

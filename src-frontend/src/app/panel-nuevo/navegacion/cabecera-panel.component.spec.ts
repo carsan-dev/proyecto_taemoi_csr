@@ -233,6 +233,65 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   });
 
   describe('entradas', () => {
+    for (const misGrupos of [true, false]) {
+      itSinReloj(`solo-profesor con MIS_GRUPOS=${misGrupos}: enlaces directos y cuenta sin gestión`, async () => {
+        roles = ['ROLE_PROFESOR'];
+        datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: misGrupos ? ['MIS_GRUPOS', 'MI_CAJA'] : ['MI_CAJA'] });
+        total.set(7);
+        await montar(misGrupos ? '/mis-grupos/4?mes=10' : '/mi-caja');
+        responderMarca();
+        const nombres = misGrupos ? ['Mis grupos', 'Mi caja'] : ['Mi caja'];
+        const enlaces = Array.from(el().querySelectorAll<HTMLAnchorElement>('.pn-cab__nav .pn-cab__entrada'));
+        expect(enlaces.map((e) => e.textContent?.trim())).toEqual(nombres);
+        expect(enlaces.every((e) => e.tagName === 'A' && !e.hasAttribute('aria-haspopup'))).toBeTrue();
+        expect(enlaces[0].getAttribute('aria-current')).toBe('page');
+        expect(el().querySelector('.pn-cab__marca')?.getAttribute('href')).toBe(misGrupos ? '/mis-grupos' : '/mi-caja');
+        expect(refrescar).not.toHaveBeenCalled();
+        expect(el().querySelector('.pn-contador')).toBeNull();
+        expect(Array.from(el().querySelectorAll('.pn-barra__nombre')).map((e) => e.textContent?.trim())).toEqual(nombres);
+        expect(el().querySelector('.pn-barra__mas')).toBeNull();
+
+        el().querySelector<HTMLButtonElement>('#pn-cuenta-boton')!.click();
+        fixture.detectChanges();
+        const cuenta = el().querySelector<HTMLElement>('#pn-menu-cuenta')!;
+        expect(cuenta.querySelector('.pn-menu__quien-rol')?.textContent?.trim()).toBe('Profesor');
+        expect(cuenta.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
+        expect(cuenta.querySelector('a[href="/politica-privacidad"]')).not.toBeNull();
+        const botones = Array.from(cuenta.querySelectorAll<HTMLButtonElement>('button'));
+        expect(botones.some((b) => b.textContent?.trim() === 'Configurar cookies')).toBeTrue();
+        expect(botones.some((b) => /diseño/i.test(b.textContent ?? ''))).withContext('el profesor no puede cambiar de diseño').toBeFalse();
+        botones.find((b) => b.textContent?.trim() === 'Cerrar sesión')!.click();
+        expect(logout).toHaveBeenCalled();
+      });
+    }
+
+    itSinReloj('solo-profesor: Mi caja se marca al navegar, sin pedir solicitudes', async () => {
+      roles = ['ROLE_PROFESOR'];
+      datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: ['MIS_GRUPOS'] });
+      await montar('/mis-grupos/4');
+      responderMarca();
+      await router.navigateByUrl('/mi-caja?mes=10');
+      fixture.detectChanges();
+      expect(entrada('grupos').hasAttribute('aria-current')).toBeFalse();
+      expect(entrada('tesoreria').getAttribute('aria-current')).toBe('page');
+      expect(refrescar).not.toHaveBeenCalled();
+    });
+
+    itSinReloj('gestor y profesor mantiene Mis grupos y Mi caja en sus desplegables', async () => {
+      roles = ['ROLE_MANAGER', 'ROLE_PROFESOR'];
+      datosPermisos = permisos({ roles: ['ADMINISTRADOR', 'PROFESOR'] });
+      await montar();
+      responderMarca();
+      expect(el().querySelectorAll('.pn-cab__nav .pn-cab__entrada').length).toBe(6);
+      entrada('grupos').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-grupos a[href="/mis-grupos"]')).not.toBeNull();
+      entrada('tesoreria').click();
+      fixture.detectChanges();
+      expect(el().querySelector('#pn-menu-tesoreria a[href="/mi-caja"]')).not.toBeNull();
+      expect(el().querySelector('.pn-barra__mas')).not.toBeNull();
+    });
+
     itSinReloj('seis con icono y nombre; cuatro con desplegable (aria-haspopup y aria-expanded)', async () => {
       await montar();
       responderMarca();

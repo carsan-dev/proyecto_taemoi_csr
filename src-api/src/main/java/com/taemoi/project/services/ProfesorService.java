@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
+import com.taemoi.project.dtos.response.TurnoDeGrupoResumenDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.Grado;
@@ -34,6 +35,7 @@ import com.taemoi.project.organizacion.AlcanceActual;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AsignacionProfesorRepository;
+import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.repositories.TutorRepository;
 import com.taemoi.project.utils.ImporteCargo;
 
@@ -76,13 +78,14 @@ public class ProfesorService {
 	private final AlumnoDeporteRepository inscripciones;
 	private final ProductosCatalogoService productosCatalogo;
 	private final RegistroAccionesProfesor registro;
+	private final TurnoRepository turnos;
 
 	public ProfesorService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
 			TutorRepository tutores, ProgresionGradosService progresionGrados,
 			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado,
 			AlumnoSaludService alumnoSalud, PDFService pdf, AlumnoDeporteService alumnoDeportes, AlumnoService alumnos,
 			AlumnoDeporteRepository inscripciones, ProductosCatalogoService productosCatalogo,
-			RegistroAccionesProfesor registro) {
+			RegistroAccionesProfesor registro, TurnoRepository turnos) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
@@ -97,9 +100,13 @@ public class ProfesorService {
 		this.inscripciones = inscripciones;
 		this.productosCatalogo = productosCatalogo;
 		this.registro = registro;
+		this.turnos = turnos;
 	}
 
-	/** Sus grupos (§5.1), por nombre: sede, su rol, disciplina y nº de alumnos activos. Sin grupos, lista vacía. */
+	/**
+	 * Sus grupos (§5.1), por nombre: sede, su rol, disciplina, nº de alumnos activos y sus turnos (pieza 8b-3o: los de
+	 * todos sus grupos en una consulta, la misma que el resumen de gestión). Sin grupos, lista vacía.
+	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.Grupo> misGrupos() {
 		Set<Long> grupos = gruposDelProfesor();
@@ -114,6 +121,11 @@ public class ProfesorService {
 				.setParameter("grupos", grupos).getResultList()) {
 			activos.put((Long) f[0], (Long) f[1]);
 		}
+		Map<Long, List<TurnoDeGrupoResumenDTO>> turnosPorGrupo = new HashMap<>();
+		for (Object[] f : turnos.findResumenPorGrupos(grupos)) {
+			turnosPorGrupo.computeIfAbsent((Long) f[0], k -> new ArrayList<>())
+					.add(new TurnoDeGrupoResumenDTO((Long) f[1], (String) f[2], (String) f[3], (String) f[4]));
+		}
 		List<ProfesorDTOs.Grupo> resultado = new ArrayList<>();
 		for (Object[] f : em.createQuery("""
 				SELECT g.id, g.nombre, g.sedeId, s.nombre, d.codigo, d.nombre
@@ -123,7 +135,8 @@ public class ProfesorService {
 			Long id = (Long) f[0];
 			resultado.add(new ProfesorDTOs.Grupo(id, (String) f[1], sede((Long) f[2], (String) f[3]), roles.get(id),
 					activos.getOrDefault(id, 0L), f[4] == null ? null
-							: new ProfesorDTOs.Disciplina((String) f[4], (String) f[5])));
+							: new ProfesorDTOs.Disciplina((String) f[4], (String) f[5]),
+					List.copyOf(turnosPorGrupo.getOrDefault(id, List.of()))));
 		}
 		return resultado;
 	}

@@ -63,7 +63,11 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "POST", "/api/auth/permisos" }, { "GET", "/api/auth/permisos/otra" },
 				{ "GET", "/api/ruta-nueva-sin-preautorize" },
 				{ "GET", "/api/caja/profesorx" }, { "GET", "/imagenes/alumnos/1.jpg" }, { "GET", "/api/profesorx" },
-				{ "GET", "/api/profesores/1" } }) {
+				{ "GET", "/api/profesores/1" },
+				// Pieza 8b-3o: de /api/escuela solo leer la marca y el logo; escribir u otra ruta, cerrado.
+				{ "PUT", "/api/escuela/marca" }, { "POST", "/api/escuela/marca" }, { "DELETE", "/api/escuela/marca" },
+				{ "PUT", "/api/escuela/logo" }, { "POST", "/api/escuela/logo" }, { "DELETE", "/api/escuela/logo" },
+				{ "GET", "/api/escuela" }, { "GET", "/api/escuela/otra" }, { "GET", "/api/escuela/marca/otra" } }) {
 			assertFalse(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 		}
 	}
@@ -81,7 +85,10 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				// Pieza E7-1 (D7-9): sus rutas propias, cualquier método (deciden la regla de URL y el @PreAuthorize).
 				{ "GET", "/api/profesor/grupos" }, { "HEAD", "/api/profesor/grupos" },
 				{ "GET", "/api/profesor/grupos/1/alumnos" }, { "GET", "/api/profesor/alumnos/1" },
-				{ "PUT", "/api/profesor/alumnos/1/deportes/TAEKWONDO/apto" } }) {
+				{ "PUT", "/api/profesor/alumnos/1/deportes/TAEKWONDO/apto" },
+				// Pieza 8b-3o (decisión 326): la marca y el logo de su escuela activa para el panel nuevo. Solo GET.
+				{ "GET", "/api/escuela/marca" }, { "HEAD", "/api/escuela/marca" }, { "GET", "/api/escuela/logo" },
+				{ "HEAD", "/api/escuela/logo" } }) {
 			llamadas.clear();
 			assertTrue(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 			assertEquals(List.of("sesion " + ruta[0] + " " + ruta[1]), llamadas, "decide la regla de siempre");
@@ -134,6 +141,29 @@ class SesionSoloProfesorAuthorizationManagerTest {
 		assertFalse(decide(anonimo, "GET", "/api/alumnos"));
 		assertTrue(decide(anonimo, "GET", "/publico/eventos"));
 		assertFalse(decide(null, "GET", "/api/alumnos"));
+	}
+
+	/**
+	 * Pieza 8b-3o (decisión 326): regla de URL de la marca y el logo de la escuela. Gestión y la sesión solo-profesor
+	 * (también responsable + profesor, decisión 184); la familia, también la que además es profesor, el responsable solo,
+	 * el superadmin sin membresía y el anónimo, no.
+	 */
+	@Test
+	void gestionOSesionSoloProfesor() {
+		AuthorizationManager<Object> regla = SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor();
+		for (Authentication sesion : List.of(sesion("ROLE_ADMIN"), sesion("ROLE_MANAGER"), sesion("ROLE_PROFESOR"),
+				sesion("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"), sesion("ROLE_PROFESOR", "ROLE_ADMIN"),
+				sesion("ROLE_PROFESOR", AutoridadPlataforma.ADMIN_PLATAFORMA))) {
+			assertTrue(regla.authorize(() -> sesion, "peticion").isGranted(), sesion.getAuthorities().toString());
+		}
+		Authentication anonimo = new AnonymousAuthenticationToken("k", "anonymousUser",
+				AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+		for (Authentication sesion : List.of(sesion("ROLE_USER"), sesion("ROLE_PROFESOR", "ROLE_USER"),
+				sesion("ROLE_RESPONSABLE_SEDE"), sesion(AutoridadPlataforma.ADMIN_PLATAFORMA), sesion(), anonimo,
+				UsernamePasswordAuthenticationToken.unauthenticated("x", null))) {
+			assertFalse(regla.authorize(() -> sesion, "peticion").isGranted(), sesion.getAuthorities().toString());
+		}
+		assertFalse(regla.authorize(() -> null, "peticion").isGranted());
 	}
 
 	@Test
