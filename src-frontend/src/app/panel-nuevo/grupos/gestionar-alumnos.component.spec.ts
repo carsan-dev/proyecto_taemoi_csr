@@ -139,6 +139,11 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     fixture.componentInstance.buscar(''); tick(300); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.alumnos-grupo__nombre').getAttribute('href')).toBe('/alumnosEditar/1');
   }));
+  it('passes the origin group to the pupil schedules screen', () => {
+    grupo([alumno(1)]);
+    const enlace: HTMLAnchorElement = fixture.nativeElement.querySelector('a.alumnos-grupo__texto[href^="/gestionarTurnosAlumno"]');
+    expect(enlace.getAttribute('href')).toBe(`/gestionarTurnosAlumno/1?grupoId=${fixture.componentInstance.grupoId}`);
+  });
   it('renders versioned photos and falls back to initials without mutating pupils', () => {
     grupo([{ ...alumno(1), fotoAlumno: { id: 17, url: '/foto' } }, alumno(2)]);
     const avatares = fixture.nativeElement.querySelectorAll('.alumnos-grupo__avatar') as NodeListOf<HTMLElement>;

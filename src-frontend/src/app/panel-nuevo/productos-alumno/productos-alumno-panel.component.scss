@@ -114,10 +114,8 @@ thead th:nth-child(9) { width: 6%; }
 .menu .peligro { color: var(--pn-peligro); }
 .expandir, .resumen, .etiqueta-movil { display: none; }
 .paginacion { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-.pendientes { position: fixed; bottom: 0; left: 0; right: 0; z-index: 35; display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 16px max(24px, calc((100vw - 1232px) / 2)); background: var(--pn-superficie); border-top: 1px solid var(--pn-linea); box-shadow: var(--pn-sombra-barra); }
-.pendientes > strong { margin-right: auto; }
+.pendientes { @include c.barra-cambios; }
 .pendientes-nota { flex: 1; min-width: 0; font: var(--pn-secundario); color: var(--pn-tinta-2); }
-.pendientes button { flex: none; min-height: 44px; }
 .vacio { padding: 40px 16px; text-align: center; color: var(--pn-tinta-2); }
 .esqueleto { height: 64px; margin-bottom: 12px; border-radius: var(--pn-radio-m); background: var(--pn-serie-pista); }
 @media (max-width: 1279px) {
@@ -151,7 +149,7 @@ thead th:nth-child(9) { width: 6%; }
   .error-fila td { grid-column: 1 / -1; }
 }
 @media (max-width: 1023px) {
-  .pendientes { bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .pendientes { @include c.barra-cambios-sobre-navegacion; }
   .productos-alumno__pagina { padding-bottom: 200px; }
 }
 @media (max-width: 767px) {
@@ -168,9 +166,7 @@ thead th:nth-child(9) { width: 6%; }
   tbody tr { padding: 12px; gap: 8px; }
   .total { right: 12px; }
   .pago-linea { white-space: nowrap; }
-  .pendientes { padding: 8px 16px; gap: 6px; flex-wrap: wrap; }
-  .pendientes > strong { flex: 1; min-width: 0; font-size: .75rem; line-height: 1.25; }
+  .pendientes { @include c.barra-cambios-compacta; }
   .pendientes-nota { order: 1; flex-basis: 100%; }
-  .pendientes button { flex: none; padding: 0 6px; font-size: .75rem; white-space: nowrap; }
   .paginacion { justify-content: space-between; gap: 4px; font-size: .8125rem; }
 }

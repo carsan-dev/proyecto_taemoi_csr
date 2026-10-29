@@ -1,13 +1,13 @@
 import { Component, DestroyRef, Injector, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, Router } from '@angular/router';
 import { Subject, catchError, filter, from, map, of, skip, switchMap, take } from 'rxjs';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll.component';
 import { CommonModule, DOCUMENT, Location } from '@angular/common';
 import { borrarCookiesGa, cargarScriptGtag, urlSinToken } from '../../../../utils/analitica.util';
-import { resolverPortalContexto } from '../../../../app.routes';
+import { resolverPortalContexto, routes } from '../../../../app.routes';
 import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
@@ -22,6 +22,29 @@ export function esRutaDelPanel(url: string): boolean {
   return (
     resolverPortalContexto(ruta) === 'admin' || RUTAS_PANEL.some((r) => ruta === r || ruta.startsWith(`${r}/`))
   );
+}
+
+/**
+ * Ruta que casa con alguna de `app.routes` sin llegar al comodín `**`: mismo número de segmentos (los `:param` valen
+ * cualquiera) o, si la ruta tiene hijas, como prefijo. Si dice «conocida» de más, solo se pierde el hueco; nunca retrasa
+ * la cabecera de una pública.
+ */
+export function esRutaConocida(url: string): boolean {
+  const segmentos = (url.split(/[?#]/)[0] || '/').split('/').filter(Boolean);
+  if (segmentos.length === 0) {
+    return true;
+  }
+  return routes.some((r) => {
+    if (!r.path || r.path === '**') {
+      return false;
+    }
+    const partes = r.path.split('/').filter(Boolean);
+    const conHijas = !!(r.children || r.loadChildren);
+    if (partes.length > segmentos.length || (!conHijas && partes.length !== segmentos.length)) {
+      return false;
+    }
+    return partes.every((p, i) => p.startsWith(':') || p === segmentos[i]);
+  });
 }
 
 /** Recordatorio global (sin cuenta ni email) de que el interruptor estaba encendido en este navegador. */
@@ -62,7 +85,15 @@ export class SkeletonComponent implements OnInit {
   private analiticaActiva = false;
   private ultimaPagina: string | null = null;
   private readonly injector = inject(Injector);
-  private readonly rutaPanel = signal(esRutaDelPanel(inject(Location).path()));
+  private readonly rutaInicial = inject(Location).path();
+  private readonly rutaPanel = signal(esRutaDelPanel(this.rutaInicial));
+  /**
+   * Carga directa (F5 o URL pegada) de una URL que solo casa con el comodín: puede acabar en el 404 del panel
+   * (`data.panelNuevo`), pero eso no se sabe hasta el primer NavigationEnd. Se apaga al acabar (o fallar) esa navegación.
+   */
+  private readonly desconocidaSinResolver = signal(
+    !this.router.navigated && !this.rutaPanel() && !esRutaConocida(this.rutaInicial)
+  );
   /** El interruptor de la sesión (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
   private readonly encendido = signal<boolean | null>(null);
   private readonly recordado = signal(recordatorio((s) => s.getItem(RECORDATORIO_PANEL)) === '1');
@@ -75,7 +106,8 @@ export class SkeletonComponent implements OnInit {
    */
   readonly modo = computed<ModoCabecera>(() => {
     if (!this.rutaPanel()) {
-      return 'hoy';
+      // Con el recordatorio, el hueco hasta saber si es el 404 del panel; sin él, o en una ruta conocida, lo de hoy.
+      return this.desconocidaSinResolver() && this.recordado() ? 'hueco' : 'hoy';
     }
     const encendido = this.encendido() ?? (this.recordado() ? null : false);
     return encendido === null ? 'hueco' : encendido ? 'nuevo' : 'hoy';
@@ -98,6 +130,15 @@ export class SkeletonComponent implements OnInit {
           this.enviarPageView(pagina);
         }
       });
+    if (this.desconocidaSinResolver()) {
+      this.router.events
+        .pipe(
+          filter((e) => e instanceof NavigationEnd || e instanceof NavigationCancel || e instanceof NavigationError),
+          take(1),
+          takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe(() => this.desconocidaSinResolver.set(false));
+    }
     if (this.rutaPanel()) {
       this.evaluarInterruptor();
     }

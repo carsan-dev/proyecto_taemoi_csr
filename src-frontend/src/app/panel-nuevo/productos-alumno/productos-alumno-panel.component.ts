@@ -83,6 +83,17 @@ export class ProductosAlumnoPanelComponent implements OnInit, ConCambiosSinGuard
     this.elemento.nativeElement.querySelector<HTMLButtonElement>(`[data-cargo="${id}"] [data-deshacer]`)?.focus();
   }
 
+  /**
+   * «Deshacer» de la fila: el del borrado marcado o, si no, el de sus cambios. El botón desaparece al deshacer: el foco
+   * pasa al «Detalle» de la misma fila para no perderse.
+   */
+  deshacer(fila: FilaCargo): void {
+    if (fila.puedeDeshacerBorrar) this.estado.deshacerBorrar(fila.id);
+    else this.estado.deshacerFila(fila.id);
+    this.detectorCambios.detectChanges();
+    this.elemento.nativeElement.querySelector<HTMLButtonElement>(`[data-cargo="${fila.id}"] [data-expandir]`)?.focus();
+  }
+
   precioResumen(texto: string): string {
     const lectura = leerPrecio(texto);
     return lectura.valor === null ? '—' : eur(lectura.valor);

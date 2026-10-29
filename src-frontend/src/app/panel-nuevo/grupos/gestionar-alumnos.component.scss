@@ -13,6 +13,7 @@
 .alumnos-grupo__campo { position: relative; display: flex; align-items: center; gap: 8px; }
 .alumnos-grupo__campo svg { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); width: 18px; height: 18px; flex: none; color: var(--pn-tinta-2); pointer-events: none; }
 .alumnos-grupo__campo input { box-sizing: border-box; flex: 1; width: 100%; min-width: 0; height: 44px; min-height: 44px; padding: 0 40px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); caret-color: var(--pn-acento); }
+.alumnos-grupo__campo input::-webkit-search-cancel-button { display: none; appearance: none; }
 .alumnos-grupo__campo input:focus-visible { outline: 2px solid var(--pn-acento); outline-offset: 2px; }
 .alumnos-grupo__campo button { flex: none; @include c.boton-texto; }
 .alumnos-grupo__busqueda p { margin: 8px 0 0; font: var(--pn-secundario); color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
