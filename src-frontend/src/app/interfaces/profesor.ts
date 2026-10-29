@@ -4,6 +4,8 @@
  * de grado llegan como texto `yyyy-MM-dd`; los importes, como número.
  */
 
+import { TurnoDeGrupoResumen } from './grupo-resumen';
+
 export type RolAsignacionProfesor = 'TITULAR' | 'AYUDANTE';
 export type ParentescoTutor = 'PADRE' | 'MADRE' | 'TUTOR_LEGAL' | 'OTRO';
 export type TipoContacto = 'ALUMNO' | 'TUTOR';
@@ -26,6 +28,7 @@ export interface GrupoProfesor {
   rol: RolAsignacionProfesor;
   alumnosActivos: number;
   disciplina: { codigo: string; nombre: string } | null;
+  turnos: TurnoDeGrupoResumen[];
 }
 
 /** ProfesorDTOs.DeporteEnLista */

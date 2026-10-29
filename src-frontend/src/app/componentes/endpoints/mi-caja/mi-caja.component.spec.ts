@@ -77,6 +77,20 @@ describe('MiCajaComponent', () => {
     expect(enlaces[1].getAttribute('aria-current')).toBe('page');
   });
 
+  it('el marco nuevo oculta la navegación duplicada y la salida; el de hoy las conserva', () => {
+    crear();
+    const navegacion = el().querySelector<HTMLElement>('app-navegacion-profesor')!;
+    const salir = el().querySelector<HTMLElement>('.btn-salir')!;
+    expect(getComputedStyle(navegacion).display).not.toBe('none');
+    expect(getComputedStyle(salir).display).not.toBe('none');
+    el().classList.add('marco-panel');
+    expect(getComputedStyle(navegacion).display).toBe('none');
+    expect(getComputedStyle(salir).display).toBe('none');
+    el().classList.remove('marco-panel');
+    expect(getComputedStyle(navegacion).display).not.toBe('none');
+    expect(getComputedStyle(salir).display).not.toBe('none');
+  });
+
   it('agrupa los cargos por alumno, por nombre, y filtra sin tildes', () => {
     const grupos = agruparPorAlumno(CARGOS);
     expect(grupos.map((g) => g.nombre)).toEqual(['Andrés Gil', 'Lucía Prado']);

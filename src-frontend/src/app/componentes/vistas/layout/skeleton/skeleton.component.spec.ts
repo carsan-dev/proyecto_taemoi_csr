@@ -116,9 +116,26 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     esperarHoy(await montar('/adminpage'));
   });
 
-  itSinReloj('encendido en la sesión solo-profesor (decisión 260): lo de hoy', async () => {
-    obtener.and.returnValue(of(permisos(true, ['PROFESOR'])));
+  for (const ruta of ['/mi-caja', '/mis-grupos', '/mis-grupos/4']) {
+    itSinReloj(`encendido en la sesión solo-profesor (decisión 326, R6): marco nuevo en ${ruta}`, async () => {
+      obtener.and.returnValue(of(permisos(true, ['PROFESOR'])));
+      const raiz = await montar(ruta);
+      expect(cabeceraDeHoy(raiz)).toBeNull();
+      expect(pie(raiz)).toBeNull();
+      expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+      expect(cargarHoja).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  itSinReloj('profesor con diseño apagado: conserva el marco de hoy', async () => {
+    obtener.and.returnValue(of(permisos(false, ['PROFESOR'])));
+    esperarHoy(await montar('/mis-grupos'));
+  });
+
+  itSinReloj('solo familia: ni siquiera un interruptor activo abre el marco nuevo', async () => {
+    obtener.and.returnValue(of(permisos(true, ['FAMILIA'])));
     esperarHoy(await montar('/mi-caja'));
+    expect(cargarHoja).not.toHaveBeenCalled();
   });
 
   itSinReloj('encendido en una ruta pública: la cabecera y el pie de hoy, sin pedir permisos', async () => {

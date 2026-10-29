@@ -25,7 +25,7 @@ class ViewerStub {
 }
 
 const GRUPO: GrupoProfesor = {
-  id: 4, nombre: 'Infantil lunes y miércoles', sede: { id: 1, nombre: 'Sede Centro' }, rol: 'TITULAR', alumnosActivos: 3, disciplina: null,
+  id: 4, nombre: 'Infantil lunes y miércoles', sede: { id: 1, nombre: 'Sede Centro' }, rol: 'TITULAR', alumnosActivos: 3, disciplina: null, turnos: [],
 };
 
 function alumno(id: number, nombre: string, apto: boolean, grado = 'Amarillo'): AlumnoDeGrupo {

@@ -38,6 +38,45 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
 
 describe('app routes', () => {
+  it('Mis grupos: ruta nueva antes de la de hoy, mismo permiso e hijas diferidas sin catálogo', async () => {
+    const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mis-grupos');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual([misGruposGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toBeUndefined();
+    expect(hoy.canMatch).toBeUndefined();
+    const hijas = await (nueva.loadChildren as () => Promise<Routes>)();
+    expect(hijas.map(hija => hija.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
+    expect(hijas.every(hija => !hija.resolve && !!hija.loadComponent)).toBeTrue();
+    expect(await hijas[0].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/mis-grupos.component')).MisGruposPanelComponent);
+    expect(await hijas[1].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/ficha-profesor-panel.component')).FichaProfesorPanelComponent);
+    expect(await hijas[2].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/grupo.component')).GrupoPanelComponent);
+    const antiguas = await (hoy.loadChildren as () => Promise<Routes>)();
+    expect(await antiguas[0].loadComponent!()).not.toBe(await hijas[0].loadComponent!());
+  });
+
+  for (const activo of [false, true]) {
+    it(`Mis grupos con diseño ${activo ? 'encendido' : 'apagado'}: solo descarga las rutas elegidas`, async () => {
+      @Component({ standalone: true, template: '<p>Nueva</p>' })
+      class PantallaNueva {}
+      @Component({ standalone: true, template: '<p>Actual</p>' })
+      class PantallaActual {}
+      const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mis-grupos');
+      const cargarNueva = jasmine.createSpy('cargar rutas nuevas').and.resolveTo([{ path: '', component: PantallaNueva }]);
+      const cargarHoy = jasmine.createSpy('cargar rutas actuales').and.resolveTo([{ path: '', component: PantallaActual }]);
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], loadChildren: cargarNueva }, { ...hoy, canActivate: [], loadChildren: cargarHoy }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido: true } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/mis-grupos', activo ? PantallaNueva : PantallaActual);
+      expect(cargarNueva.calls.count()).toBe(activo ? 1 : 0);
+      expect(cargarHoy.calls.count()).toBe(activo ? 0 : 1);
+    });
+  }
+
   for (const path of ['gestionarAlumnos/:id', 'seleccionarAlumnos/:id']) {
     it(path + ' (3m-4): lazy guarded screen preserves management roles, resolver and legacy fallback', async () => {
       const [nueva, hoy] = routes.filter((route) => route.path === path);

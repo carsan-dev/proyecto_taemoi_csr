@@ -174,8 +174,8 @@ export class SkeletonComponent implements OnInit {
   /**
    * Lee el interruptor al entrar en cada ruta del panel (los permisos están en caché: solo hay petición tras
    * `reiniciar()`, p. ej. al cambiar el propio diseño) y al entrar o salir de una cuenta. Los servicios se piden aquí,
-   * no al crear el componente: fuera del panel no se pide nada. Encendido solo con `disenoNuevo.activo`, gestión en la
-   * escuela (la sesión solo-profesor queda fuera, decisión 260) y la hoja `panel-nuevo.css` cargada. Falla cerrado.
+   * no al crear el componente: fuera del panel no se pide nada. Encendido solo con `disenoNuevo.activo`, gestión o
+   * profesor en la escuela (decisión 326, R6) y la hoja `panel-nuevo.css` cargada. Las familias siguen fuera. Falla cerrado.
    * Una respuesta válida guarda o borra el recordatorio; un error no lo toca; cerrar sesión lo borra.
    */
   private evaluarInterruptor(): void {
@@ -191,7 +191,7 @@ export class SkeletonComponent implements OnInit {
               map(
                 (p) =>
                   p?.disenoNuevo?.activo === true &&
-                  (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR')
+                  (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR' || rol === 'PROFESOR')
               ),
               switchMap((activo) => {
                 this.recordar(activo);

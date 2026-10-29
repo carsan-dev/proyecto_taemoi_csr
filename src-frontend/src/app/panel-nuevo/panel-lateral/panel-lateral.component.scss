@@ -83,6 +83,11 @@
   background: var(--pn-superficie);
 }
 
+// Sin modal (Mis grupos): no es capa superior, así que lleva su propio nivel; la lista de al lado sigue activa.
+.pn-panel--sin-velo {
+  z-index: 20;
+}
+
 // Hoja inferior (por debajo de 768 px).
 .pn-panel--hoja {
   inset: auto 0 0 0;

@@ -6,6 +6,7 @@ import {
   EventEmitter,
   Input,
   OnDestroy,
+  HostListener,
   Output,
   ViewChild,
   inject,
@@ -47,6 +48,13 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
   @Input() descripcion = '';
   /** Un envío en vuelo: el panel no se puede cerrar (hoy, el cargador global tapaba toda la pantalla). */
   @Input() bloqueado = false;
+  /** Ancho en px a escritorio (por defecto 480, el del CSS). En la hoja inferior no se usa. */
+  @Input() ancho: number | null = null;
+  /**
+   * `false`: panel no modal (`show()`): sin velo ni foco atrapado, y lo de detrás sigue visible e interactivo. Esc, la X y
+   * «cerrar» lo cierran igualmente. Por defecto, modal. Se lee al abrir; no cambia en vida del panel.
+   */
+  @Input() modal = true;
   @Output() readonly cerrar = new EventEmitter<void>();
 
   @ViewChild('panel', { static: true }) private panelRef!: ElementRef<HTMLDialogElement>;
@@ -65,8 +73,7 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.disparador = disparadorActual(this.documento);
     const panel = this.panelRef.nativeElement;
-    panel.showModal();
-    this.pila.abrir(panel);
+    this.abrirCapa(panel);
     // El foco, en el primer campo del cuerpo (o en la X si no tiene).
     const cuerpo = panel.querySelector<HTMLElement>('.pn-panel__cuerpo');
     const primero = (cuerpo ? enfocables(cuerpo)[0] : undefined) ?? enfocables(panel)[0];
@@ -81,7 +88,9 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
     this.destruido = true;
     this.consulta?.removeEventListener?.('change', this.alCambiarAncho);
     const panel = this.panelRef.nativeElement;
-    this.pila.cerrar(panel);
+    if (this.modal) {
+      this.pila.cerrar(panel);
+    }
     if (panel.open) {
       panel.close();
     }
@@ -102,12 +111,33 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (this.bloqueado) {
-      const panel = this.panelRef.nativeElement;
-      panel.showModal();
-      this.pila.abrir(panel);
+      this.abrirCapa(this.panelRef.nativeElement);
       return;
     }
     this.pedirCierre();
+  }
+
+  private abrirCapa(panel: HTMLDialogElement): void {
+    if (this.modal) {
+      panel.showModal();
+      this.pila.abrir(panel);
+    } else {
+      panel.show();
+    }
+  }
+
+  /**
+   * Sin modal, Esc cierra el panel aunque el foco esté en la lista de al lado. Si hay una capa modal encima (un diálogo
+   * de confirmación) o Esc ya se atendió, no hace nada.
+   */
+  @HostListener('document:keydown.escape', ['$event'])
+  alEscapeEnElDocumento(evento: Event): void {
+    if (this.modal || evento.defaultPrevented || this.pila.arriba()) {
+      return;
+    }
+    if (!this.panelRef.nativeElement.contains(evento.target as Node)) {
+      this.pedirCierre();
+    }
   }
 
   alClic(evento: MouseEvent): void {
@@ -122,7 +152,9 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
       this.pedirCierre();
       return;
     }
-    contenerFoco(evento, this.panelRef.nativeElement);
+    if (this.modal) {
+      contenerFoco(evento, this.panelRef.nativeElement);
+    }
   }
 
   /** Esc, el velo, la X y el cierre del navegador: emite `cerrar` una sola vez, y nada si está bloqueado. */

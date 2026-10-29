@@ -4,6 +4,7 @@ import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { AuthenticationService } from '../authentication/authentication.service';
 
 /**
  * Contador de la cabecera de gestión (D6c-4): lo que espera acción de la sesión. Se pide al entrar y al navegar, nunca
@@ -13,6 +14,7 @@ import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 @Injectable({ providedIn: 'root' })
 export class SolicitudesContadorService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthenticationService);
   private readonly url = `${environment.apiUrl}/solicitudes/contador`;
   private readonly peticiones = new Subject<void>();
   private readonly totalActual = signal(0);
@@ -37,7 +39,15 @@ export class SolicitudesContadorService {
       });
   }
 
+  /**
+   * Pide el contador. Una sesión solo profesor no tiene cabecera de gestión y el servidor le contestaría 403: no se
+   * pide, sea quien sea el que lo solicite, y el total queda a cero.
+   */
   refrescar(): void {
+    if (this.auth.esSoloProfesor()) {
+      this.reiniciar();
+      return;
+    }
     this.peticiones.next();
   }
 

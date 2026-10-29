@@ -1,5 +1,5 @@
 <nav class="pn-barra" aria-label="Accesos del panel">
-  <ul class="pn-barra__lista">
+  <ul class="pn-barra__lista" [class.pn-barra__lista--profesor]="soloProfesor">
     @for (seccion of principales; track seccion.id) {
     <li>
       <a class="pn-barra__entrada" [routerLink]="rutaDe(seccion)" [class.es-actual]="activa === seccion.id"
@@ -9,6 +9,7 @@
       </a>
     </li>
     }
+    @if (!soloProfesor) {
     <li data-pn-menu="mas">
       <button type="button" id="pn-mas-boton" class="pn-barra__entrada pn-barra__mas" [class.es-actual]="masActual"
         aria-haspopup="menu" [attr.aria-expanded]="abierta()" [attr.aria-controls]="abierta() ? 'pn-menu-mas' : null"
@@ -66,5 +67,6 @@
       </div>
       }
     </li>
+    }
   </ul>
 </nav>

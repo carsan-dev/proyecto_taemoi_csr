@@ -1,0 +1,77 @@
+<section class="pn grupo-profesor" [class.grupo-profesor--con-panel]="!!alumnoAbierto" pnAcento>
+  <div class="grupo-profesor__pagina">
+    <nav class="grupo-profesor__migas" aria-label="Ruta">
+      <a routerLink="/mis-grupos">Mis grupos</a><span aria-hidden="true">/</span>
+    </nav>
+    <header>
+      <h1>{{ grupo?.nombre ?? 'Grupo' }}</h1>
+      @if (grupo) {
+        <p class="grupo-profesor__secundario">@if (grupo.sede) { {{ grupo.sede.nombre }} · }{{ etiquetaRol(grupo.rol) }} · {{ alumnos.length | plural:'alumno':'alumnos' }}</p>
+      }
+    </header>
+    @if (cargando) {
+      <pn-esqueleto etiqueta="Cargando el grupo…">
+        <div class="grupo-profesor__esqueleto-acciones"></div>
+        @for (fila of esqueletos; track fila) { <div class="grupo-profesor__esqueleto-fila"><span></span><span></span></div> }
+      </pn-esqueleto>
+    } @else if (error) {
+      <pn-bloque-error [titulo]="error" (reintentar)="cargar()" />
+    } @else {
+      <div class="grupo-profesor__asistencia">
+        <label class="grupo-profesor__mes"><span class="grupo-profesor__oculto">Mes de la hoja de asistencia</span>
+          <select [(ngModel)]="mes" [disabled]="descargando">
+            @for (opcion of meses; track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
+          </select>
+        </label>
+        <button pnOcupado type="button" class="grupo-profesor__boton" [ocupado]="descargando"
+          textoOcupado="Generando…" (click)="descargarAsistencia($event)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6v20h12V6zM14 2v5h5M9 12h6M9 16h6" /></svg>Hoja de asistencia
+        </button>
+      </div>
+      @if (errorAsistencia) { <pn-bloque-error [titulo]="errorAsistencia" (reintentar)="descargarAsistencia()" /> }
+      <div class="grupo-profesor__filtros" role="radiogroup" aria-label="Qué alumnos ver" (keydown)="teclaFiltro($event)">
+        <button type="button" role="radio" data-filtro="todos" [attr.aria-checked]="filtro === 'todos'" [tabIndex]="filtro === 'todos' ? 0 : -1"
+          (click)="filtro = 'todos'">Todos <span data-cifras>{{ numero(alumnos.length) }}</span></button>
+        <button type="button" role="radio" data-filtro="aptos" [attr.aria-checked]="filtro === 'aptos'" [tabIndex]="filtro === 'aptos' ? 0 : -1"
+          (click)="filtro = 'aptos'">Aptos <span data-cifras>{{ numero(numeroAptos) }}</span></button>
+      </div>
+      <p class="grupo-profesor__oculto" role="status">{{ visibles.length | plural:'alumno':'alumnos' }}</p>
+      @if (!alumnos.length) {
+        <pn-bloque-vacio titulo="Este grupo no tiene alumnos activos." />
+      } @else if (!visibles.length) {
+        <pn-bloque-vacio titulo="Ningún alumno de este grupo está apto para examen." />
+      } @else {
+        <ul class="grupo-profesor__lista" aria-label="Alumnos activos">
+          @for (alumno of visibles; track alumno.id) {
+            <li class="grupo-profesor__fila" [class.grupo-profesor__fila--abierta]="alumnoAbierto?.id === alumno.id">
+              <span class="grupo-profesor__avatar" aria-hidden="true">{{ iniciales(alumno.nombre, alumno.apellidos) }}</span>
+              <span class="grupo-profesor__identidad">
+                <a class="grupo-profesor__alumno" [href]="enlaceAlumno(alumno)" [attr.data-alumno]="alumno.id"
+                  [attr.aria-current]="alumnoAbierto?.id === alumno.id ? 'true' : null" (click)="abrirAlumno($event, alumno)">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</a>
+                @for (deporte of alumno.deportes; track deporte.deporte) {
+                  <span class="grupo-profesor__deporte">
+                    @if (gradoDe(deporte); as grado) {
+                      @if (grado.fondo) { <span class="grupo-profesor__cinto" [style.background]="grado.fondo" aria-hidden="true"></span> }
+                      {{ deporte.deporteNombre }} · {{ grado.texto }}
+                    } @else {
+                      {{ deporte.deporteNombre }} · Sin grado
+                    }
+                  </span>
+                }
+              </span>
+              @if (esAptoAlumno(alumno)) {
+                <span class="grupo-profesor__apto">Apto@if (alumno.deportes.length > 1) {<span class="grupo-profesor__oculto"> en {{ deportesAptos(alumno) }}</span>}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+  @if (alumnoAbierto; as abierto) {
+    <pn-panel-lateral [titulo]="nombreCompleto(abierto.nombre, abierto.apellidos)" [ancho]="anchoPanelFicha" [modal]="false" (cerrar)="cerrarAlumno()">
+      <pn-ficha-profesor [embebida]="true" [alumnoId]="abierto.id" [grupoOrigen]="grupoId" />
+    </pn-panel-lateral>
+  }
+  @if (documentos.length) { <pn-visor-pdf [documentos]="documentos" aviso="" [focoRetorno]="focoRetorno" (cerrar)="cerrarVisor()" /> }
+</section>

@@ -1,0 +1,62 @@
+@use '../capas/capas' as c;
+
+.pn.grupo-profesor {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+  color: var(--pn-tinta);
+
+  .grupo-profesor__pagina { max-width: 1280px; margin: 0 auto; padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl); }
+  .grupo-profesor__oculto { @include c.oculto; }
+  .grupo-profesor__migas { display: flex; gap: 6px; margin-bottom: 4px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .grupo-profesor__migas a { color: var(--pn-acento); text-decoration: underline; text-underline-offset: 2px; }
+  h1 { margin: 0; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); overflow-wrap: anywhere; }
+  header { margin-bottom: 24px; }
+  .grupo-profesor__secundario { margin: 6px 0 0; font: var(--pn-secundario); color: var(--pn-tinta-2); overflow-wrap: anywhere; }
+  .grupo-profesor__asistencia { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; align-items: center; }
+  .grupo-profesor__mes { margin: 0; }
+  select { min-height: 44px; max-width: 100%; padding: 0 12px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); }
+  select:disabled { color: var(--pn-tinta-2); cursor: not-allowed; }
+  .grupo-profesor__boton { @include c.boton-secundario; }
+  svg { width: 20px; height: 20px; flex: none; }
+  .grupo-profesor__filtros { display: inline-flex; width: fit-content; max-width: 100%; margin: 0 0 20px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); overflow: hidden; background: var(--pn-superficie); }
+  .grupo-profesor__filtros button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--pn-tinta-2); font: var(--pn-etiqueta); font-size: 0.875rem; cursor: pointer; }
+  .grupo-profesor__filtros button + button { border-left: 1px solid var(--pn-borde-control); }
+  .grupo-profesor__filtros button:hover { color: var(--pn-tinta); }
+  .grupo-profesor__filtros [aria-checked='true'] { color: var(--pn-acento); background: var(--pn-acento-suave); box-shadow: inset 0 0 0 1px var(--pn-acento-borde); }
+  .grupo-profesor__filtros span { font-variant-numeric: tabular-nums; }
+  .grupo-profesor__lista { margin: 0; padding: 0; list-style: none; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); overflow: hidden; }
+  .grupo-profesor__fila { position: relative; display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 10px 16px; }
+  .grupo-profesor__fila + .grupo-profesor__fila { border-top: 1px solid var(--pn-linea); }
+  .grupo-profesor__fila:hover { background: var(--pn-superficie-2); }
+  .grupo-profesor__fila--abierta, .grupo-profesor__fila--abierta:hover { background: var(--pn-acento-suave); }
+  a:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+  .grupo-profesor__avatar { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); font-size: 0.75rem; }
+  .grupo-profesor__fila--abierta .grupo-profesor__avatar { background: var(--pn-superficie); }
+  .grupo-profesor__identidad { flex: 1; min-width: 0; }
+  // El nombre es el enlace; su ::after cubre la fila para que toda ella sea objetivo de clic.
+  .grupo-profesor__alumno { display: block; color: var(--pn-acento); font: var(--pn-cuerpo); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+  .grupo-profesor__alumno::after { content: ''; position: absolute; inset: 0; }
+  .grupo-profesor__alumno:focus-visible { outline-offset: -3px; }
+  .grupo-profesor__deporte { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 2px; color: var(--pn-tinta-2); font: var(--pn-secundario); overflow-wrap: anywhere; }
+  .grupo-profesor__cinto { display: inline-block; width: 16px; height: 8px; border-radius: 2px; border: 1px solid var(--pn-cinto-borde); }
+  .grupo-profesor__apto { flex: none; padding: 2px 10px; border-radius: var(--pn-radio-pastilla); color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); }
+  .grupo-profesor__fila--abierta .grupo-profesor__apto { background: var(--pn-superficie); }
+  .grupo-profesor__esqueleto-acciones { width: min(100%, 380px); height: 44px; margin-bottom: 24px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
+  .grupo-profesor__esqueleto-fila { display: grid; gap: 8px; padding: 16px; border-bottom: 1px solid var(--pn-linea); }
+  .grupo-profesor__esqueleto-fila span { width: 60%; height: 16px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-s); }
+  .grupo-profesor__esqueleto-fila span + span { width: 40%; }
+}
+@media (max-width: 767.98px) {
+  .pn.grupo-profesor .grupo-profesor__pagina { padding: var(--pn-espacio-m); }
+  .pn.grupo-profesor h1 { font-size: 1.375rem; }
+  .pn.grupo-profesor .grupo-profesor__asistencia { display: grid; }
+  .pn.grupo-profesor .grupo-profesor__mes select { width: 100%; }
+  .pn.grupo-profesor .grupo-profesor__boton { width: 100%; min-height: 44px; }
+  .pn.grupo-profesor .grupo-profesor__filtros { display: flex; width: 100%; }
+  .pn.grupo-profesor .grupo-profesor__filtros button { flex: 1; justify-content: center; }
+}
+
+// Con la ficha abierta en el panel lateral (no modal, ≥1024 px) el contenido se estrecha para dejarle sitio.
+@media (min-width: 1024px) {
+  .pn.grupo-profesor--con-panel .grupo-profesor__pagina { max-width: none; margin: 0; padding-right: calc(420px + var(--pn-espacio-l)); }
+}

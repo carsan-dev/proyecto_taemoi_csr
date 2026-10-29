@@ -2,14 +2,14 @@
   @if (lista()) {
   <header class="pn-cab fixed-header">
     <div class="pn-cab__fila">
-      <a class="pn-cab__marca" routerLink="/adminpage" [attr.title]="nombreEscuela()">
+      <a class="pn-cab__marca" [routerLink]="soloProfesor() ? secciones()[0].ruta : '/adminpage'" [attr.title]="nombreEscuela()">
         @if (logo(); as src) {
         <img class="pn-cab__logo" src="{{ src }}" alt="" width="46" height="46" (error)="logoFallo.set(true)" />
         }
         <span class="pn-cab__nombre">{{ nombreEscuela() }}</span>
       </a>
 
-      <nav class="pn-cab__nav" aria-label="Gestión">
+      <nav class="pn-cab__nav" [attr.aria-label]="soloProfesor() ? 'Profesor' : 'Gestión'">
         <ul class="pn-cab__lista">
           @for (seccion of secciones(); track seccion.id) {
           <li class="pn-cab__item" [attr.data-pn-menu]="seccion.id">
@@ -96,6 +96,7 @@
               <span>Cambiar a familia</span>
             </button>
             }
+            @if (!soloProfesor()) {
             <button type="button" class="pn-menu__opcion" role="menuitem" [disabled]="volviendo()"
               [attr.aria-busy]="volviendo() ? 'true' : null" (click)="volverAlDisenoAnterior()">
               <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
@@ -103,6 +104,7 @@
             </button>
             @if (errorVolver(); as error) {
             <p class="pn-menu__error" role="alert">{{ error }}</p>
+            }
             }
           </div>
           <div class="pn-menu__grupo" role="group" aria-label="Legal">
@@ -131,6 +133,7 @@
   </header>
 
   <app-barra-inferior [secciones]="secciones()" [activa]="activa()" [url]="url()" [contador]="contador()"
+    [soloProfesor]="soloProfesor()"
     (configurarCookies)="configurarCookies.emit()"></app-barra-inferior>
   }
 </div>
