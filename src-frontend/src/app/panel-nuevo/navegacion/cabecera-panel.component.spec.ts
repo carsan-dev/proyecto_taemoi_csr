@@ -512,16 +512,22 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         (b) => b.textContent?.trim() === 'Cambiar a familia'
       );
       expect(boton).toBeDefined();
+      expect(boton!.closest('[role="group"]')?.getAttribute('aria-label')).toBe('Panel');
       boton!.click();
       expect(auth.guardarVistaPreferida).toHaveBeenCalledWith('user');
     });
 
     for (const rolesSesion of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
-      itSinReloj(`8b-Z: ${rolesSesion.join(', ')} no ve «Volver al diseño anterior» (el interruptor se retiró)`, async () => {
+      itSinReloj(`8b-Z: ${rolesSesion.join(', ')} no pinta el grupo Panel vacío ni su separador`, async () => {
         roles = rolesSesion;
         await montar();
         responderMarca();
         const menu = abrirCuenta();
+        expect(menu.querySelector('[role="group"][aria-label="Panel"]')).toBeNull();
+        expect(Array.from(menu.querySelectorAll('.pn-menu__grupo')).map((g) => g.getAttribute('aria-label')))
+          .toEqual(['Legal', 'Sesión']);
+        expect(menu.querySelector('.pn-menu__grupo + .pn-menu__grupo')?.getAttribute('aria-label')).toBe('Sesión');
+        expect(menu.querySelector('.pn-menu__titulo')?.textContent?.trim()).toBe('Legal');
         const botones = Array.from(menu.querySelectorAll<HTMLButtonElement>('button'));
         expect(botones.some((b) => /diseño/i.test(b.textContent ?? ''))).toBeFalse();
         expect(menu.querySelector('[role="alert"]')).toBeNull();

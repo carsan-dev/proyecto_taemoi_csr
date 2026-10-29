@@ -202,11 +202,11 @@ test('un cambio exclusivo de query params conserva el viewport', async ({
   await loginAsAdmin(page);
   await page.goto('/alumnosListar');
   await expect(
-    page.getByRole('heading', { name: /Gestión de Alumnos/i }),
+    page.getByRole('heading', { name: 'Alumnos', exact: true }),
   ).toBeVisible();
-  await expect(page.locator('app-skeleton-card')).toHaveCount(0);
+  await expect(page.locator('pn-esqueleto[aria-busy="true"]')).toHaveCount(0);
   await page.evaluate(() => {
-    const container = document.querySelector('.admin-page-container');
+    const container = document.querySelector('.alumnos__pagina');
     if (!container) {
       throw new Error('Student page container not found');
     }
@@ -226,7 +226,7 @@ test('un cambio exclusivo de query params conserva el viewport', async ({
     .evaluate((element) => element.getBoundingClientRect().top);
 
   await page
-    .getByRole('button', { name: 'Filtrar por alumnos aptos para examen' })
+    .getByRole('button', { name: 'Solo aptos', exact: true })
     .evaluate((button: HTMLElement) => button.click());
   await expect(page).toHaveURL(/aptoParaExamen=true/);
   await expectElementTopNear(page, contextAnchor, previousTop);
@@ -241,11 +241,12 @@ test('guardar un alumno restaura su sección mientras el toast sigue visible', a
 
   try {
     await page.goto(`/alumnosEditar/${student.id}`);
-    const section = page.locator('#alumno-informacion-personal');
+    await page.getByRole('tab', { name: 'Datos y contacto', exact: true }).click();
+    const section = page.getByRole('region', { name: 'Información personal', exact: true });
     await expect(section).toBeVisible();
     await section.scrollIntoViewIfNeeded();
     await section.getByRole('button', { name: /Editar$/ }).click();
-    await page.locator('#nombre').fill(`${student.nombre}Editado`);
+    await section.getByRole('textbox', { name: 'Nombre', exact: true }).fill(`${student.nombre}Editado`);
     const previousTop = await section.evaluate(
       (element) => element.getBoundingClientRect().top,
     );
@@ -255,10 +256,10 @@ test('guardar un alumno restaura su sección mientras el toast sigue visible', a
         response.request().method() === 'PUT' &&
         response.url() === `${apiUrl}/alumnos/${student.id}`,
     );
-    await page.getByRole('button', { name: /Guardar Cambios$/ }).click();
+    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     expect((await update).ok()).toBeTruthy();
 
-    await expect(page.locator('.swal2-toast')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Avisos', exact: true })).toBeVisible();
     await expectElementTopNear(
       page,
       '#alumno-informacion-personal',

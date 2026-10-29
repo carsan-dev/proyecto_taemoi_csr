@@ -82,6 +82,7 @@
             <span class="pn-menu__quien-nombre">{{ nombreVisible() }}</span>
             <span class="pn-menu__quien-rol">{{ rol() }}</span>
           </div>
+          @if (cuenta().length || accesoDual()) {
           <div class="pn-menu__grupo" role="group" aria-label="Panel">
             @for (entrada of cuenta(); track entrada.ruta) {
             <a class="pn-menu__opcion" role="menuitem" [routerLink]="entrada.ruta" [state]="entrada.verWeb ? { verWeb: true } : undefined"
@@ -97,6 +98,7 @@
             </button>
             }
           </div>
+          }
           <div class="pn-menu__grupo" role="group" aria-label="Legal">
             <div class="pn-menu__titulo" aria-hidden="true">Legal</div>
             @for (entrada of legales; track entrada.ruta) {
