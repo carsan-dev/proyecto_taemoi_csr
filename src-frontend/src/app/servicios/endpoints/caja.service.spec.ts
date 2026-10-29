@@ -21,19 +21,35 @@ describe('CajaService', () => {
 
   afterEach(() => http.verify());
 
-  it('sedes: las de la tesorería por sede, sin la fila sin sede y por nombre', () => {
+  it('sedes: las de los permisos de la sesión (sin pedir la tesorería), también las inactivas, por nombre', () => {
     let sedes: unknown;
     servicio.sedesGestionables().subscribe((s) => (sedes = s));
-    const peticion = http.expectOne((r) => r.url === `${api}/tesoreria/resumen`);
+    http.expectNone((r) => r.url.includes('/tesoreria/'));
+    const peticion = http.expectOne((r) => r.url === `${api}/auth/permisos`);
     expect(peticion.request.withCredentials).toBeTrue();
+    expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
     peticion.flush({
-      porSede: [
-        { sedeId: 3, nombre: 'Sede Norte' },
-        { sedeId: null, nombre: null },
-        { sedeId: 1, nombre: 'Centro' },
+      roles: ['PROPIETARIO'],
+      esAdminPlataforma: false,
+      sedes: [
+        { id: 3, nombre: 'Sede Norte', activa: true },
+        { id: 7, nombre: ' ', activa: true },
+        { id: 1, nombre: 'Centro', activa: false },
       ],
+      variasSedes: true,
+      tieneGrupos: false,
+      capacidades: [],
     });
-    expect(sedes).toEqual([{ id: 1, nombre: 'Centro' }, { id: 3, nombre: 'Sede Norte' }]);
+    expect(sedes).toEqual([{ id: 1, nombre: 'Centro' }, { id: 7, nombre: 'Sede 7' }, { id: 3, nombre: 'Sede Norte' }]);
+  });
+
+  it('sedes: los permisos ya pedidos en la sesión no se vuelven a pedir', () => {
+    servicio.sedesGestionables().subscribe();
+    http.expectOne(`${api}/auth/permisos`).flush({ sedes: [{ id: 1, nombre: 'Centro', activa: true }] });
+    let sedes: unknown;
+    servicio.sedesGestionables().subscribe((s) => (sedes = s));
+    http.expectNone(`${api}/auth/permisos`);
+    expect(sedes).toEqual([{ id: 1, nombre: 'Centro' }]);
   });
 
   it('resumen: período desde/hasta y números normalizados', () => {
@@ -106,8 +122,11 @@ describe('CajaService', () => {
     servicio.movimientos(5, { desde: '2026-10-01', hasta: '2026-10-31' }).subscribe((m) => (leidos = m));
     const lista = http.expectOne((r) => r.url === `${api}/caja/sedes/5/movimientos`);
     expect(lista.request.params.get('desde')).toBe('2026-10-01');
-    lista.flush([{ id: 4, tipo: 'DEVOLUCION', importe: '-15.00', estado: 'ACTIVO', fecha: [2026, 10, 2, 9, 0] }]);
+    lista.flush([
+      { id: 4, tipo: 'DEVOLUCION', importe: '-15.00', alumnoId: 21, alumnoNombre: 'Ana Prueba', estado: 'ACTIVO', fecha: [2026, 10, 2, 9, 0] },
+    ]);
     expect(leidos[0].importe).toBe(-15);
+    expect(leidos[0].alumnoNombre).toBe('Ana Prueba');
     expect(leidos[0].fecha).toBe(new Date(2026, 9, 2, 9, 0).toISOString());
 
     servicio.crearMovimiento(5, { tipo: 'DEVOLUCION', importe: -15, alumnoId: 21, nota: 'devuelto' }).subscribe();

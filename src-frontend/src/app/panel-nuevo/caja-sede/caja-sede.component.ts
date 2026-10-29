@@ -203,9 +203,11 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
   errorEntregas = false;
   errorMovimientos = false;
 
-  /** Nombres de alumnos para la tabla de movimientos y el selector del formulario (se cargan solo si hacen falta). */
+  /**
+   * Alumnos del selector de «Apuntar movimiento» (se piden al abrirlo). La tabla de movimientos no los necesita: cada
+   * movimiento trae su `alumnoNombre` de la API.
+   */
   alumnos: Array<{ id: number; nombre: string }> = [];
-  private nombresAlumnos = new Map<number, string>();
   private alumnosPedidos = false;
 
   formEntrega: FormEntrega | null = null;
@@ -415,9 +417,6 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
           this.errorMovimientos = this.fallo(movimientos.error);
         } else if (movimientos.valor) {
           this.movimientos = movimientos.valor;
-          if (movimientos.valor.some((m) => m.alumnoId !== null)) {
-            this.cargarAlumnos();
-          }
         }
         this.cdr.markForCheck();
       });
@@ -531,7 +530,6 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
             .filter((a) => a?.id)
             .map((a) => ({ id: Number(a.id), nombre: `${a.nombre ?? ''} ${a.apellidos ?? ''}`.trim() || `Alumno ${a.id}` }))
             .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-          this.nombresAlumnos = new Map(this.alumnos.map((a) => [a.id, a.nombre]));
           this.cdr.markForCheck();
         },
         error: () => {
@@ -552,11 +550,12 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
 
   // ------------------------------------------------------------------ presentación
 
-  nombreAlumno(alumnoId: number | null): string {
-    if (alumnoId === null || alumnoId === undefined) {
+  /** El nombre que trae el movimiento; sin alumno (o sin nombre), «—». */
+  nombreAlumno(movimiento: MovimientoCaja): string {
+    if (movimiento.alumnoId === null || movimiento.alumnoId === undefined) {
       return '—';
     }
-    return this.nombresAlumnos.get(alumnoId) ?? '—';
+    return movimiento.alumnoNombre?.trim() || '—';
   }
 
   textoDesde(profesor: PendienteCobrador): string {

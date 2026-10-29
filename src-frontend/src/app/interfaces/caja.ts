@@ -101,6 +101,8 @@ export interface MovimientoCaja {
   anuladoPorUsuarioId: number | null;
   anuladoEn: string | null;
   motivoAnulacion: string | null;
+  /** «Nombre apellidos» del alumno, ya resuelto por la API en el listado de la sede; sin alumno, no viene. */
+  alumnoNombre?: string | null;
 }
 
 /** Página de Spring Data (`number` empieza en 0; la API recibe `page` desde 1). */

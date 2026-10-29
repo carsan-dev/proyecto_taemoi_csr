@@ -9,7 +9,6 @@ import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { EntregaCaja, MovimientoCaja, PendienteCobrador, TipoMovimientoCaja } from '../../interfaces/caja';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { valorDeHoy } from '../../testing/oraculo-hoy';
 import { HOY } from './caja-sede.component.hoy';
@@ -21,7 +20,13 @@ import { cobroVista, entregaVista, movimientoVista, profesorVista } from './caja
 import { CajaSedePanelComponent } from './caja-sede.component';
 
 const API = environment.apiUrl;
-const SEDES = `${API}/tesoreria/resumen`;
+/** Las sedes salen de los permisos de la sesiÃ³n (`PermisosSesionService`, real, contra el `HttpTestingController`). */
+const SEDES = `${API}/auth/permisos`;
+type SedePermisos = { id: number; nombre: string | null; activa: boolean };
+const permisos = (sedes: SedePermisos[]) => ({
+  roles: ['PROPIETARIO'], esAdminPlataforma: false, sedes, variasSedes: sedes.length > 1, tieneGrupos: false, capacidades: [],
+});
+const sedeVisible = (id: number, nombre: string | null, activa = true): SedePermisos => ({ id, nombre, activa });
 const caja = (sede: number, que: string) => `${API}/caja/sedes/${sede}/${que}`;
 const SOLICITUDES = `${API}/solicitudes`;
 
@@ -91,9 +96,9 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
     fixture.detectChanges();
   }
 
-  function cargar(sedes = [{ sedeId: 5, nombre: 'Sede Prueba' }], datos: Parameters<typeof responderSede>[1] = {}): void {
+  function cargar(sedes = [sedeVisible(5, 'Sede Prueba')], datos: Parameters<typeof responderSede>[1] = {}): void {
     crear();
-    peticiones(SEDES).forEach((r) => r.flush({ porSede: sedes }));
+    peticiones(SEDES).forEach((r) => r.flush(permisos(sedes)));
     fixture.detectChanges();
     const primera = comp().sedeId;
     if (primera !== null) {
@@ -170,7 +175,6 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
           useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, obtenerRoles: () => of([]) },
         },
         { provide: EndpointsService, useValue: { obtenerTodosLosAlumnosSinPaginar: alumnos } },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();
@@ -194,7 +198,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
     crear();
     const [s] = peticiones(SEDES);
     expect(s.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
-    s.flush({ porSede: [{ sedeId: 5, nombre: 'Sede Prueba' }, { sedeId: null, nombre: 'Sin sede' }] });
+    s.flush(permisos([sedeVisible(5, 'Sede Prueba')]));
     const [r] = peticiones(caja(5, 'resumen'));
     expect(r.request.urlWithParams).toBe(`${caja(5, 'resumen')}?desde=2026-10-01&hasta=2026-10-31`);
     expect(r.request.withCredentials).toBeTrue();
@@ -204,6 +208,22 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
     expect(peticiones(caja(5, 'entregas'))[0].request.urlWithParams).toBe(`${caja(5, 'entregas')}?page=1&size=25`);
     responderSede(5);
     http.verify();
+  });
+
+  it('al entrar no pide la tesorerÃ­a ni los alumnos: las sedes salen de los permisos y los nombres, de los movimientos', () => {
+    cargar([sedeVisible(5, 'Sede Prueba')], {
+      movimientos: [movimientoVista({ id: 6, tipo: 'DEVOLUCION', importe: -15, alumnoId: 21, alumnoNombre: 'Ana Prueba' })],
+    });
+    expect(http.match((r) => r.url.includes('/tesoreria/')).length).toBe(0);
+    expect(http.match((r) => r.url.endsWith('/alumnos')).length).toBe(0);
+    expect(alumnos).not.toHaveBeenCalled();
+    http.verify();
+  });
+
+  it('sedes de los permisos por nombre (tambiÃ©n las inactivas, como la tesorerÃ­a); sin nombre, Â«Sede NÂ»', () => {
+    cargar([sedeVisible(8, 'Sur'), sedeVisible(3, 'Norte', false), sedeVisible(4, '  ')]);
+    expect(comp().sedes).toEqual([{ id: 3, nombre: 'Norte' }, { id: 4, nombre: 'Sede 4' }, { id: 8, nombre: 'Sur' }]);
+    expect(comp().sedeId).toBe(3);
   });
 
   it('cabecera de hoy, sede y periodo bajo el tÃ­tulo; resumen con las cuatro cifras es-ES; tres pestaÃ±as con su nÃºmero', () => {
@@ -279,7 +299,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
   // ------------------------------------------------------------------ sedes
 
   describe('con varias sedes', () => {
-    const DOS = [{ sedeId: 8, nombre: 'Sur' }, { sedeId: 3, nombre: 'Norte' }];
+    const DOS = [sedeVisible(8, 'Sur'), sedeVisible(3, 'Norte')];
 
     it('desplegable de sedes ordenadas; sin preferencia abre la primera; con preferencia vÃ¡lida, esa', () => {
       cargar(DOS);
@@ -358,7 +378,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
 
   it('error al leer los datos: el mensaje del servidor y Â«ReintentarÂ», que relee todo', () => {
     crear();
-    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 5, nombre: 'Sede Prueba' }] });
+    peticiones(SEDES)[0].flush(permisos([sedeVisible(5, 'Sede Prueba')]));
     peticiones(caja(5, 'pendiente-entrega'))[0].flush({ mensaje: 'La sede no es de tu escuela' }, { status: 400, statusText: 'Bad' });
     responderSede(5);
     const error = el().querySelector('.caja__error-datos')!;
@@ -370,7 +390,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
 
   it('si fallan los pendientes y las entregas, solo el error con Â«ReintentarÂ», sin esqueleto debajo; al reintentar vuelve mientras carga', () => {
     crear();
-    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 5, nombre: 'Sede Prueba' }] });
+    peticiones(SEDES)[0].flush(permisos([sedeVisible(5, 'Sede Prueba')]));
     peticiones(caja(5, 'pendiente-entrega'))[0].flush({ mensaje: 'Error' }, { status: 500, statusText: 'Error' });
     peticiones(caja(5, 'entregas'))[0].flush({ mensaje: 'Error' }, { status: 500, statusText: 'Error' });
     responderSede(5);
@@ -393,7 +413,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
 
   it('tras cambiar de sede, las respuestas en vuelo de la anterior (pendientes, entregas y periodo) no se pintan ni tocan la nueva', () => {
     crear();
-    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 8, nombre: 'Sur' }, { sedeId: 3, nombre: 'Norte' }] });
+    peticiones(SEDES)[0].flush(permisos([sedeVisible(8, 'Sur'), sedeVisible(3, 'Norte')]));
     fixture.detectChanges();
     const viejas = ['resumen', 'movimientos', 'pendiente-entrega', 'entregas'].map((q) => peticiones(caja(3, q)));
     viejas.forEach((l) => expect(l.length).toBe(1));
@@ -424,7 +444,7 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
     jasmine.clock().tick(300);
     fixture.detectChanges();
     expect(el().querySelector('pn-esqueleto [role="status"]')).not.toBeNull();
-    peticiones(SEDES)[0].flush({ porSede: [{ sedeId: 5, nombre: 'Sede Prueba' }] });
+    peticiones(SEDES)[0].flush(permisos([sedeVisible(5, 'Sede Prueba')]));
     fixture.detectChanges();
     jasmine.clock().tick(300);
     fixture.detectChanges();
@@ -919,7 +939,10 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
   it('Movimientos: fecha, tipo, alumno, importe con signo y nota; anulados tachados con su motivo; vacÃ­o de hoy', () => {
     cargar(undefined, {
       movimientos: [
-        FALTANTE, movimientoVista({ id: 6, tipo: 'DEVOLUCION', importe: -15, alumnoId: 21, estado: 'ANULADO', motivoAnulacion: 'mal apuntado', nota: 'devuelto' }),
+        FALTANTE,
+        movimientoVista({
+          id: 6, tipo: 'DEVOLUCION', importe: -15, alumnoId: 21, alumnoNombre: 'Ana Prueba', estado: 'ANULADO', motivoAnulacion: 'mal apuntado', nota: 'devuelto',
+        }),
       ],
     });
     elegir('movimientos');
@@ -930,7 +953,8 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pestaÃ
     expect(texto(anulado)).toContain('Anulado');
     expect(texto(anulado)).toContain('Ana Prueba');
     expect(texto(anulado)).toContain('Anulado: Â«mal apuntadoÂ»');
-    expect(alumnos).toHaveBeenCalledWith(true);
+    // El nombre sale del movimiento: la lista de alumnos solo se pide al abrir Â«Apuntar movimientoÂ».
+    expect(alumnos).not.toHaveBeenCalled();
     fixture.destroy();
     cargar(undefined, { movimientos: [] });
     elegir('movimientos');

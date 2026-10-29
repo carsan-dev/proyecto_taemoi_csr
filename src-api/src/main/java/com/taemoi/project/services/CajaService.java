@@ -433,8 +433,8 @@ public class CajaService {
 		if (fin.isBefore(inicio)) {
 			throw new IllegalArgumentException("La fecha final es anterior a la inicial.");
 		}
-		return movimientos.deSedeEnPeriodo(sedeId, inicio.atStartOfDay(), fin.plusDays(1).atStartOfDay()).stream()
-				.map(CajaService::dto).toList();
+		return dtosConNombreDeAlumno(
+				movimientos.deSedeEnPeriodo(sedeId, inicio.atStartOfDay(), fin.plusDays(1).atStartOfDay()));
 	}
 
 	// ------------------------------------------------------------------ caja de sede: escritura
@@ -1172,10 +1172,36 @@ public class CajaService {
 	}
 
 	private static CajaDTOs.MovimientoCaja dto(MovimientoCaja m) {
+		return dto(m, null);
+	}
+
+	private static CajaDTOs.MovimientoCaja dto(MovimientoCaja m, String alumnoNombre) {
 		return new CajaDTOs.MovimientoCaja(m.getId(), m.getSedeId(), m.getTipo().name(), dosDecimales(m.getImporte()),
 				m.getAlumnoId(), m.getEntregaCajaId(), m.getNota(), m.getCreadoPorUsuarioId(), m.getFecha(),
 				m.getEstado().name(), m.getAnuladoPorUsuarioId(), m.getAnuladoEn(), m.getMotivoAnulacion(),
 				m.getCobroId(), m.getProductoAlumnoId(),
-				m.getCobroId() == null || m.getMetodo() == null ? null : m.getMetodo().name());
+				m.getCobroId() == null || m.getMetodo() == null ? null : m.getMetodo().name(), alumnoNombre);
+	}
+
+	/**
+	 * Movimientos del listado con el nombre del alumno («nombre apellidos», como lo compone la pantalla), con UNA
+	 * consulta para todos los alumnos ({@link #nombresDeAlumnos}). Sin alumno, o si ya no existe, {@code null}. El
+	 * eliminado anonimizando conserva su ficha con nombre y apellidos neutros: sale como «Alumno eliminado».
+	 */
+	private List<CajaDTOs.MovimientoCaja> dtosConNombreDeAlumno(List<MovimientoCaja> lista) {
+		Map<Long, String[]> nombres = nombresDeAlumnos(lista.stream().map(MovimientoCaja::getAlumnoId)
+				.filter(Objects::nonNull).collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
+		List<CajaDTOs.MovimientoCaja> dtos = new ArrayList<>(lista.size());
+		for (MovimientoCaja m : lista) {
+			String[] nombre = m.getAlumnoId() == null ? null : nombres.get(m.getAlumnoId());
+			dtos.add(dto(m, nombre == null ? null : nombreVisible(m.getAlumnoId(), nombre)));
+		}
+		return dtos;
+	}
+
+	/** «nombre apellidos» recortado; vacío, «Alumno {id}» (lo que enseñaba la pantalla). */
+	private static String nombreVisible(Long alumnoId, String[] nombre) {
+		String texto = ((nombre[0] == null ? "" : nombre[0]) + " " + (nombre[1] == null ? "" : nombre[1])).trim();
+		return texto.isEmpty() ? "Alumno " + alumnoId : texto;
 	}
 }
