@@ -202,7 +202,8 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       de todos (fuera el tema de Angular Material) sin cambiar nada visible. Comprobar en el móvil portada, login,
       área de familias y panel (Alumnos, Tesorería, Mi caja) como antes, y que
       `curl -sI https://moiskimdo.es/panel-nuevo.css` responde 200 con `Cache-Control: no-cache` y las cabeceras de
-      seguridad (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy).
+      seguridad (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy). Igual para
+      `curl -sI https://moiskimdo.es/gestion-compartida.css`.
 - [ ] E8b, pieza 8b-I (interruptor del diseño nuevo por usuario; decisiones 255, 256 y 258): con migración V31_10
       (`diseno_panel_usuario`, tabla nueva y vacía; solo amplía) → atajo `desplegar_migrar`. Con el interruptor apagado
       (por defecto) nadie nota nada; solo el propietario ve «Diseño nuevo» en su menú de cuenta del panel, con la
