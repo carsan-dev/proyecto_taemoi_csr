@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { estilosPanelGuard } from '../estilos-panel.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
-import { CLASE_ERROR_HTTP, cerrarSweetAlertAbierto, enfocables } from './capa-modal';
+import { CLASE_ERROR_HTTP, cerrarSweetAlertAbierto } from './capa-modal';
 
 @Component({ standalone: true, template: '<p>Pantalla nueva</p>' })
 class PantallaNueva {}
@@ -98,35 +98,5 @@ describe('cerrarSweetAlertAbierto (8b-D1, solo el SweetAlert2 del error HTTP y s
     const cerrar = spyOn(Swal, 'close');
     cerrarSweetAlertAbierto(router);
     expect(cerrar).not.toHaveBeenCalled();
-  });
-});
-
-/**
- * `enfocables`: una zona con scroll y sin nada enfocable dentro (el lienzo del visor de PDF) recibe el
- * foco con Tab en Chrome; si no cuenta en la vuelta, el foco sale de la capa desde ella.
- */
-describe('enfocables (zona con scroll)', () => {
-  let capa: HTMLElement;
-
-  beforeEach(() => {
-    capa = document.createElement('div');
-    capa.innerHTML =
-      '<button id="a">A</button>' +
-      '<div id="zona" style="overflow:auto;height:40px;width:100px"><div style="height:200px">largo</div></div>';
-    document.body.appendChild(capa);
-  });
-
-  afterEach(() => capa.remove());
-
-  it('cuenta la zona con scroll sin enfocables dentro, tras el botón y en su orden', () => {
-    expect(enfocables(capa).map((e) => e.id)).toEqual(['a', 'zona']);
-  });
-
-  it('no cuenta una zona sin scroll, con tabindex -1 ni con un enfocable dentro', () => {
-    capa.querySelector<HTMLElement>('#zona')!.setAttribute('tabindex', '-1');
-    expect(enfocables(capa).map((e) => e.id)).toEqual(['a']);
-    capa.querySelector<HTMLElement>('#zona')!.removeAttribute('tabindex');
-    capa.querySelector('#zona')!.insertAdjacentHTML('afterbegin', '<button id="b">B</button>');
-    expect(enfocables(capa).map((e) => e.id)).toEqual(['a', 'b']);
   });
 });

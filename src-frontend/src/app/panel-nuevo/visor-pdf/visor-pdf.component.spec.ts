@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 import { DocumentoInforme } from '../../servicios/generales/informe-pdf.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { ScrollLockService } from '../../servicios/generales/scroll-lock.service';
-import { PilaCapas } from '../capas/capa-modal';
+import { PilaCapas, enfocables } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { VisorPdfComponent } from './visor-pdf.component';
 
@@ -243,7 +243,7 @@ describe('VisorPdfComponent (8b-D2a, visor de PDF del panel nuevo)', () => {
   it('el foco queda contenido: Tab desde el último vuelve al primero y Mayús+Tab desde el primero va al último', () => {
     abrir();
     const dialogo = visor()!;
-    const lista = Array.from(dialogo.querySelectorAll<HTMLElement>('button:not([disabled]), select')).filter(
+    const lista = Array.from(dialogo.querySelectorAll<HTMLElement>('button:not([disabled]), select, [tabindex="0"]')).filter(
       (b) => b.getClientRects().length > 0
     );
     const primero = lista[0];
@@ -280,6 +280,19 @@ describe('VisorPdfComponent (8b-D2a, visor de PDF del panel nuevo)', () => {
     expect(visor()!.querySelector('.pn-visor__esqueleto')).toBeNull();
     fixture.destroy();
   }));
+
+  it('la zona con scroll del PDF es una región enfocable con nombre y `enfocables()` la cuenta la última, en orden DOM', () => {
+    abrir();
+    const dialogo = visor()!;
+    const zona = dialogo.querySelector<HTMLElement>('.pdf-canvas-wrap')!;
+    expect(zona.getAttribute('tabindex')).toBe('0');
+    expect(zona.getAttribute('role')).toBe('region');
+    expect(zona.getAttribute('aria-label')).toBe('Página del PDF');
+    const lista = enfocables(dialogo);
+    expect(lista).toContain(zona);
+    expect(lista[lista.length - 1]).toBe(zona);
+    expect(lista.filter((e) => e.tagName === 'BUTTON').every((b) => lista.indexOf(b) < lista.indexOf(zona))).toBeTrue();
+  });
 
   describe('barra compacta (8b-D2a)', () => {
     const visorPdf = () =>

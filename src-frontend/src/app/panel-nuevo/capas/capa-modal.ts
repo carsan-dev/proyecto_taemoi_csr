@@ -23,27 +23,10 @@ const ENFOCABLES = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-/**
- * Una zona con scroll y sin nada enfocable dentro: Chrome la deja enfocar con Tab (para poder desplazarla con el
- * teclado), así que cuenta como un elemento más de la vuelta; si no, el foco saldría de la capa desde ella.
- */
-function esZonaDesplazable(e: HTMLElement): boolean {
-  if (e.getAttribute('tabindex') === '-1' || (e.scrollHeight <= e.clientHeight && e.scrollWidth <= e.clientWidth)) {
-    return false;
-  }
-  const estilo = e.ownerDocument.defaultView?.getComputedStyle(e);
-  const desplaza = (v?: string) => v === 'auto' || v === 'scroll';
-  const conScroll =
-    (e.scrollHeight > e.clientHeight && desplaza(estilo?.overflowY)) ||
-    (e.scrollWidth > e.clientWidth && desplaza(estilo?.overflowX));
-  return conScroll && !e.querySelector(ENFOCABLES);
-}
-
 /** Los elementos que reciben el foco con Tab dentro de la capa, en su orden. */
 export function enfocables(capa: HTMLElement): HTMLElement[] {
-  return Array.from(capa.querySelectorAll<HTMLElement>('*')).filter(
-    (e) =>
-      (e.matches(ENFOCABLES) || esZonaDesplazable(e)) && !e.closest('[inert]') && e.getClientRects().length > 0
+  return Array.from(capa.querySelectorAll<HTMLElement>(ENFOCABLES)).filter(
+    (e) => !e.closest('[inert]') && e.getClientRects().length > 0
   );
 }
 

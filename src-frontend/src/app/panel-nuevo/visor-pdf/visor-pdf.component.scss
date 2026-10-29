@@ -72,7 +72,8 @@
 
 .pn-visor__descargar:focus-visible,
 .pn-visor__cerrar:focus-visible,
-.pn-visor__control:focus-visible {
+.pn-visor__control:focus-visible,
+.pn-visor__cuerpo ::ng-deep .pdf-canvas-wrap:focus-visible {
   outline: 3px solid var(--pn-acento-borde);
   outline-offset: 2px;
 }
