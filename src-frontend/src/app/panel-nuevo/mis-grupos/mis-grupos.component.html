@@ -28,7 +28,7 @@
               <p class="mis-grupos__secundario">@if (grupo.sede) { {{ grupo.sede.nombre }} · }{{ etiquetaRol(grupo.rol) }}</p>
               <dl>
                 <div><dt>Alumnos</dt><dd data-cifras>{{ numero(grupo.alumnosActivos) }}</dd></div>
-                <div><dt>Horario</dt><dd data-cifras>{{ resumenHorario(grupo.turnos) }}</dd></div>
+                <div><dt>Horario</dt><dd data-cifras>{{ resumenHorario(grupo.turnos ?? []) }}</dd></div>
               </dl>
             </a>
           </li>
