@@ -226,10 +226,96 @@ describe('DisenoNuevoComponent (pantalla del propietario, 8b-I)', () => {
     expect(filas().length).toBe(3);
   });
 
-  itSinReloj('«Para todo el equipo» está construido pero oculto (decisión 258)', async () => {
-    await listo();
-    expect(el().textContent).not.toContain('Para todo el equipo');
-    expect(fixture.componentInstance.mostrarParaTodo).toBeFalse();
-    http.expectNone(`${API}/panel/diseno-nuevo/por-defecto`);
+  describe('«Para todo el equipo» (R5)', () => {
+    const paraTodos = () =>
+      Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        (b.textContent ?? '').trim() === 'Diseño nuevo para todos'
+      );
+
+    itSinReloj('se muestra con su título y el texto «Diseño nuevo para todos» cuando no es el valor por defecto', async () => {
+      await listo();
+      expect(el().textContent).toContain('Para todo el equipo');
+      expect(el().textContent).toContain('Cada uno usa el diseño que le permitas.');
+      expect(paraTodos()?.textContent?.trim()).toBe('Diseño nuevo para todos');
+      expect(paraTodos()!.disabled).toBeFalse();
+    });
+
+    itSinReloj('al pulsar manda PUT {nuevo: true}, bloquea los botones y al responder recarga el estado', async () => {
+      await listo();
+      paraTodos()!.click();
+      paraTodos()!.click();
+      fixture.detectChanges();
+      expect(paraTodos()!.disabled).toBeTrue();
+      expect(paraTodos()!.getAttribute('aria-busy')).toBe('true');
+      expect(boton(4).disabled).toBeTrue();
+
+      const peticion = http.expectOne(`${API}/panel/diseno-nuevo/por-defecto`);
+      expect(peticion.request.method).toBe('PUT');
+      expect(peticion.request.body).toEqual({ nuevo: true });
+      peticion.flush({ porDefecto: true });
+      expect(reiniciar).toHaveBeenCalledTimes(1);
+
+      // Recarga del estado: la API ya dice porDefecto = true.
+      http.expectOne(`${API}/panel/diseno-nuevo`).flush({
+        porDefecto: true,
+        usuarios: [{ usuarioId: 4, permitido: true, activo: true }],
+      });
+      http
+        .expectOne((r) => r.url === `${API}/miembros` && r.params.get('rol') === 'PROPIETARIO')
+        .flush(pagina([miembro(4, 'Lucía', 'Ferrer Prado', 'PROPIETARIO')]));
+      http
+        .expectOne((r) => r.url === `${API}/miembros` && r.params.get('rol') === 'ADMINISTRADOR')
+        .flush(pagina([]));
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.porDefecto).toBeTrue();
+      expect(el().textContent).toContain('Todo el equipo usa el diseño nuevo.');
+      expect(paraTodos()).toBeUndefined();
+      const volver = Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        b.textContent?.includes('Volver al de siempre para todos')
+      );
+      expect(volver).toBeDefined();
+      expect(volver!.disabled).toBeFalse();
+    });
+
+    itSinReloj('con el valor por defecto activo, el botón contrario manda PUT {nuevo: false}', async () => {
+      await cargarHoja();
+      http.expectOne(`${API}/panel/diseno-nuevo`).flush({
+        porDefecto: true,
+        usuarios: [{ usuarioId: 4, permitido: true, activo: true }],
+      });
+      http
+        .expectOne((r) => r.url === `${API}/miembros` && r.params.get('rol') === 'PROPIETARIO')
+        .flush(pagina([miembro(4, 'Lucía', 'Ferrer Prado', 'PROPIETARIO')]));
+      http
+        .expectOne((r) => r.url === `${API}/miembros` && r.params.get('rol') === 'ADMINISTRADOR')
+        .flush(pagina([]));
+      fixture.detectChanges();
+
+      const volver = Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        b.textContent?.includes('Volver al de siempre para todos')
+      )!;
+      volver.click();
+      const peticion = http.expectOne(`${API}/panel/diseno-nuevo/por-defecto`);
+      expect(peticion.request.method).toBe('PUT');
+      expect(peticion.request.body).toEqual({ nuevo: false });
+      peticion.flush({ porDefecto: false });
+      responderCarga();
+      expect(fixture.componentInstance.porDefecto).toBeFalse();
+      expect(paraTodos()?.textContent?.trim()).toBe('Diseño nuevo para todos');
+    });
+
+    itSinReloj('si la API falla, muestra el error, no cambia el estado y deja reintentar', async () => {
+      await listo();
+      paraTodos()!.click();
+      http
+        .expectOne(`${API}/panel/diseno-nuevo/por-defecto`)
+        .flush({ mensaje: 'Solo el propietario puede hacerlo.' }, { status: 403, statusText: 'No' });
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain('Solo el propietario puede hacerlo.');
+      expect(fixture.componentInstance.porDefecto).toBeFalse();
+      expect(paraTodos()!.disabled).toBeFalse();
+      expect(reiniciar).not.toHaveBeenCalled();
+    });
   });
 });

@@ -23,7 +23,7 @@ const ERROR_CARGAR = 'No se pudo cargar el equipo. Revisa la conexión y vuelve 
  * Pantalla del propietario (8b-I, decisión 256): quién del equipo de gestión usa el diseño nuevo del panel. Se abre desde
  * «Diseño nuevo» del menú de cuenta y va en su propio chunk (`panel/diseno-nuevo`). Espera a la hoja del panel nuevo
  * (tokens bajo `.pn`). Un clic, una petición: el botón de la fila queda bloqueado hasta la respuesta. «Para todo el
- * equipo» está construido pero oculto hasta R5 (decisión 258).
+ * equipo» (R5) se enseña aquí mismo: la ruta es solo del propietario.
  */
 @Component({
   selector: 'app-diseno-nuevo',
@@ -36,9 +36,6 @@ export class DisenoNuevoComponent implements OnInit, OnDestroy {
   private readonly estilos = inject(EstilosPanelService);
   private readonly permisos = inject(PermisosSesionService);
   private readonly suscripciones = new Subscription();
-
-  /** Decisión 258: el control existe, pero no se enseña hasta R5. */
-  readonly mostrarParaTodo = false;
 
   hojaLista = false;
   estado: Estado = 'cargando';
@@ -114,7 +111,7 @@ export class DisenoNuevoComponent implements OnInit, OnDestroy {
     );
   }
 
-  /** «Para todo el equipo» (oculto hasta R5). */
+  /** «Para todo el equipo»: fija o quita el diseño nuevo por defecto (R5). */
   cambiarPorDefecto(): void {
     if (this.guardando !== null) {
       return;
