@@ -123,13 +123,16 @@ public final class CajaDTOs {
 	 * Un movimiento de caja (importe con signo). {@code entregaCajaId}: si es el automático de una entrega. Pieza 6c-6:
 	 * {@code cobroId} y {@code productoAlumnoId}, el cobro y el cargo de una devolución enlazada (153) o del ERROR de la
 	 * 193; {@code metodo}, el del cobro (D6c-13: el saldo suma solo los EFECTIVO). Los tres solo salen en el JSON en un
-	 * movimiento enlazado a un cobro: la respuesta de un movimiento de siempre no cambia.
+	 * movimiento enlazado a un cobro: la respuesta de un movimiento de siempre no cambia. {@code alumnoNombre}
+	 * («nombre apellidos»; «Alumno eliminado» si se eliminó anonimizando): solo en el listado de la sede y solo con
+	 * alumno, resuelto con una consulta para todos los movimientos; las respuestas de crear y anular no lo llevan.
 	 */
 	public record MovimientoCaja(Long id, Long sedeId, String tipo, BigDecimal importe, Long alumnoId,
 			Long entregaCajaId, String nota, Long creadoPorUsuarioId, LocalDateTime fecha, String estado,
 			Long anuladoPorUsuarioId, LocalDateTime anuladoEn, String motivoAnulacion,
 			@JsonInclude(JsonInclude.Include.NON_NULL) Long cobroId,
 			@JsonInclude(JsonInclude.Include.NON_NULL) Long productoAlumnoId,
-			@JsonInclude(JsonInclude.Include.NON_NULL) String metodo) {
+			@JsonInclude(JsonInclude.Include.NON_NULL) String metodo,
+			@JsonInclude(JsonInclude.Include.NON_NULL) String alumnoNombre) {
 	}
 }

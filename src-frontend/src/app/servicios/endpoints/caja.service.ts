@@ -4,6 +4,7 @@ import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { PermisosSesionService } from '../authentication/permisos-sesion.service';
 import { fechaApi } from '../../utils/fecha-api';
 import {
   CobroCaja,
@@ -87,6 +88,7 @@ function movimiento(m: MovimientoCaja): MovimientoCaja {
 @Injectable({ providedIn: 'root' })
 export class CajaService {
   private readonly http = inject(HttpClient);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly api = environment.apiUrl;
 
   private opciones(params?: HttpParams) {
@@ -98,23 +100,19 @@ export class CajaService {
   }
 
   /**
-   * Sedes cuya caja puede ver la sesión. No hay API de sedes todavía (entrega 8): se toman de la tesorería por sede,
-   * que ya filtra por alcance (gestión: todas las de la escuela con cargos; responsable: las suyas).
+   * Sedes cuya caja puede ver la sesión: las `sedes` de los permisos de la sesión (`/api/auth/permisos`, que el panel
+   * ya tiene en caché). Son las mismas que daba la tesorería por sede (gestión: todas las de la escuela, también las
+   * inactivas; responsable: las suyas), sin pedir sus agregados de todo el histórico. Por nombre.
    */
   sedesGestionables(): Observable<SedeCaja[]> {
-    return this.http
-      .get<{ porSede?: Array<{ sedeId: number | null; nombre: string | null }> }>(
-        `${this.api}/tesoreria/resumen`,
-        this.opciones()
+    return this.permisos.obtener().pipe(
+      map((permisos) =>
+        (permisos?.sedes ?? [])
+          .filter((sede) => sede?.id !== null && sede?.id !== undefined)
+          .map((sede) => ({ id: Number(sede.id), nombre: sede.nombre?.trim() || `Sede ${sede.id}` }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
       )
-      .pipe(
-        map((resumen) =>
-          (resumen?.porSede ?? [])
-            .filter((fila) => fila.sedeId !== null && fila.sedeId !== undefined)
-            .map((fila) => ({ id: Number(fila.sedeId), nombre: fila.nombre?.trim() || `Sede ${fila.sedeId}` }))
-            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-        )
-      );
+    );
   }
 
   resumen(sedeId: number, periodo: PeriodoCaja): Observable<ResumenCajaSede> {

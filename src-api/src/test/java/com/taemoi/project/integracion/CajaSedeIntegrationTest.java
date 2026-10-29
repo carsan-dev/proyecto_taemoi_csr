@@ -774,6 +774,84 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(404, estado(anular("/api/caja/movimientos/" + id + "/anular", "x"), otra.tPropietario));
 	}
 
+	/**
+	 * Caja de sede del panel: el listado de movimientos trae el nombre del alumno («nombre apellidos»), resuelto con UNA
+	 * consulta para todos los movimientos (el número de sentencias no crece con los alumnos). El alumno eliminado
+	 * anonimizando sale como «Alumno eliminado», como en el resto de la caja; sin alumno, el campo no sale.
+	 */
+	@Test
+	void movimientos_traenElNombreDelAlumno_conUnaConsultaParaTodos() throws Exception {
+		Escena n = new Escena("it-caja-nombres");
+		long a1 = n.alumnoEnGrupo("E6NOMBRE1", n.e.sA, n.e.gA);
+		long a2 = n.alumnoEnGrupo("E6NOMBRE2", n.e.sA, n.e.gA);
+		long a3 = n.alumnoEnGrupo("E6NOMBRE3", n.e.sA, n.e.gA);
+		String lista = "/api/caja/sedes/" + n.e.sA + "/movimientos";
+		long m1 = leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", a1, "uno"), n.tGestor, 201).get("id").asLong();
+		long sinAlumno = leer(movimiento(n.e.sA, "OTRO", "1.00", null, "tiza"), n.tGestor, 201).get("id").asLong();
+		int conUno = ContadorSentencias.contar(() -> leer(get(lista), n.tGestor, 200)).total();
+
+		long m2 = leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", a2, "dos"), n.tGestor, 201).get("id").asLong();
+		long m3 = leer(movimiento(n.e.sA, "ERROR", "-2.00", a3, "tres"), n.tGestor, 201).get("id").asLong();
+		long m4 = leer(movimiento(n.e.sA, "OTRO", "4.00", a1, "otra vez"), n.tGestor, 201).get("id").asLong();
+		// Como AlumnoServiceImpl#anonimizarAlumno: nombre y apellidos neutros y la marca de anonimizado.
+		jdbc.update("UPDATE alumno SET nombre = 'Alumno', apellidos = 'eliminado', anonimizado_en = NOW() WHERE id = ?",
+				a3);
+
+		for (String token : List.of(n.tGestor, n.tPropietario, n.tResp)) {
+			ContadorSentencias.Conteo<JsonNode> conVarios = ContadorSentencias
+					.contar(() -> leer(get(lista), token, 200));
+			Map<Long, JsonNode> porId = new java.util.HashMap<>();
+			conVarios.resultado().forEach(m -> porId.put(m.get("id").asLong(), m));
+			assertEquals(5, porId.size());
+			assertEquals(nombreCompleto(a1), porId.get(m1).get("alumnoNombre").asText());
+			assertEquals(nombreCompleto(a2), porId.get(m2).get("alumnoNombre").asText());
+			assertEquals("Alumno eliminado", porId.get(m3).get("alumnoNombre").asText());
+			assertEquals(nombreCompleto(a1), porId.get(m4).get("alumnoNombre").asText());
+			assertFalse(porId.get(sinAlumno).has("alumnoNombre"), "sin alumno, el campo no sale");
+			// Lo demás no cambia: importe con signo y alumnoId.
+			assertEquals(0, new BigDecimal("-5.00").compareTo(porId.get(m1).get("importe").decimalValue()));
+			assertEquals(a1, porId.get(m1).get("alumnoId").asLong());
+			if (token.equals(n.tGestor)) {
+				assertEquals(conUno, conVarios.total(), "una consulta de nombres para todos los movimientos");
+			}
+		}
+	}
+
+	/**
+	 * Caja de sede del panel: las sedes salen de {@code /api/auth/permisos} en vez de {@code /api/tesoreria/resumen}.
+	 * Rol a rol, las mismas sedes (id y nombre) que la tesorería por sede: gestor y propietario, todas las de la escuela
+	 * (también la inactiva); el responsable, solo las suyas; nunca las de otra escuela.
+	 */
+	@Test
+	void sedesDeLaCaja_permisosCoincidenConLaTesoreria_porRol() throws Exception {
+		String tRespAC = s.e.token(jwtService, usuarios, s.e.respAC);
+		Map<String, Set<Long>> esperadas = Map.of(
+				s.tPropietario, Set.of(s.e.sA, s.e.sB, s.e.sC),
+				s.tGestor, Set.of(s.e.sA, s.e.sB, s.e.sC),
+				s.tResp, Set.of(s.e.sA),
+				tRespAC, Set.of(s.e.sA, s.e.sC));
+		for (Map.Entry<String, Set<Long>> caso : esperadas.entrySet()) {
+			Map<Long, String> dePermisos = new java.util.HashMap<>();
+			leer(get("/api/auth/permisos"), caso.getKey(), 200).get("sedes")
+					.forEach(f -> dePermisos.put(f.get("id").asLong(), f.get("nombre").asText()));
+			Map<Long, String> deTesoreria = new java.util.HashMap<>();
+			leer(get("/api/tesoreria/resumen"), caso.getKey(), 200).get("porSede").forEach(f -> {
+				if (!f.get("sedeId").isNull()) {
+					deTesoreria.put(f.get("sedeId").asLong(), f.get("nombre").asText());
+				}
+			});
+			assertEquals(deTesoreria, dePermisos);
+			assertEquals(caso.getValue(), dePermisos.keySet());
+			assertFalse(dePermisos.keySet().stream().anyMatch(id -> id == otra.e.sA || id == otra.e.sB
+					|| id == otra.e.sC), "ninguna sede de otra escuela");
+		}
+	}
+
+	private String nombreCompleto(long alumno) {
+		return jdbc.queryForObject("SELECT CONCAT(nombre, ' ', apellidos) FROM alumno WHERE id = ?", String.class,
+				alumno);
+	}
+
 	// ------------------------------------------------------------------ resumen y saldo con números
 
 	@Test
