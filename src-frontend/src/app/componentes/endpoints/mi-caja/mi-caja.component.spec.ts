@@ -3,7 +3,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
-import { DURACION_AVISO_MS, MiCajaComponent, agruparPorAlumno } from './mi-caja.component';
+import { DURACION_AVISO_MS, MiCajaComponent } from './mi-caja.component';
+import { agruparPorAlumno } from './mi-caja-cargos';
 import { CajaProfesorService } from '../../../servicios/endpoints/caja-profesor.service';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { CargoPendienteProfesor, CobroCaja, MisCobrosPendientes } from '../../../interfaces/caja';

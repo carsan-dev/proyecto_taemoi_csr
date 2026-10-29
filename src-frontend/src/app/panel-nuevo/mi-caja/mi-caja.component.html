@@ -1,0 +1,711 @@
+<section class="pn mi-caja" pnAcento>
+  <div class="mi-caja__pagina">
+    <h1>Mi caja</h1>
+
+    <div class="mi-caja__rejilla">
+      <!-- «Llevas encima»: arriba en el móvil; desde 1024 px, columna fija de 380 px a la derecha. -->
+      <aside class="mi-caja__lado">
+        <section class="mi-caja__bloque mi-caja__encima" aria-labelledby="mi-caja-titulo-encima"
+          [attr.aria-busy]="cargandoEncima ? 'true' : null">
+          <h2 id="mi-caja-titulo-encima">Llevas encima</h2>
+          @if (encima) {
+          <p class="mi-caja__cifra" data-cifras>{{ encima.importe | eur }}</p>
+          <p class="mi-caja__secundario" data-cifras>{{ cobrosSinEntregar(encima.numeroCobros) }} · Se entregan en la sede</p>
+          } @else if (errorEncima) {
+          <pn-bloque-error [titulo]="errorEncima" (reintentar)="cargarEncima()" />
+          } @else {
+          <pn-esqueleto etiqueta="Cargando lo que llevas encima…">
+            <div class="mi-caja__huesos">
+              <span class="mi-caja__hueso mi-caja__hueso--cifra"></span>
+              <span class="mi-caja__hueso"></span>
+            </div>
+          </pn-esqueleto>
+          }
+        </section>
+        <p class="mi-caja__nota-lado"><strong>Cómo se entrega:</strong> en Caja de sede.</p>
+      </aside>
+
+      <div class="mi-caja__columna">
+        <div class="mi-caja__pestanas" role="tablist" aria-label="Mi caja" (keydown)="moverPestana($event)">
+          <button type="button" role="tab" class="mi-caja__pestana" id="mi-caja-pestana-cobrar" aria-controls="mi-caja-panel-cobrar"
+            [attr.aria-selected]="pestana === 'cobrar'" [attr.tabindex]="pestana === 'cobrar' ? 0 : -1"
+            (click)="elegirPestana('cobrar')">
+            Por cobrar <span class="mi-caja__n" data-cifras>{{ numero(numeroPorCobrar) }}</span>
+          </button>
+          <button type="button" role="tab" class="mi-caja__pestana" id="mi-caja-pestana-vender" aria-controls="mi-caja-panel-vender"
+            [attr.aria-selected]="pestana === 'vender'" [attr.tabindex]="pestana === 'vender' ? 0 : -1"
+            (click)="elegirPestana('vender')">
+            Vender
+          </button>
+          <button type="button" role="tab" class="mi-caja__pestana" id="mi-caja-pestana-encima" aria-controls="mi-caja-panel-encima"
+            [attr.aria-selected]="pestana === 'encima'" [attr.tabindex]="pestana === 'encima' ? 0 : -1"
+            (click)="elegirPestana('encima')">
+            Encima <span class="mi-caja__n" data-cifras>{{ numero(numeroEncima) }}</span>
+          </button>
+          <button type="button" role="tab" class="mi-caja__pestana" id="mi-caja-pestana-pedidos" aria-controls="mi-caja-panel-pedidos"
+            [attr.aria-selected]="pestana === 'pedidos'" [attr.tabindex]="pestana === 'pedidos' ? 0 : -1"
+            (click)="elegirPestana('pedidos')">
+            Pedidos
+            @if (solicitudesCargadas) {
+            <span class="mi-caja__n" [class.mi-caja__n--aviso]="numeroPedidos > 0" data-cifras>{{ numero(numeroPedidos) }}</span>
+            }
+          </button>
+        </div>
+
+        <!-- ============================================================ Por cobrar -->
+        <section class="mi-caja__panel" id="mi-caja-panel-cobrar" role="tabpanel" aria-labelledby="mi-caja-pestana-cobrar"
+          [hidden]="pestana !== 'cobrar'" [attr.aria-busy]="cargandoCargos ? 'true' : null">
+          @if (pestana === 'cobrar') {
+          <div class="mi-caja__buscar">
+            <div class="mi-caja__campo">
+              <input type="search" id="mi-caja-buscar" class="mi-caja__control" placeholder="Buscar alumno" aria-label="Buscar alumno"
+                autocomplete="off" [value]="busquedaCargos" (input)="buscar($event)" />
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <circle cx="10.5" cy="10.5" r="6"></circle><path d="m15 15 5 5"></path>
+              </svg>
+            </div>
+            @if (cargos.length) {
+            <span class="mi-caja__contador" data-cifras aria-live="polite">Mostrando {{ numero(cargosVisibles) }} de {{ numero(cargos.length) }}</span>
+            }
+          </div>
+
+          @if (errorCargos) {
+          <pn-bloque-error [titulo]="errorCargos" (reintentar)="cargarCargos()" />
+          } @else if (cargandoCargos && cargos.length === 0) {
+          <pn-esqueleto etiqueta="Cargando cobros pendientes…">
+            <div class="mi-caja__lista mi-caja__huesos-lista">
+              @for (fila of esqueletos; track fila) {
+              <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso mi-caja__hueso--avatar"></span><span class="mi-caja__hueso"></span></div>
+              }
+            </div>
+          </pn-esqueleto>
+          } @else if (cargos.length === 0) {
+          <pn-bloque-vacio titulo="Nada pendiente" texto="Tus alumnos están al día. Si alguien te paga otra cosa, apúntalo en «Vender»." />
+          } @else if (grupos.length === 0) {
+          <pn-bloque-vacio [titulo]="'Ningún alumno con cargos pendientes se llama «' + busquedaCargos + '».'"
+            accion="Quitar búsqueda" (accionar)="quitarBusqueda()" />
+          } @else {
+          <ul class="mi-caja__lista" aria-label="Cargos pendientes por alumno">
+            @for (grupo of grupos; track grupo.alumnoId) {
+            <li class="mi-caja__alumno">
+              <div class="mi-caja__cab-alumno">
+                <span class="mi-caja__avatar" aria-hidden="true">{{ inicialesGrupo(grupo) }}</span>
+                <h3 class="mi-caja__nombre">{{ grupo.nombre }}</h3>
+              </div>
+              <ul class="mi-caja__cargos">
+                @for (cargo of grupo.cargos; track cargo.cargoId) {
+                <li class="mi-caja__cargo">
+                  <div class="mi-caja__fila-texto">
+                    <span>{{ cargo.concepto }}</span>
+                    <span class="mi-caja__secundario" data-cifras>desde {{ diaMes(cargo.fechaAsignacion) }}</span>
+                  </div>
+                  <span class="mi-caja__importe" data-cifras>{{ cargo.importe | eur }}</span>
+                  <button type="button" pnOcupado class="mi-caja__boton-texto" [ocupado]="cobrando.has(cargo.cargoId)"
+                    textoOcupado="Cobrando…" [attr.aria-label]="'Cobrar ' + cargo.concepto + ' a ' + grupo.nombre"
+                    (click)="abrirCobro(cargo)">Cobrar</button>
+                </li>
+                }
+              </ul>
+            </li>
+            }
+          </ul>
+          }
+          <p class="mi-caja__nota">Solo alumnos de tus grupos. No cambias importes.</p>
+          }
+        </section>
+
+        <!-- ============================================================ Vender -->
+        <section class="mi-caja__panel" id="mi-caja-panel-vender" role="tabpanel" aria-labelledby="mi-caja-pestana-vender"
+          [hidden]="pestana !== 'vender'">
+          @if (pestana === 'vender') {
+          @if (errorVender) {
+          <pn-bloque-error [titulo]="errorVender" (reintentar)="cargarVender()" />
+          } @else if (cargandoVender) {
+          <pn-esqueleto etiqueta="Cargando el catálogo…">
+            <div class="mi-caja__lista mi-caja__huesos-lista">
+              @for (fila of esqueletos; track fila) {
+              <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso mi-caja__hueso--avatar"></span><span class="mi-caja__hueso"></span></div>
+              }
+            </div>
+          </pn-esqueleto>
+          } @else {
+          <!-- Paso 1: el alumno. -->
+          <section class="mi-caja__bloque mi-caja__bloque--venta" aria-labelledby="mi-caja-titulo-alumno-venta">
+            <h2 id="mi-caja-titulo-alumno-venta">Alumno de tus grupos</h2>
+            @if (alumnoVenta) {
+            <div class="mi-caja__lista">
+              <div class="mi-caja__fila mi-caja__fila--alumno">
+                <span class="mi-caja__avatar" aria-hidden="true">{{ inicialesAlumno(alumnoVenta) }}</span>
+                <div class="mi-caja__fila-texto">
+                  <span class="mi-caja__fila-nombre">{{ nombreAlumno(alumnoVenta) }}</span>
+                  @if (alumnoVenta.grupos.length) {
+                  <span class="mi-caja__secundario">{{ alumnoVenta.grupos.join(', ') }}</span>
+                  }
+                </div>
+                <button type="button" id="mi-caja-cambiar-alumno" class="mi-caja__boton-texto"
+                  [attr.aria-label]="'Cambiar el alumno (' + nombreAlumno(alumnoVenta) + ')'" (click)="cambiarAlumno()">Cambiar</button>
+              </div>
+            </div>
+            } @else if (alumnos.length === 0) {
+            <pn-bloque-vacio titulo="No tienes alumnos activos en tus grupos." />
+            } @else {
+            <div class="mi-caja__buscar">
+              <div class="mi-caja__campo">
+                <input type="search" id="mi-caja-buscar-alumno" class="mi-caja__control" placeholder="Buscar alumno"
+                  aria-label="Buscar alumno de tus grupos" autocomplete="off" [value]="busquedaAlumno" (input)="buscarAlumno($event)" />
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                  <circle cx="10.5" cy="10.5" r="6"></circle><path d="m15 15 5 5"></path>
+                </svg>
+              </div>
+              <span class="mi-caja__contador" data-cifras aria-live="polite">Mostrando {{ numero(alumnosFiltrados.length) }} de {{ numero(alumnos.length) }}</span>
+            </div>
+            @if (alumnosFiltrados.length) {
+            <ul class="mi-caja__lista mi-caja__eleccion" aria-labelledby="mi-caja-titulo-alumno-venta">
+              @for (alumno of alumnosFiltrados; track alumno.alumnoId) {
+              <li>
+                <button type="button" class="mi-caja__fila mi-caja__fila--alumno mi-caja__elegible" (click)="elegirAlumno(alumno)">
+                  <span class="mi-caja__avatar" aria-hidden="true">{{ inicialesAlumno(alumno) }}</span>
+                  <span class="mi-caja__fila-texto">
+                    <span class="mi-caja__fila-nombre">{{ nombreAlumno(alumno) }}</span>
+                    @if (alumno.grupos.length) {
+                    <span class="mi-caja__secundario">{{ alumno.grupos.join(', ') }}</span>
+                    }
+                  </span>
+                  <svg class="mi-caja__chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                    stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"></path></svg>
+                </button>
+              </li>
+              }
+            </ul>
+            } @else {
+            <pn-bloque-vacio [titulo]="'Ningún alumno de tus grupos se llama «' + busquedaAlumno + '».'"
+              accion="Quitar búsqueda" (accionar)="quitarBusquedaAlumno()" />
+            }
+            }
+          </section>
+
+          <!-- Paso 2: el producto. -->
+          <section class="mi-caja__bloque mi-caja__bloque--venta mi-caja__bloque--plano" aria-labelledby="mi-caja-titulo-catalogo">
+            <header class="mi-caja__cab-bloque">
+              <h2 id="mi-caja-titulo-catalogo">Catálogo (precio fijo)</h2>
+              @if (productos.length && !alumnoVenta) {
+              <p class="mi-caja__secundario" id="mi-caja-pista-venta">Elige primero el alumno.</p>
+              }
+            </header>
+            @if (productos.length === 0) {
+            <pn-bloque-vacio titulo="Aún no hay nada que vender"
+              texto="La gestión de la escuela todavía no ha marcado productos para vender desde Mi caja." />
+            } @else {
+            <ul class="mi-caja__catalogo" aria-labelledby="mi-caja-titulo-catalogo">
+              @for (producto of productos; track producto.id) {
+              <li class="mi-caja__fila mi-caja__fila--catalogo">
+                <span class="mi-caja__fila-texto">{{ producto.concepto }}</span>
+                <span class="mi-caja__importe" data-cifras>{{ producto.precio | eur }}</span>
+                <button type="button" pnOcupado class="mi-caja__boton-secundario" [ocupado]="vendiendo === producto.id"
+                  textoOcupado="Vendiendo…" [deshabilitado]="!alumnoVenta"
+                  [attr.aria-describedby]="alumnoVenta ? null : 'mi-caja-pista-venta'"
+                  [attr.aria-label]="'Vender ' + producto.concepto" (click)="abrirVenta(producto)">Vender</button>
+              </li>
+              }
+            </ul>
+            }
+          </section>
+          <p class="mi-caja__nota">Sin mensualidades, licencias, exámenes, reservas ni productos de grado.</p>
+          }
+          }
+        </section>
+
+        <!-- ============================================================ Encima -->
+        <section class="mi-caja__panel" id="mi-caja-panel-encima" role="tabpanel" aria-labelledby="mi-caja-pestana-encima"
+          [hidden]="pestana !== 'encima'">
+          @if (pestana === 'encima') {
+          @if (errorEncima) {
+          <pn-bloque-error [titulo]="errorEncima" (reintentar)="cargarEncima()" />
+          } @else if (!encima) {
+          <pn-esqueleto etiqueta="Cargando lo que llevas encima…">
+            <div class="mi-caja__lista mi-caja__huesos-lista">
+              @for (fila of esqueletos; track fila) {
+              <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso"></span></div>
+              }
+            </div>
+          </pn-esqueleto>
+          } @else if (encima.cobros.length === 0) {
+          <pn-bloque-vacio titulo="No llevas nada encima"
+            texto="Lo que cobres en efectivo aparecerá aquí hasta que lo entregues en la sede." />
+          } @else {
+          <div class="mi-caja__sin-entregar">
+            <h2>Sin entregar</h2>
+            <span class="mi-caja__importe" data-cifras>{{ encima.importe | eur }}</span>
+          </div>
+          <ul class="mi-caja__lista mi-caja__encima-lista" aria-label="Cobros sin entregar">
+            @for (c of encima.cobros; track c.cobroId) {
+            <li class="mi-caja__fila">
+              <div class="mi-caja__fila-texto">
+                <span class="mi-caja__fila-nombre">{{ nombreCobro(c) }}</span>
+                <span class="mi-caja__secundario">{{ c.concepto }}@if (c.venta) { · venta } · {{ cuandoCobro(c) }}</span>
+              </div>
+              <div class="mi-caja__acciones">
+                <span class="mi-caja__importe" data-cifras>{{ c.importe | eur }}</span>
+                <button type="button" class="mi-caja__boton-texto" (click)="abrirDeshacer(c)"
+                  [attr.aria-label]="'Deshacer el cobro de ' + c.concepto + ' a ' + nombreCobro(c)">Deshacer</button>
+              </div>
+            </li>
+            }
+          </ul>
+          }
+
+          <section class="mi-caja__entregados" aria-labelledby="mi-caja-titulo-entregados">
+            <h2 class="mi-caja__plegable-titulo" id="mi-caja-titulo-entregados">
+              <button type="button" class="mi-caja__plegable" [attr.aria-expanded]="entregadosAbierto"
+                aria-controls="mi-caja-lista-entregados" (click)="alternarEntregados()">
+                <span>Entregados recientes · últimos 30 días</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+                  stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
+              </button>
+            </h2>
+            <div id="mi-caja-lista-entregados" class="mi-caja__entregados-cuerpo" [hidden]="!entregadosAbierto"
+              [attr.aria-busy]="cargandoEntregados ? 'true' : null">
+              @if (entregadosAbierto) {
+              @if (errorEntregados) {
+              <pn-bloque-error [titulo]="errorEntregados" (reintentar)="cargarEntregados()" />
+              } @else if (entregados === null) {
+              <pn-esqueleto etiqueta="Cargando los cobros entregados…">
+                <div class="mi-caja__huesos-lista">
+                  <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso"></span></div>
+                  <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso"></span></div>
+                </div>
+              </pn-esqueleto>
+              } @else if (entregados.length === 0) {
+              <pn-bloque-vacio titulo="Nada entregado en los últimos 30 días" texto="Lo más antiguo lo revisa la sede." />
+              } @else {
+              <ul class="mi-caja__entregados-lista" aria-label="Entregados recientes">
+                @for (c of entregados; track c.cobroId) {
+                <li class="mi-caja__fila">
+                  <div class="mi-caja__fila-texto">
+                    <span class="mi-caja__fila-nombre">{{ nombreCobro(c) }}</span>
+                    <span class="mi-caja__secundario" data-cifras>{{ c.concepto }} · entregado el {{ diaMes(c.fechaEntrega) }}@if (c.sedeNombre) { · {{ c.sedeNombre }}}</span>
+                  </div>
+                  <div class="mi-caja__acciones">
+                    <span class="mi-caja__importe" data-cifras>{{ c.importe | eur }}</span>
+                    @if (c.solicitudPendienteId) {
+                    <span class="mi-caja__pastilla">Esperando al propietario</span>
+                    } @else if (!c.noSePuedePedir) {
+                    <button type="button" class="mi-caja__boton-texto" (click)="abrirPedirDeshacer(c)"
+                      [attr.aria-label]="'Pedir deshacer el cobro de ' + c.concepto + ' a ' + nombreCobro(c)">Pedir deshacer</button>
+                    }
+                  </div>
+                  @if (!c.solicitudPendienteId && c.noSePuedePedir) {
+                  <p class="mi-caja__fila-aviso">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                      <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 7.5v.01"></path>
+                    </svg>
+                    <span>{{ c.noSePuedePedir }}</span>
+                  </p>
+                  }
+                </li>
+                }
+              </ul>
+              }
+              }
+            </div>
+          </section>
+          @if (entregadosAbierto && entregados?.length) {
+          <p class="mi-caja__nota">Lo ya entregado está en la caja de la sede: deshacerlo se pide al propietario.</p>
+          }
+          }
+        </section>
+
+        <!-- ============================================================ Pedidos -->
+        <section class="mi-caja__panel" id="mi-caja-panel-pedidos" role="tabpanel" aria-labelledby="mi-caja-pestana-pedidos"
+          [hidden]="pestana !== 'pedidos'" [attr.aria-busy]="cargandoSolicitudes ? 'true' : null">
+          @if (pestana === 'pedidos') {
+          <div>
+            <button type="button" class="mi-caja__boton-secundario mi-caja__ancho" (click)="abrirEncargo()">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              Encargar un producto
+            </button>
+          </div>
+
+          @if (errorSolicitudes) {
+          <pn-bloque-error [titulo]="errorSolicitudes" (reintentar)="cargarSolicitudes()" />
+          } @else if (!solicitudesCargadas) {
+          <pn-esqueleto etiqueta="Cargando tus pedidos…">
+            <div class="mi-caja__huesos-lista mi-caja__huesos-lista--sueltos">
+              @for (fila of esqueletos; track fila) {
+              <div class="mi-caja__hueso-fila"><span class="mi-caja__hueso"></span></div>
+              }
+            </div>
+          </pn-esqueleto>
+          } @else if (sinPedidos) {
+          <pn-bloque-vacio titulo="Aún no has encargado nada"
+            texto="Encarga material o ropa del catálogo para un alumno: la escuela lo pide y te lo da al recibirlo." />
+          } @else {
+          @if (encargosEnCurso.length) {
+          <section class="mi-caja__seccion" aria-labelledby="mi-caja-titulo-en-curso">
+            <h2 id="mi-caja-titulo-en-curso">En curso</h2>
+            <ul class="mi-caja__encargos">
+              @for (s of encargosEnCurso; track s.id) {
+              <ng-container *ngTemplateOutlet="tplEncargo; context: { $implicit: s }" />
+              }
+            </ul>
+          </section>
+          }
+          @if (encargosTerminados.length) {
+          <section class="mi-caja__seccion" aria-labelledby="mi-caja-titulo-terminados">
+            <h2 id="mi-caja-titulo-terminados">Terminados</h2>
+            <ul class="mi-caja__encargos">
+              @for (s of encargosTerminados; track s.id) {
+              <ng-container *ngTemplateOutlet="tplEncargo; context: { $implicit: s }" />
+              }
+            </ul>
+          </section>
+          }
+          @if (solicitudesDeshacer.length) {
+          <section class="mi-caja__seccion" aria-labelledby="mi-caja-titulo-deshacer">
+            <h2 id="mi-caja-titulo-deshacer">Deshacer cobros entregados</h2>
+            <ul class="mi-caja__encargos">
+              @for (s of solicitudesDeshacer; track s.id) {
+              <li class="mi-caja__encargo" [attr.data-solicitud]="s.id">
+                <div class="mi-caja__encargo-l1">
+                  <span class="mi-caja__fila-nombre">{{ nombreSolicitud(s) }}</span>
+                  @if (s.importe !== null) {
+                  <span class="mi-caja__importe" data-cifras>{{ s.importe | eur }}</span>
+                  }
+                </div>
+                <p class="mi-caja__secundario" data-cifras>{{ s.concepto }} · pedido el {{ diaMes(s.solicitadoEn) }}</p>
+                <p class="mi-caja__nota-encargo"><span class="mi-caja__oculto">Motivo: </span>{{ s.motivo }}</p>
+                <div class="mi-caja__pie-encargo">
+                  <span class="mi-caja__pastilla" [class.mi-caja__pastilla--bien]="s.estado === 'ACEPTADA'">
+                    @if (s.estado === 'ACEPTADA') {
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                      stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+                    }
+                    {{ etiquetaDeshacer(s.estado) }}
+                  </span>
+                  @if (puedeRetirar(s)) {
+                  <div class="mi-caja__botones">
+                    <button type="button" class="mi-caja__boton-texto" (click)="abrirRetirar(s)"
+                      [attr.aria-label]="'Retirar la solicitud de deshacer ' + s.concepto + ' de ' + nombreSolicitud(s)">Retirar</button>
+                  </div>
+                  }
+                </div>
+                @if (s.respuesta) {
+                <p class="mi-caja__respuesta"><span class="mi-caja__respuesta-etiqueta">{{ s.estado === 'NO_APLICABLE' ? 'Por qué:' : 'Respuesta:' }}</span> {{ s.respuesta }}</p>
+                }
+              </li>
+              }
+            </ul>
+          </section>
+          }
+          }
+          <p class="mi-caja__nota">Solo material y ropa del catálogo. El cargo se apunta al alumno al encargar y lo cobras desde «Por cobrar».</p>
+          }
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ Panel: encargar un producto -->
+  @if (hojaEncargo; as h) {
+  <pn-panel-lateral titulo="Encargar un producto" [bloqueado]="h.enviando" (cerrar)="cerrarEncargo()">
+    @if (errorCargaEncargo) {
+    <pn-bloque-error [titulo]="errorCargaEncargo" (reintentar)="cargarDatosEncargo()" />
+    } @else if (cargandoEncargo) {
+    <pn-esqueleto etiqueta="Cargando tus alumnos y el catálogo…">
+      <div class="mi-caja__huesos">
+        <span class="mi-caja__hueso"></span>
+        <span class="mi-caja__hueso mi-caja__hueso--campo"></span>
+        <span class="mi-caja__hueso"></span>
+        <span class="mi-caja__hueso mi-caja__hueso--campo"></span>
+      </div>
+    </pn-esqueleto>
+    } @else {
+    <form id="mi-caja-form-encargo" class="mi-caja__form" novalidate (submit)="$event.preventDefault(); confirmarEncargo()">
+      @if (h.intentado && erroresEncargo.length) {
+      <div class="mi-caja__resumen-errores" role="alert" tabindex="-1" aria-labelledby="mi-caja-resumen-encargo">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <div>
+          <h3 id="mi-caja-resumen-encargo" data-cifras>{{ tituloResumenEncargo }}</h3>
+          <ul>
+            @for (e of erroresEncargo; track e.campo) {
+            <li><a [href]="'#' + idCampoEncargo[e.campo]" (click)="irACampoEncargo($event, e.campo)">{{ e.etiqueta }}</a></li>
+            }
+          </ul>
+        </div>
+      </div>
+      }
+
+      <!-- Alumno -->
+      <div class="mi-caja__campo-form">
+        <span class="mi-caja__etiqueta" id="mi-caja-encargo-alumno-etiqueta">Alumno <span class="mi-caja__marca">obligatorio</span></span>
+        @if (h.alumno) {
+        <div class="mi-caja__elegido">
+          <span class="mi-caja__fila-texto">
+            <span class="mi-caja__fila-nombre">{{ nombreAlumno(h.alumno) }}</span>
+            @if (h.alumno.grupos.length) {
+            <span class="mi-caja__secundario">{{ h.alumno.grupos.join(', ') }}</span>
+            }
+          </span>
+          <button type="button" id="mi-caja-encargo-cambiar" class="mi-caja__boton-texto" [disabled]="h.enviando"
+            [attr.aria-label]="'Cambiar el alumno (' + nombreAlumno(h.alumno) + ')'" (click)="cambiarAlumnoEncargo()">Cambiar</button>
+        </div>
+        } @else if (alumnos.length === 0) {
+        <p class="mi-caja__ayuda" [id]="idCampoEncargo.alumno" tabindex="-1">No tienes alumnos activos en tus grupos.</p>
+        } @else {
+        <div class="mi-caja__campo" [id]="idCampoEncargo.alumno">
+          <input type="search" id="mi-caja-encargo-buscar" class="mi-caja__control" placeholder="Buscar alumno" autocomplete="off"
+            aria-labelledby="mi-caja-encargo-alumno-etiqueta" [value]="h.busqueda" (input)="buscarAlumnoEncargo($event)"
+            (keydown.enter)="$event.preventDefault()"
+            [attr.aria-invalid]="errorEncargo('alumno') ? 'true' : null"
+            [attr.aria-describedby]="errorEncargo('alumno') ? 'mi-caja-encargo-alumno-error' : null" />
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+            <circle cx="10.5" cy="10.5" r="6"></circle><path d="m15 15 5 5"></path>
+          </svg>
+        </div>
+        <ul class="mi-caja__lista mi-caja__eleccion mi-caja__eleccion--corta" aria-label="Alumnos de tus grupos">
+          @for (alumno of alumnosEncargoFiltrados; track alumno.alumnoId) {
+          <li>
+            <button type="button" class="mi-caja__fila mi-caja__elegible" (click)="elegirAlumnoEncargo(alumno)">
+              <span class="mi-caja__fila-texto">
+                <span class="mi-caja__fila-nombre">{{ nombreAlumno(alumno) }}</span>
+                @if (alumno.grupos.length) {
+                <span class="mi-caja__secundario">{{ alumno.grupos.join(', ') }}</span>
+                }
+              </span>
+            </button>
+          </li>
+          } @empty {
+          <li class="mi-caja__sin-coincidencias">Ningún alumno de tus grupos se llama «{{ h.busqueda }}».</li>
+          }
+        </ul>
+        }
+        @if (errorEncargo('alumno'); as e) {
+        <p class="mi-caja__error" id="mi-caja-encargo-alumno-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+
+      <!-- Producto -->
+      <div class="mi-caja__campo-form">
+        <span class="mi-caja__etiqueta" id="mi-caja-encargo-producto-etiqueta">Producto <span class="mi-caja__marca">obligatorio</span></span>
+        @if (productosEncargables.length === 0) {
+        <p class="mi-caja__ayuda" [id]="idCampoEncargo.producto" tabindex="-1">El catálogo no tiene material ni ropa para encargar.</p>
+        } @else {
+        <div class="mi-caja__lista mi-caja__radios" [class.mi-caja__radios--error]="errorEncargo('producto')" role="radiogroup"
+          [id]="idCampoEncargo.producto" aria-labelledby="mi-caja-encargo-producto-etiqueta" aria-required="true"
+          [attr.aria-invalid]="errorEncargo('producto') ? 'true' : null"
+          [attr.aria-describedby]="errorEncargo('producto') ? 'mi-caja-encargo-producto-error' : null">
+          @for (producto of productosEncargables; track producto.id) {
+          <label class="mi-caja__radio-fila" [class.mi-caja__radio-fila--elegida]="h.productoId === producto.id">
+            <input type="radio" class="mi-caja__radio" name="mi-caja-producto-encargo" [value]="producto.id"
+              [checked]="h.productoId === producto.id" [disabled]="h.enviando" (change)="elegirProductoEncargo(producto.id)" />
+            <span class="mi-caja__fila-texto">{{ producto.concepto }}</span>
+            <span class="mi-caja__importe" data-cifras>{{ producto.precio | eur }}</span>
+          </label>
+          }
+        </div>
+        }
+        @if (errorEncargo('producto'); as e) {
+        <p class="mi-caja__error" id="mi-caja-encargo-producto-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+
+      <!-- Nota -->
+      <div class="mi-caja__campo-form">
+        <label class="mi-caja__etiqueta" [for]="idCampoEncargo.nota">Nota <span class="mi-caja__marca">obligatorio</span></label>
+        <textarea class="mi-caja__control mi-caja__control--area" [id]="idCampoEncargo.nota" rows="3" [attr.maxlength]="maxNotaEncargo"
+          placeholder="Talla, color…" [value]="h.nota" [readOnly]="h.enviando" (input)="ponerNotaEncargo($event)"
+          [attr.aria-invalid]="errorEncargo('nota') ? 'true' : null"
+          [attr.aria-describedby]="'mi-caja-encargo-nota-ayuda' + (errorEncargo('nota') ? ' mi-caja-encargo-nota-error' : '')"></textarea>
+        <p class="mi-caja__ayuda" id="mi-caja-encargo-nota-ayuda" data-cifras>Va con el encargo y en el cargo del alumno · {{ h.nota.length }}/{{ maxNotaEncargo }}</p>
+        @if (errorEncargo('nota'); as e) {
+        <p class="mi-caja__error" id="mi-caja-encargo-nota-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+
+      <!-- Sede: solo si el alumno está en grupos suyos de varias sedes (D6c-9). -->
+      @if (h.pedirSede) {
+      <div class="mi-caja__campo-form">
+        <label class="mi-caja__etiqueta" [for]="idCampoEncargo.sede">Sede <span class="mi-caja__marca">obligatorio</span></label>
+        @if (opcionesSede.length) {
+        <select class="mi-caja__control mi-caja__control--select" [id]="idCampoEncargo.sede" [disabled]="h.enviando"
+          (change)="elegirSedeEncargo($event)" [attr.aria-invalid]="errorEncargo('sede') ? 'true' : null"
+          [attr.aria-describedby]="'mi-caja-encargo-sede-ayuda' + (errorEncargo('sede') ? ' mi-caja-encargo-sede-error' : '')">
+          <option value="" disabled [selected]="h.sedeId === null">Elige la sede</option>
+          @for (sede of opcionesSede; track sede.id) {
+          <option [value]="sede.id" [selected]="h.sedeId === sede.id">{{ sede.nombre }}</option>
+          }
+        </select>
+        <p class="mi-caja__ayuda" id="mi-caja-encargo-sede-ayuda">El alumno está en grupos tuyos de varias sedes: lo atiende la que elijas.</p>
+        } @else {
+        <p class="mi-caja__ayuda" [id]="idCampoEncargo.sede" tabindex="-1">No se puede elegir la sede desde aquí: pide este encargo a la gestión.</p>
+        }
+        @if (errorEncargo('sede'); as e) {
+        <p class="mi-caja__error" id="mi-caja-encargo-sede-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+      }
+
+      <p class="mi-caja__ayuda" data-cifras>Se apunta al alumno al precio del catálogo@if (productoEncargo) { ({{ productoEncargo.precio | eur }})}. Lo cobras desde «Por cobrar».</p>
+      @if (h.error) {
+      <p class="mi-caja__error mi-caja__error--servidor" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+        <span>{{ h.error }}</span>
+      </p>
+      }
+    </form>
+    }
+    <div pnPie class="mi-caja__pie-panel">
+      <button type="button" class="mi-caja__pie-cancelar" [disabled]="h.enviando" (click)="cerrarEncargo()">Cancelar</button>
+      @if (!errorCargaEncargo && !cargandoEncargo) {
+      <button type="submit" form="mi-caja-form-encargo" pnOcupado class="mi-caja__boton-principal" [ocupado]="h.enviando"
+        textoOcupado="Encargando…">Encargar</button>
+      }
+    </div>
+  </pn-panel-lateral>
+  }
+
+  <!-- ============================================================ Panel: pedir deshacer un cobro entregado -->
+  @if (hojaPedirDeshacer; as h) {
+  <pn-panel-lateral titulo="Pedir al propietario que deshaga este cobro" [bloqueado]="h.enviando" (cerrar)="cerrarPedirDeshacer()">
+    <form id="mi-caja-form-pedir" class="mi-caja__form" novalidate (submit)="$event.preventDefault(); confirmarPedirDeshacer()">
+      <dl class="mi-caja__datos">
+        <div><dt>Alumno</dt><dd>{{ nombreCobro(h.cobro) }}</dd></div>
+        <div><dt>Concepto</dt><dd>{{ h.cobro.concepto }}</dd></div>
+        <div><dt>Importe</dt><dd data-cifras>{{ h.cobro.importe | eur }}</dd></div>
+        <div><dt>Entregado el</dt><dd data-cifras>{{ entregadoEl(h.cobro) }}</dd></div>
+      </dl>
+
+      <div class="mi-caja__campo-form">
+        <span class="mi-caja__etiqueta" id="mi-caja-que-ha-pasado-etiqueta">Qué ha pasado <span class="mi-caja__marca">obligatorio</span></span>
+        <div class="mi-caja__lista mi-caja__radios" role="radiogroup" aria-labelledby="mi-caja-que-ha-pasado-etiqueta" aria-required="true">
+          <label class="mi-caja__radio-fila" [class.mi-caja__radio-fila--elegida]="h.motivoDeshacer === 'AUN_NO_PAGADO'">
+            <input type="radio" class="mi-caja__radio" name="mi-caja-que-ha-pasado" value="AUN_NO_PAGADO"
+              [checked]="h.motivoDeshacer === 'AUN_NO_PAGADO'" [disabled]="h.enviando" (change)="elegirQueHaPasado('AUN_NO_PAGADO')" />
+            <span class="mi-caja__fila-texto"><span>Aún no ha pagado <span class="mi-caja__marca">(queda pendiente)</span></span></span>
+          </label>
+          @if (h.cobro.venta) {
+          <label class="mi-caja__radio-fila" [class.mi-caja__radio-fila--elegida]="h.motivoDeshacer === 'NO_HUBO_VENTA'">
+            <input type="radio" class="mi-caja__radio" name="mi-caja-que-ha-pasado" value="NO_HUBO_VENTA"
+              [checked]="h.motivoDeshacer === 'NO_HUBO_VENTA'" [disabled]="h.enviando" (change)="elegirQueHaPasado('NO_HUBO_VENTA')" />
+            <span class="mi-caja__fila-texto"><span>No hubo venta <span class="mi-caja__marca">(se cancela el cargo)</span></span></span>
+          </label>
+          }
+        </div>
+      </div>
+
+      <div class="mi-caja__campo-form">
+        <label class="mi-caja__etiqueta" for="mi-caja-motivo-pedir">Motivo <span class="mi-caja__marca">obligatorio</span></label>
+        <textarea class="mi-caja__control mi-caja__control--area" id="mi-caja-motivo-pedir" rows="3" [attr.maxlength]="maxMotivo"
+          placeholder="Qué pasó, para que el propietario lo entienda" [value]="h.motivo" [readOnly]="h.enviando"
+          (input)="ponerMotivoPedirDeshacer($event)" [attr.aria-invalid]="h.intentado && errorPedirDeshacer ? 'true' : null"
+          [attr.aria-describedby]="'mi-caja-motivo-pedir-contador' + (h.intentado && errorPedirDeshacer ? ' mi-caja-motivo-pedir-error' : '')"></textarea>
+        <p class="mi-caja__contador mi-caja__contador--campo" id="mi-caja-motivo-pedir-contador" data-cifras>{{ h.motivo.length }}/{{ maxMotivo }}</p>
+        @if (h.intentado && errorPedirDeshacer; as e) {
+        <p class="mi-caja__error" id="mi-caja-motivo-pedir-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+          <span>{{ e }}</span>
+        </p>
+        }
+      </div>
+      <p class="mi-caja__ayuda">Mientras tanto el cobro sigue entregado en la sede.</p>
+      @if (h.error) {
+      <p class="mi-caja__error mi-caja__error--servidor" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+        <span>{{ h.error }}</span>
+      </p>
+      }
+    </form>
+    <div pnPie class="mi-caja__pie-panel">
+      <button type="button" class="mi-caja__pie-cancelar" [disabled]="h.enviando" (click)="cerrarPedirDeshacer()">Cancelar</button>
+      <button type="submit" form="mi-caja-form-pedir" pnOcupado class="mi-caja__boton-principal" [ocupado]="h.enviando"
+        textoOcupado="Enviando…">Enviar solicitud</button>
+    </div>
+  </pn-panel-lateral>
+  }
+</section>
+
+<!-- Un encargo: hitos, estado del cobro y lo que puede hacer el profesor. -->
+<ng-template #tplEncargo let-s>
+  <li class="mi-caja__encargo" [attr.data-solicitud]="s.id">
+    <div class="mi-caja__encargo-l1">
+      <span class="mi-caja__fila-nombre">{{ nombreSolicitud(s) }}</span>
+      @if (s.importe !== null) {
+      <span class="mi-caja__importe" data-cifras>{{ s.importe | eur }}</span>
+      }
+    </div>
+    <p class="mi-caja__secundario" data-cifras>{{ s.concepto }} · pedido el {{ diaMes(s.solicitadoEn) }}</p>
+    @if (s.motivo) {
+    <p class="mi-caja__nota-encargo"><span class="mi-caja__oculto">Nota: </span>{{ s.motivo }}</p>
+    }
+    @if (encargoCaido(s)) {
+    <p class="mi-caja__caida">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path>
+      </svg>
+      <span><strong>{{ s.estado === 'RECHAZADO' ? 'Rechazado' : 'Retirado' }}</strong>@if (s.respuesta) {: {{ s.respuesta }}}</span>
+    </p>
+    } @else {
+    <ol class="mi-caja__hitos" aria-label="Estado del encargo">
+      @for (paso of pasosEncargo; track paso.estado; let i = $index) {
+      <li [class.mi-caja__hito--hecho]="i < indicePasoEncargo(s)" [attr.aria-current]="i === indicePasoEncargo(s) ? 'step' : null">
+        @if (i > 0) {
+        <svg class="mi-caja__hito-separador" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 6 6 6-6 6"></path></svg>
+        }
+        @if (i < indicePasoEncargo(s)) {
+        <svg class="mi-caja__hito-hecho" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+        }
+        <span>{{ paso.etiqueta }}</span>
+      </li>
+      }
+    </ol>
+    }
+    <div class="mi-caja__pie-encargo">
+      @if (estadoCobro(s); as cobro) {
+      <span class="mi-caja__pastilla" [class.mi-caja__pastilla--atencion]="cobro === 'PENDIENTE'"
+        [class.mi-caja__pastilla--bien]="cobro === 'COBRADO'">
+        @if (cobro === 'COBRADO') {
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+        }
+        {{ etiquetaCobro(cobro) }}
+      </span>
+      }
+      @if (puedeRetirar(s) || puedeMarcarEntregado(s)) {
+      <div class="mi-caja__botones">
+        @if (puedeRetirar(s)) {
+        <button type="button" class="mi-caja__boton-texto" (click)="abrirRetirar(s)"
+          [attr.aria-label]="'Retirar el encargo de ' + s.concepto + ' para ' + nombreSolicitud(s)">Retirar</button>
+        }
+        @if (puedeMarcarEntregado(s)) {
+        <button type="button" class="mi-caja__boton-secundario" (click)="abrirEntregado(s)">Marcar entregado al alumno</button>
+        }
+      </div>
+      }
+    </div>
+    @if (puedeRegistrarDevolucion(s)) {
+    <div class="mi-caja__devolucion">
+      <p><strong>Devolución pendiente.</strong> Llevas encima su cobro: devuélvelo a la familia y regístralo.</p>
+      <button type="button" class="mi-caja__boton-secundario" (click)="abrirDevolucion(s)">Registrar devolución</button>
+    </div>
+    } @else if (devolucionEnLaSede(s)) {
+    <p class="mi-caja__devolucion mi-caja__devolucion--sede">Devolución pendiente en la sede</p>
+    }
+  </li>
+</ng-template>

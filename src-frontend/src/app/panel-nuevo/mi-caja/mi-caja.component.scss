@@ -1,0 +1,612 @@
+// Mi caja del panel nuevo (8b-3p, boceto de la ronda 5, P1). Solo tokens de DESIGN.md, todo bajo .pn.mi-caja.
+// Móvil primero: una columna con «Llevas encima» arriba; desde 1024 px, la columna fija de 380 px a la derecha.
+@use '../capas/capas' as c;
+
+.pn.mi-caja {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+  color: var(--pn-tinta);
+
+  .mi-caja__pagina { max-width: 1280px; margin: 0 auto; padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl); }
+  h1 { margin: 0 0 20px; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); }
+  h2 { margin: 0; font: var(--pn-titulo-bloque); }
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; list-style: none; }
+
+  // ------------------------------------------------------------------ rejilla
+
+  .mi-caja__rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  .mi-caja__columna { display: grid; gap: 16px; min-width: 0; align-content: start; }
+  .mi-caja__lado { order: -1; display: grid; gap: 12px; min-width: 0; }
+  .mi-caja__panel { display: grid; gap: 16px; min-width: 0; align-content: start; }
+  .mi-caja__panel[hidden] { display: none; }
+
+  // ------------------------------------------------------------------ bloque «Llevas encima»
+
+  .mi-caja__bloque {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 18px 16px 16px;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__encima h2 { margin-bottom: 6px; }
+  .mi-caja__cifra { font: var(--pn-cifra); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+
+  .mi-caja__nota-lado {
+    display: none;
+    padding: 12px 14px;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie-2);
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2);
+
+    strong { font-weight: 600; color: var(--pn-tinta); }
+  }
+
+  .mi-caja__secundario { font: var(--pn-secundario); color: var(--pn-tinta-2); overflow-wrap: anywhere; }
+  .mi-caja__nota { font: var(--pn-etiqueta); font-weight: 400; color: var(--pn-tinta-2); }
+  .mi-caja__oculto { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+  // ------------------------------------------------------------------ pestañas segmentadas (boceto `.tabs`)
+
+  .mi-caja__pestanas {
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--pn-borde-control);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__pestana {
+    display: inline-flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 6px;
+    border: 0;
+    background: transparent;
+    color: var(--pn-tinta-2);
+    font: var(--pn-etiqueta);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+    & + & { border-left: 1px solid var(--pn-borde-control); }
+    &:hover { background: var(--pn-marca-primario-suave); color: var(--pn-tinta); }
+
+    &[aria-selected='true'] {
+      background: var(--pn-acento-suave);
+      color: var(--pn-acento);
+      box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+    }
+
+    &:focus-visible { outline-offset: -3px; }
+  }
+
+  .mi-caja__n {
+    margin-left: 4px;
+    font-weight: 600;
+    color: var(--pn-tinta-2);
+    font-variant-numeric: tabular-nums;
+
+    .mi-caja__pestana[aria-selected='true'] & { color: var(--pn-acento); }
+  }
+
+  // Algo de «Pedidos» espera su acción: el ocre de lo pendiente, con fondo para no depender solo del color.
+  .mi-caja__n--aviso,
+  .mi-caja__pestana[aria-selected='true'] .mi-caja__n--aviso {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-atencion-suave);
+    color: var(--pn-atencion);
+    text-align: center;
+  }
+
+  // ------------------------------------------------------------------ buscador
+
+  .mi-caja__buscar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .mi-caja__campo { position: relative; flex: 1 1 220px; min-width: 0; }
+
+  .mi-caja__control {
+    width: 100%;
+    height: 44px;
+    padding: 0 40px 0 12px;
+    border: 1px solid var(--pn-borde-control);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+    color: var(--pn-tinta);
+    font: var(--pn-cuerpo);
+
+    &::placeholder { color: var(--pn-tinta-2); }
+  }
+
+  .mi-caja__campo svg {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 18px;
+    height: 18px;
+    color: var(--pn-tinta-2);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .mi-caja__contador { font: var(--pn-etiqueta); font-weight: 400; color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
+
+  // ------------------------------------------------------------------ listas y filas
+
+  .mi-caja__lista,
+  .mi-caja__entregados-lista {
+    overflow: hidden;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__alumno { padding: 10px 12px 6px 16px; border-bottom: 1px solid var(--pn-linea); }
+  .mi-caja__alumno:last-child { border-bottom: 0; }
+  .mi-caja__cab-alumno { display: flex; gap: 12px; align-items: center; padding-bottom: 6px; }
+  .mi-caja__nombre { min-width: 0; margin: 0; font: var(--pn-cuerpo); font-weight: 600; overflow-wrap: anywhere; }
+
+  .mi-caja__avatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+    font: 700 0.8125rem / 1 var(--pn-fuente-cuerpo);
+  }
+
+  .mi-caja__cargo {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-height: 48px;
+    margin-left: 12px;
+    padding: 4px 0;
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  .mi-caja__fila-texto { display: grid; flex: 1 1 auto; gap: 2px; min-width: 0; font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+  .mi-caja__fila-nombre { font: var(--pn-cuerpo); font-weight: 600; }
+
+  .mi-caja__importe {
+    font: var(--pn-cuerpo);
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mi-caja__fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    padding: 10px 12px 10px 16px;
+    border-bottom: 1px solid var(--pn-linea);
+    background: var(--pn-superficie);
+
+    .mi-caja__fila-texto { flex: 1 1 170px; }
+    &:last-child { border-bottom: 0; }
+  }
+
+  .mi-caja__acciones { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+  .mi-caja__acciones .mi-caja__importe { margin-right: 4px; }
+
+  .mi-caja__fila-aviso {
+    display: flex;
+    flex-basis: 100%;
+    gap: 6px;
+    align-items: flex-start;
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2);
+
+    svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  }
+
+  // ------------------------------------------------------------------ botones (texto y secundario de DESIGN.md)
+
+  .mi-caja__boton-texto,
+  .mi-caja__boton-secundario {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: var(--pn-radio-m);
+    background: transparent;
+    color: var(--pn-acento);
+    font: var(--pn-cuerpo);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+    &:hover { background: var(--pn-acento-suave); }
+    &[aria-busy='true'] { cursor: progress; }
+
+    svg { width: 18px; height: 18px; flex: none; }
+  }
+
+  .mi-caja__boton-secundario {
+    padding: 0 16px;
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__ancho { width: 100%; }
+
+  // ------------------------------------------------------------------ Encima
+
+  .mi-caja__sin-entregar { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; }
+  .mi-caja__sin-entregar .mi-caja__importe { font: var(--pn-etiqueta); font-weight: 400; color: var(--pn-tinta-2); }
+
+  .mi-caja__entregados {
+    overflow: hidden;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__plegable-titulo { font: inherit; }
+
+  .mi-caja__plegable {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    background: transparent;
+    color: var(--pn-tinta);
+    font: 700 0.9375rem / 1.3 var(--pn-fuente-titulo);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--pn-transicion);
+
+    &:hover { background: var(--pn-marca-primario-suave); }
+    &:focus-visible { outline-offset: -3px; }
+
+    svg { flex: none; width: 18px; height: 18px; color: var(--pn-tinta-2); transform: rotate(-90deg); transition: transform var(--pn-transicion); }
+    &[aria-expanded='true'] svg { transform: none; }
+  }
+
+  .mi-caja__entregados-cuerpo { border-top: 1px solid var(--pn-linea); }
+  .mi-caja__entregados-cuerpo[hidden] { display: none; }
+  .mi-caja__entregados-lista { border: 0; border-radius: 0; }
+  .mi-caja__entregados-cuerpo pn-bloque-error,
+  .mi-caja__entregados-cuerpo pn-bloque-vacio,
+  .mi-caja__entregados-cuerpo pn-esqueleto { display: block; padding: 12px; }
+
+  // ------------------------------------------------------------------ pastillas
+
+  .mi-caja__pastilla {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-marca-suave-por-defecto);
+    color: var(--pn-tinta-2);
+    font: var(--pn-etiqueta);
+    white-space: nowrap;
+
+    svg { width: 14px; height: 14px; flex: none; }
+  }
+
+  .mi-caja__pastilla--atencion { background: var(--pn-atencion-suave); color: var(--pn-atencion); }
+  .mi-caja__pastilla--bien { background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie)); color: var(--pn-bien); }
+
+  // ------------------------------------------------------------------ Pedidos
+
+  .mi-caja__seccion { display: grid; gap: 10px; }
+  .mi-caja__encargos { display: grid; gap: 10px; }
+
+  .mi-caja__encargo {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  .mi-caja__encargo-l1 { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; }
+  .mi-caja__nota-encargo { font: var(--pn-secundario); color: var(--pn-tinta); overflow-wrap: anywhere; }
+
+  .mi-caja__hitos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    align-items: center;
+    font: var(--pn-etiqueta);
+    font-weight: 400;
+    color: var(--pn-tinta-2);
+
+    li { display: inline-flex; gap: 4px; align-items: center; }
+    li[aria-current='step'] { color: var(--pn-acento); font-weight: 700; }
+  }
+
+  .mi-caja__hito-separador { width: 14px; height: 14px; margin-right: 2px; color: var(--pn-tinta-2); }
+  .mi-caja__hito-hecho { width: 14px; height: 14px; color: var(--pn-bien); }
+
+  .mi-caja__caida {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--pn-linea);
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-superficie-2);
+    font: var(--pn-secundario);
+    overflow-wrap: anywhere;
+
+    svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--pn-tinta-2); }
+    strong { font-weight: 700; }
+  }
+
+  .mi-caja__pie-encargo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .mi-caja__botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+
+  // Devolución pendiente: el profesor lleva dinero que debe devolver (regla Un Pendiente, en ocre).
+  .mi-caja__devolucion {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--pn-atencion) 30%, var(--pn-atencion-suave));
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-atencion-suave);
+    font: var(--pn-secundario);
+    color: var(--pn-tinta);
+
+    p { flex: 1 1 220px; }
+    strong { font-weight: 700; color: var(--pn-atencion); }
+  }
+
+  .mi-caja__devolucion--sede { color: var(--pn-atencion); font-weight: 600; }
+
+  .mi-caja__respuesta { font: var(--pn-secundario); color: var(--pn-tinta); overflow-wrap: anywhere; }
+  .mi-caja__respuesta-etiqueta { font-weight: 600; color: var(--pn-tinta-2); }
+
+  // ------------------------------------------------------------------ Vender (boceto «2 bis»: un bloque por paso)
+
+  .mi-caja__bloque--venta { gap: 14px; }
+  .mi-caja__cab-bloque { display: grid; gap: 2px; }
+
+  // Catálogo: la lista va a sangre dentro del bloque, con el filete arriba.
+  .mi-caja__bloque--plano { padding-bottom: 0; overflow: hidden; }
+  .mi-caja__bloque--plano > pn-bloque-vacio { display: block; padding-bottom: 16px; }
+  .mi-caja__catalogo { margin: 0 -16px; border-top: 1px solid var(--pn-linea); }
+  .mi-caja__fila--catalogo { flex-wrap: nowrap; }
+  .mi-caja__fila--catalogo .mi-caja__fila-texto { flex: 1 1 100px; }
+  .mi-caja__fila--alumno { flex-wrap: nowrap; }
+
+  // Fila entera pulsable (elegir alumno): botón sin aspecto de botón, con el hover de las filas.
+  .mi-caja__elegible {
+    width: 100%;
+    min-height: 56px;
+    border: 0;
+    border-bottom: 1px solid var(--pn-linea);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--pn-transicion);
+
+    &:hover { background: var(--pn-marca-primario-suave); }
+    &:focus-visible { outline-offset: -3px; }
+  }
+
+  .mi-caja__eleccion li:last-child .mi-caja__elegible { border-bottom: 0; }
+  .mi-caja__eleccion--corta { max-height: 264px; overflow-y: auto; }
+  .mi-caja__chevron { flex: none; width: 18px; height: 18px; color: var(--pn-tinta-2); }
+  .mi-caja__sin-coincidencias { padding: 12px 16px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+
+  // Desactivado sin alumno: la pista «Elige primero el alumno.» dice por qué.
+  .mi-caja__boton-secundario:disabled,
+  .mi-caja__boton-texto:disabled { cursor: not-allowed; opacity: 0.55; }
+  .mi-caja__boton-secundario:disabled:hover { background: var(--pn-superficie); }
+  .mi-caja__boton-texto:disabled:hover { background: transparent; }
+
+  // ------------------------------------------------------------------ formularios de los paneles laterales
+
+  .mi-caja__form { display: grid; gap: 20px; }
+  .mi-caja__campo-form { display: grid; gap: 6px; min-width: 0; }
+
+  .mi-caja__etiqueta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+    color: var(--pn-tinta);
+    font: var(--pn-etiqueta);
+  }
+
+  .mi-caja__marca { font-weight: 400; color: var(--pn-tinta-2); }
+  .mi-caja__ayuda { font: var(--pn-secundario); color: var(--pn-tinta-2); overflow-wrap: anywhere; }
+  .mi-caja__contador--campo { justify-self: end; }
+
+  .mi-caja__control {
+    caret-color: var(--pn-acento);
+    transition: border-color var(--pn-transicion);
+
+    &[aria-invalid='true'] { border-color: var(--pn-peligro); }
+  }
+
+  .mi-caja__control--area { height: auto; min-height: 84px; padding: 10px 12px; resize: vertical; line-height: 1.4; }
+  .mi-caja__control--area:read-only { background: var(--pn-superficie-2); }
+  .mi-caja__control--select { padding-right: 12px; }
+
+  .mi-caja__elegido {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 42px;
+    padding: 4px 4px 4px 12px;
+    border: 1px solid var(--pn-borde-control);
+    border-radius: var(--pn-radio-m);
+    background: var(--pn-superficie);
+  }
+
+  // Radios en filas (boceto «rdf»): el círculo de 22 px; la fila elegida, en el acento suave.
+  .mi-caja__radios--error { border-color: var(--pn-peligro); }
+
+  .mi-caja__radio-fila {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-height: 48px;
+    padding: 8px 12px 8px 14px;
+    border-bottom: 1px solid var(--pn-linea);
+    font: var(--pn-cuerpo);
+    cursor: pointer;
+    transition: background-color var(--pn-transicion);
+
+    &:last-child { border-bottom: 0; }
+    &:hover { background: var(--pn-marca-primario-suave); }
+    .mi-caja__fila-texto { flex: 1 1 100px; }
+  }
+
+  .mi-caja__radio-fila--elegida,
+  .mi-caja__radio-fila--elegida:hover { background: var(--pn-acento-suave); }
+
+  .mi-caja__radio {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    accent-color: var(--pn-acento);
+    cursor: inherit;
+  }
+
+  .mi-caja__error {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    color: var(--pn-peligro);
+    font: var(--pn-secundario);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+
+    svg { flex: none; width: 16px; height: 16px; margin-top: 2px; }
+  }
+
+  .mi-caja__error--servidor,
+  .mi-caja__resumen-errores {
+    padding: 12px 14px;
+    border: 1px solid color-mix(in srgb, var(--pn-peligro) 35%, var(--pn-superficie));
+    border-radius: var(--pn-radio-m);
+    background: color-mix(in srgb, var(--pn-peligro) 6%, var(--pn-superficie));
+  }
+
+  // Resumen de errores arriba del formulario: «Revisa N campos» y un enlace por campo.
+  .mi-caja__resumen-errores {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font: var(--pn-secundario);
+
+    > svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--pn-peligro); }
+    h3 { margin: 0; font: var(--pn-cuerpo); font-weight: 700; }
+    ul { display: flex; flex-wrap: wrap; gap: 0 14px; margin-top: 2px; }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      color: var(--pn-acento);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    &:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+  }
+
+  // Resumen del cobro en «Pedir deshacer»: dos columnas de dato.
+  .mi-caja__datos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    margin: 0;
+
+    div { display: grid; gap: 2px; min-width: 0; }
+    dt { font: var(--pn-etiqueta); color: var(--pn-tinta-2); }
+    dd { margin: 0; font: var(--pn-cuerpo); overflow-wrap: anywhere; }
+  }
+
+  .mi-caja__pie-panel { display: flex; gap: 8px; justify-content: flex-end; }
+  .mi-caja__pie-cancelar { @include c.boton-secundario; }
+  .mi-caja__boton-principal { @include c.boton-primario; }
+
+  .mi-caja__hueso--campo { max-width: 100%; height: 42px; }
+
+  // ------------------------------------------------------------------ esqueletos (forma del contenido, en serie-pista)
+
+  .mi-caja__huesos { display: grid; gap: 10px; }
+  .mi-caja__huesos-lista { display: grid; }
+  .mi-caja__huesos-lista--sueltos { gap: 10px; }
+  .mi-caja__hueso-fila { display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 8px 16px; border-bottom: 1px solid var(--pn-linea); }
+  .mi-caja__hueso-fila:last-child { border-bottom: 0; }
+  .mi-caja__hueso { display: block; flex: 1; max-width: 60%; height: 16px; border-radius: var(--pn-radio-s); background: var(--pn-serie-pista); }
+  .mi-caja__hueso--cifra { max-width: 50%; height: 30px; }
+  .mi-caja__hueso--avatar { flex: none; width: 40px; height: 40px; border-radius: 50%; }
+}
+
+@media (min-width: 768px) {
+  .pn.mi-caja {
+    .mi-caja__bloque { padding: 18px 20px 16px; }
+    .mi-caja__pestanas { width: fit-content; }
+    .mi-caja__pestana { flex: none; min-height: 40px; padding: 0 16px; font: var(--pn-secundario); font-weight: 600; }
+    .mi-caja__cargo { margin-left: 52px; }
+    .mi-caja__boton-texto,
+    .mi-caja__boton-secundario { min-height: 40px; }
+    .mi-caja__ancho { width: auto; }
+    .mi-caja__catalogo { margin: 0 -20px; }
+  }
+}
+
+@media (min-width: 1024px) {
+  .pn.mi-caja {
+    .mi-caja__rejilla { grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; }
+    // A la derecha (en el DOM va antes). La cabecera fija mide 64 px: la columna se queda 16 px por debajo.
+    .mi-caja__lado { order: 1; position: sticky; top: 80px; }
+    .mi-caja__nota-lado { display: block; }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pn.mi-caja {
+    .mi-caja__pagina { padding: var(--pn-espacio-m); }
+    h1 { margin-bottom: 16px; font-size: 1.375rem; }
+    .mi-caja__pie-panel { flex-direction: column-reverse; }
+    .mi-caja__pie-cancelar,
+    .mi-caja__boton-principal { width: 100%; min-height: 44px; }
+    .mi-caja__resumen-errores a { min-height: 44px; }
+  }
+}
+
+// La cifra de «Registrar devolución» va en tinta, no en el ocre del cobro: es dinero que sale (boceto «cobro neutro»).
+// El diálogo se pinta en el body, fuera de este componente; la regla solo alcanza a ese diálogo por su data-dialogo.
+::ng-deep .pn-dialogo[data-dialogo='mi-caja-devolucion'] .pn-dialogo__destacado-valor {
+  color: var(--pn-tinta);
+}

@@ -675,6 +675,14 @@ export const routes: Routes = [
     canActivate: [plataformaGuard],
   },
   {
+    // Mi caja del panel nuevo (8b-3p): carga diferida y el mismo permiso, sin catálogo.
+    path: 'mi-caja',
+    canMatch: [disenoNuevoGuard],
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./panel-nuevo/mi-caja/mi-caja.component').then(m => m.MiCajaPanelComponent),
+    canActivate: [profesorGuard],
+  },
+  {
     // «Mi caja» del profesor (6b-3b): sin catálogo ni requiredRoles; una sesión solo profesor solo puede usar su caja.
     path: 'mi-caja',
     data: { seo: SEO_ROUTES.noIndex },
