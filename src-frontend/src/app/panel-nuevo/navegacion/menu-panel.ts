@@ -60,7 +60,6 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Preinscripciones', ruta: '/preinscripciones', icono: 'bi-clipboard2-check' },
       { etiqueta: 'Convocatorias', ruta: '/convocatoriasListar', icono: 'bi-clipboard-check' },
       { etiqueta: 'Crear alumno', ruta: '/alumnosCrear', icono: 'bi-person-plus', grupo: 'Fichas' },
-      { etiqueta: 'Editar alumno', ruta: '/alumnosEditar', icono: 'bi-pencil-square' },
       { etiqueta: 'Eliminar alumno', ruta: '/alumnosEliminar', icono: 'bi-trash' },
     ],
     prefijos: [
