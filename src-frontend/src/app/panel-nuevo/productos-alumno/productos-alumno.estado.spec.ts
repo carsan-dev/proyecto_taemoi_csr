@@ -416,10 +416,70 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       expect(fila(1).marcadaBorrar).toBeTrue();
       expect(fila(1).modificada).toBeFalse();
       expect(estado.pendientes()).toBe(1);
+      // Editada y marcada: solo el «Deshacer» del borrado; el de los cambios no hace nada mientras esté marcada.
+      expect(fila(1).puedeDeshacerBorrar).toBeTrue();
+      expect(fila(1).puedeDeshacerCambios).toBeFalse();
+      estado.deshacerFila(1);
+      expect(estado.ediciones().get(1)).toEqual({ notas: 'nota' });
       estado.deshacerBorrar(1);
       expect(fila(1).marcadaBorrar).toBeFalse();
       expect(fila(1).modificada).toBeTrue();
       expect(fila(1).notas).toBe('nota');
+      expect(fila(1).puedeDeshacerBorrar).toBeFalse();
+      expect(fila(1).puedeDeshacerCambios).toBeTrue();
+    });
+  });
+
+  describe('«Deshacer» de una fila editada', () => {
+    it('deshace solo esa fila: vuelve a lo guardado, conserva los demás cambios y recalcula total y contador', () => {
+      abrir([cargo(1), cargo(2, { precio: 12.5, cantidad: 2 }), cargo(3)]);
+      expect(fila(2).puedeDeshacerCambios).toBeFalse();
+      estado.cambiarPrecio(1, '40');
+      estado.cambiarCantidad(2, '3');
+      estado.cambiarPrecio(2, '10');
+      estado.cambiarNotas(3, 'Talla M');
+      estado.elegirProducto(1);
+      estado.anadirALista();
+      expect(fila(2).total).toBe(30);
+      expect(estado.pendientes()).toBe(4);
+      expect(fila(2).puedeDeshacerCambios).toBeTrue();
+      estado.deshacerFila(2);
+      expect(fila(2).modificada).toBeFalse();
+      expect(fila(2).puedeDeshacerCambios).toBeFalse();
+      expect(fila(2).cantidad).toBe('2');
+      expect(fila(2).precio).toBe('12,50');
+      expect(fila(2).total).toBe(25);
+      expect(estado.ediciones().has(2)).toBeFalse();
+      expect(estado.ediciones().get(1)).toEqual({ precio: '40' });
+      expect(fila(1).total).toBe(40);
+      expect(estado.ediciones().get(3)).toEqual({ notas: 'Talla M' });
+      expect(estado.nuevas().length).toBe(1);
+      expect(estado.pendientes()).toBe(3);
+      expect(estado.hayCambios()).toBeTrue();
+    });
+
+    it('una fila con un campo no válido se deshace y deja de bloquear el guardado', () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarCantidad(1, '0');
+      estado.cambiarNotas(2, 'nota');
+      expect(estado.puedeGuardar()).toBeFalse();
+      estado.deshacerFila(1);
+      expect(fila(1).total).toBe(30);
+      expect(estado.hayErrores()).toBeFalse();
+      expect(estado.puedeGuardar()).toBeTrue();
+    });
+
+    it('deshacer el último cambio deja la pantalla sin pendientes, como «Descartar»', () => {
+      abrir([cargo(1), cargo(2)]);
+      estado.cambiarPrecio(1, '40');
+      estado.cambiarFecha(2, '2026-10-05');
+      estado.deshacerFila(1);
+      expect(estado.pendientes()).toBe(1);
+      estado.deshacerFila(2);
+      expect(estado.pendientes()).toBe(0);
+      expect(estado.hayCambios()).toBeFalse();
+      expect(estado.puedeGuardar()).toBeFalse();
+      expect(estado.ediciones().size).toBe(0);
     });
   });
 
@@ -1032,9 +1092,18 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       relectura.flush([cargo(1, { pagado: true }), cargo(2, { pagado: true }), cargo(3, { pagado: true })]);
       expect(fila(1).errorServidor).toBe(T.errorCobradoPrecioCantidad);
       expect(estado.pendientes()).toBe(2);
-      // «Deshacer» de la fila lo quita.
+      // «Deshacer» de la fila (ya cobrada) lo quita con su error; la 2 sigue pendiente.
+      expect(fila(1).precioCantidadEditables).toBeFalse();
+      expect(fila(1).puedeDeshacerCambios).toBeTrue();
       estado.deshacerFila(1);
       expect(fila(1).modificada).toBeFalse();
+      expect(fila(1).precio).toBe('30,00');
+      expect(fila(1).total).toBe(30);
+      expect(fila(1).errorServidor).toBeNull();
+      expect(estado.pendientes()).toBe(1);
+      expect(fila(2).errorServidor).toBe(T.errorCobradoPrecioCantidad);
+      estado.deshacerFila(2);
+      expect(estado.hayCambios()).toBeFalse();
     });
 
     it('defecto 2: el cuerpo deja fuera precio y cantidad de un cargo cobrado (por eso guardar no lo envía)', () => {
