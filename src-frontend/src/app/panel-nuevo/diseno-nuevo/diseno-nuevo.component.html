@@ -8,7 +8,6 @@
       </p>
     </header>
 
-    @if (mostrarParaTodo) {
     <section class="diseno__bloque" aria-labelledby="diseno-todos">
       <div class="diseno__bloque-cabecera">
         <h2 id="diseno-todos" class="diseno__subtitulo">Para todo el equipo</h2>
@@ -23,7 +22,6 @@
         </button>
       </div>
     </section>
-    }
 
     <section class="diseno__bloque" aria-labelledby="diseno-equipo" [attr.aria-busy]="estado === 'cargando'">
       <div class="diseno__bloque-cabecera">

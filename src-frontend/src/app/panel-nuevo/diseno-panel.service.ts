@@ -52,7 +52,7 @@ export class DisenoPanelService {
     return this.http.put<DisenoUsuario>(`${this.api}/diseno-nuevo/${usuarioId}`, { permitido }, this.opciones());
   }
 
-  /** «Para todo el equipo» (oculto en la pantalla hasta R5, decisión 258). */
+  /** «Para todo el equipo» (R5). */
   cambiarPorDefecto(nuevo: boolean): Observable<{ porDefecto: boolean }> {
     return this.http.put<{ porDefecto: boolean }>(`${this.api}/diseno-nuevo/por-defecto`, { nuevo }, this.opciones());
   }
