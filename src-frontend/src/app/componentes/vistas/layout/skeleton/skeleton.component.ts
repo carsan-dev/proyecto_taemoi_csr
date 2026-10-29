@@ -11,6 +11,7 @@ import { resolverPortalContexto, routes } from '../../../../app.routes';
 import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
+import { esperarEstilos } from '../../../../panel-nuevo/esperar-estilos';
 import { CabeceraPanelComponent } from '../../../../panel-nuevo/navegacion/cabecera-panel.component';
 
 /** Rutas del panel sin `portalContext: 'admin'` que una sesión de gestión abre desde su menú (Mi caja, Mis grupos, plataforma). */
@@ -194,7 +195,16 @@ export class SkeletonComponent implements OnInit {
               ),
               switchMap((activo) => {
                 this.recordar(activo);
-                return activo ? from(estilos.cargar()).pipe(map(() => true)) : of(false);
+                if (!activo) {
+                  return of(false);
+                }
+                const carga = estilos.cargar();
+                let fallo = false;
+                carga.catch(() => {
+                  fallo = true;
+                });
+                // esperarEstilos resuelve siempre (carga, error o tope): un error de la hoja sigue dando «lo de hoy».
+                return from(esperarEstilos(carga).then(() => !fallo));
               }),
               catchError(() => of(false))
             )

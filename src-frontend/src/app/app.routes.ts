@@ -5,6 +5,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
+import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
@@ -446,6 +447,7 @@ export const routes: Routes = [
     // Plataforma (todas las escuelas): sin requiredRoles ni catálogo; la sesión puede no tener membresía.
     // Sin portalContext: solo distingue el portal 'user', y así no suma bytes al bundle inicial (al límite).
     path: 'plataformaErrores',
+    canMatch: [estilosGestionGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-errores/plataforma-errores.component').then(m => m.PlataformaErroresComponent),
     canActivate: [plataformaGuard],
@@ -453,6 +455,7 @@ export const routes: Routes = [
   {
     // Logo de cada escuela (E7-7b): misma sesión de plataforma y mismo guard que los errores.
     path: 'plataformaLogos',
+    canMatch: [estilosGestionGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-logos/plataforma-logos.component').then(m => m.PlataformaLogosComponent),
     canActivate: [plataformaGuard],

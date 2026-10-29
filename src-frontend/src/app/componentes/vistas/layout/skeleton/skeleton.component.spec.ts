@@ -113,6 +113,13 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     esperarHoy(await montar('/adminpage'));
   });
 
+  itSinReloj('encendido y la hoja nunca resuelve: sale del hueco al tope de estilos (reloj simulado)', async () => {
+    obtener.and.returnValue(of(permisos()));
+    cargarHoja.and.returnValue(new Promise<void>(() => {}));
+    const raiz = await montar('/adminpage');
+    esperarNuevo(raiz);
+  });
+
   for (const ruta of ['/mi-caja', '/mis-grupos', '/mis-grupos/4']) {
     itSinReloj(`encendido en la sesión solo-profesor (decisión 326, R6): marco nuevo en ${ruta}`, async () => {
       obtener.and.returnValue(of(permisos(['PROFESOR'])));

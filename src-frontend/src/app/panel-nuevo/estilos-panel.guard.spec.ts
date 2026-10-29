@@ -1,7 +1,9 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
+import { DOCUMENT } from '@angular/common';
 
 import { EstilosPanelService } from './estilos-panel.service';
 import { estilosPanelGuard } from './estilos-panel.guard';
+import { TIEMPO_MAXIMO_ESTILOS_MS } from './esperar-estilos';
 
 describe('estilosPanelGuard (8b-Z): la hoja del panel antes de la pantalla', () => {
   let cargar: jasmine.Spy<() => Promise<void>>;
@@ -32,4 +34,28 @@ describe('estilosPanelGuard (8b-Z): la hoja del panel antes de la pantalla', () 
     cargar.and.rejectWith(new Error('No se pudo cargar panel-nuevo.css'));
     expect(await decidir()).toBeTrue();
   });
+
+  it('abre al agotar el tiempo máximo sin load ni error', fakeAsync(() => {
+    cargar.and.returnValue(new Promise<void>(() => {}));
+    let resultado: boolean | undefined;
+    decidir().then((valor) => { resultado = valor; });
+    tick(TIEMPO_MAXIMO_ESTILOS_MS - 1);
+    expect(resultado).toBeUndefined();
+    tick(1);
+    expect(resultado).toBeTrue();
+  }));
+
+  it('con el servicio real espera las dos hojas antes de abrir y cancela el temporizador', fakeAsync(() => {
+    const documento = document.implementation.createHTMLDocument();
+    TestBed.overrideProvider(DOCUMENT, { useValue: documento });
+    TestBed.overrideProvider(EstilosPanelService, { useFactory: () => new EstilosPanelService() });
+    let resultado: boolean | undefined;
+    decidir().then((valor) => { resultado = valor; });
+    documento.head.querySelector('link[data-panel-nuevo]')!.dispatchEvent(new Event('load'));
+    flushMicrotasks();
+    expect(resultado).toBeUndefined();
+    documento.head.querySelector('link[data-gestion-compartida]')!.dispatchEvent(new Event('load'));
+    flushMicrotasks();
+    expect(resultado).toBeTrue();
+  }));
 });

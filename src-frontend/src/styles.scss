@@ -1,5 +1,3 @@
-@use "sass:meta";
-
 // Import Bootstrap CSS (precompiled - no Sass deprecation warnings)
 @import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -76,11 +74,16 @@ html {
   to { transform: rotate(360deg); }
 }
 
-// Shared admin rules are emitted once instead of being duplicated in every
-// standalone component bundle. Scope protects public and user-facing views.
-:where(body:has(.admin-ui)) {
-  @include meta.load-css("app/componentes/admin-shared-styles");
-  @include meta.load-css("app/componentes/admin-mobile-forms");
+// Lo usan las páginas públicas de deportes (pilates, taekwondo, kickboxing, defensa personal femenina).
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @font-face {
