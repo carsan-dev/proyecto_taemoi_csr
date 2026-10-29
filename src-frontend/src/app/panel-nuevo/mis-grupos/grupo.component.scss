@@ -37,8 +37,8 @@
   .grupo-profesor__alumno { display: block; color: var(--pn-acento); font: var(--pn-cuerpo); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
   .grupo-profesor__alumno::after { content: ''; position: absolute; inset: 0; }
   .grupo-profesor__alumno:focus-visible { outline-offset: -3px; }
-  .grupo-profesor__deporte { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 2px; color: var(--pn-tinta-2); font: var(--pn-secundario); overflow-wrap: anywhere; }
-  .grupo-profesor__cinto { display: inline-block; width: 16px; height: 8px; border-radius: 2px; border: 1px solid var(--pn-cinto-borde); }
+  .grupo-profesor__deporte { display: flex; align-items: center; gap: 4px 6px; margin-top: 2px; color: var(--pn-tinta-2); font: var(--pn-secundario); overflow-wrap: anywhere; }
+  .grupo-profesor__cinto { display: inline-block; flex: none; width: 16px; height: 8px; border-radius: 2px; border: 1px solid var(--pn-cinto-borde); }
   .grupo-profesor__apto { flex: none; padding: 2px 10px; border-radius: var(--pn-radio-pastilla); color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); }
   .grupo-profesor__fila--abierta .grupo-profesor__apto { background: var(--pn-superficie); }
   .grupo-profesor__esqueleto-acciones { width: min(100%, 380px); height: 44px; margin-bottom: 24px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
