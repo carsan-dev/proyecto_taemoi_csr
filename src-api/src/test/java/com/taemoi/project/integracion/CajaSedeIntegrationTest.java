@@ -847,6 +847,170 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/**
+	 * Entre escuelas: un movimiento de la escuela A cuyo {@code alumno_id} apunta a un alumno de la escuela B (la API no
+	 * lo permite, se inserta por SQL). Al listar como gestión de A, el nombre del alumno de B no sale: la consulta de
+	 * nombres lleva el filtro de escuela ({@code @TenantId}) y el movimiento no trae {@code alumnoNombre}.
+	 */
+	@Test
+	void movimientos_elAlumnoDeOtraEscuela_noSeNombra() throws Exception {
+		Escena a = new Escena("it-caja-cruce-a");
+		Escena b = new Escena("it-caja-cruce-b");
+		long alumnoDeB = b.alumnoEnGrupo("E6CRUCEAJENO", b.e.sA, b.e.gA);
+		String nombreDeB = nombreCompleto(alumnoDeB);
+		long propio = a.alumnoEnGrupo("E6CRUCEPROPIO", a.e.sA, a.e.gA);
+		long conPropio = leer(movimiento(a.e.sA, "DEVOLUCION", "-5.00", propio, "propio"), a.tGestor, 201).get("id")
+				.asLong();
+		jdbc.update("INSERT INTO movimiento_caja (organizacion_id, sede_id, tipo, importe, alumno_id, nota, fecha, estado) "
+				+ "VALUES (?, ?, 'OTRO', 1.00, ?, 'cruzado', NOW(6), 'ACTIVO')", a.e.org, a.e.sA, alumnoDeB);
+		long cruzado = jdbc.queryForObject("SELECT MAX(id) FROM movimiento_caja WHERE organizacion_id = ?", Long.class,
+				a.e.org);
+
+		for (String token : List.of(a.tGestor, a.tPropietario, a.tResp)) {
+			MvcResult r = peticion(get("/api/caja/sedes/" + a.e.sA + "/movimientos"), token);
+			assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+			String cuerpo = r.getResponse().getContentAsString();
+			JsonNode lista = json.readTree(cuerpo);
+			assertEquals(2, lista.size());
+			assertFalse(fila(lista, "id", cruzado).has("alumnoNombre"), "el alumno de otra escuela no se nombra");
+			assertEquals(nombreCompleto(propio), fila(lista, "id", conPropio).get("alumnoNombre").asText());
+			assertFalse(cuerpo.contains(nombreDeB), "el nombre del alumno de otra escuela no sale en la respuesta");
+			assertFalse(cuerpo.contains("E6CRUCEAJENO"), "ni parte de él");
+		}
+	}
+
+	/**
+	 * Crear y anular devuelven el movimiento sin {@code alumnoNombre}: el nombre solo se resuelve al listar; lo demás
+	 * (alumnoId, estado) sigue igual.
+	 */
+	@Test
+	void movimientos_crearYAnular_noTraenElNombreDelAlumno() throws Exception {
+		Escena n = new Escena("it-caja-anular");
+		long alumno = n.alumnoEnGrupo("E6ANULAR1", n.e.sA, n.e.gA);
+		JsonNode creado = leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", alumno, "creada"), n.tGestor, 201);
+		assertEquals(alumno, creado.get("alumnoId").asLong());
+		assertFalse(creado.has("alumnoNombre"), "al crear no sale el nombre");
+		long id = creado.get("id").asLong();
+		JsonNode anulado = leer(anular("/api/caja/movimientos/" + id + "/anular", "apuntado dos veces"),
+				n.tPropietario, 200);
+		assertEquals("ANULADO", anulado.get("estado").asText());
+		assertEquals(alumno, anulado.get("alumnoId").asLong());
+		assertFalse(anulado.has("alumnoNombre"), "al anular no sale el nombre");
+		// Al listar, en cambio, sí.
+		JsonNode lista = leer(get("/api/caja/sedes/" + n.e.sA + "/movimientos"), n.tGestor, 200);
+		assertEquals(nombreCompleto(alumno), fila(lista, "id", id).get("alumnoNombre").asText());
+	}
+
+	/**
+	 * La consulta de nombres solo se lanza si hay algún alumno, y es una sola sin importar cuántos: sin alumnos, N
+	 * sentencias; con 1 alumno, N + 1; con 3 alumnos distintos (y uno repetido), también N + 1.
+	 */
+	@Test
+	void movimientos_laConsultaDeNombres_soloConAlumnos_yUnaSola() throws Exception {
+		Escena n = new Escena("it-caja-sentencias");
+		long a1 = n.alumnoEnGrupo("E6SENT1", n.e.sA, n.e.gA);
+		long a2 = n.alumnoEnGrupo("E6SENT2", n.e.sA, n.e.gA);
+		long a3 = n.alumnoEnGrupo("E6SENT3", n.e.sA, n.e.gA);
+		String lista = "/api/caja/sedes/" + n.e.sA + "/movimientos";
+		leer(movimiento(n.e.sA, "OTRO", "1.00", null, "uno sin alumno"), n.tGestor, 201);
+		leer(movimiento(n.e.sA, "OTRO", "2.00", null, "dos sin alumno"), n.tGestor, 201);
+		leer(get(lista), n.tGestor, 200); // calienta cachés
+		int sinAlumnos = ContadorSentencias.contar(() -> leer(get(lista), n.tGestor, 200)).total();
+
+		leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", a1, "con alumno"), n.tGestor, 201);
+		int conUno = ContadorSentencias.contar(() -> leer(get(lista), n.tGestor, 200)).total();
+		assertEquals(sinAlumnos + 1, conUno, "con algún alumno, una consulta más");
+
+		leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", a2, "otro"), n.tGestor, 201);
+		leer(movimiento(n.e.sA, "ERROR", "-2.00", a3, "otro más"), n.tGestor, 201);
+		leer(movimiento(n.e.sA, "OTRO", "4.00", a1, "repetido"), n.tGestor, 201);
+		int conVarios = ContadorSentencias.contar(() -> leer(get(lista), n.tGestor, 200)).total();
+		assertEquals(conUno, conVarios, "la misma consulta para uno que para varios alumnos");
+	}
+
+	/**
+	 * Anonimización real ({@code POST /api/alumnos/{id}/anonimizar}, propietario): el movimiento sale con «Alumno
+	 * eliminado» y no expone nada más del alumno que lo que ya tenía (las mismas claves).
+	 */
+	@Test
+	void movimientos_alumnoAnonimizadoConElEndpointReal_saleComoAlumnoEliminado() throws Exception {
+		Escena n = new Escena("it-caja-anonimo");
+		long alumno = n.alumnoEnGrupo("E6ANONIMO", n.e.sA, n.e.gA);
+		String nombreAntes = nombreCompleto(alumno);
+		long id = leer(movimiento(n.e.sA, "DEVOLUCION", "-5.00", alumno, "antes"), n.tGestor, 201).get("id").asLong();
+		String lista = "/api/caja/sedes/" + n.e.sA + "/movimientos";
+		JsonNode antes = fila(leer(get(lista), n.tGestor, 200), "id", id);
+		assertEquals(nombreAntes, antes.get("alumnoNombre").asText());
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), n.tPropietario));
+
+		for (String token : List.of(n.tGestor, n.tPropietario, n.tResp)) {
+			String cuerpo = peticion(get(lista), token).getResponse().getContentAsString();
+			JsonNode despues = fila(json.readTree(cuerpo), "id", id);
+			assertEquals("Alumno eliminado", despues.get("alumnoNombre").asText());
+			assertEquals(alumno, despues.get("alumnoId").asLong());
+			assertEquals(campos(antes), campos(despues), "las mismas claves que antes de anonimizar");
+			assertFalse(cuerpo.contains("E6ANONIMO"), "el nombre original no sale");
+		}
+	}
+
+	/**
+	 * Roles mezclados en las sedes de la caja: gestor + responsable (alcance total: todas las sedes, también la
+	 * inactiva) y responsable sin sedes (vacío en las dos fuentes). Responsable + profesor (los dos roles en la misma
+	 * escuela): las dos fuentes dan su sede; no hay la diferencia que se esperaba (permisos [] y tesorería 403).
+	 */
+	@Test
+	void sedesDeLaCaja_rolesMezclados() throws Exception {
+		Escena n = new Escena("it-caja-roles");
+		long gestorYResp = n.e.cuenta(usuarios, "gestresp");
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')",
+				gestorYResp, n.e.org);
+		responsableDe(gestorYResp, n.e.org, n.e.sA);
+		long respSinSedes = n.e.cuentaFamilia(usuarios, "respsin"); // como respA: sin FAMILIA no abre sesión
+		responsableDe(respSinSedes, n.e.org);
+		long respProfesor = n.profesor("respprof", n.e.gA);
+		responsableDe(respProfesor, n.e.org, n.e.sA);
+
+		String tGestorResp = n.e.token(jwtService, usuarios, gestorYResp);
+		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC), sedesDePermisos(tGestorResp), "gestor + responsable: todas");
+		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC), sedesDeTesoreria(tGestorResp));
+
+		String tRespSin = n.e.token(jwtService, usuarios, respSinSedes);
+		assertEquals(Set.of(), sedesDePermisos(tRespSin), "responsable sin sedes: ninguna");
+		assertEquals(Set.of(), sedesDeTesoreria(tRespSin));
+
+		String tRespProf = n.e.token(jwtService, usuarios, respProfesor);
+		assertEquals(Set.of(n.e.sA), sedesDePermisos(tRespProf), "responsable + profesor: permisos da su sede");
+		assertEquals(Set.of(n.e.sA), sedesDeTesoreria(tRespProf), "responsable + profesor: la tesorería, la misma sede");
+	}
+
+	private void responsableDe(long usuario, long org, long... sedes) {
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'RESPONSABLE_SEDE')",
+				usuario, org);
+		long membresia = jdbc.queryForObject(
+				"SELECT id FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND rol = 'RESPONSABLE_SEDE'",
+				Long.class, usuario, org);
+		for (long sede : sedes) {
+			jdbc.update("INSERT INTO membresia_sede (membresia_id, sede_id) VALUES (?, ?)", membresia, sede);
+		}
+	}
+
+	private Set<Long> sedesDePermisos(String token) throws Exception {
+		Set<Long> ids = new HashSet<>();
+		leer(get("/api/auth/permisos"), token, 200).get("sedes").forEach(f -> ids.add(f.get("id").asLong()));
+		return ids;
+	}
+
+	private Set<Long> sedesDeTesoreria(String token) throws Exception {
+		Set<Long> ids = new HashSet<>();
+		leer(get("/api/tesoreria/resumen"), token, 200).get("porSede").forEach(f -> {
+			if (!f.get("sedeId").isNull()) {
+				ids.add(f.get("sedeId").asLong());
+			}
+		});
+		return ids;
+	}
+
 	private String nombreCompleto(long alumno) {
 		return jdbc.queryForObject("SELECT CONCAT(nombre, ' ', apellidos) FROM alumno WHERE id = ?", String.class,
 				alumno);
