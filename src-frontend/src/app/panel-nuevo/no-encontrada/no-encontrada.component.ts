@@ -9,8 +9,8 @@ import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 export const RUTA_INICIO_GESTION = '/adminpage';
 
 /**
- * 404 dentro del panel nuevo (8b-M2b): una URL desconocida con una sesión de gestión y el diseño nuevo encendido se
- * muestra con la cabecera del panel y la mascota, no con la página pública. Mismo `<title>` que el 404 público.
+ * 404 dentro del panel nuevo (8b-M2b): una URL desconocida con una sesión de gestión se muestra con la cabecera del
+ * panel y la mascota, no con la página pública. Mismo `<title>` que el 404 público.
  */
 @Component({
   selector: 'pn-no-encontrada',

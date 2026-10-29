@@ -17,6 +17,9 @@ import com.taemoi.project.entities.AuditoriaAccion;
  *
  * <p>Nunca el email, el nombre ni el cargo. Cualquier otro tipo de valor es un error de programación y la acción no se
  * hace.
+ *
+ * <p>Desde V31_13 (interruptor retirado) nada usa este registro: queda solo como referencia de las filas históricas
+ * «PANEL DISENO_*» del registro de auditoría.
  */
 @Component
 public class RegistroAccionesPanel {
