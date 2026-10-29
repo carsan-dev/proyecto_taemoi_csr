@@ -15,6 +15,13 @@ module.exports = function (config) {
     browserDisconnectTimeout: 30000,
     browserDisconnectTolerance: 2,
     browserNoActivityTimeout: 120000,
+    // El runner de CI se congela ~20 s de vez en cuando. Con los 5 s por defecto, un spec async con espera real que
+    // cae en un parón agota el tiempo, sigue vivo contaminando a los siguientes y Karma aborta con «Disconnected».
+    client: {
+      jasmine: {
+        timeoutInterval: 60000,
+      },
+    },
     customLaunchers: {
       ChromeHeadlessStable: {
         base: 'ChromeHeadless',
