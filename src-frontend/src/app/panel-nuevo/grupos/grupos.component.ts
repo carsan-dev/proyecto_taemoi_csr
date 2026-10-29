@@ -34,7 +34,7 @@ export const TIPOS_GRUPO: readonly string[] = ['Taekwondo', 'Taekwondo Competici
  * desplegables con editar, quitar y «Añadir turno»; «Alumnos», «Editar», «Rango de edad» y eliminar al pie) y los turnos
  * sin grupo al final. Las mismas lecturas y escrituras que la pantalla de hoy (`ListadoGruposComponent`), con el diálogo,
  * los avisos, el panel lateral y los estados de carga del panel nuevo, sin SweetAlert2 ni cargador global. Va en su
- * propio chunk detrás de `disenoNuevoGuard`: con el interruptor apagado sigue la pantalla de hoy.
+ * propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-grupos',

@@ -71,7 +71,7 @@ const CLAVE_ESTADO = 'listadoConvocatoriasEstado';
  * actual y el siguiente, cuantía editable, conmutador Pagado | Pendiente y cruz para quitar; al pie, el alumno apto, «PDF»
  * en un menú y «Actualizar grados de todos». Las MISMAS escrituras que la pantalla de hoy (`ListadoConvocatoriasComponent`):
  * endpoint, método, cuerpo y nombre del PDF; con el diálogo, los avisos, el visor de PDF y los estados de carga del panel
- * nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-convocatorias',

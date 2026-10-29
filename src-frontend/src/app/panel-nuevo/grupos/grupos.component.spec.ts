@@ -16,7 +16,7 @@ import { PermisosSesionService } from '../../servicios/authentication/permisos-s
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { CLASE_ERROR_HTTP } from '../capas/capa-modal';
-import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../estilos-panel.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { GruposComponent } from './grupos.component';
@@ -1023,7 +1023,7 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
 
   it('escritura fallida en el panel nuevo: el aviso de error cierra el SweetAlert2 del interceptor (swal-error-http)', async () => {
     const router = TestBed.inject(Router);
-    router.resetConfig([{ path: 'grupos', canMatch: [disenoNuevoGuard], component: PantallaNueva }]);
+    router.resetConfig([{ path: 'grupos', canMatch: [estilosPanelGuard], component: PantallaNueva }]);
     await router.navigateByUrl('/grupos');
     crear();
     responder();

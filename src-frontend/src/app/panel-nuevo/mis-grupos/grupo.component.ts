@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, finalize, forkJoin, from } from 'rxjs';
 
 import { AlumnoDeGrupo, DeporteEnLista, GrupoProfesor } from '../../interfaces/profesor';
-import { etiquetaRol, mensajeDelServidor, mesesAsistencia, nombreCompleto } from '../../componentes/endpoints/mis-grupos/profesor-textos';
+import { etiquetaRol, mensajeDelServidor, mesesAsistencia, nombreCompleto } from './profesor-textos';
 import { ProfesorService, mensajeDeErrorBlob } from '../../servicios/endpoints/profesor.service';
 import type { DocumentoInforme } from '../../servicios/generales/informe-pdf.service';
 import { gradoFila, gradoParaFrase, iniciales } from '../alumnos/alumno-vista';

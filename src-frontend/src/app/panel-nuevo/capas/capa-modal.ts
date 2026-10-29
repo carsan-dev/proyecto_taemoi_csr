@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
-import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../estilos-panel.guard';
 
 /**
  * Lo común de las capas modales del panel nuevo (8b-D1, decisiones 235, 248 y 271): diálogo, hoja inferior y panel
@@ -80,11 +80,12 @@ export function cerrarSweetAlertAbierto(router: Router): void {
   Swal.close();
 }
 
-/** ¿La ruta activa es la entrada nueva de una pantalla (la que lleva `disenoNuevoGuard` en `canMatch`)? */
+/** ¿La ruta activa es una pantalla del panel (la que lleva `estilosPanelGuard` en `canMatch` o `canActivate`)? */
 export function enPantallaNueva(router: Router): boolean {
   let ruta: ActivatedRouteSnapshot | null = router.routerState.snapshot.root;
   while (ruta) {
-    if (ruta.routeConfig?.canMatch?.includes(disenoNuevoGuard)) {
+    const config = ruta.routeConfig;
+    if (config?.canMatch?.includes(estilosPanelGuard) || config?.canActivate?.includes(estilosPanelGuard)) {
       return true;
     }
     ruta = ruta.firstChild;

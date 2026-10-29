@@ -6,7 +6,7 @@ import { Subscription, finalize } from 'rxjs';
 import { TurnoDeGrupoResumen } from '../../interfaces/grupo-resumen';
 import { GrupoProfesor } from '../../interfaces/profesor';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
-import { etiquetaRol, mensajeDelServidor } from '../../componentes/endpoints/mis-grupos/profesor-textos';
+import { etiquetaRol, mensajeDelServidor } from './profesor-textos';
 import { resumenHorario } from '../grupos/grupos-vista';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';

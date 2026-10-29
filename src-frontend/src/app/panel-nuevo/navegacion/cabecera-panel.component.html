@@ -96,16 +96,6 @@
               <span>Cambiar a familia</span>
             </button>
             }
-            @if (!soloProfesor()) {
-            <button type="button" class="pn-menu__opcion" role="menuitem" [disabled]="volviendo()"
-              [attr.aria-busy]="volviendo() ? 'true' : null" (click)="volverAlDisenoAnterior()">
-              <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-              <span>Volver al diseño anterior</span>
-            </button>
-            @if (errorVolver(); as error) {
-            <p class="pn-menu__error" role="alert">{{ error }}</p>
-            }
-            }
           </div>
           <div class="pn-menu__grupo" role="group" aria-label="Legal">
             <div class="pn-menu__titulo" aria-hidden="true">Legal</div>

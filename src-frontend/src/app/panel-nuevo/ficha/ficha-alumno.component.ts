@@ -3,8 +3,8 @@ import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angu
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
-import { DIALOGOS_FICHA } from '../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
-import { EditarAlumnoComponent } from '../../componentes/endpoints/editar-alumno/editar-alumno.component';
+import { DIALOGOS_FICHA } from './dialogos-ficha.port';
+import { FichaAlumnoBase } from './ficha-alumno-base';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
@@ -72,7 +72,7 @@ class CobrosEnVuelo extends Set<number> {
  * esqueleto. Los diálogos que hereda de la ficha de hoy pasan por el puerto `DIALOGOS_FICHA`, que aquí es el del panel
  * (`DialogosFichaPanel`, 8b-D2b): las mismas opciones, pintadas con el diálogo y los avisos del panel nuevo, sin
  * SweetAlert2; los diálogos propios de la ficha y la foto ampliada, con el panel lateral, el diálogo y una caja de luz.
- * Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * Va en su propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-ficha-alumno',
@@ -93,7 +93,7 @@ class CobrosEnVuelo extends Set<number> {
   // 8b-D2b: solo la ficha nueva da los diálogos del panel; la de hoy sigue con SweetAlert2 (el puerto por defecto).
   providers: [{ provide: DIALOGOS_FICHA, useClass: DialogosFichaPanel }],
 })
-export class FichaAlumnoComponent extends EditarAlumnoComponent implements OnInit, OnDestroy {
+export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnDestroy {
   private readonly pendientesApi = inject(PendientesAlumnoService);
   private readonly cobros = inject(CobroCargoService);
   private readonly rutaActiva = inject(ActivatedRoute);

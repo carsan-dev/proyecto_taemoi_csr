@@ -39,7 +39,7 @@ const IDS: Record<CampoProducto, string> = { concepto: 'producto-concepto', prec
  * campo y barra fija abajo con «Cancelar» y la acción (con errores, `aria-disabled`; «Guardando…» sin doble envío). Las
  * MISMAS peticiones que `CrearProductoComponent` y `EditarProductoComponent`: `POST /productos` y `PUT /productos/{id}`
  * con `{concepto, precio, vendibleProfesor}`, el precio como número (el mismo de hoy). Sin SweetAlert2 ni cargador
- * global. Va en su propio chunk detrás de `disenoNuevoGuard` (`productosCrear` y `productosEditar/:id`).
+ * global. Va en su propio chunk detrás de `estilosPanelGuard` (`productosCrear` y `productosEditar/:id`).
  */
 @Component({
   selector: 'app-producto-formulario',

@@ -9,7 +9,7 @@ import { Toast } from '../../../utils/toast.util';
 import { AvisosService } from '../../avisos/avisos.service';
 import { CONSULTA_HOJA } from '../../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
-import { disenoNuevoGuard } from '../../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../../estilos-panel.guard';
 import { EstilosPanelService } from '../../estilos-panel.service';
 import { DialogosFichaPanel, textoDeAviso } from './dialogos-ficha-panel';
 import { itSinReloj } from '../../../testing/reloj-prueba';
@@ -79,7 +79,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
     quitarTokens = ponerTokensDePrueba();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'alumnosEditar/:id', canMatch: [disenoNuevoGuard], component: PantallaNueva }]),
+        provideRouter([{ path: 'alumnosEditar/:id', canMatch: [estilosPanelGuard], component: PantallaNueva }]),
         { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         DialogosFichaPanel,

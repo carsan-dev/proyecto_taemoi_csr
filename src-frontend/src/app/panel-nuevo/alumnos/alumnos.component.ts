@@ -101,7 +101,7 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
  * búsqueda, filtros y paginación en el servidor (el mismo `GET /api/alumnos` que el listado de hoy), el pendiente vencido
  * de cada alumno de la página (`GET /api/tesoreria/pendientes-por-alumno`) con «Cobrar» como la tesorería de hoy, la fila
  * desplegable con el detalle por deporte y sus acciones y el menú «Informes». Va en su propio chunk detrás de
- * `disenoNuevoGuard`: con el interruptor apagado sigue el listado de hoy.
+ * `estilosPanelGuard`.
  *
  * 8b-D1 (decisiones 269 y 270): «Cobrar», «Dar de baja» y «Dar de alta» con el diálogo del panel nuevo, avisos propios,
  * esqueleto, error y vacío comunes, y las tres herramientas del pie, cada una en el panel lateral desde «Informes» (el

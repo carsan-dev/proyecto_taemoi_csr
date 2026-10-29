@@ -56,7 +56,7 @@ const IDS: Record<CampoConError, string> = { titulo: 'evento-titulo', descripcio
  * (desde 1280 px; al final del formulario por debajo), la tarjeta pública tal como se verá, que cambia al escribir y dice
  * si el evento está visible u oculto. Las MISMAS peticiones que `CrearEventoComponent` y `EditarEventoComponent`
  * (método, ruta, multipart y orden), sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de
- * `disenoNuevoGuard` (`eventosCrear` y `eventosEditar/:id`).
+ * `estilosPanelGuard` (`eventosCrear` y `eventosEditar/:id`).
  */
 @Component({
   selector: 'app-evento-formulario',

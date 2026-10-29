@@ -6,7 +6,7 @@ import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
-import { disenoNuevoGuard } from '../diseno-nuevo.guard';
+import { estilosPanelGuard } from '../estilos-panel.guard';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { CLASE_ERROR_HTTP, cerrarSweetAlertAbierto } from './capa-modal';
 
@@ -19,7 +19,7 @@ class PantallaDeHoy {}
 /**
  * `cerrarSweetAlertAbierto` (8b-D1, ronda 2): el aviso o el diálogo del panel nuevo que responden a un error cierran el
  * SweetAlert2 del interceptor de errores, y SOLO ese (con la clase `swal-error-http`) y SOLO en una pantalla nueva (la
- * entrada con `disenoNuevoGuard`). Una respuesta tardía que llega en una pantalla de hoy no cierra su SweetAlert2, ni el
+ * entrada con `estilosPanelGuard`). Una respuesta tardía que llega en una pantalla de hoy no cierra su SweetAlert2, ni el
  * de «Sesión expirada» (que lleva a /login), ni una confirmación.
  */
 describe('cerrarSweetAlertAbierto (8b-D1, solo el SweetAlert2 del error HTTP y solo en el panel nuevo)', () => {
@@ -29,7 +29,7 @@ describe('cerrarSweetAlertAbierto (8b-D1, solo el SweetAlert2 del error HTTP y s
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
-          { path: 'alumnosListar', canMatch: [disenoNuevoGuard], component: PantallaNueva },
+          { path: 'alumnosListar', canMatch: [estilosPanelGuard], component: PantallaNueva },
           { path: 'alumnosListar', component: PantallaDeHoy },
           { path: 'productos', component: PantallaDeHoy },
         ]),

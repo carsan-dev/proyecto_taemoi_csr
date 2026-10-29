@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import type { SweetAlertOptions, SweetAlertResult } from 'sweetalert2';
 
-import type { DialogosFichaPort } from '../../../componentes/endpoints/editar-alumno/dialogos-ficha.port';
+import type { DialogosFichaPort } from '../dialogos-ficha.port';
 import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import {

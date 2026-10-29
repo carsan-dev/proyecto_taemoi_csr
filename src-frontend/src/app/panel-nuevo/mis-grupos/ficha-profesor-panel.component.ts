@@ -20,7 +20,7 @@ import {
   hoyIso,
   mensajeDelServidor,
   nombreCompleto,
-} from '../../componentes/endpoints/mis-grupos/profesor-textos';
+} from './profesor-textos';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
 import { gradoFila, gradoParaFrase } from '../alumnos/alumno-vista';

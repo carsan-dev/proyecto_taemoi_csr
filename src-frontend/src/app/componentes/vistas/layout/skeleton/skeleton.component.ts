@@ -47,7 +47,7 @@ export function esRutaConocida(url: string): boolean {
   });
 }
 
-/** Recordatorio global (sin cuenta ni email) de que el interruptor estaba encendido en este navegador. */
+/** Recordatorio global (sin cuenta ni email) de que la última sesión de este navegador era del panel nuevo. */
 export const RECORDATORIO_PANEL = 'panelNuevo';
 
 /** localStorage puede lanzar (modo privado, bloqueado): entonces, sin recordatorio. */
@@ -59,7 +59,7 @@ function recordatorio(accion: (s: Storage) => unknown): unknown {
   }
 }
 
-/** `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe el interruptor; `nuevo`: la navegación del panel nuevo. */
+/** `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe la sesión; `nuevo`: la navegación del panel nuevo. */
 type ModoCabecera = 'hoy' | 'hueco' | 'nuevo';
 
 @Component({
@@ -94,14 +94,14 @@ export class SkeletonComponent implements OnInit {
   private readonly desconocidaSinResolver = signal(
     !this.router.navigated && !this.rutaPanel() && !esRutaConocida(this.rutaInicial)
   );
-  /** El interruptor de la sesión (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
+  /** ¿Sesión del panel nuevo? (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
   private readonly encendido = signal<boolean | null>(null);
   private readonly recordado = signal(recordatorio((s) => s.getItem(RECORDATORIO_PANEL)) === '1');
   private evaluar$?: Subject<void>;
 
   /**
-   * Fase3-e8b-plan.md §3 «Cabecera»: la de hoy salvo con el interruptor encendido y una ruta de gestión. Mientras no se
-   * sabe, la de hoy (apagado = hoy desde el primer píxel), salvo que este navegador recuerde que estaba encendido:
+   * Fase3-e8b-plan.md §3 «Cabecera»: la de hoy salvo con una sesión del panel (gestión o profesor) y una ruta de
+   * gestión. Mientras no se sabe, la de hoy, salvo que este navegador recuerde que la última sesión era del panel:
    * entonces el hueco de 64 px, para no pintar la de hoy y saltar a la nueva.
    */
   readonly modo = computed<ModoCabecera>(() => {
@@ -140,7 +140,7 @@ export class SkeletonComponent implements OnInit {
         .subscribe(() => this.desconocidaSinResolver.set(false));
     }
     if (this.rutaPanel()) {
-      this.evaluarInterruptor();
+      this.evaluarSesionPanel();
     }
     // La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada).
     const stored = this.getStored();
@@ -167,18 +167,18 @@ export class SkeletonComponent implements OnInit {
   private alCambiarDeRuta(url: string): void {
     this.rutaPanel.set(esRutaDelPanel(url) || this.rutaMarcadaComoPanel());
     if (this.rutaPanel()) {
-      this.evaluarInterruptor();
+      this.evaluarSesionPanel();
     }
   }
 
   /**
-   * Lee el interruptor al entrar en cada ruta del panel (los permisos están en caché: solo hay petición tras
-   * `reiniciar()`, p. ej. al cambiar el propio diseño) y al entrar o salir de una cuenta. Los servicios se piden aquí,
-   * no al crear el componente: fuera del panel no se pide nada. Encendido solo con `disenoNuevo.activo`, gestión o
-   * profesor en la escuela (decisión 326, R6) y la hoja `panel-nuevo.css` cargada. Las familias siguen fuera. Falla cerrado.
+   * Mira la sesión al entrar en cada ruta del panel (los permisos están en caché: solo hay petición tras
+   * `reiniciar()`) y al entrar o salir de una cuenta. Los servicios se piden aquí, no al crear el componente: fuera del
+   * panel no se pide nada. Cabecera nueva con gestión o profesor en la escuela (decisión 326, R6; sin interruptor desde
+   * 8b-Z) y la hoja `panel-nuevo.css` cargada. Las familias y la plataforma siguen con la de hoy. Falla cerrado.
    * Una respuesta válida guarda o borra el recordatorio; un error no lo toca; cerrar sesión lo borra.
    */
-  private evaluarInterruptor(): void {
+  private evaluarSesionPanel(): void {
     if (!this.evaluar$) {
       const permisos = this.injector.get(PermisosSesionService);
       const estilos = this.injector.get(EstilosPanelService);
@@ -190,8 +190,7 @@ export class SkeletonComponent implements OnInit {
               take(1),
               map(
                 (p) =>
-                  p?.disenoNuevo?.activo === true &&
-                  (p.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR' || rol === 'PROFESOR')
+                  (p?.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR' || rol === 'PROFESOR')
               ),
               switchMap((activo) => {
                 this.recordar(activo);

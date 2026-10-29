@@ -41,7 +41,7 @@ type MandoOrden = 'asa' | 'subir' | 'bajar';
  * queda en la web». El orden se cambia arrastrando el asa, con las flechas o con el teclado (flechas arriba y abajo con
  * el foco en el asa o en los botones), anunciado con `LiveAnnouncer`. Las MISMAS peticiones que la pantalla de hoy
  * (`ListadoEventosComponent`): orden, visibilidad y borrado; con el diálogo, los avisos y los estados de carga del panel
- * nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de `disenoNuevoGuard`.
+ * nuevo, sin SweetAlert2 ni cargador global. Va en su propio chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-eventos-panel',

@@ -120,11 +120,11 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
     return router.url;
   }
 
-  it('con el diseño nuevo se queda en la pantalla pedida', fakeAsync(() => {
+  it('con el recordatorio del panel se queda en la pantalla pedida', fakeAsync(() => {
     expect(arrancar(true)).toBe('/convocatoriasListar');
   }));
 
-  it('con el diseño de hoy se queda en la pantalla pedida', fakeAsync(() => {
+  it('sin el recordatorio (ni el interruptor, retirado en 8b-Z) se queda en la pantalla pedida', fakeAsync(() => {
     expect(arrancar(false)).toBe('/convocatoriasListar');
   }));
 });

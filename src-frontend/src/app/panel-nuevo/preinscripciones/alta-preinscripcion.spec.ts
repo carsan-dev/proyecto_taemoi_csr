@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
 
-import { PreinscripcionesAdminComponent } from '../../componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component';
+import { valorDeHoy } from '../../testing/oraculo-hoy';
+import { HOY } from './alta-preinscripcion.hoy';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { Catalogo } from '../../features/catalogo/catalogo.models';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
@@ -18,36 +18,21 @@ import {
 
 /**
  * «Revisar y finalizar alta» y «Cambiar la asignación» de la pantalla nueva frente a `PreinscripcionesAdminComponent`
- * de verdad (8b-3h): la misma solicitud, los mismos pasos y la misma elección de ficha (nueva o existente), los mismos
- * campos marcados y el MISMO cuerpo de `POST /preinscripciones/{ref}/finalizar` (y de `PUT …/turnos`).
+ * (8b-3h): la misma solicitud, los mismos pasos y la misma elección de ficha (nueva o existente), los mismos campos
+ * marcados y el MISMO cuerpo de `POST /preinscripciones/{ref}/finalizar` (y de `PUT …/turnos`). La pantalla de hoy se
+ * retiró en 8b-Z: sus valores van grabados en `HOY` (alta-preinscripcion.hoy.ts), en el orden en que se comparan.
  */
 describe('AltaPreinscripcion (8b-3h) igual que la pantalla de hoy', () => {
-  let api: any;
-
-  function hoy(catalogo: Catalogo = CATALOGO_TAEMOI): PreinscripcionesAdminComponent {
-    api = {
-      finalizar: jasmine.createSpy('finalizar').and.returnValue(of(void 0)),
-      actualizarTurnos: jasmine.createSpy('actualizarTurnos').and.returnValue(of(void 0)),
-      listar: () => of({ content: [], page: 0, totalElements: 0, totalPages: 0 }),
-    };
+  /** El catálogo de la escuela en un TestBed limpio (la pantalla nueva lo lee de `CatalogoService`). */
+  function conCatalogo(catalogo: Catalogo = CATALOGO_TAEMOI): void {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [proveerCatalogoTesting(catalogo)] });
-    const auth = { tieneRolAdmin: () => true };
-    const route = { snapshot: { queryParamMap: { get: () => null } } };
-    const router = { navigate: () => Promise.resolve(true) };
-    return TestBed.runInInjectionContext(() => new PreinscripcionesAdminComponent(api, auth as any, route as any, router as any));
   }
 
   const catalogo = (): CatalogoService => TestBed.inject(CatalogoService);
 
-  /** El cuerpo que envía hoy, tras `abrirFinalizacion`, los pasos y `finalizar`. */
-  function cuerpoDeHoy(c: PreinscripcionesAdminComponent): unknown {
-    const referencia = c.seleccion.referencia;
-    c.finalizar();
-    expect(api.finalizar).toHaveBeenCalledTimes(1);
-    expect(api.finalizar.calls.mostRecent().args[0]).toBe(referencia);
-    return api.finalizar.calls.mostRecent().args[1];
-  }
+  /** El cuerpo tal como viaja en el POST (JSON: las claves sin valor no se envían), como se grabó el de hoy. */
+  const comoJson = (valor: unknown): unknown => JSON.parse(JSON.stringify(valor));
 
   function estado(x: {
     accionAlumno: string;
@@ -119,107 +104,91 @@ describe('AltaPreinscripcion (8b-3h) igual que la pantalla de hoy', () => {
   };
   const OTRA = { ...EXISTENTE, id: 4, nif: '99999999R', nombre: 'Ana', email: 'ana@example.com', requiereDatosDeporte: true };
 
-  /** Abre las dos con la misma solicitud y compara el estado inicial. */
+  /** Abre la nueva con la solicitud y compara el estado inicial con el de hoy. */
   function abrirAmbas(solicitud: any, cat: Catalogo = CATALOGO_TAEMOI) {
-    const c = hoy(cat);
-    c.seleccion = structuredClone(solicitud);
-    c.abrirFinalizacion();
+    conCatalogo(cat);
     const nueva = new AltaPreinscripcion(structuredClone(solicitud), catalogo());
-    expect(estado(nueva)).toEqual(estado(c));
-    return { c, nueva };
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
+    return { nueva };
   }
 
   it('sin fichas compatibles: ficha nueva, tarifa inicial y grado; mismo cuerpo', () => {
-    const { c, nueva } = abrirAmbas(base());
+    const { nueva } = abrirAmbas(base());
     expect(nueva.accionAlumno).toBe('CREAR_NUEVO');
     expect(nueva.datosAlta.tipoTarifa).toBe('INFANTIL');
     expect(nueva.datosAlta.grado).toBe('BLANCO');
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
     expect(nueva.cuerpo().alumnoId).toBeUndefined();
   });
 
   it('una ficha con el mismo DNI: se vincula sola, solo los campos distintos, y no deja crear otra', () => {
-    const { c, nueva } = abrirAmbas(base({ alumnosCoincidentes: [EXISTENTE] }));
+    const { nueva } = abrirAmbas(base({ alumnosCoincidentes: [EXISTENTE] }));
     expect(nueva.accionAlumno).toBe('VINCULAR_EXISTENTE');
     expect([...nueva.camposActualizar]).toEqual(['NOMBRE']);
     expect(nueva.tieneCoincidenciaDniExacta).toBeTrue();
     nueva.crearNuevaFicha();
-    c.crearNuevaFicha();
     expect(nueva.accionAlumno).toBe('VINCULAR_EXISTENTE');
     // Los correos no coinciden: hay que elegir el definitivo de acceso.
     expect(nueva.finalizacionValida).toBeFalse();
     nueva.decisionEmail = 'USAR_PREINSCRIPCION';
-    c.decisionEmail = 'USAR_PREINSCRIPCION';
-    expect(estado(nueva)).toEqual(estado(c));
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
     expect(nueva.cuerpo().alumnoId).toBe(3);
     expect(nueva.cuerpo().decisionEmail).toBe('USAR_PREINSCRIPCION');
   });
 
   it('varias compatibles: no elige ninguna; al elegir la otra o crear nueva, igual que hoy', () => {
     const sol = base({ dni: '11111111H', alumnosCoincidentes: [EXISTENTE, OTRA] });
-    const { c, nueva } = abrirAmbas(sol);
+    const { nueva } = abrirAmbas(sol);
     expect(nueva.accionAlumno).toBe('');
     expect(nueva.finalizacionValida).toBeFalse();
     nueva.elegirAlumno(nueva.solicitud['alumnosCoincidentes'][1]);
-    c.elegirAlumno(c.seleccion.alumnosCoincidentes[1]);
-    expect(estado(nueva)).toEqual(estado(c));
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
     nueva.alternarCampo('TELEFONO', false);
-    c.alternarCampo('TELEFONO', false);
     nueva.crearNuevaFicha();
-    c.crearNuevaFicha();
-    expect(estado(nueva)).toEqual(estado(c));
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
     expect(nueva.accionAlumno).toBe('CREAR_NUEVO');
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
   });
 
   it('sin DNI: ninguna coincidencia se vincula sola; NIF y teléfono 2 no se comparan', () => {
     const sol = base({ dni: null, alumnosCoincidentes: [{ ...OTRA, telefono2: 699887766, requiereDatosDeporte: false }] });
-    const { c, nueva } = abrirAmbas(sol);
+    const { nueva } = abrirAmbas(sol);
     expect(nueva.accionAlumno).toBe('');
     nueva.elegirAlumno(nueva.solicitud['alumnosCoincidentes'][0]);
-    c.elegirAlumno(c.seleccion.alumnosCoincidentes[0]);
-    expect(estado(nueva)).toEqual(estado(c));
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
     expect(nueva.camposActualizar.has('NIF')).toBeFalse();
     expect(nueva.camposActualizar.has('TELEFONO2')).toBeFalse();
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
   });
 
   it('solicitud antigua sin discapacidad: hay que confirmarla y viaja en discapacidadHistorica', () => {
-    const { c, nueva } = abrirAmbas(base({ tieneDiscapacidad: null, alumnosCoincidentes: [EXISTENTE] }));
+    const { nueva } = abrirAmbas(base({ tieneDiscapacidad: null, alumnosCoincidentes: [EXISTENTE] }));
     expect(nueva.finalizacionValida).toBeFalse();
     nueva.confirmarDiscapacidadHistorica(true);
-    c.confirmarDiscapacidadHistorica(true);
     nueva.decisionEmail = 'CONSERVAR_FICHA';
-    c.decisionEmail = 'CONSERVAR_FICHA';
-    expect(estado(nueva)).toEqual(estado(c));
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
     expect(nueva.camposActualizar.has('TIENE_DISCAPACIDAD')).toBeTrue();
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
     expect(nueva.cuerpo().discapacidadHistorica).toBeTrue();
   });
 
   it('tarifas: cambiar de tarifa limpia rol y grupo y pone el importe del catálogo; las banderas exigen rol o grupo', () => {
-    const { c, nueva } = abrirAmbas(base());
+    const { nueva } = abrirAmbas(base());
     for (const t of ['PADRES_HIJOS', 'HERMANOS', 'ADULTO']) {
       nueva.datosAlta.tipoTarifa = t;
-      c.datosAlta.tipoTarifa = t;
       nueva.cambiarTarifa();
-      c.cambiarTarifa();
-      expect(estado(nueva)).withContext(t).toEqual(estado(c));
-      expect(nueva.requiereRolFamiliar).withContext(t).toBe(c.requiereRolFamiliar);
-      expect(nueva.requiereGrupoFamiliar).withContext(t).toBe(c.requiereGrupoFamiliar);
+      expect(estado(nueva)).withContext(t).toEqual(valorDeHoy(HOY));
+      expect(nueva.requiereRolFamiliar).withContext(t).toBe(valorDeHoy(HOY));
+      expect(nueva.requiereGrupoFamiliar).withContext(t).toBe(valorDeHoy(HOY));
     }
     nueva.datosAlta.tipoTarifa = 'PADRES_HIJOS';
-    c.datosAlta.tipoTarifa = 'PADRES_HIJOS';
     nueva.cambiarTarifa();
-    c.cambiarTarifa();
     expect(nueva.finalizacionValida).toBeFalse();
     nueva.datosAlta.rolFamiliar = 'MADRE';
-    c.datosAlta.rolFamiliar = 'MADRE';
     nueva.datosAlta.cuantiaTarifa = 12.5;
-    c.datosAlta.cuantiaTarifa = 12.5;
     expect(nueva.finalizacionValida).toBeTrue();
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
   });
 
   it('cuantía negativa o vacía no es válida', () => {
@@ -231,29 +200,27 @@ describe('AltaPreinscripcion (8b-3h) igual que la pantalla de hoy', () => {
   });
 
   it('otra escuela: sin tarifa preseleccionada ni válida hasta elegir una', () => {
-    const { c, nueva } = abrirAmbas(base({ deporte: 'JUDO' }), CATALOGO_SEGUNDA_ESCUELA);
+    const { nueva } = abrirAmbas(base({ deporte: 'JUDO' }), CATALOGO_SEGUNDA_ESCUELA);
     expect(nueva.datosAlta.tipoTarifa).toBe('');
     expect(nueva.finalizacionValida).toBeFalse();
-    expect(nueva.tarifasDisponibles.map((t) => t.codigo)).toEqual(c.tarifasDisponibles.map((t) => t.codigo));
+    expect(nueva.tarifasDisponibles.map((t) => t.codigo)).toEqual(valorDeHoy(HOY));
     nueva.datosAlta.tipoTarifa = 'JUDO_MES';
-    c.datosAlta.tipoTarifa = 'JUDO_MES';
     nueva.cambiarTarifa();
-    c.cambiarTarifa();
-    expect(estado(nueva)).toEqual(estado(c));
-    expect(nueva.cuerpo()).toEqual(cuerpoDeHoy(c) as any);
+    expect(estado(nueva)).toEqual(valorDeHoy(HOY));
+    expect(comoJson(nueva.cuerpo())).toEqual(valorDeHoy(HOY));
   });
 
   it('enseña los valores como hoy (fecha dd/mm/aaaa, Sí/No, «Sin dato»)', () => {
-    const { c, nueva } = abrirAmbas(base({ alumnosCoincidentes: [EXISTENTE] }));
+    const { nueva } = abrirAmbas(base({ alumnosCoincidentes: [EXISTENTE] }));
     for (const campo of nueva.camposAplicables) {
       expect(nueva.mostrarValor(nueva.valorPreinscripcion(campo), campo.clave)).toBe(
-        c.mostrarValor(c.valorPreinscripcion(campo), campo.clave)
+        valorDeHoy(HOY)
       );
       expect(nueva.mostrarValor(EXISTENTE[campo.alumno as keyof typeof EXISTENTE], campo.clave)).toBe(
-        c.mostrarValor(EXISTENTE[campo.alumno as keyof typeof EXISTENTE], campo.clave)
+        valorDeHoy(HOY)
       );
     }
-    expect(nueva.camposAplicables.map((x) => x.clave)).toEqual(c.camposAplicables.map((x) => x.clave));
+    expect(nueva.camposAplicables.map((x) => x.clave)).toEqual(valorDeHoy(HOY));
   });
 
   describe('«Cambiar la asignación» (turnos)', () => {
@@ -266,23 +233,19 @@ describe('AltaPreinscripcion (8b-3h) igual que la pantalla de hoy', () => {
     const solicitud = (estado = 'PENDIENTE') => base({ estado, temporada: '2026-2027', turnosSolicitados: [TURNOS[3]] });
 
     it('el mismo orden (lunes a domingo, luego hora), la misma regla de un turno por día y los mismos avisos de edad y plaza', () => {
-      const c = hoy();
-      api.turnos = jasmine.createSpy('turnos').and.returnValue(of(TURNOS));
-      c.seleccion = solicitud();
-      c.abrirEdicionTurnos();
+      const seleccion = solicitud();
       const ordenados = ordenarTurnos(TURNOS);
-      expect(ordenados.map((t) => t.id)).toEqual(c.turnosDisponibles.map((t) => t.id));
+      expect(ordenados.map((t) => t.id)).toEqual(valorDeHoy(HOY));
       expect(ordenados.map((t) => t.id)).toEqual([11, 12, 13, 21]);
       for (const t of ordenados) {
-        expect(turnoFueraEdad(t, c.seleccion)).withContext(String(t.id)).toBe(c.turnoFueraEdad(t));
-        expect(esPlazaActual(t, c.seleccion)).withContext(String(t.id)).toBe(c.turnoEsPlazaActual(t));
+        expect(turnoFueraEdad(t, seleccion)).withContext(String(t.id)).toBe(valorDeHoy(HOY));
+        expect(esPlazaActual(t, seleccion)).withContext(String(t.id)).toBe(valorDeHoy(HOY));
       }
       let ids = [11];
       for (const [turno, marcado] of [[TURNOS[1], true], [TURNOS[0], true], [TURNOS[2], true], [TURNOS[2], false]] as const) {
         ids = alternarTurno(ids, turno, ordenados, marcado);
-        c.alternarTurnoAdmin(turno, marcado);
-        expect(ids).toEqual(c.turnoIdsEdicion);
-        expect(turnosCambiados(c.seleccion, ids)).toBe(c.turnosEdicionCambiados);
+        expect(ids).toEqual(valorDeHoy(HOY));
+        expect(turnosCambiados(seleccion, ids)).toBe(valorDeHoy(HOY));
       }
       expect(ids).toEqual([12, 13]);
     });

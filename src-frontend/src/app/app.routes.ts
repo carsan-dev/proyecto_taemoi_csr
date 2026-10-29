@@ -4,7 +4,7 @@ import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
-import { disenoNuevoGuard } from './panel-nuevo/diseno-nuevo.guard';
+import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
@@ -199,18 +199,10 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/vistas/registro-confirmar/registro-confirmar.component').then(m => m.RegistroConfirmarComponent)
   },
   {
-    // Inicio nuevo (8b-2): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'adminpage',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/inicio/inicio.component').then(m => m.InicioComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    path: 'adminpage',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/vistas/vista-principal-admin/vista-principal-admin.component').then(m => m.VistaPrincipalAdminComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
@@ -229,25 +221,16 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
-    // Listado de alumnos nuevo (8b-3a): solo con el interruptor encendido; si no, el router pasa al de hoy sin descargar el chunk.
     path: 'alumnosListar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/alumnos/alumnos.component').then(m => m.AlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'alumnosListar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-alumnos/listado-alumnos.component').then(m => m.ListadoAlumnosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Preinscripciones nuevas (8b-3h): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'preinscripciones',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/preinscripciones/preinscripciones.component').then(m => m.PreinscripcionesPanelComponent),
     canActivate: [roleGuard],
@@ -255,40 +238,22 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'preinscripciones',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/preinscripciones-admin/preinscripciones-admin.component').then(m => m.PreinscripcionesAdminComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Ficha nueva (8b-3b): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'alumnosEditar/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/ficha/ficha-alumno.component').then(m => m.FichaAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'alumnosEditar/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
+    // Ficha sin alumno (decisión 333): la ficha nueva solo existe con id; sin él, al listado.
     path: 'alumnosEditar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-alumno/editar-alumno.component').then(m => m.EditarAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
+    redirectTo: '/alumnosListar',
     pathMatch: 'full',
   },
   {
-    // Productos y cargos nueva (8b-3n): solo con el interruptor encendido; si no, la de hoy sin descargar el chunk.
     path: 'alumnos/:id/productos',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/productos-alumno/productos-alumno-panel.component').then(m => m.ProductosAlumnoPanelComponent),
     canActivate: [roleGuard],
@@ -296,358 +261,184 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'alumnos/:id/productos',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-alumno/productos-alumno/productos-alumno.component').then(m => m.ProductosAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Alta de alumno nueva (8b-3l): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'alumnosCrear',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/alta-alumno/alta-alumno.component').then(m => m.AltaAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'alumnosCrear',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/crear-alumno/crear-alumno.component').then(m => m.CrearAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // «Bajas y eliminaciones» nueva (8b-3l): solo con el interruptor encendido; si no, el router pasa a la de hoy sin
-    // descargar el chunk. «Eliminar definitivamente» lo ve solo el propietario (y el servidor solo se lo admite a él).
+    // «Bajas y eliminaciones» (8b-3l): «Eliminar definitivamente» lo ve solo el propietario (y el servidor solo se lo
+    // admite a él).
     path: 'alumnosEliminar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/bajas-alumnos/bajas-alumnos.component').then(m => m.BajasAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'alumnosEliminar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/eliminar-alumno/eliminar-alumno.component').then(m => m.EliminarAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Grupos nuevo (8b-3c): solo con el interruptor encendido; si no, el router pasa al de hoy sin descargar el chunk.
     path: 'gruposListar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'gruposListar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/listado-grupos.component').then(m => m.ListadoGruposComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Crear grupo (3m-1): reutiliza Grupos y abre su panel; con el diseño apagado sigue la ruta de hoy.
     path: 'gruposCrear',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearGrupo: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'gruposCrear',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/crear-grupo/crear-grupo.component').then(m => m.CrearGrupoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'gruposEditar/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/grupos/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'gruposEditar/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-grupo/editar-grupo.component').then(m => m.EditarGrupoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'gestionarAlumnos/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'gestionarAlumnos/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'seleccionarAlumnos/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { ...privateRouteData(ROUTE_ROLE_SETS.management), seleccionarAlumnos: true },
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'seleccionarAlumnos/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/seleccionar-alumnos/seleccionar-alumnos.component').then(m => m.SeleccionarAlumnosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'gestionarTurnosAlumno/:alumnoId',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'gestionarTurnosAlumno/:alumnoId',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-grupos/gestionar-alumnos/gestionar-turnos-alumno/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'turnosCrear',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearTurno: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'turnosCrear',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/crear-turno/crear-turno.component').then(m => m.CrearTurnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'turnosEditar/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { ...privateRouteData(ROUTE_ROLE_SETS.management), editarTurno: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'turnosEditar/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-turno/editar-turno.component').then(m => m.EditarTurnoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Eventos del panel nuevo (8b-3f): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
     path: 'eventosListar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/eventos/eventos.component').then(m => m.EventosPanelComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'eventosListar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-eventos/listado-eventos.component').then(m => m.ListadoEventosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     // Crear evento del panel nuevo (8b-3f), el mismo formulario que editar.
     path: 'eventosCrear',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/eventos/evento-formulario.component').then(m => m.EventoFormularioComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    path: 'eventosCrear',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/crear-evento/crear-evento.component').then(m => m.CrearEventoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
     // Editar evento del panel nuevo (8b-3f).
     path: 'eventosEditar/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/eventos/evento-formulario.component').then(m => m.EventoFormularioComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'eventosEditar/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-evento/editar-evento.component').then(m => m.EditarEventoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Productos del panel nuevo (8b-3g): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
     path: 'productosListar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/productos/productos.component').then(m => m.ProductosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'productosListar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-productos/listado-productos.component').then(m => m.ListadoProductosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     // Crear producto del panel nuevo (8b-3g), el mismo formulario que editar.
     path: 'productosCrear',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/productos/producto-formulario.component').then(m => m.ProductoFormularioComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    path: 'productosCrear',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/crear-producto/crear-producto.component').then(m => m.CrearProductoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
     // Editar producto del panel nuevo (8b-3g).
     path: 'productosEditar/:id',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/productos/producto-formulario.component').then(m => m.ProductoFormularioComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'productosEditar/:id',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/editar-producto/editar-producto.component').then(m => m.EditarProductoComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
     path: 'tesoreriaCobros',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/tesoreria/tesoreria.component').then(m => m.TesoreriaComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'tesoreriaCobros',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/tesoreria-cobros/tesoreria-cobros.component').then(m => m.TesoreriaCobrosComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Caja de sede nueva (8b-3j): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'cajaSede',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/caja-sede/caja-sede.component').then(m => m.CajaSedePanelComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'cajaSede',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/caja-sede/caja-sede.component').then(m => m.CajaSedeComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Solicitudes nuevas (8b-3i): solo con el interruptor encendido; si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'solicitudes',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/solicitudes/solicitudes.component').then(m => m.SolicitudesPanelComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    // Bandeja de solicitudes al propietario (6c-7).
-    path: 'solicitudes',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.component').then(m => m.SolicitudesBandejaComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Registro de acciones nuevo (8b-3k): solo con el interruptor encendido y con los mismos guards de hoy (solo el
-    // propietario); si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'auditoriaSistema',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./panel-nuevo/escuela/registro/registro.component').then(m => m.RegistroAccionesComponent),
     canActivate: [roleGuard, adminOnlyGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'auditoriaSistema',
-    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
-    loadComponent: () => import('./componentes/endpoints/auditoria-sistema/auditoria-sistema.component').then(m => m.AuditoriaSistemaComponent),
-    canActivate: [roleGuard, adminOnlyGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Convocatorias C del panel nuevo (8b-3e): con el interruptor apagado no casa y sigue la de hoy, sin descargar el chunk.
     path: 'convocatoriasListar',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/convocatorias/convocatorias.component').then(m => m.ConvocatoriasComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    path: 'convocatoriasListar',
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
-    loadComponent: () => import('./componentes/endpoints/listado-convocatorias/listado-convocatorias.component').then(m => m.ListadoConvocatoriasComponent),
-    canActivate: [roleGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    // Configuración nueva (8b-3k): solo con el interruptor encendido y con los mismos guards de hoy (solo el
-    // propietario); si no, el router pasa a la de hoy sin descargar el chunk.
     path: 'configuracion-sistema',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./panel-nuevo/escuela/configuracion/configuracion.component').then(m => m.ConfiguracionPanelComponent),
-    canActivate: [roleGuard, adminOnlyGuard],
-    resolve: CATALOGO_RESOLVE,
-  },
-  {
-    path: 'configuracion-sistema',
-    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
-    loadComponent: () => import('./componentes/endpoints/configuracion-sistema/configuracion-sistema.component').then(m => m.ConfiguracionSistemaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
     resolve: CATALOGO_RESOLVE,
   },
@@ -677,38 +468,25 @@ export const routes: Routes = [
   {
     // Mi caja del panel nuevo (8b-3p): carga diferida y el mismo permiso, sin catálogo.
     path: 'mi-caja',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./panel-nuevo/mi-caja/mi-caja.component').then(m => m.MiCajaPanelComponent),
     canActivate: [profesorGuard],
   },
   {
-    // «Mi caja» del profesor (6b-3b): sin catálogo ni requiredRoles; una sesión solo profesor solo puede usar su caja.
-    path: 'mi-caja',
-    data: { seo: SEO_ROUTES.noIndex },
-    loadComponent: () => import('./componentes/endpoints/mi-caja/mi-caja.component').then(m => m.MiCajaComponent),
-    canActivate: [profesorGuard],
-  },
-  {
     // Mis grupos del panel nuevo: carga diferida y el mismo permiso, sin catálogo.
     path: 'mis-grupos',
-    canMatch: [disenoNuevoGuard],
+    canMatch: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadChildren: () => import('./panel-nuevo/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_PANEL_ROUTES),
     canActivate: [misGruposGuard],
   },
   {
-    // Profesor (E7-5): sus grupos, sus alumnos y la ficha reducida. Guard propio (capacidad MIS_GRUPOS, E8-5: con grupos asignados), sin catálogo.
-    path: 'mis-grupos',
-    data: { seo: SEO_ROUTES.noIndex },
-    loadChildren: () => import('./componentes/endpoints/mis-grupos/mis-grupos.routes').then(m => m.MIS_GRUPOS_ROUTES),
-    canActivate: [misGruposGuard],
-  },
-  {
-    // 404 dentro del panel (8b-M2b): solo con una sesión de gestión y el diseño nuevo encendido; el resto cae al 404 público.
+    // 404 dentro del panel (8b-M2b): solo con una sesión de gestión; el resto cae al 404 público.
     // `panelNuevo` avisa a la cáscara (SkeletonComponent) de que debe pintar la cabecera del panel aunque la URL sea desconocida.
     path: '**',
-    canMatch: [disenoNuevoGuard, gestionPanelGuard],
+    canMatch: [gestionPanelGuard],
+    canActivate: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex, panelNuevo: true },
     loadComponent: () => import('./panel-nuevo/no-encontrada/no-encontrada.component').then(m => m.NoEncontradaPanelComponent),
   },

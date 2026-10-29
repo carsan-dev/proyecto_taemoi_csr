@@ -117,7 +117,7 @@ interface ErrorDatos {
  * escribe con `ERROR_HANDLED_LOCALLY`, y `calcularEntrega`, `importeConSigno` y `reglaMovimiento` de hoy); las
  * confirmaciones de hoy con el diálogo del panel (foco contenido) y los avisos del panel. Como hoy, solo el id de la
  * última sede va al almacenamiento del navegador (decisión 206); nada va a la URL. Va en su propio chunk detrás de
- * `disenoNuevoGuard`. Mi caja (sesión solo-profesor) no pasa por aquí (decisión 260).
+ * `estilosPanelGuard`. Mi caja (sesión solo-profesor) no pasa por aquí (decisión 260).
  */
 @Component({
   selector: 'app-caja-sede-panel',

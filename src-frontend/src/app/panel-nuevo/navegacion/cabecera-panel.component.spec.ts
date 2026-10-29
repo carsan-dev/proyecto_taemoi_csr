@@ -461,13 +461,13 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(boton.getAttribute('aria-haspopup')).toBe('menu');
     });
 
-    itSinReloj('«Diseño nuevo» solo para el propietario; enlaces legales y «Configurar cookies»', async () => {
+    itSinReloj('8b-Z: sin «Diseño nuevo» tampoco para el propietario; enlaces legales y «Configurar cookies»', async () => {
       await montar();
       responderMarca();
       let configurar = 0;
       fixture.componentInstance.configurarCookies.subscribe(() => configurar++);
       const menu = abrirCuenta();
-      expect(menu.querySelector('a[href="/panel/diseno-nuevo"]')?.textContent?.trim()).toBe('Diseño nuevo');
+      expect(menu.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
       for (const ruta of ['/politica-privacidad', '/politica-cookies', '/aviso-legal']) {
         expect(menu.querySelector(`a[href="${ruta}"]`)).withContext(ruta).not.toBeNull();
       }
@@ -516,39 +516,19 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(auth.guardarVistaPreferida).toHaveBeenCalledWith('user');
     });
 
-    itSinReloj('«Volver al diseño anterior» pide PUT /api/panel/mi-diseno {activo:false}, reinicia los permisos y recarga', async () => {
-      await montar();
-      responderMarca();
-      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
-        (b) => b.textContent?.trim() === 'Volver al diseño anterior'
-      )!;
-      boton.click();
-      const peticion = http.expectOne(`${API}/panel/mi-diseno`);
-      expect(peticion.request.method).toBe('PUT');
-      expect(peticion.request.body).toEqual({ activo: false });
-      expect(recargar).not.toHaveBeenCalled();
-
-      peticion.flush({ activo: false, permitido: true });
-
-      expect(reiniciarPermisos).toHaveBeenCalled();
-      expect(recargar).toHaveBeenCalledTimes(1);
-    });
-
-    itSinReloj('si falla, lo dice y no recarga', async () => {
-      await montar();
-      responderMarca();
-      const boton = Array.from(abrirCuenta().querySelectorAll<HTMLButtonElement>('button')).find(
-        (b) => b.textContent?.trim() === 'Volver al diseño anterior'
-      )!;
-      boton.click();
-      http.expectOne(`${API}/panel/mi-diseno`).flush({ mensaje: 'x' }, { status: 403, statusText: 'Forbidden' });
-      fixture.detectChanges();
-
-      expect(recargar).not.toHaveBeenCalled();
-      expect(el().querySelector('#pn-menu-cuenta [role="alert"]')?.textContent).toContain(
-        'No se pudo volver al diseño anterior'
-      );
-    });
+    for (const rolesSesion of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
+      itSinReloj(`8b-Z: ${rolesSesion.join(', ')} no ve «Volver al diseño anterior» (el interruptor se retiró)`, async () => {
+        roles = rolesSesion;
+        await montar();
+        responderMarca();
+        const menu = abrirCuenta();
+        const botones = Array.from(menu.querySelectorAll<HTMLButtonElement>('button'));
+        expect(botones.some((b) => /diseño/i.test(b.textContent ?? ''))).toBeFalse();
+        expect(menu.querySelector('[role="alert"]')).toBeNull();
+        http.expectNone(`${API}/panel/mi-diseno`);
+        expect(recargar).not.toHaveBeenCalled();
+      });
+    }
 
     itSinReloj('«Cerrar sesión» cierra la sesión', async () => {
       await montar();

@@ -125,9 +125,11 @@ describe('menu-panel: nada se pierde (decisión 232)', () => {
 
   it('el propietario de Moiskimdo (ADMIN y PROFESOR) sigue viendo «Mi caja», «Mis grupos» y lo solo del propietario', () => {
     const rutas = rutasDeGestion(contextoDe(CASOS[3]));
-    for (const ruta of ['/mi-caja', '/mis-grupos', '/auditoriaSistema', '/configuracion-sistema', '/panel/diseno-nuevo']) {
+    for (const ruta of ['/mi-caja', '/mis-grupos', '/auditoriaSistema', '/configuracion-sistema']) {
       expect(rutas).withContext(ruta).toContain(ruta);
     }
+    // 8b-Z: «Diseño nuevo» salió del menú de cuenta.
+    expect(rutas).not.toContain('/panel/diseno-nuevo');
   });
 
   it('sin contexto (todo falso) no sale nada condicionado', () => {
@@ -199,10 +201,8 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
     expect(BARRA_INFERIOR).toEqual(['inicio', 'alumnos', 'tesoreria']);
   });
 
-  it('la cuenta lleva «Diseño nuevo» solo para el propietario', () => {
-    const disenoNuevo = CUENTA_PANEL.find((e) => e.ruta === '/panel/diseno-nuevo');
-    expect(disenoNuevo?.etiqueta).toBe('Diseño nuevo');
-    expect(disenoNuevo?.condicion).toBe('propietario');
+  it('8b-Z: la cuenta ya no lleva «Diseño nuevo» (ni ninguna entrada propia)', () => {
+    expect(CUENTA_PANEL).toEqual([]);
   });
 
   it('los enlaces legales del pie de hoy (decisión 259)', () => {

@@ -61,7 +61,7 @@ interface ErrorResumen {
  *
  * Las MISMAS reglas y el MISMO `POST /api/alumnos/crear` que `CrearAlumnoComponent` (validadores, reinicios al cambiar de
  * deporte o de tarifa, cuantía, licencia y competición, multipart con la foto opcional, aviso «Alumno creado con N
- * deporte(s)» y salto a la ficha), sin SweetAlert2. Va en su chunk detrás de `disenoNuevoGuard`.
+ * deporte(s)» y salto a la ficha), sin SweetAlert2. Va en su chunk detrás de `estilosPanelGuard`.
  */
 @Component({
   selector: 'app-alta-alumno',

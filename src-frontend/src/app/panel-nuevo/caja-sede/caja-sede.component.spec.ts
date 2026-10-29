@@ -2,16 +2,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { NEVER, of } from 'rxjs';
+import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import { CajaSedeComponent } from '../../componentes/endpoints/caja-sede/caja-sede.component';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { EntregaCaja, MovimientoCaja, PendienteCobrador, TipoMovimientoCaja } from '../../interfaces/caja';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
+import { valorDeHoy } from '../../testing/oraculo-hoy';
+import { HOY } from './caja-sede.component.hoy';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
@@ -548,16 +549,6 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta√
       ];
       cargar(undefined, { pendientes: [profesorVista({ cobros: [cobroVista(), cobroVista({ cobroId: 2, importe: 15.005 })] })] });
       for (const caso of casos) {
-        const hoyCaja = { registrarEntrega: jasmine.createSpy('registrarEntrega').and.returnValue(NEVER) };
-        const hoy = Object.create(CajaSedeComponent.prototype) as CajaSedeComponent & Record<string, unknown>;
-        Object.assign(hoy, { caja: hoyCaja, sedeId: 5 });
-        hoy.abrirEntrega(comp().pendientes![0]);
-        caso.quitar.forEach((id) => hoy.alternarCobro(id, false));
-        if (caso.contado !== null) {
-          hoy.onContadoInput(caso.contado);
-        }
-        hoy.dialogoEntrega!.nota = caso.nota;
-
         const form = abrirRecibir();
         caso.quitar.forEach((id) => {
           form.querySelector<HTMLInputElement>(`.caja__cobro input[data-cobro="${id}"]`)!.click();
@@ -567,15 +558,15 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta√
           escribirEn(form.querySelector<HTMLInputElement>('.caja__contado')!, caso.contado);
         }
         escribirEn(form.querySelector('textarea')!, caso.nota);
-        expect(comp().puedeRecibir()).withContext(JSON.stringify(caso)).toBe(hoy.puedeRecibir());
-        expect(comp().calculoEntrega?.notaObligatoria).withContext(JSON.stringify(caso)).toBe(hoy.calculoEntrega?.notaObligatoria);
-        hoy.recibirEntrega();
+        expect(comp().puedeRecibir()).withContext(JSON.stringify(caso)).toBe(valorDeHoy(HOY));
+        expect(comp().calculoEntrega?.notaObligatoria).withContext(JSON.stringify(caso)).toBe(valorDeHoy(HOY));
         comp().recibirEntrega();
         fixture.detectChanges();
         const posts = peticiones(caja(5, 'entregas'), 'POST');
-        if (hoyCaja.registrarEntrega.calls.count()) {
+        const cuerpoHoy = valorDeHoy(HOY);
+        if (cuerpoHoy !== null) {
           expect(posts.length).withContext(JSON.stringify(caso)).toBe(1);
-          expect(posts[0].request.body).withContext(JSON.stringify(caso)).toEqual(hoyCaja.registrarEntrega.calls.mostRecent().args[1]);
+          expect(posts[0].request.body).withContext(JSON.stringify(caso)).toEqual(cuerpoHoy);
           posts[0].flush({ mensaje: 'x' }, { status: 400, statusText: 'Bad' });
           fixture.detectChanges();
         } else {
@@ -1006,14 +997,6 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta√
       cargar();
       elegir('movimientos');
       for (const caso of casos) {
-        const hoyCaja = { crearMovimiento: jasmine.createSpy('crearMovimiento').and.returnValue(NEVER) };
-        const hoy = Object.create(CajaSedeComponent.prototype) as CajaSedeComponent & Record<string, unknown>;
-        Object.assign(hoy, { caja: hoyCaja, sedeId: 5, alumnosPedidos: true });
-        hoy.abrirMovimiento();
-        Object.assign(hoy.dialogoMovimiento!, { tipo: caso.tipo, alumnoId: caso.alumno });
-        hoy.onTipoMovimientoChange();
-        Object.assign(hoy.dialogoMovimiento!, { importe: caso.importe, nota: caso.nota });
-
         comp().abrirMovimiento();
         fixture.detectChanges();
         const form = formMovimiento()!;
@@ -1024,14 +1007,14 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta√
         comp().formMovimiento!.alumnoId = caso.alumno;
         escribirEn(form.querySelector<HTMLInputElement>('#caja-mov-importe')!, caso.importe);
         escribirEn(form.querySelector<HTMLTextAreaElement>('#caja-mov-nota')!, caso.nota);
-        expect(comp().puedeApuntar()).withContext(JSON.stringify(caso)).toBe(hoy.puedeApuntar());
-        hoy.apuntarMovimiento();
+        expect(comp().puedeApuntar()).withContext(JSON.stringify(caso)).toBe(valorDeHoy(HOY));
         comp().apuntarMovimiento();
         fixture.detectChanges();
         const posts = peticiones(caja(5, 'movimientos'), 'POST');
-        if (hoyCaja.crearMovimiento.calls.count()) {
+        const cuerpoHoy = valorDeHoy(HOY);
+        if (cuerpoHoy !== null) {
           expect(posts.length).withContext(JSON.stringify(caso)).toBe(1);
-          expect(posts[0].request.body).withContext(JSON.stringify(caso)).toEqual(hoyCaja.crearMovimiento.calls.mostRecent().args[1]);
+          expect(posts[0].request.body).withContext(JSON.stringify(caso)).toEqual(cuerpoHoy);
           posts[0].flush({ mensaje: 'x' }, { status: 400, statusText: 'Bad' });
           fixture.detectChanges();
         } else {

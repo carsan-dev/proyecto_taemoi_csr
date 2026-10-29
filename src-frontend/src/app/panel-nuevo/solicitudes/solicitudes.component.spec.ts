@@ -5,11 +5,9 @@ import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import Swal from 'sweetalert2';
 
-import {
-  DEVOLUCION_OTRA_SEDE as DEVOLUCION_OTRA_SEDE_HOY,
-  SolicitudesBandejaComponent,
-} from '../../componentes/endpoints/solicitudes-bandeja/solicitudes-bandeja.component';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { valorDeHoy } from '../../testing/oraculo-hoy';
+import { HOY } from './solicitudes.component.hoy';
 import { environment } from '../../../environments/environment';
 import { EstadoSolicitud, Solicitud, TipoSolicitud } from '../../interfaces/solicitud';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -353,27 +351,23 @@ describe('SolicitudesPanelComponent (8b-3i, Solicitudes del panel nuevo, P1 acci
       const estados: EstadoSolicitud[] = [
         'PENDIENTE', 'ACEPTADA', 'DENEGADA', 'RETIRADA', 'NO_APLICABLE', 'PEDIDO', 'ENCARGADO', 'RECIBIDO', 'ENTREGADO', 'RECHAZADO',
       ];
+      // La bandeja de hoy (retirada en 8b-Z), grabada: cada caso es un índice (base 36) en `distintos`, que guarda
+      // [acciones, devolucionDelProfesor, verboAceptar] en el mismo orden de los bucles.
+      const { distintos, indices } = valorDeHoy<{ distintos: string[]; indices: string }>(HOY);
+      const deHoy = (n: number) => JSON.parse(distintos[parseInt(indices[n], 36)]).map((v: unknown) => (v === '__undef' ? undefined : v));
       let casos = 0;
       for (const propietario of [true, false]) {
-        // La de hoy sin su plantilla ni inyecciones: solo sus reglas.
-        const hoy = Object.create(SolicitudesBandejaComponent.prototype) as SolicitudesBandejaComponent;
-        hoy.esPropietario = propietario;
         for (const tipo of tipos) {
           for (const estado of estados) {
             for (const propia of [true, false]) {
               for (const devolucionPendiente of [true, false]) {
                 for (const devolucionEnSede of [true, false, null]) {
                   const s = solicitudVista({ tipo, estado, propia, devolucionPendiente, devolucionEnSede });
-                  const deHoy: string[] = [];
-                  if (hoy.puedeResolver(s)) deHoy.push('aceptar', 'denegar');
-                  if (hoy.puedeRetirar(s)) deHoy.push('retirar');
-                  if (hoy.puedeMarcarEncargado(s)) deHoy.push('encargado');
-                  if (hoy.puedeMarcarRecibido(s)) deHoy.push('recibido');
-                  if (hoy.puedeRechazar(s)) deHoy.push('rechazar');
-                  if (hoy.puedeRegistrarDevolucion(s)) deHoy.push('devolucion');
-                  expect(accionesDe(s, propietario)).withContext(JSON.stringify({ propietario, tipo, estado, propia, devolucionPendiente, devolucionEnSede })).toEqual(deHoy as any);
-                  expect(devolucionDelProfesor(s)).toBe(hoy.devolucionDelProfesor(s));
-                  expect(verboAceptar(tipo)).toBe(hoy.verboAceptar(s));
+                  const [acciones, devolucion, verbo] = deHoy(casos);
+                  const contexto = JSON.stringify({ propietario, tipo, estado, propia, devolucionPendiente, devolucionEnSede });
+                  expect(accionesDe(s, propietario)).withContext(contexto).toEqual(acciones ? acciones.split(',') : []);
+                  expect(devolucionDelProfesor(s)).withContext(contexto).toBe(devolucion);
+                  expect(verboAceptar(tipo)).withContext(contexto).toBe(verbo);
                   casos++;
                 }
               }
@@ -382,7 +376,8 @@ describe('SolicitudesPanelComponent (8b-3i, Solicitudes del panel nuevo, P1 acci
         }
       }
       expect(casos).toBe(2 * 5 * 10 * 2 * 2 * 3);
-      expect(DEVOLUCION_OTRA_SEDE).toBe(DEVOLUCION_OTRA_SEDE_HOY);
+      expect(indices.length).toBe(casos);
+      expect(DEVOLUCION_OTRA_SEDE).toBe(valorDeHoy(HOY));
     });
   });
 
