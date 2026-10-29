@@ -1,5 +1,3 @@
-@use "sass:meta";
-
 // Import Bootstrap CSS (precompiled - no Sass deprecation warnings)
 @import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -74,13 +72,6 @@ html {
   from { transform: rotate(0deg); }
   50% { transform: rotate(180deg); }
   to { transform: rotate(360deg); }
-}
-
-// Shared admin rules are emitted once instead of being duplicated in every
-// standalone component bundle. Scope protects public and user-facing views.
-:where(body:has(.admin-ui)) {
-  @include meta.load-css("app/componentes/admin-shared-styles");
-  @include meta.load-css("app/componentes/admin-mobile-forms");
 }
 
 @font-face {

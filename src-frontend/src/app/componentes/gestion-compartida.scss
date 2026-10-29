@@ -1,0 +1,7 @@
+@use "sass:meta";
+
+// Conserva el alcance y el orden de las reglas compartidas de gestión.
+:where(body:has(.admin-ui)) {
+  @include meta.load-css("./admin-shared-styles");
+  @include meta.load-css("./admin-mobile-forms");
+}

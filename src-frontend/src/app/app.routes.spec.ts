@@ -4,6 +4,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
+import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { NoEncontradaPanelComponent } from './panel-nuevo/no-encontrada/no-encontrada.component';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
@@ -84,6 +85,16 @@ function permisos(roles: string[]) {
 }
 
 describe('app routes', () => {
+  for (const camino of ['plataformaErrores', 'plataformaLogos']) {
+    it(`${camino}: carga solo gestión sin convertirla en pantalla nueva`, () => {
+      const ruta = routes.find((entrada) => entrada.path === camino)!;
+      expect(ruta.canMatch).toEqual([estilosGestionGuard]);
+      expect(ruta.canActivate).toEqual([plataformaGuard]);
+      expect(ruta.data?.['panelNuevo']).toBeUndefined();
+      expect(ruta.canActivate).not.toContain(estilosPanelGuard);
+    });
+  }
+
   describe('8b-Z: una sola entrada por pantalla rediseñada, la nueva, sin interruptor', () => {
     for (const [ruta, componente, canActivate, extra] of REDISENADAS) {
       it(`${ruta}: una entrada con la pantalla nueva, la hoja del panel y sus guards`, async () => {

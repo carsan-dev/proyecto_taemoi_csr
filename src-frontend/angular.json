@@ -54,6 +54,11 @@
                 "input": "src/panel-nuevo.scss",
                 "bundleName": "panel-nuevo",
                 "inject": false
+              },
+              {
+                "input": "src/app/componentes/gestion-compartida.scss",
+                "bundleName": "gestion-compartida",
+                "inject": false
               }
             ],
             "scripts": [
@@ -207,6 +212,7 @@
               "src/app/panel-nuevo/estilos-panel.service.spec.ts",
               "src/app/panel-nuevo/formato/roles.spec.ts",
               "src/app/panel-nuevo/estilos-panel.guard.spec.ts",
+              "src/app/panel-nuevo/estilos-gestion.guard.spec.ts",
               "src/app/panel-nuevo/marca-escuela-panel.service.spec.ts",
               "src/app/panel-nuevo/acento-escuela.spec.ts",
               "src/app/panel-nuevo/navegacion/menu-panel.spec.ts",
