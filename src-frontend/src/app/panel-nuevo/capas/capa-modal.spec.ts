@@ -35,7 +35,7 @@ describe('cerrarSweetAlertAbierto (8b-D1, solo el SweetAlert2 del error HTTP y s
         ]),
         {
           provide: PermisosSesionService,
-          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },
+          useValue: { obtener: () => of({}) },
         },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],

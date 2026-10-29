@@ -9,7 +9,7 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
 
 /**
  * Condiciones de hoy, una a una:
- * - `propietario`: `isAdminOnly` de la cabecera de hoy (ROLE_ADMIN; Registro de acciones, Configuración, Diseño nuevo).
+ * - `propietario`: `isAdminOnly` de la cabecera de hoy (ROLE_ADMIN; Registro de acciones, Configuración).
  * - `profesor`: `tieneRolProfesor` (ROLE_PROFESOR; Mi caja).
  * - `misGrupos`: `veMisGrupos` (ROLE_PROFESOR y la capacidad MIS_GRUPOS de `GET /api/auth/permisos`).
  * - `plataforma`: `esAdminPlataforma` (la sesión administradora de plataforma).

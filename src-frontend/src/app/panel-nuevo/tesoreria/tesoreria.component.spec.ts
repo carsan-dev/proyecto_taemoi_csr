@@ -186,7 +186,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
           provide: AuthenticationService,
           useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esGestion, obtenerRoles: () => of([]) },
         },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         {
           provide: CatalogoService,

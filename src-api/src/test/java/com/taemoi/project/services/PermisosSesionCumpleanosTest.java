@@ -39,7 +39,7 @@ class PermisosSesionCumpleanosTest {
 
 	private PermisosSesionService servicio(String instante) {
 		Clock reloj = Clock.fixed(Instant.parse(instante), MADRID);
-		return new PermisosSesionService(null, mock(SedeRepository.class), null, vinculos, alumnos, reloj);
+		return new PermisosSesionService(null, mock(SedeRepository.class), vinculos, alumnos, reloj);
 	}
 
 	private static Date fecha(int anio, int mes, int dia) {

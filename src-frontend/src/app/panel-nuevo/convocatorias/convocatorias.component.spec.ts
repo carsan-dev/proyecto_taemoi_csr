@@ -170,7 +170,7 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

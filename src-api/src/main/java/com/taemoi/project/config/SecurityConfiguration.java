@@ -222,9 +222,9 @@ public class SecurityConfiguration {
 						// el servicio). Misma posición y motivo que /api/sedes; fuera de la lista blanca solo-profesor.
 						.requestMatchers("/api/miembros", "/api/miembros/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
-						// Pieza 8b-I (fase3-e8b-plan.md §3): interruptor del diseño nuevo del panel, solo P y G (lo del
-						// propietario, con @PreAuthorize por método). Misma posición y motivo que /api/miembros; fuera de
-						// la lista blanca solo-profesor.
+						// Pieza 8b-I (fase3-e8b-plan.md §3): el interruptor del diseño nuevo, retirado (0a10bf31, V31_13). Hoy no
+						// hay endpoints bajo /api/panel/; la regla se mantiene cerrada por defecto, solo P y G. Misma posición
+						// que /api/miembros; fuera de la lista blanca solo-profesor.
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G

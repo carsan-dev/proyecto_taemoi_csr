@@ -93,7 +93,7 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
         provideRouter([{ path: 'alumnosListar', canMatch: [estilosPanelGuard], component: PantallaNueva }]),
         {
           provide: PermisosSesionService,
-          useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) },
+          useValue: { obtener: () => of({}) },
         },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],

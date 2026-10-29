@@ -255,6 +255,16 @@ Procedimiento paso a paso en el servidor: [docs/operacion/procedimiento-producci
       interruptor encendido, revisa Inicio, Alumnos y la ficha: pestaña activa, filtros y «Filas | Tarjetas» elegidos,
       secundarios, enlaces y la página actual en el acento de Moiskimdo (`#01707F` sobre `#D5F5FC`, borde `#4595A3`);
       la cabecera, el botón principal, los estados y la ocupación, como antes.
+- [ ] Retirada del interruptor del diseño nuevo (decisión del propietario del 29/10: código y tabla juntos):
+      **con migración V31_13** (contracción en versión decimal: borra la tabla `diseno_panel_usuario` y la clave
+      `panel.diseno_por_defecto` de `configuracion_organizacion` en todas las escuelas) → atajo `desplegar_migrar`.
+      Después, solo lectura: Flyway en 31.13
+      (`SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank DESC LIMIT 1`), la tabla
+      no existe (`SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME =
+      'diseno_panel_usuario'` = 0) y `SELECT COUNT(*) FROM configuracion_organizacion WHERE clave =
+      'panel.diseno_por_defecto'` = 0. Vuelta atrás: restaurar la copia de seguridad de `desplegar_migrar`; la imagen
+      anterior sola no arranca (`ddl-auto=validate` exige la tabla). Comprobar en el móvil que el propietario y un
+      gestor entran en el panel con sus menús de siempre (también «Mi caja») y que ya no aparece «Diseño nuevo».
 
 ## Después
 - [ ] Entrar como administrador, gestor y familia; cada uno ve lo mismo que antes.

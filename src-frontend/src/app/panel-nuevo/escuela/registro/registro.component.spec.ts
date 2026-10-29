@@ -133,7 +133,7 @@ describe('RegistroAccionesComponent (8b-3k, Registro de acciones del panel nuevo
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

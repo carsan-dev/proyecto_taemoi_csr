@@ -32,12 +32,12 @@ const RUTAS: Routes = routes.map((r) =>
   r.loadComponent ? { ...r, loadComponent: () => Promise.resolve(r.canMatch ? PantallaNueva : PantallaHoy) } : r
 );
 
-function respuesta(url: string, disenoNuevo: boolean): unknown {
+function respuesta(url: string): unknown {
   if (url.endsWith('/auth/auth-status')) return true;
   if (url.endsWith('/auth/permisos')) {
     return {
       roles: ['PROPIETARIO'], esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false,
-      capacidades: [], disenoNuevo: { activo: disenoNuevo, permitido: true }, nombreVisible: 'X',
+      capacidades: [], nombreVisible: 'X',
     };
   }
   if (url.endsWith('/auth/roles')) return ['ROLE_ADMIN'];
@@ -56,8 +56,8 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
   });
 
   /** Se llama dentro de `fakeAsync`. */
-  function arrancar(disenoNuevo: boolean): string {
-    if (disenoNuevo) {
+  function arrancar(conRecordatorio: boolean): string {
+    if (conRecordatorio) {
       localStorage.setItem('panelNuevo', '1');
     } else {
       localStorage.removeItem('panelNuevo');
@@ -105,7 +105,7 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
           r.error(new ProgressEvent('error'));
         } else {
           if (r.request.url.endsWith('/auth/roles')) rolesServidos++;
-          r.flush(respuesta(r.request.url, disenoNuevo) as object);
+          r.flush(respuesta(r.request.url) as object);
         }
       } else if (rolesServidos > 0) {
         quietas++;

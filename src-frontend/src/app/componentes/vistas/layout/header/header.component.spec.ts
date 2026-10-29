@@ -6,7 +6,7 @@ import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
-import { Capacidad, DisenoNuevoSesion, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { Capacidad, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { itSinReloj } from '../../../../testing/reloj-prueba';
 
@@ -531,20 +531,6 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     });
   });
 
-  describe('8b-Z: sin «Diseño nuevo» en el menú de cuenta (el interruptor se retiró)', () => {
-    for (const roles of [['ROLE_ADMIN'], ['ROLE_ADMIN', 'ROLE_PROFESOR'], ['ROLE_MANAGER']]) {
-      itSinReloj(`${roles.join(', ')}: ni el enlace a /panel/diseno-nuevo ni «Diseño nuevo»`, async () => {
-        const { fixture } = await renderizar(roles, roles.includes('ROLE_PROFESOR') ? ['MI_CAJA'] : []);
-        fixture.componentInstance.toggleAdminAccountMenu();
-        fixture.detectChanges();
-        const panel = (fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel');
-        expect(panel).not.toBeNull();
-        expect(panel!.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
-        expect(panel!.textContent).not.toContain('Diseño nuevo');
-      });
-    }
-  });
-
   itSinReloj('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
     const { fixture, permisos } = await renderizar(['ROLE_USER']);
     expect(permisos.capacidades).not.toHaveBeenCalled();
@@ -552,53 +538,5 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mis-grupos"]')).toBeNull();
-  });
-});
-
-describe('HeaderComponent: sin «Usar el diseño nuevo» (8b-Z)', () => {
-  async function renderizar(roles: string[], disenoNuevo?: DisenoNuevoSesion) {
-    const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
-    const permisos = { capacidades: () => of([]), obtener: () => of({ roles, disenoNuevo }), reiniciar: () => undefined };
-    const authServiceMock = {
-      usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
-      usernameCambio: new BehaviorSubject<string | null>('cuenta'),
-      rolesCambio: new BehaviorSubject<string[]>(roles),
-      comprobarLogueado: () => true,
-      getRoles: () => of(roles),
-      resolverRolesDisponibles: () => of(roles),
-      esAdminPlataforma: () => of(false),
-      marcarVistaPreferidaSegunRuta: () => undefined,
-      tieneAccesoAdmin: () => gestion,
-      tieneAccesoUser: (r: string[]) => r.includes('ROLE_USER'),
-      tieneAccesoDual: () => false,
-      logout: () => undefined,
-    };
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [HeaderComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AuthenticationService, useValue: authServiceMock },
-        { provide: PageScrollService, useValue: { scrollTop: 0 } },
-        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
-        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
-        { provide: PermisosSesionService, useValue: permisos },
-      ],
-    }).compileComponents();
-    const fixture = TestBed.createComponent(HeaderComponent);
-    fixture.detectChanges();
-    fixture.componentInstance.toggleAdminAccountMenu();
-    fixture.detectChanges();
-    return fixture;
-  }
-
-  itSinReloj('ni con permiso y el diseño anterior en sus permisos (permitido y no activo)', async () => {
-    for (const roles of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
-      const fixture = await renderizar(roles, { activo: false, permitido: true });
-      const panel = (fixture.nativeElement as HTMLElement).querySelector('.admin-account-menu-panel');
-      expect(panel).withContext(roles.join()).not.toBeNull();
-      expect(panel!.textContent).withContext(roles.join()).not.toContain('Usar el diseño nuevo');
-      expect(panel!.querySelector('[role="alert"]')).withContext(roles.join()).toBeNull();
-    }
   });
 });

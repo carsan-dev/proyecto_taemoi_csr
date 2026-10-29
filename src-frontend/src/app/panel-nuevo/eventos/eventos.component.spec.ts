@@ -138,7 +138,7 @@ describe('EventosPanelComponent (8b-3f, listado de Eventos del panel nuevo)', ()
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

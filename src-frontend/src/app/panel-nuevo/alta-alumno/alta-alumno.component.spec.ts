@@ -41,7 +41,6 @@ function permisos(variasSedes: boolean) {
         variasSedes,
         tieneGrupos: false,
         capacidades: [],
-        disenoNuevo: { activo: true, permitido: true },
       }),
   };
 }

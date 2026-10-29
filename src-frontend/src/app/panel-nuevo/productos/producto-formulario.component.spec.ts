@@ -120,7 +120,7 @@ describe('ProductoFormularioComponent (8b-3g, crear y editar producto del panel 
           },
         },
         { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo: true, permitido: true } }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

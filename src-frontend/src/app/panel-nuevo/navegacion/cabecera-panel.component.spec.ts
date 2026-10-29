@@ -46,7 +46,6 @@ function permisos(parcial: Partial<PermisosSesion> & { nombreVisible?: string | 
     variasSedes: false,
     tieneGrupos: true,
     capacidades: ['DAR_GESTION', 'MIS_GRUPOS', 'MI_CAJA'],
-    disenoNuevo: { activo: true, permitido: true },
     nombreVisible: 'Carla S.',
     ...parcial,
   } as PermisosSesion;
@@ -255,7 +254,6 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         fixture.detectChanges();
         const cuenta = el().querySelector<HTMLElement>('#pn-menu-cuenta')!;
         expect(cuenta.querySelector('.pn-menu__quien-rol')?.textContent?.trim()).toBe('Profesor');
-        expect(cuenta.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
         expect(cuenta.querySelector('a[href="/politica-privacidad"]')).not.toBeNull();
         const botones = Array.from(cuenta.querySelectorAll<HTMLButtonElement>('button'));
         expect(botones.some((b) => b.textContent?.trim() === 'Configurar cookies')).toBeTrue();
@@ -461,13 +459,12 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(boton.getAttribute('aria-haspopup')).toBe('menu');
     });
 
-    itSinReloj('8b-Z: sin «Diseño nuevo» tampoco para el propietario; enlaces legales y «Configurar cookies»', async () => {
+    itSinReloj('enlaces legales y «Configurar cookies»', async () => {
       await montar();
       responderMarca();
       let configurar = 0;
       fixture.componentInstance.configurarCookies.subscribe(() => configurar++);
       const menu = abrirCuenta();
-      expect(menu.querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
       for (const ruta of ['/politica-privacidad', '/politica-cookies', '/aviso-legal']) {
         expect(menu.querySelector(`a[href="${ruta}"]`)).withContext(ruta).not.toBeNull();
       }
@@ -494,13 +491,6 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(el().querySelector('#pn-menu-cuenta')).toBeNull();
       expect(boton.getAttribute('aria-expanded')).toBe('false');
       expect(document.activeElement).toBe(boton);
-    });
-
-    itSinReloj('un gestor no ve «Diseño nuevo»', async () => {
-      roles = ['ROLE_MANAGER'];
-      await montar();
-      responderMarca();
-      expect(abrirCuenta().querySelector('a[href="/panel/diseno-nuevo"]')).toBeNull();
     });
 
     itSinReloj('«Cambiar a familia» solo con acceso doble, como «Cambiar a usuario» de hoy', async () => {
@@ -531,7 +521,6 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         const botones = Array.from(menu.querySelectorAll<HTMLButtonElement>('button'));
         expect(botones.some((b) => /diseño/i.test(b.textContent ?? ''))).toBeFalse();
         expect(menu.querySelector('[role="alert"]')).toBeNull();
-        http.expectNone(`${API}/panel/mi-diseno`);
         expect(recargar).not.toHaveBeenCalled();
       });
     }
