@@ -34,7 +34,7 @@
               <a class="alumnos-grupo__nombre" [routerLink]="['/alumnosEditar', alumno.id]">{{ alumno.nombre }} {{ alumno.apellidos }}</a>
               @if (turnosPorAlumno.get(alumno.id); as turnos) { <span class="alumnos-grupo__turnos">{{ turnos }}</span> }
             </div>
-            <a class="alumnos-grupo__texto" [routerLink]="['/gestionarTurnosAlumno', alumno.id]" [attr.aria-label]="'Turnos de ' + alumno.nombre + ' ' + alumno.apellidos">Turnos</a>
+            <a class="alumnos-grupo__texto" [routerLink]="['/gestionarTurnosAlumno', alumno.id]" [queryParams]="{ grupoId: grupoId }" [attr.aria-label]="'Turnos de ' + alumno.nombre + ' ' + alumno.apellidos">Turnos</a>
             <details class="alumnos-grupo__menu" (keydown.escape)="menu.removeAttribute('open'); resumen.focus()" #menu>
               <summary #resumen [attr.aria-label]="'Más acciones para ' + alumno.nombre + ' ' + alumno.apellidos">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>

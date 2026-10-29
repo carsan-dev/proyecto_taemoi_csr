@@ -1,5 +1,5 @@
 <section class="pn turnos-alumno" pnAcento>
-  <nav aria-label="Migas de pan"><button class="turnos-alumno__texto" type="button" (click)="volver()">Alumnos del grupo</button><span aria-hidden="true"> / </span></nav>
+  <nav aria-label="Migas de pan">@if (grupoOrigen) { <a class="turnos-alumno__texto" [routerLink]="['/gestionarAlumnos', grupoOrigen]">Alumnos del grupo</a> } @else { <button class="turnos-alumno__texto" type="button" (click)="volver()">Alumnos del grupo</button> }<span aria-hidden="true"> / </span></nav>
   <header>
     <h1>Turnos de {{ alumno ? alumno.nombre + ' ' + alumno.apellidos : 'alumno' }}</h1>
     @if (alumno) { <a [routerLink]="['/alumnosEditar', alumnoId]">Ver ficha</a> }

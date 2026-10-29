@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { Location } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
@@ -16,17 +17,19 @@ describe('GestionarTurnosAlumnoComponent (3m-5)', () => {
   let confirmar: jasmine.SpyObj<ConfirmacionService>;
   let avisos: jasmine.SpyObj<AvisosService>;
   const params = new BehaviorSubject({ alumnoId: '7' });
+  const consulta = new BehaviorSubject(convertToParamMap({}));
   const base = environment.apiUrl;
   const turno = (id: number, diaSemana = 'Lunes', horaInicio = '17:30:00'): TurnoResumen =>
     ({ id, diaSemana, horaInicio, horaFin: '18:30:00', tipoGrupo: 'Taekwondo infantil', grupoId: 4, grupoNombre: 'Infantiles' });
   beforeEach(async () => {
     params.next({ alumnoId: '7' });
+    consulta.next(convertToParamMap({}));
     confirmar = jasmine.createSpyObj('Confirmacion', ['confirmar']);
     confirmar.confirmar.and.resolveTo({ confirmado: false, valor: null });
     avisos = jasmine.createSpyObj('Avisos', ['exito', 'error']);
     await TestBed.configureTestingModule({ imports: [GestionarTurnosAlumnoComponent], providers: [
       provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
-      { provide: ActivatedRoute, useValue: { params } },
+      { provide: ActivatedRoute, useValue: { params, queryParamMap: consulta } },
       { provide: ConfirmacionService, useValue: confirmar }, { provide: AvisosService, useValue: avisos },
     ] }).compileComponents();
     fixture = TestBed.createComponent(GestionarTurnosAlumnoComponent);
@@ -57,6 +60,24 @@ describe('GestionarTurnosAlumnoComponent (3m-5)', () => {
     const opciones = fixture.nativeElement.querySelectorAll('[role=option]');
     expect(opciones[0].getAttribute('aria-disabled')).toBe('true');
     expect(opciones[0].textContent).toContain('ya asignado');
+  });
+  it('breadcrumb links to the origin group when grupoId is valid', () => {
+    consulta.next(convertToParamMap({ grupoId: '4' })); cargar();
+    const miga = fixture.nativeElement.querySelector('nav a');
+    expect(miga.getAttribute('href')).toBe('/gestionarAlumnos/4');
+    expect(miga.textContent).toContain('Alumnos del grupo');
+    expect(fixture.nativeElement.querySelector('nav button')).toBeNull();
+  });
+  it('breadcrumb goes back in history without a valid grupoId', () => {
+    for (const invalido of [undefined, 'abc', '0', '-3', '4.5', '4x']) {
+      consulta.next(convertToParamMap(invalido === undefined ? {} : { grupoId: invalido })); fixture.detectChanges();
+      expect(fixture.componentInstance.grupoOrigen).withContext(String(invalido)).toBeNull();
+    }
+    cargar();
+    const atras = spyOn(TestBed.inject(Location), 'back');
+    expect(fixture.nativeElement.querySelector('nav a')).toBeNull();
+    fixture.nativeElement.querySelector('nav button').click();
+    expect(atras).toHaveBeenCalledTimes(1);
   });
   it('shows empty state and disables assignment without selection', () => {
     cargar();

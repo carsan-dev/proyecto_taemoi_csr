@@ -38,6 +38,8 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   private envio?: Subscription;
   private revision = 0;
   alumnoId = 0;
+  /** Id del grupo desde el que se llegó (query param grupoId); null si no viene o no es válido. */
+  grupoOrigen: number | null = null;
   alumno: AlumnoTurnos | null = null;
   turnos: TurnoResumen[] = [];
   disponibles: TurnoResumen[] = [];
@@ -54,6 +56,11 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
   get turnoSeleccionado(): TurnoResumen | undefined { return this.disponibles.find(turno => String(turno.id) === this.seleccion); }
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(parametros => {
+      const bruto = parametros.get('grupoId');
+      const id = bruto !== null && /^\d+$/.test(bruto) ? Number(bruto) : 0;
+      this.grupoOrigen = Number.isSafeInteger(id) && id > 0 ? id : null;
+    });
     this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
       const id = Number(params['alumnoId']);
       if (this.revision > 0 && id === this.alumnoId) return;
@@ -146,7 +153,6 @@ export class GestionarTurnosAlumnoComponent implements OnInit, OnDestroy {
     if (!(event.target instanceof Node) || !this.campoTurno?.nativeElement.contains(event.target)) this.cerrarLista();
   }
   volver(): void {
-    // TODO(3m-5): la entrada no proporciona el grupo de origen; conservar la vuelta atrás sin inventar su id.
     this.location.back();
   }
   asignar(): void {
