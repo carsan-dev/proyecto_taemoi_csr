@@ -56,6 +56,40 @@ describe('app routes', () => {
     expect(await antiguas[0].loadComponent!()).not.toBe(await hijas[0].loadComponent!());
   });
 
+  it('Mi caja: ruta nueva antes de la de hoy, mismo permiso, diferida y sin catálogo', async () => {
+    const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mi-caja');
+    expect(nueva.canMatch).toEqual([disenoNuevoGuard]);
+    expect(nueva.canActivate).toEqual([profesorGuard]);
+    expect(nueva.canActivate).toEqual(hoy.canActivate!);
+    expect(nueva.data).toEqual(hoy.data!);
+    expect(nueva.resolve).toBeUndefined();
+    expect(nueva.component).toBeUndefined();
+    expect(hoy.canMatch).toBeUndefined();
+    expect(await nueva.loadComponent!()).toBe((await import('./panel-nuevo/mi-caja/mi-caja.component')).MiCajaPanelComponent);
+    expect(await hoy.loadComponent!()).toBe((await import('./componentes/endpoints/mi-caja/mi-caja.component')).MiCajaComponent);
+  });
+
+  for (const activo of [false, true]) {
+    it(`Mi caja con diseño ${activo ? 'encendido' : 'apagado'}: solo descarga la pantalla elegida`, async () => {
+      @Component({ standalone: true, template: '<p>Nueva</p>' })
+      class PantallaNueva {}
+      @Component({ standalone: true, template: '<p>Actual</p>' })
+      class PantallaActual {}
+      const [nueva, hoy] = routes.filter(ruta => ruta.path === 'mi-caja');
+      const cargarNueva = jasmine.createSpy('cargar pantalla nueva').and.resolveTo(PantallaNueva);
+      const cargarHoy = jasmine.createSpy('cargar pantalla actual').and.resolveTo(PantallaActual);
+      TestBed.configureTestingModule({ providers: [
+        provideRouter([{ ...nueva, canActivate: [], loadComponent: cargarNueva }, { ...hoy, canActivate: [], loadComponent: cargarHoy }]),
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ disenoNuevo: { activo, permitido: true } }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+      ] });
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl('/mi-caja', activo ? PantallaNueva : PantallaActual);
+      expect(cargarNueva.calls.count()).toBe(activo ? 1 : 0);
+      expect(cargarHoy.calls.count()).toBe(activo ? 0 : 1);
+    });
+  }
+
   for (const activo of [false, true]) {
     it(`Mis grupos con diseño ${activo ? 'encendido' : 'apagado'}: solo descarga las rutas elegidas`, async () => {
       @Component({ standalone: true, template: '<p>Nueva</p>' })
