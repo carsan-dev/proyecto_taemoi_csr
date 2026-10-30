@@ -24,17 +24,32 @@ const GUARDADAS = [
   { id: 13, url: `${FOTOS}/13`, orden: 2 },
 ];
 
+/**
+ * El SCSS elige los mandos con `(hover: hover) and (pointer: fine)`, y eso depende de la máquina: Chrome headless tiene
+ * ratón en Windows y no lo tiene en Linux (la CI). Las pruebas de foco fijan la disposición que comprueban, porque un botón
+ * con `display: none` no acepta el foco.
+ */
+const MANDOS_RATON = '.fotos__quitar, .fotos__antes, .fotos__despues { display: flex !important; } .fotos__mas { display: none !important; }';
+const MANDOS_TACTIL = '.fotos__quitar, .fotos__antes, .fotos__despues { display: none !important; } .fotos__mas { display: flex !important; }';
+
 describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formulario de eventos)', () => {
   let fixture: ComponentFixture<EventoFotosComponent>;
   let http: HttpTestingController;
   let quitarTokens: () => void;
   let anuncios: jasmine.Spy;
+  let estiloMandos: HTMLStyleElement | null = null;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const texto = (n: Element | null | undefined): string => (n?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const celdas = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('.fotos__celda--foto'));
   const dialogo = (): HTMLDialogElement | null => document.querySelector<HTMLDialogElement>('dialog.pn-dialogo');
   const contador = (): string => texto(el().querySelector('.fotos__contador'));
+
+  function fijarMandos(css: string): void {
+    estiloMandos = document.createElement('style');
+    estiloMandos.textContent = css;
+    document.head.appendChild(estiloMandos);
+  }
 
   function pintar(): void {
     pintarCapas();
@@ -99,6 +114,8 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
   });
 
   afterEach(() => {
+    estiloMandos?.remove();
+    estiloMandos = null;
     fixture?.destroy();
     TestBed.inject(AvisosService).cerrarTodos();
     pintarCapas();
@@ -307,6 +324,7 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
   // ------------------------------------------------------------------ orden
 
   it('orden con teclado: flechas en «después», foco que se queda, anuncio, extremos desactivados y «1 cambio»', () => {
+    fijarMandos(MANDOS_RATON);
     montar(1, GUARDADAS);
     expect(fixture.componentInstance.cambios).toBe(0);
     expect(boton(celdas()[0], 'Mover la foto 1 antes').disabled).toBeTrue();
@@ -327,6 +345,24 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
     boton(celdas()[1], 'Mover la foto 2 antes').click();
     fixture.detectChanges();
     expect(celdas()[0].querySelector('img')!.getAttribute('src')).toBe(`${FOTOS}/11?w=640&v=11`);
+  });
+
+  it('orden con teclado hacia atrás: el foco vuelve a «antes» de la foto movida y, en el primer puesto, pasa a su asa', () => {
+    fijarMandos(MANDOS_RATON);
+    montar(1, GUARDADAS);
+    const flechaIzquierda = (): KeyboardEvent => new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true });
+    const antes = boton(celdas()[2], 'Mover la foto 3 antes');
+    antes.focus();
+    antes.dispatchEvent(flechaIzquierda());
+    fixture.detectChanges();
+    expect(celdas()[1].querySelector('img')!.getAttribute('src')).toBe(`${FOTOS}/13?w=640&v=13`);
+    expect(document.activeElement).toBe(boton(celdas()[1], 'Mover la foto 2 antes'));
+
+    (document.activeElement as HTMLElement).dispatchEvent(flechaIzquierda());
+    fixture.detectChanges();
+    expect(celdas()[0].querySelector('img')!.getAttribute('src')).toBe(`${FOTOS}/13?w=640&v=13`);
+    expect(boton(celdas()[0], 'Mover la foto 1 antes').disabled).toBeTrue();
+    expect(document.activeElement).toBe(celdas()[0].querySelector('.fotos__asa'));
   });
 
   it('orden por arrastre: soltar mueve la miniatura y cuenta como cambio', () => {
@@ -359,16 +395,9 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
   describe('miniaturas: asa fuera del tabulador y menú «⋯»', () => {
     const mas = (n: number): HTMLButtonElement => boton(celdas()[n], `Más acciones de la foto ${n + 1}`);
     const menu = (): HTMLElement | null => el().querySelector<HTMLElement>('[role="menu"]');
-    let estiloTactil: HTMLStyleElement;
 
-    // Karma corre con ratón (hover: hover): el «⋯» se oculta. Se muestra a la fuerza para probarlo como en un móvil.
-    beforeEach(() => {
-      estiloTactil = document.createElement('style');
-      estiloTactil.textContent = '.fotos__mas { display: flex !important; }';
-      document.head.appendChild(estiloTactil);
-    });
-
-    afterEach(() => estiloTactil.remove());
+    // Con o sin ratón en la máquina que corre Karma, estas pruebas ven la miniatura como en un móvil.
+    beforeEach(() => fijarMandos(MANDOS_TACTIL));
 
     const opciones = (): string[] => Array.from(el().querySelectorAll('[role="menuitem"]')).map((o) => texto(o));
 
@@ -427,6 +456,33 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
       expect(anuncios).toHaveBeenCalledWith('Foto movida a la posición 2 de 3.');
       expect(document.activeElement).toBe(mas(1));
       expect(fixture.componentInstance.cambios).toBe(1);
+    });
+
+    it('sin ratón, las flechas en el asa mueven la foto y el foco sigue en su asa', () => {
+      montar(1, GUARDADAS);
+      const asa = celdas()[0].querySelector<HTMLButtonElement>('.fotos__asa')!;
+      asa.focus();
+      expect(document.activeElement).toBe(asa);
+      asa.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(celdas().map((c) => c.querySelector('img')!.getAttribute('src'))).toEqual([
+        `${FOTOS}/12?w=640&v=12`,
+        `${FOTOS}/11?w=640&v=11`,
+        `${FOTOS}/13?w=640&v=13`,
+      ]);
+      expect(document.activeElement).toBe(celdas()[1].querySelector('.fotos__asa'));
+    });
+
+    itSinReloj('sin ratón, al quitar una pendiente el foco pasa al «⋯» de la miniatura que ocupa su sitio', async () => {
+      montar(null);
+      elegir([jpg('f0.jpg'), jpg('f1.jpg')]);
+      await esperar();
+      mas(0).click();
+      fixture.detectChanges();
+      boton(el(), 'Quitar').click();
+      fixture.detectChanges();
+      expect(celdas().length).toBe(1);
+      expect(document.activeElement).toBe(mas(0));
     });
 
     itSinReloj('«Eliminar» del menú pide la confirmación de una guardada; en una pendiente dice «Quitar» y la quita sin preguntar', async () => {
