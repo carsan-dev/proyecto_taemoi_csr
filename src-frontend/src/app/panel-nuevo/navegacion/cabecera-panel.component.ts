@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/router';
-import { catchError, filter, map, of, switchMap, take } from 'rxjs';
+import { catchError, filter, map, of, startWith, switchMap, take } from 'rxjs';
 
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -142,10 +142,16 @@ export class CabeceraPanelComponent implements OnInit {
     catchError(() => of(false))), {
     initialValue: false,
   });
+  /** Se vuelve a pedir cuando «Mi perfil» cambia el nombre (`refrescar()`), sin recargar la página. */
   private readonly nombreSesion = toSignal(
-    this.permisos.obtener().pipe(
-      map((p) => p.nombreVisible ?? null),
-      catchError(() => of(null))
+    this.permisos.refrescado$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.permisos.obtener().pipe(
+          map((p) => p.nombreVisible ?? null),
+          catchError(() => of(null))
+        )
+      )
     ),
     { initialValue: null }
   );
@@ -157,6 +163,7 @@ export class CabeceraPanelComponent implements OnInit {
     return {
       propietario: roles.includes('ROLE_ADMIN'),
       soloProfesor: this.soloProfesor(),
+      gestion: roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
       profesor,
       misGrupos: profesor && this.capacidades().includes('MIS_GRUPOS'),
       plataforma: this.plataforma(),

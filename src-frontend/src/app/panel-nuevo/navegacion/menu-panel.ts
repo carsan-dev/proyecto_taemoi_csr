@@ -13,10 +13,13 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  * - `profesor`: `tieneRolProfesor` (ROLE_PROFESOR; Mi caja).
  * - `misGrupos`: `veMisGrupos` (ROLE_PROFESOR y la capacidad MIS_GRUPOS de `GET /api/auth/permisos`).
  * - `plataforma`: `esAdminPlataforma` (la sesión administradora de plataforma).
+ * - `gestion`: ROLE_ADMIN o ROLE_MANAGER (`/api/panel/**`); falla cerrado si el contexto no lo trae.
  */
-export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma';
+export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion';
 
-export type ContextoMenu = Readonly<Record<Condicion, boolean> & { soloProfesor?: boolean }>;
+export type ContextoMenu = Readonly<
+  Record<Exclude<Condicion, 'gestion'>, boolean> & { soloProfesor?: boolean; gestion?: boolean }
+>;
 
 export interface EntradaMenu {
   etiqueta: string;
@@ -143,7 +146,6 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/auditoriaSistema',
       '/plataformaErrores',
       '/plataformaLogos',
-      '/panel',
     ],
   },
 ];
@@ -151,8 +153,10 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
 /** La barra inferior del móvil (por debajo de 1024 px), además de «Más». */
 export const BARRA_INFERIOR: readonly IdSeccion[] = ['inicio', 'alumnos', 'tesoreria'];
 
-/** Menú de cuenta: sin entradas propias desde 8b-Z (se quitó «Diseño nuevo», decisión 256). */
-export const CUENTA_PANEL: readonly EntradaMenu[] = [];
+/** Menú de cuenta: «Mi perfil» para propietario y gestor (una sesión solo-profesor no usa `/api/panel/**`). */
+export const CUENTA_PANEL: readonly EntradaMenu[] = [
+  { etiqueta: 'Mi perfil', ruta: '/panel/mi-perfil', icono: 'bi-person', condicion: 'gestion' },
+];
 
 /** Los enlaces legales del pie público (decisión 259): en «Más» y en la cuenta, junto a «Configurar cookies». */
 export const ENLACES_LEGALES: readonly EntradaMenu[] = [

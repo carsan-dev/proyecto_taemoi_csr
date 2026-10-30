@@ -267,7 +267,7 @@ export class InicioComponent implements OnInit, OnDestroy {
         .pipe(catchError(() => of(null)))
         .subscribe((p) => {
           this.cumpleanos = p?.cumpleanos === true;
-          this.saludar(p?.nombreVisible);
+          this.saludar(p?.nombreSaludo);
         })
     );
     this.suscripciones.add(this.auth.getRoles().subscribe((roles) => (this.esAdmin = (roles ?? []).includes('ROLE_ADMIN'))));
@@ -285,8 +285,8 @@ export class InicioComponent implements OnInit, OnDestroy {
   }
 
   /** Pinta el saludo solo en la primera visita de la sesión y lo marca; después el texto no cambia. */
-  private saludar(nombreVisible: string | null | undefined): void {
-    const nombre = (nombreVisible ?? '').trim().split(/\s+/)[0];
+  private saludar(nombreSaludo: string | null | undefined): void {
+    const nombre = (nombreSaludo ?? '').trim();
     if (!this.primeraVisita || !nombre) {
       return;
     }

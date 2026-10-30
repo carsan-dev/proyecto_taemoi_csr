@@ -1,0 +1,70 @@
+<main class="pn mi-perfil" pnAcento aria-labelledby="mi-perfil-titulo">
+  <div class="mi-perfil__pagina">
+    <header class="cabecera">
+      <h1 id="mi-perfil-titulo">Mi perfil</h1>
+      <p class="subtitulo">Solo cambia lo que ves en tu panel.</p>
+    </header>
+
+    @if (estado() === 'cargando') {
+    <pn-esqueleto etiqueta="Cargando tu perfil…">
+      <div class="esqueleto"></div>
+      <div class="esqueleto"></div>
+    </pn-esqueleto>
+    } @else if (estado() === 'error') {
+    <pn-bloque-error [titulo]="textos.errorCarga" (reintentar)="cargar()" />
+    } @else {
+    <fieldset class="formulario" [disabled]="guardando()">
+      <legend class="oculto">Tu perfil</legend>
+
+      <section class="tarjeta" aria-labelledby="nombre-titulo">
+        <h2 id="nombre-titulo">Cómo te llamamos</h2>
+        <label for="nombre-panel">Nombre para el panel <span class="opcional">opcional</span></label>
+        <input id="nombre-panel" type="text" autocomplete="off" [attr.maxlength]="maxNombre" [value]="nombre()"
+          aria-describedby="nombre-ayuda nombre-contador" (input)="escribirNombre($event)" />
+        <div class="ayuda-fila">
+          @if (nombreBase(); as base) { <p id="nombre-ayuda" class="ayuda">Vacío, verás «{{ base }}».</p> }
+          @else { <span id="nombre-ayuda"></span> }
+          <p id="nombre-contador" class="contador">{{ nombre().length }} / {{ maxNombre }}</p>
+        </div>
+      </section>
+
+      <section class="tarjeta" aria-labelledby="cumple-titulo">
+        <h2 id="cumple-titulo">Cumpleaños</h2>
+        @if (cumpleFicha()) {
+        <p class="fecha-ficha">{{ textoFicha() }}</p>
+        <p class="ayuda">Sale de tu ficha de alumno. Se cambia allí.</p>
+        } @else {
+        <div class="grupo" role="group" aria-labelledby="cumple-etiqueta">
+          <span id="cumple-etiqueta" class="etiqueta">Día y mes <span class="opcional">opcional</span></span>
+          <div class="fila-campos">
+            <select id="cumple-dia" class="dia" aria-label="Día" aria-describedby="cumple-ayuda cumple-error"
+              [attr.aria-invalid]="errorCumple() ? 'true' : null" (change)="elegirDia($event)">
+              <option value="" [selected]="dia() === null">—</option>
+              @for (d of dias(); track d) { <option [value]="d" [selected]="dia() === d">{{ d }}</option> }
+            </select>
+            <select id="cumple-mes" class="mes" aria-label="Mes" aria-describedby="cumple-ayuda cumple-error"
+              [attr.aria-invalid]="errorCumple() ? 'true' : null" (change)="elegirMes($event)">
+              <option value="" [selected]="mes() === null">—</option>
+              @for (m of meses; track m; let i = $index) { <option [value]="i + 1" [selected]="mes() === i + 1">{{ m }}</option> }
+            </select>
+          </div>
+          <p id="cumple-error" class="error">{{ errorCumple() ? textos.soloUno : '' }}</p>
+          <p id="cumple-ayuda" class="ayuda">Sin año. Ese día te espera una sorpresa.</p>
+        </div>
+        }
+      </section>
+    </fieldset>
+
+    @if (errorGuardado()) { <p class="error error-guardado" role="alert">{{ errorGuardado() }}</p> }
+    }
+
+    <span class="oculto pendientes-estado" role="status" aria-live="polite">@if (hayCambios()) { {{ pendientes() }} {{ pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar }</span>
+    @if (hayCambios()) {
+    <div class="pendientes" role="region" aria-label="Cambios sin guardar">
+      <strong class="pendientes-aviso">{{ pendientes() }} {{ pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar</strong>
+      <button class="texto" type="button" (click)="descartar()" [disabled]="guardando()">Descartar</button>
+      <button pnOcupado class="primario" type="button" [ocupado]="guardando()" textoOcupado="Guardando…" (click)="guardar()">Guardar cambios</button>
+    </div>
+    }
+  </div>
+</main>

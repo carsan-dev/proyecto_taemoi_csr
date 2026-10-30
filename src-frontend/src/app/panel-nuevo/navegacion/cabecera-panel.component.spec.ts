@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
@@ -81,6 +81,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   let roles: string[];
   let refrescar: jasmine.Spy;
   let reiniciarPermisos: jasmine.Spy;
+  let refrescadoPermisos: Subject<void>;
   let recargar: jasmine.Spy;
   let logout: jasmine.Spy;
   let total: ReturnType<typeof signal<number>>;
@@ -114,6 +115,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
             obtener: () => of(datosPermisos),
             capacidades: () => of(datosPermisos.capacidades),
             reiniciar: reiniciarPermisos,
+            refrescado$: refrescadoPermisos,
           },
         },
         { provide: SolicitudesContadorService, useValue: { total, refrescar, reiniciar: () => undefined } },
@@ -145,6 +147,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     roles = ['ROLE_ADMIN', 'ROLE_PROFESOR'];
     refrescar = jasmine.createSpy('refrescar');
     reiniciarPermisos = jasmine.createSpy('reiniciar');
+    refrescadoPermisos = new Subject<void>();
     recargar = jasmine.createSpy('recargar');
     logout = jasmine.createSpy('logout');
     total = signal(0);
@@ -459,6 +462,37 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(boton.getAttribute('aria-haspopup')).toBe('menu');
     });
 
+    itSinReloj('«Mi perfil» en la cuenta del propietario y del gestor', async () => {
+      for (const rolesCaso of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
+        TestBed.resetTestingModule();
+        roles = rolesCaso;
+        await montar();
+        responderMarca();
+        const enlace = abrirCuenta().querySelector<HTMLAnchorElement>('a[href="/panel/mi-perfil"]');
+        expect(enlace?.textContent?.trim()).withContext(rolesCaso.join()).toBe('Mi perfil');
+        http.verify();
+      }
+    });
+
+    itSinReloj('«Mi perfil» no sale en la cuenta de un solo-profesor', async () => {
+      roles = ['ROLE_PROFESOR'];
+      datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: ['MI_CAJA'] });
+      await montar('/mi-caja');
+      responderMarca();
+      expect(abrirCuenta().querySelector('a[href="/panel/mi-perfil"]')).toBeNull();
+    });
+
+    itSinReloj('el nombre del botón se actualiza tras `refrescado$`, sin recargar', async () => {
+      await montar();
+      responderMarca();
+      const nombre = () => el().querySelector('#pn-cuenta-boton .pn-cab__cuenta-nombre')?.textContent?.trim();
+      expect(nombre()).toBe('Carla S.');
+      datosPermisos = permisos({ nombreVisible: 'Luci' });
+      refrescadoPermisos.next();
+      fixture.detectChanges();
+      expect(nombre()).toBe('Luci');
+    });
+
     itSinReloj('enlaces legales y «Configurar cookies»', async () => {
       await montar();
       responderMarca();
@@ -508,15 +542,15 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     });
 
     for (const rolesSesion of [['ROLE_ADMIN'], ['ROLE_MANAGER']]) {
-      itSinReloj(`8b-Z: ${rolesSesion.join(', ')} no pinta el grupo Panel vacío ni su separador`, async () => {
+      itSinReloj(`8b-3o: ${rolesSesion.join(', ')} ve el grupo Panel solo con «Mi perfil»`, async () => {
         roles = rolesSesion;
         await montar();
         responderMarca();
         const menu = abrirCuenta();
-        expect(menu.querySelector('[role="group"][aria-label="Panel"]')).toBeNull();
+        const panel = menu.querySelector('[role="group"][aria-label="Panel"]')!;
+        expect(Array.from(panel.querySelectorAll('[role="menuitem"]')).map((o) => o.textContent?.trim())).toEqual(['Mi perfil']);
         expect(Array.from(menu.querySelectorAll('.pn-menu__grupo')).map((g) => g.getAttribute('aria-label')))
-          .toEqual(['Legal', 'Sesión']);
-        expect(menu.querySelector('.pn-menu__grupo + .pn-menu__grupo')?.getAttribute('aria-label')).toBe('Sesión');
+          .toEqual(['Panel', 'Legal', 'Sesión']);
         expect(menu.querySelector('.pn-menu__titulo')?.textContent?.trim()).toBe('Legal');
         const botones = Array.from(menu.querySelectorAll<HTMLButtonElement>('button'));
         expect(botones.some((b) => /diseño/i.test(b.textContent ?? ''))).toBeFalse();

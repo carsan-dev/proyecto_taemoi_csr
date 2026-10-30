@@ -11,6 +11,7 @@ import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-g
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
+import { MiPerfilComponent } from './panel-nuevo/mi-perfil/mi-perfil.component';
 import { ProductosAlumnoPanelComponent } from './panel-nuevo/productos-alumno/productos-alumno-panel.component';
 import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
 import { EditarGrupoComponent } from './panel-nuevo/grupos/editar-grupo.component';
@@ -77,6 +78,7 @@ const REDISENADAS: Rediseno[] = [
   ['auditoriaSistema', RegistroAccionesComponent, PROPIETARIO],
   ['convocatoriasListar', ConvocatoriasComponent, GESTION],
   ['configuracion-sistema', ConfiguracionPanelComponent, PROPIETARIO],
+  ['panel/mi-perfil', MiPerfilComponent, GESTION],
 ];
 
 /** Permisos de una sesión (sin el interruptor del diseño, que desde 8b-Z no cuenta). */
@@ -122,7 +124,8 @@ describe('app routes', () => {
       expect(routes.filter((route) => route.path === '**').length).toBe(2);
     });
 
-    it('la salida sin guardar sigue en Preinscripciones y en Productos y cargos', () => {
+    it('la salida sin guardar sigue en Preinscripciones, Productos y cargos y Mi perfil', () => {
+      expect(routes.find((route) => route.path === 'panel/mi-perfil')!.canDeactivate).toEqual([salirSinGuardarGuard]);
       expect(routes.find((route) => route.path === 'preinscripciones')!.canDeactivate).toEqual([salirSinGuardarGuard]);
       expect(routes.find((route) => route.path === 'alumnos/:id/productos')!.canDeactivate).toEqual([salirSinGuardarGuard]);
     });
