@@ -37,12 +37,6 @@ describe('grupos-vista (8b-3c)', () => {
     expect(resumenHorario([T(1, 'Lunes', '18:00'), T(2, 'Miércoles', '19:00'), T(3, 'Viernes', '18:00')])).toBe('3 turnos');
   });
 
-  it('horario resumido con otro separador entre los días y la hora', () => {
-    expect(resumenHorario([T(1, 'Lunes', '18:00'), T(2, 'Miércoles', '18:00')], ' ')).toBe('L y X 18:00');
-    expect(resumenHorario([T(1, 'Lunes', '18:00'), T(2, 'Miércoles', '19:00')], ' ')).toBe('2 turnos');
-    expect(resumenHorario([], ' ')).toBe('Sin turnos');
-  });
-
   it('secciones en el orden del catálogo, cada una con sus grupos en el orden de hoy y su total de alumnos', () => {
     const disciplinas = [
       { codigo: 'TAEKWONDO', nombre: 'Taekwondo' },

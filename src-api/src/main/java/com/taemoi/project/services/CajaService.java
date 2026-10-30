@@ -33,7 +33,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.taemoi.project.acceso.PredicadosAlcance;
 import com.taemoi.project.dtos.request.CajaRequests;
 import com.taemoi.project.dtos.response.CajaDTOs;
-import com.taemoi.project.dtos.response.TurnoDeGrupoResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Cobro;
 import com.taemoi.project.entities.EntregaCaja;
@@ -194,7 +193,7 @@ public class CajaService {
 		for (Object[] f : filas) {
 			alumnosConCargos.add((Long) f[1]);
 		}
-		Map<Long, List<CajaDTOs.GrupoConHorario>> gruposPorAlumno = gruposConHorario(grupos, alumnosConCargos);
+		Map<Long, List<String>> gruposPorAlumno = nombresDeGrupos(grupos, alumnosConCargos);
 		Set<Long> vencidos = pendienteVencido.cargosVencidosDeAlumnos(alumnosConCargos);
 		List<CajaDTOs.CargoPendienteProfesor> resultado = new ArrayList<>(filas.size());
 		for (Object[] f : filas) {
@@ -206,27 +205,20 @@ public class CajaService {
 	}
 
 	/**
-	 * Por alumno, los grupos indicados en los que está, por nombre, con sus turnos. Una consulta con los datos que se
-	 * muestran (sin cargar entidades). El filtro por escuela de {@code @TenantId} lo aplican {@code Grupo} y
-	 * {@code Alumno}; los turnos cuelgan del grupo por su clave ajena ({@code LEFT JOIN g.turnos}).
+	 * Por alumno, los nombres de los grupos indicados en los que está. Una consulta con los datos que se muestran (sin
+	 * cargar entidades ni turnos). El filtro por escuela de {@code @TenantId} lo aplican {@code Grupo} y {@code Alumno}.
 	 */
-	private Map<Long, List<CajaDTOs.GrupoConHorario>> gruposConHorario(Set<Long> grupos, Set<Long> alumnosConCargos) {
-		Map<Long, Map<Long, CajaDTOs.GrupoConHorario>> porAlumno = new HashMap<>();
+	private Map<Long, List<String>> nombresDeGrupos(Set<Long> grupos, Set<Long> alumnosConCargos) {
+		Map<Long, List<String>> porAlumno = new HashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT a.id, g.id, g.nombre, t.id, t.diaSemana, t.horaInicio, t.horaFin
-				FROM Grupo g JOIN g.alumnos a LEFT JOIN g.turnos t
+				SELECT a.id, g.nombre
+				FROM Grupo g JOIN g.alumnos a
 				WHERE g.id IN :grupos AND a.id IN :alumnos
-				ORDER BY g.nombre, g.id, t.id""", Object[].class)
+				ORDER BY g.nombre, g.id""", Object[].class)
 				.setParameter("grupos", grupos).setParameter("alumnos", alumnosConCargos).getResultList()) {
-			CajaDTOs.GrupoConHorario grupo = porAlumno.computeIfAbsent((Long) f[0], id -> new LinkedHashMap<>())
-					.computeIfAbsent((Long) f[1], id -> new CajaDTOs.GrupoConHorario((String) f[2], new ArrayList<>()));
-			if (f[3] != null) {
-				grupo.turnos().add(new TurnoDeGrupoResumenDTO((Long) f[3], (String) f[4], (String) f[5], (String) f[6]));
-			}
+			porAlumno.computeIfAbsent((Long) f[0], id -> new ArrayList<>()).add((String) f[1]);
 		}
-		Map<Long, List<CajaDTOs.GrupoConHorario>> resultado = new HashMap<>();
-		porAlumno.forEach((alumno, suyos) -> resultado.put(alumno, List.copyOf(suyos.values())));
-		return resultado;
+		return porAlumno;
 	}
 
 	/**

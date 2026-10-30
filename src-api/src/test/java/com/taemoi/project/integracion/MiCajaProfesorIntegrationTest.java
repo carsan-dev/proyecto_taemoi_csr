@@ -60,8 +60,8 @@ import jakarta.servlet.http.Cookie;
  * <li>{@code venta} en {@code CobroCaja}: verdadero en la venta del catálogo del profesor, falso al cobrar un cargo de la
  * gestión; deshacer con NO_HUBO_VENTA sigue funcionando si la gestión desmarca el producto después.</li>
  * <li>{@code GET /api/caja/profesor/cargos-pendientes}: {@code vencido} con la regla de la tesorería
- * ({@code PendienteVencidoService}, hoy fijado con el {@code Clock} simulado) y {@code grupos} con solo SUS grupos y sus
- * turnos, sin N+1.</li>
+ * ({@code PendienteVencidoService}, hoy fijado con el {@code Clock} simulado) y {@code grupos} con solo los nombres de SUS
+ * grupos, sin N+1.</li>
  * </ul>
  * Escuela sintética ({@link EscuelaConSedesDePrueba}) y otra para el aislamiento. Datos inventados.
  */
@@ -71,7 +71,7 @@ import jakarta.servlet.http.Cookie;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 
-	/** Las cinco de la sesión más las tres de {@code cargos-pendientes} (cargos, grupos con turnos y vencidos). */
+	/** Las cinco de la sesión más las tres de {@code cargos-pendientes} (cargos, nombres de grupos y vencidos). */
 	private static final int SENTENCIAS_POR_COBRAR = 8;
 
 	@Autowired MockMvc mvc;
@@ -425,7 +425,7 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void porCobrar_grupos_soloLosDelProfesor_conSusTurnos() throws Exception {
+	void porCobrar_grupos_soloLosDelProfesor_porNombre() throws Exception {
 		long gB = grupo("IT 3O Grupo B " + e.marca, e.sA);
 		long gA = grupo("IT 3O Grupo A " + e.marca, e.sA);
 		long ajeno = grupo("IT 3O Grupo Ajeno " + e.marca, e.sA);
@@ -433,9 +433,6 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		asignar(e, prof, gA);
 		profesor(e, "profajeno", ajeno);
 		String token = e.token(jwtService, usuarios, prof);
-		turno(gA, "Miércoles", "18:00", "19:00");
-		turno(gA, "Lunes", "18:00", "19:00");
-		turno(ajeno, "Viernes", "20:00", "21:00");
 		long alumno = alumno("GRUPOS", "PORCOBRAR", true, gA, gB, ajeno);
 		long producto = producto("LLAVERO 3O", Boolean.FALSE);
 		long c1 = cargo(alumno, producto, "LLAVERO 3O", "2026-02-01 12:00:00");
@@ -445,18 +442,10 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(2, cargos.size());
 		for (long c : List.of(c1, c2)) {
 			JsonNode grupos = fila(cargos, "cargoId", c).get("grupos");
-			assertEquals(List.of(nombreGrupo(gA), nombreGrupo(gB)), textosDe(grupos, "nombre"));
-			JsonNode turnos = grupos.get(0).get("turnos");
-			assertEquals(List.of("Miércoles", "Lunes"), textosDe(turnos, "diaSemana"));
-			assertEquals("18:00", turnos.get(0).get("horaInicio").asText());
-			assertEquals("19:00", turnos.get(0).get("horaFin").asText());
-			assertEquals(0, grupos.get(1).get("turnos").size(), "grupo sin turnos");
+			assertEquals(List.of(nombreGrupo(gA), nombreGrupo(gB)), textos(grupos));
 		}
 
 		// Otra escuela, con un cargo propio: ni sus cargos ni sus grupos cruzan.
-		jdbc.update("""
-				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
-				VALUES ('Lunes', '18:00', '19:00', NULL, ?, ?)""", otra.gA, otra.org);
 		jdbc.update("""
 				INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion,
 				  organizacion_id, sede_id)
@@ -466,7 +455,7 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, deOtra.get(0).get("grupos").size());
 		assertFalse(deOtra.toString().contains(e.marca), deOtra.toString());
 		for (JsonNode c : deOtra) {
-			assertTrue(textosDe(c.get("grupos"), "nombre").stream().noneMatch(n -> n.contains(e.marca)), c.toString());
+			assertTrue(textos(c.get("grupos")).stream().noneMatch(n -> n.contains(e.marca)), c.toString());
 		}
 	}
 
@@ -494,7 +483,6 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		long g = grupo("IT 3O NMas1 " + e.marca, e.sA);
 		long prof = profesor(e, "profpornmas1", g);
 		String token = e.token(jwtService, usuarios, prof);
-		turno(g, "Lunes", "18:00", "19:00");
 		long pMens = productoDeTipo("CUOTA 3O NMAS1", "MENSUALIDAD", "MENSUALIDAD_3O_N");
 		cargo(alumno("UNO", "PORNMAS", true, g), pMens, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
 		leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
@@ -502,8 +490,6 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 
 		long g2 = grupo("IT 3O NMas1 B " + e.marca, e.sB);
 		asignar(e, prof, g2);
-		turno(g2, "Martes", "19:00", "20:00");
-		turno(g2, "Jueves", "19:00", "20:00");
 		for (int i = 0; i < 4; i++) {
 			long otro = alumno("X" + i, "PORNMAS", true, g, g2);
 			cargo(otro, pMens, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
@@ -545,12 +531,6 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 			vencidos.addAll(ids(a.get("detalle"), "productoAlumnoId"));
 		}
 		return vencidos;
-	}
-
-	private void turno(long grupo, String dia, String inicio, String fin) {
-		jdbc.update("""
-				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
-				VALUES (?, ?, ?, NULL, ?, ?)""", dia, inicio, fin, grupo, e.org);
 	}
 
 	private long productoDeTipo(String concepto, String tipo, String codigo) {
@@ -676,12 +656,6 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 	private static List<String> textos(JsonNode lista) {
 		List<String> textos = new ArrayList<>();
 		lista.forEach(n -> textos.add(n.asText()));
-		return textos;
-	}
-
-	private static List<String> textosDe(JsonNode lista, String campo) {
-		List<String> textos = new ArrayList<>();
-		lista.forEach(n -> textos.add(n.get(campo).asText()));
 		return textos;
 	}
 

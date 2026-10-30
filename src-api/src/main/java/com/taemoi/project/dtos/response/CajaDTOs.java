@@ -28,11 +28,7 @@ public final class CajaDTOs {
 	 */
 	public record CargoPendienteProfesor(Long cargoId, Long alumnoId, String alumnoNombre, String alumnoApellidos,
 			String concepto, BigDecimal importe, Date fechaAsignacion, Long sedeId, String sedeNombre, boolean vencido,
-			List<GrupoConHorario> grupos) {
-	}
-
-	/** Pieza 8b-3p: un grupo con sus turnos, los mismos datos que {@code ProfesorDTOs.Grupo}. */
-	public record GrupoConHorario(String nombre, List<TurnoDeGrupoResumenDTO> turnos) {
+			List<String> grupos) {
 	}
 
 	/**

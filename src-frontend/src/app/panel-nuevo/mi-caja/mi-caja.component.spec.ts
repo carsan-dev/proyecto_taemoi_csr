@@ -185,20 +185,19 @@ describe('MiCajaPanelComponent', () => {
     expect(texto()).not.toContain('vencido');
   });
 
-  it('bajo el nombre, sus grupos con el horario; con varios, separados por coma', () => {
-    const turno = (id: number, diaSemana: string, horaInicio: string) => ({ id, diaSemana, horaInicio, horaFin: '19:00' });
+  it('bajo el nombre, solo el nombre de sus grupos; con varios, separados por coma', () => {
     crear({
       cargos: of([
-        { ...cargo(1, 3, 'Lucía', 'Prado', 'Mensualidad octubre', 35), grupos: [{ nombre: 'Taekwondo infantil', turnos: [turno(1, 'Lunes', '18:00'), turno(2, 'Miércoles', '18:00')] }] },
-        { ...cargo(2, 3, 'Lucía', 'Prado', 'Camiseta', 12), grupos: [{ nombre: 'Taekwondo infantil', turnos: [turno(1, 'Lunes', '18:00'), turno(2, 'Miércoles', '18:00')] }] },
+        { ...cargo(1, 3, 'Lucía', 'Prado', 'Mensualidad octubre', 35), grupos: ['Taekwondo infantil'] },
+        { ...cargo(2, 3, 'Lucía', 'Prado', 'Camiseta', 12), grupos: ['Taekwondo infantil'] },
         {
           ...cargo(3, 5, 'Andrés', 'Gil', 'Mensualidad octubre', 30),
-          grupos: [{ nombre: 'Kickboxing', turnos: [turno(3, 'Martes', '19:00')] }, { nombre: 'Pilates', turnos: [] }],
+          grupos: ['Kickboxing', 'Pilates'],
         },
       ]),
     });
     const lineas = Array.from(el().querySelectorAll('.mi-caja__cab-alumno')).map((c) => limpio(c.querySelector('.mi-caja__secundario')?.textContent));
-    expect(lineas).toEqual(['Kickboxing · M 19:00, Pilates · Sin turnos', 'Taekwondo infantil · L y X 18:00']);
+    expect(lineas).toEqual(['Kickboxing, Pilates', 'Taekwondo infantil']);
   });
 
   it('sin grupos no pinta la línea secundaria', () => {

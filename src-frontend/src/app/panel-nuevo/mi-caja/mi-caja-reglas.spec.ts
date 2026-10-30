@@ -56,10 +56,9 @@ describe('Mi caja: reglas de cargos y pedidos', () => {
     expect(agruparPorAlumno(CARGOS, 'lucia').map((g) => g.nombre)).toEqual(['Lucía Prado']);
   });
 
-  it('la línea de grupos es por alumno: nombre y horario, separados por coma; sin grupos, vacía', () => {
-    const turno = { id: 1, diaSemana: 'Lunes', horaInicio: '18:00', horaFin: '19:00' };
-    const conGrupos = [{ ...CARGOS[0], grupos: [{ nombre: 'Infantil', turnos: [turno] }, { nombre: 'Adultos', turnos: [] }] }];
-    expect(agruparPorAlumno(conGrupos)[0].lineaGrupos).toBe('Infantil · L 18:00, Adultos · Sin turnos');
+  it('la línea de grupos es por alumno: solo los nombres, separados por coma; sin grupos, vacía', () => {
+    const conGrupos = [{ ...CARGOS[0], grupos: ['Infantil lunes y miércoles tarde', 'Adultos'] }];
+    expect(agruparPorAlumno(conGrupos)[0].lineaGrupos).toBe('Infantil lunes y miércoles tarde, Adultos');
     expect(agruparPorAlumno(CARGOS)[0].lineaGrupos).toBe('');
   });
 

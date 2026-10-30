@@ -1,4 +1,3 @@
-import { TurnoDeGrupoResumen } from './grupo-resumen';
 
 /**
  * Caja de sede (pieza 6b-3). Espejo de CajaDTOs.java y CajaRequests.java de la API (`/api/caja`). Los importes
@@ -137,12 +136,6 @@ export interface CrearMovimientoCaja {
 /** Por qué se deshace un cobro del profesor: sigue debiéndose, o la venta no llegó a hacerse (cancela el cargo). */
 export type MotivoDeshacerCobro = 'AUN_NO_PAGADO' | 'NO_HUBO_VENTA';
 
-/** CajaDTOs.GrupoConHorario: un grupo del profesor en el que está el alumno, con sus turnos. */
-export interface GrupoConHorario {
-  nombre: string;
-  turnos: TurnoDeGrupoResumen[];
-}
-
 /** CajaDTOs.CargoPendienteProfesor: un cargo pendiente de un alumno de los grupos del profesor. */
 export interface CargoPendienteProfesor {
   cargoId: number;
@@ -156,7 +149,8 @@ export interface CargoPendienteProfesor {
   sedeNombre: string | null;
   /** Con la regla de la tesorería: lo decide la API. */
   vencido: boolean;
-  grupos: GrupoConHorario[];
+  /** Nombres de SUS grupos (los del profesor) en los que está el alumno. */
+  grupos: string[];
 }
 
 /** CajaDTOs.ProductoVendible: producto del catálogo que el profesor puede vender (precio fijo). */
