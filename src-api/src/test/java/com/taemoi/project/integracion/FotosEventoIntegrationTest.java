@@ -14,8 +14,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -51,6 +54,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
@@ -66,6 +70,7 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.JwtService;
 
 import jakarta.persistence.EntityManagerFactory;
@@ -114,6 +119,7 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired MembresiaRepository membresias;
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired EntityManagerFactory emf;
+	@Autowired EventoFotoService eventoFotoService;
 	@Value("${app.base.url}") String baseUrl;
 
 	final String sufijo = UUID.randomUUID().toString().substring(0, 8);
@@ -507,6 +513,61 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(ficherosAntes + 2, ficheros(ORG1));
 		assertEquals(TOPE, jdbc.queryForObject("SELECT COUNT(DISTINCT orden) FROM evento_foto WHERE evento_id = ?",
 				Integer.class, evento), "Cada foto con su orden");
+	}
+
+	// ------------------------------------------------------------------ límites de la subida
+
+	@Test
+	void masDe60Megapixeles_es400ConMensaje_sinDejarNada() throws Exception {
+		long evento = evento(ORG1, true);
+		long ficherosAntes = ficheros(ORG1);
+
+		MockHttpServletResponse r = mvc.perform(subida(evento, cabeceraPng(10_000, 6_001), "foto.png", "image/png")
+				.cookie(jwt(tokenGestor))).andReturn().getResponse();
+
+		assertEquals(400, r.getStatus(), r.getContentAsString());
+		assertEquals("La foto es demasiado grande. Usa una de menos de 60 megapíxeles.",
+				json.readTree(r.getContentAsString()).get("mensaje").asText());
+		assertEquals(0, filas(evento));
+		assertEquals(ficherosAntes, ficheros(ORG1));
+	}
+
+	@Test
+	void sinHuecoParaProcesar_es503ConMensaje_yAlLiberarseFunciona() throws Exception {
+		long evento = evento(ORG1, true);
+		long ficherosAntes = ficheros(ORG1);
+		Semaphore procesado = (Semaphore) ReflectionTestUtils.getField(eventoFotoService, "procesado");
+		Object espera = ReflectionTestUtils.getField(eventoFotoService, "esperaProcesado");
+		ReflectionTestUtils.setField(eventoFotoService, "esperaProcesado", Duration.ofMillis(50));
+		int huecos = procesado.drainPermits();
+		try {
+			MockHttpServletResponse r = mvc.perform(subida(evento, png(), "foto.png", "image/png").cookie(jwt(tokenGestor)))
+					.andReturn().getResponse();
+
+			assertEquals(503, r.getStatus(), r.getContentAsString());
+			assertEquals("El servidor está ocupado. Reintenta en un momento.",
+					json.readTree(r.getContentAsString()).get("mensaje").asText());
+			assertEquals(0, filas(evento));
+			assertEquals(ficherosAntes, ficheros(ORG1));
+		} finally {
+			procesado.release(huecos);
+			ReflectionTestUtils.setField(eventoFotoService, "esperaProcesado", espera);
+		}
+		subir(evento, tokenGestor);
+	}
+
+	/** Leer y subir son independientes: con la subida atascada, las imágenes se siguen sirviendo. */
+	@Test
+	void sinHuecoParaProcesar_laLecturaSigue() throws Exception {
+		long evento = evento(ORG1, true);
+		long fotoId = subir(evento, tokenGestor).get("id").asLong();
+		Semaphore procesado = (Semaphore) ReflectionTestUtils.getField(eventoFotoService, "procesado");
+		int huecos = procesado.drainPermits();
+		try {
+			assertEquals(200, estado(get("/api/eventos/" + evento + "/fotos/" + fotoId).param("w", "1000")));
+		} finally {
+			procesado.release(huecos);
+		}
 	}
 
 	// ------------------------------------------------------------------ orden
@@ -930,6 +991,15 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 
 	private static Cookie jwt(String token) {
 		return new Cookie("jwt", token);
+	}
+
+	/** Firma e IHDR: declara el tamaño sin pesar nada. */
+	private static byte[] cabeceraPng(int ancho, int alto) {
+		ByteBuffer png = ByteBuffer.allocate(33);
+		png.put(new byte[] { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A });
+		png.putInt(13).put(new byte[] { 'I', 'H', 'D', 'R' }).putInt(ancho).putInt(alto);
+		png.put(new byte[] { 8, 2, 0, 0, 0 });
+		return png.array();
 	}
 
 	private static byte[] png() throws IOException {

@@ -1,10 +1,13 @@
 package com.taemoi.project.services;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,6 +23,7 @@ import com.taemoi.project.entities.EventoFoto;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.evento.FotoEventoNoEncontradaException;
+import com.taemoi.project.exceptions.evento.ServidorOcupadoException;
 import com.taemoi.project.exceptions.evento.TopeFotosEventoException;
 import com.taemoi.project.repositories.EventoFotoRepository;
 import com.taemoi.project.repositories.EventoRepository;
@@ -42,6 +46,10 @@ public class EventoFotoService {
 
 	public static final int TOPE_POR_EVENTO = 40;
 
+	/** Una foto de 60 megapíxeles ocupa cientos de MB mientras se procesa, y el panel sube varias en paralelo. */
+	private static final int PROCESADOS_SIMULTANEOS = 2;
+	private static final String MENSAJE_OCUPADO = "El servidor está ocupado. Reintenta en un momento.";
+
 	private static final Logger log = LoggerFactory.getLogger(EventoFotoService.class);
 
 	private final EventoRepository eventos;
@@ -49,6 +57,10 @@ public class EventoFotoService {
 	private final ImagenRepository imagenes;
 	private final ImagenService imagenService;
 	private final TransactionTemplate transaccion;
+	/** Propio y no el de {@code RespuestaImagen}: subir no debe dejar sin hueco a quien lee, ni al revés. */
+	private final Semaphore procesado = new Semaphore(PROCESADOS_SIMULTANEOS, true);
+	/** No es constante para poder acortarla en los tests. */
+	private Duration esperaProcesado = Duration.ofSeconds(30);
 
 	public EventoFotoService(EventoRepository eventos, EventoFotoRepository fotos, ImagenRepository imagenes,
 			ImagenService imagenService, PlatformTransactionManager transacciones) {
@@ -72,6 +84,7 @@ public class EventoFotoService {
 	/**
 	 * @throws EventoNoEncontradoException si el evento no existe o es de otra escuela
 	 * @throws TopeFotosEventoException    si ya tiene {@value #TOPE_POR_EVENTO} fotos
+	 * @throws ServidorOcupadoException    si no hay hueco para procesar la foto
 	 */
 	public EventoFoto subir(Long eventoId, MultipartFile archivo) throws IOException {
 		// Sin bloquear y antes de procesar la imagen, para no gastar en lo que ya se sabe que no entra. El tope que vale
@@ -80,7 +93,7 @@ public class EventoFotoService {
 			throw eventoNoEncontrado(eventoId);
 		}
 		comprobarTope(eventoId);
-		Imagen imagen = imagenService.guardarImagenFotoEvento(archivo);
+		Imagen imagen = procesar(archivo);
 		try {
 			return transaccion.execute(estado -> registrar(eventoId, imagen));
 		} catch (RuntimeException | Error e) {
@@ -149,6 +162,23 @@ public class EventoFotoService {
 			return suyasImagenes;
 		});
 		borradas.forEach(this::borrarFichero);
+	}
+
+	/** El semáforo se suelta antes de la transacción: con él cogido, una subida esperaría con la fila bloqueada. */
+	private Imagen procesar(MultipartFile archivo) throws IOException {
+		try {
+			if (!procesado.tryAcquire(esperaProcesado.toMillis(), TimeUnit.MILLISECONDS)) {
+				throw new ServidorOcupadoException(MENSAJE_OCUPADO);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new ServidorOcupadoException(MENSAJE_OCUPADO);
+		}
+		try {
+			return imagenService.guardarImagenFotoEvento(archivo);
+		} finally {
+			procesado.release();
+		}
 	}
 
 	private EventoFoto registrar(Long eventoId, Imagen imagen) {

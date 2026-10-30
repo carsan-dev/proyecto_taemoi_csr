@@ -33,6 +33,7 @@ import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.evento.FotoEventoNoEncontradaException;
+import com.taemoi.project.exceptions.evento.ServidorOcupadoException;
 import com.taemoi.project.exceptions.evento.TopeFotosEventoException;
 import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.EventoService;
@@ -116,6 +117,8 @@ public class EventoFotoController {
 			return ResponseEntity.badRequest().body(Map.of("mensaje", EventoController.motivo(e)));
 		} catch (TopeFotosEventoException e) {
 			return error(HttpStatus.CONFLICT, e.getMessage());
+		} catch (ServidorOcupadoException e) {
+			return error(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
 		} catch (IOException | RuntimeException e) {
 			// Sin el mensaje: puede llevar la ruta del fichero.
 			logger.error("Error al guardar una foto de evento: eventoId={} ext={} contentType={} causa={}", eventoId,
