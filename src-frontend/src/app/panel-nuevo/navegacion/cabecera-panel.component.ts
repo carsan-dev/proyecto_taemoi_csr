@@ -97,6 +97,11 @@ type IdMenu = IdSeccion | 'cuenta';
  *   al entrar y al navegar, nunca por temporizador.
  * - Las condiciones de cada opción son las de la cabecera de hoy (`menu-panel.ts`).
  */
+/** Pasar lista (`/mis-grupos/:id/lista`, `/gruposListar/:id/lista`): su barra fija de guardar sustituye a la navegación inferior. */
+export function ocultaBarraInferior(url: string): boolean {
+  return /^\/(mis-grupos|gruposListar)\/\d+\/lista(?:[?#]|$)/.test(url);
+}
+
 @Component({
   selector: 'app-cabecera-panel',
   standalone: true,
@@ -174,6 +179,8 @@ export class CabeceraPanelComponent implements OnInit {
   readonly cuenta = computed<EntradaMenu[]>(() => CUENTA_PANEL.filter((e) => visible(e, this.contexto())));
   readonly accesoDual = computed(() => this.auth.tieneAccesoDual(this.roles()));
   readonly activa = computed(() => seccionActiva(this.url()));
+  /** Pasar lista (boceto aprobado): en móvil la barra fija de guardar ocupa el sitio de la navegación inferior. */
+  readonly sinBarraInferior = computed(() => ocultaBarraInferior(this.url()));
   readonly contador = computed(() => this.soloProfesor() ? 0 : this.contadorSolicitudes.total());
 
   readonly nombreEscuela = computed(() => this.marca()?.nombre || 'Panel de gestión');

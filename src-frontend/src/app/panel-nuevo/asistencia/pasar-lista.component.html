@@ -1,0 +1,100 @@
+<section class="pn pasar-lista" pnAcento>
+  <div class="pasar-lista__pagina">
+    <nav class="pasar-lista__migas" aria-label="Ruta">
+      <a [routerLink]="enlaceListado">{{ textoListado }}</a><span aria-hidden="true">/</span>
+      @if (nombreGrupo) { <a [routerLink]="enlaceGrupo">{{ nombreGrupo }}</a><span aria-hidden="true">/</span> }
+    </nav>
+    <header class="pasar-lista__cabecera">
+      <h1>Pasar lista</h1>
+      @if (clase) {
+        <div class="pasar-lista__clase">
+          <span class="pasar-lista__secundario">{{ titulo }}</span>
+          <button type="button" class="pasar-lista__cambiar" (click)="abrirHoja()">Cambiar clase</button>
+        </div>
+        @if (!sinAlumnos) {
+          <p class="pasar-lista__secundario">Toca a quien ha venido. Sin marcar cuenta como falta.</p>
+        }
+      }
+    </header>
+
+    @if (cargando || cargandoLista) {
+      <pn-esqueleto etiqueta="Cargando la lista…">
+        @for (fila of esqueletos; track fila) { <div class="pasar-lista__esqueleto"><span></span><span></span></div> }
+      </pn-esqueleto>
+    } @else if (error) {
+      <pn-bloque-error [titulo]="error" (reintentar)="reintentar()" />
+    } @else if (!clase) {
+      <pn-bloque-vacio [titulo]="textos.sinClases" />
+    } @else if (sinAlumnos) {
+      <pn-bloque-vacio [titulo]="textos.sinAlumnos" />
+    } @else {
+      <div class="pasar-lista__todos">
+        <button type="button" class="pasar-lista__secundario-boton" (click)="alternarTodos()" [disabled]="guardando">
+          {{ todosMarcados ? 'Desmarcar todos' : 'Marcar todos' }}
+        </button>
+      </div>
+      <ul class="pasar-lista__lista" aria-label="Alumnos de la clase">
+        @for (alumno of alumnos; track alumno.id) {
+          <li>
+            <button type="button" class="pasar-lista__fila" [class.pasar-lista__fila--presente]="estaMarcado(alumno)"
+              [attr.aria-pressed]="estaMarcado(alumno)" [disabled]="guardando" (click)="alternar(alumno)">
+              <span class="pasar-lista__casilla" aria-hidden="true">
+                @if (estaMarcado(alumno)) {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                }
+              </span>
+              <span class="pasar-lista__identidad">
+                <span class="pasar-lista__nombre">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</span>
+                <span class="pasar-lista__grado">
+                  @let grado = gradoDe(alumno);
+                  @if (grado.fondo) { <span class="pasar-lista__cinto" [style.background]="grado.fondo" aria-hidden="true"></span> }
+                  {{ grado.texto }}
+                </span>
+              </span>
+              @if (estaMarcado(alumno)) { <span class="pasar-lista__presente">Presente</span> }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (clase && !cargando && !cargandoLista && !error && !sinAlumnos) {
+    <div class="pasar-lista__barra" role="region" aria-label="Guardar la lista">
+      @if (guardada) {
+        <div class="pasar-lista__estado" role="status">
+          <span class="pasar-lista__guardada">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>Lista guardada
+          </span>
+          <span class="pasar-lista__secundario">{{ cuenta }} presentes</span>
+        </div>
+        <a class="pasar-lista__secundario-boton" [routerLink]="enlaceGrupo">Volver al grupo</a>
+      } @else {
+        <div class="pasar-lista__estado pasar-lista__estado--cuenta" role="status">
+          <strong>{{ cuenta }}</strong>&ngsp;<span class="pasar-lista__secundario">presentes</span>
+        </div>
+        <button pnOcupado type="button" class="pasar-lista__primario" [ocupado]="guardando" textoOcupado="Guardando…" (click)="guardar()">Guardar lista</button>
+      }
+    </div>
+  }
+
+  @if (hojaAbierta && clases) {
+    <pn-panel-lateral titulo="Elegir clase" descripcion="Últimos 14 días" (cerrar)="cerrarHoja()">
+      @if (recientes.length) {
+        <ul class="pasar-lista__clases">
+          @for (c of recientes; track c.turnoId + c.fecha) {
+            <li>
+              <button type="button" class="pasar-lista__opcion" [class.pasar-lista__opcion--elegida]="esElegida(c)"
+                [attr.aria-current]="esElegida(c) ? 'true' : null" (click)="elegirClase(c)">
+                <span class="pasar-lista__opcion-fecha">{{ fechaDeFila(c) }}</span>&ngsp;
+                <span class="pasar-lista__opcion-estado">{{ c.alumnos === 0 ? 'Sin alumnos' : estadoClase(c) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="pasar-lista__secundario">{{ textos.sinClases }}</p>
+      }
+    </pn-panel-lateral>
+  }
+</section>

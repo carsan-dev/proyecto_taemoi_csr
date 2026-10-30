@@ -124,8 +124,10 @@
     </div>
   </header>
 
+  @if (!sinBarraInferior()) {
   <app-barra-inferior [secciones]="secciones()" [activa]="activa()" [url]="url()" [contador]="contador()"
     [soloProfesor]="soloProfesor()"
     (configurarCookies)="configurarCookies.emit()"></app-barra-inferior>
+  }
   }
 </div>

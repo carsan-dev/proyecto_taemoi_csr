@@ -84,6 +84,7 @@
     "src/app/panel-nuevo/mi-caja/mi-caja.component.spec.ts",
     "src/app/panel-nuevo/mi-perfil/mi-perfil.component.spec.ts",
     "src/app/panel-nuevo/asistencia/asistencia-textos.spec.ts",
+    "src/app/panel-nuevo/asistencia/pasar-lista.component.spec.ts",
     "src/app/servicios/endpoints/asistencia.service.spec.ts",
     "src/app/panel-nuevo/carga/lecturas-panel.service.spec.ts",
     "src/app/componentes/vistas/escaparate-principal/escaparate-principal.component.spec.ts",
