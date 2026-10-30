@@ -344,6 +344,7 @@ class ImagenServiceImplTest {
 	@Test
 	void siElWebPDeLaFotoFallaAMedias_caeAJpegSinResiduo() throws Exception {
 		for (Throwable fallo : excepciones()) {
+			imagenService.guardarImagenFotoEvento(foto());
 			Map<String, Long> antes = fotosEnDisco();
 			ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_FOTO);
 
@@ -360,6 +361,7 @@ class ImagenServiceImplTest {
 	@Test
 	void siElWebPDeLaMiniaturaFallaAMedias_caeAJpegSinResiduo() throws Exception {
 		for (Throwable fallo : excepciones()) {
+			imagenService.guardarImagenFotoEvento(foto());
 			Map<String, Long> antes = fotosEnDisco();
 			ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_MINIATURA);
 
@@ -376,6 +378,7 @@ class ImagenServiceImplTest {
 	/** Un error no cae a JPEG: el fallo sigue su camino y no deja rastro. */
 	@Test
 	void siElWebPFallaConUnError_seRelanzaSinResiduo_yNoIntentaElJpeg() throws Exception {
+		imagenService.guardarImagenFotoEvento(foto());
 		Map<String, Long> antes = fotosEnDisco();
 		for (String roto : new String[] { WEBP_FOTO, WEBP_MINIATURA }) {
 			OutOfMemoryError fallo = new OutOfMemoryError("memoria");
@@ -390,6 +393,7 @@ class ImagenServiceImplTest {
 
 	@Test
 	void siTambienFallaElJpeg_seRelanzaSinResiduo() throws Exception {
+		imagenService.guardarImagenFotoEvento(foto());
 		Map<String, Long> antes = fotosEnDisco();
 		String[][] casos = { { WEBP_FOTO, JPEG_FOTO }, { WEBP_MINIATURA, JPEG_MINIATURA } };
 		for (String[] rotos : casos) {
@@ -408,6 +412,7 @@ class ImagenServiceImplTest {
 	/** Pasa también por la limpieza del camino de rollback: la foto ya escrita se va con la miniatura a medias. */
 	@Test
 	void siLaMiniaturaFallaAMedias_laFotoYaEscritaTambienSeVa() throws Exception {
+		imagenService.guardarImagenFotoEvento(foto());
 		Map<String, Long> antes = fotosEnDisco();
 		OutOfMemoryError fallo = new OutOfMemoryError("memoria");
 		ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_MINIATURA);
