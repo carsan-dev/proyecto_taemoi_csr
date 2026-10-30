@@ -84,7 +84,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_SEDES, new Ejemplo("PUT", "/api/miembros/21/sedes")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION,
-					new Ejemplo("POST", "/api/miembros/21/invitacion"))));
+					new Ejemplo("POST", "/api/miembros/21/invitacion")),
+			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -135,6 +136,12 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("DELETE", "/api/miembros/21/invitacion"),
 			new Ejemplo("POST", "/api/miembros/21/invitacion/otra"),
 			new Ejemplo("POST", "/api/miembros/invitacion"),
+			// Decisión 322: la lectura del perfil y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/panel/mi-perfil"),
+			new Ejemplo("POST", "/api/panel/mi-perfil"),
+			new Ejemplo("DELETE", "/api/panel/mi-perfil"),
+			new Ejemplo("PUT", "/api/panel/mi-perfil/21"),
+			new Ejemplo("PUT", "/api/panel"),
 			// Pieza 8b-T: la lectura de la marca y del logo, y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/escuela/marca"),
 			new Ejemplo("GET", "/api/escuela/logo"),

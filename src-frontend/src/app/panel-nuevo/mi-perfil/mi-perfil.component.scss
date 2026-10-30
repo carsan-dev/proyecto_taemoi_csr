@@ -1,0 +1,53 @@
+@use '../capas/capas' as c;
+
+:host { display: block; }
+.mi-perfil { min-height: calc(100vh - 64px); background: var(--pn-fondo); }
+.mi-perfil__pagina { max-width: 640px; margin: auto; padding: 24px 16px 140px; }
+.oculto { @include c.oculto; }
+h1 { margin: 0; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); }
+h2 { margin: 0 0 14px; font: var(--pn-titulo-bloque); }
+p { margin: 0; }
+.cabecera { margin-bottom: 24px; }
+.subtitulo { margin-top: 4px; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.formulario { display: grid; gap: 16px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.tarjeta { padding: 18px 20px 16px; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
+label, .etiqueta { display: block; margin-bottom: 6px; font: var(--pn-etiqueta); }
+.opcional { color: var(--pn-tinta-2); font-weight: 400; }
+input, select { width: 100%; min-width: 0; min-height: 42px; padding: 8px 12px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-secundario); caret-color: var(--pn-acento); }
+input:focus-visible, select:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+input:disabled, select:disabled { background: var(--pn-superficie-2); color: var(--pn-tinta-2); }
+select[aria-invalid='true'] { border-color: var(--pn-peligro); }
+.ayuda-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.ayuda { color: var(--pn-tinta-2); font: var(--pn-secundario); overflow-wrap: anywhere; }
+.contador { margin-left: auto; flex: none; color: var(--pn-tinta-2); font: var(--pn-secundario); font-variant-numeric: tabular-nums; }
+.fila-campos { display: flex; gap: 12px; }
+.dia { flex: none; width: 88px; }
+.mes { flex: 1 1 auto; max-width: 220px; }
+.fecha-ficha { color: var(--pn-tinta); font: var(--pn-cuerpo); }
+.fecha-ficha + .ayuda { margin-top: 6px; }
+.error { color: var(--pn-peligro); font: var(--pn-etiqueta); }
+.error:empty { display: none; }
+.grupo .error, .grupo .ayuda { margin-top: 6px; }
+.error-guardado { margin-top: 16px; }
+.esqueleto { height: 112px; margin-bottom: 16px; border-radius: var(--pn-radio-m); background: var(--pn-serie-pista); }
+button { min-height: 40px; padding: 0 12px; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); color: var(--pn-acento); background: var(--pn-superficie); font: var(--pn-etiqueta); cursor: pointer; }
+button:hover:not(:disabled) { background: var(--pn-acento-suave); }
+button:disabled { opacity: .6; cursor: default; }
+.primario { color: var(--pn-marca-sobre-primario); background: var(--pn-marca-primario-tinta); border-color: var(--pn-marca-primario-tinta); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.primario:hover:not(:disabled) { background: var(--pn-marca-primario); }
+.texto { border: 0; background: transparent; color: var(--pn-acento); font: var(--pn-secundario); }
+.pendientes { @include c.barra-cambios; }
+@media (min-width: 600px) {
+  .mi-perfil__pagina { padding: 32px 24px 140px; }
+  .tarjeta { padding: 20px 24px 18px; }
+}
+@media (max-width: 1023px) {
+  .pendientes { @include c.barra-cambios-sobre-navegacion; }
+  .mi-perfil__pagina { padding-bottom: 200px; }
+}
+@media (max-width: 599px) {
+  .mi-perfil__pagina { padding-bottom: 180px; }
+  h1 { font-size: 1.375rem; }
+  button, input, select { min-height: 44px; }
+  .pendientes { @include c.barra-cambios-compacta; }
+}

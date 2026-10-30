@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Observable, catchError, map, of, shareReplay, throwError } from 'rxjs';
+import { Observable, Subject, catchError, map, of, shareReplay, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
@@ -24,6 +24,8 @@ export interface PermisosSesion {
   capacidades: Capacidad[];
   /** «Nombre A.» de la cuenta (8b-T), para el botón de cuenta del panel nuevo; null sin nombre. */
   nombreVisible?: string | null;
+  /** Nombre para el saludo de Inicio: el preferido de «Mi perfil» o el primer nombre de la cuenta; null sin nombre. */
+  nombreSaludo?: string | null;
   /** Hoy es el cumpleaños de la ficha propia de la cuenta (8b-M2); solo el booleano. Opcional: servidor anterior. */
   cumpleanos?: boolean;
 }
@@ -44,6 +46,9 @@ export function pidePermisos(roles: readonly string[]): boolean {
 export class PermisosSesionService {
   private readonly url = `${environment.apiUrl}/auth/permisos`;
   private peticion$: Observable<PermisosSesion> | null = null;
+  private readonly refrescos = new Subject<void>();
+  /** Avisa cuando la sesión cambió algo que se muestra (p. ej. el nombre de «Mi perfil»): hay que volver a pedirlos. */
+  readonly refrescado$: Observable<void> = this.refrescos.asObservable();
 
   constructor(private readonly http: HttpClient) {}
 
@@ -81,5 +86,11 @@ export class PermisosSesionService {
   /** Descarta los permisos guardados: la próxima llamada los pide de nuevo (login, cierre de sesión). */
   reiniciar(): void {
     this.peticion$ = null;
+  }
+
+  /** Descarta los permisos y avisa a quien los muestra, sin recargar la página (guardar «Mi perfil»). */
+  refrescar(): void {
+    this.reiniciar();
+    this.refrescos.next();
   }
 }

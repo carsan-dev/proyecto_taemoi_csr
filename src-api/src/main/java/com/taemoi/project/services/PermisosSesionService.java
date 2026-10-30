@@ -6,6 +6,7 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.security.core.Authentication;
@@ -14,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.taemoi.project.dtos.response.PerfilCuentaDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO;
 import com.taemoi.project.dtos.response.PermisosSesionDTO.Capacidad;
 import com.taemoi.project.entities.Alumno;
@@ -22,6 +24,7 @@ import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Sede;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.entities.UsuarioAlumno;
 import com.taemoi.project.organizacion.AlcanceActual;
 import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.organizacion.TenantContext;
@@ -45,10 +48,13 @@ import com.taemoi.project.repositories.UsuarioAlumnoRepository;
  * {@code COUNT}). {@code tieneGrupos}: {@code alcance.grupos()} no vacío.</li>
  * <li>Sesión solo-plataforma (ninguna autoridad de escuela): roles, sedes y capacidades vacíos y sin consultar la
  * escuela.</li>
- * <li>{@code nombreVisible} (pieza 8b-T): «Nombre A.» de la cuenta de la sesión, sin consulta ni registro.</li>
- * <li>{@code cumpleanos} (pieza 8b-M2): hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno con relación
- * {@code PROPIO} de la cuenta, en la organización de la sesión; sin ficha, anonimizada o sin fecha, false. Solo el
- * booleano.</li>
+ * <li>{@code nombreVisible} (pieza 8b-T): «Nombre A.» de la cuenta de la sesión, o su nombre preferido (decisión 322),
+ * sin consulta ni registro. {@code nombreSaludo} (decisión 322): el preferido entero o la primera palabra del nombre.
+ * Los lee de la cuenta que {@code IdentificadorSesionJwt} carga de la base de datos en cada petición, sin caché: un
+ * cambio se ve en la petición siguiente.</li>
+ * <li>{@code cumpleanos} (pieza 8b-M2 y decisión 322): hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno con
+ * relación {@code PROPIO} de la cuenta, en la organización de la sesión; sin ficha, anonimizada o sin fecha, decide el
+ * día y mes guardados en la cuenta. Solo el booleano.</li>
  * </ul>
  * Reutiliza el alcance de la petición ({@link AlcanceActual}): como mucho dos consultas pequeñas de sedes, sin N+1.
  */
@@ -77,7 +83,7 @@ public class PermisosSesionService {
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
-					nombreVisible(autenticacion), false);
+					nombreVisible(autenticacion), nombreSaludo(autenticacion), false);
 		}
 		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -94,39 +100,56 @@ public class PermisosSesionService {
 					: List.of();
 			activas = sedes.countByActivaTrue();
 		}
+		Usuario cuenta = cuentaDeLaSesion(autenticacion);
 		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
 				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos),
-				nombreVisible(autenticacion), cumpleanos(CobroService.usuarioActualId(), TenantContext.get()));
+				nombreVisible(autenticacion), nombreSaludo(autenticacion),
+				cumpleanos(CobroService.usuarioActualId(), TenantContext.get(),
+						cuenta == null ? null : cuenta.getCumpleDia(), cuenta == null ? null : cuenta.getCumpleMes()));
 	}
 
 	/**
-	 * Pieza 8b-M2: si hoy es el cumpleaños de alguna ficha PROPIA de la cuenta en la organización. {@code
-	 * usuario_alumno} no tiene tenant automático: se filtra por organización a mano; el alumno sí (@TenantId).
+	 * Pieza 8b-M2 y decisión 322: si hoy es el cumpleaños de la cuenta. Con ficha propia válida ({@link #cumpleFicha})
+	 * decide solo ella; si no, el día y mes guardados en la cuenta (los dos, o ninguno).
 	 */
-	boolean cumpleanos(Long usuarioId, Long organizacionId) {
+	boolean cumpleanos(Long usuarioId, Long organizacionId, Integer diaCuenta, Integer mesCuenta) {
 		if (usuarioId == null || organizacionId == null) {
 			return false;
 		}
 		LocalDate hoy = LocalDate.now(reloj);
+		Optional<PerfilCuentaDTO.DiaMes> ficha = cumpleFicha(usuarioId, organizacionId);
+		if (ficha.isPresent()) {
+			return esCumpleanos(ficha.get().mes(), ficha.get().dia(), hoy);
+		}
+		return diaCuenta != null && mesCuenta != null && esCumpleanos(mesCuenta, diaCuenta, hoy);
+	}
+
+	/**
+	 * Decisión 322: día y mes de la ficha PROPIA de la cuenta en la organización, no anonimizada y con fecha de
+	 * nacimiento; con varias, la de menor id. Se para en la primera que vale. {@code usuario_alumno} no tiene tenant
+	 * automático: se filtra por organización a mano; el alumno sí (@TenantId).
+	 */
+	public Optional<PerfilCuentaDTO.DiaMes> cumpleFicha(Long usuarioId, Long organizacionId) {
+		if (usuarioId == null || organizacionId == null) {
+			return Optional.empty();
+		}
 		return usuarioAlumnos
 				.findByUsuarioIdAndOrganizacionIdAndRelacion(usuarioId, organizacionId, RelacionUsuarioAlumno.PROPIO)
 				.stream()
-				.map(ua -> alumnos.buscarPorIdEnOrganizacionActiva(ua.getAlumnoId()).orElse(null))
-				.anyMatch(a -> a != null && !a.estaAnonimizado() && esCumpleanos(a.getFechaNacimiento(), hoy));
+				.map(UsuarioAlumno::getAlumnoId)
+				.sorted()
+				.map(id -> alumnos.buscarPorIdEnOrganizacionActiva(id).orElse(null))
+				.filter(a -> a != null && !a.estaAnonimizado() && a.getFechaNacimiento() != null)
+				.findFirst()
+				.map(a -> new java.sql.Date(a.getFechaNacimiento().getTime()).toLocalDate())
+				.map(fecha -> new PerfilCuentaDTO.DiaMes(fecha.getDayOfMonth(), fecha.getMonthValue()));
 	}
 
-	/** Cumple en {@code hoy}; los nacidos el 29-feb lo celebran el 28-feb en años no bisiestos. Fecha nula → false. */
-	static boolean esCumpleanos(java.util.Date nacimiento, LocalDate hoy) {
-		if (nacimiento == null) {
-			return false;
-		}
-		LocalDate fecha = new java.sql.Date(nacimiento.getTime()).toLocalDate();
-		int dia = fecha.getDayOfMonth();
-		if (fecha.getMonth() == Month.FEBRUARY && dia == 29 && !hoy.isLeapYear()) {
-			dia = 28;
-		}
-		return hoy.getMonth() == fecha.getMonth() && hoy.getDayOfMonth() == dia;
+	/** Cumple en {@code hoy}; los del 29-feb lo celebran el 28-feb en años no bisiestos. */
+	static boolean esCumpleanos(int mes, int dia, LocalDate hoy) {
+		int diaDeHoy = mes == Month.FEBRUARY.getValue() && dia == 29 && !hoy.isLeapYear() ? 28 : dia;
+		return hoy.getMonthValue() == mes && hoy.getDayOfMonth() == diaDeHoy;
 	}
 
 	/**
@@ -155,11 +178,36 @@ public class PermisosSesionService {
 		return List.copyOf(resultado);
 	}
 
-	/** El nombre visible de la cuenta de la sesión (la ya cargada al verificar el JWT; sin consulta). */
+	/** La cuenta de la sesión, la ya cargada al verificar el JWT en esta petición: sin consulta y nunca de una caché. */
+	private static Usuario cuentaDeLaSesion(Authentication autenticacion) {
+		return autenticacion != null && autenticacion.getPrincipal() instanceof Usuario usuario ? usuario : null;
+	}
+
+	/** El nombre visible de la cuenta de la sesión. */
 	private static String nombreVisible(Authentication autenticacion) {
-		return autenticacion != null && autenticacion.getPrincipal() instanceof Usuario usuario
-				? nombreVisible(usuario.getNombre(), usuario.getApellidos())
-				: null;
+		Usuario cuenta = cuentaDeLaSesion(autenticacion);
+		return cuenta == null ? null
+				: nombreVisible(cuenta.getNombrePreferido(), cuenta.getNombre(), cuenta.getApellidos());
+	}
+
+	/** El nombre del saludo de la cuenta de la sesión. */
+	private static String nombreSaludo(Authentication autenticacion) {
+		Usuario cuenta = cuentaDeLaSesion(autenticacion);
+		return cuenta == null ? null : nombreSaludo(cuenta.getNombrePreferido(), cuenta.getNombre());
+	}
+
+	/** Decisión 322: con nombre preferido, ese tal cual; si no, «Nombre A.». */
+	static String nombreVisible(String preferido, String nombre, String apellidos) {
+		return preferido != null ? preferido : nombreVisible(nombre, apellidos);
+	}
+
+	/** Decisión 322: el preferido entero; si no, la primera palabra del nombre; sin nombre, {@code null}. */
+	static String nombreSaludo(String preferido, String nombre) {
+		if (preferido != null) {
+			return preferido;
+		}
+		String limpio = nombre == null ? "" : nombre.trim();
+		return limpio.isEmpty() ? null : limpio.split("\\s+")[0];
 	}
 
 	/** Partículas que no dan la inicial del apellido («de la Fuente» → «F.»). */

@@ -71,4 +71,27 @@ class PermisosSesionServiceTest {
 		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", "de la"), "todo partículas");
 		assertEquals("Lucía", PermisosSesionService.nombreVisible("Lucía", ""));
 	}
+
+	/** Decisión 322: el nombre preferido, tal cual, en el botón de cuenta. */
+	@Test
+	void nombreVisible_conPreferido_eseTalCual() {
+		assertEquals("Luci", PermisosSesionService.nombreVisible("Luci", "Lucía", "Ortega Ruiz"));
+		assertEquals("Maestra Lucía de la Sierra",
+				PermisosSesionService.nombreVisible("Maestra Lucía de la Sierra", "Lucía", "Ortega"));
+		assertEquals("Lucía O.", PermisosSesionService.nombreVisible(null, "Lucía", "Ortega Ruiz"));
+		assertEquals(null, PermisosSesionService.nombreVisible(null, "  ", "Ortega"));
+		assertEquals("Luci", PermisosSesionService.nombreVisible("Luci", null, null));
+	}
+
+	/** Decisión 322: el saludo de Inicio; el preferido entero, sin recortarlo a la primera palabra. */
+	@Test
+	void nombreSaludo_preferidoEnteroOPrimeraPalabra() {
+		assertEquals("Maestra Lucía", PermisosSesionService.nombreSaludo("Maestra Lucía", "María José"));
+		assertEquals("María", PermisosSesionService.nombreSaludo(null, "María José"));
+		assertEquals("María", PermisosSesionService.nombreSaludo(null, "  María   José "));
+		assertEquals("Lucía", PermisosSesionService.nombreSaludo(null, "Lucía"));
+		assertEquals(null, PermisosSesionService.nombreSaludo(null, null));
+		assertEquals(null, PermisosSesionService.nombreSaludo(null, "   "));
+		assertEquals("Luci", PermisosSesionService.nombreSaludo("Luci", null));
+	}
 }

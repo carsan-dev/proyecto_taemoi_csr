@@ -82,6 +82,7 @@
     "src/app/panel-nuevo/visor-pdf/visor-pdf.component.spec.ts",
     "src/app/panel-nuevo/mis-grupos/ficha-profesor-panel.component.spec.ts",
     "src/app/panel-nuevo/mi-caja/mi-caja.component.spec.ts",
+    "src/app/panel-nuevo/mi-perfil/mi-perfil.component.spec.ts",
     "src/app/panel-nuevo/carga/lecturas-panel.service.spec.ts",
     "src/app/componentes/vistas/escaparate-principal/escaparate-principal.component.spec.ts",
     "src/app/componentes/vistas/layout/skeleton/skeleton.component.spec.ts",

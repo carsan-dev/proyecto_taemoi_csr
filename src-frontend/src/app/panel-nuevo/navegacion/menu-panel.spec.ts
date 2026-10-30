@@ -24,6 +24,7 @@ import {
 /** Rutas de la web pública que la cabecera de hoy enlaza desde el menú lateral: no son entradas de gestión. */
 const RUTAS_PUBLICAS = new Set([
   '/',
+  '/panel/mi-perfil', // nueva en el panel nuevo: la cabecera de hoy no la tiene
   '/eventos',
   '/horarios',
   '/tarifas',
@@ -63,6 +64,7 @@ function contextoDe(caso: Caso): ContextoMenu {
   const profesor = caso.roles.includes('ROLE_PROFESOR');
   return {
     propietario: caso.roles.includes('ROLE_ADMIN'),
+    gestion: caso.roles.includes('ROLE_ADMIN') || caso.roles.includes('ROLE_MANAGER'),
     profesor,
     misGrupos: profesor && caso.capacidades.includes('MIS_GRUPOS'),
     plataforma: caso.plataforma,
@@ -202,8 +204,26 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
     expect(BARRA_INFERIOR).toEqual(['inicio', 'alumnos', 'tesoreria']);
   });
 
-  it('8b-Z: la cuenta ya no lleva «Diseño nuevo» (ni ninguna entrada propia)', () => {
-    expect(CUENTA_PANEL).toEqual([]);
+  it('la cuenta lleva «Mi perfil»', () => {
+    expect(CUENTA_PANEL.map((e) => [e.etiqueta, e.ruta, e.icono, e.condicion])).toEqual([
+      ['Mi perfil', '/panel/mi-perfil', 'bi-person', 'gestion'],
+    ]);
+  });
+
+  for (const caso of CASOS) {
+    it(`«Mi perfil» se ve para ${caso.nombre}`, () => {
+      expect(rutasDeGestion(contextoDe(caso))).toContain('/panel/mi-perfil');
+    });
+  }
+
+  it('«Mi perfil» no se ve para solo-profesor ni sin contexto de gestión', () => {
+    const soloProfesor: ContextoMenu = { propietario: false, profesor: true, soloProfesor: true, gestion: false, misGrupos: true, plataforma: false };
+    expect(rutasDeGestion(soloProfesor)).not.toContain('/panel/mi-perfil');
+    expect(rutasDeGestion({ propietario: false, profesor: true, misGrupos: false, plataforma: false })).not.toContain('/panel/mi-perfil');
+  });
+
+  it('«Mi perfil» no enciende ninguna entrada de la cabecera', () => {
+    expect(seccionActiva('/panel/mi-perfil')).toBeNull();
   });
 
   it('los enlaces legales del pie de hoy (decisión 259)', () => {

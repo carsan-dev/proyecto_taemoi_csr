@@ -262,6 +262,16 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // «Mi perfil» (decisión 322): nombre y cumpleaños de la cuenta; propietario y gestor (`/api/panel/**`).
+    path: 'panel/mi-perfil',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
+    canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'alumnosCrear',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.management),

@@ -55,6 +55,30 @@ describe('PermisosSesionService', () => {
     expect(await segunda).toEqual(['MIS_GRUPOS']);
   });
 
+  it('refrescar() emite refrescado$ y la siguiente obtener() hace un GET nuevo', async () => {
+    const primera = firstValueFrom(servicio.obtener());
+    http.expectOne(URL_PERMISOS).flush(permisos(['MI_CAJA']));
+    await primera;
+
+    let avisos = 0;
+    const suscripcion = servicio.refrescado$.subscribe(() => avisos++);
+    servicio.refrescar();
+    expect(avisos).toBe(1);
+
+    const segunda = firstValueFrom(servicio.obtener());
+    http.expectOne(URL_PERMISOS).flush(permisos(['MIS_GRUPOS']));
+    expect((await segunda).capacidades).toEqual(['MIS_GRUPOS']);
+    suscripcion.unsubscribe();
+  });
+
+  it('reiniciar() no emite refrescado$', () => {
+    let avisos = 0;
+    const suscripcion = servicio.refrescado$.subscribe(() => avisos++);
+    servicio.reiniciar();
+    expect(avisos).toBe(0);
+    suscripcion.unsubscribe();
+  });
+
   it('un error no se guarda: capacidades() da [] y la siguiente llamada vuelve a pedir', async () => {
     const fallida = firstValueFrom(servicio.capacidades());
     http.expectOne(URL_PERMISOS).flush('error', { status: 500, statusText: 'Error' });

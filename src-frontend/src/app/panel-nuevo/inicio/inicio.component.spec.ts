@@ -235,21 +235,35 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
 
     it('primera visita con nombre: «Hola, Nombre»', () => {
       fixture.destroy();
-      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      permisos$.next({ nombreSaludo: 'Nombre', cumpleanos: false });
       abrir();
       expect(titulo()).toBe('Hola, Nombre');
     });
 
     it('primera visita en cumpleaños: «¡Feliz cumpleaños, Nombre!»', () => {
       fixture.destroy();
-      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: true });
+      permisos$.next({ nombreSaludo: 'Nombre', cumpleanos: true });
       abrir();
       expect(titulo()).toBe('¡Feliz cumpleaños, Nombre!');
     });
 
-    it('segunda visita de la sesión: «Inicio»', () => {
+    it('usa el nombre de saludo entero, con espacios', () => {
+      fixture.destroy();
+      permisos$.next({ nombreSaludo: 'Ana María', cumpleanos: false });
+      abrir();
+      expect(titulo()).toBe('Hola, Ana María');
+    });
+
+    it('sin nombreSaludo (aunque haya nombreVisible): «Inicio»', () => {
       fixture.destroy();
       permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      abrir();
+      expect(titulo()).toBe('Inicio');
+    });
+
+    it('segunda visita de la sesión: «Inicio»', () => {
+      fixture.destroy();
+      permisos$.next({ nombreSaludo: 'Nombre', cumpleanos: false });
       abrir();
       expect(titulo()).toBe('Hola, Nombre');
       abrir();
@@ -258,7 +272,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
 
     it('sin nombre: «Inicio» y no marca la sesión', () => {
       fixture.destroy();
-      permisos$.next({ nombreVisible: null, cumpleanos: true });
+      permisos$.next({ nombreSaludo: null, cumpleanos: true });
       abrir();
       expect(titulo()).toBe('Inicio');
       expect(sessionStorage.getItem('pn-inicio-saludado')).toBeNull();
@@ -266,9 +280,9 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
 
     it('el texto no cambia a mitad de visita', () => {
       fixture.destroy();
-      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      permisos$.next({ nombreSaludo: 'Nombre', cumpleanos: false });
       abrir();
-      permisos$.next({ nombreVisible: 'Otro B.', cumpleanos: true });
+      permisos$.next({ nombreSaludo: 'Otro', cumpleanos: true });
       fixture.detectChanges();
       expect(titulo()).toBe('Hola, Nombre');
     });
@@ -277,7 +291,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
       spyOn(Storage.prototype, 'getItem').and.throwError('bloqueado');
       spyOn(Storage.prototype, 'setItem').and.throwError('bloqueado');
       fixture.destroy();
-      permisos$.next({ nombreVisible: 'Nombre A.', cumpleanos: false });
+      permisos$.next({ nombreSaludo: 'Nombre', cumpleanos: false });
       expect(() => abrir()).not.toThrow();
       expect(titulo()).toBe('Hola, Nombre');
     });
