@@ -13,6 +13,7 @@ import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
 import { MiPerfilComponent } from './panel-nuevo/mi-perfil/mi-perfil.component';
 import { ProductosAlumnoPanelComponent } from './panel-nuevo/productos-alumno/productos-alumno-panel.component';
+import { PasarListaComponent } from './panel-nuevo/asistencia/pasar-lista.component';
 import { GruposComponent } from './panel-nuevo/grupos/grupos.component';
 import { EditarGrupoComponent } from './panel-nuevo/grupos/editar-grupo.component';
 import { GestionarAlumnosComponent } from './panel-nuevo/grupos/gestionar-alumnos.component';
@@ -59,6 +60,7 @@ const REDISENADAS: Rediseno[] = [
   ['alumnosCrear', AltaAlumnoComponent, GESTION],
   ['alumnosEliminar', BajasAlumnosComponent, GESTION],
   ['gruposListar', GruposComponent, GESTION],
+  ['gruposListar/:grupoId/lista', PasarListaComponent, GESTION, { prefijoAsistencia: 'gestion' }],
   ['gruposCrear', GruposComponent, GESTION, { crearGrupo: true }],
   ['gruposEditar/:id', EditarGrupoComponent, GESTION],
   ['gestionarAlumnos/:id', GestionarAlumnosComponent, GESTION],
@@ -206,11 +208,14 @@ describe('app routes', () => {
       expect(ruta.resolve).toBeUndefined();
       expect(routes.indexOf(ruta)).toBeLessThan(routes.findIndex((route) => route.path === '**'));
       const hijas = await (ruta.loadChildren as () => Promise<Routes>)();
-      expect(hijas.map((hija) => hija.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId']);
+      expect(hijas.map((hija) => hija.path)).toEqual(['', 'alumnos/:alumnoId', ':grupoId/lista', ':grupoId']);
       expect(hijas.every((hija) => !hija.resolve && typeof hija.loadComponent === 'function')).toBeTrue();
       expect(await hijas[0].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/mis-grupos.component')).MisGruposPanelComponent);
       expect(await hijas[1].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/ficha-profesor-panel.component')).FichaProfesorPanelComponent);
-      expect(await hijas[2].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/grupo.component')).GrupoPanelComponent);
+      expect(await hijas[2].loadComponent!()).toBe((await import('./panel-nuevo/asistencia/pasar-lista.component')).PasarListaComponent);
+      expect(hijas[2].data).toEqual({ prefijoAsistencia: 'profesor' });
+      expect(hijas[2].canDeactivate).toEqual([salirSinGuardarGuard]);
+      expect(await hijas[3].loadComponent!()).toBe((await import('./panel-nuevo/mis-grupos/grupo.component')).GrupoPanelComponent);
     });
 
     for (const [camino, url] of [['mi-caja', '/mi-caja'], ['mis-grupos', '/mis-grupos']] as const) {
