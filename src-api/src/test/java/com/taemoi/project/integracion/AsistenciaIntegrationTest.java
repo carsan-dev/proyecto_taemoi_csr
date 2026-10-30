@@ -88,8 +88,8 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
-	long profA, profB, profMixto, propietario, profOtra;
-	String tProfA, tProfB, tProfMixto, tGestor, tPropietario, tResp, tProfOtra, tGestorOtra;
+	long profA, profB, profMixto, propietario, propietarioProfesor, profOtra;
+	String tProfA, tProfB, tProfMixto, tGestor, tPropietario, tPropietarioProfesor, tResp, tProfOtra, tGestorOtra;
 
 	@BeforeAll
 	void preparar() {
@@ -107,6 +107,9 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		asignar(e, profMixto, e.gB);
 		propietario = e.cuenta(usuarios, "propietario");
 		membresia(e, propietario, "PROPIETARIO");
+		propietarioProfesor = e.cuenta(usuarios, "propietarioprofesor");
+		membresia(e, propietarioProfesor, "PROPIETARIO");
+		membresia(e, propietarioProfesor, "PROFESOR");
 		profOtra = soloProfesor(otra, "profotra");
 		asignar(otra, profOtra, otra.gA);
 
@@ -115,6 +118,7 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		tProfMixto = e.token(jwtService, usuarios, profMixto);
 		tGestor = e.token(jwtService, usuarios, e.gestor);
 		tPropietario = e.token(jwtService, usuarios, propietario);
+		tPropietarioProfesor = e.token(jwtService, usuarios, propietarioProfesor);
 		tResp = e.token(jwtService, usuarios, e.respA);
 		tProfOtra = otra.token(jwtService, usuarios, profOtra);
 		tGestorOtra = otra.token(jwtService, usuarios, otra.gestor);
@@ -153,6 +157,25 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		Fijo f = grupoConDosAlumnos(e.sA, profA);
 		assertEquals(403, estado(get("/api/profesor/grupos/" + f.grupo + "/clases"), tGestor));
 		assertEquals(403, estado(guardar("/api/profesor/grupos/" + f.grupo, f.turno, LUNES, f.a), tPropietario));
+	}
+
+	/** Por la ruta del profesor solo cuentan sus grupos asignados, también con el alcance total del propietario. */
+	@Test
+	void propietarioConProfesor_grupoNoAsignado_403_enLasCincoRutas_yElPutNoEscribe() throws Exception {
+		Fijo suyo = grupoConDosAlumnos(e.sA, propietarioProfesor);
+		Fijo ajeno = grupoConDosAlumnos(e.sB, profB);
+		String base = "/api/profesor/grupos/" + ajeno.grupo;
+		assertEquals(403, estado(get(base + "/clases"), tPropietarioProfesor));
+		assertEquals(403, estado(get(base + "/clases/" + ajeno.turno + "/" + LUNES), tPropietarioProfesor));
+		assertEquals(403, estado(guardar(base, ajeno.turno, LUNES, ajeno.a), tPropietarioProfesor));
+		assertEquals(403, estado(get(base + "/asistencia/resumen?year=2026&month=10"), tPropietarioProfesor));
+		assertEquals(403, estado(get(base + "/alumnos/" + ajeno.a + "/asistencia?year=2026&month=10"),
+				tPropietarioProfesor));
+		assertEquals(0, clasesDe(ajeno.grupo));
+		assertEquals(0, filas(ajeno.grupo));
+
+		assertEquals(200, estado(get("/api/profesor/grupos/" + suyo.grupo + "/clases"), tPropietarioProfesor), "el suyo, sí");
+		assertEquals(200, estado(get("/api/grupos/" + ajeno.grupo + "/clases"), tPropietarioProfesor), "por gestión, sí");
 	}
 
 	@Test
@@ -422,6 +445,23 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 				"SELECT COALESCE(payload_json, '') FROM auditoria_evento WHERE endpoint = ? ORDER BY id LIMIT 1", String.class,
 				ruta);
 		assertFalse(detalle.contains(String.valueOf(f.a)), "el 2xx no guarda el cuerpo");
+	}
+
+	/** Un 4xx pasa por el filtro genérico, que guarda el cuerpo: esa fila sobreviviría a la anonimización del alumno. */
+	@Test
+	void put400_laAuditoriaNoGuardaLosIds_enNingunPrefijo() throws Exception {
+		Fijo f = grupoConDosAlumnos(e.sA, profA);
+		for (String base : List.of("/api/profesor/grupos/" + f.grupo, "/api/grupos/" + f.grupo)) {
+			String token = base.contains("profesor") ? tProfA : tGestor;
+			String domingo = "2026-10-25";
+			assertEquals(400, estado(guardar(base, f.turno, domingo, f.a, f.b), token));
+			assertEquals("{\"presentes\":\"[redactado]\"}", cuerpoAuditado(base + "/clases/" + f.turno + "/" + domingo));
+
+			String sabado = "2026-10-24";
+			assertEquals(400, estado(put(base + "/clases/" + f.turno + "/" + sabado).contentType(MediaType.APPLICATION_JSON)
+					.content("{\"presentes\":[" + f.a + "," + f.b), token), "JSON roto");
+			assertEquals("[redactado]", cuerpoAuditado(base + "/clases/" + f.turno + "/" + sabado));
+		}
 	}
 
 	/** Varios PUT simultáneos de la primera lista: todos 200, una clase, una fila por alumno. Nunca 500. */
@@ -919,6 +959,49 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(400, estado(guardar(base, turno, LUNES), tProfA));
 	}
 
+	/** Un PUT en curso al anonimizar puede recrear su fila: cuentas, resumen y lista la ignoran por igual, en los dos prefijos. */
+	@Test
+	void filaDeUnAnonimizado_noSaleEnElResumenNiCuentaEnLaClase() throws Exception {
+		Fijo f = grupoConDosAlumnos(e.sA, profA);
+		guardarOk("/api/profesor/grupos/" + f.grupo, f.turno, LUNES, tProfA, f.a, f.b);
+		assertEquals(200, estado(post("/api/alumnos/" + f.a + "/anonimizar"), tPropietario));
+		insertarFilaPresente(f.grupo, f.a);
+
+		for (String base : List.of("/api/profesor/grupos/" + f.grupo, "/api/grupos/" + f.grupo)) {
+			String token = base.contains("profesor") ? tProfA : tGestor;
+			JsonNode resumen = leer(get(base + "/asistencia/resumen?year=2026&month=10"), token, 200);
+			assertEquals(1, resumen.size(), resumen.toString());
+			assertEquals(1, delAlumno(resumen, f.b).get("clases").asInt());
+
+			JsonNode clase = claseDe(leer(get(base + "/clases"), token, 200).get("hoy"), f.turno, LUNES);
+			assertEquals(1, clase.get("presentes").asInt());
+			assertEquals(1, clase.get("total").asInt());
+
+			JsonNode lista = leer(get(base + "/clases/" + f.turno + "/" + LUNES), token, 200);
+			assertEquals(Set.of(f.b), ids(lista));
+			assertEquals(1, lista.get("clase").get("presentes").asInt());
+			assertEquals(1, lista.get("clase").get("total").asInt());
+		}
+	}
+
+	/** Con solo la fila del anonimizado, la lista sigue guardada: 0 de 0, no «sin lista». */
+	@Test
+	void filaDelUnicoAlumnoAnonimizado_laClaseCuentaCero() throws Exception {
+		long grupo = grupoNuevo(e.sA, profA);
+		long turno = turno(grupo, "Lunes", "18:00", "19:00");
+		long unico = alumnoEnTurno("UNICOFILA", grupo, turno);
+		String base = "/api/profesor/grupos/" + grupo;
+		guardarOk(base, turno, LUNES, tProfA, unico);
+		assertEquals(200, estado(post("/api/alumnos/" + unico + "/anonimizar"), tPropietario));
+		insertarFilaPresente(grupo, unico);
+
+		JsonNode clase = claseDe(leer(get(base + "/clases"), tProfA, 200).get("hoy"), turno, LUNES);
+		assertFalse(clase.get("total").isNull());
+		assertEquals(0, clase.get("presentes").asInt());
+		assertEquals(0, clase.get("total").asInt());
+		assertEquals(0, leer(get(base + "/asistencia/resumen?year=2026&month=10"), tProfA, 200).size());
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	/** Un grupo del profesor con un turno de lunes (18:00-19:00) y dos alumnos en él. */
@@ -999,6 +1082,21 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	private void guardarOk(String base, long turno, String fecha, String token, long... presentes) throws Exception {
 		leer(guardar(base, turno, fecha, presentes), token, 200);
+	}
+
+	/** La fila que deja un PUT en curso al anonimizar. La clase es la única del grupo. */
+	private void insertarFilaPresente(long grupo, long alumno) {
+		long clase = jdbc.queryForObject("SELECT id FROM clase_asistencia WHERE grupo_id = ?", Long.class, grupo);
+		jdbc.update("INSERT INTO asistencia_alumno (organizacion_id, clase_id, alumno_id, presente) VALUES (?, ?, ?, TRUE)",
+				e.org, clase, alumno);
+	}
+
+	/** El cuerpo guardado en la única fila de auditoría de esa ruta. */
+	private String cuerpoAuditado(String ruta) {
+		List<String> cuerpos = jdbc.queryForList("SELECT COALESCE(payload_json, '') FROM auditoria_evento WHERE endpoint = ?",
+				String.class, ruta);
+		assertEquals(1, cuerpos.size(), ruta);
+		return cuerpos.get(0);
 	}
 
 	private long clasesDe(long grupo) {

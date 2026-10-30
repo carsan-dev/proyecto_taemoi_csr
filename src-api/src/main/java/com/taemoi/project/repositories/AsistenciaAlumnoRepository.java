@@ -18,17 +18,24 @@ public interface AsistenciaAlumnoRepository extends JpaRepository<AsistenciaAlum
 
 	List<AsistenciaAlumno> findByClaseId(Long claseId);
 
-	/** Filas {@code [claseId, filas, presentes]} de esas clases. Una clase sin filas no sale. */
+	/**
+	 * Filas {@code [claseId, filas, presentes]} de esas clases, sin las de alumnos anonimizados (se borran al anonimizar;
+	 * esto cubre un PUT en curso, como la lista). Una clase sin filas no sale.
+	 */
 	@Query("""
 			SELECT f.claseId, COUNT(f.id), SUM(CASE WHEN f.presente = TRUE THEN 1 ELSE 0 END)
-			FROM AsistenciaAlumno f WHERE f.claseId IN :clases GROUP BY f.claseId""")
+			FROM AsistenciaAlumno f JOIN Alumno a ON a.id = f.alumnoId
+			WHERE f.claseId IN :clases AND a.anonimizadoEn IS NULL GROUP BY f.claseId""")
 	List<Object[]> contarPorClase(@Param("clases") Collection<Long> clases);
 
-	/** Filas {@code [alumnoId, presentes, clases]} del grupo en esas fechas, ambas incluidas. */
+	/**
+	 * Filas {@code [alumnoId, presentes, clases]} del grupo en esas fechas, ambas incluidas, sin alumnos anonimizados
+	 * (como {@link #contarPorClase}).
+	 */
 	@Query("""
 			SELECT f.alumnoId, SUM(CASE WHEN f.presente = TRUE THEN 1 ELSE 0 END), COUNT(f.id)
-			FROM AsistenciaAlumno f JOIN ClaseAsistencia c ON c.id = f.claseId
-			WHERE c.grupoId = :grupo AND c.fecha BETWEEN :desde AND :hasta
+			FROM AsistenciaAlumno f JOIN ClaseAsistencia c ON c.id = f.claseId JOIN Alumno a ON a.id = f.alumnoId
+			WHERE c.grupoId = :grupo AND c.fecha BETWEEN :desde AND :hasta AND a.anonimizadoEn IS NULL
 			GROUP BY f.alumnoId ORDER BY f.alumnoId""")
 	List<Object[]> resumenDelGrupo(@Param("grupo") Long grupoId, @Param("desde") LocalDate desde,
 			@Param("hasta") LocalDate hasta);

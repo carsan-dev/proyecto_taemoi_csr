@@ -166,7 +166,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			// Pieza 8b-T: el color de la escuela en el cuerpo del PUT de la marca (los 4xx; el 2xx tiene registro propio).
 			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"),
 			// Decisión 322: el nombre y el cumpleaños del perfil de la cuenta (los 4xx; el 2xx tiene registro propio).
-			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"));
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+			// Decisión 324: los alumnos presentes, por los dos prefijos (los 4xx; el 2xx tiene registro propio). Esta fila
+			// sobrevive a la anonimización del alumno.
+			Pattern.compile("^/api(/profesor)?/grupos/[^/]+/clases/[^/]+/[^/]+/?$"), Set.of("presentes"));
 
 	/**
 	 * Parámetros de la URL que no se guardan en la auditoría para una ruta. Pieza E8-3: la búsqueda de miembros
