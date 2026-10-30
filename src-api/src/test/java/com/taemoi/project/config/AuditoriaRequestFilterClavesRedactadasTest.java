@@ -55,6 +55,17 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		}
 	}
 
+	/** Decisión 322: ni el nombre ni la fecha del perfil se guardan en el cuerpo de un 4xx de su PUT. */
+	@Test
+	void miPerfil_redactaNombreYCumple() {
+		for (String ruta : List.of("/api/panel/mi-perfil", "/api/panel/mi-perfil/", "/API/PANEL/MI-PERFIL",
+				"/api//panel/mi-perfil")) {
+			assertEquals(Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+					AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+		assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas("/api/panel/mi-perfil-otra"));
+	}
+
 	/** Pieza 8b-T: el color de la escuela no se guarda en el cuerpo de un 4xx del PUT de la marca. */
 	@Test
 	void marca_redactaElColor() {

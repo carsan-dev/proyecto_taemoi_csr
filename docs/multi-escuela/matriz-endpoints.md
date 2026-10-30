@@ -401,6 +401,25 @@ Pieza 8b-3a (Alumnos C, fase3-e8b-plan.md §10): 2 líneas nuevas; ninguna casil
   concepto, importe, vencidoDesde}]}]` solo de los alumnos con algo vencido. Solo lectura, sin registro. Lo prueba
   `PendientesPorAlumnoIntegrationTest`.
 
+Perfil de la cuenta (decisión 322, V31_14): 3 líneas nuevas bajo `/api/panel` (`PerfilCuentaController`); ninguna
+casilla existente cambia. Regla de URL `/api/panel`, `/api/panel/**` (la de siempre, fuera de la lista blanca de la
+sesión solo-profesor) y `@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")` por método. GESTOR y
+PROPIETARIO `PERMITE`; el resto (ANONIMO, FAMILIA, SOLO_PLATAFORMA, RESPONSABLE_SEDE y PROFESOR), `DENIEGA`. Opera solo
+sobre la cuenta de la sesión: ningún id en la ruta ni en el cuerpo.
+- `GET`/`HEAD /api/panel/mi-perfil` (`#obtener`): `{nombrePreferido, nombreBase, cumpleDia, cumpleMes, cumpleFicha{dia,
+  mes}}`. `cumpleFicha`: ficha PROPIA en la escuela activa, no anonimizada y con fecha (con varias, la de menor id); si
+  no, `null`. `usuario_alumno` se filtra por organización a mano y el alumno es `@TenantId`.
+- `PUT /api/panel/mi-perfil` (`#guardar`, `{nombrePreferido, cumpleDia, cumpleMes}`): sustituye los valores y devuelve lo
+  mismo que el GET. Con `cumpleFicha` en la escuela activa, el cumpleaños del cuerpo se ignora y lo guardado no se toca.
+  Nombre de más de 40 puntos de código o con caracteres de control, sin cuerpo, o sin ficha un cumpleaños incompleto o
+  imposible, 400 con `{"mensaje"}`.
+Todo 2xx del PUT registra (módulo `panel`, `PERFIL_CAMBIADO`, solo `usuario=#id` y `sinCambios`, nunca el nombre ni la
+fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, `nombrePreferido`, `cumpleDia` y
+`cumpleMes` van en `CLAVES_REDACTADAS_POR_RUTA`. `GET /api/auth/permisos` (línea existente, sin cambio de permisos):
+`nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
+y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
+`PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

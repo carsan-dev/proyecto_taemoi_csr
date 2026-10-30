@@ -372,6 +372,10 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					List.of("MIEMBROS INVITACION_REENVIADA"), () -> post("/api/miembros/" + aceptada + "/invitacion"),
 					409);
 		});
+		casos.put(EscrituraConRegistroPropio.PANEL_MI_PERFIL, () -> new Caso(tGestor, e.gestor,
+				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,
+				List.of("PANEL PERFIL_CAMBIADO"),
+				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"cumpleDia\":31,\"cumpleMes\":4}"), 400));
 		return casos;
 	}
 

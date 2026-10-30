@@ -9,17 +9,17 @@ import org.springframework.stereotype.Component;
 import com.taemoi.project.entities.AuditoriaAccion;
 
 /**
- * Registro de acciones del interruptor del diseño nuevo (pieza 8b-I, fase3-e8b-plan.md §3) en el registro de auditoría
- * de siempre ({@link AuditoriaService#registrarAccesoSensible}): en la MISMA transacción que la acción y sin capturar
- * errores (si no se puede registrar, la acción no se hace). Quién, cuándo y escuela los pone el registro; aquí, el módulo
- * {@value #MODULO}, el tipo de acción, el id de la cuenta y sí/no ({@code "PANEL DISENO_PERMITIR usuario=#21"}). Copia
+ * Registro de acciones del panel en el registro de auditoría de siempre
+ * ({@link AuditoriaService#registrarAccesoSensible}): en la MISMA transacción que la acción y sin capturar errores (si
+ * no se puede registrar, la acción no se hace). Quién, cuándo y escuela los pone el registro; aquí, el módulo
+ * {@value #MODULO}, el tipo de acción, el id de la cuenta y sí/no ({@code "PANEL PERFIL_CAMBIADO usuario=#21"}). Copia
  * de {@link RegistroAccionesSedes}.
  *
- * <p>Nunca el email, el nombre ni el cargo. Cualquier otro tipo de valor es un error de programación y la acción no se
- * hace.
+ * <p>Nunca el email, el nombre, el cargo ni una fecha. Cualquier otro tipo de valor es un error de programación y la
+ * acción no se hace.
  *
- * <p>Desde V31_13 (interruptor retirado) nada usa este registro: queda solo como referencia de las filas históricas
- * «PANEL DISENO_*» del registro de auditoría.
+ * <p>Hoy solo lo usa el perfil de la cuenta (decisión 322). Los tipos {@code DISENO_*} son históricos (pieza 8b-I,
+ * interruptor retirado en V31_13): quedan como referencia de las filas «PANEL DISENO_*» del registro de auditoría.
  */
 @Component
 public class RegistroAccionesPanel {
@@ -27,10 +27,12 @@ public class RegistroAccionesPanel {
 	public static final String MODULO = "panel";
 
 	/**
-	 * Tipo de acción registrada ({@code sinCambios=SI} si no cambió nada). Solo histórico (interruptor retirado en
-	 * V31_13): nada las registra ya; los nombres quedan como referencia de las filas «PANEL DISENO_*» del registro.
+	 * Tipo de acción registrada ({@code sinCambios=SI} si no cambió nada). Los {@code DISENO_*} son históricos
+	 * (interruptor retirado en V31_13): nada los registra ya; quedan como referencia de sus filas del registro.
 	 */
 	public enum Accion {
+		/** La cuenta guarda su perfil ({@code usuario=#id}); nunca el nombre ni la fecha. */
+		PERFIL_CAMBIADO,
 		/** El propietario da el permiso ({@code usuario=#id}). */
 		DISENO_PERMITIR,
 		/** El propietario quita el permiso ({@code usuario=#id}). */

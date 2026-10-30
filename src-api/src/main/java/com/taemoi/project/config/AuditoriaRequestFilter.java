@@ -122,7 +122,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** GestionMiembrosService#reemplazarGrupos (PROFESOR ASIGNACION_*; sin cambios, MIEMBROS GRUPOS_CAMBIADOS). */
 		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos"),
 		/** Pieza E8-4: GestionMiembrosService#reenviarInvitacion (MIEMBROS INVITACION_REENVIADA). */
-		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion");
+		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion"),
+		/**
+		 * Decisión 322: PerfilCuentaService#guardar (PANEL PERFIL_CAMBIADO; sin cambios, con sinCambios=SI). Aquí, el 2xx
+		 * guardaría el nombre y la fecha del cuerpo; el registro explícito solo lleva el id de la cuenta.
+		 */
+		PANEL_MI_PERFIL("PUT", "/api/panel/mi-perfil");
 
 		private final String metodo;
 		private final Pattern ruta;
@@ -154,7 +159,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			Pattern.compile("^/api/miembros/?$"), Set.of("email", "cargo", "nombre", "apellidos"),
 			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"),
 			// Pieza 8b-T: el color de la escuela en el cuerpo del PUT de la marca (los 4xx; el 2xx tiene registro propio).
-			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"));
+			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"),
+			// Decisión 322: el nombre y el cumpleaños del perfil de la cuenta (los 4xx; el 2xx tiene registro propio).
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"));
 
 	/**
 	 * Parámetros de la URL que no se guardan en la auditoría para una ruta. Pieza E8-3: la búsqueda de miembros

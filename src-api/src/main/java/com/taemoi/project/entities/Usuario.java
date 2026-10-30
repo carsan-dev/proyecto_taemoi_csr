@@ -7,7 +7,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -104,6 +106,26 @@ public class Usuario implements UserDetails {
 	@JoinColumn(name = "alumno_id")
 	@JsonBackReference
 	private Alumno alumno;
+
+	/**
+	 * Perfil de la cuenta (V31_14, decisión 322): nombre por el que quiere que la llamen y cumpleaños sin año (los dos
+	 * valores o ninguno, {@code ck_usuario_cumple}). Datos personales FUERA del JSON: {@code Alumno#getUsuario} saca esta
+	 * entidad en el JSON de alumno. Solo los cambia {@code PerfilCuentaService}, con sus reglas: sin {@code @Size} aquí
+	 * porque el límite es de 40 puntos de código y {@code @Size} cuenta unidades UTF-16.
+	 */
+	@JsonIgnore
+	@Column(name = "nombre_preferido", length = 40)
+	private String nombrePreferido;
+
+	@JsonIgnore
+	@JdbcTypeCode(SqlTypes.TINYINT)
+	@Column(name = "cumple_dia")
+	private Integer cumpleDia;
+
+	@JsonIgnore
+	@JdbcTypeCode(SqlTypes.TINYINT)
+	@Column(name = "cumple_mes")
+	private Integer cumpleMes;
 
 	/**
 	 * Siempre vacío: las autoridades dependen de la organización activa y las calcula
@@ -259,6 +281,30 @@ public class Usuario implements UserDetails {
 
 	public void setUltimoRecordatorioRachaReset(LocalDate ultimoRecordatorioRachaReset) {
 		this.ultimoRecordatorioRachaReset = ultimoRecordatorioRachaReset;
+	}
+
+	public String getNombrePreferido() {
+		return nombrePreferido;
+	}
+
+	public void setNombrePreferido(String nombrePreferido) {
+		this.nombrePreferido = nombrePreferido;
+	}
+
+	public Integer getCumpleDia() {
+		return cumpleDia;
+	}
+
+	public void setCumpleDia(Integer cumpleDia) {
+		this.cumpleDia = cumpleDia;
+	}
+
+	public Integer getCumpleMes() {
+		return cumpleMes;
+	}
+
+	public void setCumpleMes(Integer cumpleMes) {
+		this.cumpleMes = cumpleMes;
 	}
 
 	public Long getId() {
