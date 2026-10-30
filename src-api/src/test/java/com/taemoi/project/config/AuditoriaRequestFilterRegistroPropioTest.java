@@ -85,7 +85,11 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION,
 					new Ejemplo("POST", "/api/miembros/21/invitacion")),
-			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil"))));
+			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil")),
+			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR,
+					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
+			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_GESTION,
+					new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -114,6 +118,11 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("POST", "/api/caja/profesor/cargos/88/cobrar/extra"),
 			new Ejemplo("POST", "/api/caja/profesor/nueva-ruta"),
 			new Ejemplo("DELETE", "/api/grupos/3/profesores/21/otra"),
+			// Decisión 324: las lecturas de pasar lista y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/profesor/grupos/3/clases/9/2026-10-26"),
+			new Ejemplo("GET", "/api/grupos/3/clases/9/2026-10-26"),
+			new Ejemplo("PUT", "/api/grupos/3/clases/9"),
+			new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26/otra"),
 			// Pieza E8-2: las lecturas de sedes y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/sedes"),
 			new Ejemplo("GET", "/api/sedes/5"),

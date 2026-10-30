@@ -224,6 +224,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 	private AlumnoRetoDiarioLogRepository alumnoRetoDiarioLogRepository;
 
 	@Autowired
+	private com.taemoi.project.repositories.AsistenciaAlumnoRepository asistenciaAlumnoRepository;
+
+	@Autowired
 	private com.taemoi.project.repositories.PreinscripcionRepository preinscripcionRepository;
 
 	@Autowired
@@ -1909,6 +1912,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			preinscripcionRepository.desvincularAlumno(alumnoId);
 			alumnoRetoDiarioLogRepository.borrarDelAlumno(alumnoId);
 			registroPendienteRepository.borrarDelAlumno(alumnoId);
+			// Decisión 324: su asistencia es un dato personal, no de tesorería: no se conserva. Las listas siguen sin él.
+			asistenciaAlumnoRepository.borrarDelAlumno(alumnoId);
 
 			// Sus documentos, con el archivo (ya sin consentimientos que los referencien).
 			for (Documento documento : new ArrayList<>(alumno.getDocumentos())) {

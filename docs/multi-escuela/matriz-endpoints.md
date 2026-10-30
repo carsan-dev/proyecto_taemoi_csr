@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (465 líneas; 150 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (500 líneas; 165 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -419,6 +419,20 @@ fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, 
 `nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
 y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
 `PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Pasar lista (decisión 324, V31_15, `fase3-pasar-lista.md`): 18 líneas nuevas, 9 bajo `/api/profesor/grupos/{grupoId}`
+(`ProfesorController`) y 9 bajo `/api/grupos/{grupoId}` (`GrupoAsistenciaController`), con el mismo `AsistenciaService`.
+Ninguna casilla existente cambia. Cada prefijo tiene `GET` y `HEAD` de `/clases`, `/clases/{turnoId}/{fecha}`,
+`/asistencia/resumen` y `/alumnos/{alumnoId}/asistencia`, y `PUT /clases/{turnoId}/{fecha}`.
+- Profesor: la regla de URL de `/api/profesor/**` y `@acceso.grupoDeMisGrupos`. PROFESOR `ALCANCE`, el resto `DENIEGA`.
+  Declaradas en `PROFESOR_E7`. Guarda hasta hoy − 14 días, incluido.
+- Gestión: `RESPONSABLE_SEDE_GET` y `RESPONSABLE_SEDE_PUT` de `SecurityConfiguration` y
+  `@acceso.grupoEnSede(#grupoId,'LEER'|'EDITAR')`. GESTOR y PROPIETARIO `PERMITE`, RESPONSABLE_SEDE `ALCANCE`, el resto
+  `DENIEGA` (la sesión solo-profesor, en la URL). Sin límite de días. `grupoEnSede` y no `grupo`: este concede `LEER`
+  también por los grupos del profesor y abriría al responsable grupos de fuera de sus sedes.
+- El `PUT` tiene registro propio (`ASISTENCIA_PROFESOR` y `ASISTENCIA_GESTION` en `EscrituraConRegistroPropio`): su 2xx deja
+  una sola fila, `PROFESOR ASISTENCIA_REGISTRADA` o `ASISTENCIA_CORREGIDA` con `clase`, `grupo` y `turno`. Lo prueban
+  `AsistenciaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

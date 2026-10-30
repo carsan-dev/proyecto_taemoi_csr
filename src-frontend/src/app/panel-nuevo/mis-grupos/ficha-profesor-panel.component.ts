@@ -2,9 +2,11 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, finalize, firstValueFrom } from 'rxjs';
 
+import { AsistenciaDeAlumno, DiaAsistencia } from '../../interfaces/asistencia';
 import {
   ContactoAlumno,
   DeporteDelAlumno,
@@ -19,9 +21,11 @@ import {
   fechaCorta,
   hoyIso,
   mensajeDelServidor,
+  mesesAsistencia,
   nombreCompleto,
 } from './profesor-textos';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
 import { gradoFila, gradoParaFrase } from '../alumnos/alumno-vista';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
@@ -30,6 +34,7 @@ import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { CampoDialogo } from '../dialogo/dialogo.component';
+import { diaCorto, diaLargo } from '../asistencia/asistencia-textos';
 import { eur } from '../formato/formato-es';
 
 /** Texto de la confirmación de un pase (D7-6). Igual que en la ficha de hoy. */
@@ -75,6 +80,7 @@ interface EdicionFecha {
 })
 export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   private readonly profesor = inject(ProfesorService);
+  private readonly asistencia = inject(AsistenciaService);
   private readonly ruta = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthenticationService);
@@ -98,6 +104,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   readonly etiquetaContacto = etiquetaContacto;
   readonly hoy = hoyIso();
   readonly esqueletos = [0, 1, 2];
+  readonly meses = mesesAsistencia();
+  readonly diaCorto = diaCorto;
 
   ficha: FichaAlumnoProfesor | null = null;
   cargando = false;
@@ -115,10 +123,19 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   errorSalud: string | null = null;
   private peticionSalud: Subscription | null = null;
   private peticionFicha: Subscription | null = null;
+  private peticionAsistencia: Subscription | null = null;
+
+  /** Asistencia del mes elegido en el grupo de origen. Un 404 (el alumno no es de ese grupo) oculta el bloque. */
+  mesAsistencia = this.meses[0].valor;
+  datosAsistencia: AsistenciaDeAlumno | null = null;
+  cargandoAsistencia = false;
+  errorAsistencia = false;
+  sinAsistencia = false;
 
   constructor() {
     this.destruir.onDestroy(() => {
       this.peticionFicha?.unsubscribe();
+      this.peticionAsistencia?.unsubscribe();
       this.descartarSalud();
     });
   }
@@ -217,6 +234,49 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
         },
         error: (e) => (this.error = mensajeDelServidor(e, 'No se ha podido cargar la ficha.')),
       });
+    this.cargarAsistencia();
+  }
+
+  // ------------------------------------------------------------------ asistencia
+
+  /** Sin grupo de origen no hay a qué grupo preguntar: el bloque no se muestra. */
+  get verAsistencia(): boolean { return !!this.grupoOrigen && !this.sinAsistencia; }
+
+  cargarAsistencia(): void {
+    this.peticionAsistencia?.unsubscribe();
+    this.datosAsistencia = null;
+    this.errorAsistencia = false;
+    this.sinAsistencia = false;
+    if (!this.grupoOrigen) {
+      return;
+    }
+    const mes = this.meses.find((m) => m.valor === this.mesAsistencia) ?? this.meses[0];
+    this.cargandoAsistencia = true;
+    this.peticionAsistencia = this.asistencia
+      .deAlumno('profesor', this.grupoOrigen, this.alumnoId, mes.year, mes.month)
+      .pipe(finalize(() => (this.cargandoAsistencia = false)))
+      .subscribe({
+        next: (datos) => (this.datosAsistencia = datos),
+        error: (e) => {
+          if (e instanceof HttpErrorResponse && e.status === 404) {
+            this.sinAsistencia = true;
+          } else {
+            this.errorAsistencia = true;
+          }
+        },
+      });
+  }
+
+  cambiarMesAsistencia(valor: string): void {
+    this.mesAsistencia = valor;
+    this.cargarAsistencia();
+  }
+
+  /** Dos clases el mismo día: la hora entra en el nombre de la celda. */
+  etiquetaDia(dia: DiaAsistencia): string {
+    const repetido = (this.datosAsistencia?.dias ?? []).filter((d) => d.fecha === dia.fecha).length > 1;
+    const estado = dia.estado === 'PRESENTE' ? 'asistió' : dia.estado === 'FALTA' ? 'faltó' : 'sin lista';
+    return diaLargo(dia.fecha) + (repetido ? ', ' + dia.horaInicio : '') + ': ' + estado;
   }
 
   // ------------------------------------------------------------------ apto

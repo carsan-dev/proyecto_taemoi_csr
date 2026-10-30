@@ -17,15 +17,16 @@
     } @else if (error) {
       <pn-bloque-error [titulo]="error" (reintentar)="cargar()" />
     } @else {
+      <ng-container *ngTemplateOutlet="tarjetaHoy" />
       <div class="grupo-profesor__asistencia">
         <label class="grupo-profesor__mes"><span class="grupo-profesor__oculto">Mes de la hoja de asistencia</span>
-          <select [(ngModel)]="mes" [disabled]="descargando">
+          <select [ngModel]="mes" (ngModelChange)="cambiarMes($event)" [disabled]="descargando">
             @for (opcion of meses; track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
           </select>
         </label>
         <button pnOcupado type="button" class="grupo-profesor__boton" [ocupado]="descargando"
           textoOcupado="Generando…" (click)="descargarAsistencia($event)">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6v20h12V6zM14 2v5h5M9 12h6M9 16h6" /></svg>Hoja de asistencia
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6v20h12V6zM14 2v5h5M9 12h6M9 16h6" /></svg>Hoja en PDF
         </button>
       </div>
       @if (errorAsistencia) { <pn-bloque-error [titulo]="errorAsistencia" (reintentar)="descargarAsistencia()" /> }
@@ -41,6 +42,9 @@
       } @else if (!visibles.length) {
         <pn-bloque-vacio titulo="Ningún alumno de este grupo está apto para examen." />
       } @else {
+        @if (resumen) {
+          <div class="grupo-profesor__cabecera-lista" aria-hidden="true"><span>Alumno</span><span>Asistencia en {{ nombreMesElegido }}</span></div>
+        }
         <ul class="grupo-profesor__lista" aria-label="Alumnos activos">
           @for (alumno of visibles; track alumno.id) {
             <li class="grupo-profesor__fila" [class.grupo-profesor__fila--abierta]="alumnoAbierto?.id === alumno.id">
@@ -62,6 +66,12 @@
               @if (esAptoAlumno(alumno)) {
                 <span class="grupo-profesor__apto">Apto@if (alumno.deportes.length > 1) {<span class="grupo-profesor__oculto"> en {{ deportesAptos(alumno) }}</span>}</span>
               }
+              @if (resumen) {
+                @let asistida = asistenciaDe(alumno);
+                <span class="grupo-profesor__constancia" data-cifras>
+                  @if (asistida) { {{ asistida }} } @else { <span aria-hidden="true">—</span><span class="grupo-profesor__oculto">sin lista este mes</span> }
+                </span>
+              }
             </li>
           }
         </ul>
@@ -75,3 +85,70 @@
   }
   @if (documentos.length) { <pn-visor-pdf [documentos]="documentos" aviso="" [focoRetorno]="focoRetorno" (cerrar)="cerrarVisor()" /> }
 </section>
+
+<ng-template #tarjetaHoy>
+  @if (cargandoClases) {
+    <pn-esqueleto etiqueta="Cargando la clase de hoy…"><div class="grupo-profesor__esqueleto-tarjeta"></div></pn-esqueleto>
+  } @else if (errorClases) {
+    <section class="grupo-profesor__hoy grupo-profesor__hoy--error" aria-label="Clase de hoy">
+      <p class="grupo-profesor__hoy-texto" role="alert">No se ha podido cargar la clase de hoy.</p>
+      <button type="button" class="grupo-profesor__boton" (click)="cargarClases()">Reintentar</button>
+    </section>
+  } @else if (clasesHoy.length === 0) {
+    <section class="grupo-profesor__hoy" aria-label="Clase de hoy">
+      <div>
+        <div class="grupo-profesor__hoy-titulo">Hoy no hay clase</div>
+        @if (textoProxima) { <div class="grupo-profesor__hoy-texto">{{ textoProxima }}</div> }
+      </div>
+      @if (puedePasarOtra) {
+        <a class="grupo-profesor__boton grupo-profesor__boton--ancho" [routerLink]="['/mis-grupos', grupoId, 'lista']">Pasar otra clase</a>
+      }
+    </section>
+  } @else if (clasesHoy.length === 1) {
+    @let clase = clasesHoy[0];
+    <section class="grupo-profesor__hoy" aria-label="Clase de hoy">
+      <div>
+        <div class="grupo-profesor__hoy-titulo">{{ tituloHoy(clase) }}</div>
+        @if (tieneLista(clase)) {
+          <div class="grupo-profesor__hoy-hecha">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>{{ clase.presentes }} de {{ clase.total }} presentes
+          </div>
+        } @else if (clase.alumnos === 0) {
+          <div class="grupo-profesor__hoy-texto">Este turno no tiene alumnos asignados.</div>
+        } @else {
+          <div class="grupo-profesor__hoy-texto">Sin pasar lista</div>
+        }
+      </div>
+      @if (clase.alumnos > 0) {
+        @if (tieneLista(clase)) {
+          <a class="grupo-profesor__boton grupo-profesor__boton--ancho" [routerLink]="['/mis-grupos', grupoId, 'lista']" [queryParams]="consultaClase(clase)">Corregir lista</a>
+        } @else {
+          <a class="grupo-profesor__boton grupo-profesor__boton--primario grupo-profesor__boton--ancho" [routerLink]="['/mis-grupos', grupoId, 'lista']" [queryParams]="consultaClase(clase)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9zM9 5H6v16h12V5h-3M9 14l2 2 4-4" /></svg>Pasar lista
+          </a>
+        }
+      }
+    </section>
+  } @else {
+    <section class="grupo-profesor__hoy grupo-profesor__hoy--varias" aria-label="Clases de hoy">
+      @for (clase of clasesHoy; track clase.turnoId) {
+        <div class="grupo-profesor__hoy-fila">
+          <div>
+            <div class="grupo-profesor__hoy-titulo">{{ franja(clase) }}</div>
+            @if (tieneLista(clase)) {
+              <div class="grupo-profesor__hoy-hecha">{{ clase.presentes }} de {{ clase.total }} presentes</div>
+            } @else if (clase.alumnos === 0) {
+              <div class="grupo-profesor__hoy-texto">Este turno no tiene alumnos asignados.</div>
+            } @else {
+              <div class="grupo-profesor__hoy-texto">Sin pasar lista</div>
+            }
+          </div>
+          @if (clase.alumnos > 0) {
+            <a class="grupo-profesor__boton" [class.grupo-profesor__boton--primario]="!tieneLista(clase)" [routerLink]="['/mis-grupos', grupoId, 'lista']"
+              [queryParams]="consultaClase(clase)" [attr.aria-label]="(tieneLista(clase) ? 'Corregir la lista de las ' : 'Pasar lista de las ') + clase.horaInicio">{{ tieneLista(clase) ? 'Corregir' : 'Pasar lista' }}</a>
+          }
+        </div>
+      }
+    </section>
+  }
+</ng-template>

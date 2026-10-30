@@ -509,6 +509,19 @@ public class ProfesorService {
 		return roles;
 	}
 
+	/**
+	 * Decisión 324: deportes activos de esos alumnos por alumno, con la misma forma que {@link #alumnosDelGrupo}, para la
+	 * lista de una clase. Pública porque esta clase va con proxy; quien llama ya ha comprobado el grupo.
+	 */
+	public Map<Long, List<ProfesorDTOs.DeporteEnLista>> deportesEnLista(Collection<Long> alumnos, String disciplina) {
+		Map<Long, List<ProfesorDTOs.DeporteEnLista>> porAlumno = new HashMap<>();
+		for (FilaDeporte d : deportesActivos(alumnos)) {
+			porAlumno.computeIfAbsent(d.alumnoId(), k -> new ArrayList<>()).add(new ProfesorDTOs.DeporteEnLista(d.codigo(),
+					d.nombre(), grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina)));
+		}
+		return porAlumno;
+	}
+
 	/** Solo {@code alcance.grupos()}, también con alcance total (P o G con PROFESOR, E8-1): nunca un atajo por total. */
 	private Set<Long> gruposDelProfesor() {
 		return alcanceActual.obtener().grupos();

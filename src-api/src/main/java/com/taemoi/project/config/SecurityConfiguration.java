@@ -50,6 +50,9 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos", "/api/grupos/resumen", "/api/grupos/{id}",
+			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
+			"/api/grupos/{grupoId}/clases", "/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
+			"/api/grupos/{grupoId}/asistencia/resumen", "/api/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
 			"/api/turnos", "/api/turnos/resumen", "/api/turnos/{turnoId}",
 			// 6-2: sin plantillas ni rutas públicas (sus reglas van antes).
 			"/api/preinscripciones", "/api/preinscripciones/{referencia}",
@@ -106,6 +109,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/deportes/{deporte}/fecha-alta-competidor-inicial",
 			"/api/alumnos/{id}/deportes/{deporte}/datos-competidor",
 			"/api/grupos/{id}",
+			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
+			"/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
 			"/api/turnos/{turnoId}",
 			"/api/preinscripciones/{referencia}/turnos",
 			// 6-2 (D6-8): cuantía y pago del examen de sus alumnos.

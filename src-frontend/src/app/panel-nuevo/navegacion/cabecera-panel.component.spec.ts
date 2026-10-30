@@ -12,7 +12,7 @@ import { PermisosSesion, PermisosSesionService } from '../../servicios/authentic
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
 import { MarcaPanel } from '../marca-escuela-panel.service';
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
-import { CabeceraPanelComponent, RECARGAR_PAGINA, fondoActivoCabecera, iniciales } from './cabecera-panel.component';
+import { CabeceraPanelComponent, RECARGAR_PAGINA, fondoActivoCabecera, iniciales, ocultaBarraInferior } from './cabecera-panel.component';
 import { itSinReloj } from '../../testing/reloj-prueba';
 
 const API = environment.apiUrl;
@@ -50,6 +50,18 @@ function permisos(parcial: Partial<PermisosSesion> & { nombreVisible?: string | 
     ...parcial,
   } as PermisosSesion;
 }
+
+describe('ocultaBarraInferior', () => {
+  it('solo en pasar lista, del profesor y de gestión, con o sin consulta', () => {
+    expect(ocultaBarraInferior('/mis-grupos/7/lista')).toBeTrue();
+    expect(ocultaBarraInferior('/mis-grupos/7/lista?turno=9&fecha=2026-10-28')).toBeTrue();
+    expect(ocultaBarraInferior('/gruposListar/7/lista')).toBeTrue();
+    expect(ocultaBarraInferior('/mis-grupos/7')).toBeFalse();
+    expect(ocultaBarraInferior('/mis-grupos')).toBeFalse();
+    expect(ocultaBarraInferior('/gruposListar')).toBeFalse();
+    expect(ocultaBarraInferior('/mis-grupos/7/listado')).toBeFalse();
+  });
+});
 
 describe('fondoActivoCabecera e iniciales', () => {
   it('el texto de la cabecera llega a 4,5:1 sobre el fondo de la entrada actual', () => {

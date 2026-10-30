@@ -6,7 +6,10 @@ import { By } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { ClaseAsistencia, ClasesDelGrupo } from '../../interfaces/asistencia';
 import { AlumnoDeGrupo } from '../../interfaces/profesor';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { CONSULTA_HOJA } from '../capas/capa-modal';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { FichaProfesorPanelComponent } from './ficha-profesor-panel.component';
 import { GrupoPanelComponent } from './grupo.component';
@@ -41,14 +44,24 @@ describe('GrupoPanelComponent', () => {
       imports: [GrupoPanelComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: ActivatedRoute, useValue: { paramMap: parametros, queryParamMap: consulta } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } }],
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        // La ficha embebida inyecta la sesión: con la real, su constructor deja abierta una petición a auth-status.
+        { provide: AuthenticationService, useValue: { getRolesActuales: () => ['ROLE_PROFESOR'] } }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(GrupoPanelComponent);
     fixture.detectChanges();
   });
 
-  afterEach(() => { http.verify(); fixture.destroy(); });
+  // La tarjeta de hoy y la constancia piden sus datos aparte: lo que un test no contesta se cierra vacío.
+  afterEach(() => {
+    const abiertas = (coincide: (url: string) => boolean) => http.match(r => coincide(r.url)).filter(r => !r.cancelled);
+    abiertas(u => u.endsWith('/clases')).forEach(r => r.flush({ hoy: [], recientes: [], proxima: null }));
+    abiertas(u => u.endsWith('/asistencia/resumen')).forEach(r => r.flush([]));
+    abiertas(u => /\/alumnos\/\d+\/asistencia$/.test(u)).forEach(r => r.flush({ presentes: 0, clases: 0, dias: [] }));
+    http.verify();
+    fixture.destroy();
+  });
 
   it('muestra el esqueleto y carga título, sede y papel', () => {
     expect(elemento().querySelector('pn-esqueleto')).not.toBeNull();
@@ -138,6 +151,16 @@ describe('GrupoPanelComponent', () => {
 
   describe('ficha del alumno en escritorio (≥1024)', () => {
     const ficha = { id: 21, nombre: 'Lucía', apellidos: 'Romero', edad: 9, grupos: [], contacto: [], deportes: [] };
+
+    // El panel es hoja inferior bajo 768 px: el test no puede depender del tamaño de la ventana de Chrome Headless.
+    beforeEach(() => {
+      spyOn(window, 'matchMedia').and.callFake((consulta: string) => ({
+        matches: consulta !== CONSULTA_HOJA,
+        media: consulta,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList);
+    });
 
     it('pulsar un alumno lo refleja en la URL (?alumno=) sin abandonar el grupo', () => {
       cargar();
@@ -296,4 +319,145 @@ describe('GrupoPanelComponent', () => {
     expect(elemento().textContent).toContain('No se ha podido descargar la hoja de asistencia.');
     expect(fixture.componentInstance.descargando).toBeFalse();
   }));
+
+  describe('tarjeta de hoy', () => {
+    const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({
+      turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 18, ...cambios,
+    });
+    const tarjeta = () => elemento().querySelector<HTMLElement>('section[aria-label^="Clase"]')!;
+
+    function conClases(clases: Partial<ClasesDelGrupo>): void {
+      cargar();
+      http.expectOne(`${api}/grupos/7/clases`).flush({ hoy: [], recientes: [], proxima: null, ...clases });
+      fixture.detectChanges();
+    }
+
+    it('esqueleto mientras carga, sin tumbar el resto', () => {
+      cargar();
+      expect(elemento().querySelector('pn-esqueleto')).not.toBeNull();
+      expect(elemento().textContent).toContain('Lucía Romero');
+    });
+
+    it('sin pasar: título con el día, «Sin pasar lista» y botón principal con turno y fecha', () => {
+      conClases({ hoy: [clase()] });
+      expect(tarjeta().textContent).toContain('Hoy, miércoles · 18:00–19:00');
+      expect(tarjeta().textContent).toContain('Sin pasar lista');
+      const enlace = tarjeta().querySelector<HTMLAnchorElement>('a')!;
+      expect(enlace.textContent?.trim()).toBe('Pasar lista');
+      expect(enlace.getAttribute('href')).toBe('/mis-grupos/7/lista?turno=9&fecha=2026-10-28');
+    });
+
+    it('con lista: «12 de 18 presentes» y «Corregir lista»; pasada no significa lista', () => {
+      conClases({ hoy: [clase({ presentes: 12, total: 18, pasada: true })] });
+      expect(tarjeta().textContent).toContain('12 de 18 presentes');
+      expect(tarjeta().querySelector('a')?.textContent?.trim()).toBe('Corregir lista');
+    });
+
+    it('una clase pasada sin lista sigue siendo «Pasar lista»', () => {
+      conClases({ hoy: [clase({ pasada: true })] });
+      expect(tarjeta().querySelector('a')?.textContent?.trim()).toBe('Pasar lista');
+    });
+
+    it('turno sin alumnos: lo dice y no hay botón', () => {
+      conClases({ hoy: [clase({ alumnos: 0 })] });
+      expect(tarjeta().textContent).toContain('Este turno no tiene alumnos asignados.');
+      expect(tarjeta().querySelector('a, button')).toBeNull();
+    });
+
+    it('turno vaciado con lista guardada: muestra «12 de 18 presentes»', () => {
+      conClases({ hoy: [clase({ alumnos: 0, presentes: 12, total: 18 })] });
+      expect(tarjeta().textContent).toContain('12 de 18 presentes');
+      expect(tarjeta().textContent).not.toContain('no tiene alumnos');
+    });
+
+    it('turno vaciado con lista guardada, con dos clases hoy: también la cuenta', () => {
+      conClases({ hoy: [clase({ alumnos: 0, presentes: 5, total: 8 }), clase({ turnoId: 10, horaInicio: '19:00', horaFin: '20:00' })] });
+      const filas = elemento().querySelectorAll('.grupo-profesor__hoy-fila');
+      expect(filas[0].textContent).toContain('5 de 8 presentes');
+    });
+
+    it('dos clases hoy: una fila por clase con «Corregir» y «Pasar lista»', () => {
+      conClases({ hoy: [clase({ presentes: 12, total: 18 }), clase({ turnoId: 10, horaInicio: '19:00', horaFin: '20:00' })] });
+      const filas = elemento().querySelectorAll('.grupo-profesor__hoy-fila');
+      expect(filas.length).toBe(2);
+      expect(filas[0].textContent).toContain('18:00–19:00');
+      expect(filas[0].textContent).toContain('12 de 18 presentes');
+      expect(filas[0].querySelector('a')?.textContent?.trim()).toBe('Corregir');
+      expect(filas[1].querySelector('a')?.textContent?.trim()).toBe('Pasar lista');
+      expect(filas[1].querySelector('a')?.getAttribute('href')).toBe('/mis-grupos/7/lista?turno=10&fecha=2026-10-28');
+    });
+
+    it('sin clase hoy: próxima y «Pasar otra clase» si hay recientes', () => {
+      conClases({ recientes: [clase({ fecha: '2026-10-26' })], proxima: { fecha: '2026-11-02', horaInicio: '18:00' } });
+      expect(tarjeta().textContent).toContain('Hoy no hay clase');
+      expect(tarjeta().textContent).toContain('Próxima: lunes 2 de noviembre, 18:00');
+      const enlace = tarjeta().querySelector<HTMLAnchorElement>('a')!;
+      expect(enlace.textContent?.trim()).toBe('Pasar otra clase');
+      expect(enlace.getAttribute('href')).toBe('/mis-grupos/7/lista');
+    });
+
+    it('sin clase hoy, sin próxima y sin recientes: ni línea ni botón', () => {
+      conClases({});
+      expect(tarjeta().textContent).toContain('Hoy no hay clase');
+      expect(tarjeta().textContent).not.toContain('Próxima');
+      expect(tarjeta().querySelector('a, button')).toBeNull();
+    });
+
+    it('si falla, error compacto con reintentar y el resto sigue en pie', () => {
+      cargar();
+      http.expectOne(`${api}/grupos/7/clases`).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      expect(tarjeta().textContent).toContain('No se ha podido cargar la clase de hoy.');
+      expect(elemento().textContent).toContain('Lucía Romero');
+      tarjeta().querySelector('button')!.click();
+      http.expectOne(`${api}/grupos/7/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
+      fixture.detectChanges();
+      expect(tarjeta().textContent).toContain('Sin pasar lista');
+    });
+  });
+
+  describe('constancia del mes', () => {
+    it('el botón del PDF se llama «Hoja en PDF»', () => {
+      cargar();
+      expect(elemento().querySelector('.grupo-profesor__asistencia .grupo-profesor__boton')?.textContent?.trim()).toBe('Hoja en PDF');
+    });
+
+    it('«{presentes} de {clases}» por fila, «—» sin datos e ignora a quien ya no está', () => {
+      cargar();
+      const peticion = http.expectOne(r => r.url === `${api}/grupos/7/asistencia/resumen`);
+      const mes = fixture.componentInstance.meses[0];
+      expect(peticion.request.params.get('year')).toBe(String(mes.year));
+      expect(peticion.request.params.get('month')).toBe(String(mes.month));
+      peticion.flush([{ alumnoId: 21, presentes: 3, clases: 4 }, { alumnoId: 999, presentes: 1, clases: 1 }]);
+      fixture.detectChanges();
+      const filas = elemento().querySelectorAll('.grupo-profesor__fila');
+      expect(filas.length).toBe(2);
+      expect(filas[0].querySelector('.grupo-profesor__constancia')?.textContent?.trim()).toBe('3 de 4');
+      expect(filas[1].querySelector('.grupo-profesor__constancia')?.textContent).toContain('—');
+      expect(filas[1].querySelector('.grupo-profesor__constancia .grupo-profesor__oculto')?.textContent).toBe('sin lista este mes');
+      expect(elemento().querySelector('.grupo-profesor__cabecera-lista')?.textContent).toContain('Asistencia en ');
+    });
+
+    it('al cambiar de mes vuelve a pedir el resumen', () => {
+      cargar();
+      http.expectOne(r => r.url === `${api}/grupos/7/asistencia/resumen`).flush([]);
+      const select = elemento().querySelector<HTMLSelectElement>('select')!;
+      const mes = fixture.componentInstance.meses[1];
+      select.value = mes.valor;
+      select.dispatchEvent(new Event('change'));
+      const peticion = http.expectOne(r => r.url === `${api}/grupos/7/asistencia/resumen`);
+      expect(peticion.request.params.get('month')).toBe(String(mes.month));
+      peticion.flush([]);
+    });
+
+    it('si falla el resumen, las filas quedan sin cifra y sin error a pantalla completa', () => {
+      cargar();
+      http.expectOne(r => r.url === `${api}/grupos/7/asistencia/resumen`).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      expect(elemento().querySelectorAll('.grupo-profesor__fila').length).toBe(2);
+      expect(elemento().querySelector('.grupo-profesor__constancia')).toBeNull();
+      expect(elemento().querySelector('.grupo-profesor__cabecera-lista')).toBeNull();
+      expect(elemento().querySelector('pn-bloque-error')).toBeNull();
+    });
+  });
 });

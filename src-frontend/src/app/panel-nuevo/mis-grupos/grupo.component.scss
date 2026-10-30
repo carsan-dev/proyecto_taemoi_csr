@@ -41,10 +41,29 @@
   .grupo-profesor__cinto { display: inline-block; flex: none; width: 16px; height: 8px; border-radius: 2px; border: 1px solid var(--pn-cinto-borde); }
   .grupo-profesor__apto { flex: none; padding: 2px 10px; border-radius: var(--pn-radio-pastilla); color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); }
   .grupo-profesor__fila--abierta .grupo-profesor__apto { background: var(--pn-superficie); }
+  // Tarjeta de la clase de hoy (boceto `Estados.dc.html`) y constancia del mes (`Main.dc.html`).
+  .grupo-profesor__hoy { display: grid; gap: 10px; margin-bottom: 20px; padding: 12px 16px; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
+  .grupo-profesor__hoy--varias { gap: 0; padding-block: 0; }
+  .grupo-profesor__hoy--error { grid-template-columns: 1fr auto; align-items: center; }
+  .grupo-profesor__hoy-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; }
+  .grupo-profesor__hoy-fila + .grupo-profesor__hoy-fila { border-top: 1px solid var(--pn-linea); }
+  .grupo-profesor__hoy-titulo { font: var(--pn-cuerpo); font-weight: 600; line-height: 1.3; }
+  .grupo-profesor__hoy-texto { margin: 0; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .grupo-profesor__hoy-hecha { display: flex; align-items: center; gap: 6px; font: var(--pn-secundario); font-weight: 600; color: var(--pn-bien); font-variant-numeric: tabular-nums; }
+  .grupo-profesor__hoy-hecha svg { width: 16px; height: 16px; }
+  .grupo-profesor__boton--ancho { width: 100%; }
+  .grupo-profesor__boton--primario { @include c.boton-primario; }
+  .grupo-profesor__hoy-fila .grupo-profesor__boton { flex: none; width: auto; min-height: 44px; padding: 0 14px; }
+  .grupo-profesor__esqueleto-tarjeta { height: 92px; margin-bottom: 20px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
+  .grupo-profesor__cabecera-lista { display: flex; justify-content: space-between; padding: 0 16px 4px; font: var(--pn-etiqueta); color: var(--pn-tinta-2); }
+  .grupo-profesor__constancia { position: relative; flex: none; min-width: 3ch; text-align: right; font: var(--pn-secundario); font-weight: 600; color: var(--pn-tinta); font-variant-numeric: tabular-nums; }
   .grupo-profesor__esqueleto-acciones { width: min(100%, 380px); height: 44px; margin-bottom: 24px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-m); }
   .grupo-profesor__esqueleto-fila { display: grid; gap: 8px; padding: 16px; border-bottom: 1px solid var(--pn-linea); }
   .grupo-profesor__esqueleto-fila span { width: 60%; height: 16px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-s); }
   .grupo-profesor__esqueleto-fila span + span { width: 40%; }
+}
+@media (min-width: 768px) {
+  .pn.grupo-profesor .grupo-profesor__boton--ancho { width: fit-content; }
 }
 @media (max-width: 767.98px) {
   .pn.grupo-profesor .grupo-profesor__pagina { padding: var(--pn-espacio-m); }
@@ -52,6 +71,8 @@
   .pn.grupo-profesor .grupo-profesor__asistencia { display: grid; }
   .pn.grupo-profesor .grupo-profesor__mes select { width: 100%; }
   .pn.grupo-profesor .grupo-profesor__boton { width: 100%; min-height: 44px; }
+  .pn.grupo-profesor .grupo-profesor__hoy-fila .grupo-profesor__boton { width: auto; }
+  .pn.grupo-profesor .grupo-profesor__hoy--error .grupo-profesor__boton { width: auto; }
   .pn.grupo-profesor .grupo-profesor__filtros { display: flex; width: 100%; }
   .pn.grupo-profesor .grupo-profesor__filtros button { flex: 1; justify-content: center; }
 }

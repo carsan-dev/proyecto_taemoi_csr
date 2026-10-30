@@ -298,6 +298,16 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Pasar lista desde gestión (decisión 324): las mismas rutas de asistencia bajo `/api/grupos/{id}`.
+    path: 'gruposListar/:grupoId/lista',
+    canMatch: [estilosPanelGuard],
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), prefijoAsistencia: 'gestion' },
+    loadComponent: () => import('./panel-nuevo/asistencia/pasar-lista.component').then(m => m.PasarListaComponent),
+    canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'gruposCrear',
     canMatch: [estilosPanelGuard],
     data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearGrupo: true },
