@@ -462,17 +462,22 @@ class ImagenServiceImplTest {
 	}
 
 	@Test
-	void guardarFotoEvento_admiteJpegPngYWebp() throws Exception {
-		ByteArrayOutputStream webp = new ByteArrayOutputStream();
-		assertTrue(ImageIO.write(new BufferedImage(40, 30, BufferedImage.TYPE_3BYTE_BGR), "webp", webp));
-
+	void guardarFotoEvento_leeLaCabeceraDeCadaFormato() throws Exception {
 		for (MockMultipartFile archivo : new MockMultipartFile[] {
 				new MockMultipartFile("archivo", "a.jpg", "image/jpeg", jpeg(40, 30)),
 				new MockMultipartFile("archivo", "a.png", "image/png", crearPng(40, 30)),
-				new MockMultipartFile("archivo", "a.webp", "image/webp", webp.toByteArray()) }) {
+				new MockMultipartFile("archivo", "a.webp", "image/webp", codificada("webp")),
+				new MockMultipartFile("archivo", "a.gif", "image/gif", codificada("gif")),
+				new MockMultipartFile("archivo", "a.bmp", "image/bmp", codificada("bmp")) }) {
 			Imagen foto = imagenService.guardarImagenFotoEvento(archivo).foto();
 			assertEquals(40, ImageIO.read(tempDir.resolve(foto.getRuta()).toFile()).getWidth(), archivo.getOriginalFilename());
 		}
+	}
+
+	private static byte[] codificada(String formato) throws IOException {
+		ByteArrayOutputStream salida = new ByteArrayOutputStream();
+		assertTrue(ImageIO.write(new BufferedImage(40, 30, BufferedImage.TYPE_3BYTE_BGR), formato, salida), formato);
+		return salida.toByteArray();
 	}
 
 	private ImagenServiceImpl contandoDecodificadas(AtomicInteger decodificadas) {
