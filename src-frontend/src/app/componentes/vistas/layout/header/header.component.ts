@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone, inject } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
 import {
   AuthenticationService,
@@ -16,6 +16,8 @@ import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { PermisosSesionService, pidePermisos } from '../../../../servicios/authentication/permisos-sesion.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
+import { esperarEstilos } from '../../../../panel-nuevo/esperar-estilos';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 
@@ -45,6 +47,13 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isDesktopUserMenuOpen: boolean = false;
   isAdminAccountMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
+  /**
+   * La hoja diferida de gestión (`gestion-compartida.css`) ya cargó (o falló o venció el tope). La web pública no la
+   * pide nadie más: sin ella, la cabecera de administración se vería sin estilos.
+   */
+  estilosGestionListos: boolean = false;
+  private estilosGestionPedidos: boolean = false;
+  private readonly estilosPanel = inject(EstilosPanelService);
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
   username: string | null = null;
@@ -287,6 +296,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
       this.isAdminOnly = roles.includes('ROLE_ADMIN');
+      this.pedirEstilosGestion();
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
       this.actualizarPermisos(roles);
@@ -321,8 +331,19 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe((capacidades) => (this.veMisGrupos = profesor && capacidades.includes('MIS_GRUPOS')));
   }
 
+  /** Pide la hoja de gestión una sola vez y abre la cabecera de administración cuando resuelve (también si falla). */
+  private pedirEstilosGestion(): void {
+    if (!this.isAdmin || this.estilosGestionPedidos) {
+      return;
+    }
+    this.estilosGestionPedidos = true;
+    void esperarEstilos(this.estilosPanel.cargarGestion()).then(() => {
+      this.estilosGestionListos = true;
+    });
+  }
+
   get mostrarHeaderAdmin(): boolean {
-    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isAdmin) {
+    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isAdmin || !this.estilosGestionListos) {
       return false;
     }
     return !this.isUserRoute;

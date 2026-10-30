@@ -5,6 +5,7 @@ import { BehaviorSubject, of } from 'rxjs';
 
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
@@ -51,10 +52,13 @@ describe('HeaderComponent: contador de solicitudes', () => {
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contador },
         { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
       ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
   }

@@ -7,6 +7,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { Capacidad, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { itSinReloj } from '../../../../testing/reloj-prueba';
 
@@ -34,7 +35,8 @@ describe('HeaderComponent', () => {
 
     const pageScroll = { scrollTop: 0 };
     const scrollLock = { lock: () => () => undefined };
-    return new HeaderComponent(
+    TestBed.configureTestingModule({});
+    return TestBed.runInInjectionContext(() => new HeaderComponent(
       authServiceMock as any,
       routerMock as any,
       new NgZone({}),
@@ -42,7 +44,7 @@ describe('HeaderComponent', () => {
       scrollLock as any,
       contadorSolicitudesSimulado as any,
       { capacidades: () => of([]), obtener: () => of({}) } as any
-    );
+    ));
   }
 
   let component: HeaderComponent;
@@ -123,10 +125,13 @@ describe('HeaderComponent: menú lateral de administración', () => {
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
         { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
       ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
@@ -221,6 +226,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
         { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
       ],
     }).compileComponents();
 
@@ -389,10 +395,13 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
         { provide: PermisosSesionService, useValue: permisos },
+        { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
       ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, esAdminPlataforma, permisos };
   }
@@ -538,5 +547,84 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).toBeNull();
     expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+});
+
+describe('HeaderComponent: hoja de gestión en la web pública', () => {
+  async function renderizar(roles: string[], cargarGestion: () => Promise<void>) {
+    const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    const authServiceMock = {
+      usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
+      usernameCambio: new BehaviorSubject<string | null>('cuenta'),
+      rolesCambio: new BehaviorSubject<string[]>(roles),
+      comprobarLogueado: () => true,
+      getRoles: () => of(roles),
+      resolverRolesDisponibles: () => of(roles),
+      esAdminPlataforma: () => of(false),
+      marcarVistaPreferidaSegunRuta: () => undefined,
+      tieneAccesoAdmin: () => gestion,
+      tieneAccesoUser: () => roles.includes('ROLE_USER'),
+      tieneAccesoDual: () => false,
+      logout: () => undefined,
+    };
+    const estilos = { cargarGestion: jasmine.createSpy('cargarGestion').and.callFake(cargarGestion) };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [HeaderComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: authServiceMock },
+        { provide: PageScrollService, useValue: { scrollTop: 0 } },
+        { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contadorSolicitudesSimulado },
+        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: EstilosPanelService, useValue: estilos },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(HeaderComponent);
+    fixture.detectChanges();
+    return { fixture, estilos, el: fixture.nativeElement as HTMLElement };
+  }
+
+  itSinReloj('admin: pide la hoja una vez y la cabecera de gestión aparece al resolver', async () => {
+    let resolver!: () => void;
+    const { fixture, estilos, el } = await renderizar(
+      ['ROLE_ADMIN'],
+      () => new Promise<void>((r) => (resolver = r))
+    );
+
+    expect(estilos.cargarGestion).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.mostrarHeaderAdmin).toBeFalse();
+    expect(el.querySelector('.admin-ui')).toBeNull();
+    expect(el.querySelector('#admin-sidebar')).toBeNull();
+
+    resolver();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.estilosGestionListos).toBeTrue();
+    expect(el.querySelector('header.admin-top-navbar.admin-ui')).not.toBeNull();
+    expect(el.querySelector('#admin-sidebar')).not.toBeNull();
+    expect(estilos.cargarGestion).toHaveBeenCalledTimes(1);
+  });
+
+  itSinReloj('familia: no pide la hoja de gestión', async () => {
+    const { fixture, estilos, el } = await renderizar(['ROLE_USER'], () => Promise.resolve());
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(estilos.cargarGestion).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.estilosGestionListos).toBeFalse();
+    expect(el.querySelector('.admin-ui')).toBeNull();
+  });
+
+  itSinReloj('si la hoja falla, la cabecera de gestión aparece igualmente', async () => {
+    const { fixture, el } = await renderizar(['ROLE_MANAGER'], () => Promise.reject(new Error('sin hoja')));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.querySelector('header.admin-top-navbar.admin-ui')).not.toBeNull();
   });
 });

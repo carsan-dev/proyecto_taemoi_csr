@@ -5,6 +5,7 @@ import { BehaviorSubject, of } from 'rxjs';
 import { HeaderComponent } from '../../componentes/vistas/layout/header/header.component';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { Capacidad, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { EstilosPanelService } from '../../panel-nuevo/estilos-panel.service';
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
 import { PageScrollService } from '../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../servicios/generales/scroll-lock.service';
@@ -94,9 +95,12 @@ async function rutasDeLaCabeceraDeHoy(caso: Caso): Promise<Set<string>> {
       { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
       { provide: SolicitudesContadorService, useValue: { total: () => 0, refrescar: () => undefined, reiniciar: () => undefined } },
       { provide: PermisosSesionService, useValue: { capacidades: () => of(caso.capacidades), obtener: () => of({}) } },
+      { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
     ],
   }).compileComponents();
   const fixture = TestBed.createComponent(HeaderComponent);
+  fixture.detectChanges();
+  await fixture.whenStable();
   fixture.detectChanges();
   fixture.componentInstance.isAdminAccountMenuOpen = true;
   fixture.detectChanges();
