@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -313,6 +314,16 @@ public class ImagenServiceImpl implements ImagenService {
 		return salida;
 	}
 
+	/** Separado para poder simular en los tests un codificador que falla a mitad de escritura. */
+	protected void codificar(ImageWriter writer, IIOImage imagen, ImageWriteParam param) throws IOException {
+		writer.write(null, imagen, param);
+	}
+
+	/** Separado para poder simular su fallo en los tests. */
+	protected void borrarFicheroParcial(Path fichero) throws IOException {
+		Files.deleteIfExists(fichero);
+	}
+
 	private Path guardarComoWebp(BufferedImage imagen, Path directorioDestino, String nombreArchivo, float quality)
 			throws IOException {
 		Path directorioSeguro = directorioDestino.toAbsolutePath().normalize();
@@ -330,14 +341,16 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		ImageWriter writer = writers.next();
-		try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(
-				Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
+		// Dos recursos: cerrar el ImageOutputStream no cierra el fichero, y borrarlo abierto no liberaría su espacio.
+		try (OutputStream fichero = Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
+				ImageOutputStream outputStream = ImageIO.createImageOutputStream(fichero)) {
 			writer.setOutput(outputStream);
 			ImageWriteParam param = writer.getDefaultWriteParam();
 			if (param.canWriteCompressed()) {
 				configurarCompresionWebp(param, quality);
 			}
-			writer.write(null, new IIOImage(imagen, null, null), param);
+			codificar(writer, new IIOImage(imagen, null, null), param);
 		} finally {
 			writer.dispose();
 		}
@@ -361,8 +374,10 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		ImageWriter writer = writers.next();
-		try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(
-				Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
+		// Dos recursos: cerrar el ImageOutputStream no cierra el fichero, y borrarlo abierto no liberaría su espacio.
+		try (OutputStream fichero = Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
+				ImageOutputStream outputStream = ImageIO.createImageOutputStream(fichero)) {
 			writer.setOutput(outputStream);
 			ImageWriteParam param = writer.getDefaultWriteParam();
 			if (param.canWriteCompressed()) {
@@ -370,7 +385,7 @@ public class ImagenServiceImpl implements ImagenService {
 				float qualitySegura = Math.max(0.1f, Math.min(1.0f, quality));
 				param.setCompressionQuality(qualitySegura);
 			}
-			writer.write(null, new IIOImage(imagen, null, null), param);
+			codificar(writer, new IIOImage(imagen, null, null), param);
 		} finally {
 			writer.dispose();
 		}
@@ -385,11 +400,37 @@ public class ImagenServiceImpl implements ImagenService {
 			guardarComoWebp(imagen, directorioDestino, nombreWebp, webpQuality);
 			return crearImagen(nombreWebp, "image/webp", carpetaPublica);
 		} catch (Exception e) {
+			borrarParcialSinFallar(directorioDestino, nombreWebp);
+			// La clase y no el mensaje: puede llevar la ruta del fichero.
 			logger.warn("Fallo al guardar imagen en WebP, se usara fallback JPEG. Carpeta: {}, nombreBase: {}. Causa: {}",
-					carpetaPublica, nombreBase, e.getMessage());
-			String nombreJpeg = nombreBaseArchivo + ".jpg";
+					carpetaPublica, nombreBase, e.getClass().getSimpleName());
+			return guardarJpegDeReserva(imagen, directorioDestino, nombreBaseArchivo + ".jpg", carpetaPublica);
+		} catch (Error e) {
+			borrarParcialSinFallar(directorioDestino, nombreWebp);
+			throw e;
+		}
+	}
+
+	private Imagen guardarJpegDeReserva(BufferedImage imagen, Path directorioDestino, String nombreJpeg,
+			String carpetaPublica) throws IOException {
+		try {
 			guardarComoJpeg(imagen, directorioDestino, nombreJpeg, JPEG_FALLBACK_QUALITY);
 			return crearImagen(nombreJpeg, "image/jpeg", carpetaPublica);
+		} catch (Exception | Error e) {
+			borrarParcialSinFallar(directorioDestino, nombreJpeg);
+			throw e;
+		}
+	}
+
+	/**
+	 * El fichero se crea antes de codificar: un fallo deja uno a medias al que ninguna fila apunta. Limpieza de un fallo
+	 * que ya se está propagando, así que no debe taparlo. Sin la ruta en el log.
+	 */
+	private void borrarParcialSinFallar(Path directorio, String nombreArchivo) {
+		try {
+			borrarFicheroParcial(RutasArchivos.resolverDentroDe(directorio, nombreArchivo));
+		} catch (Exception | Error e) {
+			logger.warn("No se pudo borrar un fichero de imagen a medio escribir: {}", e.getClass().getSimpleName());
 		}
 	}
 

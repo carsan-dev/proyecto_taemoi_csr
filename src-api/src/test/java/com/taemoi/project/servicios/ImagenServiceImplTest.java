@@ -17,19 +17,34 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 import javax.imageio.IIOException;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
@@ -39,6 +54,14 @@ import com.taemoi.project.services.impl.ImagenServiceImpl;
 import com.taemoi.project.utils.DocumentoSecurityUtils;
 
 class ImagenServiceImplTest {
+
+	private static final int ANCHO_FOTO = 1000;
+	private static final String WEBP_FOTO = "webp" + ANCHO_FOTO;
+	private static final String WEBP_MINIATURA = "webp640";
+	private static final String JPEG_FOTO = "jpeg" + ANCHO_FOTO;
+	private static final String JPEG_MINIATURA = "jpeg640";
+	/** Lo que escribe el codificador roto: ningún fichero sano mide esto en estas pruebas. */
+	private static final long BYTES_A_MEDIAS = 1234;
 
 	@TempDir
 	Path tempDir;
@@ -313,6 +336,244 @@ class ImagenServiceImplTest {
 			assertSame(fallo, assertThrows(Throwable.class, () -> servicio.guardarImagenFotoEvento(
 					new MockMultipartFile("archivo", "a.png", "image/png", crearPng(100, 100)))));
 			assertEquals(0, ficherosDeFotos("org-1"), "Sin miniatura no hay foto que registrar");
+		}
+	}
+
+	// ------------------------------------------------------------------ escritura a medias
+
+	@Test
+	void siElWebPDeLaFotoFallaAMedias_caeAJpegSinResiduo() throws Exception {
+		for (Throwable fallo : excepciones()) {
+			Map<String, Long> antes = fotosEnDisco();
+			ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_FOTO);
+
+			FotoEventoGuardada guardada = servicio.guardarImagenFotoEvento(foto());
+
+			assertEquals("image/jpeg", guardada.foto().getTipo(), fallo.toString());
+			assertEquals("image/webp", guardada.miniatura().getTipo(), fallo.toString());
+			assertSoloNuevas(antes, guardada);
+			borrar(guardada);
+			assertEquals(antes, fotosEnDisco(), fallo.toString());
+		}
+	}
+
+	@Test
+	void siElWebPDeLaMiniaturaFallaAMedias_caeAJpegSinResiduo() throws Exception {
+		for (Throwable fallo : excepciones()) {
+			Map<String, Long> antes = fotosEnDisco();
+			ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_MINIATURA);
+
+			FotoEventoGuardada guardada = servicio.guardarImagenFotoEvento(foto());
+
+			assertEquals("image/webp", guardada.foto().getTipo(), fallo.toString());
+			assertEquals("image/jpeg", guardada.miniatura().getTipo(), fallo.toString());
+			assertSoloNuevas(antes, guardada);
+			borrar(guardada);
+			assertEquals(antes, fotosEnDisco(), fallo.toString());
+		}
+	}
+
+	/** Un error no cae a JPEG: el fallo sigue su camino y no deja rastro. */
+	@Test
+	void siElWebPFallaConUnError_seRelanzaSinResiduo_yNoIntentaElJpeg() throws Exception {
+		Map<String, Long> antes = fotosEnDisco();
+		for (String roto : new String[] { WEBP_FOTO, WEBP_MINIATURA }) {
+			OutOfMemoryError fallo = new OutOfMemoryError("memoria");
+			ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, roto);
+
+			assertSame(fallo, assertThrows(Throwable.class, () -> servicio.guardarImagenFotoEvento(foto())), roto);
+
+			assertEquals(antes, fotosEnDisco(), roto);
+			assertFalse(servicio.codificados.stream().anyMatch(c -> c.startsWith("jpeg")), roto);
+		}
+	}
+
+	@Test
+	void siTambienFallaElJpeg_seRelanzaSinResiduo() throws Exception {
+		Map<String, Long> antes = fotosEnDisco();
+		String[][] casos = { { WEBP_FOTO, JPEG_FOTO }, { WEBP_MINIATURA, JPEG_MINIATURA } };
+		for (String[] rotos : casos) {
+			for (Throwable fallo : todos()) {
+				ConCodificadorRoto servicio = new ConCodificadorRoto(new IOException("webp"), rotos);
+				servicio.falloDelJpeg = fallo;
+
+				assertSame(fallo, assertThrows(Throwable.class, () -> servicio.guardarImagenFotoEvento(foto())));
+
+				assertEquals(antes, fotosEnDisco(), rotos[1] + " " + fallo);
+				assertEquals(1, servicio.codificados.stream().filter(rotos[1]::equals).count(), rotos[1]);
+			}
+		}
+	}
+
+	/** Pasa también por la limpieza del camino de rollback: la foto ya escrita se va con la miniatura a medias. */
+	@Test
+	void siLaMiniaturaFallaAMedias_laFotoYaEscritaTambienSeVa() throws Exception {
+		Map<String, Long> antes = fotosEnDisco();
+		OutOfMemoryError fallo = new OutOfMemoryError("memoria");
+		ConCodificadorRoto servicio = new ConCodificadorRoto(fallo, WEBP_MINIATURA);
+
+		assertSame(fallo, assertThrows(Throwable.class, () -> servicio.guardarImagenFotoEvento(foto())));
+
+		assertTrue(servicio.codificados.contains(WEBP_FOTO), "La foto llegó a escribirse");
+		assertEquals(antes, fotosEnDisco());
+	}
+
+	@Test
+	void siNoSePuedeBorrarElParcial_noTapaElErrorOriginal() throws Exception {
+		for (Throwable falloAlBorrar : new Throwable[] { new IOException("borrado"), new IllegalStateException("borrado"),
+				new StackOverflowError("borrado") }) {
+			for (Throwable fallo : todos()) {
+				ConCodificadorRoto webpRoto = new ConCodificadorRoto(new OutOfMemoryError("webp"), WEBP_FOTO);
+				webpRoto.falloAlBorrar = falloAlBorrar;
+				ConCodificadorRoto jpegRoto = new ConCodificadorRoto(new IOException("webp"), WEBP_FOTO, JPEG_FOTO);
+				jpegRoto.falloDelJpeg = fallo;
+				jpegRoto.falloAlBorrar = falloAlBorrar;
+
+				assertSame(webpRoto.fallo, assertThrows(Throwable.class, () -> webpRoto.guardarImagenFotoEvento(foto())));
+				assertSame(fallo, assertThrows(Throwable.class, () -> jpegRoto.guardarImagenFotoEvento(foto())));
+				assertEquals(1, webpRoto.intentosDeBorrado.size(), "Se intentó borrar");
+				assertEquals(2, jpegRoto.intentosDeBorrado.size(), "El WebP y el JPEG");
+			}
+		}
+	}
+
+	@Test
+	void siNoSePuedeBorrarElWebP_laReservaJpegSigue() throws Exception {
+		ConCodificadorRoto servicio = new ConCodificadorRoto(new IOException("disco"), WEBP_FOTO);
+		servicio.falloAlBorrar = new IOException("borrado");
+
+		assertEquals("image/jpeg", servicio.guardarImagenFotoEvento(foto()).foto().getTipo());
+		assertEquals(1, servicio.intentosDeBorrado.size());
+	}
+
+	@Test
+	void elLogDelFalloNoLlevaLaRuta() throws Exception {
+		String ruta = tempDir.resolve("org-1").toString();
+		Logger logger = (Logger) LoggerFactory.getLogger(ImagenServiceImpl.class);
+		ListAppender<ILoggingEvent> registro = new ListAppender<>();
+		registro.start();
+		logger.addAppender(registro);
+		try {
+			ConCodificadorRoto servicio = new ConCodificadorRoto(new IOException("No se pudo escribir " + ruta), WEBP_FOTO);
+			servicio.falloAlBorrar = new IOException("No se pudo borrar " + ruta);
+
+			servicio.guardarImagenFotoEvento(foto());
+		} finally {
+			logger.detachAppender(registro);
+		}
+
+		assertEquals(2, registro.list.size(), registro.list.toString());
+		for (ILoggingEvent evento : registro.list) {
+			assertFalse(evento.getFormattedMessage().contains(ruta), evento.getFormattedMessage());
+			assertTrue(evento.getFormattedMessage().contains("IOException"), evento.getFormattedMessage());
+			assertNull(evento.getThrowableProxy(), "Sin traza: lleva el mismo mensaje");
+		}
+	}
+
+	/** Comparten el código de escritura: la reserva sigue igual y tampoco ellos dejan residuo. */
+	@Test
+	void elCartelYLaFotoDeAlumnoCaenAJpegSinResiduo() throws Exception {
+		ConCodificadorRoto servicio = new ConCodificadorRoto(new IOException("disco"), "webp8");
+
+		Imagen cartel = servicio.guardarImagenEvento(new MockMultipartFile("archivo", "c.png", "image/png", crearPng()));
+		Imagen alumno = servicio.guardarImagen(new MockMultipartFile("archivo", "a.png", "image/png", crearPng()));
+
+		for (Imagen imagen : new Imagen[] { cartel, alumno }) {
+			assertEquals("image/jpeg", imagen.getTipo());
+			assertEquals(8, ImageIO.read(tempDir.resolve(imagen.getRuta()).toFile()).getWidth());
+			assertEquals(1, ficheros(tempDir.resolve(imagen.getRuta()).getParent()), imagen.getRuta());
+		}
+	}
+
+	private static Throwable[] excepciones() {
+		return new Throwable[] { new IOException("disco lleno"), new IllegalStateException("codificador") };
+	}
+
+	private static Throwable[] todos() {
+		return new Throwable[] { new IOException("disco lleno"), new IllegalStateException("codificador"),
+				new OutOfMemoryError("memoria") };
+	}
+
+	private MockMultipartFile foto() {
+		return new MockMultipartFile("archivo", "foto.png", "image/png", crearPng(ANCHO_FOTO, 800));
+	}
+
+	private void borrar(FotoEventoGuardada guardada) {
+		imagenService.eliminarImagenDeSistema(guardada.foto());
+		imagenService.eliminarImagenDeSistema(guardada.miniatura());
+	}
+
+	private void assertSoloNuevas(Map<String, Long> antes, FotoEventoGuardada guardada) throws IOException {
+		Set<String> esperados = new HashSet<>(antes.keySet());
+		esperados.add(guardada.foto().getNombre());
+		esperados.add(guardada.miniatura().getNombre());
+		Map<String, Long> ahora = fotosEnDisco();
+		assertEquals(esperados, ahora.keySet());
+		assertTrue(ahora.values().stream().allMatch(tamano -> tamano != BYTES_A_MEDIAS), "Ningún fichero a medias");
+	}
+
+	private Map<String, Long> fotosEnDisco() throws IOException {
+		Path carpeta = tempDir.resolve("org-1").resolve("fotos-eventos");
+		Map<String, Long> ficheros = new HashMap<>();
+		if (Files.isDirectory(carpeta)) {
+			try (Stream<Path> rutas = Files.list(carpeta)) {
+				for (Path ruta : rutas.toList()) {
+					ficheros.put(ruta.getFileName().toString(), Files.size(ruta));
+				}
+			}
+		}
+		return ficheros;
+	}
+
+	/** Escribe bytes de verdad en el fichero de destino y falla: un disco lleno o una memoria agotada a mitad. */
+	private class ConCodificadorRoto extends ImagenServiceImpl {
+
+		private final Throwable fallo;
+		private final Set<String> rotos;
+		final List<String> codificados = new ArrayList<>();
+		final List<Path> intentosDeBorrado = new ArrayList<>();
+		Throwable falloDelJpeg;
+		Throwable falloAlBorrar;
+
+		ConCodificadorRoto(Throwable fallo, String... rotos) {
+			this.fallo = fallo;
+			this.rotos = Set.of(rotos);
+			ReflectionTestUtils.setField(this, "directorioImagenesLinux", tempDir.toString());
+			ReflectionTestUtils.setField(this, "directorioImagenesWindows", tempDir.toString());
+		}
+
+		@Override
+		protected void codificar(ImageWriter writer, IIOImage imagen, ImageWriteParam param) throws IOException {
+			String clave = writer.getOriginatingProvider().getFormatNames()[0].toLowerCase()
+					+ imagen.getRenderedImage().getWidth();
+			codificados.add(clave);
+			if (!rotos.contains(clave)) {
+				super.codificar(writer, imagen, param);
+				return;
+			}
+			ImageOutputStream salida = (ImageOutputStream) writer.getOutput();
+			salida.write(new byte[(int) BYTES_A_MEDIAS]);
+			salida.flush();
+			lanzar(falloDelJpeg != null && clave.startsWith("jpeg") ? falloDelJpeg : fallo);
+		}
+
+		@Override
+		protected void borrarFicheroParcial(Path fichero) throws IOException {
+			intentosDeBorrado.add(fichero);
+			if (falloAlBorrar != null) {
+				lanzar(falloAlBorrar);
+			}
+			super.borrarFicheroParcial(fichero);
+		}
+
+		private static void lanzar(Throwable fallo) throws IOException {
+			if (fallo instanceof IOException e) {
+				throw e;
+			}
+			if (fallo instanceof RuntimeException e) {
+				throw e;
+			}
+			throw (Error) fallo;
 		}
 	}
 
