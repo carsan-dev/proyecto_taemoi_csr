@@ -17,9 +17,7 @@ import com.taemoi.project.entities.Grupo;
 import jakarta.validation.Valid;
 
 public interface GrupoService {
-	List<GrupoConAlumnosDTO> obtenerTodosLosGrupos();
-
-	/** Grupos en versión ligera (sin alumnos): mismo alcance y, además, por id; ver {@link GrupoResumenDTO}. */
+	/** Grupos en versión ligera (sin alumnos), por id; ver {@link GrupoResumenDTO}. */
 	List<GrupoResumenDTO> obtenerResumenGrupos();
 
 	Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@NonNull Long id);

@@ -25,15 +25,6 @@ export class GrupoService {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Get all groups
-   */
-  obtenerTodosLosGrupos(): Observable<GrupoDTO[]> {
-    return this.http.get<GrupoDTO[]>(this.urlBase, {
-      withCredentials: true,
-    });
-  }
-
-  /**
    * Get group by ID
    */
   obtenerGrupoPorId(id: number): Observable<GrupoDTO> {

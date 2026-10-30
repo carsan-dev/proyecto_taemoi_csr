@@ -44,16 +44,16 @@ public class SecurityConfiguration {
 	 * de permisos lo comprueba (MatrizPermisosTest).
 	 */
 	private static final String[] RESPONSABLE_SEDE_GET = {
-			"/api/alumnos", "/api/alumnos/ids", "/api/alumnos/count", "/api/alumnos/con-deportes",
+			"/api/alumnos", "/api/alumnos/ids", "/api/alumnos/count",
 			"/api/alumnos/deportes/distribucion", "/api/alumnos/aptos", "/api/alumnos/aptos/deporte",
 			"/api/alumnos/aptos/convocatoria", "/api/alumnos/aptos/{id}", "/api/alumnos/{id}",
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
-			"/api/grupos", "/api/grupos/resumen", "/api/grupos/{id}",
+			"/api/grupos/resumen", "/api/grupos/{id}",
 			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
 			"/api/grupos/{grupoId}/clases", "/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
 			"/api/grupos/{grupoId}/asistencia/resumen", "/api/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
-			"/api/turnos", "/api/turnos/resumen", "/api/turnos/{turnoId}",
+			"/api/turnos/resumen", "/api/turnos/{turnoId}",
 			// 6-2: sin plantillas ni rutas públicas (sus reglas van antes).
 			"/api/preinscripciones", "/api/preinscripciones/{referencia}",
 			"/api/preinscripciones/{referencia}/documento-firmado", "/api/preinscripciones/{referencia}/firma",

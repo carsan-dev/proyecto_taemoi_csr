@@ -98,8 +98,6 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		JsonNode pagina = leer("/api/alumnos?page=1&size=2&incluirInactivos=true", tokenA);
 		assertEquals(4, pagina.get("totalElements").asInt());
 		assertEquals(2, pagina.get("content").size());
-		assertEquals(Set.of(e.aA, e.aGrupoA, e.aSinSede),
-				conjunto(ids(leer("/api/alumnos/con-deportes", tokenA))));
 		assertEquals(Set.of(e.aA), conjunto(ids(leer("/api/alumnos?aptoParaExamen=true", tokenA))));
 
 		// La gestión ve toda la escuela.

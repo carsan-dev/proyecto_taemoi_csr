@@ -56,8 +56,9 @@ import jakarta.servlet.http.Cookie;
  * Red de seguridad de R2-P4 (listas ligeras): el JSON de {@code GET /api/grupos/resumen} y
  * {@code GET /api/turnos/resumen} para propietario (ADMIN), administrador (MANAGER) y responsable de la sede 1,
  * congelado en {@code src/test/resources/dorado/r2-p4/*.json}; un límite de sentencias SQL por petición; y la
- * comprobación de que, sobre los mismos datos, el resumen cuenta y alcanza lo mismo que los endpoints de siempre
- * ({@code GET /api/grupos} y {@code GET /api/turnos}, que no cambian).
+ * comprobación de que, sobre los mismos datos, el resumen cuenta y alcanza lo mismo que las fichas por id
+ * ({@code GET /api/grupos/{id}} y {@code GET /api/turnos/{turnoId}}, que llevan sus alumnos y deciden el alcance con
+ * {@code @acceso}, no con el filtro del resumen). Las listas completas se retiraron (decisión 145).
  *
  * <h2>Datos</h2>
  * Sintéticos, con prefijo {@value #PREFIJO} y ids explícitos en rangos reservados, en la organización 1, más una
@@ -354,57 +355,49 @@ class ResumenGruposTurnosJsonDoradoIntegrationTest extends MySqlIntegrationTest 
 	}
 
 	/**
-	 * Sobre los mismos datos, el resumen de grupos ve los mismos grupos que {@code GET /api/grupos}, con tantos
-	 * alumnos como trae su lista y los mismos turnos que {@code GET /api/turnos}; y el resumen de turnos, los mismos
-	 * turnos que {@code GET /api/turnos}, con los mismos campos. Siempre por id ascendente.
+	 * Sobre los mismos datos, el resumen de grupos ve los grupos cuya ficha por id puede abrir ese rol, con tantos
+	 * alumnos como trae la ficha y los mismos turnos que las fichas de turno; y el resumen de turnos, los turnos cuya
+	 * ficha puede abrir, con los mismos campos. Siempre por id ascendente.
 	 */
 	@ParameterizedTest(name = "{0}")
 	@EnumSource(Rol.class)
-	void losConteosYElAlcanceCoincidenConLosEndpointsDeSiempre(Rol rol) throws Exception {
-		JsonNode gruposAntes = sembradas(json.readTree(peticion(rol, "/api/grupos")));
-		JsonNode turnosAntes = sembradas(json.readTree(peticion(rol, "/api/turnos")));
+	void losConteosYElAlcanceCoincidenConLasFichasPorId(Rol rol) throws Exception {
+		Map<Long, JsonNode> grupoFicha = fichasQuePuedeAbrir(rol, "grupo:", "/api/grupos/");
+		Map<Long, JsonNode> turnoFicha = fichasQuePuedeAbrir(rol, "turno:", "/api/turnos/");
 		JsonNode gruposResumen = sembradas(json.readTree(peticion(rol, "/api/grupos/resumen")));
 		JsonNode turnosResumen = sembradas(json.readTree(peticion(rol, "/api/turnos/resumen")));
 
-		Map<Long, List<Long>> turnosPorGrupoAntes = new TreeMap<>();
-		Map<Long, JsonNode> turnoAntes = new TreeMap<>();
-		for (JsonNode t : turnosAntes) {
-			turnoAntes.put(t.get("id").asLong(), t);
+		Map<Long, List<Long>> turnosPorGrupo = new TreeMap<>();
+		turnoFicha.forEach((id, t) -> {
 			if (!t.get("grupoId").isNull()) {
-				turnosPorGrupoAntes.computeIfAbsent(t.get("grupoId").asLong(), k -> new ArrayList<>())
-						.add(t.get("id").asLong());
+				turnosPorGrupo.computeIfAbsent(t.get("grupoId").asLong(), k -> new ArrayList<>()).add(id);
 			}
-		}
-		turnosPorGrupoAntes.values().forEach(l -> l.sort(null));
+		});
 
 		// Mismos grupos, por id ascendente.
-		List<Long> idsAntes = new ArrayList<>();
-		gruposAntes.forEach(g -> idsAntes.add(g.get("id").asLong()));
-		idsAntes.sort(null);
 		List<Long> idsResumen = new ArrayList<>();
 		gruposResumen.forEach(g -> idsResumen.add(g.get("id").asLong()));
-		assertEquals(idsAntes, idsResumen, rol + ": grupos del resumen = grupos de /api/grupos, por id");
+		assertEquals(new ArrayList<>(grupoFicha.keySet()), idsResumen,
+				rol + ": grupos del resumen = grupos con ficha accesible, por id");
 		assertTrue(rol != Rol.RESPONSABLE || idsResumen.size() == 3, rol + ": el responsable ve G1, G3 y G5");
 		assertTrue(rol == Rol.RESPONSABLE || idsResumen.size() == 5, rol + ": la gestión ve los cinco grupos");
 
-		Map<Long, JsonNode> grupoAntes = new TreeMap<>();
-		gruposAntes.forEach(g -> grupoAntes.put(g.get("id").asLong(), g));
 		for (JsonNode resumen : gruposResumen) {
 			long id = resumen.get("id").asLong();
-			JsonNode antes = grupoAntes.get(id);
+			JsonNode ficha = grupoFicha.get(id);
 			String grupo = simbolos.get(id);
-			assertEquals(antes.get("alumnos").size(), resumen.get("numAlumnos").asInt(), rol + " " + grupo + ": numAlumnos");
-			assertEquals(antes.get("nombre"), resumen.get("nombre"), rol + " " + grupo + ": nombre");
-			assertEquals(antes.get("deporte"), resumen.get("deporte"), rol + " " + grupo + ": deporte");
-			assertEquals(antes.get("rangoEdadMin"), resumen.get("rangoEdadMin"), rol + " " + grupo + ": rangoEdadMin");
-			assertEquals(antes.get("rangoEdadMax"), resumen.get("rangoEdadMax"), rol + " " + grupo + ": rangoEdadMax");
+			assertEquals(ficha.get("alumnos").size(), resumen.get("numAlumnos").asInt(), rol + " " + grupo + ": numAlumnos");
+			assertEquals(ficha.get("nombre"), resumen.get("nombre"), rol + " " + grupo + ": nombre");
+			assertEquals(ficha.get("deporte"), resumen.get("deporte"), rol + " " + grupo + ": deporte");
+			assertEquals(ficha.get("rangoEdadMin"), resumen.get("rangoEdadMin"), rol + " " + grupo + ": rangoEdadMin");
+			assertEquals(ficha.get("rangoEdadMax"), resumen.get("rangoEdadMax"), rol + " " + grupo + ": rangoEdadMax");
 			assertTrue(!resumen.has("alumnos"), grupo + ": el resumen no lleva alumnos");
 			List<Long> turnosResumenDelGrupo = new ArrayList<>();
 			resumen.get("turnos").forEach(t -> turnosResumenDelGrupo.add(t.get("id").asLong()));
-			assertEquals(turnosPorGrupoAntes.getOrDefault(id, List.of()), turnosResumenDelGrupo,
+			assertEquals(turnosPorGrupo.getOrDefault(id, List.of()), turnosResumenDelGrupo,
 					rol + " " + grupo + ": turnos del grupo, por id");
 			for (JsonNode t : resumen.get("turnos")) {
-				JsonNode otro = turnoAntes.get(t.get("id").asLong());
+				JsonNode otro = turnoFicha.get(t.get("id").asLong());
 				assertEquals(otro.get("diaSemana"), t.get("diaSemana"));
 				assertEquals(otro.get("horaInicio"), t.get("horaInicio"));
 				assertEquals(otro.get("horaFin"), t.get("horaFin"));
@@ -416,15 +409,15 @@ class ResumenGruposTurnosJsonDoradoIntegrationTest extends MySqlIntegrationTest 
 		for (JsonNode t : turnosResumen) {
 			long id = t.get("id").asLong();
 			turnosIdsResumen.add(id);
-			JsonNode antes = turnoAntes.get(id);
-			assertNotNull(antes, rol + " " + simbolos.get(id) + ": no está en /api/turnos");
+			JsonNode ficha = turnoFicha.get(id);
+			assertNotNull(ficha, rol + " " + simbolos.get(id) + ": sin ficha accesible");
 			for (String campo : List.of("diaSemana", "horaInicio", "horaFin", "grupoId", "grupoNombre", "tipoGrupo")) {
-				assertEquals(antes.get(campo), t.get(campo), rol + " " + simbolos.get(id) + ": " + campo);
+				assertEquals(ficha.get(campo), t.get(campo), rol + " " + simbolos.get(id) + ": " + campo);
 			}
 			assertTrue(!t.has("alumnos"), "el resumen de turnos no lleva alumnos");
 		}
-		assertEquals(new ArrayList<>(turnoAntes.keySet()), turnosIdsResumen,
-				rol + ": turnos del resumen = turnos de /api/turnos, por id");
+		assertEquals(new ArrayList<>(turnoFicha.keySet()), turnosIdsResumen,
+				rol + ": turnos del resumen = turnos con ficha accesible, por id");
 	}
 
 	// ------------------------------------------------------------------ utilidades
@@ -433,6 +426,26 @@ class ResumenGruposTurnosJsonDoradoIntegrationTest extends MySqlIntegrationTest 
 		MvcResult r = mvc.perform(get(ruta).cookie(new Cookie("jwt", tokens.get(rol)))).andReturn();
 		assertEquals(200, r.getResponse().getStatus(), rol + " " + ruta + ": " + r.getResponse().getContentAsString());
 		return r.getResponse().getContentAsString(StandardCharsets.UTF_8);
+	}
+
+	/**
+	 * Las fichas sembradas de ese tipo que el rol puede abrir, por id ascendente. Fuera de su alcance, 403: cualquier
+	 * otra respuesta es un fallo.
+	 */
+	private Map<Long, JsonNode> fichasQuePuedeAbrir(Rol rol, String tipo, String ruta) throws Exception {
+		Map<Long, JsonNode> fichas = new TreeMap<>();
+		for (Map.Entry<Long, String> sembrada : simbolos.entrySet()) {
+			if (!sembrada.getValue().startsWith(tipo)) {
+				continue;
+			}
+			MvcResult r = mvc.perform(get(ruta + sembrada.getKey()).cookie(new Cookie("jwt", tokens.get(rol)))).andReturn();
+			int estado = r.getResponse().getStatus();
+			assertTrue(estado == 200 || estado == 403, rol + " " + sembrada.getValue() + ": " + estado);
+			if (estado == 200) {
+				fichas.put(sembrada.getKey(), json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8)));
+			}
+		}
+		return fichas;
 	}
 
 	/** Solo las filas sembradas (por el rango de ids), en el orden en que llegan. */

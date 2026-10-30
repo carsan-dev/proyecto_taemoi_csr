@@ -292,7 +292,7 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 				get("/api/informes/listado-mensualidad-mensual"), get("/api/caja/sedes/" + e.sA + "/pendiente-entrega"),
 				get("/api/alumnos"), get("/api/alumnos/" + alumnoDeSuGrupo), get("/api/alumnos/count"),
 				post("/api/alumnos/crear"), get("/api/alumnos/" + alumnoDeSuGrupo + "/grupos"),
-				get("/api/grupos"), get("/api/grupos/" + e.gA), get("/api/turnos"),
+				get("/api/grupos/" + e.gA + "/turnos"), get("/api/grupos/" + e.gA), get("/api/turnos/resumen"),
 				get("/api/tesoreria/resumen"), get("/api/tesoreria/movimientos"),
 				get("/api/productos"), get("/api/productos-alumno/alumno/" + alumnoDeSuGrupo),
 				put("/api/productos-alumno/" + cargo).contentType(MediaType.APPLICATION_JSON).content("{}"),

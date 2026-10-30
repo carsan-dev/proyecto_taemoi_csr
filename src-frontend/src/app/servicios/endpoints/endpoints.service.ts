@@ -1108,18 +1108,9 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
-  obtenerTodosLosGrupos(): Observable<GrupoDTO[]> {
-    return this.http
-      .get<GrupoDTO[]>(`${this.urlBase}/grupos`, {
-        withCredentials: true,
-        headers: this.skipLoadingHeaders
-      })
-      .pipe(catchError(this.manejarError));
-  }
-
   /**
-   * Grupos en versión ligera (sin alumnos): para listados y selectores. Mismo alcance que `obtenerTodosLosGrupos`;
-   * el detalle con alumnos se pide con `obtenerGrupoPorId`.
+   * Grupos en versión ligera (sin alumnos): para listados y selectores.
+   * El detalle con alumnos se pide con `obtenerGrupoPorId`.
    */
   obtenerResumenGrupos(context?: HttpContext): Observable<GrupoResumen[]> {
     return this.http
@@ -1320,20 +1311,11 @@ export class EndpointsService {
   }
 
   /**
-   * Turnos en versión ligera (sin alumnos): para listados y selectores. Mismo alcance que `obtenerTodosLosTurnos`.
+   * Turnos en versión ligera (sin alumnos): para listados y selectores.
    */
   obtenerResumenTurnos(): Observable<TurnoResumen[]> {
     return this.http
       .get<TurnoResumen[]>(`${this.urlBase}/turnos/resumen`, {
-        withCredentials: true,
-        headers: this.skipLoadingHeaders
-      })
-      .pipe(catchError(this.manejarError));
-  }
-
-  obtenerTodosLosTurnos(): Observable<any[]> {
-    return this.http
-      .get<any[]>(`${this.urlBase}/turnos`, {
         withCredentials: true,
         headers: this.skipLoadingHeaders
       })

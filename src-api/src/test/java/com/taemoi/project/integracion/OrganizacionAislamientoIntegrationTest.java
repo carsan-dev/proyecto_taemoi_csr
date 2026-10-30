@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -266,8 +267,9 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(ids(alumnos.findAlumnosAptosParaExamenPorDeporte(Deporte.TAEKWONDO.name())).contains(propios.alumnoId));
 
 		// Specification usada por AlumnoServiceImpl.obtenerAlumnosFiltrados
-		assertTrue(alumnoService.obtenerAlumnosFiltrados(ajenos.marca, null, null, true).isEmpty());
-		assertEquals(1, alumnoService.obtenerAlumnosFiltrados(propios.marca, null, null, true).size());
+		assertTrue(alumnoService.obtenerAlumnosFiltrados(ajenos.marca, null, null, true, Pageable.unpaged()).isEmpty());
+		assertEquals(1, alumnoService.obtenerAlumnosFiltrados(propios.marca, null, null, true, Pageable.unpaged())
+				.getContent().size());
 
 		// JPQL @Query de ProductoAlumnoRepository
 		assertFalse(idsPa(productosAlumno.findAllUnpaidWithAlumno()).contains(ajenos.productoAlumnoId));

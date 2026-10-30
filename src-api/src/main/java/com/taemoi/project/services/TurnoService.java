@@ -15,8 +15,7 @@ public interface TurnoService {
 	Turno obtenerTurnoPorId(@NonNull Long turnoId);
 
 	/**
-	 * R2-P4s: el turno con sus alumnos; para el responsable de sede, solo los de su alcance (como
-	 * {@link #listarTurnosDTOCompleto()}).
+	 * R2-P4s: el turno con sus alumnos; para el responsable de sede, solo los de su alcance.
 	 *
 	 * @throws com.taemoi.project.exceptions.turno.TurnoNoEncontradoException si no existe.
 	 */
@@ -33,8 +32,6 @@ public interface TurnoService {
 
 	boolean eliminarTurno(@NonNull Long turnoId);
 
-	List<TurnoDTO> listarTurnosDTOCompleto();
-
-	/** Turnos en versión ligera (sin alumnos): mismo alcance que {@link #listarTurnosDTOCompleto()}, por id. */
+	/** Turnos en versión ligera (sin alumnos), por id; ver {@link TurnoResumenDTO}. */
 	List<TurnoResumenDTO> listarTurnosResumen();
 }

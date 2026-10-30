@@ -1,6 +1,6 @@
 /**
  * Turno en versión ligera (`GET /api/turnos/resumen`): día, horas y grupo, sin alumnos.
- * `grupoNombre` vale "Sin grupo" si el turno no tiene grupo (igual que en `GET /api/turnos`).
+ * `grupoNombre` vale "Sin grupo" si el turno no tiene grupo.
  */
 export interface TurnoResumen {
   id: number;

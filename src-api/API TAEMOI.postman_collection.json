@@ -1618,30 +1618,6 @@
 					"response": []
 				},
 				{
-					"name": "Obtener todos los turnos",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/api/turnos",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"api",
-								"turnos"
-							]
-						},
-						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los turnos registrados en el sistema. Requiere que el usuario tenga el rol de 'ROLE_MANAGER' o 'ROLE_ADMIN'.\n\n#### URL\n\n`GET http://localhost:8080/api/turnos`\n\n#### Encabezados\n\n- `Authorization: Bearer` : El token de autenticación.\n    \n\n#### Respuestas\n\n- **200 OK**: Lista de todos los turnos.\n    \n- **500 Internal Server Error**: Error interno en el servidor."
-					},
-					"response": []
-				},
-				{
 					"name": "Obtener todos los turnos DTO",
 					"request": {
 						"auth": {

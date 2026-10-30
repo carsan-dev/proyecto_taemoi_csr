@@ -2,8 +2,7 @@ package com.taemoi.project.dtos.response;
 
 /**
  * Turno en versión ligera ({@code GET /api/turnos/resumen}), para los listados y selectores del panel: día, horas y
- * grupo. Sin los alumnos que sí incrusta {@link com.taemoi.project.dtos.TurnoDTO} ({@code GET /api/turnos}, que no
- * cambia).
+ * grupo. Sin los alumnos que sí incrusta {@link com.taemoi.project.dtos.TurnoDTO} ({@code GET /api/turnos/{turnoId}}).
  *
  * <p>{@code tipoGrupo} es el tipo del turno ({@code Turno.getTipo()}), tal cual, también si es nulo o vacío; lo pinta
  * la pantalla de turnos de un alumno.

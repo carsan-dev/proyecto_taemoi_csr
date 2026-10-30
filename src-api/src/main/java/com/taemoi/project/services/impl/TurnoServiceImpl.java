@@ -117,18 +117,6 @@ public class TurnoServiceImpl implements TurnoService {
 	}
 
 	@Override
-	public List<TurnoDTO> listarTurnosDTOCompleto() {
-		// Responsable de sede (entrega 6-1d): turnos de grupos de sus sedes. Gestión: la consulta de siempre.
-		List<Turno> turnos = gestionPorSede.restriccion()
-				.map(alcance -> turnoRepository.findAll(
-						com.taemoi.project.acceso.PredicadosAlcance.turnosDeSusSedes(alcance)))
-				.orElseGet(turnoRepository::findAll);
-		List<TurnoDTO> dtos = turnos.stream().map(TurnoDTO::deTurno) // Utiliza el método actualizado que incluye alumnos
-				.collect(Collectors.toList());
-		return soloAlumnosEnAlcance(dtos);
-	}
-
-	@Override
 	public TurnoDTO obtenerTurnoDTOPorId(@NonNull Long turnoId) {
 		return soloAlumnosEnAlcance(List.of(TurnoDTO.deTurno(obtenerTurnoPorId(turnoId)))).get(0);
 	}
@@ -144,9 +132,8 @@ public class TurnoServiceImpl implements TurnoService {
 	}
 
 	/**
-	 * R2-P4: los turnos sin sus alumnos. Mismo alcance que {@link #listarTurnosDTOCompleto()} (responsable de sede:
-	 * turnos de grupos de sus sedes; gestión: todos) y, además, por id (aquel no ordena). Una consulta, con el grupo
-	 * y su disciplina traídos en el mismo SELECT (el grupo del turno es EAGER).
+	 * R2-P4: los turnos sin sus alumnos (responsable de sede: turnos de grupos de sus sedes; gestión: todos), por id.
+	 * Una consulta, con el grupo y su disciplina traídos en el mismo SELECT (el grupo del turno es EAGER).
 	 */
 	@Override
 	public List<TurnoResumenDTO> listarTurnosResumen() {

@@ -49,21 +49,8 @@ public class TurnoController {
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	/**
-	 * Obtiene todos los turnos disponibles.
-	 *
-	 * @return ResponseEntity con la lista de objetos Turno y estado HTTP OK si
-	 *         tiene éxito.
-	 */
-	@GetMapping
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<List<TurnoDTO>> obtenerTurnos() {
-		List<TurnoDTO> turnosDTO = turnoService.listarTurnosDTOCompleto();
-		return new ResponseEntity<>(turnosDTO, HttpStatus.OK);
-	}
-
-	/**
-	 * Turnos en versión ligera (día, horas y grupo, sin alumnos). Mismos permisos y mismo alcance que
-	 * {@link #obtenerTurnos()}.
+	 * Turnos en versión ligera (día, horas y grupo, sin alumnos). Gestión: todos; responsable de sede: los turnos de los
+	 * grupos de sus sedes.
 	 */
 	@GetMapping("/resumen")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
