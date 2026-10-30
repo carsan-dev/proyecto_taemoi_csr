@@ -156,6 +156,12 @@
                       </span>
                     }
                     <div class="tile-overlay"></div>
+                    @if (evento.numeroFotos > 0) {
+                      <span class="event-photos-badge">
+                        <i class="bi bi-images" aria-hidden="true"></i>
+                        {{ evento._fotosTexto }}
+                      </span>
+                    }
                   </div>
                   <div class="tile-content">
                     <h3 class="tile-title">{{ evento.titulo }}</h3>

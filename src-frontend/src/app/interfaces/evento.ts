@@ -21,4 +21,6 @@ export interface Evento {
     tipo: string;
   } | null;
   documentos?: Documento[];
+  /** Solo llega en la lista de eventos; el detalle pide las fotos aparte (`GET /eventos/{id}/fotos`). */
+  numeroFotos?: number;
 }

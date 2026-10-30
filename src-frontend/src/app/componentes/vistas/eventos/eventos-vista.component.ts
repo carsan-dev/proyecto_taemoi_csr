@@ -211,6 +211,7 @@ export class EventosVistaComponent implements OnChanges {
       _fechaTexto: fechaTexto,
       _fechaEtiqueta: fechaEtiqueta,
       _fechaEstado: fechaEstado,
+      _fotosTexto: this.textoFotos(evento?.numeroFotos),
     };
 
     this.eventoVistaCache.set(evento, { cacheKey, item });
@@ -224,7 +225,15 @@ export class EventosVistaComponent implements OnChanges {
       ? evento.fechaEvento.join('-')
       : String(evento?.fechaEvento ?? '');
     const modo = this.previewMode ? 'preview' : 'listado';
-    return `${modo}|${fotoKey}|${fechaRaw}`;
+    return `${modo}|${fotoKey}|${fechaRaw}|${evento?.numeroFotos ?? ''}`;
+  }
+
+  private textoFotos(numeroFotos: unknown): string | null {
+    const total = Number(numeroFotos);
+    if (!Number.isFinite(total) || total <= 0) {
+      return null;
+    }
+    return total === 1 ? '1 foto' : `${total} fotos`;
   }
 
   private construirEventoImageUrl(evento: any): string {

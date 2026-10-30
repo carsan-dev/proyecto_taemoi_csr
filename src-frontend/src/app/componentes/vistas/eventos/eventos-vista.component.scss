@@ -321,6 +321,28 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 4;
 }
 
+.event-photos-badge {
+  position: absolute;
+  right: 0.62rem;
+  bottom: 0.62rem;
+  z-index: 4;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0d47a1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 4px 12px rgba(5, 17, 33, 0.28);
+  pointer-events: none;
+
+  i {
+    font-size: 0.78rem;
+  }
+}
+
 .showcase-main-title {
   margin: 0;
   color: #ffffff;
