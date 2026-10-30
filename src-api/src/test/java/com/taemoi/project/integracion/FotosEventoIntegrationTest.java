@@ -558,15 +558,21 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		Path ficheroA = IMAGENES.resolve(ruta(a));
 		Path ficheroB = IMAGENES.resolve(ruta(b));
 		List<Long> imagenes = List.of(imagenDe(a), imagenDe(b));
+		assertEquals(201, estado(multipart("/api/eventos/" + evento + "/documentos")
+				.file(new MockMultipartFile("archivo", "bases.pdf", "application/pdf", "%PDF-1.4\n%%EOF\n".getBytes()))
+				.cookie(jwt(tokenGestor))));
+		String rutaDocumento = jdbc.queryForObject("SELECT ruta FROM documento WHERE evento_id = ?", String.class, evento);
 
 		assertEquals(200, estado(delete("/api/eventos/" + evento).cookie(jwt(tokenGestor))));
 
 		assertEquals(0, contar("SELECT COUNT(*) FROM evento WHERE id = " + evento));
 		assertEquals(0, filas(evento));
 		assertEquals(0, contar("SELECT COUNT(*) FROM imagen WHERE id IN (" + imagenes.get(0) + "," + imagenes.get(1) + ")"));
+		assertEquals(0, contar("SELECT COUNT(*) FROM documento WHERE evento_id = " + evento));
 		assertFalse(Files.exists(ficheroA));
 		assertFalse(Files.exists(ficheroB));
 		assertFalse(Files.exists(IMAGENES.resolve(rutaCartel)), "El cartel se borra como siempre");
+		assertFalse(Files.exists(DOCUMENTOS.resolve(rutaDocumento)), "Los documentos también");
 	}
 
 	@Test
