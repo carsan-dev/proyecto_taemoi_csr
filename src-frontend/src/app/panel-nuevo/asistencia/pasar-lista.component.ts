@@ -61,6 +61,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   readonly fechaClaseCapital = fechaClaseCapital;
   readonly franja = franja;
   readonly estadoClase = estadoClase;
+  readonly tieneLista = tieneLista;
   readonly nombreCompleto = nombreCompleto;
 
   prefijo: PrefijoAsistencia = 'profesor';
@@ -253,6 +254,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   }
 
   async elegirClase(clase: ClaseAsistencia): Promise<void> {
+    if (this.guardando) return;
     if (this.esElegida(clase) && !this.error) {
       this.hojaAbierta = false;
       return;

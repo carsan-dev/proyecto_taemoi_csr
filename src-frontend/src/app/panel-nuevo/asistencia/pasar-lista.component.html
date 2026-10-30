@@ -9,13 +9,23 @@
       @if (clase) {
         <div class="pasar-lista__clase">
           <span class="pasar-lista__secundario">{{ titulo }}</span>
-          <button type="button" class="pasar-lista__cambiar" (click)="abrirHoja()">Cambiar clase</button>
         </div>
         @if (!sinAlumnos) {
           <p class="pasar-lista__secundario">Toca a quien ha venido. Sin marcar cuenta como falta.</p>
         }
       }
     </header>
+
+    @if (clase) {
+      <div class="pasar-lista__acciones">
+        <button type="button" class="pasar-lista__cambiar" [disabled]="guardando" (click)="abrirHoja()">Cambiar clase</button>
+        @if (!cargando && !cargandoLista && !error && !sinAlumnos) {
+          <button type="button" class="pasar-lista__secundario-boton" (click)="alternarTodos()" [disabled]="guardando">
+            {{ todosMarcados ? 'Desmarcar todos' : 'Marcar todos' }}
+          </button>
+        }
+      </div>
+    }
 
     @if (cargando || cargandoLista) {
       <pn-esqueleto etiqueta="Cargando la lista…">
@@ -28,11 +38,6 @@
     } @else if (sinAlumnos) {
       <pn-bloque-vacio [titulo]="textos.sinAlumnos" />
     } @else {
-      <div class="pasar-lista__todos">
-        <button type="button" class="pasar-lista__secundario-boton" (click)="alternarTodos()" [disabled]="guardando">
-          {{ todosMarcados ? 'Desmarcar todos' : 'Marcar todos' }}
-        </button>
-      </div>
       <ul class="pasar-lista__lista" aria-label="Alumnos de la clase">
         @for (alumno of alumnos; track alumno.id) {
           <li>
@@ -87,7 +92,7 @@
               <button type="button" class="pasar-lista__opcion" [class.pasar-lista__opcion--elegida]="esElegida(c)"
                 [attr.aria-current]="esElegida(c) ? 'true' : null" (click)="elegirClase(c)">
                 <span class="pasar-lista__opcion-fecha">{{ fechaDeFila(c) }}</span>&ngsp;
-                <span class="pasar-lista__opcion-estado">{{ c.alumnos === 0 ? 'Sin alumnos' : estadoClase(c) }}</span>
+                <span class="pasar-lista__opcion-estado">{{ c.alumnos === 0 && !tieneLista(c) ? 'Sin alumnos' : estadoClase(c) }}</span>
               </button>
             </li>
           }

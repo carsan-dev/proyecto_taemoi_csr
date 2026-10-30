@@ -284,6 +284,42 @@ describe('PasarListaComponent', () => {
       expect(el().querySelector('dialog.pn-panel')).toBeNull();
     });
 
+    it('con el PUT pendiente, elegir otra clase no la pide ni cambia la actual', async () => {
+      crear();
+      arrancar({ hoy: [hoy], recientes: [hoy, lunes] }, { clase: hoy, alumnos: ALUMNOS });
+      filas()[0].click();
+      fixture.detectChanges();
+      boton('Guardar lista')!.click();
+      fixture.detectChanges();
+      const put = http.expectOne(`${base()}/clases/9/2026-10-28`);
+      expect(boton('Cambiar clase')?.hasAttribute('disabled')).toBeTrue();
+      await fixture.componentInstance.elegirClase(lunes);
+      http.expectNone(`${base()}/clases/8/2026-10-26`);
+      expect(fixture.componentInstance.clase).toEqual(hoy);
+      put.flush(clase({ presentes: 1, total: 3 }));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.clase?.turnoId).toBe(9);
+      expect(texto('.pasar-lista__clase')).toContain('Miércoles 28 de octubre');
+    });
+
+    it('con lista guardada y turno vaciado, la fila de la hoja muestra «2 de 3»', () => {
+      crear();
+      const vaciada = clase({ alumnos: 0, presentes: 2, total: 3 });
+      arrancar({ hoy: [hoy], recientes: [hoy, { ...lunes, ...vaciada, turnoId: 8, fecha: '2026-10-26' }] }, { clase: hoy, alumnos: ALUMNOS });
+      boton('Cambiar clase')!.click();
+      fixture.detectChanges();
+      const estados = Array.from(el().querySelectorAll('.pasar-lista__opcion-estado')).map((e) => e.textContent?.trim());
+      expect(estados).toEqual(['Sin pasar', '2 de 3']);
+    });
+
+    it('«Cambiar clase» y «Marcar todos» comparten fila, fuera de la fecha', () => {
+      crear();
+      arrancar({ hoy: [hoy] }, { clase: hoy, alumnos: ALUMNOS });
+      const fila = el().querySelector('.pasar-lista__acciones')!;
+      expect(Array.from(fila.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Cambiar clase', 'Marcar todos']);
+      expect(el().querySelector('.pasar-lista__clase button')).toBeNull();
+    });
+
     it('con cambios pide confirmación: «no» se queda, «sí» cambia y descarta las marcas', async () => {
       crear();
       arrancar({ hoy: [hoy], recientes: [hoy, lunes] }, { clase: hoy, alumnos: ALUMNOS });

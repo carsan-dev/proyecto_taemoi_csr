@@ -8,18 +8,19 @@
 
   // Una columna de 640 px como máximo; el hueco de abajo deja ver la última fila sobre la barra fija.
   .pasar-lista__pagina { max-width: 640px; margin: 0 auto; padding: var(--pn-espacio-l) var(--pn-espacio-m) 112px; }
-  .pasar-lista__migas { display: flex; gap: 6px; margin-bottom: 4px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .pasar-lista__migas { display: flex; flex-wrap: wrap; gap: 0 6px; margin-bottom: 4px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .pasar-lista__migas a:first-child, .pasar-lista__migas a:first-child + span { flex: none; white-space: nowrap; }
   .pasar-lista__migas a { color: var(--pn-acento); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
   h1 { margin: 0; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); }
   .pasar-lista__cabecera { margin-bottom: 12px; }
-  .pasar-lista__clase { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .pasar-lista__secundario { margin: 0; font: var(--pn-secundario); color: var(--pn-tinta-2); }
-  .pasar-lista__cambiar { flex: none; min-height: 44px; padding: 0; border: 0; background: none; color: var(--pn-acento); font: var(--pn-etiqueta); font-size: 0.875rem; cursor: pointer; }
-  .pasar-lista__cambiar:hover { text-decoration: underline; }
+  .pasar-lista__cambiar { flex: none; min-height: 44px; min-width: 44px; padding: 0; border: 0; background: none; color: var(--pn-acento); font: var(--pn-etiqueta); font-size: 0.875rem; cursor: pointer; }
+  .pasar-lista__cambiar:hover:not(:disabled) { text-decoration: underline; }
+  .pasar-lista__cambiar:disabled { color: var(--pn-tinta-2); cursor: default; }
   a:focus-visible, button:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
 
-  .pasar-lista__todos { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-  .pasar-lista__secundario-boton { @include c.boton-secundario; min-height: 40px; }
+  .pasar-lista__acciones { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .pasar-lista__secundario-boton { @include c.boton-secundario; min-height: 44px; }
 
   .pasar-lista__lista { margin: 0; padding: 0; list-style: none; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); overflow: hidden; }
   .pasar-lista__lista li + li { border-top: 1px solid var(--pn-linea); }

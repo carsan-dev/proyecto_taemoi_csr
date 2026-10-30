@@ -350,6 +350,18 @@ describe('GrupoPanelComponent', () => {
       expect(tarjeta().querySelector('a, button')).toBeNull();
     });
 
+    it('turno vaciado con lista guardada: muestra «12 de 18 presentes»', () => {
+      conClases({ hoy: [clase({ alumnos: 0, presentes: 12, total: 18 })] });
+      expect(tarjeta().textContent).toContain('12 de 18 presentes');
+      expect(tarjeta().textContent).not.toContain('no tiene alumnos');
+    });
+
+    it('turno vaciado con lista guardada, con dos clases hoy: también la cuenta', () => {
+      conClases({ hoy: [clase({ alumnos: 0, presentes: 5, total: 8 }), clase({ turnoId: 10, horaInicio: '19:00', horaFin: '20:00' })] });
+      const filas = elemento().querySelectorAll('.grupo-profesor__hoy-fila');
+      expect(filas[0].textContent).toContain('5 de 8 presentes');
+    });
+
     it('dos clases hoy: una fila por clase con «Corregir» y «Pasar lista»', () => {
       conClases({ hoy: [clase({ presentes: 12, total: 18 }), clase({ turnoId: 10, horaInicio: '19:00', horaFin: '20:00' })] });
       const filas = elemento().querySelectorAll('.grupo-profesor__hoy-fila');
