@@ -1,3 +1,4 @@
+
 /**
  * Caja de sede (pieza 6b-3). Espejo de CajaDTOs.java y CajaRequests.java de la API (`/api/caja`). Los importes
  * (BigDecimal con dos decimales) llegan como número; las fechas, como texto ISO (LocalDateTime sin zona, Date con zona).
@@ -146,6 +147,10 @@ export interface CargoPendienteProfesor {
   fechaAsignacion: string | null;
   sedeId: number | null;
   sedeNombre: string | null;
+  /** Con la regla de la tesorería: lo decide la API. */
+  vencido: boolean;
+  /** Nombres de SUS grupos (los del profesor) en los que está el alumno. */
+  grupos: string[];
 }
 
 /** CajaDTOs.ProductoVendible: producto del catálogo que el profesor puede vender (precio fijo). */

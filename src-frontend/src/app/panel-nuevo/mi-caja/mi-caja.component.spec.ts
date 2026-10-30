@@ -21,7 +21,7 @@ import { MiCajaPanelComponent } from './mi-caja.component';
 function cargo(cargoId: number, alumnoId: number, nombre: string, apellidos: string, concepto: string, importe: number): CargoPendienteProfesor {
   return {
     cargoId, alumnoId, alumnoNombre: nombre, alumnoApellidos: apellidos, concepto, importe,
-    fechaAsignacion: '2026-10-01T10:00:00.000Z', sedeId: 1, sedeNombre: 'Centro',
+    fechaAsignacion: '2026-10-01T10:00:00.000Z', sedeId: 1, sedeNombre: 'Centro', vencido: false, grupos: [],
   };
 }
 
@@ -183,6 +183,48 @@ describe('MiCajaPanelComponent', () => {
     expect(filas[0].querySelector('button')?.getAttribute('aria-label')).toBe('Cobrar Mensualidad octubre a Lucía Prado');
     expect(texto()).toContain('Solo alumnos de tus grupos. No cambias importes.');
     expect(texto()).not.toContain('vencido');
+  });
+
+  it('bajo el nombre, solo el nombre de sus grupos; con varios, separados por coma', () => {
+    crear({
+      cargos: of([
+        { ...cargo(1, 3, 'Lucía', 'Prado', 'Mensualidad octubre', 35), grupos: ['Taekwondo infantil'] },
+        { ...cargo(2, 3, 'Lucía', 'Prado', 'Camiseta', 12), grupos: ['Taekwondo infantil'] },
+        {
+          ...cargo(3, 5, 'Andrés', 'Gil', 'Mensualidad octubre', 30),
+          grupos: ['Kickboxing', 'Pilates'],
+        },
+      ]),
+    });
+    const lineas = Array.from(el().querySelectorAll('.mi-caja__cab-alumno')).map((c) => limpio(c.querySelector('.mi-caja__secundario')?.textContent));
+    expect(lineas).toEqual(['Kickboxing, Pilates', 'Taekwondo infantil']);
+  });
+
+  it('sin grupos no pinta la línea secundaria', () => {
+    crear();
+    expect(el().querySelector('.mi-caja__cab-alumno .mi-caja__secundario')).toBeNull();
+  });
+
+  it('solo el cargo vencido lleva el importe en ocre con la palabra «vencido»', () => {
+    crear({
+      cargos: of([
+        { ...cargo(1, 3, 'Lucía', 'Prado', 'Mensualidad septiembre', 35), vencido: true },
+        cargo(2, 3, 'Lucía', 'Prado', 'Mensualidad octubre', 35),
+      ]),
+    });
+    const [vencida, alDia] = Array.from(el().querySelectorAll('.mi-caja__cargo'));
+    const importeVencido = vencida.querySelector('.mi-caja__importe')!;
+    expect(limpio(importeVencido.querySelector('small')?.textContent)).toBe('vencido');
+    expect(limpio(importeVencido.textContent)).toContain('35,00 €');
+    expect(importeVencido.classList).toContain('mi-caja__importe--vencido');
+
+    const importeAlDia = alDia.querySelector('.mi-caja__importe')!;
+    expect(importeAlDia.querySelector('small')).toBeNull();
+    expect(importeAlDia.classList).not.toContain('mi-caja__importe--vencido');
+    expect(limpio(alDia.textContent)).not.toContain('vencido');
+    // El resto de la fila no cambia.
+    expect(limpio(vencida.textContent)).toContain('desde 01/10');
+    expect(limpio(vencida.querySelector('button')?.textContent)).toBe('Cobrar');
   });
 
   it('formatea los euros en español con miles', () => {

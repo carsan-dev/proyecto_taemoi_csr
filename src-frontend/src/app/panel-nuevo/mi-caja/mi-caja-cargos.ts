@@ -11,6 +11,8 @@ export type PestanaMiCaja = 'cobrar' | 'vender' | 'encima' | 'pedidos';
 export interface GrupoAlumno {
   alumnoId: number;
   nombre: string;
+  /** Nombres de sus grupos (los del profesor), separados por coma; vacía si no llega ninguno. */
+  lineaGrupos: string;
   cargos: CargoPendienteProfesor[];
 }
 
@@ -38,7 +40,7 @@ export function agruparPorAlumno(cargos: CargoPendienteProfesor[], busqueda: str
     }
     let grupo = grupos.get(cargo.alumnoId);
     if (!grupo) {
-      grupo = { alumnoId: cargo.alumnoId, nombre, cargos: [] };
+      grupo = { alumnoId: cargo.alumnoId, nombre, lineaGrupos: cargo.grupos.join(', '), cargos: [] };
       grupos.set(cargo.alumnoId, grupo);
     }
     grupo.cargos.push(cargo);

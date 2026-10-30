@@ -138,6 +138,7 @@ public class CajaService {
 	private final RegistroAccionesCaja registro;
 	private final SolicitudRepository solicitudes;
 	private final CobroService cobroService;
+	private final PendienteVencidoService pendienteVencido;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -146,7 +147,8 @@ public class CajaService {
 	public CajaService(CobroRepository cobros, EntregaCajaRepository entregas, MovimientoCajaRepository movimientos,
 			SedeRepository sedes, AlumnoRepository alumnos, AlcanceActual alcanceActual,
 			ProductoAlumnoService productosAlumno, RegistroAccionesCaja registro, SolicitudRepository solicitudes,
-			CobroService cobroService, PlatformTransactionManager transacciones) {
+			CobroService cobroService, PendienteVencidoService pendienteVencido,
+			PlatformTransactionManager transacciones) {
 		this.cobros = cobros;
 		this.entregas = entregas;
 		this.movimientos = movimientos;
@@ -157,6 +159,7 @@ public class CajaService {
 		this.registro = registro;
 		this.solicitudes = solicitudes;
 		this.cobroService = cobroService;
+		this.pendienteVencido = pendienteVencido;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -167,6 +170,8 @@ public class CajaService {
 	 * Cargos PENDIENTES (pagado falso o nulo) de los alumnos de los grupos del profesor de la sesión, de cualquier tipo.
 	 * Una consulta con los datos que se muestran (sin cargar entidades). Solo cargos con {@code alumno_id} (los que el
 	 * profesor puede cobrar) y no cancelados (pieza 6b-2c). Sin grupos en el alcance (o con alcance total), lista vacía.
+	 * Pieza 8b-3p: cada cargo dice si está vencido y lleva los grupos del profesor en los que está el alumno, con dos
+	 * consultas más por lote (no por alumno).
 	 */
 	public List<CajaDTOs.CargoPendienteProfesor> cargosPendientesDelProfesor() {
 		Set<Long> grupos = gruposDelProfesor();
@@ -181,13 +186,39 @@ public class CajaService {
 				  AND EXISTS (SELECT g.id FROM Grupo g JOIN g.alumnos m WHERE m.id = a.id AND g.id IN :grupos)
 				ORDER BY a.apellidos, a.nombre, pa.fechaAsignacion, pa.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList();
+		if (filas.isEmpty()) {
+			return List.of();
+		}
+		Set<Long> alumnosConCargos = new LinkedHashSet<>();
+		for (Object[] f : filas) {
+			alumnosConCargos.add((Long) f[1]);
+		}
+		Map<Long, List<String>> gruposPorAlumno = nombresDeGrupos(grupos, alumnosConCargos);
+		Set<Long> vencidos = pendienteVencido.cargosVencidosDeAlumnos(alumnosConCargos);
 		List<CajaDTOs.CargoPendienteProfesor> resultado = new ArrayList<>(filas.size());
 		for (Object[] f : filas) {
 			resultado.add(new CajaDTOs.CargoPendienteProfesor((Long) f[0], (Long) f[1], (String) f[2], (String) f[3],
 					(String) f[4], ImporteCargo.de((Double) f[5], (Integer) f[9]), (Date) f[6], (Long) f[7],
-					(String) f[8]));
+					(String) f[8], vencidos.contains(f[0]), gruposPorAlumno.getOrDefault(f[1], List.of())));
 		}
 		return resultado;
+	}
+
+	/**
+	 * Por alumno, los nombres de los grupos indicados en los que está. Una consulta con los datos que se muestran (sin
+	 * cargar entidades ni turnos). El filtro por escuela de {@code @TenantId} lo aplican {@code Grupo} y {@code Alumno}.
+	 */
+	private Map<Long, List<String>> nombresDeGrupos(Set<Long> grupos, Set<Long> alumnosConCargos) {
+		Map<Long, List<String>> porAlumno = new HashMap<>();
+		for (Object[] f : em.createQuery("""
+				SELECT a.id, g.nombre
+				FROM Grupo g JOIN g.alumnos a
+				WHERE g.id IN :grupos AND a.id IN :alumnos
+				ORDER BY g.nombre, g.id""", Object[].class)
+				.setParameter("grupos", grupos).setParameter("alumnos", alumnosConCargos).getResultList()) {
+			porAlumno.computeIfAbsent((Long) f[0], id -> new ArrayList<>()).add((String) f[1]);
+		}
+		return porAlumno;
 	}
 
 	/**

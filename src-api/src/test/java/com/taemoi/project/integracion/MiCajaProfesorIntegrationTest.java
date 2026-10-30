@@ -5,10 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,6 +23,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +40,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -52,6 +59,9 @@ import jakarta.servlet.http.Cookie;
  * conserva; el producto anidado en un cargo no la lleva.</li>
  * <li>{@code venta} en {@code CobroCaja}: verdadero en la venta del catálogo del profesor, falso al cobrar un cargo de la
  * gestión; deshacer con NO_HUBO_VENTA sigue funcionando si la gestión desmarca el producto después.</li>
+ * <li>{@code GET /api/caja/profesor/cargos-pendientes}: {@code vencido} con la regla de la tesorería
+ * ({@code PendienteVencidoService}, hoy fijado con el {@code Clock} simulado) y {@code grupos} con solo los nombres de SUS
+ * grupos, sin N+1.</li>
  * </ul>
  * Escuela sintética ({@link EscuelaConSedesDePrueba}) y otra para el aislamiento. Datos inventados.
  */
@@ -61,6 +71,9 @@ import jakarta.servlet.http.Cookie;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 
+	/** Las cinco de la sesión más las tres de {@code cargos-pendientes} (cargos, nombres de grupos y vencidos). */
+	private static final int SENTENCIAS_POR_COBRAR = 8;
+
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
 	@Autowired JdbcTemplate jdbc;
@@ -69,6 +82,7 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 	@Autowired GrupoService grupoService;
 
 	@MockitoBean JavaMailSender mailSender;
+	@MockitoBean Clock reloj;
 
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
@@ -93,6 +107,13 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		tProf1 = e.token(jwtService, usuarios, prof1);
 		tProf2 = e.token(jwtService, usuarios, prof2);
 		tProfOtra = otra.token(jwtService, usuarios, profOtra);
+	}
+
+	/** El reloj real salvo en las pruebas de {@code vencido}, que lo fijan con {@link #hoy}. */
+	@BeforeEach
+	void relojReal() {
+		when(reloj.instant()).thenAnswer(i -> Instant.now());
+		when(reloj.getZone()).thenReturn(ValidacionRelojConfig.ZONA);
 	}
 
 	@AfterEach
@@ -359,7 +380,184 @@ class MiCajaProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(conDos, conOcho.total(), "mismas sentencias con 2 y con 8 cobros: " + conOcho.sentencias());
 	}
 
+	// ------------------------------------------------------------------ por cobrar: vencido y grupos
+
+	@Test
+	void porCobrar_vencido_laMismaReglaQueLaTesoreria() throws Exception {
+		long g = grupo("IT 3O Vencido " + e.marca, e.sA);
+		String token = e.token(jwtService, usuarios, profesor(e, "profvencido", g));
+		long alumno = alumno("VENCE", "PORCOBRAR", true, g);
+		long baja = alumno("BAJA", "PORCOBRAR", false, g);
+		long pMens = productoDeTipo("CUOTA 3O", "MENSUALIDAD", "MENSUALIDAD_3O");
+		long pExamen = productoDeTipo("TASA 3O", "EXAMEN", "EXAMEN_3O");
+		long pOtro = productoDeTipo("CAMISETA 3O", "OTRO", null);
+
+		long mesAnterior = cargo(alumno, pMens, "MENSUALIDAD FEBRERO 2026", "2026-02-01 12:00:00");
+		long mesEnCurso = cargo(alumno, pMens, "MENSUALIDAD MARZO 2026", "2026-03-01 12:00:00");
+		long mesFuturo = cargo(alumno, pMens, "MENSUALIDAD ABRIL 2026", "2026-03-01 12:00:00");
+		long sinMes = cargo(alumno, pMens, "CUOTA 3O", "2026-01-15 12:00:00");
+		long examenPasado = cargo(alumno, pExamen, "DERECHO A EXAMEN 3O A", "2026-01-10 12:00:00");
+		inscribir(alumno, examenPasado, "2026-02-20");
+		long examenElDia6 = cargo(alumno, pExamen, "DERECHO A EXAMEN 3O B", "2026-01-10 12:00:00");
+		inscribir(alumno, examenElDia6, "2026-03-06");
+		long examenFuturo = cargo(alumno, pExamen, "DERECHO A EXAMEN 3O C", "2026-01-10 12:00:00");
+		inscribir(alumno, examenFuturo, "2026-06-15");
+		long examenSinConvocatoria = cargo(alumno, pExamen, "DERECHO A EXAMEN 3O D", "2026-02-10 12:00:00");
+		long camiseta = cargo(alumno, pOtro, "CAMISETA 3O", "2025-01-10 12:00:00");
+		long deBaja = cargo(baja, pMens, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
+
+		// Día 5: la mensualidad del mes en curso aún no vence y el examen del día 6 tampoco.
+		hoy("2026-03-05T23:59");
+		JsonNode dia5 = leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
+		assertEquals(10, dia5.size());
+		assertEquals(Set.of(mesAnterior, sinMes, examenPasado, examenSinConvocatoria), vencidos(dia5));
+		assertEquals(vencidosDeLaTesoreria(alumno, baja), vencidos(dia5));
+
+		// Día 6: vencen los dos. Lo futuro, lo que no es mensualidad ni examen y el alumno de baja, nunca.
+		hoy("2026-03-06T00:00");
+		JsonNode dia6 = leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
+		assertEquals(Set.of(mesAnterior, mesEnCurso, sinMes, examenPasado, examenElDia6, examenSinConvocatoria),
+				vencidos(dia6));
+		assertEquals(vencidosDeLaTesoreria(alumno, baja), vencidos(dia6));
+		for (long noVencido : List.of(mesFuturo, examenFuturo, camiseta, deBaja)) {
+			assertFalse(fila(dia6, "cargoId", noVencido).get("vencido").asBoolean(), "cargo " + noVencido);
+		}
+	}
+
+	@Test
+	void porCobrar_grupos_soloLosDelProfesor_porNombre() throws Exception {
+		long gB = grupo("IT 3O Grupo B " + e.marca, e.sA);
+		long gA = grupo("IT 3O Grupo A " + e.marca, e.sA);
+		long ajeno = grupo("IT 3O Grupo Ajeno " + e.marca, e.sA);
+		long prof = profesor(e, "profpor", gB);
+		asignar(e, prof, gA);
+		profesor(e, "profajeno", ajeno);
+		String token = e.token(jwtService, usuarios, prof);
+		long alumno = alumno("GRUPOS", "PORCOBRAR", true, gA, gB, ajeno);
+		long producto = producto("LLAVERO 3O", Boolean.FALSE);
+		long c1 = cargo(alumno, producto, "LLAVERO 3O", "2026-02-01 12:00:00");
+		long c2 = cargo(alumno, producto, "LLAVERO 3O BIS", "2026-02-02 12:00:00");
+
+		JsonNode cargos = leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
+		assertEquals(2, cargos.size());
+		for (long c : List.of(c1, c2)) {
+			JsonNode grupos = fila(cargos, "cargoId", c).get("grupos");
+			assertEquals(List.of(nombreGrupo(gA), nombreGrupo(gB)), textos(grupos));
+		}
+
+		// Otra escuela, con un cargo propio: ni sus cargos ni sus grupos cruzan.
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  organizacion_id, sede_id)
+				VALUES (?, 'LLAVERO OTRA', 30, 1, 0, '2026-02-01 12:00:00', ?, ?)""", otra.aGrupoA, otra.org, otra.sA);
+		JsonNode deOtra = leer(get("/api/caja/profesor/cargos-pendientes"), tProfOtra, 200);
+		assertEquals(1, deOtra.size(), "el cargo de la otra escuela: " + deOtra);
+		assertEquals(1, deOtra.get(0).get("grupos").size());
+		assertFalse(deOtra.toString().contains(e.marca), deOtra.toString());
+		for (JsonNode c : deOtra) {
+			assertTrue(textos(c.get("grupos")).stream().noneMatch(n -> n.contains(e.marca)), c.toString());
+		}
+	}
+
+	@Test
+	void porCobrar_vencido_enSedeAEnSedeBYSinSede() throws Exception {
+		long g = grupo("IT 3O Sedes " + e.marca, e.sA);
+		long prof = profesor(e, "profporsedes", g);
+		String token = e.token(jwtService, usuarios, prof);
+		long al = alumno("SEDES", "PORCOBRAR", true, g);
+		long p = productoDeTipo("CUOTA 3O SEDES", "MENSUALIDAD", "MENSUALIDAD_3O_S");
+		long c1 = cargo(al, p, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
+		long c2 = cargo(al, p, "MENSUALIDAD FEBRERO 2026", "2026-02-02 12:00:00");
+		long c3 = cargo(al, p, "MENSUALIDAD DICIEMBRE 2025", "2025-12-02 12:00:00");
+		jdbc.update("UPDATE producto_alumno SET sede_id = ? WHERE id = ?", e.sB, c2);
+		jdbc.update("UPDATE producto_alumno SET sede_id = NULL WHERE id = ?", c3);
+		hoy("2026-03-10T10:00");
+
+		JsonNode l = leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
+		assertEquals(Set.of(c1, c2, c3), vencidos(l), l.toString());
+		assertEquals(vencidosDeLaTesoreria(al), vencidos(l));
+	}
+
+	@Test
+	void porCobrar_sinNMasUno() throws Exception {
+		long g = grupo("IT 3O NMas1 " + e.marca, e.sA);
+		long prof = profesor(e, "profpornmas1", g);
+		String token = e.token(jwtService, usuarios, prof);
+		long pMens = productoDeTipo("CUOTA 3O NMAS1", "MENSUALIDAD", "MENSUALIDAD_3O_N");
+		cargo(alumno("UNO", "PORNMAS", true, g), pMens, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
+		leer(get("/api/caja/profesor/cargos-pendientes"), token, 200);
+		int conUno = ContadorSentencias.contar(() -> estado(get("/api/caja/profesor/cargos-pendientes"), token)).total();
+
+		long g2 = grupo("IT 3O NMas1 B " + e.marca, e.sB);
+		asignar(e, prof, g2);
+		for (int i = 0; i < 4; i++) {
+			long otro = alumno("X" + i, "PORNMAS", true, g, g2);
+			cargo(otro, pMens, "MENSUALIDAD ENERO 2026", "2026-01-02 12:00:00");
+			cargo(otro, pMens, "MENSUALIDAD FEBRERO 2026", "2026-02-02 12:00:00");
+		}
+		ContadorSentencias.Conteo<JsonNode> conCinco = ContadorSentencias
+				.contar(() -> leer(get("/api/caja/profesor/cargos-pendientes"), token, 200));
+		assertEquals(9, conCinco.resultado().size());
+		assertEquals(conUno, conCinco.total(), "mismas sentencias con 1 y con 5 alumnos: " + conCinco.sentencias());
+		assertEquals(SENTENCIAS_POR_COBRAR, conCinco.total(), "cargos, grupos y vencidos: " + conCinco.sentencias());
+	}
+
 	// ------------------------------------------------------------------ utilidades
+
+	/** Fija «hoy» (Europe/Madrid) en el {@code Clock} simulado. */
+	private void hoy(String ahora) {
+		when(reloj.instant()).thenReturn(LocalDateTime.parse(ahora).atZone(ValidacionRelojConfig.ZONA).toInstant());
+	}
+
+	/** Los ids con {@code vencido} verdadero de la respuesta de {@code cargos-pendientes}. */
+	private static Set<Long> vencidos(JsonNode cargos) {
+		Set<Long> vencidos = new HashSet<>();
+		cargos.forEach(c -> {
+			if (c.get("vencido").asBoolean()) {
+				vencidos.add(c.get("cargoId").asLong());
+			}
+		});
+		return vencidos;
+	}
+
+	/** Lo que la tesorería da por vencido de esos alumnos ({@code PendienteVencidoService#porAlumno}). */
+	private Set<Long> vencidosDeLaTesoreria(long... alumnos) throws Exception {
+		MockHttpServletRequestBuilder peticion = get("/api/tesoreria/pendientes-por-alumno");
+		for (long alumno : alumnos) {
+			peticion.param("alumnoIds", String.valueOf(alumno));
+		}
+		Set<Long> vencidos = new HashSet<>();
+		for (JsonNode a : leer(peticion, tGestor, 200)) {
+			vencidos.addAll(ids(a.get("detalle"), "productoAlumnoId"));
+		}
+		return vencidos;
+	}
+
+	private long productoDeTipo(String concepto, String tipo, String codigo) {
+		jdbc.update("INSERT INTO producto (concepto, precio, codigo, tipo, organizacion_id) VALUES (?, 1.0, ?, ?, ?)",
+				concepto + " " + e.marca, codigo == null ? null : codigo + "_" + e.marca, tipo, e.org);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	private long cargo(long alumno, long producto, String concepto, String fecha) {
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, producto_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  organizacion_id, sede_id)
+				VALUES (?, ?, ?, ?, 1, 0, ?, ?, ?)""", alumno, producto, concepto, new BigDecimal("30.00"), fecha, e.org,
+				e.sA);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	private void inscribir(long alumno, long cargo, String fechaConvocatoria) {
+		jdbc.update("INSERT INTO convocatoria (fecha_convocatoria, organizacion_id, disciplina_id) VALUES (?, ?, ?)",
+				fechaConvocatoria, e.org, e.disciplina);
+		long convocatoria = jdbc.queryForObject("SELECT MAX(id) FROM convocatoria WHERE organizacion_id = ?", Long.class,
+				e.org);
+		jdbc.update("""
+				INSERT INTO alumno_convocatoria (cuantia_examen, pagado, alumno_id, convocatoria_id, grado_actual,
+				  grado_siguiente, organizacion_id, producto_alumno_id) VALUES (20, 0, ?, ?, NULL, NULL, ?, ?)""",
+				alumno, convocatoria, e.org, cargo);
+	}
 
 	private long profesor(EscuelaConSedesDePrueba x, String nombre, long grupo) {
 		long id = x.cuentaFamilia(usuarios, nombre);

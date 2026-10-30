@@ -21,9 +21,14 @@ public final class CajaDTOs {
 	private CajaDTOs() {
 	}
 
-	/** Un cargo pendiente (no pagado) de un alumno de los grupos del profesor. */
+	/**
+	 * Un cargo pendiente (no pagado) de un alumno de los grupos del profesor. Pieza 8b-3p: {@code vencido}, con la regla
+	 * de la tesorería ({@code PendienteVencidoService}, decisión 267); {@code grupos}, SUS grupos (los del profesor) en
+	 * los que está el alumno, por nombre.
+	 */
 	public record CargoPendienteProfesor(Long cargoId, Long alumnoId, String alumnoNombre, String alumnoApellidos,
-			String concepto, BigDecimal importe, Date fechaAsignacion, Long sedeId, String sedeNombre) {
+			String concepto, BigDecimal importe, Date fechaAsignacion, Long sedeId, String sedeNombre, boolean vencido,
+			List<String> grupos) {
 	}
 
 	/**

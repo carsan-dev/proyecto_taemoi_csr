@@ -90,7 +90,12 @@
             <li class="mi-caja__alumno">
               <div class="mi-caja__cab-alumno">
                 <span class="mi-caja__avatar" aria-hidden="true">{{ inicialesGrupo(grupo) }}</span>
-                <h3 class="mi-caja__nombre">{{ grupo.nombre }}</h3>
+                <div class="mi-caja__fila-texto">
+                  <h3 class="mi-caja__nombre">{{ grupo.nombre }}</h3>
+                  @if (grupo.lineaGrupos) {
+                  <span class="mi-caja__secundario">{{ grupo.lineaGrupos }}</span>
+                  }
+                </div>
               </div>
               <ul class="mi-caja__cargos">
                 @for (cargo of grupo.cargos; track cargo.cargoId) {
@@ -99,7 +104,7 @@
                     <span>{{ cargo.concepto }}</span>
                     <span class="mi-caja__secundario" data-cifras>desde {{ diaMes(cargo.fechaAsignacion) }}</span>
                   </div>
-                  <span class="mi-caja__importe" data-cifras>{{ cargo.importe | eur }}</span>
+                  <span class="mi-caja__importe" [class.mi-caja__importe--vencido]="cargo.vencido" data-cifras>{{ cargo.importe | eur }}@if (cargo.vencido) {<small>vencido</small>}</span>
                   <button type="button" pnOcupado class="mi-caja__boton-texto" [ocupado]="cobrando.has(cargo.cargoId)"
                     textoOcupado="Cobrando…" [attr.aria-label]="'Cobrar ' + cargo.concepto + ' a ' + grupo.nombre"
                     (click)="abrirCobro(cargo)">Cobrar</button>

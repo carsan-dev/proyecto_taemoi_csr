@@ -5,6 +5,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -128,6 +129,25 @@ public class PendienteVencidoService {
 		return resultado;
 	}
 
+	/**
+	 * Pieza 8b-3p: los ids de los cargos vencidos hoy de esos alumnos, con la misma regla y el mismo universo que
+	 * {@link #obtener()}, para marcarlos en «Por cobrar» del profesor. De todas las sedes: quien llama ya ha limitado los
+	 * alumnos a los que puede ver. Solo los de la escuela activa (los joins llevan {@code organizacion_id}).
+	 */
+	@Transactional(readOnly = true)
+	public Set<Long> cargosVencidosDeAlumnos(Collection<Long> alumnoIds) {
+		if (alumnoIds.isEmpty()) {
+			return Set.of();
+		}
+		FiltroSedesTesoreria sedes = FiltroSedesTesoreria.TODAS;
+		Set<Long> cargos = new HashSet<>();
+		for (Vencido v : vencidos(repositorio.candidatosDeAlumnos(organizacionActiva(), sedes.todas(), sedes.parametro(),
+				alumnoIds))) {
+			cargos.add(v.cargo().getId());
+		}
+		return cargos;
+	}
+
 	private static Long organizacionActiva() {
 		Long organizacion = TenantContext.get();
 		if (organizacion == null) {
@@ -136,7 +156,7 @@ public class PendienteVencidoService {
 		return organizacion;
 	}
 
-	/** La regla común de {@link #obtener()} y {@link #porAlumno}: los candidatos vencidos hoy. */
+	/** La regla común de {@link #obtener()}, {@link #porAlumno} y {@link #cargosVencidosDeAlumnos}: los candidatos vencidos hoy. */
 	private List<Vencido> vencidos(List<CargoCandidato> candidatos) {
 		LocalDate hoy = LocalDate.now(reloj);
 		boolean legado = comportamientoLegado.activo();

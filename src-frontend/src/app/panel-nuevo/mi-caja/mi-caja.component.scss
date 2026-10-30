@@ -189,6 +189,15 @@
     font-variant-numeric: tabular-nums;
   }
 
+  // Cargo vencido (decisión 331): ocre, el token de lo que se debe, con la palabra debajo. El color no va solo.
+  .mi-caja__importe--vencido {
+    display: grid;
+    justify-items: end;
+    color: var(--pn-atencion);
+
+    small { font: var(--pn-etiqueta); }
+  }
+
   .mi-caja__fila {
     display: flex;
     flex-wrap: wrap;
