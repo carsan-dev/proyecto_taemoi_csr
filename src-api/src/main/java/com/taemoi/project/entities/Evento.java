@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -17,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -49,6 +51,12 @@ public class Evento extends EntidadOrganizacion {
 
 	private Boolean visible = true;
 	private Integer orden;
+
+	/** Decisión 342: lo rellenan las listas de eventos con una sola consulta; en el resto de respuestas no aparece. */
+	@Transient
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	private Integer numeroFotos;
 
 	public Long getId() {
 		return id;
@@ -112,5 +120,13 @@ public class Evento extends EntidadOrganizacion {
 
 	public void setDocumentos(List<Documento> documentos) {
 		this.documentos = documentos;
+	}
+
+	public Integer getNumeroFotos() {
+		return numeroFotos;
+	}
+
+	public void setNumeroFotos(Integer numeroFotos) {
+		this.numeroFotos = numeroFotos;
 	}
 }

@@ -279,7 +279,7 @@ public class EventoController {
 		}
 	}
 
-	private boolean tieneAccesoPrivilegiadoEventos() {
+	static boolean tieneAccesoPrivilegiadoEventos() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated()
 				|| authentication instanceof AnonymousAuthenticationToken) {
@@ -357,27 +357,27 @@ public class EventoController {
 		}
 	}
 
-	private static void avisarArchivoRechazado(String que, Long eventoId, MultipartFile archivo,
+	static void avisarArchivoRechazado(String que, Long eventoId, MultipartFile archivo,
 			IllegalArgumentException e) {
 		logger.warn("{}: eventoId={} ext={} contentType={} motivo={}", que, eventoId, extensionParaLog(archivo),
 				contentTypeParaLog(archivo), e.getMessage());
 	}
 
-	private static String extensionParaLog(MultipartFile archivo) {
+	static String extensionParaLog(MultipartFile archivo) {
 		return DocumentoSecurityUtils.extensionParaLog(archivo != null ? archivo.getOriginalFilename() : null);
 	}
 
-	private static String contentTypeParaLog(MultipartFile archivo) {
+	static String contentTypeParaLog(MultipartFile archivo) {
 		return DocumentoSecurityUtils.contentTypeParaLog(archivo != null ? archivo.getContentType() : null);
 	}
 
 	/** Motivo del rechazo para el cuerpo {@code {"mensaje": …}}; nunca nulo. */
-	private static String motivo(IllegalArgumentException e) {
+	static String motivo(IllegalArgumentException e) {
 		return e.getMessage() != null ? e.getMessage() : "Solicitud no válida.";
 	}
 
 	/** Clase de la excepción y de su causa raíz, para el log sin mensajes (pueden llevar rutas o nombres). */
-	private static String causa(Throwable e) {
+	static String causa(Throwable e) {
 		Throwable raiz = e;
 		while (raiz.getCause() != null && raiz.getCause() != raiz) {
 			raiz = raiz.getCause();
