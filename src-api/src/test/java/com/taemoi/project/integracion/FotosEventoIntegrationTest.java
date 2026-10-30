@@ -69,6 +69,7 @@ import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.EventoFotoRepository;
 import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -122,6 +123,7 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired OrganizacionRepository organizaciones;
 	@Autowired EntityManagerFactory emf;
 	@Autowired EventoFotoService eventoFotoService;
+	@Autowired EventoFotoRepository eventoFotos;
 	@Value("${app.base.url}") String baseUrl;
 
 	final String sufijo = UUID.randomUUID().toString().substring(0, 8);
@@ -428,7 +430,58 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** Con control: la misma ruta y el mismo método dan 200 a su escuela, así que el 404 viene de la escuela. */
+	@Test
+	void elFicheroDirectoDeOtraEscuelaEs404_tambienConHead() throws Exception {
+		long deOrg1 = subir(evento(ORG1, true), tokenGestor).get("id").asLong();
+		long deOrg2 = subir(evento(org2, true), tokenPropietario2).get("id").asLong();
+
+		for (long foto : List.of(deOrg1, deOrg2)) {
+			String propio = foto == deOrg1 ? tokenGestor : tokenPropietario2;
+			String ajeno = foto == deOrg1 ? tokenPropietario2 : tokenGestor;
+			for (String ruta : List.of("/imagenes/" + ruta(foto), "/imagenes/" + rutaMiniatura(foto))) {
+				assertTrue(Files.isRegularFile(IMAGENES.resolve(ruta.substring("/imagenes/".length()))), ruta);
+
+				assertNoEncontrado(head(ruta).cookie(jwt(ajeno)));
+				assertNoEncontrado(get(ruta).cookie(jwt(ajeno)));
+				assertEquals(200, estado(head(ruta).cookie(jwt(propio))), ruta);
+			}
+		}
+	}
+
 	// ------------------------------------------------------------------ aislamiento
+
+	/** Visible no significa de todos: el evento de otra escuela no existe, ni con caché de antes. */
+	@Test
+	void eventoVisibleDeOtraEscuela_404EnHeadMiniaturaYCondicional() throws Exception {
+		long eventoOrg1 = evento(ORG1, true);
+		long eventoOrg2 = evento(org2, true);
+		String deOrg1 = "/api/eventos/" + eventoOrg1 + "/fotos/" + subirGrande(eventoOrg1);
+		String deOrg2 = "/api/eventos/" + eventoOrg2 + "/fotos/" + subir(eventoOrg2, tokenPropietario2).get("id").asLong();
+
+		assertNoLlegaAOtraEscuela(deOrg1, tokenGestor, tokenPropietario2);
+		assertNoLlegaAOtraEscuela(deOrg2, tokenPropietario2, tokenGestor);
+		assertNoLlegaAOtraEscuela(deOrg2, tokenPropietario2, null);
+	}
+
+	private void assertNoLlegaAOtraEscuela(String imagen, String propio, String ajeno) throws Exception {
+		MockHttpServletResponse original = mvc.perform(conToken(get(imagen), propio)).andReturn().getResponse();
+		MockHttpServletResponse miniatura = mvc.perform(conToken(get(imagen).param("w", "320"), propio)).andReturn()
+				.getResponse();
+		assertEquals(200, original.getStatus());
+		assertEquals(200, miniatura.getStatus());
+		String etag = original.getHeader("ETag");
+		String etagMiniatura = miniatura.getHeader("ETag");
+		String fecha = original.getHeader("Last-Modified");
+		assertEquals(304, estado(conToken(get(imagen).header("If-None-Match", etag), propio)), "Su escuela sí revalida");
+
+		for (MockHttpServletRequestBuilder peticion : List.of(head(imagen), get(imagen).param("w", "320"),
+				head(imagen).param("w", "320"), get(imagen).header("If-None-Match", etag),
+				head(imagen).header("If-None-Match", etag), get(imagen).header("If-Modified-Since", fecha),
+				get(imagen).param("w", "320").header("If-None-Match", etagMiniatura))) {
+			assertNoEncontrado(conToken(peticion, ajeno));
+		}
+	}
 
 	@Test
 	void otraEscuelaNoVeNiTocaLasFotos() throws Exception {
@@ -872,6 +925,66 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(2, fila(gestion, conFotos).get("numeroFotos").asInt());
 		assertEquals(0, fila(gestion, sinFotos).get("numeroFotos").asInt());
 		assertEquals(1, fila(gestion, oculto).get("numeroFotos").asInt());
+	}
+
+	@Test
+	void numeroFotos_cadaEscuelaCuentaSoloLoSuyo() throws Exception {
+		long visible1 = evento(ORG1, true);
+		long oculto1 = evento(ORG1, false);
+		long visible2 = evento(org2, true);
+		long oculto2 = evento(org2, false);
+		rellenar(visible1, 2);
+		rellenar(oculto1, 1);
+		rellenar(visible2, 3);
+		rellenar(oculto2, 4);
+
+		JsonNode publica1 = leer("/api/eventos", null);
+		JsonNode publica2 = leer("/api/eventos", tokenPropietario2);
+		JsonNode gestion1 = leer("/api/eventos/admin/todos", tokenGestor);
+		JsonNode gestion2 = leer("/api/eventos/admin/todos", tokenPropietario2);
+
+		assertEquals(2, fila(publica1, visible1).get("numeroFotos").asInt());
+		assertEquals(3, fila(publica2, visible2).get("numeroFotos").asInt());
+		assertEquals(2, fila(gestion1, visible1).get("numeroFotos").asInt());
+		assertEquals(1, fila(gestion1, oculto1).get("numeroFotos").asInt());
+		assertEquals(3, fila(gestion2, visible2).get("numeroFotos").asInt());
+		assertEquals(4, fila(gestion2, oculto2).get("numeroFotos").asInt());
+		assertFalse(ids(publica1).contains(oculto1), "La lista pública no trae ocultos");
+		assertFalse(ids(publica2).contains(oculto2), "La lista pública no trae ocultos");
+		assertSoloSusEventosYRecuentos(publica1, ORG1);
+		assertSoloSusEventosYRecuentos(gestion1, ORG1);
+		assertSoloSusEventosYRecuentos(publica2, org2);
+		assertSoloSusEventosYRecuentos(gestion2, org2);
+
+		// El recuento no se filtra por los eventos de la lista: la consulta tampoco debe devolver filas ajenas.
+		Set<Long> recuentos1 = eventosConRecuento(ORG1);
+		Set<Long> recuentos2 = eventosConRecuento(org2);
+		assertTrue(recuentos1.containsAll(List.of(visible1, oculto1)), recuentos1.toString());
+		assertTrue(recuentos2.containsAll(List.of(visible2, oculto2)), recuentos2.toString());
+		assertTrue(recuentos1.stream().noneMatch(recuentos2::contains), "Ningún recuento compartido");
+	}
+
+	private void assertSoloSusEventosYRecuentos(JsonNode lista, long organizacion) {
+		Map<Long, Integer> suyos = new HashMap<>();
+		jdbc.query("""
+				SELECT e.id, COUNT(f.id) FROM evento e LEFT JOIN evento_foto f ON f.evento_id = e.id
+				WHERE e.organizacion_id = ? GROUP BY e.id""", fila -> {
+			suyos.put(fila.getLong(1), fila.getInt(2));
+		}, organizacion);
+		assertFalse(lista.isEmpty());
+		for (JsonNode n : lista) {
+			long id = n.get("id").asLong();
+			assertTrue(suyos.containsKey(id), "Evento ajeno en la lista: " + id);
+			assertEquals(suyos.get(id), n.get("numeroFotos").asInt(), "Recuento del evento " + id);
+		}
+	}
+
+	private Set<Long> eventosConRecuento(long organizacion) {
+		return TenantContext.calcularCon(organizacion, () -> {
+			Set<Long> eventos = new HashSet<>();
+			eventoFotos.contarPorEvento().forEach(n -> eventos.add(n.getEventoId()));
+			return eventos;
+		});
 	}
 
 	/** Las mismas sentencias con fotos que sin ellas, y una sola consulta de recuento sea cual sea el número de eventos. */
