@@ -182,9 +182,14 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect(hoy.querySelector('app-botonscroll')).not.toBeNull();
   });
 
-  itSinReloj('mientras no se sabe la sesión y sin recordatorio: la cabecera y el pie de hoy desde el primer píxel', async () => {
+  itSinReloj('primera visita sin recordatorio en una ruta de gestión: el hueco, nunca la cabecera de hoy', async () => {
     obtener.and.returnValue(NEVER);
-    esperarHoy(await montar('/alumnosListar'));
+    const raiz = await montar('/alumnosListar');
+
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+    expect(pie(raiz)).toBeNull();
+    expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+    expect(localStorage.getItem(RECORDATORIO_PANEL)).toBeNull();
   });
 
   itSinReloj('con el recordatorio de sesión del panel y sin respuesta todavía: el hueco, ni la cabecera de hoy ni el pie', async () => {
@@ -248,6 +253,40 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     esperarHoy(raiz);
   });
 
+  itSinReloj('cerrar sesión y volver a entrar sin recargar: el hueco en gestión, no la cabecera de hoy', async () => {
+    obtener.and.returnValue(of(permisos()));
+    const raiz = await montar('/adminpage');
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+
+    obtener.and.returnValue(NEVER);
+    sesion.next(false);
+    raiz.detectar();
+    esperarHoy(raiz);
+
+    sesion.next(true);
+    await TestBed.inject(Router).navigateByUrl('/alumnosListar');
+    raiz.detectar();
+
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+    expect(pie(raiz)).toBeNull();
+    expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+  });
+
+  itSinReloj('con el marco nuevo, una emisión repetida de «con sesión» no vuelve al hueco', async () => {
+    obtener.and.returnValue(of(permisos()));
+    const raiz = await montar('/adminpage');
+    const fixture = (raiz as any).fixture;
+    expect((await fixture.getDeferBlocks()).length).toBe(1);
+
+    obtener.and.returnValue(NEVER);
+    sesion.next(true);
+    raiz.detectar();
+
+    expect(cabeceraDeHoy(raiz)).toBeNull();
+    expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+    expect((await fixture.getDeferBlocks()).length).withContext('sigue el marco nuevo, no el hueco').toBe(1);
+  });
+
   itSinReloj('se vuelve a leer al navegar a una ruta del panel (tras reiniciar los permisos)', async () => {
     obtener.and.returnValue(of(permisos(['FAMILIA'])));
     const raiz = await montar('/adminpage');
@@ -308,6 +347,24 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
       raiz.fixture = fixture;
       return raiz;
     }
+
+    itSinReloj('ruta de gestión sin recordatorio, antes del NavigationEnd: ni un fotograma de la cabecera de hoy', async () => {
+      obtener.and.returnValue(NEVER);
+      const raiz = montarSinNavegar('/adminpage');
+
+      expect(cabeceraDeHoy(raiz)).toBeNull();
+      expect(pie(raiz)).toBeNull();
+      expect(marco(raiz).classList.contains('marco-panel')).toBeTrue();
+    });
+
+    itSinReloj('sin recordatorio, permisos de gestión y hoja aún cargando: el hueco, no lo de hoy', async () => {
+      obtener.and.returnValue(of(permisos()));
+      cargarHoja.and.returnValue(new Promise<void>(() => {}));
+      const raiz = montarSinNavegar('/alumnosListar');
+
+      expect(cabeceraDeHoy(raiz)).toBeNull();
+      expect(pie(raiz)).toBeNull();
+    });
 
     itSinReloj('URL inexistente con el recordatorio: ni un fotograma de la cabecera de hoy, y tras navegar sigue sin ella', async () => {
       localStorage.setItem(RECORDATORIO_PANEL, '1');

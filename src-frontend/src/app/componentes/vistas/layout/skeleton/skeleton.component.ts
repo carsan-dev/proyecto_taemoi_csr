@@ -95,22 +95,23 @@ export class SkeletonComponent implements OnInit {
   private readonly desconocidaSinResolver = signal(
     !this.router.navigated && !this.rutaPanel() && !esRutaConocida(this.rutaInicial)
   );
-  /** ¿Sesión del panel nuevo? (null: aún no se sabe). Se pide la primera vez que se entra en una ruta de gestión. */
+  /** ¿Sesión del panel nuevo? (null: aún no se sabe, y en gestión se pinta el hueco). Se pide al entrar en una ruta de gestión. */
   private readonly encendido = signal<boolean | null>(null);
   private readonly recordado = signal(recordatorio((s) => s.getItem(RECORDATORIO_PANEL)) === '1');
   private evaluar$?: Subject<void>;
 
   /**
    * Fase3-e8b-plan.md §3 «Cabecera»: la de hoy salvo con una sesión del panel (gestión o profesor) y una ruta de
-   * gestión. Mientras no se sabe, la de hoy, salvo que este navegador recuerde que la última sesión era del panel:
-   * entonces el hueco de 64 px, para no pintar la de hoy y saltar a la nueva.
+   * gestión. En una ruta de gestión, mientras no se sabe si la sesión es del panel (permisos u hoja sin llegar), siempre
+   * el hueco de 64 px, con o sin recordatorio: nunca la cabecera de hoy, para no saltar a la nueva. El recordatorio
+   * queda solo para la carga directa de una URL desconocida, que puede acabar en el 404 del panel.
    */
   readonly modo = computed<ModoCabecera>(() => {
     if (!this.rutaPanel()) {
-      // Con el recordatorio, el hueco hasta saber si es el 404 del panel; sin él, o en una ruta conocida, lo de hoy.
+      // Solo aquí cuenta el recordatorio: el hueco hasta saber si es el 404 del panel; sin él, o en una ruta conocida, lo de hoy.
       return this.desconocidaSinResolver() && this.recordado() ? 'hueco' : 'hoy';
     }
-    const encendido = this.encendido() ?? (this.recordado() ? null : false);
+    const encendido = this.encendido();
     return encendido === null ? 'hueco' : encendido ? 'nuevo' : 'hoy';
   });
 
@@ -177,7 +178,8 @@ export class SkeletonComponent implements OnInit {
    * `reiniciar()`) y al entrar o salir de una cuenta. Los servicios se piden aquí, no al crear el componente: fuera del
    * panel no se pide nada. Cabecera nueva con gestión o profesor en la escuela (decisión 326, R6; sin interruptor desde
    * 8b-Z) y la hoja `panel-nuevo.css` cargada. Las familias y la plataforma siguen con la de hoy. Falla cerrado.
-   * Una respuesta válida guarda o borra el recordatorio; un error no lo toca; cerrar sesión lo borra.
+   * Mientras no hay respuesta, el hueco. Una respuesta válida guarda o borra el recordatorio (que solo sirve en la carga
+   * directa de una URL desconocida); un error no lo toca; cerrar sesión lo borra y pasa a lo de hoy.
    */
   private evaluarSesionPanel(): void {
     if (!this.evaluar$) {
@@ -217,8 +219,12 @@ export class SkeletonComponent implements OnInit {
         .usuarioLogueadoCambio.pipe(skip(1), takeUntilDestroyed(this.destroyRef))
         .subscribe((logueado) => {
           if (!logueado) {
-            this.encendido.set(null);
+            // Sin sesión no hay panel: lo de hoy ya, sin hueco hasta el 401 de permisos.
+            this.encendido.set(false);
             this.recordar(false);
+          } else if (this.encendido() === false) {
+            // Volver a entrar sin recargar: de nuevo «no se sabe» (hueco en gestión) hasta que lleguen permisos y hoja.
+            this.encendido.set(null);
           }
           if (this.rutaPanel()) {
             evaluar$.next();
