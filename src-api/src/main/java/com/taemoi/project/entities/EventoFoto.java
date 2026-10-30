@@ -33,15 +33,21 @@ public class EventoFoto extends EntidadOrganizacion {
 	@JoinColumn(name = "imagen_id", nullable = false, updatable = false)
 	private Imagen imagen;
 
+	/** La del mosaico: WebP no se reduce al servir. Fichero y fila propios, y las mismas reglas que {@link #imagen}. */
+	@OneToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "miniatura_id", nullable = false, updatable = false)
+	private Imagen miniatura;
+
 	@Column(nullable = false)
 	private Integer orden;
 
 	protected EventoFoto() {
 	}
 
-	public EventoFoto(Evento evento, Imagen imagen, Integer orden) {
+	public EventoFoto(Evento evento, Imagen imagen, Imagen miniatura, Integer orden) {
 		this.evento = evento;
 		this.imagen = imagen;
+		this.miniatura = miniatura;
 		this.orden = orden;
 	}
 
@@ -55,6 +61,10 @@ public class EventoFoto extends EntidadOrganizacion {
 
 	public Imagen getImagen() {
 		return imagen;
+	}
+
+	public Imagen getMiniatura() {
+		return miniatura;
 	}
 
 	public Integer getOrden() {

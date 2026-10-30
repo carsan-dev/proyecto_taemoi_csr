@@ -23,11 +23,15 @@ public interface EventoFotoRepository extends JpaRepository<EventoFoto, Long> {
 	@Query("SELECT f FROM EventoFoto f WHERE f.evento.id = :eventoId ORDER BY f.orden ASC, f.id ASC")
 	List<EventoFoto> listarDeEvento(@Param("eventoId") Long eventoId);
 
-	@Query("SELECT f FROM EventoFoto f JOIN FETCH f.imagen WHERE f.evento.id = :eventoId ORDER BY f.orden ASC, f.id ASC")
+	@Query("""
+			SELECT f FROM EventoFoto f JOIN FETCH f.imagen JOIN FETCH f.miniatura
+			WHERE f.evento.id = :eventoId ORDER BY f.orden ASC, f.id ASC""")
 	List<EventoFoto> listarDeEventoConImagen(@Param("eventoId") Long eventoId);
 
 	/** Vacío si la foto no existe, es de otra escuela o es de otro evento. */
-	@Query("SELECT f FROM EventoFoto f JOIN FETCH f.imagen WHERE f.id = :fotoId AND f.evento.id = :eventoId")
+	@Query("""
+			SELECT f FROM EventoFoto f JOIN FETCH f.imagen JOIN FETCH f.miniatura
+			WHERE f.id = :fotoId AND f.evento.id = :eventoId""")
 	Optional<EventoFoto> buscarConImagen(@Param("eventoId") Long eventoId, @Param("fotoId") Long fotoId);
 
 	@Query("SELECT COUNT(f) FROM EventoFoto f WHERE f.evento.id = :eventoId")

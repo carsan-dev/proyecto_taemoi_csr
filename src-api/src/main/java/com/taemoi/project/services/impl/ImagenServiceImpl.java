@@ -47,6 +47,7 @@ public class ImagenServiceImpl implements ImagenService {
 	private static final float EVENTO_WEBP_QUALITY = 0.80f;
 	private static final float JPEG_FALLBACK_QUALITY = 0.86f;
 	private static final String NOMBRE_BASE_FOTO_EVENTO = "foto";
+	private static final String NOMBRE_BASE_MINIATURA_FOTO_EVENTO = "miniatura";
 	private static final String MENSAJE_FOTO_ILEGIBLE = "No se pudo leer la foto del evento.";
 	private static final String MENSAJE_FOTO_DEMASIADO_GRANDE =
 			"La foto es demasiado grande. Usa una de menos de 60 megapíxeles.";
@@ -96,7 +97,7 @@ public class ImagenServiceImpl implements ImagenService {
 	}
 
 	@Override
-	public Imagen guardarImagenFotoEvento(MultipartFile archivo) throws IOException {
+	public FotoEventoGuardada guardarImagenFotoEvento(MultipartFile archivo) throws IOException {
 		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
 		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_FOTOS_EVENTOS);
 		Path directorio = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
@@ -104,8 +105,32 @@ public class ImagenServiceImpl implements ImagenService {
 		rechazarFotoDemasiadoGrande(archivo);
 		Files.createDirectories(directorio);
 
-		return guardarImagenProcesadaConFallback(orientarYReducirFoto(archivo), directorio, NOMBRE_BASE_FOTO_EVENTO,
-				carpetaRelativa, EVENTO_WEBP_QUALITY);
+		BufferedImage reducida = orientarYReducirFoto(archivo);
+		Imagen foto = guardarImagenProcesadaConFallback(reducida, directorio, NOMBRE_BASE_FOTO_EVENTO, carpetaRelativa,
+				EVENTO_WEBP_QUALITY);
+		try {
+			return new FotoEventoGuardada(foto, guardarMiniaturaFotoEvento(reducida, directorio, carpetaRelativa));
+		} catch (IOException | RuntimeException | Error e) {
+			borrarSinFallar(foto);
+			throw e;
+		}
+	}
+
+	/** Separado para poder simular su fallo en los tests. */
+	protected Imagen guardarMiniaturaFotoEvento(BufferedImage foto, Path directorio, String carpetaRelativa)
+			throws IOException {
+		BufferedImage miniatura = redimensionarImagen(foto, LADO_MINIATURA_FOTO_EVENTO, LADO_MINIATURA_FOTO_EVENTO);
+		return guardarImagenProcesadaConFallback(miniatura, directorio, NOMBRE_BASE_MINIATURA_FOTO_EVENTO, carpetaRelativa,
+				EVENTO_WEBP_QUALITY);
+	}
+
+	/** Limpieza de un fallo que ya se está propagando: no debe taparlo. Sin la ruta en el log. */
+	private void borrarSinFallar(Imagen imagen) {
+		try {
+			eliminarImagenDeSistema(imagen);
+		} catch (RuntimeException e) {
+			logger.warn("No se pudo borrar una foto de evento tras fallar su miniatura: {}", e.getClass().getSimpleName());
+		}
 	}
 
 	/** En su propio método para que los píxeles a tamaño completo se puedan liberar antes de codificar la foto. */

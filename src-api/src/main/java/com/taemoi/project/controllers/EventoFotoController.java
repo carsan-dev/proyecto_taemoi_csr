@@ -87,7 +87,8 @@ public class EventoFotoController {
 			if (!sePuedeVer(evento)) {
 				return ResponseEntity.notFound().build();
 			}
-			Imagen imagen = fotos.obtenerConImagen(eventoId, fotoId).getImagen();
+			EventoFoto foto = fotos.obtenerConImagen(eventoId, fotoId);
+			Imagen imagen = pideMiniatura(anchoSolicitado) ? foto.getMiniatura() : foto.getImagen();
 			Path rutaArchivo = imagenService.resolverRutaArchivo(imagen);
 			if (rutaArchivo == null) {
 				return ResponseEntity.notFound().build();
@@ -165,6 +166,12 @@ public class EventoFotoController {
 	/** Evento visible, o quien pregunta es de gestión. Sin visibilidad guardada cuenta como oculto. */
 	private static boolean sePuedeVer(Evento evento) {
 		return Boolean.TRUE.equals(evento.getVisible()) || EventoController.tieneAccesoPrivilegiadoEventos();
+	}
+
+	/** Un {@code ?w=} sin valor útil (0 o negativo) cuenta como no pedido, igual que en {@code RespuestaImagen}. */
+	private static boolean pideMiniatura(Integer anchoSolicitado) {
+		return anchoSolicitado != null && anchoSolicitado > 0
+				&& anchoSolicitado <= ImagenService.LADO_MINIATURA_FOTO_EVENTO;
 	}
 
 	private List<EventoFotoDTO> dtos(Long eventoId, List<EventoFoto> lista) {

@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 import javax.imageio.IIOException;
@@ -33,6 +34,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.services.ImagenService.FotoEventoGuardada;
 import com.taemoi.project.services.impl.ImagenServiceImpl;
 import com.taemoi.project.utils.DocumentoSecurityUtils;
 
@@ -172,7 +174,7 @@ class ImagenServiceImplTest {
 	void guardarFotoEvento_vaALaCarpetaPrivadaDeLaEscuela() throws Exception {
 		TenantContext.set(2L);
 		Imagen foto = imagenService.guardarImagenFotoEvento(
-				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng()));
+				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng())).foto();
 
 		assertRutaDentroDelDirectorio(foto, tempDir.resolve("org-2").resolve("fotos-eventos"));
 		assertEquals("org-2/fotos-eventos/" + foto.getNombre(), foto.getRuta());
@@ -184,7 +186,7 @@ class ImagenServiceImplTest {
 	@Test
 	void guardarFotoEvento_noUsaElNombreDelFicheroSubido() throws Exception {
 		Imagen foto = imagenService.guardarImagenFotoEvento(new MockMultipartFile("archivo",
-				"../../Lucia_Garcia_Lopez_" + "x".repeat(300) + ".png", "image/png", crearPng()));
+				"../../Lucia_Garcia_Lopez_" + "x".repeat(300) + ".png", "image/png", crearPng())).foto();
 
 		assertRutaDentroDelDirectorio(foto, tempDir.resolve("org-1").resolve("fotos-eventos"));
 		assertFalse(foto.getNombre().contains("Lucia"), foto.getNombre());
@@ -194,9 +196,9 @@ class ImagenServiceImplTest {
 	@Test
 	void guardarFotoEvento_reduceComoElCartelSinAmpliar() throws Exception {
 		Imagen grande = imagenService.guardarImagenFotoEvento(
-				new MockMultipartFile("archivo", "grande.png", "image/png", crearPng(3000, 1500)));
+				new MockMultipartFile("archivo", "grande.png", "image/png", crearPng(3000, 1500))).foto();
 		Imagen pequena = imagenService.guardarImagenFotoEvento(
-				new MockMultipartFile("archivo", "pequena.png", "image/png", crearPng(300, 200)));
+				new MockMultipartFile("archivo", "pequena.png", "image/png", crearPng(300, 200))).foto();
 		Imagen cartel = imagenService.guardarImagenEvento(
 				new MockMultipartFile("archivo", "cartel.png", "image/png", crearPng(3000, 1500)));
 
@@ -233,13 +235,122 @@ class ImagenServiceImplTest {
 				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng())));
 	}
 
+	// ------------------------------------------------------------------ miniatura
+
+	@Test
+	void guardarFotoEvento_guardaUnaMiniaturaDe640PorElLadoMayor() throws Exception {
+		FotoEventoGuardada apaisada = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "a.png", "image/png", crearPng(3000, 1500)));
+		FotoEventoGuardada vertical = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "b.png", "image/png", crearPng(1500, 3000)));
+
+		assertDimensiones(1920, 960, apaisada.foto());
+		assertDimensiones(640, 320, apaisada.miniatura());
+		assertDimensiones(960, 1920, vertical.foto());
+		assertDimensiones(320, 640, vertical.miniatura());
+	}
+
+	@Test
+	void guardarFotoEvento_laMiniaturaNoAmplia() throws Exception {
+		FotoEventoGuardada pequena = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "a.png", "image/png", crearPng(300, 200)));
+
+		assertDimensiones(300, 200, pequena.foto());
+		assertDimensiones(300, 200, pequena.miniatura());
+	}
+
+	@Test
+	void guardarFotoEvento_laMiniaturaVaALaMismaCarpetaPrivada_sinElNombreSubido() throws Exception {
+		TenantContext.set(2L);
+		FotoEventoGuardada guardada = imagenService.guardarImagenFotoEvento(new MockMultipartFile("archivo",
+				"Lucia_Garcia_Lopez.png", "image/png", crearPng(1000, 800)));
+		Imagen miniatura = guardada.miniatura();
+
+		assertRutaDentroDelDirectorio(miniatura, tempDir.resolve("org-2").resolve("fotos-eventos"));
+		assertEquals("org-2/fotos-eventos/" + miniatura.getNombre(), miniatura.getRuta());
+		assertEquals("/imagenes/org-2/fotos-eventos/" + miniatura.getNombre(), miniatura.getUrl());
+		assertFalse(com.taemoi.project.archivos.RutasArchivos.esImagenPublica(miniatura.getRuta()));
+		assertFalse(miniatura.getNombre().contains("Lucia"), miniatura.getNombre());
+		assertTrue(miniatura.getNombre().length() <= 200, "Cabe en imagen.nombre");
+		assertFalse(miniatura.getRuta().equals(guardada.foto().getRuta()), "Cada una con su fichero");
+		assertEquals(2, ficherosDeFotos("org-2"));
+	}
+
+	@Test
+	void guardarFotoEvento_laMiniaturaTambienSeOrienta() throws Exception {
+		Imagen miniatura = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(4000, 2000, 6))).miniatura();
+
+		BufferedImage leida = ImageIO.read(tempDir.resolve(miniatura.getRuta()).toFile());
+		assertEquals(320, leida.getWidth());
+		assertEquals(640, leida.getHeight());
+		assertColor(Color.BLUE, leida, 80, 160);
+		assertColor(Color.RED, leida, 240, 160);
+		assertColor(Color.WHITE, leida, 80, 480);
+		assertColor(Color.GREEN, leida, 240, 480);
+	}
+
+	@Test
+	void siFallaLaMiniatura_noQuedaLaFoto() throws Exception {
+		for (Throwable fallo : new Throwable[] { new IOException("disco"), new IllegalStateException("codificador"),
+				new OutOfMemoryError("memoria") }) {
+			ImagenServiceImpl servicio = new ImagenServiceImpl() {
+				@Override
+				protected Imagen guardarMiniaturaFotoEvento(BufferedImage foto, Path directorio, String carpetaRelativa)
+						throws IOException {
+					if (fallo instanceof IOException e) {
+						throw e;
+					}
+					if (fallo instanceof RuntimeException e) {
+						throw e;
+					}
+					throw (Error) fallo;
+				}
+			};
+			ReflectionTestUtils.setField(servicio, "directorioImagenesLinux", tempDir.toString());
+			ReflectionTestUtils.setField(servicio, "directorioImagenesWindows", tempDir.toString());
+
+			assertSame(fallo, assertThrows(Throwable.class, () -> servicio.guardarImagenFotoEvento(
+					new MockMultipartFile("archivo", "a.png", "image/png", crearPng(100, 100)))));
+			assertEquals(0, ficherosDeFotos("org-1"), "Sin miniatura no hay foto que registrar");
+		}
+	}
+
+	@Test
+	void elCartelYLasFotosDeAlumnoNoGuardanMiniatura() throws Exception {
+		Imagen cartel = imagenService.guardarImagenEvento(new MockMultipartFile("archivo", "c.png", "image/png", crearPng()));
+		Imagen alumno = imagenService.guardarImagen(new MockMultipartFile("archivo", "a.png", "image/png", crearPng()));
+
+		assertEquals(1, ficheros(tempDir.resolve(cartel.getRuta()).getParent()));
+		assertEquals(1, ficheros(tempDir.resolve(alumno.getRuta()).getParent()));
+	}
+
+	private long ficherosDeFotos(String organizacion) throws IOException {
+		return ficheros(tempDir.resolve(organizacion).resolve("fotos-eventos"));
+	}
+
+	private static long ficheros(Path carpeta) throws IOException {
+		if (!Files.isDirectory(carpeta)) {
+			return 0;
+		}
+		try (Stream<Path> rutas = Files.list(carpeta)) {
+			return rutas.count();
+		}
+	}
+
+	private void assertDimensiones(int ancho, int alto, Imagen imagen) throws IOException {
+		BufferedImage leida = ImageIO.read(tempDir.resolve(imagen.getRuta()).toFile());
+		assertEquals(ancho, leida.getWidth(), imagen.getRuta());
+		assertEquals(alto, leida.getHeight(), imagen.getRuta());
+	}
+
 	// ------------------------------------------------------------------ orientación EXIF
 
 	/** Cuadrantes de colores: si la foto saliera en espejo o girada al revés, no coincidirían. */
 	@Test
 	void guardarFotoEvento_aplicaLaOrientacionAntesDeReducir() throws Exception {
 		Imagen foto = imagenService.guardarImagenFotoEvento(
-				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(4000, 2000, 6)));
+				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(4000, 2000, 6))).foto();
 
 		BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
 		assertEquals(960, leida.getWidth());
@@ -254,7 +365,7 @@ class ImagenServiceImplTest {
 	@Test
 	void guardarFotoEvento_sinNecesidadDeReducirTambienSeOrienta() throws Exception {
 		Imagen foto = imagenService.guardarImagenFotoEvento(
-				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(400, 200, 8)));
+				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(400, 200, 8))).foto();
 
 		BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
 		assertEquals(200, leida.getWidth());
@@ -273,7 +384,7 @@ class ImagenServiceImplTest {
 
 		for (byte[] contenido : new byte[][] { jpeg(400, 200), corrupta, truncada }) {
 			Imagen foto = imagenService.guardarImagenFotoEvento(
-					new MockMultipartFile("archivo", "foto.jpg", "image/jpeg", contenido));
+					new MockMultipartFile("archivo", "foto.jpg", "image/jpeg", contenido)).foto();
 
 			BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
 			assertEquals(400, leida.getWidth());
@@ -359,7 +470,7 @@ class ImagenServiceImplTest {
 				new MockMultipartFile("archivo", "a.jpg", "image/jpeg", jpeg(40, 30)),
 				new MockMultipartFile("archivo", "a.png", "image/png", crearPng(40, 30)),
 				new MockMultipartFile("archivo", "a.webp", "image/webp", webp.toByteArray()) }) {
-			Imagen foto = imagenService.guardarImagenFotoEvento(archivo);
+			Imagen foto = imagenService.guardarImagenFotoEvento(archivo).foto();
 			assertEquals(40, ImageIO.read(tempDir.resolve(foto.getRuta()).toFile()).getWidth(), archivo.getOriginalFilename());
 		}
 	}

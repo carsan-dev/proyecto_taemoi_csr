@@ -28,6 +28,7 @@ import com.taemoi.project.exceptions.evento.TopeFotosEventoException;
 import com.taemoi.project.repositories.EventoFotoRepository;
 import com.taemoi.project.repositories.EventoRepository;
 import com.taemoi.project.repositories.ImagenRepository;
+import com.taemoi.project.services.ImagenService.FotoEventoGuardada;
 
 /**
  * Decisión 342: galería de fotos de un evento. Quién puede ver qué se decide en {@code EventoFotoController}.
@@ -36,10 +37,10 @@ import com.taemoi.project.repositories.ImagenRepository;
  * para que, en REPEATABLE READ, vea lo que confirmó la subida anterior. El bloqueo debe ser la primera sentencia de la
  * transacción.
  *
- * <p>Fichero y fila no pueden ir juntos en una transacción. Al subir, el fichero se escribe fuera (procesar una imagen
- * con la fila bloqueada pararía el resto) y se borra si la transacción falla. Al borrar, el fichero se va tras confirmar,
- * así un fallo no deja una fila sin su foto. Por eso se usa {@link TransactionTemplate} y no {@code @Transactional}:
- * estos métodos no deben llamarse dentro de otra transacción.
+ * <p>Fichero y fila no pueden ir juntos en una transacción. Al subir, los ficheros (foto y miniatura) se escriben fuera
+ * (procesar una imagen con la fila bloqueada pararía el resto) y se borran si la transacción falla. Al borrar, se van tras
+ * confirmar, así un fallo no deja una fila sin su foto. Por eso se usa {@link TransactionTemplate} y no
+ * {@code @Transactional}: estos métodos no deben llamarse dentro de otra transacción.
  */
 @Service
 public class EventoFotoService {
@@ -93,12 +94,13 @@ public class EventoFotoService {
 			throw eventoNoEncontrado(eventoId);
 		}
 		comprobarTope(eventoId);
-		Imagen imagen = procesar(archivo);
+		FotoEventoGuardada guardada = procesar(archivo);
 		try {
-			return transaccion.execute(estado -> registrar(eventoId, imagen));
+			return transaccion.execute(estado -> registrar(eventoId, guardada));
 		} catch (RuntimeException | Error e) {
-			// Deshecho: el fichero recién escrito no lo apunta nadie.
-			borrarFichero(imagen);
+			// Deshecho: los ficheros recién escritos no los apunta nadie.
+			borrarFichero(guardada.foto());
+			borrarFichero(guardada.miniatura());
 			throw e;
 		}
 	}
@@ -129,20 +131,20 @@ public class EventoFotoService {
 	}
 
 	/**
-	 * Borra la fila, la imagen y, tras confirmar, el fichero.
+	 * Borra la fila, las imágenes de la foto y de su miniatura y, tras confirmar, sus ficheros.
 	 *
 	 * @throws EventoNoEncontradoException     si el evento no existe o es de otra escuela
 	 * @throws FotoEventoNoEncontradaException si la foto no es de ese evento
 	 */
 	public void eliminar(Long eventoId, Long fotoId) {
-		Imagen imagen = transaccion.execute(estado -> {
+		EventoFoto borrada = transaccion.execute(estado -> {
 			bloquear(eventoId);
 			EventoFoto foto = obtenerConImagen(eventoId, fotoId);
 			fotos.delete(foto);
-			imagenes.delete(foto.getImagen());
-			return foto.getImagen();
+			borrarFilasDeImagen(foto);
+			return foto;
 		});
-		borrarFichero(imagen);
+		borrarFicheros(borrada);
 	}
 
 	/**
@@ -152,20 +154,19 @@ public class EventoFotoService {
 	 * @throws EventoNoEncontradoException si el evento no existe o es de otra escuela
 	 */
 	public void eliminarEventoConFotos(Long eventoId) {
-		List<Imagen> borradas = transaccion.execute(estado -> {
+		List<EventoFoto> borradas = transaccion.execute(estado -> {
 			Evento evento = bloquear(eventoId);
 			List<EventoFoto> suyas = fotos.listarDeEventoConImagen(eventoId);
-			List<Imagen> suyasImagenes = suyas.stream().map(EventoFoto::getImagen).toList();
 			fotos.deleteAll(suyas);
-			imagenes.deleteAll(suyasImagenes);
+			suyas.forEach(this::borrarFilasDeImagen);
 			eventos.delete(evento);
-			return suyasImagenes;
+			return suyas;
 		});
-		borradas.forEach(this::borrarFichero);
+		borradas.forEach(this::borrarFicheros);
 	}
 
 	/** El semáforo se suelta antes de la transacción: con él cogido, una subida esperaría con la fila bloqueada. */
-	private Imagen procesar(MultipartFile archivo) throws IOException {
+	private FotoEventoGuardada procesar(MultipartFile archivo) throws IOException {
 		try {
 			if (!procesado.tryAcquire(esperaProcesado.toMillis(), TimeUnit.MILLISECONDS)) {
 				throw new ServidorOcupadoException(MENSAJE_OCUPADO);
@@ -181,11 +182,22 @@ public class EventoFotoService {
 		}
 	}
 
-	private EventoFoto registrar(Long eventoId, Imagen imagen) {
+	private EventoFoto registrar(Long eventoId, FotoEventoGuardada guardada) {
 		Evento evento = bloquear(eventoId);
 		comprobarTope(eventoId);
-		Imagen guardada = imagenes.save(imagen);
-		return fotos.save(new EventoFoto(evento, guardada, fotos.ultimoOrden(eventoId) + 1));
+		Imagen foto = imagenes.save(guardada.foto());
+		Imagen miniatura = imagenes.save(guardada.miniatura());
+		return fotos.save(new EventoFoto(evento, foto, miniatura, fotos.ultimoOrden(eventoId) + 1));
+	}
+
+	private void borrarFilasDeImagen(EventoFoto foto) {
+		imagenes.delete(foto.getImagen());
+		imagenes.delete(foto.getMiniatura());
+	}
+
+	private void borrarFicheros(EventoFoto foto) {
+		borrarFichero(foto.getImagen());
+		borrarFichero(foto.getMiniatura());
 	}
 
 	private Evento bloquear(Long eventoId) {

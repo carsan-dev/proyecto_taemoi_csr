@@ -21,6 +21,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.EncodedResource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -97,13 +98,14 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 	@Order(2)
 	void creaLaTabla_conLasColumnasPedidas() {
 		assertEquals(List.of("id bigint NO", "organizacion_id bigint NO", "evento_id bigint NO", "imagen_id bigint NO",
-				"orden int NO"), columnas("evento_foto"));
+				"miniatura_id bigint NO", "orden int NO"), columnas("evento_foto"));
 	}
 
 	@Test
 	@Order(3)
 	void indicesYUnicas() {
 		assertEquals(List.of("imagen_id"), indice("evento_foto", "uk_evento_foto_imagen", 0));
+		assertEquals(List.of("miniatura_id"), indice("evento_foto", "uk_evento_foto_miniatura", 0));
 		assertEquals(List.of("evento_id,orden"), indice("evento_foto", "idx_evento_foto_evento_orden", 1));
 		assertEquals(List.of("organizacion_id,evento_id"), indice("evento_foto", "idx_evento_foto_organizacion_evento", 1));
 	}
@@ -127,26 +129,46 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 	void borrarUnEventoConFotos_sinConocerLaTabla_seLlevaSusFilas() {
 		long evento = evento(1L, "Con fotos");
 		long imagen = imagen(1L, "a.webp", "org-1/fotos-eventos/a.webp");
-		foto(1L, evento, imagen, 1);
+		long miniatura = imagen(1L, "a-mini.webp", "org-1/fotos-eventos/a-mini.webp");
+		foto(1L, evento, imagen, miniatura, 1);
 
 		jdbc.update("DELETE FROM evento WHERE id = ?", evento);
 
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM evento_foto WHERE evento_id = ?", Long.class, evento));
-		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM imagen WHERE id = ?", Long.class, imagen),
-				"la fila de imagen queda: sin referencias, y privada");
-		jdbc.update("DELETE FROM imagen WHERE id = ?", imagen);
+		assertEquals(2L, jdbc.queryForObject("SELECT COUNT(*) FROM imagen WHERE id IN (?, ?)", Long.class, imagen, miniatura),
+				"las filas de imagen quedan: sin referencias, y privadas");
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?)", imagen, miniatura);
 	}
 
 	@Test
 	@Order(6)
 	void unaImagenNoSeRepite_niSePuedeBorrarMientrasSeUsa() {
 		long imagen = imagen(1L, "b.webp", "org-1/fotos-eventos/b.webp");
-		long foto = foto(1L, eventoDe1, imagen, 1);
+		long miniatura = imagen(1L, "b-mini.webp", "org-1/fotos-eventos/b-mini.webp");
+		long otra = imagen(1L, "b2.webp", "org-1/fotos-eventos/b2.webp");
+		long foto = foto(1L, eventoDe1, imagen, miniatura, 1);
 
-		assertThrows(DataIntegrityViolationException.class, () -> foto(1L, eventoDe1, imagen, 2));
+		assertThrows(DataIntegrityViolationException.class, () -> foto(1L, eventoDe1, imagen, otra, 2));
+		assertThrows(DataIntegrityViolationException.class, () -> foto(1L, eventoDe1, otra, miniatura, 2),
+				"Una miniatura tampoco se repite");
 		assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM imagen WHERE id = ?", imagen));
+		assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM imagen WHERE id = ?", miniatura),
+				"Una miniatura en uso tampoco se borra");
 
 		jdbc.update("DELETE FROM evento_foto WHERE id = ?", foto);
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?, ?)", imagen, miniatura, otra);
+	}
+
+	@Test
+	@Order(61)
+	void laMiniaturaEsObligatoriaYDebeExistir() {
+		long imagen = imagen(1L, "g.webp", "org-1/fotos-eventos/g.webp");
+
+		assertThrows(DataAccessException.class, () -> jdbc.update(
+				"INSERT INTO evento_foto (organizacion_id, evento_id, imagen_id, orden) VALUES (1, ?, ?, 1)", eventoDe1, imagen),
+				"Sin miniatura no hay foto");
+		assertThrows(DataIntegrityViolationException.class, () -> foto(1L, eventoDe1, imagen, 987654321L, 1));
+
 		jdbc.update("DELETE FROM imagen WHERE id = ?", imagen);
 	}
 
@@ -156,36 +178,40 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 	void elOrdenPuedeRepetirseMientrasSeReordena() {
 		long a = imagen(1L, "c.webp", "org-1/fotos-eventos/c.webp");
 		long b = imagen(1L, "d.webp", "org-1/fotos-eventos/d.webp");
-		long fotoA = foto(1L, eventoDe1, a, 1);
-		long fotoB = foto(1L, eventoDe1, b, 2);
+		long miniaturaA = imagen(1L, "c-mini.webp", "org-1/fotos-eventos/c-mini.webp");
+		long miniaturaB = imagen(1L, "d-mini.webp", "org-1/fotos-eventos/d-mini.webp");
+		long fotoA = foto(1L, eventoDe1, a, miniaturaA, 1);
+		long fotoB = foto(1L, eventoDe1, b, miniaturaB, 2);
 
 		jdbc.update("UPDATE evento_foto SET orden = 2 WHERE id = ?", fotoA);
 		jdbc.update("UPDATE evento_foto SET orden = 1 WHERE id = ?", fotoB);
 
 		jdbc.update("DELETE FROM evento_foto WHERE id IN (?, ?)", fotoA, fotoB);
-		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?)", a, b);
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?, ?, ?)", a, b, miniaturaA, miniaturaB);
 	}
 
 	@Test
 	@Order(8)
 	void laEscuelaDebeExistir() {
 		long imagen = imagen(otra, "e.webp", "org-" + otra + "/fotos-eventos/e.webp");
-		assertThrows(DataIntegrityViolationException.class, () -> foto(987654L, eventoDeOtra, imagen, 1));
-		jdbc.update("DELETE FROM imagen WHERE id = ?", imagen);
+		long miniatura = imagen(otra, "e-mini.webp", "org-" + otra + "/fotos-eventos/e-mini.webp");
+		assertThrows(DataIntegrityViolationException.class, () -> foto(987654L, eventoDeOtra, imagen, miniatura, 1));
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?)", imagen, miniatura);
 	}
 
 	@Test
 	@Order(9)
 	void repetirla_conservaLoGuardado() throws Exception {
 		long imagen = imagen(1L, "f.webp", "org-1/fotos-eventos/f.webp");
-		long foto = foto(1L, eventoDe1, imagen, 1);
+		long miniatura = imagen(1L, "f-mini.webp", "org-1/fotos-eventos/f-mini.webp");
+		long foto = foto(1L, eventoDe1, imagen, miniatura, 1);
 
 		ejecutarV31_16();
 		ejecutarV31_16();
 
 		assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM evento_foto WHERE id = ?", Long.class, foto));
 		jdbc.update("DELETE FROM evento_foto WHERE id = ?", foto);
-		jdbc.update("DELETE FROM imagen WHERE id = ?", imagen);
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?)", imagen, miniatura);
 	}
 
 	/** Si falló, volver a ejecutarla crea lo que falta. */
@@ -195,7 +221,7 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 		jdbc.execute("DROP TABLE evento_foto");
 		ejecutarV31_16();
 		assertEquals(List.of("id bigint NO", "organizacion_id bigint NO", "evento_id bigint NO", "imagen_id bigint NO",
-				"orden int NO"), columnas("evento_foto"));
+				"miniatura_id bigint NO", "orden int NO"), columnas("evento_foto"));
 	}
 
 	// ------------------------------------------------------------------ utilidades
@@ -212,9 +238,9 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForObject("SELECT MAX(id) FROM imagen WHERE organizacion_id = ?", Long.class, organizacion);
 	}
 
-	private long foto(long organizacion, long evento, long imagen, int orden) {
-		jdbc.update("INSERT INTO evento_foto (organizacion_id, evento_id, imagen_id, orden) VALUES (?, ?, ?, ?)",
-				organizacion, evento, imagen, orden);
+	private long foto(long organizacion, long evento, long imagen, long miniatura, int orden) {
+		jdbc.update("INSERT INTO evento_foto (organizacion_id, evento_id, imagen_id, miniatura_id, orden)"
+				+ " VALUES (?, ?, ?, ?, ?)", organizacion, evento, imagen, miniatura, orden);
 		return jdbc.queryForObject("SELECT MAX(id) FROM evento_foto", Long.class);
 	}
 

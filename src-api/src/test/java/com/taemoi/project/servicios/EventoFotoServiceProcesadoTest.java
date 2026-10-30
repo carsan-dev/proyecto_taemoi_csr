@@ -85,7 +85,7 @@ class EventoFotoServiceProcesadoTest {
 		when(imagenService.guardarImagenFotoEvento(any())).thenAnswer(llamada -> {
 			dentro.countDown();
 			assertTrue(soltar.await(30, TimeUnit.SECONDS));
-			return imagen();
+			return guardada();
 		});
 		List<Future<?>> enCurso = new ArrayList<>();
 		enCurso.add(hilos.submit(() -> subir()));
@@ -108,7 +108,7 @@ class EventoFotoServiceProcesadoTest {
 	void elSemaforoNoSeRetieneDuranteLaTransaccion() throws Exception {
 		when(imagenService.guardarImagenFotoEvento(any())).thenAnswer(llamada -> {
 			assertEquals(1, semaforo().availablePermits(), "Se procesa con el semáforo cogido");
-			return imagen();
+			return guardada();
 		});
 		when(eventos.findByIdParaActualizar(EVENTO)).thenAnswer(llamada -> {
 			assertEquals(2, semaforo().availablePermits(), "La transacción empieza con el semáforo libre");
@@ -164,8 +164,12 @@ class EventoFotoServiceProcesadoTest {
 		return (Semaphore) ReflectionTestUtils.getField(servicio, "procesado");
 	}
 
-	private static Imagen imagen() {
-		return new Imagen("foto.webp", "image/webp", "/imagenes/org-1/fotos-eventos/foto.webp",
-				"org-1/fotos-eventos/foto.webp");
+	private static ImagenService.FotoEventoGuardada guardada() {
+		return new ImagenService.FotoEventoGuardada(imagen("foto.webp"), imagen("miniatura.webp"));
+	}
+
+	private static Imagen imagen(String nombre) {
+		return new Imagen(nombre, "image/webp", "/imagenes/org-1/fotos-eventos/" + nombre,
+				"org-1/fotos-eventos/" + nombre);
 	}
 }

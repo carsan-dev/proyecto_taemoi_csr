@@ -1,5 +1,6 @@
 package com.taemoi.project.integracion;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -272,6 +274,75 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(304, estado(get(imagen).param("w", "480").header("If-None-Match", r.getHeader("ETag"))));
 	}
 
+	// ------------------------------------------------------------------ miniatura
+
+	@Test
+	void hasta640SeSirveLaMiniatura_yPorEncimaElOriginal() throws Exception {
+		long evento = evento(ORG1, true);
+		long fotoId = subirGrande(evento);
+		String imagen = "/api/eventos/" + evento + "/fotos/" + fotoId;
+		byte[] original = Files.readAllBytes(IMAGENES.resolve(ruta(fotoId)));
+		byte[] miniatura = Files.readAllBytes(IMAGENES.resolve(rutaMiniatura(fotoId)));
+
+		for (String ancho : List.of("1", "160", "320", "480", "640")) {
+			MockHttpServletResponse r = mvc.perform(get(imagen).param("w", ancho)).andReturn().getResponse();
+			assertEquals(200, r.getStatus());
+			assertArrayEquals(miniatura, r.getContentAsByteArray(), "w=" + ancho);
+			assertEquals(640, ImageIO.read(new ByteArrayInputStream(r.getContentAsByteArray())).getWidth());
+		}
+		for (String ancho : List.of("641", "1000", "2000", "0", "-1")) {
+			MockHttpServletResponse r = mvc.perform(get(imagen).param("w", ancho)).andReturn().getResponse();
+			assertEquals(200, r.getStatus());
+			assertArrayEquals(original, r.getContentAsByteArray(), "w=" + ancho);
+		}
+		assertArrayEquals(original, mvc.perform(get(imagen)).andReturn().getResponse().getContentAsByteArray());
+		assertEquals(1600, ImageIO.read(new ByteArrayInputStream(original)).getWidth());
+	}
+
+	@Test
+	void laMiniaturaSigueLasReglasDeVisibilidadYDeCache() throws Exception {
+		long evento = evento(ORG1, true);
+		long fotoId = subirGrande(evento);
+		String imagen = "/api/eventos/" + evento + "/fotos/" + fotoId;
+
+		MockHttpServletResponse visible = mvc.perform(get(imagen).param("w", "320")).andReturn().getResponse();
+		assertEquals("max-age=3600, must-revalidate, public", visible.getHeader("Cache-Control"));
+		assertNotNull(visible.getHeader("ETag"));
+		assertNotNull(visible.getHeader("Last-Modified"));
+		assertEquals(304, estado(get(imagen).param("w", "320").header("If-None-Match", visible.getHeader("ETag"))));
+
+		ocultar(evento);
+		for (String token : Arrays.asList(null, tokenFamilia, tokenPropietario2)) {
+			assertNoEncontrado(conToken(get(imagen).param("w", "320"), token));
+			assertNoEncontrado(conToken(head(imagen).param("w", "320"), token));
+			assertNoEncontrado(conToken(get(imagen).param("w", "320").header("If-None-Match", visible.getHeader("ETag")), token));
+		}
+		MockHttpServletResponse gestion = mvc.perform(get(imagen).param("w", "320").cookie(jwt(tokenGestor))).andReturn()
+				.getResponse();
+		assertEquals(200, gestion.getStatus());
+		assertEquals("max-age=28800, must-revalidate, private", gestion.getHeader("Cache-Control"));
+	}
+
+	@Test
+	void laMiniaturaDeOtroEventoEs404() throws Exception {
+		long evento = evento(ORG1, true);
+		long otro = evento(ORG1, true);
+		long fotoId = subir(evento, tokenGestor).get("id").asLong();
+
+		assertNoEncontrado(get("/api/eventos/" + otro + "/fotos/" + fotoId).param("w", "320"));
+	}
+
+	/** Su conducta no cambia: sin miniatura ni fila en la galería. */
+	@Test
+	void elCartelNoGuardaMiniatura() throws Exception {
+		long ficherosAntes = ficheros(ORG1);
+		long evento = eventoConCartel();
+
+		assertEquals(ficherosAntes, ficheros(ORG1));
+		assertEquals(0, filas(evento));
+		assertEquals(200, estado(get("/api/eventos/" + evento + "/imagen").param("w", "320")));
+	}
+
 	// ------------------------------------------------------------------ nada de rutas
 
 	@Test
@@ -280,6 +351,7 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		JsonNode foto = subir(evento, tokenGestor);
 		long fotoId = foto.get("id").asLong();
 		String fichero = Path.of(ruta(fotoId)).getFileName().toString();
+		String ficheroMiniatura = Path.of(rutaMiniatura(fotoId)).getFileName().toString();
 		assertEquals(Set.of("id", "url", "orden"), campos(foto));
 
 		List<String> respuestas = new ArrayList<>();
@@ -293,11 +365,17 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 			assertFalse(respuesta.contains("fotos-eventos"), respuesta);
 			assertFalse(respuesta.contains("/imagenes/"), respuesta);
 			assertFalse(respuesta.contains(fichero), respuesta);
+			assertFalse(respuesta.contains(ficheroMiniatura), respuesta);
+			assertFalse(respuesta.contains("miniatura"), respuesta);
 		}
 
 		MockHttpServletResponse imagen = mvc.perform(get("/api/eventos/" + evento + "/fotos/" + fotoId)).andReturn()
 				.getResponse();
 		assertFalse(imagen.getHeader("Content-Disposition").contains(fichero), imagen.getHeader("Content-Disposition"));
+		MockHttpServletResponse miniatura = mvc.perform(get("/api/eventos/" + evento + "/fotos/" + fotoId).param("w", "320"))
+				.andReturn().getResponse();
+		assertFalse(miniatura.getHeader("Content-Disposition").contains(ficheroMiniatura),
+				miniatura.getHeader("Content-Disposition"));
 	}
 
 	/** Ni colección en el JSON del evento: la lista se pide por su endpoint. */
@@ -318,17 +396,21 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 	void elFicheroDirectoNoSeSirveSinSesionNiAUnaFamilia() throws Exception {
 		long evento = evento(ORG1, true);
 		long fotoId = subir(evento, tokenGestor).get("id").asLong();
-		String ruta = "/imagenes/" + ruta(fotoId);
-		assertTrue(ruta.startsWith("/imagenes/org-1/fotos-eventos/"), ruta);
-		assertTrue(Files.isRegularFile(IMAGENES.resolve(ruta(fotoId))));
+		for (String ruta : List.of("/imagenes/" + ruta(fotoId), "/imagenes/" + rutaMiniatura(fotoId))) {
+			assertTrue(ruta.startsWith("/imagenes/org-1/fotos-eventos/"), ruta);
+			assertTrue(Files.isRegularFile(IMAGENES.resolve(ruta.substring("/imagenes/".length()))));
 
-		for (MockHttpServletRequestBuilder peticion : List.of(get(ruta), head(ruta), get(ruta).cookie(jwt(tokenFamilia)),
-				head(ruta).cookie(jwt(tokenFamilia)), get(ruta).cookie(jwt(tokenPropietario2)))) {
-			assertNoEncontrado(peticion);
+			for (MockHttpServletRequestBuilder peticion : List.of(get(ruta), head(ruta),
+					get(ruta).cookie(jwt(tokenFamilia)), head(ruta).cookie(jwt(tokenFamilia)),
+					get(ruta).cookie(jwt(tokenPropietario2)))) {
+				assertNoEncontrado(peticion);
+			}
 		}
 		ocultar(evento);
-		assertNoEncontrado(get(ruta));
-		assertNoEncontrado(get(ruta).cookie(jwt(tokenFamilia)));
+		for (String ruta : List.of("/imagenes/" + ruta(fotoId), "/imagenes/" + rutaMiniatura(fotoId))) {
+			assertNoEncontrado(get(ruta));
+			assertNoEncontrado(get(ruta).cookie(jwt(tokenFamilia)));
+		}
 	}
 
 	/** Como las fotos de alumnos: el personal de la escuela, con fila y sin caché. Nunca se le da esta URL. */
@@ -337,11 +419,13 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long evento = evento(ORG1, false);
 		long fotoId = subir(evento, tokenGestor).get("id").asLong();
 
-		MockHttpServletResponse r = mvc.perform(get("/imagenes/" + ruta(fotoId)).cookie(jwt(tokenGestor))).andReturn()
-				.getResponse();
+		for (String ruta : List.of(ruta(fotoId), rutaMiniatura(fotoId))) {
+			MockHttpServletResponse r = mvc.perform(get("/imagenes/" + ruta).cookie(jwt(tokenGestor))).andReturn()
+					.getResponse();
 
-		assertEquals(200, r.getStatus());
-		assertTrue(r.getHeader("Cache-Control").contains("no-store"), r.getHeader("Cache-Control"));
+			assertEquals(200, r.getStatus());
+			assertTrue(r.getHeader("Cache-Control").contains("no-store"), r.getHeader("Cache-Control"));
+		}
 	}
 
 	// ------------------------------------------------------------------ aislamiento
@@ -368,6 +452,10 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long eventoOrg2 = evento(org2, true);
 		long fotoId = subir(eventoOrg2, tokenPropietario2).get("id").asLong();
 		assertTrue(ruta(fotoId).startsWith("org-" + org2 + "/fotos-eventos/"), ruta(fotoId));
+		assertTrue(rutaMiniatura(fotoId).startsWith("org-" + org2 + "/fotos-eventos/"), rutaMiniatura(fotoId));
+		assertEquals(org2, jdbc.queryForObject("""
+				SELECT i.organizacion_id FROM imagen i JOIN evento_foto f ON f.miniatura_id = i.id WHERE f.id = ?""",
+				Long.class, fotoId));
 		assertEquals(org2, jdbc.queryForObject("SELECT organizacion_id FROM evento_foto WHERE id = ?", Long.class, fotoId));
 		assertEquals(org2, jdbc.queryForObject("""
 				SELECT i.organizacion_id FROM imagen i JOIN evento_foto f ON f.imagen_id = i.id WHERE f.id = ?""",
@@ -510,7 +598,7 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 			ejecutor.shutdownNow();
 		}
 		assertEquals(TOPE, filas(evento));
-		assertEquals(ficherosAntes + 2, ficheros(ORG1));
+		assertEquals(ficherosAntes + 4, ficheros(ORG1), "Foto y miniatura de las dos que entran");
 		assertEquals(TOPE, jdbc.queryForObject("SELECT COUNT(DISTINCT orden) FROM evento_foto WHERE evento_id = ?",
 				Integer.class, evento), "Cada foto con su orden");
 	}
@@ -641,14 +729,19 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long a = subir(evento, tokenGestor).get("id").asLong();
 		long b = subir(evento, tokenGestor).get("id").asLong();
 		Path ficheroA = IMAGENES.resolve(ruta(a));
+		Path miniaturaA = IMAGENES.resolve(rutaMiniatura(a));
 		Path ficheroB = IMAGENES.resolve(ruta(b));
+		Path miniaturaB = IMAGENES.resolve(rutaMiniatura(b));
 		long imagenA = imagenDe(a);
+		long filaMiniaturaA = miniaturaDe(a);
 
 		assertEquals(200, estado(delete("/api/eventos/" + evento + "/fotos/" + a).cookie(jwt(tokenGestor))));
 
 		assertFalse(Files.exists(ficheroA));
+		assertFalse(Files.exists(miniaturaA));
 		assertTrue(Files.exists(ficheroB));
-		assertEquals(0, contar("SELECT COUNT(*) FROM imagen WHERE id = " + imagenA));
+		assertTrue(Files.exists(miniaturaB));
+		assertEquals(0, contar("SELECT COUNT(*) FROM imagen WHERE id IN (" + imagenA + "," + filaMiniaturaA + ")"));
 		assertEquals(List.of(b), ids(leer("/api/eventos/" + evento + "/fotos", null)));
 		assertEquals(404, estado(delete("/api/eventos/" + evento + "/fotos/" + a).cookie(jwt(tokenGestor))));
 	}
@@ -662,7 +755,9 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long b = subir(evento, tokenGestor).get("id").asLong();
 		Path ficheroA = IMAGENES.resolve(ruta(a));
 		Path ficheroB = IMAGENES.resolve(ruta(b));
-		List<Long> imagenes = List.of(imagenDe(a), imagenDe(b));
+		Path miniaturaA = IMAGENES.resolve(rutaMiniatura(a));
+		Path miniaturaB = IMAGENES.resolve(rutaMiniatura(b));
+		List<Long> imagenes = List.of(imagenDe(a), imagenDe(b), miniaturaDe(a), miniaturaDe(b));
 		assertEquals(201, estado(multipart("/api/eventos/" + evento + "/documentos")
 				.file(new MockMultipartFile("archivo", "bases.pdf", "application/pdf", "%PDF-1.4\n%%EOF\n".getBytes()))
 				.cookie(jwt(tokenGestor))));
@@ -672,10 +767,13 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(0, contar("SELECT COUNT(*) FROM evento WHERE id = " + evento));
 		assertEquals(0, filas(evento));
-		assertEquals(0, contar("SELECT COUNT(*) FROM imagen WHERE id IN (" + imagenes.get(0) + "," + imagenes.get(1) + ")"));
+		assertEquals(0, contar("SELECT COUNT(*) FROM imagen WHERE id IN (" + imagenes.get(0) + "," + imagenes.get(1) + ","
+				+ imagenes.get(2) + "," + imagenes.get(3) + ")"));
 		assertEquals(0, contar("SELECT COUNT(*) FROM documento WHERE evento_id = " + evento));
 		assertFalse(Files.exists(ficheroA));
 		assertFalse(Files.exists(ficheroB));
+		assertFalse(Files.exists(miniaturaA));
+		assertFalse(Files.exists(miniaturaB));
 		assertFalse(Files.exists(IMAGENES.resolve(rutaCartel)), "El cartel se borra como siempre");
 		assertFalse(Files.exists(DOCUMENTOS.resolve(rutaDocumento)), "Los documentos también");
 	}
@@ -699,7 +797,7 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(500, estado(subida(evento, png(), "foto.png", "image/png").cookie(jwt(tokenGestor))));
 		});
 
-		assertEquals(ficherosAntes, ficheros(ORG1), "El fichero ya escrito se borra");
+		assertEquals(ficherosAntes, ficheros(ORG1), "La foto y la miniatura ya escritas se borran");
 		assertEquals(imagenesAntes, contar("SELECT COUNT(*) FROM imagen"), "La fila de imagen se deshace");
 		assertEquals(0, filas(evento));
 	}
@@ -709,12 +807,14 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long evento = evento(ORG1, true);
 		long foto = subir(evento, tokenGestor).get("id").asLong();
 		Path fichero = IMAGENES.resolve(ruta(foto));
+		Path miniatura = IMAGENES.resolve(rutaMiniatura(foto));
 
 		conTriggerQueFalla("BEFORE DELETE", "OLD", evento, () -> {
 			assertEquals(500, estado(delete("/api/eventos/" + evento + "/fotos/" + foto).cookie(jwt(tokenGestor))));
 		});
 
 		assertTrue(Files.exists(fichero), "La fila sigue: el fichero no se puede ir");
+		assertTrue(Files.exists(miniatura), "La fila sigue: la miniatura tampoco");
 		assertEquals(1, filas(evento));
 		assertEquals(200, estado(get("/api/eventos/" + evento + "/fotos/" + foto)));
 	}
@@ -724,12 +824,14 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		long evento = evento(ORG1, true);
 		long foto = subir(evento, tokenGestor).get("id").asLong();
 		Path fichero = IMAGENES.resolve(ruta(foto));
+		Path miniatura = IMAGENES.resolve(rutaMiniatura(foto));
 
 		conTriggerQueFalla("BEFORE DELETE", "OLD", evento, () -> {
 			assertEquals(500, estado(delete("/api/eventos/" + evento).cookie(jwt(tokenGestor))));
 		});
 
 		assertTrue(Files.exists(fichero));
+		assertTrue(Files.exists(miniatura));
 		assertEquals(1, filas(evento));
 		assertEquals(1, contar("SELECT COUNT(*) FROM evento WHERE id = " + evento));
 	}
@@ -871,6 +973,13 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		return json.readTree(r.getContentAsString());
 	}
 
+	private long subirGrande(long evento) throws Exception {
+		MockHttpServletResponse r = mvc.perform(subida(evento, png(1600, 1000), "foto.png", "image/png")
+				.cookie(jwt(tokenGestor))).andReturn().getResponse();
+		assertEquals(201, r.getStatus(), r.getContentAsString());
+		return json.readTree(r.getContentAsString()).get("id").asLong();
+	}
+
 	private MockMultipartHttpServletRequestBuilder subida(long evento, byte[] contenido, String nombre, String tipo) {
 		return multipart("/api/eventos/" + evento + "/fotos")
 				.file(new MockMultipartFile("archivo", nombre, tipo, contenido));
@@ -895,14 +1004,26 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 			jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, 'image/webp', ?, ?)",
 					nombre, ruta, "/imagenes/" + ruta, organizacion);
 			long imagen = jdbc.queryForObject("SELECT id FROM imagen WHERE nombre = ?", Long.class, nombre);
-			jdbc.update("INSERT INTO evento_foto (organizacion_id, evento_id, imagen_id, orden) VALUES (?, ?, ?, ?)",
-					organizacion, evento, imagen, i + 1);
+			jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, 'image/webp', ?, ?)",
+					"mini-" + nombre, ruta + "-mini", "/imagenes/" + ruta + "-mini", organizacion);
+			long miniatura = jdbc.queryForObject("SELECT id FROM imagen WHERE nombre = ?", Long.class, "mini-" + nombre);
+			jdbc.update("INSERT INTO evento_foto (organizacion_id, evento_id, imagen_id, miniatura_id, orden)"
+					+ " VALUES (?, ?, ?, ?, ?)", organizacion, evento, imagen, miniatura, i + 1);
 		}
 	}
 
 	private String ruta(long foto) {
 		return jdbc.queryForObject("SELECT i.ruta FROM imagen i JOIN evento_foto f ON f.imagen_id = i.id WHERE f.id = ?",
 				String.class, foto);
+	}
+
+	private String rutaMiniatura(long foto) {
+		return jdbc.queryForObject("SELECT i.ruta FROM imagen i JOIN evento_foto f ON f.miniatura_id = i.id WHERE f.id = ?",
+				String.class, foto);
+	}
+
+	private long miniaturaDe(long foto) {
+		return jdbc.queryForObject("SELECT miniatura_id FROM evento_foto WHERE id = ?", Long.class, foto);
 	}
 
 	private long imagenDe(long foto) {
@@ -1003,8 +1124,12 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private static byte[] png() throws IOException {
+		return png(640, 480);
+	}
+
+	private static byte[] png(int ancho, int alto) throws IOException {
 		ByteArrayOutputStream salida = new ByteArrayOutputStream();
-		ImageIO.write(new BufferedImage(640, 480, BufferedImage.TYPE_INT_RGB), "png", salida);
+		ImageIO.write(new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB), "png", salida);
 		return salida.toByteArray();
 	}
 
