@@ -337,6 +337,8 @@ Pieza E8-4 (invitaciones por correo, fase3-e8-miembros.md D8-13): 3 líneas nuev
   `GET`/`POST /api/grupos/{grupoId}/profesores` (líneas existentes) devuelven además `invitacionPendiente`.
 Lo prueban `InvitacionesIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
+> **Retirado** en la #153 (V31_13, decisión 335): estos endpoints, el campo `disenoNuevo` de `GET /api/auth/permisos` y sus acciones de registro ya no existen. Se conserva como histórico.
+
 Pieza 8b-I (interruptor del diseño nuevo, fase3-e8b-plan.md §3): 5 líneas nuevas bajo `/api/panel`
 (`DisenoPanelController`); ninguna casilla existente cambia. Regla de URL propia `/api/panel`, `/api/panel/**`
 (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`, junto a la de `/api/miembros`; fuera de la lista blanca de la sesión
