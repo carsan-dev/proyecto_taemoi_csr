@@ -693,13 +693,14 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     expect(document.getElementById(id)!.hidden).toBeTrue();
   });
 
-  it('tarjeta: pie con «Alumnos», «Editar», «Rango de edad» y la papelera, a las rutas de hoy', () => {
+  it('tarjeta: pie con «Alumnos», «Pasar lista», «Editar», «Rango de edad» y la papelera, a las rutas de hoy', () => {
     crear();
     responder();
     const pie = tarjeta(1).querySelector('.grupos__pie')!;
     expect(pie.querySelector<HTMLAnchorElement>('a[href="/gestionarAlumnos/1"]')).not.toBeNull();
     expect(texto(pie.querySelector('a[href="/gestionarAlumnos/1"]'))).toBe('Alumnos');
     expect(texto(pie.querySelector('a[href="/gruposEditar/1"]'))).toBe('Editar');
+    expect(texto(pie.querySelector('a[href="/gruposListar/1/lista"]'))).toBe('Pasar lista');
     expect(boton(pie, 'Rango de edad')).toBeTruthy();
     expect(boton(pie, 'Eliminar grupo Taekwondo Infantil')).toBeTruthy();
   });

@@ -156,6 +156,7 @@
 
           <div class="grupos__pie">
             <a class="grupos__accion" [routerLink]="['/gestionarAlumnos', g.id]">Alumnos</a>
+            <a class="grupos__accion" [routerLink]="['/gruposListar', g.id, 'lista']">Pasar lista</a>
             <a class="grupos__accion" [routerLink]="['/gruposEditar', g.id]">Editar</a>
             <button type="button" class="grupos__accion" (click)="editarRango(g)">Rango de edad</button>
             <button type="button" class="grupos__papelera" [attr.aria-label]="'Eliminar grupo ' + g.nombre" title="Eliminar"
