@@ -33,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.taemoi.project.acceso.PredicadosAlcance;
 import com.taemoi.project.dtos.request.CajaRequests;
 import com.taemoi.project.dtos.response.CajaDTOs;
+import com.taemoi.project.dtos.response.TurnoDeGrupoResumenDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Cobro;
 import com.taemoi.project.entities.EntregaCaja;
@@ -138,6 +139,7 @@ public class CajaService {
 	private final RegistroAccionesCaja registro;
 	private final SolicitudRepository solicitudes;
 	private final CobroService cobroService;
+	private final PendienteVencidoService pendienteVencido;
 	private final TransactionTemplate transaccion;
 
 	@PersistenceContext
@@ -146,7 +148,8 @@ public class CajaService {
 	public CajaService(CobroRepository cobros, EntregaCajaRepository entregas, MovimientoCajaRepository movimientos,
 			SedeRepository sedes, AlumnoRepository alumnos, AlcanceActual alcanceActual,
 			ProductoAlumnoService productosAlumno, RegistroAccionesCaja registro, SolicitudRepository solicitudes,
-			CobroService cobroService, PlatformTransactionManager transacciones) {
+			CobroService cobroService, PendienteVencidoService pendienteVencido,
+			PlatformTransactionManager transacciones) {
 		this.cobros = cobros;
 		this.entregas = entregas;
 		this.movimientos = movimientos;
@@ -157,6 +160,7 @@ public class CajaService {
 		this.registro = registro;
 		this.solicitudes = solicitudes;
 		this.cobroService = cobroService;
+		this.pendienteVencido = pendienteVencido;
 		this.transaccion = new TransactionTemplate(transacciones);
 		this.transaccion.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
 	}
@@ -167,6 +171,8 @@ public class CajaService {
 	 * Cargos PENDIENTES (pagado falso o nulo) de los alumnos de los grupos del profesor de la sesión, de cualquier tipo.
 	 * Una consulta con los datos que se muestran (sin cargar entidades). Solo cargos con {@code alumno_id} (los que el
 	 * profesor puede cobrar) y no cancelados (pieza 6b-2c). Sin grupos en el alcance (o con alcance total), lista vacía.
+	 * Pieza 8b-3p: cada cargo dice si está vencido y lleva los grupos del profesor en los que está el alumno, con dos
+	 * consultas más por lote (no por alumno).
 	 */
 	public List<CajaDTOs.CargoPendienteProfesor> cargosPendientesDelProfesor() {
 		Set<Long> grupos = gruposDelProfesor();
@@ -181,12 +187,45 @@ public class CajaService {
 				  AND EXISTS (SELECT g.id FROM Grupo g JOIN g.alumnos m WHERE m.id = a.id AND g.id IN :grupos)
 				ORDER BY a.apellidos, a.nombre, pa.fechaAsignacion, pa.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList();
+		if (filas.isEmpty()) {
+			return List.of();
+		}
+		Set<Long> alumnosConCargos = new LinkedHashSet<>();
+		for (Object[] f : filas) {
+			alumnosConCargos.add((Long) f[1]);
+		}
+		Map<Long, List<CajaDTOs.GrupoConHorario>> gruposPorAlumno = gruposConHorario(grupos, alumnosConCargos);
+		Set<Long> vencidos = pendienteVencido.cargosVencidosDeAlumnos(alumnosConCargos);
 		List<CajaDTOs.CargoPendienteProfesor> resultado = new ArrayList<>(filas.size());
 		for (Object[] f : filas) {
 			resultado.add(new CajaDTOs.CargoPendienteProfesor((Long) f[0], (Long) f[1], (String) f[2], (String) f[3],
 					(String) f[4], ImporteCargo.de((Double) f[5], (Integer) f[9]), (Date) f[6], (Long) f[7],
-					(String) f[8]));
+					(String) f[8], vencidos.contains(f[0]), gruposPorAlumno.getOrDefault(f[1], List.of())));
 		}
+		return resultado;
+	}
+
+	/**
+	 * Por alumno, los grupos indicados en los que está, por nombre, con sus turnos. Una consulta con los datos que se
+	 * muestran (sin cargar entidades). El filtro por escuela de {@code @TenantId} lo aplican {@code Grupo} y
+	 * {@code Alumno}; los turnos cuelgan del grupo por su clave ajena ({@code LEFT JOIN g.turnos}).
+	 */
+	private Map<Long, List<CajaDTOs.GrupoConHorario>> gruposConHorario(Set<Long> grupos, Set<Long> alumnosConCargos) {
+		Map<Long, Map<Long, CajaDTOs.GrupoConHorario>> porAlumno = new HashMap<>();
+		for (Object[] f : em.createQuery("""
+				SELECT a.id, g.id, g.nombre, t.id, t.diaSemana, t.horaInicio, t.horaFin
+				FROM Grupo g JOIN g.alumnos a LEFT JOIN g.turnos t
+				WHERE g.id IN :grupos AND a.id IN :alumnos
+				ORDER BY g.nombre, g.id, t.id""", Object[].class)
+				.setParameter("grupos", grupos).setParameter("alumnos", alumnosConCargos).getResultList()) {
+			CajaDTOs.GrupoConHorario grupo = porAlumno.computeIfAbsent((Long) f[0], id -> new LinkedHashMap<>())
+					.computeIfAbsent((Long) f[1], id -> new CajaDTOs.GrupoConHorario((String) f[2], new ArrayList<>()));
+			if (f[3] != null) {
+				grupo.turnos().add(new TurnoDeGrupoResumenDTO((Long) f[3], (String) f[4], (String) f[5], (String) f[6]));
+			}
+		}
+		Map<Long, List<CajaDTOs.GrupoConHorario>> resultado = new HashMap<>();
+		porAlumno.forEach((alumno, suyos) -> resultado.put(alumno, List.copyOf(suyos.values())));
 		return resultado;
 	}
 

@@ -60,9 +60,10 @@ function lista(partes: string[]): string {
 
 /**
  * Horario a la vista de la tarjeta: con la misma hora de inicio, los días ordenados por la semana y la hora
- * («L y X · 18:00»); con horas distintas, cuántos turnos («3 turnos»); sin turnos, «Sin turnos».
+ * («L y X · 18:00»); con horas distintas, cuántos turnos («3 turnos»); sin turnos, «Sin turnos». Mi caja lo pinta tras
+ * el nombre del grupo, que ya lleva el punto medio, y pasa un espacio de `separador` («L y X 18:00»).
  */
-export function resumenHorario(turnos: ReadonlyArray<TurnoDeGrupoResumen>): string {
+export function resumenHorario(turnos: ReadonlyArray<TurnoDeGrupoResumen>, separador = ' · '): string {
   if (turnos.length === 0) {
     return 'Sin turnos';
   }
@@ -71,7 +72,7 @@ export function resumenHorario(turnos: ReadonlyArray<TurnoDeGrupoResumen>): stri
     return plural(turnos.length, 'turno', 'turnos');
   }
   const dias = [...turnos].sort((a, b) => ordenDia(a.diaSemana) - ordenDia(b.diaSemana)).map((t) => letraDia(t.diaSemana));
-  return `${lista(dias)} · ${hora(turnos[0].horaInicio)}`;
+  return `${lista(dias)}${separador}${hora(turnos[0].horaInicio)}`;
 }
 
 export interface SeccionDisciplina {

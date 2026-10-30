@@ -7,7 +7,7 @@ import { estadoCobroEncargo, indicePasoEncargo, requiereAccion } from './mi-caja
 function cargo(cargoId: number, alumnoId: number, nombre: string, apellidos: string, concepto: string, importe: number): CargoPendienteProfesor {
   return {
     cargoId, alumnoId, alumnoNombre: nombre, alumnoApellidos: apellidos, concepto, importe,
-    fechaAsignacion: '2026-10-01T10:00:00.000Z', sedeId: 1, sedeNombre: 'Centro',
+    fechaAsignacion: '2026-10-01T10:00:00.000Z', sedeId: 1, sedeNombre: 'Centro', vencido: false, grupos: [],
   };
 }
 
@@ -54,6 +54,13 @@ describe('Mi caja: reglas de cargos y pedidos', () => {
     expect(grupos[1].cargos.map((c) => c.cargoId)).toEqual([1, 3]);
 
     expect(agruparPorAlumno(CARGOS, 'lucia').map((g) => g.nombre)).toEqual(['Lucía Prado']);
+  });
+
+  it('la línea de grupos es por alumno: nombre y horario, separados por coma; sin grupos, vacía', () => {
+    const turno = { id: 1, diaSemana: 'Lunes', horaInicio: '18:00', horaFin: '19:00' };
+    const conGrupos = [{ ...CARGOS[0], grupos: [{ nombre: 'Infantil', turnos: [turno] }, { nombre: 'Adultos', turnos: [] }] }];
+    expect(agruparPorAlumno(conGrupos)[0].lineaGrupos).toBe('Infantil · L 18:00, Adultos · Sin turnos');
+    expect(agruparPorAlumno(CARGOS)[0].lineaGrupos).toBe('');
   });
 
   it('línea de estados: el paso de cada estado; un encargo caído no tiene paso', () => {

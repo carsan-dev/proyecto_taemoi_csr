@@ -1,4 +1,5 @@
-import { CargoPendienteProfesor } from '../../interfaces/caja';
+import { CargoPendienteProfesor, GrupoConHorario } from '../../interfaces/caja';
+import { resumenHorario } from '../grupos/grupos-vista';
 
 /**
  * Lógica pura de «Mi caja» que comparten la pantalla de hoy y la del panel nuevo (8b-3p): pestañas, nombres, búsqueda,
@@ -11,6 +12,8 @@ export type PestanaMiCaja = 'cobrar' | 'vender' | 'encima' | 'pedidos';
 export interface GrupoAlumno {
   alumnoId: number;
   nombre: string;
+  /** Sus grupos (los del profesor) con el horario; vacía si no llega ninguno. */
+  lineaGrupos: string;
   cargos: CargoPendienteProfesor[];
 }
 
@@ -27,6 +30,11 @@ export function nombreCompleto(nombre: string | null | undefined, apellidos: str
   return [nombre, apellidos].map((p) => (p ?? '').trim()).filter(Boolean).join(' ') || 'Alumno sin nombre';
 }
 
+/** «Taekwondo infantil · L y X 18:00, Kickboxing · 3 turnos». */
+function lineaDeGrupos(grupos: GrupoConHorario[]): string {
+  return grupos.map((g) => `${g.nombre} · ${resumenHorario(g.turnos, ' ')}`).join(', ');
+}
+
 /** Cargos agrupados por alumno, alumnos por nombre y, dentro, del más antiguo al más reciente. */
 export function agruparPorAlumno(cargos: CargoPendienteProfesor[], busqueda: string = ''): GrupoAlumno[] {
   const filtro = normalizarBusqueda(busqueda);
@@ -38,7 +46,7 @@ export function agruparPorAlumno(cargos: CargoPendienteProfesor[], busqueda: str
     }
     let grupo = grupos.get(cargo.alumnoId);
     if (!grupo) {
-      grupo = { alumnoId: cargo.alumnoId, nombre, cargos: [] };
+      grupo = { alumnoId: cargo.alumnoId, nombre, lineaGrupos: lineaDeGrupos(cargo.grupos), cargos: [] };
       grupos.set(cargo.alumnoId, grupo);
     }
     grupo.cargos.push(cargo);

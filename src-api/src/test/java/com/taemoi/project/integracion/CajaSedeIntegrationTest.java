@@ -206,7 +206,7 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(ids.contains(fueraDeGrupo));
 		JsonNode fila = fila(lista, "cargoId", pendiente);
 		assertEquals(Set.of("cargoId", "alumnoId", "alumnoNombre", "alumnoApellidos", "concepto", "importe",
-				"fechaAsignacion", "sedeId", "sedeNombre"), campos(fila), "solo la fila, sin totales");
+				"fechaAsignacion", "sedeId", "sedeNombre", "vencido", "grupos"), campos(fila), "solo la fila, sin totales");
 		assertEquals(aProfA, fila.get("alumnoId").asLong());
 		assertEquals(0, new BigDecimal("10.50").compareTo(fila.get("importe").decimalValue()));
 		assertEquals(s.e.sA, fila.get("sedeId").asLong());
