@@ -168,7 +168,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	 * ({@code q}: un email o un nombre). Solo esta ruta; las demás guardan sus parámetros como siempre.
 	 */
 	private static final Map<Pattern, Set<String>> PARAMETROS_REDACTADOS_POR_RUTA = Map.of(
-			Pattern.compile("^/api/miembros/?$"), Set.of("q"));
+			Pattern.compile("^/api/miembros/?$"), Set.of("q"),
+			// Decisión 322: el perfil de la cuenta no lee parámetros, pero un GET con ?nombrePreferido=… no debe guardarlos.
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"));
 	static final String VALOR_REDACTADO = "[redactado]";
 
 	private final AuditoriaService auditoriaService;

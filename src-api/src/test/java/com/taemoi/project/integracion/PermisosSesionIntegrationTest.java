@@ -262,6 +262,24 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(p.get("variasSedes").asBoolean());
 		assertFalse(p.get("tieneGrupos").asBoolean());
 		assertEquals(List.of(), textos(p.get("capacidades")));
+		assertEquals("Usuario P.", p.get("nombreVisible").asText(), "322: sin preferido, nombre e inicial");
+		assertEquals("Usuario", p.get("nombreSaludo").asText(), "322: sin preferido, la primera palabra del nombre");
+		assertFalse(p.get("cumpleanos").asBoolean(), "sin membresía ni ficha, nunca cumpleaños");
+	}
+
+	@Test
+	void permisos_soloPlataforma_conNombrePreferido() throws Exception {
+		jdbc.update("UPDATE usuario SET nombre_preferido = 'Luci Estrella' WHERE es_admin_plataforma = TRUE AND email = ?",
+				"it-e6-plataforma-" + e.marca + "@example.test");
+		try {
+			JsonNode p = permisos(tPlataforma);
+			assertEquals("Luci Estrella", p.get("nombreVisible").asText(), "322: el preferido tal cual");
+			assertEquals("Luci Estrella", p.get("nombreSaludo").asText(), "322: el preferido entero");
+			assertFalse(p.get("cumpleanos").asBoolean());
+		} finally {
+			jdbc.update("UPDATE usuario SET nombre_preferido = NULL WHERE email = ?",
+					"it-e6-plataforma-" + e.marca + "@example.test");
+		}
 	}
 
 	@Test

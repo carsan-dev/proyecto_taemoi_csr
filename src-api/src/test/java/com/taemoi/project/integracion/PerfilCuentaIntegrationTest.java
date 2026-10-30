@@ -345,6 +345,31 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 				"%" + nombre + "%", "%" + nombre + "%"));
 	}
 
+	/** Parámetros de la URL en el GET (200) y en el PUT (400): el registro no guarda ni el nombre ni la fecha. */
+	@Test
+	void elRegistro_noGuardaLosParametrosDeLaUrl() throws Exception {
+		String nombre = "Url" + UUID.randomUUID().toString().substring(0, 8);
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		String t = token(e, cuenta);
+		long antes = ultimoEvento();
+
+		String consulta = "?nombrePreferido=" + nombre + "&cumpleDia=14&cumpleMes=9&otro=visible";
+		assertEquals(200, estado(get(RUTA + consulta), t));
+		assertEquals(400, estado(put(RUTA + consulta).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombrePreferido\":\"x\",\"cumpleDia\":31,\"cumpleMes\":4}".getBytes(StandardCharsets.UTF_8)), t));
+
+		List<Map<String, Object>> filas = eventosDesde(antes);
+		assertFalse(filas.isEmpty(), "el filtro registra al menos el 400");
+		for (Map<String, Object> fila : filas) {
+			String params = String.valueOf(fila.get("query_params_json"));
+			assertFalse(params.contains(nombre), params);
+			assertFalse(params.contains("14"), params);
+			assertFalse(params.contains("\"9\""), params);
+		}
+		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE id > ? AND query_params_json LIKE ?",
+				Long.class, antes, "%" + nombre + "%"));
+	}
+
 	/** {@code Alumno#getUsuario} saca la entidad en el JSON de alumno: el perfil de esa cuenta no puede ir dentro. */
 	@Test
 	void elJsonDeAlumno_noLlevaElPerfilDeSuCuenta() throws Exception {

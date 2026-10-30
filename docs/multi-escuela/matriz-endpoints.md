@@ -415,7 +415,7 @@ sobre la cuenta de la sesión: ningún id en la ruta ni en el cuerpo.
   imposible, 400 con `{"mensaje"}`.
 Todo 2xx del PUT registra (módulo `panel`, `PERFIL_CAMBIADO`, solo `usuario=#id` y `sinCambios`, nunca el nombre ni la
 fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, `nombrePreferido`, `cumpleDia` y
-`cumpleMes` van en `CLAVES_REDACTADAS_POR_RUTA`. `GET /api/auth/permisos` (línea existente, sin cambio de permisos):
+`cumpleMes` van en `CLAVES_REDACTADAS_POR_RUTA`. Los mismos tres nombres, si llegan como parámetros de la URL (`?nombrePreferido=…`), van en `PARAMETROS_REDACTADOS_POR_RUTA` y no se guardan en `query_params_json`. `GET /api/auth/permisos` (línea existente, sin cambio de permisos):
 `nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
 y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
 `PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.

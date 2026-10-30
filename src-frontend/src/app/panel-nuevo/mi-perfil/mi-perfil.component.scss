@@ -23,7 +23,7 @@ select[aria-invalid='true'] { border-color: var(--pn-peligro); }
 .fila-campos { display: flex; gap: 12px; }
 .dia { flex: none; width: 88px; }
 .mes { flex: 1 1 auto; max-width: 220px; }
-.fecha-ficha { font: var(--pn-titulo-bloque); }
+.fecha-ficha { color: var(--pn-tinta); font: var(--pn-cuerpo); }
 .fecha-ficha + .ayuda { margin-top: 6px; }
 .error { color: var(--pn-peligro); font: var(--pn-etiqueta); }
 .error:empty { display: none; }

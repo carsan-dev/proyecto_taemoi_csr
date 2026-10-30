@@ -153,8 +153,10 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     const conFicha = this.cumpleFicha() !== null;
-    const dia = conFicha ? null : this.dia();
-    const mes = conFicha ? null : this.mes();
+    // Con ficha la API ignora el cumpleaños del cuerpo; se manda lo que llegó del GET, nunca null/null, para que si la
+    // ficha deja de valer entre el GET y el PUT no se borre el cumpleaños guardado en la cuenta.
+    const dia = conFicha ? perfil.cumpleDia : this.dia();
+    const mes = conFicha ? perfil.cumpleMes : this.mes();
     if ((dia === null) !== (mes === null)) {
       this.errorCumple.set(true);
       return;

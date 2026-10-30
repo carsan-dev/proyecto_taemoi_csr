@@ -260,13 +260,22 @@ describe('MiPerfilComponent (8b-3o)', () => {
       peticion.flush(perfil());
     });
 
-    it('con ficha envía null en el día y el mes', async () => {
-      await abrir(perfil({ cumpleFicha: { dia: 14, mes: 3 }, cumpleDia: 14, cumpleMes: 3 }));
+    it('con ficha y la cuenta sin cumpleaños envía lo que llegó (null y null)', async () => {
+      await abrir(perfil({ cumpleFicha: { dia: 14, mes: 3 } }));
       escribir('#nombre-panel', 'Luci');
       boton('Guardar').click();
       const peticion = http.expectOne(URL);
       expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: null, cumpleMes: null });
       peticion.flush(perfil({ nombrePreferido: 'Luci', cumpleFicha: { dia: 14, mes: 3 } }));
+    });
+
+    it('con ficha y la cuenta con cumpleaños guardado, el PUT lleva ese valor y no el de la ficha', async () => {
+      await abrir(perfil({ cumpleFicha: { dia: 14, mes: 3 }, cumpleDia: 9, cumpleMes: 5 }));
+      escribir('#nombre-panel', 'Luci');
+      boton('Guardar').click();
+      const peticion = http.expectOne(URL);
+      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: 9, cumpleMes: 5 });
+      peticion.flush(perfil({ nombrePreferido: 'Luci', cumpleFicha: { dia: 14, mes: 3 }, cumpleDia: 9, cumpleMes: 5 }));
     });
 
     it('error del PUT: el mensaje de la API visible y no se pierde lo escrito', async () => {

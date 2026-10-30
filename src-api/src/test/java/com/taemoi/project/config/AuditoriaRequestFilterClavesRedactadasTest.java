@@ -98,6 +98,18 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		}
 	}
 
+	@Test
+	void miPerfil_parametrosRedactados() {
+		for (String ruta : List.of("/api/panel/mi-perfil", "/api/panel/mi-perfil/")) {
+			Map<String, String[]> guardados = AuditoriaRequestFilter.parametrosAuditables(ruta,
+					parametros("nombrePreferido", "Luci", "cumpleDia", "14", "cumpleMes", "9", "otro", "visible"));
+			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("nombrePreferido"), ruta);
+			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("cumpleDia"), ruta);
+			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("cumpleMes"), ruta);
+			assertArrayEquals(new String[] { "visible" }, guardados.get("otro"), ruta);
+		}
+	}
+
 	private static Map<String, String[]> parametros(String... claveValor) {
 		Map<String, String[]> mapa = new LinkedHashMap<>();
 		for (int i = 0; i < claveValor.length; i += 2) {
