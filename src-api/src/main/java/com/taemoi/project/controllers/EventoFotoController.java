@@ -2,6 +2,7 @@ package com.taemoi.project.controllers;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,8 @@ import com.taemoi.project.services.ImagenService;
 public class EventoFotoController {
 
 	private static final Logger logger = LoggerFactory.getLogger(EventoFotoController.class);
+	/** Menos que el cartel: ocultar un evento debe surtir efecto antes en las fotos, que pueden mostrar menores. */
+	private static final Duration CACHE_FOTO_VISIBLE = Duration.ofHours(1);
 
 	@Value("${app.base.url}")
 	private String baseUrl;
@@ -89,7 +92,7 @@ public class EventoFotoController {
 				return ResponseEntity.notFound().build();
 			}
 			return RespuestaImagen.servir(rutaArchivo, imagen.getTipo(), nombreDeDescarga(fotoId, imagen), anchoSolicitado,
-					Boolean.TRUE.equals(evento.getVisible()));
+					Boolean.TRUE.equals(evento.getVisible()), CACHE_FOTO_VISIBLE);
 		} catch (EventoNoEncontradoException | FotoEventoNoEncontradaException e) {
 			return ResponseEntity.notFound().build();
 		} catch (Exception e) {
@@ -124,7 +127,8 @@ public class EventoFotoController {
 
 	@PutMapping("/orden")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
-	public ResponseEntity<?> reordenar(@PathVariable @NonNull Long eventoId, @RequestBody List<Long> ids) {
+	public ResponseEntity<?> reordenar(@PathVariable @NonNull Long eventoId,
+			@RequestBody(required = false) List<Long> ids) {
 		try {
 			return ResponseEntity.ok(dtos(eventoId, fotos.reordenar(eventoId, ids)));
 		} catch (EventoNoEncontradoException e) {

@@ -93,17 +93,19 @@ public class EventoFotoService {
 	/**
 	 * @param ids exactamente las fotos del evento, en el orden nuevo
 	 * @return las fotos en ese orden
-	 * @throws IllegalArgumentException si no son exactamente las fotos del evento
+	 * @throws IllegalArgumentException si es {@code null} o no son exactamente las fotos del evento
 	 */
 	public List<EventoFoto> reordenar(Long eventoId, List<Long> ids) {
 		return transaccion.execute(estado -> {
 			bloquear(eventoId);
 			Map<Long, EventoFoto> porId = fotos.listarDeEvento(eventoId).stream()
 					.collect(Collectors.toMap(EventoFoto::getId, Function.identity()));
+			if (ids == null) {
+				throw listaNoValida();
+			}
 			Set<Long> pedidas = new HashSet<>(ids);
 			if (pedidas.size() != ids.size() || !pedidas.equals(porId.keySet())) {
-				throw new IllegalArgumentException(
-						"La lista debe contener exactamente las fotos del evento, sin repetir ninguna.");
+				throw listaNoValida();
 			}
 			int orden = 1;
 			for (Long id : ids) {
@@ -164,6 +166,10 @@ public class EventoFotoService {
 		if (fotos.contarDeEvento(eventoId) >= TOPE_POR_EVENTO) {
 			throw new TopeFotosEventoException("Un evento no puede tener más de " + TOPE_POR_EVENTO + " fotos.");
 		}
+	}
+
+	private static IllegalArgumentException listaNoValida() {
+		return new IllegalArgumentException("La lista debe contener exactamente las fotos del evento, sin repetir ninguna.");
 	}
 
 	private static EventoNoEncontradoException eventoNoEncontrado(Long eventoId) {

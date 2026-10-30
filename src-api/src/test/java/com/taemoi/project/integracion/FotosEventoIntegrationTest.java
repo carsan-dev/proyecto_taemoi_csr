@@ -224,6 +224,35 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** Ocultar un evento debe surtir efecto antes en la galería que en el cartel, que sigue con 8 h. */
+	@Test
+	void fotoVisible_seCacheaUnaHora_yElCartelSigueIgual() throws Exception {
+		long evento = eventoConCartel();
+		long fotoId = subir(evento, tokenGestor).get("id").asLong();
+		String imagen = "/api/eventos/" + evento + "/fotos/" + fotoId;
+
+		for (MockHttpServletRequestBuilder peticion : List.of(get(imagen), get(imagen).param("w", "480"),
+				get(imagen).param("w", "1000"))) {
+			MockHttpServletResponse r = mvc.perform(peticion).andReturn().getResponse();
+			assertEquals(200, r.getStatus());
+			assertEquals("max-age=3600, must-revalidate, public", r.getHeader("Cache-Control"));
+		}
+		assertEquals("max-age=28800, must-revalidate, public", mvc.perform(get("/api/eventos/" + evento + "/imagen"))
+				.andReturn().getResponse().getHeader("Cache-Control"));
+	}
+
+	/** Solo cambia la foto visible: la de un evento oculto la sigue viendo gestión con su caché privada. */
+	@Test
+	void fotoOculta_noCambiaSuCache() throws Exception {
+		long evento = evento(ORG1, false);
+		long fotoId = subir(evento, tokenGestor).get("id").asLong();
+
+		MockHttpServletResponse r = mvc.perform(get("/api/eventos/" + evento + "/fotos/" + fotoId).cookie(jwt(tokenGestor)))
+				.andReturn().getResponse();
+
+		assertEquals("max-age=28800, must-revalidate, private", r.getHeader("Cache-Control"));
+	}
+
 	@Test
 	void anchoSolicitado_seRespetaEnElETag_eIfNoneMatchDa304() throws Exception {
 		long evento = evento(ORG1, true);
@@ -523,6 +552,21 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(a, b), ids(leer("/api/eventos/" + evento + "/fotos", null)));
 	}
 
+	/** Un JSON «null» es un cuerpo válido para Jackson: llega como lista nula y no debe acabar en un 500. */
+	@Test
+	void reordenar_conCuerpoNulo_es400ConMensaje_sinCambiarNada() throws Exception {
+		long evento = evento(ORG1, true);
+		long a = subir(evento, tokenGestor).get("id").asLong();
+		long b = subir(evento, tokenGestor).get("id").asLong();
+
+		MockHttpServletResponse r = reordenarCuerpo(evento, "null");
+
+		assertEquals(400, r.getStatus(), r.getContentAsString());
+		assertFalse(json.readTree(r.getContentAsString()).get("mensaje").asText().isBlank());
+		assertEquals(List.of(a, b), ids(leer("/api/eventos/" + evento + "/fotos", null)));
+		assertEquals(404, reordenarCuerpo(999999999L, "null").getStatus(), "Sin evento manda el 404, como con otra lista");
+	}
+
 	@Test
 	void reordenar_unEventoSinFotosConListaVacia_noHaceNada() throws Exception {
 		assertEquals(200, reordenar(evento(ORG1, true), tokenGestor, List.of()).getStatus());
@@ -707,6 +751,35 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		cargas.stream().filter(c -> c != null).forEach(c -> assertFalse(c.contains("PNG"), c));
 	}
 
+	/** Hasta 40 por visita: ni fila ni cuerpo en memoria. El resto de la API de fotos sigue auditado. */
+	@Test
+	void lasImagenesDeLaGaleriaNoSeAuditan_yElRestoDeRutasSi() throws Exception {
+		long evento = evento(ORG1, true);
+		long a = subir(evento, tokenGestor).get("id").asLong();
+		long b = subir(evento, tokenGestor).get("id").asLong();
+		String lista = "/api/eventos/" + evento + "/fotos";
+		String imagen = lista + "/" + a;
+
+		assertEquals(200, estado(get(imagen)));
+		assertEquals(200, estado(get(imagen).param("w", "480")));
+		assertEquals(200, estado(head(imagen)));
+		assertEquals(404, estado(get(lista + "/999999999")));
+		assertEquals(200, estado(get(lista)));
+		assertEquals(200, reordenar(evento, tokenGestor, List.of(b, a)).getStatus());
+		assertEquals(200, estado(delete(imagen).cookie(jwt(tokenGestor))));
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM auditoria_evento WHERE metodo_http IN ('GET', 'HEAD')"
+				+ " AND endpoint LIKE '" + lista + "/%'"), "Ninguna lectura de imagen");
+		assertEquals(1, contar("SELECT COUNT(*) FROM auditoria_evento WHERE metodo_http = 'GET' AND endpoint = '" + lista
+				+ "'"), "La lista sigue auditada");
+		assertEquals(1, contar("SELECT COUNT(*) FROM auditoria_evento WHERE metodo_http = 'PUT' AND endpoint = '" + lista
+				+ "/orden'"), "El orden sigue auditado");
+		assertEquals(1, contar("SELECT COUNT(*) FROM auditoria_evento WHERE metodo_http = 'DELETE' AND endpoint = '"
+				+ imagen + "'"), "Borrar sigue auditado");
+		assertEquals(2, contar("SELECT COUNT(*) FROM auditoria_evento WHERE metodo_http = 'POST' AND endpoint = '" + lista
+				+ "'"), "Subir sigue auditado");
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private long evento(long organizacion, boolean visible) {
@@ -740,6 +813,11 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 	private MockMultipartHttpServletRequestBuilder subida(long evento, byte[] contenido, String nombre, String tipo) {
 		return multipart("/api/eventos/" + evento + "/fotos")
 				.file(new MockMultipartFile("archivo", nombre, tipo, contenido));
+	}
+
+	private MockHttpServletResponse reordenarCuerpo(long evento, String cuerpo) throws Exception {
+		return mvc.perform(put("/api/eventos/" + evento + "/fotos/orden").contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo).cookie(jwt(tokenGestor))).andReturn().getResponse();
 	}
 
 	private MockHttpServletResponse reordenar(long evento, String token, List<Long> ids) throws Exception {

@@ -42,8 +42,15 @@ final class RespuestaImagen {
 	private static final long MAX_TAMANO_ORIGEN_RESIZE_BYTES = 8L * 1024 * 1024;
 	private static final long MAX_PIXELES_ORIGEN_RESIZE = 12_000_000L;
 	private static final Semaphore RESIZE_SEMAPHORE = new Semaphore(2, true);
+	private static final Duration CACHE_POR_DEFECTO = Duration.ofHours(8);
 
 	private RespuestaImagen() {
+	}
+
+	/** Con la caché de 8 h del cartel. */
+	static ResponseEntity<Resource> servir(Path rutaArchivo, String tipo, String nombre, Integer anchoSolicitado,
+			boolean eventoVisible) throws IOException {
+		return servir(rutaArchivo, tipo, nombre, anchoSolicitado, eventoVisible, CACHE_POR_DEFECTO);
 	}
 
 	/**
@@ -52,12 +59,13 @@ final class RespuestaImagen {
 	 * @param nombre          nombre para {@code Content-Disposition}
 	 * @param anchoSolicitado {@code ?w=} tal como llega
 	 * @param eventoVisible   la de un evento oculto no debe quedar en cachés compartidas: solo la sirve con sesión de gestión
+	 * @param cacheVisible    {@code max-age} si el evento es visible; el de la respuesta privada no cambia
 	 */
 	static ResponseEntity<Resource> servir(Path rutaArchivo, String tipo, String nombre, Integer anchoSolicitado,
-			boolean eventoVisible) throws IOException {
+			boolean eventoVisible, Duration cacheVisible) throws IOException {
 		CacheControl cacheControl = eventoVisible
-				? CacheControl.maxAge(Duration.ofHours(8)).cachePublic().mustRevalidate()
-				: CacheControl.maxAge(Duration.ofHours(8)).cachePrivate().mustRevalidate();
+				? CacheControl.maxAge(cacheVisible).cachePublic().mustRevalidate()
+				: CacheControl.maxAge(CACHE_POR_DEFECTO).cachePrivate().mustRevalidate();
 
 		Resource recurso = new UrlResource(rutaArchivo.toUri());
 
