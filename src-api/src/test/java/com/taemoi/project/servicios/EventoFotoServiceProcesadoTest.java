@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -14,8 +15,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +40,7 @@ import com.taemoi.project.repositories.ImagenRepository;
 import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.ImagenService;
 
-/** Procesar una foto gasta mucha memoria: como mucho dos a la vez, con su propio semáforo y fuera de la transacción. */
+/** Procesar una foto gasta mucha memoria: de una en una, con su propio semáforo y fuera de la transacción. */
 class EventoFotoServiceProcesadoTest {
 
 	private static final Long EVENTO = 7L;
@@ -72,46 +71,42 @@ class EventoFotoServiceProcesadoTest {
 	}
 
 	@Test
-	void sonDosAlaVez_yLaEsperaEsDe30Segundos() {
-		assertEquals(2, semaforo().availablePermits());
+	void esUnaAlaVez_yLaEsperaEsDe30Segundos() {
+		assertEquals(1, semaforo().availablePermits());
 		assertEquals(Duration.ofSeconds(30), ReflectionTestUtils.getField(servicio, "esperaProcesado"));
 	}
 
 	@Test
-	void conDosProcesando_laTerceraEsperaYSeRinde_yLasOtrasAcaban() throws Exception {
+	void conUnaProcesando_laSegundaEsperaYSeRinde_yLaPrimeraAcaba() throws Exception {
 		ReflectionTestUtils.setField(servicio, "esperaProcesado", Duration.ofMillis(100));
-		CountDownLatch dentro = new CountDownLatch(2);
+		CountDownLatch dentro = new CountDownLatch(1);
 		CountDownLatch soltar = new CountDownLatch(1);
 		when(imagenService.guardarImagenFotoEvento(any())).thenAnswer(llamada -> {
 			dentro.countDown();
 			assertTrue(soltar.await(30, TimeUnit.SECONDS));
 			return guardada();
 		});
-		List<Future<?>> enCurso = new ArrayList<>();
-		enCurso.add(hilos.submit(() -> subir()));
-		enCurso.add(hilos.submit(() -> subir()));
+		Future<?> enCurso = hilos.submit(() -> subir());
 		assertTrue(dentro.await(30, TimeUnit.SECONDS));
 
 		ServidorOcupadoException error = assertThrows(ServidorOcupadoException.class, () -> servicio.subir(EVENTO, archivo));
 
 		assertEquals(MENSAJE, error.getMessage());
-		verify(imagenService, times(2)).guardarImagenFotoEvento(any());
+		verify(imagenService, times(1)).guardarImagenFotoEvento(any());
 		soltar.countDown();
-		for (Future<?> subida : enCurso) {
-			subida.get(30, TimeUnit.SECONDS);
-		}
-		assertEquals(2, semaforo().availablePermits());
+		enCurso.get(30, TimeUnit.SECONDS);
+		assertEquals(1, semaforo().availablePermits());
 	}
 
 	/** Si no, una subida esperaría a la imagen de otra con la fila del evento bloqueada. */
 	@Test
 	void elSemaforoNoSeRetieneDuranteLaTransaccion() throws Exception {
 		when(imagenService.guardarImagenFotoEvento(any())).thenAnswer(llamada -> {
-			assertEquals(1, semaforo().availablePermits(), "Se procesa con el semáforo cogido");
+			assertEquals(0, semaforo().availablePermits(), "Se procesa con el semáforo cogido");
 			return guardada();
 		});
 		when(eventos.findByIdParaActualizar(EVENTO)).thenAnswer(llamada -> {
-			assertEquals(2, semaforo().availablePermits(), "La transacción empieza con el semáforo libre");
+			assertEquals(1, semaforo().availablePermits(), "La transacción empieza con el semáforo libre");
 			return Optional.of(new Evento());
 		});
 
@@ -122,14 +117,66 @@ class EventoFotoServiceProcesadoTest {
 
 	@Test
 	void unFalloAlProcesarDevuelveElHueco() throws Exception {
-		IOException disco = new IOException("disco");
-		when(imagenService.guardarImagenFotoEvento(any())).thenThrow(disco);
+		for (Throwable fallo : new Throwable[] { new IOException("disco"), new IllegalStateException("codificador"),
+				new OutOfMemoryError("memoria") }) {
+			doThrow(fallo).when(imagenService).guardarImagenFotoEvento(any());
+
+			for (int i = 0; i < 3; i++) {
+				assertSame(fallo, assertThrows(Throwable.class, () -> servicio.subir(EVENTO, archivo)));
+				assertEquals(1, semaforo().availablePermits(), fallo.toString());
+			}
+		}
+	}
+
+	/** El semáforo ya se soltó al empezar la transacción: que falle no debe soltarlo otra vez. */
+	@Test
+	void unFalloDeLaTransaccionNoTocaLosHuecos_yBorraLosFicheros() throws Exception {
+		when(imagenService.guardarImagenFotoEvento(any())).thenReturn(guardada());
+		int borrados = 0;
+		for (Throwable fallo : new Throwable[] { new IllegalStateException("base de datos"), new OutOfMemoryError("memoria") }) {
+			doThrow(fallo).when(fotos).save(any());
+
+			for (int i = 0; i < 3; i++) {
+				assertSame(fallo, assertThrows(Throwable.class, () -> servicio.subir(EVENTO, archivo)));
+				assertEquals(1, semaforo().availablePermits(), fallo.toString());
+			}
+			borrados += 6;
+			verify(imagenService, times(borrados)).eliminarImagenDeSistema(any());
+		}
+	}
+
+	/** Quien se rinde no llegó a coger hueco: soltar uno inflaría el tope. */
+	@Test
+	void rendirseNoInflaLosHuecos() throws Exception {
+		ReflectionTestUtils.setField(servicio, "esperaProcesado", Duration.ofMillis(10));
+		semaforo().acquire();
 
 		for (int i = 0; i < 3; i++) {
-			assertSame(disco, assertThrows(IOException.class, () -> servicio.subir(EVENTO, archivo)));
+			assertThrows(ServidorOcupadoException.class, () -> servicio.subir(EVENTO, archivo));
 		}
 
-		assertEquals(2, semaforo().availablePermits());
+		assertEquals(0, semaforo().availablePermits());
+		semaforo().release();
+		assertEquals(1, semaforo().availablePermits());
+	}
+
+	@Test
+	void unaInterrupcionNoInflaLosHuecos() throws Exception {
+		semaforo().acquire();
+		Thread.currentThread().interrupt();
+
+		assertThrows(ServidorOcupadoException.class, () -> servicio.subir(EVENTO, archivo));
+
+		assertTrue(Thread.interrupted(), "La interrupción se conserva");
+		assertEquals(0, semaforo().availablePermits());
+		semaforo().release();
+
+		Thread.currentThread().interrupt();
+		assertThrows(ServidorOcupadoException.class, () -> servicio.subir(EVENTO, archivo));
+
+		assertTrue(Thread.interrupted(), "La interrupción se conserva");
+		assertEquals(1, semaforo().availablePermits(), "Interrumpida con hueco libre tampoco lo gasta");
+		verify(imagenService, never()).guardarImagenFotoEvento(any());
 	}
 
 	/** Lo que ya se sabe que no entra no ocupa ni espera un hueco. */

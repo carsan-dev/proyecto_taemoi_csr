@@ -47,8 +47,11 @@ public class EventoFotoService {
 
 	public static final int TOPE_POR_EVENTO = 40;
 
-	/** Una foto de 60 megapíxeles ocupa cientos de MB mientras se procesa, y el panel sube varias en paralelo. */
-	private static final int PROCESADOS_SIMULTANEOS = 2;
+	/**
+	 * De una en una: una foto de 60 megapíxeles girada ocupa unos 360 MB mientras se procesa, el panel sube varias en
+	 * paralelo y el contenedor no tiene {@code mem_limit}.
+	 */
+	private static final int PROCESADOS_SIMULTANEOS = 1;
 	private static final String MENSAJE_OCUPADO = "El servidor está ocupado. Reintenta en un momento.";
 
 	private static final Logger log = LoggerFactory.getLogger(EventoFotoService.class);

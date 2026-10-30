@@ -30,7 +30,7 @@ Aprobado por el propietario el 30/10/2026 (decisión 342). Orden de la entrega: 
 - Lista, orden y borrado. Al borrar la foto o el evento se borran también los ficheros.
 - `numeroFotos` en la lista pública sin consultas N+1. Actualiza los tests dorados de JSON.
 - Miniatura de 640 px al subir, en la misma carpeta privada, con fila propia en `imagen` y `miniatura_id` en `evento_foto`: `?w=` hasta 640 la sirve, porque WebP no se reduce al servir. Solo en la galería, la orientación EXIF se aplica antes de reducir.
-- Límites: 60 megapíxeles por foto (400, sin decodificar) y dos procesados a la vez (503 si no hay hueco en 30 s). Una foto visible se cachea 1 h, y `GET` y `HEAD` de la imagen no se auditan.
+- Límites: 60 megapíxeles por foto (400, sin decodificar) y un solo procesado a la vez (503 si no hay hueco en 30 s). Una foto visible se cachea 1 h, y `GET` y `HEAD` de la imagen no se auditan.
 - Pruebas: oculto y visible para cada rol, aislamiento entre escuelas, que `/imagenes/org-<id>/fotos-eventos/...` no sirva nada sin sesión, tope concurrente y limpieza de ficheros.
 
 ### F2 · Panel (`savvy-medium`)
