@@ -13,7 +13,7 @@ Boceto: artifact `PBbgzg4a9WCGPjp3JhkNmz`. Backend en la rama `feat/pasar-lista`
 - **La lista es del turno, no del grupo.** Lista actual: alumnos del turno ∩ del grupo ∩ activos en el deporte del grupo ∩ con fecha de nacimiento; por nombre y apellidos (el criterio del PDF). Un alumno del turno del lunes no sale en la lista del miércoles, no suma falta ese día y su detalle solo trae sus lunes. `Clase.alumnos` y `Clase.total` son los de esa lista.
 - La lista de una clase es lista actual ∪ alumnos con fila guardada: quien causa baja sigue en la lista ya guardada.
 - PUT: reemplaza la lista, idempotente, gana la última escritura. Una sola fila de auditoría.
-- PUT, por orden: turno de otro grupo 404; fecha no válida, de otro día de la semana o futura 400; profesor antes de hoy − 14 días 400; `presentes` ausente o con null 400; turno con hora no válida 400; turno sin alumnos 400 (no crea clase); id fuera de la lista 400; lista guardada con otro grupo (turno movido) 409. «Hoy»: Europe/Madrid.
+- PUT, por orden: turno de otro grupo 404; fecha no válida, de otro día de la semana o futura 400; profesor antes de hoy − 14 días 400; `presentes` ausente o con null 400; turno con hora no válida 400; lista guardada con otro grupo (turno movido) 409; turno sin alumnos 400 (no crea clase); id fuera de la lista 400. «Hoy»: Europe/Madrid.
 - GET de una clase: turno de otro grupo 404; fecha que no cae en el turno 400 salvo que tenga lista guardada. El límite de 14 días es solo del PUT.
 - Acceso: grupo ajeno 403. Gestión con alcance total: grupo de otra escuela o inexistente 404. Errores: `{"mensaje": "..."}`. Año fuera de 1900-2999 o mes fuera de 1-12: 400.
 

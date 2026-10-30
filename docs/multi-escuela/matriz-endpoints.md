@@ -411,6 +411,14 @@ sobre la cuenta de la sesión: ningún id en la ruta ni en el cuerpo.
   no, `null`. `usuario_alumno` se filtra por organización a mano y el alumno es `@TenantId`.
 - `PUT /api/panel/mi-perfil` (`#guardar`, `{nombrePreferido, cumpleDia, cumpleMes}`): sustituye los valores y devuelve lo
   mismo que el GET. Con `cumpleFicha` en la escuela activa, el cumpleaños del cuerpo se ignora y lo guardado no se toca.
+  Nombre de más de 40 puntos de código o con caracteres de control, sin cuerpo, o sin ficha un cumpleaños incompleto o
+  imposible, 400 con `{"mensaje"}`.
+Todo 2xx del PUT registra (módulo `panel`, `PERFIL_CAMBIADO`, solo `usuario=#id` y `sinCambios`, nunca el nombre ni la
+fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, `nombrePreferido`, `cumpleDia` y
+`cumpleMes` van en `CLAVES_REDACTADAS_POR_RUTA`. Los mismos tres nombres, si llegan como parámetros de la URL (`?nombrePreferido=…`), van en `PARAMETROS_REDACTADOS_POR_RUTA` y no se guardan en `query_params_json`. `GET /api/auth/permisos` (línea existente, sin cambio de permisos):
+`nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
+y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
+`PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 Pasar lista (decisión 324, V31_15, `fase3-pasar-lista.md`): 18 líneas nuevas, 9 bajo `/api/profesor/grupos/{grupoId}`
 (`ProfesorController`) y 9 bajo `/api/grupos/{grupoId}` (`GrupoAsistenciaController`), con el mismo `AsistenciaService`.
@@ -425,14 +433,6 @@ Ninguna casilla existente cambia. Cada prefijo tiene `GET` y `HEAD` de `/clases`
 - El `PUT` tiene registro propio (`ASISTENCIA_PROFESOR` y `ASISTENCIA_GESTION` en `EscrituraConRegistroPropio`): su 2xx deja
   una sola fila, `PROFESOR ASISTENCIA_REGISTRADA` o `ASISTENCIA_CORREGIDA` con `clase`, `grupo` y `turno`. Lo prueban
   `AsistenciaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
-  Nombre de más de 40 puntos de código o con caracteres de control, sin cuerpo, o sin ficha un cumpleaños incompleto o
-  imposible, 400 con `{"mensaje"}`.
-Todo 2xx del PUT registra (módulo `panel`, `PERFIL_CAMBIADO`, solo `usuario=#id` y `sinCambios`, nunca el nombre ni la
-fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, `nombrePreferido`, `cumpleDia` y
-`cumpleMes` van en `CLAVES_REDACTADAS_POR_RUTA`. Los mismos tres nombres, si llegan como parámetros de la URL (`?nombrePreferido=…`), van en `PARAMETROS_REDACTADOS_POR_RUTA` y no se guardan en `query_params_json`. `GET /api/auth/permisos` (línea existente, sin cambio de permisos):
-`nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
-y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
-`PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
