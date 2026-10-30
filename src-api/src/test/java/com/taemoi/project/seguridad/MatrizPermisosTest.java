@@ -391,6 +391,7 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 	private static Map<String, String> profesorE7() {
 		String grupos = "integracion.ProfesorGruposIntegrationTest#";
 		String saludAsistencia = "integracion.ProfesorSaludAsistenciaIntegrationTest#";
+		String lista = "integracion.AsistenciaIntegrationTest#";
 		Map<String, String> m = new LinkedHashMap<>();
 		for (String metodo : List.of("GET", "HEAD")) {
 			// E7-1: mis grupos (filtro del servicio), alumnos de un grupo suyo y ficha reducida de un alumno de sus grupos.
@@ -400,7 +401,15 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			// E7-2: salud de un alumno de sus grupos (registrada, no-store) y hoja de asistencia de un grupo suyo.
 			m.put(metodo + " /api/profesor/alumnos/{alumnoId}/salud", saludAsistencia + "saludDeAlumnoDeOtroGrupo_403");
 			m.put(metodo + " /api/profesor/grupos/{grupoId}/asistencia", saludAsistencia + "pdfAsistenciaGrupoAjeno_403");
+			// Decisión 324: pasar lista en un grupo suyo.
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/clases", lista + "grupoAjeno_403_enLasCincoRutas");
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/clases/{turnoId}/{fecha}",
+					lista + "grupoAjeno_403_enLasCincoRutas");
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/asistencia/resumen", lista + "grupoAjeno_403_enLasCincoRutas");
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
+					lista + "grupoAjeno_403_enLasCincoRutas");
 		}
+		m.put("PUT /api/profesor/grupos/{grupoId}/clases/{turnoId}/{fecha}", lista + "grupoAjeno_403_enLasCincoRutas");
 		// E7-3: apto, fecha de grado y pases de un alumno de sus grupos, solo en las disciplinas de los grupos compartidos.
 		String grados = "integracion.ProfesorGradosIntegrationTest#";
 		String deporte = " /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/";

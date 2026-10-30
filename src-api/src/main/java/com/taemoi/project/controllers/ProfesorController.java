@@ -17,9 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.taemoi.project.dtos.request.GuardarAsistenciaRequest;
 import com.taemoi.project.dtos.request.ProfesorRequests;
 import com.taemoi.project.dtos.response.AlumnoSaludDTO;
+import com.taemoi.project.dtos.response.AsistenciaDTOs;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
+import com.taemoi.project.services.AsistenciaService;
+import com.taemoi.project.services.AsistenciaService.Via;
 import com.taemoi.project.services.ProfesorService;
 
 /**
@@ -40,9 +44,11 @@ import com.taemoi.project.services.ProfesorService;
 public class ProfesorController {
 
 	private final ProfesorService profesor;
+	private final AsistenciaService asistencia;
 
-	public ProfesorController(ProfesorService profesor) {
+	public ProfesorController(ProfesorService profesor, AsistenciaService asistencia) {
 		this.profesor = profesor;
+		this.asistencia = asistencia;
 	}
 
 	/** Sus grupos (§5.1). */
@@ -88,6 +94,50 @@ public class ProfesorController {
 		String fichero = "Asistencia-grupo-%d-%d-%02d.pdf".formatted(grupoId, year, month);
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fichero + "\"").body(pdf);
+	}
+
+	// ------------------------------------------------------------------ pasar lista (decisión 324)
+	// Mismo servicio que gestión (GrupoAsistenciaController), con el límite de 14 días hacia atrás al guardar. Grupo
+	// ajeno, de otra escuela o inexistente: 403. Formas JSON en docs/multi-escuela/fase3-pasar-lista.md.
+
+	/** Clases de hoy, recientes y próxima de un grupo suyo. */
+	@GetMapping("/grupos/{grupoId}/clases")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<AsistenciaDTOs.Clases> clases(@PathVariable Long grupoId) {
+		return ResponseEntity.ok(asistencia.clases(Via.PROFESOR, grupoId));
+	}
+
+	/** Lista de una clase. Turno de otro grupo: 404. */
+	@GetMapping("/grupos/{grupoId}/clases/{turnoId}/{fecha}")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<AsistenciaDTOs.ListaDeClase> listaDeClase(@PathVariable Long grupoId,
+			@PathVariable Long turnoId, @PathVariable String fecha) {
+		return ResponseEntity.ok(asistencia.lista(Via.PROFESOR, grupoId, turnoId, fecha));
+	}
+
+	/** Guarda la lista de una clase. 400: fecha o alumnos no válidos; 404: turno de otro grupo. */
+	@PutMapping("/grupos/{grupoId}/clases/{turnoId}/{fecha}")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<AsistenciaDTOs.Clase> guardarLista(@PathVariable Long grupoId, @PathVariable Long turnoId,
+			@PathVariable String fecha, @RequestBody GuardarAsistenciaRequest cuerpo) {
+		return ResponseEntity
+				.ok(asistencia.guardar(Via.PROFESOR, grupoId, turnoId, fecha, cuerpo == null ? null : cuerpo.presentes()));
+	}
+
+	/** Presentes y clases del mes por alumno. Año o mes no válidos: 400. */
+	@GetMapping("/grupos/{grupoId}/asistencia/resumen")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<List<AsistenciaDTOs.ResumenAlumno>> resumenAsistencia(@PathVariable Long grupoId,
+			@RequestParam int year, @RequestParam int month) {
+		return ResponseEntity.ok(asistencia.resumen(Via.PROFESOR, grupoId, year, month));
+	}
+
+	/** Detalle del mes de un alumno del grupo. Alumno de fuera del grupo: 404. */
+	@GetMapping("/grupos/{grupoId}/alumnos/{alumnoId}/asistencia")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<AsistenciaDTOs.AsistenciaDeAlumno> asistenciaDeAlumno(@PathVariable Long grupoId,
+			@PathVariable Long alumnoId, @RequestParam int year, @RequestParam int month) {
+		return ResponseEntity.ok(asistencia.asistenciaDeAlumno(Via.PROFESOR, grupoId, alumnoId, year, month));
 	}
 
 	// ------------------------------------------------------------------ grados (E7-3, decisión 207)

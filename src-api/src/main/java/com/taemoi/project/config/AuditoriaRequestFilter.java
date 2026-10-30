@@ -127,7 +127,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 * Decisión 322: PerfilCuentaService#guardar (PANEL PERFIL_CAMBIADO; sin cambios, con sinCambios=SI). Aquí, el 2xx
 		 * guardaría el nombre y la fecha del cuerpo; el registro explícito solo lleva el id de la cuenta.
 		 */
-		PANEL_MI_PERFIL("PUT", "/api/panel/mi-perfil");
+		PANEL_MI_PERFIL("PUT", "/api/panel/mi-perfil"),
+		// Decisión 324: pasar lista. Todo 2xx registra, también el que no cambia nada; aquí, el 2xx guardaría los ids del cuerpo.
+		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
+		ASISTENCIA_PROFESOR("PUT", "/api/profesor/grupos/[^/]+/clases/[^/]+/[^/]+"),
+		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
+		ASISTENCIA_GESTION("PUT", "/api/grupos/[^/]+/clases/[^/]+/[^/]+");
 
 		private final String metodo;
 		private final Pattern ruta;

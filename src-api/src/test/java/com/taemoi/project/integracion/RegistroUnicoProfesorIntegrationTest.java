@@ -13,6 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -45,6 +48,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.AuditoriaRequestFilter.EscrituraConRegistroPropio;
+import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
@@ -376,6 +380,24 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,
 				List.of("PANEL PERFIL_CAMBIADO"),
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"cumpleDia\":31,\"cumpleMes\":4}"), 400));
+		// Decisión 324: pasar lista. El turno tA es de los lunes: cada caso usa su lunes, y un martes da 400.
+		LocalDate lunes = LocalDate.now(ValidacionRelojConfig.ZONA).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+		casos.put(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR, () -> {
+			long a = alumnoConGrado("E79LISTA", false);
+			e.enTurno(e.tA, a);
+			String ruta = "/api/profesor/grupos/" + e.gA + "/clases/" + e.tA + "/";
+			return delProfesor(() -> conCuerpo(put(ruta + lunes), "{\"presentes\":[" + a + "]}"), 200,
+					List.of("PROFESOR ASISTENCIA_REGISTRADA"),
+					() -> conCuerpo(put(ruta + lunes.plusDays(1)), "{\"presentes\":[]}"), 400);
+		});
+		casos.put(EscrituraConRegistroPropio.ASISTENCIA_GESTION, () -> {
+			long a = alumnoConGrado("E79LISTAGESTION", false);
+			e.enTurno(e.tA, a);
+			String ruta = "/api/grupos/" + e.gA + "/clases/" + e.tA + "/";
+			return new Caso(tGestor, e.gestor, () -> conCuerpo(put(ruta + lunes.minusDays(7)), "{\"presentes\":[" + a + "]}"),
+					200, List.of("PROFESOR ASISTENCIA_REGISTRADA"),
+					() -> conCuerpo(put(ruta + lunes.minusDays(6)), "{\"presentes\":[]}"), 400);
+		});
 		return casos;
 	}
 
