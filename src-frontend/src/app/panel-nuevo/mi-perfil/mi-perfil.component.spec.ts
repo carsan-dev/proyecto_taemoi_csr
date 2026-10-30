@@ -140,7 +140,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
         'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
       ]);
       expect(q<HTMLSelectElement>('#cumple-dia').options[0].textContent?.trim()).toBe('—');
-      expect(q('#cumple-ayuda').textContent).toBe('Sin año. Ese día te espera una sorpresa.');
+      expect(q('#cumple-ayuda').textContent).toBe('¡Ese día te espera una sorpresa!');
       expect(el().textContent).toContain('Día y mes');
     });
 
