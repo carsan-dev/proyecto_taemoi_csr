@@ -107,13 +107,13 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     esperarHoy(await montar('/alumnosListar'));
   });
 
-  itSinReloj('encendido pero la hoja panel-nuevo.css no carga: lo de hoy', async () => {
+  itSinReloj('la hoja panel-nuevo.css no carga: lo de hoy', async () => {
     obtener.and.returnValue(of(permisos()));
     cargarHoja.and.rejectWith(new Error('hoja'));
     esperarHoy(await montar('/adminpage'));
   });
 
-  itSinReloj('encendido y la hoja nunca resuelve: sale del hueco al tope de estilos (reloj simulado)', async () => {
+  itSinReloj('la hoja nunca resuelve: sale del hueco al tope de estilos (reloj simulado)', async () => {
     obtener.and.returnValue(of(permisos()));
     cargarHoja.and.returnValue(new Promise<void>(() => {}));
     const raiz = await montar('/adminpage');
@@ -121,7 +121,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
   });
 
   for (const ruta of ['/mi-caja', '/mis-grupos', '/mis-grupos/4']) {
-    itSinReloj(`encendido en la sesión solo-profesor (decisión 326, R6): marco nuevo en ${ruta}`, async () => {
+    itSinReloj(`en la sesión solo-profesor (decisión 326, R6): marco nuevo en ${ruta}`, async () => {
       obtener.and.returnValue(of(permisos(['PROFESOR'])));
       const raiz = await montar(ruta);
       expect(cabeceraDeHoy(raiz)).toBeNull();
@@ -147,18 +147,18 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect(cargarHoja).not.toHaveBeenCalled();
   });
 
-  itSinReloj('encendido en una ruta pública: la cabecera y el pie de hoy, sin pedir permisos', async () => {
+  itSinReloj('en una ruta pública: la cabecera y el pie de hoy, sin pedir permisos', async () => {
     obtener.and.returnValue(of(permisos()));
     esperarHoy(await montar('/'));
     expect(obtener).not.toHaveBeenCalled();
   });
 
-  itSinReloj('encendido en una ruta de familia (/userpage): la cabecera y el pie de hoy', async () => {
+  itSinReloj('en una ruta de familia (/userpage): la cabecera y el pie de hoy', async () => {
     obtener.and.returnValue(of(permisos()));
     esperarHoy(await montar('/userpage'));
   });
 
-  itSinReloj('encendido en gestión: la cabecera nueva en @defer, raíz del panel y sin pie', async () => {
+  itSinReloj('en gestión: la cabecera nueva en @defer, raíz del panel y sin pie', async () => {
     obtener.and.returnValue(of(permisos()));
     const raiz = await montar('/adminpage');
 
@@ -172,7 +172,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
     expect((await fixture.getDeferBlocks()).length).toBe(1);
   });
 
-  itSinReloj('el botón «volver arriba» solo con el diseño de hoy: encendido en gestión no está (taparía la barra inferior)', async () => {
+  itSinReloj('el botón «volver arriba» solo con el diseño de hoy: en gestión no está (taparía la barra inferior)', async () => {
     obtener.and.returnValue(of(permisos()));
     const nuevo = await montar('/adminpage');
     expect(nuevo.querySelector('app-botonscroll')).toBeNull();

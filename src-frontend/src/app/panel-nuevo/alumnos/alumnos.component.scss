@@ -196,7 +196,7 @@
 .alumnos__buscador {
   position: relative;
   flex: 1 1 280px;
-  min-width: 0;
+  min-width: min(100%, 18rem);
 
   > i {
     position: absolute;
@@ -1032,7 +1032,7 @@
 
   .alumnos__buscador {
     flex: 1 1 150px;
-    min-width: 150px;
+    min-width: min(100%, 18rem);
   }
 
   .alumnos__campo--select {
