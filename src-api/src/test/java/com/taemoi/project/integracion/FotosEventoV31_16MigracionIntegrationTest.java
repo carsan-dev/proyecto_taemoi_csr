@@ -31,7 +31,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * V31_16 (decisión 342): tabla {@code evento_foto}, sobre una base en V31_15 con eventos e imágenes de dos escuelas. Solo
  * amplía: ninguna columna, índice, restricción ni fila existente cambia. La imagen anterior de la API, que no conoce la
  * tabla, puede seguir borrando eventos con fotos (cascada a nivel de base de datos). Repetirla, también tras un fallo.
- * Datos inventados.
+ * Ejecuta {@code docs/multi-escuela/postcheck-v31-16.sql}. Datos inventados.
  */
 @Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -121,6 +121,35 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(filasAntes.get(tabla), jdbc.queryForList("SELECT * FROM " + tabla + " ORDER BY id"), tabla);
 		}
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM evento_foto", Long.class));
+	}
+
+	@Test
+	@Order(41)
+	void postcheck_justoTrasDesplegar() throws Exception {
+		Map<String, Object> fila = postcheck();
+		for (String columna : List.of("flyway_31_16", "ultima_es_31_16", "tabla_evento_foto", "miniatura_obligatoria")) {
+			assertEquals(1L, numero(fila, columna), columna);
+		}
+		assertEquals(6L, numero(fila, "columnas_evento_foto"));
+		assertEquals(2L, numero(fila, "unicas"));
+		assertEquals(4L, numero(fila, "claves_ajenas"));
+		assertEquals(0L, numero(fila, "filas_evento_foto"));
+		assertEquals(0L, numero(fila, "fotos_sin_miniatura"));
+	}
+
+	@Test
+	@Order(42)
+	void postcheck_conFotos() throws Exception {
+		long imagen = imagen(1L, "p.webp", "org-1/fotos-eventos/p.webp");
+		long miniatura = imagen(1L, "p-mini.webp", "org-1/fotos-eventos/p-mini.webp");
+		long foto = foto(1L, eventoDe1, imagen, miniatura, 1);
+
+		Map<String, Object> fila = postcheck();
+
+		assertEquals(1L, numero(fila, "filas_evento_foto"));
+		assertEquals(0L, numero(fila, "fotos_sin_miniatura"));
+		jdbc.update("DELETE FROM evento_foto WHERE id = ?", foto);
+		jdbc.update("DELETE FROM imagen WHERE id IN (?, ?)", imagen, miniatura);
 	}
 
 	/** Lo que hace la imagen anterior de la API: un DELETE del evento, sin saber nada de la tabla nueva. */
@@ -255,6 +284,14 @@ class FotosEventoV31_16MigracionIntegrationTest extends MySqlIntegrationTest {
 				SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS
 				WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? AND NON_UNIQUE = ?
 				GROUP BY INDEX_NAME""", String.class, tabla, indice, noUnico);
+	}
+
+	private Map<String, Object> postcheck() throws Exception {
+		return SedesVinculosMigracionIntegrationTest.ejecutarScriptDocs(dataSource, "postcheck-v31-16.sql").get(0).get(0);
+	}
+
+	private static long numero(Map<String, Object> fila, String columna) {
+		return ((Number) fila.get(columna)).longValue();
 	}
 
 	private void ejecutarV31_16() throws Exception {
