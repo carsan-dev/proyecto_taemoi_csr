@@ -184,6 +184,9 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(turnosDeA.contains(e.tB) || turnosDeA.contains(e.tSin), "sin el de B ni el turno sin grupo");
 		deA.forEach(t -> assertTrue(Set.of(e.gA, e.gA2).contains(t.get("grupoId").asLong()), t.toString()));
 		assertTrue(ids(leer("/api/turnos/resumen", tokenGestor)).containsAll(Set.of(e.tA, e.tB, e.tSin)));
+		Set<Long> deAC = ids(leer("/api/turnos/resumen", tokenAC));
+		assertTrue(deAC.contains(e.tA), "con dos sedes (A y C), igual");
+		assertFalse(deAC.contains(e.tB) || deAC.contains(e.tSin), "sin el de B ni el turno sin grupo");
 		assertEquals(200, estado(get("/api/turnos/" + e.tA), tokenA));
 		for (long ajeno : List.of(e.tB, e.tSin)) {
 			assertEquals(403, estado(get("/api/turnos/" + ajeno), tokenA));

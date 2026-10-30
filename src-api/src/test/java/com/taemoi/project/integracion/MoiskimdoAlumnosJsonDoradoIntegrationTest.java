@@ -130,8 +130,7 @@ import jakarta.servlet.http.Cookie;
  * {@code $.turnos} de {@code /api/admin}: orden según el plan de MySQL; falló así en la CI),
  * {@code Alumno.deportes} ({@code deportes} en todo alumno), {@code Turno.alumnos} ({@code alumnos} de cada turno),
  * {@code Grupo.turnos} ({@code grupo_turnos $}), {@code Alumno.documentos}/{@code productosAlumno}/{@code convocatorias};
- * y los listados sin ORDER BY: {@code findAllWithAlumnos} ({@code turnos_dto $}),
- * {@code alumnoRepository.findAll(filtro)} sin {@code Sort} para la gestión ({@code alumnos_sin_paginar $}) y
+ * y los listados sin ORDER BY: {@code findAllWithAlumnos} ({@code turnos_dto $}) y
  * {@code findByAlumnoIdWithGrado} ({@code alumno_deportes $}). Un cambio de orden en ellos no se detecta (hoy no es
  * estable); si una pieza fija un orden (D2), su ruta pasa a {@code ordenados}.</li>
  * <li>Objetos: con las claves ordenadas (el orden de campos de un objeto JSON no forma parte del contrato).</li>
