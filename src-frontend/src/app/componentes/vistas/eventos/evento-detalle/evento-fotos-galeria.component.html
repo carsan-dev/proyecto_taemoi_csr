@@ -1,0 +1,44 @@
+@if (total() > 0) {
+  <section class="fotos-evento" aria-labelledby="fotos-evento-titulo">
+    <header class="fotos-cabecera">
+      <i class="bi bi-images" aria-hidden="true"></i>
+      <h2 id="fotos-evento-titulo">Fotos del evento</h2>
+      <span class="fotos-total">{{ textoTotal() }}</span>
+    </header>
+
+    <div class="mosaico-caja">
+      <div class="mosaico">
+        @for (miniatura of miniaturas(); track miniatura.indice) {
+          <button
+            type="button"
+            class="casilla"
+            [class]="'casilla ' + miniatura.clases"
+            [attr.aria-label]="miniatura.restantes > 0 ? miniatura.alt + '. Ver las ' + total() + ' fotos' : 'Ampliar: ' + miniatura.alt"
+            (click)="abrir(miniatura.indice, $event)"
+          >
+            <img [src]="miniatura.src" [alt]="miniatura.alt" loading="lazy" decoding="async" />
+            @if (miniatura.restantes > 0) {
+              <span class="casilla-mas" aria-hidden="true">+{{ miniatura.restantes }}</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (total() > 1) {
+      <div class="fotos-accion">
+        <button type="button" class="fotos-ver-todas" (click)="abrir(0, $event)">Ver las {{ total() }} fotos</button>
+      </div>
+    }
+  </section>
+
+  @if (indiceVisor() !== null) {
+    <app-evento-fotos-visor
+      [fotos]="fotosVisor()"
+      [titulo]="titulo"
+      [indiceInicial]="indiceVisor()!"
+      [retornoFoco]="retornoFoco"
+      (cerrar)="cerrar()"
+    ></app-evento-fotos-visor>
+  }
+}

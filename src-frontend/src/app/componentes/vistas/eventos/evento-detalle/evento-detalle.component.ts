@@ -6,11 +6,12 @@ import { Documento, Evento } from '../../../../interfaces/evento';
 import { CommonModule } from '@angular/common';
 import { NgxSpinnerModule, NgxSpinnerService } from 'ngx-spinner';
 import { SeoService } from '../../../../servicios/generales/seo.service';
+import { EventoFotosGaleriaComponent } from './evento-fotos-galeria.component';
 
 @Component({
   selector: 'app-evento-detalle',
   standalone: true,
-  imports: [CommonModule, NgxSpinnerModule, RouterLink],
+  imports: [CommonModule, NgxSpinnerModule, RouterLink, EventoFotosGaleriaComponent],
   templateUrl: './evento-detalle.component.html',
   styleUrl: './evento-detalle.component.scss',
 })

@@ -266,6 +266,13 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 0.4rem;
 }
 
+.showcase-main-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .showcase-main-chip {
   width: fit-content;
   padding: 0.2rem 0.5rem;
@@ -275,8 +282,20 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   color: rgba(255, 255, 255, 0.95);
   font-size: 0.66rem;
   font-weight: 800;
+  line-height: 1.2;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 1.45rem;
+  gap: 0.3rem;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.78rem;
+    line-height: 1;
+  }
 }
 
 .event-date-badge {
@@ -319,6 +338,43 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
   top: 0.62rem;
   left: 0.62rem;
   z-index: 4;
+}
+
+.event-photos-badge {
+  position: absolute;
+  right: 0.62rem;
+  bottom: 0.62rem;
+  z-index: 4;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0d47a1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 4px 12px rgba(5, 17, 33, 0.28);
+  pointer-events: none;
+
+  i {
+    font-size: 0.78rem;
+  }
+}
+
+/* Miniaturas de destacados: la misma etiqueta que la de la cuadrícula, más pequeña, abajo a la derecha de la imagen. */
+.event-photos-badge--mini {
+  right: 0.3rem;
+  bottom: 0.3rem;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  gap: 0.22rem;
+  box-shadow: 0 3px 8px rgba(5, 17, 33, 0.28);
+
+  i {
+    font-size: 0.7rem;
+  }
 }
 
 .showcase-main-title {
@@ -757,6 +813,10 @@ $transition: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
 
   .showcase-main-chip {
     font-size: 0.58rem;
+  }
+
+  .showcase-main-chips {
+    gap: 0.3rem;
   }
 
   .showcase-main-title {

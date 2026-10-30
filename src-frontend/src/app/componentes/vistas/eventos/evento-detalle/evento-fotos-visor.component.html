@@ -1,0 +1,39 @@
+<div
+  #dialogo
+  class="visor"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Fotos del evento ' + titulo"
+  (touchstart)="alEmpezarToque($event)"
+  (touchend)="alTerminarToque($event)"
+>
+  <div class="visor-barra">
+    <span class="visor-contador" aria-live="polite">{{ indice() + 1 }} de {{ fotos.length }}</span>
+    <button #botonCerrar type="button" class="visor-boton visor-cerrar" aria-label="Cerrar el visor" (click)="cerrar.emit()">
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div class="visor-escenario" (click)="alPulsarEscenario($event)">
+    @if (hayAnterior) {
+      <button type="button" class="visor-boton visor-flecha visor-flecha--anterior" aria-label="Foto anterior" (click)="anterior()">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+      </button>
+    }
+    <img class="visor-img" [src]="urlActual" [alt]="actual?.alt ?? ''" decoding="async" />
+    @if (haySiguiente) {
+      <button type="button" class="visor-boton visor-flecha visor-flecha--siguiente" aria-label="Foto siguiente" (click)="siguiente()">
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+
+  <div class="visor-precarga" aria-hidden="true">
+    @if (urlSiguiente; as url) {
+      <img [src]="url" alt="" decoding="async" />
+    }
+    @if (urlAnterior; as url) {
+      <img [src]="url" alt="" decoding="async" />
+    }
+  </div>
+</div>

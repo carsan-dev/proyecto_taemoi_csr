@@ -1,5 +1,5 @@
 import { Location } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
@@ -21,6 +21,7 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { numero } from '../formato/formato-es';
+import { EventoFotosComponent, ResultadoFotos } from './evento-fotos.component';
 import {
   ANCHO_FORMULARIO,
   CampoConError,
@@ -61,7 +62,15 @@ const IDS: Record<CampoConError, string> = { titulo: 'evento-titulo', descripcio
 @Component({
   selector: 'app-evento-formulario',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, AcentoEscuelaDirective, EsqueletoComponent, BloqueErrorComponent, BotonOcupadoComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    AcentoEscuelaDirective,
+    EsqueletoComponent,
+    BloqueErrorComponent,
+    BotonOcupadoComponent,
+    EventoFotosComponent,
+  ],
   templateUrl: './evento-formulario.component.html',
   styleUrls: ['./evento-formulario.component.scss'],
 })
@@ -108,6 +117,9 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
   /** Se pulsó la acción con errores: el resumen se ve y cada error, bajo su campo. */
   intentado = false;
 
+  /** El bloque «Fotos del evento» (E8c · F2): lleva sus fotos; el formulario le pide subirlas al guardar. */
+  private readonly fotos = viewChild(EventoFotosComponent);
+
   private lectura?: Subscription;
   private readonly destroy$ = new Subject<void>();
   /** Las escrituras no se cancelan al salir (acaban y suben los documentos); la navegación, no. */
@@ -121,6 +133,16 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     return this.modo === 'crear'
       ? 'Crea un evento para mostrar en la página web pública'
       : 'Modifica la información del evento publicado en la web';
+  }
+
+  /** «N cambios sin guardar» de la barra: solo las fotos pendientes y el cambio de orden. */
+  get cambiosFotos(): number {
+    return this.fotos()?.cambios ?? 0;
+  }
+
+  get textoCambiosFotos(): string {
+    const n = this.cambiosFotos;
+    return n === 1 ? '1 cambio sin guardar' : `${numero(n)} cambios sin guardar`;
   }
 
   get accion(): string {
@@ -394,7 +416,7 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
   private enviarDocumentos(
     eventoId: number,
     lote: File[],
-    alTerminar: (subidos: number, errores: number, motivos: string[], guardados: DocumentoEvento[]) => void
+    alTerminar: (subidos: number, errores: number, motivos: string[], guardados: DocumentoEvento[], fallidos: File[]) => void
   ): void {
     let subidos = 0;
     let errores = 0;
@@ -402,7 +424,13 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     const guardados: (DocumentoEvento | null)[] = lote.map(() => null);
     const comprobar = () => {
       if (subidos + errores === lote.length) {
-        alTerminar(subidos, errores, motivos, guardados.filter((g): g is DocumentoEvento => !!g));
+        alTerminar(
+          subidos,
+          errores,
+          motivos,
+          guardados.filter((g): g is DocumentoEvento => !!g),
+          lote.filter((_, i) => !guardados[i])
+        );
       }
     };
     lote.forEach((archivo, i) => {
@@ -504,7 +532,7 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** `POST /eventos/crear` de hoy («nuevo» y «file» con su nombre); después, cada documento; luego, a Eventos. */
+  /** `POST /eventos/crear` de hoy («nuevo» y «file» con su nombre); después, cada documento y las fotos; luego, a Eventos. */
   private crear(): void {
     const v = this.form.getRawValue();
     const documentos = [...this.documentosNuevos];
@@ -513,11 +541,23 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
       .crearEvento(cuerpoCrear(v), this.imagen)
       .subscribe({
         next: (creado: EventoPanel) => {
+          const conFotos = (errores: number, motivos: string[], guardados: DocumentoEvento[], fallidos: File[]) => {
+            const fotos = this.fotos();
+            if (!fotos || fotos.cambios === 0) {
+              this.terminarCreado(errores, motivos);
+              return;
+            }
+            void fotos
+              .sincronizar(creado.id)
+              .then((resultado) => this.terminarCreado(errores, motivos, { creado, guardados, fallidos, resultado }));
+          };
           if (documentos.length === 0) {
-            this.terminarCreado(0, []);
+            conFotos(0, [], [], []);
             return;
           }
-          this.enviarDocumentos(creado.id, documentos, (_subidos, errores, motivos) => this.terminarCreado(errores, motivos));
+          this.enviarDocumentos(creado.id, documentos, (_subidos, errores, motivos, guardados, fallidos) =>
+            conFotos(errores, motivos, guardados, fallidos)
+          );
         },
         error: (error) => {
           this.guardando = false;
@@ -527,17 +567,60 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
       });
   }
 
-  private terminarCreado(errores: number, motivos: string[]): void {
+  /**
+   * Tras crear: si todo fue bien (o solo fallaron documentos, como hoy), a Eventos. Si alguna foto no subió, el usuario
+   * se queda en el formulario, que pasa a Editar con el evento ya creado para poder reintentar sin duplicarlo.
+   */
+  private terminarCreado(
+    errores: number,
+    motivos: string[],
+    fotos?: { creado: EventoPanel; guardados: DocumentoEvento[]; fallidos: File[]; resultado: ResultadoFotos }
+  ): void {
     this.guardando = false;
+    const fallosFotos = fotos ? fotos.resultado.fallos : 0;
+    const errorOrden = fotos?.resultado.errorOrden ?? false;
+    const partes: string[] = [];
     if (errores > 0) {
-      const parte = errores === 1 ? '1 documento no se pudo subir.' : `${numero(errores)} documentos no se pudieron subir.`;
-      this.avisos.error([`El evento se ha creado, pero ${parte}`, ...motivos].join(' '));
+      partes.push(errores === 1 ? '1 documento no se pudo subir.' : `${numero(errores)} documentos no se pudieron subir.`);
+    }
+    if (fallosFotos > 0) {
+      partes.push(fallosFotos === 1 ? '1 foto no se pudo subir.' : `${numero(fallosFotos)} fotos no se pudieron subir.`);
+    }
+    if (errorOrden) {
+      partes.push('No se pudo guardar el orden de las fotos.');
+    }
+    if (fotos && (fallosFotos > 0 || errorOrden)) {
+      this.pasarAEditar(fotos.creado, fotos.guardados, fotos.fallidos);
+      this.avisos.error(
+        [
+          `El evento se ha creado, pero ${partes.join(' ')}`,
+          ...fotos.resultado.motivos,
+          ...motivos,
+          'Reintenta cada foto o pulsa «Guardar cambios».',
+        ].join(' ')
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+    if (errores > 0) {
+      this.avisos.error([`El evento se ha creado, pero ${partes.join(' ')}`, ...motivos].join(' '));
     } else {
       this.avisos.exito('Has creado un nuevo evento.');
     }
     if (!this.destruido) {
       void this.router.navigate(['/eventosListar']);
     }
+  }
+
+  /** El evento ya existe: el formulario sigue abierto como Editar, con lo que falta por subir. */
+  private pasarAEditar(creado: EventoPanel, documentosGuardados: DocumentoEvento[], documentosFallidos: File[]): void {
+    this.modo = 'editar';
+    this.eventoId = creado.id;
+    this.evento = creado;
+    this.documentosGuardados = documentosGuardados;
+    this.documentosNuevos = documentosFallidos;
+    this.quitarImagen();
+    this.location.replaceState(`/eventosEditar/${creado.id}`);
   }
 
   /** `PUT /eventos/{id}` de hoy: «eventoEditado» y «file» (el archivo o "null"). */
@@ -558,11 +641,29 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
       .actualizarEvento(id, datos)
       .subscribe({
         next: () => {
-          this.guardando = false;
-          this.avisos.exito('El evento ha sido actualizado correctamente.');
-          if (!this.destruido) {
-            void this.router.navigate(['/eventosListar']);
+          const fotos = this.fotos();
+          if (!fotos || fotos.cambios === 0) {
+            this.terminarActualizado();
+            return;
           }
+          void fotos.sincronizar(id).then((resultado) => {
+            if (resultado.fallos === 0 && !resultado.errorOrden) {
+              this.terminarActualizado();
+              return;
+            }
+            this.guardando = false;
+            const partes: string[] = [];
+            if (resultado.fallos > 0) {
+              partes.push(resultado.fallos === 1 ? '1 foto no se pudo subir.' : `${numero(resultado.fallos)} fotos no se pudieron subir.`);
+            }
+            if (resultado.errorOrden) {
+              partes.push('No se pudo guardar el orden de las fotos.');
+            }
+            this.avisos.error(
+              [`El evento se ha guardado, pero ${partes.join(' ')}`, ...resultado.motivos, 'Reintenta cada foto o pulsa «Guardar cambios».'].join(' ')
+            );
+            this.cdr.markForCheck();
+          });
         },
         error: (error) => {
           this.guardando = false;
@@ -570,6 +671,14 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  private terminarActualizado(): void {
+    this.guardando = false;
+    this.avisos.exito('El evento ha sido actualizado correctamente.');
+    if (!this.destruido) {
+      void this.router.navigate(['/eventosListar']);
+    }
   }
 
   /** «Cancelar»: no envía nada; como hoy, crear vuelve a Eventos y editar, atrás. */
