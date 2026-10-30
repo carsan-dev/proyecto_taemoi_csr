@@ -545,6 +545,22 @@ class FotosEventoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(ficherosAntes, ficheros(ORG1));
 	}
 
+	/** Cabecera válida y ningún fotograma: sin esto saldría un 500. */
+	@Test
+	void gifSinFotogramas_es400ConMensaje_sinDejarNada() throws Exception {
+		long evento = evento(ORG1, true);
+		long ficherosAntes = ficheros(ORG1);
+		byte[] gif = { 'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0, 0, 0x3B };
+
+		MockHttpServletResponse r = mvc.perform(subida(evento, gif, "vacio.gif", "image/gif").cookie(jwt(tokenGestor)))
+				.andReturn().getResponse();
+
+		assertEquals(400, r.getStatus(), r.getContentAsString());
+		assertEquals("No se pudo leer la foto del evento.", json.readTree(r.getContentAsString()).get("mensaje").asText());
+		assertEquals(0, filas(evento));
+		assertEquals(ficherosAntes, ficheros(ORG1));
+	}
+
 	@Test
 	void sinFichero_es400() throws Exception {
 		long evento = evento(ORG1, true);

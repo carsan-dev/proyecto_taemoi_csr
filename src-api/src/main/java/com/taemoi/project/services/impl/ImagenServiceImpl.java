@@ -167,7 +167,8 @@ public class ImagenServiceImpl implements ImagenService {
 			} finally {
 				lector.dispose();
 			}
-		} catch (EOFException e) {
+		} catch (EOFException | IndexOutOfBoundsException e) {
+			// IndexOutOfBounds: cabecera válida sin ningún fotograma, como un GIF vacío.
 			throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
 		} catch (IIOException e) {
 			if (esErrorDeEntradaSalidaDelServidor(e)) {

@@ -722,6 +722,25 @@ class ImagenServiceImplTest {
 		assertEquals(0, decodificadas.get());
 	}
 
+	/** Cabecera válida y ningún fotograma: el lector no da EOF ni IIOException, sino IndexOutOfBoundsException. */
+	@Test
+	void guardarFotoEvento_gifSinFotogramas_esArchivoNoValido_sinDecodificar() {
+		AtomicInteger decodificadas = new AtomicInteger();
+		ImagenServiceImpl servicio = contandoDecodificadas(decodificadas);
+
+		ArchivoNoValidoException error = assertThrows(ArchivoNoValidoException.class, () -> servicio
+				.guardarImagenFotoEvento(new MockMultipartFile("archivo", "vacio.gif", "image/gif", gifSinFotogramas())));
+
+		assertEquals("No se pudo leer la foto del evento.", error.getMessage());
+		assertEquals(0, decodificadas.get());
+		assertFalse(Files.exists(tempDir.resolve("org-1").resolve("fotos-eventos")), "Sin rastro en disco");
+	}
+
+	/** Firma, descriptor de pantalla de 1 × 1 y terminador. */
+	private static byte[] gifSinFotogramas() {
+		return new byte[] { 'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0, 0, 0x3B };
+	}
+
 	@Test
 	void guardarFotoEvento_leeLaCabeceraDeCadaFormato() throws Exception {
 		for (MockMultipartFile archivo : new MockMultipartFile[] {
