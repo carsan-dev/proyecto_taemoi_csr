@@ -1,8 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Turno } from '../../../interfaces/turno';
 
 /**
  * Service for managing schedule (Turno) operations
@@ -14,29 +13,7 @@ import { Turno } from '../../../interfaces/turno';
 export class TurnoService {
   private readonly urlBase = `${environment.apiUrl}/turnos`;
 
-  // State management
-  private readonly turnosSubject = new BehaviorSubject<Turno[]>([]);
-  public turnos$ = this.turnosSubject.asObservable();
-
   constructor(private readonly http: HttpClient) {}
-
-  /**
-   * Get all schedules (turnos)
-   */
-  obtenerTurnos(): void {
-    this.http
-      .get<any>(this.urlBase, {
-        withCredentials: true,
-      })
-      .subscribe({
-        next: (turnos) => {
-          this.turnosSubject.next(turnos);
-        },
-        error: (error) => {
-          console.error('Error al obtener los turnos:', error);
-        },
-      });
-  }
 
   /**
    * Get all schedules as DTO (public endpoint)
