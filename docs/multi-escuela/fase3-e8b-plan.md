@@ -248,6 +248,8 @@ sombras en 9 pantallas, `$primary-color` en 15 ficheros con 3 valores (auditorí
   - La pantalla de asignación se abre desde la entrada «Diseño nuevo» del menú de cuenta del panel de hoy, visible solo
     para el propietario (decisión 256).
   - Nunca entre escuelas: todo con la escuela activa de la sesión.
+> **Retirado** en la #153 (V31_13, decisión 335): estos endpoints, el campo `disenoNuevo` de `GET /api/auth/permisos` y sus acciones de registro ya no existen. Se conserva como histórico.
+
 - **Rutas** (regla de URL nueva `/api/panel/**` → `ROLE_ADMIN` o `ROLE_MANAGER`, fuera de la lista blanca
   solo-profesor; `@PreAuthorize` por método):
   - `GET /api/panel/diseno-nuevo` (propietario): `{porDefecto, usuarios[{usuarioId, permitido, activo}]}`; la pantalla
