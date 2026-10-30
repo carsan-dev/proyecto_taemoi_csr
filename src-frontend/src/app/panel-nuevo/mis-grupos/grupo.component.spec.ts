@@ -8,6 +8,8 @@ import { BehaviorSubject } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ClaseAsistencia, ClasesDelGrupo } from '../../interfaces/asistencia';
 import { AlumnoDeGrupo } from '../../interfaces/profesor';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { CONSULTA_HOJA } from '../capas/capa-modal';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { FichaProfesorPanelComponent } from './ficha-profesor-panel.component';
 import { GrupoPanelComponent } from './grupo.component';
@@ -42,7 +44,9 @@ describe('GrupoPanelComponent', () => {
       imports: [GrupoPanelComponent],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: ActivatedRoute, useValue: { paramMap: parametros, queryParamMap: consulta } },
-        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } }],
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        // La ficha embebida inyecta la sesión: con la real, su constructor deja abierta una petición a auth-status.
+        { provide: AuthenticationService, useValue: { getRolesActuales: () => ['ROLE_PROFESOR'] } }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(GrupoPanelComponent);
@@ -147,6 +151,16 @@ describe('GrupoPanelComponent', () => {
 
   describe('ficha del alumno en escritorio (≥1024)', () => {
     const ficha = { id: 21, nombre: 'Lucía', apellidos: 'Romero', edad: 9, grupos: [], contacto: [], deportes: [] };
+
+    // El panel es hoja inferior bajo 768 px: el test no puede depender del tamaño de la ventana de Chrome Headless.
+    beforeEach(() => {
+      spyOn(window, 'matchMedia').and.callFake((consulta: string) => ({
+        matches: consulta !== CONSULTA_HOJA,
+        media: consulta,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList);
+    });
 
     it('pulsar un alumno lo refleja en la URL (?alumno=) sin abandonar el grupo', () => {
       cargar();

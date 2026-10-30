@@ -99,6 +99,12 @@ describe('FichaProfesorPanelComponent', () => {
     fixture.detectChanges();
   }
 
+  /** `NgForm` registra cada `ngModel` en una microtarea: hasta entonces el campo ni tiene valor ni escucha lo que se teclee. */
+  async function asentarFormulario(): Promise<void> {
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
   it('pantalla propia: nombre, edad, grupos, contacto con «Llamar» y la miga al grupo; sin navegación del profesor', () => {
     crear();
     expect(texto('h1')).toBe('Ana Prueba Ficticia');
@@ -127,11 +133,12 @@ describe('FichaProfesorPanelComponent', () => {
     expect(el().textContent).not.toMatch(/NIF|DNI|email|correo|dirección/i);
   });
 
-  it('un bloque por deporte: los de sus grupos, luego Salud y al final los de solo lectura, sin controles', () => {
+  it('un bloque por deporte: los de sus grupos, luego Salud y al final los de solo lectura, sin controles', async () => {
     crear(ficha([
       deporte({ deporte: 'KICKBOXING', deporteNombre: 'Kickboxing', deMisGrupos: false, apto: true, grado: { codigo: 'BLANCO', nombre: 'Blanco' }, fechaGrado: '2026-09-15' }),
       deporte(),
     ]));
+    await asentarFormulario();
     expect(bloques().map((b) => b.querySelector('h2')?.textContent?.trim())).toEqual(['Contacto', 'Asistencia', 'Taekwondo', 'Salud', 'Kickboxing']);
     const taekwondo = bloqueDe('Taekwondo');
     const kick = bloqueDe('Kickboxing');
@@ -142,7 +149,8 @@ describe('FichaProfesorPanelComponent', () => {
     expect(kick.querySelector('[role="switch"], button, input')).toBeNull();
     expect(kick.textContent).toContain('Blanco');
     expect(kick.textContent).toContain('15/09/2026');
-    expect(kick.textContent?.replace(/\s+/g, ' ')).toContain('Apto para examen Sí');
+    const apto = Array.from(kick.querySelectorAll('.ficha__datos > div')).find((f) => f.querySelector('dt')?.textContent?.trim() === 'Apto para examen');
+    expect(apto?.querySelector('dd')?.textContent?.trim()).toBe('Sí');
   });
 
   it('el grado sale formateado y con la muestra de color del cinturón', () => {
@@ -179,8 +187,9 @@ describe('FichaProfesorPanelComponent', () => {
       fixture.detectChanges();
     };
 
-    it('el campo está a la vista con «obligatorio»; Guardar y Cancelar solo aparecen al cambiarla', () => {
+    it('el campo está a la vista con «obligatorio»; Guardar y Cancelar solo aparecen al cambiarla', async () => {
       crear();
+      await asentarFormulario();
       expect(texto('.ficha__etiqueta')).toBe('Fecha de grado obligatorio');
       expect(campo().value).toBe('2026-03-12');
       expect(boton('Guardar')).toBeUndefined();
@@ -189,12 +198,14 @@ describe('FichaProfesorPanelComponent', () => {
       expect(boton('Cancelar')).toBeDefined();
       boton('Cancelar')!.click();
       fixture.detectChanges();
+      await asentarFormulario();
       expect(boton('Guardar')).toBeUndefined();
       expect(campo().value).toBe('2026-03-12');
     });
 
-    it('guarda con la fecha elegida con la misma llamada de hoy', () => {
+    it('guarda con la fecha elegida con la misma llamada de hoy', async () => {
       crear();
+      await asentarFormulario();
       profesor.actualizarFechaGrado.and.returnValue(of(deporte({ fechaGrado: '2026-05-01' })));
       escribir('2026-05-01');
       boton('Guardar')!.click();
@@ -204,8 +215,9 @@ describe('FichaProfesorPanelComponent', () => {
       expect(campo().value).toBe('2026-05-01');
     });
 
-    it('no se guarda vacía y el error sale en línea; un fallo del servidor también', () => {
+    it('no se guarda vacía y el error sale en línea; un fallo del servidor también', async () => {
       crear();
+      await asentarFormulario();
       escribir('');
       boton('Guardar')!.click();
       fixture.detectChanges();
