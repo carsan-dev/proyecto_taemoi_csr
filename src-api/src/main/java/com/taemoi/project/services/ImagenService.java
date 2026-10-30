@@ -13,9 +13,9 @@ public interface ImagenService {
 	Imagen guardarImagenEvento(MultipartFile archivo) throws IOException;
 
 	/**
-	 * Decisión 342: foto de la galería de un evento, con el mismo procesado que {@link #guardarImagenEvento} pero en
-	 * {@code org-<id>/fotos-eventos/}, una carpeta privada. El nombre del fichero subido no se usa: puede ser el de un
-	 * menor. Devuelve la imagen sin guardar en base de datos.
+	 * Decisión 342: foto de la galería de un evento, en {@code org-<id>/fotos-eventos/}, una carpeta privada. Como
+	 * {@link #guardarImagenEvento}, y además aplica la orientación EXIF y rechaza más de 60 megapíxeles sin decodificar. El
+	 * nombre del fichero subido no se usa: puede ser el de un menor. Devuelve la imagen sin guardar en base de datos.
 	 */
 	Imagen guardarImagenFotoEvento(MultipartFile archivo) throws IOException;
 

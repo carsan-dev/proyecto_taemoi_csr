@@ -7,12 +7,18 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.CRC32;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -225,6 +231,204 @@ class ImagenServiceImplTest {
 		TenantContext.clear();
 		assertThrows(IllegalStateException.class, () -> imagenService.guardarImagenFotoEvento(
 				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng())));
+	}
+
+	// ------------------------------------------------------------------ orientación EXIF
+
+	/** Cuadrantes de colores: si la foto saliera en espejo o girada al revés, no coincidirían. */
+	@Test
+	void guardarFotoEvento_aplicaLaOrientacionAntesDeReducir() throws Exception {
+		Imagen foto = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(4000, 2000, 6)));
+
+		BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
+		assertEquals(960, leida.getWidth());
+		assertEquals(1920, leida.getHeight());
+		// Guardada: rojo verde / azul blanco. Girada 90° a la derecha: azul rojo / blanco verde.
+		assertColor(Color.BLUE, leida, 240, 480);
+		assertColor(Color.RED, leida, 720, 480);
+		assertColor(Color.WHITE, leida, 240, 1440);
+		assertColor(Color.GREEN, leida, 720, 1440);
+	}
+
+	@Test
+	void guardarFotoEvento_sinNecesidadDeReducirTambienSeOrienta() throws Exception {
+		Imagen foto = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "movil.jpg", "image/jpeg", jpegConOrientacion(400, 200, 8)));
+
+		BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
+		assertEquals(200, leida.getWidth());
+		assertEquals(400, leida.getHeight());
+		// Girada 90° a la izquierda: verde blanco / rojo azul.
+		assertColor(Color.GREEN, leida, 50, 100);
+		assertColor(Color.WHITE, leida, 150, 100);
+		assertColor(Color.RED, leida, 50, 300);
+		assertColor(Color.BLUE, leida, 150, 300);
+	}
+
+	@Test
+	void guardarFotoEvento_sinEtiquetaOConEtiquetaCorrupta_seGuardaTalCual() throws Exception {
+		byte[] corrupta = conApp1(jpeg(400, 200), "Exif\0\0MM\0*\u0000\u0000\u00ff\u00ff".getBytes(StandardCharsets.ISO_8859_1));
+		byte[] truncada = conApp1(jpeg(400, 200), "Exif\0\0I".getBytes(StandardCharsets.ISO_8859_1));
+
+		for (byte[] contenido : new byte[][] { jpeg(400, 200), corrupta, truncada }) {
+			Imagen foto = imagenService.guardarImagenFotoEvento(
+					new MockMultipartFile("archivo", "foto.jpg", "image/jpeg", contenido));
+
+			BufferedImage leida = ImageIO.read(tempDir.resolve(foto.getRuta()).toFile());
+			assertEquals(400, leida.getWidth());
+			assertEquals(200, leida.getHeight());
+			assertColor(Color.RED, leida, 100, 50);
+		}
+	}
+
+	/** Solo la galería: un cartel o una foto de alumno ya guardados no deben cambiar de conducta. */
+	@Test
+	void elCartelYLasFotosDeAlumnoNoAplicanLaOrientacion() throws Exception {
+		byte[] girada = jpegConOrientacion(400, 200, 6);
+
+		Imagen cartel = imagenService.guardarImagenEvento(new MockMultipartFile("archivo", "c.jpg", "image/jpeg", girada));
+		Imagen alumno = imagenService.guardarImagen(new MockMultipartFile("archivo", "a.jpg", "image/jpeg", girada));
+
+		for (Imagen imagen : new Imagen[] { cartel, alumno }) {
+			BufferedImage leida = ImageIO.read(tempDir.resolve(imagen.getRuta()).toFile());
+			assertEquals(400, leida.getWidth(), imagen.getRuta());
+			assertEquals(200, leida.getHeight(), imagen.getRuta());
+			assertColor(Color.RED, leida, 100, 50);
+		}
+	}
+
+	// ------------------------------------------------------------------ tope de píxeles
+
+	@Test
+	void guardarFotoEvento_rechazaMasDe60Megapixeles_sinDecodificar() {
+		AtomicInteger decodificadas = new AtomicInteger();
+		ImagenServiceImpl servicio = contandoDecodificadas(decodificadas);
+
+		for (byte[] enorme : new byte[][] { cabeceraPng(10_000, 6_001), cabeceraPng(30_000, 30_000),
+				cabeceraPng(Integer.MAX_VALUE, Integer.MAX_VALUE) }) {
+			ArchivoNoValidoException error = assertThrows(ArchivoNoValidoException.class, () -> servicio
+					.guardarImagenFotoEvento(new MockMultipartFile("archivo", "foto.png", "image/png", enorme)));
+			assertEquals("La foto es demasiado grande. Usa una de menos de 60 megapíxeles.", error.getMessage());
+		}
+		assertEquals(0, decodificadas.get(), "Ni un píxel en memoria");
+		assertFalse(Files.exists(tempDir.resolve("org-1").resolve("fotos-eventos")), "Sin rastro en disco");
+	}
+
+	@Test
+	void guardarFotoEvento_admite60MegapixelesJustos() throws Exception {
+		AtomicInteger decodificadas = new AtomicInteger();
+
+		contandoDecodificadas(decodificadas).guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "foto.png", "image/png", cabeceraPng(10_000, 6_000)));
+
+		assertEquals(1, decodificadas.get());
+	}
+
+	/** El mismo tamaño pasa por el cartel: su conducta no cambia. */
+	@Test
+	void elTopeDePixelesEsSoloDeLaGaleria() throws Exception {
+		AtomicInteger decodificadas = new AtomicInteger();
+
+		contandoDecodificadas(decodificadas).guardarImagenEvento(
+				new MockMultipartFile("archivo", "cartel.png", "image/png", cabeceraPng(10_000, 6_001)));
+
+		assertEquals(1, decodificadas.get());
+	}
+
+	@Test
+	void guardarFotoEvento_sinCabeceraLegible_noDecodifica() {
+		AtomicInteger decodificadas = new AtomicInteger();
+		ImagenServiceImpl servicio = contandoDecodificadas(decodificadas);
+		byte[] cortada = new byte[20];
+		System.arraycopy(cabeceraPng(100, 100), 0, cortada, 0, cortada.length);
+
+		ArchivoNoValidoException error = assertThrows(ArchivoNoValidoException.class,
+				() -> servicio.guardarImagenFotoEvento(new MockMultipartFile("archivo", "foto.png", "image/png", cortada)));
+
+		assertEquals("No se pudo leer la foto del evento.", error.getMessage());
+		assertEquals(0, decodificadas.get());
+	}
+
+	@Test
+	void guardarFotoEvento_admiteJpegPngYWebp() throws Exception {
+		ByteArrayOutputStream webp = new ByteArrayOutputStream();
+		assertTrue(ImageIO.write(new BufferedImage(40, 30, BufferedImage.TYPE_3BYTE_BGR), "webp", webp));
+
+		for (MockMultipartFile archivo : new MockMultipartFile[] {
+				new MockMultipartFile("archivo", "a.jpg", "image/jpeg", jpeg(40, 30)),
+				new MockMultipartFile("archivo", "a.png", "image/png", crearPng(40, 30)),
+				new MockMultipartFile("archivo", "a.webp", "image/webp", webp.toByteArray()) }) {
+			Imagen foto = imagenService.guardarImagenFotoEvento(archivo);
+			assertEquals(40, ImageIO.read(tempDir.resolve(foto.getRuta()).toFile()).getWidth(), archivo.getOriginalFilename());
+		}
+	}
+
+	private ImagenServiceImpl contandoDecodificadas(AtomicInteger decodificadas) {
+		ImagenServiceImpl servicio = new ImagenServiceImpl() {
+			@Override
+			protected BufferedImage decodificar(InputStream entrada) {
+				decodificadas.incrementAndGet();
+				return new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
+			}
+		};
+		ReflectionTestUtils.setField(servicio, "directorioImagenesLinux", tempDir.toString());
+		ReflectionTestUtils.setField(servicio, "directorioImagenesWindows", tempDir.toString());
+		return servicio;
+	}
+
+	/** Solo firma e IHDR: declara el tamaño sin pesar nada. */
+	private static byte[] cabeceraPng(int ancho, int alto) {
+		ByteBuffer cuerpo = ByteBuffer.allocate(17);
+		cuerpo.put("IHDR".getBytes(StandardCharsets.ISO_8859_1)).putInt(ancho).putInt(alto);
+		cuerpo.put(new byte[] { 8, 2, 0, 0, 0 });
+		CRC32 crc = new CRC32();
+		crc.update(cuerpo.array());
+		ByteBuffer png = ByteBuffer.allocate(8 + 4 + 17 + 4);
+		png.put(new byte[] { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A });
+		png.putInt(13).put(cuerpo.array()).putInt((int) crc.getValue());
+		return png.array();
+	}
+
+	/** Cuadrantes: rojo verde / azul blanco. */
+	private static byte[] jpeg(int ancho, int alto) throws IOException {
+		BufferedImage imagen = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+		Graphics2D graphics = imagen.createGraphics();
+		graphics.setColor(Color.RED);
+		graphics.fillRect(0, 0, ancho / 2, alto / 2);
+		graphics.setColor(Color.GREEN);
+		graphics.fillRect(ancho / 2, 0, ancho - ancho / 2, alto / 2);
+		graphics.setColor(Color.BLUE);
+		graphics.fillRect(0, alto / 2, ancho / 2, alto - alto / 2);
+		graphics.setColor(Color.WHITE);
+		graphics.fillRect(ancho / 2, alto / 2, ancho - ancho / 2, alto - alto / 2);
+		graphics.dispose();
+		ByteArrayOutputStream salida = new ByteArrayOutputStream();
+		assertTrue(ImageIO.write(imagen, "jpeg", salida));
+		return salida.toByteArray();
+	}
+
+	private static byte[] jpegConOrientacion(int ancho, int alto, int orientacion) throws IOException {
+		ByteBuffer exif = ByteBuffer.allocate(6 + 8 + 2 + 12 + 4);
+		exif.put("Exif\0\0".getBytes(StandardCharsets.ISO_8859_1));
+		exif.put(new byte[] { 'M', 'M' }).putShort((short) 42).putInt(8).putShort((short) 1);
+		exif.putShort((short) 0x0112).putShort((short) 3).putInt(1).putShort((short) orientacion).putShort((short) 0);
+		return conApp1(jpeg(ancho, alto), exif.array());
+	}
+
+	/** Mete el segmento APP1 justo detrás del inicio del JPEG. */
+	private static byte[] conApp1(byte[] jpeg, byte[] contenido) {
+		ByteBuffer salida = ByteBuffer.allocate(jpeg.length + 4 + contenido.length);
+		salida.put(jpeg, 0, 2).put((byte) 0xFF).put((byte) 0xE1).putShort((short) (contenido.length + 2)).put(contenido);
+		salida.put(jpeg, 2, jpeg.length - 2);
+		return salida.array();
+	}
+
+	private static void assertColor(Color esperado, BufferedImage imagen, int x, int y) {
+		Color leido = new Color(imagen.getRGB(x, y));
+		int diferencia = Math.abs(esperado.getRed() - leido.getRed()) + Math.abs(esperado.getGreen() - leido.getGreen())
+				+ Math.abs(esperado.getBlue() - leido.getBlue());
+		assertTrue(diferencia < 60, "Píxel " + x + "," + y + ": esperado " + esperado + ", leído " + leido);
 	}
 
 	private ImagenServiceImpl decodificadorQueLanza(IIOException error) {
