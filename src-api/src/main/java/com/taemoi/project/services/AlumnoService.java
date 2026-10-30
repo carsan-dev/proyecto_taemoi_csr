@@ -39,15 +39,13 @@ public interface AlumnoService {
 	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos,
 			boolean aptoParaExamen, @NonNull Pageable pageable);
 
-	List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, boolean incluirInactivos);
-
 	/** El listado paginado con el estado de la ficha explícito (solo activos, solo inactivos o todos). */
 	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado,
 			boolean aptoParaExamen, @NonNull Pageable pageable);
 
 	/**
 	 * R2-P6 (decisión D5): el listado filtrado por deporte en el servidor, con el criterio que aplicaba el navegador
-	 * sobre {@code GET /api/alumnos/con-deportes} (listado-alumnos, {@code actualizarAlumnosPaginadosCliente}):
+	 * sobre la lista completa de alumnos con sus deportes (listado-alumnos, {@code actualizarAlumnosPaginadosCliente}):
 	 * <ul>
 	 * <li>el alumno tiene el deporte, activo o de baja en él;</li>
 	 * <li>sin inactivos: ficha activa y activo en ese deporte (decisión del propietario del 25/10, sustituye a D5: el de

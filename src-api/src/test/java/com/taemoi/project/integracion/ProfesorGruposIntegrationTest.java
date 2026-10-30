@@ -416,8 +416,8 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void sesionSoloProfesorFueraDeListaBlanca_403() throws Exception {
 		assertEquals(200, estado(get("/api/profesor/grupos"), tProfA), "dentro de la lista blanca");
-		for (String ruta : List.of("/api/alumnos", "/api/grupos", "/api/grupos/" + e.gA, "/api/catalogo",
-				"/api/grados", "/api/turnos")) {
+		for (String ruta : List.of("/api/alumnos", "/api/grupos/resumen", "/api/grupos/" + e.gA, "/api/catalogo",
+				"/api/grados", "/api/turnos/resumen")) {
 			assertEquals(403, estado(get(ruta), tProfA), ruta);
 		}
 		assertEquals(403, estado(get("/api/profesorx"), tProfA), "el prefijo no se estira");

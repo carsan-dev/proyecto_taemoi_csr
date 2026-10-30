@@ -293,16 +293,13 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/convocatorias/{id}/reporte", preinscripciones + "convocatoria_soloSusAlumnos");
 			m.put(metodo + " /api/convocatorias/{id}/informe-pdf", preinscripciones + "convocatoria_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos", alumnos + "listado_soloAlumnosDeSusSedes");
-			m.put(metodo + " /api/alumnos/con-deportes", alumnos + "listado_soloAlumnosDeSusSedes");
 			m.put(metodo + " /api/alumnos/ids", alumnos + "ids_losDelListadoEnElMismoOrden");
 			m.put(metodo + " /api/alumnos/count", alumnos + "contadorYDistribucion_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos/deportes/distribucion", alumnos + "contadorYDistribucion_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos/aptos", alumnos + "aptos_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos/aptos/deporte", alumnos + "aptos_soloSusAlumnos");
 			m.put(metodo + " /api/alumnos/aptos/convocatoria", alumnos + "aptos_soloSusAlumnos");
-			m.put(metodo + " /api/grupos", grupos + "grupos_listadoSoloDeSusSedes");
-			m.put(metodo + " /api/turnos", grupos + "turnos_listadoSoloDeSusSedes");
-			// R2-P4: versiones ligeras de las dos listas, con el mismo filtro (ver ResumenGruposTurnosJsonDoradoIntegrationTest).
+			// R2-P4: versiones ligeras de las dos listas (ver ResumenGruposTurnosJsonDoradoIntegrationTest).
 			m.put(metodo + " /api/grupos/resumen", grupos + "grupos_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/turnos/resumen", grupos + "turnos_listadoSoloDeSusSedes");
 			m.put(metodo + " /api/informes/asistencia", grupos + "asistencia_soloTurnosDeSusSedes");

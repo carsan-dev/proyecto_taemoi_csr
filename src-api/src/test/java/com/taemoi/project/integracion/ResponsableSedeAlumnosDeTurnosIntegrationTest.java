@@ -37,8 +37,8 @@ import com.taemoi.project.services.JwtService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * R2-P4s (decisión 124) contra MySQL: en los turnos que ve el responsable de sede ({@code GET /api/turnos},
- * {@code GET /api/turnos/{id}}, la respuesta de {@code PUT /api/turnos/{id}} y {@code GET /api/grupos/{g}/turnos}) solo
+ * R2-P4s (decisión 124) contra MySQL: en los turnos que ve el responsable de sede ({@code GET /api/turnos/{id}}, la
+ * respuesta de {@code PUT /api/turnos/{id}} y {@code GET /api/grupos/{g}/turnos}) solo
  * van incrustados los alumnos de su alcance, con el criterio del listado de alumnos (D9: sede principal en sus sedes
  * o alumno de algún grupo de sus sedes). La gestión (administrador y propietario) ve todos, como antes. El PUT no
  * toca los alumnos del turno: reenviar la lista filtrada no borra a los que el responsable no ve, ni una lista ajena
@@ -112,20 +112,13 @@ class ResponsableSedeAlumnosDeTurnosIntegrationTest extends MySqlIntegrationTest
 	}
 
 	@Test
-	void listado_responsableSoloVeLosAlumnosDeSuAlcance() throws Exception {
-		assertEquals(deA, alumnos(turnoDe(leer("/api/turnos", tokenA), e.tA)));
-		assertEquals(deA, alumnos(turnoDe(leer("/api/turnos", tokenAC), e.tA)), "con dos sedes (A y C), igual");
-		assertEquals(todos, alumnos(turnoDe(leer("/api/turnos", tokenGestor), e.tA)));
-		assertEquals(todos, alumnos(turnoDe(leer("/api/turnos", tokenPropietario), e.tA)));
-		// El turno de B lo sigue viendo entero la gestión.
-		assertEquals(Set.of(e.aB), alumnos(turnoDe(leer("/api/turnos", tokenGestor), e.tB)));
-	}
-
-	@Test
 	void porId_responsableSoloVeLosAlumnosDeSuAlcance() throws Exception {
 		assertEquals(deA, alumnos(leer("/api/turnos/" + e.tA, tokenA)));
+		assertEquals(deA, alumnos(leer("/api/turnos/" + e.tA, tokenAC)), "con dos sedes (A y C), igual");
 		assertEquals(todos, alumnos(leer("/api/turnos/" + e.tA, tokenGestor)));
 		assertEquals(todos, alumnos(leer("/api/turnos/" + e.tA, tokenPropietario)));
+		// El turno de B lo sigue viendo entero la gestión.
+		assertEquals(Set.of(e.aB), alumnos(leer("/api/turnos/" + e.tB, tokenGestor)));
 		assertEquals(404, peticion(get("/api/turnos/999999999"), tokenGestor).getResponse().getStatus());
 	}
 
@@ -140,16 +133,15 @@ class ResponsableSedeAlumnosDeTurnosIntegrationTest extends MySqlIntegrationTest
 	/** Sin N+1: una sola consulta de alcance para todos los turnos de la respuesta; ninguna para la gestión. */
 	@Test
 	void filtrado_unaConsultaParaTodaLaRespuesta() throws Exception {
-		for (String ruta : List.of("/api/turnos", "/api/grupos/" + e.gA + "/turnos")) {
-			ContadorSentencias.Conteo<JsonNode> responsable = ContadorSentencias.contar(() -> leer(ruta, tokenA));
-			assertEquals(deA, alumnos(turnoDe(responsable.resultado(), e.tA)), ruta);
-			assertEquals(Set.of(e.aA), alumnos(turnoDe(responsable.resultado(), tA2)), ruta);
-			assertEquals(1, consultasDeAlcance(responsable), ruta + ": " + responsable.sentencias());
+		String ruta = "/api/grupos/" + e.gA + "/turnos";
+		ContadorSentencias.Conteo<JsonNode> responsable = ContadorSentencias.contar(() -> leer(ruta, tokenA));
+		assertEquals(deA, alumnos(turnoDe(responsable.resultado(), e.tA)), ruta);
+		assertEquals(Set.of(e.aA), alumnos(turnoDe(responsable.resultado(), tA2)), ruta);
+		assertEquals(1, consultasDeAlcance(responsable), ruta + ": " + responsable.sentencias());
 
-			ContadorSentencias.Conteo<JsonNode> gestion = ContadorSentencias.contar(() -> leer(ruta, tokenGestor));
-			assertEquals(Set.of(e.aA, e.aB), alumnos(turnoDe(gestion.resultado(), tA2)), ruta);
-			assertEquals(0, consultasDeAlcance(gestion), ruta + ": " + gestion.sentencias());
-		}
+		ContadorSentencias.Conteo<JsonNode> gestion = ContadorSentencias.contar(() -> leer(ruta, tokenGestor));
+		assertEquals(Set.of(e.aA, e.aB), alumnos(turnoDe(gestion.resultado(), tA2)), ruta);
+		assertEquals(0, consultasDeAlcance(gestion), ruta + ": " + gestion.sentencias());
 	}
 
 	/** La consulta de ids del alcance (D9): la única que filtra alumnos por sede principal. */

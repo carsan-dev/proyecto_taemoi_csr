@@ -351,32 +351,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 		return alumnoRepository.findAll(filtro, pageable);
 	}
 
-	/**
-	 * Obtiene una lista de alumnos filtrados según los parámetros especificados.
-	 *
-	 * @param nombre      El nombre a filtrar.
-	 * @param gradoId     El ID del grado a filtrar.
-	 * @param categoriaId El ID de la categoría a filtrar.
-	 * @return Una lista de objetos Alumno que cumplen con los criterios de
-	 *         búsqueda.
-	 * @throws IllegalArgumentException Si no se proporciona al menos un criterio de
-	 *                                  filtrado.
-	 */
-	@Override
-	public List<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId,
-			boolean incluirInactivos) {
-		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
-				buildAlumnoSpecification(nombre, gradoId, categoriaId,
-						EstadoAlumnos.desdeIncluirInactivos(incluirInactivos), false);
-		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
-		if (restriccion.isEmpty()) {
-			return alumnoRepository.findAll(filtro);
-		}
-		return alumnoRepository.findAll(
-				filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get())),
-				org.springframework.data.domain.Sort.by("id"));
-	}
-
 	@Override
 	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
 			boolean incluirInactivos, boolean aptoParaExamen, @NonNull Pageable pageable) {

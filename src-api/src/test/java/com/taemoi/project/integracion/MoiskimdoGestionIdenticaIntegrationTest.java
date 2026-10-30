@@ -180,7 +180,7 @@ class MoiskimdoGestionIdenticaIntegrationTest extends MySqlIntegrationTest {
 		JsonNode paginaPropietario = leer("/api/alumnos?page=1&size=3&incluirInactivos=true", tokenPropietario);
 		assertEquals(paginaPropietario, leer("/api/alumnos?page=1&size=3&incluirInactivos=true", tokenGestor));
 		assertEquals(enOrg1(() -> alumnos.count()), paginaPropietario.get("totalElements").asLong());
-		assertEquals(leer("/api/alumnos/con-deportes", tokenPropietario), leer("/api/alumnos/con-deportes", tokenGestor));
+		assertEquals(leer("/api/alumnos", tokenPropietario), leer("/api/alumnos", tokenGestor));
 	}
 
 	@Test
@@ -223,8 +223,8 @@ class MoiskimdoGestionIdenticaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(gruposAntes, enOrg1(() -> grupos.findAll(PredicadosAlcance.gruposDeSusSedes(AlcanceSesion.TOTAL))
 				.stream().map(Grupo::getId).toList()));
 		for (String token : List.of(tokenPropietario, tokenGestor)) {
-			assertEquals(gruposAntes, ids(leer("/api/grupos", token)));
-			assertEquals(turnosAntes, ids(leer("/api/turnos", token)));
+			assertEquals(gruposAntes.stream().sorted().toList(), ids(leer("/api/grupos/resumen", token)));
+			assertEquals(turnosAntes.stream().sorted().toList(), ids(leer("/api/turnos/resumen", token)));
 		}
 	}
 

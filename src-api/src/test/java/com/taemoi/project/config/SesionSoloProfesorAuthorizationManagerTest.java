@@ -54,7 +54,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 
 	@Test
 	void soloProfesorNoPasaFueraDeLaListaBlancaAunqueLaReglaFueraAuthenticated() {
-		for (String[] ruta : new String[][] { { "GET", "/api/alumnos" }, { "GET", "/api/grupos" },
+		for (String[] ruta : new String[][] { { "GET", "/api/alumnos" }, { "GET", "/api/grupos/resumen" },
 				{ "GET", "/api/tesoreria/resumen" }, { "GET", "/api/productos" }, { "GET", "/api/auth/user/alumnos" },
 				{ "PUT", "/api/auth/user/recordatorios-racha-email" }, { "GET", "/api/admin/auditoria/eventos" },
 				{ "GET", "/api/informes/deudas" }, { "GET", "/api/caja/sedes/1/entregas" }, { "GET", "/api/caja" },
@@ -109,7 +109,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 	@Test
 	void responsableYProfesorSeTrataIgualQueSoloProfesor() {
 		Authentication sesion = sesion("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR");
-		for (String ruta : List.of("/api/alumnos", "/api/grupos", "/api/tesoreria/resumen", "/api/preinscripciones",
+		for (String ruta : List.of("/api/alumnos", "/api/grupos/resumen", "/api/tesoreria/resumen", "/api/preinscripciones",
 				"/api/convocatorias", "/api/caja/sedes/1/resumen", "/api/tarifas-sede", "/api/informes/asistencia")) {
 			assertFalse(decide(sesion, "GET", ruta), ruta);
 		}

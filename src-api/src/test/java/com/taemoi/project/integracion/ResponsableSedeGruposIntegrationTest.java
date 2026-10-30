@@ -81,11 +81,13 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void grupos_listadoSoloDeSusSedes() throws Exception {
-		JsonNode deA = leer("/api/grupos", tokenA);
-		assertEquals(Set.of(e.gA, e.gA2), ids(deA));
-		deA.forEach(g -> assertEquals(e.sA, g.get("sedeId").asLong(), "el JSON lleva sedeId (D6-5)"));
-		assertEquals(Set.of(e.gA, e.gA2, e.gC), ids(leer("/api/grupos", tokenAC)), "también su sede inactiva");
-		assertTrue(ids(leer("/api/grupos", tokenGestor)).containsAll(Set.of(e.gA, e.gA2, e.gB, e.gC, e.gSin)));
+		Set<Long> deA = ids(leer("/api/grupos/resumen", tokenA));
+		assertEquals(Set.of(e.gA, e.gA2), deA);
+		for (long grupo : deA) {
+			assertEquals(e.sA, leer("/api/grupos/" + grupo, tokenA).get("sedeId").asLong(), "el JSON lleva sedeId (D6-5)");
+		}
+		assertEquals(Set.of(e.gA, e.gA2, e.gC), ids(leer("/api/grupos/resumen", tokenAC)), "también su sede inactiva");
+		assertTrue(ids(leer("/api/grupos/resumen", tokenGestor)).containsAll(Set.of(e.gA, e.gA2, e.gB, e.gC, e.gSin)));
 	}
 
 	@Test
@@ -176,12 +178,12 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void turnos_listadoSoloDeSusSedes() throws Exception {
-		JsonNode deA = leer("/api/turnos", tokenA);
+		JsonNode deA = leer("/api/turnos/resumen", tokenA);
 		Set<Long> turnosDeA = ids(deA);
 		assertTrue(turnosDeA.contains(e.tA));
 		assertFalse(turnosDeA.contains(e.tB) || turnosDeA.contains(e.tSin), "sin el de B ni el turno sin grupo");
 		deA.forEach(t -> assertTrue(Set.of(e.gA, e.gA2).contains(t.get("grupoId").asLong()), t.toString()));
-		assertTrue(ids(leer("/api/turnos", tokenGestor)).containsAll(Set.of(e.tA, e.tB, e.tSin)));
+		assertTrue(ids(leer("/api/turnos/resumen", tokenGestor)).containsAll(Set.of(e.tA, e.tB, e.tSin)));
 		assertEquals(200, estado(get("/api/turnos/" + e.tA), tokenA));
 		for (long ajeno : List.of(e.tB, e.tSin)) {
 			assertEquals(403, estado(get("/api/turnos/" + ajeno), tokenA));

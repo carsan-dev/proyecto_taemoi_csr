@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (500 líneas; 165 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (494 líneas; 162 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -49,7 +49,7 @@ URL. Casillas cambiadas: `GET/HEAD /api/auth/roles` y `/api/auth/user`, `DENIEGA
 admite `ROLE_PROFESOR`); ninguna otra columna cambia. Desde la entrega 6-1,
 RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
 `grupoEnSede`, `turnoEnSede`, `alumnoComoFamiliaOSede`, que nunca activan la rama de profesor) y `PERMITE` solo en los
-25 listados y altas que filtra o comprueba el servicio (`RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO`). Lo comprueba
+listados y altas que filtra o comprueba el servicio (`RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO`). Lo comprueba
 `rolesNuevosSoloPasanPorAlcanceOPorUnFiltroDeclarado`. RESPONSABLE_SEDE solo no abre sesión (`RolMembresia.abreSesion`, D6-15).
 Las columnas nuevas van al final; la 6-1 no cambió ninguna casilla de las otras seis columnas.
 Desviación anotada del plan (§3.1): `GET /api/grupos/{grupoId}/alumnos/{alumnoId}/turnos` solo exige
@@ -433,6 +433,21 @@ Ninguna casilla existente cambia. Cada prefijo tiene `GET` y `HEAD` de `/clases`
 - El `PUT` tiene registro propio (`ASISTENCIA_PROFESOR` y `ASISTENCIA_GESTION` en `EscrituraConRegistroPropio`): su 2xx deja
   una sola fila, `PROFESOR ASISTENCIA_REGISTRADA` o `ASISTENCIA_CORREGIDA` con `clase`, `grupo` y `turno`. Lo prueban
   `AsistenciaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Retirada de los listados completos (decisión 145): 6 líneas menos, `GET` y `HEAD` de `/api/grupos`, `/api/turnos` y
+`/api/alumnos/con-deportes`; ninguna casilla de las demás rutas cambia y `POST /api/grupos` sigue. Sustitutos:
+`GET /api/grupos/resumen`, `GET /api/turnos/resumen` y `GET /api/alumnos`. Las tres dejan de estar en
+`RESPONSABLE_SEDE_GET` y en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO`. Lo que responden ahora, en `GET` y `HEAD`, lo fija
+`ListadosCompletosRetiradosIntegrationTest` con un servidor real:
+
+| Ruta | Anónimo | Familia | Gestor y propietario | Responsable de sede | Profesor |
+|---|---|---|---|---|---|
+| `/api/grupos` | 401 | 403 | 405 (sigue el `POST`) | 403 (`/api/grupos/**`) | 403 |
+| `/api/turnos` | 401 | 403 | 404 | 403 (`/api/turnos/**`) | 403 |
+| `/api/alumnos/con-deportes` | 401 | 403 | 400 | 400 | 403 |
+
+`/api/alumnos/con-deportes` cae en `/api/alumnos/{id}`: pasa la regla de URL de esa ruta, que da los mismos roles que
+tenía, y la conversión a `Long` falla antes del `@PreAuthorize`, como con cualquier id no numérico.
 
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que

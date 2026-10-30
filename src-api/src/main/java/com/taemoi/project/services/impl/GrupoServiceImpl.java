@@ -93,24 +93,8 @@ public class GrupoServiceImpl implements GrupoService {
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
 
 	/**
-	 * Obtiene todos los grupos.
-	 *
-	 * @return Una lista de objetos GrupoConAlumnosDTO que representan todos los
-	 *         grupos.
-	 */
-	@Override
-	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
-		// Responsable de sede (entrega 6-1d): solo los grupos de sus sedes. Gestión: la consulta de siempre.
-		List<Grupo> grupos = gestionPorSede.restriccion()
-				.map(alcance -> grupoRepository.findAll(PredicadosAlcance.gruposDeSusSedes(alcance)))
-				.orElseGet(grupoRepository::findAll);
-		return grupos.stream().map(this::convertirEntidadADTO).collect(Collectors.toList());
-	}
-
-	/**
-	 * R2-P4: los grupos sin sus alumnos. Mismo alcance que {@link #obtenerTodosLosGrupos()} (responsable de sede: los
-	 * grupos de sus sedes; gestión: todos) y, además, por id (aquel no ordena). Tres consultas, sin cargar alumnos: los
-	 * grupos (con su disciplina), el número de alumnos de todos ellos y sus turnos.
+	 * R2-P4: los grupos sin sus alumnos (responsable de sede: los grupos de sus sedes; gestión: todos), por id. Tres
+	 * consultas, sin cargar alumnos: los grupos (con su disciplina), el número de alumnos de todos ellos y sus turnos.
 	 */
 	@Override
 	public List<GrupoResumenDTO> obtenerResumenGrupos() {

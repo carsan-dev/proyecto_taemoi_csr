@@ -39,8 +39,10 @@ import jakarta.servlet.http.Cookie;
 /**
  * R2-P6: red de seguridad del filtro por deporte del listado de alumnos, que pasa del navegador al servidor. Compara
  * {@code GET /api/alumnos?page&size&incluirInactivos&nombre&deporte} con lo que hacía listado-alumnos
- * ({@code actualizarAlumnosPaginadosCliente}) sobre {@code GET /api/alumnos/con-deportes}, que aquí se reproduce tal
- * cual salvo en un punto:
+ * ({@code actualizarAlumnosPaginadosCliente}) sobre la lista completa de alumnos con sus deportes, que aquí se reproduce
+ * tal cual salvo en un punto. La lista es {@code GET /api/alumnos?incluirInactivos} sin paginar ni filtrar: mismos
+ * alumnos (filtro y alcance comunes) y mismos {@code deportes} que {@code GET /api/alumnos/con-deportes}, retirado por la
+ * decisión 145, y sin pasar por el filtro de deporte que se quiere comprobar:
  * <ul>
  * <li>sin inactivos, solo los activos EN ESE deporte ({@code activo !== false} en su fila). Decisión del propietario
  * del 25/10, que sustituye a D5: con disciplina, activo es activo en esa disciplina; antes bastaba con algún deporte
@@ -48,7 +50,7 @@ import jakarta.servlet.http.Cookie;
  * <li>los que tienen el deporte, activo o de baja ({@code practicaDeporte});</li>
  * <li>nombre: {@code trim().toLowerCase()} contenido en {@code nombre} o {@code apellidos} en minúsculas;</li>
  * <li>orden estable por {@code nombre} en minúsculas ({@code localeCompare}, aquí el {@link Collator} español) sobre
- * el orden de con-deportes; páginas por corte; {@code totalPaginas = ceil(n / tamaño)}.</li>
+ * el orden por id de esa lista; páginas por corte; {@code totalPaginas = ceil(n / tamaño)}.</li>
  * </ul>
  * Datos SINTÉTICOS en una escuela nueva ({@link EscuelaConSedesDePrueba} y ~90 alumnos aleatorios con semilla fija):
  * activos e inactivos, de baja en un deporte y activos en otro, varios deportes, sin deportes, nombres repetidos, con
@@ -132,10 +134,10 @@ class FiltroDeporteAlumnosEquivalenciaIntegrationTest extends MySqlIntegrationTe
 		int casosConAlumnos = 0;
 		for (Map.Entry<String, String> quien : tokens.entrySet()) {
 			for (boolean inactivos : List.of(false, true)) {
-				JsonNode conDeportes = leer("/api/alumnos/con-deportes?incluirInactivos=" + inactivos, quien.getValue());
+				JsonNode todos = leer("/api/alumnos?incluirInactivos=" + inactivos, quien.getValue());
 				for (String deporte : List.of("TAEKWONDO", "KICKBOXING", "PILATES", "kickboxing", "NO_EXISTE")) {
 					for (String busqueda : BUSQUEDAS) {
-						List<Long> esperado = comoElNavegador(conDeportes, inactivos, deporte, busqueda);
+						List<Long> esperado = comoElNavegador(todos, inactivos, deporte, busqueda);
 						if (!esperado.isEmpty()) {
 							casosConAlumnos++;
 						}
@@ -263,10 +265,10 @@ class FiltroDeporteAlumnosEquivalenciaIntegrationTest extends MySqlIntegrationTe
 
 	// ------------------------------------------------------- el navegador, con la regla del 25/10 para el deporte
 
-	private static List<Long> comoElNavegador(JsonNode conDeportes, boolean inactivos, String deporte, String busqueda) {
+	private static List<Long> comoElNavegador(JsonNode todos, boolean inactivos, String deporte, String busqueda) {
 		String termino = busqueda.strip().toLowerCase(Locale.ROOT);
 		List<JsonNode> filtrados = new ArrayList<>();
-		for (JsonNode alumno : conDeportes) {
+		for (JsonNode alumno : todos) {
 			List<JsonNode> deportes = new ArrayList<>();
 			alumno.path("deportes").forEach(deportes::add);
 			List<JsonNode> delDeporte = deportes.stream().filter(d -> deporte.equals(d.path("deporte").asText(null))).toList();

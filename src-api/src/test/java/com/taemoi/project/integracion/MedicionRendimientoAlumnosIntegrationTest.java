@@ -221,7 +221,6 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		rutas.put("alumnos_pagina", "/api/alumnos?page=1&size=9&incluirInactivos=false");
 		rutas.put("alumnos_pagina_inactivos", "/api/alumnos?page=1&size=9&incluirInactivos=true");
 		rutas.put("alumnos_sin_paginar", "/api/alumnos?incluirInactivos=false");
-		rutas.put("alumnos_con_deportes", "/api/alumnos/con-deportes?incluirInactivos=false");
 		rutas.put("alumnos_ids", "/api/alumnos/ids?incluirInactivos=false");
 		rutas.put("alumno_ficha", "/api/alumnos/" + alumnoMuestra);
 		rutas.put("alumno_completo", "/api/alumnos/" + alumnoMuestra + "/completo");
@@ -229,11 +228,9 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		rutas.put("alumno_turnos", "/api/alumnos/" + alumnoMuestra + "/turnos");
 		rutas.put("alumno_deportes", "/api/alumnos/" + alumnoMuestra + "/deportes");
 		rutas.put("admin_alumno_entidad", "/api/admin/" + alumnoMuestra);
-		rutas.put("grupos", "/api/grupos");
 		rutas.put("grupo_ficha", "/api/grupos/" + grupoMuestra);
 		rutas.put("grupo_turnos", "/api/grupos/" + grupoMuestra + "/turnos");
 		rutas.put("grupos_conteo", "/api/grupos/conteo-alumnos");
-		rutas.put("turnos", "/api/turnos");
 		rutas.put("grupos_resumen", "/api/grupos/resumen"); // R2-P4
 		rutas.put("turnos_resumen", "/api/turnos/resumen"); // R2-P4
 		rutas.put("turno_ficha", "/api/turnos/" + turnoMuestra);
@@ -298,13 +295,9 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 			sql.stream().collect(Collectors.groupingBy(MedicionRendimientoAlumnosIntegrationTest::forma, LinkedHashMap::new,
 					Collectors.counting())).forEach((k, v) -> detalle.append("  - ").append(v).append(" × ").append(k).append('\n'));
 		}
-		// R2-P4: la pantalla «Grupos y Turnos» antes (grupos + los turnos de cada grupo + turnos) y después (resúmenes).
-		List<Long> idsGrupos = new ArrayList<>();
-		json.readTree(Files.readString(SALIDA.resolve("grupos.json"))).forEach(g -> idsGrupos.add(g.get("id").asLong()));
-		List<String> antes = new ArrayList<>(List.of("/api/grupos", "/api/turnos"));
-		idsGrupos.forEach(id -> antes.add("/api/grupos/" + id + "/turnos"));
-		tabla.append(pantalla("pantalla_grupos_antes (" + antes.size() + " peticiones)", antes));
-		tabla.append(pantalla("pantalla_grupos_despues", List.of("/api/grupos/resumen", "/api/turnos/resumen")));
+		// R2-P4: la pantalla «Grupos y Turnos» con sus dos resúmenes. La comparación con el «antes» (listas completas más
+		// los turnos de cada grupo) ya no se mide: las listas completas se retiraron (decisión 145).
+		tabla.append(pantalla("pantalla_grupos", List.of("/api/grupos/resumen", "/api/turnos/resumen")));
 		String informe = "## Medición R2 (" + N_ALUMNOS + " alumnos sintéticos)\n\n" + tabla + "\n" + detalle;
 		Files.writeString(SALIDA.resolve("medicion.md"), informe, StandardCharsets.UTF_8);
 		System.out.println(informe);

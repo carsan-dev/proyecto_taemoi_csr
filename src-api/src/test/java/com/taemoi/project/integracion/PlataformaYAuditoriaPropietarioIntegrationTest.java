@@ -187,8 +187,8 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 				get("/api/alumnos"),
 				get("/api/alumnos").param("page", "1").param("size", "5"),
 				get("/api/alumnos/" + alumnoOrg1),
-				get("/api/grupos"),
-				get("/api/turnos"),
+				get("/api/grupos/resumen"),
+				get("/api/turnos/resumen"),
 				get("/api/catalogo"),
 				get("/api/admin/" + alumnoOrg1),
 				get("/api/admin/users"),
@@ -268,7 +268,7 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_ADMIN")));
 		mvc.perform(get("/api/admin/" + alumnoOrg1).cookie(c)).andExpect(status().isOk());
 		mvc.perform(get("/api/alumnos/" + alumnoOrg1).cookie(c)).andExpect(status().isOk());
-		mvc.perform(get("/api/grupos").cookie(c)).andExpect(status().isOk());
+		mvc.perform(get("/api/grupos/resumen").cookie(c)).andExpect(status().isOk());
 		mvc.perform(get("/api/catalogo").cookie(c)).andExpect(status().isOk());
 		mvc.perform(get("/api/plataforma/errores").cookie(c)).andExpect(status().isOk());
 

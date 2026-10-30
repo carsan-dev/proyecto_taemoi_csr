@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.EncodedResource;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -516,7 +517,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 				.stream().filter(g -> TipoGrado.VERDE.name().equals(g.getTipoGrado())).findFirst().orElseThrow().getId());
 
 		List<Long> encontrados = TenantContext.calcularCon(ORG_TAEMOI, () -> alumnoService
-				.obtenerAlumnosFiltrados(apellido, verdeApi, null, false).stream().map(Alumno::getId).toList());
+				.obtenerAlumnosFiltrados(apellido, verdeApi, null, false, Pageable.unpaged()).stream().map(Alumno::getId)
+				.toList());
 		assertEquals(Set.of(kb, tkd), Set.copyOf(encontrados));
 		assertFalse(encontrados.contains(otro));
 	}
@@ -805,7 +807,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(List.of(), gradoService.obtenerGradosDeDisciplina("KICKBOXING"));
 			assertThrows(IllegalArgumentException.class, () -> progresion.buscarGrado("TAEKWONDO", "BLANCO"));
 			assertTrue(grados.findById(verdeKb).isEmpty());
-			assertEquals(List.of(), alumnoService.obtenerAlumnosFiltrados(null, verdeKb, null, true));
+			assertEquals(List.of(), alumnoService.obtenerAlumnosFiltrados(null, verdeKb, null, true, Pageable.unpaged())
+					.getContent());
 		});
 		// Alta en una escuela sin la disciplina: 400, no se guarda nada.
 		String email = "org2-" + sufijo() + "@example.test";

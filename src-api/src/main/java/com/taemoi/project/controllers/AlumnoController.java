@@ -2017,28 +2017,6 @@ public class AlumnoController {
 		}
 	}
 
-	/**
-	 * Obtiene todos los alumnos con sus deportes (batch endpoint)
-	 * GET /api/alumnos/con-deportes
-	 */
-	@GetMapping("/con-deportes")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO>> obtenerTodosLosAlumnosConDeportes(
-			@RequestParam(required = false, defaultValue = "false") Boolean incluirInactivos) {
-		try {
-			logger.info("## AlumnoController :: obtenerTodosLosAlumnosConDeportes :: incluirInactivos={}", incluirInactivos);
-			List<Alumno> alumnos = alumnoService.obtenerAlumnosFiltrados(null, null, null, incluirInactivos);
-			List<com.taemoi.project.dtos.response.AlumnoConDeportesDTO> alumnosDTO = alumnos.stream()
-					.map(com.taemoi.project.dtos.response.AlumnoConDeportesDTO::deAlumno)
-					.map(this::aplicarUrlImagenPublica)
-					.collect(Collectors.toList());
-			return ResponseEntity.ok(alumnosDTO);
-		} catch (Exception e) {
-			logger.error("Error al obtener alumnos con deportes", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
-	}
-
 	private AlumnoDTO aplicarUrlImagenPublica(AlumnoDTO dto) {
 		if (dto == null || dto.getId() == null || dto.getFotoAlumno() == null) {
 			return dto;

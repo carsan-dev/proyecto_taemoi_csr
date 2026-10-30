@@ -49,20 +49,8 @@ public class GrupoController {
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 
 	/**
-	 * Obtiene todos los grupos con sus respectivos alumnos.
-	 *
-	 * @return Una lista de objetos GrupoConAlumnosDTO que representan todos los
-	 *         grupos y sus alumnos.
-	 */
-	@GetMapping
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public List<GrupoConAlumnosDTO> obtenerTodosLosGrupos() {
-		return grupoService.obtenerTodosLosGrupos();
-	}
-
-	/**
-	 * Grupos en versión ligera: datos del grupo, número de alumnos y turnos, sin los alumnos. Mismos permisos y mismo
-	 * alcance que {@link #obtenerTodosLosGrupos()}.
+	 * Grupos en versión ligera: datos del grupo, número de alumnos y turnos, sin los alumnos. Gestión: todos; responsable
+	 * de sede: los grupos de sus sedes.
 	 */
 	@GetMapping("/resumen")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")

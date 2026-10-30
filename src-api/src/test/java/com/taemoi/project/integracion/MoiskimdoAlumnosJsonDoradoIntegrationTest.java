@@ -118,8 +118,8 @@ import jakarta.servlet.http.Cookie;
  * {@code AlumnoController} (nombres únicos en la siembra);</li>
  * <li>{@code alumnos_ids} {@code $}: {@code ORDER BY a.id} en {@code AlumnoRepository.buscarIdsEnOrganizacionActiva}.</li>
  * <li>Desde R2-P1 (decisión D2), ordenados en el servidor al construir el DTO ({@code OrdenAlfabetico}: nombre,
- * apellidos, id): {@code alumnos} de {@code /api/grupos} ({@code $[*].alumnos}) y de {@code /api/grupos/{id}}
- * ({@code $.alumnos}); y por nombre de grupo, id: {@code alumno_grupos $}. En la siembra el orden alfabético coincide
+ * apellidos, id): {@code alumnos} de {@code /api/grupos/{id}} ({@code $.alumnos}); y por nombre de grupo, id:
+ * {@code alumno_grupos $}. En la siembra el orden alfabético coincide
  * con el de los ids simbólicos, así que pasar a {@code ordenados} no cambió esos ficheros; el orden con mayúsculas,
  * tildes y empates lo cubren {@code OrdenAlfabeticoTest} y {@code GrupoServiceImplOrdenTest}.</li>
  * </ul>
@@ -130,9 +130,8 @@ import jakarta.servlet.http.Cookie;
  * {@code $.turnos} de {@code /api/admin}: orden según el plan de MySQL; falló así en la CI),
  * {@code Alumno.deportes} ({@code deportes} en todo alumno), {@code Turno.alumnos} ({@code alumnos} de cada turno),
  * {@code Grupo.turnos} ({@code grupo_turnos $}), {@code Alumno.documentos}/{@code productosAlumno}/{@code convocatorias};
- * y los listados sin ORDER BY: {@code grupoRepository.findAll} ({@code grupos $}), {@code turnoRepository.findAll}
- * ({@code turnos $}), {@code findAllWithAlumnos} ({@code turnos_dto $}), {@code alumnoRepository.findAll(filtro)} sin
- * {@code Sort} para la gestión ({@code alumnos_sin_paginar $}, {@code alumnos_con_deportes $}) y
+ * y los listados sin ORDER BY: {@code findAllWithAlumnos} ({@code turnos_dto $}),
+ * {@code alumnoRepository.findAll(filtro)} sin {@code Sort} para la gestión ({@code alumnos_sin_paginar $}) y
  * {@code findByAlumnoIdWithGrado} ({@code alumno_deportes $}). Un cambio de orden en ellos no se detecta (hoy no es
  * estable); si una pieza fija un orden (D2), su ruta pasa a {@code ordenados}.</li>
  * <li>Objetos: con las claves ordenadas (el orden de campos de un objeto JSON no forma parte del contrato).</li>
@@ -197,7 +196,7 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 			"producto_alumno", "producto", "documento", "preinscripcion", "usuario", "tutor", "alumno_deporte", "alumno",
 			"turno", "grupo", "imagen");
 
-	enum Filtro { NINGUNO, ALUMNOS, IDS_ALUMNOS, GRUPOS, TURNOS }
+	enum Filtro { NINGUNO, ALUMNOS, IDS_ALUMNOS, TURNOS }
 
 	/**
 	 * Un endpoint capturado.
@@ -254,8 +253,6 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 						"/api/alumnos?page=2&size=9&nombre=" + PREFIJO + "&incluirInactivos=true", 9, "$.content"), // 7 (16, 23)
 				deLaOrganizacion("alumnos_sin_paginar", "/api/alumnos?incluirInactivos=false", Filtro.ALUMNOS,
 						5), // Δ3 (Δ31, Δ35)
-				deLaOrganizacion("alumnos_con_deportes", "/api/alumnos/con-deportes?incluirInactivos=false",
-						Filtro.ALUMNOS, 5), // Δ3 (Δ31, Δ35)
 				deLaOrganizacion("alumnos_ids", "/api/alumnos/ids?incluirInactivos=false", Filtro.IDS_ALUMNOS,
 						2, "$"), // Δ0 (Δ0, Δ0)
 				caso("alumno_ficha", "/api/alumnos/{alumno:A05}", 8), // 6 (6, 9)
@@ -266,13 +263,11 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 				caso("admin_alumno_entidad", "/api/admin/{alumno:A05}", 14), // 13 (12, 13)
 				caso("admin_alumno_con_usuario", "/api/admin/{alumno:A03}", 14), // 13 (12, 16)
 				fallaHoy("admin_alumno_con_convocatoria", "/api/admin/{alumno:A08}", 9, 500), // 7 (7, 13)
-				deLaOrganizacion("grupos", "/api/grupos", Filtro.GRUPOS, 3, "$[*].alumnos"), // Δ1 (Δ1, Δ3)
 				caso("grupo_ficha", "/api/grupos/{grupo:TKD-INFANTIL}", 8, "$.alumnos"), // 6 (6, 9)
 				caso("grupo_turnos", "/api/grupos/{grupo:TKD-INFANTIL}/turnos", 10), // 8 (8, 11)
 				caso("grupo_alumno_turnos", "/api/grupos/{grupo:KB-INICIACION}/alumnos/{alumno:A05}/turnos",
 						8), // 6 (6, 9)
 				total("grupos_conteo", "/api/grupos/conteo-alumnos", 2), // Δ0 (Δ0, Δ0)
-				deLaOrganizacion("turnos", "/api/turnos", Filtro.TURNOS, 4), // Δ2 (Δ2, Δ5)
 				caso("turno_ficha", "/api/turnos/{turno:TKD-INFANTIL/Lunes/17:00}", 9), // 7 (7, 23)
 				// R2-P3 (aforo por lotes): Δ2 tras el arreglo; límite 86 → 4.
 				deLaOrganizacion("turnos_dto", "/api/turnos/dto", Filtro.TURNOS, 4), // Δ2 (P2 Δ78; Δ114, Δ116)
@@ -708,7 +703,6 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 			case NINGUNO -> nodo;
 			case ALUMNOS -> filtrar(nodo, n -> esSembrado(n.get("id"), "alumno:"));
 			case IDS_ALUMNOS -> filtrar(nodo, n -> esSembrado(n, "alumno:"));
-			case GRUPOS -> filtrar(nodo, n -> esSembrado(n.get("id"), "grupo:"));
 			case TURNOS -> filtrar(nodo, n -> esSembrado(n.get("id"), "turno:"));
 		};
 		return normalizarNodo(nodo, "$", caso.ordenados());
