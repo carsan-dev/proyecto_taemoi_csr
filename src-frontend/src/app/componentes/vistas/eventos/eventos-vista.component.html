@@ -70,7 +70,15 @@
                 </div>
 
                 <div class="showcase-main-content">
-                  <span class="showcase-main-chip">Evento destacado</span>
+                  <div class="showcase-main-chips">
+                    <span class="showcase-main-chip">Evento destacado</span>
+                    @if (eventoPrincipal.numeroFotos > 0) {
+                      <span class="showcase-main-chip showcase-main-chip--fotos">
+                        <i class="bi bi-images" aria-hidden="true"></i>
+                        {{ eventoPrincipal._fotosTexto }}
+                      </span>
+                    }
+                  </div>
                   <h2 class="showcase-main-title">{{ eventoPrincipal.titulo }}</h2>
                   <p class="showcase-main-description">{{ eventoPrincipal.descripcion }}</p>
                   <span class="showcase-main-link">Ver detalles <i class="bi bi-arrow-right"></i></span>
@@ -117,6 +125,12 @@
                           (error)="onImageError(evento.id)"
                           [class.is-loaded]="isImageLoaded(evento.id)"
                         />
+                        @if (evento.numeroFotos > 0) {
+                          <span class="event-photos-badge event-photos-badge--mini">
+                            <i class="bi bi-images" aria-hidden="true"></i>
+                            {{ evento._fotosTexto }}
+                          </span>
+                        }
                       </div>
                       <span class="thumb-title">{{ evento.titulo }}</span>
                     </button>

@@ -31,6 +31,13 @@ describe('EventosVistaComponent · etiqueta de fotos en la cartelera', () => {
       (e.textContent ?? '').replace(/\s+/g, ' ').trim(),
     );
 
+  const chipPrincipal = (): HTMLElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.showcase-main-chip--fotos');
+  const etiquetasMiniatura = (): string[] =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.thumb-media .event-photos-badge')).map((e) =>
+      (e.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    );
+
   it('muestra «24 fotos» con su icono en la tarjeta con fotos', () => {
     montar([evento(6, { numeroFotos: 24 })]);
 
@@ -55,5 +62,62 @@ describe('EventosVistaComponent · etiqueta de fotos en la cartelera', () => {
     montar([evento(6, { numeroFotos: 3 }), evento(7)], true);
 
     expect(etiquetas()).toEqual(['3 fotos']);
+  });
+
+  describe('destacados', () => {
+    function montarDestacados(extras: Record<number, number | null>): void {
+      TestBed.configureTestingModule({ imports: [EventosVistaComponent] });
+      fixture = TestBed.createComponent(EventosVistaComponent);
+      const destacados = [1, 2, 3].map((id) => evento(id, extras[id] !== undefined ? { numeroFotos: extras[id] } : {}));
+      fixture.componentRef.setInput('eventos', destacados);
+      fixture.detectChanges();
+    }
+
+    it('el destacado principal con fotos lleva la pastilla «N fotos» con icono junto a «Evento destacado»', () => {
+      montarDestacados({ 1: 12 });
+
+      const chip = chipPrincipal()!;
+      expect(chip).not.toBeNull();
+      expect((chip.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('12 fotos');
+      expect(chip.querySelector('.bi-images')).not.toBeNull();
+      expect(chip.classList).toContain('showcase-main-chip');
+      expect(chip.previousElementSibling?.textContent?.trim()).toBe('Evento destacado');
+      expect(chip.parentElement?.classList).toContain('showcase-main-chips');
+    });
+
+    it('la pastilla del principal tiene la misma altura que «Evento destacado»', () => {
+      montarDestacados({ 1: 3 });
+
+      const chip = chipPrincipal()!;
+      const evento = chip.previousElementSibling as HTMLElement;
+      expect(Math.abs(chip.getBoundingClientRect().height - evento.getBoundingClientRect().height)).toBeLessThan(1);
+    });
+
+    it('las miniaturas de destacados con fotos llevan la etiqueta y las demás no', () => {
+      montarDestacados({ 1: 1, 2: 0, 3: 7 });
+
+      expect(etiquetasMiniatura()).toEqual(['1 foto', '7 fotos']);
+      const insignia = (fixture.nativeElement as HTMLElement).querySelector('.thumb-media .event-photos-badge')!;
+      expect(insignia.classList).toContain('event-photos-badge--mini');
+      expect(insignia.querySelector('.bi-images')).not.toBeNull();
+      expect(insignia.closest('.thumb-item')?.querySelector('.thumb-title')?.contains(insignia)).toBeFalse();
+    });
+
+    it('sin fotos (ausente, 0 o nulo) los destacados no pintan ninguna etiqueta', () => {
+      montarDestacados({ 2: 0, 3: null });
+
+      expect(chipPrincipal()).toBeNull();
+      expect(etiquetasMiniatura()).toEqual([]);
+    });
+
+    it('el principal cambia de pastilla al pasar al siguiente destacado', () => {
+      montarDestacados({ 1: 4 });
+      expect(chipPrincipal()).not.toBeNull();
+
+      fixture.componentInstance.mostrarDestacadoSiguiente(new Event('click'));
+      fixture.detectChanges();
+
+      expect(chipPrincipal()).toBeNull();
+    });
   });
 });
