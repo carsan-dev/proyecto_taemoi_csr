@@ -29,7 +29,7 @@
   <ul class="fotos__rejilla" [class.fotos__rejilla--vacia]="fotos.length === 0" cdkDropList cdkDropListOrientation="mixed"
     [cdkDropListDisabled]="ocupado" (cdkDropListDropped)="soltar($event)" aria-describedby="evento-fotos-ayuda">
     @for (f of fotos; track f.clave; let i = $index; let primera = $first; let ultima = $last) {
-    <li class="fotos__celda fotos__celda--foto" cdkDrag cdkDragPreviewContainer="parent" [cdkDragDisabled]="ocupado" [attr.data-foto]="f.clave"
+    <li class="fotos__celda fotos__celda--foto" cdkDrag cdkDragPreviewContainer="parent" [cdkDragDisabled]="ocupado" [cdkDragStartDelay]="retardoArrastre" [attr.data-foto]="f.clave"
       [attr.data-estado]="f.estado" [class.fotos__celda--pendiente]="f.estado === 'pendiente'" [class.fotos__celda--error]="f.estado === 'error'">
       <span class="fotos__oculto-texto">{{ descripcion(f, i) }}</span>
       <img class="fotos__imagen" [src]="f.vista" alt="" decoding="async" draggable="false" />
@@ -52,7 +52,7 @@
       </button>
       }
 
-      <button type="button" cdkDragHandle class="fotos__accion fotos__asa" [disabled]="ocupado"
+      <button type="button" cdkDragHandle class="fotos__accion fotos__asa" tabindex="-1" [disabled]="ocupado"
         [attr.aria-label]="'Reordenar la foto ' + (i + 1) + ' con las flechas'" aria-describedby="evento-fotos-ayuda"
         (keydown)="teclaOrden($event, i, 'asa')">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle>
@@ -73,6 +73,36 @@
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
       </button>
+
+      <div class="fotos__menu-zona" (focusout)="alSalirDelMenu($event)">
+        <button type="button" class="fotos__mas" [id]="'fotos-mas-' + f.clave" [disabled]="ocupado" [attr.aria-label]="'Más acciones de la foto ' + (i + 1)"
+          aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === f.clave" [attr.aria-controls]="menuAbierto === f.clave ? 'fotos-menu-' + f.clave : null"
+          (click)="alternarMenu(f, $event)" (keydown)="teclaBotonMenu(f, $event)">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle>
+            <circle cx="19" cy="12" r="1.8"></circle></svg>
+        </button>
+        @if (menuAbierto === f.clave) {
+        <div class="fotos__menu" role="menu" [id]="'fotos-menu-' + f.clave" [attr.aria-labelledby]="'fotos-mas-' + f.clave"
+          [style.top.px]="menuPosicion.top" [style.left.px]="menuPosicion.left" (keydown)="teclaMenu(f, $event)">
+          <button type="button" role="menuitem" class="fotos__menu-opcion" [disabled]="primera" (click)="moverDesdeMenu(f, -1)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+            <span>Mover antes</span>
+          </button>
+          <button type="button" role="menuitem" class="fotos__menu-opcion" [disabled]="ultima" (click)="moverDesdeMenu(f, 1)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            <span>Mover después</span>
+          </button>
+          <button type="button" role="menuitem" class="fotos__menu-opcion fotos__menu-opcion--peligro"
+            [attr.aria-haspopup]="f.estado === 'guardada' ? 'dialog' : null" (click)="quitarDesdeMenu(f)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+            <span>{{ f.estado === 'guardada' ? 'Eliminar' : 'Quitar' }}</span>
+          </button>
+        </div>
+        }
+      </div>
     </li>
     }
     @if (!completo) {

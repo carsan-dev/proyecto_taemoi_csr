@@ -127,28 +127,31 @@
   user-select: none;
 }
 
-// Estado en el centro: entre las acciones de arriba y las de abajo queda hueco.
+// Estado: pastilla pequeña abajo a la izquierda, para que la foto se vea. En escritorio cede el sitio a «antes» al pasar el
+// ratón o enfocar la miniatura.
 .fotos__estado {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  bottom: 6px;
+  left: 6px;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  transform: translate(-50%, -50%);
+  gap: 4px;
+  padding: 1px 7px;
+  transition: opacity var(--pn-transicion);
   border-radius: var(--pn-radio-pastilla);
   background: color-mix(in srgb, var(--pn-tinta) 78%, transparent);
   color: #fff;
   font: var(--pn-secundario);
   font-size: 0.6875rem;
+  line-height: 1.3;
   white-space: nowrap;
   pointer-events: none;
 }
 
 .fotos__giro {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   flex: none;
   animation: fotos-giro 0.8s linear infinite;
 }
@@ -175,6 +178,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  z-index: 1;
   gap: 2px;
   padding: 0;
   border: 0;
@@ -201,7 +205,8 @@
   }
 }
 
-// Acciones en las esquinas: objetivo de 44 px en móvil, chip visible de 26 px (32 px de objetivo en escritorio).
+// Acciones en las esquinas: objetivo de 44 px en táctil, chip visible de 26 px (32 px de objetivo en escritorio). En táctil
+// solo se ve el «⋯»; en escritorio, «eliminar» y, al pasar el ratón o enfocar, el asa y «antes» / «después».
 .fotos__accion {
   position: absolute;
   z-index: 1;
@@ -243,17 +248,22 @@
   }
 }
 
+// Táctil (por defecto): el asa es una capa invisible sobre toda la foto, de modo que la pulsación larga arrastra desde
+// cualquier punto (`cdkDragStartDelay`); el desplazamiento de la página sigue libre hasta que arranca el arrastre.
 .fotos__asa {
-  top: 0;
-  left: 0;
-  align-items: flex-start;
-  justify-content: flex-start;
-  cursor: grab;
-  touch-action: none;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  opacity: 0;
+  touch-action: auto;
+}
 
-  &:active {
-    cursor: grabbing;
-  }
+.fotos__quitar,
+.fotos__antes,
+.fotos__despues {
+  display: none;
 }
 
 .fotos__quitar {
@@ -280,6 +290,135 @@
   bottom: 0;
   align-items: flex-end;
   justify-content: flex-end;
+}
+
+// «⋯» (táctil): único botón de la miniatura, arriba a la derecha.
+.fotos__mas {
+  z-index: 2;
+  top: 0;
+  right: 0;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  &[aria-expanded='true'] svg {
+    background: var(--pn-acento-suave);
+    color: var(--pn-acento);
+  }
+}
+
+.fotos__menu {
+  position: fixed;
+  z-index: 40;
+  box-sizing: border-box;
+  width: 200px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.fotos__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+    background: var(--pn-acento-suave);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+}
+
+.fotos__menu-opcion--peligro {
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+}
+
+// Escritorio (ratón): en reposo solo la foto y «eliminar»; el asa y «antes» / «después» aparecen con :hover y
+// :focus-within, sin mover nada (solo opacidad).
+@media (hover: hover) and (pointer: fine) {
+  .fotos__accion {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+  }
+
+  .fotos__mas {
+    display: none;
+  }
+
+  .fotos__quitar,
+  .fotos__antes,
+  .fotos__despues {
+    display: flex;
+  }
+
+  .fotos__asa {
+    inset: auto;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .fotos__asa,
+  .fotos__antes,
+  .fotos__despues {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--pn-transicion);
+  }
+
+  .fotos__celda:hover,
+  .fotos__celda:focus-within {
+    .fotos__asa,
+    .fotos__antes,
+    .fotos__despues {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .fotos__estado {
+      opacity: 0;
+    }
+  }
 }
 
 // ------------------------------------------------------------------ añadir
@@ -366,14 +505,6 @@
 
 // ------------------------------------------------------------------ tableta y móvil
 
-@media (min-width: 768px) {
-  .fotos__accion {
-    width: 32px;
-    height: 32px;
-    padding: 2px;
-  }
-}
-
 @media (max-width: 767.98px) {
   .evento-form__seccion {
     padding: 16px;
@@ -395,6 +526,13 @@
 @media (prefers-reduced-motion: reduce) {
   .fotos__giro {
     animation: none;
+  }
+
+  .fotos__asa,
+  .fotos__antes,
+  .fotos__despues,
+  .fotos__estado {
+    transition: none;
   }
 
   .fotos__rejilla.cdk-drop-list-dragging .fotos__celda:not(.cdk-drag-placeholder),

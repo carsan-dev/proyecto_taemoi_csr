@@ -348,6 +348,126 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
     expect(fixture.componentInstance.cambios).toBe(0);
   });
 
+  // ------------------------------------------------------------------ «⋯» (táctil) y asa
+
+  describe('miniaturas: asa fuera del tabulador y menú «⋯»', () => {
+    const mas = (n: number): HTMLButtonElement => boton(celdas()[n], `Más acciones de la foto ${n + 1}`);
+    const menu = (): HTMLElement | null => el().querySelector<HTMLElement>('[role="menu"]');
+    let estiloTactil: HTMLStyleElement;
+
+    // Karma corre con ratón (hover: hover): el «⋯» se oculta. Se muestra a la fuerza para probarlo como en un móvil.
+    beforeEach(() => {
+      estiloTactil = document.createElement('style');
+      estiloTactil.textContent = '.fotos__mas { display: flex !important; }';
+      document.head.appendChild(estiloTactil);
+    });
+
+    afterEach(() => estiloTactil.remove());
+
+    const opciones = (): string[] => Array.from(el().querySelectorAll('[role="menuitem"]')).map((o) => texto(o));
+
+    it('el asa no está en el orden de tabulación', () => {
+      montar(1, GUARDADAS);
+      for (const c of celdas()) {
+        expect(c.querySelector('.fotos__asa')!.getAttribute('tabindex')).toBe('-1');
+      }
+    });
+
+    it('el arrastre táctil lleva pulsación larga y el de ratón no', () => {
+      montar(1, GUARDADAS);
+      expect(fixture.componentInstance.retardoArrastre.touch).toBeGreaterThan(0);
+      expect(fixture.componentInstance.retardoArrastre.mouse).toBe(0);
+    });
+
+    it('«⋯» abre un menú con mover antes, mover después y eliminar; los extremos van desactivados', () => {
+      montar(1, GUARDADAS);
+      expect(menu()).toBeNull();
+      expect(mas(0).getAttribute('aria-expanded')).toBe('false');
+      mas(0).click();
+      fixture.detectChanges();
+      expect(opciones()).toEqual(['Mover antes', 'Mover después', 'Eliminar']);
+      expect(mas(0).getAttribute('aria-expanded')).toBe('true');
+      const items = Array.from(el().querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
+      expect(items.map((i) => i.disabled)).toEqual([true, false, false]);
+      expect(document.activeElement).toBe(items[1]);
+      mas(0).click();
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+
+      mas(2).click();
+      fixture.detectChanges();
+      expect(Array.from(el().querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).map((i) => i.disabled)).toEqual([false, true, false]);
+    });
+
+    it('«Mover después» del menú mueve la foto, cierra el menú y deja el foco en su «⋯»', () => {
+      montar(1, GUARDADAS);
+      mas(0).click();
+      fixture.detectChanges();
+      boton(el(), 'Mover después').click();
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+      expect(celdas().map((c) => c.querySelector('img')!.getAttribute('src'))).toEqual([
+        `${FOTOS}/12?w=640&v=12`,
+        `${FOTOS}/11?w=640&v=11`,
+        `${FOTOS}/13?w=640&v=13`,
+      ]);
+      expect(anuncios).toHaveBeenCalledWith('Foto movida a la posición 2 de 3.');
+      expect(document.activeElement).toBe(mas(1));
+      expect(fixture.componentInstance.cambios).toBe(1);
+    });
+
+    itSinReloj('«Eliminar» del menú pide la confirmación de una guardada; en una pendiente dice «Quitar» y la quita sin preguntar', async () => {
+      montar(1, GUARDADAS);
+      mas(1).click();
+      fixture.detectChanges();
+      boton(el(), 'Eliminar').click();
+      await esperar();
+      expect(texto(dialogo()!.querySelector('.pn-dialogo__titulo'))).toBe('Eliminar foto');
+      boton(dialogo()!, 'Cancelar').click();
+      await esperar();
+      expect(celdas().length).toBe(3);
+
+      elegir([jpg('f0.jpg')]);
+      await esperar();
+      mas(3).click();
+      fixture.detectChanges();
+      expect(opciones()).toEqual(['Mover antes', 'Mover después', 'Quitar']);
+      boton(el(), 'Quitar').click();
+      await esperar();
+      expect(celdas().length).toBe(3);
+      expect(dialogo()).toBeNull();
+    });
+
+    it('Esc cierra el menú y devuelve el foco al «⋯»; pulsar fuera lo cierra', () => {
+      montar(1, GUARDADAS);
+      mas(1).click();
+      fixture.detectChanges();
+      menu()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+      expect(document.activeElement).toBe(mas(1));
+
+      mas(1).click();
+      fixture.detectChanges();
+      document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+    });
+
+    it('la etiqueta de estado es una pastilla abajo a la izquierda, no centrada', async () => {
+      montar(1, GUARDADAS);
+      elegir([jpg('f0.jpg')]);
+      await esperar();
+      const pastilla = celdas()[3].querySelector<HTMLElement>('.fotos__estado')!;
+      expect(texto(pastilla)).toBe('Pendiente');
+      const e = getComputedStyle(pastilla);
+      expect(e.position).toBe('absolute');
+      expect(e.left).toBe('6px');
+      expect(e.bottom).toBe('6px');
+      expect(e.transform).toBe('none');
+    });
+  });
+
   // ------------------------------------------------------------------ quitar una guardada
 
   itSinReloj('quitar una guardada: confirmación destructiva, cancelar no envía; confirmar, DELETE al momento', async () => {

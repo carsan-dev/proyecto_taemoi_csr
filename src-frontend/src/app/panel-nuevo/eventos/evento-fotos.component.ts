@@ -10,6 +10,7 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { numero } from '../formato/formato-es';
 import { EventoFotosApiService } from './evento-fotos-api.service';
+import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { moverEn, urlImagen } from './eventos-vista';
 
 /** Tope de fotos por evento (el de la API) y subidas simultáneas al guardar. */
@@ -17,6 +18,12 @@ export const MAX_FOTOS = 40;
 export const SUBIDAS_A_LA_VEZ = 3;
 /** Ancho de las miniaturas pedidas a la API (`?w=`, hasta 640). */
 export const ANCHO_FOTO = 640;
+/** Arrastre: inmediato con ratón y por pulsación larga en táctil (el dedo que se desliza antes sigue desplazando la página). */
+export const RETARDO_ARRASTRE = { touch: 350, mouse: 0 };
+/** Medidas del menú «⋯» de la miniatura (ancho fijo y alto aproximado) para colocarlo dentro de la pantalla. */
+const MENU_ANCHO = 200;
+const MENU_ALTO = 144;
+const MENU_MARGEN = 8;
 
 export type EstadoFoto = 'guardada' | 'pendiente' | 'subiendo' | 'error';
 /** El mando de orden con el foco: tras mover, el foco vuelve al mismo de la miniatura movida. */
@@ -71,18 +78,23 @@ export class EventoFotosComponent implements OnInit, OnDestroy {
   @Input() guardando = false;
 
   readonly max = MAX_FOTOS;
+  readonly retardoArrastre = RETARDO_ARRASTRE;
 
   carga: 'cargando' | 'listo' | 'error' = 'listo';
   fotos: FotoItem[] = [];
   /** Motivos de las fotos rechazadas y aviso de las descartadas por el tope, en línea. */
   mensajes: string[] = [];
   arrastrando = false;
+  /** Clave de la miniatura con el menú «⋯» abierto (táctil). */
+  menuAbierto: number | null = null;
+  menuPosicion = { top: 0, left: 0 };
   eliminando = false;
   private ordenCambiado = false;
   /** Las que no se subieron deben colocarse cuando se suban: hará falta otro `PUT .../orden`. */
   private reordenarTrasSubir = false;
   private contador = 0;
   private lectura?: Subscription;
+  private escuchaFuera = false;
 
   ngOnInit(): void {
     if (this.eventoId !== null) {
@@ -92,6 +104,7 @@ export class EventoFotosComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.lectura?.unsubscribe();
+    this.quitarEscucha();
     for (const f of this.fotos) {
       this.soltarUrl(f);
     }
@@ -300,8 +313,15 @@ export class EventoFotosComponent implements OnInit, OnDestroy {
   private enfocarTras(indice: number): void {
     const celdas = this.host.nativeElement.querySelectorAll<HTMLElement>('.fotos__celda--foto');
     const celda = celdas[Math.min(indice, celdas.length - 1)];
-    const objetivo = celda?.querySelector<HTMLElement>('.fotos__quitar') ?? this.host.nativeElement.querySelector<HTMLElement>('.fotos__anadir');
-    objetivo?.focus();
+    // En táctil «Eliminar» vive en el menú: el foco va al «⋯» de la miniatura que ocupa el sitio.
+    const candidatos = [celda?.querySelector<HTMLElement>('.fotos__quitar'), celda?.querySelector<HTMLElement>('.fotos__mas')];
+    for (const c of candidatos) {
+      c?.focus();
+      if (c && document.activeElement === c) {
+        return;
+      }
+    }
+    this.host.nativeElement.querySelector<HTMLElement>('.fotos__anadir')?.focus();
   }
 
   private soltarUrl(f: FotoItem): void {
@@ -309,6 +329,118 @@ export class EventoFotosComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(f.urlLocal);
       f.urlLocal = null;
     }
+  }
+
+  // ------------------------------------------------------------------ «⋯» (táctil)
+
+  private menuRef(clave: number): HTMLElement | null {
+    return this.host.nativeElement.querySelector<HTMLElement>(`#fotos-menu-${clave}`);
+  }
+
+  private botonMenu(clave: number): HTMLButtonElement | null {
+    return this.host.nativeElement.querySelector<HTMLButtonElement>(`#fotos-mas-${clave}`);
+  }
+
+  private readonly alPulsarFuera = (evento: Event): void => {
+    const destino = evento.target as Node | null;
+    const zona = this.menuAbierto === null ? null : this.botonMenu(this.menuAbierto)?.closest('.fotos__menu-zona');
+    if (destino && zona?.contains(destino)) {
+      return;
+    }
+    this.menuAbierto = null;
+    this.quitarEscucha();
+    this.cdr.markForCheck();
+  };
+
+  /** El menú va con `position: fixed` (la miniatura recorta): se cierra al desplazar o girar para no quedar suelto. */
+  private readonly alMoverPantalla = (): void => {
+    this.cerrarMenu(false);
+    this.cdr.markForCheck();
+  };
+
+  private quitarEscucha(): void {
+    if (this.escuchaFuera) {
+      document.removeEventListener('pointerdown', this.alPulsarFuera, true);
+      window.removeEventListener('scroll', this.alMoverPantalla, true);
+      window.removeEventListener('resize', this.alMoverPantalla);
+      this.escuchaFuera = false;
+    }
+  }
+
+  alternarMenu(f: FotoItem, evento?: Event): void {
+    if (this.menuAbierto === f.clave) {
+      this.cerrarMenu(false);
+      return;
+    }
+    const boton = this.botonMenu(f.clave);
+    if (boton) {
+      const caja = boton.getBoundingClientRect();
+      const izquierda = Math.min(Math.max(caja.right - MENU_ANCHO, MENU_MARGEN), Math.max(window.innerWidth - MENU_ANCHO - MENU_MARGEN, MENU_MARGEN));
+      const abajo = caja.bottom + 4;
+      const arriba = caja.top - MENU_ALTO - 4;
+      this.menuPosicion = { top: abajo + MENU_ALTO > window.innerHeight && arriba >= MENU_MARGEN ? arriba : abajo, left: izquierda };
+    }
+    this.menuAbierto = f.clave;
+    if (!this.escuchaFuera) {
+      document.addEventListener('pointerdown', this.alPulsarFuera, true);
+      window.addEventListener('scroll', this.alMoverPantalla, true);
+      window.addEventListener('resize', this.alMoverPantalla);
+      this.escuchaFuera = true;
+    }
+    this.cdr.detectChanges();
+    enfocarOpcion(this.menuRef(f.clave), (evento as KeyboardEvent | undefined)?.key === 'ArrowUp' ? 'ultima' : 'primera');
+  }
+
+  teclaBotonMenu(f: FotoItem, evento: KeyboardEvent): void {
+    if ((evento.key === 'ArrowDown' || evento.key === 'ArrowUp') && this.menuAbierto !== f.clave) {
+      evento.preventDefault();
+      this.alternarMenu(f, evento);
+    }
+  }
+
+  teclaMenu(f: FotoItem, evento: KeyboardEvent): void {
+    const menu = this.menuRef(f.clave);
+    if (!menu) {
+      return;
+    }
+    const accion = teclaEnMenu(evento, menu);
+    if (accion === 'cerrar') {
+      this.cerrarMenu(true);
+    } else if (accion === 'salir') {
+      this.cerrarMenu(false);
+    }
+  }
+
+  cerrarMenu(devolverFoco: boolean): void {
+    const clave = this.menuAbierto;
+    this.menuAbierto = null;
+    this.quitarEscucha();
+    if (devolverFoco && clave !== null) {
+      this.cdr.detectChanges();
+      this.botonMenu(clave)?.focus();
+    }
+  }
+
+  alSalirDelMenu(evento: FocusEvent): void {
+    const zona = evento.currentTarget as HTMLElement | null;
+    const destino = evento.relatedTarget as Node | null;
+    if (zona && destino && !zona.contains(destino)) {
+      this.cerrarMenu(false);
+    }
+  }
+
+  /** «Mover antes» / «Mover después» del menú: el foco vuelve al «⋯» de la misma miniatura, esté donde esté ahora. */
+  moverDesdeMenu(f: FotoItem, delta: number): void {
+    const indice = this.fotos.indexOf(f);
+    this.cerrarMenu(false);
+    this.mover(indice, delta);
+    this.cdr.detectChanges();
+    this.botonMenu(f.clave)?.focus();
+  }
+
+  quitarDesdeMenu(f: FotoItem): void {
+    this.cerrarMenu(false);
+    void this.quitar(f);
   }
 
   // ------------------------------------------------------------------ orden
