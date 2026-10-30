@@ -423,3 +423,84 @@
     transition: none;
   }
 }
+
+// ---------------------------------------------------------------- asistencia (boceto `Ficha.dc.html`)
+.ficha__mes {
+  margin: 0;
+}
+
+.ficha__mes .ficha__control {
+  width: auto;
+  max-width: 100%;
+  min-height: 44px;
+}
+
+.ficha__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ficha__cuenta {
+  margin: 0;
+  font: var(--pn-cifra);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha__dias {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 8px;
+}
+
+.ficha__dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ficha__dia-fecha {
+  font: var(--pn-etiqueta);
+  font-weight: 400;
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha__dia-casilla {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 2px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie);
+  color: #fff;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.ficha__dia-casilla--presente {
+  border-color: var(--pn-bien);
+  background: var(--pn-bien);
+}
+
+.ficha__dia-sin {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  font-size: 0.75rem;
+  color: var(--pn-tinta-2);
+}

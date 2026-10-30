@@ -3,8 +3,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 
+import { AsistenciaDeAlumno } from '../../interfaces/asistencia';
 import { DeporteDelAlumno, FichaAlumnoProfesor, PaseCreado, SaludAlumno } from '../../interfaces/profesor';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -38,11 +40,14 @@ const SALUD: SaludAlumno = {
 
 const PASE: PaseCreado = { deporte: deporte(), cargo: { id: 9, concepto: 'Pase a Naranja (Taekwondo)', importe: 1234.5 } };
 
+const MES_VACIO: AsistenciaDeAlumno = { presentes: 0, clases: 0, dias: [] };
+
 describe('FichaProfesorPanelComponent', () => {
   let fixture: ComponentFixture<FichaProfesorPanelComponent>;
   let componente: FichaProfesorPanelComponent;
   let profesor: jasmine.SpyObj<ProfesorService>;
   let avisos: jasmine.SpyObj<AvisosService>;
+  let asistencia: jasmine.SpyObj<AsistenciaService>;
   let opcionesDialogo: OpcionesConfirmacion | null;
   let valoresDialogo: ValoresDialogo;
   let resultadoDialogo: ResultadoConfirmacion | null;
@@ -60,6 +65,8 @@ describe('FichaProfesorPanelComponent', () => {
     ]);
     profesor.ficha.and.returnValue(of(datos));
     avisos = jasmine.createSpyObj<AvisosService>('AvisosService', ['exito', 'error']);
+    asistencia = jasmine.createSpyObj<AsistenciaService>('AsistenciaService', ['deAlumno']);
+    asistencia.deAlumno.and.returnValue(of(MES_VACIO));
     opcionesDialogo = null;
     valoresDialogo = {};
     resultadoDialogo = null;
@@ -78,6 +85,7 @@ describe('FichaProfesorPanelComponent', () => {
         provideRouter([]),
         { provide: ProfesorService, useValue: profesor },
         { provide: AvisosService, useValue: avisos },
+        { provide: AsistenciaService, useValue: asistencia },
         { provide: ConfirmacionService, useValue: confirmacion },
         { provide: AuthenticationService, useValue: { getRolesActuales: () => roles } },
         {
@@ -124,7 +132,7 @@ describe('FichaProfesorPanelComponent', () => {
       deporte({ deporte: 'KICKBOXING', deporteNombre: 'Kickboxing', deMisGrupos: false, apto: true, grado: { codigo: 'BLANCO', nombre: 'Blanco' }, fechaGrado: '2026-09-15' }),
       deporte(),
     ]));
-    expect(bloques().map((b) => b.querySelector('h2')?.textContent?.trim())).toEqual(['Contacto', 'Taekwondo', 'Salud', 'Kickboxing']);
+    expect(bloques().map((b) => b.querySelector('h2')?.textContent?.trim())).toEqual(['Contacto', 'Asistencia', 'Taekwondo', 'Salud', 'Kickboxing']);
     const taekwondo = bloqueDe('Taekwondo');
     const kick = bloqueDe('Kickboxing');
     expect(taekwondo.textContent).not.toContain('Solo lectura');
@@ -375,5 +383,87 @@ describe('FichaProfesorPanelComponent', () => {
     fixture.componentRef.setInput('alumnoId', 6);
     fixture.detectChanges();
     expect(profesor.ficha).toHaveBeenCalledWith(6);
+  });
+
+  describe('asistencia', () => {
+    const celdas = () => Array.from(el().querySelectorAll('.ficha__dia'));
+
+    it('bloque tras Contacto: «6 de 7 clases», una celda por día y el pie', () => {
+      crear();
+      asistencia.deAlumno.and.returnValue(of({
+        presentes: 1, clases: 2,
+        dias: [
+          { fecha: '2026-10-05', horaInicio: '18:00', estado: 'PRESENTE' },
+          { fecha: '2026-10-07', horaInicio: '18:00', estado: 'FALTA' },
+          { fecha: '2026-10-12', horaInicio: '18:00', estado: 'SIN_LISTA' },
+        ],
+      }));
+      componente.cargarAsistencia();
+      fixture.detectChanges();
+      expect(bloques()[0].querySelector('h2')?.textContent?.trim()).toBe('Contacto');
+      expect(bloques()[1].querySelector('h2')?.textContent?.trim()).toBe('Asistencia');
+      expect(texto('.ficha__cuenta')).toBe('1 de 2 clases');
+      expect(celdas().length).toBe(3);
+      expect(celdas()[0].textContent).toContain('lun 5');
+      expect(celdas()[0].getAttribute('aria-label')).toBe('Lunes 5: asistió');
+      expect(celdas()[0].querySelector('svg')).not.toBeNull();
+      expect(celdas()[1].getAttribute('aria-label')).toBe('Miércoles 7: faltó');
+      expect(celdas()[1].querySelector('svg')).toBeNull();
+      expect(celdas()[1].querySelector('.ficha__dia-casilla')).not.toBeNull();
+      expect(celdas()[2].textContent).toContain('Sin lista');
+      expect(celdas()[2].querySelector('.ficha__dia-casilla')).toBeNull();
+      expect(el().textContent).toContain('Casilla vacía: faltó. Las clases sin lista no cuentan.');
+    });
+
+    it('pide el grupo de origen y el mes actual; el selector vuelve a pedir', () => {
+      crear();
+      const mes = componente.meses[0];
+      expect(asistencia.deAlumno).toHaveBeenCalledWith('profesor', 4, 3, mes.year, mes.month);
+      const select = el().querySelector<HTMLSelectElement>('.ficha__mes select')!;
+      select.value = componente.meses[1].valor;
+      select.dispatchEvent(new Event('change'));
+      expect(asistencia.deAlumno).toHaveBeenCalledWith('profesor', 4, 3, componente.meses[1].year, componente.meses[1].month);
+    });
+
+    it('con dos clases el mismo día, las celdas llevan la hora en el aria-label', () => {
+      crear();
+      asistencia.deAlumno.and.returnValue(of({
+        presentes: 1, clases: 2,
+        dias: [
+          { fecha: '2026-10-05', horaInicio: '18:00', estado: 'PRESENTE' },
+          { fecha: '2026-10-05', horaInicio: '19:00', estado: 'FALTA' },
+        ],
+      }));
+      componente.cargarAsistencia();
+      fixture.detectChanges();
+      expect(celdas().map((c) => c.getAttribute('aria-label'))).toEqual(['Lunes 5, 18:00: asistió', 'Lunes 5, 19:00: faltó']);
+    });
+
+    it('sin clases: «Sin clases este mes.»', () => {
+      crear();
+      expect(texto('[aria-labelledby="ficha-asistencia"]')).toContain('Sin clases este mes.');
+    });
+
+    it('un 404 oculta el bloque', () => {
+      crear();
+      asistencia.deAlumno.and.returnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      componente.cargarAsistencia();
+      fixture.detectChanges();
+      expect(el().querySelector('[aria-labelledby="ficha-asistencia"]')).toBeNull();
+    });
+
+    it('sin grupo de origen no se muestra ni se pide', () => {
+      crear(ficha(), {});
+      expect(asistencia.deAlumno).not.toHaveBeenCalled();
+      expect(el().querySelector('[aria-labelledby="ficha-asistencia"]')).toBeNull();
+    });
+
+    it('otro error: bloque de error con reintentar', () => {
+      crear();
+      asistencia.deAlumno.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      componente.cargarAsistencia();
+      fixture.detectChanges();
+      expect(el().querySelector('[aria-labelledby="ficha-asistencia"] pn-bloque-error')).not.toBeNull();
+    });
   });
 });

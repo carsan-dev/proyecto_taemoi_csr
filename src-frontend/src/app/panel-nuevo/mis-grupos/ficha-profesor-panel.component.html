@@ -60,6 +60,48 @@
       }
     </section>
 
+    <!-- ============================================================ Asistencia -->
+    @if (verAsistencia) {
+      <section class="ficha__bloque" aria-labelledby="ficha-asistencia">
+        <div class="ficha__bloque-cabeza">
+          <h2 id="ficha-asistencia" class="ficha__titulo">Asistencia</h2>
+          <label class="ficha__mes"><span class="ficha__oculto">Mes de asistencia</span>
+            <select class="ficha__control" [ngModel]="mesAsistencia" (ngModelChange)="cambiarMesAsistencia($event)" [disabled]="cargandoAsistencia">
+              @for (opcion of meses; track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
+            </select>
+          </label>
+        </div>
+        @if (errorAsistencia) {
+          <pn-bloque-error titulo="No se ha podido cargar la asistencia." (reintentar)="cargarAsistencia()" />
+        } @else if (cargandoAsistencia && !datosAsistencia) {
+          <p class="ficha__vacio" role="status">Cargando…</p>
+        } @else if (datosAsistencia) {
+          @if (datosAsistencia.dias.length === 0) {
+            <p class="ficha__vacio">Sin clases este mes.</p>
+          } @else {
+            <p class="ficha__cuenta" data-cifras>{{ datosAsistencia.presentes }} de {{ datosAsistencia.clases }} {{ datosAsistencia.clases === 1 ? 'clase' : 'clases' }}</p>
+            <div class="ficha__dias">
+              @for (dia of datosAsistencia.dias; track $index) {
+                <div class="ficha__dia" role="img" [attr.aria-label]="etiquetaDia(dia)">
+                  <span class="ficha__dia-fecha">{{ diaCorto(dia.fecha) }}</span>
+                  @if (dia.estado === 'SIN_LISTA') {
+                    <span class="ficha__dia-sin">Sin lista</span>
+                  } @else {
+                    <span class="ficha__dia-casilla" [class.ficha__dia-casilla--presente]="dia.estado === 'PRESENTE'">
+                      @if (dia.estado === 'PRESENTE') {
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                      }
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+            <p class="ficha__pista">Casilla vacía: faltó. Las clases sin lista no cuentan.</p>
+          }
+        }
+      </section>
+    }
+
     <!-- ============================================================ Deportes de sus grupos -->
     @for (d of deportesPropios; track d.deporte) {
       <section class="ficha__bloque" [attr.aria-labelledby]="'ficha-deporte-' + d.deporte">
