@@ -473,6 +473,8 @@ hueco; con recordatorio y respuesta apagado → hoy y se borra; respuesta encend
 ni se borra; `localStorage` que lanza → no rompe; cerrar sesión → se borra; navegar a una ruta del panel → se vuelve a
 leer.
 
+> Cambiado tras la #153 (decisión 338): en una ruta de gestión, mientras no se sabe, el hueco con o sin recordatorio; el recordatorio queda solo para la carga directa de una URL desconocida (posible 404 del panel).
+
 **Riesgos:** 13 entradas quedan a dos clics (hoy 11 a uno): revisarlo con el gestor en R3; el contador de solicitudes y
 el SSE de avisos deben seguir funcionando en la cabecera nueva.
 
