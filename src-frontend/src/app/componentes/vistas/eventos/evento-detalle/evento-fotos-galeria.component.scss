@@ -45,13 +45,20 @@ $hueco: 6px;
   font-variant-numeric: tabular-nums;
 }
 
-/* Las filas miden lo mismo que una casilla cuadrada: el alto queda reservado antes de que cargue ninguna foto. */
+/*
+ * Las filas tienen una altura propia que depende del ancho de la caja (un contenedor no puede medirse con sus propias
+ * unidades cqw, de ahí la caja aparte): el alto queda reservado antes de que cargue ninguna foto. La casilla grande
+ * ocupa dos filas y las fotos recortan con object-fit: cover.
+ */
+.mosaico-caja {
+  container-type: inline-size;
+}
+
 .mosaico {
   --hueco: #{$hueco};
-  container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: calc((100cqw - 3 * var(--hueco)) / 4);
+  grid-auto-rows: clamp(120px, 15cqw, 190px);
   gap: var(--hueco);
 }
 
@@ -171,5 +178,11 @@ $hueco: 6px;
 
   .casilla.casilla--primera {
     grid-row: span 2;
+  }
+
+  /* Casillas pequeñas: la capa se oscurece más y el número crece (contraste con el blanco por encima de 7:1). */
+  .casilla-mas {
+    background: rgba(27, 43, 46, 0.82);
+    font-size: 1.75rem;
   }
 }

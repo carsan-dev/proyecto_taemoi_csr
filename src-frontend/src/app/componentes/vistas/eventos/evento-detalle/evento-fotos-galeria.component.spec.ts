@@ -35,6 +35,13 @@ describe('EventoFotosGaleriaComponent', () => {
   const raiz = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const casillas = (): HTMLButtonElement[] =>
     Array.from(raiz().querySelectorAll<HTMLButtonElement>('.casilla'));
+  /** Casillas de la cuadrícula que ocupa el mosaico (columnas × filas de cada una). */
+  const area = (): number =>
+    casillas().reduce((suma, c) => {
+      const columnas = Number(/c(\d)/.exec(c.className)![1]);
+      const filas = Number(/f(\d)/.exec(c.className)![1]);
+      return suma + columnas * filas;
+    }, 0);
   const botonVerTodas = (): HTMLButtonElement | null =>
     raiz().querySelector<HTMLButtonElement>('.fotos-ver-todas');
 
@@ -71,24 +78,59 @@ describe('EventoFotosGaleriaComponent', () => {
     expect(raiz().querySelector('.casilla-mas')).toBeNull();
   });
 
-  it('con más de 8 pinta 8 casillas y «+N» en la última, con botón «Ver las N fotos»', () => {
+  it('con más de 9 pinta 9 casillas y «+N» (total − 8) en la novena, con botón «Ver las N fotos»', () => {
     montar(of(crearFotos(24)));
 
     expect(raiz().querySelector('.fotos-total')?.textContent?.trim()).toBe('24 fotos');
-    expect(casillas().length).toBe(8);
+    expect(casillas().length).toBe(9);
     const capas = raiz().querySelectorAll('.casilla-mas');
     expect(capas.length).toBe(1);
     expect(capas[0].textContent?.trim()).toBe('+16');
-    expect(casillas()[7].contains(capas[0])).toBeTrue();
-    expect(casillas()[7].querySelector('img')).not.toBeNull();
+    expect(casillas()[8].contains(capas[0])).toBeTrue();
+    expect(casillas()[8].querySelector('img')).not.toBeNull();
     expect(botonVerTodas()?.textContent?.trim()).toBe('Ver las 24 fotos');
   });
 
-  it('con exactamente 8 fotos no hay capa «+N»', () => {
+  it('con 10 fotos la novena lleva «+2»', () => {
+    montar(of(crearFotos(10)));
+
+    expect(casillas().length).toBe(9);
+    expect(raiz().querySelector('.casilla-mas')?.textContent?.trim()).toBe('+2');
+  });
+
+  it('con exactamente 9 fotos se ven las 9 sin capa «+N»', () => {
+    montar(of(crearFotos(9)));
+
+    expect(casillas().length).toBe(9);
+    expect(raiz().querySelector('.casilla-mas')).toBeNull();
+  });
+
+  it('con 8 fotos se mantiene el reparto sin huecos y sin capa', () => {
     montar(of(crearFotos(8)));
 
     expect(casillas().length).toBe(8);
     expect(raiz().querySelector('.casilla-mas')).toBeNull();
+    expect(area()).toBe(12);
+  });
+
+  it('con 9 o más, la grande y 8 pequeñas rellenan 3 filas de 4 columnas sin huecos', () => {
+    for (const total of [9, 10, 24]) {
+      TestBed.resetTestingModule();
+      montar(of(crearFotos(total)));
+      expect(area()).toBe(12);
+      expect(casillas().slice(1).every((c) => c.classList.contains('c1') && c.classList.contains('f1'))).toBeTrue();
+    }
+  });
+
+  it('el mosaico vive en una caja contenedora y sus filas usan clamp(120px, 15cqw, 190px)', () => {
+    montar(of(crearFotos(9)));
+
+    expect(raiz().querySelector('.mosaico-caja > .mosaico')).not.toBeNull();
+    const caja = raiz().querySelector<HTMLElement>('.mosaico-caja')!;
+    expect(getComputedStyle(caja).containerType).toBe('inline-size');
+    const filas = parseFloat(getComputedStyle(raiz().querySelector<HTMLElement>('.mosaico')!).gridAutoRows);
+    expect(filas).toBeGreaterThanOrEqual(120);
+    expect(filas).toBeLessThanOrEqual(190);
   });
 
   it('las miniaturas piden 640 px, cargan en diferido y llevan alt con número y título', () => {

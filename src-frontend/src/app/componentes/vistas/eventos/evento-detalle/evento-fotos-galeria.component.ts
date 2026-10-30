@@ -7,7 +7,8 @@ import {
 import { EventoFotosVisorComponent, FotoVisor } from './evento-fotos-visor.component';
 import { textoNumeroFotos, urlFotoConAncho } from './evento-fotos-url';
 
-const MAX_MINIATURAS = 8;
+/** Casillas del mosaico: la grande de 2×2 y 8 pequeñas, tres filas de cuatro columnas sin huecos. */
+const MAX_MINIATURAS = 9;
 const ANCHO_MINIATURA = 640;
 
 interface Miniatura {
@@ -15,7 +16,7 @@ interface Miniatura {
   src: string;
   alt: string;
   clases: string;
-  /** Fotos que quedan sin mostrar; solo en la última casilla cuando hay más de ocho. */
+  /** Fotos que no caben, contando la de esta casilla; solo en la novena cuando hay más de nueve. */
   restantes: number;
 }
 
@@ -81,7 +82,7 @@ export class EventoFotosGaleriaComponent implements OnInit {
       src: urlFotoConAncho(foto.url, ANCHO_MINIATURA),
       alt: this.alt(i),
       clases: this.clasesCasilla(i, n),
-      restantes: i === MAX_MINIATURAS - 1 && todas.length > MAX_MINIATURAS ? todas.length - MAX_MINIATURAS : 0,
+      restantes: i === MAX_MINIATURAS - 1 && todas.length > MAX_MINIATURAS ? todas.length - (MAX_MINIATURAS - 1) : 0,
     }));
   }
 
@@ -115,7 +116,7 @@ export class EventoFotosGaleriaComponent implements OnInit {
             columnas = 4;
           } else if (enFila === 2) {
             columnas = 2;
-          } else if (j === otras - 1) {
+          } else if (enFila === 3 && j === otras - 1) {
             columnas = 2;
           }
         }
