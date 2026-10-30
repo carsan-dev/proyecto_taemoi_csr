@@ -227,7 +227,7 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
 
   // ------------------------------------------------------------------ subir
 
-  itSinReloj('subida en paralelo limitada a 3; campo «archivo»; al acabar, PUT .../orden con la secuencia final', async () => {
+  itSinReloj('subida en paralelo limitada a 2; campo «archivo»; al acabar, PUT .../orden con la secuencia final', async () => {
     montar(1, []);
     elegir(nombres(5).map(jpg));
     await esperar(20);
@@ -244,15 +244,18 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
 
     abiertas[0].flush(respuesta(101));
     await esperar(2);
+    const tercera = subidas();
+    expect(tercera.length).toBe(1);
+    abiertas[1].flush(respuesta(102));
+    await esperar(2);
     const cuarta = subidas();
     expect(cuarta.length).toBe(1);
-    abiertas[1].flush(respuesta(102));
-    abiertas[2].flush(respuesta(103));
+    tercera[0].flush(respuesta(103));
     await esperar(2);
-    const resto = subidas();
-    expect(resto.length).toBe(1);
+    const quinta = subidas();
+    expect(quinta.length).toBe(1);
     cuarta[0].flush(respuesta(104));
-    resto[0].flush(respuesta(105));
+    quinta[0].flush(respuesta(105));
     await esperar(2);
     const orden = http.expectOne(`${FOTOS}/orden`);
     expect(orden.request.method).toBe('PUT');
@@ -272,7 +275,10 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
     const abiertas = subidas();
     abiertas[0].flush(respuesta(101));
     abiertas[1].flush({ mensaje: 'El servidor está ocupado. Inténtalo de nuevo.' }, { status: 503, statusText: 'Service Unavailable' });
-    abiertas[2].flush(respuesta(103));
+    await esperar(2);
+    const tercera = subidas();
+    expect(tercera.length).toBe(1);
+    tercera[0].flush(respuesta(103));
     await esperar(2);
     const orden1 = http.expectOne(`${FOTOS}/orden`);
     expect(orden1.request.body).toEqual([101, 103]);
@@ -365,6 +371,13 @@ describe('EventoFotosComponent (E8c · F2, bloque «Fotos del evento» del formu
     afterEach(() => estiloTactil.remove());
 
     const opciones = (): string[] => Array.from(el().querySelectorAll('[role="menuitem"]')).map((o) => texto(o));
+
+    it('el botón «Más acciones» lleva la clase fotos__accion', () => {
+      montar(1, GUARDADAS);
+      for (let n = 0; n < celdas().length; n++) {
+        expect(mas(n).classList).toContain('fotos__accion');
+      }
+    });
 
     it('el asa no está en el orden de tabulación', () => {
       montar(1, GUARDADAS);

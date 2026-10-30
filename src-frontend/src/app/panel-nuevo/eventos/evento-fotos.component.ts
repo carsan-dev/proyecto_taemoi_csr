@@ -13,9 +13,9 @@ import { EventoFotosApiService } from './evento-fotos-api.service';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { moverEn, urlImagen } from './eventos-vista';
 
-/** Tope de fotos por evento (el de la API) y subidas simultáneas al guardar. */
+/** Tope de fotos por evento (el de la API) y de subidas simultáneas al guardar (dos). */
 export const MAX_FOTOS = 40;
-export const SUBIDAS_A_LA_VEZ = 3;
+export const SUBIDAS_A_LA_VEZ = 2;
 /** Ancho de las miniaturas pedidas a la API (`?w=`, hasta 640). */
 export const ANCHO_FOTO = 640;
 /** Arrastre: inmediato con ratón y por pulsación larga en táctil (el dedo que se desliza antes sigue desplazando la página). */

@@ -75,7 +75,7 @@
       </button>
 
       <div class="fotos__menu-zona" (focusout)="alSalirDelMenu($event)">
-        <button type="button" class="fotos__mas" [id]="'fotos-mas-' + f.clave" [disabled]="ocupado" [attr.aria-label]="'Más acciones de la foto ' + (i + 1)"
+        <button type="button" class="fotos__accion fotos__mas" [id]="'fotos-mas-' + f.clave" [disabled]="ocupado" [attr.aria-label]="'Más acciones de la foto ' + (i + 1)"
           aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === f.clave" [attr.aria-controls]="menuAbierto === f.clave ? 'fotos-menu-' + f.clave : null"
           (click)="alternarMenu(f, $event)" (keydown)="teclaBotonMenu(f, $event)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle>
