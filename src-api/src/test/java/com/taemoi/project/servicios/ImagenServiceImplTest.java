@@ -162,6 +162,71 @@ class ImagenServiceImplTest {
 		}
 	}
 
+	@Test
+	void guardarFotoEvento_vaALaCarpetaPrivadaDeLaEscuela() throws Exception {
+		TenantContext.set(2L);
+		Imagen foto = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng()));
+
+		assertRutaDentroDelDirectorio(foto, tempDir.resolve("org-2").resolve("fotos-eventos"));
+		assertEquals("org-2/fotos-eventos/" + foto.getNombre(), foto.getRuta());
+		assertFalse(Files.exists(tempDir.resolve("org-2").resolve("eventos")), "Nunca bajo la carpeta pública");
+		assertFalse(com.taemoi.project.archivos.RutasArchivos.esImagenPublica(foto.getRuta()));
+	}
+
+	/** El nombre puede ser el de un menor o traer un recorrido: no llega al disco ni a la fila. */
+	@Test
+	void guardarFotoEvento_noUsaElNombreDelFicheroSubido() throws Exception {
+		Imagen foto = imagenService.guardarImagenFotoEvento(new MockMultipartFile("archivo",
+				"../../Lucia_Garcia_Lopez_" + "x".repeat(300) + ".png", "image/png", crearPng()));
+
+		assertRutaDentroDelDirectorio(foto, tempDir.resolve("org-1").resolve("fotos-eventos"));
+		assertFalse(foto.getNombre().contains("Lucia"), foto.getNombre());
+		assertTrue(foto.getNombre().length() <= 200, "Cabe en imagen.nombre");
+	}
+
+	@Test
+	void guardarFotoEvento_reduceComoElCartelSinAmpliar() throws Exception {
+		Imagen grande = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "grande.png", "image/png", crearPng(3000, 1500)));
+		Imagen pequena = imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "pequena.png", "image/png", crearPng(300, 200)));
+		Imagen cartel = imagenService.guardarImagenEvento(
+				new MockMultipartFile("archivo", "cartel.png", "image/png", crearPng(3000, 1500)));
+
+		assertEquals(cartel.getTipo(), grande.getTipo(), "Mismo formato que el cartel");
+		BufferedImage leidaCartel = ImageIO.read(tempDir.resolve(cartel.getRuta()).toFile());
+		BufferedImage leidaGrande = ImageIO.read(tempDir.resolve(grande.getRuta()).toFile());
+		BufferedImage leidaPequena = ImageIO.read(tempDir.resolve(pequena.getRuta()).toFile());
+		assertEquals(1920, leidaGrande.getWidth());
+		assertEquals(960, leidaGrande.getHeight());
+		assertEquals(leidaCartel.getWidth(), leidaGrande.getWidth());
+		assertEquals(300, leidaPequena.getWidth());
+	}
+
+	@Test
+	void guardarFotoEvento_rechazaHeicYContenidoQueNoEsImagen_sinEscribirNada() {
+		byte[] heic = new byte[] { 0, 0, 0, 24, 'f', 't', 'y', 'p', 'h', 'e', 'i', 'c' };
+		ArchivoNoValidoException porExtension = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagenFotoEvento(new MockMultipartFile("archivo", "IMG_0001.HEIC", "application/octet-stream", heic)));
+		ArchivoNoValidoException porTipo = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagenFotoEvento(new MockMultipartFile("archivo", "foto.jpg", "image/heif", heic)));
+		ArchivoNoValidoException noImagen = assertThrows(ArchivoNoValidoException.class, () -> imagenService
+				.guardarImagenFotoEvento(new MockMultipartFile("archivo", "foto.png", "image/png", "MZ no".getBytes())));
+
+		assertEquals(DocumentoSecurityUtils.MENSAJE_HEIC, porExtension.getMessage());
+		assertEquals(DocumentoSecurityUtils.MENSAJE_HEIC, porTipo.getMessage());
+		assertEquals("No se pudo leer la foto del evento.", noImagen.getMessage());
+		assertFalse(Files.exists(tempDir.resolve("org-1").resolve("eventos")));
+	}
+
+	@Test
+	void guardarFotoEvento_sinEscuelaActivaFallaCerrado() {
+		TenantContext.clear();
+		assertThrows(IllegalStateException.class, () -> imagenService.guardarImagenFotoEvento(
+				new MockMultipartFile("archivo", "foto.png", "image/png", crearPng())));
+	}
+
 	private ImagenServiceImpl decodificadorQueLanza(IIOException error) {
 		ImagenServiceImpl servicio = new ImagenServiceImpl() {
 			@Override
@@ -175,8 +240,12 @@ class ImagenServiceImplTest {
 	}
 
 	private byte[] crearPng() {
+		return crearPng(8, 8);
+	}
+
+	private byte[] crearPng(int ancho, int alto) {
 		try {
-			BufferedImage imagen = new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB);
+			BufferedImage imagen = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
 			ByteArrayOutputStream output = new ByteArrayOutputStream();
 			ImageIO.write(imagen, "png", output);
 			return output.toByteArray();

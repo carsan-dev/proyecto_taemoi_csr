@@ -13,6 +13,13 @@ public interface ImagenService {
 	Imagen guardarImagenEvento(MultipartFile archivo) throws IOException;
 
 	/**
+	 * Decisión 342: foto de la galería de un evento, con el mismo procesado que {@link #guardarImagenEvento} pero en
+	 * {@code org-<id>/fotos-eventos/}, una carpeta privada. El nombre del fichero subido no se usa: puede ser el de un
+	 * menor. Devuelve la imagen sin guardar en base de datos.
+	 */
+	Imagen guardarImagenFotoEvento(MultipartFile archivo) throws IOException;
+
+	/**
 	 * Pieza E7-7a: escribe el PNG ya validado del logo de una escuela EXPLÍCITA (no la activa: lo sube el superadmin)
 	 * en {@code org-<id>/logo/<uuid>_logo.png}. Devuelve la imagen sin guardar en base de datos; el nombre del fichero
 	 * subido no se usa.

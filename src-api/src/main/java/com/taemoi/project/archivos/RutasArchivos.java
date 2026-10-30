@@ -26,6 +26,11 @@ public final class RutasArchivos {
 	public static final String PREFIJO_ORGANIZACION = "org-";
 	public static final String CARPETA_ALUMNOS = "alumnos";
 	public static final String CARPETA_EVENTOS = "eventos";
+	/**
+	 * Decisión 342: fotos de la galería de un evento. Fuera de {@link #esImagenPublica} a propósito: solo se sirven por
+	 * {@code GET /api/eventos/{id}/fotos/{fotoId}}, que comprueba si el evento está oculto. Pueden mostrar menores.
+	 */
+	public static final String CARPETA_FOTOS_EVENTOS = "fotos-eventos";
 	public static final String CARPETA_MATERIALES = "materiales";
 	/** Pieza E7-7a: logo de la escuela (PNG que sube el superadmin). */
 	public static final String CARPETA_LOGO = "logo";

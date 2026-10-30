@@ -43,6 +43,7 @@ public class ImagenServiceImpl implements ImagenService {
 	private static final int MAX_EVENTO_HEIGHT = 1920;
 	private static final float EVENTO_WEBP_QUALITY = 0.80f;
 	private static final float JPEG_FALLBACK_QUALITY = 0.86f;
+	private static final String NOMBRE_BASE_FOTO_EVENTO = "foto";
 
 	@Value("${app.imagenes.directorio.linux}")
 	private String directorioImagenesLinux;
@@ -70,18 +71,31 @@ public class ImagenServiceImpl implements ImagenService {
 
 	@Override
 	public Imagen guardarImagenEvento(MultipartFile archivo) throws IOException {
+		return guardarDeEvento(archivo, RutasArchivos.CARPETA_EVENTOS, "No se pudo leer la imagen del evento.", null);
+	}
+
+	@Override
+	public Imagen guardarImagenFotoEvento(MultipartFile archivo) throws IOException {
+		return guardarDeEvento(archivo, RutasArchivos.CARPETA_FOTOS_EVENTOS, "No se pudo leer la foto del evento.",
+				NOMBRE_BASE_FOTO_EVENTO);
+	}
+
+	/** @param nombreFijo nombre base del fichero; {@code null} para derivarlo del nombre subido. */
+	private Imagen guardarDeEvento(MultipartFile archivo, String categoria, String mensajeIlegible, String nombreFijo)
+			throws IOException {
 		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
-		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_EVENTOS);
+		String carpetaRelativa = carpetaDeEscuela(categoria);
 		Path rutaImagenesEventos = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
 		if (!Files.exists(rutaImagenesEventos)) {
 			Files.createDirectories(rutaImagenesEventos);
 		}
 
-		BufferedImage original = leerImagen(archivo, "No se pudo leer la imagen del evento.");
+		BufferedImage original = leerImagen(archivo, mensajeIlegible);
 
 		BufferedImage redimensionada = redimensionarParaEvento(original);
-		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
+		String nombreBase = nombreFijo != null ? nombreFijo
+				: obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
 		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesEventos, nombreBase, carpetaRelativa,
 				EVENTO_WEBP_QUALITY);
 	}
