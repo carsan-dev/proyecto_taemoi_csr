@@ -45,6 +45,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 	/**
+	 * Decisión 342: imagen de una foto de la galería. Una visita pide hasta 40: ni fila ni copia de la imagen en memoria.
+	 * Se compara con la ruta tal como llega, sin normalizar: cualquier otra forma de escribirla se sigue auditando.
+	 */
+	private static final Pattern RUTA_IMAGEN_FOTO_EVENTO = Pattern.compile("^/api/eventos/[0-9]+/fotos/[0-9]+$");
+	private static final Set<String> METODOS_IMAGEN_FOTO_EVENTO = Set.of("GET", "HEAD");
+	/**
 	 * Escrituras cuyo 2xx NO apunta este filtro porque ya deja su propio registro, más detallado, en la misma transacción
 	 * (método + ruta EXACTA tras {@link #normalizarParaComparar}). Los 4xx/5xx de estas rutas sí se apuntan aquí.
 	 *
@@ -345,6 +351,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		return r.toLowerCase(Locale.ROOT);
 	}
 
+	/** Lectura de la imagen de una foto de la galería; {@code POST}, {@code PUT}, {@code DELETE} y la lista no lo son. */
+	static boolean esImagenDeFotoEvento(String metodo, String endpoint) {
+		return endpoint != null && METODOS_IMAGEN_FOTO_EVENTO.contains(metodo)
+				&& RUTA_IMAGEN_FOTO_EVENTO.matcher(endpoint).matches();
+	}
+
 	private boolean debeAuditar(String method, String endpoint) {
 		if (endpoint == null || endpoint.isBlank()) {
 			return false;
@@ -353,6 +365,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return false;
 		}
 		if (!AUDITABLE_METHODS.contains(method)) {
+			return false;
+		}
+		if (esImagenDeFotoEvento(method, endpoint)) {
 			return false;
 		}
 		return !endpoint.startsWith("/api/auth/")

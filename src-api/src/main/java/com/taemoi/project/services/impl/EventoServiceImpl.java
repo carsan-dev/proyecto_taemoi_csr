@@ -20,9 +20,12 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
+import com.taemoi.project.repositories.EventoFotoRepository;
+import com.taemoi.project.repositories.EventoFotoRepository.NumeroFotos;
 import com.taemoi.project.repositories.EventoRepository;
 import com.taemoi.project.repositories.ImagenRepository;
 import com.taemoi.project.services.DocumentoService;
+import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
 
@@ -41,16 +44,22 @@ public class EventoServiceImpl implements EventoService {
 	@Autowired
 	private DocumentoService documentoService;
 
+	@Autowired
+	private EventoFotoRepository eventoFotoRepository;
+
+	@Autowired
+	private EventoFotoService eventoFotoService;
+
 	@Override
 	public List<Evento> obtenerTodosLosEventos() {
 		ensureOrdenesGlobal();
-		return eventoRepository.findAllByOrderByOrdenAsc();
+		return conNumeroFotos(eventoRepository.findAllByOrderByOrdenAsc());
 	}
 
 	@Override
 	public List<Evento> obtenerEventosVisibles() {
 		ensureOrdenesGlobal();
-		return eventoRepository.findByVisibleTrueOrderByOrdenAsc();
+		return conNumeroFotos(eventoRepository.findByVisibleTrueOrderByOrdenAsc());
 	}
 
 	@Override
@@ -160,8 +169,8 @@ public class EventoServiceImpl implements EventoService {
 			}
 			evento.getDocumentos().clear();
 
-			// Finalmente eliminar el evento
-			eventoRepository.delete(evento); // Eliminar el evento
+			// Finalmente eliminar el evento, con sus fotos: si algo de lo anterior falla, la galería sigue entera
+			eventoFotoService.eliminarEventoConFotos(id);
 		} else {
 			throw new EventoNoEncontradoException("No se encontró el evento con ID: " + id);
 		}
@@ -250,6 +259,13 @@ public class EventoServiceImpl implements EventoService {
 				.findFirst()
 				.orElseThrow(() -> new RuntimeException(
 						"El documento con ID " + documentoId + " no pertenece al evento con ID " + eventoId));
+	}
+
+	private List<Evento> conNumeroFotos(List<Evento> eventos) {
+		Map<Long, Integer> porEvento = eventoFotoRepository.contarPorEvento().stream()
+				.collect(Collectors.toMap(NumeroFotos::getEventoId, NumeroFotos::getTotal));
+		eventos.forEach(evento -> evento.setNumeroFotos(porEvento.getOrDefault(evento.getId(), 0)));
+		return eventos;
 	}
 
 	private void ensureOrdenesGlobal() {

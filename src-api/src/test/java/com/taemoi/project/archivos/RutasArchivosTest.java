@@ -109,6 +109,11 @@ class RutasArchivosTest {
 		assertFalse(RutasArchivos.esImagenPublica("org-2/alumnos/foto.webp"));
 		assertFalse(RutasArchivos.esImagenPublica("org-2/Alumnos/foto.webp"));
 		assertFalse(RutasArchivos.esImagenPublica("eventos/alumnos/foto.webp"));
+		// Fotos de eventos (decisión 342): solo por su endpoint, que mira si el evento está oculto.
+		assertFalse(RutasArchivos.esImagenPublica("org-2/fotos-eventos/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/FOTOS-EVENTOS/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("fotos-eventos/foto.webp"));
+		assertEquals("fotos-eventos", RutasArchivos.CARPETA_FOTOS_EVENTOS);
 	}
 
 	@Test

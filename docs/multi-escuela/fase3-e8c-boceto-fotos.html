@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boceto fotos de eventos</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--text-secondary:#5D6573;--font-sans:system-ui,sans-serif}
+body{max-width:680px;margin:0 auto;padding:16px;font-family:var(--font-sans);background:#fff}
+.cap{font-size:12px;color:var(--text-secondary);margin:0 0 6px}
+.fr{background:#F5F5F2;border-radius:12px;padding:14px;margin:0 0 1.25rem;color:#1A2230}
+.cd{background:#fff;border:1px solid #E4E4DF;border-radius:10px;padding:14px}
+.g6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.t{position:relative;aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.x{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:4px;background:#fff;color:#1A2230;font-size:12px;display:flex;align-items:center;justify-content:center}
+.a{background:#5B7C8D}.b{background:#8A9A5B}.c{background:#B5835A}.d{background:#6D6A8A}.e{background:#3F6C6A}.f{background:#A7797F}
+.btn{font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid #868D97;color:#1A2230;background:#fff}
+.pri{background:#01707F;border-color:#01707F;color:#fff}
+.ph{background:#fff;border:1px solid #CFCFC8;border-radius:16px;padding:10px;min-width:0}
+</style>
+</head>
+<body>
+<p class="cap">1 · Panel, Editar evento: bloque nuevo entre Imagen y Documentos</p>
+<div class="fr"><div class="cd">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:500">Fotos del evento</span><span style="font-size:12px;color:#7A8290">opcional</span><span style="margin-left:auto;font-size:12px;color:#5D6573">6 / 40</span></div>
+<p style="font-size:13px;color:#5D6573;margin:4px 0 10px">Se ven en la página del evento. Arrastra para cambiar el orden.</p>
+<div style="display:flex;gap:8px;align-items:center;font-size:12px;background:#FAFAF8;border:1px solid #E4E4DF;border-radius:6px;padding:7px 10px;margin-bottom:10px"><i class="ti ti-shield-check" style="font-size:16px;color:#01707F" aria-hidden="true"></i>Sube solo fotos de personas con autorización web.</div>
+<div class="g6">
+<div class="t a"><span class="x"><i class="ti ti-trash" aria-hidden="true"></i></span><i class="ti ti-grip-vertical" aria-hidden="true"></i></div>
+<div class="t b"><span class="x"><i class="ti ti-trash" aria-hidden="true"></i></span></div>
+<div class="t c"><span class="x"><i class="ti ti-trash" aria-hidden="true"></i></span></div>
+<div class="t d" style="flex-direction:column"><span style="font-size:11px">Pendiente</span></div>
+<div class="t" style="background:#FDECEA;color:#B42318;flex-direction:column;border:1px solid #B42318"><i class="ti ti-alert-circle" aria-hidden="true"></i><span style="font-size:11px">Reintentar</span></div>
+<div class="t" style="background:#fff;border:1px dashed #868D97;color:#01707F;flex-direction:column"><i class="ti ti-plus" aria-hidden="true"></i><span style="font-size:11px">Añadir</span></div>
+</div>
+<p style="font-size:12px;color:#7A8290;margin:8px 0 0">JPG, PNG, WebP o GIF. Hasta 50 MB por foto.</p>
+</div>
+<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E4E4DF;border-radius:10px;padding:8px 12px;margin-top:10px"><span style="font-size:13px">2 cambios sin guardar</span><span class="btn" style="margin-left:auto">Cancelar</span><span class="btn pri">Guardar cambios</span></div>
+</div>
+<p class="cap">2 · Web pública, página del evento: debajo de los detalles (solo si hay fotos)</p>
+<div class="fr" style="background:#F4F7FB;font-family:Montserrat,var(--font-sans)"><div style="background:#fff;border:1px solid #DFEBFF;border-radius:12px;padding:14px">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px"><i class="ti ti-photo" style="color:#0D47A1;font-size:18px" aria-hidden="true"></i><span style="font-size:16px;font-weight:500;color:#0D47A1">Fotos del evento</span><span style="margin-left:auto;font-size:12px;color:#667085">24 fotos</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+<div class="t a" style="grid-column:span 2;grid-row:span 2;aspect-ratio:auto"></div><div class="t b"></div><div class="t c"></div><div class="t d"></div><div class="t e"></div>
+<div class="t f"></div><div class="t c"></div><div class="t a"></div><div class="t" style="background:#1B2B2E;font-size:13px">+16</div>
+</div>
+<div style="text-align:center;margin-top:12px"><span class="btn" style="border-color:#0D47A1;color:#0D47A1;font-size:13px;padding:7px 14px">Ver las 24 fotos</span></div>
+</div></div>
+<p class="cap">3 · Móvil: panel, visor a pantalla completa y tarjeta de la cartelera</p>
+<div class="fr" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<div class="ph"><div style="font-size:13px;font-weight:500;display:flex"><span>Fotos del evento</span><span style="margin-left:auto;font-size:11px;color:#5D6573;font-weight:400">6 / 40</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:8px 0"><div class="t a"></div><div class="t b"></div><div class="t c"></div><div class="t d"></div><div class="t e"></div><div class="t f"></div></div>
+<div class="btn" style="text-align:center;color:#01707F;border-color:#01707F">Añadir fotos</div></div>
+<div class="ph" style="background:#0B0F14;border-color:#0B0F14;color:#fff;display:flex;flex-direction:column"><div style="display:flex;font-size:12px"><span>3 de 24</span><i class="ti ti-x" style="margin-left:auto;font-size:16px" aria-hidden="true"></i></div>
+<div class="t c" style="flex:1;aspect-ratio:auto;min-height:110px;margin:10px 0"></div>
+<div style="display:flex;justify-content:space-between;font-size:18px"><i class="ti ti-chevron-left" aria-hidden="true"></i><i class="ti ti-chevron-right" aria-hidden="true"></i></div></div>
+<div class="ph" style="font-family:Montserrat,var(--font-sans);border-radius:12px;padding:0;overflow:hidden"><div class="t e" style="aspect-ratio:16/10;border-radius:0"><span style="position:absolute;right:6px;bottom:6px;background:#fff;color:#0D47A1;font-size:11px;padding:2px 7px;border-radius:999px"><i class="ti ti-photo" aria-hidden="true"></i> 24 fotos</span></div>
+<div style="padding:8px 10px"><div style="font-size:11px;color:#667085">Realizado · 14 jun 2026</div><div style="font-size:13px;font-weight:500;color:#1F2937">Campeonato de primavera</div></div></div>
+</div>
+</body>
+</html>

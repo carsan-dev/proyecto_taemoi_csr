@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (494 líneas; 162 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (501 líneas; 164 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -449,6 +449,22 @@ Retirada de los listados completos (decisión 145): 6 líneas menos, `GET` y `HE
 `/api/alumnos/con-deportes` cae en `/api/alumnos/{id}`: pasa la regla de URL de esa ruta, que da los mismos roles que
 tenía, y la conversión a `Long` falla antes del `@PreAuthorize`, como con cualquier id no numérico.
 
+Fotos de eventos (decisión 342, `fase3-e8c-plan.md`, pieza F1): 7 líneas nuevas en `EventoFotoController`; ninguna
+casilla existente cambia.
+
+| Ruta | Métodos | Anónimo, familia, plataforma, sede y profesor | Gestor y propietario | Lo que falta en la matriz |
+|---|---|---|---|---|
+| `/api/eventos/{eventoId}/fotos` | `GET`, `HEAD` | `PERMITE` | `PERMITE` | evento oculto: 404 a quien no gestiona eventos |
+| `/api/eventos/{eventoId}/fotos/{fotoId}` | `GET`, `HEAD` | `PERMITE` | `PERMITE` | evento oculto: 404 igual; no se audita |
+| `/api/eventos/{eventoId}/fotos` | `POST` | `DENIEGA` | `PERMITE` | 400, 404, 409 y 503 con `{mensaje}` |
+| `/api/eventos/{eventoId}/fotos/orden` | `PUT` | `DENIEGA` | `PERMITE` | 400 y 404 con `{mensaje}` |
+| `/api/eventos/{eventoId}/fotos/{fotoId}` | `DELETE` | `DENIEGA` | `PERMITE` | 404 con `{mensaje}` |
+
+La regla de URL de los dos `GET` es `permitAll` y el controlador decide. Las escrituras las cierra su `@PreAuthorize`
+(`ROLE_MANAGER` o `ROLE_ADMIN`). No hay línea en `MUESTRAS_COMODIN` para `/imagenes/org-<id>/fotos-eventos/...`: esa
+columna mide la regla de URL `/imagenes/**`, que da `PERMITE`, y la barrera real es `AccesoArchivos`. Lo prueba
+`FotosEventoIntegrationTest`, para la foto y para su miniatura.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).
@@ -630,6 +646,8 @@ El riesgo general está en editar una sola de las dos capas.
   eventos no visibles. `GET /api/eventos/{eventoId}/imagen` (P×5) también lo comprueba desde el hotfix #26
   (16/10/2026): **RESUELTA**, la imagen de un evento oculto responde 404 a quien no gestiona eventos. La
   comprobación está en `EventoController`; la regla de URL no cambia.
+- `GET /api/eventos/{eventoId}/fotos` y `…/fotos/{fotoId}` (`PERMITE` en las siete columnas): `EventoFotoController`
+  responde 404 sin cuerpo si el evento está oculto y quien pregunta no lo gestiona, también con `?w=`.
 - `/documentos/Documentos_Eventos/**`, `/documentos/org-*/eventos/**` e `/imagenes/**` salvo alumnos (P×5):
   `AccesoArchivos` comprueba escuela y fila.
 - Latente: el `permitAll` de `GET /api/eventos/{eventoId}` casa con cualquier GET de un solo segmento bajo

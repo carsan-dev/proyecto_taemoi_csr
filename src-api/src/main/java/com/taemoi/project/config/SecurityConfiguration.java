@@ -409,6 +409,11 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/eventos").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/imagen").permitAll()
+						// Decisión 342: fotos de la galería. Públicas por URL; el controlador da 404 si el evento está oculto.
+						// Solo estos dos GET: el resto cae en las reglas de gestión de abajo.
+						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/fotos",
+								"/api/eventos/{eventoId}/fotos/{fotoId}")
+						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/{eventoId}/documentos/{documentoId}/descargar")
 						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/**")

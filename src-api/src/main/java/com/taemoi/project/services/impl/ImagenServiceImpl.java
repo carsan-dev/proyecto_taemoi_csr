@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -15,8 +16,10 @@ import java.util.UUID;
 import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
 import org.slf4j.Logger;
@@ -31,6 +34,7 @@ import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.services.ImagenService;
 import com.taemoi.project.utils.DocumentoSecurityUtils;
+import com.taemoi.project.utils.OrientacionExif;
 
 @Service
 public class ImagenServiceImpl implements ImagenService {
@@ -43,6 +47,13 @@ public class ImagenServiceImpl implements ImagenService {
 	private static final int MAX_EVENTO_HEIGHT = 1920;
 	private static final float EVENTO_WEBP_QUALITY = 0.80f;
 	private static final float JPEG_FALLBACK_QUALITY = 0.86f;
+	private static final String NOMBRE_BASE_FOTO_EVENTO = "foto";
+	private static final String NOMBRE_BASE_MINIATURA_FOTO_EVENTO = "miniatura";
+	private static final String MENSAJE_FOTO_ILEGIBLE = "No se pudo leer la foto del evento.";
+	private static final String MENSAJE_FOTO_DEMASIADO_GRANDE =
+			"La foto es demasiado grande. Usa una de menos de 60 megapíxeles.";
+	/** Decodificada ocupa 3 o 4 bytes por píxel: la galería sube varias a la vez, y una cabecera no pesa nada. */
+	private static final long MAX_PIXELES_FOTO_EVENTO = 60_000_000L;
 
 	@Value("${app.imagenes.directorio.linux}")
 	private String directorioImagenesLinux;
@@ -84,6 +95,90 @@ public class ImagenServiceImpl implements ImagenService {
 		String nombreBase = obtenerNombreBase(FileUtils.limpiarNombreArchivo(archivo.getOriginalFilename()));
 		return guardarImagenProcesadaConFallback(redimensionada, rutaImagenesEventos, nombreBase, carpetaRelativa,
 				EVENTO_WEBP_QUALITY);
+	}
+
+	@Override
+	public FotoEventoGuardada guardarImagenFotoEvento(MultipartFile archivo) throws IOException {
+		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_FOTOS_EVENTOS);
+		Path directorio = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
+
+		rechazarFotoDemasiadoGrande(archivo);
+		Files.createDirectories(directorio);
+
+		BufferedImage reducida = orientarYReducirFoto(archivo);
+		Imagen foto = guardarImagenProcesadaConFallback(reducida, directorio, NOMBRE_BASE_FOTO_EVENTO, carpetaRelativa,
+				EVENTO_WEBP_QUALITY);
+		try {
+			return new FotoEventoGuardada(foto, guardarMiniaturaFotoEvento(reducida, directorio, carpetaRelativa));
+		} catch (IOException | RuntimeException | Error e) {
+			borrarSinFallar(foto);
+			throw e;
+		}
+	}
+
+	/** Separado para poder simular su fallo en los tests. */
+	protected Imagen guardarMiniaturaFotoEvento(BufferedImage foto, Path directorio, String carpetaRelativa)
+			throws IOException {
+		BufferedImage miniatura = redimensionarImagen(foto, LADO_MINIATURA_FOTO_EVENTO, LADO_MINIATURA_FOTO_EVENTO);
+		return guardarImagenProcesadaConFallback(miniatura, directorio, NOMBRE_BASE_MINIATURA_FOTO_EVENTO, carpetaRelativa,
+				EVENTO_WEBP_QUALITY);
+	}
+
+	/** Limpieza de un fallo que ya se está propagando: no debe taparlo. Sin la ruta en el log. */
+	private void borrarSinFallar(Imagen imagen) {
+		try {
+			eliminarImagenDeSistema(imagen);
+		} catch (RuntimeException e) {
+			logger.warn("No se pudo borrar una foto de evento tras fallar su miniatura: {}", e.getClass().getSimpleName());
+		}
+	}
+
+	/** En su propio método para que los píxeles a tamaño completo se puedan liberar antes de codificar la foto. */
+	private BufferedImage orientarYReducirFoto(MultipartFile archivo) throws IOException {
+		BufferedImage original = leerImagen(archivo, MENSAJE_FOTO_ILEGIBLE);
+		return redimensionarParaEvento(OrientacionExif.aplicar(original, leerOrientacion(archivo)));
+	}
+
+	private static int leerOrientacion(MultipartFile archivo) {
+		try (InputStream entrada = archivo.getInputStream()) {
+			return OrientacionExif.leer(entrada);
+		} catch (IOException e) {
+			return OrientacionExif.NORMAL;
+		}
+	}
+
+	/**
+	 * Mira el tamaño en la cabecera, sin decodificar: una imagen pequeña en bytes puede ocupar gigas en memoria. Si la
+	 * cabecera no se entiende se rechaza aquí, porque de lo que no se conoce el tamaño no se decodifica nada.
+	 */
+	private static void rechazarFotoDemasiadoGrande(MultipartFile archivo) throws IOException {
+		long pixeles;
+		try (InputStream entrada = archivo.getInputStream();
+				ImageInputStream cabecera = ImageIO.createImageInputStream(entrada)) {
+			Iterator<ImageReader> lectores = ImageIO.getImageReaders(cabecera);
+			if (!lectores.hasNext()) {
+				throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+			}
+			ImageReader lector = lectores.next();
+			try {
+				lector.setInput(cabecera, true, true);
+				pixeles = (long) lector.getWidth(0) * lector.getHeight(0);
+			} finally {
+				lector.dispose();
+			}
+		} catch (EOFException | IndexOutOfBoundsException e) {
+			// IndexOutOfBounds: cabecera válida sin ningún fotograma, como un GIF vacío.
+			throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+		} catch (IIOException e) {
+			if (esErrorDeEntradaSalidaDelServidor(e)) {
+				throw e;
+			}
+			throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+		}
+		if (pixeles > MAX_PIXELES_FOTO_EVENTO) {
+			throw new ArchivoNoValidoException(MENSAJE_FOTO_DEMASIADO_GRANDE);
+		}
 	}
 
 	@Override
@@ -220,6 +315,16 @@ public class ImagenServiceImpl implements ImagenService {
 		return salida;
 	}
 
+	/** Separado para poder simular en los tests un codificador que falla a mitad de escritura. */
+	protected void codificar(ImageWriter writer, IIOImage imagen, ImageWriteParam param) throws IOException {
+		writer.write(null, imagen, param);
+	}
+
+	/** Separado para poder simular su fallo en los tests. */
+	protected void borrarFicheroParcial(Path fichero) throws IOException {
+		Files.deleteIfExists(fichero);
+	}
+
 	private Path guardarComoWebp(BufferedImage imagen, Path directorioDestino, String nombreArchivo, float quality)
 			throws IOException {
 		Path directorioSeguro = directorioDestino.toAbsolutePath().normalize();
@@ -237,14 +342,16 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		ImageWriter writer = writers.next();
-		try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(
-				Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
+		// Dos recursos: cerrar el ImageOutputStream no cierra el fichero, y borrarlo abierto no liberaría su espacio.
+		try (OutputStream fichero = Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
+				ImageOutputStream outputStream = ImageIO.createImageOutputStream(fichero)) {
 			writer.setOutput(outputStream);
 			ImageWriteParam param = writer.getDefaultWriteParam();
 			if (param.canWriteCompressed()) {
 				configurarCompresionWebp(param, quality);
 			}
-			writer.write(null, new IIOImage(imagen, null, null), param);
+			codificar(writer, new IIOImage(imagen, null, null), param);
 		} finally {
 			writer.dispose();
 		}
@@ -268,8 +375,10 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 
 		ImageWriter writer = writers.next();
-		try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(
-				Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
+		// Dos recursos: cerrar el ImageOutputStream no cierra el fichero, y borrarlo abierto no liberaría su espacio.
+		try (OutputStream fichero = Files.newOutputStream(rutaArchivo, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
+				ImageOutputStream outputStream = ImageIO.createImageOutputStream(fichero)) {
 			writer.setOutput(outputStream);
 			ImageWriteParam param = writer.getDefaultWriteParam();
 			if (param.canWriteCompressed()) {
@@ -277,7 +386,7 @@ public class ImagenServiceImpl implements ImagenService {
 				float qualitySegura = Math.max(0.1f, Math.min(1.0f, quality));
 				param.setCompressionQuality(qualitySegura);
 			}
-			writer.write(null, new IIOImage(imagen, null, null), param);
+			codificar(writer, new IIOImage(imagen, null, null), param);
 		} finally {
 			writer.dispose();
 		}
@@ -292,11 +401,37 @@ public class ImagenServiceImpl implements ImagenService {
 			guardarComoWebp(imagen, directorioDestino, nombreWebp, webpQuality);
 			return crearImagen(nombreWebp, "image/webp", carpetaPublica);
 		} catch (Exception e) {
+			borrarParcialSinFallar(directorioDestino, nombreWebp);
+			// La clase y no el mensaje: puede llevar la ruta del fichero.
 			logger.warn("Fallo al guardar imagen en WebP, se usara fallback JPEG. Carpeta: {}, nombreBase: {}. Causa: {}",
-					carpetaPublica, nombreBase, e.getMessage());
-			String nombreJpeg = nombreBaseArchivo + ".jpg";
+					carpetaPublica, nombreBase, e.getClass().getSimpleName());
+			return guardarJpegDeReserva(imagen, directorioDestino, nombreBaseArchivo + ".jpg", carpetaPublica);
+		} catch (Error e) {
+			borrarParcialSinFallar(directorioDestino, nombreWebp);
+			throw e;
+		}
+	}
+
+	private Imagen guardarJpegDeReserva(BufferedImage imagen, Path directorioDestino, String nombreJpeg,
+			String carpetaPublica) throws IOException {
+		try {
 			guardarComoJpeg(imagen, directorioDestino, nombreJpeg, JPEG_FALLBACK_QUALITY);
 			return crearImagen(nombreJpeg, "image/jpeg", carpetaPublica);
+		} catch (Exception | Error e) {
+			borrarParcialSinFallar(directorioDestino, nombreJpeg);
+			throw e;
+		}
+	}
+
+	/**
+	 * El fichero se crea antes de codificar: un fallo deja uno a medias al que ninguna fila apunta. Limpieza de un fallo
+	 * que ya se está propagando, así que no debe taparlo. Sin la ruta en el log.
+	 */
+	private void borrarParcialSinFallar(Path directorio, String nombreArchivo) {
+		try {
+			borrarFicheroParcial(RutasArchivos.resolverDentroDe(directorio, nombreArchivo));
+		} catch (Exception | Error e) {
+			logger.warn("No se pudo borrar un fichero de imagen a medio escribir: {}", e.getClass().getSimpleName());
 		}
 	}
 
