@@ -1,0 +1,405 @@
+// «Fotos del evento» (E8c · F2). Mismo marcado y mismas reglas de sección que el formulario de eventos (los estilos de un
+// componente no pasan a su hijo, de ahí las copias de sección, cabecera y marca). Solo tokens de panel-nuevo.scss bajo
+// .pn (DESIGN.md). El aviso de autorización es neutro: el ocre es solo para dinero y vencimientos.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.evento-form__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+// Soltar ficheros sobre el bloque.
+.fotos--encima {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento-suave);
+}
+
+.evento-form__seccion-cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+
+  h2 {
+    margin: 0;
+    font: var(--pn-titulo-bloque);
+    color: var(--pn-tinta);
+  }
+}
+
+.evento-form__marca {
+  font: var(--pn-etiqueta);
+  font-weight: 500;
+  color: var(--pn-tinta-2);
+}
+
+.evento-form__error {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-weight: 600;
+  color: var(--pn-peligro);
+}
+
+.fotos__contador {
+  margin-left: auto;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.fotos__ayuda {
+  margin: -8px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.fotos__aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--pn-superficie-2);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--pn-acento);
+  }
+}
+
+.fotos__pie {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.fotos__oculto {
+  @include c.oculto;
+}
+
+.fotos__oculto-texto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ rejilla
+
+// Fluida: mínimo 96 px por miniatura, pero nunca menos de tres columnas en un móvil de 360 px.
+.fotos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(96px, calc((100% - 16px) / 3)), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fotos__celda {
+  position: relative;
+  aspect-ratio: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+.fotos__imagen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+// Estado en el centro: entre las acciones de arriba y las de abajo queda hueco.
+.fotos__estado {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--pn-radio-pastilla);
+  background: color-mix(in srgb, var(--pn-tinta) 78%, transparent);
+  color: #fff;
+  font: var(--pn-secundario);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.fotos__giro {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  animation: fotos-giro 0.8s linear infinite;
+}
+
+@keyframes fotos-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fotos__celda--error {
+  border: 1px solid var(--pn-peligro);
+  background: color-mix(in srgb, var(--pn-peligro) 9%, var(--pn-superficie));
+
+  .fotos__imagen {
+    opacity: 0.25;
+  }
+}
+
+.fotos__reintentar {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+// Acciones en las esquinas: objetivo de 44 px en móvil, chip visible de 26 px (32 px de objetivo en escritorio).
+.fotos__accion {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta);
+  cursor: pointer;
+
+  svg {
+    box-sizing: content-box;
+    width: 16px;
+    height: 16px;
+    padding: 5px;
+    border-radius: 6px;
+    background: var(--pn-superficie);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--pn-tinta) 35%, transparent);
+    transition: background-color var(--pn-transicion), color var(--pn-transicion);
+  }
+
+  &:hover:not(:disabled) svg {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+
+  &:disabled {
+    cursor: default;
+
+    svg {
+      opacity: 0.4;
+    }
+  }
+}
+
+.fotos__asa {
+  top: 0;
+  left: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.fotos__quitar {
+  top: 0;
+  right: 0;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  &:hover:not(:disabled) svg {
+    background: var(--pn-superficie);
+    color: var(--pn-peligro);
+  }
+}
+
+.fotos__antes {
+  bottom: 0;
+  left: 0;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.fotos__despues {
+  right: 0;
+  bottom: 0;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+// ------------------------------------------------------------------ añadir
+
+.fotos__celda--anadir {
+  overflow: visible;
+  background: transparent;
+}
+
+.fotos__anadir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--pn-acento);
+  font: var(--pn-secundario);
+  cursor: pointer;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+// Escritorio: casilla al final de la rejilla.
+.fotos__anadir--casilla {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  border: 1px dashed var(--pn-borde-control);
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie);
+  font-size: 0.75rem;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-acento-suave);
+    border-color: var(--pn-acento);
+  }
+}
+
+// Móvil: botón a todo el ancho.
+.fotos__anadir--boton {
+  @include c.boton-secundario;
+  display: none;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+}
+
+// ------------------------------------------------------------------ carga
+
+.fotos__hueso {
+  aspect-ratio: 1;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+}
+
+// ------------------------------------------------------------------ arrastre (CDK)
+
+.fotos__celda.cdk-drag-preview {
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.fotos__celda.cdk-drag-placeholder {
+  background: var(--pn-acento-suave);
+  opacity: 0.5;
+}
+
+.fotos__rejilla.cdk-drop-list-dragging .fotos__celda:not(.cdk-drag-placeholder),
+.fotos__celda.cdk-drag-animating {
+  transition: transform 150ms ease-out;
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (min-width: 768px) {
+  .fotos__accion {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .evento-form__seccion {
+    padding: 16px;
+  }
+
+  .fotos__celda--anadir {
+    display: none;
+  }
+
+  .fotos__rejilla--vacia {
+    display: none;
+  }
+
+  .fotos__anadir--boton {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fotos__giro {
+    animation: none;
+  }
+
+  .fotos__rejilla.cdk-drop-list-dragging .fotos__celda:not(.cdk-drag-placeholder),
+  .fotos__celda.cdk-drag-animating,
+  .evento-form__seccion {
+    transition: none;
+  }
+}

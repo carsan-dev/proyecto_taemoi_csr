@@ -120,6 +120,9 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     crear(1);
     http.expectOne(`${API}/eventos/1`).flush(evento);
     fixture.detectChanges();
+    // El bloque de fotos pide la suya al aparecer el formulario (E8c · F2).
+    http.expectOne(`${API}/eventos/1/fotos`).flush([]);
+    fixture.detectChanges();
   }
 
   function rellenar(): void {
@@ -171,12 +174,12 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
 
   // ------------------------------------------------------------------ crear
 
-  it('crear: título y enlace «Eventos»; secciones Información, Imagen y Documentos; etiquetas obligatorio u opcional', () => {
+  it('crear: título y enlace «Eventos»; secciones Información, Imagen, Fotos del evento y Documentos; etiquetas obligatorio u opcional', () => {
     crear();
     expect(texto(el().querySelector('h1'))).toBe('Crear nuevo evento');
     expect(texto(el().querySelector('.evento-form__subtitulo'))).toBe('Crea un evento para mostrar en la página web pública');
     expect(el().querySelector('.evento-form__miga a')!.getAttribute('href')).toBe('/eventosListar');
-    expect(Array.from(el().querySelectorAll('.evento-form__seccion h2')).map(texto)).toEqual(['Información', 'Imagen', 'Documentos']);
+    expect(Array.from(el().querySelectorAll('.evento-form__seccion h2')).map(texto)).toEqual(['Información', 'Imagen', 'Fotos del evento', 'Documentos']);
     const etiqueta = (id: string): string => texto(el().querySelector(`label[for="${id}"]`));
     expect(etiqueta('evento-titulo')).toBe('Título obligatorio');
     expect(etiqueta('evento-descripcion')).toBe('Descripción obligatorio');
@@ -665,6 +668,143 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     editar();
     expect(texto(previa().querySelector('.evento-form__previa-estado'))).toBe('Oculto: no se verá en la web');
     expect(texto(previa().querySelector('.evento-form__previa-titulo'))).toBe('Campeonato regional');
+  });
+
+  // ------------------------------------------------------------------ fotos del evento (E8c · F2)
+
+  const cambios = (): HTMLElement | null => el().querySelector<HTMLElement>('.evento-form__cambios');
+  const miniaturas = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('.fotos__celda--foto'));
+
+  itSinReloj('fotos: la barra dice «N cambios sin guardar» (singular con 1) y desaparece con 0', async () => {
+    editar();
+    expect(cambios()).toBeNull();
+    elegir('evento-fotos', [JPG(), JPG()]);
+    await esperar();
+    expect(texto(cambios())).toBe('2 cambios sin guardar');
+    expect(cambios()!.getAttribute('role')).toBe('status');
+    botonEn(miniaturas()[0], 'Quitar la foto 1').click();
+    fixture.detectChanges();
+    expect(texto(cambios())).toBe('1 cambio sin guardar');
+    botonEn(miniaturas()[0], 'Quitar la foto 1').click();
+    fixture.detectChanges();
+    expect(cambios()).toBeNull();
+    expect(texto(el().querySelector('.evento-form__barra'))).toBe('CancelarGuardar cambios');
+  });
+
+  itSinReloj('fotos: las secciones van en el orden Imagen, Fotos del evento, Documentos', async () => {
+    crear();
+    expect(Array.from(el().querySelectorAll('.evento-form__seccion h2')).map(texto)).toEqual([
+      'Información',
+      'Imagen',
+      'Fotos del evento',
+      'Documentos',
+    ]);
+    http.expectNone(() => true);
+  });
+
+  itSinReloj('fotos al editar: guarda el evento como hoy, luego sube las pendientes y navega con el aviso de siempre', async () => {
+    editar();
+    elegir('evento-fotos', [JPG()]);
+    await esperar();
+    guardar().click();
+    fixture.detectChanges();
+    const put = http.expectOne(`${API}/eventos/1`);
+    expect(put.request.method).toBe('PUT');
+    put.flush({});
+    await esperar(1);
+    expect(navegar).not.toHaveBeenCalled();
+    const foto = http.expectOne(`${API}/eventos/1/fotos`);
+    expect(foto.request.method).toBe('POST');
+    foto.flush({ id: 501, url: `${API}/eventos/1/fotos/501`, orden: 0 });
+    await esperar(3);
+    expect(navegar).toHaveBeenCalledOnceWith(['/eventosListar']);
+    expect(avisos().map((a) => a.texto)).toEqual(['El evento ha sido actualizado correctamente.']);
+  });
+
+  itSinReloj('fotos al editar: si una falla, se queda en el formulario con aviso y «Reintentar»; no navega', async () => {
+    editar();
+    elegir('evento-fotos', [JPG(), JPG()]);
+    await esperar();
+    guardar().click();
+    fixture.detectChanges();
+    http.expectOne(`${API}/eventos/1`).flush({});
+    await esperar(1);
+    const subidas = http.match(`${API}/eventos/1/fotos`);
+    expect(subidas.length).toBe(2);
+    subidas[0].flush({ id: 501, url: `${API}/eventos/1/fotos/501`, orden: 0 });
+    subidas[1].flush({ mensaje: 'El servidor está ocupado. Inténtalo de nuevo.' }, { status: 503, statusText: 'Unavailable' });
+    await esperar(3);
+    expect(navegar).not.toHaveBeenCalled();
+    expect(miniaturas().map((m) => m.dataset['estado'])).toEqual(['guardada', 'error']);
+    expect(texto(miniaturas()[1].querySelector('.fotos__reintentar'))).toBe('Reintentar');
+    expect(texto(cambios())).toBe('1 cambio sin guardar');
+    expect(avisos()).toEqual([
+      {
+        tipo: 'error',
+        texto:
+          'El evento se ha guardado, pero 1 foto no se pudo subir. El servidor está ocupado. Inténtalo de nuevo. Reintenta cada foto o pulsa «Guardar cambios».',
+      },
+    ]);
+    expect(guardar().getAttribute('aria-disabled')).toBeNull();
+  });
+
+  itSinReloj('fotos al crear con un fallo: el evento ya existe, pasa a Editar y reintentar sube solo la fallida (sin crear otro)', async () => {
+    crear();
+    rellenar();
+    const reemplazar = spyOn(TestBed.inject(Location), 'replaceState');
+    elegir('evento-fotos', [JPG(), JPG()]);
+    await esperar();
+    guardar().click();
+    fixture.detectChanges();
+    http.expectOne(`${API}/eventos/crear`).flush({ id: 33, titulo: 'Copa de otoño', descripcion: 'Torneo amistoso.', visible: true });
+    const subidas = http.match(`${API}/eventos/33/fotos`);
+    expect(subidas.length).toBe(2);
+    subidas[0].flush({ id: 601, url: `${API}/eventos/33/fotos/601`, orden: 0 });
+    subidas[1].flush({}, { status: 500, statusText: 'Error' });
+    await esperar(3);
+    expect(navegar).not.toHaveBeenCalled();
+    expect(texto(el().querySelector('h1'))).toBe('Editar evento');
+    expect(texto(guardar())).toBe('Guardar cambios');
+    expect(reemplazar).toHaveBeenCalledOnceWith('/eventosEditar/33');
+    expect(miniaturas().map((m) => m.dataset['estado'])).toEqual(['guardada', 'error']);
+    expect(avisos()).toEqual([
+      { tipo: 'error', texto: 'El evento se ha creado, pero 1 foto no se pudo subir. Reintenta cada foto o pulsa «Guardar cambios».' },
+    ]);
+
+    botonEn(miniaturas()[1], 'Reintentar la subida de la foto 2. No se pudo subir la foto.').click();
+    const otra = http.match(`${API}/eventos/33/fotos`);
+    expect(otra.length).toBe(1);
+    otra[0].flush({ id: 602, url: `${API}/eventos/33/fotos/602`, orden: 1 });
+    await esperar(3);
+    expect(http.match(`${API}/eventos/33/fotos/orden`).length).toBe(1);
+    expect(miniaturas().map((m) => m.dataset['estado'])).toEqual(['guardada', 'guardada']);
+    http.expectNone(`${API}/eventos/crear`);
+  });
+
+  itSinReloj('fotos al crear sin fallos: sigue como hoy (aviso «Has creado un nuevo evento.» y a Eventos)', async () => {
+    crear();
+    rellenar();
+    elegir('evento-fotos', [JPG()]);
+    await esperar();
+    guardar().click();
+    fixture.detectChanges();
+    http.expectOne(`${API}/eventos/crear`).flush({ id: 33 });
+    http.expectOne(`${API}/eventos/33/fotos`).flush({ id: 601, url: `${API}/eventos/33/fotos/601`, orden: 0 });
+    await esperar(3);
+    expect(navegar).toHaveBeenCalledOnceWith(['/eventosListar']);
+    expect(avisos().map((a) => a.texto)).toEqual(['Has creado un nuevo evento.']);
+  });
+
+  itSinReloj('fotos: un fallo al leerlas en Editar no bloquea el resto del formulario', async () => {
+    crear(1);
+    http.expectOne(`${API}/eventos/1`).flush(EVENTO);
+    fixture.detectChanges();
+    http.expectOne(`${API}/eventos/1/fotos`).flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(el().querySelector('.evento-form__seccion pn-bloque-error, pn-fotos-evento pn-bloque-error')).not.toBeNull();
+    expect(el().querySelector<HTMLInputElement>('#evento-titulo')!.value).toBe('Campeonato regional');
+    expect(texto(el().querySelector('h1'))).toBe('Editar evento');
+    expect(guardar().getAttribute('aria-disabled')).toBeNull();
   });
 
   // ------------------------------------------------------------------ estados

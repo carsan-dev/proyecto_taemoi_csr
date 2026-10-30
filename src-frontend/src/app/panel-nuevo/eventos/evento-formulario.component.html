@@ -126,6 +126,9 @@
           }
         </section>
 
+        <!-- Fotos del evento -->
+        <pn-fotos-evento [eventoId]="eventoId" [guardando]="guardando" />
+
         <!-- Documentos -->
         <section class="evento-form__seccion" aria-labelledby="evento-seccion-documentos">
           <div class="evento-form__seccion-cabecera">
@@ -236,6 +239,9 @@
 
       <!-- Barra fija -->
       <div class="evento-form__barra" role="region" aria-label="Guardar">
+        @if (cambiosFotos > 0) {
+        <p class="evento-form__cambios" role="status" data-cifras>{{ textoCambiosFotos }}</p>
+        }
         <button type="button" class="evento-form__boton-secundario" [disabled]="guardando" (click)="cancelar()">Cancelar</button>
         <button type="submit" class="evento-form__boton-primario evento-form__guardar-primario"
           [attr.aria-disabled]="form.invalid || guardando ? 'true' : null" [attr.aria-busy]="guardando ? 'true' : null">

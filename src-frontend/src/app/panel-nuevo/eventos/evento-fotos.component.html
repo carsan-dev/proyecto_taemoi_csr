@@ -1,0 +1,102 @@
+<section class="evento-form__seccion fotos" [class.fotos--encima]="arrastrando" aria-labelledby="evento-seccion-fotos"
+  (dragover)="alArrastrar($event, true)" (dragleave)="alArrastrar($event, false)" (drop)="alSoltar($event)">
+  <div class="evento-form__seccion-cabecera">
+    <h2 id="evento-seccion-fotos">Fotos del evento</h2>
+    <span class="evento-form__marca">opcional</span>
+    <span class="fotos__contador" data-cifras>{{ textoContador }}</span>
+  </div>
+  <p class="fotos__ayuda" id="evento-fotos-ayuda">Se ven en la página del evento. Arrastra para cambiar el orden.</p>
+  <p class="fotos__aviso">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.4 3 7.6 7.5 9.5 4.5-1.9 7.5-5.1 7.5-9.5V6L12 3Z"></path><path d="m9 12 2 2 4-4"></path></svg>
+    <span>Sube solo fotos de personas con autorización web.</span>
+  </p>
+
+  @if (carga === 'error') {
+  <pn-bloque-error titulo="No se pudieron cargar las fotos" texto="El resto del formulario sigue disponible." (reintentar)="cargar()" />
+  } @else if (carga === 'cargando') {
+  <pn-esqueleto etiqueta="Cargando las fotos" aria-busy="true">
+    <div class="fotos__rejilla fotos__esqueleto">
+      @for (n of [1, 2, 3]; track n) {
+      <span class="fotos__hueso"></span>
+      }
+    </div>
+  </pn-esqueleto>
+  } @else {
+  <input #selector type="file" class="fotos__oculto" id="evento-fotos" accept="image/*" multiple tabindex="-1" aria-hidden="true"
+    (change)="elegir($event)" />
+
+  <ul class="fotos__rejilla" [class.fotos__rejilla--vacia]="fotos.length === 0" cdkDropList cdkDropListOrientation="mixed"
+    [cdkDropListDisabled]="ocupado" (cdkDropListDropped)="soltar($event)" aria-describedby="evento-fotos-ayuda">
+    @for (f of fotos; track f.clave; let i = $index; let primera = $first; let ultima = $last) {
+    <li class="fotos__celda fotos__celda--foto" cdkDrag cdkDragPreviewContainer="parent" [cdkDragDisabled]="ocupado" [attr.data-foto]="f.clave"
+      [attr.data-estado]="f.estado" [class.fotos__celda--pendiente]="f.estado === 'pendiente'" [class.fotos__celda--error]="f.estado === 'error'">
+      <span class="fotos__oculto-texto">{{ descripcion(f, i) }}</span>
+      <img class="fotos__imagen" [src]="f.vista" alt="" decoding="async" draggable="false" />
+
+      @if (f.estado === 'pendiente') {
+      <span class="fotos__estado">Pendiente</span>
+      } @else if (f.estado === 'subiendo') {
+      <span class="fotos__estado">
+        <svg class="fotos__giro" aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor"
+          stroke-opacity=".35" stroke-width="2.5"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg>
+        Subiendo
+      </span>
+      } @else if (f.estado === 'error') {
+      <button type="button" class="fotos__reintentar" [disabled]="ocupado || eventoId === null"
+        [attr.aria-label]="'Reintentar la subida de la foto ' + (i + 1) + (f.motivo ? '. ' + f.motivo : '')" [attr.title]="f.motivo"
+        (click)="reintentar(f)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16.5v.01"></path></svg>
+        <span>Reintentar</span>
+      </button>
+      }
+
+      <button type="button" cdkDragHandle class="fotos__accion fotos__asa" [disabled]="ocupado"
+        [attr.aria-label]="'Reordenar la foto ' + (i + 1) + ' con las flechas'" aria-describedby="evento-fotos-ayuda"
+        (keydown)="teclaOrden($event, i, 'asa')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle>
+          <circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+      </button>
+      <button type="button" class="fotos__accion fotos__quitar" [disabled]="ocupado" [attr.aria-haspopup]="f.estado === 'guardada' ? 'dialog' : null"
+        [attr.aria-label]="'Quitar la foto ' + (i + 1)" (click)="quitar(f)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 1.8h7a2 2 0 0 0 2-1.8l1-12M9 7V4.5h6V7"></path></svg>
+      </button>
+      <button type="button" class="fotos__accion fotos__antes" [disabled]="primera || ocupado"
+        [attr.aria-label]="'Mover la foto ' + (i + 1) + ' antes'" (click)="mover(i, -1, 'antes')" (keydown)="teclaOrden($event, i, 'antes')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+      </button>
+      <button type="button" class="fotos__accion fotos__despues" [disabled]="ultima || ocupado"
+        [attr.aria-label]="'Mover la foto ' + (i + 1) + ' después'" (click)="mover(i, 1, 'despues')" (keydown)="teclaOrden($event, i, 'despues')">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+      </button>
+    </li>
+    }
+    @if (!completo) {
+    <li class="fotos__celda fotos__celda--anadir">
+      <button type="button" class="fotos__anadir fotos__anadir--casilla" [disabled]="ocupado" (click)="abrirSelector(selector)">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span>Añadir</span>
+      </button>
+    </li>
+    }
+  </ul>
+
+  @if (!completo) {
+  <button type="button" class="fotos__anadir fotos__anadir--boton" [disabled]="ocupado" (click)="abrirSelector(selector)">
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    <span>Añadir fotos</span>
+  </button>
+  } @else {
+  <p class="fotos__pie">Has llegado al máximo de {{ max }} fotos.</p>
+  }
+
+  @if (mensajes.length) {
+  <p class="evento-form__error fotos__mensajes" id="evento-fotos-error" role="alert">{{ mensajes.join(' ') }}</p>
+  }
+  <p class="fotos__pie">JPG, PNG, WebP o GIF. Hasta 50 MB por foto.</p>
+  }
+</section>

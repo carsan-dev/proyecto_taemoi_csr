@@ -239,6 +239,7 @@
               "src/app/panel-nuevo/eventos/eventos-vista.spec.ts",
               "src/app/panel-nuevo/eventos/eventos.component.spec.ts",
               "src/app/panel-nuevo/eventos/evento-formulario.component.spec.ts",
+              "src/app/panel-nuevo/eventos/evento-fotos.component.spec.ts",
               "src/app/panel-nuevo/productos/productos-vista.spec.ts",
               "src/app/panel-nuevo/productos/productos.component.spec.ts",
               "src/app/panel-nuevo/productos/producto-formulario.component.spec.ts",
