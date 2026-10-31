@@ -265,7 +265,7 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
       nombre('Infantiles');
       deporte('TAEKWONDO');
       const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
-      expect(boton.disabled).toBeTrue();
+      expect(boton.disabled).toBeFalse();
       fixture.componentInstance.crear();
       fixture.detectChanges();
       http.expectNone(`${environment.apiUrl}/grupos`);
@@ -274,6 +274,19 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
       elegirSede('Mollina');
       expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error')).toBeNull();
       expect(boton.disabled).toBeFalse();
+    });
+
+    it('sin sede el botón de crear sigue activo y el clic real muestra el error sin petición', () => {
+      conVariasSedes();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(boton.disabled).toBeFalse();
+      boton.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error').textContent).toContain('Elige la sede del grupo.');
+      expect(selectSede()!.getAttribute('aria-invalid')).toBe('true');
+      http.expectNone(`${environment.apiUrl}/grupos`);
     });
 
     it('un 400 del servidor sobre la sede se muestra en su campo', () => {
