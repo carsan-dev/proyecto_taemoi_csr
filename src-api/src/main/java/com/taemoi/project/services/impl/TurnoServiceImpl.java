@@ -3,7 +3,6 @@ package com.taemoi.project.services.impl;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,6 +25,7 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.TurnoService;
+import com.taemoi.project.utils.DiaSemanaUtils;
 import com.taemoi.project.services.AforoPreinscripcionService;
 import com.taemoi.project.services.TemporadaService;
 
@@ -55,7 +55,6 @@ public class TurnoServiceImpl implements TurnoService {
 	@Autowired private PreinscripcionRepository preinscripcionRepository;
 	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
 	@Autowired private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
-	@Autowired private com.taemoi.project.repositories.SedeRepository sedeRepository;
 	/**
 	 * Reloj de la fecha de referencia de las edades de /horarios: Madrid (el visitante está en España; antes la
 	 * calculaba su navegador con su fecha local). Fijo en zona, no en la de la JVM (que suele ir en UTC).
@@ -217,34 +216,8 @@ public class TurnoServiceImpl implements TurnoService {
 		if (turnoOptional.isPresent()) {
 			Turno turno = turnoOptional.get();
 
-			if (!turno.getDiaSemana().equalsIgnoreCase(turnoDTO.getDiaSemana())) {
-				if (turno.getGrupo() != null) {
-					List<Grupo> grupos = grupoRepository.findAll();
-					// Entrega 6-1: con varias sedes, el reparto por índice (lógica heredada de Taemoi) solo mira los
-					// grupos de la MISMA sede que el turno, en el mismo orden. Con una sola sede, como siempre.
-					if (sedeRepository.findAllByOrderByIdAsc().size() > 1) {
-						Long sedeDelTurno = turno.getGrupo().getSedeId();
-						grupos = grupos.stream().filter(g -> Objects.equals(g.getSedeId(), sedeDelTurno)).toList();
-					}
-					Grupo nuevoGrupoAsignado;
-					if (turnoDTO.getDiaSemana().equalsIgnoreCase("lunes")
-							|| turnoDTO.getDiaSemana().equalsIgnoreCase("miércoles")) {
-						nuevoGrupoAsignado = obtenerGrupoPorIndice(grupos, 0);
-					} else if (turnoDTO.getDiaSemana().equalsIgnoreCase("martes")
-							|| turnoDTO.getDiaSemana().equalsIgnoreCase("jueves")) {
-						nuevoGrupoAsignado = obtenerGrupoPorIndice(grupos, 1);
-					} else {
-						throw new IllegalArgumentException("Día de la semana no válido: " + turnoDTO.getDiaSemana());
-					}
-
-					if (!Objects.equals(turno.getGrupo().getId(), nuevoGrupoAsignado.getId())) {
-						validarSinPreinscripcionesActivas(turno);
-						// El responsable no mueve un turno a un grupo de otra sede (403).
-						gestionPorSede.exigirGrupoPropio(nuevoGrupoAsignado.getId());
-						turno.setGrupo(nuevoGrupoAsignado);
-					}
-				}
-			}
+			// Decisión 374: el turno conserva su grupo al cambiar de día (vale cualquier día de lunes a domingo).
+			exigirDiaValido(turnoDTO.getDiaSemana());
 
 			turno.setDiaSemana(turnoDTO.getDiaSemana());
 			turno.setHoraInicio(turnoDTO.getHoraInicio());
@@ -285,20 +258,15 @@ public class TurnoServiceImpl implements TurnoService {
 		}
 	}
 
-	/**
-	 * Obtiene un grupo de la lista según su índice.
-	 *
-	 * @param grupos La lista de grupos disponibles.
-	 * @param indice El índice del grupo a obtener.
-	 * @return El grupo correspondiente al índice especificado.
-	 * @throws IllegalArgumentException Si no hay suficientes grupos para asignar el
-	 *                                  turno.
-	 */
-	private Grupo obtenerGrupoPorIndice(List<Grupo> grupos, int indice) {
-		if (grupos.size() > indice) {
-			return grupos.get(indice);
-		} else {
-			throw new IllegalArgumentException("No hay suficientes grupos para asignar el turno");
+	/** Lanza 400 (IllegalArgumentException) si el valor no es un día de lunes a domingo. */
+	private void exigirDiaValido(String dia) {
+		if (dia == null) {
+			throw new IllegalArgumentException("Día de la semana no válido: null");
+		}
+		try {
+			DiaSemanaUtils.mapGrupoToDayOfWeek(dia);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Día de la semana no válido: " + dia);
 		}
 	}
 
