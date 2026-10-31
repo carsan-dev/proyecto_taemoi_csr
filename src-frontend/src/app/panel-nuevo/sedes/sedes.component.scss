@@ -225,6 +225,12 @@
   }
 }
 
+.sedes__ayuda {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
 .sedes__error {
   display: flex;
   align-items: flex-start;

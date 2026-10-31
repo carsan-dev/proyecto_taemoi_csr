@@ -30,7 +30,7 @@ function sede(cambios: Partial<Sede> = {}): Sede {
 }
 
 describe('sedes-vista (E9-3)', () => {
-  it('los campos llevan las etiquetas y los máximos aprobados, sin aforo', () => {
+  it('los campos llevan las etiquetas y los máximos aprobados', () => {
     expect(CAMPOS_SEDE.map((c) => [c.etiqueta, c.maximo])).toEqual([
       ['Nombre (obligatorio)', 100],
       ['Dirección', 255],
@@ -39,13 +39,16 @@ describe('sedes-vista (E9-3)', () => {
       ['Teléfono', 20],
       ['Email', 180],
       ['Código del club en la federación', 40],
+      ['Aforo por turno (opcional)', 6],
     ]);
-    expect(CAMPOS_SEDE.some((c) => /aforo/i.test(c.etiqueta) || (c.clave as string) === 'aforoTurno')).toBeFalse();
+    const aforo = CAMPOS_SEDE.find((c) => c.clave === 'aforoTurno');
+    expect(aforo?.ayuda).toBe('Si lo dejas vacío, se usa el límite común de la escuela.');
+    expect(aforo?.modoEntrada).toBe('numeric');
   });
 
-  it('cuerpoSede recorta, envía los vacíos como null y conserva el aforo recibido', () => {
-    const campos = { ...camposDe(null), nombre: '  Mollina ', telefono: ' 600 ', direccion: '   ' };
-    expect(cuerpoSede(campos, 25)).toEqual({
+  it('cuerpoSede recorta, envía los vacíos como null y el aforo como número', () => {
+    const campos = { ...camposDe(null), nombre: '  Mollina ', telefono: ' 600 ', direccion: '   ', aforoTurno: ' 25 ' };
+    expect(cuerpoSede(campos)).toEqual({
       nombre: 'Mollina',
       direccion: null,
       localidad: null,
@@ -55,7 +58,7 @@ describe('sedes-vista (E9-3)', () => {
       codigoClubFederacion: null,
       aforoTurno: 25,
     });
-    expect(cuerpoSede(campos, null).aforoTurno).toBeNull();
+    expect(cuerpoSede({ ...campos, aforoTurno: '  ' }).aforoTurno).toBeNull();
   });
 
   it('camposDe rellena con cadenas vacías lo que viene null', () => {
@@ -69,6 +72,17 @@ describe('sedes-vista (E9-3)', () => {
     expect(validarCampos({ ...camposDe(null), nombre: 'A', email: 'sin-arroba' }).email).toBeTruthy();
     expect(validarCampos({ ...camposDe(null), nombre: 'A', email: 'a@b.es' })).toEqual({});
     expect(validarCampos({ ...camposDe(null), nombre: 'A', email: '' })).toEqual({});
+  });
+
+  it('9-7: el aforo es opcional, entero y mayor que cero', () => {
+    const base = { ...camposDe(null), nombre: 'A' };
+    expect(camposDe(sede({ aforoTurno: 25 })).aforoTurno).toBe('25');
+    expect(camposDe(sede({ aforoTurno: null })).aforoTurno).toBe('');
+    expect(validarCampos({ ...base, aforoTurno: '' })).toEqual({});
+    expect(validarCampos({ ...base, aforoTurno: ' 12 ' })).toEqual({});
+    for (const malo of ['0', '00', '-3', '1.5', '1,5', 'doce']) {
+      expect(validarCampos({ ...base, aforoTurno: malo }).aforoTurno).withContext(malo).toBe('Escribe un número entero mayor que 0 o déjalo vacío.');
+    }
   });
 
   it('reglas de activas: segunda sede, activar, única activa', () => {

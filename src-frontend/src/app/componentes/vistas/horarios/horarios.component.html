@@ -161,7 +161,7 @@
                           }
                         </div>
                         <div class="spots-count">
-                          {{ obtenerNumeroAlumnos(celda.turno) }}/{{ limiteTurno }}
+                          {{ obtenerNumeroAlumnos(celda.turno) }}/{{ aforoDe(celda.turno) }}
                         </div>
                       </div>
                     }
@@ -290,7 +290,7 @@
             </div>
             <div class="info-text">
               <span class="info-label">Plazas ocupadas</span>
-              <span class="info-value">{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ limiteTurno }}</span>
+              <span class="info-value">{{ obtenerNumeroAlumnos(selectedTurno) }} / {{ aforoDe(selectedTurno) }}</span>
             </div>
             <div class="availability-status" [class]="getAvailabilityClass(selectedTurno)">
               @if (estaLleno(selectedTurno)) {
@@ -309,7 +309,7 @@
           <!-- Progress Bar -->
           <div class="capacity-bar">
             <div class="capacity-fill"
-                 [style.width.%]="(obtenerNumeroAlumnos(selectedTurno) / limiteTurno) * 100"
+                 [style.width.%]="(obtenerNumeroAlumnos(selectedTurno) / aforoDe(selectedTurno)) * 100"
                  [class]="getAvailabilityClass(selectedTurno)">
             </div>
           </div>

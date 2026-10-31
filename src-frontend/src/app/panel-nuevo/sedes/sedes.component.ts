@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
@@ -11,11 +11,14 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import {
+  AVISO_AFORO_BAJO,
   AVISO_SEGUNDA_SEDE,
   CAMPOS_SEDE,
   CamposSede,
   ClaveCampo,
+  DefinicionCampo,
   Sede,
+  SedeEditada,
   TEXTO_DESACTIVAR,
   TEXTO_UNICA_ACTIVA,
   activarCreaSegunda,
@@ -46,7 +49,7 @@ interface PanelSede {
 /**
  * Sedes del panel nuevo (E9, pieza 9-3). Una fila por sede (nombre, localidad y teléfono, estado y editar); «Nueva sede» y
  * «Editar sede» en el panel lateral, y «Estado» (activar y desactivar) al final del panel al editar. `PUT /api/sedes/{id}`
- * reemplaza todos los datos editables: al editar se envía el `aforoTurno` que devolvió la API, aunque no se muestre.
+ * reemplaza todos los datos editables: al editar se envía también el aforo por turno del formulario (pieza 9-7).
  * Tras un alta, una edición o un cambio de estado se descartan los permisos en caché (`variasSedes` y `sedes` de
  * `GET /api/auth/permisos`) para que el resto de pantallas se enteren. Solo propietario y gestión.
  */
@@ -136,6 +139,15 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     this.panel = null;
   }
 
+  /** `aria-describedby` del control: su ayuda y su error, si los tiene. */
+  descripcionCampo(campo: DefinicionCampo, panel: PanelSede): string | null {
+    const ids = [
+      campo.ayuda ? `sedes-ayuda-${campo.clave}` : '',
+      panel.errores[campo.clave] ? `sedes-error-${campo.clave}` : '',
+    ].filter((id) => id !== '');
+    return ids.length ? ids.join(' ') : null;
+  }
+
   /** Crear con exactamente una sede activa la convierte en la segunda. */
   get segundaSede(): boolean {
     return !!this.panel && !this.panel.sede && seraSegundaSede(this.sedes);
@@ -187,12 +199,11 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     panel.enviando = true;
     panel.error = null;
     const edicion = this.sedeAbierta;
-    // El PUT reemplaza todo: se reenvía el aforo que devolvió la API, aunque la pantalla no lo muestre.
-    const cuerpo = cuerpoSede(panel.campos, edicion?.aforoTurno ?? null);
-    const peticion = edicion ? this.api.editar(edicion.id, cuerpo) : this.api.crear(cuerpo);
+    const cuerpo = cuerpoSede(panel.campos);
+    const peticion: Observable<SedeEditada> = edicion ? this.api.editar(edicion.id, cuerpo) : this.api.crear(cuerpo);
     // Sin cancelar al salir: una escritura en vuelo sigue su curso.
     peticion.subscribe({
-      next: (respuesta) => {
+      next: ({ turnosSobreAforo, ...respuesta }) => {
         // La sede cambió el nombre o apareció: los permisos en caché (`sedes`, `variasSedes`) ya no valen.
         this.permisos.reiniciar();
         if (this.destruido) {
@@ -200,6 +211,9 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
         }
         this.panel = null;
         this.avisos.exito(edicion ? 'Cambios guardados.' : 'Sede creada.');
+        if (turnosSobreAforo) {
+          this.avisos.info(AVISO_AFORO_BAJO);
+        }
         this.incorporar(respuesta);
         this.cargar(true);
       },
