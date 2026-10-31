@@ -850,6 +850,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	private CargoActualizado aplicarCambiosAlCargo(Long id, ProductoAlumnoDTO detallesDTO) {
 		ProductoAlumno productoAlumno = cobros.bloquearCargo(id)
 				.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado"));
+		// Pieza 9-5: otra vez con la fila bloqueada: un cambio de sede pudo mover el cargo mientras se esperaba.
+		gestionPorSede.exigirSedePropia(productoAlumno.getSedeId());
 		return aplicarCambiosAlCargoBloqueado(productoAlumno, detallesDTO, OrigenCobro.TESORERIA);
 	}
 
@@ -1139,6 +1141,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno cancelado = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			gestionPorSede.exigirSedePropia(cargo.getSedeId());
 			exigirSinEncargoEnCurso(id);
 			if (cargo.estaCancelado()) {
 				throw new IllegalStateException(CARGO_YA_CANCELADO);
@@ -1170,6 +1173,7 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno reactivado = cobros.enTransaccion(() -> {
 			ProductoAlumno cargo = cobros.bloquearCargo(id)
 					.orElseThrow(() -> new ProductoNoEncontradoException("ProductoAlumno no encontrado con ID: " + id));
+			gestionPorSede.exigirSedePropia(cargo.getSedeId());
 			exigirAlumnoDelCargoNoAnonimizado(cargo);
 			if (!cargo.estaCancelado()) {
 				throw new IllegalStateException(CARGO_NO_CANCELADO);
