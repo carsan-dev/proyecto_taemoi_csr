@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone, inject } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, AfterViewInit, NgZone } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router, RouterModule } from '@angular/router';
 import {
   AuthenticationService,
@@ -6,18 +6,12 @@ import {
   esSoloProfesor,
 } from '../../../../servicios/authentication/authentication.service';
 import { CommonModule } from '@angular/common';
-import { Subscription, of, switchMap } from 'rxjs';
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
-import {
-  ADMIN_HEADER_QUICK_LINKS,
-  AdminQuickNavigationItem,
-} from '../../../../core/constants/navigation.constants';
 import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { PermisosSesionService, pidePermisos } from '../../../../servicios/authentication/permisos-sesion.service';
-import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
-import { esperarEstilos } from '../../../../panel-nuevo/esperar-estilos';
 import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 
@@ -31,59 +25,29 @@ import { SolicitudesContadorService } from '../../../../servicios/endpoints/soli
 export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   usuarioLogueado: boolean = false;
   isAdmin: boolean = false;
-  isAdminOnly: boolean = false;
-  esAdminPlataforma: boolean = false;
   isUser: boolean = false;
-  /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia o la barra de administración. */
+  /** Sesión solo de profesor (sin gestión ni familia): en la web pública ve el menú público con «Volver al panel». */
+  esProfesorSolo: boolean = false;
+  /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia. */
   tieneRolProfesor: boolean = false;
   /** «Mis grupos» (E8-5, decisión 217): la sesión tiene la capacidad MIS_GRUPOS de `GET /api/auth/permisos`. */
   veMisGrupos: boolean = false;
   isUserRoute: boolean = false;
   tieneAccesoDual: boolean = false;
   isHidden: boolean = false;
-  adminMenuVisible: boolean = false;
   isMobileMenuOpen: boolean = false;
   isMobileUserQuickMenuOpen: boolean = false;
   isDesktopUserMenuOpen: boolean = false;
-  isAdminAccountMenuOpen: boolean = false;
   isAuthChecked: boolean = false; // Prevents header flash during auth check
-  /**
-   * La hoja diferida de gestión (`gestion-compartida.css`) ya cargó (o falló o venció el tope). La web pública no la
-   * pide nadie más: sin ella, la cabecera de administración se vería sin estilos.
-   */
-  estilosGestionListos: boolean = false;
-  private estilosGestionPedidos: boolean = false;
-  private readonly estilosPanel = inject(EstilosPanelService);
   private lastScrollTop: number = 0;
   private readonly scrollThreshold: number = 100;
   username: string | null = null;
   private documentScrollHandler?: (event: Event) => void;
   private resizeHandler?: () => void;
   private mobileMenuScrollRelease?: ScrollLockRelease;
-  /** La sesión tiene cabecera de gestión y pide el contador de solicitudes (ADMIN o MANAGER; D6c-4). */
-  private pideContadorSolicitudes = false;
   private permisosSuscripcion?: Subscription;
 
-  // Expandable menu sections
-  expandedSections: { [key: string]: boolean } = {
-    alumnos: false,
-    grupos: false,
-    turnos: false,
-    eventos: false,
-    productos: false,
-    convocatorias: false,
-    administracion: false
-  };
-
-  // Scroll optimization
   private readonly subscriptions = new Subscription();
-  readonly adminQuickLinks: AdminQuickNavigationItem[] = ADMIN_HEADER_QUICK_LINKS;
-
-  get visibleAdminQuickLinks(): AdminQuickNavigationItem[] {
-    return this.adminQuickLinks.filter(
-      (item) => (!item.adminOnly || this.isAdminOnly) && (!item.plataformaOnly || this.esAdminPlataforma)
-    );
-  }
 
   constructor(
     private readonly authService: AuthenticationService,
@@ -94,21 +58,6 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly solicitudesContador: SolicitudesContadorService,
     private readonly permisos: PermisosSesionService
   ) {}
-
-  /** Lo que espera acción de la sesión en la bandeja de solicitudes (0: sin distintivo). */
-  get contadorSolicitudes(): number {
-    return this.solicitudesContador.total();
-  }
-
-  /** Nombre accesible del acceso rápido: con el número si lo hay. */
-  etiquetaAccesoRapido(item: AdminQuickNavigationItem): string {
-    const total = item.contador === 'solicitudes' ? this.contadorSolicitudes : 0;
-    return total > 0 ? `${item.label}: ${total} por atender` : item.label;
-  }
-
-  textoContador(total: number): string {
-    return total > 99 ? '99+' : String(total);
-  }
 
   ngOnInit(): void {
     this.actualizarContextoRuta(this.router.url);
@@ -121,13 +70,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.comprobarRoles();
         } else {
           this.isAdmin = false;
-          this.isAdminOnly = false;
-          this.esAdminPlataforma = false;
           this.isUser = false;
           this.tieneRolProfesor = false;
           this.actualizarPermisos([]);
           this.tieneAccesoDual = false;
-          this.pideContadorSolicitudes = false;
+          this.esProfesorSolo = false;
           this.solicitudesContador.reiniciar();
           this.isAuthChecked = true;
         }
@@ -150,24 +97,18 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAuthChecked = true;
     }
 
-    // Close admin menu on navigation and reset scroll state
+    // Cierra los menús al navegar y reinicia el estado del scroll
     this.subscriptions.add(
       this.router.events.subscribe((event) => {
         if (event instanceof NavigationStart) {
-          this.adminMenuVisible = false;
           this.closeMobileMenu();
           this.closeDesktopUserMenu();
-          this.closeAdminAccountMenu();
         }
         // Reset scroll tracking on navigation end to prevent stale lastScrollTop values
         if (event instanceof NavigationEnd) {
           this.lastScrollTop = 0;
           this.isHidden = false;
           this.actualizarContextoRuta(event.urlAfterRedirects || event.url);
-          // D6c-4: el contador se refresca al navegar, nunca por temporizador.
-          if (this.usuarioLogueado && this.pideContadorSolicitudes) {
-            this.solicitudesContador.refrescar();
-          }
         }
       })
     );
@@ -234,7 +175,6 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleMobileMenu(): void {
     this.closeDesktopUserMenu();
-    this.closeAdminAccountMenu();
     this.closeMobileUserQuickMenu();
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
     this.setBodyScrollLock(this.isMobileMenuOpen);
@@ -259,22 +199,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleDesktopUserMenu(): void {
     this.closeMobileUserQuickMenu();
-    this.closeAdminAccountMenu();
     this.isDesktopUserMenuOpen = !this.isDesktopUserMenuOpen;
   }
 
   closeDesktopUserMenu(): void {
     this.isDesktopUserMenuOpen = false;
-  }
-
-  toggleAdminAccountMenu(): void {
-    this.closeDesktopUserMenu();
-    this.closeMobileUserQuickMenu();
-    this.isAdminAccountMenuOpen = !this.isAdminAccountMenuOpen;
-  }
-
-  closeAdminAccountMenu(): void {
-    this.isAdminAccountMenuOpen = false;
   }
 
   private setBodyScrollLock(locked: boolean): void {
@@ -287,28 +216,13 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   comprobarRoles() {
-    // Emite una vez y completa: no hace falta guardar la suscripción. Una sesión solo profesor no sondea la
-    // plataforma: el servidor solo le deja su caja (se esperan los roles; la petición de /roles se comparte).
-    this.authService
-      .resolverRolesDisponibles()
-      .pipe(switchMap((roles) => (esSoloProfesor(roles) ? of(false) : this.authService.esAdminPlataforma())))
-      .subscribe((esAdmin) => (this.esAdminPlataforma = esAdmin));
     this.authService.getRoles().subscribe((roles: string[]) => {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
-      this.isAdminOnly = roles.includes('ROLE_ADMIN');
-      this.pedirEstilosGestion();
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
       this.actualizarPermisos(roles);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
-      // Solo con cabecera de gestión (ADMIN o MANAGER): el responsable de sede aún no entra en el panel (E9) y
-      // una sesión PROFESOR + RESPONSABLE_SEDE es solo-profesor.
-      this.pideContadorSolicitudes = this.isAdmin;
-      if (this.pideContadorSolicitudes) {
-        this.solicitudesContador.refrescar();
-      } else {
-        this.solicitudesContador.reiniciar();
-      }
+      this.esProfesorSolo = esSoloProfesor(roles);
       this.isAuthChecked = true;
     });
   }
@@ -331,22 +245,30 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe((capacidades) => (this.veMisGrupos = profesor && capacidades.includes('MIS_GRUPOS')));
   }
 
-  /** Pide la hoja de gestión una sola vez y abre la cabecera de administración cuando resuelve (también si falla). */
-  private pedirEstilosGestion(): void {
-    if (!this.isAdmin || this.estilosGestionPedidos) {
-      return;
-    }
-    this.estilosGestionPedidos = true;
-    void esperarEstilos(this.estilosPanel.cargarGestion()).then(() => {
-      this.estilosGestionListos = true;
-    });
-  }
-
-  get mostrarHeaderAdmin(): boolean {
-    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isAdmin || !this.estilosGestionListos) {
+  /**
+   * Sesión del panel (gestión o solo profesor) fuera de las rutas de familia (la web pública y, si el skeleton cae en
+   * «lo de hoy», también las del panel): ve el menú público de siempre, con
+   * «Volver al panel» en lugar de «Entrar». Las cuentas con gestión y familia conservan su cabecera en las rutas de
+   * familia (`mostrarHeaderUser`).
+   */
+  get sesionDelPanelEnWeb(): boolean {
+    if (!this.isAuthChecked || !this.usuarioLogueado || this.isUserRoute || this.mostrarHeaderUser) {
       return false;
     }
-    return !this.isUserRoute;
+    return this.isAdmin || this.esProfesorSolo;
+  }
+
+  /** El menú público lo ven los visitantes y las sesiones del panel que miran la web. */
+  get mostrarHeaderPublico(): boolean {
+    if (!this.isAuthChecked) {
+      return false;
+    }
+    return !this.usuarioLogueado || this.sesionDelPanelEnWeb;
+  }
+
+  /** Destino de «Volver al panel»: gestión siempre al panel de gestión (aunque prefiera la vista de familia); profesor, a sus grupos. */
+  get destinoPanel(): string {
+    return this.isAdmin ? '/adminpage' : '/mis-grupos';
   }
 
   get mostrarHeaderUser(): boolean {
@@ -357,37 +279,6 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
     return this.isUserRoute;
-  }
-
-  toggleAdminMenu(): void {
-    this.adminMenuVisible = !this.adminMenuVisible;
-  }
-
-  closeAdminMenu(): void {
-    this.adminMenuVisible = false;
-    this.closeAdminAccountMenu();
-    Object.keys(this.expandedSections).forEach(key => {
-      this.expandedSections[key] = false;
-    });
-  }
-
-  toggleSection(section: string): void {
-    this.expandedSections[section] = !this.expandedSections[section];
-  }
-
-  isAdminQuickRouteActive(item: AdminQuickNavigationItem): boolean {
-    const currentPath = this.obtenerRutaActualSinQuery();
-    const prefixes = item.activePrefixes && item.activePrefixes.length > 0
-      ? item.activePrefixes
-      : [item.route];
-
-    if (item.exact) {
-      return prefixes.some((prefix) => currentPath === prefix);
-    }
-
-    return prefixes.some((prefix) =>
-      currentPath === prefix || currentPath.startsWith(`${prefix}/`)
-    );
   }
 
   @HostListener('window:scroll', [])
@@ -433,33 +324,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isDesktopUserMenuOpen && !target.closest('.user-desktop-menu')) {
       this.closeDesktopUserMenu();
     }
-    if (this.isAdminAccountMenuOpen && !target.closest('.admin-account-menu')) {
-      this.closeAdminAccountMenu();
-    }
-
-    if (this.shouldIgnoreAdminClick(target)) {
-      return;
-    }
 
     this.handleNavbarClick(target);
-  }
-
-  private shouldIgnoreAdminClick(target: HTMLElement): boolean {
-    if (!this.adminMenuVisible) {
-      return false;
-    }
-
-    const clickedToggleButton = target.closest('.admin-toggle-button');
-    if (clickedToggleButton) {
-      return true;
-    }
-
-    const clickedInsideMenu = target.closest('.admin-sidebar');
-    if (!clickedInsideMenu) {
-      this.adminMenuVisible = false;
-    }
-
-    return false;
   }
 
   private handleNavbarClick(target: HTMLElement): void {
@@ -524,26 +390,15 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private obtenerRutaActualSinQuery(): string {
-    const currentUrl = this.router.url || '';
-    return currentUrl.split('?')[0].split('#')[0];
-  }
-
-  cambiarVistaUsuario(): void {
-    this.cambiarVista('user');
-  }
-
   cambiarVistaAdmin(): void {
     this.cambiarVista('admin');
   }
 
   private cambiarVista(portal: PortalPreferido): void {
     this.authService.guardarVistaPreferida(portal);
-    this.closeAdminAccountMenu();
     this.closeDesktopUserMenu();
     this.closeMobileUserQuickMenu();
     this.closeMobileMenu();
-    this.closeAdminMenu();
     const rutaDestino = portal === 'admin' ? '/adminpage' : '/userpage';
     this.router.navigate([rutaDestino]);
   }
@@ -583,8 +438,6 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           timer: 2000,
         });
 
-        this.adminMenuVisible = false;
-        this.closeAdminAccountMenu();
         this.router.navigate(['/']);
       }
     });
