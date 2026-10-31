@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (501 líneas; 164 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (504 líneas; 165 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -482,6 +482,13 @@ columna mide la regla de URL `/imagenes/**`, que da `PERMITE`, y la barrera real
   y el registro fija que decide igual que su GET.
 - Un mapeo sin método (solo `/error`) se expande a GET, HEAD, POST, PUT, PATCH y DELETE.
 - El comentario final es informativo; el test no lo lee.
+
+Pieza 9-1 (cambio de sede del alumno, decisión 369): 3 líneas nuevas en `AlumnoController`; ninguna casilla existente
+cambia. `GET`/`HEAD /api/alumnos/{id}/cambio-sede` y `PUT /api/alumnos/{id}/sede`: GESTOR y PROPIETARIO `PERMITE`; el
+resto `DENIEGA`, también RESPONSABLE_SEDE. Regla de URL propia, antes de las del responsable de sede, y el mismo
+`@PreAuthorize` en los dos métodos. Alumno de otra escuela: 404; anonimizado: 409; sede de otra escuela, inactiva o la
+que ya tiene: 400. Todo 2xx del `PUT` registra `SEDES ALUMNO_SEDE_CAMBIADA` (solo ids) y está en
+`EscrituraConRegistroPropio`. Lo prueban `CambioSedeAlumnoIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 ## Cómo actualizarlo
 

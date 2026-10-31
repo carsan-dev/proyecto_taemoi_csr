@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.dtos.response.AlumnoFichaDTO;
 import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralMiPosicionResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingGeneralResponse;
 import com.taemoi.project.dtos.response.RetoDiarioRankingMiPosicionResponse;
@@ -26,10 +27,14 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GradoRepository;
 import com.taemoi.project.services.AlumnoService;
+import com.taemoi.project.services.CambioSedeAlumnoService;
 // import com.taemoi.project.utils.FechaUtils;
 
 @ExtendWith(MockitoExtension.class)
 class AlumnoControllerTest {
+
+	@Mock
+	private CambioSedeAlumnoService cambioSedeAlumnoService;
 
 	@Mock
 	private AlumnoService alumnoService;
@@ -67,12 +72,14 @@ class AlumnoControllerTest {
 	void obtenerAlumnoPorIdDTO_Test() {
 		Long id = 1L;
 		AlumnoDTO alumnoDTO = new AlumnoDTO();
+		AlumnoFichaDTO ficha = new AlumnoFichaDTO(alumnoDTO, 5L, "Sede IT");
 		when(alumnoService.obtenerAlumnoPorIdDTO(id)).thenReturn(Optional.of(alumnoDTO));
+		when(cambioSedeAlumnoService.ficha(alumnoDTO)).thenReturn(ficha);
 
-		ResponseEntity<AlumnoDTO> result = alumnoController.obtenerAlumnoPorIdDTO(id);
+		ResponseEntity<AlumnoFichaDTO> result = alumnoController.obtenerAlumnoPorIdDTO(id);
 
 		assertEquals(HttpStatus.OK, result.getStatusCode());
-		assertEquals(alumnoDTO, result.getBody());
+		assertEquals(ficha, result.getBody());
 	}
 
 	/*

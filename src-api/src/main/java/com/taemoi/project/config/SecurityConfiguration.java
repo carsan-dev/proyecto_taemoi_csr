@@ -325,6 +325,11 @@ public class SecurityConfiguration {
 								Roles.ROLE_USER.toString())
 						.requestMatchers(HttpMethod.POST, "/api/alumnos/aptos/{id}/actualizar-grado")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza 9-1 (decisión 369): cambio de sede del alumno, solo gestión. Antes de las del responsable.
+						.requestMatchers(HttpMethod.GET, "/api/alumnos/{id}/cambio-sede")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.requestMatchers(HttpMethod.PUT, "/api/alumnos/{id}/sede")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Entrega 6-1: alumnos abiertos al responsable de sede (constantes RESPONSABLE_SEDE_*).
 						.requestMatchers(HttpMethod.GET, alumnos(RESPONSABLE_SEDE_GET))
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),

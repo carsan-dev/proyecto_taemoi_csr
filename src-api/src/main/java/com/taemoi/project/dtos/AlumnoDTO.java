@@ -59,8 +59,9 @@ public class AlumnoDTO {
 	private Boolean aptoParaExamen;
 
 	/**
-	 * Sede principal pedida en el alta (entrega 6-1b, D6-2). Solo de entrada: las respuestas no cambian. El
-	 * responsable de sede debe indicar una de las suyas (automática si tiene una); la gestión, opcional.
+	 * Sede principal pedida en el alta (entrega 6-1b, D6-2). Solo de entrada: las respuestas no cambian (la ficha del
+	 * panel la saca con {@link com.taemoi.project.dtos.response.AlumnoFichaDTO}). El responsable de sede debe indicar
+	 * una de las suyas (automática si tiene una); la gestión, también con dos o más sedes activas (decisión 368).
 	 */
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private Long sedePrincipalId;

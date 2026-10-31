@@ -116,6 +116,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		SEDE_EDITAR("PUT", "/api/sedes/[^/]+"),
 		/** GestionSedesService#cambiarActiva (SEDES SEDE_ACTIVADA o SEDE_DESACTIVADA). */
 		SEDE_ACTIVA("PUT", "/api/sedes/[^/]+/activa"),
+		/** Pieza 9-1: CambioSedeAlumnoService#cambiar (SEDES ALUMNO_SEDE_CAMBIADA). */
+		ALUMNO_CAMBIAR_SEDE("PUT", "/api/alumnos/[^/]+/sede"),
 		// Pieza E8-3 (D8-16): miembros. Todo 2xx registra, también el que no cambia nada (con sinCambios=SI).
 		/** GestionMiembrosService#alta (MIEMBROS ROL_*, CARGO_CAMBIADO, SEDES_CAMBIADAS; PROFESOR ASIGNACION_*). */
 		MIEMBRO_ALTA("POST", "/api/miembros"),

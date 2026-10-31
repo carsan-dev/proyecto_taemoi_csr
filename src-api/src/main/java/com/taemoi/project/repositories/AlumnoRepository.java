@@ -289,6 +289,21 @@ public interface AlumnoRepository
 	@Query("UPDATE Alumno a SET a.sedePrincipalId = :sedeId WHERE a.id = :alumnoId")
 	int asignarSedePrincipal(@Param("alumnoId") Long alumnoId, @Param("sedeId") Long sedeId);
 
+	/** Pieza 9-1: la sede del alumno y si está anonimizado, leídos con la fila ya bloqueada. */
+	interface EstadoSedeAlumno {
+		Long getSedePrincipalId();
+
+		java.time.LocalDateTime getAnonimizadoEn();
+	}
+
+	/**
+	 * Pieza 9-1: bloquea (SELECT ... FOR UPDATE) el alumno de la escuela activa y devuelve su estado confirmado, sin
+	 * cargar la entidad (una consulta con bloqueo no refresca la instancia que la sesión ya tuviera).
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT a.sedePrincipalId AS sedePrincipalId, a.anonimizadoEn AS anonimizadoEn FROM Alumno a WHERE a.id = :id")
+	Optional<EstadoSedeAlumno> bloquearEstadoDeSede(@Param("id") Long id);
+
 	/** Alumnos de la escuela activa con algún NIF guardado (informe de DNIs compartidos). */
 	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
 	List<Alumno> buscarConNifEnOrganizacionActiva();
