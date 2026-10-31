@@ -32,6 +32,7 @@ import {
   etiquetaAsignacion,
   etiquetaGrupo,
   etiquetaRol,
+  invitacionPendienteAqui,
   mensajeError,
   mismasSedes,
   mismosGrupos,
@@ -174,6 +175,10 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
 
   puedeCambiar(rol: RolMembresia): boolean {
     return puedeCambiarRol(rol, this.contexto.propietario);
+  }
+
+  get verInvitacion(): boolean {
+    return !!this.ficha && invitacionPendienteAqui(this.ficha);
   }
 
   get verCancelarInvitacion(): boolean {
@@ -376,20 +381,33 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       return;
     }
     if (resultado.error) {
-      if (!this.destruido) {
-        this.fallarCancelacion(resultado.error, ficha.usuarioId);
-      }
+      this.fallarCancelacion(resultado.error, ficha.usuarioId);
       return;
     }
     if (!this.destruido) {
       this.cerrar.emit();
     }
-    this.terminarCerrado('Invitación cancelada');
+    this.terminarCerrado('Invitación cancelada.');
   }
 
-  /** El mensaje en Datos. Un 409 dice que la ficha quedó vieja: se relee sin esqueleto, para no perder el mensaje. */
+  /**
+   * El mensaje en Datos. Un 409 dice que la ficha quedó vieja: se relee sin esqueleto, para no perder el mensaje. Un 404
+   * dice que la cuenta ya no existe: no hay ficha que releer; se cierra, se avisa y la lista se recarga.
+   */
   private fallarCancelacion(error: unknown, usuarioId: number): void {
-    this.datosError = mensajeError(error, 'No se pudo cancelar la invitación.');
+    const mensaje = mensajeError(error, 'No se pudo cancelar la invitación.');
+    if (estadoHttp(error) === 404) {
+      if (!this.destruido) {
+        this.cerrar.emit();
+      }
+      this.avisos.error(mensaje);
+      this.alTerminarCerrado?.();
+      return;
+    }
+    if (this.destruido) {
+      return;
+    }
+    this.datosError = mensaje;
     this.cdr.detectChanges();
     if (estadoHttp(error) !== 409) {
       return;

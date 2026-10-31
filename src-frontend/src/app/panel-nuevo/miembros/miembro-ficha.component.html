@@ -10,7 +10,7 @@
     <section class="miembros__seccion" aria-labelledby="miembro-datos">
       <h3 class="miembros__seccion-titulo" id="miembro-datos">Datos</h3>
       <p class="miembros__dato"><span class="miembros__dato-etiqueta">Email</span> <span class="miembros__dato-valor">{{ ficha.email }}</span></p>
-      @if (ficha.invitacionPendiente) {
+      @if (verInvitacion) {
       <div class="miembros__invitacion">
         <span class="miembros__etiqueta miembros__etiqueta--atencion">Invitación pendiente</span>
         <div class="miembros__invitacion-acciones">
