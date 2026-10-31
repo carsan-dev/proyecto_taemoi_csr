@@ -629,7 +629,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     pintar();
   }
 
-  const FRASE_GOOGLE = 'Esta cuenta usa Google. Su contraseña no se cambia aquí.';
+  const FRASE_GOOGLE = 'Esta cuenta ha entrado con Google. Si también usa contraseña, puede cambiarla con «¿Has olvidado tu contraseña?».';
   const FRASE_OTRA = 'Esta cuenta también pertenece a otra escuela. Su contraseña no se cambia desde aquí.';
 
   it('visibilidad según quién abre la ficha y el estado de la contraseña (los cuatro valores)', async () => {
