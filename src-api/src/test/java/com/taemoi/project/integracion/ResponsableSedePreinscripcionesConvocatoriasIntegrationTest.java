@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.dtos.request.PlantillaPreinscripcionRequest;
 import com.taemoi.project.dtos.request.PreinscripcionRequest;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
@@ -337,6 +339,30 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 			assertEquals("PENDIENTE", estadoDe(referencia));
 		}
 		assertEquals(List.of(e.gB), gruposDe(e.aB), "la ficha ajena no se toca");
+	}
+
+	/** Decisión 96: vincular una preinscripción tampoco cambia el email de un alumno sin cuenta; conservarlo, sí vale. */
+	@Test
+	void finalizar_vincularNoCambiaElEmailDeUnAlumnoSinCuenta() throws Exception {
+		String dni = dni();
+		String emailFicha = "it-96-ficha-prei-" + e.marca + "@example.test";
+		long ficha = e.alumno("E96PREI" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, emailFicha, ficha);
+		String referencia = preinscripcion(e.org, e.gA, List.of(e.tA), dni, "nuevo-96-" + e.marca + "@example.test");
+
+		MvcResult cambio = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "USAR_PREINSCRIPCION")), tokenA);
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals("PENDIENTE", estadoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+
+		MvcResult conserva = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "CONSERVAR_FICHA")), tokenA);
+		assertEquals(200, conserva.getResponse().getStatus(), conserva.getResponse().getContentAsString());
+		assertEquals(ficha, alumnoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
 	}
 
 	@Test

@@ -760,6 +760,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
 			Usuario usuario = alumnoExistente.getUsuario();
+			if (usuario == null) {
+				// Decisión 96: sin cuenta, el email da acceso de familia a la ficha; solo lo cambia la gestión.
+				gestionPorSede.exigirGestionParaCambiarEmail(alumnoExistente.getEmail(), normalizedEmail);
+			}
 			if (usuario != null && normalizedEmail != null) {
 				String usuarioEmail = usuario.getEmail();
 				if ((usuarioEmail == null || !usuarioEmail.equals(normalizedEmail))
