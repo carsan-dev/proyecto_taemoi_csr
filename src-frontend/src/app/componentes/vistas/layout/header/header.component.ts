@@ -12,6 +12,7 @@ import { resolverPortalContexto } from '../../../../app.routes';
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockRelease, ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { PermisosSesionService, pidePermisos } from '../../../../servicios/authentication/permisos-sesion.service';
+import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 
 
 @Component({
@@ -54,6 +55,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly zone: NgZone,
     private readonly pageScroll: PageScrollService,
     private readonly scrollLock: ScrollLockService,
+    private readonly solicitudesContador: SolicitudesContadorService,
     private readonly permisos: PermisosSesionService
   ) {}
 
@@ -73,6 +75,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.actualizarPermisos([]);
           this.tieneAccesoDual = false;
           this.esProfesorSolo = false;
+          this.solicitudesContador.reiniciar();
           this.isAuthChecked = true;
         }
       })

@@ -8,6 +8,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { PageScrollService } from '../../../../servicios/generales/page-scroll.service';
 import { ScrollLockService } from '../../../../servicios/generales/scroll-lock.service';
 import { Capacidad, PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { SolicitudesContadorService } from '../../../../servicios/endpoints/solicitudes-contador.service';
 import { itSinReloj } from '../../../../testing/reloj-prueba';
 
 describe('HeaderComponent', () => {
@@ -38,6 +39,7 @@ describe('HeaderComponent', () => {
       new NgZone({}),
       pageScroll as any,
       scrollLock as any,
+      { refrescar: () => undefined, reiniciar: () => undefined } as any,
       { capacidades: () => of([]), obtener: () => of({}) } as any
     ));
   }
@@ -92,6 +94,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: { refrescar: () => undefined, reiniciar: () => undefined } },
         { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
@@ -258,6 +261,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: { refrescar: () => undefined, reiniciar: () => undefined } },
         { provide: PermisosSesionService, useValue: permisos },
       ],
     }).compileComponents();
@@ -340,6 +344,7 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
   async function renderizar(roles: string[], ruta = '/eventos', vistaPreferida: 'user' | 'admin' = 'admin') {
     const logueado = roles.length > 0;
     const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    const contador = { refrescar: jasmine.createSpy('refrescar'), reiniciar: jasmine.createSpy('reiniciar') };
     const authServiceMock = {
       usuarioLogueadoCambio: new BehaviorSubject<boolean>(logueado),
       usernameCambio: new BehaviorSubject<string | null>(logueado ? 'cuenta' : null),
@@ -364,6 +369,7 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
+        { provide: SolicitudesContadorService, useValue: contador },
         { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
@@ -374,7 +380,12 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
-    return { fixture, el: fixture.nativeElement as HTMLElement };
+    return {
+      fixture,
+      el: fixture.nativeElement as HTMLElement,
+      contador,
+      usuarioLogueadoCambio: authServiceMock.usuarioLogueadoCambio,
+    };
   }
 
   const texto = (e: Element | null) => e?.textContent?.replace(/\s+/g, ' ').trim();
@@ -470,5 +481,15 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
         expect(navegar.calls.mostRecent().args[1]?.state).withContext(roles.join()).toEqual({ verWeb: true });
       }
     }
+  });
+
+  itSinReloj('al cerrar sesión se reinicia el contador de solicitudes para que la siguiente cuenta no vea el anterior', async () => {
+    const { contador, usuarioLogueadoCambio, fixture } = await renderizar(['ROLE_ADMIN']);
+    contador.reiniciar.calls.reset();
+
+    usuarioLogueadoCambio.next(false);
+    fixture.detectChanges();
+
+    expect(contador.reiniciar).toHaveBeenCalledTimes(1);
   });
 });
