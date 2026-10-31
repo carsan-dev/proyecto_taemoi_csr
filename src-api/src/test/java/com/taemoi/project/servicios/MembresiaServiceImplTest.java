@@ -2,7 +2,6 @@ package com.taemoi.project.servicios;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -73,20 +72,8 @@ class MembresiaServiceImplTest {
 		assertEquals(Roles.ROLE_RESPONSABLE_SEDE, RolMembresia.RESPONSABLE_SEDE.autoridad());
 		assertEquals(Roles.ROLE_PROFESOR, RolMembresia.PROFESOR.autoridad());
 		assertEquals(Roles.ROLE_USER, RolMembresia.FAMILIA.autoridad());
-		for (Roles rol : Set.of(Roles.ROLE_ADMIN, Roles.ROLE_MANAGER, Roles.ROLE_USER)) {
-			assertTrue(RolMembresia.asignableDesdeApiDeRoles(rol), rol.name());
-			assertEquals(rol, RolMembresia.desdeAutoridad(rol).autoridad(), "Ida y vuelta de " + rol);
-		}
 		when(repo.findRolesActivos(10L, 1L)).thenReturn(List.of(RolMembresia.PROPIETARIO, RolMembresia.FAMILIA));
 		assertEquals(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_USER), servicio.autoridadesEn(10L, 1L));
-	}
-
-	@Test
-	void losRolesNuevosNoSeAsignanDesdeLaApiDeRoles() {
-		for (Roles rol : Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR)) {
-			assertFalse(RolMembresia.asignableDesdeApiDeRoles(rol), rol.name());
-			assertThrows(IllegalArgumentException.class, () -> RolMembresia.desdeAutoridad(rol), rol.name());
-		}
 	}
 
 	/** Taemoi igual: con las tres autoridades de siempre, abre sesión exactamente quien tiene alguna. */
@@ -371,51 +358,6 @@ class MembresiaServiceImplTest {
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L), "decisión 370: el responsable abre sesión");
 		activas.add(new Membresia(10L, 4L, RolMembresia.FAMILIA));
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L), "familia en otra escuela: mensaje de siempre");
-	}
-
-	@Test
-	void reemplazarAutoridadesConservaProfesorYGestionaSoloLosRolesDeSiempre() {
-		Membresia profesor = new Membresia(10L, 1L, RolMembresia.PROFESOR);
-		Membresia familia = new Membresia(10L, 1L, RolMembresia.FAMILIA);
-		when(repo.findByUsuarioIdAndOrganizacionId(10L, 1L)).thenReturn(List.of(profesor, familia));
-
-		servicio.reemplazarAutoridades(10L, 1L, Set.of(Roles.ROLE_MANAGER, Roles.ROLE_ADMIN));
-
-		assertTrue(profesor.isActiva(), "PROFESOR no lo gestiona la API de roles: se conserva");
-		assertFalse(familia.isActiva(), "ROLE_USER ya no está: se desactiva");
-		verify(repo).saveAll(org.mockito.ArgumentMatchers.argThat(lista -> {
-			List<Membresia> guardadas = new ArrayList<>();
-			lista.forEach(guardadas::add);
-			return guardadas.size() == 4
-					&& guardadas.stream().anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO && m.isActiva())
-					&& guardadas.stream().anyMatch(m -> m.getRol() == RolMembresia.ADMINISTRADOR && m.isActiva());
-		}));
-	}
-
-	@Test
-	void reemplazarAutoridadesSinNingunaNoDesactivaProfesorNiResponsable() {
-		Membresia profesor = new Membresia(10L, 1L, RolMembresia.PROFESOR);
-		Membresia responsable = new Membresia(10L, 1L, RolMembresia.RESPONSABLE_SEDE);
-		Membresia administrador = new Membresia(10L, 1L, RolMembresia.ADMINISTRADOR);
-		when(repo.findByUsuarioIdAndOrganizacionId(10L, 1L)).thenReturn(List.of(profesor, responsable, administrador));
-
-		servicio.reemplazarAutoridades(10L, 1L, Set.of());
-
-		assertTrue(profesor.isActiva());
-		assertTrue(responsable.isActiva());
-		assertFalse(administrador.isActiva());
-	}
-
-	@Test
-	void reemplazarAutoridadesConUnRolNuevoSeRechazaSinTocarNada() {
-		Membresia familia = new Membresia(10L, 1L, RolMembresia.FAMILIA);
-		when(repo.findByUsuarioIdAndOrganizacionId(10L, 1L)).thenReturn(List.of(familia));
-
-		assertThrows(IllegalArgumentException.class,
-				() -> servicio.reemplazarAutoridades(10L, 1L, Set.of(Roles.ROLE_PROFESOR)));
-
-		assertTrue(familia.isActiva());
-		verify(repo, never()).saveAll(any());
 	}
 
 	@Test

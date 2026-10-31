@@ -39,34 +39,6 @@ public enum RolMembresia {
 		return autoridad;
 	}
 
-	/**
-	 * Si la API de roles ({@code PUT /api/admin/users/{userId}/roles}) gestiona este rol: solo PROPIETARIO,
-	 * ADMINISTRADOR y FAMILIA. RESPONSABLE_SEDE y PROFESOR los asignará la API de miembros (entrega 8).
-	 */
-	public boolean gestionadoPorApiDeRoles() {
-		return this == PROPIETARIO || this == ADMINISTRADOR || this == FAMILIA;
-	}
-
-	/** Si la autoridad se puede pedir en la API de roles: ROLE_ADMIN, ROLE_MANAGER o ROLE_USER. */
-	public static boolean asignableDesdeApiDeRoles(Roles autoridad) {
-		return autoridad == Roles.ROLE_ADMIN || autoridad == Roles.ROLE_MANAGER || autoridad == Roles.ROLE_USER;
-	}
-
-	/**
-	 * Rol canónico que se crea al asignar una autoridad desde la API de roles.
-	 *
-	 * @throws IllegalArgumentException con {@code ROLE_RESPONSABLE_SEDE} o {@code ROLE_PROFESOR}.
-	 */
-	public static RolMembresia desdeAutoridad(Roles autoridad) {
-		return switch (autoridad) {
-			case ROLE_ADMIN -> PROPIETARIO;
-			case ROLE_MANAGER -> ADMINISTRADOR;
-			case ROLE_USER -> FAMILIA;
-			case ROLE_RESPONSABLE_SEDE, ROLE_PROFESOR ->
-				throw new IllegalArgumentException("El rol " + autoridad + " no se asigna desde la gestión de roles.");
-		};
-	}
-
 	public static Set<Roles> autoridades(Collection<RolMembresia> roles) {
 		Set<Roles> resultado = EnumSet.noneOf(Roles.class);
 		for (RolMembresia rol : roles) {

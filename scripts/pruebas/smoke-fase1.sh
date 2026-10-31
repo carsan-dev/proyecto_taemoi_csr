@@ -169,7 +169,7 @@ st, b, _ = m.req("POST", "/api/auth/organizacion", {"organizacionId": 1})
 check("multi-escuela: volver a org 1 -> 200 y roles = [ROLE_USER]", st == 200 and m.roles() == ["ROLE_USER"], (st, m.roles()))
 
 # 7. Admin org 1 no puede cambiar la contraseña de un usuario de la org 2
-st, b, _ = admin.req("PUT", f"/api/admin/users/{E['ID_USUARIO_ORG2']}/password", {"nuevaContrasena": "OtraClave123"})
+st, b, _ = admin.req("PUT", f"/api/miembros/{E['ID_USUARIO_ORG2']}/contrasena", {"nuevaContrasena": "OtraClave123"})
 check("admin org1: cambiar contraseña de usuario org 2 -> 403/404", st in (403, 404), (st, b[:160]))
 
 # 8. Errores con cuerpo JSON

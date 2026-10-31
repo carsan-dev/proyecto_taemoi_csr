@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.taemoi.project.dtos.response.OrganizacionUsuarioDTO;
@@ -31,9 +30,6 @@ import com.taemoi.project.services.MembresiaService;
 
 @Service
 public class MembresiaServiceImpl implements MembresiaService {
-
-	/** Pieza E8-3 (D8-9, decisión 221): mismo mensaje que la API de miembros. */
-	static final String SIN_PROPIETARIO = "La escuela se quedaría sin propietario.";
 
 	private final MembresiaRepository membresias;
 	private final OrganizacionRepository organizaciones;
@@ -129,66 +125,6 @@ public class MembresiaServiceImpl implements MembresiaService {
 		return resultado;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>Pieza E8-3 (D8-9, D8-19, decisión 221): bloquea la fila de la cuenta y, después, las filas PROPIETARIO activas
-	 * de la escuela antes de leer sus membresías ({@code READ_COMMITTED}, el mismo orden que
-	 * {@code GestionMiembrosService}); si el conjunto pedido desactiva la última PROPIETARIO activa, 409
-	 * {@link #SIN_PROPIETARIO} sin cambiar nada. Una escuela que ya no tiene propietario activo no se bloquea por esto.
-	 */
-	@Override
-	@Transactional(isolation = Isolation.READ_COMMITTED)
-	public Set<Roles> reemplazarAutoridades(Long usuarioId, Long organizacionId, Set<Roles> autoridades) {
-		Set<Roles> deseadas = autoridades == null || autoridades.isEmpty()
-				? EnumSet.noneOf(Roles.class)
-				: EnumSet.copyOf(autoridades);
-		for (Roles autoridad : deseadas) {
-			if (!RolMembresia.asignableDesdeApiDeRoles(autoridad)) {
-				throw new IllegalArgumentException("El rol " + autoridad + " no se asigna desde la gestión de roles.");
-			}
-		}
-		usuarios.bloquearPorId(usuarioId);
-		List<Membresia> propietarios = membresias.bloquearPropietariosActivos(organizacionId);
-		if (!deseadas.contains(Roles.ROLE_ADMIN) && propietarios != null && propietarios.size() <= 1
-				&& propietarios.stream().anyMatch(p -> Objects.equals(p.getUsuarioId(), usuarioId))) {
-			throw new IllegalStateException(SIN_PROPIETARIO);
-		}
-		List<Membresia> actuales = new ArrayList<>(
-				membresias.findByUsuarioIdAndOrganizacionId(usuarioId, organizacionId));
-
-		Set<Roles> cubiertas = EnumSet.noneOf(Roles.class);
-		for (Membresia membresia : actuales) {
-			// RESPONSABLE_SEDE y PROFESOR no los gestiona esta API (entrega 8): ni cubren ni se desactivan.
-			if (!membresia.isActiva() || !membresia.getRol().gestionadoPorApiDeRoles()) {
-				continue;
-			}
-			if (deseadas.contains(membresia.getRol().autoridad())) {
-				cubiertas.add(membresia.getRol().autoridad());
-			} else {
-				membresia.setActiva(false);
-			}
-		}
-		for (Roles autoridad : deseadas) {
-			if (cubiertas.contains(autoridad)) {
-				continue;
-			}
-			RolMembresia canonico = RolMembresia.desdeAutoridad(autoridad);
-			Membresia existente = actuales.stream()
-					.filter(m -> m.getRol() == canonico)
-					.findFirst()
-					.orElse(null);
-			if (existente != null) {
-				existente.setActiva(true);
-			} else {
-				actuales.add(new Membresia(usuarioId, organizacionId, canonico));
-			}
-		}
-		membresias.saveAll(actuales);
-		membresias.flush();
-		return autoridadesEn(usuarioId, organizacionId);
-	}
-
 	@Override
 	@Transactional
 	public void asegurarMembresia(Long usuarioId, Long organizacionId, RolMembresia rol) {
@@ -201,23 +137,6 @@ public class MembresiaServiceImpl implements MembresiaService {
 				.orElseGet(() -> new Membresia(usuarioId, organizacionId, rol));
 		membresia.setActiva(true);
 		membresias.save(membresia);
-	}
-
-	@Override
-	public Map<Long, Set<Roles>> autoridadesPorUsuario(Long organizacionId) {
-		Map<Long, Set<Roles>> resultado = new HashMap<>();
-		for (Membresia membresia : membresias.findByOrganizacionId(organizacionId)) {
-			if (membresia.isActiva()) {
-				resultado.computeIfAbsent(membresia.getUsuarioId(), k -> EnumSet.noneOf(Roles.class))
-						.add(membresia.getRol().autoridad());
-			}
-		}
-		return resultado;
-	}
-
-	@Override
-	public List<Usuario> usuariosDeOrganizacion(Long organizacionId) {
-		return membresias.findUsuariosDeOrganizacion(organizacionId, esPorDefecto(organizacionId));
 	}
 
 	@Override

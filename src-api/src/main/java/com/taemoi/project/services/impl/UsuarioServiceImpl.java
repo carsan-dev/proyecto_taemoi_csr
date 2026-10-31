@@ -1,10 +1,6 @@
 package com.taemoi.project.services.impl;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,12 +9,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.taemoi.project.dtos.UsuarioDTO;
-import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.repositories.UsuarioRepository;
-import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -38,12 +30,6 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
-	@Autowired
-	private MembresiaService membresiaService;
-
-	@Autowired
-	private ResolutorOrganizacion resolutorOrganizacion;
-
 	/**
 	 * Carga los detalles del usuario por su nombre de usuario (email) para
 	 * autenticación. Este método es usado por Spring Security para autenticación.
@@ -60,22 +46,6 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	}
 
 	/**
-	 * Obtiene todos los usuarios y los convierte en una lista de objetos
-	 * UsuarioDTO.
-	 *
-	 * @return Una lista de todos los usuarios convertidos en objetos UsuarioDTO.
-	 */
-	@Override
-	public List<UsuarioDTO> obtenerTodos() {
-		// Solo los usuarios de la organización activa, con sus roles en ella (no los de otras escuelas).
-		Long organizacionId = resolutorOrganizacion.organizacionActual();
-		Map<Long, Set<Roles>> roles = membresiaService.autoridadesPorUsuario(organizacionId);
-		return membresiaService.usuariosDeOrganizacion(organizacionId).stream()
-				.map(usuario -> UsuarioDTO.deUsuario(usuario, roles.getOrDefault(usuario.getId(), Set.of())))
-				.collect(Collectors.toList());
-	}
-
-	/**
 	 * Encuentra un usuario por su email.
 	 *
 	 * @param email El email del usuario.
@@ -85,17 +55,6 @@ public class UsuarioServiceImpl implements UsuarioService, UserDetailsService {
 	public Optional<Usuario> encontrarPorEmail(String email) {
 		String normalizedEmail = EmailUtils.normalizeEmail(email);
 		return usuarioRepository.findByEmailIgnoreCase(normalizedEmail);
-	}
-
-	/**
-	 * Encuentra un usuario por su ID.
-	 *
-	 * @param id El ID del usuario.
-	 * @return Un Optional que contiene el usuario si existe.
-	 */
-	@Override
-	public Optional<Usuario> encontrarPorId(Long id) {
-		return usuarioRepository.findById(id);
 	}
 
 	/**

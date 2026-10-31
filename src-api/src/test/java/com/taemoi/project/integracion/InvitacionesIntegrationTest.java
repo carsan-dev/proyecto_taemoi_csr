@@ -75,6 +75,7 @@ import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.GestionMiembrosService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 
 import ch.qos.logback.classic.Level;
@@ -122,6 +123,7 @@ class InvitacionesIntegrationTest extends MySqlIntegrationTest {
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
 	@Autowired GestionMiembrosService miembros;
+	@Autowired UsuarioService usuarioService;
 	@Autowired PlatformTransactionManager transacciones;
 
 	@MockitoBean EmailService email;
@@ -728,17 +730,17 @@ class InvitacionesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Ronda 1: el propietario pone la contraseña de una invitación pendiente desde «Gestión de Roles»: el enlace deja de
-	 * servir. Una cuenta con contraseña conserva su token de restablecer, como siempre.
+	 * Ronda 1: una invitación pendiente que recibe contraseña deja de estarlo y el enlace deja de servir. Por la API no se
+	 * llega ({@code PUT /api/miembros/{id}/contrasena} responde 409 con invitación pendiente), así que lo fija el servicio.
+	 * Una cuenta con contraseña conserva su token de restablecer, como siempre.
 	 */
 	@Test
-	void adminPoneContrasenaAPendiente_borraElToken() throws Exception {
+	void contrasenaEnInvitacionPendiente_borraElToken() throws Exception {
 		String correo = emailNuevo("admin-clave");
 		long id = invitar(correo, "PROFESOR");
 		String token = enviadoA(correo).token();
 
-		assertEquals(200, estado(conCuerpo(put("/api/admin/users/" + id + "/password"),
-				cuerpo(Map.of("nuevaContrasena", CONTRASENA))), tPropietario));
+		TenantContext.ejecutarCon(e.org, () -> usuarioService.actualizarContrasena(id, CONTRASENA));
 
 		assertFalse(pendiente(id));
 		assertNull(hashDe(id));
@@ -753,7 +755,7 @@ class InvitacionesIntegrationTest extends MySqlIntegrationTest {
 		String hash = "c".repeat(64);
 		jdbc.update("UPDATE usuario SET reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?", hash,
 				LocalDateTime.now().plusHours(1), conClave);
-		assertEquals(200, estado(conCuerpo(put("/api/admin/users/" + conClave + "/password"),
+		assertEquals(200, estado(conCuerpo(put("/api/miembros/" + conClave + "/contrasena"),
 				cuerpo(Map.of("nuevaContrasena", CONTRASENA))), tPropietario));
 		assertEquals(hash, hashDe(conClave));
 	}

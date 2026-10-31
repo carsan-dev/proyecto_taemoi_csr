@@ -349,7 +349,7 @@ class ResponsableSedePantallasIntegrationTest extends MySqlIntegrationTest {
 						.content("{\"vendibleProfesor\":true}"),
 				post("/api/productos-alumno/mensualidades/general"),
 				// Configuración
-				get("/api/admin/configuracion/limite-turno"), get("/api/admin/users"),
+				get("/api/admin/configuracion/limite-turno"), get("/api/admin"),
 				get("/api/admin/auditoria/eventos"), put("/api/escuela/logo"),
 				post("/api/tarifas-sede").contentType(MediaType.APPLICATION_JSON).content("{}"),
 				// Sedes

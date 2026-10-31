@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.RolMembresia;
-import com.taemoi.project.entities.Usuario;
 
 /**
  * {@link Membresia} no se filtra por organización automáticamente: cada método filtra
@@ -21,8 +20,6 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 	List<Membresia> findByUsuarioId(Long usuarioId);
 
 	List<Membresia> findByUsuarioIdAndOrganizacionId(Long usuarioId, Long organizacionId);
-
-	List<Membresia> findByOrganizacionId(Long organizacionId);
 
 	boolean existsByUsuarioId(Long usuarioId);
 
@@ -56,19 +53,6 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			""")
 	List<RolMembresia> findRolesActivos(@Param("usuarioId") Long usuarioId,
 			@Param("organizacionId") Long organizacionId);
-
-	/**
-	 * Usuarios visibles para la gestión de una organización: con alguna membresía en ella (activa o
-	 * no) y, si {@code incluirSinMembresia}, también los que no tienen ninguna membresía (legado).
-	 */
-	@Query("""
-			SELECT u FROM Usuario u
-			WHERE EXISTS (SELECT 1 FROM Membresia m WHERE m.usuarioId = u.id AND m.organizacionId = :organizacionId)
-			   OR (:incluirSinMembresia = true
-			       AND NOT EXISTS (SELECT 1 FROM Membresia m2 WHERE m2.usuarioId = u.id))
-			""")
-	List<Usuario> findUsuariosDeOrganizacion(@Param("organizacionId") Long organizacionId,
-			@Param("incluirSinMembresia") boolean incluirSinMembresia);
 
 	/**
 	 * Pieza E8-3 (D8-9, D8-19, decisión 221): las membresías PROPIETARIO activas de la escuela, bloqueadas

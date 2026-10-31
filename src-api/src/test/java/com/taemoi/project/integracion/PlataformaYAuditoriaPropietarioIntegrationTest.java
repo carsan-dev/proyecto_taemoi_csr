@@ -191,7 +191,7 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 				get("/api/turnos/resumen"),
 				get("/api/catalogo"),
 				get("/api/admin/" + alumnoOrg1),
-				get("/api/admin/users"),
+				get("/api/miembros"),
 				get("/api/admin/auditoria/eventos"),
 				get("/api/admin/auditoria/eventos/" + a1Alta),
 				get("/api/admin/auditoria/modulos"),
@@ -233,7 +233,7 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 		assertEquals(ORG1, jwtService.verificar(token).organizacionId());
 		mvc.perform(get("/api/plataforma/errores").cookie(jwt(token))).andExpect(status().isOk());
 		mvc.perform(get("/api/alumnos/" + alumnoOrg1).cookie(jwt(token))).andExpect(status().isForbidden());
-		mvc.perform(get("/api/admin/users").cookie(jwt(token))).andExpect(status().isForbidden());
+		mvc.perform(get("/api/miembros").cookie(jwt(token))).andExpect(status().isForbidden());
 	}
 
 	@Test

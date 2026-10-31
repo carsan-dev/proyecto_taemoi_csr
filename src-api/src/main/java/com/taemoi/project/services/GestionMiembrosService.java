@@ -462,8 +462,7 @@ public class GestionMiembrosService {
 	 * ni ADMINISTRADOR (403), pero sí cambia el cargo de esos roles ya activos.
 	 *
 	 * <p>FAMILIA (decisión 396, cambia la D8-6): solo el propietario, también con el rol ya activo (403 antes de mirar nada
-	 * más); no lleva cargo ni sedes (400). Crea o reactiva la membresía, como {@code reemplazarAutoridades}; nunca toca
-	 * {@code usuario_alumno}.
+	 * más); no lleva cargo ni sedes (400). Crea o reactiva la membresía; nunca toca {@code usuario_alumno}.
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MiembrosDTOs.Ficha darRol(Long usuarioId, String rolTexto, MiembrosRequests.Rol solicitud) {
@@ -630,9 +629,10 @@ public class GestionMiembrosService {
 	// ------------------------------------------------------------------ contraseña
 
 	/**
-	 * Restablece la contraseña de un miembro (pieza 9-8, decisión 373), solo el propietario (lo exige el controlador). Las
-	 * reglas de {@code /api/admin/users/{id}/password} y, además, 409 con invitación pendiente: ahí valen reenviar y
-	 * cancelar. Fila {@code MIEMBROS CONTRASENA_RESTABLECIDA usuario=#id}; nunca la contraseña.
+	 * Restablece la contraseña de un miembro (pieza 9-8, decisión 373), solo el propietario (lo exige el controlador). La
+	 * contraseña es de la cuenta global: solo si {@link MembresiaService#puedeGestionarUsuarioGlobal}. Una cuenta de Google
+	 * no tiene contraseña que restablecer. Con invitación pendiente, 409: ahí valen reenviar y cancelar. Fila
+	 * {@code MIEMBROS CONTRASENA_RESTABLECIDA usuario=#id}; nunca la contraseña.
 	 *
 	 * <p>Con la fila bloqueada, la cuenta se relee de la base ({@code refresh}): la entidad de la sesión pudo cargarse
 	 * antes del bloqueo, y aceptar la invitación o entrar con Google entre medias cambia lo que se decide aquí.

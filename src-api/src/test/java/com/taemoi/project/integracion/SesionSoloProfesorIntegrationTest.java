@@ -293,7 +293,7 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 				put("/api/auth/user/recordatorios-racha-email").contentType(MediaType.APPLICATION_JSON)
 						.content("{\"habilitado\":true}"),
 				get("/api/admin/configuracion/limite-turno"), get("/api/admin/auditoria/eventos"),
-				get("/api/admin/users"), get("/api/informes/deudas"), get("/api/informes/asistencia"),
+				get("/api/miembros"), get("/api/informes/deudas"), get("/api/informes/asistencia"),
 				get("/api/convocatorias"), get("/api/preinscripciones"), get("/api/catalogo"),
 				get("/api/tarifas-sede"), get("/api/caja/sedes/" + e.sA + "/resumen"),
 				get("/api/caja/sedes/" + e.sA + "/entregas"), get("/api/plataforma/errores"),

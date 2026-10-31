@@ -39,8 +39,7 @@ import com.taemoi.project.utils.EmailUtils;
  * {@link GrupoRepository} (acotado por {@code @TenantId}) y se comprueba otra vez su organización: un grupo de otra
  * escuela o inexistente da 404 antes de leer o escribir nada más.
  *
- * <p>Asignar crea la membresía PROFESOR de la escuela si falta (activa; {@code RolMembresia.desdeAutoridad} rechaza
- * PROFESOR, así que va con {@code new Membresia}); si está desactivada, 409 {@link #PROFESOR_DESACTIVADO} (reactivar
+ * <p>Asignar crea la membresía PROFESOR de la escuela si falta (activa); si está desactivada, 409 {@link #PROFESOR_DESACTIVADO} (reactivar
  * es de la E8). Ninguna otra membresía se toca. Quitar borra solo la fila de {@code asignacion_profesor}; la membresía
  * queda (D7-21). El alcance del profesor se recalcula en cada petición ({@code IdentificadorSesionJwt}), así que los
  * cambios valen en su siguiente petición.
