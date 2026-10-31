@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll.component';
+import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { HeaderComponent } from '../header/header.component';
 import { SkeletonComponent } from './skeleton.component';
 
@@ -24,7 +25,11 @@ describe('SkeletonComponent · «Configurar cookies» en el pie', () => {
   let consentimientoAnterior: string | null;
 
   function montar(): { raiz: HTMLElement; detectar: () => void } {
-    TestBed.configureTestingModule({ imports: [SkeletonComponent], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({ imports: [SkeletonComponent], providers: [
+        provideRouter([]),
+        { provide: AuthenticationService, useValue: { tieneAccesoAdmin: () => false, esSoloProfesor: () => false } },
+      ],
+    });
     TestBed.overrideComponent(SkeletonComponent, {
       remove: { imports: [HeaderComponent, BotonscrollComponent] },
       add: { imports: [HeaderFalsoComponent, BotonscrollFalsoComponent] },
