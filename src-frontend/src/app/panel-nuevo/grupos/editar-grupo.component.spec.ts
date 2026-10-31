@@ -332,12 +332,13 @@ describe('Editar grupo (3m-2)', () => {
       permisos$.next(PERMISOS_VARIAS);
       cargar({ sedeId: null });
       fixture.detectChanges();
-      component.guardar();
+      const boton = fixture.nativeElement.querySelector('.editar-grupo__primario') as HTMLButtonElement;
+      boton.click();
       fixture.detectChanges();
       http.expectNone(`${api}/grupos/7`);
       expect(fixture.nativeElement.querySelector('#sede-error').textContent).toContain('Elige la sede del grupo.');
       elegir('Mollina');
-      component.guardar();
+      boton.click();
       http.expectOne(`${api}/grupos/7`).flush({});
     });
   });

@@ -32,7 +32,7 @@ export function efectosDelCambio(lectura: CambioSede): EfectoCambioSede[] {
       detalle: `${eur(lectura.importePendiente)}. ${pendientes === 1 ? 'Se cobrará' : 'Se cobrarán'} en la caja de ${nueva}.`,
     });
   } else {
-    efectos.push({ clave: 'pendientes', titulo: 'No tiene cargos sin cobrar', detalle: `Nada pasa a ${nueva}.` });
+    efectos.push({ clave: 'pendientes', titulo: 'No hay cargos sin cobrar que mover', detalle: `Nada pasa a ${nueva}.` });
   }
   const cobrados = lectura.cargosCobrados;
   if (actual && cobrados > 0) {

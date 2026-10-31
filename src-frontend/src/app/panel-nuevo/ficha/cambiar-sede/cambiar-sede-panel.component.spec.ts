@@ -106,7 +106,7 @@ describe('Panel «Cambiar de sede» (E9-1)', () => {
       '1 cargo sin cobrar pasa a Estepa', '1 cargo cobrado se queda en Mollina', 'Sigue en 2 grupos de Mollina']);
     expect(uno[0].detalle.replace(/\s/g, ' ')).toBe('1.234,50 €. Se cobrará en la caja de Estepa.');
     const cero = efectosDelCambio(lectura({ cargosPendientes: 0, importePendiente: 0, cargosCobrados: 0, importeCobrado: 0, gruposEnSedeActual: 0 }));
-    expect(cero).toEqual([{ clave: 'pendientes', titulo: 'No tiene cargos sin cobrar', detalle: 'Nada pasa a Estepa.' }]);
+    expect(cero).toEqual([{ clave: 'pendientes', titulo: 'No hay cargos sin cobrar que mover', detalle: 'Nada pasa a Estepa.' }]);
   });
 
   it('un alumno sin sede: «Sin sede → Estepa», sin cobrados ni grupos', () => {
