@@ -45,6 +45,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_SALUD = Pattern.compile("^/api/(profesor/)?alumnos/[^/]+/salud/?$");
 	static final String PAYLOAD_OMITIDO_SALUD = "[payload omitted: datos de salud]";
 	/**
+	 * Pieza 9-8: contraseña de un miembro. Nunca se guarda el cuerpo, responda lo que responda y con cualquier método: un
+	 * JSON malformado u otro tipo de contenido pasa como texto por el saneador, que solo enmascara JSON válido y formularios.
+	 */
+	private static final Pattern RUTA_CONTRASENA_MIEMBRO = Pattern.compile("^/api/miembros/[^/]+/contrasena/?$");
+	static final String PAYLOAD_OMITIDO_CONTRASENA = "[payload omitted: contrasena]";
+	/**
 	 * Decisión 342: imagen de una foto de la galería. Una visita pide hasta 40: ni fila ni copia de la imagen en memoria.
 	 * Se compara con la ruta tal como llega, sin normalizar: cualquier otra forma de escribirla se sigue auditando.
 	 */
@@ -133,6 +139,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion"),
 		/** Decisión 389: GestionMiembrosService#cancelarInvitacion (MIEMBROS INVITACION_CANCELADA). */
 		MIEMBRO_INVITACION_CANCELAR("DELETE", "/api/miembros/[^/]+/invitacion"),
+		/** Pieza 9-8: GestionMiembrosService#restablecerContrasena (MIEMBROS CONTRASENA_RESTABLECIDA). */
+		MIEMBRO_CONTRASENA("PUT", "/api/miembros/[^/]+/contrasena"),
 		/**
 		 * Decisión 322: PerfilCuentaService#guardar (PANEL PERFIL_CAMBIADO; sin cambios, con sinCambios=SI). Aquí, el 2xx
 		 * guardaría el nombre y la fecha del cuerpo; el registro explícito solo lleva el id de la cuenta.
@@ -253,12 +261,14 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		String payloadRaw = rutaSalud ? "" : leerPayloadRequest(request);
-		String payloadSanitizado = rutaSalud
-				? PAYLOAD_OMITIDO_SALUD
+		String payloadOmitido = rutaSalud ? PAYLOAD_OMITIDO_SALUD
+				: esContrasenaDeMiembro(endpoint) ? PAYLOAD_OMITIDO_CONTRASENA : null;
+		String payloadRaw = payloadOmitido != null ? "" : leerPayloadRequest(request);
+		String payloadSanitizado = payloadOmitido != null
+				? payloadOmitido
 				: auditoriaPayloadSanitizer.sanitizarPayload(payloadRaw, request.getContentType());
 		Set<String> clavesRedactadas = clavesRedactadas(endpoint);
-		if (!rutaSalud && !clavesRedactadas.isEmpty()) {
+		if (payloadOmitido == null && !clavesRedactadas.isEmpty()) {
 			payloadSanitizado = auditoriaPayloadSanitizer.redactarClaves(payloadSanitizado, clavesRedactadas);
 		}
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
@@ -336,6 +346,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return true;
 		}
 		return RUTA_SALUD.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	static boolean esContrasenaDeMiembro(String endpoint) {
+		return RUTA_CONTRASENA_MIEMBRO.matcher(normalizarParaComparar(endpoint)).matches();
 	}
 
 	/** Decodifica (hasta dos veces), quita parámetros de ruta ({@code ;x}), une barras y pasa a minúsculas. */

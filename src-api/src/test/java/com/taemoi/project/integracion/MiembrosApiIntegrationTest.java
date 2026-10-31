@@ -95,8 +95,9 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 	/** E8-4 añade {@code invitacionPendiente}. */
 	private static final Set<String> CLAVES_FILA = Set.of("usuarioId", "nombre", "apellidos", "email", "authProvider",
 			"invitacionPendiente", "roles", "sedes", "numeroGrupos");
+	/** La pieza 9-8 añade {@code contrasena}, solo en la ficha. */
 	private static final Set<String> CLAVES_FICHA = Set.of("usuarioId", "nombre", "apellidos", "email", "authProvider",
-			"invitacionPendiente", "roles", "sedes", "numeroGrupos", "grupos");
+			"invitacionPendiente", "roles", "sedes", "numeroGrupos", "grupos", "contrasena");
 	/** Resumen de la fila genérica del filtro HTTP ({@code AuditoriaServiceImpl#construirResumen}). */
 	private static final String RESUMEN_GENERICO = "^(CREATE|UPDATE|DELETE|READ|OPERACION) \\S+( #\\d+)? -> \\d+$";
 
@@ -451,18 +452,12 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void darFamilia_400() throws Exception {
+	void altaConFamilia_400() throws Exception {
 		long cuenta = cuenta("familia-no");
 		membresia(e.org, cuenta, "PROFESOR");
 		assertMensaje(peticion(conCuerpo(post(RUTA), cuerpo(alta(cuenta, "FAMILIA", null, null))), tPropietario), 400,
 				FAMILIA);
-		assertMensaje(peticion(conCuerpo(put(RUTA + "/" + cuenta + "/roles/FAMILIA"), "{}"), tPropietario), 400,
-				FAMILIA);
-		long familia = cuenta("familia-no-quitar");
-		membresia(e.org, familia, "FAMILIA");
-		assertMensaje(peticion(delete(RUTA + "/" + familia + "/roles/FAMILIA"), tPropietario), 400, FAMILIA);
 		assertEquals(List.of("PROFESOR"), rolesActivos(cuenta, e.org));
-		assertEquals(List.of("FAMILIA"), rolesActivos(familia, e.org));
 	}
 
 	@Test

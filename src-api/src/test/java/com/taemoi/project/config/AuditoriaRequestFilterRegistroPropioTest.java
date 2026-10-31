@@ -88,6 +88,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 					new Ejemplo("POST", "/api/miembros/21/invitacion")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION_CANCELAR,
 					new Ejemplo("DELETE", "/api/miembros/21/invitacion")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_CONTRASENA,
+					new Ejemplo("PUT", "/api/miembros/21/contrasena")),
 			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR,
 					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
@@ -148,6 +150,12 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("POST", "/api/miembros/21/invitacion/otra"),
 			new Ejemplo("DELETE", "/api/miembros/21/invitacion/otra"),
 			new Ejemplo("POST", "/api/miembros/invitacion"),
+			// Pieza 9-8: solo el PUT de la ruta exacta.
+			new Ejemplo("GET", "/api/miembros/21/contrasena"),
+			new Ejemplo("POST", "/api/miembros/21/contrasena"),
+			new Ejemplo("DELETE", "/api/miembros/21/contrasena"),
+			new Ejemplo("PUT", "/api/miembros/21/contrasena/otra"),
+			new Ejemplo("PUT", "/api/miembros/contrasena"),
 			// Decisión 322: la lectura del perfil y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/panel/mi-perfil"),
 			new Ejemplo("POST", "/api/panel/mi-perfil"),

@@ -500,6 +500,27 @@ resto `DENIEGA`, también RESPONSABLE_SEDE. Regla de URL propia, antes de las de
 que ya tiene: 400. Todo 2xx del `PUT` registra `SEDES ALUMNO_SEDE_CAMBIADA` (solo ids) y está en
 `EscrituraConRegistroPropio`. Lo prueban `CambioSedeAlumnoIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
+Pieza 9-8 (retirar «Roles y permisos», decisiones 373 y 396): 1 línea nueva; ninguna casilla existente cambia.
+`/api/admin/users*` sigue igual: se contrae en una pieza aparte tras desplegar (decisión 397).
+- `PUT /api/miembros/{usuarioId}/contrasena` (`MiembroController#restablecerContrasena`): solo PROPIETARIO `PERMITE`, el
+  resto `DENIEGA`, también GESTOR. Regla de URL propia, antes de `/api/miembros/**`, y `hasAuthority('ROLE_ADMIN')`.
+  Cuerpo `{nuevaContrasena}` con la validación de `/api/admin/users/{id}/password`; no cumplirla, 400 con `{mensaje}`.
+  Responde 200 con la ficha. Cuenta que no es de la escuela, 404; con membresía en otra escuela, 403; de Google, 400; con
+  invitación pendiente, 409 (a propósito, distinto de `/api/admin/users/{id}/password`). Todo 2xx registra
+  `MIEMBROS CONTRASENA_RESTABLECIDA usuario=#id` (acción `UPDATE`) y está en `EscrituraConRegistroPropio`
+  (`MIEMBRO_CONTRASENA`). La auditoría nunca guarda el cuerpo de esta ruta, responda lo que responda: `payload_json` queda
+  en `[payload omitted: contrasena]`, porque un JSON malformado u otro tipo de contenido no pasan por el enmascarado.
+- `GET /api/miembros/{usuarioId}` y la ficha de cada escritura añaden `contrasena`: `RESTABLECIBLE`, `GOOGLE`,
+  `OTRA_ESCUELA` o `INVITACION_PENDIENTE` (si caben varios, en orden inverso: `INVITACION_PENDIENTE`, `GOOGLE`,
+  `OTRA_ESCUELA`). La lista no lo lleva.
+- `PUT` y `DELETE /api/miembros/{usuarioId}/roles/FAMILIA` (líneas existentes, sin casillas nuevas): cambia la D8-6. Antes
+  400; ahora funcionan, solo el propietario. Como con D8-8, lo aplica el servicio: `PERMITE` en GESTOR solo dice que la
+  petición llega, y el gestor recibe 403 en todos los casos, también con el rol ya activo. `PUT` crea o reactiva la
+  membresía; con `cargo` no vacío o `sedeIds`, 400. `DELETE` deja `activa=false` sin borrar la fila. Ninguno toca
+  `usuario_alumno`. Registro `ROL_DADO`, `ROL_REACTIVADO` y `ROL_QUITADO` con `rol=FAMILIA`. `POST /api/miembros` con
+  FAMILIA sigue en 400.
+Lo prueban `MiembrosContrasenaFamiliaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
 ## Cómo actualizarlo
 
 - **Endpoint nuevo.** El test A falla y en el mensaje aparece la línea que hay que añadir, con la decisión

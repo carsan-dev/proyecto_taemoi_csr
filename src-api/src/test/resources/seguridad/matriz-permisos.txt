@@ -344,6 +344,7 @@ HEAD     /api/miembros                                                          
 POST     /api/miembros                                                                            DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#alta
 GET      /api/miembros/{usuarioId}                                                                DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#ficha
 HEAD     /api/miembros/{usuarioId}                                                                DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#ficha
+PUT      /api/miembros/{usuarioId}/contrasena                                                     DENIEGA DENIEGA DENIEGA PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#restablecerContrasena
 PUT      /api/miembros/{usuarioId}/grupos                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#reemplazarGrupos
 POST     /api/miembros/{usuarioId}/invitacion                                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#reenviarInvitacion
 DELETE   /api/miembros/{usuarioId}/invitacion                                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#cancelarInvitacion
