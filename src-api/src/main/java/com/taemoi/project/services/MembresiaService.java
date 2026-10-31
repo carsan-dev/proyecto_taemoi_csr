@@ -83,7 +83,8 @@ public interface MembresiaService {
 	/**
 	 * Si un administrador de la organización puede cambiar el registro GLOBAL del usuario
 	 * (contraseña, email...): solo si TODAS sus membresías (activas o no) son de esa organización.
-	 * Sin ninguna membresía (legado), solo desde la organización por defecto.
+	 * Sin ninguna membresía (legado), solo desde la organización por defecto. Una cuenta de plataforma
+	 * ({@code usuario.es_admin_plataforma}), nunca (D8-13, decisión 397): tomarla daría sus capacidades en toda la plataforma.
 	 */
 	boolean puedeGestionarUsuarioGlobal(Long usuarioId, Long organizacionId);
 

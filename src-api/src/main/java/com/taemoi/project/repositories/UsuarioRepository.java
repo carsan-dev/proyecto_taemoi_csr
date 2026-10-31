@@ -57,6 +57,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 	Boolean existsByEmailIgnoreCase(String email);
 
+	/** Si la cuenta es administradora de plataforma, leído de la base y no de una entidad ya cargada en la sesión. */
+	boolean existsByIdAndEsAdminPlataformaTrue(Long id);
+
 	/** Usuarios con el recordatorio activado y una membresía activa con {@code rol} en la organización. */
 	@Query("""
 			SELECT u FROM Usuario u

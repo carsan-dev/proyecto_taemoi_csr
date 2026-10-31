@@ -67,9 +67,13 @@ export interface Miembro {
   numeroGrupos: number;
 }
 
-/** Ficha completa (`MiembrosDTOs.Ficha`): la fila más sus grupos. */
+/** Cómo está la contraseña de la cuenta (`MiembrosDTOs.Ficha.contrasena`): solo la trae la ficha. */
+export type EstadoContrasenaCuenta = 'RESTABLECIBLE' | 'GOOGLE' | 'OTRA_ESCUELA' | 'INVITACION_PENDIENTE';
+
+/** Ficha completa (`MiembrosDTOs.Ficha`): la fila más sus grupos y el estado de la contraseña. */
 export interface FichaCompleta extends Miembro {
   grupos: GrupoDeMiembro[];
+  contrasena?: EstadoContrasenaCuenta;
 }
 
 /** Una página de la lista (`MiembrosDTOs.Pagina`); `pagina` desde 0. */
@@ -167,6 +171,16 @@ export class MiembrosService {
   /** Cancela la invitación pendiente (decisión 389): el enlace deja de valer y la cuenta se borra si no tiene nada más. */
   cancelarInvitacion(usuarioId: number): Observable<InvitacionCancelada> {
     return this.http.delete<InvitacionCancelada>(`${this.api}/${usuarioId}/invitacion`, this.opciones());
+  }
+
+  /** Da el rol de familia (solo el propietario): sin cuerpo, sin cargo ni sedes. */
+  darFamilia(usuarioId: number): Observable<FichaCompleta> {
+    return this.http.put<FichaCompleta>(`${this.api}/${usuarioId}/roles/FAMILIA`, null, this.opciones());
+  }
+
+  /** Restablece la contraseña de la cuenta (solo el propietario). La contraseña no se registra en ninguna parte. */
+  restablecerContrasena(usuarioId: number, nuevaContrasena: string): Observable<FichaCompleta> {
+    return this.http.put<FichaCompleta>(`${this.api}/${usuarioId}/contrasena`, { nuevaContrasena }, this.opciones());
   }
 
   /** Desactiva el rol (nunca borra la fila). */

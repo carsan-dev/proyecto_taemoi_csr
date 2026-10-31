@@ -55,7 +55,8 @@ import jakarta.persistence.PersistenceContext;
  * en la escuela; en la escuela por defecto, también la cuenta legado sin ninguna membresía
  * ({@link MembresiaService#esUsuarioDeOrganizacion}). Una cuenta que solo es de otra escuela no existe aquí (404).
  *
- * <p>D8-8: solo {@code ROLE_ADMIN} da, reactiva o quita PROPIETARIO y ADMINISTRADOR (403). D8-9: nunca sin una
+ * <p>D8-8: solo {@code ROLE_ADMIN} da, reactiva o quita PROPIETARIO y ADMINISTRADOR (403); pieza 9-8 (decisión 396):
+ * también FAMILIA, y ahí el gestor tampoco toca el rol ya activo. D8-9: nunca sin una
  * membresía PROPIETARIO activa (409), con las filas PROPIETARIO bloqueadas antes de contar. Las escrituras son
  * {@code READ_COMMITTED}, bloquean antes la fila de la cuenta ({@code UsuarioRepository#bloquearPorId}, como
  * {@link AsignacionProfesorService}) y son todo o nada. Cada cambio queda en {@link RegistroAccionesMiembros} (y las
@@ -67,7 +68,8 @@ public class GestionMiembrosService {
 
 	static final String NO_MIEMBRO = "La cuenta no es miembro de esta escuela.";
 	static final String SIN_CUENTA = "No hay ninguna cuenta con ese email.";
-	static final String FAMILIA = "La familia se vincula desde la ficha del alumno.";
+	static final String FAMILIA_EN_ALTA = "La familia se vincula desde la ficha del alumno.";
+	static final String FAMILIA_SIN_CARGO = "El rol de familia no lleva cargo.";
 	static final String SOLO_PROPIETARIO = "Solo el propietario da o quita los roles de propietario y gestor.";
 	static final String SIN_PROPIETARIO = "La escuela se quedaría sin propietario.";
 	static final String SEDE_AJENA = "La sede no existe en la escuela.";
@@ -89,6 +91,9 @@ public class GestionMiembrosService {
 	static final String BUSQUEDA_LARGA = "La búsqueda no puede pasar de 100 caracteres.";
 	static final String YA_ACEPTADA = "La invitación ya se aceptó.";
 	static final String SIN_ROL_ACTIVO = "La cuenta no tiene ningún rol activo en esta escuela.";
+	static final String OTRA_ESCUELA = "El usuario también pertenece a otra escuela: no se puede cambiar su contraseña desde esta escuela.";
+	static final String CUENTA_GOOGLE = "Las cuentas de Google no permiten restablecer contrasena manualmente.";
+	static final String INVITACION_PENDIENTE = "Tiene una invitación pendiente: reenvíala o cancélala.";
 
 	static final int TAMANO_POR_DEFECTO = 20;
 	static final int TAMANO_MAXIMO = 100;
@@ -106,6 +111,7 @@ public class GestionMiembrosService {
 	private final RegistroAccionesMiembros registro;
 	private final RegistroAccionesProfesor registroProfesor;
 	private final InvitacionService invitaciones;
+	private final UsuarioService usuarioService;
 
 	@PersistenceContext
 	private EntityManager em;
@@ -114,7 +120,7 @@ public class GestionMiembrosService {
 			MiembrosRepository consultas, MembresiaSedeRepository membresiaSedes,
 			AsignacionProfesorRepository asignaciones, MembresiaService membresiaService,
 			ResolutorOrganizacion resolutor, RegistroAccionesMiembros registro,
-			RegistroAccionesProfesor registroProfesor, InvitacionService invitaciones) {
+			RegistroAccionesProfesor registroProfesor, InvitacionService invitaciones, UsuarioService usuarioService) {
 		this.usuarios = usuarios;
 		this.membresias = membresias;
 		this.consultas = consultas;
@@ -125,6 +131,7 @@ public class GestionMiembrosService {
 		this.registro = registro;
 		this.registroProfesor = registroProfesor;
 		this.invitaciones = invitaciones;
+		this.usuarioService = usuarioService;
 	}
 
 	// ------------------------------------------------------------------ lecturas
@@ -191,6 +198,8 @@ public class GestionMiembrosService {
 	 * {@code apellidos} se ignoran: ni token, ni contraseña, ni correo. Dos invitaciones a la vez del mismo email: la
 	 * clave única hace fallar la segunda y {@link AltaDeMiembro} la repite (entonces ya hay cuenta).
 	 *
+	 * <p>FAMILIA no entra por el alta (D8-6): el rol se da en la ficha del miembro, solo el propietario (decisión 396).
+	 *
 	 * @throws IllegalArgumentException (400) cuerpo no válido o FAMILIA
 	 * @throws SecurityException        (403) D8-8
 	 * @throws NoSuchElementException   (404) sin cuenta con ese email (ni nombre y apellidos) o grupo ajeno
@@ -205,7 +214,7 @@ public class GestionMiembrosService {
 		if (email == null || email.isEmpty()) {
 			throw new IllegalArgumentException(EMAIL_OBLIGATORIO);
 		}
-		RolMembresia rol = rolDeMiembro(solicitud.rol());
+		RolMembresia rol = rolDeAlta(solicitud.rol());
 		Cargo cargo = Cargo.de(solicitud.cargo());
 		if (solicitud.sedeIds() != null && rol != RolMembresia.RESPONSABLE_SEDE) {
 			throw new IllegalArgumentException(SEDES_SOLO_RESPONSABLE);
@@ -301,8 +310,8 @@ public class GestionMiembrosService {
 	/**
 	 * Cancela la invitación (decisión 389): retira los roles activos de esta escuela, el enlace deja de servir y el aviso
 	 * sale tras el commit. Fila {@code MIEMBROS INVITACION_CANCELADA usuario=#id cuentaBorrada=SI|NO}. Más estricto que
-	 * reenviar: si CUALQUIER rol activo es PROPIETARIO o ADMINISTRADOR, solo el propietario (403), porque aquí se retiran
-	 * todos.
+	 * reenviar: si CUALQUIER rol activo es PROPIETARIO, ADMINISTRADOR o FAMILIA (decisión 396), solo el propietario (403),
+	 * porque aquí se retiran todos.
 	 *
 	 * <p>La cuenta, según lo que tenga además (en TODAS las escuelas; borrar es irreversible, ante la duda se conserva):
 	 * <ul>
@@ -368,15 +377,18 @@ public class GestionMiembrosService {
 		return new MiembrosDTOs.InvitacionCancelada(borrar);
 	}
 
-	/** Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 D8-8 y 409 último propietario. */
+	/**
+	 * Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 si hay alguno que solo cambia el
+	 * propietario (D8-8 y decisión 396) y 409 último propietario.
+	 */
 	private void exigirCancelable(Long id, Long organizacion, List<Membresia> propietarios) {
 		List<Membresia> activas = membresias.findByUsuarioIdAndOrganizacionId(id, organizacion).stream()
 				.filter(Membresia::isActiva).toList();
 		if (activas.isEmpty()) {
 			throw new IllegalStateException(SIN_ROL_ACTIVO);
 		}
-		boolean algunRolReservado = activas.stream()
-				.anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO || m.getRol() == RolMembresia.ADMINISTRADOR);
+		boolean algunRolReservado = activas.stream().anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO
+				|| m.getRol() == RolMembresia.ADMINISTRADOR || m.getRol() == RolMembresia.FAMILIA);
 		if (algunRolReservado && !sesionDePropietario()) {
 			throw new SecurityException(SOLO_PROPIETARIO);
 		}
@@ -448,11 +460,18 @@ public class GestionMiembrosService {
 	 * Da o reactiva el rol (D8-7) y fija el cargo si llega; con el rol ya activo, solo el cargo. RESPONSABLE_SEDE:
 	 * {@code sedeIds} reemplaza sus sedes; sin sedes guardadas ni pedidas, 400. El gestor no da ni reactiva PROPIETARIO
 	 * ni ADMINISTRADOR (403), pero sí cambia el cargo de esos roles ya activos.
+	 *
+	 * <p>FAMILIA (decisión 396, cambia la D8-6): solo el propietario, también con el rol ya activo (403 antes de mirar nada
+	 * más); no lleva cargo ni sedes (400). Crea o reactiva la membresía, como {@code reemplazarAutoridades}; nunca toca
+	 * {@code usuario_alumno}.
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MiembrosDTOs.Ficha darRol(Long usuarioId, String rolTexto, MiembrosRequests.Rol solicitud) {
-		RolMembresia rol = rolDeMiembro(rolTexto);
+		RolMembresia rol = rolDeLaRuta(rolTexto);
 		Cargo cargo = Cargo.de(solicitud == null ? null : solicitud.cargo());
+		if (rol == RolMembresia.FAMILIA && cargo.valor() != null) {
+			throw new IllegalArgumentException(FAMILIA_SIN_CARGO);
+		}
 		List<Long> sedeIds = solicitud == null ? null : solicitud.sedeIds();
 		if (sedeIds != null && rol != RolMembresia.RESPONSABLE_SEDE) {
 			throw new IllegalArgumentException(SEDES_SOLO_RESPONSABLE);
@@ -484,8 +503,9 @@ public class GestionMiembrosService {
 	/**
 	 * Quita el rol (D8-7): {@code activa=false}, sin borrar la fila; conserva asignaciones y sedes. Ya desactivado: 200
 	 * con {@code sinCambios=SI}. PROPIETARIO: bloquea antes las filas PROPIETARIO activas de la escuela y, si es la
-	 * última, 409 {@link #SIN_PROPIETARIO} (D8-9, D8-19). A una cuenta pendiente que se queda sin ninguna membresía activa
-	 * en esta escuela, el enlace de esta escuela se le invalida, sin correo de cancelación
+	 * última, 409 {@link #SIN_PROPIETARIO} (D8-9, D8-19). FAMILIA (decisión 396), solo el propietario: sus alumnos siguen
+	 * vinculados y, sin otro rol, la cuenta deja de entrar. A una cuenta pendiente que se queda sin ninguna membresía
+	 * activa en esta escuela (FAMILIA incluida), el enlace de esta escuela se le invalida, sin correo de cancelación
 	 * ({@link #invalidarEnlaceSiNoQuedanRoles}).
 	 *
 	 * @throws SecurityException      (403) D8-8
@@ -494,7 +514,7 @@ public class GestionMiembrosService {
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MiembrosDTOs.Ficha quitarRol(Long usuarioId, String rolTexto) {
-		RolMembresia rol = rolDeMiembro(rolTexto);
+		RolMembresia rol = rolDeLaRuta(rolTexto);
 		exigirPropietarioPara(rol);
 		Long organizacion = organizacionActiva();
 		Usuario cuenta = exigirMiembro(usuarioId, organizacion);
@@ -604,6 +624,45 @@ public class GestionMiembrosService {
 			asignar(cuenta.getId(), grupo.getKey(), grupo.getValue(), organizacion, cambios);
 		}
 		cambios.gruposSinCambiosSiHaceFalta();
+		return ficha(cuenta, organizacion);
+	}
+
+	// ------------------------------------------------------------------ contraseña
+
+	/**
+	 * Restablece la contraseña de un miembro (pieza 9-8, decisión 373), solo el propietario (lo exige el controlador). Las
+	 * reglas de {@code /api/admin/users/{id}/password} y, además, 409 con invitación pendiente: ahí valen reenviar y
+	 * cancelar. Fila {@code MIEMBROS CONTRASENA_RESTABLECIDA usuario=#id}; nunca la contraseña.
+	 *
+	 * <p>Con la fila bloqueada, la cuenta se relee de la base ({@code refresh}): la entidad de la sesión pudo cargarse
+	 * antes del bloqueo, y aceptar la invitación o entrar con Google entre medias cambia lo que se decide aquí.
+	 *
+	 * @throws NoSuchElementException   (404) no es miembro de la escuela activa
+	 * @throws SecurityException        (403) {@value #OTRA_ESCUELA}
+	 * @throws IllegalArgumentException (400) {@value #CUENTA_GOOGLE}
+	 * @throws IllegalStateException    (409) {@value #INVITACION_PENDIENTE}
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public MiembrosDTOs.Ficha restablecerContrasena(Long usuarioId, String nuevaContrasena) {
+		Long organizacion = organizacionActiva();
+		Usuario cuenta = exigirMiembro(usuarioId, organizacion);
+		Long id = cuenta.getId();
+		usuarios.bloquearPorId(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
+		em.refresh(cuenta);
+		if (!membresiaService.puedeGestionarUsuarioGlobal(id, organizacion)) {
+			throw new SecurityException(OTRA_ESCUELA);
+		}
+		if (cuenta.getAuthProvider() == AuthProvider.GOOGLE) {
+			throw new IllegalArgumentException(CUENTA_GOOGLE);
+		}
+		if (cuenta.invitacionPendiente()) {
+			throw new IllegalStateException(INVITACION_PENDIENTE);
+		}
+		usuarioService.actualizarContrasena(id, nuevaContrasena);
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("usuario", id);
+		registro.registrar(RegistroAccionesMiembros.Accion.CONTRASENA_RESTABLECIDA, RUTA + "/" + id + "/contrasena",
+				valores);
 		return ficha(cuenta, organizacion);
 	}
 
@@ -756,7 +815,7 @@ public class GestionMiembrosService {
 		}
 	}
 
-	/** Uno de los cinco roles, tal cual; FAMILIA aparte (400 propio); otro valor o ninguno, 400. */
+	/** Uno de los cinco roles, tal cual; otro valor o ninguno, 400. */
 	private static RolMembresia rolDesde(String rol) {
 		if (rol != null) {
 			for (RolMembresia valor : RolMembresia.values()) {
@@ -768,11 +827,20 @@ public class GestionMiembrosService {
 		throw new IllegalArgumentException(ROL_NO_VALIDO);
 	}
 
-	/** Rol que gestiona esta API: PROPIETARIO, ADMINISTRADOR, RESPONSABLE_SEDE o PROFESOR (FAMILIA, 400 propio). */
-	private static RolMembresia rolDeMiembro(String rol) {
+	/** Rol del alta (D8-6): PROPIETARIO, ADMINISTRADOR, RESPONSABLE_SEDE o PROFESOR; FAMILIA, 400 propio. */
+	private static RolMembresia rolDeAlta(String rol) {
 		RolMembresia valor = rolDesde(rol);
 		if (valor == RolMembresia.FAMILIA) {
-			throw new IllegalArgumentException(FAMILIA);
+			throw new IllegalArgumentException(FAMILIA_EN_ALTA);
+		}
+		return valor;
+	}
+
+	/** Rol de {@code /roles/{rol}}. FAMILIA (decisión 396), solo el propietario: 403 en todos los casos, sin mirar más. */
+	private static RolMembresia rolDeLaRuta(String rol) {
+		RolMembresia valor = rolDesde(rol);
+		if (valor == RolMembresia.FAMILIA && !sesionDePropietario()) {
+			throw new SecurityException(SOLO_PROPIETARIO);
 		}
 		return valor;
 	}
@@ -887,7 +955,23 @@ public class GestionMiembrosService {
 				.toList();
 		return new MiembrosDTOs.Ficha(cuenta.getId(), cuenta.getNombre(), cuenta.getApellidos(), cuenta.getEmail(),
 				cuenta.getAuthProvider(), cuenta.invitacionPendiente(), datos.roles(cuenta.getId()),
-				datos.sedes(cuenta.getId()), grupos.size(), grupos);
+				datos.sedes(cuenta.getId()), grupos.size(), grupos, estadoContrasena(cuenta, organizacion));
+	}
+
+	/**
+	 * Si la contraseña se puede restablecer desde esta escuela o por qué no (pieza 9-8). Dos consultas como mucho y solo en
+	 * la ficha: la lista no lo calcula. Una cuenta de plataforma sale como {@code OTRA_ESCUELA}: no se revela que lo es.
+	 */
+	private MiembrosDTOs.EstadoContrasena estadoContrasena(Usuario cuenta, Long organizacion) {
+		if (cuenta.invitacionPendiente()) {
+			return MiembrosDTOs.EstadoContrasena.INVITACION_PENDIENTE;
+		}
+		if (cuenta.getAuthProvider() == AuthProvider.GOOGLE) {
+			return MiembrosDTOs.EstadoContrasena.GOOGLE;
+		}
+		return membresiaService.puedeGestionarUsuarioGlobal(cuenta.getId(), organizacion)
+				? MiembrosDTOs.EstadoContrasena.RESTABLECIBLE
+				: MiembrosDTOs.EstadoContrasena.OTRA_ESCUELA;
 	}
 
 	/** Invitación pendiente de una fila de la lista (LOCAL o sin proveedor y sin contraseña), sin consulta nueva. */

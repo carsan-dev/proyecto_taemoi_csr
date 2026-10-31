@@ -43,7 +43,9 @@ public class RegistroAccionesMiembros {
 		/** Pieza E8-4: invitación reenviada con un token nuevo ({@code usuario=#id}). */
 		INVITACION_REENVIADA(AuditoriaAccion.UPDATE),
 		/** Decisión 389: invitación cancelada ({@code usuario=#id cuentaBorrada=SI|NO}; nunca el token). */
-		INVITACION_CANCELADA(AuditoriaAccion.DELETE);
+		INVITACION_CANCELADA(AuditoriaAccion.DELETE),
+		/** Pieza 9-8: contraseña restablecida por el propietario ({@code usuario=#id}; nunca la contraseña). */
+		CONTRASENA_RESTABLECIDA(AuditoriaAccion.UPDATE);
 
 		private final AuditoriaAccion auditoria;
 

@@ -111,8 +111,8 @@ const OPERACIONES: readonly Acceso[] = [
   },
   {
     clave: 'configuracion',
-    etiqueta: 'Roles y configuración',
-    descripcion: 'Permisos de usuarios y límite global de turno.',
+    etiqueta: 'Configuración',
+    descripcion: 'Límite global de alumnos por turno.',
     ruta: '/configuracion-sistema',
     icono: 'bi-gear',
     soloAdmin: true,

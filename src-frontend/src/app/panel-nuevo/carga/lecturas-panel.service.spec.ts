@@ -209,13 +209,12 @@ describe('LecturasPanelService (8b-D2a)', () => {
     }
   });
 
-  it('Configuración y Registro de acciones (8b-3k): usuarios, eventos con y sin filtros, detalle y módulos, como hoy y con ERROR_HANDLED_LOCALLY', () => {
+  it('Registro de acciones (8b-3k): eventos con y sin filtros, detalle y módulos, como hoy y con ERROR_HANDLED_LOCALLY', () => {
     const hoy = TestBed.inject(EndpointsService);
     const panel = TestBed.inject(LecturasPanelService);
     const vacio = { desde: null, hasta: null, resultado: 'EXITO', accion: null, modulo: null, usuario: null, texto: null };
     const lleno = { desde: '2026-10-01', hasta: '2026-10-23', resultado: 'EXITO', accion: 'READ', modulo: 'salud', usuario: ' ana ', texto: ' cinto ' };
     const pares: [Observable<unknown>, Observable<unknown>][] = [
-      [hoy.obtenerUsuarios(), panel.usuarios()],
       [hoy.obtenerAuditoriaEventos(vacio, 1, 25), panel.auditoriaEventos(vacio, 1, 25)],
       [hoy.obtenerAuditoriaEventos(lleno, 3, 25), panel.auditoriaEventos(lleno, 3, 25)],
       [hoy.obtenerAuditoriaEventoDetalle(9), panel.auditoriaEventoDetalle(9)],

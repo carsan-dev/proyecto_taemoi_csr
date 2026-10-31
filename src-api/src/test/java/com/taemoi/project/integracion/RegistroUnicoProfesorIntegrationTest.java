@@ -339,9 +339,9 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR, () -> {
 			long cuenta = e.cuenta(usuarios, "dar-rol-" + UUID.randomUUID().toString().substring(0, 6));
 			membresia(e.org, cuenta, "FAMILIA");
-			// FAMILIA no se da por esta API: 400.
+			// Rol que no existe: 400.
 			return new Caso(tPropietario, propietario, () -> put("/api/miembros/" + cuenta + "/roles/PROFESOR"), 200,
-					List.of("MIEMBROS ROL_DADO"), () -> put("/api/miembros/" + cuenta + "/roles/FAMILIA"), 400);
+					List.of("MIEMBROS ROL_DADO"), () -> put("/api/miembros/" + cuenta + "/roles/JEFE"), 400);
 		});
 		casos.put(EscrituraConRegistroPropio.MIEMBRO_ROL_QUITAR, () -> {
 			long cuenta = e.cuenta(usuarios, "quitar-rol-" + UUID.randomUUID().toString().substring(0, 6));
@@ -395,6 +395,16 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 			return new Caso(tPropietario, propietario, () -> delete("/api/miembros/" + pendiente + "/invitacion"), 200,
 					List.of("MIEMBROS INVITACION_CANCELADA"), () -> delete("/api/miembros/" + aceptada + "/invitacion"),
 					409);
+		});
+		// Pieza 9-8: restablecer la contraseña de un miembro.
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_CONTRASENA, () -> {
+			long cuenta = e.cuenta(usuarios, "contrasena-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, cuenta, "PROFESOR");
+			// Contraseña débil: 400.
+			return new Caso(tPropietario, propietario,
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/contrasena"), "{\"nuevaContrasena\":\"Nueva-Clave-2026\"}"),
+					200, List.of("MIEMBROS CONTRASENA_RESTABLECIDA"),
+					() -> conCuerpo(put("/api/miembros/" + cuenta + "/contrasena"), "{\"nuevaContrasena\":\"corta\"}"), 400);
 		});
 		casos.put(EscrituraConRegistroPropio.PANEL_MI_PERFIL, () -> new Caso(tGestor, e.gestor,
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,

@@ -23,7 +23,10 @@ public final class MiembrosRequests {
 			Boolean reactivar, String nombre, String apellidos) {
 	}
 
-	/** {@code PUT /api/miembros/{usuarioId}/roles/{rol}} (cuerpo opcional; {@code sedeIds} solo para el responsable). */
+	/**
+	 * {@code PUT /api/miembros/{usuarioId}/roles/{rol}} (cuerpo opcional; {@code sedeIds} solo para el responsable;
+	 * FAMILIA no lleva cargo).
+	 */
 	public record Rol(String cargo, List<Long> sedeIds) {
 	}
 
