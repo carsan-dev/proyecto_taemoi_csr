@@ -14,11 +14,12 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  * - `misGrupos`: `veMisGrupos` (ROLE_PROFESOR y la capacidad MIS_GRUPOS de `GET /api/auth/permisos`).
  * - `plataforma`: `esAdminPlataforma` (la sesión administradora de plataforma).
  * - `gestion`: ROLE_ADMIN o ROLE_MANAGER (`/api/panel/**`); falla cerrado si el contexto no lo trae.
+ * - `sedes`: la capacidad SEDES de `GET /api/auth/permisos` (E9-3); falla cerrado si el contexto no la trae.
  */
-export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion';
+export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion' | 'sedes';
 
 export type ContextoMenu = Readonly<
-  Record<Exclude<Condicion, 'gestion'>, boolean> & { soloProfesor?: boolean; gestion?: boolean }
+  Record<Exclude<Condicion, 'gestion' | 'sedes'>, boolean> & { soloProfesor?: boolean; gestion?: boolean; sedes?: boolean }
 >;
 
 export interface EntradaMenu {
@@ -126,6 +127,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
     entradas: [
       { etiqueta: 'Eventos', ruta: '/eventosListar', icono: 'bi-calendar-check' },
       { etiqueta: 'Crear evento', ruta: '/eventosCrear', icono: 'bi-calendar-plus' },
+      { etiqueta: 'Sedes', ruta: '/sedes', icono: 'bi-geo-alt', condicion: 'sedes' },
       { etiqueta: 'Configuración', ruta: '/configuracion-sistema', icono: 'bi-sliders', condicion: 'propietario' },
       { etiqueta: 'Registro de acciones', ruta: '/auditoriaSistema', icono: 'bi-journal-text', condicion: 'propietario' },
       { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web', verWeb: true },
@@ -142,6 +144,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/eventosListar',
       '/eventosCrear',
       '/eventosEditar',
+      '/sedes',
       '/configuracion-sistema',
       '/auditoriaSistema',
       '/plataformaErrores',

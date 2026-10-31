@@ -171,6 +171,7 @@ export class CabeceraPanelComponent implements OnInit {
       gestion: roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
       profesor,
       misGrupos: profesor && this.capacidades().includes('MIS_GRUPOS'),
+      sedes: this.capacidades().includes('SEDES'),
       plataforma: this.plataforma(),
     };
   });

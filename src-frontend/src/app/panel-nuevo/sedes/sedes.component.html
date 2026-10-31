@@ -1,0 +1,106 @@
+<div class="pn sedes" pnAcento>
+  <div class="sedes__pagina">
+    <header class="sedes__cabecera">
+      <h1 class="sedes__titulo">Sedes</h1>
+      <button type="button" class="sedes__boton-primario" (click)="abrirNueva()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"></path></svg>
+        <span>Nueva sede</span>
+      </button>
+    </header>
+
+    @if (estado === 'error') {
+    <pn-bloque-error pose="dudar" class="sedes__bloque-estado" titulo="No se pudieron cargar las sedes" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="sedes__cargando" etiqueta="Cargando sedes" aria-busy="true">
+      <div class="sedes__esqueleto">
+        @for (i of [1, 2, 3, 4]; track i) {
+        <div class="sedes__esqueleto-fila"><span></span><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (sedes.length === 0) {
+    <pn-bloque-vacio pose="esperar" class="sedes__bloque-estado" titulo="Aún no hay sedes" texto="Crea la primera para empezar a organizar grupos y turnos."
+      accion="Nueva sede" (accionar)="abrirNueva()" />
+    } @else {
+    <ul class="sedes__lista" aria-label="Sedes de la escuela">
+      @for (sede of sedes; track sede.id) {
+      <li class="sedes__item">
+        <button type="button" class="sedes__fila" [class.sedes__fila--inactiva]="!sede.activa" [attr.data-id]="sede.id" (click)="abrirEditar(sede)">
+          <span class="sedes__datos">
+            <span class="sedes__nombre"><span class="sedes__oculto">Editar </span>{{ sede.nombre }}</span>
+            @if (lineaSecundaria(sede); as linea) {
+            <span class="sedes__linea">{{ linea }}</span>
+            }
+          </span>
+          <span class="sedes__estado" [class.sedes__estado--activa]="sede.activa">{{ sede.activa ? 'Activa' : 'Inactiva' }}</span>
+          <svg class="sedes__editar" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"></path><path d="m14.5 7.5 3 3"></path></svg>
+        </button>
+      </li>
+      }
+    </ul>
+    }
+  </div>
+
+  @if (panel; as p) {
+  <pn-panel-lateral [titulo]="p.sede ? 'Editar sede' : 'Nueva sede'" [bloqueado]="p.enviando || p.cambiandoEstado" (cerrar)="cerrarPanel()">
+    <form id="sedes-form" class="sedes__form" novalidate (submit)="guardar($event)">
+      @if (segundaSede) {
+      <p class="sedes__nota" id="sedes-segunda" role="note">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+        <span>{{ avisoSegundaSede }}</span>
+      </p>
+      }
+      @for (c of campos; track c.clave) {
+      <div class="sedes__campo">
+        <label class="sedes__etiqueta" [for]="'sedes-campo-' + c.clave">{{ c.etiqueta }}</label>
+        <input class="sedes__control" [id]="'sedes-campo-' + c.clave" [type]="c.type" [attr.maxlength]="c.maximo" [attr.autocomplete]="c.autocomplete"
+          [value]="p.campos[c.clave]" [disabled]="p.enviando" [attr.aria-invalid]="p.errores[c.clave] ? 'true' : null"
+          [attr.aria-describedby]="p.errores[c.clave] ? 'sedes-error-' + c.clave : null" (input)="escribir(c.clave, $event)" />
+        @if (p.errores[c.clave]; as mensaje) {
+        <p class="sedes__error" [id]="'sedes-error-' + c.clave">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <span>{{ mensaje }}</span>
+        </p>
+        }
+      </div>
+      }
+      @if (p.error) {
+      <p class="sedes__error sedes__error--general" id="sedes-error-general" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ p.error }}</span>
+      </p>
+      }
+    </form>
+
+    @if (sedeAbierta; as sede) {
+    <section class="sedes__estado-bloque" aria-labelledby="sedes-estado-titulo">
+      <div class="sedes__estado-cabecera">
+        <h3 class="sedes__estado-titulo" id="sedes-estado-titulo">Estado</h3>
+        <span class="sedes__estado" [class.sedes__estado--activa]="sede.activa">{{ sede.activa ? 'Activa' : 'Inactiva' }}</span>
+      </div>
+      @if (sede.activa) {
+      @if (unicaActiva) {
+      <p class="sedes__estado-texto">{{ textoUnicaActiva }}</p>
+      } @else {
+      <button type="button" class="sedes__boton-secundario" [disabled]="p.enviando" (click)="desactivar()">Desactivar sede</button>
+      }
+      } @else {
+      <button type="button" pnOcupado class="sedes__boton-secundario" [ocupado]="p.cambiandoEstado" textoOcupado="Activando…"
+        [deshabilitado]="p.enviando" (click)="activar()">Activar sede</button>
+      }
+    </section>
+    }
+
+    <div pnPie class="sedes__pie">
+      <button type="button" class="sedes__boton-texto" [disabled]="p.enviando || p.cambiandoEstado" (click)="cerrarPanel()">Cancelar</button>
+      <button type="submit" form="sedes-form" pnOcupado class="sedes__boton-primario" [ocupado]="p.enviando" [textoOcupado]="textoGuardando"
+        [deshabilitado]="p.cambiandoEstado">{{ textoGuardar }}</button>
+    </div>
+  </pn-panel-lateral>
+  }
+</div>

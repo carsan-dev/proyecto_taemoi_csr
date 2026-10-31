@@ -165,3 +165,28 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
     expect(entradaActual('/eventosListar', '/eventosListar?x=1')).toBeTrue();
   });
 });
+
+describe('menu-panel: Sedes (E9-3)', () => {
+  const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
+
+  it('«Sedes» va en Escuela, antes de Configuración, y solo con la capacidad SEDES', () => {
+    const escuela = MENU_PANEL.find((s) => s.id === 'escuela')!;
+    const rutas = escuela.entradas.map((e) => e.ruta);
+    expect(rutas.indexOf('/sedes')).toBeGreaterThan(-1);
+    expect(rutas.indexOf('/sedes')).toBeLessThan(rutas.indexOf('/configuracion-sistema'));
+    expect(escuela.entradas.find((e) => e.ruta === '/sedes')).toEqual(
+      jasmine.objectContaining({ etiqueta: 'Sedes', icono: 'bi-geo-alt', condicion: 'sedes' })
+    );
+    expect(rutasDeGestion({ ...base, sedes: true })).toContain('/sedes');
+    expect(rutasDeGestion({ ...base, sedes: false })).not.toContain('/sedes');
+    expect(rutasDeGestion(base)).not.toContain('/sedes');
+  });
+
+  it('el gestor con SEDES también la ve, aunque no sea propietario', () => {
+    expect(rutasDeGestion({ ...base, propietario: false, sedes: true })).toContain('/sedes');
+  });
+
+  it('/sedes enciende la entrada Escuela', () => {
+    expect(seccionActiva('/sedes')).toBe('escuela');
+  });
+});
