@@ -63,7 +63,7 @@
             @for (r of rolesActivos(m); track $index) {
             <span class="miembros__etiqueta">{{ etiquetaRol(r) }}</span>
             }
-            @if (m.invitacionPendiente) {
+            @if (invitacionPendienteAqui(m)) {
             <span class="miembros__etiqueta miembros__etiqueta--atencion">Invitación pendiente</span>
             }
           </span>

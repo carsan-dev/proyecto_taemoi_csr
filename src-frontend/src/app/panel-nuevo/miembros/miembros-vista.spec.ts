@@ -6,6 +6,7 @@ import {
   etiquetaGrupo,
   etiquetaRol,
   filaDeFicha,
+  invitacionPendienteAqui,
   lineaSecundaria,
   mismasSedes,
   mismosGrupos,
@@ -39,6 +40,15 @@ function miembro(cambios: Partial<Miembro> = {}): Miembro {
 }
 
 describe('miembros-vista (E9-4)', () => {
+  it('invitación pendiente aquí: la global y algún rol activo en esta escuela (la familia cuenta)', () => {
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: true }))).toBeTrue();
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: true, roles: [rol('FAMILIA')] }))).toBeTrue();
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false), rol('RESPONSABLE_SEDE')] }))).toBeTrue();
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false)] }))).toBeFalse();
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: true, roles: [] }))).toBeFalse();
+    expect(invitacionPendienteAqui(miembro({ invitacionPendiente: false }))).toBeFalse();
+  });
+
   it('cancelar invitación: exige invitación pendiente y algún rol activo', () => {
     expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true }), false)).toBeTrue();
     expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: false }), true)).toBeFalse();

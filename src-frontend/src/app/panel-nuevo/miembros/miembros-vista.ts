@@ -110,12 +110,19 @@ export function tituloCancelarInvitacion(nombre: string): string {
 }
 
 /**
+ * `invitacionPendiente` es de la cuenta, global: una cuenta conservada tras cancelar sigue sin contraseña. Aquí solo hay
+ * invitación que enseñar con algún rol activo en esta escuela; sin ninguno, reenviar daría 409.
+ */
+export function invitacionPendienteAqui(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>): boolean {
+  return m.invitacionPendiente && rolesActivos(m).length > 0;
+}
+
+/**
  * Cancelar retira todos sus roles activos de esta escuela (decisión 389): hace falta alguno y que la sesión pueda
  * cambiarlos todos. El servidor lo vuelve a comprobar con 403.
  */
 export function puedeCancelarInvitacion(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>, sesionPropietaria: boolean): boolean {
-  const activos = rolesActivos(m);
-  return m.invitacionPendiente && activos.length > 0 && activos.every((rol) => puedeCambiarRol(rol, sesionPropietaria));
+  return invitacionPendienteAqui(m) && rolesActivos(m).every((rol) => puedeCambiarRol(rol, sesionPropietaria));
 }
 
 /** Nombre del grupo con su sede cuando la escuela tiene varias. */

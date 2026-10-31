@@ -201,6 +201,84 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(filas().every((f) => f.tagName === 'BUTTON')).toBeTrue();
   });
 
+  // Última página con una sola fila, ya abierta: `total` y `totalPaginas` antes de borrarla.
+  function enLaUltimaPagina(numeroDePagina: number): void {
+    const hasta = { total: (numeroDePagina - 1) * 20 + 1, totalPaginas: numeroDePagina };
+    cargar(pagina([miembro()], hasta));
+    fixture.componentInstance.irAPagina(numeroDePagina);
+    listados()[0].flush(pagina([miembro({ usuarioId: 99 })], { ...hasta, pagina: numeroDePagina - 1 }));
+    fixture.detectChanges();
+  }
+
+  const paginaPedida = (r: TestRequest): string | null => r.request.params.get('page');
+
+  it('recarga silenciosa de una página que se quedó vacía: va a la última válida, sin pasar por «Aún no hay miembros»', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    const [vacia] = listados();
+    expect(paginaPedida(vacia)).toBe('2');
+    vacia.flush(pagina([], { pagina: 2, total: 40, totalPaginas: 2 }));
+    fixture.detectChanges();
+
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    expect(fixture.componentInstance.pagina).toBe(2);
+    const [valida] = listados();
+    expect(paginaPedida(valida)).toBe('1');
+    valida.flush(pagina([miembro({ usuarioId: 7 })], { pagina: 1, total: 40, totalPaginas: 2 }));
+    fixture.detectChanges();
+
+    expect(filas().map((f) => f.getAttribute('data-id'))).toEqual(['7']);
+    expect(el().querySelector('pn-esqueleto')).toBeNull();
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    expect(fixture.componentInstance.totalPaginas).toBe(2);
+  });
+
+  it('carga normal de una página vacía: sigue el esqueleto hasta tener la última válida', () => {
+    enLaUltimaPagina(2);
+    fixture.componentInstance.cargar();
+    listados()[0].flush(pagina([], { pagina: 1, total: 20, totalPaginas: 1 }));
+    fixture.detectChanges();
+
+    expect(el().querySelector('pn-esqueleto')).not.toBeNull();
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    const [valida] = listados();
+    expect(paginaPedida(valida)).toBe('0');
+    valida.flush(pagina([miembro({ usuarioId: 7 })], { total: 20, totalPaginas: 1 }));
+    fixture.detectChanges();
+    expect(filas().length).toBe(1);
+  });
+
+  it('sin nadie en ninguna página: acaba en la primera y entonces sí dice «Aún no hay miembros»', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    listados()[0].flush(pagina([], { pagina: 2, total: 0, totalPaginas: 0 }));
+    fixture.detectChanges();
+    const [primera] = listados();
+    expect(paginaPedida(primera)).toBe('0');
+    primera.flush(pagina([]));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.pagina).toBe(1);
+    expect(el().textContent).toContain('Aún no hay miembros');
+    expect(listados().length).toBe(0);
+  });
+
+  it('una respuesta vacía que aún cuenta esa página no entra en bucle: retrocede una cada vez', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    listados()[0].flush(pagina([], { pagina: 2, total: 41, totalPaginas: 3 }));
+    fixture.detectChanges();
+    const [segunda] = listados();
+    expect(paginaPedida(segunda)).toBe('1');
+    segunda.flush(pagina([], { pagina: 1, total: 41, totalPaginas: 3 }));
+    fixture.detectChanges();
+    const [primera] = listados();
+    expect(paginaPedida(primera)).toBe('0');
+    primera.flush(pagina([], { total: 0, totalPaginas: 0 }));
+    fixture.detectChanges();
+    expect(listados().length).toBe(0);
+  });
+
   it('cargando: esqueleto; error: bloque con «Reintentar» que vuelve a pedir', () => {
     permisosActuales = permisos(PROPIETARIA);
     fixture = TestBed.createComponent(MiembrosPanelComponent);
@@ -443,6 +521,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   const TEXTO_CANCELAR = 'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.';
   const YA_ACEPTADA = 'La invitación ya se aceptó.';
   const SOLO_PROPIETARIO = 'Solo el propietario da o quita los roles de propietario y gestor.';
+  const NO_MIEMBRO = 'La cuenta no es miembro de esta escuela.';
   const pendiente = (cambios: Partial<FichaCompleta> = {}): FichaCompleta => ficha({ invitacionPendiente: true, ...cambios });
   const tieneCancelar = (): boolean => Array.from(panel()!.querySelectorAll('button')).some((b) => texto(b) === 'Cancelar invitación');
   const fichasPedidas = (id = 1): TestRequest[] => http.match((r) => r.method === 'GET' && r.url === `${API}/${id}`);
@@ -492,6 +571,41 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(tieneCancelar()).toBeFalse();
   });
 
+  it('sin rol activo en esta escuela (cuenta conservada): ni pastilla ni «Reenviar invitación», en la fila ni en la ficha', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false)] }));
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).toBeNull();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(Array.from(panel()!.querySelectorAll('button')).some((b) => texto(b) === 'Reenviar invitación')).toBeFalse();
+  });
+
+  it('solo con familia activa sigue pendiente aquí: pastilla y «Reenviar invitación»', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false), rol('FAMILIA')] }));
+    expect(texto(filas()[0].querySelector('.miembros__etiqueta--atencion'))).toBe('Invitación pendiente');
+    expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+  });
+
+  it('al quitar el último rol desaparecen pastilla y botones; al devolverlo vuelven', async () => {
+    await abrirPendiente();
+    marcar(casilla('PROFESOR'), false);
+    await esperar();
+    await confirmar();
+    http.expectOne((r) => r.method === 'DELETE' && r.url === `${API}/1/roles/PROFESOR`).flush(pendiente({ roles: [rol('PROFESOR', false)] }));
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false)] })])));
+    pintar();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).toBeNull();
+
+    marcar(casilla('PROFESOR'), true);
+    http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/roles/PROFESOR`).flush(pendiente());
+    await esperar();
+    http.match((r) => r.url === GRUPOS).forEach((r) => r.flush([]));
+    listados().forEach((r) => r.flush(pagina([miembro({ invitacionPendiente: true })])));
+    pintar();
+    expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).not.toBeNull();
+  });
+
   it('no aparece sin invitación pendiente', async () => {
     cargar();
     await abrirFicha(ficha());
@@ -531,7 +645,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
 
       expect(panel()).toBeNull();
       expect(dialogo()).toBeNull();
-      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada' }]);
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada.' }]);
       const recarga = listados();
       expect(recarga.length).toBe(1);
       recarga[0].flush(pagina([]));
@@ -619,6 +733,55 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(tieneCancelar()).toBeTrue();
   });
 
+  it('404: la cuenta ya no existe: cierra la ficha, recarga la lista y avisa con el mensaje de la API, sin pedir la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: NO_MIEMBRO }, { status: 404, statusText: 'Not Found' });
+    await esperar();
+
+    expect(panel()).toBeNull();
+    expect(dialogo()).toBeNull();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: NO_MIEMBRO }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    await esperar();
+    expect(fichasPedidas().length).toBe(0);
+  });
+
+  it('404 con la ficha ya cerrada: también avisa y la lista se refresca', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    peticion.flush({ mensaje: NO_MIEMBRO }, { status: 404, statusText: 'Not Found' });
+    await esperar();
+
+    expect(avisos()).toEqual([{ tipo: 'error', texto: NO_MIEMBRO }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    expect(fichasPedidas().length).toBe(0);
+  });
+
+  it('ficha cerrada con la cancelación en vuelo: un 409 no avisa ni recarga nada', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    peticion.flush({ mensaje: YA_ACEPTADA }, { status: 409, statusText: 'Conflict' });
+    await esperar();
+
+    expect(avisos()).toEqual([]);
+    expect(listados().length).toBe(0);
+    expect(fichasPedidas().length).toBe(0);
+  });
+
   it('ficha cerrada con la cancelación en vuelo: el éxito se avisa y la lista se refresca, sin pedir la ficha', async () => {
     await abrirPendiente();
     await pedirCancelar();
@@ -629,7 +792,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(el().querySelector('pn-miembro-ficha')).toBeNull();
     peticion.flush({ cuentaBorrada: true });
     await esperar();
-    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada' }]);
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada.' }]);
     const recarga = listados();
     expect(recarga.length).toBe(1);
     recarga[0].flush(pagina([]));

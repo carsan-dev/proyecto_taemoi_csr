@@ -18,6 +18,7 @@ import {
   POR_PAGINA,
   etiquetaRol,
   filaDeFicha,
+  invitacionPendienteAqui,
   lineaSecundaria,
   nombreCompleto,
   rolesActivos,
@@ -60,6 +61,7 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
   readonly lineaSecundaria = lineaSecundaria;
   readonly nombreCompleto = nombreCompleto;
   readonly rolesActivos = rolesActivos;
+  readonly invitacionPendienteAqui = invitacionPendienteAqui;
   readonly numero = numero;
 
   // Filtros (al servidor).
@@ -151,9 +153,18 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
       .listar({ q: this.texto, rol: this.rol, incluirFamilias: this.incluirFamilias, pagina: this.pagina - 1, tamano: POR_PAGINA })
       .subscribe({
         next: (respuesta) => {
-          this.miembros = respuesta?.contenido ?? [];
-          this.total = Number(respuesta?.total ?? this.miembros.length) || 0;
-          this.totalPaginas = Number(respuesta?.totalPaginas ?? 0) || (this.total > 0 ? Math.ceil(this.total / POR_PAGINA) : 0);
+          const miembros = respuesta?.contenido ?? [];
+          const total = Number(respuesta?.total ?? miembros.length) || 0;
+          const totalPaginas = Number(respuesta?.totalPaginas ?? 0) || (total > 0 ? Math.ceil(total / POR_PAGINA) : 0);
+          // Se borró la única fila de la última página: no es una escuela vacía. Siempre retrocede, así que acaba.
+          if (miembros.length === 0 && this.pagina > 1) {
+            this.pagina = Math.max(1, Math.min(totalPaginas, this.pagina - 1));
+            this.cargar(silencioso);
+            return;
+          }
+          this.miembros = miembros;
+          this.total = total;
+          this.totalPaginas = totalPaginas;
           this.estado = 'listo';
           this.cdr.detectChanges();
         },

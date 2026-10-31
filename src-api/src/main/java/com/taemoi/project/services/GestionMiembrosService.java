@@ -1,5 +1,6 @@
 package com.taemoi.project.services;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -318,7 +319,8 @@ public class GestionMiembrosService {
 	 * otra (la de menor id), con su nombre y su correo; si es de otra, su token sigue vivo tal cual.</li>
 	 * <li>Otra membresía (inactiva o de una escuela desactivada) o cualquier dato de
 	 * {@link UsuarioRepository#tieneDatosFueraDeLaInvitacion}: se conserva sin token vivo. FAMILIA activa con alumnos
-	 * vinculados aquí no se toca: los vínculos se gestionan aparte.</li>
+	 * vinculados aquí no se toca: los vínculos se gestionan aparte; sin más roles que retirar ni token vivo, repetir no
+	 * tendría efecto: 409 {@value #SIN_ROL_ACTIVO}, sin correo ni {@code INVITACION_CANCELADA}.</li>
 	 * <li>Nada más: se borran sus membresías de esta escuela, con sus sedes, sus asignaciones y la cuenta.</li>
 	 * </ul>
 	 *
@@ -350,6 +352,10 @@ public class GestionMiembrosService {
 
 		List<Membresia> todas = membresias.findByUsuarioId(id);
 		List<Membresia> deEstaEscuela = todas.stream().filter(m -> organizacion.equals(m.getOrganizacionId())).toList();
+		List<Membresia> aRetirar = rolesARetirar(id, deEstaEscuela, organizacion);
+		if (aRetirar.isEmpty() && !tieneTokenVivo(cuenta)) {
+			throw new IllegalStateException(SIN_ROL_ACTIVO);
+		}
 		boolean borrar = deEstaEscuela.size() == todas.size()
 				&& usuarios.tieneDatosFueraDeLaInvitacion(id, organizacion) == 0;
 
@@ -362,7 +368,10 @@ public class GestionMiembrosService {
 		if (borrar) {
 			borrarCuentaPendiente(id, deEstaEscuela, organizacion);
 		} else {
-			retirarRoles(id, deEstaEscuela, organizacion);
+			for (Membresia membresia : aRetirar) {
+				membresia.setActiva(false);
+				membresias.saveAndFlush(membresia);
+			}
 			resolverToken(cuenta, organizacion);
 		}
 		return new MiembrosDTOs.InvitacionCancelada(borrar);
@@ -386,15 +395,20 @@ public class GestionMiembrosService {
 		}
 	}
 
-	/** Roles activos a {@code activa=false}, sin borrar filas, sedes ni asignaciones; FAMILIA con alumnos no se toca. */
-	private void retirarRoles(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
+	/**
+	 * Lo que cancelar pasa a {@code activa=false}, sin borrar filas, sedes ni asignaciones: sus roles activos, salvo FAMILIA
+	 * con alumnos.
+	 */
+	private List<Membresia> rolesARetirar(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
 		boolean conAlumnos = consultas.alumnosVinculados(id, organizacion) > 0;
-		for (Membresia membresia : deEstaEscuela) {
-			if (membresia.isActiva() && !(membresia.getRol() == RolMembresia.FAMILIA && conAlumnos)) {
-				membresia.setActiva(false);
-				membresias.saveAndFlush(membresia);
-			}
-		}
+		return deEstaEscuela.stream().filter(Membresia::isActiva)
+				.filter(m -> !(m.getRol() == RolMembresia.FAMILIA && conAlumnos)).toList();
+	}
+
+	/** Si aún hay un enlace que sirva: con hash y sin caducar, como exige aceptar la invitación. */
+	private static boolean tieneTokenVivo(Usuario cuenta) {
+		return cuenta.getResetTokenHash() != null && cuenta.getResetTokenExpiresAt() != null
+				&& cuenta.getResetTokenExpiresAt().isAfter(LocalDateTime.now());
 	}
 
 	/**
@@ -487,7 +501,9 @@ public class GestionMiembrosService {
 	 * Quita el rol (D8-7): {@code activa=false}, sin borrar la fila; conserva asignaciones y sedes. Ya desactivado: 200
 	 * con {@code sinCambios=SI}. PROPIETARIO: bloquea antes las filas PROPIETARIO activas de la escuela y, si es la
 	 * última, 409 {@link #SIN_PROPIETARIO} (D8-9, D8-19). FAMILIA (decisión 396), solo el propietario: sus alumnos siguen
-	 * vinculados y, sin otro rol, la cuenta deja de entrar.
+	 * vinculados y, sin otro rol, la cuenta deja de entrar. A una cuenta pendiente que se queda sin ninguna membresía
+	 * activa en esta escuela (FAMILIA incluida), el enlace de esta escuela se le invalida, sin correo de cancelación
+	 * ({@link #invalidarEnlaceSiNoQuedanRoles}).
 	 *
 	 * @throws SecurityException      (403) D8-8
 	 * @throws NoSuchElementException (404) no es miembro o no tiene ese rol
@@ -519,9 +535,25 @@ public class GestionMiembrosService {
 			membresia.setActiva(false);
 			membresias.saveAndFlush(membresia);
 			cambios.rol(RegistroAccionesMiembros.Accion.ROL_QUITADO, rol);
+			invalidarEnlaceSiNoQuedanRoles(cuenta, organizacion);
 		}
 		cambios.sinCambiosSiHaceFalta(RegistroAccionesMiembros.Accion.ROL_QUITADO, rol);
 		return ficha(cuenta, organizacion);
+	}
+
+	/**
+	 * Tras quitar un rol: a una cuenta que sigue pendiente y no conserva ninguna membresía activa aquí se le resuelve el
+	 * token como al cancelar ({@link #resolverToken}). Quien llama tiene la fila bloqueada: lo escrito se vuelca antes y la
+	 * cuenta se relee, porque la entidad de la sesión pudo cargarse antes del bloqueo; {@code aceptar} pudo confirmar.
+	 */
+	private void invalidarEnlaceSiNoQuedanRoles(Usuario cuenta, Long organizacion) {
+		em.flush();
+		em.refresh(cuenta);
+		boolean sinRoles = membresias.findByUsuarioIdAndOrganizacionId(cuenta.getId(), organizacion).stream()
+				.noneMatch(Membresia::isActiva);
+		if (cuenta.invitacionPendiente() && sinRoles) {
+			resolverToken(cuenta, organizacion);
+		}
 	}
 
 	// ------------------------------------------------------------------ sedes y grupos

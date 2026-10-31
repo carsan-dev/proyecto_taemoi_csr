@@ -2,12 +2,14 @@ package com.taemoi.project.services;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -80,7 +82,10 @@ public class AsignacionProfesorService {
 		this.registro = registro;
 	}
 
-	/** Profesores del grupo (titulares primero). Grupo de otra escuela o inexistente: 404. */
+	/**
+	 * Profesores del grupo (titulares primero). Grupo de otra escuela o inexistente: 404. {@code invitacionPendiente}
+	 * exige además algún rol activo en esta escuela: sin ninguno, la asignación se conserva pero reenviar daría 409.
+	 */
 	@Transactional(readOnly = true)
 	public List<GrupoProfesoresDTOs.Profesor> listar(Long grupoId) {
 		Long organizacion = organizacionActiva();
@@ -89,12 +94,16 @@ public class AsignacionProfesorService {
 		if (filas.isEmpty()) {
 			return List.of();
 		}
+		List<Long> ids = filas.stream().map(AsignacionProfesor::getUsuarioId).toList();
 		Map<Long, Usuario> cuentas = new HashMap<>();
-		usuarios.findAllById(filas.stream().map(AsignacionProfesor::getUsuarioId).toList())
-				.forEach(u -> cuentas.put(u.getId(), u));
+		usuarios.findAllById(ids).forEach(u -> cuentas.put(u.getId(), u));
+		Set<Long> conRolActivo = new HashSet<>(membresias.cuentasConRolActivo(organizacion, ids));
 		return filas.stream()
 				.filter(a -> cuentas.containsKey(a.getUsuarioId()))
-				.map(a -> profesor(cuentas.get(a.getUsuarioId()), a.getRol()))
+				.map(a -> {
+					Usuario cuenta = cuentas.get(a.getUsuarioId());
+					return profesor(cuenta, a.getRol(), cuenta.invitacionPendiente() && conRolActivo.contains(cuenta.getId()));
+				})
 				.sorted(ORDEN)
 				.toList();
 	}
@@ -151,7 +160,8 @@ public class AsignacionProfesorService {
 			registro.registrar(RegistroAccionesProfesor.Accion.ASIGNACION_ROL_CAMBIADO, endpoint,
 					valores(grupoId, usuarioId, rol));
 		}
-		return profesor(cuenta, rol);
+		// Con su membresía PROFESOR activa: la acaba de comprobar o crear.
+		return profesor(cuenta, rol, cuenta.invitacionPendiente());
 	}
 
 	/**
@@ -239,8 +249,9 @@ public class AsignacionProfesorService {
 		return "/api/grupos/" + grupoId + "/profesores";
 	}
 
-	private static GrupoProfesoresDTOs.Profesor profesor(Usuario cuenta, RolAsignacionProfesor rol) {
+	private static GrupoProfesoresDTOs.Profesor profesor(Usuario cuenta, RolAsignacionProfesor rol,
+			boolean invitacionPendiente) {
 		return new GrupoProfesoresDTOs.Profesor(cuenta.getId(), cuenta.getNombre(), cuenta.getApellidos(),
-				cuenta.getEmail(), rol, cuenta.invitacionPendiente());
+				cuenta.getEmail(), rol, invitacionPendiente);
 	}
 }
