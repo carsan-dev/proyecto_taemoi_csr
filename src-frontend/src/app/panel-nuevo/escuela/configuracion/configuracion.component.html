@@ -120,7 +120,8 @@
         <label class="conf__etiqueta" for="conf-limite">Límite de alumnos</label>
         <input id="conf-limite" class="conf__control conf__control--numero" type="number" inputmode="numeric" min="1" max="100" step="1"
           [value]="textoLimite" [attr.aria-invalid]="validacionLimite.error ? 'true' : null"
-          [attr.aria-describedby]="validacionLimite.error ? 'conf-limite-error' : null" (input)="escribirLimite($event)" />
+          [attr.aria-describedby]="validacionLimite.error ? 'conf-limite-ayuda conf-limite-error' : 'conf-limite-ayuda'" (input)="escribirLimite($event)" />
+        <p class="conf__ayuda" id="conf-limite-ayuda">Es el límite común de la escuela. Si una sede tiene su propio aforo, sus turnos usan el de la sede.</p>
         @if (validacionLimite.error; as error) {
         <p class="conf__error" id="conf-limite-error" role="alert">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

@@ -201,6 +201,26 @@
   margin-left: 28px;
 }
 
+.miembros__subbloque {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  min-width: 0;
+  margin-left: 28px;
+
+  // Con la sangría, los selectores no deben empujar más allá del ancho (375 px): se encogen y envuelven.
+  .miembros__control {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.miembros__subbloque-titulo {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
 .miembros__cargo-etiqueta,
 .miembros__etiqueta-campo {
   font: var(--pn-etiqueta);
@@ -391,6 +411,7 @@
   }
 
   .miembros__seccion > .miembros__boton-secundario,
+  .miembros__subbloque > .miembros__boton-secundario,
   .miembros__invitacion .miembros__boton-secundario {
     width: 100%;
   }

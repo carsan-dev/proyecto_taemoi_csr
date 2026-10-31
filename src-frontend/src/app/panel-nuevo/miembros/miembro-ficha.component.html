@@ -60,6 +60,91 @@
             <span>{{ mensaje }}</span>
           </p>
           }
+          @if (rol === 'RESPONSABLE_SEDE' && verSedes) {
+          <div class="miembros__subbloque" role="group" aria-labelledby="miembro-sedes">
+            <h4 class="miembros__subbloque-titulo" id="miembro-sedes">Sedes</h4>
+            <ul class="miembros__sedes">
+              @for (sede of sedesMarcables; track sede.id) {
+              <li>
+                <label class="miembros__casilla">
+                  <input type="checkbox" [checked]="sedesElegidas.includes(sede.id)" [disabled]="sedesOcupado"
+                    (change)="alternarSede(sede.id, $any($event.target).checked)" />
+                  <span>{{ sede.nombre }}@if (sede.inactiva) { (inactiva)}</span>
+                </label>
+              </li>
+              }
+            </ul>
+            @if (sedesError) {
+            <p class="miembros__error" role="alert" id="miembro-sedes-error">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+              <span>{{ sedesError }}</span>
+            </p>
+            }
+            <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="sedesOcupado" textoOcupado="Guardando…"
+              [deshabilitado]="!sedesCambiadas" (click)="guardarSedes()">{{ responsablePendiente ? 'Dar el rol con estas sedes' : 'Guardar sedes' }}</button>
+          </div>
+          }
+          @if (rol === 'PROFESOR' && verGrupos) {
+          <div class="miembros__subbloque" role="group" aria-labelledby="miembro-grupos">
+            <h4 class="miembros__subbloque-titulo" id="miembro-grupos">Grupos</h4>
+            @if (gruposElegidos.length === 0) {
+            <p class="miembros__ayuda">No tiene grupos asignados.</p>
+            } @else {
+            <ul class="miembros__grupos">
+              @for (grupo of gruposElegidos; track grupo.grupoId) {
+              <li class="miembros__grupo" [attr.data-grupo]="grupo.grupoId">
+                <span class="miembros__grupo-nombre">{{ etiquetaDeGrupo(grupo) }}</span>
+                <label class="miembros__oculto" [for]="'miembro-grupo-rol-' + grupo.grupoId">Rol en {{ grupo.nombre }}</label>
+                <select class="miembros__control miembros__control--corto" [id]="'miembro-grupo-rol-' + grupo.grupoId" [value]="grupo.rol"
+                  [disabled]="gruposOcupado" (change)="cambiarRolDeGrupo(grupo.grupoId, $any($event.target).value)">
+                  @for (r of rolesAsignacion; track r.valor) {
+                  <option [value]="r.valor" [selected]="r.valor === grupo.rol">{{ r.etiqueta }}</option>
+                  }
+                </select>
+                <button type="button" class="miembros__boton-texto" [disabled]="gruposOcupado" (click)="quitarGrupo(grupo.grupoId)">
+                  Quitar<span class="miembros__oculto"> {{ grupo.nombre }}</span></button>
+              </li>
+              }
+            </ul>
+            }
+            @if (catalogoError) {
+            <p class="miembros__error" role="alert">
+              <span>No se pudieron cargar los grupos.</span>
+              <button type="button" class="miembros__boton-texto" (click)="cargarCatalogo()">Reintentar</button>
+            </p>
+            } @else if (catalogo !== null && gruposDisponibles.length > 0) {
+            <div class="miembros__anadir-grupo">
+              <label class="miembros__oculto" for="miembro-grupo-nuevo">Grupo</label>
+              <select class="miembros__control" id="miembro-grupo-nuevo" [value]="grupoNuevo" [disabled]="gruposOcupado"
+                (change)="grupoNuevo = $any($event.target).value">
+                <option value="">Añadir un grupo…</option>
+                @for (g of gruposDisponibles; track g.id) {
+                <option [value]="g.id" [selected]="'' + g.id === grupoNuevo">{{ g.nombre }}</option>
+                }
+              </select>
+              <label class="miembros__oculto" for="miembro-grupo-nuevo-rol">Rol en el grupo nuevo</label>
+              <select class="miembros__control miembros__control--corto" id="miembro-grupo-nuevo-rol" [value]="rolNuevo" [disabled]="gruposOcupado"
+                (change)="rolNuevo = $any($event.target).value">
+                @for (r of rolesAsignacion; track r.valor) {
+                <option [value]="r.valor" [selected]="r.valor === rolNuevo">{{ r.etiqueta }}</option>
+                }
+              </select>
+              <button type="button" class="miembros__boton-secundario miembros__boton-pequeno" [disabled]="grupoNuevo === '' || gruposOcupado"
+                (click)="anadirGrupo()">Añadir</button>
+            </div>
+            }
+            @if (gruposError) {
+            <p class="miembros__error" role="alert" id="miembro-grupos-error">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+              <span>{{ gruposError }}</span>
+            </p>
+            }
+            <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="gruposOcupado" textoOcupado="Guardando…"
+              [deshabilitado]="!gruposCambiados" (click)="guardarGrupos()">Guardar grupos</button>
+          </div>
+          }
         </li>
         }
         @if (tieneFamilia) {
@@ -70,93 +155,6 @@
         }
       </ul>
     </section>
-
-    @if (verSedes) {
-    <section class="miembros__seccion" aria-labelledby="miembro-sedes">
-      <h3 class="miembros__seccion-titulo" id="miembro-sedes">Sedes</h3>
-      <ul class="miembros__sedes">
-        @for (sede of sedesMarcables; track sede.id) {
-        <li>
-          <label class="miembros__casilla">
-            <input type="checkbox" [checked]="sedesElegidas.includes(sede.id)" [disabled]="sedesOcupado"
-              (change)="alternarSede(sede.id, $any($event.target).checked)" />
-            <span>{{ sede.nombre }}@if (sede.inactiva) { (inactiva)}</span>
-          </label>
-        </li>
-        }
-      </ul>
-      @if (sedesError) {
-      <p class="miembros__error" role="alert" id="miembro-sedes-error">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
-        <span>{{ sedesError }}</span>
-      </p>
-      }
-      <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="sedesOcupado" textoOcupado="Guardando…"
-        [deshabilitado]="!sedesCambiadas" (click)="guardarSedes()">{{ responsablePendiente ? 'Dar el rol con estas sedes' : 'Guardar sedes' }}</button>
-    </section>
-    }
-
-    @if (verGrupos) {
-    <section class="miembros__seccion" aria-labelledby="miembro-grupos">
-      <h3 class="miembros__seccion-titulo" id="miembro-grupos">Grupos</h3>
-      @if (gruposElegidos.length === 0) {
-      <p class="miembros__ayuda">No tiene grupos asignados.</p>
-      } @else {
-      <ul class="miembros__grupos">
-        @for (grupo of gruposElegidos; track grupo.grupoId) {
-        <li class="miembros__grupo" [attr.data-grupo]="grupo.grupoId">
-          <span class="miembros__grupo-nombre">{{ etiquetaDeGrupo(grupo) }}</span>
-          <label class="miembros__oculto" [for]="'miembro-grupo-rol-' + grupo.grupoId">Rol en {{ grupo.nombre }}</label>
-          <select class="miembros__control miembros__control--corto" [id]="'miembro-grupo-rol-' + grupo.grupoId" [value]="grupo.rol"
-            [disabled]="gruposOcupado" (change)="cambiarRolDeGrupo(grupo.grupoId, $any($event.target).value)">
-            @for (r of rolesAsignacion; track r.valor) {
-            <option [value]="r.valor" [selected]="r.valor === grupo.rol">{{ r.etiqueta }}</option>
-            }
-          </select>
-          <button type="button" class="miembros__boton-texto" [disabled]="gruposOcupado" (click)="quitarGrupo(grupo.grupoId)">
-            Quitar<span class="miembros__oculto"> {{ grupo.nombre }}</span></button>
-        </li>
-        }
-      </ul>
-      }
-      @if (catalogoError) {
-      <p class="miembros__error" role="alert">
-        <span>No se pudieron cargar los grupos.</span>
-        <button type="button" class="miembros__boton-texto" (click)="cargarCatalogo()">Reintentar</button>
-      </p>
-      } @else if (catalogo !== null && gruposDisponibles.length > 0) {
-      <div class="miembros__anadir-grupo">
-        <label class="miembros__oculto" for="miembro-grupo-nuevo">Grupo</label>
-        <select class="miembros__control" id="miembro-grupo-nuevo" [value]="grupoNuevo" [disabled]="gruposOcupado"
-          (change)="grupoNuevo = $any($event.target).value">
-          <option value="">Añadir un grupo…</option>
-          @for (g of gruposDisponibles; track g.id) {
-          <option [value]="g.id" [selected]="'' + g.id === grupoNuevo">{{ g.nombre }}</option>
-          }
-        </select>
-        <label class="miembros__oculto" for="miembro-grupo-nuevo-rol">Rol en el grupo nuevo</label>
-        <select class="miembros__control miembros__control--corto" id="miembro-grupo-nuevo-rol" [value]="rolNuevo" [disabled]="gruposOcupado"
-          (change)="rolNuevo = $any($event.target).value">
-          @for (r of rolesAsignacion; track r.valor) {
-          <option [value]="r.valor" [selected]="r.valor === rolNuevo">{{ r.etiqueta }}</option>
-          }
-        </select>
-        <button type="button" class="miembros__boton-secundario miembros__boton-pequeno" [disabled]="grupoNuevo === '' || gruposOcupado"
-          (click)="anadirGrupo()">Añadir</button>
-      </div>
-      }
-      @if (gruposError) {
-      <p class="miembros__error" role="alert" id="miembro-grupos-error">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
-        <span>{{ gruposError }}</span>
-      </p>
-      }
-      <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="gruposOcupado" textoOcupado="Guardando…"
-        [deshabilitado]="!gruposCambiados" (click)="guardarGrupos()">Guardar grupos</button>
-    </section>
-    }
   </div>
   }
 

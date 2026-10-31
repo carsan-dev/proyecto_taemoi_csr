@@ -118,6 +118,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   const casilla = (r: string): HTMLInputElement => panel()!.querySelector<HTMLInputElement>(`[data-rol="${r}"] input[type="checkbox"]`)!;
   const lineaRol = (r: string): HTMLElement => panel()!.querySelector<HTMLElement>(`[data-rol="${r}"]`)!;
   const titulos = (): string[] => Array.from(panel()!.querySelectorAll('.miembros__seccion-titulo')).map((t) => texto(t));
+  const subtitulos = (): string[] => Array.from(panel()!.querySelectorAll('.miembros__subbloque-titulo')).map((t) => texto(t));
 
   function marcar(c: HTMLInputElement, valor: boolean): void {
     c.checked = valor;
@@ -439,12 +440,17 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   it('Sedes solo con Responsable de sede activo; guarda con PUT /sedes y exige al menos una', async () => {
     cargar();
     await abrirFicha(ficha());
-    expect(titulos()).not.toContain('Sedes');
+    expect(subtitulos()).not.toContain('Sedes');
     fixture.destroy();
 
     cargar(pagina([miembro({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 1, nombre: 'Casariche' }] })]));
     await abrirFicha(ficha({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 1, nombre: 'Casariche' }] }));
-    expect(titulos()).toEqual(['Datos', 'Roles', 'Sedes']);
+    expect(titulos()).toEqual(['Datos', 'Roles']);
+    expect(subtitulos()).toEqual(['Sedes']);
+    const bloque = lineaRol('RESPONSABLE_SEDE').querySelector('#miembro-sedes');
+    expect(bloque).not.toBeNull();
+    expect(bloque!.closest('[role="group"]')!.getAttribute('aria-labelledby')).toBe('miembro-sedes');
+    expect(lineaRol('PROFESOR')?.querySelector('#miembro-sedes') ?? null).toBeNull();
     const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
     // Solo las activas: Herrera, inactiva y sin guardar, no sale.
     expect(cajas.map((c) => texto(c.parentElement))).toEqual(['Casariche', 'Mollina']);
@@ -491,7 +497,9 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     await abrirFicha(ficha());
     marcar(casilla('RESPONSABLE_SEDE'), true);
     expect(http.match((r) => r.method === 'PUT').length).toBe(0);
-    expect(titulos()).toContain('Sedes');
+    expect(subtitulos()).toContain('Sedes');
+    expect(lineaRol('RESPONSABLE_SEDE').querySelector('#miembro-sedes')).not.toBeNull();
+    expect(lineaRol('RESPONSABLE_SEDE').querySelector('.miembros__sedes')).not.toBeNull();
     const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
     cajas[1].checked = true;
     cajas[1].dispatchEvent(new Event('change'));
@@ -512,12 +520,15 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   it('Grupos solo con Profesor activo: lista con su rol, cambia, quita, añade y guarda con PUT /grupos', async () => {
     cargar(pagina([miembro({ roles: [rol('ADMINISTRADOR')] })]));
     await abrirFicha(ficha({ roles: [rol('ADMINISTRADOR')] }));
-    expect(titulos()).not.toContain('Grupos');
+    expect(subtitulos()).not.toContain('Grupos');
     fixture.destroy();
 
     cargar(pagina([miembro({ numeroGrupos: 1 })]));
     await abrirFicha(ficha({ numeroGrupos: 1, grupos: [{ grupoId: 10, nombre: 'Infantil martes', sedeId: 2, rol: 'TITULAR' }] }));
-    expect(titulos()).toEqual(['Datos', 'Roles', 'Grupos']);
+    expect(titulos()).toEqual(['Datos', 'Roles']);
+    expect(subtitulos()).toEqual(['Grupos']);
+    expect(lineaRol('PROFESOR').querySelector('#miembro-grupos')).not.toBeNull();
+    expect(lineaRol('PROFESOR').querySelector('.miembros__grupos')).not.toBeNull();
     const fila = panel()!.querySelector<HTMLElement>('.miembros__grupo[data-grupo="10"]')!;
     expect(texto(fila.querySelector('.miembros__grupo-nombre'))).toBe('Infantil martes · Mollina');
     expect(fila.querySelector<HTMLSelectElement>('select')!.value).toBe('TITULAR');
@@ -673,7 +684,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     boton(panel()!, 'Añadir miembro').click();
     http.expectOne((r) => r.method === 'POST' && r.url === API).flush({ mensaje: 'No hay ninguna cuenta con ese email.' }, { status: 404, statusText: 'Not Found' });
     await esperar();
-    expect(texto(panel()!.querySelector('#miembro-alta-sin-cuenta'))).toBe('No hay ninguna cuenta con ese email. Le enviaremos una invitación para crear su contraseña.');
+    expect(texto(panel()!.querySelector('#miembro-alta-sin-cuenta'))).toBe('No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.');
     expect(texto(panel()!.querySelector('label[for="miembro-alta-nombre"]'))).toBe('Nombre (obligatorio)');
     expect(texto(panel()!.querySelector('label[for="miembro-alta-apellidos"]'))).toBe('Apellidos (obligatorio)');
     expect(panel()!.querySelector('#miembro-alta-error')).toBeNull();

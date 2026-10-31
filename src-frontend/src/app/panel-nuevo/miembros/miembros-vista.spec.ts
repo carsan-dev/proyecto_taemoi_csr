@@ -109,7 +109,7 @@ describe('miembros-vista (E9-4)', () => {
     expect(pideReactivar(409, 'La cuenta tiene el rol de profesor desactivado en esta escuela.')).toBeTrue();
     expect(pideReactivar(409, 'La escuela se quedaría sin propietario.')).toBeFalse();
     expect(pideReactivar(400, 'desactivado')).toBeFalse();
-    expect(AVISO_SIN_CUENTA).toBe('No hay ninguna cuenta con ese email. Le enviaremos una invitación para crear su contraseña.');
+    expect(AVISO_SIN_CUENTA).toBe('No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.');
   });
 
   it('la fila de una ficha no lleva grupos', () => {

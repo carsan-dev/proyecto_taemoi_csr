@@ -50,7 +50,7 @@ export const CARGO_MAXIMO = 100;
 
 export const AYUDA_SOLO_PROPIETARIO = 'Solo el propietario puede cambiar este rol.';
 export const TEXTO_QUITAR = 'Podrás devolvérselo después.';
-export const AVISO_SIN_CUENTA = 'No hay ninguna cuenta con ese email. Le enviaremos una invitación para crear su contraseña.';
+export const AVISO_SIN_CUENTA = 'No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.';
 export const MENSAJE_SIN_SEDES = 'Indica al menos una sede.';
 
 export function nombreCompleto(m: Pick<Miembro, 'nombre' | 'apellidos'>): string {

@@ -237,7 +237,7 @@ describe('Editar grupo (3m-2)', () => {
     cargar(); component.nuevoEmail = 'nuevo@ejemplo.com'; component.anadirProfesor();
     http.expectOne(`${api}/miembros`).flush({ mensaje: 'No hay ninguna cuenta con ese email' }, { status: 404, statusText: 'Not Found' });
     expect(component.textoBotonAlta).toBe('Enviar invitación'); expect(component.puedeEnviarAlta).toBeFalse();
-    fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('No hay ninguna cuenta con ese email. Te pedimos su nombre para invitarle.');
+    fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.');
     component.nuevoNombre = ' Ana '; component.nuevosApellidos = ' Gil '; component.anadirProfesor();
     const req = http.expectOne(`${api}/miembros`); expect(req.request.body.nombre).toBe('Ana'); expect(req.request.body.apellidos).toBe('Gil');
     req.flush({}); http.expectOne(`${api}/grupos/7/profesores`).flush([]);
