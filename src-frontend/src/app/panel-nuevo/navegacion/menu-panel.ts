@@ -168,8 +168,9 @@ export const BARRA_INFERIOR: readonly IdSeccion[] = ['inicio', 'alumnos', 'tesor
 
 /**
  * Lo que ve el responsable de sede (decisión 370), con Mi caja y Mis grupos si también es profesor (371). Es una lista
- * de permitidas: una entrada nueva del menú no le llega hasta que se decida. No incluye «Eliminar alumno», Productos,
- * Eventos, Sedes, Miembros, Configuración ni el registro.
+ * de permitidas: una entrada nueva del menú no le llega hasta que se decida. Conserva «Ver la web», donde la tiene la
+ * gestión (sección Escuela, sola). No incluye «Eliminar alumno», Productos, Eventos, Sedes, Miembros, Configuración ni el
+ * registro.
  */
 const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
   '/adminpage',
@@ -185,6 +186,7 @@ const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
   '/cajaSede',
   '/mi-caja',
   '/solicitudes',
+  '/',
 ]);
 
 /** Menú de cuenta: «Mi perfil» para propietario, gestor y responsable (una sesión solo-profesor no usa `/api/panel/**`). */
@@ -206,7 +208,7 @@ export function visible(entrada: EntradaMenu, contexto: ContextoMenu): boolean {
   return !entrada.condicion || contexto[entrada.condicion] === true;
 }
 
-/** Las secciones del responsable: sin las que se quedan vacías (Escuela, salvo que además sea de plataforma). */
+/** Las secciones del responsable: sin las que se quedan vacías; Escuela se queda con «Ver la web» (y plataforma, si la tiene). */
 function menuDeSede(contexto: ContextoMenu): SeccionMenu[] {
   return MENU_PANEL.map((seccion) => ({
     ...seccion,

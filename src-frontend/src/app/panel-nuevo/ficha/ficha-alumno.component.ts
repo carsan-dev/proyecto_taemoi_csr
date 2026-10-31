@@ -205,6 +205,14 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   }
 
   /**
+   * Una ficha sin email no se guarda con el responsable (decisión 96): `datosAlumnoValidos` exige email y el servidor
+   * responde 403 si lo añade quien no es de gestión.
+   */
+  get sinEmailParaGuardar(): boolean {
+    return this.panelSede && !`${this.alumno?.email ?? ''}`.trim();
+  }
+
+  /**
    * Ficha que el responsable ve por un grupo de sus sedes, de sede principal ajena (D9 y D6-3): se lee, pero no se
    * edita y sus pagos dan 403, así que no se piden y la pestaña no sale.
    */

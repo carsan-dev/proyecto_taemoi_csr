@@ -667,6 +667,82 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       expect(pedidas.filter((u) => u.includes('/productos-alumno/alumno/'))).toEqual([]);
     });
 
+    const ESCRITURAS = ['Agregar deporte', 'Dar de baja', 'Actualizar grado', 'Agregar a convocatoria', 'Cambiar foto', 'Quitar'];
+
+    itSinReloj('ficha de otra sede: solo lectura de verdad, con la línea que lo explica', async () => {
+      panelSedeFicha = true;
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = 99;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      const aviso = m.el().querySelector('.ficha__modo');
+      expect(aviso?.textContent?.trim()).toBe('Este alumno es de otra sede: solo puedes consultar su ficha.');
+      ESCRITURAS.forEach((etiqueta) => expect(() => boton(m.el(), etiqueta)).withContext(etiqueta).toThrow());
+      expect(m.el().querySelector('.deportes__quitar')).toBeNull();
+      expect(m.el().querySelector('.deportes__anadir-grupo')).toBeNull();
+      expect(m.el().querySelector('.deportes__anadir-turno')).toBeNull();
+      const controles = Array.from(m.el().querySelectorAll<HTMLInputElement>('.deportes__control, .deportes__interruptor-control'));
+      expect(controles.length).toBeGreaterThan(0);
+      expect(controles.filter((c) => !c.disabled).map((c) => c.id)).toEqual([]);
+      await pestana(m, 'Documentos y notas');
+      expect(() => boton(m.el(), 'Subir documento')).toThrow();
+      expect(() => boton(m.el(), 'Guardar observaciones')).toThrow();
+      expect(m.el().querySelector('.documentos__icono-boton--peligro')).toBeNull();
+      expect(m.el().querySelector<HTMLTextAreaElement>('#observaciones')!.readOnly).toBeTrue();
+      expect(m.el().querySelector('.ficha__modo')).not.toBeNull();
+    });
+
+    itSinReloj('ficha de su sede (R) o de gestión: sin la línea y con todas las escrituras', async () => {
+      panelSedeFicha = true;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', fichaDeSuSede());
+      expect(m.el().querySelector('.ficha__modo')).toBeNull();
+      ['Agregar deporte', 'Dar de baja', 'Actualizar grado', 'Cambiar foto'].forEach((e) => expect(boton(m.el(), e)).withContext(e).toBeTruthy());
+      expect(m.el().querySelector<HTMLInputElement>('.deportes__control')!.disabled).toBeFalse();
+      m.harness.fixture.destroy();
+      panelSedeFicha = false;
+      gestionFicha = true;
+      const g = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datosPorDefecto());
+      expect(g.el().querySelector('.ficha__modo')).toBeNull();
+      ['Agregar deporte', 'Dar de baja', 'Actualizar grado', 'Cambiar foto'].forEach((e) => expect(boton(g.el(), e)).withContext(e).toBeTruthy());
+    });
+
+    itSinReloj('sin email, R lo dice y no deja guardar; con email, o gestión, sí', async () => {
+      panelSedeFicha = true;
+      const datos = fichaDeSuSede();
+      datos.alumno.email = '';
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', datos);
+      boton(m.el(), 'Editar').click();
+      await m.asentar();
+      const aviso = 'Esta ficha no tiene email y solo gestión puede añadirlo: sin él no se puede guardar.';
+      expect(texto(m.el(), '.datos__nota')).toBe(aviso);
+      const campo = m.el().querySelector<HTMLInputElement>('#telefono')!;
+      campo.value = '622222222';
+      campo.dispatchEvent(new Event('input'));
+      await m.asentar();
+      expect(boton(m.el().querySelector('.ficha__guardar')!, 'Guardar cambios').disabled).toBeTrue();
+      m.harness.fixture.destroy();
+
+      const conEmail = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', fichaDeSuSede());
+      boton(conEmail.el(), 'Editar').click();
+      await conEmail.asentar();
+      expect(texto(conEmail.el(), '.datos__nota')).toBe('El email lo cambia gestión.');
+      const otro = conEmail.el().querySelector<HTMLInputElement>('#telefono')!;
+      otro.value = '622222222';
+      otro.dispatchEvent(new Event('input'));
+      await conEmail.asentar();
+      expect(boton(conEmail.el().querySelector('.ficha__guardar')!, 'Guardar cambios').disabled).toBeFalse();
+      conEmail.harness.fixture.destroy();
+
+      panelSedeFicha = false;
+      gestionFicha = true;
+      const sinEmail = datosPorDefecto();
+      sinEmail.alumno.email = '';
+      const g = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', sinEmail);
+      boton(g.el(), 'Editar').click();
+      await g.asentar();
+      expect(g.el().querySelector('#email')).not.toBeNull();
+      expect(g.comp.sinEmailParaGuardar).toBeFalse();
+    });
+
     itSinReloj('ficha de su sede: los pagos se piden y se ven', async () => {
       panelSedeFicha = true;
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', fichaDeSuSede());

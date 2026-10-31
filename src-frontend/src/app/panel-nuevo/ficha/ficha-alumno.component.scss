@@ -222,6 +222,12 @@
   transition: opacity var(--pn-transicion);
 }
 
+.ficha__modo {
+  margin: 0 0 var(--pn-espacio-s);
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
 .ficha__sin-foto {
   margin: 0;
   font: var(--pn-secundario);

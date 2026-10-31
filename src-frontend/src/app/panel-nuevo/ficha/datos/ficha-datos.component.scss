@@ -86,6 +86,10 @@
   color: var(--pn-tinta-2);
 }
 
+.datos__nota--aviso {
+  color: var(--pn-peligro);
+}
+
 .datos__error {
   display: flex;
   align-items: center;

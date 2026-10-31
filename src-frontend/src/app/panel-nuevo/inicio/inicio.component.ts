@@ -29,6 +29,8 @@ interface Acceso {
   ruta: string;
   icono: string;
   queryParams?: Record<string, string>;
+  /** Texto para el responsable de sede cuando la descripción ofrece algo que no puede hacer (decisión 370). */
+  descripcionSede?: string;
   /** Solo ROLE_ADMIN (adminOnlyGuard devolvería al gestor a la raíz). */
   soloAdmin?: boolean;
   /** Fuera del alcance del responsable de sede (decisión 370). */
@@ -88,6 +90,7 @@ const OPERACIONES: readonly Acceso[] = [
     clave: 'convocatorias',
     etiqueta: 'Preparar convocatorias',
     descripcion: 'Crear convocatorias, pagos e informe de examen.',
+    descripcionSede: 'Pagos e informe de examen.',
     ruta: '/convocatoriasListar',
     icono: 'bi-clipboard-check',
   },
@@ -122,7 +125,8 @@ const SECCIONES: readonly Acceso[] = [
   { clave: 'grupos', etiqueta: 'Grupos y turnos', descripcion: 'Organiza grupos y gestiona horarios', ruta: '/gruposListar', icono: 'bi-collection' },
   { clave: 'eventos', etiqueta: 'Eventos', descripcion: 'Crea y administra eventos especiales', ruta: '/eventosListar', icono: 'bi-calendar-check', soloGestion: true },
   { clave: 'productos', etiqueta: 'Productos', descripcion: 'Gestión de productos y servicios', ruta: '/productosListar', icono: 'bi-box-seam', soloGestion: true },
-  { clave: 'convocatorias', etiqueta: 'Convocatorias', descripcion: 'Publica y gestiona convocatorias', ruta: '/convocatoriasListar', icono: 'bi-clipboard-check' },
+  { clave: 'convocatorias', etiqueta: 'Convocatorias', descripcion: 'Publica y gestiona convocatorias',
+    descripcionSede: 'Consulta las convocatorias y sus exámenes', ruta: '/convocatoriasListar', icono: 'bi-clipboard-check' },
   { clave: 'tesoreria', etiqueta: 'Tesorería', descripcion: 'Control mensual de cobros y deudas', ruta: '/tesoreriaCobros', icono: 'bi-cash-coin' },
   {
     clave: 'registro',
@@ -253,12 +257,20 @@ export class InicioComponent implements OnInit, OnDestroy {
   }
 
   get operaciones(): Acceso[] {
-    return OPERACIONES.filter((o) => this.accesoPermitido(o));
+    return OPERACIONES.filter((o) => this.accesoPermitido(o)).map((o) => this.paraSesion(o));
   }
 
   get secciones(): Acceso[] {
-    return SECCIONES.filter((s) => this.accesoPermitido(s));
+    return SECCIONES.filter((s) => this.accesoPermitido(s)).map((s) => this.paraSesion(s));
   }
+
+  /** El responsable lee el texto sin lo que no puede hacer. */
+  private paraSesion(acceso: Acceso): Acceso {
+    return this.panelSede && acceso.descripcionSede ? { ...acceso, descripcion: acceso.descripcionSede } : acceso;
+  }
+
+  /** Responsable de sede sin sedes (decisión 65): entra y no ve nada; el Inicio lo dice en vez de enseñar ceros y atajos de crear. */
+  sinSedes = false;
 
   private accesoPermitido(acceso: Acceso): boolean {
     return (!acceso.soloAdmin || this.esAdmin) && (!acceso.soloGestion || !this.panelSede);
@@ -279,6 +291,7 @@ export class InicioComponent implements OnInit, OnDestroy {
         .pipe(catchError(() => of(null)))
         .subscribe((p) => {
           this.cumpleanos = p?.cumpleanos === true;
+          this.sinSedes = this.panelSede && Array.isArray(p?.sedes) && p.sedes.length === 0;
           this.saludar(p?.nombreSaludo);
         })
     );

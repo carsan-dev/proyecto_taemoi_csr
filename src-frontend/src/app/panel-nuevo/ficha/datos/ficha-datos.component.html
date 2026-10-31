@@ -66,7 +66,13 @@
     <span class="datos__valor datos__valor--vacio">No establecido</span>
     }
     @if (ficha.editingBasicInfo) {
+    @if (campo.id === 'email' && ficha.sinEmailParaGuardar) {
+    <p class="datos__nota datos__nota--aviso" role="status">
+      Esta ficha no tiene email y solo gestión puede añadirlo: sin él no se puede guardar.
+    </p>
+    } @else {
     <p class="datos__nota">El email lo cambia gestión.</p>
+    }
     }
     }
   </div>

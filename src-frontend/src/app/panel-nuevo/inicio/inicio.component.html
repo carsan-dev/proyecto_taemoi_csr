@@ -15,6 +15,14 @@
       </button>
     </header>
 
+    @if (sinSedes) {
+    <section class="inicio__bloque inicio__sin-sedes" aria-labelledby="inicio-sin-sedes">
+      <div class="inicio__vacio-con-mascota">
+        <pn-mascota pose="descansar" tamano="md" animacion="aparecer" />
+        <p id="inicio-sin-sedes" class="inicio__vacio">Aún no tienes ninguna sede asignada. Pídesela a gestión.</p>
+      </div>
+    </section>
+    } @else {
     <div class="inicio__rejilla">
       <!-- Hoy: clases del día, la siguiente resaltada -->
       <section class="inicio__bloque inicio__hoy" aria-labelledby="inicio-hoy">
@@ -479,5 +487,6 @@
         </div>
       </section>
     </div>
+    }
   </div>
 </div>

@@ -14,6 +14,7 @@ const RUTAS_370 = [
   '/tesoreriaCobros',
   '/cajaSede',
   '/solicitudes',
+  '/',
   '/panel/mi-perfil',
 ];
 
@@ -39,14 +40,23 @@ describe('menu-panel: responsable de sede (decisión 370)', () => {
   it('R + Pr suma Mi caja y Mis grupos, sin la vista de solo profesor (371)', () => {
     const contexto: ContextoMenu = { ...BASE, profesor: true, misGrupos: true, soloProfesor: false };
     expect(rutasDeGestion(contexto).sort()).toEqual([...RUTAS_370, '/mi-caja', '/mis-grupos'].sort());
-    expect(menuVisible(contexto).map((s) => s.id)).toEqual(['inicio', 'alumnos', 'grupos', 'tesoreria', 'solicitudes']);
+    expect(menuVisible(contexto).map((s) => s.id)).toEqual(['inicio', 'alumnos', 'grupos', 'tesoreria', 'solicitudes', 'escuela']);
   });
 
   it('ninguna entrada lleva a lo que no ve, y Productos o Eventos no dejan título vacío', () => {
     const rutas = rutasDeGestion(BASE);
     NO_VE.forEach((ruta) => expect(rutas).withContext(ruta).not.toContain(ruta));
-    expect(menuVisible(BASE).map((s) => s.id)).toEqual(['inicio', 'alumnos', 'grupos', 'tesoreria', 'solicitudes']);
+    expect(menuVisible(BASE).map((s) => s.id)).toEqual(['inicio', 'alumnos', 'grupos', 'tesoreria', 'solicitudes', 'escuela']);
     expect(menuVisible(BASE).find((s) => s.id === 'tesoreria')?.entradas.map((e) => e.grupo ?? null)).toEqual([null, null]);
+  });
+
+  it('R conserva «Ver la web», sola en Escuela y en el mismo sitio que gestión; gestión la sigue teniendo', () => {
+    const escuela = menuVisible(BASE).find((s) => s.id === 'escuela')!;
+    expect(escuela.entradas.map((e) => e.etiqueta)).toEqual(['Ver la web']);
+    expect(escuela.entradas[0].verWeb).toBeTrue();
+    const gestion = menuVisible({ propietario: true, profesor: false, misGrupos: false, plataforma: false, panelSede: false, gestion: true });
+    expect(gestion.find((s) => s.id === 'escuela')!.entradas.map((e) => e.etiqueta)).toContain('Ver la web');
+    expect(gestion.find((s) => s.id === 'escuela')!.entradas.length).toBeGreaterThan(1);
   });
 
   it('un responsable que además es de plataforma conserva sus entradas de plataforma', () => {
@@ -64,7 +74,7 @@ describe('menu-panel: responsable de sede (decisión 370)', () => {
 
   it('toda ruta del menú de R, salvo Mi caja y Mis grupos, deja pasar al responsable', () => {
     const contexto: ContextoMenu = { ...BASE, profesor: true, misGrupos: true };
-    for (const ruta of rutasDeGestion(contexto).filter((r) => r !== '/mi-caja' && r !== '/mis-grupos')) {
+    for (const ruta of rutasDeGestion(contexto).filter((r) => r !== '/mi-caja' && r !== '/mis-grupos' && r !== '/')) {
       const definicion = routes.find((r) => `/${r.path}` === ruta);
       expect((definicion?.data?.['requiredRoles'] as string[] | undefined) ?? []).withContext(ruta).toContain('ROLE_RESPONSABLE_SEDE');
     }

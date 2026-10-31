@@ -1,6 +1,7 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { EMPTY, Observable, Subscription, concat, defer, forkJoin, of } from 'rxjs';
-import { catchError, finalize, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, take, tap } from 'rxjs/operators';
 
 import { euros } from '../../componentes/generales/pedir-al-propietario/pedir-al-propietario';
 import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
@@ -180,6 +181,7 @@ export class ProductosAlumnoEstado {
   private readonly api = inject(ProductosAlumnoApiService);
   private readonly auth = inject(AuthenticationService);
   private readonly permisos = inject(PermisosSesionService);
+  private readonly enrutador = inject(Router);
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly cobro = inject(CobroCargoService);
@@ -367,26 +369,53 @@ export class ProductosAlumnoEstado {
       cargos: resultado(this.api.cargos(id)),
       catalogo: resultado(this.api.catalogo()),
       alumno: resultado(this.api.alumno(id)),
-    }).subscribe(({ cargos, catalogo, alumno }) => {
-      if (!alumno.ok || !alumno.valor || alumno.valor.alumnoEliminado === true) {
-        this.fallarCarga(T.errorAlumno);
+    }).subscribe((lectura) => {
+      const revision = this.revision;
+      if (this.permisos.tiene('PANEL_SEDE') && lectura.alumno.ok && lectura.alumno.valor) {
+        // Responsable de sede: los cargos de un alumno de otra sede dan 403, así que su ficha es de solo lectura.
+        const sedeDelAlumno = (lectura.alumno.valor as { sedePrincipalId?: number | null }).sedePrincipalId;
+        this.permisos
+          .obtener()
+          .pipe(take(1))
+          .subscribe({
+            next: (p) => {
+              if (revision !== this.revision) return;
+              if ((p?.sedes ?? []).some((s) => s.id === sedeDelAlumno)) {
+                this.aplicarCarga(id, lectura);
+              } else {
+                void this.enrutador.navigate(['/alumnosEditar', id], { replaceUrl: true });
+              }
+            },
+            error: () => this.aplicarCarga(id, lectura),
+          });
         return;
       }
-      if (!cargos.ok) {
-        this.fallarCarga(T.errorCargos);
-        return;
-      }
-      if (!catalogo.ok) {
-        this.fallarCarga(T.errorCatalogo);
-        return;
-      }
-      this.alumno.set(alumno.valor);
-      this.cargos.set(this.ordenar(cargos.valor));
-      this.catalogo.set(Array.isArray(catalogo.valor) ? catalogo.valor : []);
-      this.pagina.set(paginaValida(leerPaginaGuardada(id), this.totalCargos()));
-      guardarPagina(id, this.pagina());
-      this.estado.set('listo');
+      this.aplicarCarga(id, lectura);
     });
+  }
+
+  private aplicarCarga(
+    id: number,
+    { cargos, catalogo, alumno }: { cargos: Resultado<ProductoAlumnoDTO[]>; catalogo: Resultado<any>; alumno: Resultado<any> }
+  ): void {
+    if (!alumno.ok || !alumno.valor || alumno.valor.alumnoEliminado === true) {
+      this.fallarCarga(T.errorAlumno);
+      return;
+    }
+    if (!cargos.ok) {
+      this.fallarCarga(T.errorCargos);
+      return;
+    }
+    if (!catalogo.ok) {
+      this.fallarCarga(T.errorCatalogo);
+      return;
+    }
+    this.alumno.set(alumno.valor);
+    this.cargos.set(this.ordenar(cargos.valor));
+    this.catalogo.set(Array.isArray(catalogo.valor) ? catalogo.valor : []);
+    this.pagina.set(paginaValida(leerPaginaGuardada(id), this.totalCargos()));
+    guardarPagina(id, this.pagina());
+    this.estado.set('listo');
   }
 
   private fallarCarga(texto: string): void {

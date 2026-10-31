@@ -614,6 +614,13 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
   });
 
   describe('responsable de sede (decisión 370 y A12 del inventario)', () => {
+    it('gestión sin sedes en la respuesta no ve el estado vacío del responsable', () => {
+      permisos$.next({ cumpleanos: false, sedes: [] });
+      responder();
+      expect(elemento().querySelector('.inicio__sin-sedes')).toBeNull();
+      expect(elemento().querySelector('.inicio__rejilla')).not.toBeNull();
+    });
+
     function abrirComoResponsable(): void {
       fixture.destroy();
       http.match(() => true);
@@ -641,6 +648,39 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
       for (const ruta of ['/eventosListar', '/productosListar', '/alumnosEliminar']) {
         expect(enlaces).withContext(ruta).not.toContain(ruta);
       }
+    });
+
+    it('el texto de convocatorias no ofrece crearlas; gestión lo conserva', () => {
+      responder();
+      expect(elemento().textContent).toContain('Crear convocatorias, pagos e informe de examen.');
+      expect(elemento().textContent).toContain('Publica y gestiona convocatorias');
+      abrirComoResponsable();
+      responder();
+      const texto = elemento().textContent ?? '';
+      expect(texto).not.toContain('Crear convocatorias');
+      expect(texto).not.toContain('Publica y gestiona');
+      expect(texto).toContain('Pagos e informe de examen.');
+      expect(texto).toContain('Consulta las convocatorias y sus exámenes');
+    });
+
+    it('sin sedes: estado vacío propio, sin atajos de crear ni avisos de grupo o turno', () => {
+      permisos$.next({ cumpleanos: false, sedes: [] });
+      abrirComoResponsable();
+      responder();
+      const raiz = elemento();
+      expect(raiz.querySelector('.inicio__sin-sedes')?.textContent).toContain('Aún no tienes ninguna sede asignada. Pídesela a gestión.');
+      expect(raiz.querySelector('[data-acceso="alta"]')).toBeNull();
+      expect(raiz.querySelector('.inicio__rejilla')).toBeNull();
+      expect(raiz.textContent).not.toContain('Crear grupo');
+      expect(raiz.textContent).not.toContain('Crear turno');
+    });
+
+    it('con sedes enseña el Inicio de siempre', () => {
+      permisos$.next({ cumpleanos: false, sedes: [{ id: 1, nombre: 'Central', activa: true } as any] });
+      abrirComoResponsable();
+      responder();
+      expect(elemento().querySelector('.inicio__sin-sedes')).toBeNull();
+      expect(elemento().querySelector('[data-acceso="alta"]')).not.toBeNull();
     });
   });
 });

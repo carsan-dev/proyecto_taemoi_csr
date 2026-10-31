@@ -610,6 +610,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
           'Grupos',
           'Tesorería',
           'Solicitudes',
+          'Escuela',
         ]);
         const cuenta = abrirCuenta();
         expect(cuenta.textContent).toContain('Responsable de sede');
