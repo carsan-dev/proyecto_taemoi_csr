@@ -91,6 +91,9 @@ class AlumnoSubidasWebMvcTest {
 	private AlumnoService alumnoService;
 
 	@MockitoBean
+	private com.taemoi.project.services.CambioSedeAlumnoService cambioSedeAlumnoService;
+
+	@MockitoBean
 	private AlumnoRepository alumnoRepository;
 
 	@MockitoBean

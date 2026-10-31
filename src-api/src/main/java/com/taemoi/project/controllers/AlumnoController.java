@@ -75,7 +75,10 @@ import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.dtos.TurnoDTO;
 import com.taemoi.project.dtos.request.AlumnoObservacionesDTO;
 import com.taemoi.project.acceso.SoloPropietarioEliminaAlumnos;
+import com.taemoi.project.dtos.request.CambiarSedeAlumnoRequest;
 import com.taemoi.project.dtos.response.AlumnoConGruposDTO;
+import com.taemoi.project.dtos.response.AlumnoFichaDTO;
+import com.taemoi.project.dtos.response.CambioSedeAlumnoDTO;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaDTO;
 import com.taemoi.project.dtos.response.GrupoResponseDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
@@ -164,6 +167,7 @@ public class AlumnoController {
 	@Autowired
 	private AlumnoDeporteService alumnoDeporteService;
 
+	@Autowired private com.taemoi.project.services.CambioSedeAlumnoService cambioSedeAlumnoService;
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 	@Autowired private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 	@Autowired private com.taemoi.project.services.ProgresionGradosService progresionGrados;
@@ -286,12 +290,41 @@ public class AlumnoController {
 	 */
 	@GetMapping("/{id}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoEnSede(#id,'LEER')")
-	public ResponseEntity<AlumnoDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
+	public ResponseEntity<AlumnoFichaDTO> obtenerAlumnoPorIdDTO(@PathVariable @NonNull Long id) {
 		logger.info("## AlumnoController :: mostrarAlumnosPorId");
-		Optional<AlumnoDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id)
-				.map(this::aplicarUrlImagenPublica);
+		Optional<AlumnoFichaDTO> alumno = alumnoService.obtenerAlumnoPorIdDTO(id)
+				.map(this::aplicarUrlImagenPublica).map(cambioSedeAlumnoService::ficha);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
+	}
+
+	/**
+	 * Pieza 9-1 (decisión 369): qué pasaría al cambiar al alumno a esa sede, sin modificar nada. Solo gestión.
+	 *
+	 * @param id     ID del alumno.
+	 * @param sedeId sede de destino.
+	 * @return sede actual y nueva, cargos que pasan a la nueva y cargos y grupos que se quedan.
+	 */
+	@GetMapping("/{id}/cambio-sede")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<CambioSedeAlumnoDTO> leerCambioDeSede(@PathVariable @NonNull Long id,
+			@RequestParam Long sedeId) {
+		return ResponseEntity.ok(cambioSedeAlumnoService.previa(id, sedeId));
+	}
+
+	/**
+	 * Pieza 9-1 (decisión 369): cambia al alumno de sede y mueve a la nueva sus cargos sin cobrar. Lo cobrado, las
+	 * entregas de caja y los grupos no cambian. Solo gestión.
+	 *
+	 * @param id        ID del alumno.
+	 * @param solicitud sede de destino.
+	 * @return la sede de la que viene y lo que se movió, con la misma forma que la lectura previa.
+	 */
+	@PutMapping("/{id}/sede")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<CambioSedeAlumnoDTO> cambiarSede(@PathVariable @NonNull Long id,
+			@RequestBody CambiarSedeAlumnoRequest solicitud) {
+		return ResponseEntity.ok(cambioSedeAlumnoService.cambiar(id, solicitud.sedeId()));
 	}
 
 	@GetMapping("/{alumnoId}/imagen")

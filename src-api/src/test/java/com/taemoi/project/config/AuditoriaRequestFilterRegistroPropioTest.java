@@ -76,6 +76,7 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.SEDE_CREAR, new Ejemplo("POST", "/api/sedes")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_EDITAR, new Ejemplo("PUT", "/api/sedes/5")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_ACTIVA, new Ejemplo("PUT", "/api/sedes/5/activa")),
+			Map.entry(EscrituraConRegistroPropio.ALUMNO_CAMBIAR_SEDE, new Ejemplo("PUT", "/api/alumnos/12/sede")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ALTA, new Ejemplo("POST", "/api/miembros")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR,
 					new Ejemplo("PUT", "/api/miembros/21/roles/PROFESOR")),

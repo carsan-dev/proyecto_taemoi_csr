@@ -41,6 +41,9 @@ import com.taemoi.project.services.SedeService;
 public class GestionPorSede {
 
 	private final AlcanceActual alcanceActual;
+	public static final String INDICA_LA_SEDE = "Indica la sede.";
+	public static final String GRUPO_SIN_SEDE = "El grupo no tiene sede. Asígnasela antes de finalizar.";
+
 	private final SedeRepository sedes;
 	private final AlumnoRepository alumnos;
 	private final ConsultaAccesoRecursos consulta;
@@ -84,8 +87,8 @@ public class GestionPorSede {
 	 * <li>Con sede: debe ser de la escuela activa (si no, 400); para el responsable, una de las suyas (si no, 403);
 	 * con {@code exigirActiva}, activa (D6-17; si no, 400).</li>
 	 * <li>Sin sede, responsable: su única sede; con varias, 400 (obligatoria).</li>
-	 * <li>Sin sede, resto: la única sede activa de la escuela ({@link SedeService#sedePorDefecto}), o {@code null}
-	 * con varias o ninguna (como hasta ahora).</li>
+	 * <li>Sin sede, resto: la única sede activa de la escuela ({@link SedeService#sedePorDefecto}); con varias, 400
+	 * (obligatoria, decisiones 368 y 377); con ninguna, {@code null} (como hasta ahora).</li>
 	 * </ul>
 	 */
 	public Long sedeDeAlta(Long solicitada, boolean exigirActiva) {
@@ -93,11 +96,14 @@ public class GestionPorSede {
 		Long sedeId = solicitada;
 		if (sedeId == null) {
 			if (restriccion.isEmpty()) {
+				if (sedeService.variasActivas()) {
+					throw new IllegalArgumentException(INDICA_LA_SEDE);
+				}
 				return sedeService.sedePorDefecto().orElse(null);
 			}
 			Set<Long> suyas = restriccion.get().sedes();
 			if (suyas.size() != 1) {
-				throw new IllegalArgumentException("Indica la sede.");
+				throw new IllegalArgumentException(INDICA_LA_SEDE);
 			}
 			sedeId = suyas.iterator().next();
 		}
@@ -110,6 +116,19 @@ public class GestionPorSede {
 			throw new IllegalArgumentException("La sede está inactiva.");
 		}
 		return sede.getId();
+	}
+
+	/**
+	 * Decisión 377: al finalizar una preinscripción, con varias sedes activas el grupo tiene que tener sede: el alumno
+	 * nace en ella y no hay quien la elija en ese momento.
+	 *
+	 * @param sedeDelGrupo sede del grupo de la solicitud, o {@code null}
+	 * @throws IllegalArgumentException (400) sin sede y con varias activas
+	 */
+	public void exigirSedeDelGrupoAlFinalizar(Long sedeDelGrupo) {
+		if (sedeDelGrupo == null && sedeService.variasActivas()) {
+			throw new IllegalArgumentException(GRUPO_SIN_SEDE);
+		}
 	}
 
 	/**

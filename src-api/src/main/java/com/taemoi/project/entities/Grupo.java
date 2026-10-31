@@ -51,7 +51,8 @@ public class Grupo extends EntidadOrganizacion {
 
 	/**
 	 * Sede del grupo (V31; NULL admitido hasta V32). Solo el id, fuera del JSON: las respuestas de la API no
-	 * cambian. Al crear un grupo sin sede se usa la única sede activa de la escuela ({@code SedeService}).
+	 * cambian. Al crear un grupo sin sede se usa la única sede activa de la escuela; con varias, hay que indicarla
+	 * ({@code GestionPorSede#sedeDeAlta}).
 	 */
 	@JsonIgnore
 	@Column(name = "sede_id")

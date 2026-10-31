@@ -23,6 +23,16 @@
             <p id="nombre-ayuda" class="editar-grupo__nota">Elige un nombre descriptivo para identificar el grupo fácilmente. Ejemplo: Infantiles cinturón blanco.</p>
             <p class="editar-grupo__contador" id="nombre-contador">{{ nombre.value.length }} / 50</p>
           </div>
+          @if (pedirSede) {
+            <label for="grupo-sede">Sede <span>(obligatorio)</span></label>
+            <select id="grupo-sede" [formControl]="sede" aria-required="true" (change)="errorGuardar = ''" [attr.aria-invalid]="errorSede ? 'true' : null"
+              [attr.aria-describedby]="'sede-ayuda' + (errorSede ? ' sede-error' : '')">
+              <option [ngValue]="null" disabled [selected]="sede.value === null">Elige una sede</option>
+              @for (s of sedesElegibles; track s.id) { <option [ngValue]="s.id" [selected]="s.id === sede.value">{{ s.nombre }}{{ s.activa === false ? ' (inactiva)' : '' }}</option> }
+            </select>
+            @if (errorSede) { <p class="editar-grupo__error" id="sede-error" role="alert">{{ errorSede }}</p> }
+            <p id="sede-ayuda" class="editar-grupo__nota editar-grupo__nota--sede">Los cargos de sus alumnos siguen en la sede de cada alumno.</p>
+          }
           <div class="editar-grupo__guardar"><button type="submit" pnOcupado class="editar-grupo__primario" [ocupado]="guardando" textoOcupado="Guardando…" [deshabilitado]="nombre.invalid">Guardar cambios</button></div>
         </form>
         @if (errorGuardar) { <p class="editar-grupo__error" id="guardar-error" role="alert">{{ errorGuardar }}</p> }

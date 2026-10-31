@@ -3,12 +3,16 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { EditarGrupoComponent } from './editar-grupo.component';
 
+const PERMISOS_UNA: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: [] };
+const PERMISOS_VARIAS: PermisosSesion = { ...PERMISOS_UNA, variasSedes: true, sedes: [
+  { id: 1, nombre: 'Mollina', activa: true }, { id: 2, nombre: 'Estepa', activa: true }, { id: 3, nombre: 'Cerrada', activa: false }] };
 const profesor = { usuarioId: 9, nombre: 'Marta', apellidos: 'Gil', email: 'marta@ejemplo.com', rol: 'TITULAR' as const, invitacionPendiente: true };
 
 describe('Editar grupo (3m-2)', () => {
@@ -18,14 +22,17 @@ describe('Editar grupo (3m-2)', () => {
   let avisos: jasmine.SpyObj<AvisosService>;
   let confirmacion: jasmine.SpyObj<ConfirmacionService>;
   let params: BehaviorSubject<{ id: string }>;
+  let permisos$: BehaviorSubject<PermisosSesion>;
   const api = environment.apiUrl;
   beforeEach(() => {
     params = new BehaviorSubject({ id: '7' });
+    permisos$ = new BehaviorSubject(PERMISOS_UNA);
     avisos = jasmine.createSpyObj('AvisosService', ['exito', 'error']);
     confirmacion = jasmine.createSpyObj('ConfirmacionService', ['confirmar']);
     TestBed.configureTestingModule({ imports: [EditarGrupoComponent], providers: [
       provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       { provide: ActivatedRoute, useValue: { params } },
+      { provide: PermisosSesionService, useValue: { obtener: () => permisos$ } },
       { provide: AvisosService, useValue: avisos }, { provide: ConfirmacionService, useValue: confirmacion },
     ] });
     fixture = TestBed.createComponent(EditarGrupoComponent);
@@ -34,8 +41,8 @@ describe('Editar grupo (3m-2)', () => {
     fixture.detectChanges();
   });
   afterEach(() => { fixture.destroy(); http.verify(); });
-  function cargar(): void {
-    http.expectOne(`${api}/grupos/7`).flush({ id: 7, nombre: 'Infantiles A', rangoEdadMin: 6, rangoEdadMax: 12, alumnos: [] });
+  function cargar(extra: object = {}): void {
+    http.expectOne(`${api}/grupos/7`).flush({ id: 7, nombre: 'Infantiles A', rangoEdadMin: 6, rangoEdadMax: 12, alumnos: [], ...extra });
     http.expectOne(`${api}/grupos/7/profesores`).flush([profesor]);
     http.expectOne(`${api}/grupos/resumen`).flush([
       { id: 7, nombre: 'Infantiles A', numAlumnos: 18, turnos: [{ id: 1 }, { id: 2 }] },
@@ -278,4 +285,61 @@ describe('Editar grupo (3m-2)', () => {
     http.expectOne(api + '/miembros').flush({}); http.expectOne(api + '/grupos/7/profesores').flush([]);
   });
 
+
+  describe('sede (E9-1)', () => {
+    const select = () => fixture.nativeElement.querySelector('#grupo-sede') as HTMLSelectElement | null;
+    function elegir(texto: string): void {
+      const s = select()!;
+      s.selectedIndex = Array.from(s.options).findIndex((o) => o.textContent?.startsWith(texto));
+      s.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+    it('con una sola sede no hay campo y el PUT no lleva sedeId', () => {
+      cargar({ sedeId: 1 });
+      expect(select()).toBeNull();
+      component.guardar();
+      const req = http.expectOne(`${api}/grupos/7`);
+      expect(req.request.body).toEqual({ nombre: 'Infantiles A', rangoEdadMin: 6, rangoEdadMax: 12 });
+      req.flush({});
+    });
+    it('con varias sedes preselecciona la del grupo, ofrece las activas, da la ayuda y manda sedeId sin perder el rango', () => {
+      permisos$.next(PERMISOS_VARIAS);
+      cargar({ sedeId: 2 });
+      fixture.detectChanges();
+      const s = select()!;
+      expect(Array.from(s.options).map((o) => o.textContent)).toEqual(['Elige una sede', 'Mollina', 'Estepa']);
+      expect(s.selectedOptions[0].textContent).toBe('Estepa');
+      expect(fixture.nativeElement.querySelector('#sede-ayuda').textContent).toBe('Los cargos de sus alumnos siguen en la sede de cada alumno.');
+      elegir('Mollina');
+      component.guardar();
+      const req = http.expectOne(`${api}/grupos/7`);
+      expect(req.request.body).toEqual({ nombre: 'Infantiles A', rangoEdadMin: 6, rangoEdadMax: 12, sedeId: 1 });
+      req.flush({});
+    });
+    it('si la sede del grupo está inactiva sigue como opción y no se pierde', () => {
+      permisos$.next(PERMISOS_VARIAS);
+      cargar({ sedeId: 3 });
+      fixture.detectChanges();
+      const s = select()!;
+      expect(Array.from(s.options).map((o) => o.textContent)).toEqual(['Elige una sede', 'Mollina', 'Estepa', 'Cerrada (inactiva)']);
+      expect(s.selectedOptions[0].textContent).toContain('Cerrada');
+      component.guardar();
+      const req = http.expectOne(`${api}/grupos/7`);
+      expect(req.request.body.sedeId).toBe(3);
+      req.flush({});
+    });
+    it('un grupo sin sede con varias sedes exige elegirla antes de guardar', () => {
+      permisos$.next(PERMISOS_VARIAS);
+      cargar({ sedeId: null });
+      fixture.detectChanges();
+      const boton = fixture.nativeElement.querySelector('.editar-grupo__primario') as HTMLButtonElement;
+      boton.click();
+      fixture.detectChanges();
+      http.expectNone(`${api}/grupos/7`);
+      expect(fixture.nativeElement.querySelector('#sede-error').textContent).toContain('Elige la sede del grupo.');
+      elegir('Mollina');
+      boton.click();
+      http.expectOne(`${api}/grupos/7`).flush({});
+    });
+  });
 });

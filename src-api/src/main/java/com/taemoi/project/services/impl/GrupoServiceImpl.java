@@ -42,7 +42,6 @@ import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.GrupoService;
-import com.taemoi.project.services.SedeService;
 import com.taemoi.project.utils.OrdenAlfabetico;
 
 import jakarta.persistence.criteria.JoinType;
@@ -81,9 +80,6 @@ public class GrupoServiceImpl implements GrupoService {
 
 	@Autowired
 	private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
-
-	@Autowired
-	private SedeService sedeService;
 
 	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
 	@Autowired
@@ -152,7 +148,7 @@ public class GrupoServiceImpl implements GrupoService {
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
 		// D6-5: sede del cuerpo (de la escuela; del responsable, una de las suyas; activa, D6-17). Sin sede: la del
-		// responsable si tiene una; para la gestión, la única sede activa (o ninguna, como hasta ahora).
+		// responsable si tiene una; para la gestión, la única sede activa; con varias, 400 (decisiones 368 y 377).
 		grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
 		grupo = grupoRepository.save(grupo);
 		return convertirEntidadADTO(grupo);
@@ -177,27 +173,19 @@ public class GrupoServiceImpl implements GrupoService {
 			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
 			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
 			// Sin sede en el cuerpo (o la misma), el grupo conserva la suya. Un cambio de sede se valida como un
-			// alta: de la escuela, del responsable si lo es, y activa (D6-5, D6-17).
+			// alta: de la escuela, del responsable si lo es, y activa (D6-5, D6-17). Un grupo sin sede la recibe como
+			// en el alta: con varias activas, 400 y la transacción se deshace entera (decisión 368). Cambiar la sede
+			// de un grupo no mueve cargos ni cobros: un cargo va con la sede del alumno.
 			if (grupoDTO.getSedeId() != null && !Objects.equals(grupoDTO.getSedeId(), grupo.getSedeId())) {
 				grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
+			} else if (grupo.getSedeId() == null) {
+				grupo.setSedeId(gestionPorSede.sedeDeAlta(null, true));
 			}
-			asignarSedePorDefecto(grupo);
 			grupo = grupoRepository.save(grupo);
 
 			return convertirEntidadADTO(grupo);
 		} else {
 			return null;
-		}
-	}
-
-	/**
-	 * La API de grupos no pide sede (fase 3, entrega 1): un grupo sin sede recibe la única sede activa de la
-	 * escuela (Taemoi: «Umbrete»). Con varias o ninguna, queda sin sede hasta que la API permita elegirla. Un
-	 * grupo que ya tiene sede la conserva.
-	 */
-	private void asignarSedePorDefecto(Grupo grupo) {
-		if (grupo.getSedeId() == null) {
-			sedeService.sedePorDefecto().ifPresent(grupo::setSedeId);
 		}
 	}
 

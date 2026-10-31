@@ -10,6 +10,7 @@ import { CatalogoDisciplina } from '../../features/catalogo/catalogo.models';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { errorInterceptor } from '../../core/interceptors/error.interceptor';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
@@ -21,17 +22,23 @@ const DISCIPLINAS: CatalogoDisciplina[] = [
   { codigo: 'TAEKWONDO', nombre: 'Taekwondo', orden: 1, activa: true, edadAdulto: 14, permiteCompeticion: true, requiereLicencia: true, sistemaGradosId: 1, tieneMaterialExamen: true },
 ];
 
+const PERMISOS_UNA: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: [] };
+const PERMISOS_VARIAS: PermisosSesion = { ...PERMISOS_UNA, variasSedes: true, sedes: [
+  { id: 1, nombre: 'Mollina', activa: true }, { id: 2, nombre: 'Estepa', activa: true }, { id: 3, nombre: 'Cerrada', activa: false }] };
+
 describe('CrearGrupoPanelComponent (3m-1b)', () => {
+  let permisos: PermisosSesion;
   let fixture: ComponentFixture<CrearGrupoPanelComponent>;
   let http: HttpTestingController;
   let avisos: jasmine.SpyObj<AvisosService>;
 
   beforeEach(async () => {
+    permisos = PERMISOS_UNA;
     avisos = jasmine.createSpyObj('AvisosService', ['exito', 'error']);
     spyOn(Swal, 'fire');
     await TestBed.configureTestingModule({
       imports: [CrearGrupoPanelComponent],
-      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }, { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } }],
+      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }, { provide: PermisosSesionService, useValue: { obtener: () => of(permisos) } }, { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     cargarPanel();
@@ -209,5 +216,89 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
     peticion.flush({}, { status: 500, statusText: 'Error' });
     expect(error).toHaveBeenCalled();
     expect(Swal.fire).toHaveBeenCalledWith(jasmine.objectContaining({ title: 'Error del Servidor' }));
+  });
+
+  describe('sede (E9-1)', () => {
+    function conVariasSedes(): void {
+      permisos = PERMISOS_VARIAS;
+      fixture.destroy();
+      cargarPanel();
+    }
+    function selectSede(): HTMLSelectElement | null {
+      return fixture.nativeElement.querySelector('#crear-grupo-sede');
+    }
+    function elegirSede(valor: string): void {
+      const select = selectSede()!;
+      select.selectedIndex = Array.from(select.options).findIndex((o) => o.textContent === valor);
+      select.dispatchEvent(new Event('change'));
+      select.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
+    }
+
+    it('con una sola sede no hay campo y el cuerpo es el de hoy', () => {
+      expect(selectSede()).toBeNull();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      fixture.componentInstance.crear();
+      const peticion = http.expectOne(`${environment.apiUrl}/grupos`);
+      expect(peticion.request.body).toEqual({ nombre: 'Infantiles', deporte: 'TAEKWONDO' });
+      peticion.flush({ id: 9 });
+    });
+
+    it('con varias sedes es el tercer campo, ofrece solo las activas y manda sedeId', () => {
+      conVariasSedes();
+      const select = selectSede()!;
+      expect(fixture.nativeElement.querySelector('label[for="crear-grupo-sede"]').textContent).toContain('Sede (obligatorio)');
+      expect(Array.from(fixture.nativeElement.querySelectorAll('select')).indexOf(select)).toBe(1);
+      expect(Array.from(select.options).map((o) => o.textContent)).toEqual(['Elige una sede', 'Mollina', 'Estepa']);
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      elegirSede('Estepa');
+      fixture.componentInstance.crear();
+      const peticion = http.expectOne(`${environment.apiUrl}/grupos`);
+      expect(peticion.request.body).toEqual({ nombre: 'Infantiles', deporte: 'TAEKWONDO', sedeId: 2 });
+      peticion.flush({ id: 9 });
+    });
+
+    it('sin elegir sede avisa y no crea', () => {
+      conVariasSedes();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(boton.disabled).toBeFalse();
+      fixture.componentInstance.crear();
+      fixture.detectChanges();
+      http.expectNone(`${environment.apiUrl}/grupos`);
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error').textContent).toContain('Elige la sede del grupo.');
+      expect(selectSede()!.getAttribute('aria-invalid')).toBe('true');
+      elegirSede('Mollina');
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error')).toBeNull();
+      expect(boton.disabled).toBeFalse();
+    });
+
+    it('sin sede el botón de crear sigue activo y el clic real muestra el error sin petición', () => {
+      conVariasSedes();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      const boton = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(boton.disabled).toBeFalse();
+      boton.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error').textContent).toContain('Elige la sede del grupo.');
+      expect(selectSede()!.getAttribute('aria-invalid')).toBe('true');
+      http.expectNone(`${environment.apiUrl}/grupos`);
+    });
+
+    it('un 400 del servidor sobre la sede se muestra en su campo', () => {
+      conVariasSedes();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      elegirSede('Mollina');
+      fixture.componentInstance.crear();
+      http.expectOne(`${environment.apiUrl}/grupos`).flush({ mensaje: 'Indica la sede.' }, { status: 400, statusText: 'Bad Request' });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error').textContent).toContain('Indica la sede.');
+      expect(fixture.nativeElement.querySelectorAll('[role="alert"]').length).toBe(1);
+    });
   });
 });

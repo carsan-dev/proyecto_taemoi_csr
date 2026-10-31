@@ -65,7 +65,7 @@ final class EscuelaConSedesDePrueba {
 		e.gA2 = e.grupo(grupos, "IT E6 gA2 " + e.marca, e.sA);
 		e.gB = e.grupo(grupos, "IT E6 gB " + e.marca, e.sB);
 		e.gC = e.grupo(grupos, "IT E6 gC " + e.marca, e.sC);
-		e.gSin = e.grupo(grupos, "IT E6 gSin " + e.marca, null);
+		e.gSin = e.grupo(grupos, "IT E6 gSin " + e.marca, e.sA);
 		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", e.gSin);
 		jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", e.sC);
 

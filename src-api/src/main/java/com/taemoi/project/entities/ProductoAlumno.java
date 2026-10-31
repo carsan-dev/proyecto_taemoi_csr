@@ -61,9 +61,12 @@ public class ProductoAlumno extends EntidadOrganizacion {
 
 	/**
 	 * Sede a la que se imputa el cargo (V31_3, entrega 6-3, D6-9): la sede principal del alumno AL CREARLO. Se fija
-	 * en {@link #fijarSedeAlCrear()} (cubre todos los puntos que crean cargos) y nunca cambia ({@code updatable =
-	 * false}): cambiar al alumno de sede no mueve sus cargos antiguos. NULL si el alumno no tiene sede principal (solo
-	 * la gestión lo ve, en «Sin sede»). Sin consultas: en una escuela de una sola sede todo alumno tiene sede principal
+	 * en {@link #fijarSedeAlCrear()} (cubre todos los puntos que crean cargos) y ningún {@code save} la cambia
+	 * ({@code updatable = false}). Única excepción, la decisión 369: al cambiar al alumno de sede
+	 * ({@code CambioSedeAlumnoService}), sus cargos sin cobrar pasan a la sede nueva con la consulta explícita
+	 * {@code ProductoAlumnoRepository#moverASede}; los pagados y los cancelados se quedan donde estaban. NULL si el alumno
+	 * no tiene sede principal (solo la gestión lo ve, en «Sin sede»). Sin consultas: en una escuela de una sola sede todo
+	 * alumno tiene sede principal
 	 * (alta 6-1, finalización 6-2 y V31_2), y los postchecks de V31_2 y V31_3 lo vigilan. Fuera del JSON de la
 	 * entidad; los DTO la exponen como {@code sedeId}.
 	 */

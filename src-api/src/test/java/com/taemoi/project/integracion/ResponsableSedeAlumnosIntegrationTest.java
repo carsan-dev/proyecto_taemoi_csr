@@ -206,10 +206,11 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(e.sA, e.sedeDe(idDe(suya)));
 		assertEquals(400, alta(tokenA, 999_999_999L).getResponse().getStatus(), "sede que no existe");
 
-		// Gestión en una escuela con varias sedes: opcional (NULL como hasta ahora) o la indicada.
+		// Gestión en una escuela con varias sedes: obligatoria (400, decisión 368) o la indicada.
 		MvcResult gestionSinSede = alta(tokenGestor, null);
-		assertEquals(201, gestionSinSede.getResponse().getStatus(), gestionSinSede.getResponse().getContentAsString());
-		assertNull(e.sedeDe(idDe(gestionSinSede)));
+		assertEquals(400, gestionSinSede.getResponse().getStatus(), gestionSinSede.getResponse().getContentAsString());
+		assertTrue(gestionSinSede.getResponse().getContentAsString().contains("Indica la sede."),
+				gestionSinSede.getResponse().getContentAsString());
 		MvcResult gestionConSede = alta(tokenGestor, e.sB);
 		assertEquals(201, gestionConSede.getResponse().getStatus());
 		assertEquals(e.sB, e.sedeDe(idDe(gestionConSede)));

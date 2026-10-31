@@ -130,15 +130,11 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(e.sA, sedeDelGrupo(creado));
 		assertEquals(204, estado(delete("/api/grupos/" + creado), tokenA));
 
-		// Gestión con varias sedes: sin sede, NULL como hasta ahora; en una sede inactiva, 400 (D6-17).
-		MvcResult gestion = peticion(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
-				.content(grupo("IT E6 gestion " + e.marca, null)), tokenGestor);
-		assertEquals(201, gestion.getResponse().getStatus());
-		long deGestion = json.readTree(gestion.getResponse().getContentAsString()).get("id").asLong();
-		assertNull(sedeDelGrupo(deGestion));
+		// Gestión con varias sedes: sin sede, 400 (decisión 368); en una sede inactiva, 400 (D6-17).
+		assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
+				.content(grupo("IT E6 gestion " + e.marca, null)), tokenGestor));
 		assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
 				.content(grupo("IT E6 gestion inactiva " + e.marca, e.sC)), tokenGestor));
-		assertEquals(204, estado(delete("/api/grupos/" + deGestion), tokenGestor));
 	}
 
 	// ------------------------------------------------------------------ turnos

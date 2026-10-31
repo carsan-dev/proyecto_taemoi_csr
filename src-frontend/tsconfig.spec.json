@@ -74,6 +74,7 @@
     "src/app/panel-nuevo/no-encontrada/gestion-panel.guard.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-vista.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-alumno.component.spec.ts",
+    "src/app/panel-nuevo/ficha/cambiar-sede/cambiar-sede-panel.component.spec.ts",
     "src/app/panel-nuevo/ficha/dialogos-ficha.port.spec.ts",
     "src/app/panel-nuevo/ficha/dialogos/dialogos-ficha-panel.spec.ts",
     "src/app/panel-nuevo/ficha/dialogos/dialogos-alumno-panel.component.spec.ts",

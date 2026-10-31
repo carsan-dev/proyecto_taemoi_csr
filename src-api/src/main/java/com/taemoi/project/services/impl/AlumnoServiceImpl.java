@@ -296,6 +296,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			AlumnoDTO dto = AlumnoDTO.deAlumno(alumno);
 			// Pieza 8b-3n (decisión 299): solo la ficha lo dice; el panel lo enseña como un alumno que no existe.
 			dto.setAlumnoEliminado(alumno.estaAnonimizado());
+			// Pieza 9-1: para AlumnoFichaDTO; este DTO no la saca en el JSON.
+			dto.setSedePrincipalId(alumno.getSedePrincipalId());
 			return dto;
 		});
 	}
@@ -455,7 +457,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
 		// D6-2: sede principal del alta. Responsable: obligatoria y suya (403 si no; automática si tiene una).
-		// Gestión: la pedida o, si no, la única sede activa (con varias, NULL como hasta ahora).
+		// Gestión: la pedida o, si no, la única sede activa (con varias, 400; decisiones 368 y 377).
 		Long sedePrincipal;
 		try {
 			// D6-18: tampoco en una sede inactiva (400), ni la gestión ni el responsable.

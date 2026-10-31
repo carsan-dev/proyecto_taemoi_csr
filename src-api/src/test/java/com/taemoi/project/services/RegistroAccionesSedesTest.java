@@ -45,6 +45,18 @@ class RegistroAccionesSedesTest {
 	}
 
 	@Test
+	void cambioDeSedeDeUnAlumno_soloIds_ySinSedeAnterior() {
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("alumno", 12L);
+		valores.put("sedeAnterior", null);
+		valores.put("sedeNueva", 3L);
+		valores.put("cargosMovidos", 2L);
+		registro.registrar(RegistroAccionesSedes.Accion.ALUMNO_SEDE_CAMBIADA, "/api/alumnos/12/sede", valores);
+		verify(auditoria).registrarAccesoSensible(AuditoriaAccion.UPDATE, "sedes", "/api/alumnos/12/sede", 12L,
+				"SEDES ALUMNO_SEDE_CAMBIADA alumno=#12 sedeAnterior=NINGUNO sedeNueva=#3 cargosMovidos=#2");
+	}
+
+	@Test
 	void sinCambiosComoSiNo() {
 		Map<String, Object> valores = new LinkedHashMap<>();
 		valores.put("sede", 7L);
