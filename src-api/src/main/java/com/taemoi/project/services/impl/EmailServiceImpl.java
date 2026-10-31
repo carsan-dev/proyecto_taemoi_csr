@@ -64,8 +64,8 @@ public class EmailServiceImpl implements EmailService {
 			}
 			javaMailSender.send(mimeMessage);
 		} catch (MessagingException | UnsupportedEncodingException | RuntimeException e) {
-			// Sin el cuerpo ni el mensaje del error: el correo puede llevar un enlace con un token (invitaciones).
-			logger.error("Error al enviar el correo electrónico a {}: {}", to, e.getClass().getSimpleName());
+			// Sin destinatario, cuerpo ni mensaje del error: pueden traer el email o el enlace con un token (invitaciones).
+			logger.error("Error al enviar el correo electrónico: {}", e.getClass().getSimpleName());
 		}
 	}
 
