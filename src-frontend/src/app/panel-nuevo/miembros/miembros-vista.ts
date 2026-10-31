@@ -138,7 +138,7 @@ export function familiaExigeAlumno(m: Pick<Miembro, 'roles'>): boolean {
 /** Cómo está la contraseña de la cuenta para quien abre la ficha (`MiembrosDTOs.Ficha.contrasena`). */
 export type EstadoContrasena = 'RESTABLECIBLE' | 'GOOGLE' | 'OTRA_ESCUELA' | 'INVITACION_PENDIENTE';
 
-export const TEXTO_CONTRASENA_GOOGLE = 'Esta cuenta usa Google. Su contraseña no se cambia aquí.';
+export const TEXTO_CONTRASENA_GOOGLE = 'Esta cuenta ha entrado con Google. Si también usa contraseña, puede cambiarla con «¿Has olvidado tu contraseña?».';
 export const TEXTO_CONTRASENA_OTRA_ESCUELA = 'Esta cuenta también pertenece a otra escuela. Su contraseña no se cambia desde aquí.';
 export const MENSAJE_CONTRASENA_DEBIL = 'La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).';
 export const MENSAJE_CONTRASENAS_DISTINTAS = 'Las contraseñas no coinciden';
