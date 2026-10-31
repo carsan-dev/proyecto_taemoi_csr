@@ -192,6 +192,34 @@ class AforoPorSedeIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void quitarElAforo_avisaSiLaOcupacionSuperaElLimiteComun() throws Exception {
+		alta(tokenE, e.tB);
+		alta(tokenE, e.tB); // 3 en el turno de B (aB y dos pendientes) frente al límite común de 2
+
+		assertTrue(editarAforo(e.sB, null).get("turnosSobreAforo").asBoolean());
+		assertNull(jdbc.queryForObject("SELECT aforo_turno FROM sede WHERE id = ?", Integer.class, e.sB));
+	}
+
+	@Test
+	void quitarElAforo_noAvisaSiNoSuperaElLimiteComun() throws Exception {
+		alta(tokenE, e.tB); // 2 en el turno de B, límite común 2
+
+		assertFalse(editarAforo(e.sB, null).get("turnosSobreAforo").asBoolean());
+	}
+
+	@Test
+	void aforoMaximo_999999ValidoY1000000Rechazado() throws Exception {
+		assertEquals(999_999, editarAforo(e.sB, 999_999).get("aforoTurno").asInt());
+
+		Map<String, Object> datos = new LinkedHashMap<>();
+		datos.put("nombre", jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sB));
+		datos.put("aforoTurno", 1_000_000);
+		leer(put("/api/sedes/" + e.sB).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(datos)),
+				tokenE, 400);
+		assertEquals(999_999, jdbc.queryForObject("SELECT aforo_turno FROM sede WHERE id = ?", Integer.class, e.sB));
+	}
+
+	@Test
 	void subirElAforo_promocionaLaListaDeEspera() throws Exception {
 		assertEquals(EN_ESPERA, alta(tokenE, e.tA));
 

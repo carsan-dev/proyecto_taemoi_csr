@@ -83,6 +83,8 @@ public class AforoPreinscripcionService {
   if(!ids.isEmpty())for(Object[] fila:sedes.aforosPorSede(ids))porSede.put((Long)fila[0],((Number)fila[1]).intValue());
   return new Aforos(configuracion.obtenerLimiteTurno(),porSede);
  }
+ /** Límite común de turno de la escuela activa. */
+ public int limiteComun(){return configuracion.obtenerLimiteTurno();}
  /** Si algún turno de la sede tiene más ocupación (alumnos que cuentan + pendientes de la temporada) que {@code aforo}. */
  public boolean hayTurnosSobreAforo(Long sedeId,int aforo,String temporada){
   List<Turno> horarios=turnos.findConGrupoPorSede(sedeId);
