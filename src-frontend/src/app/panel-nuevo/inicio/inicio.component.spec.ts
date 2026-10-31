@@ -103,7 +103,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true, tieneAccesoAdmin: () => true } },
-        { provide: PermisosSesionService, useValue: { obtener: () => permisos$ } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => permisos$ } },
         { provide: PlataformaService, useValue: { esAdminPlataforma: () => of(false) } },
         {
           provide: CatalogoService,
@@ -611,5 +611,76 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     const cobrar = getComputedStyle(raiz.querySelector('.inicio__cobrar')!);
     expect(cobrar.borderTopColor).withContext('«Cobrar»: borde').toBe('rgb(69, 149, 163)');
     expect(cobrar.color).withContext('«Cobrar»: texto').toBe('rgb(1, 112, 127)');
+  });
+
+  describe('responsable de sede (decisión 370 y A12 del inventario)', () => {
+    it('gestión sin sedes en la respuesta no ve el estado vacío del responsable', () => {
+      permisos$.next({ cumpleanos: false, sedes: [] });
+      responder();
+      expect(elemento().querySelector('.inicio__sin-sedes')).toBeNull();
+      expect(elemento().querySelector('.inicio__rejilla')).not.toBeNull();
+    });
+
+    function abrirComoResponsable(): void {
+      fixture.destroy();
+      http.match(() => true);
+      spyOn(TestBed.inject(PermisosSesionService), 'tiene').and.callFake((c: string) => c === 'PANEL_SEDE');
+      fixture = TestBed.createComponent(InicioComponent);
+      fixture.detectChanges();
+    }
+
+    it('pide el vencido y las lecturas de sus sedes, pero no los eventos (403)', () => {
+      abrirComoResponsable();
+      expect(http.match(`${API}/eventos/admin/todos`).length).toBe(0);
+      expect(http.match(`${API}/tesoreria/pendiente-vencido`).length).toBe(1);
+      expect(http.match(`${API}/grupos/resumen`).length).toBe(1);
+    });
+
+    it('sin nada de Eventos, Productos ni bajas, y las cifras no se quedan cargando', () => {
+      abrirComoResponsable();
+      responder();
+      expect(fixture.componentInstance.cifrasCargando).toBeFalse();
+      const raiz = elemento();
+      expect(raiz.querySelector('[data-acceso="eventos"]')).toBeNull();
+      expect(raiz.querySelector('.inicio__eventos')).toBeNull();
+      expect(raiz.querySelector('.inicio__totales--tres')).not.toBeNull();
+      const enlaces = Array.from(raiz.querySelectorAll('a')).map((a) => a.getAttribute('href') ?? '');
+      for (const ruta of ['/eventosListar', '/productosListar', '/alumnosEliminar']) {
+        expect(enlaces).withContext(ruta).not.toContain(ruta);
+      }
+    });
+
+    it('el texto de convocatorias no ofrece crearlas; gestión lo conserva', () => {
+      responder();
+      expect(elemento().textContent).toContain('Crear convocatorias, pagos e informe de examen.');
+      expect(elemento().textContent).toContain('Publica y gestiona convocatorias');
+      abrirComoResponsable();
+      responder();
+      const texto = elemento().textContent ?? '';
+      expect(texto).not.toContain('Crear convocatorias');
+      expect(texto).not.toContain('Publica y gestiona');
+      expect(texto).toContain('Pagos e informe de examen.');
+      expect(texto).toContain('Consulta las convocatorias y sus exámenes');
+    });
+
+    it('sin sedes: estado vacío propio, sin atajos de crear ni avisos de grupo o turno', () => {
+      permisos$.next({ cumpleanos: false, sedes: [] });
+      abrirComoResponsable();
+      responder();
+      const raiz = elemento();
+      expect(raiz.querySelector('.inicio__sin-sedes')?.textContent).toContain('Aún no tienes ninguna sede asignada. Pídesela a gestión.');
+      expect(raiz.querySelector('[data-acceso="alta"]')).toBeNull();
+      expect(raiz.querySelector('.inicio__rejilla')).toBeNull();
+      expect(raiz.textContent).not.toContain('Crear grupo');
+      expect(raiz.textContent).not.toContain('Crear turno');
+    });
+
+    it('con sedes enseña el Inicio de siempre', () => {
+      permisos$.next({ cumpleanos: false, sedes: [{ id: 1, nombre: 'Central', activa: true } as any] });
+      abrirComoResponsable();
+      responder();
+      expect(elemento().querySelector('.inicio__sin-sedes')).toBeNull();
+      expect(elemento().querySelector('[data-acceso="alta"]')).not.toBeNull();
+    });
   });
 });

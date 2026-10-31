@@ -206,7 +206,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		JsonNode a = permisos(tRespA);
 		assertEquals(List.of("RESPONSABLE_SEDE", "FAMILIA"), textos(a.get("roles")));
 		assertEquals(List.of(e.sA), ids(a.get("sedes")), "solo la suya");
-		assertEquals(List.of(), textos(a.get("capacidades")), "sin pantallas de sedes hasta la E9");
+		assertEquals(List.of("PANEL_SEDE", "ELEGIR_VISTA"), textos(a.get("capacidades")), "decisiones 370 y 371");
 		JsonNode ac = permisos(tRespAC);
 		assertEquals(List.of(e.sA, e.sC), ids(ac.get("sedes")));
 		assertFalse(ac.get("sedes").get(1).get("activa").asBoolean(), "su sede cerrada sigue saliendo (D5-5)");
@@ -239,16 +239,16 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void permisos_responsableMasProfesor_sinSedes() throws Exception {
+	void permisos_responsableMasProfesor_susSedesYSusCapacidades() throws Exception {
 		MvcResult r = peticion(RUTA, tRespProf);
 		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		String cuerpo = r.getResponse().getContentAsString();
 		JsonNode p = json.readTree(cuerpo);
-		assertEquals(List.of("PROFESOR"), textos(p.get("roles")), "como /api/auth/roles: solo PROFESOR");
-		assertEquals(0, p.get("sedes").size(), "las sedes del responsable no salen en la sesión 184");
-		assertFalse(cuerpo.contains("IT E6 A " + e.marca), cuerpo);
+		assertEquals(List.of("RESPONSABLE_SEDE", "PROFESOR"), textos(p.get("roles")), "como /api/auth/roles (371)");
+		assertEquals(1, p.get("sedes").size(), "las sedes del responsable salen: entra como responsable");
+		assertTrue(cuerpo.contains("IT E6 A " + e.marca), cuerpo);
 		assertTrue(p.get("tieneGrupos").asBoolean());
-		assertEquals(PROFESOR, textos(p.get("capacidades")));
+		assertEquals(List.of("MIS_GRUPOS", "MI_CAJA", "PANEL_SEDE"), textos(p.get("capacidades")));
 	}
 
 	// ------------------------------------------------------------------ plataforma, anónimo y escuelas

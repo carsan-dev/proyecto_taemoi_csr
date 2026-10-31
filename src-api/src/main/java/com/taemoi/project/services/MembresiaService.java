@@ -32,8 +32,8 @@ public interface MembresiaService {
 	boolean puedeEntrarEn(Usuario usuario, Long organizacionId);
 
 	/**
-	 * Si el usuario tiene membresías activas y en NINGUNA escuela sus autoridades abren sesión (hoy, solo
-	 * RESPONSABLE_SEDE, sin PROFESOR: decisiones 180 y 184). Decide el motivo del rechazo del inicio de sesión.
+	 * Si el usuario tiene membresías activas y en NINGUNA escuela sus autoridades abren sesión (hoy, nunca: todos los
+	 * roles abren sesión desde la pieza 9-5, decisión 370). Decide el motivo del rechazo del inicio de sesión.
 	 */
 	boolean soloTieneRolesSinAcceso(Long usuarioId);
 

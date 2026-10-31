@@ -33,6 +33,9 @@
       </div>
     </div>
     } @else if (alumno) {
+    @if (fichaDeOtraSede) {
+    <p class="ficha__modo" role="note">Este alumno es de otra sede: solo puedes consultar su ficha.</p>
+    }
     <section class="ficha__carnet" aria-labelledby="ficha-nombre">
       <div class="ficha__franja" aria-hidden="true">
         @for (d of franja; track d.codigo) {
@@ -51,6 +54,7 @@
           @if (!fotoUrl) {
           <p class="ficha__sin-foto">Sin foto todavía</p>
           }
+          @if (!fichaDeOtraSede) {
           <div class="ficha__foto-acciones">
             <button type="button" class="ficha__boton-secundario ficha__boton-secundario--compacto" (click)="inputFile.click()">
               <i class="bi bi-camera" aria-hidden="true"></i>
@@ -64,6 +68,7 @@
             <input #inputFile type="file" accept="image/*" class="ficha__oculto" tabindex="-1"
               aria-label="Elegir una foto nueva del alumno" (change)="onFileSelected($event)" />
           </div>
+          }
         </div>
 
         <div class="ficha__identidad">
@@ -165,9 +170,11 @@
                       <span class="ficha__cargo-desde" data-cifras>Vencido desde el {{ fecha(c.vencidoDesde) }}</span>
                     </span>
                     <span class="ficha__cargo-importe" data-cifras>{{ eur(c.importe) }}</span>
+                    @if (!fichaDeOtraSede) {
                     <button type="button" class="ficha__boton-secundario ficha__boton-secundario--compacto"
                       [disabled]="cobrando.has(c.productoAlumnoId)" [attr.aria-label]="'Cobrar ' + c.concepto + ', ' + eur(c.importe)"
                       (click)="cobrar(c)">Cobrar</button>
+                    }
                   </li>
                   }
                 </ul>
@@ -198,19 +205,24 @@
         </aside>
 
         <div class="ficha__acciones">
+          @if (!fichaDeOtraSede) {
           <button type="button" class="ficha__boton-secundario ficha__accion--editar" (click)="editarDatos()">
             <i class="bi bi-pencil" aria-hidden="true"></i>
             <span>Editar datos</span>
           </button>
+          }
+          @if (!panelSede) {
           <a class="ficha__boton-texto ficha__accion--familia" routerLink="/userpage" [queryParams]="{ alumnoId: alumno.id }">
             <i class="bi bi-person-badge" aria-hidden="true"></i>
             <span>Vista de familia</span>
           </a>
+          }
           <button type="button" class="ficha__boton-texto ficha__accion--whatsapp" [disabled]="!alumno.telefono && !alumno.telefono2"
             (click)="abrirWhatsApp()">
             <i class="bi bi-whatsapp" aria-hidden="true"></i>
             <span>WhatsApp</span>
           </button>
+          @if (!fichaDeOtraSede) {
           <div class="ficha__mas-zona" (focusout)="alSalirDelMenu($event)">
             <button #botonMas type="button" id="ficha-mas" class="ficha__boton-texto ficha__mas" aria-label="Más acciones"
               aria-haspopup="menu" [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'ficha-menu-mas' : null"
@@ -221,11 +233,12 @@
             <div #menuMas id="ficha-menu-mas" class="ficha__menu" role="menu" aria-labelledby="ficha-mas" (keydown)="teclaMenu($event)">
               <button type="button" class="ficha__menu-opcion ficha__menu-opcion--peligro" role="menuitem" (click)="bajaAltaOEliminar()">
                 <i class="bi" [class.bi-person-dash]="isAlumnoActivo()" [class.bi-person-check]="!isAlumnoActivo()" aria-hidden="true"></i>
-                <span>{{ isAlumnoActivo() ? 'Dar de baja o eliminar…' : 'Dar de alta o eliminar…' }}</span>
+                <span>{{ textoBajaAlta }}</span>
               </button>
             </div>
             }
           </div>
+          }
         </div>
       </div>
     </section>
@@ -269,7 +282,7 @@
       </p>
       <div class="ficha__guardar-botones">
         <button type="button" class="ficha__boton-secundario" (click)="cancelBasicInfoChanges()">Cancelar</button>
-        <button type="button" class="ficha__boton-primario" [disabled]="hasBasicInfoErrors()" (click)="applyBasicInfoChanges()">Guardar cambios</button>
+        <button type="button" class="ficha__boton-primario" [disabled]="hasBasicInfoErrors() || sinEmailParaGuardar" (click)="applyBasicInfoChanges()">Guardar cambios</button>
       </div>
     </div>
     }

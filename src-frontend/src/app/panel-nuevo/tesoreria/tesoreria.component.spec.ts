@@ -186,7 +186,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
           provide: AuthenticationService,
           useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esGestion, obtenerRoles: () => of([]) },
         },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         {
           provide: CatalogoService,
@@ -651,6 +651,17 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     expect(opciones(abrirMenuFila(1000))).toEqual(['Notas']);
     expect(opciones(abrirMenuFila(1001))).toEqual(['Notas', 'Cambiar fecha de pago', 'Descargar recibo', 'Revertir']);
     expect(opciones(abrirMenuFila(1002))).not.toContain('Descargar recibo');
+  });
+
+  it('«⋯» recibo: el responsable de sede lo tiene, sin «Revertir»', () => {
+    (TestBed.inject(PermisosSesionService) as unknown as { tiene: (c: string) => boolean }).tiene = (c: string) => c === 'PANEL_SEDE';
+    esGestion = false;
+    esAdmin = false;
+    crear();
+    responder([PAGADO]);
+    const lista = opciones(abrirMenuFila(1001));
+    expect(lista).toContain('Descargar recibo');
+    expect(lista).not.toContain('Revertir');
   });
 
   it('«⋯» recibo: sin gestión (solo profesor o familias) no hay «Descargar recibo»', () => {

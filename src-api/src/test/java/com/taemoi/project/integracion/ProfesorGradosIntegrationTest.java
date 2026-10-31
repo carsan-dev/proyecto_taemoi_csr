@@ -547,7 +547,7 @@ class ProfesorGradosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, estado(pase(a, "TAEKWONDO", "pase-recompensa", null), tProfA));
 		assertEquals(409, estado(pase(a, "TAEKWONDO", "pase-examen", null), tProfA));
 
-		// R+Pr (sesión 184): su grupo gB sí; un alumno de su sede A que no está en sus grupos, no.
+		// R+Pr (decisión 371): su grupo gB sí; un alumno de su sede A que no está en sus grupos, no.
 		long deB = alumno("E73RPB", e.gB, e.sB, gAmarillo, true);
 		assertEquals(200, estado(pase(deB, "TAEKWONDO", "pase-examen", null), tProfRP));
 		long deSuSede = alumno("E73RPSEDE", e.gA, e.sA, gAmarillo, true);

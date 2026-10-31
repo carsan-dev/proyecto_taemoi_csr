@@ -80,7 +80,7 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		if (existingUser.isPresent()) {
 			Usuario usuario = existingUser.get();
 			// Mismo criterio que el login con contraseña: alguna escuela en la que pueda entrar; y el mismo motivo
-			// propio para quien solo tiene roles sin acceso (hoy, solo responsable de sede: decisiones 180 y 184).
+			// propio para quien solo tiene roles sin acceso (hoy, ninguno: todos abren sesión desde la pieza 9-5).
 			if (membresiaService.elegirOrganizacionParaLogin(usuario).isEmpty()) {
 				throw new IllegalArgumentException(
 						membresiaService.organizacionesConMembresiaActiva(usuario.getId()).isEmpty()

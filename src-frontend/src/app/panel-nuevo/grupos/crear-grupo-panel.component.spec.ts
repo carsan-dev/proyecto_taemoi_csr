@@ -38,7 +38,7 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
     spyOn(Swal, 'fire');
     await TestBed.configureTestingModule({
       imports: [CrearGrupoPanelComponent],
-      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }, { provide: PermisosSesionService, useValue: { obtener: () => of(permisos) } }, { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } }],
+      providers: [provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]), { provide: AvisosService, useValue: avisos }, { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisos) } }, { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     cargarPanel();

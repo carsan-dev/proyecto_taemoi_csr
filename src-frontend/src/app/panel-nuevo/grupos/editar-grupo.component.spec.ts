@@ -10,7 +10,7 @@ import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { EditarGrupoComponent } from './editar-grupo.component';
 
-const PERMISOS_UNA: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: [] };
+const PERMISOS_UNA: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: ['ASIGNAR_PROFESORES'] };
 const PERMISOS_VARIAS: PermisosSesion = { ...PERMISOS_UNA, variasSedes: true, sedes: [
   { id: 1, nombre: 'Mollina', activa: true }, { id: 2, nombre: 'Estepa', activa: true }, { id: 3, nombre: 'Cerrada', activa: false }] };
 const profesor = { usuarioId: 9, nombre: 'Marta', apellidos: 'Gil', email: 'marta@ejemplo.com', rol: 'TITULAR' as const, invitacionPendiente: true };
@@ -32,7 +32,7 @@ describe('Editar grupo (3m-2)', () => {
     TestBed.configureTestingModule({ imports: [EditarGrupoComponent], providers: [
       provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
       { provide: ActivatedRoute, useValue: { params } },
-      { provide: PermisosSesionService, useValue: { obtener: () => permisos$ } },
+      { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => permisos$ } },
       { provide: AvisosService, useValue: avisos }, { provide: ConfirmacionService, useValue: confirmacion },
     ] });
     fixture = TestBed.createComponent(EditarGrupoComponent);
@@ -50,6 +50,20 @@ describe('Editar grupo (3m-2)', () => {
     ]);
     fixture.detectChanges();
   }
+  it('responsable de sede (372): sin ASIGNAR_PROFESORES no pide ni enseña los profesores', () => {
+    permisos$.next({ ...PERMISOS_UNA, capacidades: ['PANEL_SEDE'] });
+    fixture.destroy();
+    http.match(() => true);
+    fixture = TestBed.createComponent(EditarGrupoComponent);
+    fixture.detectChanges();
+    http.expectOne(`${api}/grupos/7`).flush({ id: 7, nombre: 'Infantiles A', rangoEdadMin: 6, rangoEdadMax: 12, alumnos: [] });
+    http.expectNone(`${api}/grupos/7/profesores`);
+    http.expectOne(`${api}/grupos/resumen`).flush([]);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('#profesores-titulo')).toBeNull();
+    expect(host.textContent).not.toContain('Guardar el nombre no afecta a los profesores.');
+  });
   it('sitúa el error antes de la fila de ayuda completa y contador sin estrechar la página', () => {
     cargar(); component.nombre.setValue(''); component.nombre.markAsTouched(); fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;

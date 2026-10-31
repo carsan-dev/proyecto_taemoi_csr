@@ -73,15 +73,21 @@
     @if (alta.correosDiferentes) {
     <fieldset class="alta__seccion">
       <legend class="alta__titulo">Correo definitivo de acceso</legend>
+      @if (alta.fichaSinCorreoParaResponsable) {
+      <p class="alta__nota">Esta ficha no tiene correo: la finaliza gestión.</p>
+      } @else if (alta.soloCorreoDeFicha) {
+      <p class="alta__nota">Los correos no coinciden. El correo de la ficha lo cambia gestión.</p>
+      } @else {
       <p class="alta__nota">Los correos no coinciden. El elegido se guardará en la ficha, recibirá la confirmación y será el usado para acceder al portal.</p>
+      }
       <div class="alta__opciones">
         <label class="alta__opcion">
-          <input type="radio" name="preins-correo" value="CONSERVAR_FICHA" [checked]="alta.decisionEmail === 'CONSERVAR_FICHA'" [disabled]="enviando"
+          <input type="radio" name="preins-correo" value="CONSERVAR_FICHA" [checked]="alta.decisionEmail === 'CONSERVAR_FICHA'" [disabled]="enviando || alta.fichaSinCorreoParaResponsable"
             (change)="alta.decisionEmail = 'CONSERVAR_FICHA'" />
           <span class="alta__opcion-texto"><strong>Conservar correo de la ficha</strong><small class="alta__correo">{{ alumno.email }}</small></span>
         </label>
         <label class="alta__opcion">
-          <input type="radio" name="preins-correo" value="USAR_PREINSCRIPCION" [checked]="alta.decisionEmail === 'USAR_PREINSCRIPCION'" [disabled]="enviando"
+          <input type="radio" name="preins-correo" value="USAR_PREINSCRIPCION" [checked]="alta.decisionEmail === 'USAR_PREINSCRIPCION'" [disabled]="enviando || alta.soloCorreoDeFicha"
             (change)="alta.decisionEmail = 'USAR_PREINSCRIPCION'" />
           <span class="alta__opcion-texto"><strong>Usar correo de la preinscripción</strong><small class="alta__correo">{{ s['email'] }}</small></span>
         </label>

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Navigation, Router, provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 
 import {
   EscaparatePrincipalComponent,
@@ -38,7 +38,7 @@ describe('EscaparatePrincipalComponent con sesión de gestión', () => {
             usuarioLogueadoCambio: new Subject<boolean>(),
             rolesCambio: roles$,
             getRolesActuales: () => ['ROLE_ADMIN'],
-            resolverRutaInicioPorRoles: () => o.ruta ?? '/adminpage',
+            resolverRutaInicio: () => of(o.ruta ?? '/adminpage'),
           },
         },
       ],

@@ -37,9 +37,9 @@ import jakarta.servlet.http.Cookie;
  * Comprobación de alumno accesible al validar el JWT de una cuenta solo familia, en CADA petición: la decide
  * {@link AccesoFamiliaService} (regla única; su email normalizado y el guard de email en blanco se prueban en
  * {@code AccesoFamiliaServiceImplTest} y contra MySQL en {@code AccesoFamiliaEquivalenciaIntegrationTest}). Los
- * roles de gestión no necesitan alumno; RESPONSABLE_SEDE solo (o con PROFESOR) no abre sesión, PROFESOR solo sí
- * (decisión 180, limitada a su caja en la cadena de seguridad), y con FAMILIA entran como familia (entrega 5b, D5-1
- * y D5-2).
+ * roles de gestión no necesitan alumno; RESPONSABLE_SEDE abre sesión sin alumno (decisión 370), también con FAMILIA
+ * (pieza 9-5) o PROFESOR (decisión 371); PROFESOR solo también (decisión 180, limitada a su caja en la cadena de
+ * seguridad), y con FAMILIA entra como familia (entrega 5b, D5-1 y D5-2).
  *
  * <p>La cuenta se busca por el email del token, así que por HTTP su email nunca llega en blanco ni con
  * espacios a esta comprobación: se simulan datos inconsistentes escribiendo el campo directamente.
@@ -91,16 +91,33 @@ class IdentificadorSesionJwtTest {
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
-	// ------------------------------------------------------------------ roles sin acceso todavía (entrega 5b)
+	// ------------------------------------------------------------------ roles nuevos (entrega 5b, pieza 9-5)
 
+	/** Decisión 370: el responsable de sede abre sesión, con sus sedes y sin preguntar por alumnos. */
 	@Test
-	void soloResponsableNoAbreSesion() {
+	void soloResponsableAbreSesionConSusSedes() {
 		cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE));
-		assertTrue(identificador.identificar(peticion()).isEmpty(), "solo RESPONSABLE_SEDE");
+		when(alcances.filasDeAlcance(5L, 1L)).thenReturn(List.of(fila(AlcanceRepository.TIPO_SEDE, 20L)));
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(Set.of(Roles.ROLE_RESPONSABLE_SEDE), sesion.autoridades());
+		assertEquals(Set.of(20L), sesion.alcance().sedes());
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
-	/** Decisión 184: responsable de sede + profesor abre sesión como profesor (la cadena la limita a su caja). */
+	/** Pieza 9-5: con FAMILIA sigue entrando sin alumnos: su puerta es la de responsable. */
+	@Test
+	void responsableYFamiliaAbreSesionSinPreguntarPorAlumnos() {
+		cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER));
+
+		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
+
+		assertEquals(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER), sesion.autoridades());
+		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
+	}
+
+	/** Decisión 371: responsable de sede + profesor abre sesión como responsable y conserva las dos autoridades. */
 	@Test
 	void responsableYProfesorAbreSesionSinPreguntarPorAlumnos() {
 		cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR));
@@ -158,13 +175,14 @@ class IdentificadorSesionJwtTest {
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
+	/** Decisión 370: ya pasa la puerta como responsable; conserva además la autoridad de plataforma. */
 	@Test
-	void plataformaSoloResponsableEnLaEscuelaPorDefectoQuedaSoloConLaAutoridadDePlataforma() {
+	void plataformaSoloResponsableEntraComoResponsableYConservaLaDePlataforma() {
 		marcarPlataforma(cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE)));
 
 		SesionVerificada sesion = identificador.identificar(peticion()).orElseThrow();
 
-		assertEquals(Set.of(), sesion.autoridades());
+		assertEquals(Set.of(Roles.ROLE_RESPONSABLE_SEDE), sesion.autoridades());
 		assertTrue(sesion.adminPlataforma());
 	}
 
@@ -282,7 +300,7 @@ class IdentificadorSesionJwtTest {
 		when(acceso.tieneAlgunoAccesible(cuenta, 1L)).thenReturn(false);
 		assertTrue(identificador.identificar(peticion()).isEmpty());
 
-		marcarPlataforma(cuentaConAutoridades(Set.of(Roles.ROLE_RESPONSABLE_SEDE)));
+		marcarPlataforma(cuentaConAutoridades(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER)));
 		assertEquals(AlcanceSesion.NINGUNO, identificador.identificar(peticion()).orElseThrow().alcance());
 		verifyNoInteractions(alcances);
 	}

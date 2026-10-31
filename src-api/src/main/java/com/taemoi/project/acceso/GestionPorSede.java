@@ -22,6 +22,7 @@ import com.taemoi.project.organizacion.AlcanceSesion;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.services.SedeService;
+import com.taemoi.project.utils.EmailUtils;
 
 /**
  * Comprobaciones de servicio de la entrega 6 (entrega6-plan.md §2.3): listados y datos que llegan en el cuerpo, donde
@@ -43,6 +44,8 @@ public class GestionPorSede {
 	private final AlcanceActual alcanceActual;
 	public static final String INDICA_LA_SEDE = "Indica la sede.";
 	public static final String GRUPO_SIN_SEDE = "El grupo no tiene sede. Asígnasela antes de finalizar.";
+	public static final String EMAIL_SOLO_GESTION = "Solo la gestión de la escuela puede cambiar el email de un alumno "
+			+ "sin cuenta.";
 
 	private final SedeRepository sedes;
 	private final AlumnoRepository alumnos;
@@ -201,6 +204,24 @@ public class GestionPorSede {
 		if (propios != distintos.size()) {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
+	}
+
+	/**
+	 * Decisión 96: el email de un alumno sin cuenta da acceso de familia a su ficha, así que solo lo cambia la gestión.
+	 * Para el responsable, cambiarlo (también ponerlo en una ficha que no lo tiene) es un 403 con {@link
+	 * #EMAIL_SOLO_GESTION}; el mismo email, escrito con otra caja o con espacios, no es un cambio. Sin restricción, nada.
+	 *
+	 * @throws SecurityException (403 con el motivo en {@code GlobalExceptionHandler})
+	 */
+	public void exigirGestionParaCambiarEmail(String actual, String nuevo) {
+		if (restriccion().isPresent() && !Objects.equals(emailComparable(actual), emailComparable(nuevo))) {
+			throw new SecurityException(EMAIL_SOLO_GESTION);
+		}
+	}
+
+	private static String emailComparable(String email) {
+		String normalizado = EmailUtils.normalizeEmail(email);
+		return normalizado == null || normalizado.isEmpty() ? null : normalizado;
 	}
 
 	/** Para el responsable: la sede es una de las suyas (si no, 403). Sin restricción, nada. */

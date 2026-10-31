@@ -38,7 +38,7 @@ import jakarta.servlet.http.Cookie;
 
 /**
  * Pieza 279 contra MySQL: {@code GET /api/productos-alumno/{productoAlumnoId}/recibo} genera al momento el recibo en
- * PDF del cobro ACTIVO del cargo. Solo la gestión (propietario y administrador); el responsable de sede, la familia y
+ * PDF del cobro ACTIVO del cargo. Gestión y, pieza 9-5, el responsable de la sede del cargo (propietario y administrador); el responsable de sede, la familia y
  * la sesión solo-profesor, 403; sin sesión, 401. Cargo sin cobrar, o con el cobro anulado o devuelto, 409; cargo de otra escuela,
  * 404 (aislamiento por organización). El PDF lleva los datos de la escuela, el número, el alumno (solo nombre y
  * apellidos), el concepto, el importe, la forma de pago, la sede y el pie; ni DNI, ni contacto del alumno, ni quién
@@ -227,10 +227,11 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void soloGestion() throws Exception {
+	void gestionYResponsableDeLaSede() throws Exception {
 		assertEquals(403, pedir(cargoCobrado, tokenProfesor).getResponse().getStatus(), "sesión solo-profesor");
 		assertEquals(403, pedir(cargoCobrado, tokenFamilia).getResponse().getStatus(), "familia");
-		assertEquals(403, pedir(cargoCobrado, tokenResponsable).getResponse().getStatus(), "responsable de sede");
+		assertEquals(200, pedir(cargoCobrado, tokenResponsable).getResponse().getStatus(), "responsable de su sede");
+		assertEquals(403, pedir(cargoOtra, tokenResponsable).getResponse().getStatus(), "cargo de otra escuela");
 		assertEquals(401, mvc.perform(get(ruta(cargoCobrado))).andReturn().getResponse().getStatus(), "sin sesión");
 	}
 
@@ -317,10 +318,11 @@ class ReciboPagoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void legado_soloGestion() throws Exception {
+	void legado_gestionYResponsableDeLaSede() throws Exception {
 		assertEquals(403, pedir(legado, tokenProfesor).getResponse().getStatus(), "sesión solo-profesor");
 		assertEquals(403, pedir(legado, tokenFamilia).getResponse().getStatus(), "familia");
-		assertEquals(403, pedir(legado, tokenResponsable).getResponse().getStatus(), "responsable de sede");
+		assertEquals(200, pedir(legado, tokenResponsable).getResponse().getStatus(), "responsable de su sede");
+		assertEquals(403, pedir(legadoSinSede, tokenResponsable).getResponse().getStatus(), "cargo sin sede: solo gestión");
 		assertEquals(401, mvc.perform(get(ruta(legado))).andReturn().getResponse().getStatus(), "sin sesión");
 	}
 

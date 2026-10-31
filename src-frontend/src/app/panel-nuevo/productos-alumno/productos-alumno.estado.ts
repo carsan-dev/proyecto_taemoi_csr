@@ -1,10 +1,12 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { EMPTY, Observable, Subscription, concat, defer, forkJoin, of } from 'rxjs';
-import { catchError, finalize, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, take, tap } from 'rxjs/operators';
 
 import { euros } from '../../componentes/generales/pedir-al-propietario/pedir-al-propietario';
 import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
 import { SolicitudesService } from '../../servicios/endpoints/solicitudes.service';
 import { importeCargo } from '../../utils/importe-cargo';
@@ -178,6 +180,8 @@ function resultado<V>(peticion: Observable<V>): Observable<Resultado<V>> {
 export class ProductosAlumnoEstado {
   private readonly api = inject(ProductosAlumnoApiService);
   private readonly auth = inject(AuthenticationService);
+  private readonly permisos = inject(PermisosSesionService);
+  private readonly enrutador = inject(Router);
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly cobro = inject(CobroCargoService);
@@ -222,7 +226,7 @@ export class ProductosAlumnoEstado {
   /** Propietario (`ROLE_ADMIN`): el único que elimina cargos. Falla cerrado. */
   readonly esPropietario = signal(false);
   readonly rolesCargados = signal(false);
-  /** Propietario o administración (`ROLE_ADMIN` o `ROLE_MANAGER`): ve «Descargar recibo» (pieza 279). */
+  /** Propietario, administración o responsable de sede: ve «Descargar recibo» (pieza 279). */
   readonly esGestion = signal(false);
 
   // ------------------------------------------------------------------ cambios pendientes
@@ -365,26 +369,53 @@ export class ProductosAlumnoEstado {
       cargos: resultado(this.api.cargos(id)),
       catalogo: resultado(this.api.catalogo()),
       alumno: resultado(this.api.alumno(id)),
-    }).subscribe(({ cargos, catalogo, alumno }) => {
-      if (!alumno.ok || !alumno.valor || alumno.valor.alumnoEliminado === true) {
-        this.fallarCarga(T.errorAlumno);
+    }).subscribe((lectura) => {
+      const revision = this.revision;
+      if (this.permisos.tiene('PANEL_SEDE') && lectura.alumno.ok && lectura.alumno.valor) {
+        // Responsable de sede: los cargos de un alumno de otra sede dan 403, así que su ficha es de solo lectura.
+        const sedeDelAlumno = (lectura.alumno.valor as { sedePrincipalId?: number | null }).sedePrincipalId;
+        this.permisos
+          .obtener()
+          .pipe(take(1))
+          .subscribe({
+            next: (p) => {
+              if (revision !== this.revision) return;
+              if ((p?.sedes ?? []).some((s) => s.id === sedeDelAlumno)) {
+                this.aplicarCarga(id, lectura);
+              } else {
+                void this.enrutador.navigate(['/alumnosEditar', id], { replaceUrl: true });
+              }
+            },
+            error: () => this.aplicarCarga(id, lectura),
+          });
         return;
       }
-      if (!cargos.ok) {
-        this.fallarCarga(T.errorCargos);
-        return;
-      }
-      if (!catalogo.ok) {
-        this.fallarCarga(T.errorCatalogo);
-        return;
-      }
-      this.alumno.set(alumno.valor);
-      this.cargos.set(this.ordenar(cargos.valor));
-      this.catalogo.set(Array.isArray(catalogo.valor) ? catalogo.valor : []);
-      this.pagina.set(paginaValida(leerPaginaGuardada(id), this.totalCargos()));
-      guardarPagina(id, this.pagina());
-      this.estado.set('listo');
+      this.aplicarCarga(id, lectura);
     });
+  }
+
+  private aplicarCarga(
+    id: number,
+    { cargos, catalogo, alumno }: { cargos: Resultado<ProductoAlumnoDTO[]>; catalogo: Resultado<any>; alumno: Resultado<any> }
+  ): void {
+    if (!alumno.ok || !alumno.valor || alumno.valor.alumnoEliminado === true) {
+      this.fallarCarga(T.errorAlumno);
+      return;
+    }
+    if (!cargos.ok) {
+      this.fallarCarga(T.errorCargos);
+      return;
+    }
+    if (!catalogo.ok) {
+      this.fallarCarga(T.errorCatalogo);
+      return;
+    }
+    this.alumno.set(alumno.valor);
+    this.cargos.set(this.ordenar(cargos.valor));
+    this.catalogo.set(Array.isArray(catalogo.valor) ? catalogo.valor : []);
+    this.pagina.set(paginaValida(leerPaginaGuardada(id), this.totalCargos()));
+    guardarPagina(id, this.pagina());
+    this.estado.set('listo');
   }
 
   private fallarCarga(texto: string): void {
@@ -1213,7 +1244,7 @@ export class ProductosAlumnoEstado {
   private resolverPropietario(): void {
     if (this.auth.rolesEstanCargados()) {
       this.esPropietario.set(this.auth.tieneRolAdmin());
-      this.esGestion.set(this.auth.tieneAccesoAdmin());
+      this.esGestion.set(this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE'));
       this.rolesCargados.set(true);
       return;
     }
@@ -1221,7 +1252,7 @@ export class ProductosAlumnoEstado {
       this.auth.obtenerRoles().subscribe({
         next: () => {
           this.esPropietario.set(this.auth.tieneRolAdmin());
-          this.esGestion.set(this.auth.tieneAccesoAdmin());
+          this.esGestion.set(this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE'));
           this.rolesCargados.set(true);
         },
         error: () => {

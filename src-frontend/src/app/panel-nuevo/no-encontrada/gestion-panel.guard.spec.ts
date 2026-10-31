@@ -22,6 +22,16 @@ describe('gestionPanelGuard (8b-M2b): falla cerrado', () => {
     return isObservable(r) ? firstValueFrom(r as Observable<boolean>) : (r as boolean);
   }
 
+  it('responsable de sede (PANEL_SEDE): casa', async () => {
+    obtener.and.returnValue(of({ ...permisos(['RESPONSABLE_SEDE']), capacidades: ['PANEL_SEDE'] }));
+    expect(await decidir()).toBeTrue();
+  });
+
+  it('el rol sin la capacidad no casa', async () => {
+    obtener.and.returnValue(of({ ...permisos(['RESPONSABLE_SEDE']), capacidades: [] }));
+    expect(await decidir()).toBeFalse();
+  });
+
   for (const rol of ['PROPIETARIO', 'ADMINISTRADOR']) {
     it(`${rol}: casa`, async () => {
       obtener.and.returnValue(of(permisos([rol])));

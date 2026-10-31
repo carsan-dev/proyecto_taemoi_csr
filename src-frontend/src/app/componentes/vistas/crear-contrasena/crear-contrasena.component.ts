@@ -131,7 +131,7 @@ export class CrearContrasenaComponent implements OnInit, OnDestroy {
         next: (roles) => {
           this.enviando = false;
           showSuccessToast('Contraseña creada');
-          this.router.navigate([this.auth.resolverRutaInicioPorRoles(roles)]);
+          this.auth.resolverRutaInicio(roles).subscribe((ruta) => this.router.navigate([ruta]));
         },
         error: (error: unknown) => {
           this.enviando = false;

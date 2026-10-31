@@ -15,8 +15,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,14 +49,14 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
-import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 
 import jakarta.servlet.http.Cookie;
 
 /**
  * Decisión 180 (matiza la D5-1), por HTTP real contra MySQL: una cuenta que SOLO es profesor inicia sesión (con
  * contraseña y con Google) y solo usa su caja ({@code /api/caja/profesor/**}), lo imprescindible de sesión y lo
- * público; todo lo demás, 403. El responsable de sede solo sigue sin entrar con su mensaje. Escuela sintética
+ * público; todo lo demás, 403. El responsable de sede (solo o con profesor) entra por su panel de sede: ver
+ * {@code ResponsableSedeEntradaIntegrationTest}. Escuela sintética
  * ({@link EscuelaConSedesDePrueba}); datos inventados.
  */
 @SpringBootTest
@@ -168,26 +166,21 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void soloResponsable_sigueRechazadoConSuMensaje() throws Exception {
+	void soloResponsable_entraConSuSesionYSinCaja() throws Exception {
 		Usuario responsable = cuenta("solo-resp", null);
 		responsableDe(responsable, e.sA);
 
-		for (Usuario cuenta : List.of(responsable)) {
-			mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
-					.content("{\"email\":\"" + cuenta.getEmail() + "\",\"contrasena\":\"" + CLAVE + "\"}"))
-					.andExpect(status().isForbidden())
-					.andExpect(jsonPath("$.mensaje").value(AuthenticationServiceImpl.ROL_SIN_ACCESO));
-
-			String redirigido = loginGoogle(cuenta.getEmail()).getRedirectedUrl();
-			assertNotNull(redirigido);
-			assertTrue(URLDecoder.decode(redirigido, StandardCharsets.UTF_8)
-					.endsWith("message=" + AuthenticationServiceImpl.ROL_SIN_ACCESO), redirigido);
-
-			// Un token emitido a mano tampoco abre sesión (puerta en cada petición).
-			String emitido = e.token(jwtService, usuarios, cuenta.getId());
-			mvc.perform(get("/api/auth/roles").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
-			mvc.perform(get("/api/caja/profesor/cargos-pendientes").cookie(jwt(emitido)))
-					.andExpect(status().isUnauthorized());
+		// Decisión 370: entra con contraseña, con Google y con un token emitido (la puerta de cada petición).
+		String token = login(responsable.getEmail());
+		String redirigido = loginGoogle(responsable.getEmail()).getRedirectedUrl();
+		assertNotNull(redirigido);
+		assertTrue(!redirigido.contains("error="), redirigido);
+		for (String sesion : List.of(token, e.token(jwtService, usuarios, responsable.getId()))) {
+			mvc.perform(get("/api/auth/roles").cookie(jwt(sesion)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE")));
+			assertEquals(200, estado(get("/api/alumnos"), sesion));
+			assertEquals(403, estado(get("/api/caja/profesor/cargos-pendientes"), sesion), "su caja es de profesor");
 		}
 	}
 
@@ -234,12 +227,11 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Decisión 184: responsable de sede (de la sede A) + profesor entra como profesor, con contraseña y con Google: la
-	 * misma sesión limitada. Su parte de responsable no abre nada (ni lo que tendría por su sede) y /roles solo dice
-	 * ROLE_PROFESOR, para que el frontend la lleve a «Mi caja».
+	 * Decisión 371 (sustituye a la 184): responsable de sede (de la sede A) + profesor entra como responsable, con
+	 * contraseña y con Google, y suma su caja: ya no es la sesión limitada y /roles dice los dos roles.
 	 */
 	@Test
-	void responsableYProfesor_entraComoProfesor_soloASuCaja() throws Exception {
+	void responsableYProfesor_entraComoResponsable_yConservaSuCaja() throws Exception {
 		Usuario ambos = cuenta("resp-y-prof", null);
 		responsableDe(ambos, e.sA);
 		membresia(ambos, e.org, "PROFESOR");
@@ -250,7 +242,7 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(e.org, jwtService.verificar(token).organizacionId());
 		mvc.perform(get("/api/auth/roles").cookie(jwt(token)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_PROFESOR")));
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR")));
 		mvc.perform(get("/api/auth/user").cookie(jwt(token)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.alumnoDTO").doesNotExist());
@@ -260,7 +252,8 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(ids.contains(cargo), pendientes.toString());
 		leer(get("/api/caja/profesor/productos"), token, 200);
 		leer(get("/api/caja/profesor/cobros-pendientes-entrega"), token, 200);
-		soloSuCajaSesionYLoPublico(token);
+		assertEquals(200, estado(get("/api/alumnos"), token), "su panel de sede");
+		assertEquals(403, estado(get("/api/caja/sedes/" + e.sB + "/resumen"), token), "solo sus sedes");
 
 		Usuario ambosGoogle = cuenta("resp-y-prof-google", null);
 		responsableDe(ambosGoogle, e.sA);
@@ -271,9 +264,9 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 		assertNotNull(deGoogle, "la cookie de sesión");
 		assertEquals(e.org, jwtService.verificar(deGoogle).organizacionId());
 		mvc.perform(get("/api/auth/roles").cookie(jwt(deGoogle)))
-				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_PROFESOR")));
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR")));
 		assertEquals(200, estado(get("/api/caja/profesor/cargos-pendientes"), deGoogle));
-		assertEquals(403, estado(get("/api/alumnos"), deGoogle));
+		assertEquals(200, estado(get("/api/alumnos"), deGoogle));
 	}
 
 	@Test
@@ -346,11 +339,12 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_MANAGER")));
 		assertEquals(200, estado(get("/api/alumnos/count"), deGestion));
 
-		// A la escuela donde solo es responsable de sede no se cambia, y no aparece en el selector.
+		// Decisión 370: la escuela donde solo es responsable de sede aparece en el selector y se puede cambiar a ella.
 		String deResp = login(soloResp.getEmail());
-		cambiar(deResp, e.org, 403);
 		mvc.perform(get("/api/auth/organizaciones").cookie(jwt(deResp)))
-				.andExpect(jsonPath("$[*].id", containsInAnyOrder((int) ORG1)));
+				.andExpect(jsonPath("$[*].id", containsInAnyOrder((int) ORG1, (int) e.org)));
+		mvc.perform(get("/api/auth/roles").cookie(jwt(cambiar(deResp, e.org, 200))))
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE")));
 	}
 
 	// ---------------------------------------------------------------------------------

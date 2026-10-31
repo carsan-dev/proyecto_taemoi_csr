@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,6 +50,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.dtos.request.PlantillaPreinscripcionRequest;
 import com.taemoi.project.dtos.request.PreinscripcionRequest;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
@@ -111,8 +115,9 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 	@BeforeAll
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-preins");
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 		plantilla = jdbc.queryForObject("""
 				SELECT p.id FROM plantilla_preinscripcion p JOIN disciplina d ON d.id = p.disciplina_id
@@ -338,6 +343,67 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		assertEquals(List.of(e.gB), gruposDe(e.aB), "la ficha ajena no se toca");
 	}
 
+	/** Decisión 96: vincular una preinscripción tampoco cambia el email de un alumno sin cuenta; conservarlo, sí vale. */
+	@Test
+	void finalizar_vincularNoCambiaElEmailDeUnAlumnoSinCuenta() throws Exception {
+		String dni = dni();
+		String emailFicha = "it-96-ficha-prei-" + e.marca + "@example.test";
+		long ficha = e.alumno("E96PREI" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, emailFicha, ficha);
+		String referencia = preinscripcion(e.org, e.gA, List.of(e.tA), dni, "nuevo-96-" + e.marca + "@example.test");
+
+		MvcResult cambio = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "USAR_PREINSCRIPCION")), tokenA);
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals("PENDIENTE", estadoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+
+		MvcResult conserva = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "CONSERVAR_FICHA")), tokenA);
+		assertEquals(200, conserva.getResponse().getStatus(), conserva.getResponse().getContentAsString());
+		assertEquals(ficha, alumnoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+	}
+
+	/** Decisión 96 con las tres sesiones del responsable: 403 con el motivo y ni la solicitud ni la ficha cambian. */
+	@ParameterizedTest
+	@ValueSource(strings = { "R", "R + Pr", "R + F" })
+	void finalizar_conOtroEmail_mismo403ParaRProfesorYFamilia(String perfil) throws Exception {
+		String dni = dni();
+		String emailFicha = "it-96-perfil-" + dni + "-" + e.marca + "@example.test";
+		long ficha = e.alumno("E96PERFIL" + dni + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, emailFicha, ficha);
+		String referencia = preinscripcion(e.org, e.gA, List.of(e.tA), dni, "otro-96-" + dni + "@example.test");
+		int cargos = jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE alumno_id = ?", Integer.class, ficha);
+
+		MvcResult cambio = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "USAR_PREINSCRIPCION")),
+				tokenDel(perfil));
+
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals("PENDIENTE", estadoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+		assertEquals(cargos,
+				jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE alumno_id = ?", Integer.class, ficha));
+	}
+
+	private String tokenDel(String perfil) {
+		return switch (perfil) {
+		case "R" -> tokenA;
+		case "R + F" -> e.token(jwtService, usuarios, e.respA);
+		default -> {
+			long cuenta = e.cuenta(usuarios, "r-pr-96");
+			e.responsable(cuenta, e.sA);
+			jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'PROFESOR')", cuenta, e.org);
+			yield e.token(jwtService, usuarios, cuenta);
+		}
+		};
+	}
+
 	@Test
 	void finalizar_vincularNoCambiaElEmailDeUnaCuenta() throws Exception {
 		String dni = dni();
@@ -561,11 +627,12 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 	@Test
 	void cuentaFamiliaYResponsable_familiaIntactaYSedeLimitada() throws Exception {
 		// Como familia, su alumno propio (sin sede); como responsable, los de su sede; nunca los de otra sede.
-		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.propioA), tokenA));
-		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.aA), tokenA));
-		assertEquals(403, estado(get("/api/convocatorias/alumnos/" + e.aB), tokenA));
-		assertEquals(403, estado(get("/api/preinscripciones/" + pB), tokenA));
-		assertEquals(403, estado(post("/api/alumnos/" + convocatoria + "/alumno/" + e.propioA), tokenA),
+		String tokenFamiliaA = e.token(jwtService, usuarios, e.respA);
+		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.propioA), tokenFamiliaA));
+		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.aA), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/convocatorias/alumnos/" + e.aB), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/preinscripciones/" + pB), tokenFamiliaA));
+		assertEquals(403, estado(post("/api/alumnos/" + convocatoria + "/alumno/" + e.propioA), tokenFamiliaA),
 				"su alumno de familia no tiene sede: no lo apunta como responsable");
 	}
 

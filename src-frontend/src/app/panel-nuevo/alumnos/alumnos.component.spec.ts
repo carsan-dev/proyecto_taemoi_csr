@@ -7,6 +7,7 @@ import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { MOISKIMDO_PRUEBA } from '../tema-prueba';
@@ -1117,6 +1118,25 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(cancelar.color).withContext('«Cancelar» del diálogo: texto').toBe(ACENTO);
     botonDialogo('Cancelar').click();
     pintar();
+    flush();
+  }));
+
+  it('responsable de sede: sin bajas, «Generar informe», mensualidades ni vista de familia (370)', fakeAsync(() => {
+    spyOn(TestBed.inject(PermisosSesionService), 'tiene').and.callFake((c: string) => c === 'PANEL_SEDE');
+    crear();
+    responder();
+    const componente = fixture.componentInstance;
+    expect(el().querySelector('.alumnos__enlace-bajas')).toBeNull();
+    expect(el().querySelector('a[href^="/userpage"]')).toBeNull();
+    expect(componente.opcionesHerramientas.map((o) => o.seccion)).toEqual(['asistencia', 'listado-mensualidades']);
+    componente.alternarMenu();
+    fixture.detectChanges();
+    const menu = el().querySelector('#alumnos-menu-informes')!;
+    expect(menu.textContent).not.toContain('Generar informe');
+    expect(menu.querySelector('[role="separator"]')).toBeNull();
+    componente.alternarMenu();
+    fixture.detectChanges();
+    expect(el().querySelector('pn-generar-informe')).toBeNull();
     flush();
   }));
 });

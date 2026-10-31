@@ -32,9 +32,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * <li>organización: el claim {@code org}; en tokens heredados (sin claim) solo se acepta si el usuario
  * tiene membresías activas en exactamente UNA organización;</li>
  * <li>el usuario sigue teniendo membresía activa en esa organización (y esta está activa), en CADA
- * petición, y sus autoridades abren sesión ({@link RolMembresia#abreSesion}: RESPONSABLE_SEDE sola,
- * no; PROFESOR sin FAMILIA ni gestión, con o sin RESPONSABLE_SEDE, sí, limitada a su caja en la cadena de seguridad,
- * decisiones 180 y 184); si solo es familia, además
+ * petición, y sus autoridades abren sesión ({@link RolMembresia#abreSesion}: RESPONSABLE_SEDE, limitada a sus sedes,
+ * decisión 370; PROFESOR solo, limitada a su caja en la cadena de seguridad, decisión 180); si solo es familia, además
  * algún alumno accesible en esa escuela ({@link AccesoFamiliaService}).</li>
  * </ol>
  * Administrador de plataforma ({@code usuario.es_admin_plataforma}, fase3-sedes-permisos.md §4): la sesión lleva

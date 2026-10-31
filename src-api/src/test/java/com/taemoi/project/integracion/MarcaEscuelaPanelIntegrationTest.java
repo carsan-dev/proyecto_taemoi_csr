@@ -200,12 +200,14 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Gestión y, desde la pieza 8b-3o (decisión 326), la sesión solo-profesor (solo leer). La familia, también la que
-	 * además es profesor (entra como familia), el responsable de sede y el superadmin sin membresía, 403.
+	 * Gestión y, solo para leer, la sesión solo-profesor (pieza 8b-3o, decisión 326) y el responsable de sede (pieza 9-5,
+	 * decisión 370). La familia, también la que además es profesor (entra como familia), y el superadmin sin membresía,
+	 * 403.
 	 */
 	@Test
-	void marca_soloGestionYSesionSoloProfesor() throws Exception {
-		for (String token : List.of(tFamiliaA, tResponsableA, tFamiliaProfesorA)) {
+	void marca_gestionResponsableYSesionSoloProfesor() throws Exception {
+		mvc.perform(get("/api/escuela/marca").cookie(new Cookie("jwt", tResponsableA))).andExpect(status().isOk());
+		for (String token : List.of(tFamiliaA, tFamiliaProfesorA)) {
 			for (String ruta : List.of("/api/escuela/marca", "/api/escuela/logo")) {
 				mvc.perform(get(ruta).cookie(new Cookie("jwt", token))).andExpect(status().isForbidden());
 			}

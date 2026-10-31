@@ -21,7 +21,7 @@ import com.taemoi.project.services.AsignacionProfesorService;
  * existente por email como titular o ayudante (o le cambian el rol) y la quitan.
  *
  * <p>Solo {@code ROLE_ADMIN} y {@code ROLE_MANAGER}: la regla de URL explícita de {@code SecurityConfiguration} (antes
- * de las del responsable de sede) y el {@code @PreAuthorize} de cada método. RESPONSABLE_SEDE (hasta la E9), PROFESOR y
+ * de las del responsable de sede) y el {@code @PreAuthorize} de cada método. RESPONSABLE_SEDE (decisión 372), PROFESOR y
  * FAMILIA, 403; fuera de la lista blanca de la sesión solo-profesor. El servicio lee el grupo acotado por escuela (de
  * otra escuela o inexistente, 404) y filtra {@code asignacion_profesor} y {@code membresia} por la escuela activa.
  */

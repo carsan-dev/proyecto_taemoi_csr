@@ -59,7 +59,7 @@ describe('AvisosService y AvisosComponent (8b-D1, avisos)', () => {
         provideHttpClientTesting(),
         {
           provide: PermisosSesionService,
-          useValue: { obtener: () => of({}), reiniciar: () => undefined },
+          useValue: { tiene: () => false, obtener: () => of({}), reiniciar: () => undefined },
         },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],

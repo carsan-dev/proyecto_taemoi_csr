@@ -659,7 +659,7 @@ class AccesoRecursosTest {
 		assertTrue(acceso.grupoDeMisGrupos(7L));
 		assertFalse(acceso.grupoDeMisGrupos(8L));
 		assertFalse(acceso.grupoDeMisGrupos(null));
-		// Sesión 184 (R+Pr): sus sedes no abren un grupo que no es suyo.
+		// R+Pr (decisión 371): sus sedes no abren un grupo que no es suyo.
 		sesion(escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"));
 		org.mockito.Mockito.lenient().when(consulta.grupoEnSedes(8L, SEDES)).thenReturn(true);
 		assertTrue(acceso.grupoDeMisGrupos(7L));
@@ -709,7 +709,7 @@ class AccesoRecursosTest {
 	void alumnoDeMisGruposAsignados_soloSusGrupos_nuncaPorTotalNiPorSede() {
 		org.mockito.Mockito.lenient().when(consulta.alumnoEnGrupos(7L, GRUPOS)).thenReturn(true);
 		org.mockito.Mockito.lenient().when(consulta.alumnoEnSedes(8L, SEDES)).thenReturn(true);
-		// Solo profesor, F+Pr, R+Pr (sesión 184) y P/G+Pr: solo sus grupos.
+		// Solo profesor, F+Pr, R+Pr (decisión 371) y P/G+Pr: solo sus grupos.
 		for (Authentication sesion : List.of(escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_PROFESOR"),
 				escuela(AlcanceSesion.limitado(Set.of(), GRUPOS), "ROLE_USER", "ROLE_PROFESOR"),
 				escuela(AlcanceSesion.limitado(SEDES, GRUPOS), "ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"),

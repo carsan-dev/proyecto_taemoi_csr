@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -35,6 +36,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.DisciplinaRepository;
 import com.taemoi.project.repositories.TarifaRepository;
@@ -77,8 +79,9 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-alumnos");
 		TenantContext.ejecutarCon(e.org, () -> DisciplinasDePrueba.tarifa(tarifas, "ADULTO", "30.00", null));
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 	}
 
@@ -277,6 +280,73 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
 	}
 
+	/**
+	 * Decisión 96: el email de un alumno sin cuenta da acceso de familia a su ficha: solo lo cambia la gestión. El
+	 * responsable recibe 403 con el motivo y no cambia nada; con el mismo email, guarda lo demás.
+	 */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void email_alumnoSinCuenta_elResponsableNoLoCambia_laGestionSi() throws Exception {
+		String ficha = "it-96-ficha-" + e.marca + "@example.test";
+		long alumno = e.alumno("E96SINCUENTA" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", ficha, alumno);
+		conDeporte(alumno);
+
+		for (String token : List.of(tokenA, e.token(jwtService, usuarios, e.respA))) {
+			MvcResult cambio = peticion(editar(alumno, "it-96-otro-" + e.marca + "@example.test", "Calle 2"), token);
+			assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+			assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+					json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+			assertEquals(ficha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+			assertEquals("Calle 1", direccionDe(alumno), "el 403 no deja cambios a medias");
+		}
+
+		// Con el mismo email (también con otra caja o espacios) guarda lo demás.
+		MvcResult mismo = peticion(editar(alumno, ficha.toUpperCase(), "Calle 3"), tokenA);
+		assertEquals(200, mismo.getResponse().getStatus(), mismo.getResponse().getContentAsString());
+		assertEquals("Calle 3", direccionDe(alumno));
+		assertEquals(ficha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+
+		// La gestión, también la que además es responsable, lo cambia.
+		String nuevo = "it-96-gestion-" + e.marca + "@example.test";
+		MvcResult gestion = peticion(editar(alumno, nuevo, "Calle 4"), tokenGestor);
+		assertEquals(200, gestion.getResponse().getStatus(), gestion.getResponse().getContentAsString());
+		assertEquals(nuevo, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+		long ambos = e.cuenta(usuarios, "gestor-y-responsable");
+		e.responsable(ambos, e.sA);
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')", ambos, e.org);
+		MvcResult mixta = peticion(editar(alumno, ficha, "Calle 5"), e.token(jwtService, usuarios, ambos));
+		assertEquals(200, mixta.getResponse().getStatus(), mixta.getResponse().getContentAsString());
+		assertEquals(ficha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+	}
+
+	/** Decisión 96: una ficha sin email tampoco lo recibe del responsable: es dar el acceso de familia. */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void email_alumnoSinCuentaNiEmail_elResponsableNoLoPone() throws Exception {
+		long alumno = e.alumno("E96SINEMAIL" + e.marca, e.sA, true);
+		conDeporte(alumno);
+
+		MvcResult cambio = peticion(editar(alumno, "it-96-nuevo-" + e.marca + "@example.test", "Calle 2"), tokenA);
+
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertNull(jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+	}
+
+	/** Con un deporte, el PUT no pide tarifa ni fecha de alta. */
+	private void conDeporte(long alumno) {
+		long disciplina = jdbc.queryForObject(
+				"SELECT id FROM disciplina WHERE organizacion_id = ? AND codigo = 'TAEKWONDO'", Long.class, e.org);
+		jdbc.update("""
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
+				  organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id)
+				VALUES (FALSE, 0, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?)""", alumno, e.org, disciplina);
+	}
+
+	private String direccionDe(long alumno) {
+		return jdbc.queryForObject("SELECT direccion FROM alumno WHERE id = ?", String.class, alumno);
+	}
+
 	private MockHttpServletRequestBuilder editar(long alumno, String email, String direccion) {
 		String cuerpo = """
 				{"nombre":"E6CUENTA%s","apellidos":"PRUEBA","fechaNacimiento":"2010-01-01","direccion":"%s",
@@ -334,12 +404,14 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void cuentaFamiliaYResponsable_familiaComoAntesYSedePorLaApi() throws Exception {
+		String tokenFamiliaA = e.token(jwtService, usuarios, e.respA);
 		// Su alumno de familia: rutas de familia sí; rutas de gestión no (no es de su sede).
-		assertEquals(200, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenA));
-		assertEquals(403, estado(get("/api/alumnos/" + e.propioA), tokenA));
-		assertFalse(ids(leer("/api/alumnos", tokenA)).contains(e.propioA));
+		assertEquals(200, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.propioA), tokenFamiliaA));
+		assertFalse(ids(leer("/api/alumnos", tokenFamiliaA)).contains(e.propioA));
 		// El portal de familia (reto diario, material de examen) no se abre por sede.
-		assertEquals(403, estado(get("/api/alumnos/" + e.aA + "/reto-diario"), tokenA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.aA + "/reto-diario"), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenA), "sin familia, no es suyo");
 	}
 
 	@Test
@@ -357,7 +429,7 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 				"SELECT id FROM alumno WHERE organizacion_id = 1 AND numero_expediente = ?", Long.class, expediente);
 		long membresia = jdbc.queryForObject("""
 				SELECT id FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND rol = 'RESPONSABLE_SEDE'""",
-				Long.class, e.respA, e.org);
+				Long.class, e.respSoloA, e.org);
 		jdbc.update("INSERT INTO membresia_sede (membresia_id, sede_id) VALUES (?, ?)", membresia, umbrete);
 		try {
 			assertEquals(403, estado(get("/api/alumnos/" + deMoiskimdo), tokenA));
@@ -365,6 +437,26 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		} finally {
 			jdbc.update("DELETE FROM membresia_sede WHERE membresia_id = ? AND sede_id = ?", membresia, umbrete);
 		}
+	}
+
+	/** Pieza 9-5: el alta de alumno no lee el id del cuerpo: crea una ficha nueva y la que nombra sigue como estaba. */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void alta_conIdDeOtroAlumno_noLoSobrescribe() throws Exception {
+		java.util.Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", e.aB);
+		String cuerpo = """
+				{"id":%d,"nombre":"ALTA CON ID","apellidos":"RESPONSABLE %s","fechaNacimiento":"1990-03-04",
+				 "direccion":"Calle 1","telefono":600000009,"autorizacionWeb":true,
+				 "deportesInicial":[{"deporte":"TAEKWONDO","fechaAlta":"2024-09-01","tipoTarifa":"ADULTO",
+				   "cuantiaTarifa":30.0,"competidor":false,"tieneLicencia":false}]}""".formatted(e.aB, e.marca);
+
+		MvcResult alta = peticion(multipart("/api/alumnos/crear").param("nuevo", cuerpo), tokenA);
+
+		assertEquals(201, alta.getResponse().getStatus(), alta.getResponse().getContentAsString());
+		long creado = idDe(alta);
+		assertTrue(creado != e.aB, "ficha nueva");
+		assertEquals(e.sA, e.sedeDe(creado));
+		assertEquals(antes, jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", e.aB));
 	}
 
 	// ------------------------------------------------------------------ utilidades

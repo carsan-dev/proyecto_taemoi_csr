@@ -87,7 +87,7 @@ public class PendienteVencidoService {
 	@Transactional(readOnly = true)
 	public PendienteVencidoDTO obtener() {
 		Long organizacion = organizacionActiva();
-		// La gestión ve toda la escuela, como /resumen sin sede (el responsable de sede no entra hasta la E9).
+		// La gestión ve toda la escuela y el responsable, sus sedes: como /resumen sin sede.
 		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
 		return resumir(vencidos(repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro())));
 	}

@@ -49,12 +49,15 @@
     <div class="documentos__fila">
       <label class="documentos__etiqueta" for="observaciones">Observaciones</label>
       <textarea id="observaciones" class="documentos__control documentos__observaciones" rows="4"
-        placeholder="Escribe aquí todas las observaciones que quieras." [(ngModel)]="ficha.observacionesDraft"></textarea>
+        placeholder="Escribe aquí todas las observaciones que quieras." [(ngModel)]="ficha.observacionesDraft"
+        [readOnly]="ficha.fichaDeOtraSede"></textarea>
+      @if (!ficha.fichaDeOtraSede) {
       <div class="documentos__guardar">
         <button type="button" class="documentos__boton-secundario"
           [disabled]="!ficha.hasObservacionesChanges() || ficha.guardandoObservaciones"
           (click)="ficha.guardarObservaciones()">{{ ficha.guardandoObservaciones ? 'Guardando…' : 'Guardar observaciones' }}</button>
       </div>
+      }
     </div>
   </section>
 
@@ -79,10 +82,12 @@
             (click)="ficha.descargarDocumento(doc)">
             <i class="bi bi-download" aria-hidden="true"></i>
           </button>
+          @if (!ficha.fichaDeOtraSede) {
           <button type="button" class="documentos__icono-boton documentos__icono-boton--peligro" [attr.aria-label]="'Eliminar ' + doc.nombre"
             (click)="ficha.eliminarDocumento(doc.id)">
             <i class="bi bi-trash3" aria-hidden="true"></i>
           </button>
+          }
         </span>
       </li>
       }
@@ -99,10 +104,12 @@
     <p class="documentos__vacio">Todavía no hay documentos.</p>
     }
     <div class="documentos__pie">
+      @if (!ficha.fichaDeOtraSede) {
       <button type="button" class="documentos__boton-secundario" (click)="docFileInput.click()">
         <i class="bi bi-upload" aria-hidden="true"></i>
         <span>Subir documento</span>
       </button>
+      }
       <button type="button" class="documentos__boton-texto" [disabled]="!ficha.alumno?.telefono && !ficha.alumno?.telefono2"
         (click)="ficha.abrirWhatsApp()">
         <i class="bi bi-whatsapp" aria-hidden="true"></i>

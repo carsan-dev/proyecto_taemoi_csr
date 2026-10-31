@@ -141,7 +141,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of(permisosActuales), reiniciar: () => undefined } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisosActuales), reiniciar: () => undefined } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

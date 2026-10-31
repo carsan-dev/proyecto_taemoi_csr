@@ -18,10 +18,12 @@ export class FooterComponent {
   private readonly auth = inject(AuthenticationService);
 
   /**
-   * «Inicio» manda `verWeb` solo con sesión del panel (gestión o solo profesor), para que la portada no la devuelva al
-   * panel. Visitantes y familias: el enlace se comporta como siempre.
+   * «Inicio» manda `verWeb` solo con sesión del panel (gestión, responsable de sede o solo profesor), para que la portada
+   * no la devuelva al panel. Visitantes y familias: el enlace se comporta como siempre.
    */
   get estadoInicio(): { verWeb: boolean } | undefined {
-    return this.auth.tieneAccesoAdmin() || this.auth.esSoloProfesor() ? ESTADO_VER_WEB : undefined;
+    return this.auth.tieneAccesoAdmin() || this.auth.esSoloProfesor() || this.auth.tieneRolResponsable()
+      ? ESTADO_VER_WEB
+      : undefined;
   }
 }

@@ -13,7 +13,7 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  * - `profesor`: `tieneRolProfesor` (ROLE_PROFESOR; Mi caja).
  * - `misGrupos`: `veMisGrupos` (ROLE_PROFESOR y la capacidad MIS_GRUPOS de `GET /api/auth/permisos`).
  * - `plataforma`: `esAdminPlataforma` (la sesión administradora de plataforma).
- * - `gestion`: ROLE_ADMIN o ROLE_MANAGER (`/api/panel/**`); falla cerrado si el contexto no lo trae.
+ * - `gestion`: ROLE_ADMIN o ROLE_MANAGER, o `panelSede` (`/api/panel/**`); falla cerrado si el contexto no lo trae.
  * - `sedes`: la capacidad SEDES de `GET /api/auth/permisos` (E9-3); falla cerrado si el contexto no la trae.
  * - `miembros`: la capacidad MIEMBROS de `GET /api/auth/permisos` (E9-4); falla cerrado si el contexto no la trae.
  */
@@ -22,6 +22,8 @@ export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' 
 export type ContextoMenu = Readonly<
   Record<Exclude<Condicion, 'gestion' | 'sedes' | 'miembros'>, boolean> & {
     soloProfesor?: boolean;
+    /** La capacidad PANEL_SEDE de `GET /api/auth/permisos`: el menú de la decisión 370. */
+    panelSede?: boolean;
     gestion?: boolean;
     sedes?: boolean;
     miembros?: boolean;
@@ -164,7 +166,30 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
 /** La barra inferior del móvil (por debajo de 1024 px), además de «Más». */
 export const BARRA_INFERIOR: readonly IdSeccion[] = ['inicio', 'alumnos', 'tesoreria'];
 
-/** Menú de cuenta: «Mi perfil» para propietario y gestor (una sesión solo-profesor no usa `/api/panel/**`). */
+/**
+ * Lo que ve el responsable de sede (decisión 370), con Mi caja y Mis grupos si también es profesor (371). Es una lista
+ * de permitidas: una entrada nueva del menú no le llega hasta que se decida. Conserva «Ver la web», donde la tiene la
+ * gestión (sección Escuela, sola). No incluye «Eliminar alumno», Productos, Eventos, Sedes, Miembros, Configuración ni el
+ * registro.
+ */
+const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
+  '/adminpage',
+  '/alumnosListar',
+  '/preinscripciones',
+  '/convocatoriasListar',
+  '/alumnosCrear',
+  '/gruposListar',
+  '/mis-grupos',
+  '/gruposCrear',
+  '/turnosCrear',
+  '/tesoreriaCobros',
+  '/cajaSede',
+  '/mi-caja',
+  '/solicitudes',
+  '/',
+]);
+
+/** Menú de cuenta: «Mi perfil» para propietario, gestor y responsable (una sesión solo-profesor no usa `/api/panel/**`). */
 export const CUENTA_PANEL: readonly EntradaMenu[] = [
   { etiqueta: 'Mi perfil', ruta: '/panel/mi-perfil', icono: 'bi-person', condicion: 'gestion' },
 ];
@@ -177,10 +202,23 @@ export const ENLACES_LEGALES: readonly EntradaMenu[] = [
 ];
 
 export function visible(entrada: EntradaMenu, contexto: ContextoMenu): boolean {
+  if (entrada.condicion === 'gestion' && contexto.panelSede) {
+    return true;
+  }
   return !entrada.condicion || contexto[entrada.condicion] === true;
 }
 
-/** Las entradas visibles: dos accesos directos para solo-profesor o las seis secciones de gestión. */
+/** Las secciones del responsable: sin las que se quedan vacías; Escuela se queda con «Ver la web» (y plataforma, si la tiene). */
+function menuDeSede(contexto: ContextoMenu): SeccionMenu[] {
+  return MENU_PANEL.map((seccion) => ({
+    ...seccion,
+    entradas: seccion.entradas.filter(
+      (e) => visible(e, contexto) && (RUTAS_PANEL_SEDE.has(e.ruta) || e.condicion === 'plataforma')
+    ),
+  })).filter((seccion) => seccion.ruta || seccion.entradas.length > 0);
+}
+
+/** Las entradas visibles: dos accesos directos para solo-profesor, las de la 370 o las seis secciones de gestión. */
 export function menuVisible(contexto: ContextoMenu): SeccionMenu[] {
   // Decisión 326 (R6): el profesor sin gestión navega directamente, sin menús administrativos.
   if (contexto.soloProfesor) {
@@ -194,6 +232,9 @@ export function menuVisible(contexto: ContextoMenu): SeccionMenu[] {
         ruta: '/mi-caja', entradas: [], prefijos: ['/mi-caja'],
       },
     ];
+  }
+  if (contexto.panelSede) {
+    return menuDeSede(contexto);
   }
   return MENU_PANEL.map((seccion) => ({
     ...seccion,

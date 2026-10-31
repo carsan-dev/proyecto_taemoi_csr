@@ -89,7 +89,7 @@ type IdMenu = IdSeccion | 'cuenta';
 /**
  * Cabecera C del panel nuevo (8b-N, fase3-e8b-plan.md §8; DESIGN.md, Navigation): color y logo de la escuela, seis
  * entradas (cuatro con desplegable) y la cuenta; por debajo de 1024 px, la barra inferior. Se carga en un `@defer`
- * de `skeleton` solo con una sesión del panel (gestión o profesor) y en una ruta de gestión.
+ * de `skeleton` solo con una sesión del panel (gestión, responsable de sede o profesor) y en una ruta de gestión.
  *
  * - Antes de pintar espera a la marca (`GET /api/escuela/marca`, una vez por sesión) y la escribe en su raíz `.pn`;
  *   mientras tanto, el hueco de 64 px que deja `skeleton`. Si falla, pinta con el tema por defecto.
@@ -100,6 +100,21 @@ type IdMenu = IdSeccion | 'cuenta';
 /** Pasar lista (`/mis-grupos/:id/lista`, `/gruposListar/:id/lista`): su barra fija de guardar sustituye a la navegación inferior. */
 export function ocultaBarraInferior(url: string): boolean {
   return /^\/(mis-grupos|gruposListar)\/\d+\/lista(?:[?#]|$)/.test(url);
+}
+
+/** Profesor sin gestión ni responsable: los dos accesos directos (la familia + profesor también, decisión 326). */
+function soloAccesosDeProfesor(roles: readonly string[]): boolean {
+  return (
+    roles.includes('ROLE_PROFESOR') &&
+    !roles.includes('ROLE_ADMIN') &&
+    !roles.includes('ROLE_MANAGER') &&
+    !roles.includes('ROLE_RESPONSABLE_SEDE')
+  );
+}
+
+/** Quién ve la bandeja de solicitudes y su contador. */
+function veSolicitudes(roles: readonly string[]): boolean {
+  return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER') || roles.includes('ROLE_RESPONSABLE_SEDE');
 }
 
 @Component({
@@ -133,17 +148,13 @@ export class CabeceraPanelComponent implements OnInit {
   readonly url = signal(this.router.url);
 
   private readonly roles = toSignal(this.auth.getRoles(), { initialValue: [] as string[] });
-  readonly soloProfesor = computed(() => {
-    const roles = this.roles();
-    return roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER');
-  });
+  readonly soloProfesor = computed(() => soloAccesosDeProfesor(this.roles()));
   private readonly capacidades = toSignal<readonly Capacidad[], readonly Capacidad[]>(this.permisos.capacidades(), {
     initialValue: [],
   });
   private readonly plataforma = toSignal(this.auth.getRoles().pipe(
     filter((roles) => roles.length > 0),
-    switchMap((roles) => roles.includes('ROLE_PROFESOR') && !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_MANAGER')
-      ? of(false) : this.auth.esAdminPlataforma()),
+    switchMap((roles) => soloAccesosDeProfesor(roles) ? of(false) : this.auth.esAdminPlataforma()),
     catchError(() => of(false))), {
     initialValue: false,
   });
@@ -168,6 +179,7 @@ export class CabeceraPanelComponent implements OnInit {
     return {
       propietario: roles.includes('ROLE_ADMIN'),
       soloProfesor: this.soloProfesor(),
+      panelSede: this.capacidades().includes('PANEL_SEDE'),
       gestion: roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
       profesor,
       misGrupos: profesor && this.capacidades().includes('MIS_GRUPOS'),
@@ -179,7 +191,7 @@ export class CabeceraPanelComponent implements OnInit {
 
   readonly secciones = computed<SeccionMenu[]>(() => menuVisible(this.contexto()));
   readonly cuenta = computed<EntradaMenu[]>(() => CUENTA_PANEL.filter((e) => visible(e, this.contexto())));
-  readonly accesoDual = computed(() => this.auth.tieneAccesoDual(this.roles()));
+  readonly accesoDual = computed(() => this.auth.tieneAccesoDual(this.roles(), this.capacidades()));
   readonly activa = computed(() => seccionActiva(this.url()));
   /** Pasar lista (boceto aprobado): en móvil la barra fija de guardar ocupa el sitio de la navegación inferior. */
   readonly sinBarraInferior = computed(() => ocultaBarraInferior(this.url()));
@@ -192,8 +204,16 @@ export class CabeceraPanelComponent implements OnInit {
   });
   readonly nombreVisible = computed(() => this.nombreSesion() || this.usuario() || 'Mi cuenta');
   readonly iniciales = computed(() => iniciales(this.nombreSesion() || this.usuario()));
-  readonly rol = computed(() => this.soloProfesor() ? 'Profesor'
-    : etiquetaRol(this.roles().includes('ROLE_ADMIN') ? 'ROLE_ADMIN' : 'ROLE_MANAGER'));
+  readonly rol = computed(() => {
+    const roles = this.roles();
+    if (this.soloProfesor()) {
+      return 'Profesor';
+    }
+    if (roles.includes('ROLE_ADMIN')) {
+      return etiquetaRol('ROLE_ADMIN');
+    }
+    return etiquetaRol(roles.includes('ROLE_MANAGER') ? 'ROLE_MANAGER' : 'ROLE_RESPONSABLE_SEDE');
+  });
 
   ngOnInit(): void {
     const raiz = this.raiz.nativeElement;
@@ -212,7 +232,7 @@ export class CabeceraPanelComponent implements OnInit {
       });
 
     this.auth.getRoles().pipe(
-      filter((roles) => roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')),
+      filter(veSolicitudes),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(() => this.contadorSolicitudes.refrescar());
     this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((evento) => {
@@ -221,7 +241,7 @@ export class CabeceraPanelComponent implements OnInit {
       }
       if (evento instanceof NavigationEnd) {
         this.url.set(evento.urlAfterRedirects || evento.url);
-        if (this.roles().includes('ROLE_ADMIN') || this.roles().includes('ROLE_MANAGER')) {
+        if (veSolicitudes(this.roles())) {
           this.contadorSolicitudes.refrescar();
         }
       }

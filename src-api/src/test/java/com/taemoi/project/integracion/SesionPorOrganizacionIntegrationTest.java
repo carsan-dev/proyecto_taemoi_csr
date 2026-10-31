@@ -538,25 +538,24 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(jsonPath("$.mensaje").value("No hay alumnos activos asociados a esta cuenta."));
 	}
 
-	// ------------------------------------------------------------------ roles sin acceso todavía (entrega 5b)
+	// ------------------------------------------------------------------ roles nuevos (entrega 5b, pieza 9-5)
 
 	@Test
-	void soloResponsableRecibeElMensajeDeRolSinAccesoYSuTokenNoVale() throws Exception {
-		// Decisión 180: el profesor solo ya entra (SesionSoloProfesorIntegrationTest); el responsable solo, no.
+	void soloResponsableEntraYSuTokenVale() throws Exception {
+		// Decisiones 180 y 370: profesor solo y responsable solo ya entran.
 		Usuario usuario = crearUsuario("solo-responsable-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.RESPONSABLE_SEDE);
 		dar(usuario, org2, RolMembresia.RESPONSABLE_SEDE);
 
 		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"email\":\"" + usuario.getEmail() + "\",\"contrasena\":\"" + CLAVE + "\"}"))
-				.andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.mensaje")
-						.value("Tu rol en esta escuela todavía no tiene acceso a la aplicación."));
+				.andExpect(status().isOk());
 
-		// Un token ya emitido deja de abrir sesión en la siguiente petición.
 		String emitido = jwtService.generateToken(usuario, 600_000, ORG1);
-		mvc.perform(get("/api/auth/roles").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
-		mvc.perform(get("/api/alumnos").cookie(jwt(emitido))).andExpect(status().isUnauthorized());
+		mvc.perform(get("/api/auth/roles").cookie(jwt(emitido)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE")));
+		mvc.perform(get("/api/alumnos").cookie(jwt(emitido))).andExpect(status().isOk());
 	}
 
 	@Test
@@ -577,16 +576,18 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void selectorDeEscuelaNoListaLaEscuelaDondeSoloEsResponsable() throws Exception {
+	void selectorDeEscuelaListaLaEscuelaDondeSoloEsResponsable() throws Exception {
 		Usuario usuario = crearUsuario("gestor-y-responsable-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.ADMINISTRADOR);
 		dar(usuario, org2, RolMembresia.RESPONSABLE_SEDE);
 
 		mvc.perform(get("/api/auth/organizaciones").cookie(jwt(login(usuario.getEmail()))))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$", hasSize(2)))
 				.andExpect(jsonPath("$[0].id").value(ORG1))
-				.andExpect(jsonPath("$[0].activa").value(true));
+				.andExpect(jsonPath("$[0].activa").value(true))
+				.andExpect(jsonPath("$[1].id").value(org2))
+				.andExpect(jsonPath("$[1].activa").value(false));
 	}
 
 	@Test

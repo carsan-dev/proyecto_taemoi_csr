@@ -105,13 +105,15 @@ class SesionSoloProfesorAuthorizationManagerTest {
 		assertTrue(llamadas.stream().allMatch(l -> l.startsWith("anonimo ")), llamadas.toString());
 	}
 
-	/** Decisión 184: responsable de sede + profesor es la misma sesión limitada; su parte de responsable no abre nada. */
+	/** Decisión 371 (sustituye a la 184): responsable de sede + profesor ya no es sesión limitada: decide la regla. */
 	@Test
-	void responsableYProfesorSeTrataIgualQueSoloProfesor() {
+	void responsableYProfesorNoSeLimita_decideLaReglaDeSiempre() {
 		Authentication sesion = sesion("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR");
 		for (String ruta : List.of("/api/alumnos", "/api/grupos/resumen", "/api/tesoreria/resumen", "/api/preinscripciones",
 				"/api/convocatorias", "/api/caja/sedes/1/resumen", "/api/tarifas-sede", "/api/informes/asistencia")) {
-			assertFalse(decide(sesion, "GET", ruta), ruta);
+			llamadas.clear();
+			assertTrue(decide(sesion, "GET", ruta), ruta);
+			assertEquals(List.of("sesion GET " + ruta), llamadas, "solo decide la regla de siempre");
 		}
 		assertTrue(decide(sesion, "GET", "/api/caja/profesor/cargos-pendientes"));
 		assertTrue(decide(sesion, "GET", "/api/auth/roles"));
@@ -131,6 +133,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 		for (Authentication sesion : List.of(sesion("ROLE_ADMIN"), sesion("ROLE_MANAGER"), sesion("ROLE_USER"),
 				sesion("ROLE_PROFESOR", "ROLE_USER"), sesion("ROLE_PROFESOR", "ROLE_MANAGER"),
 				sesion("ROLE_PROFESOR", "ROLE_ADMIN"), sesion("ROLE_RESPONSABLE_SEDE"),
+				sesion("ROLE_RESPONSABLE_SEDE", "ROLE_USER"), sesion("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"),
 				sesion(AutoridadPlataforma.ADMIN_PLATAFORMA), sesion())) {
 			llamadas.clear();
 			assertTrue(decide(sesion, "GET", "/api/alumnos"), sesion.getAuthorities().toString());
@@ -144,14 +147,15 @@ class SesionSoloProfesorAuthorizationManagerTest {
 	}
 
 	/**
-	 * Pieza 8b-3o (decisión 326): regla de URL de la marca y el logo de la escuela. Gestión y la sesión solo-profesor
-	 * (también responsable + profesor, decisión 184); la familia, también la que además es profesor, el responsable solo,
-	 * el superadmin sin membresía y el anónimo, no.
+	 * Pieza 8b-3o (decisión 326) y 9-5 (decisión 370): regla de URL de la marca y el logo de la escuela. Gestión, el
+	 * responsable de sede (solo, con profesor o con familia) y la sesión solo-profesor; la familia, también la que además
+	 * es profesor, el superadmin sin membresía y el anónimo, no.
 	 */
 	@Test
-	void gestionOSesionSoloProfesor() {
-		AuthorizationManager<Object> regla = SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor();
+	void panelConMarca() {
+		AuthorizationManager<Object> regla = SesionSoloProfesorAuthorizationManager.panelConMarca();
 		for (Authentication sesion : List.of(sesion("ROLE_ADMIN"), sesion("ROLE_MANAGER"), sesion("ROLE_PROFESOR"),
+				sesion("ROLE_RESPONSABLE_SEDE"), sesion("ROLE_RESPONSABLE_SEDE", "ROLE_USER"),
 				sesion("ROLE_RESPONSABLE_SEDE", "ROLE_PROFESOR"), sesion("ROLE_PROFESOR", "ROLE_ADMIN"),
 				sesion("ROLE_PROFESOR", AutoridadPlataforma.ADMIN_PLATAFORMA))) {
 			assertTrue(regla.authorize(() -> sesion, "peticion").isGranted(), sesion.getAuthorities().toString());
@@ -159,7 +163,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 		Authentication anonimo = new AnonymousAuthenticationToken("k", "anonymousUser",
 				AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
 		for (Authentication sesion : List.of(sesion("ROLE_USER"), sesion("ROLE_PROFESOR", "ROLE_USER"),
-				sesion("ROLE_RESPONSABLE_SEDE"), sesion(AutoridadPlataforma.ADMIN_PLATAFORMA), sesion(), anonimo,
+				sesion(AutoridadPlataforma.ADMIN_PLATAFORMA), sesion(), anonimo,
 				UsernamePasswordAuthenticationToken.unauthenticated("x", null))) {
 			assertFalse(regla.authorize(() -> sesion, "peticion").isGranted(), sesion.getAuthorities().toString());
 		}

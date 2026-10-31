@@ -265,8 +265,29 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		String preinscripciones = "integracion.ResponsableSedePreinscripcionesConvocatoriasIntegrationTest#";
 		String tesoreria = "integracion.ResponsableSedeTesoreriaIntegrationTest#";
 		String tarifasSede = "integracion.TarifaSedeApiIntegrationTest#";
+		String entrada = "integracion.ResponsableSedeEntradaIntegrationTest#";
+		String pantallas = "integracion.ResponsableSedePantallasIntegrationTest#";
 		Map<String, String> m = new TreeMap<>();
+		m.put("PUT /api/panel/mi-perfil", pantallas + "miPerfil_soloLaSuya");
 		for (String metodo : List.of("GET", "HEAD")) {
+			// Pieza 9-5 (decisión 370): lo imprescindible de su sesión. Solo devuelve datos de la cuenta y de la escuela
+			// activa (roles, quién es, nombre y logo), ninguno de una sede.
+			m.put(metodo + " /api/auth/roles", entrada + "responsableSolo_entraConContrasena_conSusSedesYSinFichaDeFamilia");
+			m.put(metodo + " /api/auth/user", entrada + "responsableSolo_vinculadoAUnAlumnoActivo_noRecibeFicha");
+			m.put(metodo + " /api/escuela/marca", entrada + "responsableSolo_entraConContrasena_conSusSedesYSinFichaDeFamilia");
+			m.put(metodo + " /api/escuela/logo", entrada + "responsableSolo_entraConContrasena_conSusSedesYSinFichaDeFamilia");
+			m.put(metodo + " /api/panel/mi-perfil", pantallas + "miPerfil_soloLaSuya");
+			// Catálogo de la escuela para el alta de alumno: ningún dato de sede.
+			m.put(metodo + " /api/grados", pantallas + "alumnos_soloLosDeSusSedes_conSuPendienteYElAltaConGrados");
+			m.put(metodo + " /api/grados/disponibles/{fechaNacimiento}",
+					pantallas + "alumnos_soloLosDeSusSedes_conSuPendienteYElAltaConGrados");
+			// Filtrados en el servicio: GestionPorSede.idsAlumnosEnAlcance y filtroTesoreria.
+			m.put(metodo + " /api/grupos/conteo-alumnos", pantallas + "grupos_conteoYAlumnosPorTipo_soloDeSusSedes");
+			m.put(metodo + " /api/grupos/tipo/{tipo}/alumnos", pantallas + "grupos_conteoYAlumnosPorTipo_soloDeSusSedes");
+			m.put(metodo + " /api/tesoreria/pendiente-vencido",
+					pantallas + "inicio_lasLecturasResponden_yElVencidoSoloLleva_elDineroDeSusSedes");
+			m.put(metodo + " /api/tesoreria/pendientes-por-alumno",
+					pantallas + "alumnos_soloLosDeSusSedes_conSuPendienteYElAltaConGrados");
 			// 6-4 (D6-31): tarifas por sede, solo las de sus sedes (filtro del servicio); escribir es de gestión.
 			m.put(metodo + " /api/tarifas-sede", tarifasSede + "responsable_leeSoloLasDeSusSedes");
 			// 6-3: tesorería de sus sedes (por la sede del cargo, D6-9/D6-12); catálogo común en lectura (D6-11);
@@ -658,7 +679,7 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		assertEquals(Decision.DENIEGA, alumnos.url().get(RolMatriz.PROFESOR));
 		EvaluadorAutorizacion.Resultado roles = evaluarClave("GET /api/auth/roles");
 		assertEquals(Decision.PERMITE, roles.combinada().get(RolMatriz.PROFESOR));
-		assertEquals(Decision.DENIEGA, roles.combinada().get(RolMatriz.RESPONSABLE_SEDE));
+		assertEquals(Decision.PERMITE, roles.combinada().get(RolMatriz.RESPONSABLE_SEDE));
 		assertEquals(Decision.PERMITE, evaluarClave("GET /api/eventos").combinada().get(RolMatriz.PROFESOR));
 	}
 

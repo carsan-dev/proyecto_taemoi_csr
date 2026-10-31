@@ -1668,15 +1668,20 @@ export class EndpointsService {
       .pipe(catchError(this.manejarError));
   }
 
+  /** `errorLocal`: el que llama dice el error (sin el aviso genérico del interceptor). */
   actualizarAlumnoConvocatoria(
     alumnoConvocatoriaId: number,
-    datos: any
+    datos: any,
+    errorLocal = false
   ): Observable<void> {
     return this.http
       .put<void>(
         `${this.urlBase}/convocatorias/alumno/${alumnoConvocatoriaId}`,
         datos,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          ...(errorLocal ? { context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) } : {}),
+        }
       )
       .pipe(catchError(this.manejarError));
   }

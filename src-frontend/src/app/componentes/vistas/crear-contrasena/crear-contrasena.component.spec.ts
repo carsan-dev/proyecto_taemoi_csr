@@ -25,10 +25,10 @@ describe('CrearContrasenaComponent', () => {
     auth = jasmine.createSpyObj<AuthenticationService>('AuthenticationService', [
       'datosInvitacion',
       'aceptarInvitacion',
-      'resolverRutaInicioPorRoles',
+      'resolverRutaInicio',
     ]);
     auth.datosInvitacion.and.returnValue(respuestaDatos as never);
-    auth.resolverRutaInicioPorRoles.and.returnValue('/mis-grupos');
+    auth.resolverRutaInicio.and.returnValue(of('/mis-grupos'));
     location = jasmine.createSpyObj<Location>('Location', ['replaceState']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
     router.navigate.and.resolveTo(true);
@@ -155,7 +155,7 @@ describe('CrearContrasenaComponent', () => {
     await rellenar();
     enviar();
     expect(auth.aceptarInvitacion).toHaveBeenCalledWith('tok-123', 'Segura123', 'lucia@ejemplo.test');
-    expect(auth.resolverRutaInicioPorRoles).toHaveBeenCalledWith(['ROLE_PROFESOR']);
+    expect(auth.resolverRutaInicio).toHaveBeenCalledWith(['ROLE_PROFESOR']);
     expect(router.navigate).toHaveBeenCalledWith(['/mis-grupos']);
   });
 

@@ -375,10 +375,11 @@ export class EscaparatePrincipalComponent
     if (urlActual !== '/' && urlActual !== '') {
       return;
     }
-    const rutaDestino = this.authService.resolverRutaInicioPorRoles(roles);
-    if (rutaDestino !== '/') {
-      redireccionHechaEnEstaCarga = true;
-      this.router.navigate([rutaDestino]);
-    }
+    this.authService.resolverRutaInicio(roles).subscribe((rutaDestino) => {
+      if (rutaDestino !== '/') {
+        redireccionHechaEnEstaCarga = true;
+        this.router.navigate([rutaDestino]);
+      }
+    });
   }
 }

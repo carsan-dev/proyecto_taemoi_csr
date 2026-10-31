@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { Subject, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, takeUntil } from 'rxjs/operators';
 
@@ -97,6 +98,11 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   readonly catalogo = inject(CatalogoService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
+  /** El responsable de sede inscribe y anota, pero no crea, borra ni aplica una convocatoria: es de toda la escuela. */
+  get panelSede(): boolean {
+    return this.permisos.tiene('PANEL_SEDE');
+  }
+  private readonly permisos = inject(PermisosSesionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly temaActual = inject(AcentoEscuelaActual);
@@ -130,6 +136,8 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   alumnosCargadosCompletamente = false;
   /** Inscripciones con una escritura en vuelo: sin doble envío. */
   readonly enProceso = new Set<number>();
+  /** El 403 de la API al cambiar el pago o la cuantía (cargo de otra sede), junto a la fila del alumno. */
+  readonly errorFila = new Map<number, string>();
   /** Inscripciones cuya foto no cargó: su avatar vuelve a las iniciales. */
   private readonly fotosFallidas = new Set<number>();
   /** El bloque abierto antes de salir (p. ej. a la ficha de un alumno): se vuelve a abrir al leer las listas. */
@@ -542,8 +550,9 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   /** `actualizarAlumnoConvocatoria` de hoy: aviso y relectura; un error dice el del servidor y vuelve a lo guardado. */
   private guardarAlumno(a: AlumnoConvocatoria, cuerpo: { cuantiaExamen: number | null; pagado: boolean }): void {
     this.enProceso.add(a.id);
+    this.errorFila.delete(a.id);
     this.endpoints
-      .actualizarAlumnoConvocatoria(a.id, cuerpo)
+      .actualizarAlumnoConvocatoria(a.id, cuerpo, true)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -556,6 +565,12 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
         },
         error: (e) => {
           this.enProceso.delete(a.id);
+          if (e?.status === 403) {
+            // Cargo de otra sede: lo dice la fila y no cambia nada (ni aviso ni relectura); el pago queda como estaba.
+            this.errorFila.set(a.id, mensajeDeError(e) ?? 'No tienes permiso para cambiar este pago.');
+            this.cdr.markForCheck();
+            return;
+          }
           this.avisos.error(mensajeDeError(e) ?? 'No se pudo actualizar el alumno.');
           this.leerBloque();
         },

@@ -33,13 +33,16 @@
       </div>
       @if (duracion) { <p class="turno__ayuda" aria-live="polite">Duración: {{ duracion }}</p> }
       @if (form.hasError('horasInvalidas')) { <p id="turno-horas-error" class="turno__error" role="alert">La hora de inicio debe ser anterior a la hora de fin</p> }
-      <label class="turno__grupo" for="turno-grupo">Grupo <span class="turno__metadato">opcional</span></label>
-      <select id="turno-grupo" class="turno__campo" formControlName="grupoId" aria-describedby="turno-grupo-ayuda">
-        <option value="">Sin grupo</option>
+      <label class="turno__grupo" for="turno-grupo">Grupo <span class="turno__metadato">{{ exigeGrupo ? 'obligatorio' : 'opcional' }}</span></label>
+      <select id="turno-grupo" class="turno__campo" formControlName="grupoId"
+        [attr.aria-invalid]="errorCampo('grupoId') ? 'true' : null"
+        [attr.aria-describedby]="'turno-grupo-ayuda' + (errorCampo('grupoId') ? ' turno-grupo-error' : '')">
+        <option value="">{{ exigeGrupo ? 'Selecciona un grupo' : 'Sin grupo' }}</option>
         @if (grupoActualAusente) { <option [value]="turno!.grupoId">{{ turno!.grupoNombre }}</option> }
         @for (grupo of grupos; track grupo.id) { <option [value]="grupo.id">{{ grupo.nombre }}</option> }
       </select>
-      <p id="turno-grupo-ayuda" class="turno__ayuda">Puedes asignar este turno a un grupo o dejarlo sin grupo. «Sin grupo» es la primera opción.</p>
+      <p id="turno-grupo-ayuda" class="turno__ayuda">{{ exigeGrupo ? 'El turno pertenece a la sede de su grupo.' : 'Puedes asignar este turno a un grupo o dejarlo sin grupo. «Sin grupo» es la primera opción.' }}</p>
+      @if (errorCampo('grupoId')) { <p id="turno-grupo-error" class="turno__error" role="alert">{{ errorCampo('grupoId') }}</p> }
       @if (!editando && form.controls.grupoId.value) {
       <label class="turno__grupo" for="turno-tipo">Tipo de grupo <span class="turno__metadato">obligatorio</span></label>
       <select id="turno-tipo" class="turno__campo" formControlName="tipoGrupo" required

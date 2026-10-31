@@ -205,10 +205,12 @@ class PendientesPorAlumnoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void pendientesPorAlumno_responsableSede_403() throws Exception {
-		String ruta = ids(e.aA);
-		assertEquals(403, estado(get(ruta), tokenResponsable), "el responsable de sede, hasta la E9");
-		assertEquals(403, estado(head(ruta), tokenResponsable));
+	void pendientesPorAlumno_responsableSede_soloCargosDeSusSedes() throws Exception {
+		String ruta = ids(e.aA, e.aB, e.aGrupoA);
+		JsonNode deA = leer(ruta, tokenResponsable);
+		assertEquals(1, deA.size(), "pieza 9-5: aB y aGrupoA tienen cargos de la sede B");
+		assertEquals(e.aA, deA.get(0).get("alumnoId").asLong());
+		assertEquals(200, estado(head(ruta), tokenResponsable));
 		assertEquals(403, estado(get(ruta), tokenFamilia));
 		assertEquals(200, estado(get(ruta), tokenGestor));
 	}

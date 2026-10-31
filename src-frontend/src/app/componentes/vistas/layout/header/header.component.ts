@@ -28,6 +28,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   isUser: boolean = false;
   /** Sesión solo de profesor (sin gestión ni familia): en la web pública ve el menú público con «Volver al panel». */
   esProfesorSolo: boolean = false;
+  /** Capacidad PANEL_SEDE: responsable de sede sin gestión, su sitio es el panel (decisiones 370 y 378). */
+  esPanelSede: boolean = false;
   /** La sesión tiene ROLE_PROFESOR: enlaza «Mi caja» desde el menú de familia. */
   tieneRolProfesor: boolean = false;
   /** «Mis grupos» (E8-5, decisión 217): la sesión tiene la capacidad MIS_GRUPOS de `GET /api/auth/permisos`. */
@@ -75,6 +77,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
           this.actualizarPermisos([]);
           this.tieneAccesoDual = false;
           this.esProfesorSolo = false;
+          this.esPanelSede = false;
           this.solicitudesContador.reiniciar();
           this.isAuthChecked = true;
         }
@@ -220,33 +223,41 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
       this.isAdmin = this.authService.tieneAccesoAdmin(roles);
       this.isUser = this.authService.tieneAccesoUser(roles);
       this.tieneRolProfesor = roles.includes('ROLE_PROFESOR');
-      this.actualizarPermisos(roles);
       this.tieneAccesoDual = this.authService.tieneAccesoDual(roles);
       this.esProfesorSolo = esSoloProfesor(roles);
-      this.isAuthChecked = true;
+      this.actualizarPermisos(roles);
+      // El responsable espera a sus capacidades: sin ellas no se sabe qué cabecera le toca.
+      this.isAuthChecked ||= !roles.includes('ROLE_RESPONSABLE_SEDE');
     });
   }
 
   /**
    * Pide los permisos una vez por sesión con ROLE_PROFESOR o gestión (`pidePermisos`). «Mis grupos» sigue igual que
-   * antes: solo con ROLE_PROFESOR y la capacidad MIS_GRUPOS, así que pedirlos con gestión no cambia ningún menú. Si
-   * fallan, sin enlace.
+   * antes: solo con ROLE_PROFESOR y la capacidad MIS_GRUPOS, así que pedirlos con gestión no cambia ningún menú. Las
+   * capacidades del responsable (PANEL_SEDE y ELEGIR_VISTA) llevan su «Volver al panel» y «Cambiar a admin». Si fallan,
+   * sin enlace.
    */
   private actualizarPermisos(roles: readonly string[]): void {
     this.permisosSuscripcion?.unsubscribe();
     this.permisosSuscripcion = undefined;
     this.veMisGrupos = false;
+    this.esPanelSede = false;
     if (!pidePermisos(roles)) {
       return;
     }
     const profesor = roles.includes('ROLE_PROFESOR');
     this.permisosSuscripcion = this.permisos
       .capacidades()
-      .subscribe((capacidades) => (this.veMisGrupos = profesor && capacidades.includes('MIS_GRUPOS')));
+      .subscribe((capacidades) => {
+        this.veMisGrupos = profesor && capacidades.includes('MIS_GRUPOS');
+        this.esPanelSede = capacidades.includes('PANEL_SEDE');
+        this.tieneAccesoDual = this.authService.tieneAccesoDual(roles as string[], capacidades);
+        this.isAuthChecked = true;
+      });
   }
 
   /**
-   * Sesión del panel (gestión o solo profesor) fuera de las rutas de familia (la web pública y, si el skeleton cae en
+   * Sesión del panel (gestión, responsable de sede o solo profesor) fuera de las rutas de familia (la web pública y, si el skeleton cae en
    * «lo de hoy», también las del panel): ve el menú público de siempre, con
    * «Volver al panel» en lugar de «Entrar». Las cuentas con gestión y familia conservan su cabecera en las rutas de
    * familia (`mostrarHeaderUser`).
@@ -255,7 +266,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isAuthChecked || !this.usuarioLogueado || this.isUserRoute || this.mostrarHeaderUser) {
       return false;
     }
-    return this.isAdmin || this.esProfesorSolo;
+    return this.isAdmin || this.esPanelSede || this.esProfesorSolo;
   }
 
   /** El menú público lo ven los visitantes y las sesiones del panel que miran la web. */
@@ -266,16 +277,16 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     return !this.usuarioLogueado || this.sesionDelPanelEnWeb;
   }
 
-  /** Destino de «Volver al panel»: gestión siempre al panel de gestión (aunque prefiera la vista de familia); profesor, a sus grupos. */
+  /** Destino de «Volver al panel»: gestión y responsable siempre al panel (aunque prefieran la vista de familia); profesor, a sus grupos. */
   get destinoPanel(): string {
-    return this.isAdmin ? '/adminpage' : '/mis-grupos';
+    return this.isAdmin || this.esPanelSede ? '/adminpage' : '/mis-grupos';
   }
 
   get mostrarHeaderUser(): boolean {
     if (!this.isAuthChecked || !this.usuarioLogueado || !this.isUser) {
       return false;
     }
-    if (!this.isAdmin) {
+    if (!this.isAdmin && !this.esPanelSede) {
       return true;
     }
     return this.isUserRoute;

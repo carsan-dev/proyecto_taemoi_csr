@@ -50,6 +50,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos/resumen", "/api/grupos/{id}",
+			// Pieza 9-5: alumnos por tipo de la pantalla Grupos, solo los de su alcance (en el servicio).
+			"/api/grupos/tipo/{tipo}/alumnos",
 			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
 			"/api/grupos/{grupoId}/clases", "/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
 			"/api/grupos/{grupoId}/asistencia/resumen", "/api/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
@@ -64,6 +66,9 @@ public class SecurityConfiguration {
 			// catálogo de productos en lectura e informes de deudas y del listado mensual.
 			"/api/tesoreria/resumen", "/api/tesoreria/movimientos", "/api/tesoreria/anios-disponibles",
 			"/api/tesoreria/export/csv", "/api/tesoreria/export/pdf",
+			// Pieza 9-5: lo vencido de sus sedes para Inicio y Alumnos (filtroTesoreria) y el recibo de sus cargos (@acceso).
+			"/api/tesoreria/pendiente-vencido", "/api/tesoreria/pendientes-por-alumno",
+			"/api/productos-alumno/{productoAlumnoId}/recibo",
 			"/api/productos-alumno/alumno/{alumnoId}",
 			"/api/productos", "/api/productos/todos", "/api/productos/{id}",
 			"/api/informes/deudas", "/api/informes/deudas/csv", "/api/informes/listado-mensualidad-mensual" };
@@ -218,7 +223,7 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// API endpoints
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-						// Pieza E8-2 (D8-1, D8-2): sedes de la escuela, solo P y G (R DENIEGA hasta la E9). Antes de
+						// Pieza E8-2 (D8-1, D8-2): sedes de la escuela, solo P y G (decisión 370: R no ve Sedes). Antes de
 						// toda regla del responsable de sede para que ningún patrón suyo las abra; fuera de la lista
 						// blanca de la sesión solo-profesor.
 						.requestMatchers("/api/sedes", "/api/sedes/**")
@@ -228,16 +233,20 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/miembros", "/api/miembros/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-I (fase3-e8b-plan.md §3): la regla nació para el interruptor del diseño nuevo, retirado
-						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil). Solo P y G.
-						// Misma posición que /api/miembros; fuera de la lista blanca solo-profesor.
+						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil): P y G y,
+						// pieza 9-5, R (solo su propia cuenta, sin ids). Misma posición que /api/miembros; fuera de la lista
+						// blanca solo-profesor.
+						.requestMatchers("/api/panel/mi-perfil")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
-						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G
-						// (R DENIEGA hasta la E9). Misma posición y motivo que /api/panel. Pieza 8b-3o (decisión 326): leer la marca
-						// y el logo, también la sesión solo-profesor (en su lista blanca, solo GET; HEAD cuenta como GET);
-						// la familia, también la que además es profesor, no. El resto de /api/escuela, fuera de su lista blanca.
+						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G.
+						// Misma posición y motivo que /api/panel. Pieza 8b-3o (decisión 326): leer la marca y el logo, también la
+						// sesión solo-profesor (en su lista blanca, solo GET; HEAD cuenta como GET) y, pieza 9-5 (decisión 370), el
+						// responsable de sede; la familia, también la que además es profesor, no. El resto de /api/escuela, gestión.
 						.requestMatchers(HttpMethod.GET, "/api/escuela/marca", "/api/escuela/logo")
-						.access(SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor())
+						.access(SesionSoloProfesorAuthorizationManager.panelConMarca())
 						.requestMatchers("/api/escuela", "/api/escuela/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Catálogo: el público (disciplinas activas) para cualquiera; el completo, con sesión de la
@@ -355,7 +364,7 @@ public class SecurityConfiguration {
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						.requestMatchers(HttpMethod.DELETE, "/api/alumnos/{alumnoId}/turnos/{turnoId}")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
-						// Pieza E7-4 (decisión 208, D7-19): profesores de un grupo, solo P y G (R DENIEGA hasta la E9).
+						// Pieza E7-4 (decisión 208, D7-19): profesores de un grupo, solo P y G (decisión 372: R no asigna).
 						// Antes de las reglas del responsable de sede para que ningún patrón suyo las abra.
 						.requestMatchers("/api/grupos/{grupoId}/profesores", "/api/grupos/{grupoId}/profesores/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
@@ -365,8 +374,10 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
+						// Pieza 9-5: el responsable cuenta solo los alumnos de su alcance (en el servicio).
 						.requestMatchers(HttpMethod.GET, "/api/grupos/conteo-alumnos")
-						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						// Entrega 6-1: grupos abiertos al responsable de sede.
 						.requestMatchers(HttpMethod.GET, grupos(RESPONSABLE_SEDE_GET))
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),

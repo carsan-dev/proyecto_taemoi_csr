@@ -117,7 +117,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PermisosSesionService, useValue: { obtener: () => ({ subscribe: () => undefined }), reiniciar } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => ({ subscribe: () => undefined }), reiniciar } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

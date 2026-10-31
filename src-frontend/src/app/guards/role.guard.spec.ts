@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CanActivateFn } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { BehaviorSubject, Observable, firstValueFrom, isObservable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, isObservable, of } from 'rxjs';
 
 import { roleGuard } from './role.guard';
 import { AuthenticationService } from '../servicios/authentication/authentication.service';
@@ -13,6 +13,7 @@ describe('roleGuard', () => {
   const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
   const authServiceMock = {
     resolverRolesDisponibles: jasmine.createSpy('resolverRolesDisponibles'),
+    capacidadesDeResponsable: jasmine.createSpy('capacidadesDeResponsable'),
   } as unknown as AuthenticationService;
 
   const executeGuard: CanActivateFn = (...guardParameters) =>
@@ -29,6 +30,7 @@ describe('roleGuard', () => {
   beforeEach(() => {
     routerSpy.navigate.calls.reset();
     (authServiceMock.resolverRolesDisponibles as jasmine.Spy).calls.reset();
+    (authServiceMock.capacidadesDeResponsable as jasmine.Spy).and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       providers: [
@@ -77,9 +79,63 @@ describe('roleGuard', () => {
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 
+  describe('responsable de sede (decisiones 370 y 371)', () => {
+    const PANEL_SEDE = { data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE'] } } as any;
+    const GESTION = { data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER'] } } as any;
+    const FAMILIA = { data: { requiredRoles: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] } } as any;
+
+    function sesion(roles: string[], capacidades: string[]): void {
+      (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(of(roles));
+      (authServiceMock.capacidadesDeResponsable as jasmine.Spy).and.returnValue(of(capacidades));
+    }
+
+    async function entrar(ruta: unknown): Promise<unknown> {
+      return resolveGuardResult(executeGuard(ruta as any, { url: '/x' } as any));
+    }
+
+    for (const roles of [
+      ['ROLE_RESPONSABLE_SEDE'],
+      ['ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR'],
+      ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'],
+    ]) {
+      it(`${roles.join(' + ')} entra en las pantallas de la 370`, async () => {
+        sesion(roles, ['PANEL_SEDE']);
+        expect(await entrar(PANEL_SEDE)).toBeTrue();
+      });
+
+      it(`${roles.join(' + ')} va a su panel desde una pantalla de gestión`, async () => {
+        sesion(roles, ['PANEL_SEDE']);
+        expect(await entrar(GESTION)).toBeFalse();
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/adminpage']);
+      });
+    }
+
+    it('R solo no entra en el portal de familia: va a su panel (entrada con Google)', async () => {
+      sesion(['ROLE_RESPONSABLE_SEDE'], ['PANEL_SEDE']);
+      expect(await entrar(FAMILIA)).toBeFalse();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/adminpage']);
+    });
+
+    it('R + F entra en el portal de familia (371)', async () => {
+      sesion(['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA']);
+      expect(await entrar(FAMILIA)).toBeTrue();
+    });
+
+    it('falla cerrado: sin PANEL_SEDE un responsable no entra y va a la raíz', async () => {
+      sesion(['ROLE_RESPONSABLE_SEDE'], []);
+      expect(await entrar(PANEL_SEDE)).toBeFalse();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    });
+
+    it('R + G entra por su gestión, sin PANEL_SEDE', async () => {
+      sesion(['ROLE_RESPONSABLE_SEDE', 'ROLE_ADMIN'], []);
+      expect(await entrar(GESTION)).toBeTrue();
+    });
+  });
+
   it('manda a «Mis grupos» a una sesión solo profesor que llega a /userpage (entrada con Google)', async () => {
     (authServiceMock.resolverRolesDisponibles as jasmine.Spy).and.returnValue(
-      new BehaviorSubject(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']).asObservable()
+      new BehaviorSubject(['ROLE_PROFESOR']).asObservable()
     );
 
     const result = await resolveGuardResult(

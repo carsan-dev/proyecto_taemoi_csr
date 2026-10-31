@@ -7,7 +7,7 @@ import java.util.List;
  * autorización real sigue en el servidor; esto solo dice qué enseñar.
  *
  * @param roles             los {@code RolMembresia} de la sesión en la escuela activa, por el orden del enum; en la
- *                          sesión solo-profesor (también R+Pr), solo {@code PROFESOR}; en la solo-plataforma, ninguno.
+ *                          solo-plataforma, ninguno.
  * @param esAdminPlataforma si la sesión lleva {@code ROLE_ADMIN_PLATAFORMA}.
  * @param sedes             sedes visibles: con gestión, todas las de la escuela (también inactivas); el responsable,
  *                          las suyas; el resto, ninguna. Por id.
@@ -46,9 +46,19 @@ public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, L
 		SEDES,
 		/** Asignar profesores a grupos: propietario y gestor. */
 		ASIGNAR_PROFESORES,
-		/** «Mis grupos»: la sesión solo-profesor siempre; con PROFESOR fuera de ella, solo con grupos (217). */
+		/**
+		 * «Mis grupos»: la sesión solo-profesor y responsable + profesor sin gestión (371), siempre; con PROFESOR fuera
+		 * de esas, solo con grupos (217).
+		 */
 		MIS_GRUPOS,
 		/** «Mi caja»: cualquier sesión con {@code ROLE_PROFESOR}. */
-		MI_CAJA
+		MI_CAJA,
+		/**
+		 * Panel limitado a sus sedes (decisión 370, las de {@code sedes}): {@code ROLE_RESPONSABLE_SEDE} sin gestión,
+		 * solo o con PROFESOR o FAMILIA. Con gestión no sale: esa sesión es de gestión, con alcance total.
+		 */
+		PANEL_SEDE,
+		/** Elige entre su panel de sede y la vista de familia (decisión 371): responsable + familia sin gestión. */
+		ELEGIR_VISTA
 	}
 }

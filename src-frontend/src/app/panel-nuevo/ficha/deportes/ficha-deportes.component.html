@@ -2,13 +2,13 @@
   <header class="deportes__cabecera">
     <h2 id="deportes-titulo" class="deportes__titulo">Deportes</h2>
     <div class="deportes__acciones">
-      @if (ficha.deportesDisponibles.length > 0) {
+      @if (ficha.deportesDisponibles.length > 0 && !ficha.fichaDeOtraSede) {
       <button type="button" class="deportes__boton-secundario" (click)="ficha.abrirModalAgregarDeporte()">
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         <span>Agregar deporte</span>
       </button>
       }
-      @if (ficha.deportesDelAlumno.length > 0) {
+      @if (ficha.deportesDelAlumno.length > 0 && !ficha.fichaDeOtraSede) {
       @if (ficha.isAlumnoActivo()) {
       <button type="button" class="deportes__boton-texto deportes__boton-texto--peligro" (click)="ficha.eliminarODarDeBajaAlumno()">
         <i class="bi bi-person-dash" aria-hidden="true"></i>
@@ -44,6 +44,7 @@
         <span class="deportes__marca deportes__marca--principal">Principal</span>
         }
       </h3>
+      @if (!ficha.fichaDeOtraSede) {
       <div class="deportes__bloque-acciones">
         @if (d.activo !== false && !ficha.isDeportePrincipal(d.deporte)) {
         <button type="button" class="deportes__boton-texto" (click)="ficha.marcarDeportePrincipal(d.deporte)">
@@ -70,6 +71,7 @@
         </button>
         }
       </div>
+      }
     </header>
 
     <div class="deportes__cajas">
@@ -86,7 +88,7 @@
         </p>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaGrado-' + d.deporte">Desde</label>
-          <input type="date" class="deportes__control" [id]="'fechaGrado-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaGrado-' + d.deporte"
             [value]="ficha.getDisplayedFechaGrado(d.deporte)" (change)="ficha.onFechaGradoChange(d.deporte, $event)" />
           @if (tiempoConGrado(d); as t) {
           <span class="deportes__nota" data-cifras>{{ t }}</span>
@@ -99,15 +101,17 @@
         </div>
         }
         <div class="deportes__interruptor">
-          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'aptoExamen-' + d.deporte"
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [disabled]="ficha.fichaDeOtraSede" [id]="'aptoExamen-' + d.deporte"
             [checked]="d.aptoParaExamen" (change)="ficha.actualizarAptoParaExamen(d.deporte, $event)" />
           <label [for]="'aptoExamen-' + d.deporte">¿Apto para examen?</label>
         </div>
         <div class="deportes__botones-grado">
+          @if (!ficha.fichaDeOtraSede) {
           <button type="button" class="deportes__boton-secundario" (click)="ficha.abrirModalActualizarGrado(d.deporte)">
             <i class="bi bi-arrow-up-circle" aria-hidden="true"></i>
             <span>Actualizar grado</span>
           </button>
+          }
           @if (d.aptoParaExamen) {
           @if (ficha.getProximaConvocatoriaPorDeporte(d.deporte); as convocatoria) {
           <p class="deportes__convocatoria" data-cifras>
@@ -120,17 +124,19 @@
           } @else {
           <p class="deportes__convocatoria deportes__convocatoria--sin">Sin convocatoria próxima</p>
           }
+          @if (!ficha.fichaDeOtraSede) {
           <button type="button" class="deportes__boton-texto" (click)="ficha.abrirModalConvocatoriasPorDeporte(d.deporte)">
             <i class="bi bi-calendar-plus" aria-hidden="true"></i>
             <span>Agregar a convocatoria</span>
           </button>
-          @if (ficha.ofreceRecompensaGrado(d.deporte)) {
+          }
+          @if (ficha.ofreceRecompensaGrado(d.deporte) && !ficha.fichaDeOtraSede) {
           <button type="button" class="deportes__boton-texto" (click)="ficha.pasarGradoPorRecompensa(d.deporte)">
             <i class="bi bi-award" aria-hidden="true"></i>
             <span>Pasar por recompensa</span>
           </button>
           }
-          @if (ficha.ofreceDerechoExamen(d.deporte)) {
+          @if (ficha.ofreceDerechoExamen(d.deporte) && !ficha.fichaDeOtraSede) {
           <button type="button" class="deportes__boton-texto" (click)="ficha.pasarGradoConDerechoExamen(d.deporte)">
             <i class="bi bi-journal-check" aria-hidden="true"></i>
             <span>Añadir derecho de examen</span>
@@ -146,7 +152,7 @@
         <h4 class="deportes__caja-titulo" [id]="'caja-tarifa-' + d.deporte">Tarifa</h4>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'tipoTarifa-' + d.deporte">Tipo</label>
-          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [id]="'tipoTarifa-' + d.deporte" [ngModel]="ficha.getDisplayedTipoTarifa(d.deporte)"
+          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'tipoTarifa-' + d.deporte" [ngModel]="ficha.getDisplayedTipoTarifa(d.deporte)"
             (ngModelChange)="ficha.onTipoTarifaModelChange(d.deporte, $event)">
             <option value="">Seleccionar tarifa</option>
             @for (tarifa of ficha.tarifasParaDeporte(d.deporte); track tarifa.codigo) {
@@ -156,13 +162,13 @@
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'cuantiaTarifa-' + d.deporte">Cuantía (€)</label>
-          <input type="number" step="0.01" inputmode="decimal" class="deportes__control" [id]="'cuantiaTarifa-' + d.deporte"
+          <input type="number" step="0.01" inputmode="decimal" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'cuantiaTarifa-' + d.deporte"
             [ngModel]="ficha.getDisplayedCuantiaTarifa(d.deporte)" (ngModelChange)="ficha.onCuantiaTarifaModelChange(d.deporte, $event)" />
         </div>
         @if (ficha.requiereRolFamiliar(d.deporte)) {
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'rolFamiliar-' + d.deporte">Rol familiar</label>
-          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [id]="'rolFamiliar-' + d.deporte" [ngModel]="ficha.getDisplayedRolFamiliar(d.deporte)"
+          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'rolFamiliar-' + d.deporte" [ngModel]="ficha.getDisplayedRolFamiliar(d.deporte)"
             (ngModelChange)="ficha.onRolFamiliarModelChange(d.deporte, $event)">
             <option value="NINGUNO">Ninguno</option>
             <option value="PADRE">Padre</option>
@@ -175,7 +181,7 @@
         @if (ficha.requiereGrupoFamiliar(d.deporte)) {
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'grupoFamiliar-' + d.deporte">Grupo familiar</label>
-          <input type="text" class="deportes__control" [id]="'grupoFamiliar-' + d.deporte" placeholder="Ej.: Familia García"
+          <input type="text" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'grupoFamiliar-' + d.deporte" placeholder="Ej.: Familia García"
             [ngModel]="ficha.getDisplayedGrupoFamiliar(d.deporte)" (ngModelChange)="ficha.onGrupoFamiliarModelChange(d.deporte, $event)" />
         </div>
         }
@@ -192,12 +198,12 @@
         <h4 class="deportes__caja-titulo" [id]="'caja-alta-' + d.deporte">Alta y antigüedad</h4>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaAlta-' + d.deporte">Alta</label>
-          <input type="date" class="deportes__control" [id]="'fechaAlta-' + d.deporte" [value]="ficha.getDisplayedFechaAlta(d.deporte)"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaAlta-' + d.deporte" [value]="ficha.getDisplayedFechaAlta(d.deporte)"
             (change)="ficha.onFechaAltaChange(d.deporte, $event)" />
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaAltaInicial-' + d.deporte">Alta inicial</label>
-          <input type="date" class="deportes__control" [id]="'fechaAltaInicial-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaAltaInicial-' + d.deporte"
             [value]="ficha.getDisplayedFechaAltaInicial(d.deporte)" (change)="ficha.onFechaAltaInicialChange(d.deporte, $event)" />
           <span class="deportes__nota">Cuenta para la antigüedad</span>
         </div>
@@ -215,7 +221,7 @@
         </dl>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaBajaDeporte-' + d.deporte">Baja</label>
-          <input type="date" class="deportes__control" [id]="'fechaBajaDeporte-' + d.deporte" [value]="ficha.getDisplayedFechaBaja(d.deporte)"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaBajaDeporte-' + d.deporte" [value]="ficha.getDisplayedFechaBaja(d.deporte)"
             (change)="ficha.onFechaBajaChange(d.deporte, $event)" />
           <span class="deportes__nota">Vacía si no hay baja</span>
         </div>
@@ -232,19 +238,19 @@
       <section class="deportes__caja" data-caja="licencia" [attr.aria-labelledby]="'caja-licencia-' + d.deporte">
         <h4 class="deportes__caja-titulo" [id]="'caja-licencia-' + d.deporte">Licencia federativa</h4>
         <div class="deportes__interruptor">
-          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'tieneLicencia-' + d.deporte"
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [disabled]="ficha.fichaDeOtraSede" [id]="'tieneLicencia-' + d.deporte"
             [checked]="ficha.getDisplayedTieneLicencia(d.deporte)" (change)="ficha.onTieneLicenciaChange(d.deporte, $event)" />
           <label [for]="'tieneLicencia-' + d.deporte">¿Tiene licencia?</label>
         </div>
         @if (ficha.getDisplayedTieneLicencia(d.deporte)) {
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'numeroLicencia-' + d.deporte">Número</label>
-          <input type="number" inputmode="numeric" class="deportes__control" [id]="'numeroLicencia-' + d.deporte"
+          <input type="number" inputmode="numeric" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'numeroLicencia-' + d.deporte"
             [value]="ficha.getDisplayedNumeroLicencia(d.deporte) ?? ''" (input)="ficha.onNumeroLicenciaChange(d.deporte, $event)" />
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaLicencia-' + d.deporte">Fecha</label>
-          <input type="date" class="deportes__control" [id]="'fechaLicencia-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaLicencia-' + d.deporte"
             [value]="ficha.getDisplayedFechaLicencia(d.deporte)" (change)="ficha.onFechaLicenciaChange(d.deporte, $event)" />
         </div>
         }
@@ -263,7 +269,7 @@
         <h4 class="deportes__caja-titulo" [id]="'caja-competidor-' + d.deporte">Competidor</h4>
         @if (ficha.pendingLicenciaChanges.get(d.deporte)?.tieneLicencia ?? d.tieneLicencia) {
         <div class="deportes__interruptor">
-          <input type="checkbox" role="switch" class="deportes__interruptor-control" [id]="'competidor-' + d.deporte"
+          <input type="checkbox" role="switch" class="deportes__interruptor-control" [disabled]="ficha.fichaDeOtraSede" [id]="'competidor-' + d.deporte"
             [checked]="ficha.pendingCompetidorChanges.get(d.deporte)?.competidor ?? d.competidor"
             (change)="ficha.onCompetidorChange(d.deporte, $event)" />
           <label [for]="'competidor-' + d.deporte">¿Es competidor?</label>
@@ -271,13 +277,13 @@
         @if (ficha.pendingCompetidorChanges.get(d.deporte)?.competidor ?? d.competidor) {
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaAltaCompeticion-' + d.deporte">Alta en competición</label>
-          <input type="date" class="deportes__control" [id]="'fechaAltaCompeticion-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaAltaCompeticion-' + d.deporte"
             [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaAltaCompeticion ?? (d.fechaAltaCompeticion ? (d.fechaAltaCompeticion | date: 'yyyy-MM-dd') : '')"
             (change)="ficha.onFechaAltaCompeticionChange(d.deporte, $event)" />
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaAltaCompetidorInicial-' + d.deporte">Alta inicial como competidor</label>
-          <input type="date" class="deportes__control" [id]="'fechaAltaCompetidorInicial-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaAltaCompetidorInicial-' + d.deporte"
             [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaAltaCompetidorInicial ?? (d.fechaAltaCompetidorInicial ? (d.fechaAltaCompetidorInicial | date: 'yyyy-MM-dd') : '')"
             (change)="ficha.onFechaAltaCompetidorInicialChange(d.deporte, $event)" />
         </div>
@@ -291,7 +297,7 @@
         }
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'categoria-' + d.deporte">Categoría</label>
-          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [id]="'categoria-' + d.deporte" [ngModel]="ficha.getCategoriaValue(d.deporte)"
+          <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'categoria-' + d.deporte" [ngModel]="ficha.getCategoriaValue(d.deporte)"
             (ngModelChange)="ficha.onCategoriaModelChange(d.deporte, $event)">
             <option value="">Seleccionar categoría</option>
             @for (cat of ficha.categorias; track cat) {
@@ -301,12 +307,12 @@
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'peso-' + d.deporte">Peso (kg)</label>
-          <input type="number" step="0.1" inputmode="decimal" class="deportes__control" [id]="'peso-' + d.deporte"
+          <input type="number" step="0.1" inputmode="decimal" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'peso-' + d.deporte"
             [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.peso ?? d.peso ?? ''" (input)="ficha.onPesoChange(d.deporte, $event)" />
         </div>
         <div class="deportes__campo">
           <label class="deportes__etiqueta" [for]="'fechaPeso-' + d.deporte">Fecha del peso</label>
-          <input type="date" class="deportes__control" [id]="'fechaPeso-' + d.deporte"
+          <input type="date" class="deportes__control" [disabled]="ficha.fichaDeOtraSede" [id]="'fechaPeso-' + d.deporte"
             [value]="ficha.pendingCompetidorChanges.get(d.deporte)?.fechaPeso ?? (d.fechaPeso ? (d.fechaPeso | date: 'yyyy-MM-dd') : '')"
             (change)="ficha.onFechaPesoChange(d.deporte, $event)" />
         </div>
@@ -327,34 +333,38 @@
       <section class="deportes__caja" data-caja="grupos" [attr.aria-labelledby]="'caja-grupos-' + d.deporte">
         <h4 class="deportes__caja-titulo" [id]="'caja-grupos-' + d.deporte">Grupos y turnos</h4>
         @if (ficha.getGruposDelDeporte(d.deporte).length === 0) {
-        <p class="deportes__nota deportes__nota--bloque">Sin grupos. Añade uno para elegir sus turnos.</p>
+        <p class="deportes__nota deportes__nota--bloque">{{ ficha.fichaDeOtraSede ? 'Sin grupos.' : 'Sin grupos. Añade uno para elegir sus turnos.' }}</p>
         }
         <ul class="deportes__grupos">
           @for (grupo of ficha.getGruposDelDeporte(d.deporte); track grupo.id) {
           <li class="deportes__grupo">
             <div class="deportes__grupo-cabecera">
               <span class="deportes__grupo-nombre">{{ grupo.nombre }}</span>
+              @if (!ficha.fichaDeOtraSede) {
               <button type="button" class="deportes__quitar" [attr.aria-label]="'Quitar el grupo ' + grupo.nombre"
                 (click)="ficha.eliminarGrupoAlumno(grupo.id)">
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
               </button>
+              }
             </div>
             <ul class="deportes__turnos">
               @for (turno of ficha.getTurnosDelGrupo(grupo.id); track turno.id) {
               <li class="deportes__turno">
                 <span data-cifras>{{ quitarTexto(turno) }}</span>
+                @if (!ficha.fichaDeOtraSede) {
                 <button type="button" class="deportes__quitar deportes__quitar--turno" [attr.aria-label]="'Quitar el turno ' + quitarTexto(turno)"
                   (click)="ficha.eliminarTurnoAlumno(turno.id)">
                   <i class="bi bi-x" aria-hidden="true"></i>
                 </button>
+                }
               </li>
               } @empty {
               <li class="deportes__nota">Sin turnos</li>
               }
             </ul>
-            @if (ficha.getTurnosDisponiblesDelGrupo(grupo.id).length > 0) {
+            @if (ficha.getTurnosDisponiblesDelGrupo(grupo.id).length > 0 && !ficha.fichaDeOtraSede) {
             <label class="deportes__oculto" [for]="'anadir-turno-' + grupo.id">Añadir turno a {{ grupo.nombre }}</label>
-            <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control deportes__anadir-turno" [id]="'anadir-turno-' + grupo.id"
+            <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control deportes__anadir-turno" [disabled]="ficha.fichaDeOtraSede" [id]="'anadir-turno-' + grupo.id"
               (change)="ficha.agregarTurnoAlumno(+$any($event.target).value); $any($event.target).value = ''">
               <option value="" selected disabled>Añadir turno…</option>
               @for (turno of ficha.getTurnosDisponiblesDelGrupo(grupo.id); track turno.id) {
@@ -365,9 +375,9 @@
           </li>
           }
         </ul>
-        @if (ficha.getGruposDisponiblesDelDeporte(d.deporte).length > 0) {
+        @if (ficha.getGruposDisponiblesDelDeporte(d.deporte).length > 0 && !ficha.fichaDeOtraSede) {
         <label class="deportes__oculto" [for]="'anadir-grupo-' + d.deporte">Añadir grupo de {{ ficha.getDeporteLabel(d.deporte) }}</label>
-        <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control deportes__anadir-grupo" [id]="'anadir-grupo-' + d.deporte"
+        <select appSearchableSelect searchDropdownClass="pn ficha-desplegable" [searchDropdownVariables]="variablesDesplegable()" class="deportes__control deportes__anadir-grupo" [disabled]="ficha.fichaDeOtraSede" [id]="'anadir-grupo-' + d.deporte"
           (change)="ficha.agregarGrupoAlumno(+$any($event.target).value); $any($event.target).value = ''">
           <option value="" selected disabled>Añadir grupo…</option>
           @for (grupo of ficha.getGruposDisponiblesDelDeporte(d.deporte); track grupo.id) {

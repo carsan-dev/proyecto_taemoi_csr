@@ -115,7 +115,7 @@ describe('pidePermisos: quién pide GET /api/auth/permisos (8b-I)', () => {
 
   it('la familia, el responsable de sede solo o sin roles no piden', () => {
     expect(pidePermisos(['ROLE_USER'])).toBeFalse();
-    expect(pidePermisos(['ROLE_USER', 'ROLE_RESPONSABLE_SEDE'])).toBeFalse();
+    expect(pidePermisos(['ROLE_USER', 'ROLE_RESPONSABLE_SEDE'])).toBeTrue();
     expect(pidePermisos([])).toBeFalse();
   });
 });

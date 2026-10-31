@@ -9,8 +9,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -60,6 +64,7 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 	@MockitoBean JavaMailSender mailSender;
 
 	EscuelaConSedesDePrueba e;
+	EscuelaConSedesDePrueba otra;
 	String tokenA;
 	String tokenAC;
 	String tokenGestor;
@@ -67,8 +72,10 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 	@BeforeAll
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-grupos");
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-grupos-otra");
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 	}
 
@@ -101,8 +108,8 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 					.content(grupo("Cambio", null)), tokenA));
 			assertEquals(403, estado(delete("/api/grupos/" + ajeno), tokenA));
 		}
-		// Conteo por tipos de Taemoi: sigue siendo de gestión.
-		assertEquals(403, estado(get("/api/grupos/conteo-alumnos"), tokenA));
+		// Conteo por tipos: pieza 9-5, abierto y solo con los alumnos de su alcance (ResponsableSedePantallas...).
+		assertEquals(200, estado(get("/api/grupos/conteo-alumnos"), tokenA));
 	}
 
 	@Test
@@ -135,6 +142,100 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 				.content(grupo("IT E6 gestion " + e.marca, null)), tokenGestor));
 		assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
 				.content(grupo("IT E6 gestion inactiva " + e.marca, e.sC)), tokenGestor));
+	}
+
+	/**
+	 * Pieza 9-5: un alta no admite id. Con él, {@code save} haría merge sobre el grupo que existe y el POST sobrescribiría
+	 * un grupo de otra sede sin pasar por el permiso del PUT. 400 para todos, también para la gestión.
+	 */
+	@Test
+	void grupos_altaConIdDeOtroGrupo_400ySinTocarlo() throws Exception {
+		long grupos = jdbc.queryForObject("SELECT COUNT(*) FROM grupo WHERE organizacion_id = ?", Long.class, e.org);
+		Map<String, Object> grupoB = estadoDelGrupo(e.gB);
+		Map<String, Object> grupoA = estadoDelGrupo(e.gA);
+		Map<String, Object> deOtraEscuela = estadoDelGrupo(otra.gA);
+
+		for (String token : List.of(tokenA, tokenGestor)) {
+			assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
+					.content(grupoConId(e.gB, "Robado", e.sA)), token), "grupo de otra sede");
+			assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
+					.content(grupoConId(e.gA, "Pisado", e.sA)), token), "grupo de la misma sede");
+			assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
+					.content(grupoConId(otra.gA, "De otra escuela", e.sA)), token), "grupo de otra escuela");
+			assertEquals(400, estado(post("/api/grupos").contentType(MediaType.APPLICATION_JSON)
+					.content(grupoConId(Long.MAX_VALUE, "Sin existir", e.sA)), token), "id que no existe");
+		}
+
+		assertEquals(grupoB, estadoDelGrupo(e.gB));
+		assertEquals(grupoA, estadoDelGrupo(e.gA));
+		assertEquals(deOtraEscuela, estadoDelGrupo(otra.gA));
+		assertEquals(grupos, jdbc.queryForObject("SELECT COUNT(*) FROM grupo WHERE organizacion_id = ?", Long.class,
+				e.org), "ningún grupo nuevo");
+	}
+
+	private String grupoConId(long id, String nombre, long sede) {
+		return "{\"id\":" + id + ",\"nombre\":\"" + nombre + "\",\"deporte\":\"TAEKWONDO\",\"sedeId\":" + sede + "}";
+	}
+
+	private Map<String, Object> estadoDelGrupo(long grupo) {
+		return Map.of("fila", jdbc.queryForMap("SELECT * FROM grupo WHERE id = ?", grupo),
+				"alumnos", jdbc.queryForList("SELECT alumno_id FROM alumno_grupo WHERE grupo_id = ? ORDER BY alumno_id",
+						Long.class, grupo),
+				"turnos", jdbc.queryForList("SELECT id FROM turno WHERE grupo_id = ? ORDER BY id", Long.class, grupo));
+	}
+
+	// ------------------------------------------------------------------ lotes con un id ajeno
+
+	/** Lote con un alumno de otra escuela: 403 entero, ni en el grupo ni en sus turnos (alumno_turno). */
+	@Test
+	void lote_conAlumnoDeOtraEscuela_403ySinAnadirNadaAlGrupoNiASusTurnos() throws Exception {
+		long turno = turnoEn(e.gA2, "Martes");
+		try {
+			assertEquals(403, estado(post("/api/grupos/" + e.gA2 + "/alumnos").contentType(MediaType.APPLICATION_JSON)
+					.content("[" + e.aA + "," + otra.aA + "]"), tokenA));
+
+			assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM alumno_grupo WHERE grupo_id = ?", Integer.class,
+					e.gA2));
+			assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM alumno_turno WHERE turno_id = ?", Integer.class,
+					turno));
+		} finally {
+			jdbc.update("DELETE FROM turno WHERE id = ?", turno);
+		}
+	}
+
+	/** Pasar lista con un alumno de otra escuela: 400 sin crear la clase ni cambiar una ya guardada. */
+	@Test
+	void pasarLista_conAlumnoDeOtraEscuela_400ySinCambiarClaseNiAsistencias() throws Exception {
+		long turno = turnoEn(e.gA, "Lunes");
+		e.enTurno(turno, e.aGrupoA);
+		String lunes = LocalDate.now().with(TemporalAdjusters.previous(DayOfWeek.MONDAY)).toString();
+		String ruta = "/api/grupos/" + e.gA + "/clases/" + turno + "/" + lunes;
+
+		assertEquals(400, estado(lista(ruta, e.aGrupoA, otra.aA), tokenA), "clase sin guardar");
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM clase_asistencia WHERE turno_id = ?", Integer.class,
+				turno));
+
+		assertEquals(200, estado(lista(ruta, e.aGrupoA), tokenA));
+		Map<String, Object> clase = jdbc.queryForMap("SELECT * FROM clase_asistencia WHERE turno_id = ?", turno);
+		List<Map<String, Object>> asistencias = jdbc.queryForList(
+				"SELECT * FROM asistencia_alumno WHERE clase_id = ? ORDER BY id", clase.get("id"));
+		assertEquals(1, asistencias.size());
+
+		assertEquals(400, estado(lista(ruta, otra.aA), tokenA), "clase guardada");
+		assertEquals(400, estado(lista(ruta, e.aGrupoA, otra.aA), tokenA), "clase guardada, con un alumno propio");
+
+		assertEquals(clase, jdbc.queryForMap("SELECT * FROM clase_asistencia WHERE turno_id = ?", turno));
+		assertEquals(asistencias,
+				jdbc.queryForList("SELECT * FROM asistencia_alumno WHERE clase_id = ? ORDER BY id", clase.get("id")));
+		jdbc.update("DELETE FROM asistencia_alumno WHERE clase_id = ?", clase.get("id"));
+		jdbc.update("DELETE FROM clase_asistencia WHERE turno_id = ?", turno);
+		jdbc.update("DELETE FROM alumno_turno WHERE turno_id = ?", turno);
+		jdbc.update("DELETE FROM turno WHERE id = ?", turno);
+	}
+
+	private MockHttpServletRequestBuilder lista(String ruta, long... presentes) throws Exception {
+		return put(ruta).contentType(MediaType.APPLICATION_JSON)
+				.content(json.writeValueAsString(Map.of("presentes", presentes)));
 	}
 
 	// ------------------------------------------------------------------ turnos
@@ -181,6 +282,21 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 
 	private static String turnoEl(String dia) {
 		return "{\"diaSemana\":\"" + dia + "\",\"horaInicio\":\"07:00\",\"horaFin\":\"08:00\"}";
+	}
+
+	/** Pieza 9-5: el alta de turno no lee el id del cuerpo: crea uno nuevo y el que nombra sigue como estaba. */
+	@Test
+	void turnos_altaConIdDeOtroTurno_noLoSobrescribe() throws Exception {
+		Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM turno WHERE id = ?", e.tB);
+		int enGrupoA = turnosDe(e.gA);
+
+		assertEquals(201, estado(post("/api/turnos/crear-asignando-grupo").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"id\":" + e.tB + ",\"diaSemana\":\"Viernes\",\"horaInicio\":\"20:00\",\"horaFin\":\"21:00\","
+						+ "\"tipoGrupo\":\"IT\",\"grupoId\":" + e.gA + "}"), tokenA));
+
+		assertEquals(antes, jdbc.queryForMap("SELECT * FROM turno WHERE id = ?", e.tB));
+		assertEquals(enGrupoA + 1, turnosDe(e.gA));
+		jdbc.update("DELETE FROM turno WHERE grupo_id = ? AND dia_semana = 'Viernes'", e.gA);
 	}
 
 	@Test

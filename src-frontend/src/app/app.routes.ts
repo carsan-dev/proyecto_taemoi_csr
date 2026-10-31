@@ -17,7 +17,7 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 /** Las rutas autenticadas esperan al catálogo (tras los guards) para que los componentes lo lean de forma síncrona. */
 const CATALOGO_RESOLVE = { catalogo: catalogoResolver };
 
-type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER';
+type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER' | 'ROLE_RESPONSABLE_SEDE';
 export type PortalContext = 'public' | 'admin' | 'user';
 export interface AppRouteData {
   portalContext?: PortalContext;
@@ -26,6 +26,8 @@ export interface AppRouteData {
 
 const ROUTE_ROLE_SETS = {
   management: ['ROLE_ADMIN', 'ROLE_MANAGER'] as const satisfies readonly RouteRole[],
+  /** Las pantallas de la decisión 370: gestión y responsable de sede; `roleGuard` exige a este PANEL_SEDE. */
+  panelSede: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE'] as const satisfies readonly RouteRole[],
   adminOnly: ['ROLE_ADMIN'] as const satisfies readonly RouteRole[],
   userPortal: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] as const satisfies readonly RouteRole[],
 };
@@ -202,7 +204,7 @@ export const routes: Routes = [
   {
     path: 'adminpage',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/inicio/inicio.component').then(m => m.InicioComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -224,7 +226,7 @@ export const routes: Routes = [
   {
     path: 'alumnosListar',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/alumnos/alumnos.component').then(m => m.AlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -232,7 +234,7 @@ export const routes: Routes = [
   {
     path: 'preinscripciones',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/preinscripciones/preinscripciones.component').then(m => m.PreinscripcionesPanelComponent),
     canActivate: [roleGuard],
     canDeactivate: [salirSinGuardarGuard],
@@ -241,7 +243,7 @@ export const routes: Routes = [
   {
     path: 'alumnosEditar/:id',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/ficha/ficha-alumno.component').then(m => m.FichaAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -255,17 +257,17 @@ export const routes: Routes = [
   {
     path: 'alumnos/:id/productos',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/productos-alumno/productos-alumno-panel.component').then(m => m.ProductosAlumnoPanelComponent),
     canActivate: [roleGuard],
     canDeactivate: [salirSinGuardarGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {
-    // «Mi perfil» (decisión 322): nombre y cumpleaños de la cuenta; propietario y gestor (`/api/panel/**`).
+    // «Mi perfil» (decisión 322): nombre y cumpleaños de la cuenta; propietario, gestor y responsable (`/api/panel/**`).
     path: 'panel/mi-perfil',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
     canActivate: [roleGuard],
     canDeactivate: [salirSinGuardarGuard],
@@ -274,7 +276,7 @@ export const routes: Routes = [
   {
     path: 'alumnosCrear',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/alta-alumno/alta-alumno.component').then(m => m.AltaAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -292,7 +294,7 @@ export const routes: Routes = [
   {
     path: 'gruposListar',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -301,7 +303,7 @@ export const routes: Routes = [
     // Pasar lista desde gestión (decisión 324): las mismas rutas de asistencia bajo `/api/grupos/{id}`.
     path: 'gruposListar/:grupoId/lista',
     canMatch: [estilosPanelGuard],
-    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), prefijoAsistencia: 'gestion' },
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.panelSede), prefijoAsistencia: 'gestion' },
     loadComponent: () => import('./panel-nuevo/asistencia/pasar-lista.component').then(m => m.PasarListaComponent),
     canActivate: [roleGuard],
     canDeactivate: [salirSinGuardarGuard],
@@ -310,7 +312,7 @@ export const routes: Routes = [
   {
     path: 'gruposCrear',
     canMatch: [estilosPanelGuard],
-    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearGrupo: true },
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.panelSede), crearGrupo: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -318,7 +320,7 @@ export const routes: Routes = [
   {
     path: 'gruposEditar/:id',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/grupos/editar-grupo.component').then(m => m.EditarGrupoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -326,7 +328,7 @@ export const routes: Routes = [
   {
     path: 'gestionarAlumnos/:id',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -334,7 +336,7 @@ export const routes: Routes = [
   {
     path: 'seleccionarAlumnos/:id',
     canMatch: [estilosPanelGuard],
-    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), seleccionarAlumnos: true },
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.panelSede), seleccionarAlumnos: true },
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-alumnos.component').then(m => m.GestionarAlumnosComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -342,7 +344,7 @@ export const routes: Routes = [
   {
     path: 'gestionarTurnosAlumno/:alumnoId',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/grupos/gestionar-turnos-alumno.component').then(m => m.GestionarTurnosAlumnoComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -350,7 +352,7 @@ export const routes: Routes = [
   {
     path: 'turnosCrear',
     canMatch: [estilosPanelGuard],
-    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), crearTurno: true },
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.panelSede), crearTurno: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -358,7 +360,7 @@ export const routes: Routes = [
   {
     path: 'turnosEditar/:id',
     canMatch: [estilosPanelGuard],
-    data: { ...privateRouteData(ROUTE_ROLE_SETS.management), editarTurno: true },
+    data: { ...privateRouteData(ROUTE_ROLE_SETS.panelSede), editarTurno: true },
     loadComponent: () => import('./panel-nuevo/grupos/grupos.component').then(m => m.GruposComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -418,7 +420,7 @@ export const routes: Routes = [
   {
     path: 'tesoreriaCobros',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/tesoreria/tesoreria.component').then(m => m.TesoreriaComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -426,7 +428,7 @@ export const routes: Routes = [
   {
     path: 'cajaSede',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/caja-sede/caja-sede.component').then(m => m.CajaSedePanelComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -434,7 +436,7 @@ export const routes: Routes = [
   {
     path: 'solicitudes',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/solicitudes/solicitudes.component').then(m => m.SolicitudesPanelComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -450,7 +452,7 @@ export const routes: Routes = [
   {
     path: 'convocatoriasListar',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/convocatorias/convocatorias.component').then(m => m.ConvocatoriasComponent),
     canActivate: [roleGuard],
     resolve: CATALOGO_RESOLVE,
@@ -515,7 +517,7 @@ export const routes: Routes = [
     canActivate: [misGruposGuard],
   },
   {
-    // 404 dentro del panel (8b-M2b): solo con una sesión de gestión; el resto cae al 404 público.
+    // 404 dentro del panel (8b-M2b): solo con una sesión de gestión o de responsable; el resto cae al 404 público.
     // `panelNuevo` avisa a la cáscara (SkeletonComponent) de que debe pintar la cabecera del panel aunque la URL sea desconocida.
     path: '**',
     canMatch: [gestionPanelGuard],

@@ -652,8 +652,15 @@ class SolicitudesIntegrationTest extends MySqlIntegrationTest {
 		membresia(respYProf, s.e.org, "PROFESOR");
 		long familia = s.e.cuentaFamilia(usuarios, "solo-familia");
 
-		List<String> tokens = List.of(s.e.token(jwtService, usuarios, soloProfesor),
-				s.e.token(jwtService, usuarios, respYProf), s.tProf1, s.e.token(jwtService, usuarios, familia));
+		// Decisión 371: responsable + profesor ya no es esa sesión: usa la bandeja de su sede, sin aceptar ni denegar.
+		String tokenRespYProf = s.e.token(jwtService, usuarios, respYProf);
+		assertEquals(200, estado(get("/api/solicitudes").param("segmento", "PENDIENTES"), tokenRespYProf));
+		assertEquals(200, estado(get("/api/solicitudes/contador"), tokenRespYProf));
+		assertEquals(403, estado(post("/api/solicitudes/" + id + "/aceptar"), tokenRespYProf));
+		assertEquals(403, estado(denegar(id, "x"), tokenRespYProf));
+
+		List<String> tokens = List.of(s.e.token(jwtService, usuarios, soloProfesor), s.tProf1,
+				s.e.token(jwtService, usuarios, familia));
 		assertEquals(200, estado(get("/api/caja/profesor/cargos-pendientes"), tokens.get(0)), "su caja sí");
 		for (String token : tokens) {
 			for (MockHttpServletRequestBuilder ruta : List.of(get("/api/solicitudes").param("segmento", "PENDIENTES"),

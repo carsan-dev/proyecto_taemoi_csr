@@ -27,7 +27,7 @@ describe('SkeletonComponent · «Configurar cookies» en el pie', () => {
   function montar(): { raiz: HTMLElement; detectar: () => void } {
     TestBed.configureTestingModule({ imports: [SkeletonComponent], providers: [
         provideRouter([]),
-        { provide: AuthenticationService, useValue: { tieneAccesoAdmin: () => false, esSoloProfesor: () => false } },
+        { provide: AuthenticationService, useValue: { tieneAccesoAdmin: () => false, tieneRolResponsable: () => false, esSoloProfesor: () => false } },
       ],
     });
     TestBed.overrideComponent(SkeletonComponent, {

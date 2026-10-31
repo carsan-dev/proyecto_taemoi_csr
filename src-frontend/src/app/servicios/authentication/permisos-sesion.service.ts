@@ -1,12 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Observable, Subject, catchError, map, of, shareReplay, throwError } from 'rxjs';
+import { Observable, Subject, catchError, map, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 
 /** Lo que la sesión puede hacer en la escuela activa (D8-14). La autorización real sigue siendo del servidor. */
-export type Capacidad = 'MIEMBROS' | 'DAR_GESTION' | 'SEDES' | 'ASIGNAR_PROFESORES' | 'MIS_GRUPOS' | 'MI_CAJA';
+export type Capacidad =
+  | 'MIEMBROS'
+  | 'DAR_GESTION'
+  | 'SEDES'
+  | 'ASIGNAR_PROFESORES'
+  | 'MIS_GRUPOS'
+  | 'MI_CAJA'
+  /** Responsable de sede sin gestión: la señal del menú y las pantallas de la decisión 370. */
+  | 'PANEL_SEDE'
+  /** Responsable de sede y familia sin gestión: elige vista como gestión + familia (decisión 371). */
+  | 'ELEGIR_VISTA';
 
 export interface SedeVisible {
   id: number;
@@ -31,11 +41,16 @@ export interface PermisosSesion {
 }
 
 /**
- * Quién pide los permisos al entrar: ROLE_PROFESOR (Mis grupos y Mi caja) y la gestión (ROLE_ADMIN o ROLE_MANAGER).
- * Una vez por sesión: la petición se comparte.
+ * Quién pide los permisos al entrar: ROLE_PROFESOR (Mis grupos y Mi caja), la gestión (ROLE_ADMIN o ROLE_MANAGER) y el
+ * responsable de sede. Una vez por sesión: la petición se comparte.
  */
 export function pidePermisos(roles: readonly string[]): boolean {
-  return roles.includes('ROLE_PROFESOR') || roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+  return (
+    roles.includes('ROLE_PROFESOR') ||
+    roles.includes('ROLE_ADMIN') ||
+    roles.includes('ROLE_MANAGER') ||
+    roles.includes('ROLE_RESPONSABLE_SEDE')
+  );
 }
 
 /**
@@ -46,6 +61,8 @@ export function pidePermisos(roles: readonly string[]): boolean {
 export class PermisosSesionService {
   private readonly url = `${environment.apiUrl}/auth/permisos`;
   private peticion$: Observable<PermisosSesion> | null = null;
+  /** Las de la última respuesta vigente: {@link tiene} las lee sin suscribirse. */
+  private capacidadesLeidas: readonly Capacidad[] = [];
   private readonly refrescos = new Subject<void>();
   /** Avisa cuando la sesión cambió algo que se muestra (p. ej. el nombre de «Mi perfil»): hay que volver a pedirlos. */
   readonly refrescado$: Observable<void> = this.refrescos.asObservable();
@@ -62,6 +79,11 @@ export class PermisosSesionService {
           context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true),
         })
         .pipe(
+          tap((permisos) => {
+            if (this.peticion$ === peticion$) {
+              this.capacidadesLeidas = permisos?.capacidades ?? [];
+            }
+          }),
           catchError((error) => {
             if (this.peticion$ === peticion$) {
               this.peticion$ = null;
@@ -83,14 +105,24 @@ export class PermisosSesionService {
     );
   }
 
+  /**
+   * Lectura síncrona para las pantallas: `false` hasta que llegan los permisos. `roleGuard` los espera antes de abrir
+   * una pantalla a un responsable de sede, así que dentro de ella `tiene('PANEL_SEDE')` ya es definitivo.
+   */
+  tiene(capacidad: Capacidad): boolean {
+    return this.capacidadesLeidas.includes(capacidad);
+  }
+
   /** Descarta los permisos guardados: la próxima llamada los pide de nuevo (login, cierre de sesión). */
   reiniciar(): void {
     this.peticion$ = null;
+    this.capacidadesLeidas = [];
   }
 
   /** Descarta los permisos y avisa a quien los muestra, sin recargar la página (guardar «Mi perfil»). */
   refrescar(): void {
-    this.reiniciar();
+    // Sigue siendo la misma sesión: `tiene()` conserva las capacidades mientras llega la respuesta nueva.
+    this.peticion$ = null;
     this.refrescos.next();
   }
 }

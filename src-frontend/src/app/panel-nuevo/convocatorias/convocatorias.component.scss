@@ -336,6 +336,17 @@ $columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
   }
 }
 
+// El 403 de la API junto a la fila: ocupa todo el ancho, bajo las columnas.
+.convocatorias__error-fila {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+}
+
 // Cabecera de columnas, una vez por bloque; decorativa. Misma rejilla y mismo relleno que las filas.
 .convocatorias__columnas {
   display: grid;

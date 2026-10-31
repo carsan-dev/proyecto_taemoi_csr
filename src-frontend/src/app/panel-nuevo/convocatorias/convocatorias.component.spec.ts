@@ -170,7 +170,7 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();
@@ -622,6 +622,31 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(avisos()[0].tipo).toBe('error');
     responderRelectura();
     expect(botonEn(filaAlumno(2), 'Pendiente').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('desmarcar un examen de otra sede (403): el mensaje de la API en la fila, sin aviso ni relectura, y el pago como estaba', () => {
+    cargar();
+    abrir();
+    expect(botonEn(filaAlumno(1), 'Pagado').getAttribute('aria-pressed')).toBe('true');
+    botonEn(filaAlumno(1), 'Pendiente').click();
+    const r = http.expectOne(`${API}/convocatorias/alumno/1`);
+    // Con ERROR_HANDLED_LOCALLY el interceptor no pone el aviso genérico de «Acceso denegado».
+    expect(r.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    r.flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
+    fixture.detectChanges();
+    pintar();
+    expect(avisos()).toEqual([]);
+    expect(filaAlumno(1).querySelector('.convocatorias__error-fila')?.textContent).toContain('Acceso denegado.');
+    expect(filaAlumno(2).querySelector('.convocatorias__error-fila')).toBeNull();
+    expect(botonEn(filaAlumno(1), 'Pagado').getAttribute('aria-pressed')).toBe('true');
+    expect(botonEn(filaAlumno(1), 'Pagado').disabled).toBeFalse();
+    http.expectNone(`${API}/convocatorias/${11}/alumnos`);
+    // El siguiente intento limpia el mensaje.
+    botonEn(filaAlumno(1), 'Pendiente').click();
+    fixture.detectChanges();
+    expect(filaAlumno(1).querySelector('.convocatorias__error-fila')).toBeNull();
+    http.expectOne(`${API}/convocatorias/alumno/1`).flush(null);
+    responderRelectura(11, [inscrito(1, { pagado: false }), PENDIENTE]);
   });
 
   it('cuantía: al cambiar el campo, el PUT de hoy con la cuantía (coma decimal) y el pagado; sin cambio, nada', () => {
@@ -1201,5 +1226,17 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(fire).not.toHaveBeenCalled();
     expect(loading.show).not.toHaveBeenCalled();
     expect(pendientesDe(`${API}/convocatorias`).length).toBe(0);
+  });
+
+  it('responsable de sede: sin crear, eliminar ni actualizar grados (convocatoria global)', () => {
+    const permisos = TestBed.inject(PermisosSesionService) as unknown as { tiene: (c: string) => boolean };
+    permisos.tiene = (c: string) => c === 'PANEL_SEDE';
+    cargar();
+    abrir();
+    pintar();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.textContent).not.toContain('Crear convocatoria');
+    expect(raiz.querySelector('.convocatorias__papelera')).toBeNull();
+    expect(raiz.textContent).not.toContain('Actualizar grados de todos');
   });
 });

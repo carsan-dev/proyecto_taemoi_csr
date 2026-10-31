@@ -2617,12 +2617,21 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
    * Eliminar, dar de baja o dar de alta al alumno
    * Muestra opciones diferentes según si el alumno está activo o inactivo
    */
+  /** Acciones reservadas a la gestión: eliminar al alumno y crear convocatorias. Las pantallas de sede lo cierran. */
+  protected get accionesDeGestion(): boolean {
+    return true;
+  }
+
   eliminarODarDeBajaAlumno(): void {
     if (!this.alumnoId) {
       return;
     }
 
     const alumnoActivo = this.isAlumnoActivo();
+    const puedeEliminar = this.accionesDeGestion;
+    const opcionEliminar = puedeEliminar
+      ? '<li><strong>Eliminar completamente:</strong> Elimina permanentemente al alumno y toda su información (irreversible)</li>'
+      : '';
 
     if (alumnoActivo) {
       // Alumno ACTIVO - Mostrar opciones de dar de baja o eliminar
@@ -2632,12 +2641,12 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
           <p>Selecciona una opción para <strong>${this.alumno.nombre} ${this.alumno.apellidos}</strong>:</p>
           <ul style="text-align: left; margin-top: 1rem;">
             <li><strong>Dar de baja:</strong> Desactiva todos los deportes activos y mantiene todos los datos (historial, grupos, productos, etc.)</li>
-            <li><strong>Eliminar completamente:</strong> Elimina permanentemente al alumno y toda su información (irreversible)</li>
+            ${opcionEliminar}
           </ul>
         `,
         icon: 'warning',
         showCancelButton: true,
-        showDenyButton: true,
+        showDenyButton: puedeEliminar,
         confirmButtonText: 'Dar de baja',
         denyButtonText: 'Eliminar completamente',
         cancelButtonText: 'Cancelar',
@@ -2661,12 +2670,12 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
           <p>Selecciona una opción para <strong>${this.alumno.nombre} ${this.alumno.apellidos}</strong> (actualmente inactivo):</p>
           <ul style="text-align: left; margin-top: 1rem;">
             <li><strong>Dar de alta:</strong> Reactiva al alumno en uno de sus deportes</li>
-            <li><strong>Eliminar completamente:</strong> Elimina permanentemente al alumno y toda su información (irreversible)</li>
+            ${opcionEliminar}
           </ul>
         `,
         icon: 'question',
         showCancelButton: true,
-        showDenyButton: true,
+        showDenyButton: puedeEliminar,
         confirmButtonText: 'Dar de alta',
         denyButtonText: 'Eliminar completamente',
         cancelButtonText: 'Cancelar',
@@ -3522,6 +3531,14 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
         );
 
         if (convocatoriasOrdenadas.length === 0) {
+          if (!this.accionesDeGestion) {
+            this.dialogos.fire({
+              title: 'Información',
+              text: `No hay convocatorias de ${this.getDeporteLabel(deporte)}. Las crea gestión.`,
+              icon: 'info',
+            });
+            return;
+          }
           this.abrirSwalCrearConvocatoria(deporte);
           return;
         }
@@ -3547,7 +3564,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
           inputPlaceholder: 'Selecciona una convocatoria',
           inputValue: String(convocatoriaDefault.id),
           showCancelButton: true,
-          showDenyButton: true,
+          showDenyButton: this.accionesDeGestion,
           confirmButtonText: 'Añadir',
           denyButtonText: 'Crear nueva',
           cancelButtonText: 'Cancelar',

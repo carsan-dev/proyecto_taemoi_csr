@@ -98,8 +98,9 @@ class ResponsableSedeAlumnosDeTurnosIntegrationTest extends MySqlIntegrationTest
 		long propietario = e.cuenta(usuarios, "propietario");
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'PROPIETARIO')",
 				propietario, e.org);
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 		tokenPropietario = e.token(jwtService, usuarios, propietario);
 		deA = Set.of(e.aA, e.aGrupoA, e.aSinSede);

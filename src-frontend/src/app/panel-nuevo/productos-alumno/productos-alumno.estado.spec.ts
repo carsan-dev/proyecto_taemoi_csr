@@ -2,12 +2,14 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import type { OpcionesConfirmacion, ResultadoConfirmacion } from '../dialogo/dialogo.component';
@@ -1276,6 +1278,35 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       expect(fila(2).ocupada).toBeTrue();
       expect(fila(2).cobrando).toBeFalse();
       cancelar.flush(cargo(2, CANCELADO));
+    });
+  });
+  describe('responsable de sede (decisión 370)', () => {
+    function comoResponsable(): jasmine.Spy {
+      const permisos = TestBed.inject(PermisosSesionService);
+      spyOn(permisos, 'tiene').and.callFake((c: string) => c === 'PANEL_SEDE');
+      spyOn(permisos, 'obtener').and.returnValue(of({ sedes: [{ id: 1, nombre: 'Central', activa: true }] } as any));
+      return spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    }
+
+    it('alumno de otra sede: lleva a su ficha y no deja la pantalla de cargos', () => {
+      const navegar = comoResponsable();
+      abrir([], { ...ALUMNO, sedePrincipalId: 99 });
+      expect(navegar).toHaveBeenCalledOnceWith(['/alumnosEditar', 7], { replaceUrl: true });
+      expect(estado.estado()).toBe('cargando');
+    });
+
+    it('alumno de su sede: carga los cargos', () => {
+      const navegar = comoResponsable();
+      abrir([], { ...ALUMNO, sedePrincipalId: 1 });
+      expect(navegar).not.toHaveBeenCalled();
+      expect(estado.estado()).toBe('listo');
+    });
+
+    it('gestión no se redirige aunque el alumno sea de cualquier sede', () => {
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      abrir([], { ...ALUMNO, sedePrincipalId: 99 });
+      expect(navegar).not.toHaveBeenCalled();
+      expect(estado.estado()).toBe('listo');
     });
   });
 });

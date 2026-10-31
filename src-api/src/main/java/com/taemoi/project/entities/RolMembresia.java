@@ -15,9 +15,11 @@ import java.util.function.BooleanSupplier;
  * <li>{@code ADMINISTRADOR} → {@code ROLE_MANAGER}</li>
  * <li>{@code FAMILIA} → {@code ROLE_USER}</li>
  * <li>{@code RESPONSABLE_SEDE} → {@code ROLE_RESPONSABLE_SEDE} y {@code PROFESOR} → {@code ROLE_PROFESOR}:
- * autoridades propias; solo pasan las reglas que las nombran (fallan cerradas). RESPONSABLE_SEDE sola no abre sesión
- * ({@link #abreSesion}); PROFESOR sin FAMILIA ni gestión (con o sin RESPONSABLE_SEDE) sí, limitada a su caja
- * ({@link #sesionSoloProfesor}, decisiones 180 y 184); con FAMILIA, la cuenta entra como familia.</li>
+ * autoridades propias; solo pasan las reglas que las nombran (fallan cerradas). Las dos abren sesión
+ * ({@link #abreSesion}): RESPONSABLE_SEDE, limitada a sus sedes (decisión 370); PROFESOR sin FAMILIA, gestión ni
+ * RESPONSABLE_SEDE, limitada a su caja ({@link #sesionSoloProfesor}, decisión 180); RESPONSABLE_SEDE + PROFESOR entra
+ * como responsable y suma Mi caja y Mis grupos (decisión 371, sustituye a la 184); con FAMILIA, PROFESOR entra como
+ * familia.</li>
  * </ul>
  */
 public enum RolMembresia {
@@ -74,30 +76,32 @@ public enum RolMembresia {
 	}
 
 	/**
-	 * Puerta de entrada (D5-1, matizada por las decisiones 180 y 184): una sesión de escuela se abre con
-	 * {@code ROLE_ADMIN}, {@code ROLE_MANAGER} o {@code ROLE_USER}, o con {@code ROLE_PROFESOR} (sin esos tres, con o
-	 * sin RESPONSABLE_SEDE, es una sesión limitada a su caja: {@link #sesionSoloProfesor}). Con las autoridades de
-	 * siempre equivale a «tiene alguna». Solo RESPONSABLE_SEDE no abre (D6-15, hasta la E9). Además, si
+	 * Puerta de entrada (D5-1, matizada por la decisión 180; la D6-15 la cierra la 370, pieza 9-5): una sesión de escuela
+	 * se abre con {@code ROLE_ADMIN}, {@code ROLE_MANAGER}, {@code ROLE_USER}, {@code ROLE_RESPONSABLE_SEDE} (limitada a
+	 * sus sedes por {@code @acceso} y {@code GestionPorSede}; sin sedes entra y no ve nada, decisión 65) o
+	 * {@code ROLE_PROFESOR} (solo, una sesión limitada a su caja: {@link #sesionSoloProfesor}). Además, si
 	 * {@link #requiereAlumnoActivo}, hace falta algún alumno accesible.
 	 */
 	public static boolean abreSesion(Set<Roles> autoridades) {
 		return autoridades.contains(Roles.ROLE_ADMIN)
 				|| autoridades.contains(Roles.ROLE_MANAGER)
 				|| autoridades.contains(Roles.ROLE_USER)
+				|| autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE)
 				|| autoridades.contains(Roles.ROLE_PROFESOR);
 	}
 
 	/**
-	 * Sesión solo-profesor (decisiones 180 y 184): tiene {@code ROLE_PROFESOR} y ninguno de los tres roles que abren
-	 * sesión de siempre, con o sin {@code ROLE_RESPONSABLE_SEDE}. La cadena de seguridad la limita a su caja, a lo
-	 * imprescindible de sesión y a lo público ({@code SesionSoloProfesorAuthorizationManager}): la autoridad de
-	 * responsable no abre nada en esta sesión hasta la E9.
+	 * Sesión solo-profesor (decisión 180): tiene {@code ROLE_PROFESOR} y ningún otro rol de escuela. La cadena de
+	 * seguridad la limita a su caja, a lo imprescindible de sesión y a lo público
+	 * ({@code SesionSoloProfesorAuthorizationManager}). Con {@code ROLE_RESPONSABLE_SEDE} ya no lo es (decisión 371, que
+	 * sustituye a la 184): entra como responsable.
 	 */
 	public static boolean sesionSoloProfesor(Set<Roles> autoridades) {
 		return autoridades.contains(Roles.ROLE_PROFESOR)
 				&& !autoridades.contains(Roles.ROLE_ADMIN)
 				&& !autoridades.contains(Roles.ROLE_MANAGER)
-				&& !autoridades.contains(Roles.ROLE_USER);
+				&& !autoridades.contains(Roles.ROLE_USER)
+				&& !autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE);
 	}
 
 	/**
@@ -115,11 +119,13 @@ public enum RolMembresia {
 	/**
 	 * Regla de acceso heredada: una cuenta que solo es familia (sin rol de gestión) necesita
 	 * al menos un alumno accesible en la escuela ({@code AccesoFamiliaService.tieneAlgunoAccesible}).
-	 * RESPONSABLE_SEDE y PROFESOR no son gestión: con FAMILIA, también la necesitan (D5-2).
+	 * PROFESOR no es gestión: con FAMILIA, también la necesita (D5-2). RESPONSABLE_SEDE ya no (pieza 9-5): entra por sí
+	 * mismo, así que quedarse sin alumnos como familia no le cierra su panel de sede.
 	 */
 	public static boolean requiereAlumnoActivo(Set<Roles> autoridades) {
 		return autoridades.contains(Roles.ROLE_USER)
 				&& !autoridades.contains(Roles.ROLE_ADMIN)
-				&& !autoridades.contains(Roles.ROLE_MANAGER);
+				&& !autoridades.contains(Roles.ROLE_MANAGER)
+				&& !autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE);
 	}
 }

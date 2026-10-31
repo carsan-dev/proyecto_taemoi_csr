@@ -24,8 +24,9 @@ import com.taemoi.project.services.JwtService;
  *          aNada     sin sede ni grupo             (solo gestión)
  *          aInactivoA sede principal A, de baja
  * turnos   tA (lunes, gA, con aA), tB (lunes, gB, con aB), tSin (sin grupo)
- * cuentas  FAMILIA + RESPONSABLE_SEDE (la puerta de entrada exige FAMILIA, D6-15), cada una con su alumno propio
- *          sin sede: respA (sede A) y respAC (sedes A y C); y un gestor (ADMINISTRADOR).
+ * cuentas  FAMILIA + RESPONSABLE_SEDE, cada una con su alumno propio sin sede: respA (sede A) y respAC (sedes A y C);
+ *          y un gestor (ADMINISTRADOR). Desde la pieza 9-5 RESPONSABLE_SEDE entra solo: las demás combinaciones las
+ *          crea cada test con {@link #cuenta} y {@link #responsable}.
  * </pre>
  * TAEKWONDO activo: aA (apto), aB (apto), aGrupoA (no apto).
  */
@@ -41,6 +42,7 @@ final class EscuelaConSedesDePrueba {
 	long aA, aGrupoA, aSinSede, aB, aNada, aInactivoA;
 	long tA, tB, tSin;
 	long respA, respAC, gestor, propioA, propioAC;
+	long respSoloA, respSoloAC;
 
 	private EscuelaConSedesDePrueba(JdbcTemplate jdbc) {
 		this.jdbc = jdbc;
@@ -100,6 +102,17 @@ final class EscuelaConSedesDePrueba {
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')",
 				e.gestor, e.org);
 		return e;
+	}
+
+	/**
+	 * Cuentas SOLO RESPONSABLE_SEDE (decisión 370), con las sedes de respA y respAC: la sesión real de un responsable de
+	 * sede, sin autoridad de familia. Aparte de {@link #crear}: añaden miembros a la escuela.
+	 */
+	void crearResponsablesSolos(UsuarioRepository usuarios) {
+		respSoloA = cuenta(usuarios, "respsoloa");
+		responsable(respSoloA, sA);
+		respSoloAC = cuenta(usuarios, "respsoloac");
+		responsable(respSoloAC, sA, sC);
 	}
 
 	String token(JwtService jwt, UsuarioRepository usuarios, long usuarioId) {
@@ -185,7 +198,7 @@ final class EscuelaConSedesDePrueba {
 		return id;
 	}
 
-	private void responsable(long usuario, long... sedes) {
+	void responsable(long usuario, long... sedes) {
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'RESPONSABLE_SEDE')",
 				usuario, org);
 		long membresia = jdbc.queryForObject("""

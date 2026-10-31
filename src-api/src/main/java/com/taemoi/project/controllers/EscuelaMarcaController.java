@@ -17,9 +17,9 @@ import com.taemoi.project.marca.MarcaPanelService;
 
 /**
  * Pieza 8b-T (fase3-e8b-plan.md §4): la marca de la escuela ACTIVA para el panel nuevo. Gestión (propietario y
- * gestor) y, desde la pieza 8b-3o (decisión 326), la sesión solo-profesor, que solo lee ({@link #LEER}); el responsable
- * de sede, la familia (también la que además es profesor) y el superadmin sin membresía, 403. Protegido dos veces: la
- * regla de URL de {@code SecurityConfiguration} (y la lista blanca de la sesión solo-profesor) y {@code @PreAuthorize}
+ * gestor) y, solo para leer ({@link #LEER}), la sesión solo-profesor (pieza 8b-3o, decisión 326) y el responsable de
+ * sede (pieza 9-5, decisión 370); la familia (también la que además es profesor) y el superadmin sin membresía, 403.
+ * Protegido dos veces: la regla de URL de {@code SecurityConfiguration} (y la lista blanca de la sesión solo-profesor) y {@code @PreAuthorize}
  * aquí. Una ruta nueva bajo esta clase queda solo para gestión.
  */
 @RestController
@@ -28,10 +28,10 @@ import com.taemoi.project.marca.MarcaPanelService;
 public class EscuelaMarcaController {
 
 	/**
-	 * Lectura de la marca y el logo: gestión o la sesión solo-profesor (PROFESOR sin ADMIN, MANAGER ni USER; también
-	 * con RESPONSABLE_SEDE), como {@code SesionSoloProfesorAuthorizationManager.gestionOSesionSoloProfesor}.
+	 * Lectura de la marca y el logo: gestión, responsable de sede o la sesión solo-profesor, como
+	 * {@code SesionSoloProfesorAuthorizationManager.panelConMarca}.
 	 */
-	static final String LEER = "hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER') "
+	static final String LEER = "hasAnyAuthority('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE') "
 			+ "or (hasAuthority('ROLE_PROFESOR') and !hasAuthority('ROLE_USER'))";
 
 	static final CacheControl CACHE_LOGO = CacheControl.maxAge(Duration.ofSeconds(300)).cachePrivate();

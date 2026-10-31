@@ -54,6 +54,9 @@ import jakarta.transaction.Transactional;
 @Service
 public class GrupoServiceImpl implements GrupoService {
 
+	/** Pieza 9-5: {@code POST /api/grupos} no admite id (ver {@link #crearGrupo}). */
+	static final String ALTA_CON_ID = "Un grupo nuevo no lleva id.";
+
 	/**
 	 * Inyección del repositorio de grupo.
 	 */
@@ -146,6 +149,10 @@ public class GrupoServiceImpl implements GrupoService {
 	@Override
 	@Transactional
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
+		// Pieza 9-5: un alta no lleva id. Con él, save haría merge sobre ese grupo sin pasar por el permiso del PUT.
+		if (grupoDTO.getId() != null) {
+			throw new IllegalArgumentException(ALTA_CON_ID);
+		}
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
 		// D6-5: sede del cuerpo (de la escuela; del responsable, una de las suyas; activa, D6-17). Sin sede: la del
 		// responsable si tiene una; para la gestión, la única sede activa; con varias, 400 (decisiones 368 y 377).
@@ -300,6 +307,8 @@ public class GrupoServiceImpl implements GrupoService {
 
 		List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing",
 				"Defensa Personal Femenina");
+		// Pieza 9-5: el responsable de sede cuenta solo los alumnos de su alcance (D9). Gestión: los COUNT de siempre.
+		Optional<Set<Long>> alcance = gestionPorSede.idsAlumnosEnAlcance();
 
 		for (String tipo : tipos) {
 			String tipoUpper = tipo.toUpperCase();
@@ -321,7 +330,14 @@ public class GrupoServiceImpl implements GrupoService {
 			long totalCount;
 			long activeCount;
 
-			if (esCompeticion) {
+			if (alcance.isPresent()) {
+				// Hibernate 6 no admite una lista vacía en IN: sin alumnos en su alcance no se consulta.
+				boolean sinAlumnos = alcance.get().isEmpty();
+				totalCount = sinAlumnos ? 0
+						: alumnoDeporteRepository.contarPorDeporteDeAlumnos(deporte, esCompeticion, false, alcance.get());
+				activeCount = sinAlumnos ? 0
+						: alumnoDeporteRepository.contarPorDeporteDeAlumnos(deporte, esCompeticion, true, alcance.get());
+			} else if (esCompeticion) {
 				totalCount = alumnoDeporteRepository.countCompetidoresByDeporte(deporte);
 				activeCount = alumnoDeporteRepository.countCompetidoresActivosByDeporte(deporte);
 			} else {
@@ -364,8 +380,11 @@ public class GrupoServiceImpl implements GrupoService {
 			alumnosDeporte = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte);
 		}
 
+		// Pieza 9-5: el responsable de sede ve solo los alumnos de su alcance (D9).
+		Optional<Set<Long>> alcance = gestionPorSede.idsAlumnosEnAlcance();
 		return alumnosDeporte.stream()
 			.filter(ad -> ad.getAlumno() != null)
+			.filter(ad -> alcance.isEmpty() || alcance.get().contains(ad.getAlumno().getId()))
 			.map(AlumnoCortoDTO::deAlumnoDeporte)
 			.collect(Collectors.toList());
 	}

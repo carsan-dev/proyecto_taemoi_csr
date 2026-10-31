@@ -11,6 +11,7 @@ import {
   PreinscripcionService,
 } from '../../features/preinscripcion/preinscripcion.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
@@ -101,6 +102,11 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
   private readonly avisos = inject(AvisosService);
   private readonly catalogo = inject(CatalogoService);
   private readonly auth = inject(AuthenticationService);
+  /** Responsable de sede: sin Plantillas PDF, que son de la escuela (decisión 370), ni cambio de correo (96). */
+  get panelSede(): boolean {
+    return this.permisos.tiene('PANEL_SEDE');
+  }
+  private readonly permisos = inject(PermisosSesionService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -221,7 +227,7 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.pestana = this.route.snapshot.queryParamMap.get('tab') === 'plantillas' ? 'plantillas' : 'solicitudes';
+    this.pestana = !this.panelSede && this.route.snapshot.queryParamMap.get('tab') === 'plantillas' ? 'plantillas' : 'solicitudes';
     this.cargar();
   }
 
@@ -815,6 +821,7 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
     }
     this.cerrarMenu(false);
     this.alta = new AltaPreinscripcion(s, this.catalogo);
+    this.alta.soloCorreoDeFicha = this.panelSede;
   }
 
   cerrarAlta(): void {

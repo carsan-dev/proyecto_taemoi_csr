@@ -15,6 +15,14 @@
       </button>
     </header>
 
+    @if (sinSedes) {
+    <section class="inicio__bloque inicio__sin-sedes" aria-labelledby="inicio-sin-sedes">
+      <div class="inicio__vacio-con-mascota">
+        <pn-mascota pose="descansar" tamano="md" animacion="aparecer" />
+        <p id="inicio-sin-sedes" class="inicio__vacio">Aún no tienes ninguna sede asignada. Pídesela a gestión.</p>
+      </div>
+    </section>
+    } @else {
     <div class="inicio__rejilla">
       <!-- Hoy: clases del día, la siguiente resaltada -->
       <section class="inicio__bloque inicio__hoy" aria-labelledby="inicio-hoy">
@@ -291,6 +299,7 @@
               <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
             </a>
           </li>
+          @if (!panelSede) {
           <li>
             <a class="inicio__acceso" data-acceso="eventos" routerLink="/eventosListar">
               <i class="bi bi-eye-slash" aria-hidden="true"></i>
@@ -301,6 +310,7 @@
               <i class="bi bi-chevron-right inicio__chevron" aria-hidden="true"></i>
             </a>
           </li>
+          }
           <li>
             <a class="inicio__acceso" data-acceso="preinscripciones" routerLink="/preinscripciones">
               <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
@@ -329,7 +339,7 @@
         <pn-bloque-error titulo="No se pudieron cargar las cifras"
           texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarDatos()" />
         } @else {
-        <ul class="inicio__totales">
+        <ul class="inicio__totales" [class.inicio__totales--tres]="panelSede">
           <li>
             <a class="inicio__total" routerLink="/alumnosListar">
               <span class="inicio__total-etiqueta">Alumnos</span>
@@ -345,6 +355,7 @@
               <span class="inicio__total-detalle" data-cifras>{{ plural(totalTurnos, 'turno', 'turnos') }}</span>
             </a>
           </li>
+          @if (!panelSede) {
           <li>
             <a class="inicio__total" routerLink="/eventosListar">
               <span class="inicio__total-etiqueta">Eventos</span>
@@ -352,6 +363,7 @@
               <span class="inicio__total-detalle" data-cifras>{{ plural(eventosVisibles, 'visible', 'visibles') }}</span>
             </a>
           </li>
+          }
           <li>
             <a class="inicio__total" routerLink="/alumnosListar" [queryParams]="{ aptoParaExamen: 'true' }">
               <span class="inicio__total-etiqueta">Aptos para examen</span>
@@ -410,6 +422,7 @@
       </section>
 
       <!-- Eventos activos -->
+      @if (!panelSede) {
       <section class="inicio__bloque inicio__eventos" aria-labelledby="inicio-eventos">
         <div class="inicio__bloque-cabecera">
           <h2 id="inicio-eventos" class="inicio__subtitulo">Eventos activos</h2>
@@ -439,6 +452,7 @@
         </ul>
         }
       </section>
+      }
 
       <!-- Operaciones y accesos -->
       <section class="inicio__bloque inicio__operaciones" aria-labelledby="inicio-operaciones">
@@ -473,5 +487,6 @@
         </div>
       </section>
     </div>
+    }
   </div>
 </div>

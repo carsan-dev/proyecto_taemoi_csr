@@ -49,7 +49,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
         provideRouter([{ path: '**', component: PantallaFalsaComponent }]),
         { provide: PermisosSesionService, useValue: { obtener } },
         { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
-        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion, tieneAccesoAdmin: () => false, esSoloProfesor: () => false } },
+        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion, tieneAccesoAdmin: () => false, tieneRolResponsable: () => false, esSoloProfesor: () => false } },
       ],
       deferBlockBehavior: DeferBlockBehavior.Manual,
     });
@@ -331,7 +331,7 @@ describe('SkeletonComponent · cabecera del panel nuevo (8b-N)', () => {
           ]),
           { provide: PermisosSesionService, useValue: { obtener } },
           { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
-          { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion, tieneAccesoAdmin: () => false, esSoloProfesor: () => false } },
+          { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: sesion, tieneAccesoAdmin: () => false, tieneRolResponsable: () => false, esSoloProfesor: () => false } },
         ],
         deferBlockBehavior: DeferBlockBehavior.Manual,
       });

@@ -9,6 +9,7 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { InformePdfService } from '../../servicios/generales/informe-pdf.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { calcularEdad } from '../../utilities/calcular-edad';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
@@ -149,7 +150,14 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   readonly numero = numero;
   readonly plural = plural;
   readonly porPagina = POR_PAGINA;
-  readonly opcionesHerramientas = OPCIONES_HERRAMIENTAS;
+  /**
+   * Responsable de sede (decisión 370): sin bajas definitivas, sin informes de escuela (`/api/informes/**` sin sede), sin
+   * generar mensualidades y sin la vista de familia, que él no puede abrir.
+   */
+  readonly panelSede = inject(PermisosSesionService).tiene('PANEL_SEDE');
+  readonly opcionesHerramientas = this.panelSede
+    ? OPCIONES_HERRAMIENTAS.filter((o) => o.seccion !== 'mensualidades')
+    : OPCIONES_HERRAMIENTAS;
 
   @ViewChild('menuInformes') private menuInformes?: ElementRef<HTMLElement>;
   @ViewChild('botonInformes') private botonInformes?: ElementRef<HTMLButtonElement>;

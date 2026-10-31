@@ -41,8 +41,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 	public static final String SIN_ESCUELA = "El usuario no tiene acceso a ninguna escuela.";
 	public static final String SIN_ALUMNOS_ACTIVOS = "No hay alumnos activos asociados a esta cuenta.";
 	/**
-	 * Membresías activas, pero solo de roles que todavía no abren sesión: hoy, solo RESPONSABLE_SEDE (sin PROFESOR).
-	 * La cuenta profesor sin FAMILIA ni gestión ya entra, a su caja (decisiones 180 y 184).
+	 * Membresías activas, pero solo de roles que no abren sesión. Desde la pieza 9-5 (decisión 370) todos los roles
+	 * abren sesión: el mensaje queda para un rol nuevo que nazca cerrado.
 	 */
 	public static final String ROL_SIN_ACCESO = "Tu rol en esta escuela todavía no tiene acceso a la aplicación.";
 
