@@ -1,4 +1,4 @@
-﻿@if (isAuthChecked && !usuarioLogueado) {
+﻿@if (mostrarHeaderPublico) {
 <header class="header-anonimo fixed-header" [ngClass]="{'is-hidden': isHidden}">
   <nav class="navbar navbar-expand-lg bg-white p-0">
     <div class="container-fluid">
@@ -7,7 +7,7 @@
         [attr.aria-label]="isMobileMenuOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'">
         <i class="bi" [ngClass]="isMobileMenuOpen ? 'bi-x-lg' : 'bi-list'"></i>
       </button>
-      <a class="navbar-brand d-lg-none" [routerLink]="['/']">
+      <a class="navbar-brand d-lg-none" [routerLink]="['/']" [state]="{ verWeb: true }">
         <img class="header-logo-mobile" src="../../../../assets/media/Logo_escuela.svg"
           alt="Logo de la aplicación TaeMoi" width="137" height="137">
       </a>
@@ -16,11 +16,18 @@
         <div class="title-sub">ESCUELA DE ARTES MARCIALES</div>
       </div>
       <div class="header-actions-mobile d-lg-none">
+        @if (sesionDelPanelEnWeb) {
+        <a class="btn-entrar-mobile btn-panel-mobile" [routerLink]="[destinoPanel]">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          <span>Volver al panel</span>
+        </a>
+        } @else {
         <a class="btn-preinscribete-mobile" [routerLink]="['/preinscripcion']">Preinscríbete</a>
         <a class="btn-entrar-mobile" [routerLink]="['/login']" aria-label="Acceso para alumnos">
           <i class="bi bi-person" aria-hidden="true"></i>
           <span>Alumnos</span>
         </a>
+        }
       </div>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,7 +35,7 @@
       </button>
       <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
         <div class="navbar-left d-flex align-items-center">
-          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']">
+          <a class="navbar-brand-desktop d-none d-lg-block" [routerLink]="['/']" [state]="{ verWeb: true }">
             <img class="header-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la aplicación TaeMoi" width="137" height="137">
           </a>
           <ul class="navbar-nav ms-lg-4">
@@ -114,9 +121,15 @@
               </a>
             </li>
             <li class="nav-item">
+              @if (sesionDelPanelEnWeb) {
+              <a class="btn btn-login" [routerLink]="[destinoPanel]">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>Volver al panel
+              </a>
+              } @else {
               <a class="btn btn-login" [routerLink]="['/login']" aria-label="Acceso para alumnos">
                 <i class="bi bi-person" aria-hidden="true"></i>Acceso alumnos
               </a>
+              }
             </li>
           </ul>
         </div>
@@ -189,11 +202,18 @@
         <span>Únete a nosotros</span>
       </a>
       <div class="mobile-header-section-title">Cuenta</div>
+      @if (sesionDelPanelEnWeb) {
+      <a class="mobile-header-link" [routerLink]="[destinoPanel]" (click)="closeMobileMenu()">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>Volver al panel</span>
+      </a>
+      } @else {
       <a class="mobile-header-link" [routerLink]="['/login']" routerLinkActive="active"
         (click)="closeMobileMenu()">
         <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
         <span>Iniciar Sesión</span>
       </a>
+      }
     </nav>
     <div class="mobile-header-social" role="group" aria-label="Redes sociales">
       <a class="mobile-header-social-link" href="https://www.facebook.com/moiskimdo.escueladetaekwondo/"
@@ -212,368 +232,6 @@
   </div>
 </div>
 }
-}
-
-<!-- Header para administradores -->
-@if (mostrarHeaderAdmin) {
-<header class="admin-top-navbar admin-ui">
-  <div class="navbar-container">
-    <button class="admin-toggle-button" type="button" (click)="toggleAdminMenu()" aria-label="Abrir menú"
-      aria-controls="admin-sidebar" [attr.aria-expanded]="adminMenuVisible">
-      <i class="bi bi-list"></i>
-    </button>
-    <a class="navbar-brand" [routerLink]="['/adminpage']">
-      <img class="admin-logo" src="../../../../assets/media/Logo_escuela.svg" alt="Logo">
-      <div class="brand-text">
-        <span class="brand-title">MOI'S KIM DO</span>
-        <span class="brand-subtitle">Panel de Administración</span>
-      </div>
-    </a>
-    <nav class="admin-quick-nav" aria-label="Accesos rápidos de administración">
-      @for (item of visibleAdminQuickLinks; track item.route) {
-        <a
-          class="quick-link"
-          [attr.data-priority]="item.priority ?? 99"
-          [routerLink]="[item.route]"
-          [class.active]="isAdminQuickRouteActive(item)"
-          [title]="etiquetaAccesoRapido(item)"
-          [attr.aria-label]="etiquetaAccesoRapido(item)">
-          <i class="bi {{ item.icon }}"></i>
-          @if (item.contador === 'solicitudes' && contadorSolicitudes > 0) {
-            <span class="contador-aviso" aria-hidden="true">{{ textoContador(contadorSolicitudes) }}</span>
-          }
-        </a>
-      }
-    </nav>
-    <div class="navbar-actions">
-      <div class="admin-account-menu">
-        <button type="button" class="admin-account-toggle" (click)="toggleAdminAccountMenu()"
-          [class.is-open]="isAdminAccountMenuOpen" [attr.aria-expanded]="isAdminAccountMenuOpen"
-          aria-haspopup="menu" aria-label="Opciones de cuenta">
-          <i class="bi bi-person-circle"></i>
-          <span class="username" [attr.title]="username || 'Mi cuenta'">{{ username || 'Mi cuenta' }}</span>
-          <i class="bi admin-account-chevron"
-            [ngClass]="isAdminAccountMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-        </button>
-        @if (isAdminAccountMenuOpen) {
-        <div class="admin-account-menu-panel" role="menu" aria-label="Opciones de cuenta admin">
-          @if (tieneAccesoDual) {
-          <button class="admin-account-menu-item" type="button" (click)="cambiarVistaUsuario()">
-            <i class="bi bi-calendar2-check"></i>
-            <span>Cambiar a usuario</span>
-          </button>
-          }
-          <button class="admin-account-menu-item logout" type="button"
-            (click)="cerrarSesion(); closeAdminAccountMenu()">
-            <i class="bi bi-box-arrow-right"></i>
-            <span>Cerrar sesión</span>
-          </button>
-        </div>
-        }
-      </div>
-    </div>
-  </div>
-</header>
-
-<nav class="admin-sidebar" id="admin-sidebar" [ngClass]="{ 'show': adminMenuVisible }">
-  <div class="sidebar-header">
-    <button class="close-sidebar" (click)="closeAdminMenu()">
-      <i class="bi bi-x-lg"></i>
-    </button>
-    <h3>Navegación</h3>
-  </div>
-
-  <ul class="sidebar-menu">
-    <li class="menu-section">
-      <span class="section-title">Principal</span>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/adminpage']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-speedometer2"></i>
-        <span>Dashboard</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/']" [state]="{ verWeb: true }" routerLinkActive="active"
-        [routerLinkActiveOptions]="{exact: true}" (click)="closeAdminMenu()">
-        <i class="bi bi-house-door"></i>
-        <span>Inicio</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/eventos']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-calendar-event"></i>
-        <span>Eventos</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/horarios']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-clock"></i>
-        <span>Horarios</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/tarifas']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-tag"></i>
-        <span>Tarifas</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/contacto']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-envelope"></i>
-        <span>Contacto</span>
-      </a>
-    </li>
-
-    <li class="menu-section">
-      <span class="section-title">Deportes</span>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/taekwondo']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-lightning-fill"></i>
-        <span>Taekwondo</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/kickboxing']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-gem"></i>
-        <span>Kickboxing</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/pilates']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-heart-pulse"></i>
-        <span>Pilates</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/defensa-personal-femenina']" routerLinkActive="active"
-        (click)="closeAdminMenu()">
-        <i class="bi bi-shield-fill-check"></i>
-        <span>Defensa Personal</span>
-      </a>
-    </li>
-
-    <li class="menu-section">
-      <span class="section-title">Gestión</span>
-    </li>
-    <li><a class="menu-link" [routerLink]="['/preinscripciones']" routerLinkActive="active" (click)="closeAdminMenu()"><i class="bi bi-clipboard2-check"></i><span>Preinscripciones</span></a></li>
-
-    <!-- Alumnos Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('alumnos'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['alumnos']">
-        <i class="bi bi-people"></i>
-        <span>Alumnos</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['alumnos']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/alumnosListar']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Listar Alumnos</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/alumnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-person-plus"></i>
-            <span>Crear Alumno</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/alumnosEliminar']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-trash"></i>
-            <span>Eliminar Alumno</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Grupos y Turnos Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('grupos'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['grupos']">
-        <i class="bi bi-collection"></i>
-        <span>Grupos y Turnos</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['grupos']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/gruposListar']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Gestión de Grupos y Turnos</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/turnosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-calendar-plus"></i>
-            <span>Crear Turno</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/gruposCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-plus-square"></i>
-            <span>Crear Grupo</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Eventos Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('eventos'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['eventos']">
-        <i class="bi bi-calendar-check"></i>
-        <span>Eventos</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['eventos']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/eventosListar']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Consultar Eventos</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/eventosCrear']" routerLinkActive="active" (click)="closeAdminMenu()">
-            <i class="bi bi-calendar-plus-fill"></i>
-            <span>Crear Evento</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Productos Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('productos'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['productos']">
-        <i class="bi bi-cart3"></i>
-        <span>Productos</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['productos']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/productosListar']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Consultar Productos</span>
-          </a>
-        </li>
-        <li>
-          <a class="submenu-link" [routerLink]="['/productosCrear']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-plus-square-fill"></i>
-            <span>Crear Producto</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Tesorería -->
-    <li>
-      <a class="menu-link" [routerLink]="['/tesoreriaCobros']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-cash-stack"></i>
-        <span>Tesorería y Cobros</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/cajaSede']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-safe2"></i>
-        <span>Caja de sede</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/solicitudes']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-inbox"></i>
-        <span>Solicitudes</span>
-        @if (contadorSolicitudes > 0) {
-          <span class="contador-aviso">{{ textoContador(contadorSolicitudes) }}</span>
-          <span class="visually-hidden">por atender</span>
-        }
-      </a>
-    </li>
-    @if (tieneRolProfesor) {
-    <li>
-      <a class="menu-link" [routerLink]="['/mi-caja']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-wallet2"></i>
-        <span>Mi caja</span>
-      </a>
-    </li>
-    }
-    @if (veMisGrupos) {
-    <li>
-      <a class="menu-link" [routerLink]="['/mis-grupos']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-people"></i>
-        <span>Mis grupos</span>
-      </a>
-    </li>
-    }
-    @if (isAdminOnly) {
-    <li>
-      <a class="menu-link" [routerLink]="['/auditoriaSistema']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-journal-text"></i>
-        <span>Registro de acciones</span>
-      </a>
-    </li>
-    }
-
-    <!-- Convocatorias Section -->
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('convocatorias'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['convocatorias']">
-        <i class="bi bi-clipboard-check"></i>
-        <span>Convocatorias</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['convocatorias']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/convocatoriasListar']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-list-ul"></i>
-            <span>Consultar Convocatorias</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-
-    <!-- Administración Section -->
-    @if (isAdminOnly) {
-    <li class="menu-item-expandable">
-      <div class="menu-link expandable" (click)="toggleSection('administracion'); $event.stopPropagation()"
-        [class.expanded]="expandedSections['administracion']">
-        <i class="bi bi-gear-fill"></i>
-        <span>Administración</span>
-        </div>
-      <ul class="submenu" [class.show]="expandedSections['administracion']">
-        <li>
-          <a class="submenu-link" [routerLink]="['/configuracion-sistema']" routerLinkActive="active"
-            (click)="closeAdminMenu()">
-            <i class="bi bi-sliders"></i>
-            <span>Configuración</span>
-          </a>
-        </li>
-      </ul>
-    </li>
-    }
-
-    <!-- Superadmin Section: solo la sesión administradora de plataforma -->
-    @if (esAdminPlataforma) {
-    <li class="menu-section">
-      <span class="section-title">Superadmin</span>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/plataformaErrores']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-exclamation-octagon"></i>
-        <span>Errores de plataforma</span>
-      </a>
-    </li>
-    <li>
-      <a class="menu-link" [routerLink]="['/plataformaLogos']" routerLinkActive="active" (click)="closeAdminMenu()">
-        <i class="bi bi-palette"></i>
-        <span>Logo y color</span>
-      </a>
-    </li>
-    }
-  </ul>
-</nav>
 }
 
 @if (mostrarHeaderUser) {

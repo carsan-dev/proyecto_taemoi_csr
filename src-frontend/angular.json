@@ -348,7 +348,6 @@
               "src/app/panel-nuevo/ficha/ficha-alumno-base.bloqueos.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-alumno-base.reservas.spec.ts",
               "src/app/servicios/endpoints/solicitudes.service.spec.ts",
-              "src/app/componentes/vistas/layout/header/header.solicitudes.spec.ts",
               "src/app/componentes/generales/pedir-al-propietario/pedir-al-propietario.spec.ts",
               "src/app/utils/subida-archivos.util.spec.ts",
               "src/app/panel-nuevo/ficha/ficha-alumno-base.subidas.spec.ts",

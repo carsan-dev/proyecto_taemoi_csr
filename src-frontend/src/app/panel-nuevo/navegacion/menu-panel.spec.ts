@@ -1,14 +1,4 @@
-import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
-
-import { HeaderComponent } from '../../componentes/vistas/layout/header/header.component';
-import { AuthenticationService } from '../../servicios/authentication/authentication.service';
-import { Capacidad, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
-import { EstilosPanelService } from '../../panel-nuevo/estilos-panel.service';
-import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
-import { PageScrollService } from '../../servicios/generales/page-scroll.service';
-import { ScrollLockService } from '../../servicios/generales/scroll-lock.service';
+import { Capacidad } from '../../servicios/authentication/permisos-sesion.service';
 import {
   BARRA_INFERIOR,
   ContextoMenu,
@@ -20,23 +10,6 @@ import {
   seccionActiva,
   entradaActual,
 } from './menu-panel';
-
-/** Rutas de la web pública que la cabecera de hoy enlaza desde el menú lateral: no son entradas de gestión. */
-const RUTAS_PUBLICAS = new Set([
-  '/',
-  '/panel/mi-perfil', // nueva en el panel nuevo: la cabecera de hoy no la tiene
-  '/eventos',
-  '/horarios',
-  '/tarifas',
-  '/contacto',
-  '/taekwondo',
-  '/kickboxing',
-  '/pilates',
-  '/defensa-personal-femenina',
-  '/politica-privacidad',
-  '/politica-cookies',
-  '/aviso-legal',
-]);
 
 interface Caso {
   nombre: string;
@@ -71,64 +44,7 @@ function contextoDe(caso: Caso): ContextoMenu {
   };
 }
 
-/** Pinta la cabecera de HOY con la sesión del caso y saca todas las rutas de su barra, su menú lateral y su cuenta. */
-async function rutasDeLaCabeceraDeHoy(caso: Caso): Promise<Set<string>> {
-  const auth = {
-    usuarioLogueadoCambio: new BehaviorSubject<boolean>(true),
-    usernameCambio: new BehaviorSubject<string | null>('cuenta'),
-    rolesCambio: new BehaviorSubject<string[]>(caso.roles),
-    comprobarLogueado: () => true,
-    getRoles: () => of(caso.roles),
-    resolverRolesDisponibles: () => of(caso.roles),
-    esAdminPlataforma: () => of(caso.plataforma),
-    marcarVistaPreferidaSegunRuta: () => undefined,
-    tieneAccesoAdmin: (r: string[]) => r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER'),
-    tieneAccesoUser: (r: string[]) => r.includes('ROLE_USER'),
-    tieneAccesoDual: (r: string[]) =>
-      r.includes('ROLE_USER') && (r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER')),
-  };
-  TestBed.resetTestingModule();
-  await TestBed.configureTestingModule({
-    imports: [HeaderComponent],
-    providers: [
-      provideRouter([]),
-      { provide: AuthenticationService, useValue: auth },
-      { provide: PageScrollService, useValue: { scrollTop: 0 } },
-      { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
-      { provide: SolicitudesContadorService, useValue: { total: () => 0, refrescar: () => undefined, reiniciar: () => undefined } },
-      { provide: PermisosSesionService, useValue: { capacidades: () => of(caso.capacidades), obtener: () => of({}) } },
-      { provide: EstilosPanelService, useValue: { cargarGestion: () => Promise.resolve() } },
-    ],
-  }).compileComponents();
-  const fixture = TestBed.createComponent(HeaderComponent);
-  fixture.detectChanges();
-  await fixture.whenStable();
-  fixture.detectChanges();
-  fixture.componentInstance.isAdminAccountMenuOpen = true;
-  fixture.detectChanges();
-  const raiz = fixture.nativeElement as HTMLElement;
-  const enlaces = raiz.querySelectorAll<HTMLAnchorElement>(
-    '.admin-top-navbar a[href], #admin-sidebar a[href], .admin-account-menu-panel a[href]'
-  );
-  expect(enlaces.length).withContext(`la cabecera de hoy se pintó para «${caso.nombre}»`).toBeGreaterThan(10);
-  const rutas = new Set<string>();
-  enlaces.forEach((a) => rutas.add(a.getAttribute('href')!));
-  fixture.destroy();
-  return rutas;
-}
-
 describe('menu-panel: nada se pierde (decisión 232)', () => {
-  for (const caso of CASOS) {
-    it(`${caso.nombre}: las mismas rutas de gestión que la cabecera de hoy, con las mismas condiciones`, async () => {
-      const hoy = [...(await rutasDeLaCabeceraDeHoy(caso))].filter((r) => !RUTAS_PUBLICAS.has(r)).sort();
-      const nuevo = rutasDeGestion(contextoDe(caso))
-        .filter((r) => !RUTAS_PUBLICAS.has(r))
-        .sort();
-
-      expect(nuevo).toEqual(hoy);
-    });
-  }
-
   it('el propietario de Moiskimdo (ADMIN y PROFESOR) sigue viendo «Mi caja», «Mis grupos» y lo solo del propietario', () => {
     const rutas = rutasDeGestion(contextoDe(CASOS[3]));
     for (const ruta of ['/mi-caja', '/mis-grupos', '/auditoriaSistema', '/configuracion-sistema']) {
