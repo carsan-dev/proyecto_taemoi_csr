@@ -35,6 +35,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -363,6 +365,43 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		assertEquals(200, conserva.getResponse().getStatus(), conserva.getResponse().getContentAsString());
 		assertEquals(ficha, alumnoDe(referencia));
 		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+	}
+
+	/** Decisión 96 con las tres sesiones del responsable: 403 con el motivo y ni la solicitud ni la ficha cambian. */
+	@ParameterizedTest
+	@ValueSource(strings = { "R", "R + Pr", "R + F" })
+	void finalizar_conOtroEmail_mismo403ParaRProfesorYFamilia(String perfil) throws Exception {
+		String dni = dni();
+		String emailFicha = "it-96-perfil-" + dni + "-" + e.marca + "@example.test";
+		long ficha = e.alumno("E96PERFIL" + dni + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, emailFicha, ficha);
+		String referencia = preinscripcion(e.org, e.gA, List.of(e.tA), dni, "otro-96-" + dni + "@example.test");
+		int cargos = jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE alumno_id = ?", Integer.class, ficha);
+
+		MvcResult cambio = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
+				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "USAR_PREINSCRIPCION")),
+				tokenDel(perfil));
+
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals("PENDIENTE", estadoDe(referencia));
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
+		assertEquals(cargos,
+				jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE alumno_id = ?", Integer.class, ficha));
+	}
+
+	private String tokenDel(String perfil) {
+		return switch (perfil) {
+		case "R" -> tokenA;
+		case "R + F" -> e.token(jwtService, usuarios, e.respA);
+		default -> {
+			long cuenta = e.cuenta(usuarios, "r-pr-96");
+			e.responsable(cuenta, e.sA);
+			jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'PROFESOR')", cuenta, e.org);
+			yield e.token(jwtService, usuarios, cuenta);
+		}
+		};
 	}
 
 	@Test

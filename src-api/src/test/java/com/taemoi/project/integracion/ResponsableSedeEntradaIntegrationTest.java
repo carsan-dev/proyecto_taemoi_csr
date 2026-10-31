@@ -117,6 +117,7 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of("PANEL_SEDE"), textos(permisos.get("capacidades")));
 
 		assertEquals(200, estado(get("/api/escuela/marca"), token));
+		assertEquals(404, estado(get("/api/escuela/logo"), token), "la escuela no tiene logo subido: 404, no 403");
 		assertEquals(1, leer(get("/api/auth/organizaciones"), token, 200).size());
 		assertEquals(200, estado(get("/api/auth/plataforma"), token));
 		assertEquals(403, estado(get("/api/auth/user/alumnos"), token), "no es familia");
@@ -164,6 +165,26 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(401, estado(get("/api/alumnos"), token));
 		assertEquals(401, estado(get("/api/auth/roles"), token));
+	}
+
+	/** Recargar la página: las tres llamadas con las que el panel recompone la sesión a partir de la cookie. */
+	@Test
+	void responsableSolo_recargaConSuCookie_yAlDesactivarLaMembresiaCae() throws Exception {
+		Usuario cuenta = cuenta("solo-recarga");
+		e.responsable(cuenta.getId(), e.sA);
+		String token = login(cuenta.getEmail());
+
+		assertEquals("true", texto(get("/api/auth/auth-status"), token, 200));
+		mvc.perform(get("/api/auth/roles").cookie(jwt(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE")));
+		assertEquals(List.of("PANEL_SEDE"), textos(leer(get("/api/auth/permisos"), token, 200).get("capacidades")));
+
+		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta.getId());
+
+		assertEquals("false", texto(get("/api/auth/auth-status"), token, 200));
+		assertEquals(401, estado(get("/api/auth/roles"), token));
+		assertEquals(401, estado(get("/api/auth/permisos"), token));
 	}
 
 	@Test
@@ -262,6 +283,27 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of("MIS_GRUPOS", "MI_CAJA", "PANEL_SEDE"), textos(permisos.get("capacidades")));
 	}
 
+	/** Las capacidades no viajan en el token: al perder R, la siguiente petición ya es la sesión solo-profesor. */
+	@Test
+	void responsableYProfesor_pierdeResponsable_sigueComoSoloProfesor() throws Exception {
+		Usuario cuenta = cuenta("pierde-r-profesor");
+		e.responsable(cuenta.getId(), e.sA);
+		membresia(cuenta.getId(), e.org, "PROFESOR");
+		asignar(cuenta.getId(), e.gA);
+		String token = login(cuenta.getEmail());
+		assertEquals(200, estado(get("/api/alumnos"), token));
+
+		desactivar(cuenta.getId(), "RESPONSABLE_SEDE");
+
+		assertEquals(403, estado(get("/api/alumnos"), token));
+		assertEquals(403, estado(get("/api/tesoreria/resumen"), token));
+		assertEquals(403, estado(get("/api/caja/sedes/" + e.sA + "/resumen"), token));
+		assertEquals(200, estado(get("/api/caja/profesor/cargos-pendientes"), token));
+		JsonNode permisos = leer(get("/api/auth/permisos"), token, 200);
+		assertEquals(List.of("PROFESOR"), textos(permisos.get("roles")));
+		assertEquals(List.of("MIS_GRUPOS", "MI_CAJA"), textos(permisos.get("capacidades")));
+	}
+
 	@Test
 	void profesorSolo_sigueSiendoSesionSoloProfesor() throws Exception {
 		Usuario cuenta = cuenta("profesor");
@@ -320,6 +362,39 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		mvc.perform(get("/api/auth/user").cookie(jwt(token)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.alumnoDTO").doesNotExist());
+	}
+
+	/** Sin R vuelve la regla de la familia: sin alumnos, la siguiente petición ya no entra. */
+	@Test
+	void responsableYFamiliaSinAlumnos_pierdeResponsable_401() throws Exception {
+		Usuario cuenta = cuenta("pierde-r-sin-alumnos");
+		e.responsable(cuenta.getId(), e.sA);
+		membresia(cuenta.getId(), e.org, "FAMILIA");
+		String token = login(cuenta.getEmail());
+		assertEquals(200, estado(get("/api/alumnos"), token));
+
+		desactivar(cuenta.getId(), "RESPONSABLE_SEDE");
+
+		assertEquals(401, estado(get("/api/alumnos"), token));
+		assertEquals(401, estado(get("/api/auth/roles"), token));
+		assertEquals("false", texto(get("/api/auth/auth-status"), token, 200));
+	}
+
+	/** Con alumnos sigue entrando, ya solo como familia: nada de su antigua sede. */
+	@Test
+	void responsableYFamiliaConAlumnos_pierdeResponsable_sigueComoFamilia() throws Exception {
+		long cuenta = e.cuentaFamilia(usuarios, "pierde-r-con-alumnos");
+		e.responsable(cuenta, e.sA);
+		String token = e.token(jwtService, usuarios, cuenta);
+		assertEquals(200, estado(get("/api/alumnos"), token));
+
+		desactivar(cuenta, "RESPONSABLE_SEDE");
+
+		assertEquals(403, estado(get("/api/alumnos"), token));
+		assertEquals(200, estado(get("/api/auth/user/alumnos"), token));
+		JsonNode permisos = leer(get("/api/auth/permisos"), token, 200);
+		assertEquals(List.of("FAMILIA"), textos(permisos.get("roles")));
+		assertEquals(0, permisos.get("sedes").size());
 	}
 
 	@Test
@@ -416,6 +491,10 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 				rol);
 	}
 
+	private void desactivar(long usuario, String rol) {
+		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ? AND rol = ?", usuario, rol);
+	}
+
 	private void asignar(long usuario, long grupo) {
 		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) "
 				+ "VALUES (?, ?, ?, 'TITULAR')", e.org, usuario, grupo);
@@ -468,6 +547,12 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = peticion(peticion, token);
 		assertEquals(esperado, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		return json.readTree(r.getResponse().getContentAsString());
+	}
+
+	private String texto(MockHttpServletRequestBuilder peticion, String token, int esperado) throws Exception {
+		MvcResult r = peticion(peticion, token);
+		assertEquals(esperado, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		return r.getResponse().getContentAsString();
 	}
 
 	private int estado(MockHttpServletRequestBuilder peticion, String token) throws Exception {

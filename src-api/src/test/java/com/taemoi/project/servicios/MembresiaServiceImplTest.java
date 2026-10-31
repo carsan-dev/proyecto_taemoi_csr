@@ -132,6 +132,35 @@ class MembresiaServiceImplTest {
 		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_MANAGER)));
 	}
 
+	/**
+	 * Pieza 9-5: los 32 subconjuntos de los cinco roles contra la fórmula anterior, congelada aquí a propósito (no llama a
+	 * producción). {@code requiereAlumnoActivo} solo cambia en R + familia sin gestión, con o sin profesor.
+	 */
+	@Test
+	void requiereAlumnoActivo_soloCambiaParaResponsableConFamiliaSinGestion() {
+		List<Roles> roles = List.of(Roles.ROLE_ADMIN, Roles.ROLE_MANAGER, Roles.ROLE_RESPONSABLE_SEDE,
+				Roles.ROLE_PROFESOR, Roles.ROLE_USER);
+		assertEquals(5, Roles.values().length, "un rol nuevo debe entrar en esta tabla");
+		int cambian = 0;
+		for (int mascara = 0; mascara < 32; mascara++) {
+			Set<Roles> autoridades = EnumSet.noneOf(Roles.class);
+			for (int i = 0; i < roles.size(); i++) {
+				if ((mascara & (1 << i)) != 0) {
+					autoridades.add(roles.get(i));
+				}
+			}
+			boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
+			boolean anterior = autoridades.contains(Roles.ROLE_USER) && !gestion;
+			boolean responsableConFamiliaSinGestion = anterior && autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE);
+			assertEquals(anterior && !responsableConFamiliaSinGestion, RolMembresia.requiereAlumnoActivo(autoridades),
+					autoridades.toString());
+			if (anterior != RolMembresia.requiereAlumnoActivo(autoridades)) {
+				cambian++;
+			}
+		}
+		assertEquals(2, cambian, "R + F y R + F + Pr");
+	}
+
 	@Test
 	void sesionSoloProfesor_esLaQueTieneProfesorYNingunoDeLosTresRolesDeSiempre() {
 		assertTrue(RolMembresia.sesionSoloProfesor(Set.of(Roles.ROLE_PROFESOR)));
