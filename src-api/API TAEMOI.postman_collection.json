@@ -18,7 +18,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -49,7 +49,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvUHJ1ZWJhQGdtYWlsLmNvbSIsImlhdCI6MTcxNjM5Nzk2MiwiZXhwIjoxNzE2NDMzOTYyfQ.0Tm6dTQjWw0ecTrDSPsAHSGRZ-Pq8x2-ukLLWQVdhOw",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -82,7 +82,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -114,7 +114,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -159,7 +159,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"crolyx16@gmail.com\",\r\n    \"contrasena\": \"17022003\"\r\n}",
+							"raw": "{\r\n    \"email\": \"{{email_admin}}\",\r\n    \"contrasena\": \"{{contrasena_admin}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -190,7 +190,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"usuarioPrueba@gmail.com\",\r\n    \"contrasena\": \"12345678\"\r\n}",
+							"raw": "{\r\n    \"email\": \"{{email_user}}\",\r\n    \"contrasena\": \"{{contrasena_user}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -221,7 +221,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"moiskimdotaekwondo@gmail.com\",\r\n    \"contrasena\": \"09012013\"\r\n}",
+							"raw": "{\r\n    \"email\": \"{{email_manager}}\",\r\n    \"contrasena\": \"{{contrasena_manager}}\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -252,7 +252,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"nombre\": \"Carlos\",\r\n    \"apellidos\": \"Sanchez\",\r\n    \"email\": \"emaIl@email.es\",\r\n    \"contrasena\": \"12345\",\r\n    \"roles\": [\"ROLE_USER\"]\r\n}",
+							"raw": "{\r\n    \"nombre\": \"Carlos\",\r\n    \"apellidos\": \"Sanchez\",\r\n    \"email\": \"{{email_registro}}\",\r\n    \"contrasena\": \"{{contrasena_registro}}\",\r\n    \"roles\": [\"ROLE_USER\"]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -284,7 +284,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -316,7 +316,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzODAxNTAsImV4cCI6MTcxNjQxNjE1MH0.4sUdYu2m1tONsRy0MGNKLYw37GQvCDIlSj_IgTFkWtM",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -353,7 +353,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -394,7 +394,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -425,7 +425,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -457,7 +457,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvUHJ1ZWJhQGdtYWlsLmNvbSIsImlhdCI6MTcxNjQ1Mjk5NCwiZXhwIjoxNzE2NDg4OTk0fQ.iC3M0dK8UPDnrVUcgDkfqXt2iQnSKugLB1CO1DI_2tk",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -779,7 +779,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -791,7 +791,7 @@
 							"formdata": [
 								{
 									"key": "nuevo",
-									"value": "{\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"nombre\": \"Carlos\",\n  \"apellidos\": \"Sanchez\",\n  \"numeroExpediente\": 123456789,\n  \"fechaNacimiento\": \"2003-02-17\",\n  \"nif\": \"29501424Z\",\n  \"direccion\": \"Caserio Pedro,asd5asd3, Madrid, Com 19407\",\n  \"telefono\": \"695568455\",\n  \"email\": \"csanrom1702@g.educaand.es\",\n  \"fechaAlta\": \"2003-10-19\"\n}",
+									"value": "{\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"nombre\": \"Alumno\",\n  \"apellidos\": \"Ejemplo\",\n  \"numeroExpediente\": 10000001,\n  \"fechaNacimiento\": \"2010-01-01\",\n  \"nif\": \"00000000T\",\n  \"direccion\": \"Calle Ejemplo 1, 00000, Ciudad\",\n  \"telefono\": \"600000000\",\n  \"email\": \"alumno@example.test\",\n  \"fechaAlta\": \"2003-10-19\"\n}",
 									"type": "text"
 								},
 								{
@@ -826,7 +826,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -838,7 +838,7 @@
 							"formdata": [
 								{
 									"key": "alumnoEditado",
-									"value": "{\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"numeroExpediente\": \"12345675\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"nif\": \"12345678A\",\n  \"direccion\": \"Calle Principal, 123\",\n  \"telefono\": 123456787,\n  \"email\": \"juan@examples.com\",\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"fechaAlta\": \"2023-01-01\"\n}",
+									"value": "{\n  \"nombre\": \"Alumno\",\n  \"apellidos\": \"Ejemplo\",\n  \"numeroExpediente\": \"10000001\",\n  \"fechaNacimiento\": \"2010-01-01\",\n  \"nif\": \"00000000T\",\n  \"direccion\": \"Calle Ejemplo 1, 00000, Ciudad\",\n  \"telefono\": 600000000,\n  \"email\": \"alumno@example.test\",\n  \"tipoTarifa\": \"FAMILIAR\",\n  \"fechaAlta\": \"2023-01-01\"\n}",
 									"type": "text"
 								}
 							]
@@ -868,7 +868,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -905,7 +905,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -945,7 +945,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -986,7 +986,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1018,7 +1018,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1052,7 +1052,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU1MTMyODUsImV4cCI6MTcxNTU0OTI4NX0.VEAUsyv34wgSSGpy0l7GOBiRcjNsoZylW8iBwao0auI",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1086,7 +1086,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYyMjE3MjMsImV4cCI6MTcxNjI1NzcyM30.kjBS0MYkTzCHf9dyzzUZL5KdMDEk1UZnTdXBDPayDns",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1118,7 +1118,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTcwMDE5MzYsImV4cCI6MTcxNzAzNzkzNn0.Cltae00fL3WG4M5fg0Xfe3I7Ogk0oiocPwa_u_OAIVA",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1156,7 +1156,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTcwMDI2NTIsImV4cCI6MTcxNzAzODY1Mn0.uyB3Uh4zD6R_44zvpBY23ex4LCd_WiFOKVurGaejCcw",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1203,7 +1203,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDA5NzcsImV4cCI6MTcxNjg3Njk3N30.KHDYSFLnXxrKBwpUcPmKy5SkNbdflvqR_REdULdXQSM",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1245,7 +1245,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1277,7 +1277,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY4NDE2OTgsImV4cCI6MTcxNjg3NzY5OH0.cUtzJTIFRffOMLpguWjor6cNPTE1wBi2eW7CKtCgzRo",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1338,7 +1338,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1379,7 +1379,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTY0NTQzMjcsImV4cCI6MTcxNjQ5MDMyN30.EPVfS4JyZ0FV-uM0uQeOMMd7wd2mQAKp6rbEpBF2J90",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1420,7 +1420,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1461,7 +1461,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTYzMTUyMjUsImV4cCI6MTcxNjM1MTIyNX0.gAC1cihs-FSvKbe5mNXwj4MWUVXtxeots5_ABReR9Jk",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1493,7 +1493,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1527,7 +1527,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1561,7 +1561,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTgwODIsImV4cCI6MTcxNTgzNDA4Mn0.Hu29rpy7XZ5TWk2oiQ2jo8BuJPC0TNxiP_uvyrm6Zng",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1623,7 +1623,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1656,7 +1656,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1694,7 +1694,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTU3OTcyNzgsImV4cCI6MTcxNTgzMzI3OH0.JhtyN36QC7JNeUcNPZqsCRcsC78hPD28UxpXFBw9Z58",
+									"value": "{{token}}",
 									"type": "string"
 								}
 							]
@@ -1774,6 +1774,51 @@
 		{
 			"key": "nombre",
 			"value": "nombre=Irene",
+			"type": "string"
+		},
+		{
+			"key": "contrasena_admin",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contrasena_user",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contrasena_manager",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "contrasena_registro",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email_admin",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email_user",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email_manager",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email_registro",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
 			"type": "string"
 		}
 	]
