@@ -176,7 +176,7 @@ export class SkeletonComponent implements OnInit {
   /**
    * Mira la sesión al entrar en cada ruta del panel (los permisos están en caché: solo hay petición tras
    * `reiniciar()`) y al entrar o salir de una cuenta. Los servicios se piden aquí, no al crear el componente: fuera del
-   * panel no se pide nada. Cabecera nueva con gestión o profesor en la escuela (decisión 326, R6; sin interruptor desde
+   * panel no se pide nada. Cabecera nueva con gestión, profesor o responsable en la escuela (decisión 326, R6; sin interruptor desde
    * 8b-Z) y la hoja `panel-nuevo.css` cargada. Las familias y la plataforma siguen con la de hoy. Falla cerrado.
    * Mientras no hay respuesta, el hueco. Una respuesta válida guarda o borra el recordatorio (que solo sirve en la carga
    * directa de una URL desconocida); un error no lo toca; cerrar sesión lo borra y pasa a lo de hoy.
@@ -193,7 +193,8 @@ export class SkeletonComponent implements OnInit {
               take(1),
               map(
                 (p) =>
-                  (p?.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR' || rol === 'PROFESOR')
+                  (p?.roles ?? []).some((rol) => rol === 'PROPIETARIO' || rol === 'ADMINISTRADOR' || rol === 'PROFESOR') ||
+                  !!p?.capacidades?.includes('PANEL_SEDE')
               ),
               switchMap((activo) => {
                 this.recordar(activo);

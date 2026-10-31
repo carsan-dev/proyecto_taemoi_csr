@@ -4,7 +4,7 @@ import { LoginInterface } from '../../interfaces/login-interface';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, catchError, defer, finalize, map, Observable, of, retry, shareReplay, switchMap, take, tap, throwError, timer } from 'rxjs';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { PermisosSesionService } from './permisos-sesion.service';
+import { Capacidad, PermisosSesionService } from './permisos-sesion.service';
 import { sesionCerrada } from './sesion-cerrada';
 
 export type PortalPreferido = 'admin' | 'user';
@@ -17,15 +17,17 @@ export interface DatosInvitacion {
 }
 
 /**
- * Sesión «solo profesor» (pieza 6b-3b): ROLE_PROFESOR sin gestión ni familia (puede ser también responsable de
- * sede). El servidor solo le deja «Mi caja» y lo imprescindible de la sesión: nada de gestión ni del portal familiar.
+ * Sesión «solo profesor» (pieza 6b-3b): ROLE_PROFESOR sin gestión, familia ni responsable de sede (R + Pr entra como
+ * responsable, decisión 371). El servidor solo le deja «Mi caja» y lo imprescindible de la sesión: nada de gestión ni
+ * del portal familiar.
  */
 export function esSoloProfesor(roles: readonly string[]): boolean {
   return (
     roles.includes('ROLE_PROFESOR') &&
     !roles.includes('ROLE_ADMIN') &&
     !roles.includes('ROLE_MANAGER') &&
-    !roles.includes('ROLE_USER')
+    !roles.includes('ROLE_USER') &&
+    !roles.includes('ROLE_RESPONSABLE_SEDE')
   );
 }
 
@@ -397,6 +399,10 @@ export class AuthenticationService {
     return roles.includes('ROLE_USER');
   }
 
+  tieneRolResponsable(): boolean {
+    return this.rolesSubject.value.includes('ROLE_RESPONSABLE_SEDE');
+  }
+
   tieneAccesoAdmin(roles: string[] = this.rolesSubject.value): boolean {
     return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
   }
@@ -405,8 +411,9 @@ export class AuthenticationService {
     return roles.includes('ROLE_USER');
   }
 
-  tieneAccesoDual(roles: string[] = this.rolesSubject.value): boolean {
-    return this.tieneAccesoAdmin(roles) && this.tieneAccesoUser(roles);
+  /** Gestión + familia, o la capacidad ELEGIR_VISTA de responsable + familia (decisión 371). */
+  tieneAccesoDual(roles: string[] = this.rolesSubject.value, capacidades: readonly Capacidad[] = []): boolean {
+    return (this.tieneAccesoAdmin(roles) && this.tieneAccesoUser(roles)) || capacidades.includes('ELEGIR_VISTA');
   }
 
   tieneRolProfesor(roles: string[] = this.rolesSubject.value): boolean {
@@ -440,11 +447,29 @@ export class AuthenticationService {
     }
   }
 
-  resolverRutaInicioPorRoles(roles: string[] = this.rolesSubject.value): string {
-    const tieneAccesoAdmin = this.tieneAccesoAdmin(roles);
+  /**
+   * Las capacidades de un responsable de sede, que deciden su destino y su menú; las demás sesiones no las necesitan
+   * para eso y siguen sin esperar a `/auth/permisos`. Si no se pueden leer, ninguna (falla cerrado).
+   */
+  capacidadesDeResponsable(roles: readonly string[]): Observable<readonly Capacidad[]> {
+    return roles.includes('ROLE_RESPONSABLE_SEDE') ? this.permisos.capacidades().pipe(take(1)) : of([]);
+  }
+
+  /** Destino al entrar: el de {@link resolverRutaInicioPorRoles}, con las capacidades del responsable de sede. */
+  resolverRutaInicio(roles: string[] = this.rolesSubject.value): Observable<string> {
+    return this.capacidadesDeResponsable(roles).pipe(
+      map((capacidades) => this.resolverRutaInicioPorRoles(roles, capacidades))
+    );
+  }
+
+  resolverRutaInicioPorRoles(
+    roles: string[] = this.rolesSubject.value,
+    capacidades: readonly Capacidad[] = []
+  ): string {
+    const tieneAccesoAdmin = this.tieneAccesoAdmin(roles) || capacidades.includes('PANEL_SEDE');
     const tieneAccesoUser = this.tieneAccesoUser(roles);
 
-    if (tieneAccesoAdmin && tieneAccesoUser) {
+    if (this.tieneAccesoDual(roles, capacidades)) {
       return this.obtenerVistaPreferida() === 'user' ? '/userpage' : '/adminpage';
     }
     if (tieneAccesoAdmin) {

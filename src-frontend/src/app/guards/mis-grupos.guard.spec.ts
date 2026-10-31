@@ -67,6 +67,11 @@ describe('misGruposGuard', () => {
     });
   }
 
+  it('manda a su panel a un responsable sin MIS_GRUPOS', async () => {
+    conPermisos(['PANEL_SEDE'], ['ROLE_RESPONSABLE_SEDE']);
+    expect(url(await resultado())).toBe('/adminpage');
+  });
+
   it('manda a la raíz a la familia sin MIS_GRUPOS', async () => {
     conPermisos([], ['ROLE_USER']);
     expect(url(await resultado())).toBe('/');

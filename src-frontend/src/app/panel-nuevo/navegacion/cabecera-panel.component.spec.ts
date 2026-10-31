@@ -115,8 +115,9 @@ describe('CabeceraPanelComponent (8b-N)', () => {
             getRoles: () => of(roles),
             getRolesActuales: () => roles,
             esAdminPlataforma: () => of(false),
-            tieneAccesoDual: (r: string[]) =>
-              r.includes('ROLE_USER') && (r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER')),
+            tieneAccesoDual: (r: string[], capacidades: string[] = []) =>
+              (r.includes('ROLE_USER') && (r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER'))) ||
+              capacidades.includes('ELEGIR_VISTA'),
             guardarVistaPreferida: jasmine.createSpy('guardarVistaPreferida'),
             logout,
           },
@@ -590,6 +591,63 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       expect(el().querySelector('#pn-menu-cuenta')).toBeNull();
       expect(boton.getAttribute('aria-expanded')).toBe('false');
       expect(document.activeElement).toBe(boton);
+    });
+
+    describe('responsable de sede (decisiones 370 y 371)', () => {
+      function textos(selector: string): string[] {
+        return Array.from(el().querySelectorAll(selector)).map((e) => e.textContent!.trim());
+      }
+
+      itSinReloj('R solo: las cinco secciones de la 370, «Responsable de sede» y el contador', async () => {
+        roles = ['ROLE_RESPONSABLE_SEDE'];
+        datosPermisos = permisos({ roles: ['RESPONSABLE_SEDE'], capacidades: ['PANEL_SEDE'] });
+        await montar();
+        responderMarca();
+        expect(refrescar).toHaveBeenCalled();
+        expect(textos('.pn-cab__nav .pn-cab__entrada').map((t) => t.split('\n')[0].trim())).toEqual([
+          'Inicio',
+          'Alumnos',
+          'Grupos',
+          'Tesorería',
+          'Solicitudes',
+        ]);
+        const cuenta = abrirCuenta();
+        expect(cuenta.textContent).toContain('Responsable de sede');
+        expect(cuenta.textContent).toContain('Mi perfil');
+        expect(cuenta.textContent).not.toContain('Cambiar a familia');
+      });
+
+      itSinReloj('R + Pr: no cae en la vista de solo profesor y suma Mi caja y Mis grupos', async () => {
+        roles = ['ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR'];
+        datosPermisos = permisos({ roles: ['RESPONSABLE_SEDE', 'PROFESOR'], capacidades: ['MIS_GRUPOS', 'MI_CAJA', 'PANEL_SEDE'] });
+        await montar();
+        responderMarca();
+        const componente = fixture.componentInstance;
+        expect(componente.soloProfesor()).toBeFalse();
+        const rutas = componente.secciones().flatMap((s) => s.entradas.map((e) => e.ruta));
+        expect(rutas).toContain('/mi-caja');
+        expect(rutas).toContain('/mis-grupos');
+        expect(rutas).toContain('/tesoreriaCobros');
+        expect(rutas).not.toContain('/productosListar');
+        expect(componente.rol()).toBe('Responsable de sede');
+      });
+
+      itSinReloj('R + F: «Cambiar a familia» con ELEGIR_VISTA', async () => {
+        roles = ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'];
+        datosPermisos = permisos({ roles: ['RESPONSABLE_SEDE', 'FAMILIA'], capacidades: ['PANEL_SEDE', 'ELEGIR_VISTA'] });
+        await montar();
+        responderMarca();
+        expect(abrirCuenta().textContent).toContain('Cambiar a familia');
+      });
+
+      itSinReloj('solo profesor y gestión siguen igual', async () => {
+        roles = ['ROLE_PROFESOR'];
+        datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: ['MIS_GRUPOS', 'MI_CAJA'] });
+        await montar();
+        responderMarca();
+        expect(fixture.componentInstance.soloProfesor()).toBeTrue();
+        expect(fixture.componentInstance.secciones().map((s) => s.etiqueta)).toEqual(['Mis grupos', 'Mi caja']);
+      });
     });
 
     itSinReloj('«Cambiar a familia» solo con acceso doble, como «Cambiar a usuario» de hoy', async () => {

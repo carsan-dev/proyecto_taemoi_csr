@@ -26,10 +26,6 @@ describe('AuthenticationService: entrada de «Mi caja»', () => {
     expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR'])).toBe('/mis-grupos');
   });
 
-  it('profesor y responsable de sede entra en /mis-grupos', () => {
-    expect(auth.resolverRutaInicioPorRoles(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'])).toBe('/mis-grupos');
-  });
-
   it('familia + profesor y gestión + profesor entran como hoy', () => {
     expect(auth.resolverRutaInicioPorRoles(['ROLE_USER', 'ROLE_PROFESOR'])).toBe('/userpage');
     expect(auth.resolverRutaInicioPorRoles(['ROLE_MANAGER', 'ROLE_PROFESOR'])).toBe('/adminpage');
@@ -40,7 +36,7 @@ describe('AuthenticationService: entrada de «Mi caja»', () => {
 
   it('esSoloProfesor distingue las cuentas mixtas', () => {
     expect(esSoloProfesor(['ROLE_PROFESOR'])).toBeTrue();
-    expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'])).toBeTrue();
+    expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'])).toBeFalse();
     expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_USER'])).toBeFalse();
     expect(esSoloProfesor(['ROLE_PROFESOR', 'ROLE_ADMIN'])).toBeFalse();
     expect(esSoloProfesor(['ROLE_RESPONSABLE_SEDE'])).toBeFalse();

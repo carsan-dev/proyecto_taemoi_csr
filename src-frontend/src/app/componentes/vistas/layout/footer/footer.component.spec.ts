@@ -10,6 +10,7 @@ describe('FooterComponent', () => {
     const auth = {
       tieneAccesoAdmin: () => roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER'),
       esSoloProfesor: () => esSoloProfesor(roles),
+      tieneRolResponsable: () => roles.includes('ROLE_RESPONSABLE_SEDE'),
     };
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
@@ -50,5 +51,10 @@ describe('FooterComponent', () => {
 
   it('solo profesor: «Inicio» con verWeb', async () => {
     expect(await estadoAlPulsarInicio(['ROLE_PROFESOR'])).toEqual({ verWeb: true });
+  });
+
+  it('responsable de sede: «Inicio» manda verWeb, como la gestión', async () => {
+    const pie = await crear(['ROLE_RESPONSABLE_SEDE']);
+    expect(pie.componentInstance.estadoInicio).toEqual({ verWeb: true });
   });
 });

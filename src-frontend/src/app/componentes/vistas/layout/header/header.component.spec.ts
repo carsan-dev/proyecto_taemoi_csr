@@ -95,7 +95,7 @@ describe('HeaderComponent: cabecera móvil', () => {
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: { refrescar: () => undefined, reiniciar: () => undefined } },
-        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, capacidades: () => of([]), obtener: () => of({}) } },
       ],
     }).compileComponents();
 
@@ -274,7 +274,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
   }
 
   itSinReloj('solo profesor: sin cabecera de familia (el menú público de la web lo cubren sus pruebas)', async () => {
-    const { fixture } = await renderizar(['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE']);
+    const { fixture } = await renderizar(['ROLE_PROFESOR']);
     const el = fixture.nativeElement as HTMLElement;
 
     expect(fixture.componentInstance.mostrarHeaderUser).toBeFalse();
@@ -341,7 +341,12 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
 });
 
 describe('HeaderComponent: cabecera de la web pública con sesión del panel', () => {
-  async function renderizar(roles: string[], ruta = '/eventos', vistaPreferida: 'user' | 'admin' = 'admin') {
+  async function renderizar(
+    roles: string[],
+    ruta = '/eventos',
+    vistaPreferida: 'user' | 'admin' = 'admin',
+    capacidades: string[] = []
+  ) {
     const logueado = roles.length > 0;
     const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
     const contador = { refrescar: jasmine.createSpy('refrescar'), reiniciar: jasmine.createSpy('reiniciar') };
@@ -357,7 +362,8 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
       obtenerVistaPreferida: () => vistaPreferida,
       tieneAccesoAdmin: () => gestion,
       tieneAccesoUser: () => roles.includes('ROLE_USER'),
-      tieneAccesoDual: () => gestion && roles.includes('ROLE_USER'),
+      tieneAccesoDual: (_r: string[], caps: string[] = []) =>
+        (gestion && roles.includes('ROLE_USER')) || caps.includes('ELEGIR_VISTA'),
       logout: () => undefined,
     };
 
@@ -370,7 +376,7 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
         { provide: PageScrollService, useValue: { scrollTop: 0 } },
         { provide: ScrollLockService, useValue: { lock: () => () => undefined } },
         { provide: SolicitudesContadorService, useValue: contador },
-        { provide: PermisosSesionService, useValue: { capacidades: () => of([]), obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, capacidades: () => of(capacidades), obtener: () => of({}) } },
       ],
     }).compileComponents();
 
@@ -397,6 +403,39 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
     expect(el.querySelector('a.btn-login[href="/login"]')).not.toBeNull();
     expect(el.querySelector('a.btn-entrar-mobile[href="/login"]')).not.toBeNull();
     expect(texto(el)).not.toContain('Volver al panel');
+  });
+
+  for (const [nombre, roles, capacidades] of [
+    ['R solo', ['ROLE_RESPONSABLE_SEDE'], ['PANEL_SEDE']],
+    ['R + Pr', ['ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR'], ['MIS_GRUPOS', 'MI_CAJA', 'PANEL_SEDE']],
+    ['R + F', ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA']],
+  ] as const) {
+    itSinReloj(`${nombre} en la web pública: «Volver al panel» a /adminpage (decisión 378)`, async () => {
+      const { el, fixture } = await renderizar([...roles], '/eventos', 'admin', [...capacidades]);
+      expect(fixture.componentInstance.sesionDelPanelEnWeb).toBeTrue();
+      expect(texto(el.querySelector('a.btn-login'))).toBe('Volver al panel');
+      expect(el.querySelector('a.btn-login')?.getAttribute('href')).toBe('/adminpage');
+      expect(el.querySelector('a.btn-entrar-mobile')?.getAttribute('href')).toBe('/adminpage');
+    });
+  }
+
+  itSinReloj('R + F en las rutas de familia: su cabecera, con «Cambiar a admin» (371)', async () => {
+    const { el, fixture } = await renderizar(
+      ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'],
+      '/userpage',
+      'user',
+      ['PANEL_SEDE', 'ELEGIR_VISTA']
+    );
+    expect(fixture.componentInstance.mostrarHeaderUser).toBeTrue();
+    expect(fixture.componentInstance.tieneAccesoDual).toBeTrue();
+    fixture.componentInstance.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Cambiar a admin');
+  });
+
+  itSinReloj('sin capacidades legibles, un responsable no ve «Volver al panel»', async () => {
+    const { fixture } = await renderizar(['ROLE_RESPONSABLE_SEDE']);
+    expect(fixture.componentInstance.sesionDelPanelEnWeb).toBeFalse();
   });
 
   itSinReloj('gestión en la web pública: menú público y «Volver al panel» a /adminpage, sin «Entrar»', async () => {

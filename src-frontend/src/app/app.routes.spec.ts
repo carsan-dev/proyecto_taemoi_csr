@@ -88,6 +88,9 @@ function permisos(roles: string[]) {
   return { roles, esAdminPlataforma: false, sedes: [], variasSedes: false, tieneGrupos: false, capacidades: [] };
 }
 
+/** Lo que el responsable de sede no ve (decisión 370): el resto de pantallas de gestión le dejan pasar. */
+const SOLO_GESTION = /^(alumnosEliminar|eventos(Listar|Crear|Editar)|productos(Listar|Crear|Editar)|sedes|miembros)/;
+
 describe('app routes', () => {
   for (const camino of ['plataformaErrores', 'plataformaLogos']) {
     it(`${camino}: carga solo gestión sin convertirla en pantalla nueva`, () => {
@@ -109,8 +112,13 @@ describe('app routes', () => {
         expect(entrada.canActivate).toEqual(canActivate as any);
         expect(entrada.resolve).toEqual({ catalogo: catalogoResolver });
         expect(entrada.data?.['portalContext']).toBe('admin');
+        const gestion = ['ROLE_ADMIN', 'ROLE_MANAGER'];
         expect(entrada.data?.['requiredRoles']).toEqual(
-          canActivate === PROPIETARIO ? ['ROLE_ADMIN'] : ['ROLE_ADMIN', 'ROLE_MANAGER']
+          canActivate === PROPIETARIO
+            ? ['ROLE_ADMIN']
+            : SOLO_GESTION.test(ruta)
+              ? gestion
+              : [...gestion, 'ROLE_RESPONSABLE_SEDE']
         );
         for (const [clave, valor] of Object.entries(extra ?? {})) {
           expect(entrada.data?.[clave]).withContext(clave).toBe(valor);
@@ -230,7 +238,7 @@ describe('app routes', () => {
         TestBed.configureTestingModule({
           providers: [
             provideRouter([{ ...ruta, canActivate: [], ...carga }]),
-            { provide: PermisosSesionService, useValue: { obtener: () => of(permisos(['PROFESOR'])) } },
+            { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisos(['PROFESOR'])) } },
             { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
           ],
         });
@@ -327,7 +335,7 @@ describe('app routes', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ ...panel, loadComponent: () => Promise.resolve(NoEncontradaPanelComponent) }, { path: '**', component: Publico }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of(permisos(['FAMILIA'])) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisos(['FAMILIA'])) } },
         { provide: EstilosPanelService, useValue: { cargar: cargarHoja } },
       ],
     });
@@ -354,9 +362,12 @@ describe('app routes', () => {
           providers: [
             // Los guards de verdad (canMatch y canActivate de la entrada); solo se quita el catálogo.
             provideRouter([{ ...entrada, resolve: {}, loadComponent: cargar }, { path: '', component: Portada }]),
-            { provide: PermisosSesionService, useValue: { obtener: () => of(permisos([...rolesSesion])) } },
+            { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisos([...rolesSesion])) } },
             { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-            { provide: AuthenticationService, useValue: { resolverRolesDisponibles: () => of([...rolesSesion]) } },
+            {
+              provide: AuthenticationService,
+              useValue: { resolverRolesDisponibles: () => of([...rolesSesion]), capacidadesDeResponsable: () => of([]) },
+            },
           ],
         });
         const harness = await RouterTestingHarness.create();

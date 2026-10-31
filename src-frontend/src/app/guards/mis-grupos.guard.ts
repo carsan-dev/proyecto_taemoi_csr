@@ -8,7 +8,8 @@ import { PermisosSesionService } from '../servicios/authentication/permisos-sesi
 /**
  * «Mis grupos» (E7, E8-5): pasa quien tiene la capacidad MIS_GRUPOS (decisión 217): el solo profesor, la familia +
  * profesor y la gestión + profesor con grupos asignados. Sin ella, la gestión va a su panel y cualquier otra sesión a
- * la raíz; si no se pueden leer los permisos, también a la raíz. Misma condición que el enlace de la cabecera.
+ * la raíz; un responsable de sede sin grupos, a su panel; si no se pueden leer los permisos, también a la raíz. Misma
+ * condición que el enlace de la cabecera.
  * Se aplica en la ruta padre; las hijas son perezosas y solo se alcanzan a través de ella.
  */
 export const misGruposGuard: CanActivateFn = () => {
@@ -23,7 +24,11 @@ export const misGruposGuard: CanActivateFn = () => {
       }
       return auth.resolverRolesDisponibles().pipe(
         map((roles) =>
-          router.createUrlTree([roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER') ? '/adminpage' : '/'])
+          router.createUrlTree([
+            roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER') || p.capacidades?.includes('PANEL_SEDE')
+              ? '/adminpage'
+              : '/',
+          ])
         )
       );
     }),

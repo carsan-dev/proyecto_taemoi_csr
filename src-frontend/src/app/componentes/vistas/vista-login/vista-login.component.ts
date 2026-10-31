@@ -243,8 +243,7 @@ export class VistaLoginComponent implements OnInit {
   }
 
   private redirigirSegunRol(roles: string[]) {
-    const rutaDestino = this.authService.resolverRutaInicioPorRoles(roles);
-    this.router.navigate([rutaDestino]);
+    this.authService.resolverRutaInicio(roles).subscribe((rutaDestino) => this.router.navigate([rutaDestino]));
   }
 
   private setRememberMeCookie(): void {
