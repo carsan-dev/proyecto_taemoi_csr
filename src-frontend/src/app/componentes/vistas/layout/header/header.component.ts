@@ -32,8 +32,6 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   /** «Mis grupos» (E8-5, decisión 217): la sesión tiene la capacidad MIS_GRUPOS de `GET /api/auth/permisos`. */
   veMisGrupos: boolean = false;
   isUserRoute: boolean = false;
-  /** La ruta actual es de la web pública (ni del portal de familia ni del de gestión). */
-  isPublicRoute: boolean = false;
   tieneAccesoDual: boolean = false;
   isHidden: boolean = false;
   isMobileMenuOpen: boolean = false;
@@ -245,12 +243,13 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /**
-   * Sesión del panel (gestión o solo profesor) en una ruta de la web pública: ve el menú público de siempre, con
+   * Sesión del panel (gestión o solo profesor) fuera de las rutas de familia (la web pública y, si el skeleton cae en
+   * «lo de hoy», también las del panel): ve el menú público de siempre, con
    * «Volver al panel» en lugar de «Entrar». Las cuentas con gestión y familia conservan su cabecera en las rutas de
    * familia (`mostrarHeaderUser`).
    */
   get sesionDelPanelEnWeb(): boolean {
-    if (!this.isAuthChecked || !this.usuarioLogueado || !this.isPublicRoute || this.mostrarHeaderUser) {
+    if (!this.isAuthChecked || !this.usuarioLogueado || this.isUserRoute || this.mostrarHeaderUser) {
       return false;
     }
     return this.isAdmin || this.esProfesorSolo;
@@ -403,9 +402,7 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private actualizarContextoRuta(url: string): void {
     const rutaActual = this.normalizarRuta(url);
-    const portal = resolverPortalContexto(rutaActual);
-    this.isUserRoute = portal === 'user';
-    this.isPublicRoute = portal === 'public';
+    this.isUserRoute = resolverPortalContexto(rutaActual) === 'user';
     this.authService.marcarVistaPreferidaSegunRuta(rutaActual);
   }
 

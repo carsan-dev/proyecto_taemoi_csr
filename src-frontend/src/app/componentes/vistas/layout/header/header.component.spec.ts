@@ -56,20 +56,11 @@ describe('HeaderComponent', () => {
     (component as any).actualizarContextoRuta('/userpage/turnos');
 
     expect(component.isUserRoute).toBeTrue();
-    expect(component.isPublicRoute).toBeFalse();
   });
 
   it('detecta el portal admin usando metadata de rutas', () => {
     (component as any).actualizarContextoRuta('/alumnosListar');
 
-    expect(component.isUserRoute).toBeFalse();
-    expect(component.isPublicRoute).toBeFalse();
-  });
-
-  it('detecta la web pública usando metadata de rutas', () => {
-    (component as any).actualizarContextoRuta('/eventos');
-
-    expect(component.isPublicRoute).toBeTrue();
     expect(component.isUserRoute).toBeFalse();
   });
 });
@@ -459,10 +450,12 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
     expect(el.querySelector('a[href="/login"]')).toBeNull();
   });
 
-  itSinReloj('gestión en una ruta del panel: sin cabecera pública (la pinta la del panel)', async () => {
+  itSinReloj('gestión en una ruta del portal admin (skeleton en «lo de hoy»): menú público y «Volver al panel»', async () => {
     const { el } = await renderizar(['ROLE_ADMIN'], '/alumnosListar');
 
-    expect(el.querySelector('header')).toBeNull();
+    expect(el.querySelector('header.header-anonimo')).not.toBeNull();
+    expect(el.querySelector('a.btn-login')?.getAttribute('href')).toBe('/adminpage');
+    expect(el.querySelector('a[href="/login"]')).toBeNull();
   });
 
   itSinReloj('los logos del menú público mandan verWeb para no volver al panel', async () => {
