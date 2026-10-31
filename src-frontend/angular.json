@@ -256,6 +256,8 @@
               "src/app/panel-nuevo/caja-sede/caja-sede.component.spec.ts",
               "src/app/panel-nuevo/escuela/configuracion/configuracion-vista.spec.ts",
               "src/app/panel-nuevo/escuela/configuracion/configuracion.component.spec.ts",
+              "src/app/panel-nuevo/sedes/sedes-vista.spec.ts",
+              "src/app/panel-nuevo/sedes/sedes.component.spec.ts",
               "src/app/panel-nuevo/escuela/registro/registro-vista.spec.ts",
               "src/app/panel-nuevo/escuela/registro/registro.component.spec.ts",
               "src/app/panel-nuevo/alta-alumno/alta-alumno-vista.spec.ts",

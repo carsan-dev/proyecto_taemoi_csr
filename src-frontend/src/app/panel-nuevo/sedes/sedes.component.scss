@@ -1,0 +1,355 @@
+// Sedes del panel nuevo (E9, 9-3). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+//
+// Una lista de filas, no de tarjetas: nombre en 600 y, debajo, localidad y teléfono en texto secundario; a la derecha, la
+// etiqueta de estado y el lápiz. Toda la fila es el botón que abre «Editar sede». Las inactivas atenúan el nombre con
+// `tinta-2` (no con opacidad: el contraste se queda en 4,5:1). Un solo primario a la vista: «Nueva sede». Sin sombras.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.sedes {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.sedes__pagina {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.sedes__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ botones
+
+.sedes__boton-primario {
+  @include c.boton-primario;
+}
+
+.sedes__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.sedes__boton-texto {
+  @include c.boton-texto;
+}
+
+.sedes__boton-primario,
+.sedes__boton-secundario,
+.sedes__boton-texto {
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.sedes__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 20px;
+}
+
+.sedes__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+// ------------------------------------------------------------------ lista
+
+.sedes__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  overflow: hidden;
+}
+
+.sedes__item + .sedes__item {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.sedes__fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.sedes__datos {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sedes__nombre {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sedes__linea {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.sedes__fila--inactiva .sedes__nombre {
+  color: var(--pn-tinta-2);
+}
+
+.sedes__editar {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--pn-tinta-2);
+}
+
+// Estado: lleva siempre su texto, el color solo acompaña.
+.sedes__estado {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+}
+
+.sedes__estado--activa {
+  background: var(--pn-superficie-2);
+  box-shadow: inset 0 0 0 1px var(--pn-linea-fuerte);
+  color: var(--pn-bien);
+}
+
+// ------------------------------------------------------------------ panel lateral
+
+.sedes__form {
+  display: grid;
+  gap: 16px;
+}
+
+// Aviso informativo, como el de Bajas: superficie con filete e icono, sin borde lateral de color.
+.sedes__nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+    color: var(--pn-acento);
+  }
+}
+
+.sedes__campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sedes__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.sedes__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-2);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+}
+
+.sedes__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+.sedes__estado-bloque {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.sedes__estado-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sedes__estado-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.sedes__estado-texto {
+  max-width: 65ch;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.sedes__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+// ------------------------------------------------------------------ esqueleto
+
+.sedes__esqueleto {
+  display: grid;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.sedes__esqueleto-fila {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  span {
+    display: block;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(1) {
+    width: 36%;
+  }
+
+  span:nth-child(2) {
+    width: 20%;
+    margin-left: auto;
+  }
+
+  span:nth-child(3) {
+    width: 18px;
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .sedes__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-xl);
+  }
+
+  .sedes__titulo {
+    font-size: 1.375rem;
+  }
+
+  .sedes__fila {
+    min-height: 72px;
+    padding: 12px;
+  }
+
+  .sedes__boton-primario,
+  .sedes__boton-secundario,
+  .sedes__boton-texto {
+    min-height: 44px;
+  }
+
+  .sedes__control {
+    min-height: 44px;
+  }
+
+  .sedes__estado-bloque .sedes__boton-secundario {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sedes__fila {
+    transition: none;
+  }
+}

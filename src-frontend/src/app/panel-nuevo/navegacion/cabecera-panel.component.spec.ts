@@ -425,6 +425,33 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     });
   });
 
+  describe('entrada «Sedes» (E9-3): solo con la capacidad SEDES', () => {
+    for (const [nombre, capacidades, sale] of [
+      ['con SEDES', ['SEDES'], true],
+      ['sin SEDES', [], false],
+    ] as const) {
+      itSinReloj(`${nombre}: ${sale ? 'sale' : 'no sale'} en el desplegable de Escuela, antes de Configuración, y en «Más»`, async () => {
+        roles = ['ROLE_ADMIN'];
+        datosPermisos = permisos({ roles: ['ADMINISTRADOR'], capacidades: [...capacidades] });
+        await montar();
+        responderMarca();
+        entrada('escuela').click();
+        fixture.detectChanges();
+        const enlaces = Array.from(el().querySelectorAll<HTMLAnchorElement>('#pn-menu-escuela a')).map((a) => a.getAttribute('href'));
+        if (sale) {
+          expect(enlaces.indexOf('/sedes')).toBeGreaterThan(-1);
+          expect(enlaces.indexOf('/sedes')).toBeLessThan(enlaces.indexOf('/configuracion-sistema'));
+        } else {
+          expect(enlaces).not.toContain('/sedes');
+        }
+        el().querySelector<HTMLElement>('nav.pn-barra .pn-barra__mas')!.click();
+        fixture.detectChanges();
+        const hoja = el().querySelector<HTMLElement>('#pn-menu-mas')!;
+        expect(hoja.querySelector('a[href="/sedes"]') !== null).toBe(sale);
+      });
+    }
+  });
+
   describe('contador de solicitudes', () => {
     itSinReloj('se refresca al entrar y al navegar, y se ve en la entrada', async () => {
       await montar();
