@@ -111,52 +111,64 @@ class TurnoServiceImplTest {
 		verify(turnoRepository).deleteById(11L);
 	}
 
+	/** Decisión 374: cambiar el día no mueve el turno de grupo, así que no mira preinscripciones ni grupos. */
 	@Test
-	void bloqueaReasignarTurnoConPreinscripcionesActivas() {
-		Grupo origen = grupo(1L), destino = grupo(2L);
-		Turno turno = turno(11L, "Lunes", origen);
-		TurnoDTO cambios = new TurnoDTO();
-		cambios.setDiaSemana("martes");
-		cambios.setHoraInicio("18:00");
-		cambios.setHoraFin("19:00");
-		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
-		when(grupoRepository.findAll()).thenReturn(List.of(origen, destino));
-		when(preinscripciones.countActivasByTurnoId(org.mockito.ArgumentMatchers.eq(11L), anyCollection()))
-				.thenReturn(1L);
-
-		assertThrows(IllegalStateException.class, () -> service.actualizarTurno(11L, cambios));
-		verify(turnoRepository, never()).save(turno);
-		assertEquals(origen, turno.getGrupo());
-	}
-
-	/** Entrega 6-1: con dos sedes, el reparto por día solo mira los grupos de la sede del turno, en su orden. */
-	@Test
-	void cambiarElDia_conVariasSedes_reasignaEntreLosGruposDeSuSede() {
-		Grupo a1 = grupo(1L, 10L), b1 = grupo(2L, 20L), a2 = grupo(3L, 10L), b2 = grupo(4L, 20L);
-		Turno turno = turno(11L, "Lunes", b1);
-		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
-		when(grupoRepository.findAll()).thenReturn(List.of(a1, b1, a2, b2));
-		when(sedes.findAllByOrderByIdAsc()).thenReturn(List.of(new com.taemoi.project.entities.Sede(),
-				new com.taemoi.project.entities.Sede()));
-
-		service.actualizarTurno(11L, cambiosA("martes"));
-
-		assertEquals(b2, turno.getGrupo(), "índice 1 entre los grupos de la sede 20 (b1, b2), no b1");
-		verify(gestionPorSede).exigirGrupoPropio(4L);
-	}
-
-	/** Con una sola sede, el resultado es el de siempre: índice entre todos los grupos. */
-	@Test
-	void cambiarElDia_conUnaSede_igualQueAntes() {
+	void cambiarDeLunesAMartes_conservaElGrupo_ySinComprobarPreinscripciones() {
 		Grupo g1 = grupo(1L, 10L), g2 = grupo(2L, 10L);
 		Turno turno = turno(11L, "Lunes", g1);
 		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
-		when(grupoRepository.findAll()).thenReturn(List.of(g1, g2));
-		when(sedes.findAllByOrderByIdAsc()).thenReturn(List.of(new com.taemoi.project.entities.Sede()));
 
 		service.actualizarTurno(11L, cambiosA("martes"));
 
-		assertEquals(g2, turno.getGrupo());
+		assertEquals(g1, turno.getGrupo());
+		assertEquals("martes", turno.getDiaSemana());
+		verify(turnoRepository).save(turno);
+		verify(preinscripciones, never()).countActivasByTurnoId(org.mockito.ArgumentMatchers.anyLong(), anyCollection());
+		verify(grupoRepository, never()).findAll();
+		verify(sedes, never()).findAllByOrderByIdAsc();
+		verify(gestionPorSede, never()).exigirGrupoPropio(org.mockito.ArgumentMatchers.anyLong());
+	}
+
+	/** Con varias sedes tampoco salta de sede: el grupo (y su sede) no cambian. */
+	@Test
+	void cambiarElDia_conVariasSedes_noSaltaDeSede() {
+		Grupo a1 = grupo(1L, 10L), b1 = grupo(2L, 20L);
+		Turno turno = turno(11L, "Lunes", b1);
+		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
+
+		service.actualizarTurno(11L, cambiosA("miércoles"));
+
+		assertEquals(b1, turno.getGrupo());
+		assertEquals(20L, turno.getGrupo().getSedeId());
+	}
+
+	@Test
+	void aceptaViernesSabadoYDomingo_conYSinAcento() {
+		for (String dia : List.of("viernes", "Sábado", "sabado", "DOMINGO", "Miércoles", "miercoles")) {
+			Grupo g = grupo(1L, 10L);
+			Turno turno = turno(11L, "Lunes", g);
+			when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
+
+			service.actualizarTurno(11L, cambiosA(dia));
+
+			assertEquals(dia, turno.getDiaSemana());
+			assertEquals(g, turno.getGrupo());
+		}
+	}
+
+	@Test
+	void rechazaUnDiaQueNoEsDiaDeLaSemana() {
+		Grupo g = grupo(1L, 10L);
+		Turno turno = turno(11L, "Lunes", g);
+		when(turnoRepository.findByIdForUpdate(11L)).thenReturn(Optional.of(turno));
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> service.actualizarTurno(11L, cambiosA("foo")));
+
+		assertEquals("Día de la semana no válido: foo", error.getMessage());
+		assertThrows(IllegalArgumentException.class, () -> service.actualizarTurno(11L, cambiosA(null)));
+		verify(turnoRepository, never()).save(turno);
+		assertEquals("Lunes", turno.getDiaSemana());
 	}
 
 	private static TurnoDTO cambiosA(String dia) {
