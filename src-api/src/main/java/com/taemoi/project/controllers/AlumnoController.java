@@ -241,8 +241,8 @@ public class AlumnoController {
 					: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estadoFichas, soloAptos, pageable);
 		}
 
-		if (porDeporte && isPaged) {
-			// Página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).
+		if ((porDeporte || sedeId != null) && isPaged) {
+			// Con deporte o con sede: página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).
 			return ResponseEntity.ok(alumnos.map(AlumnoDTO::deAlumno).map(this::aplicarUrlImagenPublica));
 		}
 

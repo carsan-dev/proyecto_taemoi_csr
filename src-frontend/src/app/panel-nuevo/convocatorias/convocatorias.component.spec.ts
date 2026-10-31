@@ -1285,6 +1285,20 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
       expect(bloque.request.params.get('sedeId')).toBe('2');
     });
 
+    it('al cambiar de sede se descartan las lecturas pendientes de bloques no visibles', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      cargar();
+      fixture.componentInstance.leerCifras(99);
+      const vieja = http.match((r) => r.url === `${API}/convocatorias/99/alumnos`)[0];
+      elegirSede('2');
+      expect(vieja.cancelled).toBeTrue();
+      responderCifras();
+      fixture.componentInstance.leerCifras(99);
+      const nueva = http.expectOne((r) => r.url === `${API}/convocatorias/99/alumnos`);
+      expect(nueva.request.params.get('sedeId')).toBe('2');
+      nueva.flush([]);
+    });
+
     it('la sede queda en el estado de la pantalla y se recupera al volver', () => {
       conPermisos(GESTION_VARIAS_SEDES);
       cargar();

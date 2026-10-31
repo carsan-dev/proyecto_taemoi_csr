@@ -117,6 +117,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   filtroDeporte = 'TODOS';
   /** Sede del cargo (decisión 376); `null`, todas. */
   filtroSede: number | null = null;
+  /** La sede ya aplicada con «Aplicar»: paginar y buscar usan esta, para que lista y resumen sean del mismo filtro. */
+  private sedeAplicada: number | null = null;
   filtroEstado: EstadoFiltro = 'PENDIENTES';
   filtroTexto = '';
   filtroSoloActivos = true;
@@ -303,7 +305,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       this.filtroSoloActivos,
       this.pagina,
       POR_PAGINA,
-      this.filtroSede
+      this.sedeAplicada
     );
     if (!conResumen) {
       if (!silencioso) {
@@ -325,7 +327,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       this.estado = 'cargando';
     }
     this.carga = forkJoin({
-      resumen: this.lecturas.tesoreriaResumen(this.filtroMes, this.filtroAno, this.filtroDeporte, this.filtroSoloActivos, this.filtroSede),
+      resumen: this.lecturas.tesoreriaResumen(this.filtroMes, this.filtroAno, this.filtroDeporte, this.filtroSoloActivos, this.sedeAplicada),
       movimientos: movimientos$,
     }).subscribe({
       next: ({ resumen, movimientos }) => {
@@ -406,6 +408,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   aplicar(): void {
     this.normalizarPeriodo();
     this.pagina = 1;
+    this.sedeAplicada = this.filtroSede;
     this.cargar();
   }
 
@@ -414,6 +417,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     this.filtroAno = this.anoPorDefecto();
     this.filtroDeporte = 'TODOS';
     this.filtroSede = null;
+    this.sedeAplicada = null;
     this.filtroEstado = 'PENDIENTES';
     this.filtroTexto = '';
     this.filtroSoloActivos = true;

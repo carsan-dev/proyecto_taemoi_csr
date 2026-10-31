@@ -223,6 +223,10 @@ export class AlumnosComponent implements OnInit, OnDestroy {
 
   get subtitulo(): string {
     const porPagina = `${numero(POR_PAGINA)} por página`;
+    if (this.sedeId !== null && this.estado === 'listo') {
+      // Con una sede elegida, la cifra es la del filtro y no la de toda la escuela.
+      return `${this.filtroEstado === 'activos' ? plural(this.total, 'alumno activo', 'alumnos activos') : this.contador}, ${porPagina}`;
+    }
     return this.activos === null ? porPagina : `${plural(this.activos, 'alumno activo', 'alumnos activos')}, ${porPagina}`;
   }
 
