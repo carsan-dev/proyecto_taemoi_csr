@@ -12,7 +12,8 @@ import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { MOTIVO_CANCELACION_POR_DEFECTO, PreinscripcionService } from '../../features/preinscripcion/preinscripcion.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -988,5 +989,60 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
     expect(raiz.querySelector('[role="tablist"]')).toBeNull();
     expect(raiz.textContent).not.toContain('Plantillas PDF');
     expect(fixture.componentInstance.pestana).toBe('solicitudes');
+  });
+
+  describe('filtro por sede (9-6, decisión 376)', () => {
+    function conPermisos(permisos: PermisosSesion): void {
+      (TestBed.inject(PermisosSesionService) as unknown as { obtener: () => unknown }).obtener = () => of(permisos);
+    }
+
+    function elegirSede(valor: string): void {
+      const select = el().querySelector<HTMLSelectElement>('#preins-sede')!;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    const delListado = () => http.match((r) => r.url === BASE).filter((r) => !r.cancelled);
+
+    it('con una sede no hay selector y la petición es la de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      expect(el().querySelector('#preins-sede')).toBeNull();
+      expect(delListado()[0].request.urlWithParams).toBe(`${BASE}?page=0&size=25`);
+    });
+
+    it('el responsable no ve el selector', () => {
+      conPermisos(RESPONSABLE_VARIAS_SEDES);
+      crear();
+      expect(el().querySelector('#preins-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: como el resto de la barra, va con «Filtrar», desde la primera página', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      delListado()[0].flush({ content: LISTA(), page: 2, totalElements: 80, totalPages: 4 });
+      fixture.detectChanges();
+      elegirSede('2');
+      expect(delListado().length).toBe(0);
+      fixture.componentInstance.filtrar();
+      fixture.detectChanges();
+      const [lista] = delListado();
+      expect(lista.request.params.get('sedeId')).toBe('2');
+      expect(lista.request.params.get('page')).toBe('0');
+      expect(fixture.componentInstance.hayFiltros).toBeTrue();
+    });
+
+    it('«Quitar filtros» también quita la sede', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      delListado()[0].flush({ content: [], page: 0, totalElements: 0, totalPages: 0 });
+      fixture.detectChanges();
+      elegirSede('2');
+      fixture.componentInstance.quitarFiltros();
+      fixture.detectChanges();
+      expect(delListado()[0].request.params.has('sedeId')).toBeFalse();
+      expect(el().querySelector<HTMLSelectElement>('#preins-sede')!.value).toBe('');
+    });
   });
 });

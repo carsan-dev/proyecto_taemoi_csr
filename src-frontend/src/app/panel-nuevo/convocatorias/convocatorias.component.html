@@ -41,6 +41,8 @@
       }
     </div>
 
+    <pn-filtro-sede class="convocatorias__sede" campoId="convocatorias-sede" [valor]="sedeId" (cambio)="elegirSede($event)" />
+
     <div class="convocatorias__panel" id="convocatorias-panel" role="tabpanel"
       [attr.aria-labelledby]="pestanaActual ? 'convocatorias-pestana-' + pestanaActual.codigo : null">
       @if (sinNumero.has(deporte)) {

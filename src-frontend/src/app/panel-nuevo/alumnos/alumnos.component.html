@@ -60,6 +60,7 @@
         <option [value]="d.codigo" [selected]="d.codigo === deporte">{{ d.nombre }}</option>
         }
       </select>
+      <pn-filtro-sede class="alumnos__sede" campoId="alumnos-sede" [valor]="sedeId" (cambio)="elegirSede($event)" />
       <div class="alumnos__vista alumnos__filtro-estado" role="group" aria-label="Estado">
         @for (o of opcionesEstado; track o.valor) {
         <button type="button" class="alumnos__vista-opcion" [attr.data-estado]="o.valor" [attr.aria-pressed]="filtroEstado === o.valor"

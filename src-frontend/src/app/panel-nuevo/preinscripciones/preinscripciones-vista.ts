@@ -28,10 +28,12 @@ export interface Filtros {
   temporada: string;
   deporte: string;
   estado: string;
+  /** Id de la sede del grupo de la solicitud (decisión 376); vacío, todas. */
+  sedeId: string;
   q: string;
 }
 
-export const FILTROS_VACIOS: Filtros = { temporada: '', deporte: '', estado: '', q: '' };
+export const FILTROS_VACIOS: Filtros = { temporada: '', deporte: '', estado: '', sedeId: '', q: '' };
 
 /** Un estado que la pantalla no conoce sale tal cual: nunca se esconde. */
 export function etiquetaEstado(estado: string | null | undefined): string {

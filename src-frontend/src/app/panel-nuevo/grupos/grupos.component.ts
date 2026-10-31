@@ -15,6 +15,7 @@ import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
+import { FiltroSedeComponent } from '../filtro-sede/filtro-sede.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ErrorCampo, ValoresDialogo } from '../dialogo/dialogo.component';
 import { frasePlural, numero } from '../formato/formato-es';
@@ -46,6 +47,7 @@ export const TIPOS_GRUPO: readonly string[] = ['Taekwondo', 'Taekwondo Competici
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    FiltroSedeComponent,
     AlumnosTipoPanelComponent,
     CrearGrupoPanelComponent,
     TurnoPanelComponent,
@@ -82,6 +84,8 @@ export class GruposComponent implements OnInit, OnDestroy {
 
   /** Disciplina elegida en el filtro; vacío, todas. */
   filtro: string | null = null;
+  /** Sede del grupo (decisión 376); `null`, todas. Se conserva como `filtro`, mientras dura la pantalla. */
+  sedeId: number | null = null;
   /** Tarjetas con los turnos desplegados. */
   readonly abiertas = new Set<number>();
   /** Turno elegido en «Añadir turno» de cada grupo. */
@@ -112,7 +116,9 @@ export class GruposComponent implements OnInit, OnDestroy {
       partes.push(frasePlural(this.grupos.length, '{n} grupo', '{n} grupos'));
     }
     if (this.estadoTurnos === 'listo') {
-      partes.push(frasePlural(this.turnos.length, '{n} turno', '{n} turnos'));
+      // Un turno sin grupo no tiene sede: con una sede elegida cuentan los de sus grupos.
+      const turnos = this.sedeId === null ? this.turnos.length : this.grupos.reduce((suma, g) => suma + g.turnos.length, 0);
+      partes.push(frasePlural(turnos, '{n} turno', '{n} turnos'));
     }
     return partes.join(' · ');
   }
@@ -180,7 +186,7 @@ export class GruposComponent implements OnInit, OnDestroy {
     if (!recargar) {
       this.estadoGrupos = 'cargando';
     }
-    this.cargaGrupos = this.lecturas.resumenGrupos().subscribe({
+    this.cargaGrupos = this.lecturas.resumenGrupos(this.sedeId).subscribe({
       next: (grupos) => {
         this.grupos = (grupos ?? []).map((g) => ({ ...g, turnos: [...(g.turnos ?? [])] }));
         this.estadoGrupos = 'listo';
@@ -270,6 +276,8 @@ export class GruposComponent implements OnInit, OnDestroy {
     }
     this.cerrarCrear();
     this.filtro = null;
+    // El grupo nuevo puede ser de otra sede: que se vea.
+    this.sedeId = null;
     this.cargarGrupos(true, id);
   }
 
@@ -320,6 +328,11 @@ export class GruposComponent implements OnInit, OnDestroy {
 
   elegirFiltro(codigo: string | null): void {
     this.filtro = codigo;
+  }
+
+  elegirSede(sedeId: number | null): void {
+    this.sedeId = sedeId;
+    this.cargarGrupos();
   }
 
   teclaFiltro(evento: KeyboardEvent): void {

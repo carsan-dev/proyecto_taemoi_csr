@@ -8,10 +8,12 @@ import Swal from 'sweetalert2';
 import { environment } from '../../../../environments/environment';
 import { HerramientasAlumnosComponent } from '../../../componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.component';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
+import { PermisosSesion, PermisosSesionService } from '../../../servicios/authentication/permisos-sesion.service';
 import { InformePdfService } from '../../../servicios/generales/informe-pdf.service';
 import { LoadingService } from '../../../servicios/generales/loading.service';
 import { AvisosService } from '../../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../../filtro-sede/filtro-sede-prueba';
 import { HerramientaAlumnos, HerramientaPanelComponent } from './herramienta-panel.component';
 import { InformePdfPanelService } from './informe-pdf-panel.service';
 import { itSinReloj } from '../../../testing/reloj-prueba';
@@ -49,6 +51,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
   let fixture: ComponentFixture<Anfitrion>;
   let quitarTokens: () => void;
   let descargas: string[];
+  let permisosSesion: PermisosSesion;
 
   function el(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -122,6 +125,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
     descargas = [];
+    permisosSesion = GESTION_UNA_SEDE;
     TestBed.configureTestingModule({
       imports: [Anfitrion],
       providers: [
@@ -129,6 +133,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
         provideHttpClientTesting(),
         InformePdfService,
         { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisosSesion) } },
         {
           provide: CatalogoService,
           useValue: {
@@ -516,6 +521,36 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
       expect(hoy().comp.estadoAlumnos).toBeNull();
       expect(cargar(undefined, true)).toEqual({ ids: [1, 2, 3], url: '/alumnos?incluirInactivos=true' });
       expect(cargar(undefined, false)).toEqual({ ids: [1, 2, 3], url: '/alumnos?incluirInactivos=false' });
+    });
+  });
+
+  describe('listado de asistencia por sede (9-6, decisión 142)', () => {
+    function pedir(): string[] {
+      elegir('#pn-asistencia-mes', '09');
+      elegir('#pn-asistencia-mes-ano', '2026');
+      pulsar('Lunes');
+      botonPie('Descargar PDF').click();
+      pintar();
+      return anotar().map((p) => p.url);
+    }
+
+    it('con una sede no hay selector y la petición es la de hoy', () => {
+      abrir('asistencia');
+      expect(panel().querySelector('#pn-asistencia-sede')).toBeNull();
+      expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&grupo=lunes']);
+    });
+
+    it('el responsable no ve el selector', () => {
+      permisosSesion = RESPONSABLE_VARIAS_SEDES;
+      abrir('asistencia');
+      expect(panel().querySelector('#pn-asistencia-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: por defecto todas, y con sede la envía', () => {
+      permisosSesion = GESTION_VARIAS_SEDES;
+      abrir('asistencia');
+      elegir('#pn-asistencia-sede', '2');
+      expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&sedeId=2&grupo=lunes']);
     });
   });
 });

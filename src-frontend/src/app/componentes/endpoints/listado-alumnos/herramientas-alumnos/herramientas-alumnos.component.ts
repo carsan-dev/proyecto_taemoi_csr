@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 
@@ -37,7 +37,7 @@ export type SeccionHerramientas = 'mensualidades' | 'asistencia' | 'listado-mens
 export class HerramientasAlumnosComponent implements OnChanges {
   readonly informes = inject(InformePdfService);
   readonly catalogo = inject(CatalogoService);
-  private readonly endpoints = inject(EndpointsService);
+  protected readonly endpoints = inject(EndpointsService);
   private readonly loadingService = inject(LoadingService);
 
   /** Los del listado: con ellos cambia la lista de alumnos seleccionables, como hoy. */
@@ -500,7 +500,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
     const mesAno = this.mesAnoAsistencia;
     const [year, month] = mesAno.split('-').map(Number);
     const grupos = [...this.gruposSeleccionados];
-    const solicitudes = grupos.map(grupo => this.endpoints.descargarAsistencia(year, month, grupo).pipe(
+    const solicitudes = grupos.map(grupo => this.solicitudAsistencia(year, month, grupo).pipe(
       map(blob => ({ grupo, blob })), catchError(() => of({ grupo, blob: null as Blob | null }))
     ));
     this.informes.generar(forkJoin(solicitudes).pipe(map(resultados => {
@@ -511,6 +511,11 @@ export class HerramientasAlumnosComponent implements OnChanges {
         aviso: fallidos.length ? `No se pudo generar el PDF para: ${fallidos.join(', ')}` : '',
       };
     })), accion, 'No se pudo generar el listado de asistencia');
+  }
+
+  /** La petición de la hoja de un día; el panel nuevo le añade la sede. */
+  protected solicitudAsistencia(year: number, month: number, grupo: string): Observable<Blob> {
+    return this.endpoints.descargarAsistencia(year, month, grupo);
   }
 
   generarListadoMensualidadMensual(accion: AccionInforme = 'descargar'): void {

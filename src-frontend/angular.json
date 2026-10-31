@@ -258,6 +258,7 @@
               "src/app/panel-nuevo/escuela/configuracion/configuracion.component.spec.ts",
               "src/app/panel-nuevo/sedes/sedes-vista.spec.ts",
               "src/app/panel-nuevo/sedes/sedes.component.spec.ts",
+              "src/app/panel-nuevo/filtro-sede/filtro-sede.component.spec.ts",
               "src/app/panel-nuevo/miembros/miembros-vista.spec.ts",
               "src/app/panel-nuevo/miembros/miembros.component.spec.ts",
               "src/app/panel-nuevo/escuela/registro/registro-vista.spec.ts",

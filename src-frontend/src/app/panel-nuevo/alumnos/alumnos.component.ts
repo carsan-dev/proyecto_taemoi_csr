@@ -18,6 +18,7 @@ import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService, teclaPanelCargos } from '../cobro/cobro-cargo';
+import { FiltroSedeComponent, sedeVigente } from '../filtro-sede/filtro-sede.component';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import {
@@ -124,6 +125,7 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
     BloqueVacioComponent,
     HerramientaPanelComponent,
     AcentoEscuelaDirective,
+    FiltroSedeComponent,
   ],
   // El de siempre, con los avisos del panel nuevo (un SweetAlert2 quedaría detrás del panel lateral).
   providers: [{ provide: InformePdfService, useClass: InformePdfPanelService }],
@@ -144,6 +146,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   private readonly cobros = inject(CobroCargoService);
   private readonly bajasAltas = inject(BajasAltasPanel);
   private readonly avisos = inject(AvisosService);
+  private readonly permisos = inject(PermisosSesionService);
 
   readonly eur = eur;
   readonly fecha = fecha;
@@ -154,7 +157,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
    * Responsable de sede (decisión 370): sin bajas definitivas, sin informes de escuela (`/api/informes/**` sin sede), sin
    * generar mensualidades y sin la vista de familia, que él no puede abrir.
    */
-  readonly panelSede = inject(PermisosSesionService).tiene('PANEL_SEDE');
+  readonly panelSede = this.permisos.tiene('PANEL_SEDE');
   readonly opcionesHerramientas = this.panelSede
     ? OPCIONES_HERRAMIENTAS.filter((o) => o.seccion !== 'mensualidades')
     : OPCIONES_HERRAMIENTAS;
@@ -168,6 +171,8 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   /** Qué alumnos lista la pantalla: solo activos (por defecto), solo inactivos o todos. */
   filtroEstado: FiltroEstado = 'activos';
   aptos = false;
+  /** Sede principal (decisión 376); `null`, todas. */
+  sedeId: number | null = null;
   pagina = 1;
 
   vista: Vista = 'filas';
@@ -209,7 +214,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   }
 
   get hayFiltros(): boolean {
-    return this.nombre.trim() !== '' || this.deporte !== '' || this.inactivos || this.aptos;
+    return this.nombre.trim() !== '' || this.deporte !== '' || this.inactivos || this.aptos || this.sedeId !== null;
   }
 
   get contador(): string {
@@ -272,6 +277,18 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       })
     );
     this.contarActivos();
+    const sede = Number(parametros?.get('sedeId'));
+    if (Number.isInteger(sede) && sede > 0) {
+      // Solo con `sedeId` en la dirección: sin él, la carga de siempre.
+      this.suscripciones.add(
+        sedeVigente(this.permisos, sede).subscribe((vigente) => {
+          this.sedeId = vigente;
+          this.cargar();
+          this.escribirDireccion = true;
+        })
+      );
+      return;
+    }
     this.cargar();
     this.escribirDireccion = true;
   }
@@ -297,7 +314,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       this.escribirEstado();
     }
     this.carga = this.lecturas
-      .alumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null, this.filtroEstado)
+      .alumnos(this.pagina, POR_PAGINA, this.nombre.trim(), this.inactivos, this.aptos, this.deporte || null, this.filtroEstado, this.sedeId)
       .subscribe({
         next: (respuesta) => {
           this.alumnos = Array.isArray(respuesta?.content) ? respuesta.content : [];
@@ -381,6 +398,12 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.cargar();
   }
 
+  elegirSede(sedeId: number | null): void {
+    this.sedeId = sedeId;
+    this.pagina = 1;
+    this.cargar();
+  }
+
   elegirEstado(estado: FiltroEstado): void {
     if (estado === this.filtroEstado) {
       return;
@@ -405,6 +428,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.busqueda.next('');
     this.nombre = '';
     this.deporte = '';
+    this.sedeId = null;
     this.filtroEstado = 'activos';
     if (this.aptos) {
       this.alternarAptos();
@@ -442,6 +466,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
         // Se limpia el parámetro de antes (`inactivos=true`) al reescribir la dirección.
         inactivos: null,
         aptoParaExamen: this.aptos ? 'true' : null,
+        sedeId: this.sedeId === null ? null : String(this.sedeId),
         pagina: this.pagina > 1 ? String(this.pagina) : null,
         vista: this.vista === 'tarjetas' ? 'tarjetas' : null,
       },

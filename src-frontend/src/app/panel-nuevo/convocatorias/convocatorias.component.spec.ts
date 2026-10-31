@@ -9,7 +9,8 @@ import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -1238,5 +1239,70 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(raiz.textContent).not.toContain('Crear convocatoria');
     expect(raiz.querySelector('.convocatorias__papelera')).toBeNull();
     expect(raiz.textContent).not.toContain('Actualizar grados de todos');
+  });
+
+  describe('filtro por sede (9-6, decisión 376)', () => {
+    function conPermisos(permisos: PermisosSesion): void {
+      (TestBed.inject(PermisosSesionService) as unknown as { obtener: () => unknown }).obtener = () => of(permisos);
+    }
+
+    function elegirSede(valor: string): void {
+      const select = el().querySelector<HTMLSelectElement>('#convocatorias-sede')!;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    const deCifras = () => vivas((x) => /\/convocatorias\/\d+\/alumnos$/.test(x.request.url));
+
+    it('con una sede no hay selector y las peticiones son las de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      responderListas();
+      expect(el().querySelector('#convocatorias-sede')).toBeNull();
+      expect(deCifras().map((x) => x.request.urlWithParams)).toEqual([`${API}/convocatorias/11/alumnos`, `${API}/convocatorias/12/alumnos`]);
+    });
+
+    it('el responsable no ve el selector', () => {
+      conPermisos(RESPONSABLE_VARIAS_SEDES);
+      cargar();
+      expect(el().querySelector('#convocatorias-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: la lista no se relee; cifras y alumnos, de la sede y desde la página 1', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      cargar();
+      fixture.componentInstance.pagina = 2;
+      elegirSede('2');
+      expect(fixture.componentInstance.pagina).toBe(1);
+      expect(pendientesDe(`${API}/convocatorias`).length).toBe(0);
+      const cifras = deCifras();
+      expect(cifras.map((x) => x.request.params.get('sedeId'))).toEqual(['2', '2']);
+      responderCifras();
+      cabecera(11).click();
+      fixture.detectChanges();
+      const bloque = http.expectOne((r) => r.url === `${API}/convocatorias/11/alumnos`);
+      expect(bloque.request.params.get('sedeId')).toBe('2');
+    });
+
+    it('la sede queda en el estado de la pantalla y se recupera al volver', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      cargar();
+      elegirSede('2');
+      responderCifras();
+      fixture.destroy();
+      crear();
+      expect(fixture.componentInstance.sedeId).toBe(2);
+      responderListas();
+      expect(deCifras()[0].request.params.get('sedeId')).toBe('2');
+    });
+
+    it('una sede guardada no filtra a quien ya no ve el selector', () => {
+      sessionStorage.setItem(CLAVE_ESTADO, JSON.stringify({ sedeConvocatorias: 1 }));
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      responderListas();
+      expect(deCifras()[0].request.params.has('sedeId')).toBeFalse();
+    });
   });
 });

@@ -1,18 +1,20 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { MOISKIMDO_PRUEBA } from '../tema-prueba';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { AlumnosComponent, CLAVE_VISTA } from './alumnos.component';
 import { PendienteAlumno } from './pendientes-alumno.service';
 
@@ -1139,4 +1141,87 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(el().querySelector('pn-generar-informe')).toBeNull();
     flush();
   }));
+
+  describe('filtro por sede (9-6, decisión 376)', () => {
+    function conPermisos(permisos: PermisosSesion): void {
+      spyOn(TestBed.inject(PermisosSesionService), 'obtener').and.returnValue(of(permisos));
+    }
+
+    function enDireccion(parametros: Record<string, string>): void {
+      Object.defineProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap', { value: convertToParamMap(parametros) });
+    }
+
+    function elegirSede(valor: string): void {
+      const select = el().querySelector<HTMLSelectElement>('#alumnos-sede')!;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    it('con una sede no hay selector y la petición es la de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      expect(el().querySelector('#alumnos-sede')).toBeNull();
+      const [lista] = http.match((r) => r.url === `${API}/alumnos` && r.params.get('size') === '25');
+      expect(lista.request.params.has('sedeId')).toBeFalse();
+      expect(lista.request.urlWithParams).toBe(`${API}/alumnos?page=1&size=25&incluirInactivos=false&estado=activos`);
+    });
+
+    it('el responsable no ve el selector', () => {
+      conPermisos(RESPONSABLE_VARIAS_SEDES);
+      crear();
+      expect(el().querySelector('#alumnos-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: se envía, vuelve a la página 1 y queda en la dirección', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder(60);
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      fixture.componentInstance.irAPagina(2);
+      responder(60);
+      elegirSede('2');
+      const [lista] = listados();
+      expect(lista.request.params.get('sedeId')).toBe('2');
+      expect(lista.request.params.get('page')).toBe('1');
+      expect(navegar.calls.mostRecent().args[1]!.queryParams!['sedeId']).toBe('2');
+      expect(navegar.calls.mostRecent().args[1]!.queryParams!['pagina']).toBeNull();
+      lista.flush(pagina(30));
+      fixture.detectChanges();
+      elegirSede('');
+      const [todas] = listados();
+      expect(todas.request.params.has('sedeId')).toBeFalse();
+    });
+
+    it('«Quitar filtros» también quita la sede', fakeAsync(() => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      expect(fixture.componentInstance.hayFiltros).toBeTrue();
+      http.match((r) => r.url === `${API}/alumnos`).forEach((r) => r.flush(pagina(0, 0)));
+      fixture.detectChanges();
+      fixture.componentInstance.quitarFiltros();
+      tick(300);
+      fixture.detectChanges();
+      expect(listados()[0].request.params.has('sedeId')).toBeFalse();
+      expect(el().querySelector<HTMLSelectElement>('#alumnos-sede')!.value).toBe('');
+      flush();
+    }));
+
+    it('una sede en la dirección se aplica si el selector la ofrece', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      enDireccion({ sedeId: '2' });
+      crear();
+      expect(listados()[0].request.params.get('sedeId')).toBe('2');
+      expect(el().querySelector<HTMLSelectElement>('#alumnos-sede')!.value).toBe('2');
+    });
+
+    it('un enlace con sede no filtra con una sede ni al responsable', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      enDireccion({ sedeId: '1' });
+      crear();
+      expect(listados()[0].request.params.has('sedeId')).toBeFalse();
+    });
+  });
 });

@@ -20,6 +20,7 @@ import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
+import { FiltroSedeComponent } from '../filtro-sede/filtro-sede.component';
 import { plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { AltaPreinscripcion } from './alta-preinscripcion';
@@ -89,6 +90,7 @@ interface Editor {
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    FiltroSedeComponent,
     FinalizarAltaComponent,
     PlantillasPdfComponent,
   ],

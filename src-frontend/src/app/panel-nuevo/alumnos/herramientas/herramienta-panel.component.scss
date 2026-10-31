@@ -72,6 +72,15 @@ fieldset > .herramienta__leyenda {
   color: var(--pn-tinta-2);
 }
 
+.herramienta__sede {
+  --filtro-sede-alto: 40px;
+  --filtro-sede-etiqueta: var(--pn-tinta);
+
+  @media (max-width: 767.98px) {
+    --filtro-sede-alto: 44px;
+  }
+}
+
 .herramienta__campo--corto {
   max-width: 160px;
 }

@@ -36,6 +36,9 @@
       }
     </section>
 
+    <!-- Fuera del estado de la lista: no se va mientras carga, y sin grupos en la sede sigue a mano. -->
+    <pn-filtro-sede class="grupos__sede" campoId="grupos-sede" [valor]="sedeId" (cambio)="elegirSede($event)" />
+
     @if (estadoGrupos === 'cargando') {
     <pn-esqueleto class="grupos__cargando" etiqueta="Cargando grupos" aria-busy="true">
       <div class="grupos__esqueleto-filtro"><span></span><span></span><span></span></div>
@@ -54,6 +57,9 @@
     <div class="grupos__lista-estado">
       <pn-bloque-error pose="dudar" class="grupos__bloque-estado" titulo="No se pudieron cargar los grupos" (reintentar)="cargarGrupos()" />
     </div>
+    } @else if (grupos.length === 0 && sedeId !== null) {
+    <pn-bloque-vacio pose="buscar" class="grupos__bloque-estado" titulo="No hay grupos en esta sede" accion="Ver todas las sedes"
+      (accionar)="elegirSede(null)" />
     } @else if (grupos.length === 0) {
     <pn-bloque-vacio pose="esperar" class="grupos__bloque-estado" titulo="Todavía no hay grupos">
       <button type="button" pnAccionVacio class="grupos__boton-secundario" aria-haspopup="dialog" (click)="abrirCrear($event)">Nuevo grupo</button>
