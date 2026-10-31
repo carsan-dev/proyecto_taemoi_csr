@@ -53,7 +53,7 @@ class TurnosPublicosSinDatosPersonalesIntegrationTest extends MySqlIntegrationTe
 	/** Forma exacta de cada turno público: cualquier campo nuevo debe revisarse aquí. */
 	private static final Set<String> CLAVES_TURNO = new TreeSet<>(Set.of("id", "diaSemana", "horaInicio", "horaFin",
 			"grupoId", "tipoGrupo", "rangoEdadMin", "rangoEdadMax", "edadMinAlumnos", "edadMaxAlumnos",
-			"ocupacionEfectiva", "completo"));
+			"ocupacionEfectiva", "aforoEfectivo", "completo"));
 	private static final List<String> CLAVES_PERSONALES = List.of("alumnos", "nif", "email", "telefono",
 			"telefono2", "direccion", "fechaNacimiento", "nombre", "apellidos", "responsableLegal",
 			"observaciones", "fotoAlumno");
