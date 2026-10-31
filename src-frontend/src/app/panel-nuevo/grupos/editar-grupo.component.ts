@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of } from 'rxjs';
 import { catchError, finalize, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { PermisosSesionService, SedeVisible } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { GrupoProfesoresService } from '../../servicios/endpoints/grupo-profesores.service';
 import { AltaDeProfesor, MiembrosService } from '../../servicios/endpoints/miembros.service';
@@ -36,6 +37,7 @@ export class EditarGrupoComponent implements OnInit {
   private readonly profesoresService = inject(GrupoProfesoresService);
   private readonly miembrosService = inject(MiembrosService);
   private readonly lecturas = inject(LecturasPanelService);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly avisos = inject(AvisosService);
@@ -44,6 +46,10 @@ export class EditarGrupoComponent implements OnInit {
   private readonly recargaGrupo$ = new Subject<void>();
   private readonly recargaProfesores$ = new Subject<void>();
   readonly nombre = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50)] });
+  /** Solo con varias sedes activas (E9-1); con una, el PUT es el de hoy. */
+  pedirSede = false;
+  private todasLasSedes: SedeVisible[] = [];
+  readonly sede = new FormControl<number | null>(null);
   readonly roles: readonly RolAsignacionProfesor[] = ['TITULAR', 'AYUDANTE'];
   grupoId = 0;
   grupo: GrupoDTO | null = null;
@@ -77,7 +83,17 @@ export class EditarGrupoComponent implements OnInit {
     ).subscribe((grupo) => {
       this.cargando = false;
       this.grupo = grupo;
-      if (grupo) this.nombre.setValue(grupo.nombre);
+      if (grupo) { this.nombre.setValue(grupo.nombre); this.sede.setValue(grupo.sedeId ?? null); }
+    });
+    this.permisos.obtener().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (p) => {
+        this.todasLasSedes = p?.sedes ?? [];
+        this.pedirSede = !!p?.variasSedes && this.todasLasSedes.filter((s) => s.activa !== false).length > 1;
+        this.sede.setValidators(this.pedirSede ? Validators.required : null);
+        this.sede.updateValueAndValidity({ emitEvent: false });
+      },
+      // Sin permisos no se pide: el servidor conserva la sede, como hoy.
+      error: () => (this.pedirSede = false),
     });
     this.recargaProfesores$.pipe(
       tap(() => { this.profesoresCargando = this.profesores.length === 0; this.profesoresError = ''; }),
@@ -94,6 +110,7 @@ export class EditarGrupoComponent implements OnInit {
       this.grupo = null;
       this.profesores = [];
       this.nombre.reset('');
+      this.sede.reset(null);
       this.errorGuardar = '';
       this.errorAlta = '';
       this.menuAbierto = null;
@@ -128,17 +145,29 @@ export class EditarGrupoComponent implements OnInit {
     if (this.nombre.hasError('required')) return 'El nombre del grupo es obligatorio';
     return this.nombre.hasError('maxlength') ? 'Máximo 50 caracteres' : '';
   }
+  /** Las sedes activas y, si la del grupo está inactiva, también esa: así no se pierde su valor. */
+  get sedesElegibles(): SedeVisible[] {
+    const actual = this.grupo?.sedeId;
+    return this.todasLasSedes.filter((s) => s.activa !== false || s.id === actual);
+  }
+  get errorSede(): string {
+    return this.pedirSede && this.sede.touched && this.sede.hasError('required') ? 'Elige la sede del grupo.' : '';
+  }
   guardar(): void {
     this.nombre.markAsTouched();
-    if (this.nombre.invalid || this.guardando || !this.grupo) return;
+    this.sede.markAsTouched();
+    if (this.nombre.invalid || (this.pedirSede && this.sede.invalid) || this.guardando || !this.grupo) return;
     const nombre = this.nombre.value;
-    // Solo estos tres campos forman el PUT de hoy; el rango oculto no se modifica.
-    const cuerpo = { nombre, rangoEdadMin: this.grupo.rangoEdadMin ?? null, rangoEdadMax: this.grupo.rangoEdadMax ?? null };
+    // El PUT de hoy: nombre y rango (que no se modifica); con varias sedes, además la sede. El servidor conserva lo que no llega.
+    const cuerpo: { nombre: string; rangoEdadMin: number | null; rangoEdadMax: number | null; sedeId?: number } =
+      { nombre, rangoEdadMin: this.grupo.rangoEdadMin ?? null, rangoEdadMax: this.grupo.rangoEdadMax ?? null };
+    const sedeId = this.pedirSede ? this.sede.value : null;
+    if (sedeId !== null) cuerpo.sedeId = sedeId;
     this.guardando = true;
     this.errorGuardar = '';
     this.endpoints.actualizarGrupo(this.grupoId, cuerpo as GrupoDTO, contextoErrorLocal())
       .pipe(finalize(() => { this.guardando = false; }), takeUntil(this.cambioGrupo$), takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: () => { if (this.grupo) this.grupo.nombre = nombre; this.avisos.exito('El grupo se ha actualizado correctamente'); },
+        next: () => { if (this.grupo) { this.grupo.nombre = nombre; if (sedeId !== null) this.grupo.sedeId = sedeId; } this.avisos.exito('El grupo se ha actualizado correctamente'); },
         error: (error: unknown) => { this.errorGuardar = mensajeDeError(error) ?? 'Error al actualizar el grupo'; },
       });
   }

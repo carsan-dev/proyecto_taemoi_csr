@@ -17,6 +17,8 @@ import { FichaAlumnoBase } from './ficha-alumno-base';
 import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo-service.testing';
 import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { ReciboPagoService } from '../cobro/recibo-pago.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { of } from 'rxjs';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { itSinReloj, leerFicherosEnLaZona } from '../../testing/reloj-prueba';
@@ -214,6 +216,11 @@ interface Montaje<C> {
 let fire: jasmine.Spy;
 /** Pieza 279: la sesión es de gestión (propietario o administración). */
 let gestionFicha = false;
+const PERMISOS_UNA_SEDE: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: [] };
+const PERMISOS_VARIAS_SEDES: PermisosSesion = { ...PERMISOS_UNA_SEDE, variasSedes: true, sedes: [
+  { id: 1, nombre: 'Mollina', activa: true }, { id: 2, nombre: 'Estepa', activa: true }, { id: 3, nombre: 'Cerrada', activa: false }] };
+/** E9-1: lo que devuelve `GET /api/auth/permisos` en el montaje. */
+let permisosFicha: PermisosSesion = PERMISOS_UNA_SEDE;
 let actual: Montaje<any> | null = null;
 
 function configurar(): void {
@@ -231,6 +238,7 @@ function configurar(): void {
         { path: '**', component: OtraPantalla },
       ]),
       proveerCatalogoTesting(CATALOGO_TAEMOI),
+      { provide: PermisosSesionService, useValue: { obtener: () => of(permisosFicha) } },
       { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
       // 8b-D1: «Cobrar» del carnet mira si la sesión puede «Deshacer» (el propietario); la ficha no usa nada más.
       { provide: AuthenticationService, useValue: { tieneRolAdmin: () => false, tieneAccesoAdmin: () => gestionFicha } },
@@ -355,6 +363,7 @@ const contestar = ((opciones: any) => {
 describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   beforeEach(() => {
     gestionFicha = false;
+    permisosFicha = PERMISOS_UNA_SEDE;
     fire = spyOn(Swal, 'fire').and.callFake(contestar);
     // 8b-D2b: la ficha nueva abre sus diálogos con el puerto del panel (no con SweetAlert2). Aquí se comparan las
     // opciones que recibe el puerto con las del SweetAlert2 de hoy y se contestan igual; cómo se pintan, en
@@ -598,6 +607,63 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   });
 
   // ---------------------------------------------------------------- barra
+
+  describe('sede (E9-1)', () => {
+    itSinReloj('con una sola sede el carnet no enseña la sede ni «Cambiar»', async () => {
+      gestionFicha = true;
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = 1;
+      datos.alumno.sedePrincipalNombre = 'Central';
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      expect(m.el().querySelector('[data-dato="sede"]')).toBeNull();
+      expect(m.el().querySelector('pn-cambiar-sede')).toBeNull();
+    });
+
+    itSinReloj('con varias sedes enseña la sede tras Estado y «Cambiar» solo a la gestión', async () => {
+      permisosFicha = PERMISOS_VARIAS_SEDES;
+      gestionFicha = true;
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = 1;
+      datos.alumno.sedePrincipalNombre = 'Mollina';
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      const dato = m.el().querySelector('[data-dato="sede"]')!;
+      expect(dato.previousElementSibling?.getAttribute('data-dato')).toBe('estado');
+      expect(texto(dato, 'dt')).toBe('Sede');
+      expect(texto(dato, '.ficha__sede span')).toBe('Mollina');
+      expect(boton(dato, 'Cambiar')).toBeTruthy();
+      boton(dato, 'Cambiar').click();
+      await m.asentar();
+      expect(m.el().querySelector('pn-cambiar-sede')).not.toBeNull();
+      m.harness.fixture.destroy();
+
+      gestionFicha = false;
+      const m2 = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      expect(texto(m2.el(), '[data-dato="sede"] dd')).toBe('Mollina');
+      expect(m2.el().querySelector('[data-dato="sede"] button')).toBeNull();
+    });
+
+    itSinReloj('un alumno sin sede dice «Sin sede»', async () => {
+      permisosFicha = PERMISOS_VARIAS_SEDES;
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = null;
+      datos.alumno.sedePrincipalNombre = null;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      expect(texto(m.el(), '[data-dato="sede"] dd')).toBe('Sin sede');
+    });
+
+    itSinReloj('al cambiarla cierra el panel, vuelve a leer la ficha y avisa', async () => {
+      permisosFicha = PERMISOS_VARIAS_SEDES;
+      gestionFicha = true;
+      const m = await montar(FichaAlumnoComponent);
+      const releer = spyOn(m.comp, 'cargarAlumno').and.callThrough();
+      m.comp.cambiarSedeAbierto = true;
+      m.comp.sedeCambiada('Estepa');
+      await m.asentar();
+      expect(m.comp.cambiarSedeAbierto).toBeFalse();
+      expect(releer).toHaveBeenCalledWith(m.comp.alumnoId!);
+      expect(m.swal.some((o: any) => JSON.stringify(o).includes('Sede cambiada a Estepa.'))).toBeTrue();
+    });
+  });
 
   describe('barra', () => {
     itSinReloj('«Alumnos» lleva al listado; «1 de N» con anterior y siguiente; «Incluir inactivos» pide los ids con inactivos', async () => {

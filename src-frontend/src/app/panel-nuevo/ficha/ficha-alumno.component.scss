@@ -280,6 +280,26 @@
   }
 }
 
+.ficha__sede {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.ficha__enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover { text-decoration-thickness: 2px; }
+}
+
 .ficha__disciplinas {
   grid-area: disciplinas;
   display: flex;
@@ -771,6 +791,8 @@
 // ------------------------------------------------------------------ móvil (375; objetivos de 44 px)
 
 @media (max-width: 767.98px) {
+  .ficha__enlace { min-height: 44px; padding-inline: 4px; }
+
   .ficha__pagina {
     padding: var(--pn-espacio-s) var(--pn-espacio-m) 120px;
   }

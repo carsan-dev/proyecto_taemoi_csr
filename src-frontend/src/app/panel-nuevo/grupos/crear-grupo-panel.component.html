@@ -31,10 +31,28 @@
       <span>{{ errorDeporte }}</span>
     </p>
     }
+    @if (pedirSede) {
+    <label class="crear-grupo__etiqueta crear-grupo__etiqueta--deporte" for="crear-grupo-sede">Sede <span>(obligatorio)</span></label>
+    <select id="crear-grupo-sede" class="crear-grupo__campo" [formControl]="sede" required
+      [attr.disabled]="enviando ? '' : null" (change)="errorSedeServidor = ''"
+      [attr.aria-invalid]="errorSede ? 'true' : null"
+      [attr.aria-describedby]="errorSede ? 'crear-grupo-sede-error' : null">
+      <option [ngValue]="null" disabled>Elige una sede</option>
+      @for (s of sedes; track s.id) {
+      <option [ngValue]="s.id">{{ s.nombre }}</option>
+      }
+    </select>
+    @if (errorSede) {
+    <p class="crear-grupo__error" id="crear-grupo-sede-error" role="alert">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+      <span>{{ errorSede }}</span>
+    </p>
+    }
+    }
   </form>
   <div pnPie class="crear-grupo__pie">
     <button type="button" class="crear-grupo__cancelar" [disabled]="enviando" (click)="cerrado.emit()">Cancelar</button>
     <button type="submit" form="crear-grupo-form" pnOcupado class="crear-grupo__crear" [ocupado]="enviando"
-      textoOcupado="Creando…" [deshabilitado]="nombre.invalid || deporte.invalid">Crear grupo</button>
+      textoOcupado="Creando…" [deshabilitado]="nombre.invalid || deporte.invalid || (pedirSede && sede.invalid)">Crear grupo</button>
   </div>
 </pn-panel-lateral>

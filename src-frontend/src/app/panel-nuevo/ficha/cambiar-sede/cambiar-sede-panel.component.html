@@ -1,0 +1,50 @@
+<pn-panel-lateral titulo="Cambiar de sede" [bloqueado]="enviando" (cerrar)="cerrado.emit()">
+  <div class="cambiar-sede">
+    <p class="cambiar-sede__ruta" data-ruta>
+      <span>{{ nombreActual }}</span>
+      @if (sede.value !== null) {
+      <span class="cambiar-sede__a"> a </span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+      <span>{{ nombreNueva }}</span>
+      }
+    </p>
+
+    <div class="cambiar-sede__campo">
+      <label class="cambiar-sede__etiqueta" for="cambiar-sede-nueva">Sede nueva <span>(obligatorio)</span></label>
+      <select id="cambiar-sede-nueva" class="cambiar-sede__select" [formControl]="sede" required
+        [attr.disabled]="enviando ? '' : null" (change)="elegida()">
+        <option [ngValue]="null" disabled>Elige una sede</option>
+        @for (s of opciones; track s.id) {
+        <option [ngValue]="s.id">{{ s.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    @if (leyendo) {
+    <p class="cambiar-sede__leyendo" role="status">Calculando qué pasa con los cargos…</p>
+    } @else if (errorLectura) {
+    <div class="cambiar-sede__error" role="alert">
+      <p>{{ errorLectura }}</p>
+      <button type="button" class="cambiar-sede__reintentar" (click)="leer()">Reintentar</button>
+    </div>
+    } @else if (lectura) {
+    <ul class="cambiar-sede__efectos" aria-label="Qué pasa al cambiar de sede">
+      @for (efecto of efectos; track efecto.clave) {
+      <li [attr.data-efecto]="efecto.clave"><b>{{ efecto.titulo }}</b><small>{{ efecto.detalle }}</small></li>
+      }
+    </ul>
+    }
+
+    @if (errorEnvio) {
+    <p class="cambiar-sede__error-envio" id="cambiar-sede-error" role="alert">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>
+      <span>{{ errorEnvio }}</span>
+    </p>
+    }
+  </div>
+  <div pnPie class="cambiar-sede__pie">
+    <button type="button" class="cambiar-sede__cancelar" [disabled]="enviando" (click)="cerrado.emit()">Cancelar</button>
+    <button type="button" pnOcupado class="cambiar-sede__confirmar" [ocupado]="enviando" textoOcupado="Cambiando…"
+      [deshabilitado]="!lectura || leyendo || !!errorLectura" (click)="confirmar()">{{ lectura ? 'Cambiar a ' + nombreNueva : 'Cambiar de sede' }}</button>
+  </div>
+</pn-panel-lateral>
