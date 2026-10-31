@@ -26,6 +26,16 @@
   @include c.boton-texto;
 }
 
+// En rojo para no competir con «Reenviar invitación»; hover neutro, como las acciones de texto en peligro de la ficha.
+.miembros__boton-texto--peligro {
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-peligro);
+  }
+}
+
 .miembros__boton-pequeno {
   min-height: 34px;
   padding: 0 12px;
@@ -97,10 +107,18 @@
 }
 
 .miembros__invitacion {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  width: 100%;
+}
+
+.miembros__invitacion-acciones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .miembros__etiqueta {

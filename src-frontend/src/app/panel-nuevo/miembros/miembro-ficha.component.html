@@ -13,8 +13,14 @@
       @if (ficha.invitacionPendiente) {
       <div class="miembros__invitacion">
         <span class="miembros__etiqueta miembros__etiqueta--atencion">Invitación pendiente</span>
-        <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="reenviando" textoOcupado="Reenviando…"
-          (click)="reenviar()">Reenviar invitación</button>
+        <div class="miembros__invitacion-acciones">
+          <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="reenviando" textoOcupado="Reenviando…"
+            (click)="reenviar()">Reenviar invitación</button>
+          @if (verCancelarInvitacion) {
+          <button type="button" pnOcupado class="miembros__boton-texto miembros__boton-texto--peligro" [ocupado]="cancelando"
+            textoOcupado="Cancelando…" (click)="cancelarInvitacion()">Cancelar invitación</button>
+          }
+        </div>
       </div>
       }
       @if (datosError) {

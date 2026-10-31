@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -11,6 +12,7 @@ import { FichaCompleta, Miembro, PaginaDeMiembros, RolDeMiembro, RolMembresia } 
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { MiembroFichaComponent } from './miembro-ficha.component';
 import { MiembrosPanelComponent } from './miembros.component';
 
 const API = `${environment.apiUrl}/miembros`;
@@ -433,6 +435,205 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     http.expectOne((r) => r.url === `${API}/1/invitacion`).flush({ mensaje: 'La invitación ya se aceptó.' }, { status: 409, statusText: 'Conflict' });
     await esperar();
     expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe('La invitación ya se aceptó.');
+  });
+
+  // ------------------------------------------------------------------ ficha: cancelar invitación (decisión 389)
+
+  const TITULO_CANCELAR = '¿Cancelar la invitación de Lucía Martín Gil?';
+  const TEXTO_CANCELAR = 'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.';
+  const YA_ACEPTADA = 'La invitación ya se aceptó.';
+  const SOLO_PROPIETARIO = 'Solo el propietario da o quita los roles de propietario y gestor.';
+  const pendiente = (cambios: Partial<FichaCompleta> = {}): FichaCompleta => ficha({ invitacionPendiente: true, ...cambios });
+  const tieneCancelar = (): boolean => Array.from(panel()!.querySelectorAll('button')).some((b) => texto(b) === 'Cancelar invitación');
+  const fichasPedidas = (id = 1): TestRequest[] => http.match((r) => r.method === 'GET' && r.url === `${API}/${id}`);
+  const borrados = (id = 1): TestRequest[] => http.match((r) => r.method === 'DELETE' && r.url === `${API}/${id}/invitacion`);
+  const instanciaFicha = (): MiembroFichaComponent => fixture.debugElement.query(By.directive(MiembroFichaComponent)).componentInstance;
+
+  async function abrirPendiente(f: FichaCompleta = pendiente(), caps: Capacidad[] = PROPIETARIA): Promise<void> {
+    cargar(pagina([miembro({ invitacionPendiente: true, roles: f.roles })]), caps);
+    await abrirFicha(f);
+  }
+
+  async function pedirCancelar(): Promise<void> {
+    boton(panel()!, 'Cancelar invitación').click();
+    await esperar();
+  }
+
+  it('«Cancelar invitación» va en su fila con «Reenviar invitación», bajo la pastilla, como botón de texto en peligro', async () => {
+    await abrirPendiente();
+    const bloque = panel()!.querySelector('.miembros__invitacion')!;
+    expect(bloque.querySelector(':scope > .miembros__etiqueta')).not.toBeNull();
+    const acciones = Array.from(bloque.querySelectorAll('.miembros__invitacion-acciones button'));
+    expect(acciones.map((b) => texto(b))).toEqual(['Reenviar invitación', 'Cancelar invitación']);
+    expect(acciones[1].classList.contains('miembros__boton-texto')).toBeTrue();
+    expect(acciones[1].classList.contains('miembros__boton-texto--peligro')).toBeTrue();
+  });
+
+  it('la sesión propietaria lo ve también con roles reservados', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROPIETARIO'), rol('ADMINISTRADOR'), rol('PROFESOR')] }));
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  it('la sesión gestora lo ve si ningún rol activo es reservado, aunque tenga uno reservado desactivado', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR'), rol('ADMINISTRADOR', false)] }), GESTORA);
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  for (const roles of [[rol('PROPIETARIO')], [rol('ADMINISTRADOR')], [rol('ADMINISTRADOR'), rol('PROFESOR')]]) {
+    it(`la sesión gestora no lo ve con ${roles.map((r) => r.rol).join(' y ')} activos; «Reenviar» sigue`, async () => {
+      await abrirPendiente(pendiente({ roles }), GESTORA);
+      expect(tieneCancelar()).toBeFalse();
+      expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+    });
+  }
+
+  it('no aparece sin ningún rol activo en esta escuela', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false)] }));
+    expect(tieneCancelar()).toBeFalse();
+  });
+
+  it('no aparece sin invitación pendiente', async () => {
+    cargar();
+    await abrirFicha(ficha());
+    expect(tieneCancelar()).toBeFalse();
+  });
+
+  it('pide confirmación con los textos exactos, en peligro y con el foco en «Volver»; «Volver» no llama a la API', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    const d = dialogo()!;
+    expect(d.classList.contains('pn-dialogo--peligro')).toBeTrue();
+    expect(texto(d.querySelector('.pn-dialogo__titulo'))).toBe(TITULO_CANCELAR);
+    expect(texto(d.querySelector('.pn-dialogo__mensaje'))).toBe(TEXTO_CANCELAR);
+    expect(texto(d.querySelector('.pn-dialogo__accion'))).toBe('Cancelar invitación');
+    const volver = d.querySelector('.pn-dialogo__cancelar') as HTMLButtonElement;
+    expect(texto(volver)).toBe('Volver');
+    expect(document.activeElement).toBe(volver);
+    volver.click();
+    await esperar();
+    expect(dialogo()).toBeNull();
+    expect(borrados().length).toBe(0);
+    expect(panel()).not.toBeNull();
+    expect(avisos()).toEqual([]);
+  });
+
+  for (const cuentaBorrada of [true, false]) {
+    it(`éxito con cuentaBorrada=${cuentaBorrada}: DELETE sin cuerpo, cierra la ficha, recarga la lista, avisa y no vuelve a pedir la ficha`, async () => {
+      await abrirPendiente();
+      await pedirCancelar();
+      await confirmar();
+      const [peticion] = borrados();
+      expect(peticion.request.body).toBeNull();
+      expect(peticion.request.withCredentials).toBeTrue();
+      expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      peticion.flush({ cuentaBorrada });
+      await esperar();
+
+      expect(panel()).toBeNull();
+      expect(dialogo()).toBeNull();
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada' }]);
+      const recarga = listados();
+      expect(recarga.length).toBe(1);
+      recarga[0].flush(pagina([]));
+      await esperar();
+      expect(fichasPedidas().length).toBe(0);
+    });
+  }
+
+  it('mientras se envía: «Cancelando…», panel bloqueado y sin doble envío', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    const accion = dialogo()!.querySelector('.pn-dialogo__accion') as HTMLButtonElement;
+    accion.click();
+    await esperar();
+    const [peticion] = borrados();
+    expect(texto(accion)).toBe('Cancelando…');
+    expect(instanciaFicha().ocupado).toBeTrue();
+    const enLaFicha = panel()!.querySelector('.miembros__boton-texto--peligro') as HTMLButtonElement;
+    expect(texto(enLaFicha)).toBe('Cancelando…');
+    expect(enLaFicha.getAttribute('aria-busy')).toBe('true');
+    expect((panel()!.querySelector('.miembros__pie button') as HTMLButtonElement).disabled).toBeTrue();
+
+    accion.click();
+    enLaFicha.click();
+    void instanciaFicha().cancelarInvitacion();
+    await esperar();
+    expect(borrados().length).toBe(0);
+    expect(document.querySelectorAll('dialog.pn-dialogo').length).toBe(1);
+    peticion.flush({ cuentaBorrada: true });
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([])));
+  });
+
+  it('dos pulsaciones seguidas abren un solo diálogo', async () => {
+    await abrirPendiente();
+    const b = boton(panel()!, 'Cancelar invitación');
+    b.click();
+    b.click();
+    await esperar();
+    expect(document.querySelectorAll('dialog.pn-dialogo').length).toBe(1);
+  });
+
+  it('con un reenvío en vuelo no abre el diálogo', async () => {
+    await abrirPendiente();
+    boton(panel()!, 'Reenviar invitación').click();
+    pintar();
+    const reenvio = http.expectOne((r) => r.method === 'POST' && r.url === `${API}/1/invitacion`);
+    void instanciaFicha().cancelarInvitacion();
+    await esperar();
+    expect(dialogo()).toBeNull();
+    reenvio.flush(pendiente());
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([])));
+  });
+
+  it('409: el mensaje en Datos; recarga la ficha sin esqueleto, refleja el estado real y la fila se pone al día', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: YA_ACEPTADA }, { status: 409, statusText: 'Conflict' });
+    await esperar();
+    expect(panel()).not.toBeNull();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(YA_ACEPTADA);
+    expect(avisos()).toEqual([]);
+
+    const [recarga] = fichasPedidas();
+    expect(panel()!.querySelector('pn-esqueleto')).toBeNull();
+    recarga.flush(ficha({ invitacionPendiente: false }));
+    await esperar();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(YA_ACEPTADA);
+    expect(fixture.componentInstance.miembros[0].invitacionPendiente).toBeFalse();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('403: el mensaje en Datos, sin recargar la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: SOLO_PROPIETARIO }, { status: 403, statusText: 'Forbidden' });
+    await esperar();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(SOLO_PROPIETARIO);
+    expect(fichasPedidas().length).toBe(0);
+    expect(instanciaFicha().ocupado).toBeFalse();
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  it('ficha cerrada con la cancelación en vuelo: el éxito se avisa y la lista se refresca, sin pedir la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(el().querySelector('pn-miembro-ficha')).toBeNull();
+    peticion.flush({ cuentaBorrada: true });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada' }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    expect(fichasPedidas().length).toBe(0);
   });
 
   // ------------------------------------------------------------------ ficha: sedes

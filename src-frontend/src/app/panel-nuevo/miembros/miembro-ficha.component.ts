@@ -4,7 +4,14 @@ import { Observable, Subscription } from 'rxjs';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { RolAsignacionProfesor } from '../../interfaces/profesor';
 import { SedeVisible } from '../../servicios/authentication/permisos-sesion.service';
-import { FichaCompleta, GrupoDeMiembro, Miembro, MiembrosService, RolMembresia } from '../../servicios/endpoints/miembros.service';
+import {
+  FichaCompleta,
+  GrupoDeMiembro,
+  InvitacionCancelada,
+  Miembro,
+  MiembrosService,
+  RolMembresia,
+} from '../../servicios/endpoints/miembros.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
@@ -18,8 +25,10 @@ import {
   MENSAJE_SIN_SEDES,
   ROLES_ASIGNACION,
   ROLES_PERSONAL,
+  TEXTO_CANCELAR_INVITACION,
   TEXTO_QUITAR,
   asignacionesDe,
+  estadoHttp,
   etiquetaAsignacion,
   etiquetaGrupo,
   etiquetaRol,
@@ -28,8 +37,10 @@ import {
   mismosGrupos,
   nombreCompleto,
   puedeCambiarRol,
+  puedeCancelarInvitacion,
   rolDe,
   tieneRolActivo,
+  tituloCancelarInvitacion,
   tituloQuitar,
 } from './miembros-vista';
 
@@ -93,6 +104,10 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
 
   datosError: string | null = null;
   reenviando = false;
+  /** Diálogo de cancelar abierto: no se abre otro. */
+  private confirmandoCancelar = false;
+  /** La cancelación ya confirmada, en vuelo. */
+  cancelando = false;
 
   sedesElegidas: number[] = [];
   sedesOcupado = false;
@@ -121,7 +136,11 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
 
   get ocupado(): boolean {
     return (
-      this.reenviando || this.sedesOcupado || this.gruposOcupado || Object.values(this.rolOcupado).some((v) => v === true)
+      this.reenviando ||
+      this.cancelando ||
+      this.sedesOcupado ||
+      this.gruposOcupado ||
+      Object.values(this.rolOcupado).some((v) => v === true)
     );
   }
 
@@ -155,6 +174,10 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
 
   puedeCambiar(rol: RolMembresia): boolean {
     return puedeCambiarRol(rol, this.contexto.propietario);
+  }
+
+  get verCancelarInvitacion(): boolean {
+    return !!this.ficha && puedeCancelarInvitacion(this.ficha, this.contexto.propietario);
   }
 
   get tieneFamilia(): boolean {
@@ -308,7 +331,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ datos
 
   reenviar(): void {
-    if (!this.ficha || this.reenviando) {
+    if (!this.ficha || this.reenviando || this.cancelando) {
       return;
     }
     this.datosError = null;
@@ -319,6 +342,64 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       (m) => (this.datosError = m),
       'No se pudo reenviar la invitación.',
       'Invitación reenviada.'
+    );
+  }
+
+  /**
+   * Cancela la invitación (decisión 389). La cuenta puede haberse borrado: al acabar bien no se pide ni se emite ninguna
+   * ficha; se cierra el panel, se avisa y la lista se recarga.
+   */
+  async cancelarInvitacion(): Promise<void> {
+    const ficha = this.ficha;
+    if (!ficha || this.ocupado || this.confirmandoCancelar || !this.verCancelarInvitacion) {
+      return;
+    }
+    this.datosError = null;
+    this.confirmandoCancelar = true;
+    const resultado = await this.confirmacion.confirmar<InvitacionCancelada>({
+      titulo: tituloCancelarInvitacion(nombreCompleto(ficha)),
+      mensaje: TEXTO_CANCELAR_INVITACION,
+      accion: 'Cancelar invitación',
+      accionOcupada: 'Cancelando…',
+      cancelar: 'Volver',
+      destructivo: true,
+      nombre: 'cancelar-invitacion',
+      ejecutar: () => {
+        this.cancelando = true;
+        this.cdr.detectChanges();
+        return this.api.cancelarInvitacion(ficha.usuarioId);
+      },
+    });
+    this.confirmandoCancelar = false;
+    this.cancelando = false;
+    if (!resultado.confirmado) {
+      return;
+    }
+    if (resultado.error) {
+      if (!this.destruido) {
+        this.fallarCancelacion(resultado.error, ficha.usuarioId);
+      }
+      return;
+    }
+    if (!this.destruido) {
+      this.cerrar.emit();
+    }
+    this.terminarCerrado('Invitación cancelada');
+  }
+
+  /** El mensaje en Datos. Un 409 dice que la ficha quedó vieja: se relee sin esqueleto, para no perder el mensaje. */
+  private fallarCancelacion(error: unknown, usuarioId: number): void {
+    this.datosError = mensajeError(error, 'No se pudo cancelar la invitación.');
+    this.cdr.detectChanges();
+    if (estadoHttp(error) !== 409) {
+      return;
+    }
+    this.suscripciones.add(
+      this.api.ficha(usuarioId).subscribe({
+        next: (ficha) => this.aplicar(ficha, []),
+        // La relectura es un extra: si falla, sigue el mensaje de la API.
+        error: () => undefined,
+      })
     );
   }
 

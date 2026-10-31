@@ -1,6 +1,7 @@
 import { FichaCompleta, Miembro, RolDeMiembro } from '../../servicios/endpoints/miembros.service';
 import {
   AVISO_SIN_CUENTA,
+  TEXTO_CANCELAR_INVITACION,
   cuerpoAlta,
   etiquetaGrupo,
   etiquetaRol,
@@ -11,8 +12,10 @@ import {
   nombreCompleto,
   pideReactivar,
   puedeCambiarRol,
+  puedeCancelarInvitacion,
   rolesActivos,
   rolesParaAlta,
+  tituloCancelarInvitacion,
   tituloQuitar,
   validarAlta,
 } from './miembros-vista';
@@ -36,6 +39,29 @@ function miembro(cambios: Partial<Miembro> = {}): Miembro {
 }
 
 describe('miembros-vista (E9-4)', () => {
+  it('cancelar invitación: exige invitación pendiente y algún rol activo', () => {
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true }), false)).toBeTrue();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: false }), true)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [] }), true)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false)] }), true)).toBeFalse();
+  });
+
+  it('cancelar invitación: con un rol activo reservado, solo la sesión propietaria (la familia no es reservada)', () => {
+    const reservado = miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('ADMINISTRADOR')] });
+    expect(puedeCancelarInvitacion(reservado, true)).toBeTrue();
+    expect(puedeCancelarInvitacion(reservado, false)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROPIETARIO')] }), false)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('PROPIETARIO', false)] }), false)).toBeTrue();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('FAMILIA')] }), false)).toBeTrue();
+  });
+
+  it('cancelar invitación: título y texto del diálogo', () => {
+    expect(tituloCancelarInvitacion('Marta Ruiz Pérez')).toBe('¿Cancelar la invitación de Marta Ruiz Pérez?');
+    expect(TEXTO_CANCELAR_INVITACION).toBe(
+      'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.'
+    );
+  });
+
   it('los nombres de rol en pantalla: Gestor es ADMINISTRADOR', () => {
     expect(etiquetaRol('PROPIETARIO')).toBe('Propietario');
     expect(etiquetaRol('ADMINISTRADOR')).toBe('Gestor');
