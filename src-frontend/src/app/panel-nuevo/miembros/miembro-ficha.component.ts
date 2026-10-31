@@ -43,6 +43,7 @@ import {
   etiquetaAsignacion,
   etiquetaGrupo,
   etiquetaRol,
+  familiaExigeAlumno,
   invitacionPendienteAqui,
   mensajeError,
   mensajeErrorContrasena,
@@ -217,9 +218,20 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     return !!this.ficha && puedeCancelarInvitacion(this.ficha, this.contexto.propietario);
   }
 
-  /** Para el gestor: la fila de texto de Familia solo si la cuenta tiene esa membresía. */
+  /** Para el gestor: la fila de texto de Familia solo si la cuenta tiene esa membresía activa. */
   get tieneFamilia(): boolean {
-    return !!this.ficha && rolDe(this.ficha, 'FAMILIA') !== null;
+    return !!this.ficha && tieneRolActivo(this.ficha, 'FAMILIA');
+  }
+
+  /** Para el propietario: la ayuda de Familia solo si el rol exigiría de verdad un alumno vinculado. */
+  get verAyudaFamilia(): boolean {
+    return !!this.ficha && familiaExigeAlumno(this.ficha);
+  }
+
+  /** Los ids que describen la casilla de Familia: solo los que están pintados; sin ninguno, sin atributo. */
+  get descripcionFamilia(): string | null {
+    const ids = [this.verAyudaFamilia ? 'miembro-ayuda-FAMILIA' : '', this.rolError.FAMILIA ? 'miembro-error-FAMILIA' : ''];
+    return ids.filter((id) => id !== '').join(' ') || null;
   }
 
   get verSedes(): boolean {

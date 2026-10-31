@@ -508,6 +508,45 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(lineaRol('FAMILIA').textContent).not.toContain('Guardar cargo');
   });
 
+  it('propietario: la ayuda de Familia sale con Profesor o sin roles, y aria-describedby apunta a ella', async () => {
+    for (const roles of [[rol('PROFESOR')], []]) {
+      cargar(pagina([miembro()]), PROPIETARIA);
+      await abrirFicha(ficha({ roles }));
+      expect(texto(lineaRol('FAMILIA').querySelector('.miembros__ayuda'))).withContext(`${roles.length} roles`).toBe(AYUDA_FAMILIA);
+      expect(casilla('FAMILIA').getAttribute('aria-describedby')).toBe('miembro-ayuda-FAMILIA');
+      fixture.destroy();
+    }
+  });
+
+  it('propietario: con Propietario, Gestor o Responsable de sede activos no sale la ayuda ni aria-describedby', async () => {
+    for (const activo of ['PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE'] as const) {
+      cargar(pagina([miembro()]), PROPIETARIA);
+      await abrirFicha(ficha({ roles: [rol(activo), rol('PROFESOR')] }));
+      expect(lineaRol('FAMILIA').querySelector('.miembros__ayuda')).withContext(activo).toBeNull();
+      expect(casilla('FAMILIA').hasAttribute('aria-describedby')).withContext(activo).toBeFalse();
+      fixture.destroy();
+    }
+  });
+
+  it('propietario: el rol inactivo no cuenta, y un error de Familia solo describe lo que existe', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ roles: [rol('ADMINISTRADOR', false), rol('PROFESOR')] }));
+    expect(texto(lineaRol('FAMILIA').querySelector('.miembros__ayuda'))).toBe(AYUDA_FAMILIA);
+    fixture.destroy();
+
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ roles: [rol('ADMINISTRADOR')] }));
+    marcar(casilla('FAMILIA'), true);
+    http
+      .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/roles/FAMILIA`)
+      .flush({ mensaje: 'No se pudo.' }, { status: 409, statusText: 'Conflict' });
+    await esperar();
+    const descrita = casilla('FAMILIA').getAttribute('aria-describedby');
+    expect(descrita).toBe('miembro-error-FAMILIA');
+    expect(panel()!.querySelector(`#${descrita}`)).not.toBeNull();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
   it('gestor con la membresía: fila de texto con la ayuda de solo propietario; sin ella, ni fila', async () => {
     cargar(pagina([miembro()]), GESTORA);
     await abrirFicha(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA')] }));
@@ -520,6 +559,12 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
 
     cargar(pagina([miembro()]), GESTORA);
     await abrirFicha(ficha({ roles: [rol('PROFESOR')] }));
+    expect(panel()!.querySelector('[data-rol="FAMILIA"]')).toBeNull();
+  });
+
+  it('gestor: Familia ya quitada no se enseña', async () => {
+    cargar(pagina([miembro()]), GESTORA);
+    await abrirFicha(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA', false)] }));
     expect(panel()!.querySelector('[data-rol="FAMILIA"]')).toBeNull();
   });
 
@@ -866,7 +911,16 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(tieneCancelar()).toBeTrue();
   });
 
-  for (const roles of [[rol('PROPIETARIO')], [rol('ADMINISTRADOR')], [rol('ADMINISTRADOR'), rol('PROFESOR')]]) {
+  it('la sesión gestora lo ve con Familia ya quitada, y la propietaria con Familia activa', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR'), rol('FAMILIA', false)] }), GESTORA);
+    expect(tieneCancelar()).toBeTrue();
+    fixture.destroy();
+
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR'), rol('FAMILIA')] }), PROPIETARIA);
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  for (const roles of [[rol('PROPIETARIO')], [rol('ADMINISTRADOR')], [rol('ADMINISTRADOR'), rol('PROFESOR')], [rol('FAMILIA')], [rol('PROFESOR'), rol('FAMILIA')]]) {
     it(`la sesión gestora no lo ve con ${roles.map((r) => r.rol).join(' y ')} activos; «Reenviar» sigue`, async () => {
       await abrirPendiente(pendiente({ roles }), GESTORA);
       expect(tieneCancelar()).toBeFalse();

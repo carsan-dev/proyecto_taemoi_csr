@@ -121,10 +121,18 @@ export function invitacionPendienteAqui(m: Pick<Miembro, 'invitacionPendiente' |
 
 /**
  * Cancelar retira todos sus roles activos de esta escuela (decisión 389): hace falta alguno y que la sesión pueda
- * cambiarlos todos. El servidor lo vuelve a comprobar con 403.
+ * cambiarlos todos. Familia también la cambia solo el propietario (decisión 396). El servidor lo vuelve a comprobar con 403.
  */
 export function puedeCancelarInvitacion(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>, sesionPropietaria: boolean): boolean {
-  return invitacionPendienteAqui(m) && rolesActivos(m).every((rol) => puedeCambiarRol(rol, sesionPropietaria));
+  return invitacionPendienteAqui(m) && (sesionPropietaria || !rolesActivos(m).some((rol) => esRolReservado(rol) || rol === 'FAMILIA'));
+}
+
+/**
+ * Si quien tiene Familia necesita un alumno vinculado para entrar: `RolMembresia.requiereAlumnoActivo` del servidor, que
+ * Propietario, Gestor y Responsable de sede (activos) evitan. Profesor no.
+ */
+export function familiaExigeAlumno(m: Pick<Miembro, 'roles'>): boolean {
+  return !(['PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE'] as const).some((rol) => tieneRolActivo(m, rol));
 }
 
 /** Cómo está la contraseña de la cuenta para quien abre la ficha (`MiembrosDTOs.Ficha.contrasena`). */

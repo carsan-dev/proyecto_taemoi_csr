@@ -1,6 +1,7 @@
 import { FichaCompleta, Miembro, RolDeMiembro } from '../../servicios/endpoints/miembros.service';
 import {
   AVISO_SIN_CUENTA,
+  OPCIONES_ROL,
   REGLAS_CONTRASENA,
   TEXTO_QUITAR_FAMILIA,
   TEXTO_CANCELAR_INVITACION,
@@ -8,6 +9,7 @@ import {
   cuerpoAlta,
   etiquetaGrupo,
   etiquetaRol,
+  familiaExigeAlumno,
   filaDeFicha,
   invitacionPendienteAqui,
   lineaSecundaria,
@@ -60,13 +62,36 @@ describe('miembros-vista (E9-4)', () => {
     expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false)] }), true)).toBeFalse();
   });
 
-  it('cancelar invitación: con un rol activo reservado, solo la sesión propietaria (la familia no es reservada)', () => {
+  it('cancelar invitación: con un rol activo reservado, solo la sesión propietaria', () => {
     const reservado = miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('ADMINISTRADOR')] });
     expect(puedeCancelarInvitacion(reservado, true)).toBeTrue();
     expect(puedeCancelarInvitacion(reservado, false)).toBeFalse();
     expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROPIETARIO')] }), false)).toBeFalse();
     expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('PROPIETARIO', false)] }), false)).toBeTrue();
-    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('FAMILIA')] }), false)).toBeTrue();
+  });
+
+  it('cancelar invitación: Familia activa también queda para la sesión propietaria (decisión 396); inactiva no cuenta', () => {
+    const familia = miembro({ invitacionPendiente: true, roles: [rol('FAMILIA')] });
+    expect(puedeCancelarInvitacion(familia, true)).toBeTrue();
+    expect(puedeCancelarInvitacion(familia, false)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('FAMILIA')] }), false)).toBeFalse();
+    expect(puedeCancelarInvitacion(miembro({ invitacionPendiente: true, roles: [rol('PROFESOR'), rol('FAMILIA', false)] }), false)).toBeTrue();
+  });
+
+  it('Familia en el alta y en el filtro: la regla de cancelar no los cambia', () => {
+    expect(rolesParaAlta(true)).toEqual(['PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR']);
+    expect(rolesParaAlta(false)).toEqual(['RESPONSABLE_SEDE', 'PROFESOR']);
+    expect(OPCIONES_ROL.map((o) => o.valor)).toEqual(['', 'PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR']);
+  });
+
+  it('Familia exige alumno salvo con Propietario, Gestor o Responsable de sede activos (requiereAlumnoActivo)', () => {
+    expect(familiaExigeAlumno(miembro({ roles: [] }))).toBeTrue();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('PROFESOR')] }))).toBeTrue();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('FAMILIA')] }))).toBeTrue();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('ADMINISTRADOR', false), rol('PROFESOR')] }))).toBeTrue();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('PROPIETARIO')] }))).toBeFalse();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('ADMINISTRADOR')] }))).toBeFalse();
+    expect(familiaExigeAlumno(miembro({ roles: [rol('RESPONSABLE_SEDE'), rol('FAMILIA')] }))).toBeFalse();
   });
 
   it('cancelar invitación: título y texto del diálogo', () => {
