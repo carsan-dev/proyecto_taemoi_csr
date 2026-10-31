@@ -153,38 +153,6 @@
 			"name": "Usuarios, login y registro",
 			"item": [
 				{
-					"name": "Listar usuarios",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjcm9seXgxNkBnbWFpbC5jb20iLCJpYXQiOjE3MTc4MDE4ODEsImV4cCI6MTcxNzgzNzg4MX0.8NU-BAeOrsg8cxQ5cEljnwqSFJQeAyGqRLCXo5ONJDs",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8080/api/admin/users",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8080",
-							"path": [
-								"api",
-								"admin",
-								"users"
-							]
-						},
-						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
-					},
-					"response": []
-				},
-				{
 					"name": "Login admin",
 					"request": {
 						"method": "POST",
@@ -336,7 +304,7 @@
 								"roles"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los roles registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los roles registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/auth/roles`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				},
@@ -368,7 +336,7 @@
 								"user"
 							]
 						},
-						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/admin/users`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
+						"description": "#### Descripción\n\nEste endpoint permite obtener una lista de todos los usuarios registrados en el sistema.\n\n#### URL\n\n`GET http://localhost:8080/api/auth/user`\n\n#### Parámetros de consulta\n\nNo se requieren parámetros de consulta para esta solicitud.\n\n#### Encabezados\n\nNo se requieren encabezados especiales.\n\n#### Respuestas\n\n- **200 OK** - Se devuelve una lista de todos los usuarios.\n    \n- **404 Not Found** - Si no se encuentra ningún usuario registrado.\n    \n- **500 Internal Server Error** - Si ocurre algún error interno en el servidor."
 					},
 					"response": []
 				}

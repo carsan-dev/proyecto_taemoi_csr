@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (504 líneas; 165 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (502 líneas; 164 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -310,13 +310,12 @@ Pieza E8-3 (API de miembros, fase3-e8-miembros.md D8-1 y D8-4 a D8-11): 9 línea
 `DENIEGA`: RESPONSABLE_SEDE hasta la E9, PROFESOR (fuera de su lista blanca), FAMILIA, SOLO_PLATAFORMA y ANONIMO. Regla
 de URL propia `/api/miembros`, `/api/miembros/**` (`hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')`, junto a la de
 `/api/sedes`) y el mismo `@PreAuthorize` en cada método. La D8 (solo el propietario da o quita PROPIETARIO y
-ADMINISTRADOR, 403 al gestor) y el último propietario (409) los aplica el servicio, no la URL: `PERMITE` en GESTOR solo
+ADMINISTRADOR, 403 al gestor) y el último propietario (409, decisión 221) los aplica el servicio, no la URL: `PERMITE` en GESTOR solo
 dice que la petición llega. Cuenta de otra escuela: 404; sedes y grupos de otra escuela: 400 y 404. Registro explícito
 (módulo `miembros` y, las asignaciones, `profesor`; solo ids; sin cambios, con `sinCambios=SI`): las cinco escrituras
 en `EscrituraConRegistroPropio`, una fila por escritura. `/api/miembros` (`email`, `cargo`, `nombre`, `apellidos`) y
 `/api/miembros/{id}/roles/{rol}` (`cargo`), en `CLAVES_REDACTADAS_POR_RUTA`; el parámetro `q` de `GET /api/miembros`,
-en `PARAMETROS_REDACTADOS_POR_RUTA` (la búsqueda no queda en `query_params_json`). Decisión 221: la línea de `PUT /api/admin/users/{userId}/roles` no cambia (solo
-PROPIETARIO `PERMITE`), pero responde 409 si deja la escuela sin propietario activo. Lo prueban
+en `PARAMETROS_REDACTADOS_POR_RUTA` (la búsqueda no queda en `query_params_json`). Lo prueban
 `MiembrosApiIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 Pieza E8-4 (invitaciones por correo, fase3-e8-miembros.md D8-13): 3 líneas nuevas; ninguna casilla existente cambia.
@@ -501,12 +500,11 @@ que ya tiene: 400. Todo 2xx del `PUT` registra `SEDES ALUMNO_SEDE_CAMBIADA` (sol
 `EscrituraConRegistroPropio`. Lo prueban `CambioSedeAlumnoIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
 Pieza 9-8 (retirar «Roles y permisos», decisiones 373 y 396): 1 línea nueva; ninguna casilla existente cambia.
-`/api/admin/users*` sigue igual: se contrae en una pieza aparte tras desplegar (decisión 397).
 - `PUT /api/miembros/{usuarioId}/contrasena` (`MiembroController#restablecerContrasena`): solo PROPIETARIO `PERMITE`, el
   resto `DENIEGA`, también GESTOR. Regla de URL propia, antes de `/api/miembros/**`, y `hasAuthority('ROLE_ADMIN')`.
-  Cuerpo `{nuevaContrasena}` con la validación de `/api/admin/users/{id}/password`; no cumplirla, 400 con `{mensaje}`.
-  Responde 200 con la ficha. Cuenta que no es de la escuela, 404; con membresía en otra escuela, 403; de Google, 400; con
-  invitación pendiente, 409 (a propósito, distinto de `/api/admin/users/{id}/password`). Todo 2xx registra
+  Cuerpo `{nuevaContrasena}`: al menos 8 caracteres, con mayúsculas, minúsculas y números; no cumplirla, 400 con
+  `{mensaje}`. Responde 200 con la ficha. Cuenta que no es de la escuela, 404; con membresía en otra escuela, 403; de
+  Google, 400; con invitación pendiente, 409 (a propósito: ahí valen reenviar y cancelar). Todo 2xx registra
   `MIEMBROS CONTRASENA_RESTABLECIDA usuario=#id` (acción `UPDATE`) y está en `EscrituraConRegistroPropio`
   (`MIEMBRO_CONTRASENA`). La auditoría nunca guarda el cuerpo de esta ruta, responda lo que responda: `payload_json` queda
   en `[payload omitted: contrasena]`, porque un JSON malformado u otro tipo de contenido no pasan por el enmascarado.
@@ -520,6 +518,14 @@ Pieza 9-8 (retirar «Roles y permisos», decisiones 373 y 396): 1 línea nueva; 
   `usuario_alumno`. Registro `ROL_DADO`, `ROL_REACTIVADO` y `ROL_QUITADO` con `rol=FAMILIA`. `POST /api/miembros` con
   FAMILIA sigue en 400.
 Lo prueban `MiembrosContrasenaFamiliaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Contracción de `/api/admin/users*` (decisión 397): 4 líneas retiradas (`GET` y `HEAD /api/admin/users`, `PUT
+/api/admin/users/{userId}/password` y `PUT /api/admin/users/{userId}/roles`); ninguna casilla cambia. Las sustituye
+`/api/miembros`. Estado real de las rutas retiradas, con sesión de propietario y sin datos de ninguna cuenta en el
+cuerpo: `GET /api/admin/users` cae en `GET /api/admin/{id}` con un id que no es un número, 400 con `{mensaje}`;
+`PUT /api/admin/users/{id}/roles` y `/password` no tienen manejador, 404 con el cuerpo de `/error`, y no cambian nada. La
+regla de URL de `/api/admin/**` sigue por delante: sin sesión, 401; sin `ROLE_ADMIN`, 403. Lo prueba
+`DespachoDeErrorIntegrationTest`.
 
 ## Cómo actualizarlo
 
