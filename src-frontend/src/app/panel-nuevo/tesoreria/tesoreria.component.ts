@@ -795,8 +795,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     const pagado = pagadoDeEstado(this.filtroEstado);
     const solicitud =
       formato === 'pdf'
-        ? this.endpoints.exportarTesoreriaPDF(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.filtroSede)
-        : this.endpoints.exportarTesoreriaCSV(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.filtroSede);
+        ? this.endpoints.exportarTesoreriaPDF(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.sedeAplicada)
+        : this.endpoints.exportarTesoreriaCSV(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.sedeAplicada);
     const nombreArchivo = nombreExportacion(
       { mes: this.filtroMes, ano: this.filtroAno, deporte: this.filtroDeporte, estado: this.filtroEstado, soloActivos: this.filtroSoloActivos },
       formato

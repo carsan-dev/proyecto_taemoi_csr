@@ -1200,6 +1200,9 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       crear();
       responder();
       elegirSede('2');
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      responder();
       fixture.componentInstance.exportar('pdf');
       expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/pdf`))['sedeId']).toBe('2');
       fixture.componentInstance.informes.cerrar();
@@ -1208,6 +1211,15 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       const p = pendientes();
       expect(params(p.movimientos[0])['sedeId']).toBeUndefined();
       expect(el().querySelector<HTMLSelectElement>('#tesoreria-sede')!.value).toBe('');
+    });
+
+    it('elegir una sede sin aplicar no cambia la exportación', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      fixture.componentInstance.exportar('csv');
+      expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/csv`))).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true' });
     });
 
     it('la exportación sin sede es la de hoy', () => {
