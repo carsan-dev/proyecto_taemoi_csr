@@ -104,6 +104,7 @@ public class TurnoServiceImpl implements TurnoService {
 			TurnoPublicoDTO dto = TurnoPublicoDTO.deTurno(turno, hoy);
 			if (turno.getGrupo() != null) {
 				dto.setOcupacionEfectiva(ocupacion.ocupacionEfectiva(turno));
+				dto.setAforoEfectivo(ocupacion.aforo(turno));
 				dto.setCompleto(ocupacion.completo(turno));
 			}
 			return dto;
@@ -132,7 +133,8 @@ public class TurnoServiceImpl implements TurnoService {
 
 	/**
 	 * R2-P4: los turnos sin sus alumnos (responsable de sede: turnos de grupos de sus sedes; gestión: todos), por id.
-	 * Una consulta, con el grupo y su disciplina traídos en el mismo SELECT (el grupo del turno es EAGER).
+	 * Una consulta, con el grupo y su disciplina traídos en el mismo SELECT (el grupo del turno es EAGER), más los aforos
+	 * efectivos de todos los turnos: el límite común y los de sus sedes, una vez cada uno.
 	 */
 	@Override
 	public List<TurnoResumenDTO> listarTurnosResumen() {
@@ -145,10 +147,12 @@ public class TurnoServiceImpl implements TurnoService {
 			}
 			return null;
 		};
-		return turnoRepository.findAll(conGrupo.and(alcance), Sort.by("id")).stream()
+		List<Turno> turnos = turnoRepository.findAll(conGrupo.and(alcance), Sort.by("id"));
+		AforoPreinscripcionService.Aforos aforos = aforoPreinscripcionService.aforos(turnos);
+		return turnos.stream()
 				.map(t -> new TurnoResumenDTO(t.getId(), t.getDiaSemana(), t.getHoraInicio(), t.getHoraFin(),
 						t.getGrupo() != null ? t.getGrupo().getId() : null,
-						t.getGrupo() != null ? t.getGrupo().getNombre() : "Sin grupo", t.getTipo()))
+						t.getGrupo() != null ? t.getGrupo().getNombre() : "Sin grupo", t.getTipo(), aforos.de(t)))
 				.toList();
 	}
 

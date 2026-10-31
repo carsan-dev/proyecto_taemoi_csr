@@ -1,5 +1,6 @@
 [
   {
+    "aforoEfectivo" : 3,
     "completo" : true,
     "diaSemana" : "Lunes",
     "edadMaxAlumnos" : null,
@@ -14,6 +15,7 @@
     "tipoGrupo" : null
   },
   {
+    "aforoEfectivo" : 3,
     "completo" : true,
     "diaSemana" : "Miércoles",
     "edadMaxAlumnos" : null,
@@ -28,6 +30,7 @@
     "tipoGrupo" : null
   },
   {
+    "aforoEfectivo" : 3,
     "completo" : true,
     "diaSemana" : "Martes",
     "edadMaxAlumnos" : 40,
@@ -42,6 +45,7 @@
     "tipoGrupo" : null
   },
   {
+    "aforoEfectivo" : 3,
     "completo" : true,
     "diaSemana" : "Jueves",
     "edadMaxAlumnos" : 36,
@@ -56,6 +60,7 @@
     "tipoGrupo" : null
   },
   {
+    "aforoEfectivo" : 3,
     "completo" : false,
     "diaSemana" : "Viernes",
     "edadMaxAlumnos" : null,
@@ -70,6 +75,7 @@
     "tipoGrupo" : null
   },
   {
+    "aforoEfectivo" : 3,
     "completo" : false,
     "diaSemana" : "Lunes",
     "edadMaxAlumnos" : null,

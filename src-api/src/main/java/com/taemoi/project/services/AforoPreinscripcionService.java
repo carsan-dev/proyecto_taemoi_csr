@@ -16,19 +16,22 @@ import com.taemoi.project.entities.*;
 import com.taemoi.project.repositories.*;
 
 /**
- * Aforo de los turnos para las preinscripciones: plazas = límite de turno de la organización − (alumnos que cuentan +
+ * Aforo de los turnos para las preinscripciones: plazas = aforo efectivo del turno − (alumnos que cuentan +
  * preinscripciones PENDIENTES de la temporada en {@code preinscripcion_turno}); un turno sin grupo no tiene plazas.
  * Cuentan los alumnos del turno con la ficha activa y el deporte del grupo activo.
  *
+ * <p>Pieza 9-7 (decisión 245): el aforo efectivo es el de la sede del grupo del turno ({@code sede.aforo_turno}); si la
+ * sede no lo tiene o el turno no tiene sede, el límite común de la organización ({@link Aforos}).
+ *
  * <p>R2-P3: la ocupación se calcula por lotes ({@link #ocupacion}): alumnos que cuentan por turno en una consulta
- * agregada, pendientes por turno en otra y el límite una vez, para todos los turnos de la operación. Antes, cada turno
+ * agregada, pendientes por turno en otra y los aforos una vez, para todos los turnos de la operación. Antes, cada turno
  * cargaba sus alumnos y lanzaba un exists por alumno, un count y una lectura del límite.
  */
 @Service
 public class AforoPreinscripcionService {
- private final TurnoRepository turnos; private final AlumnoDeporteRepository alumnoDeportes; private final PreinscripcionRepository preinscripciones; private final ConfiguracionSistemaService configuracion;
+ private final TurnoRepository turnos; private final AlumnoDeporteRepository alumnoDeportes; private final PreinscripcionRepository preinscripciones; private final ConfiguracionSistemaService configuracion; private final SedeRepository sedes;
  @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
- public AforoPreinscripcionService(TurnoRepository t,AlumnoDeporteRepository ad,PreinscripcionRepository p,ConfiguracionSistemaService c){turnos=t;alumnoDeportes=ad;preinscripciones=p;configuracion=c;}
+ public AforoPreinscripcionService(TurnoRepository t,AlumnoDeporteRepository ad,PreinscripcionRepository p,ConfiguracionSistemaService c,SedeRepository s){turnos=t;alumnoDeportes=ad;preinscripciones=p;configuracion=c;sedes=s;}
 
  @Transactional public List<Turno> bloquearTurnos(Collection<Long> turnoIds){
   List<Long> ids=turnoIds.stream().distinct().sorted().toList();
@@ -62,7 +65,7 @@ public class AforoPreinscripcionService {
  @Transactional public Preinscripcion releerBloqueada(Preinscripcion p){String referencia=p.getReferencia();em.detach(p);return preinscripciones.findByReferenciaForUpdate(referencia).orElseThrow(()->new java.util.NoSuchElementException("Preinscripción no encontrada."));}
  /** Estado confirmado de la solicitud, sin pasar por el contexto de persistencia. */
  public EstadoPreinscripcion estadoConfirmado(Long id){return preinscripciones.findEstadoById(id);}
- /** Ocupación de los turnos dados en la temporada, en tres consultas en total (alumnos que cuentan, pendientes y límite). */
+ /** Ocupación de los turnos dados en la temporada, en cuatro consultas en total (alumnos que cuentan, pendientes, límite y aforos de sus sedes). */
  public Ocupacion ocupacion(Collection<Turno> horarios,String temporada){
   List<Long> ids=horarios.stream().filter(t->t.getGrupo()!=null).map(Turno::getId).filter(Objects::nonNull).distinct().sorted().toList();
   Map<Long,Integer> activos=new HashMap<>(),pendientes=new HashMap<>();
@@ -70,7 +73,21 @@ public class AforoPreinscripcionService {
    for(Object[] fila:turnos.contarAlumnosQueCuentanPorTurno(ids))activos.put((Long)fila[0],((Number)fila[1]).intValue());
    for(Object[] fila:preinscripciones.contarPorTurnoTemporadaYEstado(ids,temporada,EstadoPreinscripcion.PENDIENTE))pendientes.put((Long)fila[0],((Number)fila[1]).intValue());
   }
-  return new Ocupacion(configuracion.obtenerLimiteTurno(),activos,pendientes);
+  return new Ocupacion(aforos(horarios),activos,pendientes);
+ }
+ /** Aforos efectivos de los turnos dados: el límite común y, en una consulta, los de sus sedes. */
+ public Aforos aforos(Collection<Turno> horarios){
+  Set<Long> ids=new TreeSet<>();
+  for(Turno t:horarios)if(t.getGrupo()!=null&&t.getGrupo().getSedeId()!=null)ids.add(t.getGrupo().getSedeId());
+  Map<Long,Integer> porSede=new HashMap<>();
+  if(!ids.isEmpty())for(Object[] fila:sedes.aforosPorSede(ids))porSede.put((Long)fila[0],((Number)fila[1]).intValue());
+  return new Aforos(configuracion.obtenerLimiteTurno(),porSede);
+ }
+ /** Si algún turno de la sede tiene más ocupación (alumnos que cuentan + pendientes de la temporada) que {@code aforo}. */
+ public boolean hayTurnosSobreAforo(Long sedeId,int aforo,String temporada){
+  List<Turno> horarios=turnos.findConGrupoPorSede(sedeId);
+  Ocupacion o=ocupacion(horarios,temporada);
+  return horarios.stream().anyMatch(t->o.ocupacionEfectiva(t)>aforo);
  }
  public int plazasDisponibles(Turno turno,String temporada){return ocupacion(List.of(turno),temporada).plazas(turno);}
  public int plazasDisponibles(Grupo grupo,String temporada){
@@ -90,18 +107,26 @@ public class AforoPreinscripcionService {
   * ({@link #sumarPendiente}) igual que la contaría una nueva consulta tras guardar la solicitud.
   */
  public static final class Ocupacion {
-  private final int limite; private final Map<Long,Integer> activos; private final Map<Long,Integer> pendientes;
+  private final Aforos aforos; private final Map<Long,Integer> activos; private final Map<Long,Integer> pendientes;
   /** @param activos alumnos que cuentan por id de turno; @param pendientes solicitudes PENDIENTES por id de turno (se copia: la promoción lo actualiza). */
-  public Ocupacion(int limite,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this.limite=limite;this.activos=Map.copyOf(activos);this.pendientes=new HashMap<>(pendientes);}
-  public int limite(){return limite;}
+  public Ocupacion(Aforos aforos,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this.aforos=aforos;this.activos=Map.copyOf(activos);this.pendientes=new HashMap<>(pendientes);}
+  /** Con un único límite, sin aforos de sede. */
+  public Ocupacion(int limite,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this(new Aforos(limite,Map.of()),activos,pendientes);}
+  public int limite(){return aforos.limite();}
+  public int aforo(Turno t){return aforos.de(t);}
   /** Alumnos que cuentan + pendientes de la temporada. */
   public int ocupacionEfectiva(Turno t){return activos.getOrDefault(t.getId(),0)+pendientes.getOrDefault(t.getId(),0);}
-  public int plazas(Turno t){if(t.getGrupo()==null)return 0;return Math.max(0,limite-ocupacionEfectiva(t));}
+  public int plazas(Turno t){if(t.getGrupo()==null)return 0;return Math.max(0,aforos.de(t)-ocupacionEfectiva(t));}
   public boolean completo(Turno t){return plazas(t)<=0;}
   /** Un grupo está completo si no tiene turnos o todos están completos. */
   public boolean completos(Collection<Turno> horariosDelGrupo){return horariosDelGrupo.isEmpty()||horariosDelGrupo.stream().allMatch(this::completo);}
   public boolean algunaPlaza(Collection<Turno> seleccion){return seleccion.stream().anyMatch(t->!completo(t));}
   /** Una solicitud pasa a PENDIENTE: cuenta una vez más en cada turno suyo de {@code preinscripcion_turno}. */
   public void sumarPendiente(Collection<Turno> turnosDeLaSolicitud){turnosDeLaSolicitud.stream().map(Turno::getId).distinct().forEach(id->pendientes.merge(id,1,Integer::sum));}
+ }
+ /** Límite común de la escuela y aforos de las sedes que lo tienen; una sede de otra escuela no aparece (Hibernate filtra). */
+ public record Aforos(int limite,Map<Long,Integer> porSede){
+  /** El aforo de la sede del grupo del turno o, si no lo hay, el límite común. */
+  public int de(Turno t){Long sede=t.getGrupo()==null?null:t.getGrupo().getSedeId();return sede==null?limite:porSede.getOrDefault(sede,limite);}
  }
 }

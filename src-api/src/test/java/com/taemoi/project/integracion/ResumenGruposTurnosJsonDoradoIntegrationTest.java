@@ -118,8 +118,9 @@ class ResumenGruposTurnosJsonDoradoIntegrationTest extends MySqlIntegrationTest 
 	}
 
 	/**
-	 * Límites: lo medido (6, 6, 8, 4, 4, 6) más un margen de 2. No dependen del número de filas: grupos = autenticación +
-	 * grupos + alumnos + turnos; turnos = autenticación + una consulta. El responsable suma las de su alcance.
+	 * Límites: lo medido al fijarlos (6, 6, 8, 4, 4, 6) más un margen de 2. No dependen del número de filas: grupos =
+	 * autenticación + grupos + alumnos + turnos; turnos = autenticación + una consulta + límite común + aforos de sedes
+	 * (pieza 9-7, sin margen: mide 6, 6 y 7). El responsable suma las de su alcance.
 	 */
 	static Stream<Caso> casos() {
 		return Stream.of(

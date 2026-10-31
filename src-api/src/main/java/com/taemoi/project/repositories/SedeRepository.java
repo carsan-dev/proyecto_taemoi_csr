@@ -39,6 +39,13 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
 	@Query("SELECT s FROM Sede s ORDER BY s.id")
 	List<Sede> bloquearDeLaEscuela();
 
+	/**
+	 * Pieza 9-7: aforo de las sedes que lo tienen, de una vez. Filas {@code [sedeId, aforoTurno]} de la escuela activa; las
+	 * que no lo tienen no salen. Valores leídos de la base de datos, no de las entidades de la sesión.
+	 */
+	@Query("SELECT s.id, s.aforoTurno FROM Sede s WHERE s.id IN :ids AND s.aforoTurno IS NOT NULL")
+	List<Object[]> aforosPorSede(@Param("ids") Collection<Long> ids);
+
 	/** Pieza E8-2: nombre ya usado en la escuela activa, con la colación de la columna (como la clave única). */
 	boolean existsByNombre(String nombre);
 

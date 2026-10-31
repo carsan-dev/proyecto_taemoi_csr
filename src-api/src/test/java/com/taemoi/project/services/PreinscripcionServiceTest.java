@@ -799,7 +799,8 @@ class PreinscripcionServiceTest {
 					.count();
 		});
 		AforoPreinscripcionService aforoReal = new AforoPreinscripcionService(
-				turnos, alumnoDeportes, preinscripciones, configuracion);
+				turnos, alumnoDeportes, preinscripciones, configuracion,
+				mock(com.taemoi.project.repositories.SedeRepository.class));
 		PreinscripcionService servicioPromocion = new PreinscripcionService(preinscripciones, plantillas, grupos,
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,

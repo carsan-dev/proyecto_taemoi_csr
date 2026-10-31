@@ -40,6 +40,8 @@ public class TurnoPublicoDTO {
 	private Integer edadMinAlumnos;
 	private Integer edadMaxAlumnos;
 	private Integer ocupacionEfectiva;
+	/** Pieza 9-7: aforo del turno (el de su sede o el límite común); {@code null} sin grupo, como la ocupación. */
+	private Integer aforoEfectivo;
 	private Boolean completo;
 
 	public static TurnoPublicoDTO deTurno(Turno turno, LocalDate hoy) {
@@ -135,6 +137,8 @@ public class TurnoPublicoDTO {
 	public Integer getEdadMaxAlumnos() { return edadMaxAlumnos; }
 	public void setEdadMaxAlumnos(Integer edadMaxAlumnos) { this.edadMaxAlumnos = edadMaxAlumnos; }
 	public Integer getOcupacionEfectiva() { return ocupacionEfectiva; }
+	public Integer getAforoEfectivo() { return aforoEfectivo; }
+	public void setAforoEfectivo(Integer aforoEfectivo) { this.aforoEfectivo = aforoEfectivo; }
 	public void setOcupacionEfectiva(Integer ocupacionEfectiva) { this.ocupacionEfectiva = ocupacionEfectiva; }
 	public Boolean getCompleto() { return completo; }
 	public void setCompleto(Boolean completo) { this.completo = completo; }

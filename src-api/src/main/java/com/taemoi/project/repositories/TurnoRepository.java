@@ -67,6 +67,10 @@ public interface TurnoRepository extends JpaRepository<Turno, Long>, JpaSpecific
 	@Query("SELECT DISTINCT t FROM Turno t LEFT JOIN FETCH t.alumnos")
 	List<Turno> findAllWithAlumnos();
 
+	/** Pieza 9-7: los turnos de los grupos de la sede, con su grupo. */
+	@Query("SELECT t FROM Turno t JOIN FETCH t.grupo g WHERE g.sedeId = :sedeId")
+	List<Turno> findConGrupoPorSede(@Param("sedeId") Long sedeId);
+
 	/**
 	 * R2-P3 (aforo por lotes): por turno, alumnos distintos que cuentan en el aforo, los de ficha activa con el deporte
 	 * del grupo del turno activo (antes, un exists por alumno). Filas {@code [turnoId, número]}; los turnos sin alumnos

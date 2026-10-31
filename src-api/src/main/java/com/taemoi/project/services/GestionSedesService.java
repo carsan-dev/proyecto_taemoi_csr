@@ -56,10 +56,24 @@ public class GestionSedesService {
 
 	private final SedeRepository sedes;
 	private final RegistroAccionesSedes registro;
+	private final AforoPreinscripcionService aforo;
+	private final TemporadaService temporadas;
 
-	public GestionSedesService(SedeRepository sedes, RegistroAccionesSedes registro) {
+	public GestionSedesService(SedeRepository sedes, RegistroAccionesSedes registro,
+			AforoPreinscripcionService aforo, TemporadaService temporadas) {
 		this.sedes = sedes;
 		this.registro = registro;
+		this.aforo = aforo;
+		this.temporadas = temporadas;
+	}
+
+	/**
+	 * Resultado de una edición.
+	 *
+	 * @param aforoCambiado    el aforo de la sede es otro: pueden haberse abierto plazas
+	 * @param turnosSobreAforo el aforo recién cambiado queda por debajo de la ocupación de algún turno de la sede
+	 */
+	public record Edicion(SedeDTO sede, boolean aforoCambiado, boolean turnosSobreAforo) {
 	}
 
 	/** Todas las sedes de la escuela activa, también las inactivas, por id. */
@@ -102,20 +116,23 @@ public class GestionSedesService {
 	 * @throws IllegalStateException    (409) el nombre ya lo tiene otra sede de la escuela
 	 */
 	@Transactional
-	public SedeDTO editar(Long id, SedeRequest solicitud) {
+	public Edicion editar(Long id, SedeRequest solicitud) {
 		Sede sede = exigir(id);
 		Datos datos = Datos.de(solicitud);
 		if (sedes.existsByNombreAndIdNot(datos.nombre(), sede.getId())) {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
 		}
 		boolean sinCambios = datos.igualQue(sede);
+		boolean aforoCambiado = !Objects.equals(datos.aforoTurno(), sede.getAforoTurno());
 		if (!sinCambios) {
 			datos.aplicar(sede);
 			sede = guardar(sede);
 		}
 		registro.registrar(RegistroAccionesSedes.Accion.SEDE_EDITADA, RUTA + "/" + sede.getId(),
 				valores(sede.getId(), sinCambios));
-		return SedeDTO.de(sede);
+		boolean turnosSobreAforo = aforoCambiado && datos.aforoTurno() != null
+				&& aforo.hayTurnosSobreAforo(sede.getId(), datos.aforoTurno(), temporadas.actual());
+		return new Edicion(SedeDTO.de(sede), aforoCambiado, turnosSobreAforo);
 	}
 
 	/**
