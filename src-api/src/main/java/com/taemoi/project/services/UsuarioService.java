@@ -1,31 +1,19 @@
 package com.taemoi.project.services;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import com.taemoi.project.dtos.UsuarioDTO;
 import com.taemoi.project.entities.Usuario;
 
 public interface UsuarioService extends UserDetailsService {
-
-	List<UsuarioDTO> obtenerTodos();
 
 	@Override
 	UserDetails loadUserByUsername(String email) throws UsernameNotFoundException;
 
 	Optional<Usuario> encontrarPorEmail(String email);
-
-	/**
-	 * Encuentra un usuario por su ID.
-	 *
-	 * @param id El ID del usuario.
-	 * @return Un Optional que contiene el usuario si existe.
-	 */
-	Optional<Usuario> encontrarPorId(Long id);
 
 	/**
 	 * Elimina un usuario por su ID.

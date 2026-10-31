@@ -40,10 +40,10 @@ public interface MiembrosRepository extends Repository<Membresia, Long> {
 
 	/**
 	 * Una página de miembros de la escuela, por apellidos, nombre e id. Miembro: alguna membresía (activa o no) en la
-	 * escuela y, si {@code porDefecto}, también la cuenta sin ninguna membresía (legado, como
-	 * {@code MembresiaRepository#findUsuariosDeOrganizacion}). Sin {@code incluirFamilias}, solo quien tiene alguna
-	 * membresía distinta de {@code familia}; con {@code filtrarRol}, quien tiene una de {@code rol}; con {@code buscar},
-	 * {@code patron} (en minúsculas, con {@code !} como escape) en nombre, apellidos, «nombre apellidos» o email.
+	 * escuela y, si {@code porDefecto}, también la cuenta sin ninguna membresía (legado). Sin {@code incluirFamilias},
+	 * solo quien tiene alguna membresía distinta de {@code familia}; con {@code filtrarRol}, quien tiene una de
+	 * {@code rol}; con {@code buscar}, {@code patron} (en minúsculas, con {@code !} como escape) en nombre, apellidos,
+	 * «nombre apellidos» o email.
 	 */
 	@Query(value = """
 			SELECT u.id AS id, u.nombre AS nombre, u.apellidos AS apellidos, u.email AS email,

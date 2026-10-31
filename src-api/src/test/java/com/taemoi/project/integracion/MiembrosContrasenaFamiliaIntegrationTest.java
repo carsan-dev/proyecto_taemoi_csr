@@ -65,8 +65,8 @@ import jakarta.servlet.http.Cookie;
  * Pieza 9-8 contra MySQL (decisiones 373 y 396; cambia la D8-6): lo que hacía «Roles y permisos» pasa a la ficha del
  * miembro.
  * <ul>
- * <li>{@code PUT /api/miembros/{id}/contrasena}: solo el propietario, con las reglas de {@code /api/admin/users/{id}/password}
- * y además 409 con invitación pendiente; la contraseña no queda en ninguna fila de auditoría.</li>
+ * <li>{@code PUT /api/miembros/{id}/contrasena}: solo el propietario; cuenta de la escuela que no sea de otra ni de
+ * plataforma ni de Google; 409 con invitación pendiente; la contraseña no queda en ninguna fila de auditoría.</li>
  * <li>Campo {@code contrasena} de la ficha: los cuatro valores y su prioridad; la lista no lo lleva.</li>
  * <li>FAMILIA por {@code PUT} y {@code DELETE /roles/FAMILIA}: solo el propietario; nunca toca {@code usuario_alumno}.</li>
  * </ul>
@@ -444,29 +444,27 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ cuentas de plataforma (D8-13, decisión 397)
 
-	/** Ni la ruta nueva ni la antigua; la ficha y el 403 dicen «otra escuela», nunca que es de plataforma. */
+	/** La ficha y el 403 dicen «otra escuela», nunca que es de plataforma. */
 	@Test
-	void superadminConMembresiaEnLaEscuela_403PorLasDosRutas() throws Exception {
+	void superadminConMembresiaEnLaEscuela_403() throws Exception {
 		long cuenta = superadmin("sa-miembro");
 		membresia(e.org, cuenta, "PROFESOR");
 		String antes = hash(cuenta);
 
 		assertEquals("OTRA_ESCUELA", campoContrasena(cuenta));
 		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
-		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
 		assertEquals(antes, hash(cuenta));
 	}
 
 	/** Darla de alta por su email le crea su única membresía aquí: eso no la hace de esta escuela. */
 	@Test
-	void superadminSinMembresiaTrasUnAlta_403PorLasDosRutas() throws Exception {
+	void superadminSinMembresiaTrasUnAlta_403() throws Exception {
 		long cuenta = superadmin("sa-alta");
 		String antes = hash(cuenta);
 		String alta = json.writeValueAsString(Map.of("email", emailDe(cuenta), "rol", "PROFESOR"));
 
 		assertEquals("OTRA_ESCUELA", leer(conCuerpo(post(RUTA), alta), tPropietario, 200).get("contrasena").asText());
 		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
-		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
 		assertEquals(antes, hash(cuenta));
 	}
 
@@ -478,13 +476,12 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals("OTRA_ESCUELA", leer(get(RUTA + "/" + cuenta), tPropietarioOrg1, 200).get("contrasena").asText());
 		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietarioOrg1), 403, OTRA_ESCUELA);
-		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietarioOrg1), 403, OTRA_ESCUELA);
 		assertEquals(antes, hash(cuenta));
 	}
 
-	/** Control de los tres anteriores: una cuenta normal se restablece por las dos rutas. */
+	/** Control de los tres anteriores: una cuenta normal se restablece. */
 	@Test
-	void cuentaNormal_200PorLasDosRutas() throws Exception {
+	void cuentaNormal_200() throws Exception {
 		long cuenta = cuenta("control-rutas");
 		membresia(e.org, cuenta, "PROFESOR");
 
@@ -492,9 +489,6 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 		String nueva = clave();
 		assertEquals(200, peticion(contrasena(cuenta, nueva), tPropietario).getResponse().getStatus());
 		assertTrue(encoder.matches(nueva, hash(cuenta)));
-		String antigua = clave();
-		assertEquals(200, peticion(contrasenaRutaAntigua(cuenta, antigua), tPropietario).getResponse().getStatus());
-		assertTrue(encoder.matches(antigua, hash(cuenta)));
 	}
 
 	// ------------------------------------------------------------------ campo de la ficha
@@ -884,10 +878,6 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 
 	private MockHttpServletRequestBuilder contrasena(long cuenta, String clave) throws Exception {
 		return conCuerpo(put(ruta(cuenta)), cuerpoContrasena(clave));
-	}
-
-	private MockHttpServletRequestBuilder contrasenaRutaAntigua(long cuenta, String clave) throws Exception {
-		return conCuerpo(put("/api/admin/users/" + cuenta + "/password"), cuerpoContrasena(clave));
 	}
 
 	private MvcResult entrar(String email, String clave) throws Exception {

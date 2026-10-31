@@ -20,9 +20,7 @@ import com.taemoi.project.exceptions.pago.PagoNotFoundException;
 import com.taemoi.project.exceptions.preinscripcion.PreinscripcionDuplicadaException;
 import com.taemoi.project.exceptions.producto.ProductoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
-import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
 import com.taemoi.project.exceptions.usuario.UsuarioCompartidoException;
-import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -45,11 +43,6 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(DatosAlumnoInvalidosException.class)
 	public ResponseEntity<String> handleDatosAlumnoInvalidosException(DatosAlumnoInvalidosException e) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-	}
-
-	@ExceptionHandler(ListaUsuariosVaciaException.class)
-	public ResponseEntity<String> handleListaUsuariosVaciaException(ListaUsuariosVaciaException e) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
 	}
 
 	@ExceptionHandler(ListaAlumnosVaciaException.class)
@@ -90,11 +83,6 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(PreinscripcionDuplicadaException.class)
 	public ResponseEntity<Map<String,String>> handlePreinscripcionDuplicada(PreinscripcionDuplicadaException e) {
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("mensaje", e.getMessage()));
-	}
-
-	@ExceptionHandler(UsuarioNoEncontradoException.class)
-	public ResponseEntity<Map<String,String>> handleUsuarioNoEncontrado(UsuarioNoEncontradoException e) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensaje", e.getMessage()));
 	}
 
 	@ExceptionHandler(UsuarioCompartidoException.class)

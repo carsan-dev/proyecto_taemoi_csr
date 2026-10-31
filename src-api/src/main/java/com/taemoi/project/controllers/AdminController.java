@@ -22,42 +22,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.taemoi.project.dtos.UsuarioDTO;
-import com.taemoi.project.dtos.request.PasswordResetAdminRequest;
 import com.taemoi.project.entities.Alumno;
-import com.taemoi.project.entities.AuthProvider;
-import com.taemoi.project.entities.RolMembresia;
-import com.taemoi.project.entities.Roles;
-import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
-import com.taemoi.project.exceptions.usuario.ListaUsuariosVaciaException;
-import com.taemoi.project.exceptions.usuario.UsuarioNoEncontradoException;
-import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.services.AlumnoService;
-import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.ConfiguracionSistemaService;
-import com.taemoi.project.services.UsuarioService;
 import com.taemoi.project.services.PreinscripcionService;
-
-import jakarta.validation.Valid;
 
 /**
  * Controlador REST que maneja las operaciones relacionadas con administración.
- * Este controlador proporciona endpoints para administrar usuarios y alumnos en
- * el sistema. Todos los endpoints en este controlador requieren autorización
- * con el rol ROLE_ADMIN.
+ * Este controlador proporciona endpoints para consultar los alumnos y para el
+ * límite de alumnos por turno. Todos los endpoints en este controlador requieren
+ * autorización con el rol ROLE_ADMIN.
  */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 	private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
-
-	/**
-	 * Inyección del servicio de usuario.
-	 */
-	@Autowired
-	private UsuarioService usuarioService;
 
 	/**
 	 * Inyección del servicio de alumno.
@@ -71,8 +52,6 @@ public class AdminController {
 	@Autowired
 	private ConfiguracionSistemaService configuracionSistemaService;
 	@Autowired private PreinscripcionService preinscripcionService;
-	@Autowired private MembresiaService membresiaService;
-	@Autowired private ResolutorOrganizacion resolutorOrganizacion;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o no paginada según los parámetros
@@ -120,89 +99,6 @@ public class AdminController {
 		Optional<Alumno> alumno = alumnoService.obtenerAlumnoPorId(id);
 		return alumno.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado con ID: " + id));
-	}
-
-	/**
-	 * Obtiene una lista de usuarios en el sistema.
-	 *
-	 * @return ResponseEntity que contiene una lista de usuarios.
-	 * @throws ListaUsuariosVaciaException si no se encuentran usuarios en el
-	 *                                     sistema.
-	 */
-	@GetMapping("/users")
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
-	public ResponseEntity<List<UsuarioDTO>> mostrarUsuarios() {
-		logger.info("## AuthorizationAdminController :: showUsers");
-		List<UsuarioDTO> usuarios = usuarioService.obtenerTodos();
-		if (usuarios.isEmpty()) {
-			throw new ListaUsuariosVaciaException("No hay usuarios registrados en el sistema.");
-		}
-		return ResponseEntity.ok(usuarios);
-	}
-
-	/**
-	 * Actualiza los roles de un usuario.
-	 *
-	 * @param userId ID del usuario a actualizar.
-	 * @param roles  Set de roles a asignar al usuario.
-	 * @return ResponseEntity con el usuario actualizado.
-	 * @throws UsuarioNoEncontradoException si no se encuentra el usuario.
-	 */
-	@PutMapping("/users/{userId}/roles")
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
-	public ResponseEntity<UsuarioDTO> actualizarRolesUsuario(@PathVariable Long userId,
-			@RequestBody java.util.Set<Roles> roles) {
-		logger.info("## AdminController :: actualizarRolesUsuario - userId: {}, roles: {}", userId, roles);
-		// Un null en la lista (antes, 500 por NPE en EnumSet.copyOf) y los roles RESPONSABLE_SEDE y PROFESOR (los
-		// asignará la API de miembros) se rechazan con 400 antes de tocar nada.
-		if (roles != null && roles.stream().anyMatch(java.util.Objects::isNull)) {
-			throw new IllegalArgumentException("La lista de roles contiene un valor no válido.");
-		}
-		if (roles != null && roles.stream().anyMatch(r -> !RolMembresia.asignableDesdeApiDeRoles(r))) {
-			throw new IllegalArgumentException(
-					"Solo se pueden asignar los roles ROLE_ADMIN, ROLE_MANAGER y ROLE_USER.");
-		}
-
-		// Buscar el usuario (solo los de la escuela activa: los de otras escuelas no existen aquí)
-		Long organizacionId = resolutorOrganizacion.organizacionActual();
-		Usuario usuario = usuarioDeLaOrganizacion(userId, organizacionId);
-
-		// Los roles se guardan como membresías de la escuela activa (ya no en usuario_rol)
-		java.util.Set<Roles> resultantes = membresiaService.reemplazarAutoridades(usuario.getId(), organizacionId,
-				roles);
-
-		// Convertir a DTO y devolver
-		UsuarioDTO usuarioDTO = UsuarioDTO.deUsuario(usuario, resultantes);
-		return ResponseEntity.ok(usuarioDTO);
-	}
-
-	@PutMapping("/users/{userId}/password")
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
-	public ResponseEntity<UsuarioDTO> actualizarContrasenaUsuario(@PathVariable Long userId,
-			@Valid @RequestBody PasswordResetAdminRequest request) {
-		logger.info("## AdminController :: actualizarContrasenaUsuario - userId: {}", userId);
-
-		Long organizacionId = resolutorOrganizacion.organizacionActual();
-		Usuario usuario = usuarioDeLaOrganizacion(userId, organizacionId);
-		// La contraseña es de la cuenta global: solo si el usuario no pertenece a ninguna otra escuela.
-		if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(), organizacionId)) {
-			throw new SecurityException(
-					"El usuario también pertenece a otra escuela: no se puede cambiar su contraseña desde esta escuela.");
-		}
-
-		if (usuario.getAuthProvider() == AuthProvider.GOOGLE) {
-			throw new IllegalArgumentException("Las cuentas de Google no permiten restablecer contrasena manualmente.");
-		}
-
-		Usuario actualizado = usuarioService.actualizarContrasena(userId, request.getNuevaContrasena());
-		return ResponseEntity.ok(UsuarioDTO.deUsuario(actualizado,
-				membresiaService.autoridadesEn(actualizado.getId(), organizacionId)));
-	}
-
-	private Usuario usuarioDeLaOrganizacion(Long userId, Long organizacionId) {
-		return usuarioService.encontrarPorId(userId)
-				.filter(u -> membresiaService.esUsuarioDeOrganizacion(u.getId(), organizacionId))
-				.orElseThrow(() -> new UsuarioNoEncontradoException("Usuario no encontrado con ID: " + userId));
 	}
 
 	/**

@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -87,6 +88,8 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 
 	private static final long ORG1 = 1L;
 	private static final String CLAVE = "Clave-Segura-123";
+	/** Roles activos de la ficha de {@code /api/miembros}: la lista lleva también los desactivados. */
+	private static final String ROLES_ACTIVOS = "$.roles[?(@.activa == true)].rol";
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -218,14 +221,13 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 
 		mvc.perform(get("/api/admin/" + alumnoOrg2).cookie(jwt(token))).andExpect(status().isOk());
 		mvc.perform(get("/api/admin/" + alumnoOrg1).cookie(jwt(token))).andExpect(status().isNotFound());
-		mvc.perform(get("/api/admin/users").cookie(jwt(token)))
+		mvc.perform(get("/api/miembros").param("incluirFamilias", "true").cookie(jwt(token)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[*].email", org.hamcrest.Matchers.hasItem(adminOrg2.getEmail())))
-				.andExpect(jsonPath("$[*].email", not(org.hamcrest.Matchers.hasItem(adminOrg1.getEmail()))));
+				.andExpect(jsonPath("$.contenido[*].email", org.hamcrest.Matchers.hasItem(adminOrg2.getEmail())))
+				.andExpect(jsonPath("$.contenido[*].email", not(org.hamcrest.Matchers.hasItem(adminOrg1.getEmail()))));
 
 		// Tampoco puede cambiar roles de un usuario que no es de su escuela: 404 con cuerpo estándar.
-		mvc.perform(put("/api/admin/users/" + adminOrg1.getId() + "/roles")
-				.cookie(jwt(token)).contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_ADMIN\"]"))
+		mvc.perform(put("/api/miembros/" + adminOrg1.getId() + "/roles/PROPIETARIO").cookie(jwt(token)))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.mensaje").exists());
 		assertTrue(TenantContext.calcularCon(ORG1,
@@ -341,16 +343,18 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void editarRolesDesdeAdminEscribeMembresiasDeLaEscuelaActivaYNoUsuarioRol() throws Exception {
+	void cambiarRolesEscribeMembresiasDeLaEscuelaActivaYNoUsuarioRol() throws Exception {
 		Usuario usuario = crearUsuario("editado-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.PROPIETARIO);
 		String tokenUsuario = login(usuario.getEmail());
 		String tokenAdmin = login(adminOrg1.getEmail());
 
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_MANAGER\"]"))
+		mvc.perform(put("/api/miembros/" + usuario.getId() + "/roles/ADMINISTRADOR").cookie(jwt(tokenAdmin)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.rol").value("[ROLE_MANAGER]"));
+				.andExpect(jsonPath(ROLES_ACTIVOS, containsInAnyOrder("PROPIETARIO", "ADMINISTRADOR")));
+		mvc.perform(delete("/api/miembros/" + usuario.getId() + "/roles/PROPIETARIO").cookie(jwt(tokenAdmin)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath(ROLES_ACTIVOS, containsInAnyOrder("ADMINISTRADOR")));
 
 		assertEquals(List.of("ADMINISTRADOR"), jdbc.queryForList(
 				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = 1 AND activa = TRUE",
@@ -362,10 +366,9 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_MANAGER")));
 
 		// Sin roles: deja de tener acceso a la escuela.
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-				.contentType(MediaType.APPLICATION_JSON).content("[]"))
+		mvc.perform(delete("/api/miembros/" + usuario.getId() + "/roles/ADMINISTRADOR").cookie(jwt(tokenAdmin)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.rol").value("[]"));
+				.andExpect(jsonPath(ROLES_ACTIVOS, hasSize(0)));
 		mvc.perform(get("/api/auth/roles").cookie(jwt(tokenUsuario))).andExpect(status().isUnauthorized());
 	}
 
@@ -483,13 +486,13 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("UPDATE membresia SET activa = FALSE WHERE id = ?", inactiva.getId());
 		dar(compartido, org2, RolMembresia.PROPIETARIO);
 
-		mvc.perform(put("/api/admin/users/" + compartido.getId() + "/password").cookie(jwt(tokenAdmin))
+		mvc.perform(put("/api/miembros/" + compartido.getId() + "/contrasena").cookie(jwt(tokenAdmin))
 				.contentType(MediaType.APPLICATION_JSON).content("{\"nuevaContrasena\":\"Nueva-Clave-456\"}"))
 				.andExpect(status().isForbidden())
 				.andExpect(jsonPath("$.mensaje").value(containsString("otra escuela")));
 		login(compartido.getEmail()); // la contraseña no ha cambiado
 
-		mvc.perform(put("/api/admin/users/" + soloEscuela1.getId() + "/password").cookie(jwt(tokenAdmin))
+		mvc.perform(put("/api/miembros/" + soloEscuela1.getId() + "/contrasena").cookie(jwt(tokenAdmin))
 				.contentType(MediaType.APPLICATION_JSON).content("{\"nuevaContrasena\":\"Nueva-Clave-456\"}"))
 				.andExpect(status().isOk());
 		mvc.perform(post("/api/auth/signin").contentType(MediaType.APPLICATION_JSON)
@@ -497,20 +500,20 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(status().isOk());
 
 		// Usuario de otra escuela: 404 con el cuerpo de error estándar.
-		mvc.perform(put("/api/admin/users/" + adminOrg2.getId() + "/password").cookie(jwt(tokenAdmin))
+		mvc.perform(put("/api/miembros/" + adminOrg2.getId() + "/contrasena").cookie(jwt(tokenAdmin))
 				.contentType(MediaType.APPLICATION_JSON).content("{\"nuevaContrasena\":\"Nueva-Clave-456\"}"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.mensaje").exists());
 	}
 
 	@Test
-	void editarRolesSoloTocaLasMembresiasDeLaEscuelaActiva() throws Exception {
+	void quitarRolSoloTocaLasMembresiasDeLaEscuelaActiva() throws Exception {
 		Usuario usuario = crearUsuario("roles-dos-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.ADMINISTRADOR);
 		dar(usuario, org2, RolMembresia.PROPIETARIO);
 
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(login(adminOrg1.getEmail())))
-				.contentType(MediaType.APPLICATION_JSON).content("[]"))
+		mvc.perform(delete("/api/miembros/" + usuario.getId() + "/roles/ADMINISTRADOR")
+				.cookie(jwt(login(adminOrg1.getEmail()))))
 				.andExpect(status().isOk());
 
 		assertEquals(List.of("PROPIETARIO"), jdbc.queryForList(
@@ -603,34 +606,19 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void editarRolesNoAdmiteLosRolesNuevosYNoDesactivaProfesor() throws Exception {
+	void cambiarOtrosRolesNoDesactivaProfesorNiResponsable() throws Exception {
 		Usuario usuario = crearUsuario("roles-profesor-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, ORG1, RolMembresia.RESPONSABLE_SEDE);
 		dar(usuario, ORG1, RolMembresia.FAMILIA);
 		String tokenAdmin = login(adminOrg1.getEmail());
 
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_USER\",\"ROLE_PROFESOR\"]"))
-				.andExpect(status().isBadRequest());
-		assertEquals(List.of("FAMILIA", "PROFESOR"), rolesActivosEn1(usuario));
-
-		// Un null en la lista o un valor que no es un rol: 400 sin tocar ninguna membresía.
-		for (String cuerpo : List.of("[null]", "[\"ROLE_USER\", null]")) {
-			mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-					.contentType(MediaType.APPLICATION_JSON).content(cuerpo))
-					.andExpect(status().isBadRequest())
-					.andExpect(jsonPath("$.mensaje").value("La lista de roles contiene un valor no válido."));
-		}
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_X\"]"))
-				.andExpect(status().isBadRequest());
-		assertEquals(List.of("FAMILIA", "PROFESOR"), rolesActivosEn1(usuario));
-
-		mvc.perform(put("/api/admin/users/" + usuario.getId() + "/roles").cookie(jwt(tokenAdmin))
-				.contentType(MediaType.APPLICATION_JSON).content("[\"ROLE_MANAGER\"]"))
+		mvc.perform(put("/api/miembros/" + usuario.getId() + "/roles/ADMINISTRADOR").cookie(jwt(tokenAdmin)))
+				.andExpect(status().isOk());
+		mvc.perform(delete("/api/miembros/" + usuario.getId() + "/roles/FAMILIA").cookie(jwt(tokenAdmin)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.rol").value("[ROLE_MANAGER, ROLE_PROFESOR]"));
-		assertEquals(List.of("ADMINISTRADOR", "PROFESOR"), rolesActivosEn1(usuario));
+				.andExpect(jsonPath(ROLES_ACTIVOS, containsInAnyOrder("ADMINISTRADOR", "PROFESOR", "RESPONSABLE_SEDE")));
+		assertEquals(List.of("ADMINISTRADOR", "PROFESOR", "RESPONSABLE_SEDE"), rolesActivosEn1(usuario));
 	}
 
 	private List<String> rolesActivosEn1(Usuario usuario) {

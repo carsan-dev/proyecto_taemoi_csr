@@ -1,7 +1,6 @@
 package com.taemoi.project.services;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,30 +53,13 @@ public interface MembresiaService {
 	 */
 	List<OrganizacionUsuarioDTO> organizacionesDe(Long usuarioId, Long organizacionActiva);
 
-	/**
-	 * Deja al usuario exactamente con {@code autoridades} en la organización, entre los roles que gestiona la
-	 * API de roles (PROPIETARIO, ADMINISTRADOR y FAMILIA): desactiva las membresías cuya autoridad ya no está y
-	 * crea (o reactiva) el rol canónico de las nuevas. Las de RESPONSABLE_SEDE y PROFESOR no se tocan.
-	 *
-	 * @return las autoridades resultantes en esa organización (incluidas las de los roles no gestionados).
-	 * @throws IllegalArgumentException si se pide una autoridad que no se asigna desde aquí
-	 *         ({@link RolMembresia#asignableDesdeApiDeRoles}).
-	 */
-	Set<Roles> reemplazarAutoridades(Long usuarioId, Long organizacionId, Set<Roles> autoridades);
-
 	/** Crea (o reactiva) la membresía {@code rol} del usuario en la organización. */
 	void asegurarMembresia(Long usuarioId, Long organizacionId, RolMembresia rol);
 
-	/** Autoridades activas de cada usuario de la organización (clave: id de usuario). */
-	Map<Long, Set<Roles>> autoridadesPorUsuario(Long organizacionId);
-
 	/**
-	 * Usuarios que gestiona la organización: con alguna membresía en ella (activa o no). En la
-	 * organización por defecto se incluyen también los usuarios sin ninguna membresía (legado).
+	 * Si el usuario es miembro de la organización: con alguna membresía en ella (activa o no). En la organización por
+	 * defecto cuentan también los usuarios sin ninguna membresía (legado).
 	 */
-	List<Usuario> usuariosDeOrganizacion(Long organizacionId);
-
-	/** Si el usuario es uno de {@link #usuariosDeOrganizacion}. */
 	boolean esUsuarioDeOrganizacion(Long usuarioId, Long organizacionId);
 
 	/**

@@ -109,8 +109,8 @@ public class MiembroController {
 	}
 
 	/**
-	 * Restablece la contraseña ({@code {nuevaContrasena}}), solo el propietario. Devuelve la ficha. La misma validación que
-	 * {@code /api/admin/users/{id}/password}: si no la cumple, 400.
+	 * Restablece la contraseña ({@code {nuevaContrasena}}), solo el propietario. Devuelve la ficha. Se valida con
+	 * {@link PasswordResetAdminRequest}: si no cumple, 400.
 	 */
 	@PutMapping("/{usuarioId}/contrasena")
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")

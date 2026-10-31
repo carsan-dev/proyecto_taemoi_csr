@@ -48,14 +48,12 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GestionMiembrosService;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
-import com.taemoi.project.services.MembresiaService;
 
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.servlet.http.Cookie;
@@ -68,7 +66,7 @@ import jakarta.servlet.http.Cookie;
  * <li>Lista paginada y con búsqueda en el servidor, sin familias por defecto y sin N+1.</li>
  * <li>Alta de cuentas existentes todo o nada, también con dos altas a la vez; FAMILIA no.</li>
  * <li>D8-8: el gestor no da ni quita propietario ni gestor. D8-9: nunca sin propietario activo, también con dos quitas a
- * la vez y por el endpoint viejo de roles.</li>
+ * la vez.</li>
  * <li>Sedes del responsable y grupos del profesor solo de la escuela; reemplazo todo o nada.</li>
  * <li>Registro solo con ids y una fila por escritura; los 4xx, la genérica con email y cargo redactados.</li>
  * </ul>
@@ -108,7 +106,6 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
 	@Autowired GestionMiembrosService miembros;
-	@Autowired MembresiaService membresiaService;
 	@Autowired EntityManagerFactory emf;
 
 	@MockitoBean JavaMailSender mailSender;
@@ -714,15 +711,16 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 		leer(conCuerpo(put(RUTA + "/" + b + "/roles/PROPIETARIO"), "{}"), mini.token(), 200);
 		leer(delete(RUTA + "/" + a + "/roles/PROPIETARIO"), mini.token(), 200);
 		assertEquals(List.of(), rolesActivos(a, mini.org()));
+		assertEquals(1, membresias(a, mini.org(), "PROPIETARIO"), "la fila queda, desactivada");
 		String tokenB = tokenEn(b, mini.org());
 		assertMensaje(peticion(delete(RUTA + "/" + b + "/roles/PROPIETARIO"), tokenB), 409, SIN_PROPIETARIO);
 		assertEquals(List.of("PROPIETARIO"), rolesActivos(b, mini.org()));
 	}
 
 	/**
-	 * D8-19: dos quitas a la vez de los dos únicos propietarios (y una por el endpoint viejo) se ordenan con el bloqueo
-	 * de las filas PROPIETARIO: una pasa, la otra ve la primera confirmada y da 409. Llama al servicio desde dos hilos
-	 * (cada uno con su escuela y su sesión de propietario) para que las dos lleguen siempre a la transacción.
+	 * D8-19: dos quitas a la vez de los dos únicos propietarios se ordenan con el bloqueo de las filas PROPIETARIO: una
+	 * pasa, la otra ve la primera confirmada y da 409. Llama al servicio desde dos hilos (cada uno con su escuela y su
+	 * sesión de propietario) para que las dos lleguen siempre a la transacción.
 	 */
 	@Test
 	void dosQuitasALaVez_quedaUnPropietario() throws Exception {
@@ -733,11 +731,9 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 		for (int ronda = 0; ronda < 6; ronda++) {
 			jdbc.update("UPDATE membresia SET activa = TRUE WHERE organizacion_id = ? AND rol = 'PROPIETARIO'",
 					mini.org());
-			boolean viejo = ronda % 2 == 1;
 			List<String> resultados = enParaleloComoPropietario(mini.org(), actor,
 					() -> miembros.quitarRol(a, "PROPIETARIO"),
-					viejo ? () -> membresiaService.reemplazarAutoridades(b, mini.org(), Set.of(Roles.ROLE_MANAGER))
-							: () -> miembros.quitarRol(b, "PROPIETARIO"));
+					() -> miembros.quitarRol(b, "PROPIETARIO"));
 			assertEquals(List.of("409: " + SIN_PROPIETARIO, "ok"), resultados, "ronda " + ronda);
 			assertEquals(1, jdbc.queryForObject("""
 					SELECT COUNT(*) FROM membresia WHERE organizacion_id = ? AND rol = 'PROPIETARIO' AND activa = TRUE""",
@@ -745,41 +741,22 @@ class MiembrosApiIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** El 409 no toca nada; dar otro rol al último propietario le conserva PROPIETARIO. */
 	@Test
-	void endpointViejo_dejarSinPropietario_409() throws Exception {
-		Mini mini = mini("viejo", 1);
+	void ultimoPropietario_elRechazoNoCambiaNadaYOtroRolLoConserva() throws Exception {
+		Mini mini = mini("ultimo-conserva", 1);
 		long a = mini.propietarios().get(0);
-		for (String roles : List.of("[\"ROLE_MANAGER\"]", "[]", "[\"ROLE_USER\"]")) {
-			long antes = ultimoEvento();
-			assertMensaje(peticion(conCuerpo(put("/api/admin/users/" + a + "/roles"), roles), mini.token()), 409,
-					SIN_PROPIETARIO);
-			assertEquals(List.of("PROPIETARIO"), rolesActivos(a, mini.org()), roles);
-			assertEquals(0, membresias(a, mini.org(), "ADMINISTRADOR"), "nada cambia: " + roles);
-			assertEquals(0, membresias(a, mini.org(), "FAMILIA"), "nada cambia: " + roles);
-			List<Map<String, Object>> filas = eventosDesde(antes, mini.org());
-			assertEquals(1, filas.size(), filas.toString());
-			assertTrue(((String) filas.get(0).get("resumen")).matches(RESUMEN_GENERICO), "la genérica, como hoy");
-		}
-		// Conservando ROLE_ADMIN, como hoy.
-		MvcResult r = peticion(conCuerpo(put("/api/admin/users/" + a + "/roles"), "[\"ROLE_ADMIN\",\"ROLE_MANAGER\"]"),
-				mini.token());
-		assertEquals(200, r.getResponse().getStatus(), contenido(r));
-		assertEquals("[ROLE_ADMIN, ROLE_MANAGER]", json.readTree(contenido(r)).get("rol").asText());
-	}
-
-	@Test
-	void endpointViejo_conOtroPropietario_comoHoy() throws Exception {
-		Mini mini = mini("viejo-dos", 2);
-		long b = mini.propietarios().get(1);
 		long antes = ultimoEvento();
-		MvcResult r = peticion(conCuerpo(put("/api/admin/users/" + b + "/roles"), "[\"ROLE_MANAGER\"]"), mini.token());
-		assertEquals(200, r.getResponse().getStatus(), contenido(r));
-		assertEquals("[ROLE_MANAGER]", json.readTree(contenido(r)).get("rol").asText());
-		assertEquals(List.of("ADMINISTRADOR"), rolesActivos(b, mini.org()));
-		assertEquals(1, membresias(b, mini.org(), "PROPIETARIO"), "la fila queda, desactivada");
+		assertMensaje(peticion(delete(RUTA + "/" + a + "/roles/PROPIETARIO"), mini.token()), 409, SIN_PROPIETARIO);
+		assertEquals(List.of("PROPIETARIO"), rolesActivos(a, mini.org()));
+		assertEquals(0, membresias(a, mini.org(), "ADMINISTRADOR"), "nada cambia");
+		assertEquals(0, membresias(a, mini.org(), "FAMILIA"), "nada cambia");
 		List<Map<String, Object>> filas = eventosDesde(antes, mini.org());
 		assertEquals(1, filas.size(), filas.toString());
-		assertTrue(((String) filas.get(0).get("resumen")).matches(RESUMEN_GENERICO), "la genérica, como hoy");
+		assertTrue(((String) filas.get(0).get("resumen")).matches(RESUMEN_GENERICO), "rechazada: la genérica");
+
+		leer(conCuerpo(put(RUTA + "/" + a + "/roles/ADMINISTRADOR"), "{}"), mini.token(), 200);
+		assertEquals(List.of("PROPIETARIO", "ADMINISTRADOR"), rolesActivos(a, mini.org()));
 	}
 
 	// ------------------------------------------------------------------ sedes del responsable
