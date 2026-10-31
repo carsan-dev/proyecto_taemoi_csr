@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -23,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.sql.DataSource;
 
@@ -38,6 +42,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -48,6 +53,7 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.RegistroAccionesSedes;
 
 import jakarta.servlet.http.Cookie;
 
@@ -71,6 +77,8 @@ import jakarta.servlet.http.Cookie;
 class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String YA_ESTA = "El alumno ya está en esa sede.";
+	private static final String SEDE_INEXISTENTE = "La sede no existe en la escuela.";
+	private static final long SEDE_QUE_NO_EXISTE = 999_999_999L;
 	private static final Set<String> CLAVES = Set.of("sedeActualId", "sedeActualNombre", "sedeNuevaId",
 			"sedeNuevaNombre", "cargosPendientes", "importePendiente", "cargosCobrados", "importeCobrado",
 			"gruposEnSedeActual");
@@ -84,6 +92,7 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired GrupoService grupoService;
 
 	@MockitoBean JavaMailSender mailSender;
+	@MockitoSpyBean RegistroAccionesSedes registro;
 
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
@@ -259,6 +268,61 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(previa, resultado);
 	}
 
+	/**
+	 * Precios que en {@code double} no son exactos: sumados así darían 1,7000000000000002. El cargo con el mismo
+	 * {@code alumno_id} pero de otra organización (no debería existir) tampoco cuenta ni se mueve.
+	 */
+	@Test
+	void importesDecimales_previaYCambioCoinciden() throws Exception {
+		long alumno = alumnoEnGrupo("DECIMALES", e.sA, e.gA);
+		long decimos = cargo(alumno, e.sA, 0.10, 3, false); // 0,30
+		long quintos = cargo(alumno, e.sA, 0.20, 7, false); // 1,40
+		long ajenoConSuAlumno = cargoDeOtraEscuela(otra.aA);
+		long ajenoConEsteAlumno = cargoDeOtraEscuela(alumno);
+		String filasAjenas = filaDelCargo(ajenoConSuAlumno) + filaDelCargo(ajenoConEsteAlumno);
+
+		JsonNode previa = leer(get(rutaPrevia(alumno, e.sB)), tGestor, 200);
+
+		assertEquals(2, previa.get("cargosPendientes").asLong());
+		assertImporte("1.70", previa.get("importePendiente"));
+		JsonNode resultado = leer(cambio(alumno, e.sB), tGestor, 200);
+		assertEquals(previa, resultado);
+		assertEquals(e.sB, sedeDelCargo(decimos));
+		assertEquals(e.sB, sedeDelCargo(quintos));
+		assertEquals(filasAjenas, filaDelCargo(ajenoConSuAlumno) + filaDelCargo(ajenoConEsteAlumno),
+				"los cargos de otra organización no cambian");
+	}
+
+	/**
+	 * Sin transacción en el test: la de {@code cambiar} es la que se confirma o se deshace. La auditoría falla con las
+	 * escrituras ya hechas (se ven desde su misma transacción) y al leer de la base después no queda ninguna.
+	 */
+	@Test
+	void cambio_siFallaLaAuditoria_noQuedaNada() throws Exception {
+		long alumno = alumnoEnGrupo("AUDITORIA", e.sA, e.gA);
+		long pendiente = cargo(alumno, e.sA, 25.0, 1, false);
+		long sinSede = cargo(alumno, null, 10.0, 1, false);
+		long deOtraSede = cargo(alumno, sD, 10.0, 1, false);
+		Foto antes = foto(alumno);
+		AtomicReference<Long> sedeAlFallar = new AtomicReference<>();
+		AtomicReference<Long> sedeDelCargoAlFallar = new AtomicReference<>();
+		doAnswer(llamada -> {
+			sedeAlFallar.set(e.sedeDe(alumno));
+			sedeDelCargoAlFallar.set(sedeDelCargo(pendiente));
+			throw new IllegalStateException("Fallo de auditoría de prueba");
+		}).when(registro).registrar(eq(RegistroAccionesSedes.Accion.ALUMNO_SEDE_CAMBIADA), any(), any());
+
+		assertEquals(409, estado(cambio(alumno, e.sB), tGestor));
+
+		assertEquals(e.sB, sedeAlFallar.get(), "la auditoría falla después de escribir al alumno");
+		assertEquals(e.sB, sedeDelCargoAlFallar.get(), "y después de mover los cargos");
+		assertEquals(e.sA, e.sedeDe(alumno));
+		assertEquals(e.sA, sedeDelCargo(pendiente));
+		assertNull(sedeDelCargo(sinSede));
+		assertEquals(sD, sedeDelCargo(deOtraSede));
+		assertEquals(antes, foto(alumno), "ni el alumno, ni los cargos, ni las auditorías");
+	}
+
 	// ------------------------------------------------------------------ caja tras el cambio
 
 	@Test
@@ -341,6 +405,11 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(400, estado(get(rutaPrevia(alumno, e.sC)), tGestor), "sede inactiva");
 		assertEquals(400, estado(cambio(alumno, otra.sA), tGestor), "sede de otra escuela");
 		assertEquals(400, estado(get(rutaPrevia(alumno, otra.sA)), tGestor), "sede de otra escuela");
+		for (MvcResult inexistente : List.of(peticion(cambio(alumno, SEDE_QUE_NO_EXISTE), tGestor),
+				peticion(get(rutaPrevia(alumno, SEDE_QUE_NO_EXISTE)), tGestor))) {
+			assertEquals(400, inexistente.getResponse().getStatus());
+			assertTrue(contenido(inexistente).contains(SEDE_INEXISTENTE), contenido(inexistente));
+		}
 		assertEquals(400, estado(conCuerpo(put("/api/alumnos/" + alumno + "/sede"), "{}"), tGestor), "sin sede");
 		assertEquals(400, estado(get("/api/alumnos/" + alumno + "/cambio-sede"), tGestor), "sin sede");
 		MvcResult misma = peticion(cambio(alumno, e.sA), tGestor);
@@ -364,6 +433,25 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(409, estado(cambio(alumno, e.sB), tPropietario));
 		assertEquals(409, estado(get(rutaPrevia(alumno, e.sB)), tPropietario));
 		assertEquals(e.sA, e.sedeDe(alumno));
+	}
+
+	@Test
+	void alumnoDeBaja_seCambiaYMueveSusCargos() throws Exception {
+		long alumno = e.alumno("E9BAJA" + marca(), e.sA, false);
+		jdbc.update("UPDATE alumno SET fecha_baja = '2026-01-15' WHERE id = ?", alumno);
+		long pendiente = cargo(alumno, e.sA, 12.50, 2, false);
+
+		JsonNode previa = leer(get(rutaPrevia(alumno, e.sB)), tGestor, 200);
+		assertEquals(1, previa.get("cargosPendientes").asLong());
+		assertImporte("25.00", previa.get("importePendiente"));
+		assertEquals(previa, leer(cambio(alumno, e.sB), tGestor, 200));
+
+		assertEquals(e.sB, e.sedeDe(alumno));
+		assertEquals(e.sB, sedeDelCargo(pendiente));
+		assertFalse(jdbc.queryForObject("SELECT activo FROM alumno WHERE id = ?", Boolean.class, alumno),
+				"el cambio no reactiva al alumno");
+		assertEquals("2026-01-15",
+				jdbc.queryForObject("SELECT CAST(fecha_baja AS CHAR) FROM alumno WHERE id = ?", String.class, alumno));
 	}
 
 	// ------------------------------------------------------------------ concurrencia con el cobro
@@ -513,6 +601,15 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE alumno_id = ?", Long.class, alumno);
 	}
 
+	/** Cargo pendiente de la otra escuela, en su sede A. */
+	private long cargoDeOtraEscuela(long alumno) {
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  organizacion_id, sede_id) VALUES (?, 'CARGO IT', 1000.0, 1, 0, NOW(), ?, ?)""", alumno, otra.org, otra.sA);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE alumno_id = ? AND organizacion_id = ?",
+				Long.class, alumno, otra.org);
+	}
+
 	/** Cargo antiguo: sin {@code alumno_id}, llega al alumno solo por la inscripción. */
 	private long cargoSoloInscripcion(long inscripcion, long sede) {
 		jdbc.update("""
@@ -544,6 +641,10 @@ class CambioSedeAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	private Long sedeDelCargo(long cargo) {
 		return jdbc.queryForObject("SELECT sede_id FROM producto_alumno WHERE id = ?", Long.class, cargo);
+	}
+
+	private String filaDelCargo(long cargo) {
+		return jdbc.queryForMap("SELECT * FROM producto_alumno WHERE id = ?", cargo).toString();
 	}
 
 	private String nombreDe(long sede) {

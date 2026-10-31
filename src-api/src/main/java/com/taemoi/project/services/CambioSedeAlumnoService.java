@@ -41,7 +41,11 @@ import com.taemoi.project.utils.ImporteCargo;
  *
  * <p><b>Orden de bloqueo:</b> cargos y después alumno. El cobro bloquea su cargo y al insertar la fila de
  * {@code cobro} toma un bloqueo compartido sobre el alumno (clave ajena): al revés habría un ciclo. El bloqueo del alumno
- * ordena dos cambios simultáneos e impide que nazca un cargo suyo mientras dura la transacción.
+ * ordena dos cambios simultáneos, pero no impide que nazca un cargo suyo: el que nace a la vez
+ * ({@code asignarProductoAAlumno} o la generación masiva) leyó al alumno antes y puede quedar en la sede vieja, porque su
+ * INSERT solo espera por la clave ajena. El cobro simultáneo de un cargo recién nacido que no entró en la lista de
+ * bloqueados puede interbloquearse con el cambio: InnoDB aborta una de las transacciones y nada queda a medias. Es un
+ * caso conocido, pendiente de confirmar por el propietario; se arregla volviendo a cambiar de sede.
  */
 @Service
 public class CambioSedeAlumnoService {
