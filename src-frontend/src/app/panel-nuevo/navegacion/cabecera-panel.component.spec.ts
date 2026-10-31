@@ -452,6 +452,32 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     }
   });
 
+  describe('entrada «Miembros» (E9-4): solo con la capacidad MIEMBROS', () => {
+    for (const [nombre, capacidades, sale] of [
+      ['con MIEMBROS', ['SEDES', 'MIEMBROS'], true],
+      ['sin MIEMBROS', ['SEDES'], false],
+    ] as const) {
+      itSinReloj(`${nombre}: ${sale ? 'sale' : 'no sale'} en Escuela, tras Sedes, y en «Más»`, async () => {
+        roles = ['ROLE_ADMIN'];
+        datosPermisos = permisos({ roles: ['ADMINISTRADOR'], capacidades: [...capacidades] });
+        await montar();
+        responderMarca();
+        entrada('escuela').click();
+        fixture.detectChanges();
+        const enlaces = Array.from(el().querySelectorAll<HTMLAnchorElement>('#pn-menu-escuela a')).map((a) => a.getAttribute('href'));
+        if (sale) {
+          expect(enlaces.indexOf('/miembros')).toBe(enlaces.indexOf('/sedes') + 1);
+        } else {
+          expect(enlaces).not.toContain('/miembros');
+        }
+        el().querySelector<HTMLElement>('nav.pn-barra .pn-barra__mas')!.click();
+        fixture.detectChanges();
+        const hoja = el().querySelector<HTMLElement>('#pn-menu-mas')!;
+        expect(hoja.querySelector('a[href="/miembros"]') !== null).toBe(sale);
+      });
+    }
+  });
+
   describe('contador de solicitudes', () => {
     itSinReloj('se refresca al entrar y al navegar, y se ve en la entrada', async () => {
       await montar();

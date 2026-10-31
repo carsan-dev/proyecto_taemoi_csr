@@ -1,0 +1,166 @@
+<pn-panel-lateral [titulo]="nombre" [bloqueado]="ocupado" (cerrar)="cerrar.emit()">
+  @if (estado === 'cargando') {
+  <pn-esqueleto etiqueta="Cargando la ficha" aria-busy="true">
+    <div class="miembros__esqueleto-ficha"><span></span><span></span><span></span><span></span></div>
+  </pn-esqueleto>
+  } @else if (estado === 'error' || !ficha) {
+  <pn-bloque-error pose="dudar" titulo="No se pudo cargar la ficha" (reintentar)="cargar()" />
+  } @else {
+  <div class="miembros__ficha">
+    <section class="miembros__seccion" aria-labelledby="miembro-datos">
+      <h3 class="miembros__seccion-titulo" id="miembro-datos">Datos</h3>
+      <p class="miembros__dato"><span class="miembros__dato-etiqueta">Email</span> <span class="miembros__dato-valor">{{ ficha.email }}</span></p>
+      @if (ficha.invitacionPendiente) {
+      <div class="miembros__invitacion">
+        <span class="miembros__etiqueta miembros__etiqueta--atencion">Invitación pendiente</span>
+        <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="reenviando" textoOcupado="Reenviando…"
+          (click)="reenviar()">Reenviar invitación</button>
+      </div>
+      }
+      @if (datosError) {
+      <p class="miembros__error" role="alert" id="miembro-datos-error">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ datosError }}</span>
+      </p>
+      }
+    </section>
+
+    <section class="miembros__seccion" aria-labelledby="miembro-roles">
+      <h3 class="miembros__seccion-titulo" id="miembro-roles">Roles</h3>
+      <ul class="miembros__roles">
+        @for (rol of rolesPersonal; track rol) {
+        <li class="miembros__rol" [attr.data-rol]="rol">
+          <label class="miembros__casilla">
+            <input type="checkbox" [checked]="marcado(rol)" [disabled]="!puedeCambiar(rol) || rolOcupado[rol]"
+              [attr.aria-describedby]="!puedeCambiar(rol) ? 'miembro-ayuda-' + rol : (rolError[rol] ? 'miembro-error-' + rol : null)"
+              (change)="alternarRol(rol, $event)" />
+            <span>{{ etiquetaRol(rol) }}</span>
+          </label>
+          @if (!puedeCambiar(rol)) {
+          <p class="miembros__ayuda" [id]="'miembro-ayuda-' + rol">{{ ayudaSoloPropietario }}</p>
+          }
+          @if (activo(rol)) {
+          <form class="miembros__cargo" (submit)="guardarCargo(rol, $event)" novalidate>
+            <label class="miembros__cargo-etiqueta" [for]="'miembro-cargo-' + rol">Cargo (opcional)</label>
+            <div class="miembros__cargo-fila">
+              <input class="miembros__control" [id]="'miembro-cargo-' + rol" type="text" autocomplete="off" [attr.maxlength]="cargoMaximo"
+                [value]="cargos[rol] ?? ''" [disabled]="rolOcupado[rol] || !puedeCambiar(rol)" (input)="escribirCargo(rol, $event)" />
+              @if (cargoCambiado(rol)) {
+              <button type="submit" pnOcupado class="miembros__boton-secundario miembros__boton-pequeno" [ocupado]="!!rolOcupado[rol]"
+                textoOcupado="Guardando…">Guardar cargo</button>
+              }
+            </div>
+          </form>
+          }
+          @if (rolError[rol]; as mensaje) {
+          <p class="miembros__error" role="alert" [id]="'miembro-error-' + rol">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <span>{{ mensaje }}</span>
+          </p>
+          }
+        </li>
+        }
+        @if (tieneFamilia) {
+        <li class="miembros__rol miembros__rol--texto" data-rol="FAMILIA">
+          <span class="miembros__rol-texto">Familia</span>
+          <span class="miembros__ayuda">Se vincula desde la ficha del alumno.</span>
+        </li>
+        }
+      </ul>
+    </section>
+
+    @if (verSedes) {
+    <section class="miembros__seccion" aria-labelledby="miembro-sedes">
+      <h3 class="miembros__seccion-titulo" id="miembro-sedes">Sedes</h3>
+      <ul class="miembros__sedes">
+        @for (sede of sedesMarcables; track sede.id) {
+        <li>
+          <label class="miembros__casilla">
+            <input type="checkbox" [checked]="sedesElegidas.includes(sede.id)" [disabled]="sedesOcupado"
+              (change)="alternarSede(sede.id, $any($event.target).checked)" />
+            <span>{{ sede.nombre }}@if (sede.inactiva) { (inactiva)}</span>
+          </label>
+        </li>
+        }
+      </ul>
+      @if (sedesError) {
+      <p class="miembros__error" role="alert" id="miembro-sedes-error">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ sedesError }}</span>
+      </p>
+      }
+      <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="sedesOcupado" textoOcupado="Guardando…"
+        [deshabilitado]="!sedesCambiadas" (click)="guardarSedes()">{{ responsablePendiente ? 'Dar el rol con estas sedes' : 'Guardar sedes' }}</button>
+    </section>
+    }
+
+    @if (verGrupos) {
+    <section class="miembros__seccion" aria-labelledby="miembro-grupos">
+      <h3 class="miembros__seccion-titulo" id="miembro-grupos">Grupos</h3>
+      @if (gruposElegidos.length === 0) {
+      <p class="miembros__ayuda">No tiene grupos asignados.</p>
+      } @else {
+      <ul class="miembros__grupos">
+        @for (grupo of gruposElegidos; track grupo.grupoId) {
+        <li class="miembros__grupo" [attr.data-grupo]="grupo.grupoId">
+          <span class="miembros__grupo-nombre">{{ etiquetaDeGrupo(grupo) }}</span>
+          <label class="miembros__oculto" [for]="'miembro-grupo-rol-' + grupo.grupoId">Rol en {{ grupo.nombre }}</label>
+          <select class="miembros__control miembros__control--corto" [id]="'miembro-grupo-rol-' + grupo.grupoId" [value]="grupo.rol"
+            [disabled]="gruposOcupado" (change)="cambiarRolDeGrupo(grupo.grupoId, $any($event.target).value)">
+            @for (r of rolesAsignacion; track r.valor) {
+            <option [value]="r.valor" [selected]="r.valor === grupo.rol">{{ r.etiqueta }}</option>
+            }
+          </select>
+          <button type="button" class="miembros__boton-texto" [disabled]="gruposOcupado" (click)="quitarGrupo(grupo.grupoId)">
+            Quitar<span class="miembros__oculto"> {{ grupo.nombre }}</span></button>
+        </li>
+        }
+      </ul>
+      }
+      @if (catalogoError) {
+      <p class="miembros__error" role="alert">
+        <span>No se pudieron cargar los grupos.</span>
+        <button type="button" class="miembros__boton-texto" (click)="cargarCatalogo()">Reintentar</button>
+      </p>
+      } @else if (catalogo !== null && gruposDisponibles.length > 0) {
+      <div class="miembros__anadir-grupo">
+        <label class="miembros__oculto" for="miembro-grupo-nuevo">Grupo</label>
+        <select class="miembros__control" id="miembro-grupo-nuevo" [value]="grupoNuevo" [disabled]="gruposOcupado"
+          (change)="grupoNuevo = $any($event.target).value">
+          <option value="">Añadir un grupo…</option>
+          @for (g of gruposDisponibles; track g.id) {
+          <option [value]="g.id" [selected]="'' + g.id === grupoNuevo">{{ g.nombre }}</option>
+          }
+        </select>
+        <label class="miembros__oculto" for="miembro-grupo-nuevo-rol">Rol en el grupo nuevo</label>
+        <select class="miembros__control miembros__control--corto" id="miembro-grupo-nuevo-rol" [value]="rolNuevo" [disabled]="gruposOcupado"
+          (change)="rolNuevo = $any($event.target).value">
+          @for (r of rolesAsignacion; track r.valor) {
+          <option [value]="r.valor" [selected]="r.valor === rolNuevo">{{ r.etiqueta }}</option>
+          }
+        </select>
+        <button type="button" class="miembros__boton-secundario miembros__boton-pequeno" [disabled]="grupoNuevo === '' || gruposOcupado"
+          (click)="anadirGrupo()">Añadir</button>
+      </div>
+      }
+      @if (gruposError) {
+      <p class="miembros__error" role="alert" id="miembro-grupos-error">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ gruposError }}</span>
+      </p>
+      }
+      <button type="button" pnOcupado class="miembros__boton-secundario" [ocupado]="gruposOcupado" textoOcupado="Guardando…"
+        [deshabilitado]="!gruposCambiados" (click)="guardarGrupos()">Guardar grupos</button>
+    </section>
+    }
+  </div>
+  }
+
+  <div pnPie class="miembros__pie">
+    <button type="button" class="miembros__boton-texto" [disabled]="ocupado" (click)="cerrar.emit()">Cerrar</button>
+  </div>
+</pn-panel-lateral>

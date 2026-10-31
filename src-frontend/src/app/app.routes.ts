@@ -465,6 +465,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Miembros de la escuela (E9-4): propietario y gestión; la entrada del menú sale con la capacidad MIEMBROS.
+    path: 'miembros',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/miembros/miembros.component').then(m => m.MiembrosPanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'configuracion-sistema',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),

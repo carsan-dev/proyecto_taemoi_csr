@@ -1,0 +1,399 @@
+// Miembros del panel nuevo (E9, 9-4): la lista. Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+//
+// Igual que Sedes: filas, no tarjetas. Nombre en 600, debajo el email y, más discreta, la línea de sedes y grupos. A la
+// derecha, las etiquetas de los roles activos (siempre con su texto) y, si procede, «Invitación pendiente» en el tono de
+// atención. Toda la fila es el botón que abre la ficha. Un solo primario a la vista: «Añadir miembro». Sin sombras.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.miembros {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.miembros__pagina {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.miembros__oculto {
+  @include c.oculto;
+}
+
+.miembros__boton-primario {
+  @include c.boton-primario;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ cabecera y barra
+
+.miembros__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-espacio-m);
+  margin-bottom: 20px;
+}
+
+.miembros__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+}
+
+.miembros__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--pn-espacio-m);
+}
+
+.miembros__buscador {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: min(100%, 16rem);
+
+  > svg {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--pn-tinta-2);
+    pointer-events: none;
+  }
+}
+
+.miembros__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.miembros__control--buscar {
+  padding-left: 40px;
+}
+
+.miembros__control--select {
+  flex: 0 1 220px;
+  width: auto;
+  cursor: pointer;
+}
+
+.miembros__casilla--filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 4px;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--pn-acento);
+    cursor: pointer;
+  }
+}
+
+// ------------------------------------------------------------------ lista
+
+.miembros__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  overflow: hidden;
+}
+
+.miembros__item + .miembros__item {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.miembros__fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.miembros__datos {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+
+.miembros__nombre {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.miembros__email,
+.miembros__linea {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.miembros__linea {
+  font-size: 0.8125rem;
+}
+
+.miembros__etiquetas {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 45%;
+}
+
+// Etiqueta: lleva siempre su texto; el color solo acompaña.
+.miembros__etiqueta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.miembros__etiqueta--atencion {
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+.miembros__ir {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ paginación
+
+.miembros__paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+
+.miembros__rango {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-variant-numeric: tabular-nums;
+  color: var(--pn-tinta-2);
+}
+
+.miembros__paginas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.miembros__pagina-num,
+.miembros__pagina-paso {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: default;
+    color: var(--pn-tinta-2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.miembros__pagina-num[aria-current='page'] {
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--pn-acento-borde);
+}
+
+.miembros__pagina-salto {
+  min-width: 24px;
+  color: var(--pn-tinta-2);
+  text-align: center;
+}
+
+// ------------------------------------------------------------------ esqueleto
+
+.miembros__esqueleto {
+  display: grid;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.miembros__esqueleto-fila {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 16px;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+
+  span {
+    display: block;
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(1) {
+    width: 38%;
+  }
+
+  span:nth-child(2) {
+    width: 16%;
+    margin-left: auto;
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .miembros__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-xl);
+  }
+
+  .miembros__titulo {
+    font-size: 1.375rem;
+  }
+
+  // Las etiquetas pasan bajo los datos: el nombre y el email conservan todo el ancho.
+  .miembros__fila {
+    flex-wrap: wrap;
+    min-height: 72px;
+    padding: 12px;
+  }
+
+  .miembros__datos {
+    flex-basis: calc(100% - 30px);
+  }
+
+  .miembros__etiquetas {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .miembros__ir {
+    order: 2;
+  }
+
+  .miembros__boton-primario,
+  .miembros__control--select {
+    min-height: 44px;
+  }
+
+  .miembros__control {
+    min-height: 44px;
+  }
+
+  .miembros__control--select {
+    flex: 1 1 100%;
+  }
+
+  .miembros__casilla--filtro {
+    min-height: 44px;
+  }
+
+  .miembros__pagina-num,
+  .miembros__pagina-paso {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miembros__fila {
+    transition: none;
+  }
+}

@@ -1,0 +1,105 @@
+<div class="pn miembros" pnAcento>
+  <div class="miembros__pagina">
+    <header class="miembros__cabecera">
+      <h1 class="miembros__titulo">Miembros</h1>
+      <button type="button" class="miembros__boton-primario" (click)="abrirAlta()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 5v14M5 12h14"></path></svg>
+        <span>Añadir miembro</span>
+      </button>
+    </header>
+
+    <div class="miembros__barra" role="search" aria-label="Buscar y filtrar miembros">
+      <div class="miembros__buscador">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+        <label class="miembros__oculto" for="miembros-buscar">Buscar por nombre o email</label>
+        <input id="miembros-buscar" type="search" class="miembros__control miembros__control--buscar" autocomplete="off"
+          placeholder="Buscar por nombre o email" maxlength="100" [value]="texto" (input)="buscar($any($event.target).value)" />
+      </div>
+      <label class="miembros__oculto" for="miembros-rol">Rol</label>
+      <select id="miembros-rol" class="miembros__control miembros__control--select" [value]="rol" (change)="elegirRol($any($event.target).value)">
+        @for (o of opcionesRol; track o.valor) {
+        <option [value]="o.valor" [selected]="o.valor === rol">{{ o.etiqueta }}</option>
+        }
+      </select>
+      <label class="miembros__casilla miembros__casilla--filtro">
+        <input type="checkbox" id="miembros-familias" [checked]="incluirFamilias" (change)="alternarFamilias($any($event.target).checked)" />
+        <span>Incluir familias</span>
+      </label>
+    </div>
+
+    @if (estado === 'error') {
+    <pn-bloque-error pose="dudar" class="miembros__bloque-estado" titulo="No se pudieron cargar los miembros" (reintentar)="cargar()" />
+    } @else if (estado === 'cargando') {
+    <pn-esqueleto class="miembros__cargando" etiqueta="Cargando miembros" aria-busy="true">
+      <div class="miembros__esqueleto">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="miembros__esqueleto-fila"><span></span><span></span></div>
+        }
+      </div>
+    </pn-esqueleto>
+    } @else if (miembros.length === 0) {
+    @if (hayFiltros) {
+    <pn-bloque-vacio class="miembros__bloque-estado" titulo="Sin resultados" texto="Ningún miembro coincide con la búsqueda."
+      accion="Quitar filtros" (accionar)="quitarFiltros()" />
+    } @else {
+    <pn-bloque-vacio pose="esperar" class="miembros__bloque-estado" titulo="Aún no hay miembros" texto="Añade al primero para darle acceso al panel."
+      accion="Añadir miembro" (accionar)="abrirAlta()" />
+    }
+    } @else {
+    <ul class="miembros__lista" aria-label="Miembros de la escuela">
+      @for (m of miembros; track m.usuarioId) {
+      <li class="miembros__item">
+        <button type="button" class="miembros__fila" [attr.data-id]="m.usuarioId" (click)="abrirFicha(m)">
+          <span class="miembros__datos">
+            <span class="miembros__nombre"><span class="miembros__oculto">Abrir la ficha de </span>{{ nombreCompleto(m) }}</span>
+            <span class="miembros__email">{{ m.email }}</span>
+            @if (lineaSecundaria(m); as linea) {
+            <span class="miembros__linea">{{ linea }}</span>
+            }
+          </span>
+          <span class="miembros__etiquetas">
+            @for (r of rolesActivos(m); track $index) {
+            <span class="miembros__etiqueta">{{ etiquetaRol(r) }}</span>
+            }
+            @if (m.invitacionPendiente) {
+            <span class="miembros__etiqueta miembros__etiqueta--atencion">Invitación pendiente</span>
+            }
+          </span>
+          <svg class="miembros__ir" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </button>
+      </li>
+      }
+    </ul>
+
+    <nav class="miembros__paginacion" aria-label="Páginas del listado">
+      <p class="miembros__rango" aria-live="polite">{{ rango }}</p>
+      @if (totalPaginas > 1) {
+      <div class="miembros__paginas">
+        <button type="button" class="miembros__pagina-paso" [disabled]="pagina === 1" (click)="irAPagina(pagina - 1)">Anterior</button>
+        @for (p of paginas; track $index) {
+        @if (p === null) {
+        <span class="miembros__pagina-salto" aria-hidden="true">…</span>
+        } @else {
+        <button type="button" class="miembros__pagina-num" [attr.aria-current]="p === pagina ? 'page' : null"
+          [attr.aria-label]="'Página ' + numero(p)" (click)="irAPagina(p)">{{ numero(p) }}</button>
+        }
+        }
+        <button type="button" class="miembros__pagina-paso" [disabled]="pagina === totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente</button>
+      </div>
+      }
+    </nav>
+    }
+  </div>
+
+  @if (abierto; as miembro) {
+  <pn-miembro-ficha [fila]="miembro" [contexto]="contexto" (cerrar)="cerrarFicha()" (cambiada)="fichaCambiada($event)"
+    [alTerminarCerrado]="refrescarTrasCierre" />
+  }
+  @if (altaAbierta) {
+  <pn-miembro-alta [contexto]="contexto" (cerrar)="cerrarAlta()" (creada)="altaHecha($event)"
+    [alTerminarCerrado]="refrescarTrasCierre" />
+  }
+</div>

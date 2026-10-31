@@ -190,3 +190,23 @@ describe('menu-panel: Sedes (E9-3)', () => {
     expect(seccionActiva('/sedes')).toBe('escuela');
   });
 });
+
+describe('menu-panel: Miembros (E9-4)', () => {
+  const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
+
+  it('«Miembros» va en Escuela, tras Sedes, y solo con la capacidad MIEMBROS', () => {
+    const escuela = MENU_PANEL.find((s) => s.id === 'escuela')!;
+    const rutas = escuela.entradas.map((e) => e.ruta);
+    expect(rutas.indexOf('/miembros')).toBe(rutas.indexOf('/sedes') + 1);
+    expect(escuela.entradas.find((e) => e.ruta === '/miembros')).toEqual(
+      jasmine.objectContaining({ etiqueta: 'Miembros', icono: 'bi-person-gear', condicion: 'miembros' })
+    );
+    expect(rutasDeGestion({ ...base, miembros: true })).toContain('/miembros');
+    expect(rutasDeGestion({ ...base, miembros: false })).not.toContain('/miembros');
+    expect(rutasDeGestion(base)).not.toContain('/miembros');
+  });
+
+  it('/miembros enciende la entrada Escuela', () => {
+    expect(seccionActiva('/miembros')).toBe('escuela');
+  });
+});

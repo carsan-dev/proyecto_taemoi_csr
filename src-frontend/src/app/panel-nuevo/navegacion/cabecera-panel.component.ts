@@ -172,6 +172,7 @@ export class CabeceraPanelComponent implements OnInit {
       profesor,
       misGrupos: profesor && this.capacidades().includes('MIS_GRUPOS'),
       sedes: this.capacidades().includes('SEDES'),
+      miembros: this.capacidades().includes('MIEMBROS'),
       plataforma: this.plataforma(),
     };
   });
