@@ -100,6 +100,7 @@ describe('Panel «Cambiar de sede» (E9-1)', () => {
   });
 
   it('singular, plural y cero, con importes es-ES', () => {
+    montar();
     const uno = efectosDelCambio(lectura({ cargosPendientes: 1, importePendiente: 1234.5, cargosCobrados: 1, importeCobrado: 10, gruposEnSedeActual: 2 }));
     expect(uno.map((e) => e.titulo)).toEqual([
       '1 cargo sin cobrar pasa a Estepa', '1 cargo cobrado se queda en Mollina', 'Sigue en 2 grupos de Mollina']);
