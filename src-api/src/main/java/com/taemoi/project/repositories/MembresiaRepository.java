@@ -3,6 +3,7 @@ package com.taemoi.project.repositories;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -75,4 +76,9 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			ORDER BY m.id
 			""")
 	List<Membresia> bloquearPropietariosActivos(@Param("organizacionId") Long organizacionId);
+
+	/** Decisión 389: borra las membresías de la cuenta en la escuela (activas o no), al borrar una cuenta pendiente. */
+	@Modifying(flushAutomatically = true)
+	@Query("DELETE FROM Membresia m WHERE m.usuarioId = :usuarioId AND m.organizacionId = :organizacionId")
+	int borrarDeLaEscuela(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
 }

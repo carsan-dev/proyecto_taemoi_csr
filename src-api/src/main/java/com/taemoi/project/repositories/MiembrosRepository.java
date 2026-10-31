@@ -106,6 +106,10 @@ public interface MiembrosRepository extends Repository<Membresia, Long> {
 			ORDER BY ms.sedeId""")
 	List<Long> sedesDeMembresia(@Param("membresiaId") Long membresiaId, @Param("organizacionId") Long organizacionId);
 
+	/** Decisión 389: alumnos vinculados a la cuenta en la escuela ({@code usuario_alumno}). */
+	@Query("SELECT COUNT(v) FROM UsuarioAlumno v WHERE v.usuarioId = :usuarioId AND v.organizacionId = :organizacionId")
+	long alumnosVinculados(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
+
 	/** Borra las sedes de una membresía, solo si la membresía es de la escuela; devuelve las filas borradas. */
 	@Modifying(flushAutomatically = true)
 	@Query("""

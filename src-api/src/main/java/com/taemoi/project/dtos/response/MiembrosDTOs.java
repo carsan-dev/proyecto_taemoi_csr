@@ -37,6 +37,10 @@ public final class MiembrosDTOs {
 			boolean invitacionPendiente, List<Rol> roles, List<Sede> sedes, int numeroGrupos, List<Grupo> grupos) {
 	}
 
+	/** Resultado de cancelar la invitación (decisión 389): sin ficha, porque la cuenta puede ya no existir. */
+	public record InvitacionCancelada(boolean cuentaBorrada) {
+	}
+
 	/** Una página de la lista ({@code pagina} desde 0). */
 	public record Pagina(List<Miembro> contenido, int pagina, int tamano, long total, int totalPaginas) {
 	}

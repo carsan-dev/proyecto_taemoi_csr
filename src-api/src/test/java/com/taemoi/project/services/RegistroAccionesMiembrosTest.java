@@ -93,6 +93,19 @@ class RegistroAccionesMiembrosTest {
 	}
 
 	@Test
+	void invitacionCancelada_resumenConSiNoYSinDatosDeLaCuenta() {
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_CANCELADA, "/api/miembros/21/invitacion",
+				valores("usuario", 21L, "cuentaBorrada", Boolean.TRUE));
+		verify(auditoria).registrarAccesoSensible(AuditoriaAccion.DELETE, "miembros", "/api/miembros/21/invitacion",
+				21L, "MIEMBROS INVITACION_CANCELADA usuario=#21 cuentaBorrada=SI");
+
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_CANCELADA, "/api/miembros/22/invitacion",
+				valores("usuario", 22L, "cuentaBorrada", Boolean.FALSE));
+		verify(auditoria).registrarAccesoSensible(AuditoriaAccion.DELETE, "miembros", "/api/miembros/22/invitacion",
+				22L, "MIEMBROS INVITACION_CANCELADA usuario=#22 cuentaBorrada=NO");
+	}
+
+	@Test
 	void textoLibre_IllegalStateException() {
 		Map<String, Object> conCargo = valores("usuario", 8L, "cargo", "Director técnico");
 		assertThrows(IllegalStateException.class,

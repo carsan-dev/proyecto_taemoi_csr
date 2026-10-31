@@ -291,6 +291,129 @@ public class GestionMiembrosService {
 		return ficha(cuenta, organizacion);
 	}
 
+	/**
+	 * Cancela la invitación (decisión 389): retira los roles activos de esta escuela, el enlace deja de servir y el aviso
+	 * sale tras el commit. Fila {@code MIEMBROS INVITACION_CANCELADA usuario=#id cuentaBorrada=SI|NO}. Más estricto que
+	 * reenviar: si CUALQUIER rol activo es PROPIETARIO o ADMINISTRADOR, solo el propietario (403), porque aquí se retiran
+	 * todos.
+	 *
+	 * <p>La cuenta, según lo que tenga además (en TODAS las escuelas; borrar es irreversible, ante la duda se conserva):
+	 * <ul>
+	 * <li>Rol activo en otra escuela activa: se conserva. Si la invitación vigente es de esta escuela, se renueva para la
+	 * otra (la de menor id), con su nombre y su correo; si es de otra, su token sigue vivo tal cual.</li>
+	 * <li>Otra membresía (inactiva o de una escuela desactivada) o cualquier dato de
+	 * {@link UsuarioRepository#tieneDatosFueraDeLaInvitacion}: se conserva sin token vivo. FAMILIA activa con alumnos
+	 * vinculados aquí no se toca: los vínculos se gestionan aparte.</li>
+	 * <li>Nada más: se borran sus membresías de esta escuela, con sus sedes, sus asignaciones y la cuenta.</li>
+	 * </ul>
+	 *
+	 * <p>Carrera con {@code aceptar}: esta transacción tiene bloqueada la fila desde el principio, así que el UPDATE de
+	 * {@code aceptar} espera y, al confirmar, no encuentra el hash (400). Si {@code aceptar} confirmó antes, 409. Las altas
+	 * desde otra escuela bloquean la misma fila, y cualquier fila nueva con clave ajena a la cuenta también espera a este
+	 * bloqueo: lo que se decide aquí no cambia hasta el commit.
+	 *
+	 * @throws NoSuchElementException (404) no es miembro de la escuela activa
+	 * @throws SecurityException      (403) D8-8
+	 * @throws IllegalStateException  (409) {@value #SIN_ROL_ACTIVO}, {@value #SIN_PROPIETARIO} o {@value #YA_ACEPTADA}
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public MiembrosDTOs.InvitacionCancelada cancelarInvitacion(Long usuarioId) {
+		Long organizacion = organizacionActiva();
+		Long id = exigirMiembro(usuarioId, organizacion).getId();
+		usuarios.bloquearPorId(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
+		// Antes de leer ninguna membresía: las filas PROPIETARIO llegan con el estado ya confirmado.
+		List<Membresia> propietarios = membresias.bloquearPropietariosActivos(organizacion);
+		exigirCancelable(id, organizacion, propietarios);
+		if (usuarios.confirmarInvitacionPendiente(id) != 1) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+
+		// El UPDATE ha vaciado la sesión: desde aquí, el estado ya confirmado de la cuenta, con su fila bloqueada.
+		Usuario cuenta = usuarios.findById(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
+		List<Membresia> todas = membresias.findByUsuarioId(id);
+		List<Membresia> deEstaEscuela = todas.stream().filter(m -> organizacion.equals(m.getOrganizacionId())).toList();
+		boolean borrar = deEstaEscuela.size() == todas.size()
+				&& usuarios.tieneDatosFueraDeLaInvitacion(id, organizacion) == 0;
+
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("usuario", id);
+		valores.put("cuentaBorrada", borrar);
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_CANCELADA, RUTA + "/" + id + "/invitacion", valores);
+		invitaciones.avisarCancelacion(cuenta, organizacion);
+
+		if (borrar) {
+			borrarCuentaPendiente(id, deEstaEscuela, organizacion);
+		} else {
+			retirarRoles(id, deEstaEscuela, organizacion);
+			resolverToken(cuenta, organizacion);
+		}
+		return new MiembrosDTOs.InvitacionCancelada(borrar);
+	}
+
+	/** Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 D8-8 y 409 último propietario. */
+	private void exigirCancelable(Long id, Long organizacion, List<Membresia> propietarios) {
+		List<Membresia> activas = membresias.findByUsuarioIdAndOrganizacionId(id, organizacion).stream()
+				.filter(Membresia::isActiva).toList();
+		if (activas.isEmpty()) {
+			throw new IllegalStateException(SIN_ROL_ACTIVO);
+		}
+		boolean algunRolReservado = activas.stream()
+				.anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO || m.getRol() == RolMembresia.ADMINISTRADOR);
+		if (algunRolReservado && !sesionDePropietario()) {
+			throw new SecurityException(SOLO_PROPIETARIO);
+		}
+		boolean esPropietario = propietarios.stream().anyMatch(p -> id.equals(p.getUsuarioId()));
+		if (esPropietario && propietarios.size() <= 1) {
+			throw new IllegalStateException(SIN_PROPIETARIO);
+		}
+	}
+
+	/** Roles activos a {@code activa=false}, sin borrar filas, sedes ni asignaciones; FAMILIA con alumnos no se toca. */
+	private void retirarRoles(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
+		boolean conAlumnos = consultas.alumnosVinculados(id, organizacion) > 0;
+		for (Membresia membresia : deEstaEscuela) {
+			if (membresia.isActiva() && !(membresia.getRol() == RolMembresia.FAMILIA && conAlumnos)) {
+				membresia.setActiva(false);
+				membresias.saveAndFlush(membresia);
+			}
+		}
+	}
+
+	/**
+	 * El enlace de esta escuela muere en todo caso. Con rol activo en otra escuela activa, la invitación pasa a la de menor
+	 * id si era de esta (o de ninguna conocida); si ya era de otra, su token sigue tal cual. Sin rol activo fuera, ningún
+	 * token vivo.
+	 */
+	private void resolverToken(Usuario cuenta, Long organizacion) {
+		List<Membresia> activasFuera = membresias.findActivasDeUsuario(cuenta.getId()).stream()
+				.filter(m -> !organizacion.equals(m.getOrganizacionId())).toList();
+		Long escuelaInvitacion = cuenta.getUltimaOrganizacionId();
+		boolean sigue = true;
+		if (activasFuera.isEmpty()) {
+			sigue = usuarios.retirarTokenInvitacion(cuenta.getId()) == 1;
+		} else if (escuelaInvitacion == null || organizacion.equals(escuelaInvitacion)) {
+			Long otra = activasFuera.get(0).getOrganizacionId();
+			List<Membresia> activasDeLaOtra = activasFuera.stream().filter(m -> otra.equals(m.getOrganizacionId()))
+					.toList();
+			sigue = invitaciones.renovarToken(cuenta, otra, rolDeLaInvitacion(activasDeLaOtra));
+		}
+		if (!sigue) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+	}
+
+	/** Las filas propias de la invitación en esta escuela y la cuenta, que ya no tiene nada más. */
+	private void borrarCuentaPendiente(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
+		for (Membresia membresia : deEstaEscuela) {
+			consultas.borrarSedesDeMembresia(membresia.getId(), organizacion);
+		}
+		asignaciones.borrarDeLaEscuela(id, organizacion);
+		membresias.borrarDeLaEscuela(id, organizacion);
+		if (usuarios.borrarCuentaPendiente(id) != 1) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+	}
+
 	/** El rol del texto del correo: el primero (orden del enum) de sus roles activos de personal; si no, FAMILIA. */
 	private static RolMembresia rolDeLaInvitacion(List<Membresia> activas) {
 		return activas.stream().map(Membresia::getRol).filter(rol -> rol != RolMembresia.FAMILIA).sorted().findFirst()

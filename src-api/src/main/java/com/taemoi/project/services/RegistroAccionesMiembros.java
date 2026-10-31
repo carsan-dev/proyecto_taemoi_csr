@@ -41,7 +41,9 @@ public class RegistroAccionesMiembros {
 		/** Pieza E8-4: cuenta pendiente creada por una invitación ({@code usuario=#id rol=ROL}; nunca el token). */
 		MIEMBRO_INVITADO(AuditoriaAccion.CREATE),
 		/** Pieza E8-4: invitación reenviada con un token nuevo ({@code usuario=#id}). */
-		INVITACION_REENVIADA(AuditoriaAccion.UPDATE);
+		INVITACION_REENVIADA(AuditoriaAccion.UPDATE),
+		/** Decisión 389: invitación cancelada ({@code usuario=#id cuentaBorrada=SI|NO}; nunca el token). */
+		INVITACION_CANCELADA(AuditoriaAccion.DELETE);
 
 		private final AuditoriaAccion auditoria;
 

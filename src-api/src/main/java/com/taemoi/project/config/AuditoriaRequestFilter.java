@@ -131,6 +131,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		MIEMBRO_GRUPOS("PUT", "/api/miembros/[^/]+/grupos"),
 		/** Pieza E8-4: GestionMiembrosService#reenviarInvitacion (MIEMBROS INVITACION_REENVIADA). */
 		MIEMBRO_INVITACION("POST", "/api/miembros/[^/]+/invitacion"),
+		/** Decisión 389: GestionMiembrosService#cancelarInvitacion (MIEMBROS INVITACION_CANCELADA). */
+		MIEMBRO_INVITACION_CANCELAR("DELETE", "/api/miembros/[^/]+/invitacion"),
 		/**
 		 * Decisión 322: PerfilCuentaService#guardar (PANEL PERFIL_CAMBIADO; sin cambios, con sinCambios=SI). Aquí, el 2xx
 		 * guardaría el nombre y la fecha del cuerpo; el registro explícito solo lleva el id de la cuenta.
