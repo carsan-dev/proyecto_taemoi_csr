@@ -311,7 +311,7 @@ public class GestionMiembrosService {
 	 * <li>Otra membresía (inactiva o de una escuela desactivada) o cualquier dato de
 	 * {@link UsuarioRepository#tieneDatosFueraDeLaInvitacion}: se conserva sin token vivo. FAMILIA activa con alumnos
 	 * vinculados aquí no se toca: los vínculos se gestionan aparte; sin más roles que retirar ni token vivo, repetir no
-	 * tendría efecto: 409 {@value #SIN_ROL_ACTIVO}, sin correo ni fila.</li>
+	 * tendría efecto: 409 {@value #SIN_ROL_ACTIVO}, sin correo ni {@code INVITACION_CANCELADA}.</li>
 	 * <li>Nada más: se borran sus membresías de esta escuela, con sus sedes, sus asignaciones y la cuenta.</li>
 	 * </ul>
 	 *
