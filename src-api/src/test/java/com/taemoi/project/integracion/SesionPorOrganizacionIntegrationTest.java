@@ -606,9 +606,10 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void cambiarOtrosRolesNoDesactivaProfesor() throws Exception {
+	void cambiarOtrosRolesNoDesactivaProfesorNiResponsable() throws Exception {
 		Usuario usuario = crearUsuario("roles-profesor-" + sufijo + "@example.test", null, null);
 		dar(usuario, ORG1, RolMembresia.PROFESOR);
+		dar(usuario, ORG1, RolMembresia.RESPONSABLE_SEDE);
 		dar(usuario, ORG1, RolMembresia.FAMILIA);
 		String tokenAdmin = login(adminOrg1.getEmail());
 
@@ -616,8 +617,8 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 				.andExpect(status().isOk());
 		mvc.perform(delete("/api/miembros/" + usuario.getId() + "/roles/FAMILIA").cookie(jwt(tokenAdmin)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath(ROLES_ACTIVOS, containsInAnyOrder("ADMINISTRADOR", "PROFESOR")));
-		assertEquals(List.of("ADMINISTRADOR", "PROFESOR"), rolesActivosEn1(usuario));
+				.andExpect(jsonPath(ROLES_ACTIVOS, containsInAnyOrder("ADMINISTRADOR", "PROFESOR", "RESPONSABLE_SEDE")));
+		assertEquals(List.of("ADMINISTRADOR", "PROFESOR", "RESPONSABLE_SEDE"), rolesActivosEn1(usuario));
 	}
 
 	private List<String> rolesActivosEn1(Usuario usuario) {

@@ -66,7 +66,7 @@ import jakarta.servlet.http.Cookie;
  * <li>Lista paginada y con búsqueda en el servidor, sin familias por defecto y sin N+1.</li>
  * <li>Alta de cuentas existentes todo o nada, también con dos altas a la vez; FAMILIA no.</li>
  * <li>D8-8: el gestor no da ni quita propietario ni gestor. D8-9: nunca sin propietario activo, también con dos quitas a
- * la vez y por el endpoint viejo de roles.</li>
+ * la vez.</li>
  * <li>Sedes del responsable y grupos del profesor solo de la escuela; reemplazo todo o nada.</li>
  * <li>Registro solo con ids y una fila por escritura; los 4xx, la genérica con email y cargo redactados.</li>
  * </ul>

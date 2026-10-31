@@ -161,6 +161,7 @@ class DespachoDeErrorIntegrationTest extends MySqlIntegrationTest {
 	void rutasRetiradasDeAdminUsers_sinDatosNiCambios(CapturedOutput salida) throws Exception {
 		String cookie = "jwt=" + tokenPropietario;
 		String claveAntes = claveDeLaFamilia();
+		List<String> membresiasAntes = membresiasDeLaFamilia();
 
 		HttpResponse<String> lista = enviar(get("/api/admin/users").header("Cookie", cookie));
 		assertEquals(400, lista.statusCode(), lista.body());
@@ -173,9 +174,7 @@ class DespachoDeErrorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(404, roles.statusCode(), roles.body());
 		assertEquals(404, cuerpo(roles).get("status").asInt(), roles.body());
 		assertFalse(roles.body().contains("@"), roles.body());
-		assertEquals(List.of(RolMembresia.FAMILIA), TenantContext.calcularCon(1L,
-				() -> membresias.findByUsuarioIdAndOrganizacionId(familia.getId(), 1L)).stream().map(Membresia::getRol)
-				.toList());
+		assertEquals(membresiasAntes, membresiasDeLaFamilia());
 
 		HttpResponse<String> contrasena = enviar(put("/api/admin/users/" + familia.getId() + "/password",
 				"{\"nuevaContrasena\":\"Otra-Clave-456\"}").header("Cookie", cookie));
@@ -183,10 +182,20 @@ class DespachoDeErrorIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(404, cuerpo(contrasena).get("status").asInt(), contrasena.body());
 		assertFalse(contrasena.body().contains("@"), contrasena.body());
 		assertEquals(claveAntes, claveDeLaFamilia());
+		assertEquals(membresiasAntes, membresiasDeLaFamilia());
 
 		// La regla de URL de /api/admin/** sigue por delante del manejador: sin sesión de propietario no se llega a él.
 		assertEquals(401, enviar(get("/api/admin/users")).statusCode());
 		assertEquals(403, enviar(get("/api/admin/users").header("Cookie", "jwt=" + tokenFamilia)).statusCode());
+		assertEquals(401, enviar(put("/api/admin/users/" + familia.getId() + "/roles", "[\"ROLE_ADMIN\"]")).statusCode());
+		assertEquals(403, enviar(put("/api/admin/users/" + familia.getId() + "/roles", "[\"ROLE_ADMIN\"]")
+				.header("Cookie", "jwt=" + tokenFamilia)).statusCode());
+		assertEquals(401, enviar(put("/api/admin/users/" + familia.getId() + "/password",
+				"{\"nuevaContrasena\":\"Otra-Clave-456\"}")).statusCode());
+		assertEquals(403, enviar(put("/api/admin/users/" + familia.getId() + "/password",
+				"{\"nuevaContrasena\":\"Otra-Clave-456\"}").header("Cookie", "jwt=" + tokenFamilia)).statusCode());
+		assertEquals(claveAntes, claveDeLaFamilia());
+		assertEquals(membresiasAntes, membresiasDeLaFamilia());
 		sinErrorDeOrganizacion(salida);
 	}
 
@@ -194,6 +203,13 @@ class DespachoDeErrorIntegrationTest extends MySqlIntegrationTest {
 
 	private String claveDeLaFamilia() {
 		return TenantContext.calcularCon(1L, () -> usuarios.findById(familia.getId()).orElseThrow().getContrasena());
+	}
+
+	private List<String> membresiasDeLaFamilia() {
+		return TenantContext.calcularCon(1L,
+				() -> membresias.findByUsuarioIdAndOrganizacionId(familia.getId(), 1L).stream()
+						.map(m -> m.getRol() + "|" + m.isActiva() + "|" + m.getCargo())
+						.sorted().toList());
 	}
 
 	private HttpRequest.Builder get(String ruta) {
