@@ -41,6 +41,9 @@ import com.taemoi.project.repositories.MiembrosRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.utils.EmailUtils;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 /**
  * Miembros de la escuela activa (pieza E8-3; D8-4 a D8-12, D8-16, D8-19; fase3-e8-plan.md §4): lista, ficha, alta de
  * cuentas existentes, dar, reactivar y quitar roles con su cargo, sedes del responsable y grupos del profesor.
@@ -102,6 +105,9 @@ public class GestionMiembrosService {
 	private final RegistroAccionesMiembros registro;
 	private final RegistroAccionesProfesor registroProfesor;
 	private final InvitacionService invitaciones;
+
+	@PersistenceContext
+	private EntityManager em;
 
 	public GestionMiembrosService(UsuarioRepository usuarios, MembresiaRepository membresias,
 			MiembrosRepository consultas, MembresiaSedeRepository membresiaSedes,
@@ -308,9 +314,11 @@ public class GestionMiembrosService {
 	 * </ul>
 	 *
 	 * <p>Carrera con {@code aceptar}: esta transacción tiene bloqueada la fila desde el principio, así que el UPDATE de
-	 * {@code aceptar} espera y, al confirmar, no encuentra el hash (400). Si {@code aceptar} confirmó antes, 409. Las altas
-	 * desde otra escuela bloquean la misma fila, y cualquier fila nueva con clave ajena a la cuenta también espera a este
-	 * bloqueo: lo que se decide aquí no cambia hasta el commit.
+	 * {@code aceptar} espera y, al confirmar, no encuentra el hash (400). Si {@code aceptar} confirmó antes, 409: con la
+	 * fila bloqueada, la cuenta se relee de la base ({@code refresh}), porque la entidad de la sesión pudo cargarse antes
+	 * del bloqueo; nada depende del recuento de filas de un UPDATE. Las altas desde otra escuela bloquean la misma fila, y
+	 * cualquier fila nueva con clave ajena a la cuenta también espera a este bloqueo: lo que se decide aquí no cambia hasta
+	 * el commit.
 	 *
 	 * @throws NoSuchElementException (404) no es miembro de la escuela activa
 	 * @throws SecurityException      (403) D8-8
@@ -319,17 +327,18 @@ public class GestionMiembrosService {
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public MiembrosDTOs.InvitacionCancelada cancelarInvitacion(Long usuarioId) {
 		Long organizacion = organizacionActiva();
-		Long id = exigirMiembro(usuarioId, organizacion).getId();
+		Usuario cuenta = exigirMiembro(usuarioId, organizacion);
+		Long id = cuenta.getId();
 		usuarios.bloquearPorId(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
 		// Antes de leer ninguna membresía: las filas PROPIETARIO llegan con el estado ya confirmado.
 		List<Membresia> propietarios = membresias.bloquearPropietariosActivos(organizacion);
 		exigirCancelable(id, organizacion, propietarios);
-		if (usuarios.confirmarInvitacionPendiente(id) != 1) {
+		// Desde aquí, el estado ya confirmado de la cuenta, con su fila bloqueada; no la entidad vieja de la sesión.
+		em.refresh(cuenta);
+		if (!cuenta.invitacionPendiente()) {
 			throw new IllegalStateException(YA_ACEPTADA);
 		}
 
-		// El UPDATE ha vaciado la sesión: desde aquí, el estado ya confirmado de la cuenta, con su fila bloqueada.
-		Usuario cuenta = usuarios.findById(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
 		List<Membresia> todas = membresias.findByUsuarioId(id);
 		List<Membresia> deEstaEscuela = todas.stream().filter(m -> organizacion.equals(m.getOrganizacionId())).toList();
 		boolean borrar = deEstaEscuela.size() == todas.size()
@@ -382,23 +391,22 @@ public class GestionMiembrosService {
 	/**
 	 * El enlace de esta escuela muere en todo caso. Con rol activo en otra escuela activa, la invitación pasa a la de menor
 	 * id si era de esta (o de ninguna conocida); si ya era de otra, su token sigue tal cual. Sin rol activo fuera, ningún
-	 * token vivo.
+	 * token vivo. Con la fila bloqueada y la cuenta releída pendiente, retirar el token no decide nada: puede no haber
+	 * ninguno. Renovar sí cambia el hash, y su recuento se comprueba.
 	 */
 	private void resolverToken(Usuario cuenta, Long organizacion) {
 		List<Membresia> activasFuera = membresias.findActivasDeUsuario(cuenta.getId()).stream()
 				.filter(m -> !organizacion.equals(m.getOrganizacionId())).toList();
 		Long escuelaInvitacion = cuenta.getUltimaOrganizacionId();
-		boolean sigue = true;
 		if (activasFuera.isEmpty()) {
-			sigue = usuarios.retirarTokenInvitacion(cuenta.getId()) == 1;
+			usuarios.retirarTokenInvitacion(cuenta.getId());
 		} else if (escuelaInvitacion == null || organizacion.equals(escuelaInvitacion)) {
 			Long otra = activasFuera.get(0).getOrganizacionId();
 			List<Membresia> activasDeLaOtra = activasFuera.stream().filter(m -> otra.equals(m.getOrganizacionId()))
 					.toList();
-			sigue = invitaciones.renovarToken(cuenta, otra, rolDeLaInvitacion(activasDeLaOtra));
-		}
-		if (!sigue) {
-			throw new IllegalStateException(YA_ACEPTADA);
+			if (!invitaciones.renovarToken(cuenta, otra, rolDeLaInvitacion(activasDeLaOtra))) {
+				throw new IllegalStateException(YA_ACEPTADA);
+			}
 		}
 	}
 

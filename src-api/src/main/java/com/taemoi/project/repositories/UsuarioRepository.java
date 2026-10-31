@@ -113,20 +113,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 			@Param("contrasena") String contrasena, @Param("ahora") java.time.LocalDateTime ahora);
 
 	/**
-	 * Decisión 389: confirma contra la base que la invitación SIGUE pendiente, sin cambiar nada; 1 si lo está, 0 si otra
-	 * petición la aceptó. Es un UPDATE para leer la fila vigente y no la entidad de la sesión: {@code aceptarInvitacion}
-	 * no bloquea la fila antes de escribir. El token no se toca porque el de otra escuela debe seguir vivo; se retira
-	 * aparte con {@link #retirarTokenInvitacion}. Cuenta las filas ENCONTRADAS, no las cambiadas: es lo que devuelve
-	 * Connector/J por defecto; con {@code useAffectedRows=true} daría siempre 0.
+	 * Decisión 389: deja sin token vivo una invitación que sigue pendiente. Quien llama tiene la fila bloqueada y ya
+	 * comprobó que lo está; el recuento no decide nada: con {@code useAffectedRows=true} da 0 si el token ya era NULL.
 	 */
-	@Modifying(flushAutomatically = true, clearAutomatically = true)
-	@Query("""
-			UPDATE Usuario u SET u.resetTokenHash = u.resetTokenHash
-			WHERE u.id = :usuarioId AND u.contrasena IS NULL
-			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
-	int confirmarInvitacionPendiente(@Param("usuarioId") Long usuarioId);
-
-	/** Decisión 389: deja sin token vivo una invitación que sigue pendiente; 0 si ya no lo está. */
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query("""
 			UPDATE Usuario u SET u.resetTokenHash = NULL, u.resetTokenExpiresAt = NULL
