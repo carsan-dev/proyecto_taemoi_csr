@@ -80,7 +80,7 @@ describe('DialogosFichaPanel: los diálogos de la ficha con las piezas del panel
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'alumnosEditar/:id', canMatch: [estilosPanelGuard], component: PantallaNueva }]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         DialogosFichaPanel,
       ],

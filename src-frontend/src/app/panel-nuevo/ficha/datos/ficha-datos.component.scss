@@ -80,6 +80,12 @@
   @include b.control;
 }
 
+.datos__nota {
+  margin: 2px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
 .datos__error {
   display: flex;
   align-items: center;

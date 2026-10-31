@@ -264,4 +264,17 @@ describe('AltaPreinscripcion (8b-3h) igual que la pantalla de hoy', () => {
       expect(turnosCambiados(sol, [1, 3])).toBeTrue();
     });
   });
+
+  it('responsable de sede (decisión 96): conserva el correo de la ficha; sin correo, la finaliza gestión', () => {
+    conCatalogo(CATALOGO_TAEMOI);
+    const nueva = new AltaPreinscripcion(base({ alumnosCoincidentes: [EXISTENTE] }), catalogo());
+    nueva.elegirAlumno(EXISTENTE);
+    nueva.soloCorreoDeFicha = true;
+    expect(nueva.fichaSinCorreoParaResponsable).toBeFalse();
+    nueva.decisionEmail = 'CONSERVAR_FICHA';
+    expect(nueva.finalizacionValida).toBeTrue();
+    nueva.alumnoSeleccionado = { ...nueva.alumnoSeleccionado, email: '' };
+    expect(nueva.fichaSinCorreoParaResponsable).toBeTrue();
+    expect(nueva.finalizacionValida).toBeFalse();
+  });
 });

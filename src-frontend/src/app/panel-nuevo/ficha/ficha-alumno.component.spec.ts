@@ -216,6 +216,7 @@ interface Montaje<C> {
 let fire: jasmine.Spy;
 /** Pieza 279: la sesión es de gestión (propietario o administración). */
 let gestionFicha = false;
+let panelSedeFicha = false;
 const PERMISOS_UNA_SEDE: PermisosSesion = { roles: ['ROLE_ADMIN'], esAdminPlataforma: false, sedes: [{ id: 1, nombre: 'Central', activa: true }], variasSedes: false, tieneGrupos: true, capacidades: [] };
 const PERMISOS_VARIAS_SEDES: PermisosSesion = { ...PERMISOS_UNA_SEDE, variasSedes: true, sedes: [
   { id: 1, nombre: 'Mollina', activa: true }, { id: 2, nombre: 'Estepa', activa: true }, { id: 3, nombre: 'Cerrada', activa: false }] };
@@ -238,7 +239,7 @@ function configurar(): void {
         { path: '**', component: OtraPantalla },
       ]),
       proveerCatalogoTesting(CATALOGO_TAEMOI),
-      { provide: PermisosSesionService, useValue: { obtener: () => of(permisosFicha) } },
+      { provide: PermisosSesionService, useValue: { tiene: (c: string) => panelSedeFicha && c === 'PANEL_SEDE', obtener: () => of(permisosFicha) } },
       { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
       // 8b-D1: «Cobrar» del carnet mira si la sesión puede «Deshacer» (el propietario); la ficha no usa nada más.
       { provide: AuthenticationService, useValue: { tieneRolAdmin: () => false, tieneAccesoAdmin: () => gestionFicha } },
@@ -607,6 +608,72 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
   });
 
   // ---------------------------------------------------------------- barra
+
+  describe('responsable de sede (decisiones 370, 369, 96 y 65)', () => {
+    afterEach(() => (panelSedeFicha = false));
+
+    function fichaDeSuSede(): Datos {
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = 1;
+      return datos;
+    }
+
+    itSinReloj('sin «Cambiar» de sede, sin vista de familia y sin eliminar', async () => {
+      panelSedeFicha = true;
+      permisosFicha = PERMISOS_VARIAS_SEDES;
+      const datos = fichaDeSuSede();
+      datos.alumno.sedePrincipalNombre = 'Central';
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      const carnet = m.el().querySelector('[data-dato="sede"]');
+      expect(carnet?.querySelector('button')).toBeNull();
+      expect(m.el().querySelector('a[href^="/userpage"]')).toBeNull();
+      expect(m.comp.textoBajaAlta).not.toContain('eliminar');
+    });
+
+    itSinReloj('el email se lee y no se escribe, con la línea de gestión', async () => {
+      panelSedeFicha = true;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', fichaDeSuSede());
+      m.comp.editingBasicInfo = true;
+      m.harness.detectChanges();
+      expect(m.el().querySelector('input#email')).toBeNull();
+      expect(m.el().querySelector('input#telefono')).not.toBeNull();
+      expect(m.el().querySelector('.datos__nota')?.textContent).toContain('El email lo cambia gestión.');
+    });
+
+    itSinReloj('gestión sigue editando el email', async () => {
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', fichaDeSuSede());
+      m.comp.editingBasicInfo = true;
+      m.harness.detectChanges();
+      expect(m.el().querySelector('input#email')).not.toBeNull();
+      expect(m.el().querySelector('.datos__nota')).toBeNull();
+    });
+
+    itSinReloj('ficha de sede ajena vista por un grupo: no pide pagos (403) ni deja editar', async () => {
+      panelSedeFicha = true;
+      const datos = datosPorDefecto();
+      datos.alumno.sedePrincipalId = 99;
+      const pedidas: string[] = [];
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', datos);
+      m.retener = (req) => {
+        pedidas.push(req.request.url);
+        return false;
+      };
+      expect(m.comp.fichaDeOtraSede).toBeTrue();
+      expect(m.comp.pestanas.map((p) => p.clave)).not.toContain('pagos');
+      expect(m.el().querySelector('.ficha__accion--editar')).toBeNull();
+      expect(m.el().querySelector('#ficha-mas')).toBeNull();
+      m.comp.obtenerProductosAlumno(7);
+      await m.asentar();
+      expect(pedidas.filter((u) => u.includes('/productos-alumno/alumno/'))).toEqual([]);
+    });
+
+    itSinReloj('ficha de su sede: los pagos se piden y se ven', async () => {
+      panelSedeFicha = true;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7', fichaDeSuSede());
+      expect(m.comp.fichaDeOtraSede).toBeFalse();
+      expect(m.comp.pestanas.map((p) => p.clave)).toContain('pagos');
+    });
+  });
 
   describe('sede (E9-1)', () => {
     itSinReloj('con una sola sede el carnet no enseña la sede ni «Cambiar»', async () => {

@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, take } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
@@ -111,7 +111,6 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   readonly fecha = fecha;
   readonly numero = numero;
   readonly plural = plural;
-  readonly pestanas = PESTANAS;
 
   @ViewChild('menuMas') private menuMas?: ElementRef<HTMLElement>;
   @ViewChild('botonMas') private botonMas?: ElementRef<HTMLButtonElement>;
@@ -130,6 +129,8 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   panelAbierto = false;
   /** Con dos o más sedes activas (E9-1) el carnet enseña la sede; con una, nada cambia. */
   variasSedes = false;
+  /** Ficha vista por un grupo de sus sedes, de sede principal ajena: solo lectura para el responsable. */
+  fichaDeOtraSede = false;
   sedesActivas: SedeVisible[] = [];
   cambiarSedeAbierto = false;
   menuAbierto = false;
@@ -188,6 +189,57 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   }
 
   // ------------------------------------------------------------------ sede (E9-1)
+
+  /** Responsable de sede: lo que la decisión 370 y la 96 dejan fuera de su ficha. */
+  get panelSede(): boolean {
+    return this.permisosSesion.tiene('PANEL_SEDE');
+  }
+
+  protected override get accionesDeGestion(): boolean {
+    return !this.panelSede;
+  }
+
+  /** El email solo lo cambia gestión (decisión 96): el servidor responde 403 al responsable, con cuenta o sin ella. */
+  get emailSoloLectura(): boolean {
+    return this.panelSede;
+  }
+
+  /**
+   * Ficha que el responsable ve por un grupo de sus sedes, de sede principal ajena (D9 y D6-3): se lee, pero no se
+   * edita y sus pagos dan 403, así que no se piden y la pestaña no sale.
+   */
+  override obtenerProductosAlumno(alumnoId: number): void {
+    if (!this.panelSede) {
+      super.obtenerProductosAlumno(alumnoId);
+      return;
+    }
+    this.suscripciones.add(
+      this.permisosSesion
+        .obtener()
+        .pipe(take(1))
+        .subscribe((p) => {
+          this.fichaDeOtraSede = !(p?.sedes ?? []).some((s) => s.id === this.alumno?.sedePrincipalId);
+          if (this.fichaDeOtraSede) {
+            this.pestana = this.pestana === 'pagos' ? 'deportes' : this.pestana;
+          } else {
+            super.obtenerProductosAlumno(alumnoId);
+          }
+          this.cdr.markForCheck();
+        })
+    );
+  }
+
+  get pestanas(): typeof PESTANAS {
+    return this.fichaDeOtraSede ? PESTANAS.filter((p) => p.clave !== 'pagos') : PESTANAS;
+  }
+
+  /** Texto de la opción de «Más acciones»: el responsable no elimina alumnos. */
+  get textoBajaAlta(): string {
+    if (this.panelSede) {
+      return this.isAlumnoActivo() ? 'Dar de baja…' : 'Dar de alta…';
+    }
+    return this.isAlumnoActivo() ? 'Dar de baja o eliminar…' : 'Dar de alta o eliminar…';
+  }
 
   /** «Cambiar» solo para la gestión (propietario y administración). */
   get puedeCambiarSede(): boolean {
@@ -481,26 +533,26 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
 
   /** Flechas (con vuelta), Inicio y Fin; la pestaña se activa al llegar a ella. */
   teclaPestanas(evento: KeyboardEvent): void {
-    const actual = PESTANAS.findIndex((p) => p.clave === this.pestana);
+    const actual = this.pestanas.findIndex((p) => p.clave === this.pestana);
     let siguiente: number;
     switch (evento.key) {
       case 'ArrowRight':
-        siguiente = (actual + 1) % PESTANAS.length;
+        siguiente = (actual + 1) % this.pestanas.length;
         break;
       case 'ArrowLeft':
-        siguiente = (actual - 1 + PESTANAS.length) % PESTANAS.length;
+        siguiente = (actual - 1 + this.pestanas.length) % this.pestanas.length;
         break;
       case 'Home':
         siguiente = 0;
         break;
       case 'End':
-        siguiente = PESTANAS.length - 1;
+        siguiente = this.pestanas.length - 1;
         break;
       default:
         return;
     }
     evento.preventDefault();
-    this.cambiarPestana(PESTANAS[siguiente].clave, true);
+    this.cambiarPestana(this.pestanas[siguiente].clave, true);
   }
 
   etiquetaPestana(clave: Pestana, texto: string): string | null {

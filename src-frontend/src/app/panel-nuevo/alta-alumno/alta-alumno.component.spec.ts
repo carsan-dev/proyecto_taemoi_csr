@@ -403,7 +403,7 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
   });
 
   it('sin permisos legibles no pide la sede (el servidor decide, como hoy)', () => {
-    TestBed.overrideProvider(PermisosSesionService, { useValue: { obtener: () => throwError(() => new Error('x')) } });
+    TestBed.overrideProvider(PermisosSesionService, { useValue: { tiene: () => false, obtener: () => throwError(() => new Error('x')) } });
     fixture = TestBed.createComponent(AltaAlumnoComponent);
     http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();

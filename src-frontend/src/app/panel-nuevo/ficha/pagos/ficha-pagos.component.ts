@@ -40,9 +40,9 @@ export class FichaPagosComponent {
     return pendiente > 0 ? `${cargos}, ${eur(pendiente)} pendiente` : `${cargos}, todo pagado`;
   }
 
-  /** «Descargar recibo» (pieza 279): gestión (propietario y administración) y cargo cobrado, no cancelado ni devuelto. */
+  /** «Descargar recibo» (pieza 279): gestión y responsable de sede, y cargo cobrado, no cancelado ni devuelto. */
   puedeDescargarRecibo(p: ProductoAlumnoDTO): boolean {
-    return this.auth.tieneAccesoAdmin() && !!p.pagado && !p.canceladoEn && !p.devuelto;
+    return (this.auth.tieneAccesoAdmin() || this.ficha.panelSede) && !!p.pagado && !p.canceladoEn && !p.devuelto;
   }
 
   descargarRecibo(p: ProductoAlumnoDTO): void {

@@ -62,6 +62,8 @@ export class AltaPreinscripcion {
   alumnoSeleccionado: any;
   discapacidadHistorica: boolean | null = null;
   decisionEmail: DecisionEmail = '';
+  /** Responsable de sede (decisión 96): solo conserva el correo de la ficha; usar el de la solicitud es 403. */
+  soloCorreoDeFicha = false;
   datosAlta: DatosAlta = { tipoTarifa: '', cuantiaTarifa: null, rolFamiliar: 'NINGUNO', grupoFamiliar: '', grado: '', fechaGrado: '' };
   readonly camposActualizar = new Set<string>();
 
@@ -228,6 +230,11 @@ export class AltaPreinscripcion {
     );
   }
 
+  /** Con el responsable, una ficha sin correo no se puede conservar ni cambiar: la finaliza gestión. */
+  get fichaSinCorreoParaResponsable(): boolean {
+    return this.soloCorreoDeFicha && this.correosDiferentes && !this.alumnoSeleccionado.email?.trim();
+  }
+
   get discapacidadEfectiva(): boolean | null {
     return this.solicitud['tieneDiscapacidad'] ?? this.discapacidadHistorica;
   }
@@ -241,7 +248,7 @@ export class AltaPreinscripcion {
     if (!this.accionAlumno || this.discapacidadEfectiva == null || (this.accionAlumno === 'VINCULAR_EXISTENTE' && !this.alumnoSeleccionado)) {
       return false;
     }
-    if (this.correosDiferentes && !this.decisionEmail) {
+    if ((this.correosDiferentes && !this.decisionEmail) || this.fichaSinCorreoParaResponsable) {
       return false;
     }
     const d = this.datosAlta;

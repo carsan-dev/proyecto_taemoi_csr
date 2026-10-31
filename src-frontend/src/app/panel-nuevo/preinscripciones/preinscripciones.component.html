@@ -14,6 +14,7 @@
       }
     </header>
 
+    @if (!panelSede) {
     <div class="preins__pestanas" role="tablist" aria-label="Secciones de preinscripciones" (keydown)="teclaPestanas($event)">
       <button type="button" role="tab" class="preins__pestana" id="preins-pestana-solicitudes" aria-controls="preins-panel-solicitudes"
         [attr.aria-selected]="pestana === 'solicitudes'" [attr.tabindex]="pestana === 'solicitudes' ? 0 : -1"
@@ -22,9 +23,11 @@
         [attr.aria-selected]="pestana === 'plantillas'" [attr.tabindex]="pestana === 'plantillas' ? 0 : -1"
         (click)="cambiarPestana('plantillas')">Plantillas PDF</button>
     </div>
+    }
 
     @if (pestana === 'solicitudes') {
-    <div id="preins-panel-solicitudes" role="tabpanel" aria-labelledby="preins-pestana-solicitudes">
+    <div id="preins-panel-solicitudes" [attr.role]="panelSede ? null : 'tabpanel'"
+      [attr.aria-labelledby]="panelSede ? null : 'preins-pestana-solicitudes'">
       <form class="preins__filtros" role="search" aria-label="Filtrar preinscripciones" novalidate (submit)="filtrar($event)">
         <div class="preins__filtro">
           <label class="preins__oculto" for="preins-temporada">Temporada</label>

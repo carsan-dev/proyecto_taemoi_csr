@@ -6,6 +6,7 @@ import {
   cambiosDeCobro,
 } from '../../componentes/endpoints/tesoreria-cobros/confirmar-cobro';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -50,6 +51,7 @@ export class CobroCargoService {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly auth = inject(AuthenticationService);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly recibo = inject(ReciboPagoService);
 
   /**
@@ -90,10 +92,10 @@ export class CobroCargoService {
       return;
     }
     const texto = `Cobro registrado: ${eur(cargo.importe)}${nombre ? ` · ${nombre}` : ''}`;
-    // Gestión (propietario y administración) tiene «Recibo»; «Deshacer», solo el propietario. Tras deshacer, «Recibo» no
+    // Gestión y responsable de sede tienen «Recibo»; «Deshacer», solo el propietario. Tras deshacer, «Recibo» no
     // descarga (el aviso se cierra al pulsar «Deshacer»; esto cubre además un clic que llegara después).
     let deshecho = false;
-    const previa = this.auth.tieneAccesoAdmin()
+    const previa = this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE')
       ? { texto: 'Recibo', cierra: false, alPulsar: () => (deshecho ? undefined : void this.recibo.descargar(id)) }
       : undefined;
     const deshacer = this.auth.tieneRolAdmin()

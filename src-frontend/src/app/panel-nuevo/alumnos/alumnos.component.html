@@ -7,7 +7,9 @@
       </div>
       <div class="alumnos__acciones">
         <!-- 8b-3l: el enlace que faltaba desde los listados nuevos a «Bajas y eliminaciones». -->
+        @if (!panelSede) {
         <a class="alumnos__enlace-bajas" routerLink="/alumnosEliminar">Bajas y eliminaciones</a>
+        }
         <div class="alumnos__menu-zona" (focusout)="alSalirDelMenu($event)">
           <button #botonInformes type="button" id="alumnos-informes" class="alumnos__boton-secundario"
             aria-haspopup="menu" [attr.aria-expanded]="menuAbierto" [attr.aria-controls]="menuAbierto ? 'alumnos-menu-informes' : null"
@@ -18,11 +20,13 @@
           @if (menuAbierto) {
           <div #menuInformes id="alumnos-menu-informes" class="alumnos__menu" role="menu" aria-labelledby="alumnos-informes"
             (keydown)="teclaMenu($event)">
+            @if (!panelSede) {
             <button type="button" class="alumnos__menu-opcion" role="menuitem" (click)="abrirInformes()">
               <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
               <span>Generar informe…</span>
             </button>
             <div class="alumnos__menu-separador" role="separator"></div>
+            }
             @for (o of opcionesHerramientas; track o.seccion) {
             <button type="button" class="alumnos__menu-opcion" role="menuitem" (click)="abrirHerramienta(o.seccion)">
               <i class="bi" [class.bi-calendar-check]="o.seccion === 'mensualidades'"
@@ -254,8 +258,10 @@
           <div class="alumnos__detalle-acciones">
             <a class="alumnos__accion" [routerLink]="['/alumnosEditar', f.id]">
               <i class="bi bi-pencil" aria-hidden="true"></i>Editar ficha</a>
+            @if (!panelSede) {
             <a class="alumnos__accion" routerLink="/userpage" [queryParams]="{ alumnoId: f.id }">
               <i class="bi bi-person-badge" aria-hidden="true"></i>Vista de familia</a>
+            }
             @if (f.activo) {
             <button type="button" class="alumnos__accion alumnos__accion--peligro" (click)="darDeBaja(f.id)">
               <i class="bi bi-person-dash" aria-hidden="true"></i>Dar de baja</button>

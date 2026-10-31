@@ -60,6 +60,8 @@ export class EditarGrupoComponent implements OnInit {
   profesores: ProfesorDeGrupo[] = [];
   profesoresCargando = true;
   profesoresError = '';
+  /** Capacidad ASIGNAR_PROFESORES: la gestión; el responsable no ve el bloque ni lo pide (decisión 372). */
+  puedeAsignarProfesores = false;
   gruposDeLaEscuela: GrupoResumen[] = [];
   gruposMarcados = new Set<number>();
   cambiandoRol = new Set<number>();
@@ -91,6 +93,11 @@ export class EditarGrupoComponent implements OnInit {
         this.pedirSede = !!p?.variasSedes && this.todasLasSedes.filter((s) => s.activa !== false).length > 1;
         this.sede.setValidators(this.pedirSede ? Validators.required : null);
         this.sede.updateValueAndValidity({ emitEvent: false });
+        const yaPodia = this.puedeAsignarProfesores;
+        this.puedeAsignarProfesores = !!p?.capacidades?.includes('ASIGNAR_PROFESORES');
+        if (this.grupoId && !yaPodia) {
+          this.cargarProfesores();
+        }
       },
       // Sin permisos no se pide: el servidor conserva la sede, como hoy.
       error: () => (this.pedirSede = false),
@@ -132,7 +139,7 @@ export class EditarGrupoComponent implements OnInit {
     if (!(evento.currentTarget as HTMLElement).contains(evento.relatedTarget as Node | null)) this.menuAbierto = null;
   }
   cargarGrupo(): void { this.recargaGrupo$.next(); }
-  cargarProfesores(): void { this.recargaProfesores$.next(); }
+  cargarProfesores(): void { if (this.puedeAsignarProfesores) this.recargaProfesores$.next(); }
   get resumen(): string {
     const resumen = this.gruposDeLaEscuela.find((g) => g.id === this.grupoId);
     const alumnos = resumen?.numAlumnos ?? this.grupo?.alumnos?.length;

@@ -8,6 +8,7 @@ import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { errorInterceptor } from '../../core/interceptors/error.interceptor';
 import { AvisosService } from '../avisos/avisos.service';
 import { TIPOS_TURNO, TurnoPanelComponent } from './turno-panel.component';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 
 const API = environment.apiUrl;
 const GRUPOS = [{ id: 1, nombre: 'Infantiles A', deporte: 'TAEKWONDO', numAlumnos: 99, turnos: [] },
@@ -248,5 +249,26 @@ describe('TurnoPanelComponent (3m-3)', () => {
     expect(panel.errorGuardar).toBe('No hemos podido actualizar el turno');
     expect(guardado).not.toHaveBeenCalled();
     http.expectNone(`${API}/grupos/2/turnos/7`);
+  });
+
+  describe('responsable de sede', () => {
+    beforeEach(() => spyOn(TestBed.inject(PermisosSesionService), 'tiene').and.callFake((c: string) => c === 'PANEL_SEDE'));
+
+    it('exige grupo al crear: sin «Sin grupo» y sin POST a /turnos/crear', () => {
+      const panel = iniciar();
+      expect(panel.exigeGrupo).toBeTrue();
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.querySelector('#turno-grupo option')?.textContent).toBe('Selecciona un grupo');
+      horario(panel);
+      panel.guardar();
+      fixture.detectChanges();
+      http.expectNone(`${API}/turnos/crear`);
+      expect(host.querySelector('#turno-grupo-error')?.textContent).toContain('El grupo es obligatorio');
+    });
+
+    it('al editar no cambia nada', () => {
+      const panel = iniciar(true);
+      expect(panel.exigeGrupo).toBeFalse();
+    });
   });
 });

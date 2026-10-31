@@ -3,10 +3,12 @@
     aria-labelledby="datos-personales-titulo">
     <header class="datos__cabecera">
       <h2 id="datos-personales-titulo" class="datos__titulo">Información personal</h2>
+      @if (!ficha.fichaDeOtraSede) {
       <button type="button" class="datos__boton-secundario" [attr.aria-pressed]="ficha.editingBasicInfo" (click)="ficha.toggleEditBasicInfo()">
         <i class="bi" [class.bi-pencil]="!ficha.editingBasicInfo" [class.bi-x-lg]="ficha.editingBasicInfo" aria-hidden="true"></i>
         <span>{{ ficha.editingBasicInfo ? 'Cancelar' : 'Editar' }}</span>
       </button>
+      }
     </header>
     <ng-container *ngTemplateOutlet="campos; context: { $implicit: personales }"></ng-container>
     <div class="datos__fila">
@@ -35,7 +37,7 @@
 <ng-template #campos let-lista>
   @for (campo of lista; track campo.id) {
   <div class="datos__fila" [class.datos__fila--error]="ficha.hasBasicInfoError(campo.id)">
-    @if (ficha.editingBasicInfo) {
+    @if (ficha.editingBasicInfo && !soloLectura(campo)) {
     <label class="datos__etiqueta" [for]="campo.id">
       {{ campo.etiqueta }}
       @if (campo.obligatorio) {<span class="datos__obligatorio" aria-hidden="true">*</span>}
@@ -62,6 +64,9 @@
     }
     } @else {
     <span class="datos__valor datos__valor--vacio">No establecido</span>
+    }
+    @if (ficha.editingBasicInfo) {
+    <p class="datos__nota">El email lo cambia gestión.</p>
     }
     }
   </div>

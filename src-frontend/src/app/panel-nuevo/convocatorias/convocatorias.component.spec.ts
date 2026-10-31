@@ -170,7 +170,7 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();
@@ -1201,5 +1201,17 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(fire).not.toHaveBeenCalled();
     expect(loading.show).not.toHaveBeenCalled();
     expect(pendientesDe(`${API}/convocatorias`).length).toBe(0);
+  });
+
+  it('responsable de sede: sin crear, eliminar ni actualizar grados (convocatoria global)', () => {
+    const permisos = TestBed.inject(PermisosSesionService) as unknown as { tiene: (c: string) => boolean };
+    permisos.tiene = (c: string) => c === 'PANEL_SEDE';
+    cargar();
+    abrir();
+    pintar();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.textContent).not.toContain('Crear convocatoria');
+    expect(raiz.querySelector('.convocatorias__papelera')).toBeNull();
+    expect(raiz.textContent).not.toContain('Actualizar grados de todos');
   });
 });

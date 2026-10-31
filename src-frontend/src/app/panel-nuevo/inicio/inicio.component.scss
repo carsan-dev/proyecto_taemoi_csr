@@ -612,6 +612,11 @@
   }
 }
 
+// Sin «Eventos» (responsable de sede): las tres cifras ocupan todo el ancho.
+.inicio__totales--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .inicio__totales li:first-child .inicio__total {
   padding-left: 0;
 }

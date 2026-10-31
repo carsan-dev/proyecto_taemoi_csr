@@ -12,6 +12,7 @@ import { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { SolicitudesService } from '../../servicios/endpoints/solicitudes.service';
@@ -89,6 +90,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   private readonly cobro = inject(CobroCargoService);
   private readonly recibo = inject(ReciboPagoService);
   private readonly auth = inject(AuthenticationService);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly solicitudes = inject(SolicitudesService);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -622,7 +624,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     this.actualizar(m, { fechaPago } as Partial<ProductoAlumnoDTO>, 'Fecha de pago actualizada', 'No se pudo actualizar la fecha de pago');
   }
 
-  /** «Descargar recibo» (gestión) de un cobro: `GET /productos-alumno/{id}/recibo`. */
+  /** «Descargar recibo» (gestión y responsable de sede) de un cobro: `GET /productos-alumno/{id}/recibo`. */
   async descargarRecibo(m: TesoreriaMovimiento): Promise<void> {
     if (!this.esGestion || !m.pagado || m.devuelto || this.sinId(m)) {
       return;
@@ -959,10 +961,14 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private veRecibos(): boolean {
+    return this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE');
+  }
+
   private resolverPermisos(): void {
     if (this.auth.rolesEstanCargados()) {
       this.isAdmin = this.auth.tieneRolAdmin();
-      this.esGestion = this.auth.tieneAccesoAdmin();
+      this.esGestion = this.veRecibos();
       return;
     }
     this.auth
@@ -971,7 +977,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.isAdmin = this.auth.tieneRolAdmin();
-          this.esGestion = this.auth.tieneAccesoAdmin();
+          this.esGestion = this.veRecibos();
         },
         error: () => {
           this.isAdmin = false;

@@ -156,7 +156,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { params: of({}) } },
         { provide: LoadingService, useValue: loading },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

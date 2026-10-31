@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
@@ -42,6 +43,7 @@ function horasValidas(form: AbstractControl): ValidationErrors | null {
 export class TurnoPanelComponent implements OnInit, OnDestroy {
   private readonly endpoints = inject(EndpointsService);
   private readonly avisos = inject(AvisosService);
+  private readonly permisos = inject(PermisosSesionService);
   @Input() turnoId: number | null = null;
   @Input() grupoInicialId: number | null = null;
   @Output() readonly cerrado = new EventEmitter<void>();
@@ -66,6 +68,8 @@ export class TurnoPanelComponent implements OnInit, OnDestroy {
   private readonly cambios = this.form.controls.grupoId.valueChanges.subscribe(() => this.validarTipo());
 
   get editando(): boolean { return this.turnoId !== null; }
+  /** El responsable de sede no crea turnos sin grupo: `POST /api/turnos/crear` es 403 (la sede sale del grupo). */
+  get exigeGrupo(): boolean { return !this.editando && this.permisos.tiene('PANEL_SEDE'); }
   get grupoActualAusente(): boolean { return !!this.turno?.grupoId && !this.grupos.some((g) => g.id === this.turno?.grupoId); }
   get duracion(): string {
     if (this.form.controls.horaInicio.invalid || this.form.controls.horaFin.invalid || this.form.hasError('horasInvalidas')) return '';
@@ -81,7 +85,10 @@ export class TurnoPanelComponent implements OnInit, OnDestroy {
   }
   private get grupoElegido(): number | null { return this.form.controls.grupoId.value ? Number(this.form.controls.grupoId.value) : null; }
 
-  ngOnInit(): void { this.cargar(); }
+  ngOnInit(): void {
+    if (this.exigeGrupo) this.form.controls.grupoId.setValidators(Validators.required);
+    this.cargar();
+  }
   cargar(): void {
     if (this.enviando) return;
     this.carga?.unsubscribe();
@@ -127,11 +134,12 @@ export class TurnoPanelComponent implements OnInit, OnDestroy {
       ? [Validators.required, (campo) => this.esTipo(campo.value) ? null : { tipoInvalido: true }] : []);
     control.updateValueAndValidity({ emitEvent: false });
   }
-  errorCampo(campo: 'diaSemana' | 'horaInicio' | 'horaFin' | 'tipoGrupo'): string {
+  errorCampo(campo: 'diaSemana' | 'horaInicio' | 'horaFin' | 'tipoGrupo' | 'grupoId'): string {
     const control = this.form.controls[campo];
     if (!control.touched || !control.invalid) return '';
     if (campo === 'diaSemana') return 'El día de la semana es obligatorio';
     if (campo === 'tipoGrupo') return 'El tipo de grupo es obligatorio';
+    if (campo === 'grupoId') return 'El grupo es obligatorio';
     return control.hasError('required') ? `La hora de ${campo === 'horaInicio' ? 'inicio' : 'fin'} es obligatoria` : 'Formato HH:mm requerido';
   }
   cerrar(): void { if (!this.enviando) this.cerrado.emit(); }

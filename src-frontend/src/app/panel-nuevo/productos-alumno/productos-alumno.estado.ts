@@ -5,6 +5,7 @@ import { catchError, finalize, map, tap } from 'rxjs/operators';
 import { euros } from '../../componentes/generales/pedir-al-propietario/pedir-al-propietario';
 import type { ProductoAlumnoDTO } from '../../interfaces/producto-alumno-dto';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
 import { SolicitudesService } from '../../servicios/endpoints/solicitudes.service';
 import { importeCargo } from '../../utils/importe-cargo';
@@ -178,6 +179,7 @@ function resultado<V>(peticion: Observable<V>): Observable<Resultado<V>> {
 export class ProductosAlumnoEstado {
   private readonly api = inject(ProductosAlumnoApiService);
   private readonly auth = inject(AuthenticationService);
+  private readonly permisos = inject(PermisosSesionService);
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly cobro = inject(CobroCargoService);
@@ -222,7 +224,7 @@ export class ProductosAlumnoEstado {
   /** Propietario (`ROLE_ADMIN`): el único que elimina cargos. Falla cerrado. */
   readonly esPropietario = signal(false);
   readonly rolesCargados = signal(false);
-  /** Propietario o administración (`ROLE_ADMIN` o `ROLE_MANAGER`): ve «Descargar recibo» (pieza 279). */
+  /** Propietario, administración o responsable de sede: ve «Descargar recibo» (pieza 279). */
   readonly esGestion = signal(false);
 
   // ------------------------------------------------------------------ cambios pendientes
@@ -1213,7 +1215,7 @@ export class ProductosAlumnoEstado {
   private resolverPropietario(): void {
     if (this.auth.rolesEstanCargados()) {
       this.esPropietario.set(this.auth.tieneRolAdmin());
-      this.esGestion.set(this.auth.tieneAccesoAdmin());
+      this.esGestion.set(this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE'));
       this.rolesCargados.set(true);
       return;
     }
@@ -1221,7 +1223,7 @@ export class ProductosAlumnoEstado {
       this.auth.obtenerRoles().subscribe({
         next: () => {
           this.esPropietario.set(this.auth.tieneRolAdmin());
-          this.esGestion.set(this.auth.tieneAccesoAdmin());
+          this.esGestion.set(this.auth.tieneAccesoAdmin() || this.permisos.tiene('PANEL_SEDE'));
           this.rolesCargados.set(true);
         },
         error: () => {

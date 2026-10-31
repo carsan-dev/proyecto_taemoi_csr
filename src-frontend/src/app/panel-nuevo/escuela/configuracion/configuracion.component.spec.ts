@@ -146,7 +146,7 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();

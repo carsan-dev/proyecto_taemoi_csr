@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { Subject, Subscription, forkJoin, of } from 'rxjs';
 import { catchError, map, takeUntil } from 'rxjs/operators';
 
@@ -97,6 +98,11 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   readonly catalogo = inject(CatalogoService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
+  /** El responsable de sede inscribe y anota, pero no crea, borra ni aplica una convocatoria: es de toda la escuela. */
+  get panelSede(): boolean {
+    return this.permisos.tiene('PANEL_SEDE');
+  }
+  private readonly permisos = inject(PermisosSesionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly temaActual = inject(AcentoEscuelaActual);

@@ -67,6 +67,11 @@ export class FichaDatosComponent {
     return campo.tipo === 'date' ? fecha(valor) : String(valor);
   }
 
+  /** En edición, el campo se lee y no se escribe: el email con el responsable de sede (decisión 96). */
+  soloLectura(campo: Campo): boolean {
+    return campo.id === 'email' && this.ficha.emailSoloLectura;
+  }
+
   enlace(campo: Campo): string | null {
     const valor = this.lectura(campo);
     if (!valor) {

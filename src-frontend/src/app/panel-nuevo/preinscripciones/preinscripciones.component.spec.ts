@@ -204,7 +204,7 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
         provideRouter([]),
         proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: AuthenticationService, useValue: { tieneRolAdmin: () => esAdmin } },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     }).compileComponents();
@@ -977,5 +977,16 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
     expect(raiz.scrollWidth).toBeLessThanOrEqual(raiz.clientWidth);
     expect(f.scrollWidth).toBeLessThanOrEqual(f.clientWidth);
     fixture.nativeElement.remove();
+  });
+
+  it('responsable de sede: sin pestaña ni carga de Plantillas PDF, ni con ?tab=plantillas', () => {
+    const permisos = TestBed.inject(PermisosSesionService) as unknown as { tiene: (c: string) => boolean };
+    permisos.tiene = (c: string) => c === 'PANEL_SEDE';
+    cargar();
+    pintar();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[role="tablist"]')).toBeNull();
+    expect(raiz.textContent).not.toContain('Plantillas PDF');
+    expect(fixture.componentInstance.pestana).toBe('solicitudes');
   });
 });

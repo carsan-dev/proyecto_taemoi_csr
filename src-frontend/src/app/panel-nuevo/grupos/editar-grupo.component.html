@@ -12,7 +12,7 @@
       </header>
       <section class="editar-grupo__bloque" aria-labelledby="datos-titulo">
         <h2 id="datos-titulo">Datos del grupo</h2>
-        <p class="editar-grupo__nota">Guardar el nombre no afecta a los profesores.</p>
+        @if (puedeAsignarProfesores) { <p class="editar-grupo__nota">Guardar el nombre no afecta a los profesores.</p> }
         <form (submit)="$event.preventDefault(); guardar()">
           <label for="grupo-nombre">Nombre del grupo <span>(obligatorio)</span></label>
           <input id="grupo-nombre" type="text" [formControl]="nombre" maxlength="50" required
@@ -37,6 +37,7 @@
         </form>
         @if (errorGuardar) { <p class="editar-grupo__error" id="guardar-error" role="alert">{{ errorGuardar }}</p> }
       </section>
+      @if (puedeAsignarProfesores) {
       <section class="editar-grupo__bloque" aria-labelledby="profesores-titulo">
         <h2 id="profesores-titulo">Profesores</h2>
         <p class="editar-grupo__nota">Los cambios de profesores se aplican al momento.</p>
@@ -85,6 +86,7 @@
           </form>
         </div>
       </section>
+      }
     }
   </main>
 </div>
