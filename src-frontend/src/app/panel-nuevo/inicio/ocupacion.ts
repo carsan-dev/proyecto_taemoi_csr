@@ -4,9 +4,9 @@ import { numero, plural } from '../formato/formato-es';
  * Ocupación de la semana y clases de hoy del Inicio nuevo (8b-2, decisiones 245 y 254). Puro: sin Angular ni HTTP.
  *
  * No hay inscritos por turno: cada turno de un grupo cuenta los alumnos del grupo (`numAlumnos` de
- * `GET /api/grupos/resumen`), así que un grupo con dos días cuenta sus alumnos en los dos. Las plazas son el límite
- * común por turno (`GET /api/turnos/limite`) por el número de turnos de la celda; cuando cada sede tenga su aforo (E9),
- * será la ocupación real.
+ * `GET /api/grupos/resumen`), así que un grupo con dos días cuenta sus alumnos en los dos. Las plazas de cada celda son
+ * la suma de los aforos de sus turnos (pieza 9-7): el `aforoEfectivo` de `GET /api/turnos/resumen`, que es el de su sede
+ * o, si no lo tiene, el límite común; sin ese dato, el límite común (`GET /api/turnos/limite`).
  */
 
 export interface TurnoOcupacion {
@@ -110,6 +110,17 @@ function minutos(hora: string): number {
   return h * 60 + m;
 }
 
+/** Aforo efectivo por id de turno, a partir de `GET /api/turnos/resumen`. */
+export function aforosPorTurno(turnos: readonly { id: number; aforoEfectivo?: number }[] | null | undefined): Map<number, number> {
+  const aforos = new Map<number, number>();
+  for (const turno of turnos ?? []) {
+    if (Number.isFinite(turno.aforoEfectivo) && turno.aforoEfectivo! > 0) {
+      aforos.set(turno.id, turno.aforoEfectivo!);
+    }
+  }
+  return aforos;
+}
+
 /** Paso de la rampa por la fracción exacta de inscritos sobre plazas. */
 export function pasoDe(inscritos: number, plazas: number): PasoOcupacion {
   const fraccion = plazas > 0 ? inscritos / plazas : 0;
@@ -122,10 +133,14 @@ export function pasoDe(inscritos: number, plazas: number): PasoOcupacion {
   return fraccion >= 0.25 ? 2 : 1;
 }
 
-export function calcularOcupacion(grupos: readonly GrupoOcupacion[], limite: number): Ocupacion {
-  const plazasPorTurno = Number.isFinite(limite) && limite > 0 ? limite : 0;
-  // clave «dia|franja» → turnos e inscritos.
-  const acumulado = new Map<string, { turnos: number; inscritos: number }>();
+export function calcularOcupacion(
+  grupos: readonly GrupoOcupacion[],
+  limite: number,
+  aforos: ReadonlyMap<number, number> = new Map()
+): Ocupacion {
+  const limiteComun = Number.isFinite(limite) && limite > 0 ? limite : 0;
+  // clave «dia|franja» → turnos, inscritos y plazas.
+  const acumulado = new Map<string, { turnos: number; inscritos: number; plazas: number }>();
   const franjas = new Set<string>();
   const diasConClase = new Set<string>();
   for (const grupo of grupos ?? []) {
@@ -138,8 +153,9 @@ export function calcularOcupacion(grupos: readonly GrupoOcupacion[], limite: num
       franjas.add(franja);
       diasConClase.add(dia);
       const clave = `${dia}|${franja}`;
-      const a = acumulado.get(clave) ?? { turnos: 0, inscritos: 0 };
+      const a = acumulado.get(clave) ?? { turnos: 0, inscritos: 0, plazas: 0 };
       a.turnos += 1;
+      a.plazas += aforos.get(turno.id) ?? limiteComun;
       a.inscritos += Math.max(0, grupo.numAlumnos ?? 0);
       acumulado.set(clave, a);
     }
@@ -166,7 +182,7 @@ export function calcularOcupacion(grupos: readonly GrupoOcupacion[], limite: num
           descripcion: `${dia.largo}, ${franja}: sin clase`,
         } satisfies CeldaOcupacion;
       }
-      const plazasCelda = a.turnos * plazasPorTurno;
+      const plazasCelda = a.plazas;
       inscritos += a.inscritos;
       plazas += plazasCelda;
       const porcentaje = plazasCelda > 0 ? Math.round((a.inscritos / plazasCelda) * 100) : 0;
@@ -189,9 +205,14 @@ export function calcularOcupacion(grupos: readonly GrupoOcupacion[], limite: num
 }
 
 /** Las clases del día de `ahora`, por hora de inicio; la siguiente es la primera que aún no ha empezado. */
-export function clasesDeHoy(grupos: readonly GrupoOcupacion[], limite: number, ahora: Date): ClaseDeHoy[] {
+export function clasesDeHoy(
+  grupos: readonly GrupoOcupacion[],
+  limite: number,
+  ahora: Date,
+  aforos: ReadonlyMap<number, number> = new Map()
+): ClaseDeHoy[] {
   const hoy = claveDia(ahora);
-  const plazas = Number.isFinite(limite) && limite > 0 ? limite : 0;
+  const limiteComun = Number.isFinite(limite) && limite > 0 ? limite : 0;
   const clases: ClaseDeHoy[] = [];
   for (const grupo of grupos ?? []) {
     for (const turno of grupo.turnos ?? []) {
@@ -207,7 +228,7 @@ export function clasesDeHoy(grupos: readonly GrupoOcupacion[], limite: number, a
         horaInicio: inicio,
         horaFin: normalizarHora(turno.horaFin),
         inscritos: Math.max(0, grupo.numAlumnos ?? 0),
-        plazas,
+        plazas: aforos.get(turno.id) ?? limiteComun,
         siguiente: false,
       });
     }

@@ -19,6 +19,20 @@ describe('HorariosComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('9-7: usa el aforo efectivo del turno y, si no llega, el límite común', () => {
+    component.limiteTurno = 36;
+    expect(component.aforoDe({ aforoEfectivo: 10 })).toBe(10);
+    expect(component.aforoDe({})).toBe(36);
+  });
+
+  it('9-7: «pocas plazas» se calcula sobre el aforo del turno', () => {
+    component.limiteTurno = 36;
+    expect(component.quedanPocasPlazas({ ocupacionEfectiva: 8, aforoEfectivo: 10 })).toBeTrue();
+    expect(component.quedanPocasPlazas({ ocupacionEfectiva: 8 })).toBeFalse();
+    expect(component.quedanPocasPlazas({ ocupacionEfectiva: 29 })).toBeTrue();
+    expect(component.quedanPocasPlazas({ ocupacionEfectiva: 10, aforoEfectivo: 10 })).toBeFalse();
+  });
+
   it('navega con el deporte y únicamente el ID del turno pulsado', () => {
     component.navegarAPreinscripcion({id:17,grupoId:4,tipoGrupo:'Pilates'});
 

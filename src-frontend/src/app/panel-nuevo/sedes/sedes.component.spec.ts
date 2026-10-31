@@ -218,7 +218,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
 
   // ------------------------------------------------------------------ crear
 
-  it('«Nueva sede»: siete campos con las etiquetas exactas, sin aforo, y sin sección Estado', () => {
+  it('«Nueva sede»: ocho campos con las etiquetas exactas y sin sección Estado', () => {
     cargar([sede({ id: 1 }), sede({ id: 2 })]);
     abrirNueva();
     const etiquetas = Array.from(panel()!.querySelectorAll('label.sedes__etiqueta')).map((l) => texto(l));
@@ -230,6 +230,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
       'Teléfono',
       'Email',
       'Código del club en la federación',
+      'Aforo por turno (opcional)',
     ]);
     expect(campo('nombre').getAttribute('maxlength')).toBe('100');
     expect(campo('direccion').getAttribute('maxlength')).toBe('255');
@@ -237,7 +238,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     expect(campo('telefono').getAttribute('maxlength')).toBe('20');
     expect(campo('email').getAttribute('maxlength')).toBe('180');
     expect(campo('codigoClubFederacion').getAttribute('maxlength')).toBe('40');
-    expect(panel()!.textContent).not.toMatch(/aforo/i);
+    expect(campo('aforoTurno').getAttribute('maxlength')).toBe('6');
     expect(panel()!.querySelector('.sedes__estado-bloque')).toBeNull();
     expect(texto(boton(panel()!, 'Cancelar'))).toBe('Cancelar');
     expect(texto(panel()!.querySelector('.sedes__pie .sedes__boton-primario'))).toBe('Crear sede');
@@ -436,6 +437,73 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Cambios guardados.' }]);
     expect(reiniciar).toHaveBeenCalledTimes(1);
     expect(panel()).toBeNull();
+    listados().forEach((r) => r.flush(UNA_ACTIVA));
+  });
+
+  it('9-7: el aforo se ve con su ayuda, y vaciarlo envía null', async () => {
+    cargar(UNA_ACTIVA);
+    abrirEditar(1);
+    expect(texto(panel()!.querySelector('label[for="sedes-campo-aforoTurno"]'))).toBe('Aforo por turno (opcional)');
+    expect(campo('aforoTurno').value).toBe('25');
+    expect(campo('aforoTurno').getAttribute('inputmode')).toBe('numeric');
+    expect(texto(panel()!.querySelector('#sedes-ayuda-aforoTurno'))).toBe('Si lo dejas vacío, se usa el límite común de la escuela.');
+    expect(campo('aforoTurno').getAttribute('aria-describedby')).toBe('sedes-ayuda-aforoTurno');
+    expect(campo('nombre').getAttribute('aria-describedby')).toBeNull();
+    escribir('aforoTurno', '');
+    boton(panel()!, 'Guardar cambios').click();
+    await esperar();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+    expect((put.request.body as { aforoTurno: number | null }).aforoTurno).toBeNull();
+    put.flush({ ...UNA_ACTIVA[0], aforoTurno: null, turnosSobreAforo: false });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Cambios guardados.' }]);
+    listados().forEach((r) => r.flush(UNA_ACTIVA));
+  });
+
+  it('9-7: un aforo no válido no se envía: error en el campo y foco', async () => {
+    cargar(UNA_ACTIVA);
+    abrirEditar(1);
+    escribir('aforoTurno', '0');
+    boton(panel()!, 'Guardar cambios').click();
+    await esperar();
+    http.expectNone((r) => r.method === 'PUT');
+    expect(texto(panel()!.querySelector('#sedes-error-aforoTurno'))).toBe('Escribe un número entero mayor que 0 o déjalo vacío.');
+    expect(campo('aforoTurno').getAttribute('aria-invalid')).toBe('true');
+    expect(campo('aforoTurno').getAttribute('aria-describedby')).toBe('sedes-ayuda-aforoTurno sedes-error-aforoTurno');
+    expect(document.activeElement).toBe(campo('aforoTurno'));
+  });
+
+  it('9-7: alta con aforo: lo envía como número', async () => {
+    cargar(UNA_ACTIVA);
+    boton(el(), 'Nueva sede').click();
+    pintar();
+    escribir('nombre', 'Herrera');
+    escribir('aforoTurno', '30');
+    boton(panel()!, 'Crear segunda sede').click();
+    await esperar();
+    const post = http.expectOne((r) => r.method === 'POST' && r.url === API);
+    expect((post.request.body as { aforoTurno: number | null }).aforoTurno).toBe(30);
+    post.flush(sede({ id: 9, nombre: 'Herrera', aforoTurno: 30 }));
+    await esperar();
+    listados().forEach((r) => r.flush(UNA_ACTIVA));
+  });
+
+  it('9-7: un aforo por debajo de la ocupación se guarda y avisa, sin quedarse en la lista', async () => {
+    cargar(UNA_ACTIVA);
+    abrirEditar(1);
+    escribir('aforoTurno', '5');
+    boton(panel()!, 'Guardar cambios').click();
+    await esperar();
+    http
+      .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`)
+      .flush({ ...UNA_ACTIVA[0], aforoTurno: 5, turnosSobreAforo: true });
+    await esperar();
+    expect(avisos()).toEqual([
+      { tipo: 'exito', texto: 'Cambios guardados.' },
+      { tipo: 'info', texto: 'Hay turnos con más inscritos que este aforo: no se da de baja a nadie, pero no entrarán nuevas plazas.' },
+    ]);
+    expect(panel()).toBeNull();
+    expect(Object.keys(fixture.componentInstance.sedes[0])).not.toContain('turnosSobreAforo');
     listados().forEach((r) => r.flush(UNA_ACTIVA));
   });
 

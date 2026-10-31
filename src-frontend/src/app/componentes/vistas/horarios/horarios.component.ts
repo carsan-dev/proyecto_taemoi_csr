@@ -274,10 +274,16 @@ export class HorariosComponent implements OnInit, OnDestroy {
     return turno.ocupacionEfectiva ?? 0;
   }
 
+  /** El aforo del turno (el de su sede o el límite común); si no llega, el límite común. */
+  aforoDe(turno: any): number {
+    return turno.aforoEfectivo ?? this.limiteTurno;
+  }
+
   quedanPocasPlazas(turno: any): boolean {
     const numAlumnos = this.obtenerNumeroAlumnos(turno);
-    const UMBRAL_POCAS_PLAZAS = Math.ceil(this.limiteTurno * 0.8);
-    return numAlumnos >= UMBRAL_POCAS_PLAZAS && numAlumnos < this.limiteTurno;
+    const aforo = this.aforoDe(turno);
+    const UMBRAL_POCAS_PLAZAS = Math.ceil(aforo * 0.8);
+    return numAlumnos >= UMBRAL_POCAS_PLAZAS && numAlumnos < aforo;
   }
 
   estaLleno(turno: any): boolean {

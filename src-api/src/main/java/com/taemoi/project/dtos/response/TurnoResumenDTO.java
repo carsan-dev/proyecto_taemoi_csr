@@ -9,7 +9,10 @@ package com.taemoi.project.dtos.response;
  *
  * <p>{@code grupoNombre} vale {@code "Sin grupo"} si el turno no tiene grupo, igual que en
  * {@link com.taemoi.project.dtos.TurnoDTO}.
+ *
+ * <p>{@code aforoEfectivo} (pieza 9-7, decisión 245): el aforo de la sede del grupo o, si no lo tiene o el turno no tiene
+ * sede, el límite común de la escuela.
  */
 public record TurnoResumenDTO(Long id, String diaSemana, String horaInicio, String horaFin, Long grupoId,
-		String grupoNombre, String tipoGrupo) {
+		String grupoNombre, String tipoGrupo, int aforoEfectivo) {
 }

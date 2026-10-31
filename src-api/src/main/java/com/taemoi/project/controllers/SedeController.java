@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.taemoi.project.dtos.request.SedeActivaRequest;
 import com.taemoi.project.dtos.request.SedeRequest;
 import com.taemoi.project.dtos.response.SedeDTO;
+import com.taemoi.project.dtos.response.SedeEditadaDTO;
 import com.taemoi.project.services.GestionSedesService;
+import com.taemoi.project.services.PreinscripcionService;
 
 /**
  * Sedes de la escuela activa (pieza E8-2; D8-1, D8-2): propietario y gestor las listan (también las inactivas), las
@@ -32,9 +34,11 @@ import com.taemoi.project.services.GestionSedesService;
 public class SedeController {
 
 	private final GestionSedesService sedes;
+	private final PreinscripcionService preinscripciones;
 
-	public SedeController(GestionSedesService sedes) {
+	public SedeController(GestionSedesService sedes, PreinscripcionService preinscripciones) {
 		this.sedes = sedes;
+		this.preinscripciones = preinscripciones;
 	}
 
 	/** Todas las sedes de la escuela, por id. */
@@ -57,11 +61,19 @@ public class SedeController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(sedes.crear(solicitud));
 	}
 
-	/** Reemplaza los datos editables (no {@code activa}). */
+	/**
+	 * Reemplaza los datos editables (no {@code activa}). Si cambia el aforo, promociona la lista de espera, como al
+	 * cambiar el límite común ({@code AdminController#actualizarLimiteTurno}), y la respuesta dice si queda por debajo de
+	 * la ocupación de algún turno: se guarda igual y nadie causa baja.
+	 */
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
-	public ResponseEntity<SedeDTO> editar(@PathVariable Long id, @RequestBody SedeRequest solicitud) {
-		return ResponseEntity.ok(sedes.editar(id, solicitud));
+	public ResponseEntity<SedeEditadaDTO> editar(@PathVariable Long id, @RequestBody SedeRequest solicitud) {
+		GestionSedesService.Edicion edicion = sedes.editar(id, solicitud);
+		if (edicion.aforoCambiado()) {
+			preinscripciones.promocionarTodas();
+		}
+		return ResponseEntity.ok(new SedeEditadaDTO(edicion.sede(), edicion.turnosSobreAforo()));
 	}
 
 	/** {@code {"activa": true | false}}; la última sede activa no se desactiva (409). */

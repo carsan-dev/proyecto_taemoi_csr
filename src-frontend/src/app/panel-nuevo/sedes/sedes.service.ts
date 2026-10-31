@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { CuerpoSede, Sede } from './sedes-vista';
+import { CuerpoSede, Sede, SedeEditada } from './sedes-vista';
 
 /**
  * API de sedes (`/api/sedes`, propietario y gestión; pieza E8-2). Los errores `{mensaje}` los presenta la pantalla
@@ -29,8 +29,8 @@ export class SedesService {
   }
 
   /** Reemplaza todos los datos editables: el cuerpo lleva también el `aforoTurno`. */
-  editar(id: number, cuerpo: CuerpoSede): Observable<Sede> {
-    return this.http.put<Sede>(`${this.url}/${id}`, cuerpo, this.opciones());
+  editar(id: number, cuerpo: CuerpoSede): Observable<SedeEditada> {
+    return this.http.put<SedeEditada>(`${this.url}/${id}`, cuerpo, this.opciones());
   }
 
   cambiarActiva(id: number, activa: boolean): Observable<Sede> {

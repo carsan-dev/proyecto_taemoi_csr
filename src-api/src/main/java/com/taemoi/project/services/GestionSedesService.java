@@ -46,7 +46,10 @@ public class GestionSedesService {
 	static final String ACTIVA_OBLIGATORIA = "Indica si la sede queda activa.";
 	static final String SIN_DATOS = "Indica los datos de la sede.";
 	static final String EMAIL_NO_VALIDO = "El email de la sede no es válido.";
-	static final String AFORO_NO_VALIDO = "El aforo por turno debe ser 1 o más (o vacío: el límite de la escuela).";
+	static final String AFORO_NO_VALIDO = "El aforo por turno debe estar entre 1 y 999999 (o vacío: el límite de la escuela).";
+
+	/** Tope del aforo por turno: seis cifras, como el panel. */
+	static final int AFORO_MAXIMO = 999_999;
 
 	/** Clave única de V31 (organizacion_id, nombre). */
 	private static final String CLAVE_UNICA_NOMBRE = "uk_sede_organizacion_nombre";
@@ -56,10 +59,24 @@ public class GestionSedesService {
 
 	private final SedeRepository sedes;
 	private final RegistroAccionesSedes registro;
+	private final AforoPreinscripcionService aforo;
+	private final TemporadaService temporadas;
 
-	public GestionSedesService(SedeRepository sedes, RegistroAccionesSedes registro) {
+	public GestionSedesService(SedeRepository sedes, RegistroAccionesSedes registro,
+			AforoPreinscripcionService aforo, TemporadaService temporadas) {
 		this.sedes = sedes;
 		this.registro = registro;
+		this.aforo = aforo;
+		this.temporadas = temporadas;
+	}
+
+	/**
+	 * Resultado de una edición.
+	 *
+	 * @param aforoCambiado    el aforo de la sede es otro: pueden haberse abierto plazas
+	 * @param turnosSobreAforo el aforo recién cambiado queda por debajo de la ocupación de algún turno de la sede
+	 */
+	public record Edicion(SedeDTO sede, boolean aforoCambiado, boolean turnosSobreAforo) {
 	}
 
 	/** Todas las sedes de la escuela activa, también las inactivas, por id. */
@@ -102,20 +119,24 @@ public class GestionSedesService {
 	 * @throws IllegalStateException    (409) el nombre ya lo tiene otra sede de la escuela
 	 */
 	@Transactional
-	public SedeDTO editar(Long id, SedeRequest solicitud) {
+	public Edicion editar(Long id, SedeRequest solicitud) {
 		Sede sede = exigir(id);
 		Datos datos = Datos.de(solicitud);
 		if (sedes.existsByNombreAndIdNot(datos.nombre(), sede.getId())) {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
 		}
 		boolean sinCambios = datos.igualQue(sede);
+		boolean aforoCambiado = !Objects.equals(datos.aforoTurno(), sede.getAforoTurno());
 		if (!sinCambios) {
 			datos.aplicar(sede);
 			sede = guardar(sede);
 		}
 		registro.registrar(RegistroAccionesSedes.Accion.SEDE_EDITADA, RUTA + "/" + sede.getId(),
 				valores(sede.getId(), sinCambios));
-		return SedeDTO.de(sede);
+		int aforoEfectivo = datos.aforoTurno() != null ? datos.aforoTurno() : aforo.limiteComun();
+		boolean turnosSobreAforo = aforoCambiado
+				&& aforo.hayTurnosSobreAforo(sede.getId(), aforoEfectivo, temporadas.actual());
+		return new Edicion(SedeDTO.de(sede), aforoCambiado, turnosSobreAforo);
 	}
 
 	/**
@@ -221,7 +242,7 @@ public class GestionSedesService {
 			}
 			String club = maximo(recortar(solicitud.codigoClubFederacion()), 40, "El código del club en la federación");
 			Integer aforo = solicitud.aforoTurno();
-			if (aforo != null && aforo < 1) {
+			if (aforo != null && (aforo < 1 || aforo > AFORO_MAXIMO)) {
 				throw new IllegalArgumentException(AFORO_NO_VALIDO);
 			}
 			return new Datos(nombre, direccion, localidad, codigoPostal, telefono, email, club, aforo);

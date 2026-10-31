@@ -1,4 +1,4 @@
-import { GrupoOcupacion, calcularOcupacion, clasesDeHoy, claveDia, pasoDe } from './ocupacion';
+import { GrupoOcupacion, aforosPorTurno, calcularOcupacion, clasesDeHoy, claveDia, pasoDe } from './ocupacion';
 
 function grupo(id: number, numAlumnos: number, turnos: [string, string, string][], deporte = 'TAEKWONDO'): GrupoOcupacion {
   return {
@@ -52,6 +52,33 @@ describe('ocupacion (8b-2, decisión 245)', () => {
     expect(lunes19.inscritos).toBe(7);
     expect(lunes19.texto).toBe('7/72');
     expect(calcularOcupacion(grupos, 20).filas[3].celdas[0].plazas).toBe(40);
+  });
+
+  it('9-7: cada turno cuenta el aforo de su sede y, sin él, el límite común', () => {
+    // Grupo 2 (turno 20) con aforo 10; grupo 3 (turno 30) sin dato: el límite común.
+    const o = calcularOcupacion(grupos, 36, new Map([[20, 10]]));
+    const lunes19 = o.filas[3].celdas[0];
+    expect(lunes19.plazas).toBe(46);
+    expect(lunes19.texto).toBe('7/46');
+    expect(lunes19.descripcion).toContain('7 inscritos de 46 plazas (15 %)');
+    expect(o.plazas).toBe(calcularOcupacion(grupos, 36).plazas - 26);
+  });
+
+  it('9-7: sin aforos, igual que con el límite común', () => {
+    expect(calcularOcupacion(grupos, 36, new Map())).toEqual(calcularOcupacion(grupos, 36));
+  });
+
+  it('9-7: las clases de hoy usan el aforo de su turno', () => {
+    const lunes = new Date(2026, 9, 26, 10, 0);
+    const clases = clasesDeHoy(grupos, 36, lunes, new Map([[20, 10]]));
+    expect(clases.find((c) => c.turnoId === 20)?.plazas).toBe(10);
+    expect(clases.find((c) => c.turnoId === 30)?.plazas).toBe(36);
+  });
+
+  it('9-7: aforosPorTurno lee el aforo del resumen y descarta lo que no es un número positivo', () => {
+    const aforos = aforosPorTurno([{ id: 1, aforoEfectivo: 12 }, { id: 2 }, { id: 3, aforoEfectivo: 0 }]);
+    expect([...aforos]).toEqual([[1, 12]]);
+    expect(aforosPorTurno(null).size).toBe(0);
   });
 
   it('un grupo con dos días cuenta sus alumnos en ambos', () => {

@@ -1,5 +1,6 @@
 [
   {
+    "aforoEfectivo" : 36,
     "diaSemana" : "Lunes",
     "grupoId" : "grupo:G1",
     "grupoNombre" : "DORADOP4 Taekwondo Sede1",
@@ -9,6 +10,7 @@
     "tipoGrupo" : "Infantil"
   },
   {
+    "aforoEfectivo" : 36,
     "diaSemana" : "Miércoles",
     "grupoId" : "grupo:G1",
     "grupoNombre" : "DORADOP4 Taekwondo Sede1",
@@ -18,6 +20,7 @@
     "tipoGrupo" : "Infantil"
   },
   {
+    "aforoEfectivo" : 36,
     "diaSemana" : "Jueves",
     "grupoId" : "grupo:G3",
     "grupoNombre" : "DORADOP4 Kickboxing Sede1",
@@ -27,6 +30,7 @@
     "tipoGrupo" : "Kickboxing"
   },
   {
+    "aforoEfectivo" : 36,
     "diaSemana" : "Viernes",
     "grupoId" : "grupo:G3",
     "grupoNombre" : "DORADOP4 Kickboxing Sede1",

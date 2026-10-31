@@ -57,8 +57,11 @@
       <div class="sedes__campo">
         <label class="sedes__etiqueta" [for]="'sedes-campo-' + c.clave">{{ c.etiqueta }}</label>
         <input class="sedes__control" [id]="'sedes-campo-' + c.clave" [type]="c.type" [attr.maxlength]="c.maximo" [attr.autocomplete]="c.autocomplete"
-          [value]="p.campos[c.clave]" [disabled]="p.enviando" [attr.aria-invalid]="p.errores[c.clave] ? 'true' : null"
-          [attr.aria-describedby]="p.errores[c.clave] ? 'sedes-error-' + c.clave : null" (input)="escribir(c.clave, $event)" />
+          [attr.inputmode]="c.modoEntrada ?? null" [value]="p.campos[c.clave]" [disabled]="p.enviando" [attr.aria-invalid]="p.errores[c.clave] ? 'true' : null"
+          [attr.aria-describedby]="descripcionCampo(c, p)" (input)="escribir(c.clave, $event)" />
+        @if (c.ayuda) {
+        <p class="sedes__ayuda" [id]="'sedes-ayuda-' + c.clave">{{ c.ayuda }}</p>
+        }
         @if (p.errores[c.clave]; as mensaje) {
         <p class="sedes__error" [id]="'sedes-error-' + c.clave">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

@@ -348,8 +348,8 @@ del alumno al pie del carnet; debajo, pestañas Deportes, Pagos, Datos y contact
 Mapa de calor día × franja: columnas de lunes a sábado, filas por hora de inicio. Cada celda muestra
 «inscritos/plazas» en texto (el color nunca va solo), con los cuatro pasos de `serie-ocupacion` (menos del 25 %,
 25-49 %, 50-74 %, 75 % o más) y una trama a 135° para «sin clase». La columna de hoy lleva «Hoy» en ocre. Leyenda
-debajo, título con el total («N plazas ocupadas de M») y la nota «Inscritos frente al límite común de 36 por
-turno», que desaparece cuando exista el aforo por sede (E9). Cada celda lleva su descripción completa al pasar
+debajo, título con el total («N plazas ocupadas de M») y la nota «Inscritos de cada franja frente al aforo de su sede
+o, si no lo tiene, al límite común de la escuela». Cada celda lleva su descripción completa al pasar
 el ratón; el mapa no se lee en voz alta ni recibe el foco: los lectores de pantalla leen la tabla equivalente, con la
 misma descripción por celda (8b-2).
 

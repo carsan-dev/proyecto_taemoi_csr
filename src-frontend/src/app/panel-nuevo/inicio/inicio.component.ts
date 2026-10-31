@@ -17,7 +17,7 @@ import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { DIAS_VENTANA_ERRORES, ventanaUltimosDias } from '../../utils/ventana-fechas.util';
 import { eur, fecha, fechaLarga, mes, numero, plural } from '../formato/formato-es';
-import { ClaseDeHoy, Ocupacion, calcularOcupacion, clasesDeHoy } from './ocupacion';
+import { ClaseDeHoy, Ocupacion, aforosPorTurno, calcularOcupacion, clasesDeHoy } from './ocupacion';
 import { CargoVencido, PendienteVencido, PendienteVencidoService, TipoPendiente } from './pendiente-vencido.service';
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -380,10 +380,11 @@ export class InicioComponent implements OnInit, OnDestroy {
       this.limiteValido = d.limite !== null && Number.isFinite(Number(d.limite)) && Number(d.limite) > 0;
       this.limite = this.limiteValido ? Number(d.limite) : 0;
       this.erroresPlataforma = d.errores;
+      const aforos = aforosPorTurno(d.turnos);
       this.ocupacion = this.limiteValido
-        ? calcularOcupacion(grupos, this.limite)
+        ? calcularOcupacion(grupos, this.limite, aforos)
         : { dias: [], franjas: [], filas: [], inscritos: 0, plazas: 0 };
-      this.clases = clasesDeHoy(grupos, this.limite, this.ahora);
+      this.clases = clasesDeHoy(grupos, this.limite, this.ahora, aforos);
       this.leerDistribucion(d.distribucion ?? {});
       this.estado = 'listo';
       this.calcularAvisos();

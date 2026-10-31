@@ -170,6 +170,8 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     limite?: number | 'error';
     /** Si es true, no responde la petición de eventos (llegan por su cuenta, más tarde). */
     sinEventos?: boolean;
+    /** Respuesta de `GET /turnos/resumen`. */
+    turnos?: unknown[];
   }
 
   function responder(dto: PendienteVencido = pendiente(), opciones: Respuestas = {}): void {
@@ -180,7 +182,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
       r.flush({ totalElements: opciones.activos ?? 50 })
     );
     http.match(`${API}/grupos/resumen`).forEach((r) => r.flush(opciones.grupos ?? GRUPOS));
-    http.match(`${API}/turnos/resumen`).forEach((r) => r.flush([{ id: 11 }, { id: 12 }, { id: 21 }]));
+    http.match(`${API}/turnos/resumen`).forEach((r) => r.flush(opciones.turnos ?? [{ id: 11 }, { id: 12 }, { id: 21 }]));
     http.match(`${API}/turnos/limite`).forEach((r) =>
       opciones.limite === 'error'
         ? r.flush({ mensaje: 'fallo' }, { status: 500, statusText: 'Error' })
@@ -364,8 +366,24 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(celdas17[1]).toBe('Sin clase');
     expect(celdas17[2]).toBe('6 inscritos de 36 plazas (17 %)');
     expect(texto('.inicio__ocupacion-total')).toBe('13 plazas ocupadas de 108');
-    expect(texto('.inicio__ocupacion-nota')).toContain('límite común de 36 por turno');
+    expect(texto('.inicio__ocupacion-nota')).toContain('frente al aforo de su sede o, si no lo tiene, al límite común de la escuela');
     expect(texto('.inicio__ocupacion-nota')).toContain('cuenta sus alumnos en cada día');
+    expect(texto('.inicio__ocupacion-nota')).not.toContain('E9');
+  });
+
+  it('9-7: cada franja y cada clase usan el aforo efectivo de sus turnos', () => {
+    responder(pendiente(), {
+      turnos: [
+        { id: 11, aforoEfectivo: 12 },
+        { id: 12, aforoEfectivo: 12 },
+        { id: 21, aforoEfectivo: 8 },
+      ],
+    });
+    expect(texto('.inicio__ocupacion-total')).toBe('13 plazas ocupadas de 32');
+    const filas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('table.inicio__ocupacion-tabla tbody tr'));
+    expect(filas[0].querySelectorAll('td')[0].textContent?.trim()).toBe('6 inscritos de 12 plazas (50 %)');
+    expect(texto('.inicio__hoy')).toContain('6 de 12 plazas ocupadas');
+    expect(texto('.inicio__hoy')).toContain('1 de 8 plazas ocupadas');
   });
 
   it('plurales: clases de hoy, cargos y alumnos', () => {
@@ -552,7 +570,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     expect(texto('.inicio__clase')).toContain('1 de 1 plaza ocupada');
     expect(texto('.inicio__clase')).not.toContain('plazas');
     expect(texto('.inicio__cifras')).toContain('Alumnos 2 1 activo, 1 inactivo');
-    expect(texto('.inicio__ocupacion-nota')).toContain('límite común de 1 por turno');
+    expect(texto('.inicio__ocupacion-nota')).toContain('límite común de la escuela');
   });
 
   it('plurales con miles: cifras agrupadas en «Hoy» y en el total de la ocupación', () => {

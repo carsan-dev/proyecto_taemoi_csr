@@ -200,8 +200,8 @@
         </div>
         @if (estado === 'listo' && limiteValido) {
         <p class="inicio__ocupacion-nota">
-          Inscritos de cada franja frente al límite común de {{ numero(limite) }} por turno; un grupo con dos días cuenta
-          sus alumnos en cada día. <strong>Cuando cada sede tenga su aforo (E9), esta será la ocupación real.</strong>
+          Inscritos de cada franja frente al aforo de su sede o, si no lo tiene, al límite común de la escuela; un grupo
+          con dos días cuenta sus alumnos en cada día.
         </p>
         }
         @if (estado === 'cargando') {
