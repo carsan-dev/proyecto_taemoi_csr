@@ -153,6 +153,8 @@
 
 .miembros__rol {
   display: grid;
+  // Sin esto, la opción más larga de un selector de grupos ensancha la columna y la ficha desborda a 375 px.
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 6px 0;
 
@@ -221,10 +223,11 @@
 
 .miembros__subbloque {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   justify-items: start;
   min-width: 0;
-  margin-left: 28px;
+  margin: 6px 0 0 28px;
 
   // Con la sangría, los selectores no deben empujar más allá del ancho (375 px): se encogen y envuelven.
   .miembros__control {
