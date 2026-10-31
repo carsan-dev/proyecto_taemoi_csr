@@ -140,20 +140,31 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 	// ------------------------------------------------------------------ turnos
 
 	/**
-	 * Al cambiar el día, el reparto heredado por índice solo mira los grupos de la sede del turno (revisión 6-1):
-	 * antes, un turno de B pasaba a un grupo de A.
+	 * Decisión 374: al cambiar el día el turno conserva su grupo (y su sede); vale cualquier día de lunes a domingo y
+	 * un valor que no es un día da 400. El responsable sigue limitado a sus sedes (403 en turnos ajenos).
 	 */
 	@Test
-	void turnos_cambiarElDiaReasignaDentroDeSuSede() throws Exception {
+	void turnos_cambiarElDiaConservaSuGrupo() throws Exception {
 		long deA = turnoEn(e.gA, "Lunes");
 		assertEquals(200, estado(put("/api/turnos/" + deA).contentType(MediaType.APPLICATION_JSON)
 				.content(turnoEl("martes")), tokenA));
-		assertEquals(e.gA2, grupoDelTurno(deA), "índice 1 entre gA y gA2");
+		assertEquals(e.gA, grupoDelTurno(deA));
 
 		long deB = turnoEn(e.gB, "Martes");
 		assertEquals(200, estado(put("/api/turnos/" + deB).contentType(MediaType.APPLICATION_JSON)
 				.content(turnoEl("lunes")), tokenGestor));
-		assertEquals(e.gB, grupoDelTurno(deB), "índice 0 entre los grupos de B: no pasa a la sede A");
+		assertEquals(e.gB, grupoDelTurno(deB), "no pasa a la sede A");
+
+		for (String dia : List.of("viernes", "sábado", "domingo")) {
+			assertEquals(200, estado(put("/api/turnos/" + deA).contentType(MediaType.APPLICATION_JSON)
+					.content(turnoEl(dia)), tokenA), dia);
+			assertEquals(e.gA, grupoDelTurno(deA));
+		}
+		assertEquals(400, estado(put("/api/turnos/" + deA).contentType(MediaType.APPLICATION_JSON)
+				.content(turnoEl("foo")), tokenA));
+		assertEquals(403, estado(put("/api/turnos/" + deB).contentType(MediaType.APPLICATION_JSON)
+				.content(turnoEl("martes")), tokenA), "turno de otra sede");
+		assertEquals(e.gB, grupoDelTurno(deB));
 		jdbc.update("DELETE FROM turno WHERE id IN (?, ?)", deA, deB);
 	}
 
