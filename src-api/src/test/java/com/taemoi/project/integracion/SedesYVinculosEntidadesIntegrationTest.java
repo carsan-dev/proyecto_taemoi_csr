@@ -3,6 +3,7 @@ package com.taemoi.project.integracion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -101,15 +102,16 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void escuelaSinSedeOConVarias_grupoSinSede() {
+	void grupoSinSede_laUnicaActiva_ningunaSinSede_variasObligatoria() {
 		long sinSede = organizacion("it-sin-sede");
 		GrupoConAlumnosDTO a = TenantContext.calcularCon(sinSede, () -> grupoService.crearGrupo(dto("IT sin sede")));
 		assertNull(sedeDe(a.getId()));
 
 		long dosSedes = organizacion("it-dos-sedes");
 		jdbc.update("INSERT INTO sede (organizacion_id, nombre) VALUES (?, 'Una'), (?, 'Otra')", dosSedes, dosSedes);
-		GrupoConAlumnosDTO b = TenantContext.calcularCon(dosSedes, () -> grupoService.crearGrupo(dto("IT dos sedes")));
-		assertNull(sedeDe(b.getId()));
+		IllegalArgumentException sinElegir = assertThrows(IllegalArgumentException.class,
+				() -> TenantContext.calcularCon(dosSedes, () -> grupoService.crearGrupo(dto("IT dos sedes"))));
+		assertEquals("Indica la sede.", sinElegir.getMessage());
 
 		long unaSede = organizacion("it-una-sede");
 		jdbc.update("INSERT INTO sede (organizacion_id, nombre) VALUES (?, 'Unica')", unaSede);
