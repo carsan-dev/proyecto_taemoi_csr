@@ -264,7 +264,7 @@ public class TurnoServiceImpl implements TurnoService {
 			throw new IllegalArgumentException("Día de la semana no válido: null");
 		}
 		try {
-			DiaSemanaUtils.mapGrupoToDayOfWeek(dia.trim());
+			DiaSemanaUtils.mapGrupoToDayOfWeek(dia);
 		} catch (IllegalArgumentException e) {
 			throw new IllegalArgumentException("Día de la semana no válido: " + dia);
 		}
