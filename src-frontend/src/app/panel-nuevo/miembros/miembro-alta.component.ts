@@ -40,9 +40,9 @@ export class MiembroAltaComponent implements OnDestroy {
 
   @Input({ required: true }) contexto!: ContextoMiembros;
   @Output() readonly cerrar = new EventEmitter<void>();
-  /** La ficha del miembro nuevo y si fue una invitación. */
   /** Llamada cuando el alta termina con el panel ya cerrado (los `@Output` ya no llegan): la lista se refresca. */
   @Input() alTerminarCerrado: (() => void) | null = null;
+  /** La ficha del miembro nuevo y si fue una invitación. */
   @Output() readonly creada = new EventEmitter<{ ficha: FichaCompleta; invitacion: boolean }>();
 
   readonly avisoSinCuenta = AVISO_SIN_CUENTA;
