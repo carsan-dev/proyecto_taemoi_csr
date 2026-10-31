@@ -197,7 +197,8 @@ public class AlumnoController {
 			@RequestParam(required = false) Boolean incluirInactivos,
 			@RequestParam(required = false) Boolean aptoParaExamen,
 			@RequestParam(required = false) String deporte,
-			@RequestParam(required = false) String estado) {
+			@RequestParam(required = false) String estado,
+			@RequestParam(required = false) Long sedeId) {
 
 		logger.info("## AlumnoController :: obtenerAlumnosDTO :: Iniciando método");
 		logger.info(
@@ -225,13 +226,23 @@ public class AlumnoController {
 		}
 		boolean soloAptos = aptoParaExamen != null && aptoParaExamen;
 
-		Page<Alumno> alumnos = porDeporte
-				? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, estadoFichas, soloAptos,
-						pageable)
-				: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estadoFichas, soloAptos, pageable);
+		// Pieza 9-6 (decisión 376): sedeId, por sede principal; sin él, las llamadas de siempre.
+		Page<Alumno> alumnos;
+		if (sedeId != null) {
+			alumnos = porDeporte
+					? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, estadoFichas, soloAptos,
+							sedeId, pageable)
+					: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estadoFichas, soloAptos, sedeId,
+							pageable);
+		} else {
+			alumnos = porDeporte
+					? alumnoService.obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, estadoFichas, soloAptos,
+							pageable)
+					: alumnoService.obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estadoFichas, soloAptos, pageable);
+		}
 
-		if (porDeporte && isPaged) {
-			// Página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).
+		if ((porDeporte || sedeId != null) && isPaged) {
+			// Con deporte o con sede: página vacía con su total (una página fuera de rango conserva totalPages, como la paginación del navegador).
 			return ResponseEntity.ok(alumnos.map(AlumnoDTO::deAlumno).map(this::aplicarUrlImagenPublica));
 		}
 

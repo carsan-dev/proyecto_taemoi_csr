@@ -84,8 +84,12 @@ public class ConvocatoriaController {
 
 	@GetMapping("/{id}/alumnos")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id) {
-		List<AlumnoConvocatoriaDTO> alumnos = convocatoriaService.obtenerAlumnosDeConvocatoria(id);
+	public ResponseEntity<List<AlumnoConvocatoriaDTO>> obtenerAlumnosDeConvocatoria(@PathVariable Long id,
+			@RequestParam(required = false) Long sedeId) {
+		// Pieza 9-6 (decisión 376): sedeId, por la sede principal del alumno inscrito.
+		List<AlumnoConvocatoriaDTO> alumnos = sedeId != null
+				? convocatoriaService.obtenerAlumnosDeConvocatoria(id, sedeId)
+				: convocatoriaService.obtenerAlumnosDeConvocatoria(id);
 		return ResponseEntity.ok(alumnos);
 	}
 

@@ -941,9 +941,10 @@ export class EndpointsService {
     deporte: string = 'TODOS',
     pagado?: boolean,
     texto?: string,
-    soloActivos: boolean = true
+    soloActivos: boolean = true,
+    sedeId?: number | null
   ): Observable<Blob> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos, sedeId);
 
     return this.http
       .get(`${this.urlBase}/tesoreria/export/pdf`, {
@@ -960,9 +961,10 @@ export class EndpointsService {
     deporte: string = 'TODOS',
     pagado?: boolean,
     texto?: string,
-    soloActivos: boolean = true
+    soloActivos: boolean = true,
+    sedeId?: number | null
   ): Observable<Blob> {
-    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos);
+    const params = this.construirParamsTesoreria(mes, ano, deporte, pagado, texto, soloActivos, sedeId);
 
     return this.http
       .get(`${this.urlBase}/tesoreria/export/csv`, {
@@ -988,9 +990,14 @@ export class EndpointsService {
     deporte: string,
     pagado?: boolean,
     texto?: string,
-    soloActivos?: boolean
+    soloActivos?: boolean,
+    sedeId?: number | null
   ): HttpParams {
     let params = new HttpParams();
+
+    if (sedeId) {
+      params = params.set('sedeId', sedeId);
+    }
 
     if (ano !== null && ano !== undefined) {
       params = params.set('ano', ano.toString());
@@ -2152,11 +2159,16 @@ export class EndpointsService {
     year: number,
     month: number,
     grupo: string | string[],
-    deporte?: string
+    deporte?: string,
+    sedeId?: number | null
   ): Observable<Blob> {
     let params = new HttpParams()
       .set('year', year.toString())
       .set('month', month.toString());
+
+    if (sedeId) {
+      params = params.set('sedeId', sedeId);
+    }
 
     if (Array.isArray(grupo)) {
       grupo.forEach((dia) => {

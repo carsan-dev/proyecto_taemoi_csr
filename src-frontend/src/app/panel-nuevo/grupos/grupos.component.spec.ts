@@ -12,7 +12,8 @@ import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
 import { TurnoResumen } from '../../interfaces/turno-resumen';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { CLASE_ERROR_HTTP } from '../capas/capa-modal';
@@ -1060,5 +1061,91 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
     b.click();
     fixture.detectChanges();
     coherente();
+  });
+
+  describe('filtro por sede (9-6, decisión 376)', () => {
+    function conPermisos(permisos: PermisosSesion): void {
+      (TestBed.inject(PermisosSesionService) as unknown as { obtener: () => unknown }).obtener = () => of(permisos);
+    }
+
+    function elegirSede(valor: string): void {
+      const select = el().querySelector<HTMLSelectElement>('#grupos-sede')!;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    const delResumen = () => http.match((r) => r.url === `${API}/grupos/resumen`).filter((r) => !r.cancelled);
+
+    it('con una sede no hay selector y las peticiones son las de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      expect(el().querySelector('#grupos-sede')).toBeNull();
+      const l = lecturas();
+      expect(l.grupos[0].request.urlWithParams).toBe(`${API}/grupos/resumen`);
+      expect(l.turnos[0].request.urlWithParams).toBe(`${API}/turnos/resumen`);
+      expect(l.conteo[0].request.urlWithParams).toBe(`${API}/grupos/conteo-alumnos`);
+      l.grupos[0].flush(datosGrupos());
+      l.turnos[0].flush(datosTurnos());
+      l.conteo[0].flush(CONTEO);
+      http.verify();
+    });
+
+    it('el responsable no ve el selector', () => {
+      conPermisos(RESPONSABLE_VARIAS_SEDES);
+      crear();
+      expect(el().querySelector('#grupos-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: pide los grupos de la sede; turnos y conteo no se repiten', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      expect(el().querySelector('#grupos-sede')).withContext('sigue a mano mientras carga').not.toBeNull();
+      const [grupos] = delResumen();
+      expect(grupos.request.params.get('sedeId')).toBe('2');
+      grupos.flush(datosGrupos());
+      fixture.detectChanges();
+      http.verify();
+    });
+
+    it('sede sin grupos: lo dice, el selector sigue y «Ver todas las sedes» quita el filtro', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      delResumen()[0].flush([]);
+      fixture.detectChanges();
+      expect(texto(el())).toContain('No hay grupos en esta sede');
+      expect(texto(el())).not.toContain('Todavía no hay grupos');
+      expect(el().querySelector('#grupos-sede')).not.toBeNull();
+      boton(el(), 'Ver todas las sedes').click();
+      fixture.detectChanges();
+      expect(delResumen()[0].request.params.has('sedeId')).toBeFalse();
+    });
+
+    it('con sede, la cabecera cuenta los turnos de sus grupos', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      const [primero] = datosGrupos();
+      delResumen()[0].flush([primero]);
+      fixture.detectChanges();
+      expect(fixture.componentInstance.subtitulo).toContain(`${primero.turnos.length} turno`);
+    });
+
+    it('al crear un grupo se quita la sede para que se vea', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      delResumen()[0].flush(datosGrupos());
+      fixture.detectChanges();
+      fixture.componentInstance.grupoCreado(99);
+      fixture.detectChanges();
+      expect(delResumen()[0].request.params.has('sedeId')).toBeFalse();
+    });
   });
 });

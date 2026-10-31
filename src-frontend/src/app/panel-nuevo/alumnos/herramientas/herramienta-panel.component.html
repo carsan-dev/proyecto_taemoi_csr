@@ -3,6 +3,8 @@
   @case ('asistencia') {
   <div class="herramienta__form">
     <pn-campo-mes-ano campoId="pn-asistencia-mes" [(valor)]="mesAnoAsistencia" />
+    <pn-filtro-sede class="herramienta__campo herramienta__sede" campoId="pn-asistencia-sede" etiquetaVisible [valor]="sedeAsistencia"
+      (cambio)="sedeAsistencia = $event" />
     <fieldset class="herramienta__grupo" aria-describedby="pn-asistencia-dias-ayuda">
       <legend class="herramienta__leyenda">Días de la semana</legend>
       <div class="herramienta__pastillas">

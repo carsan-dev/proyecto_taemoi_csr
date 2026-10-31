@@ -30,6 +30,7 @@ import { CobroCargoService } from '../cobro/cobro-cargo';
 import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ParteMensaje } from '../dialogo/dialogo.component';
+import { FiltroSedeComponent } from '../filtro-sede/filtro-sede.component';
 import { eur, fecha, frasePlural, numero } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
@@ -72,6 +73,7 @@ const SUBTITULO = 'Control de deudas, pagos pendientes y estado mensual por depo
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    FiltroSedeComponent,
     MascotaComponent,
     PanelLateralComponent,
     VisorPdfComponent,
@@ -113,6 +115,10 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   filtroMes: number | null = new Date().getMonth() + 1;
   filtroAno: number | null = new Date().getFullYear();
   filtroDeporte = 'TODOS';
+  /** Sede del cargo (decisión 376); `null`, todas. */
+  filtroSede: number | null = null;
+  /** La sede ya aplicada con «Aplicar»: paginar y buscar usan esta, para que lista y resumen sean del mismo filtro. */
+  private sedeAplicada: number | null = null;
   filtroEstado: EstadoFiltro = 'PENDIENTES';
   filtroTexto = '';
   filtroSoloActivos = true;
@@ -298,7 +304,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       this.filtroTexto,
       this.filtroSoloActivos,
       this.pagina,
-      POR_PAGINA
+      POR_PAGINA,
+      this.sedeAplicada
     );
     if (!conResumen) {
       if (!silencioso) {
@@ -320,7 +327,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
       this.estado = 'cargando';
     }
     this.carga = forkJoin({
-      resumen: this.lecturas.tesoreriaResumen(this.filtroMes, this.filtroAno, this.filtroDeporte, this.filtroSoloActivos),
+      resumen: this.lecturas.tesoreriaResumen(this.filtroMes, this.filtroAno, this.filtroDeporte, this.filtroSoloActivos, this.sedeAplicada),
       movimientos: movimientos$,
     }).subscribe({
       next: ({ resumen, movimientos }) => {
@@ -382,6 +389,11 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     this.filtroDeporte = valor;
   }
 
+  /** Como el resto de la barra: se aplica con «Aplicar». */
+  elegirSede(sedeId: number | null): void {
+    this.filtroSede = sedeId;
+  }
+
   alternarActivos(evento: Event): void {
     this.filtroSoloActivos = (evento.target as HTMLInputElement).checked;
   }
@@ -396,6 +408,7 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
   aplicar(): void {
     this.normalizarPeriodo();
     this.pagina = 1;
+    this.sedeAplicada = this.filtroSede;
     this.cargar();
   }
 
@@ -403,6 +416,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     this.filtroMes = new Date().getMonth() + 1;
     this.filtroAno = this.anoPorDefecto();
     this.filtroDeporte = 'TODOS';
+    this.filtroSede = null;
+    this.sedeAplicada = null;
     this.filtroEstado = 'PENDIENTES';
     this.filtroTexto = '';
     this.filtroSoloActivos = true;
@@ -780,8 +795,8 @@ export class TesoreriaComponent implements OnInit, OnDestroy {
     const pagado = pagadoDeEstado(this.filtroEstado);
     const solicitud =
       formato === 'pdf'
-        ? this.endpoints.exportarTesoreriaPDF(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos)
-        : this.endpoints.exportarTesoreriaCSV(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos);
+        ? this.endpoints.exportarTesoreriaPDF(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.sedeAplicada)
+        : this.endpoints.exportarTesoreriaCSV(this.filtroMes, this.filtroAno, this.filtroDeporte, pagado, this.filtroTexto, this.filtroSoloActivos, this.sedeAplicada);
     const nombreArchivo = nombreExportacion(
       { mes: this.filtroMes, ano: this.filtroAno, deporte: this.filtroDeporte, estado: this.filtroEstado, soloActivos: this.filtroSoloActivos },
       formato

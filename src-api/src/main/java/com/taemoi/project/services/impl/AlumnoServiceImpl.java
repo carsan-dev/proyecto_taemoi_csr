@@ -337,12 +337,22 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado,
 			boolean aptoParaExamen, @NonNull Pageable pageable) {
+		return obtenerAlumnosFiltrados(nombre, gradoId, categoriaId, estado, aptoParaExamen, null, pageable);
+	}
+
+	@Override
+	public Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado,
+			boolean aptoParaExamen, Long sedeId, @NonNull Pageable pageable) {
+		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		org.springframework.data.jpa.domain.Specification<Alumno> filtro =
 				buildAlumnoSpecification(nombre, gradoId, categoriaId, estado, aptoParaExamen);
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		if (restriccion.isPresent()) {
 			// Responsable de sede (entrega 6-1c): D9 por sus sedes.
 			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		}
+		if (sedeId != null) {
+			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosConSedePrincipalEn(java.util.Set.of(sedeId)));
 		}
 		// Sin paginar, por id, como GET /api/alumnos/ids (también con gestión): sin ORDER BY, MySQL devolvía el orden
 		// del índice que eligiera, y con estadísticas distintas elige uk (organizacion_id, numero_expediente).
@@ -363,6 +373,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
 			EstadoAlumnos estado, boolean aptoParaExamen, @NonNull Pageable pageable) {
+		return obtenerAlumnosPorDeporte(deporte, nombre, gradoId, categoriaId, estado, aptoParaExamen, null, pageable);
+	}
+
+	@Override
+	public Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
+			EstadoAlumnos estado, boolean aptoParaExamen, Long sedeId, @NonNull Pageable pageable) {
+		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		// El nombre no va al filtro común (que busca también en «nombre apellidos» y sin distinguir tildes).
 		// El estado lo resuelve el filtro del deporte (solo inactivos es el complemento de solo activos): el común solo
 		// filtra la ficha para solo activos, como siempre.
@@ -373,6 +390,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 		java.util.Optional<com.taemoi.project.organizacion.AlcanceSesion> restriccion = gestionPorSede.restriccion();
 		if (restriccion.isPresent()) {
 			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosDeSusSedes(restriccion.get()));
+		}
+		if (sedeId != null) {
+			filtro = filtro.and(com.taemoi.project.acceso.PredicadosAlcance.alumnosConSedePrincipalEn(java.util.Set.of(sedeId)));
 		}
 		return alumnoRepository.findAll(filtro, pageable);
 	}

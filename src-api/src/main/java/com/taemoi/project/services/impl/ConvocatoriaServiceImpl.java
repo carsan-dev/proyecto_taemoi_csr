@@ -116,10 +116,18 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 
 	@Override
 	public List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId) {
+		return obtenerAlumnosDeConvocatoria(convocatoriaId, null);
+	}
+
+	@Override
+	public List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId, Long sedeId) {
+		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		Convocatoria convocatoria = convocatoriaRepository.findById(convocatoriaId).orElseThrow(
 				() -> new IllegalArgumentException("Convocatoria no encontrada con ID: " + convocatoriaId));
 
-		Predicate<AlumnoConvocatoria> enAlcance = enAlcanceDelResponsable();
+		Predicate<AlumnoConvocatoria> enAlcance = sedeId == null ? enAlcanceDelResponsable()
+				: enAlcanceDelResponsable().and(inscripcion -> inscripcion.getAlumno() != null
+						&& sedeId.equals(inscripcion.getAlumno().getSedePrincipalId()));
 		return convocatoria.getAlumnosConvocatoria().stream()
 				.filter(enAlcance)
 				.map(alumnoConvocatoria -> {

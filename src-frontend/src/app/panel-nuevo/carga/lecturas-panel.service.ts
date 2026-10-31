@@ -38,7 +38,8 @@ export class LecturasPanelService {
     incluirInactivos = false,
     aptoParaExamen = false,
     deporte: string | null = null,
-    estado: 'activos' | 'inactivos' | 'todos' | null = null
+    estado: 'activos' | 'inactivos' | 'todos' | null = null,
+    sedeId: number | null = null
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -57,6 +58,9 @@ export class LecturasPanelService {
     if (deporte) {
       params = params.set('deporte', deporte);
     }
+    if (sedeId !== null) {
+      params = params.set('sedeId', sedeId);
+    }
     return this.http.get<any>(`${environment.apiUrl}/alumnos`, {
       params,
       withCredentials: true,
@@ -71,8 +75,9 @@ export class LecturasPanelService {
   }
 
   /** Igual que `EndpointsService.obtenerResumenGrupos` (Grupos, 8b-3c). */
-  resumenGrupos(): Observable<GrupoResumen[]> {
+  resumenGrupos(sedeId: number | null = null): Observable<GrupoResumen[]> {
     return this.http.get<GrupoResumen[]>(`${environment.apiUrl}/grupos/resumen`, {
+      params: paramsSede(sedeId),
       withCredentials: true,
       headers: new HttpHeaders({ 'X-Skip-Loading': 'true' }),
       context: contextoErrorLocal(),
@@ -107,9 +112,15 @@ export class LecturasPanelService {
     });
   }
   /** Igual que `EndpointsService.obtenerTesoreriaResumen` (Tesorería, 8b-3d). */
-  tesoreriaResumen(mes: number | null, ano: number | null, deporte = 'TODOS', soloActivos = true): Observable<TesoreriaResumen> {
+  tesoreriaResumen(
+    mes: number | null,
+    ano: number | null,
+    deporte = 'TODOS',
+    soloActivos = true,
+    sedeId: number | null = null
+  ): Observable<TesoreriaResumen> {
     return this.http.get<TesoreriaResumen>(`${environment.apiUrl}/tesoreria/resumen`, {
-      params: paramsTesoreria(mes, ano, deporte, undefined, undefined, soloActivos),
+      params: paramsTesoreria(mes, ano, deporte, undefined, undefined, soloActivos, sedeId),
       withCredentials: true,
       context: contextoErrorLocal(),
     });
@@ -124,9 +135,10 @@ export class LecturasPanelService {
     texto?: string,
     soloActivos = true,
     page = 1,
-    size = 25
+    size = 25,
+    sedeId: number | null = null
   ): Observable<PaginatedResponse<TesoreriaMovimiento>> {
-    const params = paramsTesoreria(mes, ano, deporte, pagado, texto, soloActivos)
+    const params = paramsTesoreria(mes, ano, deporte, pagado, texto, soloActivos, sedeId)
       .set('page', page.toString())
       .set('size', size.toString());
     return this.http.get<PaginatedResponse<TesoreriaMovimiento>>(`${environment.apiUrl}/tesoreria/movimientos`, {
@@ -307,8 +319,9 @@ export class LecturasPanelService {
   }
 
   /** Igual que `EndpointsService.obtenerAlumnosDeConvocatoria` (Convocatorias, 8b-3e). */
-  alumnosDeConvocatoria(convocatoriaId: number): Observable<any[]> {
+  alumnosDeConvocatoria(convocatoriaId: number, sedeId: number | null = null): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/convocatorias/${convocatoriaId}/alumnos`, {
+      params: paramsSede(sedeId),
       withCredentials: true,
       context: contextoErrorLocal(),
     });
@@ -334,13 +347,19 @@ export class LecturasPanelService {
 }
 
 /** Los parámetros de la tesorería de hoy (`EndpointsService.construirParamsTesoreria`, privado), en el mismo orden. */
+/** `sedeId` del filtro por sede (9-6); sin sede, ningún parámetro: la misma petición de siempre. */
+function paramsSede(sedeId: number | null): HttpParams | undefined {
+  return sedeId === null ? undefined : new HttpParams().set('sedeId', sedeId);
+}
+
 export function paramsTesoreria(
   mes: number | null,
   ano: number | null,
   deporte: string,
   pagado?: boolean,
   texto?: string,
-  soloActivos?: boolean
+  soloActivos?: boolean,
+  sedeId?: number | null
 ): HttpParams {
   let params = new HttpParams();
   if (ano !== null && ano !== undefined) {
@@ -361,6 +380,9 @@ export function paramsTesoreria(
   }
   if (soloActivos !== undefined && soloActivos !== null) {
     params = params.set('soloActivos', soloActivos.toString());
+  }
+  if (sedeId !== undefined && sedeId !== null) {
+    params = params.set('sedeId', sedeId);
   }
   return params;
 }

@@ -1,0 +1,50 @@
+// Filtro por sede (9-6): la forma de los campos de filtro del panel. Cada pantalla le da el sitio en su barra con una
+// clase en el propio elemento. `--filtro-sede-etiqueta` y `--filtro-sede-alto` son para el panel lateral, de campos más
+// bajos y etiqueta en tinta. Solo tokens de panel-nuevo.scss.
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.filtro-sede__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--filtro-sede-etiqueta, var(--pn-tinta-2));
+}
+
+.filtro-sede__etiqueta--oculta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.filtro-sede__control {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--filtro-sede-alto, 42px);
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background-color: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.filtro-sede__control--elegido {
+  border-color: var(--pn-acento-borde);
+  background-color: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font-weight: 600;
+}

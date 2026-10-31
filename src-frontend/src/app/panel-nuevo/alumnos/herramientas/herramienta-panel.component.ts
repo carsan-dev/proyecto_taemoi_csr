@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
 import {
   HerramientasAlumnosComponent,
@@ -11,6 +12,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { BotonOcupadoComponent } from '../../carga/boton-ocupado.component';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { ParteMensaje } from '../../dialogo/dialogo.component';
+import { FiltroSedeComponent } from '../../filtro-sede/filtro-sede.component';
 import { frasePlural } from '../../formato/formato-es';
 import { PanelLateralComponent } from '../../panel-lateral/panel-lateral.component';
 import { CampoMesAnoComponent } from './campo-mes-ano.component';
@@ -54,7 +56,7 @@ const TITULOS: Record<HerramientaAlumnos, { titulo: string; descripcion: string 
 @Component({
   selector: 'pn-herramienta-alumnos',
   standalone: true,
-  imports: [FormsModule, SearchableSelectDirective, PanelLateralComponent, BotonOcupadoComponent, CampoMesAnoComponent],
+  imports: [FormsModule, SearchableSelectDirective, PanelLateralComponent, BotonOcupadoComponent, CampoMesAnoComponent, FiltroSedeComponent],
   templateUrl: './herramienta-panel.component.html',
   styleUrls: ['./herramienta-panel.component.scss', './campos-panel.scss'],
 })
@@ -69,6 +71,8 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
   readonly etiquetaDia = (dia: string) => dia.charAt(0).toUpperCase() + dia.slice(1);
   /** Botón de PDF que se pulsó: es el que se pone ocupado. */
   pdfPulsado: AccionInforme | null = null;
+  /** Decisión 142: la hoja de asistencia de las clases de una sede; `null`, todas, como hoy. */
+  sedeAsistencia: number | null = null;
 
   get textos(): { titulo: string; descripcion: string } {
     return TITULOS[this.herramienta];
@@ -215,6 +219,13 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
   }
 
   // ------------------------------------------------------------------ avisos, confirmaciones y carga del panel nuevo
+
+  /** Sin sede, la petición de siempre. */
+  protected override solicitudAsistencia(year: number, month: number, grupo: string): Observable<Blob> {
+    return this.sedeAsistencia === null
+      ? super.solicitudAsistencia(year, month, grupo)
+      : this.endpoints.descargarAsistencia(year, month, grupo, undefined, this.sedeAsistencia);
+  }
 
   protected override avisarExito(texto: string): void {
     // 8b-M: «mensualidades generadas» cierra una tarea larga, y es de las pocas veces que la mascota celebra. Las

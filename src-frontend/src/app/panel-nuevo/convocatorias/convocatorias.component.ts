@@ -20,6 +20,7 @@ import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
+import { FiltroSedeComponent, sedeVigente } from '../filtro-sede/filtro-sede.component';
 import { fecha, fechaLarga, numero } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
 import { variablesDelTema } from '../tema-escuela';
@@ -85,6 +86,7 @@ const CLAVE_ESTADO = 'listadoConvocatoriasEstado';
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    FiltroSedeComponent,
     VisorPdfComponent,
   ],
   providers: [{ provide: InformePdfService, useClass: InformePdfPanelService }],
@@ -122,6 +124,11 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
   /** Las convocatorias de cada disciplina con grados, por código. */
   listas: Record<string, ConvocatoriaPanel[]> = {};
   pagina = 1;
+  /**
+   * Sede principal de los inscritos (decisión 376); `null`, todas. Las convocatorias son de toda la escuela: la lista no
+   * cambia, cambian las cifras y los alumnos de cada bloque, como para el responsable.
+   */
+  sedeId: number | null = null;
   /** Cifras de cada bloque, por id de convocatoria. */
   readonly cifras = new Map<number, CifrasBloque>();
 
@@ -197,7 +204,16 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restaurarEstado();
-    this.cargar();
+    if (this.sedeId === null) {
+      this.cargar();
+      return;
+    }
+    sedeVigente(this.permisos, this.sedeId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((vigente) => {
+        this.sedeId = vigente;
+        this.cargar();
+      });
   }
 
   ngOnDestroy(): void {
@@ -292,7 +308,7 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     this.cifras.set(id, { estado: 'cargando' });
     const generacion = this.nuevaGeneracion(id);
     this.lecturasCifras.set(id, this.lecturas
-      .alumnosDeConvocatoria(id)
+      .alumnosDeConvocatoria(id, this.sedeId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alumnos) => {
@@ -331,6 +347,19 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     this.cerrarBloque();
     this.deporte = codigo;
     this.pagina = 1;
+    this.guardarEstado();
+    this.leerCifrasVisibles();
+  }
+
+  elegirSede(sedeId: number | null): void {
+    this.cerrarBloque();
+    this.sedeId = sedeId;
+    this.pagina = 1;
+    // Las lecturas en vuelo (también de páginas no visibles) son de la sede anterior: se descartan.
+    this.lecturasCifras.forEach((l) => l.unsubscribe());
+    this.lecturasCifras.clear();
+    this.generacionCifras.clear();
+    this.cifras.clear();
     this.guardarEstado();
     this.leerCifrasVisibles();
   }
@@ -446,7 +475,7 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
       this.estadoAlumnos = 'cargando';
     }
     this.lecturaBloque = this.lecturas
-      .alumnosDeConvocatoria(c.id)
+      .alumnosDeConvocatoria(c.id, this.sedeId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (datos) => {
@@ -989,6 +1018,8 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
           deporteSeleccionado: this.deporte,
           // Solo con un bloque abierto; la pantalla de hoy ignora este campo.
           convocatoriaAbierta: this.abierta?.id,
+          // Solo con una sede elegida; también la ignora.
+          sedeConvocatorias: this.sedeId ?? undefined,
         })
       );
     } catch {
@@ -1009,6 +1040,8 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
       }
       const abierta = Number(estado?.convocatoriaAbierta);
       this.abiertaRecordada = Number.isInteger(abierta) && abierta > 0 ? abierta : null;
+      const sede = Number(estado?.sedeConvocatorias);
+      this.sedeId = Number.isInteger(sede) && sede > 0 ? sede : null;
     } catch {
       // Un estado ilegible se ignora, como hoy.
     }

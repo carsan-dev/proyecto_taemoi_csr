@@ -64,6 +64,8 @@
           }
         </select>
       </div>
+      <pn-filtro-sede class="tesoreria__campo tesoreria__campo--sede" campoId="tesoreria-sede" etiquetaVisible [valor]="filtroSede"
+        (cambio)="elegirSede($event)" />
       <label class="tesoreria__casilla" for="tesoreria-activos">
         <input id="tesoreria-activos" type="checkbox" [checked]="filtroSoloActivos" (change)="alternarActivos($event)" />
         <span>Solo alumnos activos</span>

@@ -95,6 +95,11 @@ $columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
 
 // ------------------------------------------------------------------ pestañas por disciplina
 
+.convocatorias__sede {
+  max-width: 280px;
+  margin-bottom: 16px;
+}
+
 .convocatorias__pestanas {
   display: flex;
   flex-wrap: wrap;

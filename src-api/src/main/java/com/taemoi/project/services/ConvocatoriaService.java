@@ -23,6 +23,12 @@ public interface ConvocatoriaService {
 
 	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId);
 
+	/**
+	 * Pieza 9-6 (decisión 376): los inscritos con esa sede principal, por AND con el alcance. La convocatoria es de toda
+	 * la escuela y no tiene sede: el filtro va por el alumno, la misma sede de su cargo de examen (D6-9).
+	 */
+	List<AlumnoConvocatoriaDTO> obtenerAlumnosDeConvocatoria(Long convocatoriaId, Long sedeId);
+
 	List<AlumnoConvocatoriaReporteDTO> obtenerReporteDeConvocatoria(Long convocatoriaId);
 
 	void eliminarConvocatoria(Long convocatoriaId);

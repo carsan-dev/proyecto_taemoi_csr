@@ -11,7 +11,8 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { TesoreriaMovimiento } from '../../interfaces/tesoreria-movimiento';
 import { TesoreriaResumen } from '../../interfaces/tesoreria-resumen';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -1125,5 +1126,108 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     expect(loading.show).not.toHaveBeenCalled();
     expect(esResumen).toBeDefined();
     expect(esMovimientos).toBeDefined();
+  });
+
+  describe('filtro por sede (9-6, decisión 376)', () => {
+    function conPermisos(permisos: PermisosSesion): void {
+      (TestBed.inject(PermisosSesionService) as unknown as { obtener: () => unknown }).obtener = () => of(permisos);
+    }
+
+    function elegirSede(valor: string): void {
+      const select = el().querySelector<HTMLSelectElement>('#tesoreria-sede')!;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    it('con una sede no hay selector y las peticiones son las de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      expect(el().querySelector('#tesoreria-sede')).toBeNull();
+      const p = pendientes();
+      expect(params(p.resumen[0])).toEqual({ ano: '2026', mes: '10', soloActivos: 'true' });
+      expect(params(p.movimientos[0])).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true', page: '1', size: '25' });
+    });
+
+    it('el responsable no ve el selector', () => {
+      conPermisos(RESPONSABLE_VARIAS_SEDES);
+      crear();
+      expect(el().querySelector('#tesoreria-sede')).toBeNull();
+    });
+
+    it('con dos sedes y gestión: como el resto de la barra, va con «Aplicar», en resumen y movimientos, desde la página 1', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder([PENDIENTE], 60);
+      fixture.componentInstance.irAPagina(2);
+      fixture.detectChanges();
+      responder([PENDIENTE], 60);
+      elegirSede('2');
+      expect(pendientes().movimientos.length).withContext('no se aplica al elegir').toBe(0);
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      const p = pendientes();
+      expect(params(p.resumen[0])['sedeId']).toBe('2');
+      expect(params(p.movimientos[0])['sedeId']).toBe('2');
+      expect(params(p.movimientos[0])['page']).toBe('1');
+    });
+
+    it('paginar y buscar usan la sede ya aplicada, no la elegida sin «Aplicar»', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder([PENDIENTE], 60);
+      elegirSede('2');
+      fixture.componentInstance.irAPagina(2);
+      fixture.detectChanges();
+      let r = responder([PENDIENTE], 60);
+      expect(r.resumen).withContext('paginar no relee el resumen').toBeUndefined();
+      expect(params(r.movimientos)['sedeId']).withContext('paginar').toBeUndefined();
+      fixture.componentInstance.cargar(false);
+      r = responder([PENDIENTE], 60);
+      expect(params(r.movimientos)['sedeId']).withContext('buscar').toBeUndefined();
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      r = responder([PENDIENTE], 60);
+      expect(params(r.resumen!)['sedeId']).withContext('aplicar, resumen').toBe('2');
+      expect(params(r.movimientos)['sedeId']).withContext('aplicar').toBe('2');
+      fixture.componentInstance.irAPagina(2);
+      r = responder([PENDIENTE], 60);
+      expect(params(r.movimientos)['sedeId']).withContext('paginar tras aplicar').toBe('2');
+    });
+
+    it('las exportaciones respetan la sede y «Restablecer» la quita', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      responder();
+      fixture.componentInstance.exportar('pdf');
+      expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/pdf`))['sedeId']).toBe('2');
+      fixture.componentInstance.informes.cerrar();
+      fixture.componentInstance.restablecer();
+      fixture.detectChanges();
+      const p = pendientes();
+      expect(params(p.movimientos[0])['sedeId']).toBeUndefined();
+      expect(el().querySelector<HTMLSelectElement>('#tesoreria-sede')!.value).toBe('');
+    });
+
+    it('elegir una sede sin aplicar no cambia la exportación', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      fixture.componentInstance.exportar('csv');
+      expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/csv`))).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true' });
+    });
+
+    it('la exportación sin sede es la de hoy', () => {
+      conPermisos(GESTION_UNA_SEDE);
+      crear();
+      responder();
+      fixture.componentInstance.exportar('csv');
+      expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/csv`))).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true' });
+    });
   });
 });
