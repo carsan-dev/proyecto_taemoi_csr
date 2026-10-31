@@ -23,7 +23,7 @@ import com.taemoi.project.services.GestionSedesService;
  * ven, las crean, las editan y las activan o desactivan. Sin borrado.
  *
  * <p>Solo {@code ROLE_ADMIN} y {@code ROLE_MANAGER}: la regla de URL explícita de {@code SecurityConfiguration} (antes
- * de las del responsable de sede) y el {@code @PreAuthorize} de cada método. RESPONSABLE_SEDE (hasta la E9), PROFESOR,
+ * de las del responsable de sede) y el {@code @PreAuthorize} de cada método. RESPONSABLE_SEDE (decisión 370), PROFESOR,
  * FAMILIA y la sesión solo-plataforma, 403; fuera de la lista blanca de la sesión solo-profesor. Errores con
  * {@code {"mensaje"}}: 400 datos, 404 sede de otra escuela o inexistente, 409 nombre repetido o última sede activa.
  */

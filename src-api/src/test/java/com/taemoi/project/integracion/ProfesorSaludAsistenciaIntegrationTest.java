@@ -236,8 +236,9 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(403, estado(get("/api/profesor/grupos/" + e.gA + "/asistencia?year=2026&month=9"), tProfRP));
 		assertEquals(200, estado(get("/api/profesor/alumnos/" + e.aB + "/salud"), tProfRP), "aB está en gB");
 		assertEquals(200, estado(get("/api/profesor/grupos/" + e.gB + "/asistencia?year=2026&month=9"), tProfRP));
-		// Y la salud de gestión sigue cerrada a la sesión 184, también para su sede.
-		assertEquals(403, estado(get("/api/alumnos/" + e.aA + "/salud"), tProfRP));
+		// Decisión 371: la salud de gestión es la de su sede, no la de su grupo de otra sede.
+		assertEquals(200, estado(get("/api/alumnos/" + e.aA + "/salud"), tProfRP));
+		assertEquals(403, estado(get("/api/alumnos/" + e.aB + "/salud"), tProfRP));
 	}
 
 	@Test

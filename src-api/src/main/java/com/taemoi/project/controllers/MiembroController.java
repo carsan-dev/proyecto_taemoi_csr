@@ -25,7 +25,7 @@ import com.taemoi.project.services.GestionMiembrosService;
  *
  * <p>Solo {@code ROLE_ADMIN} y {@code ROLE_MANAGER}: la regla de URL explícita de {@code SecurityConfiguration} (junto
  * a la de {@code /api/sedes}) y el {@code @PreAuthorize} de cada método; la D8 sobre PROPIETARIO y ADMINISTRADOR la
- * aplica el servicio (403). RESPONSABLE_SEDE (hasta la E9), PROFESOR, FAMILIA y la sesión solo-plataforma, 403; fuera
+ * aplica el servicio (403). RESPONSABLE_SEDE (decisión 370), PROFESOR, FAMILIA y la sesión solo-plataforma, 403; fuera
  * de la lista blanca de la sesión solo-profesor. Errores con {@code {"mensaje"}}: 400 datos, 403 D8, 404 cuenta o grupo
  * de otra escuela o inexistente, 409 estado (rol desactivado, último propietario, sin el rol que hace falta).
  */

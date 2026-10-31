@@ -47,9 +47,9 @@ import com.taemoi.project.organizacion.AlcanceSesion;
  * también para escribir (cobrar en efectivo y deshacer su cobro, D4). El alcance total NO concede: la gestión cobra por
  * el PUT del cargo y su dinero entra en caja al momento (decisión 1); una cuenta de gestión que además sea profesor
  * tiene alcance total (desde la E8-1, con sus grupos para «Mis grupos») y no entra por aquí. Abren sesión de profesor
- * la cuenta solo profesor y la responsable de sede + profesor (decisiones 180 y 184, restringidas a su caja por
- * {@code SesionSoloProfesorAuthorizationManager}) y la mixta FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ
- * cuenta; D5-2 sigue valiendo para las rutas existentes.</li>
+ * la cuenta solo profesor (decisión 180, restringida a su caja por {@code SesionSoloProfesorAuthorizationManager}), la
+ * responsable de sede + profesor (decisión 371: suma su caja y sus grupos a su panel de sede) y la mixta
+ * FAMILIA + PROFESOR: en estas rutas la rama de profesor SÍ cuenta; D5-2 sigue valiendo para las rutas existentes.</li>
  * <li>{@link #cajaDeSede}: alcance total o sedes de {@code ROLE_RESPONSABLE_SEDE}; nunca la rama de profesor.</li>
  * </ul>
  */
@@ -212,7 +212,7 @@ public class AccesoRecursos {
 
 	/**
 	 * Pieza E7-1 (D7-11): el grupo es uno de los del profesor de la sesión (rutas {@code /api/profesor/**}). Solo la rama
-	 * de profesor, por {@code alcance.grupos()}; ni el alcance total ni las sedes del responsable (sesión 184) conceden.
+	 * de profesor, por {@code alcance.grupos()}; ni el alcance total ni las sedes del responsable (371) conceden.
 	 * Pieza E8-1 (decisión 217, D8-15): P o G con PROFESOR entran con SUS grupos (el total guardado los lleva), nunca por
 	 * el total. Un grupo de otra escuela o inexistente no está nunca en sus grupos: {@code false} (403, sin revelar si
 	 * existe).

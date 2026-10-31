@@ -39,11 +39,10 @@ import com.taemoi.project.repositories.UsuarioAlumnoRepository;
  *
  * <ul>
  * <li>Roles: los {@link RolMembresia} de las autoridades de la sesión (las membresías activas de la escuela activa,
- * ya calculadas al verificar el JWT; sin consulta). En la sesión solo-profesor ({@link RolMembresia#sesionSoloProfesor},
- * también R+Pr, decisiones 180 y 184) solo {@code PROFESOR}, como {@code /api/auth/roles}.</li>
- * <li>Sedes visibles: alcance total → todas las de la escuela, también inactivas; {@code ROLE_RESPONSABLE_SEDE} fuera
- * de la sesión solo-profesor → las de su alcance; resto, ninguna. {@code sede} es {@code @TenantId}: nunca sale una
- * de otra escuela.</li>
+ * ya calculadas al verificar el JWT; sin consulta), como {@code /api/auth/roles}.</li>
+ * <li>Sedes visibles: alcance total → todas las de la escuela, también inactivas; {@code ROLE_RESPONSABLE_SEDE} → las
+ * de su alcance (sin sedes asignadas, ninguna: decisión 65); resto, ninguna. {@code sede} es {@code @TenantId}: nunca
+ * sale una de otra escuela.</li>
  * <li>{@code variasSedes}: más de una sede activa en la escuela (de la lista ya cargada con total; si no, un
  * {@code COUNT}). {@code tieneGrupos}: {@code alcance.grupos()} no vacío.</li>
  * <li>Sesión solo-plataforma (ninguna autoridad de escuela): roles, sedes y capacidades vacíos y sin consultar la
@@ -95,13 +94,13 @@ public class PermisosSesionService {
 			visibles = sedes.findAllByOrderByIdAsc();
 			activas = visibles.stream().filter(Sede::isActiva).count();
 		} else {
-			visibles = !soloProfesor && autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE) && !alcance.sedes().isEmpty()
+			visibles = autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE) && !alcance.sedes().isEmpty()
 					? sedes.findByIdInOrderByIdAsc(alcance.sedes())
 					: List.of();
 			activas = sedes.countByActivaTrue();
 		}
 		Usuario cuenta = cuentaDeLaSesion(autenticacion);
-		return new PermisosSesionDTO(roles(autoridades, soloProfesor), plataforma,
+		return new PermisosSesionDTO(roles(autoridades), plataforma,
 				visibles.stream().map(s -> new PermisosSesionDTO.Sede(s.getId(), s.getNombre(), s.isActiva())).toList(),
 				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos),
 				nombreVisible(autenticacion), nombreSaludo(autenticacion),
@@ -154,12 +153,14 @@ public class PermisosSesionService {
 
 	/**
 	 * Capacidades por autoridades (D8-14): MIEMBROS, SEDES y ASIGNAR_PROFESORES con gestión; DAR_GESTION solo el
-	 * propietario (D8); MIS_GRUPOS en la sesión solo-profesor siempre y, fuera de ella, con PROFESOR y grupos (217);
-	 * MI_CAJA con PROFESOR. En el orden de {@link Capacidad}.
+	 * propietario (D8); MIS_GRUPOS en la sesión solo-profesor y con responsable + profesor sin gestión siempre (371) y,
+	 * fuera de ellas, con PROFESOR y grupos (217); MI_CAJA con PROFESOR; PANEL_SEDE con responsable sin gestión (370) y
+	 * ELEGIR_VISTA si además es familia (371). En el orden de {@link Capacidad}.
 	 */
 	static List<Capacidad> capacidades(Set<Roles> autoridades, boolean tieneGrupos) {
 		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
 		boolean profesor = autoridades.contains(Roles.ROLE_PROFESOR);
+		boolean panelDeSede = !gestion && autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE);
 		Set<Capacidad> resultado = EnumSet.noneOf(Capacidad.class);
 		if (gestion) {
 			resultado.add(Capacidad.MIEMBROS);
@@ -169,11 +170,17 @@ public class PermisosSesionService {
 		if (autoridades.contains(Roles.ROLE_ADMIN)) {
 			resultado.add(Capacidad.DAR_GESTION);
 		}
-		if (RolMembresia.sesionSoloProfesor(autoridades) || (profesor && tieneGrupos)) {
+		if (RolMembresia.sesionSoloProfesor(autoridades) || (profesor && (tieneGrupos || panelDeSede))) {
 			resultado.add(Capacidad.MIS_GRUPOS);
 		}
 		if (profesor) {
 			resultado.add(Capacidad.MI_CAJA);
+		}
+		if (panelDeSede) {
+			resultado.add(Capacidad.PANEL_SEDE);
+			if (autoridades.contains(Roles.ROLE_USER)) {
+				resultado.add(Capacidad.ELEGIR_VISTA);
+			}
 		}
 		return List.copyOf(resultado);
 	}
@@ -234,10 +241,7 @@ public class PermisosSesionService {
 		return limpio;
 	}
 
-	private static List<String> roles(Set<Roles> autoridades, boolean soloProfesor) {
-		if (soloProfesor) {
-			return List.of(RolMembresia.PROFESOR.name());
-		}
+	private static List<String> roles(Set<Roles> autoridades) {
 		List<String> roles = new ArrayList<>();
 		for (RolMembresia rol : RolMembresia.values()) {
 			if (autoridades.contains(rol.autoridad())) {

@@ -49,7 +49,7 @@ import jakarta.servlet.http.Cookie;
  * <li>Solo sus grupos ({@code alcance.grupos()}), por id y en listados; un grupo o alumno ajeno (otro profesor, otra
  * escuela o inexistente) da 403 sin revelar si existe; un alumno de baja de su grupo, 404 (D7-13).</li>
  * <li>DTO reducidos: nunca NIF, email, dirección, observaciones, tarifa ni cobros (D7-12).</li>
- * <li>Cuentas mixtas: R+Pr (sesión 184) no ve sus sedes por estas rutas; F+Pr usa sus grupos; P/G sin PROFESOR no
+ * <li>Cuentas mixtas: R+Pr (decisión 371) no ve sus sedes por estas rutas; F+Pr usa sus grupos; P/G sin PROFESOR no
  * usa estas rutas (con PROFESOR, solo sus grupos: E8-1, decisión 217). La sesión solo-profesor sigue cerrada fuera de
  * su lista blanca.</li>
  * </ul>
@@ -397,9 +397,10 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Set.of(e.aGrupoA, e.aB),
 				ids(leer(get("/api/profesor/grupos/" + e.gB + "/alumnos"), tProfRP, 200), "id"));
 		assertEquals(200, estado(get("/api/profesor/alumnos/" + e.aB), tProfRP));
-		// Y la sesión 184 sigue cerrada en las rutas de gestión de su sede.
-		assertEquals(403, estado(get("/api/alumnos/" + e.aA), tProfRP));
-		assertEquals(403, estado(get("/api/grupos/" + e.gA), tProfRP));
+		// Decisión 371: las rutas de gestión son su panel de sede, solo de su sede (gB es de otra).
+		assertEquals(200, estado(get("/api/alumnos/" + e.aA), tProfRP));
+		assertEquals(200, estado(get("/api/grupos/" + e.gA), tProfRP));
+		assertEquals(403, estado(get("/api/grupos/" + e.gB), tProfRP));
 	}
 
 	@Test
@@ -428,11 +429,17 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		for (String token : List.of(tProfA, tProfFP, tProfRP)) {
 			// Un alumno de SUS grupos: ni así entra por las rutas de gestión.
 			long alumno = token.equals(tProfRP) ? e.aB : token.equals(tProfFP) ? alumnoGA2 : tutelado;
-			for (MockHttpServletRequestBuilder peticion : List.of(get("/api/alumnos"),
+			// Decisión 371: el listado y la asistencia de R+Pr son los de su panel de sede: los filtra el servicio.
+			List<MockHttpServletRequestBuilder> peticiones = new java.util.ArrayList<>(List.of(
 					get("/api/alumnos/" + alumno), get("/api/alumnos/" + alumno + "/tutores"),
-					get("/api/alumnos/" + alumno + "/salud"), get("/api/informes/asistencia?year=2026&month=10"),
+					get("/api/alumnos/" + alumno + "/salud"),
 					put("/api/alumnos/" + alumno + "/deportes/TAEKWONDO/grado").contentType(MediaType.APPLICATION_JSON)
-							.content("{\"nuevoGrado\":\"ROJO\"}"))) {
+							.content("{\"nuevoGrado\":\"ROJO\"}")));
+			if (!token.equals(tProfRP)) {
+				peticiones.add(get("/api/alumnos"));
+				peticiones.add(get("/api/informes/asistencia?year=2026&month=10"));
+			}
+			for (MockHttpServletRequestBuilder peticion : peticiones) {
 				MvcResult r = peticion(peticion, token);
 				assertEquals(403, r.getResponse().getStatus(),
 						r.getRequest().getMethod() + " " + r.getRequest().getRequestURI());

@@ -47,7 +47,7 @@ import jakarta.persistence.EntityManager;
  * <p><b>Filtro único: {@code alcance.grupos()}</b> (D7-11), como {@code CajaService.alumnosDeMisGrupos}. Nunca
  * {@code GestionPorSede.restriccion()} (no restringe al profesor), {@code PredicadosAlcance.alumnos(alcance)} ni
  * {@code AccesoRecursos.alumno/grupo(id, 'LEER')}, que también conceden por las sedes del responsable: en la sesión
- * R+Pr (decisión 184) las sedes no abren nada aquí. Pieza E8-1 (decisión 217, D8-15): P o G con PROFESOR tienen alcance
+ * R+Pr (decisión 371) las sedes no abren nada aquí. Pieza E8-1 (decisión 217, D8-15): P o G con PROFESOR tienen alcance
  * total y sus grupos; aquí cuentan solo los grupos (sin asignaciones, lista vacía o 403), nunca el total. El
  * {@code @PreAuthorize} del controlador ya filtra; el servicio lo vuelve a comprobar.
  *

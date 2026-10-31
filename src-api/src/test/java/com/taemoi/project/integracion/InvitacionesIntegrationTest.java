@@ -580,7 +580,7 @@ class InvitacionesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void aceptarSinEscuelaQueAbraSesion_403ConContrasenaCreada() throws Exception {
+	void aceptarComoResponsableSolo_abreSesion() throws Exception {
 		String correo = emailNuevo("solo-responsable");
 		Map<String, Object> datos = invitacion(correo, "RESPONSABLE_SEDE", "Ana", "Responsable");
 		datos.put("sedeIds", List.of(e.sA));
@@ -588,8 +588,9 @@ class InvitacionesIntegrationTest extends MySqlIntegrationTest {
 
 		MvcResult r = aceptar(enviadoA(correo).token(), CONTRASENA);
 
-		assertMensaje(r, 403, AuthenticationServiceImpl.ROL_SIN_ACCESO);
-		assertNull(cookieJwt(r));
+		// Decisión 370: el responsable de sede entra por su invitación, como el resto de roles.
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertNotNull(cookieJwt(r));
 		assertFalse(pendiente(id), "la contraseña queda creada");
 	}
 

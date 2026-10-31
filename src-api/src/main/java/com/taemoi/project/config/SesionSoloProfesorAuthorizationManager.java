@@ -23,9 +23,9 @@ import com.taemoi.project.entities.Roles;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Decisiones 180 y 184 (pieza 6b-3b-2, matizan la D5-1): una sesión solo-profesor
- * ({@link RolMembresia#sesionSoloProfesor}: PROFESOR sin FAMILIA ni gestión, también con RESPONSABLE_SEDE) solo usa su
- * caja hasta la E9; su autoridad de responsable, si la tiene, no abre nada más. Envuelve el {@link AuthorizationManager} de las reglas de URL de
+ * Decisión 180 (pieza 6b-3b-2, matiza la D5-1): una sesión solo-profesor ({@link RolMembresia#sesionSoloProfesor}:
+ * PROFESOR sin ningún otro rol de escuela) solo usa su caja. RESPONSABLE_SEDE + PROFESOR ya no es esa sesión (decisión
+ * 371): entra como responsable y aquí delega sin más. Envuelve el {@link AuthorizationManager} de las reglas de URL de
  * {@code SecurityConfiguration} y, para esa sesión, deja decidir a las reglas de siempre SOLO en:
  * <ul>
  * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), sus rutas de la entrega 7
@@ -109,10 +109,11 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 	/**
 	 * Pieza 8b-3o (decisión 326): regla de URL de la marca y el logo de la escuela activa ({@code GET} de
 	 * {@code /api/escuela/marca} y {@code /api/escuela/logo}). Concede a gestión ({@code ROLE_ADMIN} o
-	 * {@code ROLE_MANAGER}) y a la sesión solo-profesor ({@link #esSesionSoloProfesor}, también responsable + profesor);
-	 * la familia (también la que además es profesor), el responsable solo, el superadmin sin membresía y el anónimo, no.
+	 * {@code ROLE_MANAGER}), al responsable de sede (pieza 9-5, decisión 370: la cabecera de su panel; también con
+	 * FAMILIA o PROFESOR) y a la sesión solo-profesor ({@link #esSesionSoloProfesor}); la familia (también la que además
+	 * es profesor), el superadmin sin membresía y el anónimo, no.
 	 */
-	static <T> AuthorizationManager<T> gestionOSesionSoloProfesor() {
+	static <T> AuthorizationManager<T> panelConMarca() {
 		return new AuthorizationManager<>() {
 			@Override
 			@Deprecated
@@ -132,7 +133,8 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				}
 				for (GrantedAuthority autoridad : sesion.getAuthorities()) {
 					String nombre = autoridad.getAuthority();
-					if (Roles.ROLE_ADMIN.name().equals(nombre) || Roles.ROLE_MANAGER.name().equals(nombre)) {
+					if (Roles.ROLE_ADMIN.name().equals(nombre) || Roles.ROLE_MANAGER.name().equals(nombre)
+							|| Roles.ROLE_RESPONSABLE_SEDE.name().equals(nombre)) {
 						return true;
 					}
 				}

@@ -24,8 +24,9 @@ import com.taemoi.project.services.JwtService;
  *          aNada     sin sede ni grupo             (solo gestión)
  *          aInactivoA sede principal A, de baja
  * turnos   tA (lunes, gA, con aA), tB (lunes, gB, con aB), tSin (sin grupo)
- * cuentas  FAMILIA + RESPONSABLE_SEDE (la puerta de entrada exige FAMILIA, D6-15), cada una con su alumno propio
- *          sin sede: respA (sede A) y respAC (sedes A y C); y un gestor (ADMINISTRADOR).
+ * cuentas  FAMILIA + RESPONSABLE_SEDE, cada una con su alumno propio sin sede: respA (sede A) y respAC (sedes A y C);
+ *          y un gestor (ADMINISTRADOR). Desde la pieza 9-5 RESPONSABLE_SEDE entra solo: las demás combinaciones las
+ *          crea cada test con {@link #cuenta} y {@link #responsable}.
  * </pre>
  * TAEKWONDO activo: aA (apto), aB (apto), aGrupoA (no apto).
  */
@@ -185,7 +186,7 @@ final class EscuelaConSedesDePrueba {
 		return id;
 	}
 
-	private void responsable(long usuario, long... sedes) {
+	void responsable(long usuario, long... sedes) {
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'RESPONSABLE_SEDE')",
 				usuario, org);
 		long membresia = jdbc.queryForObject("""

@@ -107,29 +107,36 @@ class MembresiaServiceImplTest {
 	}
 
 	@Test
-	void soloProfesorAbreSesionSinAlumno_responsableSoloNo_yConFamiliaExigenAlumno() {
+	void profesorYResponsableAbrenSesionSinAlumno_yProfesorConFamiliaLoExige() {
 		// Decisión 180 (matiza la D5-1): la cuenta que solo es profesor entra (solo a su caja); sin grupos, también.
 		assertTrue(RolMembresia.abreSesion(Set.of(Roles.ROLE_PROFESOR)));
 		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_PROFESOR)));
 		assertTrue(RolMembresia.puedeEntrar(Set.of(Roles.ROLE_PROFESOR), () -> {
 			throw new AssertionError("solo profesor no consulta alumnos accesibles");
 		}));
-		// El responsable de sede solo sigue sin entrar (D6-15); con profesor entra como profesor (decisión 184).
-		assertFalse(RolMembresia.abreSesion(Set.of(Roles.ROLE_RESPONSABLE_SEDE)));
+		// Decisión 370: el responsable de sede solo entra, sin alumno; con profesor entra como responsable (371).
+		assertTrue(RolMembresia.abreSesion(Set.of(Roles.ROLE_RESPONSABLE_SEDE)));
+		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_RESPONSABLE_SEDE)));
+		assertTrue(RolMembresia.puedeEntrar(Set.of(Roles.ROLE_RESPONSABLE_SEDE), () -> {
+			throw new AssertionError("el responsable no consulta alumnos accesibles");
+		}));
 		assertTrue(RolMembresia.abreSesion(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR)));
 		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR)));
 		assertFalse(RolMembresia.abreSesion(Set.of()));
 		assertTrue(RolMembresia.abreSesion(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER)));
 		assertTrue(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER)));
-		assertTrue(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER)));
+		// Pieza 9-5: el responsable entra por sí mismo; quedarse sin alumnos como familia no le cierra la puerta.
+		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER)));
+		assertFalse(RolMembresia.requiereAlumnoActivo(
+				Set.of(Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_PROFESOR, Roles.ROLE_USER)));
 		assertFalse(RolMembresia.requiereAlumnoActivo(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_MANAGER)));
 	}
 
 	@Test
 	void sesionSoloProfesor_esLaQueTieneProfesorYNingunoDeLosTresRolesDeSiempre() {
 		assertTrue(RolMembresia.sesionSoloProfesor(Set.of(Roles.ROLE_PROFESOR)));
-		// Falla cerrada: si algún día entrara con RESPONSABLE_SEDE, seguiría limitada a la caja.
-		assertTrue(RolMembresia.sesionSoloProfesor(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_RESPONSABLE_SEDE)));
+		// Decisión 371 (sustituye a la 184): con RESPONSABLE_SEDE entra como responsable, sin la lista blanca.
+		assertFalse(RolMembresia.sesionSoloProfesor(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_RESPONSABLE_SEDE)));
 		for (Roles deSiempre : List.of(Roles.ROLE_ADMIN, Roles.ROLE_MANAGER, Roles.ROLE_USER)) {
 			assertFalse(RolMembresia.sesionSoloProfesor(Set.of(Roles.ROLE_PROFESOR, deSiempre)), deSiempre.name());
 			assertFalse(RolMembresia.sesionSoloProfesor(Set.of(deSiempre)), deSiempre.name());
@@ -236,27 +243,28 @@ class MembresiaServiceImplTest {
 	}
 
 	@Test
-	void soloResponsableNoEsEscuelaValida_soloProfesorSi() {
+	void soloResponsableYSoloProfesorSonEscuelaValida() {
+		// Decisión 370: solo responsable de sede (sin FAMILIA ni alumno) abre sesión en su escuela.
 		activas.add(new Membresia(10L, 3L, RolMembresia.RESPONSABLE_SEDE));
 		when(repo.findRolesActivos(10L, 3L)).thenReturn(List.of(RolMembresia.RESPONSABLE_SEDE));
 
-		assertTrue(servicio.elegirOrganizacionParaLogin(usuario).isEmpty());
-		assertFalse(servicio.puedeEntrarEn(usuario, 3L));
-		assertTrue(servicio.soloTieneRolesSinAcceso(10L));
+		assertEquals(Optional.of(3L), servicio.elegirOrganizacionParaLogin(usuario));
+		assertTrue(servicio.puedeEntrarEn(usuario, 3L));
+		assertFalse(servicio.soloTieneRolesSinAcceso(10L));
 
 		// Decisión 180: solo profesor (sin FAMILIA ni alumno) abre sesión en su escuela.
+		activas.clear();
 		activas.add(new Membresia(10L, 2L, RolMembresia.PROFESOR));
 		when(repo.findRolesActivos(10L, 2L)).thenReturn(List.of(RolMembresia.PROFESOR));
 		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
 		assertTrue(servicio.puedeEntrarEn(usuario, 2L));
-		assertFalse(servicio.puedeEntrarEn(usuario, 3L));
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L));
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
-	/** Decisión 184: responsable de sede + profesor entra como profesor (sesión limitada a su caja). */
+	/** Decisión 371 (sustituye a la 184): responsable de sede + profesor entra como responsable, sin la lista blanca. */
 	@Test
-	void responsableYProfesorEnLaMismaEscuelaEntraComoProfesor() {
+	void responsableYProfesorEnLaMismaEscuelaEntraComoResponsable() {
 		activas.add(new Membresia(10L, 2L, RolMembresia.PROFESOR));
 		activas.add(new Membresia(10L, 2L, RolMembresia.RESPONSABLE_SEDE));
 		when(repo.findRolesActivos(10L, 2L)).thenReturn(List.of(RolMembresia.RESPONSABLE_SEDE, RolMembresia.PROFESOR));
@@ -264,7 +272,7 @@ class MembresiaServiceImplTest {
 		assertEquals(Optional.of(2L), servicio.elegirOrganizacionParaLogin(usuario));
 		assertTrue(servicio.puedeEntrarEn(usuario, 2L));
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L));
-		assertTrue(RolMembresia.sesionSoloProfesor(servicio.autoridadesEn(10L, 2L)));
+		assertFalse(RolMembresia.sesionSoloProfesor(servicio.autoridadesEn(10L, 2L)));
 		verify(acceso, never()).tieneAlgunoAccesible(any(), anyLong());
 	}
 
@@ -291,7 +299,7 @@ class MembresiaServiceImplTest {
 	}
 
 	@Test
-	void selectorDeEscuelaNoListaLasEscuelasDondeSusRolesNoAbrenSesion() {
+	void selectorDeEscuelaListaLasEscuelasDondeSusRolesAbrenSesion() {
 		activas.add(new Membresia(10L, 1L, RolMembresia.ADMINISTRADOR));
 		activas.add(new Membresia(10L, 2L, RolMembresia.PROFESOR));
 		activas.add(new Membresia(10L, 3L, RolMembresia.RESPONSABLE_SEDE));
@@ -300,11 +308,12 @@ class MembresiaServiceImplTest {
 
 		List<OrganizacionUsuarioDTO> lista = servicio.organizacionesDe(10L, 1L);
 
-		// Decisión 180: la escuela donde solo es profesor sí aparece; la de solo responsable, no.
-		assertEquals(List.of(1L, 2L, 4L), lista.stream().map(OrganizacionUsuarioDTO::id).toList());
+		// Decisiones 180 y 370: aparecen la escuela donde solo es profesor y la de solo responsable.
+		assertEquals(List.of(1L, 2L, 3L, 4L), lista.stream().map(OrganizacionUsuarioDTO::id).toList());
 		assertEquals(List.of("ROLE_MANAGER"), lista.get(0).roles());
 		assertEquals(List.of("ROLE_PROFESOR"), lista.get(1).roles());
-		assertEquals(List.of("ROLE_PROFESOR", "ROLE_USER"), lista.get(2).roles(), "PROFESOR + FAMILIA: como familia");
+		assertEquals(List.of("ROLE_RESPONSABLE_SEDE"), lista.get(2).roles());
+		assertEquals(List.of("ROLE_PROFESOR", "ROLE_USER"), lista.get(3).roles(), "PROFESOR + FAMILIA: como familia");
 		assertTrue(lista.get(0).activa());
 	}
 
@@ -327,10 +336,10 @@ class MembresiaServiceImplTest {
 	}
 
 	@Test
-	void soloTieneRolesSinAccesoSoloSiTodasLasMembresiasActivasSonDeRolesNuevos() {
+	void soloTieneRolesSinAcceso_hoyNingunRolLoEs() {
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L), "sin membresías: es SIN_ESCUELA");
 		activas.add(new Membresia(10L, 2L, RolMembresia.RESPONSABLE_SEDE));
-		assertTrue(servicio.soloTieneRolesSinAcceso(10L));
+		assertFalse(servicio.soloTieneRolesSinAcceso(10L), "decisión 370: el responsable abre sesión");
 		activas.add(new Membresia(10L, 4L, RolMembresia.FAMILIA));
 		assertFalse(servicio.soloTieneRolesSinAcceso(10L), "familia en otra escuela: mensaje de siempre");
 	}

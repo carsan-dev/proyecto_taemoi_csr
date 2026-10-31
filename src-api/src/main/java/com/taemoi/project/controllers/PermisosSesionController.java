@@ -11,8 +11,8 @@ import com.taemoi.project.services.PermisosSesionService;
 
 /**
  * {@code GET /api/auth/permisos} (pieza E8-1, D8-14): roles, sedes visibles y capacidades de la sesión, la fuente
- * única de menús y guards del frontend. Las mismas sesiones que {@code /api/auth/roles} más la solo-plataforma (con
- * roles vacíos). Sin regla de URL propia (cae en {@code authenticated()}); en la lista blanca de la sesión
+ * única de menús y guards del frontend. Las mismas sesiones que {@code /api/auth/roles} (también el responsable de
+ * sede, pieza 9-5) más la solo-plataforma (con roles vacíos). Sin regla de URL propia (cae en {@code authenticated()}); en la lista blanca de la sesión
  * solo-profesor ({@code SesionSoloProfesorAuthorizationManager}). Como todo {@code /api/auth/**}, no se audita.
  */
 @RestController
@@ -27,7 +27,7 @@ public class PermisosSesionController {
 
 	@GetMapping("/permisos")
 	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_USER') || hasRole('ROLE_PROFESOR')"
-			+ " || hasAuthority('ROLE_ADMIN_PLATAFORMA')")
+			+ " || hasRole('ROLE_RESPONSABLE_SEDE') || hasAuthority('ROLE_ADMIN_PLATAFORMA')")
 	public ResponseEntity<PermisosSesionDTO> permisos() {
 		return ResponseEntity.ok(servicio.permisos());
 	}
