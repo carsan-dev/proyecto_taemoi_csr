@@ -53,6 +53,7 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
   private readonly busqueda = new Subject<string>();
   private readonly suscripciones = new Subscription();
   private lectura: Subscription | null = null;
+  private destruido = false;
 
   readonly opcionesRol = OPCIONES_ROL;
   readonly etiquetaRol = etiquetaRol;
@@ -132,6 +133,7 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destruido = true;
     this.suscripciones.unsubscribe();
     this.lectura?.unsubscribe();
     this.busqueda.complete();
@@ -156,7 +158,8 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
           this.cdr.detectChanges();
         },
         error: () => {
-          if (!silencioso) {
+          // Una recarga silenciosa no tira la lista, salvo que cancelara una carga normal en curso: entonces falla igual.
+          if (!silencioso || this.estado === 'cargando') {
             this.estado = 'error';
           }
           this.cdr.detectChanges();
@@ -216,6 +219,16 @@ export class MiembrosPanelComponent implements OnInit, OnDestroy {
   cerrarAlta(): void {
     this.altaAbierta = false;
   }
+
+  /**
+   * Una escritura terminó cuando su panel ya estaba cerrado: la fila quedó vieja y se refresca la lista sin esqueleto.
+   * Es una función de flecha para pasarla a los paneles, que ya no emiten nada una vez destruidos.
+   */
+  readonly refrescarTrasCierre = (): void => {
+    if (!this.destruido) {
+      this.cargar(true);
+    }
+  };
 
   /** La ficha cambió algo: la fila se pone al día ya y la lista se recarga sin esqueleto. */
   fichaCambiada(ficha: FichaCompleta): void {

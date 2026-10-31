@@ -72,6 +72,8 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   @Output() readonly cerrar = new EventEmitter<void>();
   /** La ficha que devolvió la API tras un cambio: la lista se pone al día. */
   @Output() readonly cambiada = new EventEmitter<FichaCompleta>();
+  /** Llamada cuando una escritura termina con el panel ya cerrado (los `@Output` ya no llegan): la lista se refresca. */
+  @Input() alTerminarCerrado: (() => void) | null = null;
 
   readonly rolesPersonal = ROLES_PERSONAL;
   readonly rolesAsignacion = ROLES_ASIGNACION;
@@ -178,9 +180,11 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   /** Las sedes que se pueden marcar: las activas y, para no perderlas sin querer, las guardadas aunque estén inactivas. */
   get sedesMarcables(): { id: number; nombre: string; inactiva: boolean }[] {
     const lista = this.contexto.sedes.filter((s) => s.activa).map((s) => ({ id: s.id, nombre: s.nombre, inactiva: false }));
+    // Sin datos de sedes (los permisos fallaron o tardan) no se sabe que esté inactiva: sin etiqueta.
+    const conocidas = this.contexto.sedes.length > 0;
     for (const sede of this.ficha?.sedes ?? []) {
       if (!lista.some((s) => s.id === sede.id)) {
-        lista.push({ id: sede.id, nombre: sede.nombre, inactiva: true });
+        lista.push({ id: sede.id, nombre: sede.nombre, inactiva: conocidas });
       }
     }
     return lista;
@@ -259,6 +263,14 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     );
   }
 
+  /** El éxito llegó con el panel cerrado: se avisa igualmente y la lista se refresca. */
+  private terminarCerrado(aviso?: string): void {
+    if (aviso) {
+      this.avisos.exito(aviso);
+    }
+    this.alTerminarCerrado?.();
+  }
+
   /** Lanza un cambio con su ocupado y su error; la respuesta refresca la ficha. */
   private escribir(
     peticion: Observable<FichaCompleta>,
@@ -274,6 +286,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       next: (ficha) => {
         ocupado(false);
         if (this.destruido) {
+          this.terminarCerrado(aviso);
           return;
         }
         this.aplicar(ficha, tocadas);
@@ -363,6 +376,9 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.destruido) {
+      if (!resultado.error) {
+        this.terminarCerrado();
+      }
       return;
     }
     if (resultado.error) {
@@ -420,6 +436,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       return;
     }
     this.sedesError = null;
+    const aviso = this.responsablePendiente ? 'Rol dado.' : 'Sedes guardadas.';
     const peticion = this.responsablePendiente
       ? this.api.darRol(ficha.usuarioId, 'RESPONSABLE_SEDE', { sedeIds: [...this.sedesElegidas] })
       : this.api.reemplazarSedes(ficha.usuarioId, [...this.sedesElegidas]);
@@ -429,7 +446,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       (v) => (this.sedesOcupado = v),
       (m) => (this.sedesError = m),
       'No se pudieron guardar las sedes.',
-      'Sedes guardadas.'
+      aviso
     );
   }
 

@@ -35,9 +35,9 @@ export function rolEnFrase(rol: RolMembresia): string {
   return etiquetaRol(rol).toLowerCase();
 }
 
-/** Opciones del selector de la lista; «Todos» es el valor vacío. */
+/** Opciones del selector de la lista; «Todos los roles» es el valor vacío. */
 export const OPCIONES_ROL: readonly { valor: RolMembresia | ''; etiqueta: string }[] = [
-  { valor: '', etiqueta: 'Todos' },
+  { valor: '', etiqueta: 'Todos los roles' },
   { valor: 'PROPIETARIO', etiqueta: 'Propietario' },
   { valor: 'ADMINISTRADOR', etiqueta: 'Gestor' },
   { valor: 'RESPONSABLE_SEDE', etiqueta: 'Responsable de sede' },

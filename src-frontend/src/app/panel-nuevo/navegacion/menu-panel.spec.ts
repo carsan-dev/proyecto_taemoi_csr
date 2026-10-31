@@ -199,7 +199,7 @@ describe('menu-panel: Miembros (E9-4)', () => {
     const rutas = escuela.entradas.map((e) => e.ruta);
     expect(rutas.indexOf('/miembros')).toBe(rutas.indexOf('/sedes') + 1);
     expect(escuela.entradas.find((e) => e.ruta === '/miembros')).toEqual(
-      jasmine.objectContaining({ etiqueta: 'Miembros', icono: 'bi-person-badge', condicion: 'miembros' })
+      jasmine.objectContaining({ etiqueta: 'Miembros', icono: 'bi-person-gear', condicion: 'miembros' })
     );
     expect(rutasDeGestion({ ...base, miembros: true })).toContain('/miembros');
     expect(rutasDeGestion({ ...base, miembros: false })).not.toContain('/miembros');

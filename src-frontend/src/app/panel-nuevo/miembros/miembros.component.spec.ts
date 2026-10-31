@@ -235,7 +235,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   it('el selector de rol y «Incluir familias» filtran en el servidor', () => {
     cargar();
     const opciones = Array.from(el().querySelectorAll<HTMLOptionElement>('#miembros-rol option')).map((o) => texto(o));
-    expect(opciones).toEqual(['Todos', 'Propietario', 'Gestor', 'Responsable de sede', 'Profesor']);
+    expect(opciones).toEqual(['Todos los roles', 'Propietario', 'Gestor', 'Responsable de sede', 'Profesor']);
     const select = el().querySelector<HTMLSelectElement>('#miembros-rol')!;
     select.value = 'ADMINISTRADOR';
     select.dispatchEvent(new Event('change'));
@@ -501,6 +501,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(put.request.body).toEqual({ sedeIds: [2] });
     put.flush(ficha({ roles: [rol('PROFESOR'), rol('RESPONSABLE_SEDE')], sedes: [{ id: 2, nombre: 'Mollina' }] }));
     await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Rol dado.' }]);
     expect(casilla('RESPONSABLE_SEDE').checked).toBeTrue();
     expect(panel()!.textContent).toContain('Guardar sedes');
     listados().forEach((r) => r.flush(pagina([miembro()])));
@@ -746,5 +747,193 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(consola).not.toHaveBeenCalled();
     expect(aviso).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
+  });
+
+  // ------------------------------------------------------------------ lecturas, doble envío y cierres con escritura en vuelo
+
+  it('una respuesta vieja de la lista se descarta: la petición anterior se cancela y manda la última', () => {
+    cargar();
+    const comp = fixture.componentInstance;
+    comp.cargar();
+    comp.cargar();
+    const [vieja, ultima] = listados();
+    expect(vieja.cancelled).toBeTrue();
+    expect(ultima.cancelled).toBeFalse();
+    ultima.flush(pagina([miembro({ usuarioId: 5, nombre: 'Berta', apellidos: 'Sol', email: 'berta@ejemplo.test' })]));
+    fixture.detectChanges();
+    expect(filas().map((f) => f.dataset['id'])).toEqual(['5']);
+  });
+
+  it('una recarga silenciosa que cancela una carga normal y falla deja el bloque de error, no el esqueleto', () => {
+    cargar();
+    const comp = fixture.componentInstance;
+    comp.cargar();
+    fixture.detectChanges();
+    expect(comp.estado).toBe('cargando');
+    comp.cargar(true);
+    const [vieja, silenciosa] = listados();
+    expect(vieja.cancelled).toBeTrue();
+    silenciosa.flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(comp.estado).toBe('error');
+    expect(el().querySelector('pn-bloque-error')).not.toBeNull();
+    expect(el().querySelector('pn-esqueleto')).toBeNull();
+  });
+
+  it('una recarga silenciosa que falla con la lista ya a la vista no la tira', () => {
+    cargar();
+    fixture.componentInstance.cargar(true);
+    listados()[0].flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.estado).toBe('listo');
+    expect(filas().length).toBe(1);
+  });
+
+  it('al destruir el componente no queda viva la lectura de la lista', () => {
+    permisosActuales = permisos(PROPIETARIA);
+    fixture = TestBed.createComponent(MiembrosPanelComponent);
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    const [lectura] = listados();
+    expect(lectura.cancelled).toBeFalse();
+    fixture.destroy();
+    expect(lectura.cancelled).toBeTrue();
+  });
+
+  it('doble envío del alta: un segundo envío mientras el primero va en vuelo no manda otro POST', () => {
+    abrirAlta();
+    rellenar('miembro-alta-email', 'ana@ejemplo.test');
+    rellenar('miembro-alta-rol', 'PROFESOR');
+    boton(panel()!, 'Añadir miembro').click();
+    panel()!.querySelector<HTMLFormElement>('#miembro-alta-form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+    pintar();
+    const posts = http.match((r) => r.method === 'POST' && r.url === API);
+    expect(posts.length).toBe(1);
+    posts[0].flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+  });
+
+  it('doble envío en la ficha: un segundo «Guardar cargo» en vuelo no repite el PUT', async () => {
+    cargar();
+    await abrirFicha(ficha({ roles: [rol('PROFESOR', true, 'Jefe')] }));
+    const caja = lineaRol('PROFESOR').querySelector<HTMLInputElement>('input[type="text"]')!;
+    caja.value = 'Coordinador';
+    caja.dispatchEvent(new Event('input'));
+    pintar();
+    const guardar = boton(lineaRol('PROFESOR'), 'Guardar cargo');
+    guardar.click();
+    guardar.click();
+    const puts = http.match((r) => r.method === 'PUT' && r.url === `${API}/1/roles/PROFESOR`);
+    expect(puts.length).toBe(1);
+    puts[0].flush(ficha({ roles: [rol('PROFESOR', true, 'Coordinador')] }));
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('PUT /sedes conserva la sede inactiva ya guardada y la etiqueta como inactiva', async () => {
+    cargar();
+    await abrirFicha(ficha({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 3, nombre: 'Herrera' }, { id: 1, nombre: 'Casariche' }] }));
+    const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
+    expect(cajas.map((c) => texto(c.parentElement))).toEqual(['Casariche', 'Mollina', 'Herrera (inactiva)']);
+    cajas[1].checked = true;
+    cajas[1].dispatchEvent(new Event('change'));
+    pintar();
+    boton(panel()!, 'Guardar sedes').click();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/sedes`);
+    expect(put.request.body).toEqual({ sedeIds: [3, 1, 2] });
+    put.flush(ficha({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 3, nombre: 'Herrera' }, { id: 1, nombre: 'Casariche' }, { id: 2, nombre: 'Mollina' }] }));
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('sin datos de sedes (permisos que fallan o tardan) las sedes guardadas se enseñan sin «(inactiva)»', async () => {
+    cargar();
+    fixture.componentInstance.contexto = { ...fixture.componentInstance.contexto, sedes: [] };
+    await abrirFicha(ficha({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 1, nombre: 'Casariche' }] }));
+    const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
+    expect(cajas.map((c) => texto(c.parentElement))).toEqual(['Casariche']);
+    expect(cajas[0].checked).toBeTrue();
+  });
+
+  it('PUT /grupos conserva un grupo que no está en el catálogo', async () => {
+    cargar();
+    await abrirFicha(ficha({ numeroGrupos: 1, grupos: [{ grupoId: 99, nombre: 'Antiguo', sedeId: null, rol: 'TITULAR' }] }));
+    expect(panel()!.querySelector('.miembros__grupo[data-grupo="99"]')).not.toBeNull();
+    const nuevo = panel()!.querySelector<HTMLSelectElement>('#miembro-grupo-nuevo')!;
+    nuevo.value = '11';
+    nuevo.dispatchEvent(new Event('change'));
+    pintar();
+    boton(panel()!, 'Añadir').click();
+    pintar();
+    boton(panel()!, 'Guardar grupos').click();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/grupos`);
+    expect(put.request.body).toEqual({
+      asignaciones: [
+        { grupoId: 99, rol: 'TITULAR' },
+        { grupoId: 11, rol: 'TITULAR' },
+      ],
+    });
+    put.flush(ficha());
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('al cerrar la ficha no quedan lecturas vivas (la ficha ni el catálogo de grupos)', async () => {
+    cargar();
+    el().querySelector<HTMLButtonElement>('.miembros__fila[data-id="1"]')!.click();
+    pintar();
+    const lectura = http.expectOne((r) => r.method === 'GET' && r.url === `${API}/1`);
+    expect(lectura.cancelled).toBeFalse();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(lectura.cancelled).toBeTrue();
+
+    el().querySelector<HTMLButtonElement>('.miembros__fila[data-id="1"]')!.click();
+    pintar();
+    http.expectOne((r) => r.method === 'GET' && r.url === `${API}/1`).flush(ficha());
+    await esperar();
+    const catalogo = http.match((r) => r.url === GRUPOS);
+    expect(catalogo.length).toBe(1);
+    expect(catalogo[0].cancelled).toBeFalse();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(catalogo[0].cancelled).toBeTrue();
+  });
+
+  it('ficha cerrada con un guardado en vuelo: el éxito se avisa y la lista se refresca igualmente', async () => {
+    cargar();
+    await abrirFicha(ficha({ roles: [rol('PROFESOR', true, 'Jefe')] }));
+    const caja = lineaRol('PROFESOR').querySelector<HTMLInputElement>('input[type="text"]')!;
+    caja.value = 'Coordinador';
+    caja.dispatchEvent(new Event('input'));
+    pintar();
+    boton(lineaRol('PROFESOR'), 'Guardar cargo').click();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/roles/PROFESOR`);
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(el().querySelector('pn-miembro-ficha')).toBeNull();
+    expect(listados().length).toBe(0);
+    put.flush(ficha({ roles: [rol('PROFESOR', true, 'Coordinador')] }));
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Cargo guardado.' }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([miembro()]));
+  });
+
+  it('alta cerrada con el POST en vuelo: el éxito se avisa y la lista se refresca, sin abrir la ficha', async () => {
+    abrirAlta();
+    rellenar('miembro-alta-email', 'ana@ejemplo.test');
+    rellenar('miembro-alta-rol', 'PROFESOR');
+    boton(panel()!, 'Añadir miembro').click();
+    const post = http.expectOne((r) => r.method === 'POST' && r.url === API);
+    fixture.componentInstance.altaAbierta = false;
+    pintar();
+    post.flush(ficha({ usuarioId: 7, nombre: 'Ana', apellidos: 'Ruiz', email: 'ana@ejemplo.test' }));
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Miembro añadido.' }]);
+    expect(el().querySelector('pn-miembro-ficha')).toBeNull();
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([miembro()]));
   });
 });

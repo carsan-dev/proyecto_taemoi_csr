@@ -134,7 +134,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Eventos', ruta: '/eventosListar', icono: 'bi-calendar-check' },
       { etiqueta: 'Crear evento', ruta: '/eventosCrear', icono: 'bi-calendar-plus' },
       { etiqueta: 'Sedes', ruta: '/sedes', icono: 'bi-geo-alt', condicion: 'sedes' },
-      { etiqueta: 'Miembros', ruta: '/miembros', icono: 'bi-person-badge', condicion: 'miembros' },
+      { etiqueta: 'Miembros', ruta: '/miembros', icono: 'bi-person-gear', condicion: 'miembros' },
       { etiqueta: 'Configuración', ruta: '/configuracion-sistema', icono: 'bi-sliders', condicion: 'propietario' },
       { etiqueta: 'Registro de acciones', ruta: '/auditoriaSistema', icono: 'bi-journal-text', condicion: 'propietario' },
       { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web', verWeb: true },

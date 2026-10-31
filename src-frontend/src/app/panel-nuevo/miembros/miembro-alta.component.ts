@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, inject } from '@angular/core';
 
 import { FichaCompleta, MiembrosService, RolMembresia } from '../../servicios/endpoints/miembros.service';
+import { AvisosService } from '../avisos/avisos.service';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import { ContextoMiembros } from './miembro-ficha.component';
@@ -33,12 +34,15 @@ import {
 export class MiembroAltaComponent implements OnDestroy {
   private readonly api = inject(MiembrosService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly avisos = inject(AvisosService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private destruido = false;
 
   @Input({ required: true }) contexto!: ContextoMiembros;
   @Output() readonly cerrar = new EventEmitter<void>();
   /** La ficha del miembro nuevo y si fue una invitación. */
+  /** Llamada cuando el alta termina con el panel ya cerrado (los `@Output` ya no llegan): la lista se refresca. */
+  @Input() alTerminarCerrado: (() => void) | null = null;
   @Output() readonly creada = new EventEmitter<{ ficha: FichaCompleta; invitacion: boolean }>();
 
   readonly avisoSinCuenta = AVISO_SIN_CUENTA;
@@ -127,9 +131,12 @@ export class MiembroAltaComponent implements OnDestroy {
     this.api.altaDeMiembro(cuerpoAlta(this.campos, this.invitar, this.reactivar)).subscribe({
       next: (ficha) => {
         this.enviando = false;
-        if (!this.destruido) {
-          this.creada.emit({ ficha, invitacion });
+        if (this.destruido) {
+          this.avisos.exito(invitacion ? 'Invitación enviada.' : 'Miembro añadido.');
+          this.alTerminarCerrado?.();
+          return;
         }
+        this.creada.emit({ ficha, invitacion });
       },
       error: (error) => {
         this.enviando = false;

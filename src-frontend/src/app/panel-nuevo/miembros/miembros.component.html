@@ -60,7 +60,7 @@
             }
           </span>
           <span class="miembros__etiquetas">
-            @for (r of rolesActivos(m); track r) {
+            @for (r of rolesActivos(m); track $index) {
             <span class="miembros__etiqueta">{{ etiquetaRol(r) }}</span>
             }
             @if (m.invitacionPendiente) {
@@ -95,9 +95,11 @@
   </div>
 
   @if (abierto; as miembro) {
-  <pn-miembro-ficha [fila]="miembro" [contexto]="contexto" (cerrar)="cerrarFicha()" (cambiada)="fichaCambiada($event)" />
+  <pn-miembro-ficha [fila]="miembro" [contexto]="contexto" (cerrar)="cerrarFicha()" (cambiada)="fichaCambiada($event)"
+    [alTerminarCerrado]="refrescarTrasCierre" />
   }
   @if (altaAbierta) {
-  <pn-miembro-alta [contexto]="contexto" (cerrar)="cerrarAlta()" (creada)="altaHecha($event)" />
+  <pn-miembro-alta [contexto]="contexto" (cerrar)="cerrarAlta()" (creada)="altaHecha($event)"
+    [alTerminarCerrado]="refrescarTrasCierre" />
   }
 </div>
