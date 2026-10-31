@@ -29,7 +29,9 @@ public class RegistroAccionesSedes {
 		SEDE_CREADA(AuditoriaAccion.CREATE),
 		SEDE_EDITADA(AuditoriaAccion.UPDATE),
 		SEDE_DESACTIVADA(AuditoriaAccion.UPDATE),
-		SEDE_ACTIVADA(AuditoriaAccion.UPDATE);
+		SEDE_ACTIVADA(AuditoriaAccion.UPDATE),
+		/** Pieza 9-1 (decisión 369): alumno, sede anterior (NINGUNO si no tenía), sede nueva y cargos movidos. */
+		ALUMNO_SEDE_CAMBIADA(AuditoriaAccion.UPDATE);
 
 		private final AuditoriaAccion auditoria;
 

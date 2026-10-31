@@ -3,6 +3,9 @@ import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angu
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { PermisosSesionService, SedeVisible } from '../../servicios/authentication/permisos-sesion.service';
+import { CambiarSedePanelComponent } from './cambiar-sede/cambiar-sede-panel.component';
 import { DIALOGOS_FICHA } from './dialogos-ficha.port';
 import { FichaAlumnoBase } from './ficha-alumno-base';
 import { AlumnoDeporteDTO } from '../../interfaces/alumno-deporte-dto';
@@ -83,6 +86,7 @@ class CobrosEnVuelo extends Set<number> {
     FichaPagosComponent,
     FichaDatosComponent,
     FichaDocumentosComponent,
+    CambiarSedePanelComponent,
     DialogosAlumnoPanelComponent,
     FotoAmpliadaPanelComponent,
     EsqueletoComponent,
@@ -99,6 +103,8 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   private readonly rutaActiva = inject(ActivatedRoute);
   private readonly enrutador = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly auth = inject(AuthenticationService);
+  private readonly permisosSesion = inject(PermisosSesionService);
   private readonly anfitrion = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly eur = eur;
@@ -122,6 +128,10 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   pendiente: PendienteAlumno | null = null;
   estadoPendiente: Estado = 'cargando';
   panelAbierto = false;
+  /** Con dos o más sedes activas (E9-1) el carnet enseña la sede; con una, nada cambia. */
+  variasSedes = false;
+  sedesActivas: SedeVisible[] = [];
+  cambiarSedeAbierto = false;
   menuAbierto = false;
   /** Cargos del carnet con un cobro en vuelo. */
   readonly cobrando = new Set<number>();
@@ -135,6 +145,17 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
 
   override ngOnInit(): void {
     super.ngOnInit();
+    this.suscripciones.add(
+      this.permisosSesion.obtener().subscribe({
+        next: (p) => {
+          this.sedesActivas = (p?.sedes ?? []).filter((s) => s.activa !== false);
+          this.variasSedes = !!p?.variasSedes && this.sedesActivas.length > 1;
+          this.cdr.markForCheck();
+        },
+        // Sin permisos no se enseña la sede: el carnet queda como hoy.
+        error: () => (this.variasSedes = false),
+      })
+    );
     this.suscripciones.add(
       this.rutaActiva.queryParamMap.subscribe((parametros) => {
         const pedida = parametros.get('pestana');
@@ -164,6 +185,24 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   protected override aplicarAlumnoCargado(alumnoResponse: any): void {
     super.aplicarAlumnoCargado(alumnoResponse);
     this.cargarPendiente();
+  }
+
+  // ------------------------------------------------------------------ sede (E9-1)
+
+  /** «Cambiar» solo para la gestión (propietario y administración). */
+  get puedeCambiarSede(): boolean {
+    return this.auth.tieneAccesoAdmin();
+  }
+
+  get nombreSede(): string {
+    return this.alumno?.sedePrincipalNombre || 'Sin sede';
+  }
+
+  /** Cambio aplicado: cierra el panel, vuelve a leer la ficha (y con ella los cargos de Pagos) y avisa. */
+  sedeCambiada(nombre: string): void {
+    this.cambiarSedeAbierto = false;
+    if (this.alumnoId) this.cargarAlumno(this.alumnoId);
+    this.dialogos.toastExito(`Sede cambiada a ${nombre}.`);
   }
 
   // ------------------------------------------------------------------ barra

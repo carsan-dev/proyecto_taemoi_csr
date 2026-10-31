@@ -60,7 +60,7 @@ import jakarta.servlet.http.Cookie;
  * <li>Nunca sin sedes activas (409, también con dos desactivaciones a la vez); desactivar conserva a sus
  * responsables.</li>
  * <li>Una fila de registro por escritura, solo con ids; los 4xx, la genérica con los datos de la sede redactados.</li>
- * <li>D8-3: con dos sedes activas, el alta de grupo y de alumno sin sede de la gestión, como hoy.</li>
+ * <li>Decisiones 368 y 377: con dos sedes activas, el alta de grupo y de alumno sin sede de la gestión da 400.</li>
  * </ul>
  * Escuelas sintéticas ({@link EscuelaConSedesDePrueba}: A y B activas, C inactiva) y escuelas mínimas por SQL; cada
  * test crea sus sedes con nombre único y mira solo sus filas, así que el orden no importa. Nada en Moiskimdo. Datos
@@ -559,23 +559,27 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
-	// ------------------------------------------------------------------ D8-3: dos sedes activas, como hoy
+	// ------------------------------------------------------------------ decisiones 368 y 377: dos sedes activas
 
 	/**
-	 * D8-3 (fase3-e8-miembros.md §9 riesgo 9): con una sede activa, el grupo que la gestión da de alta sin sede recibe
-	 * esa sede; con dos, {@code SedeService.sedePorDefecto()} queda vacío y el grupo se crea igual (201) SIN sede
-	 * ({@code grupo.sede_id} NULL), también al editarlo sin sede. Con sede explícita, la pedida. No se cambia en la E8.
+	 * D8-3 cerrado por las decisiones 368 y 377: con una sede activa, el grupo que la gestión da de alta sin sede recibe
+	 * esa sede; con dos, 400 «Indica la sede.» y no se crea, y editar uno sin sede sin indicarla también da 400. Con sede
+	 * explícita, la pedida.
 	 */
 	@Test
-	void dosSedesActivas_altaDeGrupo_comportamientoActual() throws Exception {
+	void dosSedesActivas_altaDeGrupo_exigeLaSede() throws Exception {
 		assertEquals(d83.sA, sedeDelGrupo(altaDeGrupo("IT E8-2 d83 una " + d83.marca, null)), "una activa: esa");
 		long segunda = crearEn(tGestorD83, "IT E8-2 d83 segunda grupos " + d83.marca);
 		try {
-			long sinSede = altaDeGrupo("IT E8-2 d83 sin sede " + d83.marca, null);
-			assertNull(sedeDelGrupo(sinSede), "dos activas: el grupo queda sin sede");
-			assertEquals(200, estado(conCuerpo(put("/api/grupos/" + sinSede),
+			MvcResult sinSede = peticion(conCuerpo(post("/api/grupos"), grupo("IT E8-2 d83 sin sede " + d83.marca, null)),
+					tGestorD83);
+			assertEquals(400, sinSede.getResponse().getStatus(), contenido(sinSede));
+			assertTrue(contenido(sinSede).contains("Indica la sede."), contenido(sinSede));
+			long grupoSinSede = altaDeGrupo("IT E8-2 d83 antiguo " + d83.marca, d83.sA);
+			jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", grupoSinSede);
+			assertEquals(400, estado(conCuerpo(put("/api/grupos/" + grupoSinSede),
 					grupo("IT E8-2 d83 sin sede editado " + d83.marca, null)), tGestorD83));
-			assertNull(sedeDelGrupo(sinSede), "editarlo sin sede tampoco le pone una");
+			assertNull(sedeDelGrupo(grupoSinSede), "editarlo sin sede no le pone una");
 			assertEquals(segunda, sedeDelGrupo(altaDeGrupo("IT E8-2 d83 en la segunda " + d83.marca, segunda)));
 			assertEquals(d83.sA, sedeDelGrupo(altaDeGrupo("IT E8-2 d83 en A " + d83.marca, d83.sA)));
 		} finally {
@@ -586,15 +590,18 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * D8-3: el alumno que la gestión da de alta sin sede principal recibe la única sede activa; con dos, se crea igual
-	 * (201) con {@code sede_principal_id} NULL. Con sede explícita, la pedida.
+	 * D8-3 cerrado por las decisiones 368 y 377: el alumno que la gestión da de alta sin sede principal recibe la única
+	 * sede activa; con dos, 400 «Indica la sede.» y no se crea. Con sede explícita, la pedida.
 	 */
 	@Test
-	void dosSedesActivas_altaDeAlumno_comportamientoActual() throws Exception {
+	void dosSedesActivas_altaDeAlumno_exigeLaSede() throws Exception {
 		assertEquals(d83.sA, sedePrincipal(altaDeAlumno("UNA", null)), "una activa: esa");
 		long segunda = crearEn(tGestorD83, "IT E8-2 d83 segunda alumnos " + d83.marca);
 		try {
-			assertNull(sedePrincipal(altaDeAlumno("SINSEDE", null)), "dos activas: el alumno queda sin sede");
+			MvcResult sinSede = peticion(multipart("/api/alumnos/crear").param("nuevo", cuerpoDeAlumno("SINSEDE", null)),
+					tGestorD83);
+			assertEquals(400, sinSede.getResponse().getStatus(), contenido(sinSede));
+			assertTrue(contenido(sinSede).contains("Indica la sede."), contenido(sinSede));
 			assertEquals(segunda, sedePrincipal(altaDeAlumno("SEGUNDA", segunda)));
 		} finally {
 			jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", segunda);
@@ -649,14 +656,17 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 				+ "}";
 	}
 
-	private long altaDeAlumno(String sufijo, Long sede) throws Exception {
-		String cuerpo = """
+	private String cuerpoDeAlumno(String sufijo, Long sede) {
+		return """
 				{"nombre":"ALTA D83","apellidos":"PRUEBA %s %s","fechaNacimiento":"1990-03-04","direccion":"Calle 1",
 				 "telefono":600000009,"autorizacionWeb":true%s,
 				 "deportesInicial":[{"deporte":"TAEKWONDO","fechaAlta":"2024-09-01","tipoTarifa":"ADULTO",
 				   "cuantiaTarifa":30.0,"competidor":false,"tieneLicencia":false}]}"""
 				.formatted(sufijo, d83.marca, sede == null ? "" : ",\"sedePrincipalId\":" + sede);
-		MvcResult r = peticion(multipart("/api/alumnos/crear").param("nuevo", cuerpo), tGestorD83);
+	}
+
+	private long altaDeAlumno(String sufijo, Long sede) throws Exception {
+		MvcResult r = peticion(multipart("/api/alumnos/crear").param("nuevo", cuerpoDeAlumno(sufijo, sede)), tGestorD83);
 		assertEquals(201, r.getResponse().getStatus(), contenido(r));
 		long id = json.readTree(contenido(r)).get("id").asLong();
 		assertEquals(d83.org, jdbc.queryForObject("SELECT organizacion_id FROM alumno WHERE id = ?", Long.class, id));

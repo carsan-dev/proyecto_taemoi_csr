@@ -51,7 +51,8 @@ import jakarta.servlet.http.Cookie;
  * gestiona la tesorería de SUS sedes. Resumen, movimientos, exportaciones e informes solo con los cargos de sus sedes
  * (por la sede del cargo); cargos sueltos y cobros solo de alumnos de su sede principal (un alumno visible por grupo
  * desde otra sede no se cobra); sin generaciones masivas ni edición del catálogo; en una sede inactiva no se crean
- * cargos pero se cobran los existentes; cada cargo nace con la sede principal del alumno y no se mueve. Las cuentas son
+ * cargos pero se cobran los existentes; cada cargo nace con la sede principal del alumno y {@code asignarSedePrincipal} no
+ * lo mueve (lo sin cobrar solo cambia de sede con {@code CambioSedeAlumnoService}, decisión 369). Las cuentas son
  * FAMILIA + RESPONSABLE_SEDE (D6-15). Escuela sintética de {@link EscuelaConSedesDePrueba}.
  *
  * <pre>

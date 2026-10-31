@@ -652,4 +652,57 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT pa.id FROM ProductoAlumno pa WHERE pa.id = :id")
 	Optional<Long> bloquearPorId(@Param("id") Long id);
+
+	/**
+	 * Pieza 9-1: bloquea (SELECT ... FOR UPDATE) esos cargos de la escuela activa, en orden de id y sin cargar las
+	 * entidades, para que el cambio de sede y un cobro se ordenen sobre la misma fila ({@code CambioSedeAlumnoService}).
+	 */
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT pa.id FROM ProductoAlumno pa WHERE pa.id IN :ids ORDER BY pa.id")
+	List<Long> bloquearPorIdsEnOrden(@Param("ids") Collection<Long> ids);
+
+	/** Pieza 9-1: lo que el cambio de sede necesita de un cargo; el importe sale de {@link ImporteCargo}. */
+	interface CargoDeCambioDeSede {
+		Long getId();
+
+		Double getPrecio();
+
+		Integer getCantidad();
+	}
+
+	/** El alumno del cargo como lo resuelve la tesorería: {@code COALESCE(alumno, alumnoDeporte.alumno)}. */
+	String CARGO_DEL_ALUMNO = "(pa.alumno.id = :alumnoId OR (pa.alumno IS NULL AND pa.alumnoDeporte.id IN "
+			+ "(SELECT ad.id FROM AlumnoDeporte ad WHERE ad.alumno.id = :alumnoId)))";
+
+	/**
+	 * Decisión 369: los cargos del alumno que el cambio de sede mueve a {@code :sedeId}: sin cobrar (pagado falso o
+	 * nulo, como en la tesorería), no cancelados y que no estén ya en esa sede. Un cargo sin pagar no debería tener cobro
+	 * ACTIVO (el pago y el cobro cambian juntos, con el cargo bloqueado); si lo tuviera, no se mueve: el cobro se quedaría
+	 * en otra sede.
+	 */
+	String CARGO_QUE_PASA_A_SEDE = CARGO_DEL_ALUMNO + " AND (pa.pagado = false OR pa.pagado IS NULL) "
+			+ "AND pa.canceladoEn IS NULL AND (pa.sedeId IS NULL OR pa.sedeId <> :sedeId) "
+			+ "AND NOT EXISTS (SELECT c.id FROM Cobro c WHERE c.productoAlumnoId = pa.id "
+			+ "AND c.estado = com.taemoi.project.entities.EstadoCobro.ACTIVO)";
+
+	/** Pieza 9-1: los cargos que el cambio de sede movería ahora a esa sede (ver {@link #CARGO_QUE_PASA_A_SEDE}). */
+	@Query("SELECT pa.id AS id, pa.precio AS precio, pa.cantidad AS cantidad FROM ProductoAlumno pa WHERE "
+			+ CARGO_QUE_PASA_A_SEDE + " ORDER BY pa.id")
+	List<CargoDeCambioDeSede> cargosQuePasanASede(@Param("alumnoId") Long alumnoId, @Param("sedeId") Long sedeId);
+
+	/** Pieza 9-1: los cargos pagados del alumno en esa sede; con {@code sedeId} nulo, los pagados sin sede. */
+	@Query("SELECT pa.id AS id, pa.precio AS precio, pa.cantidad AS cantidad FROM ProductoAlumno pa WHERE "
+			+ CARGO_DEL_ALUMNO + " AND pa.pagado = true AND (pa.sedeId = :sedeId OR (:sedeId IS NULL AND pa.sedeId IS NULL))"
+			+ " ORDER BY pa.id")
+	List<CargoDeCambioDeSede> cargosCobradosEnSede(@Param("alumnoId") Long alumnoId, @Param("sedeId") Long sedeId);
+
+	/**
+	 * Decisión 369: la ÚNICA escritura de {@code producto_alumno.sede_id} después del alta; el mapeo de la entidad es
+	 * {@code updatable = false}. Mueve los cargos de {@link #CARGO_QUE_PASA_A_SEDE} de la escuela activa y devuelve
+	 * cuántos. El importe, el pago y el resto del cargo no cambian. Quien la llama bloquea antes los cargos.
+	 */
+	@org.springframework.transaction.annotation.Transactional
+	@org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("UPDATE ProductoAlumno pa SET pa.sedeId = :sedeId WHERE " + CARGO_QUE_PASA_A_SEDE)
+	int moverASede(@Param("alumnoId") Long alumnoId, @Param("sedeId") Long sedeId);
 }

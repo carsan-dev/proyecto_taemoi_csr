@@ -91,6 +91,8 @@
   "responsableLegalNif" : null,
   "responsableLegalNombre" : null,
   "rolFamiliar" : "HIJO",
+  "sedePrincipalId" : 1,
+  "sedePrincipalNombre" : "Umbrete",
   "telefono" : "600000005",
   "telefono2" : null,
   "tieneDiscapacidad" : false,

@@ -33,6 +33,12 @@ public interface GrupoRepository extends JpaRepository<Grupo, Long>, JpaSpecific
 
 	List<Grupo> findByTipoIgnoreCase(String tipo);
 
+	/** Pieza 9-1: grupos del alumno en esa sede; con {@code sedeId} nulo, sus grupos sin sede. */
+	@org.springframework.data.jpa.repository.Query("SELECT COUNT(g) FROM Grupo g JOIN g.alumnos a WHERE a.id = :alumnoId "
+			+ "AND (g.sedeId = :sedeId OR (:sedeId IS NULL AND g.sedeId IS NULL))")
+	long contarDelAlumnoEnSede(@org.springframework.data.repository.query.Param("alumnoId") Long alumnoId,
+			@org.springframework.data.repository.query.Param("sedeId") Long sedeId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@org.springframework.data.jpa.repository.Query("select g from Grupo g where g.id = :id")
 	Optional<Grupo> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);

@@ -1,0 +1,90 @@
+@use '../../capas/capas' as c;
+
+.cambiar-sede { display: grid; gap: 20px; }
+
+.cambiar-sede__ruta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+
+  svg { width: 18px; height: 18px; flex: none; color: var(--pn-acento); }
+}
+
+.cambiar-sede__a { @include c.oculto; }
+
+.cambiar-sede__etiqueta {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+
+  span { color: var(--pn-tinta-2); font-weight: 400; }
+}
+
+.cambiar-sede__select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+}
+
+.cambiar-sede__efectos {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-fondo);
+  list-style: none;
+
+  li { display: grid; gap: 2px; }
+  b { color: var(--pn-tinta); font: var(--pn-etiqueta); }
+  small { color: var(--pn-tinta-2); font: var(--pn-secundario); }
+}
+
+.cambiar-sede__leyendo { margin: 0; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+
+.cambiar-sede__error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+
+  p { margin: 0; overflow-wrap: anywhere; }
+}
+
+.cambiar-sede__reintentar { @include c.boton-texto; }
+
+.cambiar-sede__error-envio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--pn-peligro);
+  font: var(--pn-secundario);
+  overflow-wrap: anywhere;
+
+  svg { width: 18px; height: 18px; flex: none; }
+}
+
+.cambiar-sede__pie { display: flex; justify-content: flex-end; gap: 8px; }
+.cambiar-sede__cancelar { @include c.boton-texto; }
+.cambiar-sede__confirmar { @include c.boton-primario; }
+
+@media (max-width: 767.98px) {
+  .cambiar-sede__select,
+  .cambiar-sede__reintentar,
+  .cambiar-sede__cancelar,
+  .cambiar-sede__confirmar { min-height: 44px; }
+  .cambiar-sede__pie > * { flex: 1; }
+}

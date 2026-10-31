@@ -317,6 +317,14 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					List.of("SEDES SEDE_DESACTIVADA"), () -> conCuerpo(put("/api/sedes/" + sede + "/activa"), "{}"),
 					400);
 		});
+		// Pieza 9-1: cambio de sede del alumno (módulo sedes).
+		casos.put(EscrituraConRegistroPropio.ALUMNO_CAMBIAR_SEDE, () -> {
+			long alumno = e.alumno("E91SEDE" + UUID.randomUUID().toString().substring(0, 6), e.sA, true);
+			String cuerpo = "{\"sedeId\":" + e.sB + "}";
+			// Ya está en esa sede: 400.
+			Peticion cambiar = () -> conCuerpo(put("/api/alumnos/" + alumno + "/sede"), cuerpo);
+			return new Caso(tPropietario, propietario, cambiar, 200, List.of("SEDES ALUMNO_SEDE_CAMBIADA"), cambiar, 400);
+		});
 		// Pieza E8-3: miembros (módulo miembros). Cada caso con su cuenta nueva en la escuela de prueba.
 		casos.put(EscrituraConRegistroPropio.MIEMBRO_ALTA, () -> {
 			long cuenta = e.cuenta(usuarios, "alta-miembro-" + UUID.randomUUID().toString().substring(0, 6));

@@ -90,6 +90,17 @@
                 <span class="ficha__pastilla" [class.ficha__pastilla--bien]="isAlumnoActivo()">{{ isAlumnoActivo() ? 'Activo' : 'Inactivo' }}</span>
               </dd>
             </div>
+            @if (variasSedes) {
+            <div class="ficha__dato" data-dato="sede">
+              <dt>Sede</dt>
+              <dd class="ficha__sede">
+                <span>{{ nombreSede }}</span>
+                @if (puedeCambiarSede) {
+                <button type="button" class="ficha__enlace" (click)="cambiarSedeAbierto = true">Cambiar</button>
+                }
+              </dd>
+            </div>
+            }
           </dl>
         </div>
 
@@ -273,6 +284,10 @@
   <!-- 8b-D2b: los diálogos propios de la ficha y la foto ampliada, con las capas del panel (dentro de .pn, con sus tokens). -->
   @if (!cargando && alumno) {
   <pn-dialogos-alumno [ficha]="this" />
+  }
+  @if (cambiarSedeAbierto && alumno) {
+  <pn-cambiar-sede [alumnoId]="alumno.id" [sedeActualId]="alumno.sedePrincipalId ?? null" [sedeActualNombre]="alumno.sedePrincipalNombre ?? null"
+    [sedes]="sedesActivas" (cerrado)="cambiarSedeAbierto = false" (cambiado)="sedeCambiada($event)" />
   }
   @if (fotoAmpliada) {
   <pn-foto-ampliada [url]="fotoAmpliada" [alt]="'Foto de ' + (alumno?.nombre ?? '') + ' ' + (alumno?.apellidos ?? '')" (cerrar)="cerrarModal()" />
