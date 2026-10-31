@@ -84,7 +84,6 @@ public class PermisosSesionService {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
 					nombreVisible(autenticacion), nombreSaludo(autenticacion), false);
 		}
-		boolean soloProfesor = RolMembresia.sesionSoloProfesor(autoridades);
 		AlcanceSesion alcance = alcanceActual.obtener();
 		boolean tieneGrupos = !alcance.grupos().isEmpty();
 

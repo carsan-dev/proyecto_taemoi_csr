@@ -2424,6 +2424,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			// alumno o lo borró), 400 «no inscrito», como el PUT de la inscripción: nada se decide con el pago desfasado.
 			productoAlumno = cobros.bloquearCargo(productoAlumno.getId())
 					.orElseThrow(() -> new IllegalArgumentException("El alumno no está inscrito en esta convocatoria"));
+			// Pieza 9-5: la ruta mira al alumno, pero el cargo puede seguir en su sede antigua (369): el responsable solo
+			// lo borra o lo desvincula si es de sus sedes.
+			gestionPorSede.exigirSedePropia(productoAlumno.getSedeId());
 		}
 		boolean examenPagado = productoAlumno != null ? Boolean.TRUE.equals(productoAlumno.getPagado())
 				: Boolean.TRUE.equals(alumnoConvocatoria.getPagado());

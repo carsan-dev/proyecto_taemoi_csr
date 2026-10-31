@@ -253,6 +253,11 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 	public void actualizarAlumnoConvocatoria(Long alumnoConvocatoriaId, AlumnoConvocatoriaDTO alumnoConvocatoriaDTO) {
 		AlumnoConvocatoria alumnoConvocatoria = alumnoConvocatoriaRepository.findById(alumnoConvocatoriaId)
 				.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+		// Pieza 9-5: la ruta mira al alumno, pero el dinero va por la sede del cargo: tras un cambio de sede el cargo y su
+		// cobro siguen en la antigua (369). El responsable solo marca o desmarca el examen (154) si el cargo es de sus sedes.
+		if (alumnoConvocatoria.getProductoAlumno() != null) {
+			gestionPorSede.exigirSedePropia(alumnoConvocatoria.getProductoAlumno().getSedeId());
+		}
 		// 8b-3l bis (decisión 287): la inscripción de un alumno eliminado anonimizando no se modifica (409).
 		if (alumnoConvocatoria.getAlumno() != null) {
 			alumnoConvocatoria.getAlumno().exigirNoAnonimizado();
@@ -285,6 +290,8 @@ public class ConvocatoriaServiceImpl implements ConvocatoriaService {
 				// la sesión y el cobro fallaba por la clave ajena (500).
 				ProductoAlumno productoAlumno = cobros.bloquearCargo(cargoDelExamen.getId())
 						.orElseThrow(() -> new IllegalArgumentException("AlumnoConvocatoria no encontrado"));
+				// Pieza 9-5: otra vez con la fila bloqueada: un cambio de sede pudo mover el cargo mientras se esperaba.
+				gestionPorSede.exigirSedePropia(productoAlumno.getSedeId());
 				boolean pagadoAntes = Boolean.TRUE.equals(productoAlumno.getPagado());
 				// Pieza 6c-1, decisión 194 (la 187 desde la convocatoria): con el examen pagado (con o sin cobro, también
 				// antes de la 6b-1) y una cuantía distinta de la que se ve (la de la inscripción) → 409 y no se cambia nada

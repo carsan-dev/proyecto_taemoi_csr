@@ -625,19 +625,25 @@ public interface ProductoAlumnoRepository extends JpaRepository<ProductoAlumno, 
 	@Query("SELECT DISTINCT FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago)) " +
 			"FROM ProductoAlumno pa " +
 			"WHERE COALESCE(pa.fechaAsignacion, pa.fechaPago) IS NOT NULL " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes) " +
 			"ORDER BY FUNCTION('YEAR', COALESCE(pa.fechaAsignacion, pa.fechaPago))")
-	List<Integer> findAniosDistintosTesoreriaConFecha();
+	List<Integer> findAniosDistintosTesoreriaConFecha(@Param("todasLasSedes") Boolean todasLasSedes,
+			@Param("sedes") Collection<Long> sedes);
 
 	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
-			"WHERE pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND pa.concepto IS NOT NULL")
-	List<String> findConceptosTesoreriaSinFecha();
+			"WHERE pa.fechaAsignacion IS NULL AND pa.fechaPago IS NULL AND pa.concepto IS NOT NULL " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+	List<String> findConceptosTesoreriaSinFecha(@Param("todasLasSedes") Boolean todasLasSedes,
+			@Param("sedes") Collection<Long> sedes);
 
 	@Query("SELECT pa.concepto FROM ProductoAlumno pa " +
 			"LEFT JOIN pa.producto p " +
 			"WHERE pa.concepto IS NOT NULL " +
 			"AND (UPPER(pa.concepto) LIKE 'MENSUALIDAD%' OR UPPER(pa.concepto) LIKE 'TARIFA COMPETIDOR%' OR " +
-			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo IS NOT NULL AND (:legado = false OR p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING'))))")
-	List<String> findConceptosTesoreriaConPeriodoPotencial(@Param("legado") Boolean legado);
+			"(p.tipo IN (com.taemoi.project.entities.TipoProducto.MENSUALIDAD, com.taemoi.project.entities.TipoProducto.COMPETIDOR) AND p.codigo IS NOT NULL AND (:legado = false OR p.codigo NOT IN ('MENSUALIDAD', 'COMPETIDOR_TAEKWONDO', 'COMPETIDOR_KICKBOXING')))) " +
+			"AND (:todasLasSedes = true OR pa.sedeId IN :sedes)")
+	List<String> findConceptosTesoreriaConPeriodoPotencial(@Param("legado") Boolean legado,
+			@Param("todasLasSedes") Boolean todasLasSedes, @Param("sedes") Collection<Long> sedes);
 
 	List<ProductoAlumno> findByAlumnoDeporteId(Long alumnoDeporteId);
 

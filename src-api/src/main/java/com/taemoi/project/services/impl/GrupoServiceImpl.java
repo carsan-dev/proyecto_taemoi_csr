@@ -54,6 +54,9 @@ import jakarta.transaction.Transactional;
 @Service
 public class GrupoServiceImpl implements GrupoService {
 
+	/** Pieza 9-5: {@code POST /api/grupos} no admite id (ver {@link #crearGrupo}). */
+	static final String ALTA_CON_ID = "Un grupo nuevo no lleva id.";
+
 	/**
 	 * Inyección del repositorio de grupo.
 	 */
@@ -146,6 +149,10 @@ public class GrupoServiceImpl implements GrupoService {
 	@Override
 	@Transactional
 	public GrupoConAlumnosDTO crearGrupo(GrupoConAlumnosDTO grupoDTO) {
+		// Pieza 9-5: un alta no lleva id. Con él, save haría merge sobre ese grupo sin pasar por el permiso del PUT.
+		if (grupoDTO.getId() != null) {
+			throw new IllegalArgumentException(ALTA_CON_ID);
+		}
 		Grupo grupo = convertirDTOAEntidad(grupoDTO);
 		// D6-5: sede del cuerpo (de la escuela; del responsable, una de las suyas; activa, D6-17). Sin sede: la del
 		// responsable si tiene una; para la gestión, la única sede activa; con varias, 400 (decisiones 368 y 377).
@@ -324,13 +331,12 @@ public class GrupoServiceImpl implements GrupoService {
 			long activeCount;
 
 			if (alcance.isPresent()) {
-				List<AlumnoDeporte> suyos = (esCompeticion
-						? alumnoDeporteRepository.findCompetidoresByDeporteWithAlumno(deporte)
-						: alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte)).stream()
-						.filter(ad -> ad.getAlumno() != null && alcance.get().contains(ad.getAlumno().getId()))
-						.toList();
-				totalCount = suyos.size();
-				activeCount = suyos.stream().filter(ad -> Boolean.TRUE.equals(ad.getAlumno().getActivo())).count();
+				// Hibernate 6 no admite una lista vacía en IN: sin alumnos en su alcance no se consulta.
+				boolean sinAlumnos = alcance.get().isEmpty();
+				totalCount = sinAlumnos ? 0
+						: alumnoDeporteRepository.contarPorDeporteDeAlumnos(deporte, esCompeticion, false, alcance.get());
+				activeCount = sinAlumnos ? 0
+						: alumnoDeporteRepository.contarPorDeporteDeAlumnos(deporte, esCompeticion, true, alcance.get());
 			} else if (esCompeticion) {
 				totalCount = alumnoDeporteRepository.countCompetidoresByDeporte(deporte);
 				activeCount = alumnoDeporteRepository.countCompetidoresActivosByDeporte(deporte);

@@ -17,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,11 +36,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
 
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.servlet.http.Cookie;
 
 /**
@@ -66,6 +70,7 @@ class ResponsableSedePantallasIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired EntityManagerFactory emf;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -189,6 +194,22 @@ class ResponsableSedePantallasIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Set.of(e.aA, e.aGrupoA), ids(leer(get("/api/grupos/tipo/Taekwondo/alumnos"), tR), "id"));
 		assertEquals(Set.of(e.aA, e.aB, e.aGrupoA), ids(leer(get("/api/grupos/tipo/Taekwondo/alumnos"), tGestor), "id"));
 		assertEquals(0, leer(get("/api/grupos/tipo/{tipo}/alumnos", "Taekwondo Competición"), tR).size());
+	}
+
+	/** Cuenta por sus alumnos en la base: ni una inscripción cargada en memoria, por grande que sea la escuela. */
+	@Test
+	void grupos_conteo_noCargaLasInscripcionesDeLaEscuela() throws Exception {
+		Statistics st = emf.unwrap(SessionFactory.class).getStatistics();
+		boolean activas = st.isStatisticsEnabled();
+		st.setStatisticsEnabled(true);
+		try {
+			st.clear();
+			assertEquals(2, leer(get("/api/grupos/conteo-alumnos"), tR).get("Taekwondo").get("total").asInt());
+			assertTrue(st.getPrepareStatementCount() > 0, "las estadísticas cuentan");
+			assertEquals(0, st.getEntityStatistics(AlumnoDeporte.class.getName()).getLoadCount());
+		} finally {
+			st.setStatisticsEnabled(activas);
+		}
 	}
 
 	@Test

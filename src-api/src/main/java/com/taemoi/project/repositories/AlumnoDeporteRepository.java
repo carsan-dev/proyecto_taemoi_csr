@@ -95,6 +95,18 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	List<Object[]> contarActivosPorDisciplinaDeAlumnos(@Param("alumnos") java.util.Collection<Long> alumnos);
 
 	/**
+	 * Pieza 9-5: inscripciones activas en el deporte, solo de esos alumnos (alcance del responsable de sede). Con
+	 * {@code soloCompetidores}, las de competidor; con {@code soloAlumnoActivo}, las de alumnos activos. {@code alumnos} no
+	 * puede estar vacío.
+	 */
+	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad JOIN ad.alumno a "
+			+ "WHERE ad.disciplina.codigo = :deporte AND ad.activo = true AND a.id IN :alumnos "
+			+ "AND (:soloCompetidores = false OR ad.competidor = true) "
+			+ "AND (:soloAlumnoActivo = false OR a.activo = true)")
+	long contarPorDeporteDeAlumnos(@Param("deporte") String deporte, @Param("soloCompetidores") boolean soloCompetidores,
+			@Param("soloAlumnoActivo") boolean soloAlumnoActivo, @Param("alumnos") java.util.Collection<Long> alumnos);
+
+	/**
 	 * Cuenta alumnos activos por deporte (deporte activo y alumno activo)
 	 */
 	@Query("SELECT COUNT(ad) FROM AlumnoDeporte ad JOIN ad.alumno a " +

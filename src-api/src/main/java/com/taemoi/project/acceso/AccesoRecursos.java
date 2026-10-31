@@ -122,7 +122,7 @@ public class AccesoRecursos {
 	/**
 	 * Entrega 6-2 (D6-8), solo alcance total o sedes del responsable, por el alumno de la inscripción en la
 	 * convocatoria: {@code LEER} por D9; {@code EDITAR} (cuantía y pago del examen) solo si su sede principal es una de
-	 * las suyas (D6-3).
+	 * las suyas (D6-3). Pieza 9-5: el servicio exige además la sede del cargo, que tras un cambio de sede puede ser otra.
 	 */
 	public boolean alumnoConvocatoriaEnSede(Long alumnoConvocatoriaId, String operacion) {
 		OperacionAcceso op = operacion(operacion, "alumnoConvocatoriaEnSede");

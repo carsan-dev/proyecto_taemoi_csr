@@ -359,11 +359,15 @@ public class TesoreriaServiceImpl implements TesoreriaService {
 
 	@Override
 	public List<Integer> obtenerAniosDisponibles() {
+		// Pieza 9-5: el responsable, solo los años de los cargos de sus sedes (D6-12). Gestión: todos, como siempre.
+		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
 		TreeSet<Integer> anios = new TreeSet<>();
-		anios.addAll(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha());
-		aniadirAniosDesdeConceptos(anios, productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(legado()));
+		anios.addAll(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha(sedes.todas(), sedes.parametro()));
+		aniadirAniosDesdeConceptos(anios, productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(legado(),
+				sedes.todas(), sedes.parametro()));
 
-		List<String> conceptosSinFecha = productoAlumnoRepository.findConceptosTesoreriaSinFecha();
+		List<String> conceptosSinFecha = productoAlumnoRepository.findConceptosTesoreriaSinFecha(sedes.todas(),
+				sedes.parametro());
 		aniadirAniosDesdeConceptos(anios, conceptosSinFecha);
 
 		if (anios.isEmpty()) {

@@ -233,10 +233,10 @@ class TesoreriaServiceImplTest {
 
 	@Test
 	void obtenerAniosDisponibles_incluyeAniosDesdeConceptoConFechaExistente() {
-		when(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha()).thenReturn(List.of(2025));
-		when(productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(true))
+		when(productoAlumnoRepository.findAniosDistintosTesoreriaConFecha(eq(true), any())).thenReturn(List.of(2025));
+		when(productoAlumnoRepository.findConceptosTesoreriaConPeriodoPotencial(eq(true), eq(true), any()))
 				.thenReturn(List.of("MENSUALIDAD FEBRERO 2026 - TAEKWONDO"));
-		when(productoAlumnoRepository.findConceptosTesoreriaSinFecha()).thenReturn(List.of());
+		when(productoAlumnoRepository.findConceptosTesoreriaSinFecha(eq(true), any())).thenReturn(List.of());
 
 		List<Integer> anios = tesoreriaService.obtenerAniosDisponibles();
 		assertEquals(List.of(2025, 2026), anios);

@@ -439,6 +439,26 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** Pieza 9-5: el alta de alumno no lee el id del cuerpo: crea una ficha nueva y la que nombra sigue como estaba. */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void alta_conIdDeOtroAlumno_noLoSobrescribe() throws Exception {
+		java.util.Map<String, Object> antes = jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", e.aB);
+		String cuerpo = """
+				{"id":%d,"nombre":"ALTA CON ID","apellidos":"RESPONSABLE %s","fechaNacimiento":"1990-03-04",
+				 "direccion":"Calle 1","telefono":600000009,"autorizacionWeb":true,
+				 "deportesInicial":[{"deporte":"TAEKWONDO","fechaAlta":"2024-09-01","tipoTarifa":"ADULTO",
+				   "cuantiaTarifa":30.0,"competidor":false,"tieneLicencia":false}]}""".formatted(e.aB, e.marca);
+
+		MvcResult alta = peticion(multipart("/api/alumnos/crear").param("nuevo", cuerpo), tokenA);
+
+		assertEquals(201, alta.getResponse().getStatus(), alta.getResponse().getContentAsString());
+		long creado = idDe(alta);
+		assertTrue(creado != e.aB, "ficha nueva");
+		assertEquals(e.sA, e.sedeDe(creado));
+		assertEquals(antes, jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", e.aB));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private MvcResult alta(String token, Long sede) throws Exception {
