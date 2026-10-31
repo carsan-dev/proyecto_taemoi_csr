@@ -15,7 +15,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -128,11 +130,11 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 	EscuelaConSedesDePrueba otra;
 	long propietario;
 	String nombreEscuela, nombreOtra;
-	String tPropietario, tGestor, tPropietarioOtra, tResponsable, tProfesor, tFamilia;
+	String tPropietario, tGestor, tPropietarioOtra, tResponsable, tProfesor, tFamilia, tResponsableProfesor;
 	final AtomicInteger contador = new AtomicInteger();
 
-	/** Un correo enviado: asunto y HTML. */
-	record Correo(String asunto, String html) {
+	/** Un correo enviado: asunto, HTML y nombre del remitente. */
+	record Correo(String asunto, String html, String remitente) {
 		boolean esCancelacion() {
 			return asunto.startsWith("Invitación cancelada");
 		}
@@ -161,6 +163,9 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		long profesor = e.cuenta(usuarios, "profesor");
 		membresia(e.org, profesor, "PROFESOR");
 		long familia = e.cuentaFamilia(usuarios, "familia");
+		long responsableProfesor = e.cuenta(usuarios, "responsable-profesor");
+		e.responsable(responsableProfesor, e.sA);
+		membresia(e.org, responsableProfesor, "PROFESOR");
 
 		tPropietario = e.token(jwtService, usuarios, propietario);
 		tGestor = e.token(jwtService, usuarios, e.gestor);
@@ -168,6 +173,7 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		tResponsable = e.token(jwtService, usuarios, e.respSoloA);
 		tProfesor = e.token(jwtService, usuarios, profesor);
 		tFamilia = e.token(jwtService, usuarios, familia);
+		tResponsableProfesor = e.token(jwtService, usuarios, responsableProfesor);
 	}
 
 	@AfterEach
@@ -234,6 +240,7 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(2, enviados.size(), "la invitación y la cancelación");
 		Correo aviso = enviados.get(1);
 		assertEquals("Invitación cancelada · " + nombreEscuela, aviso.asunto());
+		assertEquals(nombreEscuela, aviso.remitente());
 		assertTrue(aviso.html().contains("Hola, Ana."), aviso.html());
 		assertTrue(aviso.html().contains(nombreEscuela + " ha cancelado tu invitación. El enlace que recibiste ya no "
 				+ "sirve para entrar en " + nombreEscuela + "."), aviso.html());
@@ -288,6 +295,7 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		anadirYReenviar(id, correo, tPropietario, "PROFESOR");
 		assertEquals(e.org, ultimaEscuela(id));
 		String tokenEsta = ultimoEnviadoA(correo).token();
+		int correosAntes = enviadosA(correo).size();
 
 		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
 
@@ -299,11 +307,14 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		assertMensaje(aceptar(tokenEsta), 400, ENLACE_NO_VALE);
 
 		List<Correo> enviados = enviadosA(correo);
-		List<Correo> nuevos = enviados.subList(enviados.size() - 2, enviados.size());
+		assertEquals(correosAntes + 2, enviados.size(), "dos correos: uno de cada");
+		List<Correo> nuevos = enviados.subList(correosAntes, enviados.size());
 		assertEquals(1, nuevos.stream().filter(Correo::esCancelacion).count(), "dos correos: uno de cada");
 		assertEquals("Invitación cancelada · " + nombreEscuela, nuevos.get(0).asunto());
+		assertEquals(nombreEscuela, nuevos.get(0).remitente(), "el aviso sale con el nombre de la escuela que cancela");
 		Correo invitacion = nuevos.get(1);
 		assertEquals("Tu acceso a " + nombreOtra, invitacion.asunto());
+		assertEquals(nombreOtra, invitacion.remitente(), "la invitación nueva, con el de la otra");
 		assertTrue(invitacion.html().contains("responsable de sede en " + nombreOtra), invitacion.html());
 		assertNotEquals(tokenEsta, invitacion.token());
 		assertEquals(sha256(invitacion.token()), hashDe(id));
@@ -504,47 +515,7 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 	 */
 	@Test
 	void autorDeDineroCajaOAsistencia_conservaLaCuentaYElAutor() throws Exception {
-		Map<String, Referencia> casos = new LinkedHashMap<>();
-		for (String columna : List.of("cobrado_por_usuario_id", "anulado_por_usuario_id")) {
-			casos.put("cobro." + columna, id -> {
-				jdbc.update("INSERT INTO cobro (organizacion_id, importe, fecha_cobro, origen, " + columna
-						+ ") VALUES (?, 10.00, NOW(6), 'TESORERIA', ?)", e.org, id);
-			});
-		}
-		for (String columna : List.of("entregado_por_usuario_id", "recibido_por_usuario_id",
-				"anulada_por_usuario_id")) {
-			casos.put("entrega_caja." + columna, id -> {
-				jdbc.update("INSERT INTO entrega_caja (organizacion_id, sede_id, importe_declarado, importe_contado, "
-						+ "fecha, " + columna + ") VALUES (?, ?, 10.00, 10.00, NOW(6), ?)", e.org, e.sA, id);
-			});
-		}
-		for (String columna : List.of("creado_por_usuario_id", "anulado_por_usuario_id")) {
-			casos.put("movimiento_caja." + columna, id -> {
-				jdbc.update("INSERT INTO movimiento_caja (organizacion_id, sede_id, tipo, importe, nota, fecha, " + columna
-						+ ") VALUES (?, ?, 'OTRO', 1.00, 'IT 389', NOW(6), ?)", e.org, e.sA, id);
-			});
-		}
-		for (String columna : List.of("cancelado_por_usuario_id", "vendido_por_usuario_id")) {
-			casos.put("producto_alumno." + columna, id -> {
-				jdbc.update("INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion, "
-						+ "organizacion_id, sede_id, " + columna + ") VALUES (?, 'IT 389', 1.0, 1, 0, NOW(), ?, ?, ?)",
-						e.aA, e.org, e.sA, id);
-			});
-		}
-		for (String columna : List.of("solicitado_por_usuario_id", "resuelto_por_usuario_id",
-				"encargado_por_usuario_id", "recibido_por_usuario_id")) {
-			casos.put("solicitud." + columna, id -> {
-				jdbc.update("INSERT INTO solicitud (organizacion_id, tipo, estado, solicitado_en, motivo, " + columna
-						+ ") VALUES (?, 'ENCARGO', 'RETIRADA', NOW(6), 'IT 389', ?)", e.org, id);
-			});
-		}
-		for (String columna : List.of("registrado_por_usuario_id", "modificado_por_usuario_id")) {
-			casos.put("clase_asistencia." + columna, id -> {
-				jdbc.update("INSERT INTO clase_asistencia (organizacion_id, grupo_id, fecha, hora_inicio, hora_fin, "
-						+ "registrado_en, " + columna + ") VALUES (?, ?, '2026-09-07', '18:00', '19:00', NOW(6), ?)",
-						e.org, e.gA, id);
-			});
-		}
+		Map<String, Referencia> casos = referenciasDeAutoria(e);
 		for (Map.Entry<String, Referencia> caso : casos.entrySet()) {
 			String[] partes = caso.getKey().split("\\.");
 			long id = invitar(emailNuevo(partes[1].substring(0, 8)), "PROFESOR");
@@ -558,6 +529,77 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		}
 		assertEquals(CONSERVAN.stream().filter(r -> !r.startsWith("usuario_")).count(), (long) casos.size(),
 				"una por cada columna de dinero, caja o autoría");
+	}
+
+	/**
+	 * Lo mismo con el dato en OTRA escuela, donde la cuenta no tiene ninguna membresía: la comprobación mira todas las
+	 * escuelas, y la fila ajena sigue idéntica.
+	 */
+	@Test
+	void autorDeDineroCajaOAsistenciaEnOtraEscuela_conservaLaCuentaYElAutor() throws Exception {
+		Map<String, Referencia> casos = referenciasDeAutoria(otra);
+		for (Map.Entry<String, Referencia> caso : casos.entrySet()) {
+			String[] partes = caso.getKey().split("\\.");
+			long id = invitar(emailNuevo("otra-" + partes[1].substring(0, 8)), "PROFESOR");
+			caso.getValue().crear(id);
+			assertEquals(1L, filas(partes[0], partes[1], id, "organizacion_id", otra.org), caso.getKey());
+			String fila = filaEnTexto(partes[0], partes[1], id);
+
+			JsonNode respuesta = cancelar(id, tPropietario, 200);
+
+			assertFalse(respuesta.get("cuentaBorrada").asBoolean(), caso.getKey());
+			assertEquals(1L, filas("usuario", "id", id), caso.getKey());
+			assertEquals(fila, filaEnTexto(partes[0], partes[1], id), caso.getKey());
+			assertEquals(List.of(), rolesActivos(id, e.org), caso.getKey());
+		}
+		assertEquals(CONSERVAN.stream().filter(r -> !r.startsWith("usuario_")).count(), (long) casos.size(),
+				"una por cada columna de dinero, caja o autoría");
+	}
+
+	/** Una inserción por cada columna de dinero, caja o autoría, con los datos de {@code escuela}. */
+	private Map<String, Referencia> referenciasDeAutoria(EscuelaConSedesDePrueba escuela) {
+		Map<String, Referencia> casos = new LinkedHashMap<>();
+		for (String columna : List.of("cobrado_por_usuario_id", "anulado_por_usuario_id")) {
+			casos.put("cobro." + columna, id -> {
+				jdbc.update("INSERT INTO cobro (organizacion_id, importe, fecha_cobro, origen, " + columna
+						+ ") VALUES (?, 10.00, NOW(6), 'TESORERIA', ?)", escuela.org, id);
+			});
+		}
+		for (String columna : List.of("entregado_por_usuario_id", "recibido_por_usuario_id",
+				"anulada_por_usuario_id")) {
+			casos.put("entrega_caja." + columna, id -> {
+				jdbc.update("INSERT INTO entrega_caja (organizacion_id, sede_id, importe_declarado, importe_contado, "
+						+ "fecha, " + columna + ") VALUES (?, ?, 10.00, 10.00, NOW(6), ?)", escuela.org, escuela.sA, id);
+			});
+		}
+		for (String columna : List.of("creado_por_usuario_id", "anulado_por_usuario_id")) {
+			casos.put("movimiento_caja." + columna, id -> {
+				jdbc.update("INSERT INTO movimiento_caja (organizacion_id, sede_id, tipo, importe, nota, fecha, " + columna
+						+ ") VALUES (?, ?, 'OTRO', 1.00, 'IT 389', NOW(6), ?)", escuela.org, escuela.sA, id);
+			});
+		}
+		for (String columna : List.of("cancelado_por_usuario_id", "vendido_por_usuario_id")) {
+			casos.put("producto_alumno." + columna, id -> {
+				jdbc.update("INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion, "
+						+ "organizacion_id, sede_id, " + columna + ") VALUES (?, 'IT 389', 1.0, 1, 0, NOW(), ?, ?, ?)",
+						escuela.aA, escuela.org, escuela.sA, id);
+			});
+		}
+		for (String columna : List.of("solicitado_por_usuario_id", "resuelto_por_usuario_id",
+				"encargado_por_usuario_id", "recibido_por_usuario_id")) {
+			casos.put("solicitud." + columna, id -> {
+				jdbc.update("INSERT INTO solicitud (organizacion_id, tipo, estado, solicitado_en, motivo, " + columna
+						+ ") VALUES (?, 'ENCARGO', 'RETIRADA', NOW(6), 'IT 389', ?)", escuela.org, id);
+			});
+		}
+		for (String columna : List.of("registrado_por_usuario_id", "modificado_por_usuario_id")) {
+			casos.put("clase_asistencia." + columna, id -> {
+				jdbc.update("INSERT INTO clase_asistencia (organizacion_id, grupo_id, fecha, hora_inicio, hora_fin, "
+						+ "registrado_en, " + columna + ") VALUES (?, ?, '2026-09-07', '18:00', '19:00', NOW(6), ?)",
+						escuela.org, escuela.gA, id);
+			});
+		}
+		return casos;
 	}
 
 	@FunctionalInterface
@@ -676,6 +718,318 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(hash, hashDe(id));
 		assertEquals(List.of("PROFESOR"), rolesActivos(id, e.org));
+	}
+
+	/** Decisión 371: la cuenta doble responsable + profesor suma su caja y sus grupos, no la gestión de miembros. */
+	@Test
+	void sesionDeResponsableYProfesor_denegada() throws Exception {
+		String correo = emailNuevo("doble");
+		long id = invitar(correo, "PROFESOR");
+		String hash = hashDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		assertEquals(403, peticion(delete(ruta(id)), tResponsableProfesor).getResponse().getStatus());
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(List.of("PROFESOR"), rolesActivos(id, e.org));
+		assertEquals(correosAntes, enviadosA(correo).size());
+	}
+
+	// ------------------------------------------------------------------ nada que cancelar
+
+	/** FAMILIA con alumnos no se retira: sin token vivo, repetir no tendría ningún efecto. */
+	@Test
+	void familiaConAlumnosYaCancelada_409SinCorreoNiAuditoria() throws Exception {
+		String correo = emailNuevo("familia-repite");
+		long id = invitar(correo, "PROFESOR");
+		membresia(e.org, id, "FAMILIA");
+		vincularAlumno(id, e.aB);
+		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
+		int correosAntes = enviadosA(correo).size();
+		long antes = ultimoEvento();
+
+		assertMensaje(peticion(delete(ruta(id)), tPropietario), 409, SIN_ROL_ACTIVO);
+
+		assertEquals(correosAntes, enviadosA(correo).size());
+		assertSinCancelacionRegistrada(antes);
+		assertEquals(List.of("FAMILIA"), rolesActivos(id, e.org));
+		assertEquals(1L, filas("usuario_alumno", "usuario_id", id));
+	}
+
+	/** Solo FAMILIA con alumnos: con el enlace vivo, la primera cancelación lo retira y avisa, como siempre. */
+	@Test
+	void soloFamiliaConAlumnosYTokenVivo_laPrimeraCancelacionSigueIgual() throws Exception {
+		String correo = emailNuevo("familia-primera");
+		long id = cuentaPendiente(correo, e.org);
+		membresia(e.org, id, "FAMILIA");
+		vincularAlumno(id, e.aB);
+		long antes = ultimoEvento();
+
+		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
+
+		assertNull(hashDe(id));
+		assertEquals(List.of("FAMILIA"), rolesActivos(id, e.org));
+		assertTrue(ultimoEnviadoA(correo).esCancelacion());
+		assertEquals(List.of("MIEMBROS INVITACION_CANCELADA usuario=#" + id + " cuentaBorrada=NO"),
+				resumenes(eventosDesde(antes, e.org)));
+
+		assertMensaje(peticion(delete(ruta(id)), tPropietario), 409, SIN_ROL_ACTIVO);
+		assertEquals(1, enviadosA(correo).size(), "solo el primer aviso");
+	}
+
+	/** Un token caducado ya no sirve: tampoco hay nada que cancelar. */
+	@Test
+	void familiaConAlumnosYTokenCaducado_409SinCorreo() throws Exception {
+		String correo = emailNuevo("familia-caducada");
+		long id = cuentaPendiente(correo, e.org);
+		membresia(e.org, id, "FAMILIA");
+		vincularAlumno(id, e.aB);
+		jdbc.update("UPDATE usuario SET reset_token_expires_at = NOW() - INTERVAL 1 DAY WHERE id = ?", id);
+		long antes = ultimoEvento();
+
+		assertMensaje(peticion(delete(ruta(id)), tPropietario), 409, SIN_ROL_ACTIVO);
+
+		assertEquals(0, enviadosA(correo).size());
+		assertSinCancelacionRegistrada(antes);
+	}
+
+	// ------------------------------------------------------------------ quitar el último rol
+
+	@Test
+	void quitarElUltimoRol_elEnlaceMuereYLaCuentaSigue() throws Exception {
+		String correo = emailNuevo("quita-ultimo");
+		long id = invitar(correo, "PROFESOR");
+		String token = ultimoEnviadoA(correo).token();
+		int correosAntes = enviadosA(correo).size();
+		long antes = ultimoEvento();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertNull(hashDe(id));
+		assertNull(caducidadDe(id));
+		assertEquals(1L, filas("usuario", "id", id));
+		assertTrue(pendiente(id));
+		assertEquals(e.org, ultimaEscuela(id));
+		assertEquals(correosAntes, enviadosA(correo).size(), "sin correo de cancelación");
+		assertEquals(List.of("MIEMBROS ROL_QUITADO usuario=#" + id + " rol=PROFESOR"),
+				resumenes(eventosDesde(antes, e.org)));
+		assertMensaje(aceptar(token), 400, ENLACE_NO_VALE);
+	}
+
+	@Test
+	void quitarElUltimoPropietarioDeLaCuenta_elEnlaceMuere() throws Exception {
+		String correo = emailNuevo("quita-propietario");
+		long id = invitar(correo, "PROPIETARIO");
+		String token = ultimoEnviadoA(correo).token();
+
+		quitarRol(id, "PROPIETARIO", tPropietario);
+
+		assertNull(hashDe(id));
+		assertMensaje(aceptar(token), 400, ENLACE_NO_VALE);
+	}
+
+	@Test
+	void quitarUnoDeDosRoles_elEnlaceSigueValiendo() throws Exception {
+		String correo = emailNuevo("quita-uno");
+		long id = invitar(correo, "PROFESOR");
+		membresia(e.org, id, "RESPONSABLE_SEDE");
+		String token = ultimoEnviadoA(correo).token();
+		String hash = hashDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(correosAntes, enviadosA(correo).size());
+		assertEquals(200, aceptar(token).getResponse().getStatus());
+		assertFalse(pendiente(id));
+	}
+
+	@Test
+	void quitarElUltimoRolDeAqui_conInvitacionVigenteDeOtra_noLaToca() throws Exception {
+		String correo = emailNuevo("quita-vigente-otra");
+		long id = invitar(correo, "PROFESOR");
+		anadirYReenviar(id, correo, tPropietarioOtra, "PROFESOR");
+		String tokenOtra = ultimoEnviadoA(correo).token();
+		String hash = hashDe(id);
+		Object caduca = caducidadDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(caduca, caducidadDe(id));
+		assertEquals(otra.org, ultimaEscuela(id));
+		assertEquals(correosAntes, enviadosA(correo).size());
+		assertEquals(200, aceptar(tokenOtra).getResponse().getStatus());
+		assertFalse(pendiente(id));
+	}
+
+	@Test
+	void quitarElUltimoRolDeAqui_conRolFueraEInvitacionDeEsta_seRenuevaParaLaOtra() throws Exception {
+		String correo = emailNuevo("quita-renueva");
+		long id = invitarDesdeOtra(correo, "RESPONSABLE_SEDE", otra.sA);
+		anadirYReenviar(id, correo, tPropietario, "PROFESOR");
+		String tokenEsta = ultimoEnviadoA(correo).token();
+		int correosAntes = enviadosA(correo).size();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertEquals(otra.org, ultimaEscuela(id));
+		assertMensaje(aceptar(tokenEsta), 400, ENLACE_NO_VALE);
+		List<Correo> enviados = enviadosA(correo);
+		assertEquals(correosAntes + 1, enviados.size(), "solo la invitación de la otra, sin aviso de cancelación");
+		Correo invitacion = enviados.get(enviados.size() - 1);
+		assertEquals("Tu acceso a " + nombreOtra, invitacion.asunto());
+		assertEquals(nombreOtra, invitacion.remitente());
+		assertEquals(sha256(invitacion.token()), hashDe(id));
+		assertEquals(200, aceptar(invitacion.token()).getResponse().getStatus());
+		assertFalse(pendiente(id));
+	}
+
+	@Test
+	void devolverElRolYReenviar_daUnEnlaceNuevoQueFunciona() throws Exception {
+		String correo = emailNuevo("quita-devuelve");
+		long id = invitar(correo, "PROFESOR");
+		String viejo = ultimoEnviadoA(correo).token();
+		quitarRol(id, "PROFESOR", tPropietario);
+		assertEquals(200, peticion(put(RUTA + "/" + id + "/roles/PROFESOR"), tPropietario).getResponse().getStatus());
+		assertNull(hashDe(id), "devolver el rol no da enlace: lo da reenviar");
+
+		assertEquals(200, peticion(post(ruta(id)), tPropietario).getResponse().getStatus());
+
+		String nuevo = ultimoEnviadoA(correo).token();
+		assertNotEquals(viejo, nuevo);
+		assertMensaje(aceptar(viejo), 400, ENLACE_NO_VALE);
+		assertEquals(200, aceptar(nuevo).getResponse().getStatus());
+		assertFalse(pendiente(id));
+		assertEquals(List.of("PROFESOR"), rolesActivos(id, e.org));
+	}
+
+	/** Una cuenta aceptada conserva su token de restablecer: comparte columnas con el de la invitación. */
+	@Test
+	void quitarElUltimoRolAUnaCuentaAceptada_nadaMasCambia() throws Exception {
+		String correo = emailNuevo("quita-aceptada");
+		long id = invitar(correo, "PROFESOR");
+		assertEquals(200, aceptar(ultimoEnviadoA(correo).token()).getResponse().getStatus());
+		jdbc.update("""
+				UPDATE usuario SET reset_token_hash = SHA2(?, 256), reset_token_expires_at = NOW() + INTERVAL 1 HOUR
+				WHERE id = ?""", correo, id);
+		String hash = hashDe(id);
+		Object caduca = caducidadDe(id);
+		String contrasena = contrasenaDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(caduca, caducidadDe(id));
+		assertEquals(contrasena, contrasenaDe(id));
+		assertEquals(e.org, ultimaEscuela(id));
+		assertEquals(correosAntes, enviadosA(correo).size());
+	}
+
+	@Test
+	void quitarUnRolYaInactivo_noTocaElToken() throws Exception {
+		String correo = emailNuevo("quita-sin-cambios");
+		long id = cuentaPendiente(correo, e.org);
+		insertarMembresia(e.org, id, "PROFESOR", false);
+		String hash = hashDe(id);
+		Object caduca = caducidadDe(id);
+		long antes = ultimoEvento();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(caduca, caducidadDe(id));
+		assertEquals(List.of("MIEMBROS ROL_QUITADO usuario=#" + id + " rol=PROFESOR sinCambios=SI"),
+				resumenes(eventosDesde(antes, e.org)));
+	}
+
+	@Test
+	void quitarAlUltimoPropietarioPendiente_409YElEnlaceSigue() {
+		long sola = escuelaSinNada("sola-quitar");
+		long id = cuentaPendiente(emailNuevo("quita-ultimo-propietario"), sola);
+		membresia(sola, id, "PROPIETARIO");
+		String hash = hashDe(id);
+
+		IllegalStateException error = assertThrows(IllegalStateException.class,
+				() -> comoPropietario(sola, () -> miembros.quitarRol(id, "PROPIETARIO")));
+
+		assertEquals(SIN_PROPIETARIO, error.getMessage());
+		assertEquals(hash, hashDe(id));
+		assertEquals(List.of("PROPIETARIO"), rolesActivos(id, sola));
+	}
+
+	/** La renovación va en la transacción: si se deshace, ni rol quitado ni enlace nuevo ni correo. */
+	@Test
+	void quitarElUltimoRolDeAqui_siSeDeshace_nadaCambiaNiSaleCorreo() throws Exception {
+		String correo = emailNuevo("quita-deshecha");
+		long id = invitarDesdeOtra(correo, "PROFESOR");
+		anadirYReenviar(id, correo, tPropietario, "PROFESOR");
+		String hash = hashDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		assertThrows(IllegalStateException.class, () -> comoPropietario(e.org, () -> transaccion()
+				.executeWithoutResult(estado -> {
+					miembros.quitarRol(id, "PROFESOR");
+					throw new IllegalStateException("se deshace");
+				})));
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(e.org, ultimaEscuela(id));
+		assertEquals(List.of("PROFESOR"), rolesActivos(id, e.org));
+		assertEquals(correosAntes, enviadosA(correo).size());
+	}
+
+	/**
+	 * Gana aceptar y la sesión aún tiene la cuenta pendiente: solo la relectura evita renovar una invitación ya aceptada.
+	 * El rol se quita igual: la cuenta ya no está pendiente y nada más cambia.
+	 */
+	@Test
+	void aceptarGanaAQuitarRol_conLaEntidadAntigua_noRenuevaNiFalla() throws Exception {
+		String correo = emailNuevo("carrera-quitar");
+		long id = invitarDesdeOtra(correo, "PROFESOR");
+		anadirYReenviar(id, correo, tPropietario, "PROFESOR");
+		String token = ultimoEnviadoA(correo).token();
+		int correosAntes = enviadosA(correo).size();
+		ExecutorService hilo = Executors.newSingleThreadExecutor();
+		try {
+			comoPropietario(e.org, () -> transaccion().executeWithoutResult(estado -> {
+				assertTrue(usuarios.findById(id).orElseThrow().invitacionPendiente());
+				try {
+					assertEquals(200, hilo.submit(() -> aceptar(token)).get(30, TimeUnit.SECONDS).getResponse().getStatus());
+				} catch (Exception fallo) {
+					fail(fallo);
+				}
+				miembros.quitarRol(id, "PROFESOR");
+			}));
+		} finally {
+			hilo.shutdownNow();
+		}
+		assertFalse(pendiente(id));
+		assertEquals(List.of(), rolesActivos(id, e.org));
+		assertEquals(List.of("PROFESOR"), rolesActivos(id, otra.org));
+		assertEquals(e.org, ultimaEscuela(id));
+		assertEquals(correosAntes, enviadosA(correo).size());
+	}
+
+	// ------------------------------------------------------------------ profesores del grupo
+
+	/** La pastilla del grupo: pendiente, y con algún rol activo aquí; un rol en otra escuela no cuenta. */
+	@Test
+	void profesorDelGrupo_soloSalePendienteConRolActivoEnEstaEscuela() throws Exception {
+		String correo = emailNuevo("grupo");
+		long id = invitarDesdeOtra(correo, "PROFESOR");
+		anadirYReenviar(id, correo, tPropietario, "PROFESOR");
+		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) VALUES (?, ?, ?, 'TITULAR')",
+				e.org, id, e.gA2);
+		assertTrue(pendienteEnElGrupo(id, e.gA2));
+
+		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
+
+		assertTrue(pendiente(id));
+		assertFalse(pendienteEnElGrupo(id, e.gA2));
 	}
 
 	// ------------------------------------------------------------------ carrera con aceptar
@@ -1005,6 +1359,32 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForMap("SELECT * FROM alumno WHERE id = ?", alumno).toString();
 	}
 
+	/** Sin la fila de la acción; la del filtro ({@code DELETE miembros #id -> 409}) sale con todo rechazo. */
+	private void assertSinCancelacionRegistrada(long antes) {
+		assertTrue(resumenes(eventosDesde(antes, e.org)).stream().noneMatch(r -> r.contains("INVITACION_CANCELADA")));
+	}
+
+	private String filaEnTexto(String tabla, String columna, long valor) {
+		return jdbc.queryForMap("SELECT * FROM " + tabla + " WHERE " + columna + " = ?", valor).toString();
+	}
+
+	private void vincularAlumno(long usuario, long alumno) {
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", usuario, alumno, e.org);
+	}
+
+	private boolean pendienteEnElGrupo(long usuario, long grupo) throws Exception {
+		MvcResult r = peticion(get("/api/grupos/" + grupo + "/profesores"), tPropietario);
+		assertEquals(200, r.getResponse().getStatus(), contenido(r));
+		for (JsonNode profesor : json.readTree(contenido(r))) {
+			if (profesor.get("usuarioId").asLong() == usuario) {
+				return profesor.get("invitacionPendiente").asBoolean();
+			}
+		}
+		return fail("no está en el grupo");
+	}
+
 	private long ultimoEvento() {
 		return jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) FROM auditoria_evento", Long.class);
 	}
@@ -1041,11 +1421,13 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 	private List<Correo> enviadosA(String para) {
 		ArgumentCaptor<String> asunto = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<String> remitente = ArgumentCaptor.forClass(String.class);
 		verify(email, atLeast(0)).sendEmailConImagen(eq(para), asunto.capture(), html.capture(), any(), any(), any(),
-				any());
+				remitente.capture());
 		List<Correo> correos = new ArrayList<>();
 		for (int i = 0; i < html.getAllValues().size(); i++) {
-			correos.add(new Correo(asunto.getAllValues().get(i), html.getAllValues().get(i)));
+			correos.add(new Correo(asunto.getAllValues().get(i), html.getAllValues().get(i),
+					remitente.getAllValues().get(i)));
 		}
 		return correos;
 	}
