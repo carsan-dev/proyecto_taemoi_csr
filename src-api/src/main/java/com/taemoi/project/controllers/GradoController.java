@@ -33,10 +33,11 @@ public class GradoController {
 
 	/**
 	 * Grados de la disciplina ({@code codigo}); sin parámetro, los de taekwondo (la respuesta de
-	 * siempre). Disciplina inexistente o sin grados: lista vacía.
+	 * siempre). Disciplina inexistente o sin grados: lista vacía. También el responsable de sede (pieza 9-5): lo pide el
+	 * alta de alumno y es un catálogo de la escuela, sin datos de ninguna sede.
 	 */
 	@GetMapping
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<Grado>> obtenerTodosLosGrados(
 			@RequestParam(required = false) String disciplina) {
 		List<Grado> grados = disciplina == null || disciplina.isBlank()
@@ -52,7 +53,7 @@ public class GradoController {
 	 * usa los grados de taekwondo.
 	 */
 	@GetMapping("/disponibles/{fechaNacimiento}")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<String>> obtenerGradosDisponiblesPorFechaNacimiento(
 			@PathVariable String fechaNacimiento,
 			@RequestParam(required = false, defaultValue = GradoService.DISCIPLINA_POR_DEFECTO) String deporte) {

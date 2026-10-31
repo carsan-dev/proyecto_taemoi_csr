@@ -62,21 +62,22 @@ public class TesoreriaController {
 
 	/**
 	 * Pieza 8b-2 (decisiones 242 y 267): lo no pagado con el plazo vencido, de cualquier mes (mensualidades y derechos
-	 * de examen), con desglose por tipo, mes y sede y los cinco más antiguos. Para el Inicio de la gestión: el
-	 * responsable de sede no entra hasta la E9 (como en las sedes), aunque /resumen sí lo admite.
+	 * de examen), con desglose por tipo, mes y sede y los cinco más antiguos. Para el Inicio de la gestión y, pieza 9-5,
+	 * del responsable de sede: solo los cargos de sus sedes ({@code GestionPorSede.filtroTesoreria}).
 	 */
 	@GetMapping("/pendiente-vencido")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<PendienteVencidoDTO> obtenerPendienteVencido() {
 		return ResponseEntity.ok(pendienteVencidoService.obtener());
 	}
 
 	/**
 	 * Pieza 8b-3a: lo vencido de cada alumno de una página del listado nuevo (como mucho 25 ids; más, 400), con la misma
-	 * regla que /pendiente-vencido. Solo alumnos de la escuela activa: los ids ajenos se ignoran. Mismas autoridades.
+	 * regla que /pendiente-vencido. Solo alumnos de la escuela activa y, para el responsable, cargos de sus sedes: los ids
+	 * ajenos se ignoran. Mismas autoridades.
 	 */
 	@GetMapping("/pendientes-por-alumno")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<PendienteAlumnoDTO>> obtenerPendientesPorAlumno(@RequestParam List<Long> alumnoIds) {
 		return ResponseEntity.ok(pendienteVencidoService.porAlumno(alumnoIds));
 	}

@@ -281,9 +281,12 @@ class PendienteVencidoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void pendienteVencido_responsableSede_denegadoHastaE9() throws Exception {
-		assertEquals(403, estado(get(RUTA), tokenResponsable), "el responsable de sede, hasta la E9");
-		assertEquals(403, estado(head(RUTA), tokenResponsable));
+	void pendienteVencido_responsableSede_soloSusSedes() throws Exception {
+		JsonNode deA = leer(RUTA, tokenResponsable);
+		assertEquals(1, deA.get("porSede").size(), "pieza 9-5: solo la sede A");
+		assertEquals(e.sA, deA.get("porSede").get(0).get("sedeId").asLong());
+		assertImporte("100.00", deA.get("total"));
+		assertEquals(200, estado(head(RUTA), tokenResponsable));
 		assertEquals(403, estado(get(RUTA), tokenFamilia));
 		assertEquals(200, estado(get(RUTA), tokenGestor));
 	}

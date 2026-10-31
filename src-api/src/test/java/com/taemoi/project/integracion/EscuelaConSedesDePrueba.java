@@ -42,6 +42,7 @@ final class EscuelaConSedesDePrueba {
 	long aA, aGrupoA, aSinSede, aB, aNada, aInactivoA;
 	long tA, tB, tSin;
 	long respA, respAC, gestor, propioA, propioAC;
+	long respSoloA, respSoloAC;
 
 	private EscuelaConSedesDePrueba(JdbcTemplate jdbc) {
 		this.jdbc = jdbc;
@@ -101,6 +102,17 @@ final class EscuelaConSedesDePrueba {
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')",
 				e.gestor, e.org);
 		return e;
+	}
+
+	/**
+	 * Cuentas SOLO RESPONSABLE_SEDE (decisión 370), con las sedes de respA y respAC: la sesión real de un responsable de
+	 * sede, sin autoridad de familia. Aparte de {@link #crear}: añaden miembros a la escuela.
+	 */
+	void crearResponsablesSolos(UsuarioRepository usuarios) {
+		respSoloA = cuenta(usuarios, "respsoloa");
+		responsable(respSoloA, sA);
+		respSoloAC = cuenta(usuarios, "respsoloac");
+		responsable(respSoloAC, sA, sC);
 	}
 
 	String token(JwtService jwt, UsuarioRepository usuarios, long usuarioId) {

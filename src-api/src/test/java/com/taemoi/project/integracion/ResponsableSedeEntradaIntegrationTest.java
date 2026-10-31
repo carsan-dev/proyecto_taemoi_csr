@@ -380,6 +380,10 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, leer(get("/api/turnos/resumen"), token, 200).size());
 		assertEquals(0, leer(get("/api/preinscripciones?size=10"), token, 200).get("totalElements").asInt());
 		assertEquals(0, leer(get("/api/tesoreria/movimientos?size=10"), token, 200).get("totalElements").asInt());
+		assertEquals(0, leer(get("/api/tesoreria/pendiente-vencido"), token, 200).get("porSede").size());
+		assertEquals(0, leer(get("/api/tesoreria/pendientes-por-alumno?alumnoIds=" + e.aA), token, 200).size());
+		assertEquals(0, leer(get("/api/grupos/conteo-alumnos"), token, 200).get("Taekwondo").get("total").asInt());
+		assertEquals(0, leer(get("/api/grupos/tipo/Taekwondo/alumnos"), token, 200).size());
 		assertEquals(403, estado(get("/api/alumnos/" + e.aA), token));
 		assertEquals(403, estado(get("/api/grupos/" + e.gA), token));
 		assertEquals(403, estado(get("/api/caja/sedes/" + e.sA + "/resumen"), token));

@@ -67,8 +67,9 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 	@BeforeAll
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-grupos");
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 	}
 
@@ -101,8 +102,8 @@ class ResponsableSedeGruposIntegrationTest extends MySqlIntegrationTest {
 					.content(grupo("Cambio", null)), tokenA));
 			assertEquals(403, estado(delete("/api/grupos/" + ajeno), tokenA));
 		}
-		// Conteo por tipos de Taemoi: sigue siendo de gestión.
-		assertEquals(403, estado(get("/api/grupos/conteo-alumnos"), tokenA));
+		// Conteo por tipos: pieza 9-5, abierto y solo con los alumnos de su alcance (ResponsableSedePantallas...).
+		assertEquals(200, estado(get("/api/grupos/conteo-alumnos"), tokenA));
 	}
 
 	@Test

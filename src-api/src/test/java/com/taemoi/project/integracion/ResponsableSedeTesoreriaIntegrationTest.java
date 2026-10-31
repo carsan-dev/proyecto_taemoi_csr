@@ -53,7 +53,7 @@ import jakarta.servlet.http.Cookie;
  * desde otra sede no se cobra); sin generaciones masivas ni edición del catálogo; en una sede inactiva no se crean
  * cargos pero se cobran los existentes; cada cargo nace con la sede principal del alumno y {@code asignarSedePrincipal} no
  * lo mueve (lo sin cobrar solo cambia de sede con {@code CambioSedeAlumnoService}, decisión 369). Las cuentas son
- * FAMILIA + RESPONSABLE_SEDE (D6-15). Escuela sintética de {@link EscuelaConSedesDePrueba}.
+ * RESPONSABLE_SEDE solo (decisión 370). Escuela sintética de {@link EscuelaConSedesDePrueba}.
  *
  * <pre>
  * cargos iniciales (gestor, por la API)   aA: 10 pendiente + 25 pagado (A) · aB: 25 (B) · aGrupoA: 10 (B)
@@ -106,8 +106,9 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 				VALUES (TRUE, 0, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?)""", aC, e.org, e.disciplina);
 		jdbc.update("UPDATE alumno_deporte SET cuantia_tarifa = 30.0 WHERE organizacion_id = ?", e.org);
 
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 		tokenFamilia = e.token(jwtService, usuarios, e.cuentaFamilia(usuarios, "familiatesoreria"));
 
@@ -263,8 +264,8 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(403, estado(get("/api/productos-alumno/alumno/" + e.aB), tokenA));
 		assertEquals(403, estado(get("/api/productos-alumno/alumno/" + e.aGrupoA), tokenA), "visible por grupo (D6-3)");
 		assertEquals(403, estado(get("/api/productos-alumno/alumno/" + e.aSinSede), tokenA), "sin sede principal");
-		assertEquals(403, estado(get("/api/productos-alumno/alumno/" + e.propioA), tokenA),
-				"su alumno de familia no le abre la tesorería");
+		assertEquals(403, estado(get("/api/productos-alumno/alumno/" + e.propioA),
+				e.token(jwtService, usuarios, e.respA)), "su alumno de familia no le abre la tesorería");
 		assertEquals(Set.of(cargoB), ids(leer("/api/productos-alumno/alumno/" + e.aB, tokenGestor)));
 		JsonNode deA = leer("/api/productos-alumno/alumno/" + e.aA, tokenGestor);
 		deA.forEach(c -> assertEquals(e.sA, c.get("sedeId").asLong(), "sedeId aditivo en el JSON"));

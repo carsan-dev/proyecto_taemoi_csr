@@ -50,6 +50,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/completo", "/api/alumnos/{alumnoId}/salud", "/api/alumnos/{alumnoId}/tutores",
 			"/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos/resumen", "/api/grupos/{id}",
+			// Pieza 9-5: alumnos por tipo de la pantalla Grupos, solo los de su alcance (en el servicio).
+			"/api/grupos/tipo/{tipo}/alumnos",
 			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
 			"/api/grupos/{grupoId}/clases", "/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
 			"/api/grupos/{grupoId}/asistencia/resumen", "/api/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
@@ -64,6 +66,9 @@ public class SecurityConfiguration {
 			// catálogo de productos en lectura e informes de deudas y del listado mensual.
 			"/api/tesoreria/resumen", "/api/tesoreria/movimientos", "/api/tesoreria/anios-disponibles",
 			"/api/tesoreria/export/csv", "/api/tesoreria/export/pdf",
+			// Pieza 9-5: lo vencido de sus sedes para Inicio y Alumnos (filtroTesoreria) y el recibo de sus cargos (@acceso).
+			"/api/tesoreria/pendiente-vencido", "/api/tesoreria/pendientes-por-alumno",
+			"/api/productos-alumno/{productoAlumnoId}/recibo",
 			"/api/productos-alumno/alumno/{alumnoId}",
 			"/api/productos", "/api/productos/todos", "/api/productos/{id}",
 			"/api/informes/deudas", "/api/informes/deudas/csv", "/api/informes/listado-mensualidad-mensual" };
@@ -228,8 +233,12 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/miembros", "/api/miembros/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-I (fase3-e8b-plan.md §3): la regla nació para el interruptor del diseño nuevo, retirado
-						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil). Solo P y G.
-						// Misma posición que /api/miembros; fuera de la lista blanca solo-profesor.
+						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil): P y G y,
+						// pieza 9-5, R (solo su propia cuenta, sin ids). Misma posición que /api/miembros; fuera de la lista
+						// blanca solo-profesor.
+						.requestMatchers("/api/panel/mi-perfil")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G.
@@ -365,8 +374,10 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.GET, "/api/grupos/{grupoId}/alumnos/{alumnoId}/turnos")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
+						// Pieza 9-5: el responsable cuenta solo los alumnos de su alcance (en el servicio).
 						.requestMatchers(HttpMethod.GET, "/api/grupos/conteo-alumnos")
-						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						// Entrega 6-1: grupos abiertos al responsable de sede.
 						.requestMatchers(HttpMethod.GET, grupos(RESPONSABLE_SEDE_GET))
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),

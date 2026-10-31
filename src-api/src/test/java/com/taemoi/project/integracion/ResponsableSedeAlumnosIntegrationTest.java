@@ -77,8 +77,9 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-alumnos");
 		TenantContext.ejecutarCon(e.org, () -> DisciplinasDePrueba.tarifa(tarifas, "ADULTO", "30.00", null));
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 	}
 
@@ -334,12 +335,14 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void cuentaFamiliaYResponsable_familiaComoAntesYSedePorLaApi() throws Exception {
+		String tokenFamiliaA = e.token(jwtService, usuarios, e.respA);
 		// Su alumno de familia: rutas de familia sí; rutas de gestión no (no es de su sede).
-		assertEquals(200, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenA));
-		assertEquals(403, estado(get("/api/alumnos/" + e.propioA), tokenA));
-		assertFalse(ids(leer("/api/alumnos", tokenA)).contains(e.propioA));
+		assertEquals(200, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.propioA), tokenFamiliaA));
+		assertFalse(ids(leer("/api/alumnos", tokenFamiliaA)).contains(e.propioA));
 		// El portal de familia (reto diario, material de examen) no se abre por sede.
-		assertEquals(403, estado(get("/api/alumnos/" + e.aA + "/reto-diario"), tokenA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.aA + "/reto-diario"), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/alumnos/" + e.propioA + "/grupos"), tokenA), "sin familia, no es suyo");
 	}
 
 	@Test
@@ -357,7 +360,7 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 				"SELECT id FROM alumno WHERE organizacion_id = 1 AND numero_expediente = ?", Long.class, expediente);
 		long membresia = jdbc.queryForObject("""
 				SELECT id FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND rol = 'RESPONSABLE_SEDE'""",
-				Long.class, e.respA, e.org);
+				Long.class, e.respSoloA, e.org);
 		jdbc.update("INSERT INTO membresia_sede (membresia_id, sede_id) VALUES (?, ?)", membresia, umbrete);
 		try {
 			assertEquals(403, estado(get("/api/alumnos/" + deMoiskimdo), tokenA));

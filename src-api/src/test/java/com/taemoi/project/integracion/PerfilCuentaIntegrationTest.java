@@ -117,11 +117,17 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void soloProfesorFamiliaYResponsable_403() throws Exception {
-		for (String token : List.of(tSoloProf, tFamilia, tResponsable)) {
+	void soloProfesorYFamilia_403() throws Exception {
+		for (String token : List.of(tSoloProf, tFamilia)) {
 			assertEquals(403, estado(get(RUTA), token));
 			assertEquals(403, estado(cuerpo("{\"nombrePreferido\":\"Luci\"}"), token));
 		}
+	}
+
+	/** Pieza 9-5: el responsable de sede usa su perfil, el de su propia cuenta. */
+	@Test
+	void responsable_leeSuPerfil() throws Exception {
+		assertEquals(200, estado(get(RUTA), tResponsable));
 	}
 
 	@Test

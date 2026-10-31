@@ -300,6 +300,8 @@ public class GrupoServiceImpl implements GrupoService {
 
 		List<String> tipos = Arrays.asList("Taekwondo", "Taekwondo Competición", "Pilates", "Kickboxing",
 				"Defensa Personal Femenina");
+		// Pieza 9-5: el responsable de sede cuenta solo los alumnos de su alcance (D9). Gestión: los COUNT de siempre.
+		Optional<Set<Long>> alcance = gestionPorSede.idsAlumnosEnAlcance();
 
 		for (String tipo : tipos) {
 			String tipoUpper = tipo.toUpperCase();
@@ -321,7 +323,15 @@ public class GrupoServiceImpl implements GrupoService {
 			long totalCount;
 			long activeCount;
 
-			if (esCompeticion) {
+			if (alcance.isPresent()) {
+				List<AlumnoDeporte> suyos = (esCompeticion
+						? alumnoDeporteRepository.findCompetidoresByDeporteWithAlumno(deporte)
+						: alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte)).stream()
+						.filter(ad -> ad.getAlumno() != null && alcance.get().contains(ad.getAlumno().getId()))
+						.toList();
+				totalCount = suyos.size();
+				activeCount = suyos.stream().filter(ad -> Boolean.TRUE.equals(ad.getAlumno().getActivo())).count();
+			} else if (esCompeticion) {
 				totalCount = alumnoDeporteRepository.countCompetidoresByDeporte(deporte);
 				activeCount = alumnoDeporteRepository.countCompetidoresActivosByDeporte(deporte);
 			} else {
@@ -364,8 +374,11 @@ public class GrupoServiceImpl implements GrupoService {
 			alumnosDeporte = alumnoDeporteRepository.findActivosByDeporteWithAlumno(deporte);
 		}
 
+		// Pieza 9-5: el responsable de sede ve solo los alumnos de su alcance (D9).
+		Optional<Set<Long>> alcance = gestionPorSede.idsAlumnosEnAlcance();
 		return alumnosDeporte.stream()
 			.filter(ad -> ad.getAlumno() != null)
+			.filter(ad -> alcance.isEmpty() || alcance.get().contains(ad.getAlumno().getId()))
 			.map(AlumnoCortoDTO::deAlumnoDeporte)
 			.collect(Collectors.toList());
 	}

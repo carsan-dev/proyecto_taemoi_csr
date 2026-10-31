@@ -111,8 +111,9 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 	@BeforeAll
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e6-preins");
-		tokenA = e.token(jwtService, usuarios, e.respA);
-		tokenAC = e.token(jwtService, usuarios, e.respAC);
+		e.crearResponsablesSolos(usuarios);
+		tokenA = e.token(jwtService, usuarios, e.respSoloA);
+		tokenAC = e.token(jwtService, usuarios, e.respSoloAC);
 		tokenGestor = e.token(jwtService, usuarios, e.gestor);
 		plantilla = jdbc.queryForObject("""
 				SELECT p.id FROM plantilla_preinscripcion p JOIN disciplina d ON d.id = p.disciplina_id
@@ -561,11 +562,12 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 	@Test
 	void cuentaFamiliaYResponsable_familiaIntactaYSedeLimitada() throws Exception {
 		// Como familia, su alumno propio (sin sede); como responsable, los de su sede; nunca los de otra sede.
-		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.propioA), tokenA));
-		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.aA), tokenA));
-		assertEquals(403, estado(get("/api/convocatorias/alumnos/" + e.aB), tokenA));
-		assertEquals(403, estado(get("/api/preinscripciones/" + pB), tokenA));
-		assertEquals(403, estado(post("/api/alumnos/" + convocatoria + "/alumno/" + e.propioA), tokenA),
+		String tokenFamiliaA = e.token(jwtService, usuarios, e.respA);
+		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.propioA), tokenFamiliaA));
+		assertEquals(200, estado(get("/api/convocatorias/alumnos/" + e.aA), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/convocatorias/alumnos/" + e.aB), tokenFamiliaA));
+		assertEquals(403, estado(get("/api/preinscripciones/" + pB), tokenFamiliaA));
+		assertEquals(403, estado(post("/api/alumnos/" + convocatoria + "/alumno/" + e.propioA), tokenFamiliaA),
 				"su alumno de familia no tiene sede: no lo apunta como responsable");
 	}
 

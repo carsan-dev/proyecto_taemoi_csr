@@ -59,14 +59,14 @@ public class GrupoController {
 	}
 
 	@GetMapping("/conteo-alumnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<Map<String, Map<String, Long>>> obtenerConteoAlumnosPorGrupo() {
 		Map<String, Map<String, Long>> conteoAlumnos = grupoService.contarAlumnosPorGrupo();
 		return ResponseEntity.ok(conteoAlumnos);
 	}
 
 	@GetMapping("/tipo/{tipo}/alumnos")
-	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN')")
+	@PreAuthorize("hasRole('ROLE_MANAGER') || hasRole('ROLE_ADMIN') || hasRole('ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<AlumnoCortoDTO>> obtenerAlumnosPorCategoria(@PathVariable String tipo) {
 		try {
 			List<AlumnoCortoDTO> alumnos = grupoService.obtenerAlumnosPorTipo(tipo);

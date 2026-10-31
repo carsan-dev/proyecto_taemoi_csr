@@ -106,13 +106,14 @@ public class ProductoAlumnoController {
 	}
 
 	/**
-	 * Pieza 279: recibo de pago en PDF del cobro ACTIVO del cargo, generado al momento (descarga). Solo la gestión, con
-	 * la regla de {@code GET /api/tesoreria/pendiente-vencido}: propietario y administrador; ni el responsable de sede,
-	 * ni la familia, ni la sesión solo-profesor (que la cadena de seguridad ya limita a su caja). Cargo de otra escuela
-	 * o inexistente → 404; sin cobrar, o con el cobro anulado o devuelto → 409 ({@code ReciboPagoService}).
+	 * Pieza 279: recibo de pago en PDF del cobro ACTIVO del cargo, generado al momento (descarga). Propietario,
+	 * administrador y, pieza 9-5, el responsable de la sede del cargo; ni la familia ni la sesión solo-profesor (que la
+	 * cadena de seguridad ya limita a su caja). Para la gestión, cargo de otra escuela o inexistente → 404; para el
+	 * responsable, 403 sin revelar si existe; sin cobrar, o con el cobro anulado o devuelto → 409
+	 * ({@code ReciboPagoService}).
 	 */
 	@GetMapping("/{productoAlumnoId}/recibo")
-	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.productoAlumnoEnSede(#productoAlumnoId,'LEER')")
 	public ResponseEntity<byte[]> descargarRecibo(@PathVariable Long productoAlumnoId) {
 		ReciboPagoService.ReciboPago recibo = reciboPagoService.generar(productoAlumnoId);
 		return ResponseEntity.ok()
