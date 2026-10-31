@@ -1,0 +1,397 @@
+// Ficha y alta de Miembros en el panel lateral (E9, 9-4). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+//
+// Secciones separadas por un filete, cada una con su título de bloque, su aviso de error y su botón de guardar; sin
+// tarjetas dentro del panel. Casillas nativas con `accent-color` del acento, en una zona táctil de 44 px en móvil.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.miembros__oculto {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ botones
+
+.miembros__boton-primario {
+  @include c.boton-primario;
+}
+
+.miembros__boton-secundario {
+  @include c.boton-secundario;
+}
+
+.miembros__boton-texto {
+  @include c.boton-texto;
+}
+
+.miembros__boton-pequeno {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.miembros__boton-primario,
+.miembros__boton-secundario,
+.miembros__boton-texto {
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.miembros__pie {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.miembros__pie--doble {
+  justify-content: space-between;
+}
+
+// ------------------------------------------------------------------ ficha
+
+.miembros__ficha {
+  display: grid;
+  gap: 24px;
+}
+
+.miembros__seccion {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding-top: 20px;
+  border-top: 1px solid var(--pn-linea);
+
+  &:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.miembros__seccion-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+}
+
+.miembros__dato {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.miembros__dato-etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta-2);
+}
+
+.miembros__dato-valor {
+  overflow-wrap: anywhere;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+}
+
+.miembros__invitacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.miembros__etiqueta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+  color: var(--pn-tinta);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.miembros__etiqueta--atencion {
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+// ------------------------------------------------------------------ roles, sedes y grupos
+
+.miembros__roles,
+.miembros__sedes,
+.miembros__grupos {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miembros__rol {
+  display: grid;
+  gap: 6px;
+  padding: 6px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+    padding-top: 10px;
+  }
+}
+
+.miembros__rol--texto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.miembros__rol-texto {
+  font-weight: 600;
+  color: var(--pn-tinta);
+}
+
+.miembros__casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  cursor: pointer;
+
+  input {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin: 0;
+    accent-color: var(--pn-acento);
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+    }
+  }
+
+  input:disabled + span {
+    color: var(--pn-tinta-2);
+  }
+}
+
+.miembros__ayuda {
+  margin: 0;
+  max-width: 65ch;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.miembros__cargo {
+  display: grid;
+  gap: 6px;
+  margin-left: 28px;
+}
+
+.miembros__cargo-etiqueta,
+.miembros__etiqueta-campo {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.miembros__cargo-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  .miembros__control {
+    flex: 1 1 200px;
+    width: auto;
+  }
+}
+
+.miembros__control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-2);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+}
+
+.miembros__control--corto {
+  width: auto;
+  min-width: 120px;
+}
+
+.miembros__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 6px 0;
+
+  & + & {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.miembros__grupo-nombre {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.miembros__anadir-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  .miembros__control:first-of-type {
+    flex: 1 1 200px;
+    width: auto;
+  }
+}
+
+// ------------------------------------------------------------------ alta
+
+.miembros__form {
+  display: grid;
+  gap: 16px;
+}
+
+.miembros__campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.miembros__conjunto {
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    margin-bottom: 4px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 4px;
+  }
+}
+
+// Aviso informativo, como el de Sedes: superficie con filete e icono, sin borde lateral de color.
+.miembros__nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+    color: var(--pn-acento);
+  }
+}
+
+.miembros__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-peligro);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 1px;
+  }
+
+  span {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+// ------------------------------------------------------------------ esqueleto de la ficha
+
+.miembros__esqueleto-ficha {
+  display: grid;
+  gap: 18px;
+
+  span {
+    display: block;
+    height: 16px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:nth-child(odd) {
+    width: 40%;
+  }
+
+  span:nth-child(even) {
+    width: 80%;
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .miembros__boton-primario,
+  .miembros__boton-secundario,
+  .miembros__boton-texto,
+  .miembros__control {
+    min-height: 44px;
+  }
+
+  .miembros__casilla {
+    min-height: 44px;
+  }
+
+  .miembros__seccion > .miembros__boton-secundario,
+  .miembros__invitacion .miembros__boton-secundario {
+    width: 100%;
+  }
+}
