@@ -240,7 +240,9 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, estado(get("/api/profesor/grupos"), token));
 		assertEquals(200, estado(get("/api/profesor/grupos/" + e.gB + "/alumnos"), token));
 		assertEquals(200, estado(get("/api/profesor/alumnos/" + e.aB), token));
-		// Ser profesor en la sede B no le abre la gestión de esa sede.
+		// Ser profesor en la sede B no le abre la gestión de esa sede, ni en listados.
+		assertFalse(leer(get("/api/alumnos?page=1&size=50"), token, 200).toString().contains("\"id\":" + e.aB + ","));
+		assertFalse(ids(leer(get("/api/grupos/resumen"), token, 200)).contains(e.gB));
 		assertEquals(403, estado(get("/api/alumnos/" + e.aB), token));
 		assertEquals(403, estado(get("/api/grupos/" + e.gB), token));
 		assertEquals(403, estado(get("/api/caja/sedes/" + e.sB + "/resumen"), token));
