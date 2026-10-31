@@ -1172,11 +1172,37 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       expect(params(p.movimientos[0])['page']).toBe('1');
     });
 
+    it('paginar y buscar usan la sede ya aplicada, no la elegida sin «Aplicar»', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder([PENDIENTE], 60);
+      elegirSede('2');
+      fixture.componentInstance.irAPagina(2);
+      fixture.detectChanges();
+      let r = responder([PENDIENTE], 60);
+      expect(r.resumen).withContext('paginar no relee el resumen').toBeUndefined();
+      expect(params(r.movimientos)['sedeId']).withContext('paginar').toBeUndefined();
+      fixture.componentInstance.cargar(false);
+      r = responder([PENDIENTE], 60);
+      expect(params(r.movimientos)['sedeId']).withContext('buscar').toBeUndefined();
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      r = responder([PENDIENTE], 60);
+      expect(params(r.resumen!)['sedeId']).withContext('aplicar, resumen').toBe('2');
+      expect(params(r.movimientos)['sedeId']).withContext('aplicar').toBe('2');
+      fixture.componentInstance.irAPagina(2);
+      r = responder([PENDIENTE], 60);
+      expect(params(r.movimientos)['sedeId']).withContext('paginar tras aplicar').toBe('2');
+    });
+
     it('las exportaciones respetan la sede y «Restablecer» la quita', () => {
       conPermisos(GESTION_VARIAS_SEDES);
       crear();
       responder();
       elegirSede('2');
+      fixture.componentInstance.aplicar();
+      fixture.detectChanges();
+      responder();
       fixture.componentInstance.exportar('pdf');
       expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/pdf`))['sedeId']).toBe('2');
       fixture.componentInstance.informes.cerrar();
@@ -1185,6 +1211,15 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       const p = pendientes();
       expect(params(p.movimientos[0])['sedeId']).toBeUndefined();
       expect(el().querySelector<HTMLSelectElement>('#tesoreria-sede')!.value).toBe('');
+    });
+
+    it('elegir una sede sin aplicar no cambia la exportación', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder();
+      elegirSede('2');
+      fixture.componentInstance.exportar('csv');
+      expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/csv`))).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true' });
     });
 
     it('la exportación sin sede es la de hoy', () => {

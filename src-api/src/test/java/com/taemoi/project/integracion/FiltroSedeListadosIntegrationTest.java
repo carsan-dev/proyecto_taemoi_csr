@@ -129,6 +129,19 @@ class FiltroSedeListadosIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void alumnos_segundaPaginaRealYFueraDeRangoConservanElTotalDeLaSede() throws Exception {
+		JsonNode segunda = leer("/api/alumnos?page=2&size=1&sedeId=" + e.sB, tokenGestor);
+		assertEquals(1, segunda.get("content").size());
+		assertEquals(2, segunda.get("totalElements").asInt());
+		assertEquals(2, segunda.get("totalPages").asInt());
+
+		JsonNode fuera = leer("/api/alumnos?page=3&size=1&sedeId=" + e.sB, tokenGestor);
+		assertEquals(0, fuera.get("content").size());
+		assertEquals(2, fuera.get("totalElements").asInt(), "una página fuera de rango conserva el total de la sede");
+		assertEquals(2, fuera.get("totalPages").asInt());
+	}
+
+	@Test
 	void alumnos_responsableAcotaDentroDeSuAlcance() throws Exception {
 		assertTrue(alumnos("/api/alumnos?page=1&size=100", tokenA).containsAll(Set.of(e.aA, e.aGrupoA)),
 				"sin parámetro, su alcance D9");

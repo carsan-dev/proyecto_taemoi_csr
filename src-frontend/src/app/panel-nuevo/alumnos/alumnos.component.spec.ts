@@ -1193,6 +1193,24 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
       expect(todas.request.params.has('sedeId')).toBeFalse();
     });
 
+    it('con una sede elegida el subtítulo usa el total del filtro; sin sede, el de siempre', () => {
+      conPermisos(GESTION_VARIAS_SEDES);
+      crear();
+      responder(60);
+      expect(texto('.alumnos__subtitulo')).toBe('790 alumnos activos, 25 por página');
+      elegirSede('2');
+      const [lista] = listados();
+      lista.flush(pagina(30));
+      fixture.detectChanges();
+      http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`).forEach((r) => r.flush([]));
+      expect(texto('.alumnos__subtitulo')).toBe('30 alumnos activos, 25 por página');
+      elegirSede('');
+      listados()[0].flush(pagina(60));
+      fixture.detectChanges();
+      http.match((r) => r.url === `${API}/tesoreria/pendientes-por-alumno`).forEach((r) => r.flush([]));
+      expect(texto('.alumnos__subtitulo')).toBe('790 alumnos activos, 25 por página');
+    });
+
     it('«Quitar filtros» también quita la sede', fakeAsync(() => {
       conPermisos(GESTION_VARIAS_SEDES);
       crear();

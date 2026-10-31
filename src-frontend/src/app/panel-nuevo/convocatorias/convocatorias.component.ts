@@ -355,6 +355,10 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     this.cerrarBloque();
     this.sedeId = sedeId;
     this.pagina = 1;
+    // Las lecturas en vuelo (también de páginas no visibles) son de la sede anterior: se descartan.
+    this.lecturasCifras.forEach((l) => l.unsubscribe());
+    this.lecturasCifras.clear();
+    this.generacionCifras.clear();
     this.cifras.clear();
     this.guardarEstado();
     this.leerCifrasVisibles();
