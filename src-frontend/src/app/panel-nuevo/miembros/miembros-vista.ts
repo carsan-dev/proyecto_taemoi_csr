@@ -54,6 +54,8 @@ export const TEXTO_CANCELAR_INVITACION =
   'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.';
 export const AVISO_SIN_CUENTA = 'No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.';
 export const MENSAJE_SIN_SEDES = 'Indica al menos una sede.';
+export const TEXTO_QUITAR_FAMILIA = 'Sus alumnos siguen vinculados. Si no tiene otro rol, no podrá entrar. Podrás devolvérselo después.';
+export const AYUDA_FAMILIA = 'Solo podrá entrar si tiene algún alumno vinculado.';
 
 export function nombreCompleto(m: Pick<Miembro, 'nombre' | 'apellidos'>): string {
   return [m.nombre, m.apellidos]
@@ -123,6 +125,58 @@ export function invitacionPendienteAqui(m: Pick<Miembro, 'invitacionPendiente' |
  */
 export function puedeCancelarInvitacion(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>, sesionPropietaria: boolean): boolean {
   return invitacionPendienteAqui(m) && rolesActivos(m).every((rol) => puedeCambiarRol(rol, sesionPropietaria));
+}
+
+/** Cómo está la contraseña de la cuenta para quien abre la ficha (`MiembrosDTOs.Ficha.contrasena`). */
+export type EstadoContrasena = 'RESTABLECIBLE' | 'GOOGLE' | 'OTRA_ESCUELA' | 'INVITACION_PENDIENTE';
+
+export const TEXTO_CONTRASENA_GOOGLE = 'Esta cuenta usa Google. Su contraseña no se cambia aquí.';
+export const TEXTO_CONTRASENA_OTRA_ESCUELA = 'Esta cuenta también pertenece a otra escuela. Su contraseña no se cambia desde aquí.';
+export const MENSAJE_CONTRASENA_DEBIL = 'La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).';
+export const MENSAJE_CONTRASENAS_DISTINTAS = 'Las contraseñas no coinciden';
+export const AVISO_CONTRASENA_GUARDADA = 'Contraseña actualizada correctamente.';
+
+/** El formulario de restablecer contraseña de la ficha: los valores viven solo aquí, nunca en logs ni en estado compartido. */
+export interface FormContrasena {
+  nueva: string;
+  confirmar: string;
+  mostrar: boolean;
+  enviando: boolean;
+  error: string | null;
+}
+
+export function formContrasenaVacio(): FormContrasena {
+  return { nueva: '', confirmar: '', mostrar: false, enviando: false, error: null };
+}
+
+/** Las reglas de la contraseña, en su orden (movidas desde Configuración, 9-8). */
+export interface ReglaContrasena {
+  clave: 'largo' | 'mayuscula' | 'minuscula' | 'numero' | 'coinciden';
+  texto: string;
+  cumple: (nueva: string, confirmar: string) => boolean;
+}
+
+export const REGLAS_CONTRASENA: readonly ReglaContrasena[] = [
+  { clave: 'largo', texto: 'Mínimo 8 caracteres', cumple: (n) => n.length >= 8 },
+  { clave: 'mayuscula', texto: 'Al menos 1 mayúscula', cumple: (n) => /[A-Z]/.test(n) },
+  { clave: 'minuscula', texto: 'Al menos 1 minúscula', cumple: (n) => /[a-z]/.test(n) },
+  { clave: 'numero', texto: 'Al menos 1 número', cumple: (n) => /\d/.test(n) },
+  { clave: 'coinciden', texto: 'Coinciden', cumple: (n, c) => n.length > 0 && n === c },
+];
+
+export function contrasenaCumpleReglas(contrasena: string): boolean {
+  return contrasena.length >= 8 && /[A-Z]/.test(contrasena) && /[a-z]/.test(contrasena) && /\d/.test(contrasena);
+}
+
+/** El error al guardar la contraseña: «mensaje» de la API, «message», «error», 403 y el genérico. */
+export function mensajeErrorContrasena(error: any): string {
+  return (
+    error?.error?.mensaje ||
+    error?.error?.message ||
+    error?.error?.error ||
+    (error?.status === 403 ? 'No tienes permisos para restablecer contraseñas.' : null) ||
+    'No se pudo actualizar la contraseña.'
+  );
 }
 
 /** Nombre del grupo con su sede cuando la escuela tiene varias. */

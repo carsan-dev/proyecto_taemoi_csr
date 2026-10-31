@@ -162,16 +162,14 @@
   }
 }
 
-.miembros__rol--texto {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 12px;
-}
-
+// Familia en texto (el gestor no la cambia): el nombre alineado con los de las casillas (18 px de caja + 10 de hueco).
 .miembros__rol-texto {
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding-left: 28px;
   color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
 }
 
 .miembros__casilla {
@@ -211,6 +209,11 @@
   max-width: 65ch;
   font: var(--pn-secundario);
   color: var(--pn-tinta-2);
+}
+
+// La ayuda de un rol, alineada con el nombre y no con la casilla.
+.miembros__ayuda--sangria {
+  margin-left: 28px;
 }
 
 .miembros__cargo {
@@ -317,6 +320,68 @@
     flex: 1 1 200px;
     width: auto;
   }
+}
+
+// ------------------------------------------------------------------ restablecer contraseña (dentro de Datos)
+
+// Se despliega ahí mismo, sin otro panel encima: fondo de página, 8 px de radio, sin filete ni sombra.
+.miembros__plegado {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-fondo);
+}
+
+.miembros__obligatorio {
+  font-weight: 400;
+  color: var(--pn-tinta-2);
+}
+
+.miembros__reglas {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miembros__regla {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+
+  &[data-cumple='true'] {
+    color: var(--pn-bien);
+    font-weight: 600;
+  }
+}
+
+.miembros__plegado-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+// Frase en lugar del botón (cuenta de Google u otra escuela): caja suave, sin icono ni borde.
+.miembros__aviso {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-fondo);
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
 }
 
 // ------------------------------------------------------------------ alta
@@ -430,7 +495,12 @@
 
   .miembros__seccion > .miembros__boton-secundario,
   .miembros__subbloque > .miembros__boton-secundario,
-  .miembros__invitacion .miembros__boton-secundario {
+  .miembros__invitacion .miembros__boton-secundario,
+  .miembros__invitacion-acciones > .miembros__boton-secundario {
     width: 100%;
+  }
+
+  .miembros__plegado-acciones > button {
+    flex: 1 1 auto;
   }
 }

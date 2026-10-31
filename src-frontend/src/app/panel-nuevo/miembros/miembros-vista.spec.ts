@@ -1,13 +1,17 @@
 import { FichaCompleta, Miembro, RolDeMiembro } from '../../servicios/endpoints/miembros.service';
 import {
   AVISO_SIN_CUENTA,
+  REGLAS_CONTRASENA,
+  TEXTO_QUITAR_FAMILIA,
   TEXTO_CANCELAR_INVITACION,
+  contrasenaCumpleReglas,
   cuerpoAlta,
   etiquetaGrupo,
   etiquetaRol,
   filaDeFicha,
   invitacionPendienteAqui,
   lineaSecundaria,
+  mensajeErrorContrasena,
   mismasSedes,
   mismosGrupos,
   nombreCompleto,
@@ -100,6 +104,33 @@ describe('miembros-vista (E9-4)', () => {
     expect(puedeCambiarRol('PROPIETARIO', true)).toBeTrue();
     expect(rolesParaAlta(false)).toEqual(['RESPONSABLE_SEDE', 'PROFESOR']);
     expect(rolesParaAlta(true)).toEqual(['PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR']);
+  });
+
+  it('Familia (decisión 396): puedeCambiarRol sigue como siempre y el alta no la ofrece', () => {
+    expect(puedeCambiarRol('FAMILIA', false)).toBeTrue();
+    expect(rolesParaAlta(true)).not.toContain('FAMILIA');
+    expect(rolesParaAlta(false)).not.toContain('FAMILIA');
+    expect(tituloQuitar('FAMILIA', 'Lucía Martín')).toBe('¿Quitar el rol de familia a Lucía Martín?');
+    expect(TEXTO_QUITAR_FAMILIA).toBe('Sus alumnos siguen vinculados. Si no tiene otro rol, no podrá entrar. Podrás devolvérselo después.');
+  });
+
+  it('las reglas de la contraseña son las de Configuración, movidas a Miembros (9-8)', () => {
+    expect(REGLAS_CONTRASENA.map((r) => r.texto)).toEqual([
+      'Mínimo 8 caracteres', 'Al menos 1 mayúscula', 'Al menos 1 minúscula', 'Al menos 1 número', 'Coinciden',
+    ]);
+    expect(contrasenaCumpleReglas('Abcdefg1')).toBeTrue();
+    expect(contrasenaCumpleReglas('abcdefg1')).toBeFalse();
+    expect(contrasenaCumpleReglas('Abcdef1')).toBeFalse();
+    const coinciden = REGLAS_CONTRASENA.find((r) => r.clave === 'coinciden')!;
+    expect(coinciden.cumple('', '')).toBeFalse();
+    expect(coinciden.cumple('Abcdefg1', 'Abcdefg1')).toBeTrue();
+  });
+
+  it('el error de contraseña: el «mensaje» de la API, «message», 403 o el genérico', () => {
+    expect(mensajeErrorContrasena({ status: 400, error: { mensaje: 'Contraseña débil.' } })).toBe('Contraseña débil.');
+    expect(mensajeErrorContrasena({ status: 403 })).toBe('No tienes permisos para restablecer contraseñas.');
+    expect(mensajeErrorContrasena({ status: 400, error: { message: 'Muy corta' } })).toBe('Muy corta');
+    expect(mensajeErrorContrasena({ status: 500 })).toBe('No se pudo actualizar la contraseña.');
   });
 
   it('el título de quitar lleva el rol en minúscula y el nombre', () => {

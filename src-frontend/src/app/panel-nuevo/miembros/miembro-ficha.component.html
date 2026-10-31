@@ -1,4 +1,4 @@
-<pn-panel-lateral [titulo]="nombre" [bloqueado]="ocupado" (cerrar)="cerrar.emit()">
+<pn-panel-lateral [titulo]="nombre" [bloqueado]="ocupado" (cerrar)="cerrarFicha()">
   @if (estado === 'cargando') {
   <pn-esqueleto etiqueta="Cargando la ficha" aria-busy="true">
     <div class="miembros__esqueleto-ficha"><span></span><span></span><span></span><span></span></div>
@@ -22,6 +22,68 @@
           }
         </div>
       </div>
+      }
+      @switch (estadoContrasena) {
+      @case ('RESTABLECIBLE') {
+      @if (contrasena; as form) {
+      <form class="miembros__plegado" id="miembro-form-contrasena" novalidate aria-labelledby="miembro-contrasena-titulo"
+        (submit)="guardarContrasena($event)">
+        <h4 class="miembros__subbloque-titulo" id="miembro-contrasena-titulo">Restablecer contraseña</h4>
+        <div class="miembros__campo">
+          <label class="miembros__etiqueta-campo" for="miembro-contrasena-nueva">Nueva contraseña <span class="miembros__obligatorio">(obligatorio)</span></label>
+          <input id="miembro-contrasena-nueva" class="miembros__control" [type]="form.mostrar ? 'text' : 'password'" autocomplete="new-password"
+            [value]="form.nueva" [disabled]="form.enviando" [attr.aria-invalid]="form.error ? 'true' : null"
+            [attr.aria-describedby]="'miembro-contrasena-reglas' + (form.error ? ' miembro-contrasena-error' : '')"
+            (input)="escribirContrasena('nueva', $event)" />
+        </div>
+        <div class="miembros__campo">
+          <label class="miembros__etiqueta-campo" for="miembro-contrasena-confirmar">Repite la contraseña <span class="miembros__obligatorio">(obligatorio)</span></label>
+          <input id="miembro-contrasena-confirmar" class="miembros__control" [type]="form.mostrar ? 'text' : 'password'" autocomplete="new-password"
+            [value]="form.confirmar" [disabled]="form.enviando" (input)="escribirContrasena('confirmar', $event)" />
+        </div>
+        <label class="miembros__casilla">
+          <input type="checkbox" [checked]="form.mostrar" [disabled]="form.enviando" (change)="alternarMostrar($event)" />
+          <span>Mostrar las contraseñas</span>
+        </label>
+        <ul class="miembros__reglas" id="miembro-contrasena-reglas" aria-label="Requisitos de la contraseña">
+          @for (r of reglas; track r.clave) {
+          @let cumple = r.cumple(form.nueva, form.confirmar);
+          <li class="miembros__regla" [attr.data-regla]="r.clave" [attr.data-cumple]="cumple">
+            @if (cumple) {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            } @else {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"></circle></svg>
+            }
+            <span>{{ r.texto }}</span><span class="miembros__oculto">{{ cumple ? ': cumple' : ': falta' }}</span>
+          </li>
+          }
+        </ul>
+        @if (form.error) {
+        <p class="miembros__error" role="alert" id="miembro-contrasena-error">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <span>{{ form.error }}</span>
+        </p>
+        }
+        <div class="miembros__plegado-acciones">
+          <button type="button" class="miembros__boton-texto" [disabled]="form.enviando" (click)="cancelarContrasena()">Cancelar</button>
+          <button type="submit" pnOcupado class="miembros__boton-primario" [ocupado]="form.enviando" textoOcupado="Guardando…">Guardar contraseña</button>
+        </div>
+      </form>
+      } @else {
+      <div class="miembros__invitacion-acciones">
+        <button type="button" id="miembro-restablecer" class="miembros__boton-secundario" [disabled]="ocupado"
+          (click)="abrirContrasena()">Restablecer contraseña</button>
+      </div>
+      }
+      }
+      @case ('GOOGLE') {
+      <p class="miembros__aviso">{{ textoContrasenaGoogle }}</p>
+      }
+      @case ('OTRA_ESCUELA') {
+      <p class="miembros__aviso">{{ textoContrasenaOtraEscuela }}</p>
+      }
       }
       @if (datosError) {
       <p class="miembros__error" role="alert" id="miembro-datos-error">
@@ -153,10 +215,27 @@
           }
         </li>
         }
-        @if (tieneFamilia) {
-        <li class="miembros__rol miembros__rol--texto" data-rol="FAMILIA">
-          <span class="miembros__rol-texto">Familia</span>
-          <span class="miembros__ayuda">Se vincula desde la ficha del alumno.</span>
+        @if (contexto.propietario) {
+        <li class="miembros__rol" data-rol="FAMILIA">
+          <label class="miembros__casilla">
+            <input type="checkbox" [checked]="marcado('FAMILIA')" [disabled]="rolOcupado['FAMILIA']"
+              [attr.aria-describedby]="'miembro-ayuda-FAMILIA' + (rolError['FAMILIA'] ? ' miembro-error-FAMILIA' : '')"
+              (change)="alternarRol('FAMILIA', $event)" />
+            <span>{{ etiquetaRol('FAMILIA') }}</span>
+          </label>
+          <p class="miembros__ayuda miembros__ayuda--sangria" id="miembro-ayuda-FAMILIA">{{ ayudaFamilia }}</p>
+          @if (rolError['FAMILIA']; as mensaje) {
+          <p class="miembros__error" role="alert" id="miembro-error-FAMILIA">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <span>{{ mensaje }}</span>
+          </p>
+          }
+        </li>
+        } @else if (tieneFamilia) {
+        <li class="miembros__rol" data-rol="FAMILIA">
+          <span class="miembros__rol-texto">{{ etiquetaRol('FAMILIA') }}</span>
+          <p class="miembros__ayuda miembros__ayuda--sangria" id="miembro-ayuda-FAMILIA">{{ ayudaSoloPropietario }}</p>
         </li>
         }
       </ul>
@@ -165,6 +244,6 @@
   }
 
   <div pnPie class="miembros__pie">
-    <button type="button" class="miembros__boton-texto" [disabled]="ocupado" (click)="cerrar.emit()">Cerrar</button>
+    <button type="button" class="miembros__boton-texto" [disabled]="ocupado" (click)="cerrarFicha()">Cerrar</button>
   </div>
 </pn-panel-lateral>

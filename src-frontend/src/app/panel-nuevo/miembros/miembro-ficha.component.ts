@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 
 import { GrupoResumen } from '../../interfaces/grupo-resumen';
@@ -20,20 +20,32 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import {
+  AVISO_CONTRASENA_GUARDADA,
+  AYUDA_FAMILIA,
   AYUDA_SOLO_PROPIETARIO,
   CARGO_MAXIMO,
+  FormContrasena,
+  MENSAJE_CONTRASENAS_DISTINTAS,
+  MENSAJE_CONTRASENA_DEBIL,
   MENSAJE_SIN_SEDES,
+  REGLAS_CONTRASENA,
   ROLES_ASIGNACION,
   ROLES_PERSONAL,
   TEXTO_CANCELAR_INVITACION,
+  TEXTO_CONTRASENA_GOOGLE,
+  TEXTO_CONTRASENA_OTRA_ESCUELA,
   TEXTO_QUITAR,
+  TEXTO_QUITAR_FAMILIA,
   asignacionesDe,
+  contrasenaCumpleReglas,
   estadoHttp,
+  formContrasenaVacio,
   etiquetaAsignacion,
   etiquetaGrupo,
   etiquetaRol,
   invitacionPendienteAqui,
   mensajeError,
+  mensajeErrorContrasena,
   mismasSedes,
   mismosGrupos,
   nombreCompleto,
@@ -60,7 +72,8 @@ type Seccion = 'sedes' | 'grupos' | RolMembresia;
  * Ficha de un miembro en el panel lateral (E9, pieza 9-4). Cuatro secciones que guardan cada una por su cuenta y
  * enseñan su propio error: Datos (email, invitación), Roles (casilla y cargo por rol), Sedes (solo con Responsable de
  * sede activo) y Grupos (solo con Profesor activo; `PUT /grupos` reemplaza el conjunto). Cada respuesta es la ficha
- * completa y la refresca. Sin cambio de contraseña (sigue en Configuración hasta la pieza 9-8).
+ * completa y la refresca. Solo el propietario ve «Restablecer contraseña» (en Datos, plegable ahí mismo) y Familia como
+ * casilla (decisión 396); el gestor ve Familia en texto.
  */
 @Component({
   selector: 'pn-miembro-ficha',
@@ -75,6 +88,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly suscripciones = new Subscription();
   private destruido = false;
 
@@ -91,6 +105,10 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   readonly rolesAsignacion = ROLES_ASIGNACION;
   readonly cargoMaximo = CARGO_MAXIMO;
   readonly ayudaSoloPropietario = AYUDA_SOLO_PROPIETARIO;
+  readonly ayudaFamilia = AYUDA_FAMILIA;
+  readonly reglas = REGLAS_CONTRASENA;
+  readonly textoContrasenaGoogle = TEXTO_CONTRASENA_GOOGLE;
+  readonly textoContrasenaOtraEscuela = TEXTO_CONTRASENA_OTRA_ESCUELA;
   readonly etiquetaRol = etiquetaRol;
   readonly etiquetaAsignacion = etiquetaAsignacion;
 
@@ -104,6 +122,8 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
   responsablePendiente = false;
 
   datosError: string | null = null;
+  /** El bloque «Restablecer contraseña»: `null` mientras está plegado. Sus valores no salen de este componente. */
+  contrasena: FormContrasena | null = null;
   reenviando = false;
   /** Diálogo de cancelar abierto: no se abre otro. */
   private confirmandoCancelar = false;
@@ -128,6 +148,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destruido = true;
+    this.vaciarContrasena();
     this.suscripciones.unsubscribe();
   }
 
@@ -139,6 +160,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     return (
       this.reenviando ||
       this.cancelando ||
+      !!this.contrasena?.enviando ||
       this.sedesOcupado ||
       this.gruposOcupado ||
       Object.values(this.rolOcupado).some((v) => v === true)
@@ -173,8 +195,18 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     return this.activo(rol) || (rol === 'RESPONSABLE_SEDE' && this.responsablePendiente);
   }
 
+  /** Familia solo la cambia el propietario (decisión 396); `puedeCambiarRol` sigue siendo la regla del alta. */
   puedeCambiar(rol: RolMembresia): boolean {
-    return puedeCambiarRol(rol, this.contexto.propietario);
+    return rol === 'FAMILIA' ? this.contexto.propietario : puedeCambiarRol(rol, this.contexto.propietario);
+  }
+
+  /** Lo que se enseña bajo el email: solo para el propietario; la invitación pendiente no enseña nada (valen Reenviar y Cancelar). */
+  get estadoContrasena(): 'RESTABLECIBLE' | 'GOOGLE' | 'OTRA_ESCUELA' | null {
+    const estado = this.ficha?.contrasena;
+    if (!this.contexto.propietario || !estado || estado === 'INVITACION_PENDIENTE') {
+      return null;
+    }
+    return estado;
   }
 
   get verInvitacion(): boolean {
@@ -185,6 +217,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     return !!this.ficha && puedeCancelarInvitacion(this.ficha, this.contexto.propietario);
   }
 
+  /** Para el gestor: la fila de texto de Familia solo si la cuenta tiene esa membresía. */
   get tieneFamilia(): boolean {
     return !!this.ficha && rolDe(this.ficha, 'FAMILIA') !== null;
   }
@@ -421,6 +454,108 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     );
   }
 
+  // ------------------------------------------------------------------ restablecer contraseña
+
+  abrirContrasena(): void {
+    if (this.estadoContrasena !== 'RESTABLECIBLE' || this.contrasena || this.ocupado) {
+      return;
+    }
+    this.contrasena = formContrasenaVacio();
+    this.cdr.detectChanges();
+    this.enfocar('#miembro-contrasena-nueva');
+  }
+
+  cancelarContrasena(): void {
+    if (this.contrasena?.enviando) {
+      return;
+    }
+    this.vaciarContrasena();
+    this.cdr.detectChanges();
+    this.enfocar('#miembro-restablecer');
+  }
+
+  escribirContrasena(campo: 'nueva' | 'confirmar', evento: Event): void {
+    if (!this.contrasena) {
+      return;
+    }
+    this.contrasena[campo] = (evento.target as HTMLInputElement).value;
+    this.contrasena.error = null;
+  }
+
+  alternarMostrar(evento: Event): void {
+    if (this.contrasena) {
+      this.contrasena.mostrar = (evento.target as HTMLInputElement).checked;
+    }
+  }
+
+  guardarContrasena(evento?: Event): void {
+    evento?.preventDefault();
+    const form = this.contrasena;
+    const ficha = this.ficha;
+    if (!form || !ficha || form.enviando || this.estadoContrasena !== 'RESTABLECIBLE') {
+      return;
+    }
+    if (!contrasenaCumpleReglas(form.nueva)) {
+      form.error = MENSAJE_CONTRASENA_DEBIL;
+      this.cdr.detectChanges();
+      this.enfocar('#miembro-contrasena-nueva');
+      return;
+    }
+    if (form.nueva !== form.confirmar) {
+      form.error = MENSAJE_CONTRASENAS_DISTINTAS;
+      this.cdr.detectChanges();
+      this.enfocar('#miembro-contrasena-nueva');
+      return;
+    }
+    form.enviando = true;
+    form.error = null;
+    // Sin cancelar al salir: una escritura en vuelo sigue su curso.
+    this.api.restablecerContrasena(ficha.usuarioId, form.nueva).subscribe({
+      next: (respuesta) => {
+        if (this.destruido) {
+          this.vaciarContrasena();
+          this.terminarCerrado(AVISO_CONTRASENA_GUARDADA);
+          return;
+        }
+        this.vaciarContrasena();
+        this.aplicar(respuesta, []);
+        this.avisos.exito(AVISO_CONTRASENA_GUARDADA);
+        this.enfocar('#miembro-restablecer');
+      },
+      error: (error) => {
+        form.enviando = false;
+        if (this.destruido) {
+          return;
+        }
+        // El error se queda dentro del bloque y lo escrito se conserva.
+        form.error = mensajeErrorContrasena(error);
+        this.cdr.detectChanges();
+        this.enfocar('#miembro-contrasena-nueva');
+      },
+    });
+  }
+
+  /** Cierra la ficha vaciando antes los campos de contraseña. */
+  cerrarFicha(): void {
+    if (this.contrasena?.enviando) {
+      return;
+    }
+    this.vaciarContrasena();
+    this.cerrar.emit();
+  }
+
+  private vaciarContrasena(): void {
+    if (this.contrasena) {
+      this.contrasena.nueva = '';
+      this.contrasena.confirmar = '';
+      this.contrasena = null;
+    }
+  }
+
+  private enfocar(selector: string): void {
+    this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus();
+  }
+
   // ------------------------------------------------------------------ roles
 
   alternarRol(rol: RolMembresia, evento: Event): void {
@@ -453,7 +588,7 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
       return;
     }
     this.escribir(
-      this.api.darRol(ficha.usuarioId, rol),
+      rol === 'FAMILIA' ? this.api.darFamilia(ficha.usuarioId) : this.api.darRol(ficha.usuarioId, rol),
       [rol],
       (v) => (this.rolOcupado[rol] = v),
       (m) => (this.rolError[rol] = m),
@@ -465,9 +600,10 @@ export class MiembroFichaComponent implements OnInit, OnDestroy {
     const ficha = this.ficha!;
     const resultado = await this.confirmacion.confirmar<FichaCompleta>({
       titulo: tituloQuitar(rol, nombreCompleto(ficha)),
-      mensaje: TEXTO_QUITAR,
+      mensaje: rol === 'FAMILIA' ? TEXTO_QUITAR_FAMILIA : TEXTO_QUITAR,
       accion: 'Quitar rol',
       accionOcupada: 'Quitando…',
+      ...(rol === 'FAMILIA' ? { cancelar: 'Volver' } : {}),
       nombre: 'quitar-rol',
       ejecutar: () => this.api.quitarRol(ficha.usuarioId, rol),
     });

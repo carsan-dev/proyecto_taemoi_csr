@@ -251,14 +251,6 @@ export class LecturasPanelService {
     });
   }
 
-  /** Igual que `EndpointsService.obtenerUsuarios` (Roles y permisos de Configuración, 8b-3k). */
-  usuarios(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/admin/users`, {
-      withCredentials: true,
-      context: contextoErrorLocal(),
-    });
-  }
-
   /** Igual que `EndpointsService.obtenerAuditoriaEventos` (Registro de acciones, 8b-3k): mismos parámetros y orden. */
   auditoriaEventos(
     filtros: {

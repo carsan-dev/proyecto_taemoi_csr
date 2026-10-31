@@ -483,12 +483,320 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     listados().forEach((r) => r.flush(pagina([miembro()])));
   });
 
-  it('la familia es solo texto', async () => {
-    cargar();
+  // ------------------------------------------------------------------ ficha: familia (decisión 396)
+
+  const AYUDA_FAMILIA = 'Solo podrá entrar si tiene algún alumno vinculado.';
+
+  it('propietario sin la membresía: Familia es una casilla más tras Profesor, sin marcar, sin formulario de cargo y con la ayuda', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ roles: [rol('PROFESOR')] }));
+    const orden = Array.from(panel()!.querySelectorAll('[data-rol]')).map((n) => n.getAttribute('data-rol'));
+    expect(orden).toEqual(['PROPIETARIO', 'ADMINISTRADOR', 'RESPONSABLE_SEDE', 'PROFESOR', 'FAMILIA']);
+    expect(casilla('FAMILIA').checked).toBeFalse();
+    expect(casilla('FAMILIA').disabled).toBeFalse();
+    expect(texto(lineaRol('FAMILIA').querySelector('.miembros__ayuda'))).toBe(AYUDA_FAMILIA);
+    expect(lineaRol('FAMILIA').querySelector('input[type="text"]')).toBeNull();
+    expect(lineaRol('FAMILIA').textContent).not.toContain('Cargo');
+    expect(panel()!.textContent).not.toContain('Se vincula desde la ficha del alumno.');
+  });
+
+  it('propietario con la membresía activa: casilla marcada y todavía sin formulario de cargo', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA')] }));
+    expect(casilla('FAMILIA').checked).toBeTrue();
+    expect(lineaRol('FAMILIA').querySelector('input[type="text"]')).toBeNull();
+    expect(lineaRol('FAMILIA').textContent).not.toContain('Guardar cargo');
+  });
+
+  it('gestor con la membresía: fila de texto con la ayuda de solo propietario; sin ella, ni fila', async () => {
+    cargar(pagina([miembro()]), GESTORA);
     await abrirFicha(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA')] }));
     const familia = lineaRol('FAMILIA');
-    expect(texto(familia)).toContain('Familia');
+    expect(texto(familia.querySelector('.miembros__rol-texto'))).toBe('Familia');
     expect(familia.querySelector('input')).toBeNull();
+    expect(texto(familia.querySelector('.miembros__ayuda'))).toBe('Solo el propietario puede cambiar este rol.');
+    expect(panel()!.textContent).not.toContain('Se vincula desde la ficha del alumno.');
+    fixture.destroy();
+
+    cargar(pagina([miembro()]), GESTORA);
+    await abrirFicha(ficha({ roles: [rol('PROFESOR')] }));
+    expect(panel()!.querySelector('[data-rol="FAMILIA"]')).toBeNull();
+  });
+
+  it('dar Familia: PUT /roles/FAMILIA directo, sin cuerpo ni diálogo, y refresca la casilla', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha());
+    marcar(casilla('FAMILIA'), true);
+    expect(dialogo()).toBeNull();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/roles/FAMILIA`);
+    expect(put.request.body).toBeNull();
+    expect(put.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    put.flush(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA')] }));
+    await esperar();
+    expect(casilla('FAMILIA').checked).toBeTrue();
+    expect(lineaRol('FAMILIA').querySelector('input[type="text"]')).toBeNull();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('quitar Familia: diálogo con el texto exacto, «Quitar rol» llama a DELETE y «Volver» no', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA')] }));
+    marcar(casilla('FAMILIA'), false);
+    await esperar();
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__titulo'))).toBe('¿Quitar el rol de familia a Lucía Martín Gil?');
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__mensaje'))).toBe(
+      'Sus alumnos siguen vinculados. Si no tiene otro rol, no podrá entrar. Podrás devolvérselo después.'
+    );
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__accion'))).toBe('Quitar rol');
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__cancelar'))).toBe('Volver');
+    (dialogo()!.querySelector('.pn-dialogo__cancelar') as HTMLButtonElement).click();
+    await esperar();
+    expect(http.match((r) => r.method === 'DELETE').length).toBe(0);
+    expect(casilla('FAMILIA').checked).toBeTrue();
+
+    marcar(casilla('FAMILIA'), false);
+    await esperar();
+    await confirmar();
+    http.expectOne((r) => r.method === 'DELETE' && r.url === `${API}/1/roles/FAMILIA`).flush(ficha({ roles: [rol('PROFESOR'), rol('FAMILIA', false)] }));
+    await esperar();
+    expect(casilla('FAMILIA').checked).toBeFalse();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  // ------------------------------------------------------------------ ficha: restablecer contraseña (9-8)
+
+  const nueva = (): HTMLInputElement => panel()!.querySelector<HTMLInputElement>('#miembro-contrasena-nueva')!;
+  const repite = (): HTMLInputElement => panel()!.querySelector<HTMLInputElement>('#miembro-contrasena-confirmar')!;
+  const bloqueContrasena = (): HTMLElement | null => panel()!.querySelector<HTMLElement>('#miembro-form-contrasena');
+  const restablecer = (): HTMLButtonElement | null => panel()!.querySelector<HTMLButtonElement>('#miembro-restablecer');
+  const PUT_CONTRASENA = `${API}/1/contrasena`;
+
+  function escribir(c: HTMLInputElement, valor: string): void {
+    c.value = valor;
+    c.dispatchEvent(new Event('input'));
+    pintar();
+  }
+
+  async function conBloque(caps: Capacidad[] = PROPIETARIA): Promise<void> {
+    cargar(pagina([miembro()]), caps);
+    await abrirFicha(ficha({ contrasena: 'RESTABLECIBLE' }));
+    restablecer()!.click();
+    pintar();
+  }
+
+  const FRASE_GOOGLE = 'Esta cuenta usa Google. Su contraseña no se cambia aquí.';
+  const FRASE_OTRA = 'Esta cuenta también pertenece a otra escuela. Su contraseña no se cambia desde aquí.';
+
+  it('visibilidad según quién abre la ficha y el estado de la contraseña (los cuatro valores)', async () => {
+    const casos: [FichaCompleta['contrasena'], boolean, boolean, string][] = [
+      ['RESTABLECIBLE', true, false, ''],
+      ['GOOGLE', false, false, FRASE_GOOGLE],
+      ['OTRA_ESCUELA', false, false, FRASE_OTRA],
+      ['INVITACION_PENDIENTE', false, false, ''],
+    ];
+    for (const [estado, boton_, , frase] of casos) {
+      cargar(pagina([miembro()]), PROPIETARIA);
+      await abrirFicha(ficha({ contrasena: estado }));
+      expect(restablecer() !== null).withContext(`propietario ${estado}`).toBe(boton_);
+      expect(texto(panel()!.querySelector('.miembros__aviso'))).withContext(`propietario ${estado}`).toBe(frase);
+      fixture.destroy();
+
+      // El gestor no ve nada de la parte de contraseña, aunque la API la trajera.
+      cargar(pagina([miembro()]), GESTORA);
+      await abrirFicha(ficha({ contrasena: estado }));
+      expect(restablecer()).withContext(`gestor ${estado}`).toBeNull();
+      expect(panel()!.querySelector('.miembros__aviso')).withContext(`gestor ${estado}`).toBeNull();
+      expect(bloqueContrasena()).toBeNull();
+      fixture.destroy();
+    }
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha());
+    expect(restablecer()).toBeNull();
+  });
+
+  it('el botón es secundario, va tras el email y desplegarlo enseña el bloque con sus campos, foco en el primero', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ contrasena: 'RESTABLECIBLE' }));
+    document.body.appendChild(el());
+    expect(restablecer()!.classList).toContain('miembros__boton-secundario');
+    expect(texto(restablecer())).toBe('Restablecer contraseña');
+    restablecer()!.click();
+    pintar();
+    const bloque = bloqueContrasena()!;
+    expect(texto(bloque.querySelector('h4'))).toBe('Restablecer contraseña');
+    expect(texto(bloque.querySelector('label[for="miembro-contrasena-nueva"]'))).toBe('Nueva contraseña (obligatorio)');
+    expect(texto(bloque.querySelector('label[for="miembro-contrasena-confirmar"]'))).toBe('Repite la contraseña (obligatorio)');
+    expect(nueva().getAttribute('autocomplete')).toBe('new-password');
+    expect(repite().getAttribute('autocomplete')).toBe('new-password');
+    expect(nueva().type).toBe('password');
+    expect(texto(bloque.querySelector('.miembros__casilla'))).toBe('Mostrar las contraseñas');
+    expect(Array.from(bloque.querySelectorAll('.miembros__regla')).map((r) => texto(r).replace(/: (cumple|falta)$/, ''))).toEqual([
+      'Mínimo 8 caracteres', 'Al menos 1 mayúscula', 'Al menos 1 minúscula', 'Al menos 1 número', 'Coinciden',
+    ]);
+    expect(Array.from(bloque.querySelectorAll('.miembros__plegado-acciones button')).map((b) => texto(b))).toEqual(['Cancelar', 'Guardar contraseña']);
+    // Se despliega en la propia ficha: no se abre otro panel lateral.
+    expect(document.querySelectorAll('dialog.pn-panel').length).toBe(1);
+    expect(document.activeElement).toBe(nueva());
+    // «Mostrar las contraseñas» cambia los dos campos.
+    const mostrar = bloque.querySelector<HTMLInputElement>('.miembros__casilla input')!;
+    mostrar.click();
+    pintar();
+    expect(nueva().type).toBe('text');
+    expect(repite().type).toBe('text');
+    el().remove();
+  });
+
+  it('cancelar pliega, vacía los campos y devuelve el foco al botón; al volver a desplegar está vacío', async () => {
+    cargar(pagina([miembro()]), PROPIETARIA);
+    await abrirFicha(ficha({ contrasena: 'RESTABLECIBLE' }));
+    document.body.appendChild(el());
+    restablecer()!.click();
+    pintar();
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    boton(bloqueContrasena()!, 'Cancelar').click();
+    pintar();
+    expect(bloqueContrasena()).toBeNull();
+    expect(document.activeElement).toBe(restablecer());
+    expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+    restablecer()!.click();
+    pintar();
+    expect(nueva().value).toBe('');
+    expect(repite().value).toBe('');
+    el().remove();
+  });
+
+  it('los requisitos se marcan en vivo, y «Coinciden» solo con las dos iguales', async () => {
+    await conBloque();
+    const estado = (): string[] => Array.from(panel()!.querySelectorAll('.miembros__regla')).map((r) => r.getAttribute('data-cumple') ?? '');
+    expect(estado()).toEqual(['false', 'false', 'false', 'false', 'false']);
+    escribir(nueva(), 'abc');
+    expect(estado()).toEqual(['false', 'false', 'true', 'false', 'false']);
+    escribir(nueva(), 'Abcdefg1');
+    expect(estado()).toEqual(['true', 'true', 'true', 'true', 'false']);
+    escribir(repite(), 'Abcdefg1');
+    expect(estado()).toEqual(['true', 'true', 'true', 'true', 'true']);
+    escribir(repite(), 'Abcdefg2');
+    expect(estado()[4]).toBe('false');
+  });
+
+  it('guardar: PUT /contrasena con ERROR_HANDLED_LOCALLY, aviso de éxito, bloque plegado y vacío, y la lista se pone al día', async () => {
+    await conBloque();
+    document.body.appendChild(el());
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    boton(bloqueContrasena()!, 'Guardar contraseña').click();
+    pintar();
+    const put = http.expectOne((r) => r.method === 'PUT' && r.url === PUT_CONTRASENA);
+    expect(put.request.body).toEqual({ nuevaContrasena: 'Abcdefg1' });
+    expect(put.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    put.flush(ficha({ contrasena: 'RESTABLECIBLE' }));
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Contraseña actualizada correctamente.' }]);
+    expect(bloqueContrasena()).toBeNull();
+    expect(document.activeElement).toBe(restablecer());
+    restablecer()!.click();
+    pintar();
+    expect(nueva().value).toBe('');
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+    el().remove();
+  });
+
+  it('una contraseña que no cumple las reglas o no coincide no se envía y el mensaje sale en el bloque', async () => {
+    await conBloque();
+    for (const mala of ['abcdefgh1', 'ABCDEFGH1', 'Abcdefgh', 'Abc1']) {
+      escribir(nueva(), mala);
+      escribir(repite(), mala);
+      boton(bloqueContrasena()!, 'Guardar contraseña').click();
+      pintar();
+      const error = bloqueContrasena()!.querySelector('[role="alert"]');
+      expect(texto(error)).toBe('La contraseña debe tener mayúsculas, minúsculas y números (mínimo 8).');
+      expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+    }
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg2');
+    boton(bloqueContrasena()!, 'Guardar contraseña').click();
+    pintar();
+    expect(texto(bloqueContrasena()!.querySelector('[role="alert"]'))).toBe('Las contraseñas no coinciden');
+    expect(nueva().getAttribute('aria-invalid')).toBe('true');
+    expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+  });
+
+  it('un error de la API se ve dentro del bloque con role=alert y no pierde lo escrito', async () => {
+    await conBloque();
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    boton(bloqueContrasena()!, 'Guardar contraseña').click();
+    pintar();
+    http.expectOne((r) => r.method === 'PUT' && r.url === PUT_CONTRASENA).flush({ mensaje: 'La contraseña es demasiado común.' }, { status: 400, statusText: 'Bad Request' });
+    await esperar();
+    const alerta = bloqueContrasena()!.querySelector('[role="alert"]')!;
+    expect(texto(alerta)).toBe('La contraseña es demasiado común.');
+    expect(nueva().value).toBe('Abcdefg1');
+    expect(repite().value).toBe('Abcdefg1');
+    expect(nueva().disabled).toBeFalse();
+    expect(avisos()).toEqual([]);
+    // Al escribir de nuevo el error desaparece.
+    escribir(nueva(), 'Abcdefg12');
+    escribir(repite(), 'Abcdefg12');
+    expect(bloqueContrasena()!.querySelector('[role="alert"]')).toBeNull();
+    // Un error sin mensaje de la API: el genérico.
+    boton(bloqueContrasena()!, 'Guardar contraseña').click();
+    pintar();
+    http.expectOne((r) => r.method === 'PUT' && r.url === PUT_CONTRASENA).flush(null, { status: 500, statusText: 'Error' });
+    await esperar();
+    expect(texto(bloqueContrasena()!.querySelector('[role="alert"]'))).toBe('No se pudo actualizar la contraseña.');
+  });
+
+  it('mientras se envía el panel queda bloqueado y un segundo envío no repite el PUT', async () => {
+    await conBloque();
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    const guardar = boton(bloqueContrasena()!, 'Guardar contraseña');
+    guardar.click();
+    pintar();
+    expect(guardar.disabled || guardar.getAttribute('aria-busy') === 'true' || texto(guardar) === 'Guardando…').toBeTrue();
+    expect(nueva().disabled).toBeTrue();
+    expect(boton(bloqueContrasena()!, 'Cancelar').disabled).toBeTrue();
+    bloqueContrasena()!.dispatchEvent(new Event('submit'));
+    guardar.click();
+    pintar();
+    expect(http.match((r) => r.method === 'PUT' && r.url === PUT_CONTRASENA).length).toBe(1);
+    // El panel no se cierra con la escritura en vuelo.
+    boton(panel()!, 'Cerrar').click();
+    pintar();
+    expect(panel()).not.toBeNull();
+  });
+
+  it('cerrar la ficha vacía los campos: al reabrirla el bloque está plegado y vacío', async () => {
+    await conBloque();
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    const ficha_ = fixture.debugElement.query(By.directive(MiembroFichaComponent)).componentInstance as MiembroFichaComponent;
+    expect(ficha_.contrasena?.nueva).toBe('Abcdefg1');
+    boton(panel()!, 'Cerrar').click();
+    pintar();
+    expect(ficha_.contrasena).toBeNull();
+    await abrirFicha(ficha({ contrasena: 'RESTABLECIBLE' }));
+    expect(bloqueContrasena()).toBeNull();
+    restablecer()!.click();
+    pintar();
+    expect(nueva().value).toBe('');
+  });
+
+  it('destruir el componente vacía los campos y no guarda ni escribe la contraseña en la consola', async () => {
+    const consola = [spyOn(console, 'log'), spyOn(console, 'warn'), spyOn(console, 'error'), spyOn(console, 'info')];
+    await conBloque();
+    escribir(nueva(), 'Abcdefg1');
+    escribir(repite(), 'Abcdefg1');
+    const ficha_ = fixture.debugElement.query(By.directive(MiembroFichaComponent)).componentInstance as MiembroFichaComponent;
+    const form = ficha_.contrasena!;
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(form.nueva).toBe('');
+    expect(form.confirmar).toBe('');
+    expect(ficha_.contrasena).toBeNull();
+    consola.forEach((c) => expect(c).not.toHaveBeenCalled());
   });
 
   // ------------------------------------------------------------------ ficha: invitación
