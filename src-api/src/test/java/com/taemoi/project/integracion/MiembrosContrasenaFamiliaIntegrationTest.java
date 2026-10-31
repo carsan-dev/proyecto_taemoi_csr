@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.function.Executable;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -56,6 +57,7 @@ import com.taemoi.project.services.JwtService;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
 import jakarta.servlet.http.Cookie;
 
@@ -89,6 +91,7 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 	private static final String SIN_ESCUELA = "El usuario no tiene acceso a ninguna escuela.";
 	private static final String SIN_ALUMNOS_ACTIVOS = "No hay alumnos activos asociados a esta cuenta.";
 	private static final String PAYLOAD_OMITIDO = "[payload omitted: contrasena]";
+	private static final String CUERPO_NO_VALIDO = "El cuerpo de la petición no es válido.";
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -326,6 +329,64 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/**
+	 * Jackson cita el token que no entiende y {@code DefaultHandlerExceptionResolver} lo deja en un WARN: sin comillas, ese
+	 * token es la contraseña. Tampoco con otro tipo de contenido.
+	 */
+	@Test
+	void cuerpoMalformadoOdeOtroTipo_elValorNoLlegaAlLog() throws Throwable {
+		long cuenta = cuenta("log-malformado");
+		membresia(e.org, cuenta, "PROFESOR");
+		String antes = hash(cuenta);
+		String valor = valorSinComillas();
+		List<MvcResult> malformados = new ArrayList<>();
+
+		sinValorEnElLog(valor, () -> {
+			for (String cuerpo : List.of("{\"nuevaContrasena\":" + valor + "}", valor, "{\"nuevaContrasena\":\"" + valor + "\"")) {
+				malformados.add(peticion(conCuerpo(put(ruta(cuenta)), cuerpo), tPropietario));
+			}
+			assertEquals(415, peticion(put(ruta(cuenta)).contentType(MediaType.TEXT_PLAIN).content(valor), tPropietario)
+					.getResponse().getStatus());
+			assertEquals(415, peticion(put(ruta(cuenta)).contentType(MediaType.TEXT_PLAIN)
+					.content("{\"nuevaContrasena\":" + valor + "}"), tPropietario).getResponse().getStatus());
+		});
+
+		assertEquals(3, malformados.size());
+		for (MvcResult malformado : malformados) {
+			assertMensaje(malformado, 400, CUERPO_NO_VALIDO);
+			assertFalse(contenido(malformado).contains(valor));
+		}
+		assertEquals(antes, hash(cuenta));
+	}
+
+	/** Sin cuerpo tampoco se puede leer: sigue en 400, ahora con su mensaje. */
+	@Test
+	void sinCuerpo_400ConMensaje() throws Exception {
+		long cuenta = cuenta("sin-cuerpo");
+		membresia(e.org, cuenta, "PROFESOR");
+		assertMensaje(peticion(put(ruta(cuenta)), tPropietario), 400, CUERPO_NO_VALIDO);
+	}
+
+	/** El resto de endpoints con cuerpo sigue en 400 y sin escribir nada; el handler es de todo el controlador. */
+	@Test
+	void losDemasEndpointsConCuerpo_400SiEstaMalformado() throws Throwable {
+		long cuenta = cuenta("malformado-demas");
+		membresia(e.org, cuenta, "PROFESOR");
+		String valor = valorSinComillas();
+		String cuerpo = "{\"campo\":" + valor + "}";
+
+		sinValorEnElLog(valor, () -> {
+			for (String token : List.of(tPropietario, tGestor)) {
+				assertMensaje(peticion(conCuerpo(post(RUTA), cuerpo), token), 400, CUERPO_NO_VALIDO);
+				assertMensaje(peticion(conCuerpo(put(RUTA + "/" + cuenta + "/roles/PROFESOR"), cuerpo), token), 400,
+						CUERPO_NO_VALIDO);
+				assertMensaje(peticion(conCuerpo(put(RUTA + "/" + cuenta + "/sedes"), cuerpo), token), 400, CUERPO_NO_VALIDO);
+				assertMensaje(peticion(conCuerpo(put(RUTA + "/" + cuenta + "/grupos"), cuerpo), token), 400, CUERPO_NO_VALIDO);
+			}
+		});
+		assertEquals("PROFESOR:true", roles(leer(get(RUTA + "/" + cuenta), tPropietario, 200)));
+	}
+
 	@Test
 	void elTokenDeRestablecerDeUnaCuentaConContrasenaSigueVivo() throws Exception {
 		long cuenta = cuenta("token");
@@ -379,6 +440,61 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 		String clave = clave();
 		assertEquals(200, peticion(contrasena(legada, clave), tPropietarioOrg1).getResponse().getStatus());
 		assertTrue(encoder.matches(clave, hash(legada)));
+	}
+
+	// ------------------------------------------------------------------ cuentas de plataforma (D8-13, decisión 397)
+
+	/** Ni la ruta nueva ni la antigua; la ficha y el 403 dicen «otra escuela», nunca que es de plataforma. */
+	@Test
+	void superadminConMembresiaEnLaEscuela_403PorLasDosRutas() throws Exception {
+		long cuenta = superadmin("sa-miembro");
+		membresia(e.org, cuenta, "PROFESOR");
+		String antes = hash(cuenta);
+
+		assertEquals("OTRA_ESCUELA", campoContrasena(cuenta));
+		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
+		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
+		assertEquals(antes, hash(cuenta));
+	}
+
+	/** Darla de alta por su email le crea su única membresía aquí: eso no la hace de esta escuela. */
+	@Test
+	void superadminSinMembresiaTrasUnAlta_403PorLasDosRutas() throws Exception {
+		long cuenta = superadmin("sa-alta");
+		String antes = hash(cuenta);
+		String alta = json.writeValueAsString(Map.of("email", emailDe(cuenta), "rol", "PROFESOR"));
+
+		assertEquals("OTRA_ESCUELA", leer(conCuerpo(post(RUTA), alta), tPropietario, 200).get("contrasena").asText());
+		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
+		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietario), 403, OTRA_ESCUELA);
+		assertEquals(antes, hash(cuenta));
+	}
+
+	/** Sin ninguna membresía es miembro de la escuela por defecto, como una cuenta legada; tampoco desde ahí. */
+	@Test
+	void superadminSinMembresia_403DesdeLaEscuelaPorDefecto() throws Exception {
+		long cuenta = superadmin("sa-legada");
+		String antes = hash(cuenta);
+
+		assertEquals("OTRA_ESCUELA", leer(get(RUTA + "/" + cuenta), tPropietarioOrg1, 200).get("contrasena").asText());
+		assertMensaje(peticion(contrasena(cuenta, clave()), tPropietarioOrg1), 403, OTRA_ESCUELA);
+		assertMensaje(peticion(contrasenaRutaAntigua(cuenta, clave()), tPropietarioOrg1), 403, OTRA_ESCUELA);
+		assertEquals(antes, hash(cuenta));
+	}
+
+	/** Control de los tres anteriores: una cuenta normal se restablece por las dos rutas. */
+	@Test
+	void cuentaNormal_200PorLasDosRutas() throws Exception {
+		long cuenta = cuenta("control-rutas");
+		membresia(e.org, cuenta, "PROFESOR");
+
+		assertEquals("RESTABLECIBLE", campoContrasena(cuenta));
+		String nueva = clave();
+		assertEquals(200, peticion(contrasena(cuenta, nueva), tPropietario).getResponse().getStatus());
+		assertTrue(encoder.matches(nueva, hash(cuenta)));
+		String antigua = clave();
+		assertEquals(200, peticion(contrasenaRutaAntigua(cuenta, antigua), tPropietario).getResponse().getStatus());
+		assertTrue(encoder.matches(antigua, hash(cuenta)));
 	}
 
 	// ------------------------------------------------------------------ campo de la ficha
@@ -634,6 +750,13 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 		return id;
 	}
 
+	/** Cuenta nueva sin membresías, marcada como administradora de plataforma. */
+	private long superadmin(String nombre) {
+		long id = cuenta(nombre);
+		jdbc.update("UPDATE usuario SET es_admin_plataforma = TRUE WHERE id = ?", id);
+		return id;
+	}
+
 	private void membresia(long organizacion, long usuario, String rol) {
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, ?)", usuario, organizacion,
 				rol);
@@ -646,6 +769,31 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 	/** Contraseña válida y única: se busca tal cual en las filas de auditoría. */
 	private String clave() {
 		return "Clave-" + contador.incrementAndGet() + "-" + e.marca + "-Zq9";
+	}
+
+	/** Contraseña que Jackson cita entera sin comillas: solo letras y dígitos, única en todo el log. */
+	private String valorSinComillas() {
+		return "ClaveSinComillas" + contador.incrementAndGet() + e.marca + "Zq9";
+	}
+
+	/** Ejecuta las peticiones escuchando el log raíz: {@code valor} no aparece en ningún mensaje ni error encadenado. */
+	private void sinValorEnElLog(String valor, Executable peticiones) throws Throwable {
+		Logger raiz = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+		ListAppender<ILoggingEvent> eventos = new ListAppender<>();
+		eventos.start();
+		raiz.addAppender(eventos);
+		try {
+			peticiones.execute();
+		} finally {
+			raiz.detachAppender(eventos);
+		}
+		for (ILoggingEvent evento : List.copyOf(eventos.list)) {
+			StringBuilder texto = new StringBuilder(evento.getFormattedMessage());
+			for (IThrowableProxy error = evento.getThrowableProxy(); error != null; error = error.getCause()) {
+				texto.append(' ').append(error.getMessage());
+			}
+			assertFalse(texto.toString().contains(valor), texto.toString());
+		}
 	}
 
 	private String hash(long usuario) {
@@ -736,6 +884,10 @@ class MiembrosContrasenaFamiliaIntegrationTest extends MySqlIntegrationTest {
 
 	private MockHttpServletRequestBuilder contrasena(long cuenta, String clave) throws Exception {
 		return conCuerpo(put(ruta(cuenta)), cuerpoContrasena(clave));
+	}
+
+	private MockHttpServletRequestBuilder contrasenaRutaAntigua(long cuenta, String clave) throws Exception {
+		return conCuerpo(put("/api/admin/users/" + cuenta + "/password"), cuerpoContrasena(clave));
 	}
 
 	private MvcResult entrar(String email, String clave) throws Exception {

@@ -669,6 +669,39 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0L, filas("usuario", "id", id));
 	}
 
+	/** Decisión 396: FAMILIA solo la cambia el propietario, y cancelar la retiraría. Da igual que vaya con otro rol. */
+	@Test
+	void gestorConFamiliaActiva_403YNadaCambia_elPropietarioSiCancela() throws Exception {
+		String correo = emailNuevo("gestor-familia");
+		long junto = invitar(correo, "PROFESOR");
+		membresia(e.org, junto, "FAMILIA");
+		long sola = cuentaPendiente(emailNuevo("gestor-familia-sola"), e.org);
+		membresia(e.org, sola, "FAMILIA");
+		String hash = hashDe(junto);
+
+		for (long cuenta : List.of(junto, sola)) {
+			assertMensaje(peticion(delete(ruta(cuenta)), tGestor), 403, SOLO_PROPIETARIO);
+			assertEquals(1L, filas("usuario", "id", cuenta));
+		}
+		assertEquals(List.of("PROFESOR", "FAMILIA"), rolesActivos(junto, e.org));
+		assertEquals(List.of("FAMILIA"), rolesActivos(sola, e.org));
+		assertEquals(hash, hashDe(junto));
+		assertEquals(1, enviadosA(correo).size(), "solo la invitación");
+
+		assertTrue(cancelar(junto, tPropietario, 200).get("cuentaBorrada").asBoolean());
+		assertTrue(cancelar(sola, tPropietario, 200).get("cuentaBorrada").asBoolean());
+	}
+
+	@Test
+	void gestorConFamiliaYaInactiva_200() throws Exception {
+		long id = invitar(emailNuevo("gestor-familia-inactiva"), "PROFESOR");
+		insertarMembresia(e.org, id, "FAMILIA", false);
+
+		assertTrue(cancelar(id, tGestor, 200).get("cuentaBorrada").asBoolean());
+
+		assertEquals(0L, filas("usuario", "id", id));
+	}
+
 	@Test
 	void propietarioSobrePropietarioPendienteConOtroPropietario_200() throws Exception {
 		long id = invitar(emailNuevo("otro-propietario"), "PROPIETARIO");
@@ -841,6 +874,45 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 
 		assertEquals(hash, hashDe(id));
 		assertEquals(correosAntes, enviadosA(correo).size());
+		assertEquals(200, aceptar(token).getResponse().getStatus());
+		assertFalse(pendiente(id));
+	}
+
+	/** FAMILIA es un rol activo más: mientras queda, el enlace vive; al quitar la última, muere sin correo. */
+	@Test
+	void quitarFamiliaComoUltimoRolActivo_elEnlaceMuere() throws Exception {
+		String correo = emailNuevo("quita-familia");
+		long id = invitar(correo, "PROFESOR");
+		membresia(e.org, id, "FAMILIA");
+		String token = ultimoEnviadoA(correo).token();
+		String hash = hashDe(id);
+		int correosAntes = enviadosA(correo).size();
+
+		quitarRol(id, "PROFESOR", tPropietario);
+		assertEquals(hash, hashDe(id), "sigue FAMILIA activa");
+
+		quitarRol(id, "FAMILIA", tPropietario);
+
+		assertNull(hashDe(id));
+		assertNull(caducidadDe(id));
+		assertEquals(1L, filas("usuario", "id", id));
+		assertTrue(pendiente(id));
+		assertEquals(correosAntes, enviadosA(correo).size(), "sin correo de cancelación");
+		assertMensaje(aceptar(token), 400, ENLACE_NO_VALE);
+	}
+
+	@Test
+	void quitarFamiliaConProfesorActivo_elEnlaceSigueValiendo() throws Exception {
+		String correo = emailNuevo("quita-familia-profesor");
+		long id = invitar(correo, "PROFESOR");
+		membresia(e.org, id, "FAMILIA");
+		String token = ultimoEnviadoA(correo).token();
+		String hash = hashDe(id);
+
+		quitarRol(id, "FAMILIA", tPropietario);
+
+		assertEquals(hash, hashDe(id));
+		assertEquals(List.of("PROFESOR"), rolesActivos(id, e.org));
 		assertEquals(200, aceptar(token).getResponse().getStatus());
 		assertFalse(pendiente(id));
 	}

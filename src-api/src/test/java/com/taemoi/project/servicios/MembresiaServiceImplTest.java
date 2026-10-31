@@ -434,6 +434,18 @@ class MembresiaServiceImplTest {
 		assertFalse(servicio.puedeGestionarUsuarioGlobal(10L, 2L));
 	}
 
+	/** D8-13 (decisión 397): ninguna escuela gestiona una cuenta de plataforma, tenga o no membresías ahí. */
+	@Test
+	void cuentaDePlataforma_ningunaEscuelaLaGestiona() {
+		when(usuarios.existsByIdAndEsAdminPlataformaTrue(10L)).thenReturn(true);
+
+		when(repo.findByUsuarioId(10L)).thenReturn(List.of(new Membresia(10L, 2L, RolMembresia.PROPIETARIO)));
+		assertFalse(servicio.puedeGestionarUsuarioGlobal(10L, 2L), "Con todas sus membresías en esa escuela");
+
+		when(repo.findByUsuarioId(10L)).thenReturn(List.of());
+		assertFalse(servicio.puedeGestionarUsuarioGlobal(10L, 1L), "Sin membresías, ni desde la escuela por defecto");
+	}
+
 	@Test
 	void usuariosSinMembresiaSoloSonDeLaEscuelaPorDefecto() {
 		when(repo.existsByUsuarioId(10L)).thenReturn(false);

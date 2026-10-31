@@ -233,6 +233,9 @@ public class MembresiaServiceImpl implements MembresiaService {
 		if (usuarioId == null || organizacionId == null) {
 			return false;
 		}
+		if (usuarios.existsByIdAndEsAdminPlataformaTrue(usuarioId)) {
+			return false;
+		}
 		List<Membresia> todas = membresias.findByUsuarioId(usuarioId);
 		if (todas.isEmpty()) {
 			return esPorDefecto(organizacionId);

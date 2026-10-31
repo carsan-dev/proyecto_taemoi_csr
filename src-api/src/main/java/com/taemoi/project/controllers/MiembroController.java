@@ -3,6 +3,7 @@ package com.taemoi.project.controllers;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,6 +42,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/miembros")
 public class MiembroController {
+
+	private static final String CUERPO_NO_VALIDO = "El cuerpo de la petición no es válido.";
 
 	private final GestionMiembrosService miembros;
 	private final AltaDeMiembro altas;
@@ -124,6 +127,16 @@ public class MiembroController {
 	public ResponseEntity<Map<String, String>> contrasenaNoValida(MethodArgumentNotValidException error) {
 		return ResponseEntity.badRequest().body(Map.of("mensaje", error.getBindingResult().getAllErrors().get(0)
 				.getDefaultMessage()));
+	}
+
+	/**
+	 * Cuerpo que no se puede leer (JSON malformado o ninguno donde hace falta): 400 con {@code {"mensaje"}}, en cualquier
+	 * endpoint de este controlador. Atendido aquí, Spring no apunta en el log el error de Jackson, que cita el texto del
+	 * cuerpo: en la ruta de la contraseña, la contraseña. Por eso tampoco se registra nada de la excepción.
+	 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<Map<String, String>> cuerpoNoLegible() {
+		return ResponseEntity.badRequest().body(Map.of("mensaje", CUERPO_NO_VALIDO));
 	}
 
 	/** Reemplaza las sedes del responsable ({@code {sedeIds}}). */

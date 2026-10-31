@@ -310,8 +310,8 @@ public class GestionMiembrosService {
 	/**
 	 * Cancela la invitación (decisión 389): retira los roles activos de esta escuela, el enlace deja de servir y el aviso
 	 * sale tras el commit. Fila {@code MIEMBROS INVITACION_CANCELADA usuario=#id cuentaBorrada=SI|NO}. Más estricto que
-	 * reenviar: si CUALQUIER rol activo es PROPIETARIO o ADMINISTRADOR, solo el propietario (403), porque aquí se retiran
-	 * todos.
+	 * reenviar: si CUALQUIER rol activo es PROPIETARIO, ADMINISTRADOR o FAMILIA (decisión 396), solo el propietario (403),
+	 * porque aquí se retiran todos.
 	 *
 	 * <p>La cuenta, según lo que tenga además (en TODAS las escuelas; borrar es irreversible, ante la duda se conserva):
 	 * <ul>
@@ -377,15 +377,18 @@ public class GestionMiembrosService {
 		return new MiembrosDTOs.InvitacionCancelada(borrar);
 	}
 
-	/** Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 D8-8 y 409 último propietario. */
+	/**
+	 * Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 si hay alguno que solo cambia el
+	 * propietario (D8-8 y decisión 396) y 409 último propietario.
+	 */
 	private void exigirCancelable(Long id, Long organizacion, List<Membresia> propietarios) {
 		List<Membresia> activas = membresias.findByUsuarioIdAndOrganizacionId(id, organizacion).stream()
 				.filter(Membresia::isActiva).toList();
 		if (activas.isEmpty()) {
 			throw new IllegalStateException(SIN_ROL_ACTIVO);
 		}
-		boolean algunRolReservado = activas.stream()
-				.anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO || m.getRol() == RolMembresia.ADMINISTRADOR);
+		boolean algunRolReservado = activas.stream().anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO
+				|| m.getRol() == RolMembresia.ADMINISTRADOR || m.getRol() == RolMembresia.FAMILIA);
 		if (algunRolReservado && !sesionDePropietario()) {
 			throw new SecurityException(SOLO_PROPIETARIO);
 		}
@@ -956,8 +959,8 @@ public class GestionMiembrosService {
 	}
 
 	/**
-	 * Si la contraseña se puede restablecer desde esta escuela o por qué no (pieza 9-8). Una consulta como mucho y solo en
-	 * la ficha: la lista no lo calcula.
+	 * Si la contraseña se puede restablecer desde esta escuela o por qué no (pieza 9-8). Dos consultas como mucho y solo en
+	 * la ficha: la lista no lo calcula. Una cuenta de plataforma sale como {@code OTRA_ESCUELA}: no se revela que lo es.
 	 */
 	private MiembrosDTOs.EstadoContrasena estadoContrasena(Usuario cuenta, Long organizacion) {
 		if (cuenta.invitacionPendiente()) {
