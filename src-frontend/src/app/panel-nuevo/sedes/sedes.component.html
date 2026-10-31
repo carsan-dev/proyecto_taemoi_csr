@@ -2,7 +2,7 @@
   <div class="sedes__pagina">
     <header class="sedes__cabecera">
       <h1 class="sedes__titulo">Sedes</h1>
-      <button type="button" class="sedes__boton-primario" (click)="abrirNueva()">
+      <button type="button" class="sedes__boton-primario" [disabled]="estado !== 'listo'" (click)="abrirNueva()">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M12 5v14M5 12h14"></path></svg>
         <span>Nueva sede</span>

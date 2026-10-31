@@ -204,6 +204,18 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     expect(panel()).not.toBeNull();
   });
 
+  it('con la lista en error, «Nueva sede» está desactivado y abrirNueva() no abre el panel', () => {
+    fixture = TestBed.createComponent(SedesPanelComponent);
+    http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    listados()[0].flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(boton(el(), 'Nueva sede').disabled).toBeTrue();
+    fixture.componentInstance.abrirNueva();
+    pintar();
+    expect(panel()).toBeNull();
+  });
+
   // ------------------------------------------------------------------ crear
 
   it('«Nueva sede»: siete campos con las etiquetas exactas, sin aforo, y sin sección Estado', () => {
@@ -263,6 +275,23 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     recarga.flush([sede({ id: 1 }), sede({ id: 2 }), sede({ id: 9, nombre: 'Lora de Estepa' })]);
     fixture.detectChanges();
     expect(filas().length).toBe(3);
+  });
+
+  it('crear con la recarga fallida: la sede nueva entra en la lista igualmente', async () => {
+    cargar([sede({ id: 1 }), sede({ id: 2 })]);
+    abrirNueva();
+    escribir('nombre', 'Lora de Estepa');
+    boton(panel()!, 'Crear sede').click();
+    await esperar();
+    http.expectOne((r) => r.method === 'POST' && r.url === API).flush(sede({ id: 9, nombre: 'Lora de Estepa' }), { status: 201, statusText: 'Created' });
+    await esperar();
+    const [recarga] = listados();
+    expect(recarga).toBeDefined();
+    recarga.flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(el().querySelector('pn-bloque-error')).toBeNull();
+    expect(filas().length).toBe(3);
+    expect(texto(el().querySelector('.sedes__fila[data-id="9"] .sedes__nombre'))).toBe('Editar Lora de Estepa');
   });
 
   it('crear sin nombre o con email no válido no envía nada y enfoca el campo', async () => {
@@ -408,6 +437,21 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     expect(reiniciar).toHaveBeenCalledTimes(1);
     expect(panel()).toBeNull();
     listados().forEach((r) => r.flush(UNA_ACTIVA));
+  });
+
+  it('editar con la recarga fallida: la sede muestra el nombre nuevo', async () => {
+    cargar(UNA_ACTIVA);
+    abrirEditar(1);
+    escribir('nombre', 'Casariche Centro');
+    boton(panel()!, 'Guardar cambios').click();
+    await esperar();
+    http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush({ ...UNA_ACTIVA[0], nombre: 'Casariche Centro' });
+    await esperar();
+    const [recarga] = listados();
+    expect(recarga).toBeDefined();
+    recarga.flush({ mensaje: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(texto(el().querySelector('.sedes__fila[data-id="1"] .sedes__nombre'))).toBe('Editar Casariche Centro');
   });
 
   it('una sede sin aforo se edita con aforoTurno null (no se inventa ni se pierde nada)', async () => {

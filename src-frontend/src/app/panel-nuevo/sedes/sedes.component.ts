@@ -118,6 +118,10 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
   // ------------------------------------------------------------------ panel «Nueva sede» y «Editar sede»
 
   abrirNueva(): void {
+    // Con la lista en carga o en error no hay sedes que contar: no se sabría si la nueva es la segunda.
+    if (this.estado !== 'listo') {
+      return;
+    }
     this.panel = { sede: null, campos: camposDe(null), errores: {}, error: null, enviando: false, cambiandoEstado: false };
   }
 
@@ -188,7 +192,7 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     const peticion = edicion ? this.api.editar(edicion.id, cuerpo) : this.api.crear(cuerpo);
     // Sin cancelar al salir: una escritura en vuelo sigue su curso.
     peticion.subscribe({
-      next: () => {
+      next: (respuesta) => {
         // La sede cambió el nombre o apareció: los permisos en caché (`sedes`, `variasSedes`) ya no valen.
         this.permisos.reiniciar();
         if (this.destruido) {
@@ -196,6 +200,7 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
         }
         this.panel = null;
         this.avisos.exito(edicion ? 'Cambios guardados.' : 'Sede creada.');
+        this.incorporar(respuesta);
         this.cargar(true);
       },
       error: (error) => {
@@ -213,6 +218,12 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  /** La sede que devolvió el servidor entra en la lista ya, sin esperar a la recarga: si esta falla, no queda vieja. */
+  private incorporar(sede: Sede): void {
+    const existe = this.sedes.some((s) => s.id === sede.id);
+    this.sedes = existe ? this.sedes.map((s) => (s.id === sede.id ? sede : s)) : [...this.sedes, sede];
   }
 
   private enfocar(clave: ClaveCampo): void {
@@ -236,7 +247,11 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
       nombre: 'desactivar-sede',
       ejecutar: () => this.api.cambiarActiva(sede.id, false),
     });
-    if (!resultado.confirmado || this.destruido) {
+    if (!resultado.confirmado) {
+      return;
+    }
+    if (this.destruido) {
+      this.permisos.reiniciar();
       return;
     }
     if (resultado.error) {
@@ -262,7 +277,11 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
         nombre: 'activar-segunda-sede',
         ejecutar: () => this.api.cambiarActiva(sede.id, true),
       });
-      if (!resultado.confirmado || this.destruido) {
+      if (!resultado.confirmado) {
+        return;
+      }
+      if (this.destruido) {
+        this.permisos.reiniciar();
         return;
       }
       if (resultado.error) {
