@@ -97,9 +97,18 @@ public class GrupoServiceImpl implements GrupoService {
 	 */
 	@Override
 	public List<GrupoResumenDTO> obtenerResumenGrupos() {
+		return obtenerResumenGrupos(null);
+	}
+
+	@Override
+	public List<GrupoResumenDTO> obtenerResumenGrupos(Long sedeId) {
+		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		Specification<Grupo> alcance = gestionPorSede.restriccion()
 				.map(PredicadosAlcance::gruposDeSusSedes)
 				.orElseGet(Specification::unrestricted);
+		if (sedeId != null) {
+			alcance = alcance.and(PredicadosAlcance.gruposEnSedes(Set.of(sedeId)));
+		}
 		Specification<Grupo> conDisciplina = (raiz, consulta, cb) -> {
 			if (!Long.class.equals(consulta.getResultType())) {
 				raiz.fetch("disciplina", JoinType.LEFT);

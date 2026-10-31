@@ -1079,6 +1079,13 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte)
 			throws IOException {
+		return generarListadoAsistencia(year, month, grupos, deporte, null);
+	}
+
+	@Override
+	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte, Long sedeId)
+			throws IOException {
+		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		List<String> gruposFiltrados = grupos == null ? Collections.emptyList()
 				: grupos.stream().filter(g -> g != null && !g.isBlank()).map(String::trim).distinct()
 						.collect(Collectors.toList());
@@ -1148,6 +1155,9 @@ public class PDFServiceImpl implements PDFService {
 					}
 					if (sedesDelResponsable != null && (turno.getGrupo().getSedeId() == null
 							|| !sedesDelResponsable.contains(turno.getGrupo().getSedeId()))) {
+						continue;
+					}
+					if (sedeId != null && !sedeId.equals(turno.getGrupo().getSedeId())) {
 						continue;
 					}
 					if (!java.util.Objects.equals(turno.getGrupo().getDeporte(), alumnoDeporteEnum)) {

@@ -113,7 +113,7 @@ class PDFControllerSecurityWebMvcTest {
 	@Test
 	void handlerDeAsistenciaExigeGestionOResponsableDeSede() throws Exception {
 		PreAuthorize asistencia = PDFController.class.getMethod("generarAsistencia", int.class, int.class,
-				String.class, List.class, String.class, jakarta.servlet.http.HttpServletResponse.class)
+				String.class, List.class, String.class, Long.class, jakarta.servlet.http.HttpServletResponse.class)
 				.getAnnotation(PreAuthorize.class);
 
 		assertThat(asistencia).isNotNull();

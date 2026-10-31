@@ -185,6 +185,17 @@ public class GestionPorSede {
 	}
 
 	/**
+	 * Pieza 9-6 (decisión 376): comprueba la sede de un filtro de listado con las reglas de {@link #filtroTesoreria}: de
+	 * la escuela activa (si no, 400) y, para el responsable, una de las suyas (si no, 403). El filtro va por AND con el
+	 * alcance, así que nunca lo amplía. Sin sede, nada.
+	 */
+	public void exigirSedeDeFiltro(Long sedeSolicitada) {
+		if (sedeSolicitada != null) {
+			filtroTesoreria(sedeSolicitada);
+		}
+	}
+
+	/**
 	 * Entrega 6-3 (D6-3): para el responsable, la sede principal de CADA alumno es una de las suyas (certificados de
 	 * cobros). Una consulta que compara el recuento; un id que no existe en la escuela también deniega. Sin
 	 * restricción, nada.

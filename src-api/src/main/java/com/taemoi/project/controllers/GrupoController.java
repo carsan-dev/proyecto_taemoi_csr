@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -50,12 +51,12 @@ public class GrupoController {
 
 	/**
 	 * Grupos en versión ligera: datos del grupo, número de alumnos y turnos, sin los alumnos. Gestión: todos; responsable
-	 * de sede: los grupos de sus sedes.
+	 * de sede: los grupos de sus sedes. Con {@code sedeId} (pieza 9-6), solo los de esa sede.
 	 */
 	@GetMapping("/resumen")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public List<GrupoResumenDTO> obtenerResumenGrupos() {
-		return grupoService.obtenerResumenGrupos();
+	public List<GrupoResumenDTO> obtenerResumenGrupos(@RequestParam(required = false) Long sedeId) {
+		return sedeId != null ? grupoService.obtenerResumenGrupos(sedeId) : grupoService.obtenerResumenGrupos();
 	}
 
 	@GetMapping("/conteo-alumnos")

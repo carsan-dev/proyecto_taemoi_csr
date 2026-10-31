@@ -49,6 +49,13 @@ public interface PDFService {
 	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte) throws IOException;
 
 	/**
+	 * Decisión 142 (pieza 9-6): solo las clases de grupos de esa sede, con todos los que van a ellas: no se filtra por la
+	 * sede principal del alumno. Por AND con el alcance del responsable; sin sede, lo de siempre.
+	 */
+	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte, Long sedeId)
+			throws IOException;
+
+	/**
 	 * Pieza E7-2 (D7-15): hoja de asistencia del mes con esos turnos (por id), solo con los alumnos activos del turno
 	 * que están en su grupo. La usa el profesor para su grupo; la firma por {@code String} no cambia.
 	 */

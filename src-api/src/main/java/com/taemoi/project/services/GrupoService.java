@@ -20,6 +20,9 @@ public interface GrupoService {
 	/** Grupos en versión ligera (sin alumnos), por id; ver {@link GrupoResumenDTO}. */
 	List<GrupoResumenDTO> obtenerResumenGrupos();
 
+	/** Pieza 9-6 (decisión 376): el mismo resumen solo con los grupos de esa sede, por AND con el alcance. */
+	List<GrupoResumenDTO> obtenerResumenGrupos(Long sedeId);
+
 	Optional<GrupoConAlumnosDTO> obtenerGrupoConAlumnosPorId(@NonNull Long id);
 
 	GrupoConAlumnosDTO crearGrupo(@Valid GrupoConAlumnosDTO grupoDTO);

@@ -44,6 +44,13 @@ public interface AlumnoService {
 			boolean aptoParaExamen, @NonNull Pageable pageable);
 
 	/**
+	 * Pieza 9-6 (decisión 376): el mismo listado solo con los alumnos de esa sede principal, por AND con el alcance; ver
+	 * {@link com.taemoi.project.acceso.GestionPorSede#exigirSedeDeFiltro}. Sin sede, el de siempre.
+	 */
+	Page<Alumno> obtenerAlumnosFiltrados(String nombre, Long gradoId, Long categoriaId, EstadoAlumnos estado,
+			boolean aptoParaExamen, Long sedeId, @NonNull Pageable pageable);
+
+	/**
 	 * R2-P6 (decisión D5): el listado filtrado por deporte en el servidor, con el criterio que aplicaba el navegador
 	 * sobre la lista completa de alumnos con sus deportes (listado-alumnos, {@code actualizarAlumnosPaginadosCliente}):
 	 * <ul>
@@ -66,6 +73,10 @@ public interface AlumnoService {
 	 */
 	Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
 			EstadoAlumnos estado, boolean aptoParaExamen, @NonNull Pageable pageable);
+
+	/** Pieza 9-6: el mismo listado por deporte solo con los alumnos de esa sede principal; sin sede, el de siempre. */
+	Page<Alumno> obtenerAlumnosPorDeporte(String deporte, String nombre, Long gradoId, Long categoriaId,
+			EstadoAlumnos estado, boolean aptoParaExamen, Long sedeId, @NonNull Pageable pageable);
 
 	List<Long> obtenerIdsAlumnos(boolean incluirInactivos);
 
