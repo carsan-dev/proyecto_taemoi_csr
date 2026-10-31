@@ -31,4 +31,9 @@ public interface AsignacionProfesorRepository extends JpaRepository<AsignacionPr
 			WHERE a.usuarioId = :usuarioId AND a.grupoId = :grupoId AND a.organizacionId = :organizacionId""")
 	int borrar(@Param("usuarioId") Long usuarioId, @Param("grupoId") Long grupoId,
 			@Param("organizacionId") Long organizacionId);
+
+	/** Decisión 389: borra las asignaciones de la cuenta en la escuela, al borrar una cuenta pendiente. */
+	@Modifying(flushAutomatically = true)
+	@Query("DELETE FROM AsignacionProfesor a WHERE a.usuarioId = :usuarioId AND a.organizacionId = :organizacionId")
+	int borrarDeLaEscuela(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
 }

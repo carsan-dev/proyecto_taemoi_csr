@@ -26,6 +26,16 @@
   @include c.boton-texto;
 }
 
+// En rojo para no competir con «Reenviar invitación»; hover neutro, como las acciones de texto en peligro de la ficha.
+.miembros__boton-texto--peligro {
+  color: var(--pn-peligro);
+
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-peligro);
+  }
+}
+
 .miembros__boton-pequeno {
   min-height: 34px;
   padding: 0 12px;
@@ -97,10 +107,18 @@
 }
 
 .miembros__invitacion {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  width: 100%;
+}
+
+.miembros__invitacion-acciones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .miembros__etiqueta {
@@ -135,6 +153,8 @@
 
 .miembros__rol {
   display: grid;
+  // Sin esto, la opción más larga de un selector de grupos ensancha la columna y la ficha desborda a 375 px.
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   padding: 6px 0;
 
@@ -199,6 +219,27 @@
   display: grid;
   gap: 6px;
   margin-left: 28px;
+}
+
+.miembros__subbloque {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  justify-items: start;
+  min-width: 0;
+  margin: 6px 0 0 28px;
+
+  // Con la sangría, los selectores no deben empujar más allá del ancho (375 px): se encogen y envuelven.
+  .miembros__control {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+.miembros__subbloque-titulo {
+  margin: 0;
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
 }
 
 .miembros__cargo-etiqueta,
@@ -391,6 +432,7 @@
   }
 
   .miembros__seccion > .miembros__boton-secundario,
+  .miembros__subbloque > .miembros__boton-secundario,
   .miembros__invitacion .miembros__boton-secundario {
     width: 100%;
   }

@@ -102,6 +102,11 @@ export interface AltaDeMiembro {
   reactivar?: boolean;
 }
 
+/** Respuesta de cancelar una invitación: si la cuenta dejó de existir. */
+export interface InvitacionCancelada {
+  cuentaBorrada: boolean;
+}
+
 /** API de miembros (E8-3, E8-4): la pantalla Miembros (E9-4) y «Profesores» de la ficha del grupo. Errores tratados en la pantalla. */
 @Injectable({ providedIn: 'root' })
 export class MiembrosService {
@@ -157,6 +162,11 @@ export class MiembrosService {
   /** Como `reenviarInvitacion`, con la ficha completa que devuelve la API (pantalla Miembros). */
   reenviarConFicha(usuarioId: number): Observable<FichaCompleta> {
     return this.http.post<FichaCompleta>(`${this.api}/${usuarioId}/invitacion`, null, this.opciones());
+  }
+
+  /** Cancela la invitación pendiente (decisión 389): el enlace deja de valer y la cuenta se borra si no tiene nada más. */
+  cancelarInvitacion(usuarioId: number): Observable<InvitacionCancelada> {
+    return this.http.delete<InvitacionCancelada>(`${this.api}/${usuarioId}/invitacion`, this.opciones());
   }
 
   /** Desactiva el rol (nunca borra la fila). */

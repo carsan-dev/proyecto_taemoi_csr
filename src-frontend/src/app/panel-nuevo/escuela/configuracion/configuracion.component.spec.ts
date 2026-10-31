@@ -272,6 +272,16 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     expect(texto(el().querySelector('.conf__nota'))).toContain('página pública de horarios');
   });
 
+  it('límite: la ayuda explica el aforo de sede y se une al campo, con y sin error', () => {
+    cargar(375);
+    const campo = el().querySelector<HTMLInputElement>('#conf-limite')!;
+    expect(texto(el().querySelector('#conf-limite-ayuda'))).toBe('Es el límite común de la escuela. Si una sede tiene su propio aforo, sus turnos usan el de la sede.');
+    expect(campo.getAttribute('aria-describedby')).toBe('conf-limite-ayuda');
+    escribir(campo, '0');
+    expect(campo.getAttribute('aria-describedby')).toBe('conf-limite-ayuda conf-limite-error');
+    expect(el().querySelector('#conf-limite-error')).not.toBeNull();
+  });
+
   it('límite menor que 1: el error bajo el campo y Guardar desactivado', () => {
     cargar(375);
     const campo = el().querySelector<HTMLInputElement>('#conf-limite')!;

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
@@ -11,6 +12,7 @@ import { FichaCompleta, Miembro, PaginaDeMiembros, RolDeMiembro, RolMembresia } 
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
+import { MiembroFichaComponent } from './miembro-ficha.component';
 import { MiembrosPanelComponent } from './miembros.component';
 
 const API = `${environment.apiUrl}/miembros`;
@@ -118,6 +120,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   const casilla = (r: string): HTMLInputElement => panel()!.querySelector<HTMLInputElement>(`[data-rol="${r}"] input[type="checkbox"]`)!;
   const lineaRol = (r: string): HTMLElement => panel()!.querySelector<HTMLElement>(`[data-rol="${r}"]`)!;
   const titulos = (): string[] => Array.from(panel()!.querySelectorAll('.miembros__seccion-titulo')).map((t) => texto(t));
+  const subtitulos = (): string[] => Array.from(panel()!.querySelectorAll('.miembros__subbloque-titulo')).map((t) => texto(t));
 
   function marcar(c: HTMLInputElement, valor: boolean): void {
     c.checked = valor;
@@ -196,6 +199,84 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(Array.from(filas()[1].querySelectorAll('.miembros__etiqueta')).map((e) => texto(e))).toEqual(['Responsable de sede', 'Invitación pendiente']);
     expect(texto(filas()[1].querySelector('.miembros__linea'))).toBe('Casariche');
     expect(filas().every((f) => f.tagName === 'BUTTON')).toBeTrue();
+  });
+
+  // Última página con una sola fila, ya abierta: `total` y `totalPaginas` antes de borrarla.
+  function enLaUltimaPagina(numeroDePagina: number): void {
+    const hasta = { total: (numeroDePagina - 1) * 20 + 1, totalPaginas: numeroDePagina };
+    cargar(pagina([miembro()], hasta));
+    fixture.componentInstance.irAPagina(numeroDePagina);
+    listados()[0].flush(pagina([miembro({ usuarioId: 99 })], { ...hasta, pagina: numeroDePagina - 1 }));
+    fixture.detectChanges();
+  }
+
+  const paginaPedida = (r: TestRequest): string | null => r.request.params.get('page');
+
+  it('recarga silenciosa de una página que se quedó vacía: va a la última válida, sin pasar por «Aún no hay miembros»', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    const [vacia] = listados();
+    expect(paginaPedida(vacia)).toBe('2');
+    vacia.flush(pagina([], { pagina: 2, total: 40, totalPaginas: 2 }));
+    fixture.detectChanges();
+
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    expect(fixture.componentInstance.pagina).toBe(2);
+    const [valida] = listados();
+    expect(paginaPedida(valida)).toBe('1');
+    valida.flush(pagina([miembro({ usuarioId: 7 })], { pagina: 1, total: 40, totalPaginas: 2 }));
+    fixture.detectChanges();
+
+    expect(filas().map((f) => f.getAttribute('data-id'))).toEqual(['7']);
+    expect(el().querySelector('pn-esqueleto')).toBeNull();
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    expect(fixture.componentInstance.totalPaginas).toBe(2);
+  });
+
+  it('carga normal de una página vacía: sigue el esqueleto hasta tener la última válida', () => {
+    enLaUltimaPagina(2);
+    fixture.componentInstance.cargar();
+    listados()[0].flush(pagina([], { pagina: 1, total: 20, totalPaginas: 1 }));
+    fixture.detectChanges();
+
+    expect(el().querySelector('pn-esqueleto')).not.toBeNull();
+    expect(el().textContent).not.toContain('Aún no hay miembros');
+    const [valida] = listados();
+    expect(paginaPedida(valida)).toBe('0');
+    valida.flush(pagina([miembro({ usuarioId: 7 })], { total: 20, totalPaginas: 1 }));
+    fixture.detectChanges();
+    expect(filas().length).toBe(1);
+  });
+
+  it('sin nadie en ninguna página: acaba en la primera y entonces sí dice «Aún no hay miembros»', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    listados()[0].flush(pagina([], { pagina: 2, total: 0, totalPaginas: 0 }));
+    fixture.detectChanges();
+    const [primera] = listados();
+    expect(paginaPedida(primera)).toBe('0');
+    primera.flush(pagina([]));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.pagina).toBe(1);
+    expect(el().textContent).toContain('Aún no hay miembros');
+    expect(listados().length).toBe(0);
+  });
+
+  it('una respuesta vacía que aún cuenta esa página no entra en bucle: retrocede una cada vez', () => {
+    enLaUltimaPagina(3);
+    fixture.componentInstance.refrescarTrasCierre();
+    listados()[0].flush(pagina([], { pagina: 2, total: 41, totalPaginas: 3 }));
+    fixture.detectChanges();
+    const [segunda] = listados();
+    expect(paginaPedida(segunda)).toBe('1');
+    segunda.flush(pagina([], { pagina: 1, total: 41, totalPaginas: 3 }));
+    fixture.detectChanges();
+    const [primera] = listados();
+    expect(paginaPedida(primera)).toBe('0');
+    primera.flush(pagina([], { total: 0, totalPaginas: 0 }));
+    fixture.detectChanges();
+    expect(listados().length).toBe(0);
   });
 
   it('cargando: esqueleto; error: bloque con «Reintentar» que vuelve a pedir', () => {
@@ -434,17 +515,306 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe('La invitación ya se aceptó.');
   });
 
+  // ------------------------------------------------------------------ ficha: cancelar invitación (decisión 389)
+
+  const TITULO_CANCELAR = '¿Cancelar la invitación de Lucía Martín Gil?';
+  const TEXTO_CANCELAR = 'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.';
+  const YA_ACEPTADA = 'La invitación ya se aceptó.';
+  const SOLO_PROPIETARIO = 'Solo el propietario da o quita los roles de propietario y gestor.';
+  const NO_MIEMBRO = 'La cuenta no es miembro de esta escuela.';
+  const pendiente = (cambios: Partial<FichaCompleta> = {}): FichaCompleta => ficha({ invitacionPendiente: true, ...cambios });
+  const tieneCancelar = (): boolean => Array.from(panel()!.querySelectorAll('button')).some((b) => texto(b) === 'Cancelar invitación');
+  const fichasPedidas = (id = 1): TestRequest[] => http.match((r) => r.method === 'GET' && r.url === `${API}/${id}`);
+  const borrados = (id = 1): TestRequest[] => http.match((r) => r.method === 'DELETE' && r.url === `${API}/${id}/invitacion`);
+  const instanciaFicha = (): MiembroFichaComponent => fixture.debugElement.query(By.directive(MiembroFichaComponent)).componentInstance;
+
+  async function abrirPendiente(f: FichaCompleta = pendiente(), caps: Capacidad[] = PROPIETARIA): Promise<void> {
+    cargar(pagina([miembro({ invitacionPendiente: true, roles: f.roles })]), caps);
+    await abrirFicha(f);
+  }
+
+  async function pedirCancelar(): Promise<void> {
+    boton(panel()!, 'Cancelar invitación').click();
+    await esperar();
+  }
+
+  it('«Cancelar invitación» va en su fila con «Reenviar invitación», bajo la pastilla, como botón de texto en peligro', async () => {
+    await abrirPendiente();
+    const bloque = panel()!.querySelector('.miembros__invitacion')!;
+    expect(bloque.querySelector(':scope > .miembros__etiqueta')).not.toBeNull();
+    const acciones = Array.from(bloque.querySelectorAll('.miembros__invitacion-acciones button'));
+    expect(acciones.map((b) => texto(b))).toEqual(['Reenviar invitación', 'Cancelar invitación']);
+    expect(acciones[1].classList.contains('miembros__boton-texto')).toBeTrue();
+    expect(acciones[1].classList.contains('miembros__boton-texto--peligro')).toBeTrue();
+  });
+
+  it('la sesión propietaria lo ve también con roles reservados', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROPIETARIO'), rol('ADMINISTRADOR'), rol('PROFESOR')] }));
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  it('la sesión gestora lo ve si ningún rol activo es reservado, aunque tenga uno reservado desactivado', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR'), rol('ADMINISTRADOR', false)] }), GESTORA);
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  for (const roles of [[rol('PROPIETARIO')], [rol('ADMINISTRADOR')], [rol('ADMINISTRADOR'), rol('PROFESOR')]]) {
+    it(`la sesión gestora no lo ve con ${roles.map((r) => r.rol).join(' y ')} activos; «Reenviar» sigue`, async () => {
+      await abrirPendiente(pendiente({ roles }), GESTORA);
+      expect(tieneCancelar()).toBeFalse();
+      expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+    });
+  }
+
+  it('no aparece sin ningún rol activo en esta escuela', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false)] }));
+    expect(tieneCancelar()).toBeFalse();
+  });
+
+  it('sin rol activo en esta escuela (cuenta conservada): ni pastilla ni «Reenviar invitación», en la fila ni en la ficha', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false)] }));
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).toBeNull();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(Array.from(panel()!.querySelectorAll('button')).some((b) => texto(b) === 'Reenviar invitación')).toBeFalse();
+  });
+
+  it('solo con familia activa sigue pendiente aquí: pastilla y «Reenviar invitación»', async () => {
+    await abrirPendiente(pendiente({ roles: [rol('PROFESOR', false), rol('FAMILIA')] }));
+    expect(texto(filas()[0].querySelector('.miembros__etiqueta--atencion'))).toBe('Invitación pendiente');
+    expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+  });
+
+  it('al quitar el último rol desaparecen pastilla y botones; al devolverlo vuelven', async () => {
+    await abrirPendiente();
+    marcar(casilla('PROFESOR'), false);
+    await esperar();
+    await confirmar();
+    http.expectOne((r) => r.method === 'DELETE' && r.url === `${API}/1/roles/PROFESOR`).flush(pendiente({ roles: [rol('PROFESOR', false)] }));
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([miembro({ invitacionPendiente: true, roles: [rol('PROFESOR', false)] })])));
+    pintar();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).toBeNull();
+
+    marcar(casilla('PROFESOR'), true);
+    http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/roles/PROFESOR`).flush(pendiente());
+    await esperar();
+    http.match((r) => r.url === GRUPOS).forEach((r) => r.flush([]));
+    listados().forEach((r) => r.flush(pagina([miembro({ invitacionPendiente: true })])));
+    pintar();
+    expect(boton(panel()!, 'Reenviar invitación')).toBeTruthy();
+    expect(filas()[0].querySelector('.miembros__etiqueta--atencion')).not.toBeNull();
+  });
+
+  it('no aparece sin invitación pendiente', async () => {
+    cargar();
+    await abrirFicha(ficha());
+    expect(tieneCancelar()).toBeFalse();
+  });
+
+  it('pide confirmación con los textos exactos, en peligro y con el foco en «Volver»; «Volver» no llama a la API', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    const d = dialogo()!;
+    expect(d.classList.contains('pn-dialogo--peligro')).toBeTrue();
+    expect(texto(d.querySelector('.pn-dialogo__titulo'))).toBe(TITULO_CANCELAR);
+    expect(texto(d.querySelector('.pn-dialogo__mensaje'))).toBe(TEXTO_CANCELAR);
+    expect(texto(d.querySelector('.pn-dialogo__accion'))).toBe('Cancelar invitación');
+    const volver = d.querySelector('.pn-dialogo__cancelar') as HTMLButtonElement;
+    expect(texto(volver)).toBe('Volver');
+    expect(document.activeElement).toBe(volver);
+    volver.click();
+    await esperar();
+    expect(dialogo()).toBeNull();
+    expect(borrados().length).toBe(0);
+    expect(panel()).not.toBeNull();
+    expect(avisos()).toEqual([]);
+  });
+
+  for (const cuentaBorrada of [true, false]) {
+    it(`éxito con cuentaBorrada=${cuentaBorrada}: DELETE sin cuerpo, cierra la ficha, recarga la lista, avisa y no vuelve a pedir la ficha`, async () => {
+      await abrirPendiente();
+      await pedirCancelar();
+      await confirmar();
+      const [peticion] = borrados();
+      expect(peticion.request.body).toBeNull();
+      expect(peticion.request.withCredentials).toBeTrue();
+      expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      peticion.flush({ cuentaBorrada });
+      await esperar();
+
+      expect(panel()).toBeNull();
+      expect(dialogo()).toBeNull();
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada.' }]);
+      const recarga = listados();
+      expect(recarga.length).toBe(1);
+      recarga[0].flush(pagina([]));
+      await esperar();
+      expect(fichasPedidas().length).toBe(0);
+    });
+  }
+
+  it('mientras se envía: «Cancelando…», panel bloqueado y sin doble envío', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    const accion = dialogo()!.querySelector('.pn-dialogo__accion') as HTMLButtonElement;
+    accion.click();
+    await esperar();
+    const [peticion] = borrados();
+    expect(texto(accion)).toBe('Cancelando…');
+    expect(instanciaFicha().ocupado).toBeTrue();
+    const enLaFicha = panel()!.querySelector('.miembros__boton-texto--peligro') as HTMLButtonElement;
+    expect(texto(enLaFicha)).toBe('Cancelando…');
+    expect(enLaFicha.getAttribute('aria-busy')).toBe('true');
+    expect((panel()!.querySelector('.miembros__pie button') as HTMLButtonElement).disabled).toBeTrue();
+
+    accion.click();
+    enLaFicha.click();
+    void instanciaFicha().cancelarInvitacion();
+    await esperar();
+    expect(borrados().length).toBe(0);
+    expect(document.querySelectorAll('dialog.pn-dialogo').length).toBe(1);
+    peticion.flush({ cuentaBorrada: true });
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([])));
+  });
+
+  it('dos pulsaciones seguidas abren un solo diálogo', async () => {
+    await abrirPendiente();
+    const b = boton(panel()!, 'Cancelar invitación');
+    b.click();
+    b.click();
+    await esperar();
+    expect(document.querySelectorAll('dialog.pn-dialogo').length).toBe(1);
+  });
+
+  it('con un reenvío en vuelo no abre el diálogo', async () => {
+    await abrirPendiente();
+    boton(panel()!, 'Reenviar invitación').click();
+    pintar();
+    const reenvio = http.expectOne((r) => r.method === 'POST' && r.url === `${API}/1/invitacion`);
+    void instanciaFicha().cancelarInvitacion();
+    await esperar();
+    expect(dialogo()).toBeNull();
+    reenvio.flush(pendiente());
+    await esperar();
+    listados().forEach((r) => r.flush(pagina([])));
+  });
+
+  it('409: el mensaje en Datos; recarga la ficha sin esqueleto, refleja el estado real y la fila se pone al día', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: YA_ACEPTADA }, { status: 409, statusText: 'Conflict' });
+    await esperar();
+    expect(panel()).not.toBeNull();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(YA_ACEPTADA);
+    expect(avisos()).toEqual([]);
+
+    const [recarga] = fichasPedidas();
+    expect(panel()!.querySelector('pn-esqueleto')).toBeNull();
+    recarga.flush(ficha({ invitacionPendiente: false }));
+    await esperar();
+    expect(panel()!.querySelector('.miembros__invitacion')).toBeNull();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(YA_ACEPTADA);
+    expect(fixture.componentInstance.miembros[0].invitacionPendiente).toBeFalse();
+    listados().forEach((r) => r.flush(pagina([miembro()])));
+  });
+
+  it('403: el mensaje en Datos, sin recargar la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: SOLO_PROPIETARIO }, { status: 403, statusText: 'Forbidden' });
+    await esperar();
+    expect(texto(panel()!.querySelector('#miembro-datos-error'))).toBe(SOLO_PROPIETARIO);
+    expect(fichasPedidas().length).toBe(0);
+    expect(instanciaFicha().ocupado).toBeFalse();
+    expect(tieneCancelar()).toBeTrue();
+  });
+
+  it('404: la cuenta ya no existe: cierra la ficha, recarga la lista y avisa con el mensaje de la API, sin pedir la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    borrados()[0].flush({ mensaje: NO_MIEMBRO }, { status: 404, statusText: 'Not Found' });
+    await esperar();
+
+    expect(panel()).toBeNull();
+    expect(dialogo()).toBeNull();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: NO_MIEMBRO }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    await esperar();
+    expect(fichasPedidas().length).toBe(0);
+  });
+
+  it('404 con la ficha ya cerrada: también avisa y la lista se refresca', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    peticion.flush({ mensaje: NO_MIEMBRO }, { status: 404, statusText: 'Not Found' });
+    await esperar();
+
+    expect(avisos()).toEqual([{ tipo: 'error', texto: NO_MIEMBRO }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    expect(fichasPedidas().length).toBe(0);
+  });
+
+  it('ficha cerrada con la cancelación en vuelo: un 409 no avisa ni recarga nada', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    peticion.flush({ mensaje: YA_ACEPTADA }, { status: 409, statusText: 'Conflict' });
+    await esperar();
+
+    expect(avisos()).toEqual([]);
+    expect(listados().length).toBe(0);
+    expect(fichasPedidas().length).toBe(0);
+  });
+
+  it('ficha cerrada con la cancelación en vuelo: el éxito se avisa y la lista se refresca, sin pedir la ficha', async () => {
+    await abrirPendiente();
+    await pedirCancelar();
+    await confirmar();
+    const [peticion] = borrados();
+    fixture.componentInstance.abierto = null;
+    pintar();
+    expect(el().querySelector('pn-miembro-ficha')).toBeNull();
+    peticion.flush({ cuentaBorrada: true });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Invitación cancelada.' }]);
+    const recarga = listados();
+    expect(recarga.length).toBe(1);
+    recarga[0].flush(pagina([]));
+    expect(fichasPedidas().length).toBe(0);
+  });
+
   // ------------------------------------------------------------------ ficha: sedes
 
   it('Sedes solo con Responsable de sede activo; guarda con PUT /sedes y exige al menos una', async () => {
     cargar();
     await abrirFicha(ficha());
-    expect(titulos()).not.toContain('Sedes');
+    expect(subtitulos()).not.toContain('Sedes');
     fixture.destroy();
 
     cargar(pagina([miembro({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 1, nombre: 'Casariche' }] })]));
     await abrirFicha(ficha({ roles: [rol('RESPONSABLE_SEDE')], sedes: [{ id: 1, nombre: 'Casariche' }] }));
-    expect(titulos()).toEqual(['Datos', 'Roles', 'Sedes']);
+    expect(titulos()).toEqual(['Datos', 'Roles']);
+    expect(subtitulos()).toEqual(['Sedes']);
+    const bloque = lineaRol('RESPONSABLE_SEDE').querySelector('#miembro-sedes');
+    expect(bloque).not.toBeNull();
+    expect(bloque!.closest('[role="group"]')!.getAttribute('aria-labelledby')).toBe('miembro-sedes');
+    expect(lineaRol('PROFESOR')?.querySelector('#miembro-sedes') ?? null).toBeNull();
     const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
     // Solo las activas: Herrera, inactiva y sin guardar, no sale.
     expect(cajas.map((c) => texto(c.parentElement))).toEqual(['Casariche', 'Mollina']);
@@ -491,7 +861,9 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     await abrirFicha(ficha());
     marcar(casilla('RESPONSABLE_SEDE'), true);
     expect(http.match((r) => r.method === 'PUT').length).toBe(0);
-    expect(titulos()).toContain('Sedes');
+    expect(subtitulos()).toContain('Sedes');
+    expect(lineaRol('RESPONSABLE_SEDE').querySelector('#miembro-sedes')).not.toBeNull();
+    expect(lineaRol('RESPONSABLE_SEDE').querySelector('.miembros__sedes')).not.toBeNull();
     const cajas = Array.from(panel()!.querySelectorAll<HTMLInputElement>('.miembros__sedes input'));
     cajas[1].checked = true;
     cajas[1].dispatchEvent(new Event('change'));
@@ -512,12 +884,15 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
   it('Grupos solo con Profesor activo: lista con su rol, cambia, quita, añade y guarda con PUT /grupos', async () => {
     cargar(pagina([miembro({ roles: [rol('ADMINISTRADOR')] })]));
     await abrirFicha(ficha({ roles: [rol('ADMINISTRADOR')] }));
-    expect(titulos()).not.toContain('Grupos');
+    expect(subtitulos()).not.toContain('Grupos');
     fixture.destroy();
 
     cargar(pagina([miembro({ numeroGrupos: 1 })]));
     await abrirFicha(ficha({ numeroGrupos: 1, grupos: [{ grupoId: 10, nombre: 'Infantil martes', sedeId: 2, rol: 'TITULAR' }] }));
-    expect(titulos()).toEqual(['Datos', 'Roles', 'Grupos']);
+    expect(titulos()).toEqual(['Datos', 'Roles']);
+    expect(subtitulos()).toEqual(['Grupos']);
+    expect(lineaRol('PROFESOR').querySelector('#miembro-grupos')).not.toBeNull();
+    expect(lineaRol('PROFESOR').querySelector('.miembros__grupos')).not.toBeNull();
     const fila = panel()!.querySelector<HTMLElement>('.miembros__grupo[data-grupo="10"]')!;
     expect(texto(fila.querySelector('.miembros__grupo-nombre'))).toBe('Infantil martes · Mollina');
     expect(fila.querySelector<HTMLSelectElement>('select')!.value).toBe('TITULAR');
@@ -673,7 +1048,7 @@ describe('MiembrosPanelComponent (E9-4, pantalla Miembros del panel nuevo)', () 
     boton(panel()!, 'Añadir miembro').click();
     http.expectOne((r) => r.method === 'POST' && r.url === API).flush({ mensaje: 'No hay ninguna cuenta con ese email.' }, { status: 404, statusText: 'Not Found' });
     await esperar();
-    expect(texto(panel()!.querySelector('#miembro-alta-sin-cuenta'))).toBe('No hay ninguna cuenta con ese email. Le enviaremos una invitación para crear su contraseña.');
+    expect(texto(panel()!.querySelector('#miembro-alta-sin-cuenta'))).toBe('No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.');
     expect(texto(panel()!.querySelector('label[for="miembro-alta-nombre"]'))).toBe('Nombre (obligatorio)');
     expect(texto(panel()!.querySelector('label[for="miembro-alta-apellidos"]'))).toBe('Apellidos (obligatorio)');
     expect(panel()!.querySelector('#miembro-alta-error')).toBeNull();

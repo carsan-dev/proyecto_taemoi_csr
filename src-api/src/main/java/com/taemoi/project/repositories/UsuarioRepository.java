@@ -111,4 +111,60 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
 	int aceptarInvitacion(@Param("usuarioId") Long usuarioId, @Param("hash") String hash,
 			@Param("contrasena") String contrasena, @Param("ahora") java.time.LocalDateTime ahora);
+
+	/**
+	 * Decisión 389: deja sin token vivo una invitación que sigue pendiente. Quien llama tiene la fila bloqueada y ya
+	 * comprobó que lo está; el recuento no decide nada: con {@code useAffectedRows=true} da 0 si el token ya era NULL.
+	 */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			UPDATE Usuario u SET u.resetTokenHash = NULL, u.resetTokenExpiresAt = NULL
+			WHERE u.id = :usuarioId AND u.contrasena IS NULL
+			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
+	int retirarTokenInvitacion(@Param("usuarioId") Long usuarioId);
+
+	/**
+	 * Decisión 389: 1 si la cuenta tiene algo más que las filas propias de la invitación en {@code organizacionId} (sus
+	 * membresías, con sus sedes, y sus asignaciones), 0 si no. Consulta nativa: mira TODAS las escuelas, sin
+	 * {@code @TenantId}. Las membresías de otras escuelas las mira quien llama, para saber además cuáles siguen activas.
+	 *
+	 * <p>Una línea por cada clave ajena a {@code usuario}: casi todas son {@code ON DELETE SET NULL} o {@code CASCADE}, así
+	 * que borrar sin mirarlas no daría error: perdería el autor de un cobro o el vínculo con un alumno. También el vínculo
+	 * legado {@code usuario.alumno_id} y la marca de plataforma. Una clave ajena nueva hace fallar
+	 * {@code CancelarInvitacionIntegrationTest} hasta añadirla aquí. {@code auditoria_evento} no tiene clave ajena: copia
+	 * el id, el email y el nombre, y no impide el borrado. {@code usuario_rol} se va en V32: quitar su línea entonces.
+	 */
+	@Query(value = """
+			SELECT CASE WHEN
+			     EXISTS (SELECT 1 FROM usuario u WHERE u.id = :usuarioId
+			             AND (u.alumno_id IS NOT NULL OR u.es_admin_plataforma = TRUE))
+			  OR EXISTS (SELECT 1 FROM usuario_alumno x WHERE x.usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM usuario_rol x WHERE x.usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM asignacion_profesor x WHERE x.usuario_id = :usuarioId
+			             AND x.organizacion_id <> :organizacionId)
+			  OR EXISTS (SELECT 1 FROM cobro x WHERE x.cobrado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM cobro x WHERE x.anulado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM entrega_caja x WHERE x.entregado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM entrega_caja x WHERE x.recibido_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM entrega_caja x WHERE x.anulada_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM movimiento_caja x WHERE x.creado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM movimiento_caja x WHERE x.anulado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM producto_alumno x WHERE x.cancelado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM producto_alumno x WHERE x.vendido_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM solicitud x WHERE x.solicitado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM solicitud x WHERE x.resuelto_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM solicitud x WHERE x.encargado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM solicitud x WHERE x.recibido_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM clase_asistencia x WHERE x.registrado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM clase_asistencia x WHERE x.modificado_por_usuario_id = :usuarioId)
+			THEN 1 ELSE 0 END""", nativeQuery = true)
+	int tieneDatosFueraDeLaInvitacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
+
+	/** Decisión 389: borra la cuenta solo si sigue pendiente; 1 si la borró. Antes hay que haber quitado sus filas. */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			DELETE FROM Usuario u
+			WHERE u.id = :usuarioId AND u.contrasena IS NULL
+			  AND (u.authProvider IS NULL OR u.authProvider = com.taemoi.project.entities.AuthProvider.LOCAL)""")
+	int borrarCuentaPendiente(@Param("usuarioId") Long usuarioId);
 }

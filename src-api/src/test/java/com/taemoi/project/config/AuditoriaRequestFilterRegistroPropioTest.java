@@ -86,6 +86,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_GRUPOS, new Ejemplo("PUT", "/api/miembros/21/grupos")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION,
 					new Ejemplo("POST", "/api/miembros/21/invitacion")),
+			Map.entry(EscrituraConRegistroPropio.MIEMBRO_INVITACION_CANCELAR,
+					new Ejemplo("DELETE", "/api/miembros/21/invitacion")),
 			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR,
 					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
@@ -140,11 +142,11 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("PUT", "/api/miembros/21/roles"),
 			new Ejemplo("PUT", "/api/miembros/21/roles/PROFESOR/otra"),
 			new Ejemplo("POST", "/api/miembros/21/sedes"),
-			// Pieza E8-4: reenviar la invitación solo por POST y en su ruta exacta.
+			// Pieza E8-4 y decisión 389: reenviar por POST y cancelar por DELETE, en su ruta exacta.
 			new Ejemplo("GET", "/api/miembros/21/invitacion"),
 			new Ejemplo("PUT", "/api/miembros/21/invitacion"),
-			new Ejemplo("DELETE", "/api/miembros/21/invitacion"),
 			new Ejemplo("POST", "/api/miembros/21/invitacion/otra"),
+			new Ejemplo("DELETE", "/api/miembros/21/invitacion/otra"),
 			new Ejemplo("POST", "/api/miembros/invitacion"),
 			// Decisión 322: la lectura del perfil y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/panel/mi-perfil"),

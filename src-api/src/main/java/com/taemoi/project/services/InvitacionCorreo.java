@@ -116,7 +116,7 @@ public final class InvitacionCorreo {
 	}
 
 	/** Los bytes y el tipo de un data URI en Base64 ({@code data:image/png;base64,…}); {@code null} si no lo es. */
-	private record Logo(byte[] bytes, String tipo) {
+	record Logo(byte[] bytes, String tipo) {
 		static Logo de(String dataUri) {
 			if (dataUri == null || !dataUri.startsWith("data:")) {
 				return null;

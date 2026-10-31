@@ -75,7 +75,7 @@
               @for (rol of roles; track rol) { <button type="button" [attr.aria-pressed]="nuevoRol === rol" [disabled]="enviandoAlta" (click)="nuevoRol = rol">{{ rol === 'TITULAR' ? 'Titular' : 'Ayudante' }}</button> }
             </div>
             @if (modoAlta === 'sinCuenta') {
-              <p class="editar-grupo__aviso" role="status">No hay ninguna cuenta con ese email. Te pedimos su nombre para invitarle.</p>
+              <p class="editar-grupo__aviso" role="status">No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.</p>
               <div class="editar-grupo__nombres"><div><label for="profesor-nombre">Nombre (obligatorio)</label><input id="profesor-nombre" name="nombre" [(ngModel)]="nuevoNombre" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="given-name" /></div><div><label for="profesor-apellidos">Apellidos (obligatorio)</label><input id="profesor-apellidos" name="apellidos" [(ngModel)]="nuevosApellidos" [readOnly]="enviandoAlta" required maxlength="50" autocomplete="family-name" /></div></div>
             } @else if (modoAlta === 'desactivado') { <p class="editar-grupo__aviso" role="status">Tiene el rol de profesor desactivado en esta escuela.</p> }
             @if (otrosGrupos.length) {

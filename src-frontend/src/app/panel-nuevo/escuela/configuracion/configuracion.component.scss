@@ -210,6 +210,13 @@
   min-width: 0;
 }
 
+.conf__ayuda {
+  max-width: 65ch;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
 .conf__etiqueta {
   font: var(--pn-etiqueta);
   color: var(--pn-tinta);

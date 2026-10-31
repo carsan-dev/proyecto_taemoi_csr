@@ -50,7 +50,9 @@ export const CARGO_MAXIMO = 100;
 
 export const AYUDA_SOLO_PROPIETARIO = 'Solo el propietario puede cambiar este rol.';
 export const TEXTO_QUITAR = 'Podrás devolvérselo después.';
-export const AVISO_SIN_CUENTA = 'No hay ninguna cuenta con ese email. Le enviaremos una invitación para crear su contraseña.';
+export const TEXTO_CANCELAR_INVITACION =
+  'El enlace dejará de valer y le avisaremos por correo. Si no tiene nada más en ninguna escuela, su cuenta se borrará.';
+export const AVISO_SIN_CUENTA = 'No hay ninguna cuenta registrada con ese email. Le enviaremos una invitación para crear su contraseña.';
 export const MENSAJE_SIN_SEDES = 'Indica al menos una sede.';
 
 export function nombreCompleto(m: Pick<Miembro, 'nombre' | 'apellidos'>): string {
@@ -101,6 +103,26 @@ export function rolesParaAlta(sesionPropietaria: boolean): RolMembresia[] {
 
 export function tituloQuitar(rol: RolMembresia, nombre: string): string {
   return `¿Quitar el rol de ${rolEnFrase(rol)} a ${nombre}?`;
+}
+
+export function tituloCancelarInvitacion(nombre: string): string {
+  return `¿Cancelar la invitación de ${nombre}?`;
+}
+
+/**
+ * `invitacionPendiente` es de la cuenta, global: una cuenta conservada tras cancelar sigue sin contraseña. Aquí solo hay
+ * invitación que enseñar con algún rol activo en esta escuela; sin ninguno, reenviar daría 409.
+ */
+export function invitacionPendienteAqui(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>): boolean {
+  return m.invitacionPendiente && rolesActivos(m).length > 0;
+}
+
+/**
+ * Cancelar retira todos sus roles activos de esta escuela (decisión 389): hace falta alguno y que la sesión pueda
+ * cambiarlos todos. El servidor lo vuelve a comprobar con 403.
+ */
+export function puedeCancelarInvitacion(m: Pick<Miembro, 'invitacionPendiente' | 'roles'>, sesionPropietaria: boolean): boolean {
+  return invitacionPendienteAqui(m) && rolesActivos(m).every((rol) => puedeCambiarRol(rol, sesionPropietaria));
 }
 
 /** Nombre del grupo con su sede cuando la escuela tiene varias. */

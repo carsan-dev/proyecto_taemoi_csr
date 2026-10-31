@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.taemoi.project.events.InvitacionCanceladaEvent;
 import com.taemoi.project.events.InvitacionEnviableEvent;
 
 /**
@@ -14,6 +15,9 @@ import com.taemoi.project.events.InvitacionEnviableEvent;
  * los de preinscripción: una invitación deshecha no avisa a nadie y un fallo al preparar o entregar el correo nunca
  * deshace la cuenta ni responde 500 (se puede reenviar). El log del fallo lleva solo el id de la cuenta y el tipo de
  * error: nunca el token, el enlace ni el mensaje del error.
+ *
+ * <p>Decisión 389: el aviso de invitación cancelada sale igual, solo tras confirmar la cancelación; su fallo no la
+ * deshace y el log lleva solo el id de la cuenta y el tipo de error.
  *
  * <p>Enlace: {@code app.frontend.base-url} (la misma base que el correo de restablecer contraseña; pendiente conocido
  * del dominio único) + {@code /crear-contrasena?token=…}, la página «Crea tu contraseña» (E8-6).
@@ -47,6 +51,19 @@ public class InvitacionCorreoListener {
 		} catch (RuntimeException e) {
 			log.warn("No se pudo enviar la invitación de la cuenta #{} ({}); se puede reenviar.", evento.usuarioId(),
 					e.getClass().getSimpleName());
+		}
+	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void alConfirmar(InvitacionCanceladaEvent evento) {
+		try {
+			InvitacionCorreo.Correo correo = InvitacionCanceladaCorreo.de(marcaEscuela.de(evento.organizacionId()),
+					evento.nombre());
+			emailService.sendEmailConImagen(evento.email(), correo.asunto(), correo.html(), InvitacionCorreo.CID_LOGO,
+					correo.logo(), correo.tipoLogo(), correo.remitente());
+		} catch (RuntimeException e) {
+			log.warn("No se pudo enviar el aviso de invitación cancelada de la cuenta #{} ({}); la cancelación sigue "
+					+ "confirmada.", evento.usuarioId(), e.getClass().getSimpleName());
 		}
 	}
 }

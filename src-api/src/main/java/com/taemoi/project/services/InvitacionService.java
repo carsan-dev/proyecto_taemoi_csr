@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.events.InvitacionCanceladaEvent;
 import com.taemoi.project.events.InvitacionEnviableEvent;
 import com.taemoi.project.repositories.UsuarioRepository;
 
@@ -150,6 +151,16 @@ public class InvitacionService {
 		eventos.publishEvent(new InvitacionEnviableEvent(cuenta.getId(), organizacionId, cuenta.getEmail(),
 				cuenta.getNombre(), rol, token));
 		return true;
+	}
+
+	/**
+	 * Deja para después del commit el aviso de invitación cancelada (decisión 389), con el email y el nombre copiados: la
+	 * cuenta puede ya no existir cuando salga. Si la transacción se deshace, no sale.
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void avisarCancelacion(Usuario cuenta, Long organizacionId) {
+		eventos.publishEvent(new InvitacionCanceladaEvent(cuenta.getId(), organizacionId, cuenta.getEmail(),
+				cuenta.getNombre()));
 	}
 
 	/**

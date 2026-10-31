@@ -1,8 +1,10 @@
 package com.taemoi.project.repositories;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,6 +37,14 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			ORDER BY m.organizacionId ASC
 			""")
 	List<Membresia> findActivasDeUsuario(@Param("usuarioId") Long usuarioId);
+
+	/** De esas cuentas, las que tienen algún rol activo en la organización. */
+	@Query("""
+			SELECT DISTINCT m.usuarioId FROM Membresia m
+			WHERE m.organizacionId = :organizacionId AND m.activa = true AND m.usuarioId IN :usuarios
+			""")
+	List<Long> cuentasConRolActivo(@Param("organizacionId") Long organizacionId,
+			@Param("usuarios") Collection<Long> usuarios);
 
 	/** Roles activos del usuario en una organización (vacío si la organización no está activa). */
 	@Query("""
@@ -75,4 +85,9 @@ public interface MembresiaRepository extends JpaRepository<Membresia, Long> {
 			ORDER BY m.id
 			""")
 	List<Membresia> bloquearPropietariosActivos(@Param("organizacionId") Long organizacionId);
+
+	/** Decisión 389: borra las membresías de la cuenta en la escuela (activas o no), al borrar una cuenta pendiente. */
+	@Modifying(flushAutomatically = true)
+	@Query("DELETE FROM Membresia m WHERE m.usuarioId = :usuarioId AND m.organizacionId = :organizacionId")
+	int borrarDeLaEscuela(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
 }

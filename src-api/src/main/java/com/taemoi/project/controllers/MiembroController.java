@@ -74,6 +74,13 @@ public class MiembroController {
 		return ResponseEntity.ok(miembros.reenviarInvitacion(usuarioId));
 	}
 
+	/** Cancela la invitación pendiente: el enlace deja de valer y se retiran sus roles en la escuela. Sin cuerpo. */
+	@DeleteMapping("/{usuarioId}/invitacion")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
+	public ResponseEntity<MiembrosDTOs.InvitacionCancelada> cancelarInvitacion(@PathVariable Long usuarioId) {
+		return ResponseEntity.ok(miembros.cancelarInvitacion(usuarioId));
+	}
+
 	/** Da o reactiva el rol y fija su cargo ({@code {cargo?, sedeIds?}}, cuerpo opcional). */
 	@PutMapping("/{usuarioId}/roles/{rol}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")

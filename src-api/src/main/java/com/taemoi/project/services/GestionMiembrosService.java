@@ -1,5 +1,6 @@
 package com.taemoi.project.services;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,6 +41,9 @@ import com.taemoi.project.repositories.MembresiaSedeRepository;
 import com.taemoi.project.repositories.MiembrosRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.utils.EmailUtils;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 /**
  * Miembros de la escuela activa (pieza E8-3; D8-4 a D8-12, D8-16, D8-19; fase3-e8-plan.md §4): lista, ficha, alta de
@@ -102,6 +106,9 @@ public class GestionMiembrosService {
 	private final RegistroAccionesMiembros registro;
 	private final RegistroAccionesProfesor registroProfesor;
 	private final InvitacionService invitaciones;
+
+	@PersistenceContext
+	private EntityManager em;
 
 	public GestionMiembrosService(UsuarioRepository usuarios, MembresiaRepository membresias,
 			MiembrosRepository consultas, MembresiaSedeRepository membresiaSedes,
@@ -291,6 +298,144 @@ public class GestionMiembrosService {
 		return ficha(cuenta, organizacion);
 	}
 
+	/**
+	 * Cancela la invitación (decisión 389): retira los roles activos de esta escuela, el enlace deja de servir y el aviso
+	 * sale tras el commit. Fila {@code MIEMBROS INVITACION_CANCELADA usuario=#id cuentaBorrada=SI|NO}. Más estricto que
+	 * reenviar: si CUALQUIER rol activo es PROPIETARIO o ADMINISTRADOR, solo el propietario (403), porque aquí se retiran
+	 * todos.
+	 *
+	 * <p>La cuenta, según lo que tenga además (en TODAS las escuelas; borrar es irreversible, ante la duda se conserva):
+	 * <ul>
+	 * <li>Rol activo en otra escuela activa: se conserva. Si la invitación vigente es de esta escuela, se renueva para la
+	 * otra (la de menor id), con su nombre y su correo; si es de otra, su token sigue vivo tal cual.</li>
+	 * <li>Otra membresía (inactiva o de una escuela desactivada) o cualquier dato de
+	 * {@link UsuarioRepository#tieneDatosFueraDeLaInvitacion}: se conserva sin token vivo. FAMILIA activa con alumnos
+	 * vinculados aquí no se toca: los vínculos se gestionan aparte; sin más roles que retirar ni token vivo, repetir no
+	 * tendría efecto: 409 {@value #SIN_ROL_ACTIVO}, sin correo ni {@code INVITACION_CANCELADA}.</li>
+	 * <li>Nada más: se borran sus membresías de esta escuela, con sus sedes, sus asignaciones y la cuenta.</li>
+	 * </ul>
+	 *
+	 * <p>Carrera con {@code aceptar}: esta transacción tiene bloqueada la fila desde el principio, así que el UPDATE de
+	 * {@code aceptar} espera y, al confirmar, no encuentra el hash (400). Si {@code aceptar} confirmó antes, 409: con la
+	 * fila bloqueada, la cuenta se relee de la base ({@code refresh}), porque la entidad de la sesión pudo cargarse antes
+	 * del bloqueo; nada depende del recuento de filas de un UPDATE. Las altas desde otra escuela bloquean la misma fila, y
+	 * cualquier fila nueva con clave ajena a la cuenta también espera a este bloqueo: lo que se decide aquí no cambia hasta
+	 * el commit.
+	 *
+	 * @throws NoSuchElementException (404) no es miembro de la escuela activa
+	 * @throws SecurityException      (403) D8-8
+	 * @throws IllegalStateException  (409) {@value #SIN_ROL_ACTIVO}, {@value #SIN_PROPIETARIO} o {@value #YA_ACEPTADA}
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public MiembrosDTOs.InvitacionCancelada cancelarInvitacion(Long usuarioId) {
+		Long organizacion = organizacionActiva();
+		Usuario cuenta = exigirMiembro(usuarioId, organizacion);
+		Long id = cuenta.getId();
+		usuarios.bloquearPorId(id).orElseThrow(() -> new NoSuchElementException(NO_MIEMBRO));
+		// Antes de leer ninguna membresía: las filas PROPIETARIO llegan con el estado ya confirmado.
+		List<Membresia> propietarios = membresias.bloquearPropietariosActivos(organizacion);
+		exigirCancelable(id, organizacion, propietarios);
+		// Desde aquí, el estado ya confirmado de la cuenta, con su fila bloqueada; no la entidad vieja de la sesión.
+		em.refresh(cuenta);
+		if (!cuenta.invitacionPendiente()) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+
+		List<Membresia> todas = membresias.findByUsuarioId(id);
+		List<Membresia> deEstaEscuela = todas.stream().filter(m -> organizacion.equals(m.getOrganizacionId())).toList();
+		List<Membresia> aRetirar = rolesARetirar(id, deEstaEscuela, organizacion);
+		if (aRetirar.isEmpty() && !tieneTokenVivo(cuenta)) {
+			throw new IllegalStateException(SIN_ROL_ACTIVO);
+		}
+		boolean borrar = deEstaEscuela.size() == todas.size()
+				&& usuarios.tieneDatosFueraDeLaInvitacion(id, organizacion) == 0;
+
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("usuario", id);
+		valores.put("cuentaBorrada", borrar);
+		registro.registrar(RegistroAccionesMiembros.Accion.INVITACION_CANCELADA, RUTA + "/" + id + "/invitacion", valores);
+		invitaciones.avisarCancelacion(cuenta, organizacion);
+
+		if (borrar) {
+			borrarCuentaPendiente(id, deEstaEscuela, organizacion);
+		} else {
+			for (Membresia membresia : aRetirar) {
+				membresia.setActiva(false);
+				membresias.saveAndFlush(membresia);
+			}
+			resolverToken(cuenta, organizacion);
+		}
+		return new MiembrosDTOs.InvitacionCancelada(borrar);
+	}
+
+	/** Comprobaciones de cancelar que dependen de sus roles: 409 sin rol activo, 403 D8-8 y 409 último propietario. */
+	private void exigirCancelable(Long id, Long organizacion, List<Membresia> propietarios) {
+		List<Membresia> activas = membresias.findByUsuarioIdAndOrganizacionId(id, organizacion).stream()
+				.filter(Membresia::isActiva).toList();
+		if (activas.isEmpty()) {
+			throw new IllegalStateException(SIN_ROL_ACTIVO);
+		}
+		boolean algunRolReservado = activas.stream()
+				.anyMatch(m -> m.getRol() == RolMembresia.PROPIETARIO || m.getRol() == RolMembresia.ADMINISTRADOR);
+		if (algunRolReservado && !sesionDePropietario()) {
+			throw new SecurityException(SOLO_PROPIETARIO);
+		}
+		boolean esPropietario = propietarios.stream().anyMatch(p -> id.equals(p.getUsuarioId()));
+		if (esPropietario && propietarios.size() <= 1) {
+			throw new IllegalStateException(SIN_PROPIETARIO);
+		}
+	}
+
+	/**
+	 * Lo que cancelar pasa a {@code activa=false}, sin borrar filas, sedes ni asignaciones: sus roles activos, salvo FAMILIA
+	 * con alumnos.
+	 */
+	private List<Membresia> rolesARetirar(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
+		boolean conAlumnos = consultas.alumnosVinculados(id, organizacion) > 0;
+		return deEstaEscuela.stream().filter(Membresia::isActiva)
+				.filter(m -> !(m.getRol() == RolMembresia.FAMILIA && conAlumnos)).toList();
+	}
+
+	/** Si aún hay un enlace que sirva: con hash y sin caducar, como exige aceptar la invitación. */
+	private static boolean tieneTokenVivo(Usuario cuenta) {
+		return cuenta.getResetTokenHash() != null && cuenta.getResetTokenExpiresAt() != null
+				&& cuenta.getResetTokenExpiresAt().isAfter(LocalDateTime.now());
+	}
+
+	/**
+	 * El enlace de esta escuela muere en todo caso. Con rol activo en otra escuela activa, la invitación pasa a la de menor
+	 * id si era de esta (o de ninguna conocida); si ya era de otra, su token sigue tal cual. Sin rol activo fuera, ningún
+	 * token vivo. Con la fila bloqueada y la cuenta releída pendiente, retirar el token no decide nada: puede no haber
+	 * ninguno. Renovar sí cambia el hash, y su recuento se comprueba.
+	 */
+	private void resolverToken(Usuario cuenta, Long organizacion) {
+		List<Membresia> activasFuera = membresias.findActivasDeUsuario(cuenta.getId()).stream()
+				.filter(m -> !organizacion.equals(m.getOrganizacionId())).toList();
+		Long escuelaInvitacion = cuenta.getUltimaOrganizacionId();
+		if (activasFuera.isEmpty()) {
+			usuarios.retirarTokenInvitacion(cuenta.getId());
+		} else if (escuelaInvitacion == null || organizacion.equals(escuelaInvitacion)) {
+			Long otra = activasFuera.get(0).getOrganizacionId();
+			List<Membresia> activasDeLaOtra = activasFuera.stream().filter(m -> otra.equals(m.getOrganizacionId()))
+					.toList();
+			if (!invitaciones.renovarToken(cuenta, otra, rolDeLaInvitacion(activasDeLaOtra))) {
+				throw new IllegalStateException(YA_ACEPTADA);
+			}
+		}
+	}
+
+	/** Las filas propias de la invitación en esta escuela y la cuenta, que ya no tiene nada más. */
+	private void borrarCuentaPendiente(Long id, List<Membresia> deEstaEscuela, Long organizacion) {
+		for (Membresia membresia : deEstaEscuela) {
+			consultas.borrarSedesDeMembresia(membresia.getId(), organizacion);
+		}
+		asignaciones.borrarDeLaEscuela(id, organizacion);
+		membresias.borrarDeLaEscuela(id, organizacion);
+		if (usuarios.borrarCuentaPendiente(id) != 1) {
+			throw new IllegalStateException(YA_ACEPTADA);
+		}
+	}
+
 	/** El rol del texto del correo: el primero (orden del enum) de sus roles activos de personal; si no, FAMILIA. */
 	private static RolMembresia rolDeLaInvitacion(List<Membresia> activas) {
 		return activas.stream().map(Membresia::getRol).filter(rol -> rol != RolMembresia.FAMILIA).sorted().findFirst()
@@ -339,7 +484,9 @@ public class GestionMiembrosService {
 	/**
 	 * Quita el rol (D8-7): {@code activa=false}, sin borrar la fila; conserva asignaciones y sedes. Ya desactivado: 200
 	 * con {@code sinCambios=SI}. PROPIETARIO: bloquea antes las filas PROPIETARIO activas de la escuela y, si es la
-	 * última, 409 {@link #SIN_PROPIETARIO} (D8-9, D8-19).
+	 * última, 409 {@link #SIN_PROPIETARIO} (D8-9, D8-19). A una cuenta pendiente que se queda sin ninguna membresía activa
+	 * en esta escuela, el enlace de esta escuela se le invalida, sin correo de cancelación
+	 * ({@link #invalidarEnlaceSiNoQuedanRoles}).
 	 *
 	 * @throws SecurityException      (403) D8-8
 	 * @throws NoSuchElementException (404) no es miembro o no tiene ese rol
@@ -371,9 +518,25 @@ public class GestionMiembrosService {
 			membresia.setActiva(false);
 			membresias.saveAndFlush(membresia);
 			cambios.rol(RegistroAccionesMiembros.Accion.ROL_QUITADO, rol);
+			invalidarEnlaceSiNoQuedanRoles(cuenta, organizacion);
 		}
 		cambios.sinCambiosSiHaceFalta(RegistroAccionesMiembros.Accion.ROL_QUITADO, rol);
 		return ficha(cuenta, organizacion);
+	}
+
+	/**
+	 * Tras quitar un rol: a una cuenta que sigue pendiente y no conserva ninguna membresía activa aquí se le resuelve el
+	 * token como al cancelar ({@link #resolverToken}). Quien llama tiene la fila bloqueada: lo escrito se vuelca antes y la
+	 * cuenta se relee, porque la entidad de la sesión pudo cargarse antes del bloqueo; {@code aceptar} pudo confirmar.
+	 */
+	private void invalidarEnlaceSiNoQuedanRoles(Usuario cuenta, Long organizacion) {
+		em.flush();
+		em.refresh(cuenta);
+		boolean sinRoles = membresias.findByUsuarioIdAndOrganizacionId(cuenta.getId(), organizacion).stream()
+				.noneMatch(Membresia::isActiva);
+		if (cuenta.invitacionPendiente() && sinRoles) {
+			resolverToken(cuenta, organizacion);
+		}
 	}
 
 	// ------------------------------------------------------------------ sedes y grupos

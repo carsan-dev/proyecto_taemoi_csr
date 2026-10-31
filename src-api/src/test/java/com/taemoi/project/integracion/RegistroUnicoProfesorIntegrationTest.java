@@ -384,6 +384,18 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					List.of("MIEMBROS INVITACION_REENVIADA"), () -> post("/api/miembros/" + aceptada + "/invitacion"),
 					409);
 		});
+		// Decisión 389: cancelar una invitación pendiente; aquí la cuenta se borra.
+		casos.put(EscrituraConRegistroPropio.MIEMBRO_INVITACION_CANCELAR, () -> {
+			long pendiente = e.cuenta(usuarios, "cancelar-" + UUID.randomUUID().toString().substring(0, 6));
+			jdbc.update("UPDATE usuario SET contrasena = NULL WHERE id = ?", pendiente);
+			membresia(e.org, pendiente, "PROFESOR");
+			long aceptada = e.cuenta(usuarios, "aceptada-" + UUID.randomUUID().toString().substring(0, 6));
+			membresia(e.org, aceptada, "PROFESOR");
+			// Ya tiene contraseña: 409.
+			return new Caso(tPropietario, propietario, () -> delete("/api/miembros/" + pendiente + "/invitacion"), 200,
+					List.of("MIEMBROS INVITACION_CANCELADA"), () -> delete("/api/miembros/" + aceptada + "/invitacion"),
+					409);
+		});
 		casos.put(EscrituraConRegistroPropio.PANEL_MI_PERFIL, () -> new Caso(tGestor, e.gestor,
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,
 				List.of("PANEL PERFIL_CAMBIADO"),

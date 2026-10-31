@@ -337,6 +337,16 @@ Pieza E8-4 (invitaciones por correo, fase3-e8-miembros.md D8-13): 3 líneas nuev
   `GET`/`POST /api/grupos/{grupoId}/profesores` (líneas existentes) devuelven además `invitacionPendiente`.
 Lo prueban `InvitacionesIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
 
+Decisión 389 (cancelar invitación): 1 línea nueva; ninguna casilla existente cambia.
+- `DELETE /api/miembros/{usuarioId}/invitacion` (`MiembroController#cancelarInvitacion`): como el resto de
+  `/api/miembros/**`, GESTOR y PROPIETARIO `PERMITE` y el resto `DENIEGA` (misma regla de URL y `@PreAuthorize`). Sin
+  cuerpo; responde 200 con `{cuentaBorrada}`, nunca la ficha, porque la cuenta puede ya no existir. En el servicio:
+  cuenta que no es de la escuela, 404; sin rol activo, ya aceptada o último propietario, 409; un gestor sobre una cuenta
+  con CUALQUIER rol activo PROPIETARIO o ADMINISTRADOR, 403 (más estricto que reenviar: aquí se retiran todos). Todo 2xx
+  registra `MIEMBROS INVITACION_CANCELADA usuario=#id cuentaBorrada=SI|NO` (acción `DELETE`) y está en
+  `EscrituraConRegistroPropio` (`MIEMBRO_INVITACION_CANCELAR`). El aviso por correo sale tras el commit.
+Lo prueban `CancelarInvitacionIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
 > **Retirado** en la #153 (V31_13, decisión 335): estos endpoints, el campo `disenoNuevo` de `GET /api/auth/permisos` y sus acciones de registro ya no existen. Se conserva como histórico.
 
 Pieza 8b-I (interruptor del diseño nuevo, fase3-e8b-plan.md §3): 5 líneas nuevas bajo `/api/panel`

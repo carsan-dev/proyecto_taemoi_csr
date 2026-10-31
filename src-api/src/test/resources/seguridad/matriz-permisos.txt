@@ -346,6 +346,7 @@ GET      /api/miembros/{usuarioId}                                              
 HEAD     /api/miembros/{usuarioId}                                                                DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#ficha
 PUT      /api/miembros/{usuarioId}/grupos                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#reemplazarGrupos
 POST     /api/miembros/{usuarioId}/invitacion                                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#reenviarInvitacion
+DELETE   /api/miembros/{usuarioId}/invitacion                                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#cancelarInvitacion
 PUT      /api/miembros/{usuarioId}/roles/{rol}                                                    DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#darRol
 DELETE   /api/miembros/{usuarioId}/roles/{rol}                                                    DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#quitarRol
 PUT      /api/miembros/{usuarioId}/sedes                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # MiembroController#reemplazarSedes
