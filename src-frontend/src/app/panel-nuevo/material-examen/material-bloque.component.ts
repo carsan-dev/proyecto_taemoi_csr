@@ -46,9 +46,6 @@ import { DetalleBloque, DocumentoDetalle, VideoDetalle } from './material-examen
 import { MaterialMenuComponent, OpcionMenu } from './material-menu.component';
 import { MaterialSubidaFilaComponent } from './material-subida-fila.component';
 
-/** Arrastre: inmediato con ratón y por pulsación larga en táctil, para que el dedo siga desplazando la página. */
-const RETARDO_ARRASTRE = { touch: 350, mouse: 0 };
-
 type Estado = 'cargando' | 'listo' | 'error';
 /** El mando de orden con el foco: tras mover, el foco vuelve al mismo de la fila movida. */
 type MandoOrden = 'asa' | 'subir' | 'bajar';
@@ -101,7 +98,6 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   @ViewChild('selectorSustituto') private selectorSustituto?: ElementRef<HTMLInputElement>;
   @ViewChild('selectorDocumentoSustituto') private selectorDocumentoSustituto?: ElementRef<HTMLInputElement>;
 
-  readonly retardoArrastre = RETARDO_ARRASTRE;
   readonly aceptaVideos = ACEPTA_VIDEOS;
   readonly aceptaPdf = ACEPTA_PDF;
   readonly aceptaDocumentos = ACEPTA_DOCUMENTOS;

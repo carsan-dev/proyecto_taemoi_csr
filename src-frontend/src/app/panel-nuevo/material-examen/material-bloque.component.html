@@ -68,7 +68,7 @@
         <div class="vids">
           <ul class="vids__lista" cdkDropList cdkDropListLockAxis="y" [cdkDropListDisabled]="guardandoOrden" (cdkDropListDropped)="soltar($event)">
             @for (v of videos; track v.fichero; let i = $index; let primero = $first; let ultimo = $last) {
-            <li class="vid" cdkDrag cdkDragPreviewContainer="parent" [cdkDragStartDelay]="retardoArrastre" [class.vid--movida]="movido === v.fichero" [attr.data-fichero]="v.fichero">
+            <li class="vid" cdkDrag cdkDragPreviewContainer="parent" [class.vid--movida]="movido === v.fichero" [attr.data-fichero]="v.fichero">
               <button type="button" cdkDragHandle class="icono vid__asa" [attr.tabindex]="movil ? 0 : -1" [disabled]="guardandoOrden"
                 [attr.aria-label]="'Arrastrar «' + v.titulo + '» para ordenar, o usa las flechas'" (keydown)="teclaOrden($event, i, 'asa')">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"></path></svg>
