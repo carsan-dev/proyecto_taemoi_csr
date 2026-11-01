@@ -4575,7 +4575,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
    * Handle change for basic info fields
    */
   onBasicInfoChange(field: string, event: Event): void {
-    if (field === 'tieneDiscapacidad') return;
     const target = event.target as HTMLInputElement;
     let value: any;
 

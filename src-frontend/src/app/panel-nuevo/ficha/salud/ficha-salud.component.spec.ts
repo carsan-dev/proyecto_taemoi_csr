@@ -65,6 +65,17 @@ describe('FichaSaludComponent', () => {
     expect(c.salud?.alumnoId).toBe(9); expect(el().textContent).toContain('Solo nueve');
     expect(el().textContent).not.toContain('Alergia ficticia');
   });
+  it('cambiar soloLectura no cierra el bloque ni pierde lo que se edita', () => {
+    abrir(); c.editar(); c.formulario!.alergias = 'No perder';
+    fixture.componentRef.setInput('soloLectura', true); fixture.detectChanges();
+    expect(c.saludAbierta).toBeTrue(); expect(c.editando).toBeTrue(); expect(c.salud).toEqual(DTO);
+    expect(c.formulario!.alergias).toBe('No perder');
+  });
+  it('cambiar alumnoId cierra el bloque y descarta los datos', () => {
+    abrir(); c.editar();
+    fixture.componentRef.setInput('alumnoId', 9); fixture.detectChanges();
+    expect(c.saludAbierta).toBeFalse(); expect(c.editando).toBeFalse(); expect(c.salud).toBeNull(); expect(c.formulario).toBeNull();
+  });
   it('sin datos ofrece añadir; con discapacidad sin registro muestra la lista', () => {
     abrir({ ...DTO, registrado: false, tieneDiscapacidad: false, discapacidadTipos: [] });
     expect(el().textContent).toContain('Sin datos de salud registrados.');
@@ -82,7 +93,7 @@ describe('FichaSaludComponent', () => {
     fixture.componentRef.setInput('anonimizado', true); fixture.detectChanges(); c.conmutarSalud(); c.pedirSalud();
     expect(el().querySelector('section')).toBeNull(); http.expectNone(URL);
   });
-  it('cuenta cinco grupos de cambios y Descartar vuelve a lectura sin GET', () => {
+  it('cuenta cinco grupos de cambios y descartar vuelve a lectura sin GET', () => {
     abrir(); c.editar(); expect(c.cambios).toBe(0);
     const f = c.formulario!;
     f.tieneDiscapacidad = false; f.discapacidadTipos = ['AUDITIVA']; f.descripcion = 'Otra'; f.impideDetalle = 'Otro'; f.alergias = 'Otra';
@@ -110,6 +121,24 @@ describe('FichaSaludComponent', () => {
     req.flush({ ...DTO, tieneDiscapacidad: false, discapacidadTipos: [] });
     expect(c.ficha.alumno.tieneDiscapacidad).toBeFalse(); expect(c.editando).toBeFalse();
     expect(avisos.exito).toHaveBeenCalledWith('Datos de salud guardados.'); http.expectNone(URL);
+  });
+  it('editar en la app no reenvía el origen anterior', () => {
+    abrir({ ...DTO, origen: 'PREINSCRIPCION' }); c.editar(); c.formulario!.alergias = 'Otra'; c.guardar();
+    const req = http.expectOne(URL);
+    expect('origen' in req.request.body).toBeFalse();
+    req.flush({ ...DTO, alergias: 'Otra', origen: 'APP' });
+  });
+  it('sin cambios el botón interno dice Cancelar; con cambios no se ve y manda la barra', () => {
+    abrir(); c.editar(); fixture.detectChanges();
+    expect(botones()).toContain('Cancelar'); expect(botones()).not.toContain('Descartar');
+    c.formulario!.alergias = 'Otra'; fixture.detectChanges();
+    expect(botones()).not.toContain('Cancelar'); expect(botones()).not.toContain('Descartar');
+  });
+  it('Editar lleva el lápiz y sigue siendo un botón aparte de Ocultar salud', () => {
+    abrir();
+    const editar = Array.from(el().querySelectorAll('button')).find(b => b.textContent!.trim() === 'Editar')!;
+    expect(editar.querySelector('i.bi.bi-pencil')).not.toBeNull();
+    expect(botones()).toContain('Ocultar salud');
   });
   it('con No envía los textos asociados como null, aunque hubiese texto guardado', () => {
     abrir(); c.editar(); c.formulario!.lesionEnfermedad = false; c.formulario!.impideActividad = false; c.guardar();

@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import type { SaludAlumno } from '../../../interfaces/profesor';
@@ -10,7 +10,7 @@ import { SelectorDiscapacidadComponent } from '../../salud/selector-discapacidad
 import { GuardarSalud, SaludAlumnoService } from '../../salud/salud-alumno.service';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 
-type FormularioSalud = Omit<GuardarSalud, 'descripcion' | 'impideDetalle' | 'alergias' | 'discapacidadOtra'> & {
+type FormularioSalud = Omit<GuardarSalud, 'descripcion' | 'impideDetalle' | 'alergias' | 'discapacidadOtra' | 'origen'> & {
   descripcion: string; impideDetalle: string; alergias: string; discapacidadOtra: string;
 };
 
@@ -46,7 +46,7 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
   ] as const;
 
   ngOnInit(): void { this.ficha.bloqueSalud = this; }
-  ngOnChanges(): void { this.descartarSalud(); }
+  ngOnChanges(cambios: SimpleChanges): void { if (cambios['alumnoId']) this.descartarSalud(); }
   ngOnDestroy(): void {
     this.descartarSalud();
     if (this.ficha.bloqueSalud === this) this.ficha.bloqueSalud = null;
@@ -105,7 +105,6 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
       tieneDiscapacidad: s.tieneDiscapacidad, discapacidadTipos: [...s.discapacidadTipos], discapacidadOtra: s.discapacidadOtra ?? '',
       lesionEnfermedad: s.lesionEnfermedad, descripcion: s.descripcion ?? '',
       impideActividad: s.impideActividad, impideDetalle: s.impideDetalle ?? '', alergias: s.alergias ?? '',
-      ...(s.origen !== undefined ? { origen: s.origen } : {}),
     };
     this.editando = true;
     this.intentado = false;
@@ -143,7 +142,6 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
       impideActividad: f.impideActividad,
       impideDetalle: f.impideActividad === true ? this.texto(f.impideDetalle) : null,
       alergias: this.texto(f.alergias),
-      ...(f.origen !== undefined ? { origen: f.origen } : {}),
     };
     const id = this.alumnoId, revision = ++this.revision;
     this.guardando = true;

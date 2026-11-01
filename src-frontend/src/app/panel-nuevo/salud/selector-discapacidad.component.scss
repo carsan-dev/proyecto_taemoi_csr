@@ -9,7 +9,7 @@
 .op { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-pastilla); background: var(--pn-superficie); color: var(--pn-tinta); font: var(--pn-cuerpo); font-weight: 600; cursor: pointer; }
 .op[aria-pressed='true'] { background: var(--pn-acento-suave); border-color: var(--pn-acento); }
 .marca { color: var(--pn-acento); }
-.otra { margin-top: 18px; }
+.otra { margin-top: var(--selector-otra-margen, 18px); }
 .ctl { @include b.control; }
 .bajo { display: flex; justify-content: space-between; gap: 12px; font: var(--pn-secundario); font-size: 13px; }
 .bajo > :last-child { flex: none; }
