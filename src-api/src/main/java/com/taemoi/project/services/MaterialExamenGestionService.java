@@ -16,10 +16,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -200,7 +202,10 @@ public class MaterialExamenGestionService {
 		}
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_VIDEOS));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			entradasDe(leer(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_VIDEOS);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			String extension = extension(limpio);
@@ -236,7 +241,9 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
-		String extension = extension(exigirVideo(leer(bloque), fichero).fichero());
+		BloqueEnDisco inicial = leer(bloque);
+		String extension = extension(exigirVideo(inicial, fichero).fichero());
+		comprobarIndiceAsegurable(inicial);
 
 		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_VIDEOS));
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
@@ -263,7 +270,9 @@ public class MaterialExamenGestionService {
 		comprobarNombreGuardado(fichero);
 		String nuevo = tituloValido(titulo);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirVideo(leer(bloque), fichero);
+			BloqueEnDisco inicial = leer(bloque);
+			exigirVideo(inicial, fichero);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
 			BloqueEnDisco disco = leer(bloque);
 			String actual = exigirVideo(disco, fichero).fichero();
@@ -281,7 +290,9 @@ public class MaterialExamenGestionService {
 	public MaterialGestionDTO.Detalle reordenarVideos(String disciplina, String bloqueId, List<String> ficheros) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		bajoBloqueo(bloque, () -> {
-			comprobarPermutacion(leer(bloque), ficheros);
+			BloqueEnDisco inicial = leer(bloque);
+			comprobarPermutacion(inicial, ficheros);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
 			BloqueEnDisco disco = leer(bloque);
 			comprobarPermutacion(disco, ficheros);
@@ -303,7 +314,9 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirVideo(leer(bloque), fichero);
+			BloqueEnDisco inicial = leer(bloque);
+			exigirVideo(inicial, fichero);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
 			BloqueEnDisco disco = leer(bloque);
 			VideoEnDisco video = exigirVideo(disco, fichero);
@@ -331,7 +344,10 @@ public class MaterialExamenGestionService {
 		DocumentoSecurityUtils.detectarMimePermitido(TEMARIO, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_TEMARIO));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			comprobarIndiceAsegurable(leer(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_TEMARIO);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, RecepcionCruda::cabeceraDePdf, CABECERA_PDF_FALSA);
@@ -362,7 +378,10 @@ public class MaterialExamenGestionService {
 		DocumentoSecurityUtils.detectarMimePermitido(limpio, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			comprobarIndiceAsegurable(leer(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, cabeceraDeDocumento(limpio), CABECERA_PDF_FALSA);
@@ -384,9 +403,11 @@ public class MaterialExamenGestionService {
 			CuerpoCrudo cuerpo) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
-		String existente = exigirDocumento(leer(bloque), fichero).fichero();
+		BloqueEnDisco inicial = leer(bloque);
+		String existente = exigirDocumento(inicial, fichero).fichero();
 		DocumentoSecurityUtils.detectarMimePermitido(existente, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
+		comprobarIndiceAsegurable(inicial);
 
 		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS));
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
@@ -412,7 +433,9 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirDocumento(leer(bloque), fichero);
+			BloqueEnDisco inicial = leer(bloque);
+			exigirDocumento(inicial, fichero);
+			comprobarIndiceAsegurable(inicial);
 			adoptar(bloque);
 			BloqueEnDisco disco = leer(bloque);
 			DocumentoEnDisco documento = exigirDocumento(disco, fichero);
@@ -517,17 +540,42 @@ public class MaterialExamenGestionService {
 
 	// ------------------------------------------------------------------ índice
 
-	/** Lo que las familias ya ven, con su título y su orden: la primera escritura lo fija en el índice. */
+	/**
+	 * Lo que las familias ya ven, con su título y su orden: la primera escritura lo fija en el índice. Toda reescritura del
+	 * índice sale de aquí. El lector funde en una entrada los nombres que solo difieren en mayúsculas, así que un bloque con
+	 * dos de ellos no se puede reescribir sin dar el título o el orden de uno al otro: 409 y no se escribe nada. Las escrituras
+	 * lo llaman también antes de adoptar, para que el material ni se mueva.
+	 */
 	private static List<EntradaIndice> entradasDe(BloqueEnDisco disco) {
+		Set<String> nombres = new HashSet<>();
 		List<EntradaIndice> entradas = new ArrayList<>();
-		disco.videos().forEach(v -> entradas.add(new EntradaIndice(v.fichero(), v.titulo(), v.orden())));
+		for (VideoEnDisco video : disco.videos()) {
+			if (!nombres.add(video.fichero().toLowerCase(Locale.ROOT))) {
+				logger.error("Material de examen con nombres que solo difieren en mayúsculas: carpeta={}", disco.carpeta());
+				throw new MaterialExamenException(HttpStatus.CONFLICT,
+						"Este bloque tiene vídeos cuyo nombre solo se distingue por las mayúsculas y no se puede cambiar. "
+								+ "Avisa al administrador.");
+			}
+			entradas.add(new EntradaIndice(video.fichero(), video.titulo(), video.orden()));
+		}
 		return entradas;
 	}
 
 	private void asegurarIndice(BloqueEnDisco disco) throws IOException {
-		if (!Files.isRegularFile(disco.carpeta().resolve(INDICE))) {
+		if (!hayIndice(disco)) {
 			escribirIndice(disco.carpeta(), entradasDe(disco));
 		}
+	}
+
+	/** Lo que {@link #asegurarIndice} exigirá, sin escribir nada. */
+	private static void comprobarIndiceAsegurable(BloqueEnDisco disco) {
+		if (!hayIndice(disco)) {
+			entradasDe(disco);
+		}
+	}
+
+	private static boolean hayIndice(BloqueEnDisco disco) {
+		return Files.isRegularFile(disco.carpeta().resolve(INDICE));
 	}
 
 	private void escribirIndice(Path carpeta, List<EntradaIndice> entradas) throws IOException {
@@ -661,15 +709,31 @@ public class MaterialExamenGestionService {
 	}
 
 	private static VideoEnDisco exigirVideo(BloqueEnDisco disco, String fichero) {
-		String buscado = fichero.trim();
-		return disco.videos().stream().filter(v -> v.fichero().equalsIgnoreCase(buscado)).findFirst()
+		return porNombre(disco.videos(), VideoEnDisco::fichero, fichero)
 				.orElseThrow(() -> new NoSuchElementException("Ese vídeo no existe en este bloque."));
 	}
 
 	private static DocumentoEnDisco exigirDocumento(BloqueEnDisco disco, String fichero) {
-		String buscado = fichero.trim();
-		return disco.documentos().stream().filter(d -> d.fichero().equalsIgnoreCase(buscado)).findFirst()
+		return porNombre(disco.documentos(), DocumentoEnDisco::fichero, fichero)
 				.orElseThrow(() -> new NoSuchElementException("Ese documento no existe en este bloque."));
+	}
+
+	/**
+	 * Con dos ficheros que solo difieren en mayúsculas, borrar o sustituir el que no era sería irreparable: primero el
+	 * nombre exacto; sin él, el único que coincida sin mayúsculas; si son varios, 409.
+	 */
+	private static <T> Optional<T> porNombre(List<T> ficheros, Function<T, String> nombre, String fichero) {
+		String buscado = fichero.trim();
+		Optional<T> exacto = ficheros.stream().filter(f -> nombre.apply(f).equals(buscado)).findFirst();
+		if (exacto.isPresent()) {
+			return exacto;
+		}
+		List<T> parecidos = ficheros.stream().filter(f -> nombre.apply(f).equalsIgnoreCase(buscado)).toList();
+		if (parecidos.size() > 1) {
+			throw new MaterialExamenException(HttpStatus.CONFLICT,
+					"Hay varios ficheros con ese nombre que solo se distinguen por las mayúsculas. Usa el nombre exacto.");
+		}
+		return parecidos.stream().findFirst();
 	}
 
 	private static Predicate<byte[]> cabeceraDeDocumento(String fichero) {

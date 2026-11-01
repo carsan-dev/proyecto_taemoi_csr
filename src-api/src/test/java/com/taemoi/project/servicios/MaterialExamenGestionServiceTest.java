@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -28,7 +29,10 @@ import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,6 +69,9 @@ import com.taemoi.project.organizacion.TransaccionEnEscuela;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.MaterialExamenGestionService;
+import com.taemoi.project.services.MaterialExamenService.BloqueEnDisco;
+import com.taemoi.project.services.MaterialExamenService.DocumentoEnDisco;
+import com.taemoi.project.services.MaterialExamenService.VideoEnDisco;
 import com.taemoi.project.services.impl.MaterialExamenServiceImpl;
 
 /**
@@ -89,8 +96,33 @@ class MaterialExamenGestionServiceTest {
 	private final AlumnoDeporteService alumnoDeportes = mock(AlumnoDeporteService.class);
 	private final AuditoriaService auditoria = mock(AuditoriaService.class);
 	private CatalogoTaemoiEnMemoria catalogo;
-	private MaterialExamenServiceImpl lectura;
+	private LectorDePrueba lectura;
 	private MaterialExamenGestionService gestion;
+
+	/**
+	 * El lector real con lo que un disco de Windows no admite: dos nombres que solo difieren en mayúsculas. {@code nombres}
+	 * cambia el nombre con el que se lee un fichero; su ruta sigue siendo la real.
+	 */
+	private class LectorDePrueba extends MaterialExamenServiceImpl {
+		final Map<String, String> nombres = new HashMap<>();
+
+		@Override
+		public BloqueEnDisco leerBloque(String disciplina, String bloqueId) {
+			return renombrado(super.leerBloque(disciplina, bloqueId));
+		}
+
+		BloqueEnDisco renombrado(BloqueEnDisco disco) {
+			return new BloqueEnDisco(disco.carpeta(), disco.temario(),
+					disco.videos().stream()
+							.map(v -> new VideoEnDisco(nombres.getOrDefault(v.fichero(), v.fichero()), v.titulo(), v.orden(),
+									v.ruta()))
+							.toList(),
+					disco.documentos().stream()
+							.map(d -> new DocumentoEnDisco(nombres.getOrDefault(d.fichero(), d.fichero()), d.titulo(), d.mime(),
+									d.ruta()))
+							.toList());
+		}
+	}
 
 	/** Doble con los dos puntos que un test no puede provocar de verdad: el movimiento y el espacio en disco. */
 	private class GestionDePrueba extends MaterialExamenGestionService {
@@ -121,7 +153,7 @@ class MaterialExamenGestionServiceTest {
 	@BeforeEach
 	void preparar() {
 		catalogo = new CatalogoTaemoiEnMemoria();
-		lectura = new MaterialExamenServiceImpl();
+		lectura = new LectorDePrueba();
 		ReflectionTestUtils.setField(lectura, "alumnoDeporteService", alumnoDeportes);
 		ReflectionTestUtils.setField(lectura, "catalogo", catalogo.catalogo());
 		ReflectionTestUtils.setField(lectura, "progresion", catalogo.progresion());
@@ -925,6 +957,112 @@ class MaterialExamenGestionServiceTest {
 				.registrarAccesoSensible(any(), any(), any(), any(), any());
 
 		assertEquals("guardia.mp4", gestion.subirVideo(KB, B01, "guardia.mp4", cuerpoVideo(100)).fichero());
+	}
+
+	// ------------------------------------------------------------------ identidad de un fichero
+
+	private void dosVideosQueSoloDifierenEnMayusculas(Path bloque) throws IOException {
+		video(bloque, "01_mayuscula.mp4");
+		video(bloque, "02_minuscula.mp4");
+		lectura.nombres.put("01_mayuscula.mp4", "A.mp4");
+		lectura.nombres.put("02_minuscula.mp4", "a.mp4");
+	}
+
+	@Test
+	void identidad_laExactaPrimero_sinExactaUnaSola_yVarias409() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		dosVideosQueSoloDifierenEnMayusculas(legada);
+		video(legada, "Saludo.mp4");
+		pdf(legada.resolve("documentacion").resolve("01_mayuscula.pdf"));
+		pdf(legada.resolve("documentacion").resolve("02_minuscula.pdf"));
+		pdf(legada.resolve("documentacion").resolve("Guia.pdf"));
+		lectura.nombres.put("01_mayuscula.pdf", "G.pdf");
+		lectura.nombres.put("02_minuscula.pdf", "g.pdf");
+
+		assertEquals("02_minuscula.mp4", gestion.video(TKD, B01, "a.mp4").getFileName());
+		assertEquals("01_mayuscula.mp4", gestion.video(TKD, B01, "A.mp4").getFileName());
+		assertEquals("Saludo.mp4", gestion.video(TKD, B01, "saludo.MP4").getFileName());
+		assertEquals(HttpStatus.CONFLICT, estadoDe(() -> gestion.video(TKD, B01, "A.MP4")));
+		assertEquals("02_minuscula.pdf", gestion.documento(TKD, B01, "g.pdf").getFileName());
+		assertEquals("01_mayuscula.pdf", gestion.documento(TKD, B01, "G.pdf").getFileName());
+		assertEquals("Guia.pdf", gestion.documento(TKD, B01, "guia.PDF").getFileName());
+		assertEquals(HttpStatus.CONFLICT, estadoDe(() -> gestion.documento(TKD, B01, "G.PDF")));
+	}
+
+	@Test
+	void nombresQueSoloDifierenEnMayusculas_ningunaEscrituraQueReescribaElIndiceTocaNada() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		dosVideosQueSoloDifierenEnMayusculas(legada);
+		pdf(legada.resolve("documentacion").resolve("guia.pdf"));
+		InputStream prohibido = new InputStream() {
+			@Override
+			public int read() {
+				throw new AssertionError("no se lee el cuerpo");
+			}
+		};
+		Map<String, org.junit.jupiter.api.function.Executable> escrituras = new LinkedHashMap<>();
+		escrituras.put("subir", () -> gestion.subirVideo(TKD, B01, "nuevo.mp4", new CuerpoCrudo(prohibido, 100, "video/mp4")));
+		escrituras.put("título", () -> gestion.cambiarTitulo(TKD, B01, "a.mp4", "Otro"));
+		escrituras.put("orden", () -> gestion.reordenarVideos(TKD, B01, List.of("a.mp4", "A.mp4")));
+		escrituras.put("eliminar", () -> gestion.eliminarVideo(TKD, B01, "a.mp4"));
+		escrituras.put("sustituir",
+				() -> gestion.sustituirVideo(TKD, B01, "a.mp4", new CuerpoCrudo(prohibido, 100, "video/mp4")));
+		escrituras.put("temario", () -> gestion.subirTemario(TKD, B01, new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("documento",
+				() -> gestion.subirDocumento(TKD, B01, "a.pdf", new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("sustituir documento",
+				() -> gestion.sustituirDocumento(TKD, B01, "guia.pdf", new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("eliminar documento", () -> gestion.eliminarDocumento(TKD, B01, "guia.pdf"));
+
+		for (Map.Entry<String, org.junit.jupiter.api.function.Executable> escritura : escrituras.entrySet()) {
+			assertEquals(HttpStatus.CONFLICT, estadoDe(escritura.getValue()), escritura.getKey());
+		}
+
+		assertEquals(Set.of("01_mayuscula.mp4", "02_minuscula.mp4"), nombres(legada.resolve("videos")));
+		assertEquals(Set.of("guia.pdf"), nombres(legada.resolve("documentacion")));
+		assertFalse(Files.exists(legada.resolve("index.json")));
+		assertFalse(Files.exists(raiz.resolve("org-1")), "ni siquiera se adopta");
+		verify(auditoria, never()).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void sustituirConIndice_noLoReescribeYActuaSobreElExacto() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		dosVideosQueSoloDifierenEnMayusculas(legada);
+		Files.writeString(legada.resolve("index.json"), "{\"videos\":[]}");
+
+		gestion.sustituirVideo(TKD, B01, "a.mp4", cuerpoVideo(777));
+
+		Path videos = propia(1L, "taekwondo", B01).resolve("videos");
+		assertEquals(777L, Files.size(videos.resolve("02_minuscula.mp4")));
+		assertEquals(32L, Files.size(videos.resolve("01_mayuscula.mp4")));
+	}
+
+	@Test
+	void eliminarUnDocumento_borraElExacto() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		pdf(legada.resolve("documentacion").resolve("01_mayuscula.pdf"));
+		pdf(legada.resolve("documentacion").resolve("02_minuscula.pdf"));
+		lectura.nombres.put("01_mayuscula.pdf", "G.pdf");
+		lectura.nombres.put("02_minuscula.pdf", "g.pdf");
+
+		gestion.eliminarDocumento(TKD, B01, "g.pdf");
+
+		assertEquals(Set.of("01_mayuscula.pdf"), nombres(propia(1L, "taekwondo", B01).resolve("documentacion")));
+	}
+
+	/** Solo corre en un disco que distinga mayúsculas: el de producción y el de la CI, no NTFS. */
+	@Test
+	void conDosFicherosDeVerdad_borrarResponde409YNoBorraNinguno() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "A.mp4");
+		assumeTrue(Files.notExists(legada.resolve("videos").resolve("a.mp4")), "el disco no distingue mayúsculas");
+		video(legada, "a.mp4");
+
+		assertEquals(HttpStatus.CONFLICT, estadoDe(() -> gestion.eliminarVideo(TKD, B01, "a.mp4")));
+
+		assertEquals(Set.of("A.mp4", "a.mp4"), nombres(legada.resolve("videos")));
+		assertFalse(Files.exists(legada.resolve("index.json")));
 	}
 
 	// ------------------------------------------------------------------ apoyo
