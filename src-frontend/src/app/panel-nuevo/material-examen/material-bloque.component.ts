@@ -576,15 +576,16 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
     }
     this.escribir(this.api.eliminarVideo(this.disciplina, this.bloqueId, v.fichero), 'No se pudo eliminar el vídeo.', () => {
       this.avisos.exito('Vídeo eliminado.');
-      this.enfocarTrasEliminar(indice);
+      this.enfocarTrasEliminar('.vid', indice, '.material__anadir-videos');
     });
   }
 
-  private enfocarTrasEliminar(indice: number): void {
+  /** El disparador desapareció con su fila: el foco pasa a la que ocupa su lugar o, sin filas, a `sinFilas`. */
+  private enfocarTrasEliminar(selectorFila: string, indice: number, sinFilas: string): void {
     this.cdr.detectChanges();
-    const filas = this.host.nativeElement.querySelectorAll<HTMLElement>('.vid');
+    const filas = this.host.nativeElement.querySelectorAll<HTMLElement>(selectorFila);
     const fila = filas[Math.min(indice, filas.length - 1)];
-    (fila?.querySelector<HTMLElement>('.menu__boton') ?? this.host.nativeElement.querySelector<HTMLElement>('.material__anadir-videos'))?.focus();
+    (fila?.querySelector<HTMLElement>('.menu__boton') ?? this.host.nativeElement.querySelector<HTMLElement>(sinFilas))?.focus();
   }
 
   /** Una escritura que devuelve el detalle: lo aplica, o enseña el mensaje de la API. */
@@ -791,9 +792,11 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       nombre: 'eliminar-documento',
     });
     if (r.confirmado && !this.destruido) {
-      this.escribir(this.api.eliminarDocumento(this.disciplina, this.bloqueId, d.fichero), 'No se pudo eliminar el documento.', () =>
-        this.avisos.exito('Documento eliminado.')
-      );
+      const indice = this.detalle?.documentos.findIndex((documento) => documento.fichero === d.fichero) ?? 0;
+      this.escribir(this.api.eliminarDocumento(this.disciplina, this.bloqueId, d.fichero), 'No se pudo eliminar el documento.', () => {
+        this.avisos.exito('Documento eliminado.');
+        this.enfocarTrasEliminar('.docs .fich', indice, '.material__seccion--documentos .drop button');
+      });
     }
   }
 }

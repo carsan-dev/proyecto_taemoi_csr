@@ -12,7 +12,7 @@ import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { MaterialBloqueComponent } from './material-bloque.component';
 import { CLIENTE_SUBIDAS } from './material-examen-api.service';
-import { DetalleBloque, VideoDetalle } from './material-examen.models';
+import { DetalleBloque, DocumentoDetalle, VideoDetalle } from './material-examen.models';
 
 const API = `${environment.apiUrl}/material-examen/TAEKWONDO/b01`;
 const MB = 1024 * 1024;
@@ -711,6 +711,40 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       await esperar();
       expect(confirmar.calls.mostRecent().args[0].mensaje).toBe('Las familias dejarán de verlo. No se puede deshacer.');
       http.expectOne(`${API}/documentacion/normas.pdf`).flush(detalle({ documentos: [] }));
+    });
+  });
+
+  describe('foco al eliminar un documento', () => {
+    const doc = (fichero: string): DocumentoDetalle => ({ fichero, titulo: fichero, mime: 'application/pdf', bytes: 10, fecha: '2026-09-12T10:00:00Z' });
+    const menus = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('.docs .menu__boton'));
+
+    async function eliminar(indice: number, restantes: DocumentoDetalle[], fichero: string): Promise<void> {
+      document.body.appendChild(fixture.nativeElement);
+      abrirMenu(el().querySelectorAll<HTMLElement>('.docs .fich')[indice]);
+      opcion('Eliminar').click();
+      await esperar();
+      http.expectOne(`${API}/documentacion/${fichero}`).flush(detalle({ documentos: restantes }));
+      pintar();
+    }
+
+    afterEach(() => (fixture.nativeElement as HTMLElement).remove());
+
+    it('pasa al documento siguiente', async () => {
+      cargar(detalle({ documentos: [doc('uno.pdf'), doc('dos.pdf'), doc('tres.pdf')] }));
+      await eliminar(0, [doc('dos.pdf'), doc('tres.pdf')], 'uno.pdf');
+      expect(document.activeElement).toBe(menus()[0]);
+    });
+
+    it('sin siguiente, pasa al que queda antes', async () => {
+      cargar(detalle({ documentos: [doc('uno.pdf'), doc('dos.pdf')] }));
+      await eliminar(1, [doc('uno.pdf')], 'dos.pdf');
+      expect(document.activeElement).toBe(menus()[0]);
+    });
+
+    it('si no queda ninguno, pasa a «Añadir documento»', async () => {
+      cargar();
+      await eliminar(0, [], 'normas.pdf');
+      expect(document.activeElement).toBe(boton(el(), 'Añadir documento'));
     });
   });
 
