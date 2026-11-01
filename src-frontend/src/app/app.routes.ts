@@ -246,6 +246,7 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
     loadComponent: () => import('./panel-nuevo/ficha/ficha-alumno.component').then(m => m.FichaAlumnoComponent),
     canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
     resolve: CATALOGO_RESOLVE,
   },
   {

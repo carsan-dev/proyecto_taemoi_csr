@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, Input } from '@angular/core';
 
+import { FichaSaludComponent } from '../salud/ficha-salud.component';
 import { fecha } from '../../formato/formato-es';
 import { fechaParaCampo } from '../ficha-vista';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
@@ -39,7 +40,7 @@ const CONTACTO: Campo[] = [
 @Component({
   selector: 'app-ficha-datos',
   standalone: true,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, FichaSaludComponent],
   templateUrl: './ficha-datos.component.html',
   styleUrls: ['./ficha-datos.component.scss'],
 })

@@ -70,6 +70,8 @@ describe('FichaAlumnoBase scroll continuity', () => {
 
     component.applyBasicInfoChanges();
 
+    const datos = endpoints.actualizarAlumno.calls.mostRecent().args[1] as FormData;
+    expect(Object.keys(JSON.parse(datos.get('alumnoEditado') as string))).not.toContain('tieneDiscapacidad');
     expect(pageScroll.captureSnapshot).toHaveBeenCalledOnceWith('alumno-informacion-personal');
     expect(component.cargarAlumno).toHaveBeenCalled();
     expect(pageScroll.restoreSnapshotAfterNextRender).toHaveBeenCalledOnceWith(snapshot, 'auto');

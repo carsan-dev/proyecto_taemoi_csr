@@ -1,4 +1,5 @@
 export interface AlumnoDTO {
+  alumnoEliminado?: boolean | null;
   grupos: any;
   id: number;
   nombre: string;

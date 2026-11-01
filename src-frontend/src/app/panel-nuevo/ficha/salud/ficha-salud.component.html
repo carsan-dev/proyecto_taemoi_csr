@@ -1,0 +1,90 @@
+@if (!anonimizado) {
+<section class="salud" aria-labelledby="salud-titulo">
+  <header class="cabecera">
+    <div><h2 id="salud-titulo">Salud</h2><p class="sec">Tu consulta queda registrada.</p></div>
+    @if (!editando) {
+    <div class="acciones">
+      @if (salud && !sinDatos && !soloLectura) {<button type="button" class="texto" (click)="editar()">Editar</button>}
+      <button type="button" class="texto" [attr.aria-expanded]="saludAbierta" aria-controls="salud-contenido" (click)="conmutarSalud()">
+        {{ saludAbierta ? 'Ocultar salud' : 'Ver salud' }}
+        <svg class="flecha" [class.abierta]="saludAbierta" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+      </button>
+    </div>
+    }
+  </header>
+  <div id="salud-contenido" [hidden]="!saludAbierta" [attr.aria-busy]="cargando || guardando">
+    @if (saludAbierta) {
+      @let f = formulario;
+      @let s = salud;
+      @if (cargando) {<p role="status">Cargando…</p>}
+      @else if (editando && f) {
+        <fieldset class="col" [disabled]="guardando">
+          <legend class="oculto">Datos de salud</legend>
+          @for (pregunta of preguntas; track pregunta.campo) {
+          <div class="campo">
+            <span class="lbl" [id]="'salud-' + pregunta.campo + '-titulo'">{{ pregunta.texto }}</span>
+            <div class="seg" role="radiogroup" [attr.aria-labelledby]="'salud-' + pregunta.campo + '-titulo'">
+              <input class="radio" type="radio" [name]="'salud-' + pregunta.campo" [id]="'salud-' + pregunta.campo + '-si'"
+                [value]="true" [(ngModel)]="f[pregunta.campo]" />
+              <label [for]="'salud-' + pregunta.campo + '-si'">Sí</label>
+              <input class="radio" type="radio" [name]="'salud-' + pregunta.campo" [id]="'salud-' + pregunta.campo + '-no'"
+                [value]="false" [(ngModel)]="f[pregunta.campo]" />
+              <label [for]="'salud-' + pregunta.campo + '-no'">No</label>
+            </div>
+          </div>
+          @if (pregunta.campo === 'tieneDiscapacidad') {
+            @if (f.tieneDiscapacidad === true) {
+            <pn-selector-discapacidad id="ficha-discapacidad" [(tipos)]="f.discapacidadTipos" [(otra)]="f.discapacidadOtra"
+              [deshabilitado]="guardando" [error]="intentado && otraVacia" />
+            } @else if (f.tieneDiscapacidad === false && salud && salud.discapacidadTipos.length) {
+            <p class="sec">Al guardar se borrarán los tipos marcados.</p>
+            }
+          }
+          @if (pregunta.campo === 'lesionEnfermedad' && f.lesionEnfermedad === true) {
+          <div class="campo">
+            <label class="lbl" for="salud-descripcion">Describe cuál <span>opcional</span></label>
+            <textarea class="ta" id="salud-descripcion" maxlength="4000" [(ngModel)]="f.descripcion" aria-describedby="salud-descripcion-contador"></textarea>
+            <div class="bajo" id="salud-descripcion-contador">{{ f.descripcion?.length || 0 }} / 4000</div>
+          </div>
+          }
+          @if (pregunta.campo === 'impideActividad' && f.impideActividad === true) {
+          <div class="campo">
+            <label class="lbl" for="salud-impide">Qué le impide <span>opcional</span></label>
+            <textarea class="ta" id="salud-impide" maxlength="4000" [(ngModel)]="f.impideDetalle" aria-describedby="salud-impide-contador"></textarea>
+            <div class="bajo" id="salud-impide-contador">{{ f.impideDetalle?.length || 0 }} / 4000</div>
+          </div>
+          }
+          }
+          <div class="campo">
+            <label class="lbl" for="salud-alergias">Alergias <span>opcional</span></label>
+            <textarea class="ta" id="salud-alergias" maxlength="4000" [(ngModel)]="f.alergias" aria-describedby="salud-alergias-contador"></textarea>
+            <div class="bajo" id="salud-alergias-contador">{{ f.alergias?.length || 0 }} / 4000</div>
+          </div>
+        </fieldset>
+        @if (!cambios) {<button type="button" class="texto" [disabled]="guardando" (click)="descartarEdicion()">Descartar</button>}
+      } @else if (error) {
+        <pn-bloque-error titulo="No se han podido leer los datos de salud." [texto]="error" (reintentar)="pedirSalud()" />
+      } @else if (sinDatos) {
+        <p>Sin datos de salud registrados.</p>
+        @if (!soloLectura) {<button type="button" class="anadir" (click)="editar()">Añadir datos de salud</button>}
+      } @else if (s) {
+        <dl class="lista">
+          <div><dt>Tipo de discapacidad</dt><dd>
+            @if (s.tieneDiscapacidad === true && tiposLectura.length) {
+              <span class="pastillas">@for (tipo of tiposLectura; track tipo) {<span class="pas">{{ etiquetas[tipo] }}</span>}</span>
+              @if (s.discapacidadTipos.includes('OTRA') && s.discapacidadOtra) {<span class="detalle">{{ s.discapacidadOtra }}</span>}
+            } @else {<span>{{ s.tieneDiscapacidad === false ? 'No aplica' : 'Sin indicar' }}</span>}
+          </dd></div>
+          <div><dt>Lesión o enfermedad</dt><dd>{{ respuesta(s.lesionEnfermedad) }}
+            @if (s.lesionEnfermedad && s.descripcion) {<span class="detalle">{{ s.descripcion }}</span>}
+          </dd></div>
+          <div><dt>Le impide alguna actividad</dt><dd>{{ respuesta(s.impideActividad) }}
+            @if (s.impideActividad && s.impideDetalle) {<span class="detalle">{{ s.impideDetalle }}</span>}
+          </dd></div>
+          <div><dt>Alergias</dt><dd>{{ s.alergias || 'Ninguna indicada' }}</dd></div>
+        </dl>
+      }
+    }
+  </div>
+</section>
+}

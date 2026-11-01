@@ -73,6 +73,12 @@ describe('alta-alumno-vista (8b-3l)', () => {
     };
   }
 
+  it('el cuerpo auditable del POST excluye siempre tipos y texto de salud', () => {
+    const cuerpo = cuerpoAlta(crudo({ tieneDiscapacidad: true, discapacidadTipos: ['OTRA'], discapacidadOtra: 'Dato ficticio' }), reglas, false);
+    expect('discapacidadTipos' in cuerpo).toBeFalse(); expect('discapacidadOtra' in cuerpo).toBeFalse();
+    expect(cuerpo['tieneDiscapacidad']).toBeTrue();
+  });
+
   it('mensajes de hoy de los datos personales y del deporte, y el error del servidor', () => {
     expect(mensajesPersona('nombre', { required: true })).toEqual(['El nombre del alumno es obligatorio']);
     expect(mensajesPersona('telefono', { required: true, pattern: true, maxlength: true })).toEqual([

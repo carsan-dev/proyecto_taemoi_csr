@@ -260,6 +260,8 @@ export function cuerpoAlta(crudo: Record<string, any>, reglas: ReglasCuerpo, ped
   const datos: Record<string, any> = { ...crudo };
   const sede = datos['sede'];
   delete datos['sede'];
+  delete datos['discapacidadTipos'];
+  delete datos['discapacidadOtra'];
   const nif = typeof datos['nif'] === 'string' ? datos['nif'].trim().toUpperCase() : '';
   datos['nif'] = nif === '' ? null : nif;
   const responsableNif =

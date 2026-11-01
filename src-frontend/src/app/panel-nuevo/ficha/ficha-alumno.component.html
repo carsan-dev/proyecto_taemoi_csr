@@ -269,10 +269,13 @@
       }
     </div>
 
-    @if (editingBasicInfo && hasPendingBasicInfoChanges()) {
-    <div class="ficha__guardar" role="region" aria-label="Cambios sin guardar" [class.ficha__guardar--errores]="hasBasicInfoErrors()">
+    @if (bloqueSalud?.cambios || (editingBasicInfo && hasPendingBasicInfoChanges())) {
+    @let salud = bloqueSalud;
+    <div class="ficha__guardar" role="region" aria-label="Cambios sin guardar" [class.ficha__guardar--errores]="!salud?.cambios && hasBasicInfoErrors()">
       <p class="ficha__guardar-texto" aria-live="polite">
-        @if (hasBasicInfoErrors()) {
+        @if (salud?.cambios) {
+        {{ salud!.cambios }} {{ salud!.cambios === 1 ? 'cambio sin guardar' : 'cambios sin guardar' }}
+        } @else if (hasBasicInfoErrors()) {
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         Corrige los errores antes de guardar
         } @else {
@@ -281,8 +284,13 @@
         }
       </p>
       <div class="ficha__guardar-botones">
+        @if (salud?.cambios) {
+        <button type="button" class="ficha__boton-secundario" [disabled]="salud!.guardando" (click)="salud!.descartarEdicion()">Descartar</button>
+        <button type="button" class="ficha__boton-primario" [disabled]="salud!.guardando" (click)="salud!.guardar()">Guardar</button>
+        } @else {
         <button type="button" class="ficha__boton-secundario" (click)="cancelBasicInfoChanges()">Cancelar</button>
         <button type="button" class="ficha__boton-primario" [disabled]="hasBasicInfoErrors() || sinEmailParaGuardar" (click)="applyBasicInfoChanges()">Guardar cambios</button>
+        }
       </div>
     </div>
     }

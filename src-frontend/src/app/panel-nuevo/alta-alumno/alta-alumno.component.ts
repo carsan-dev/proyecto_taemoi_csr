@@ -3,6 +3,9 @@ import { AbstractControl, FormArray, FormBuilder, FormGroup, ReactiveFormsModule
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
+import type { TipoDiscapacidad } from '../../interfaces/tipo-discapacidad';
+import { SelectorDiscapacidadComponent } from '../salud/selector-discapacidad.component';
+import { SaludAlumnoService } from '../salud/salud-alumno.service';
 import { SearchableSelectDirective } from '../../directives/searchable-select.directive';
 import { RolFamiliar } from '../../enums/rol-familiar';
 import { cuantiaEstandar } from '../../features/catalogo/catalogo-reglas';
@@ -66,13 +69,14 @@ interface ErrorResumen {
 @Component({
   selector: 'app-alta-alumno',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, SearchableSelectDirective, AcentoEscuelaDirective, BotonOcupadoComponent],
+  imports: [SelectorDiscapacidadComponent, ReactiveFormsModule, RouterLink, SearchableSelectDirective, AcentoEscuelaDirective, BotonOcupadoComponent],
   templateUrl: './alta-alumno.component.html',
   styleUrls: ['./alta-alumno.component.scss'],
 })
 export class AltaAlumnoComponent implements OnInit, OnDestroy {
   readonly catalogo = inject(CatalogoService);
   private readonly api = inject(AltaAlumnoApiService);
+  private readonly saludApi = inject(SaludAlumnoService);
   private readonly permisos = inject(PermisosSesionService);
   private readonly router = inject(Router);
   private readonly avisos = inject(AvisosService);
@@ -112,6 +116,7 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
 
   private readonly suscripciones = new Subscription();
   private destruido = false;
+  private alumnoCreado = false;
 
   get deportes(): FormArray<FormGroup> {
     return this.form.get('deportesInicial') as FormArray<FormGroup>;
@@ -134,9 +139,16 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
       rolFamiliar: [{ value: RolFamiliar.NINGUNO, disabled: true }],
       grupoFamiliar: [{ value: '', disabled: true }],
       tieneDiscapacidad: [false],
+      discapacidadTipos: [[] as TipoDiscapacidad[]],
+      discapacidadOtra: ['', Validators.maxLength(4000)],
       deportesInicial: this.fb.array([this.nuevoDeporte()], Validators.required),
     });
 
+    this.suscripciones.add(this.form.get('tieneDiscapacidad')!.valueChanges.subscribe(activa => {
+      if (!activa) this.form.patchValue({ discapacidadTipos: [], discapacidadOtra: '' });
+      this.validarDiscapacidad();
+    }));
+    this.suscripciones.add(this.form.get('discapacidadTipos')!.valueChanges.subscribe(() => this.validarDiscapacidad()));
     this.suscripciones.add(
       this.form.get('fechaNacimiento')!.valueChanges.subscribe((valor: string) => {
         if (valor) {
@@ -422,6 +434,21 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
     c.markAsDirty();
   }
 
+  cambiarTipos(tipos: TipoDiscapacidad[]): void {
+    this.form.get('discapacidadTipos')!.setValue(tipos);
+    this.form.markAsDirty();
+  }
+  cambiarOtra(texto: string): void {
+    this.form.get('discapacidadOtra')!.setValue(texto);
+    this.form.markAsDirty();
+  }
+  private validarDiscapacidad(): void {
+    const otra = this.form.get('discapacidadOtra')!;
+    const obligatoria = this.valor('tieneDiscapacidad') && this.valor('discapacidadTipos').includes('OTRA');
+    otra.setValidators([Validators.maxLength(4000), ...(obligatoria ? [Validators.required, Validators.pattern(/\S/)] : [])]);
+    otra.updateValueAndValidity({ emitEvent: false });
+  }
+
   private actualizarCategoriasPorEdad(): void {
     this.deportes.controls.forEach((d) => {
       const categoria = d.get('categoria')!;
@@ -524,6 +551,9 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
         }
       }
     });
+    if (this.form.get('discapacidadOtra')?.invalid) {
+      lista.push({ id: 'alta-discapacidad-otra', etiqueta: 'Tipo de discapacidad', mensaje: 'Indica cuál es la discapacidad.' });
+    }
     return lista;
   }
 
@@ -638,7 +668,7 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
 
   /** Con errores no envía: el resumen «Faltan N datos» y los mensajes bajo cada campo (decisión 285). */
   darDeAlta(): void {
-    if (this.enviando) {
+    if (this.enviando || this.alumnoCreado) {
       return;
     }
     if (this.form.invalid) {
@@ -662,16 +692,26 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
       },
       this.pedirSede
     );
+    const tipos: TipoDiscapacidad[] = this.valor('tieneDiscapacidad') ? [...this.valor('discapacidadTipos')] : [];
+    const otra: string | null = tipos.includes('OTRA') ? this.valor('discapacidadOtra').trim() : null;
     this.enviando = true;
     this.api.crear(cuerpo, this.imagen).subscribe({
       next: (respuesta) => {
-        this.enviando = false;
-        const n = cuerpo['deportesInicial']?.length || 0;
-        this.avisos.exito(`Alumno creado con ${n} deporte(s)`, undefined, { mascota: 'celebrar' });
-        this.form.markAsPristine();
-        if (!this.destruido) {
-          void this.router.navigate(respuesta?.id ? ['/alumnosEditar', respuesta.id] : ['/alumnosListar']);
-        }
+        this.alumnoCreado = true;
+        const finalizar = (fallo: boolean): void => {
+          this.enviando = false;
+          this.form.markAsPristine();
+          if (fallo) this.avisos.info('Alumno creado. No se guardó el tipo de discapacidad: añádelo en su ficha, en Salud.');
+          else this.avisos.exito(`Alumno creado con ${cuerpo['deportesInicial']?.length || 0} deporte(s)`, undefined, { mascota: 'celebrar' });
+          if (!this.destruido) void this.router.navigate(respuesta?.id ? ['/alumnosEditar', respuesta.id] : ['/alumnosListar']);
+        };
+        if (!tipos.length) { finalizar(false); return; }
+        if (!respuesta?.id) { finalizar(true); return; }
+        this.saludApi.guardar(respuesta.id, {
+          tieneDiscapacidad: true, discapacidadTipos: tipos,
+          discapacidadOtra: otra, origen: null,
+          lesionEnfermedad: null, descripcion: null, impideActividad: null, impideDetalle: null, alergias: null,
+        }).subscribe({ next: () => finalizar(false), error: () => finalizar(true) });
       },
       error: (error) => {
         this.enviando = false;

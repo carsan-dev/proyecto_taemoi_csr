@@ -172,7 +172,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
     telefono2?: string;
     responsableLegalNombre?: string;
     responsableLegalNif?: string;
-    tieneDiscapacidad?: boolean;
     autorizacionWeb?: boolean;
     fechaBaja?: string;
     observaciones?: string;
@@ -271,7 +270,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
         autorizacionWeb: [true, Validators.required],
         grado: [''], // DEPRECATED: No longer required - managed via tabs
         aptoParaExamen: [false], // DEPRECATED: No longer required - managed via tabs
-        tieneDiscapacidad: [false],
         observaciones: [''],
       }
     );
@@ -976,7 +974,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
       fechaNacimiento,
       fechaBaja,
       autorizacionWeb: alumno.autorizacionWeb,
-      tieneDiscapacidad: alumno.tieneDiscapacidad,
       observaciones: alumno.observaciones ?? '',
     });
 
@@ -1018,7 +1015,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
    */
   actualizarAlumno(id: number) {
     const formData = new FormData();
-    const alumnoEditado = { ...this.alumnoForm.value };
+    const { tieneDiscapacidad: _discapacidad, ...alumnoEditado } = this.alumnoForm.value;
     const nifNormalizado =
       typeof alumnoEditado.nif === 'string' ? alumnoEditado.nif.trim().toUpperCase() : alumnoEditado.nif;
     alumnoEditado.nif = nifNormalizado === '' ? null : nifNormalizado;
@@ -1574,7 +1571,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
       fechaAltaInicial: this.alumno.fechaAltaInicial ? formatDate(this.alumno.fechaAltaInicial) : null,
       fechaBaja: this.alumno.fechaBaja ? formatDate(this.alumno.fechaBaja) : null,
       autorizacionWeb: this.alumno.autorizacionWeb,
-      tieneDiscapacidad: this.alumno.tieneDiscapacidad,
     };
   }
 
@@ -4579,6 +4575,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
    * Handle change for basic info fields
    */
   onBasicInfoChange(field: string, event: Event): void {
+    if (field === 'tieneDiscapacidad') return;
     const target = event.target as HTMLInputElement;
     let value: any;
 
@@ -4927,7 +4924,6 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
       telefono2: telefono2Int,
       responsableLegalNombre: this.pendingBasicInfoChanges.responsableLegalNombre ?? this.alumno.responsableLegalNombre,
       responsableLegalNif: (this.pendingBasicInfoChanges.responsableLegalNif ?? this.alumno.responsableLegalNif)?.trim().toUpperCase() || null,
-      tieneDiscapacidad: this.pendingBasicInfoChanges.tieneDiscapacidad ?? this.alumno.tieneDiscapacidad,
       autorizacionWeb: this.pendingBasicInfoChanges.autorizacionWeb ?? this.alumno.autorizacionWeb,
       fechaBaja: fechaBaja,
       observaciones: this.pendingBasicInfoChanges.observaciones ?? this.alumno.observaciones,

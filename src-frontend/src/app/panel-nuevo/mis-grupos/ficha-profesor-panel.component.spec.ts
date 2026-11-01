@@ -35,6 +35,7 @@ function ficha(deportes: DeporteDelAlumno[] = [deporte()]): FichaAlumnoProfesor 
 }
 
 const SALUD: SaludAlumno = {
+  tieneDiscapacidad: null, discapacidadTipos: [], discapacidadOtra: null,
   alumnoId: 3, registrado: true, lesionEnfermedad: true, descripcion: 'Asma leve', impideActividad: false, impideDetalle: null, alergias: null,
 };
 
@@ -396,6 +397,27 @@ describe('FichaProfesorPanelComponent', () => {
     fixture.detectChanges();
     expect(profesor.ficha).toHaveBeenCalledWith(6);
   });
+
+  it('Discapacidad es la primera fila: Sí, tipos y Otra; sin registro no oculta discapacidad', () => {
+    crear();
+    profesor.salud.and.returnValue(of({ ...SALUD, registrado: false, tieneDiscapacidad: true, discapacidadTipos: ['FISICA', 'OTRA'], discapacidadOtra: 'Detalle ficticio' }));
+    componente.conmutarSalud(); fixture.detectChanges();
+    const bloque = bloqueDe('Salud');
+    expect(bloque.querySelector('dt')!.textContent).toBe('Discapacidad');
+    expect(bloque.querySelector('dd')!.textContent).toContain('Sí');
+    expect(Array.from(bloque.querySelectorAll('.pas')).map(p => p.textContent!.trim())).toEqual(['Física', 'Otra']);
+    expect(bloque.textContent).toContain('Detalle ficticio');
+    expect(bloque.textContent).not.toContain('Sin datos de salud registrados.');
+    expect(bloque.textContent).not.toContain('Editar');
+  });
+
+  for (const valor of [false, null]) {
+    it('lee discapacidad ' + valor + ' sin inventar un Sí', () => {
+      crear(); profesor.salud.and.returnValue(of({ ...SALUD, tieneDiscapacidad: valor }));
+      componente.conmutarSalud(); fixture.detectChanges();
+      expect(bloqueDe('Salud').querySelector('dd')!.textContent!.trim()).toBe(valor === null ? 'Sin indicar' : 'No');
+    });
+  }
 
   describe('asistencia', () => {
     const celdas = () => Array.from(el().querySelectorAll('.ficha__dia'));

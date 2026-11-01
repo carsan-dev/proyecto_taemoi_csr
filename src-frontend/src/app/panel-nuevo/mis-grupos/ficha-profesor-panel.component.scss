@@ -504,3 +504,6 @@
   font-size: 0.75rem;
   color: var(--pn-tinta-2);
 }
+
+.salud-pastillas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.salud-pastillas .pas { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: var(--pn-radio-pastilla); font: var(--pn-etiqueta); color: var(--pn-tinta); background: var(--pn-marca-primario-suave); }
