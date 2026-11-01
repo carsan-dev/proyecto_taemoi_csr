@@ -11,10 +11,6 @@
       }
     </header>
     <ng-container *ngTemplateOutlet="campos; context: { $implicit: personales }"></ng-container>
-    <div class="datos__fila">
-      <span class="datos__etiqueta">Discapacidad</span>
-      <span class="datos__valor">{{ ficha.alumno.tieneDiscapacidad ? 'Sí' : 'No' }}</span>
-    </div>
   </section>
 
   <section class="datos__bloque" id="alumno-contacto" data-scroll-anchor="alumno-contacto" aria-labelledby="datos-contacto-titulo">

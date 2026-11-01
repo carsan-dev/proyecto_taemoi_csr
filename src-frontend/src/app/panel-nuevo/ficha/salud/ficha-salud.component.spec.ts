@@ -110,7 +110,7 @@ describe('FichaSaludComponent', () => {
     c.guardar(); fixture.detectChanges(); http.expectNone(URL);
     expect(el().textContent).toContain('Indica cuál es la discapacidad.');
   });
-  it('PUT exacto, sin metadatos de lectura; éxito actualiza discapacidad sin recargar', () => {
+  it('PUT exacto, sin metadatos de lectura; al terminar sale de la edición', () => {
     abrir(); c.editar(); c.formulario!.tieneDiscapacidad = false; c.guardar();
     const req = http.expectOne(URL);
     expect(req.request.method).toBe('PUT');
@@ -119,7 +119,7 @@ describe('FichaSaludComponent', () => {
     expect(c.guardando).toBeTrue();
     c.guardar(); http.expectNone(URL);
     req.flush({ ...DTO, tieneDiscapacidad: false, discapacidadTipos: [] });
-    expect(c.ficha.alumno.tieneDiscapacidad).toBeFalse(); expect(c.editando).toBeFalse();
+    expect(c.editando).toBeFalse();
     expect(avisos.exito).toHaveBeenCalledWith('Datos de salud guardados.'); http.expectNone(URL);
   });
   it('editar en la app no reenvía el origen anterior', () => {

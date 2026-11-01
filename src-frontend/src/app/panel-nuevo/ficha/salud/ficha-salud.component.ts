@@ -162,7 +162,6 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
         this.salud = salud;
         this.guardando = false;
         this.descartarEdicion();
-        if (this.ficha.alumno?.id === id) this.ficha.alumno.tieneDiscapacidad = salud.tieneDiscapacidad;
         this.avisos.exito('Datos de salud guardados.');
       },
       error: e => {
