@@ -157,8 +157,64 @@ describe('FichaSaludComponent', () => {
     expect(el().querySelector('pn-bloque-error')!.textContent).toContain('No se han podido leer los datos de salud.');
     c.pedirSalud(); http.expectOne(URL).flush(DTO); expect(c.error).toBeNull();
   });
-  it('destruir cancela la petición y borra el DTO y el formulario', () => {
-    c.conmutarSalud(); const req = http.expectOne(URL); c.ngOnDestroy();
+  it('destruir con el bloque abierto y el formulario poblado cancela lo que va en vuelo y borra el DTO y el formulario', () => {
+    const ficha = c.ficha; expect(ficha.bloqueSalud).toBe(c);
+    abrir(); c.editar(); c.formulario!.alergias = 'Otra'; c.guardar();
+    const req = http.expectOne(URL);
+    expect(c.salud).not.toBeNull(); expect(c.formulario).not.toBeNull(); expect(req.cancelled).toBeFalse();
+    fixture.destroy();
     expect(req.cancelled).toBeTrue(); expect(c.salud).toBeNull(); expect(c.formulario).toBeNull();
+    expect(ficha.bloqueSalud).toBeNull();
+  });
+  it('pasar a anonimizado con el bloque abierto cancela y borra los datos, y no deja cambios pendientes', () => {
+    abrir(); c.editar(); c.formulario!.alergias = 'Otra'; c.guardar();
+    const req = http.expectOne(URL);
+    fixture.componentRef.setInput('anonimizado', true); fixture.detectChanges();
+    expect(req.cancelled).toBeTrue(); expect(c.saludAbierta).toBeFalse(); expect(c.guardando).toBeFalse();
+    expect(c.salud).toBeNull(); expect(c.formulario).toBeNull(); expect(c.cambios).toBe(0);
+    expect(el().querySelector('section')).toBeNull();
+  });
+
+  describe('textos sin respuesta afirmativa (fichas importadas de papel)', () => {
+    const CUERPO = { tieneDiscapacidad: true, discapacidadTipos: ['FISICA'], discapacidadOtra: null, alergias: 'Otra' };
+    function guardarCuerpo(): unknown {
+      c.formulario!.alergias = 'Otra'; c.guardar();
+      const req = http.expectOne(URL), cuerpo = req.request.body;
+      req.flush(DTO);
+      return cuerpo;
+    }
+    for (const leido of [null, false]) {
+      const papel: SaludAlumno = { ...DTO, lesionEnfermedad: leido, descripcion: '  Texto de papel ', impideActividad: leido, impideDetalle: 'Detalle de papel' };
+      it(`con ${leido} sin cambiar envía el texto original tal cual y no cuenta cambios`, () => {
+        abrir(papel); c.editar(); expect(c.cambios).toBe(0);
+        expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: leido, descripcion: '  Texto de papel ', impideActividad: leido, impideDetalle: 'Detalle de papel' });
+      });
+      it(`de ${leido} a Sí envía el texto del formulario`, () => {
+        abrir(papel); c.editar();
+        c.formulario!.lesionEnfermedad = true; c.formulario!.impideActividad = true; c.formulario!.impideDetalle = ' Otro detalle ';
+        expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: true, descripcion: 'Texto de papel', impideActividad: true, impideDetalle: 'Otro detalle' });
+      });
+      it(`con ${leido}, marcar Sí, escribir y volver atrás conserva el texto original`, () => {
+        abrir(papel); c.editar();
+        c.formulario!.lesionEnfermedad = true; c.formulario!.descripcion = 'Escrito';
+        c.formulario!.lesionEnfermedad = leido;
+        expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: leido, descripcion: '  Texto de papel ', impideActividad: leido, impideDetalle: 'Detalle de papel' });
+      });
+    }
+    it('de sin indicar a No conserva el texto, que nadie ha visto ni pedido borrar', () => {
+      abrir({ ...DTO, lesionEnfermedad: null, descripcion: 'Texto de papel', impideActividad: null, impideDetalle: 'Detalle de papel' }); c.editar();
+      c.formulario!.lesionEnfermedad = false; c.formulario!.impideActividad = false;
+      expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: false, descripcion: 'Texto de papel', impideActividad: false, impideDetalle: 'Detalle de papel' });
+    });
+    for (const nuevo of [false, null]) {
+      it(`de Sí a ${nuevo} envía null`, () => {
+        abrir(); c.editar(); c.formulario!.lesionEnfermedad = nuevo; c.formulario!.impideActividad = nuevo;
+        expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: nuevo, descripcion: null, impideActividad: nuevo, impideDetalle: null });
+      });
+    }
+    it('con Sí envía el texto editado del formulario', () => {
+      abrir(); c.editar(); c.formulario!.descripcion = ' Otra descripción '; c.formulario!.impideDetalle = '   ';
+      expect(guardarCuerpo()).toEqual({ ...CUERPO, lesionEnfermedad: true, descripcion: 'Otra descripción', impideActividad: true, impideDetalle: null });
+    });
   });
 });

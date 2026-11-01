@@ -103,6 +103,8 @@ class CobrosEnVuelo extends Set<number> {
 export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnDestroy {
   bloqueSalud: FichaSaludComponent | null = null;
   private confirmandoSalidaSalud = false;
+  /** Última pestaña pedida por la dirección mientras se decide si se abandona Salud. */
+  private pestanaPorConfirmar: Pestana | null = null;
   private readonly confirmacionSalud = inject(ConfirmacionService);
   private readonly pendientesApi = inject(PendientesAlumnoService);
   private readonly cobros = inject(CobroCargoService);
@@ -168,7 +170,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       this.rutaActiva.queryParamMap.subscribe((parametros) => {
         const pedida = parametros.get('pestana');
         if (pedida !== null) {
-          this.pestana = PESTANAS.some((p) => p.clave === pedida) ? (pedida as Pestana) : 'deportes';
+          this.irAPestanaDeLaDireccion(PESTANAS.some((p) => p.clave === pedida) ? (pedida as Pestana) : 'deportes');
         }
       })
     );
@@ -616,6 +618,33 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       return null;
     }
     return `${texto}, ${plural(this.pendiente.cargos, 'cargo vencido', 'cargos vencidos')}`;
+  }
+
+  /**
+   * Atrás, Adelante o un enlace que solo cambia `?pestana=` no pasan por `canDeactivate` y cambiar de pestaña destruye
+   * el bloque de Salud: se decide aquí. Si no se abandona, la dirección vuelve a la pestaña en la que se sigue.
+   */
+  private irAPestanaDeLaDireccion(clave: Pestana): void {
+    if (this.pestanaPorConfirmar) {
+      this.pestanaPorConfirmar = clave;
+      return;
+    }
+    if (clave === this.pestana) return;
+    if (!this.bloqueSalud?.guardando && !this.bloqueSalud?.cambios) {
+      this.pestana = clave;
+      return;
+    }
+    this.pestanaPorConfirmar = clave;
+    void this.puedeSalir().then((salir) => {
+      const pedida = this.pestanaPorConfirmar!;
+      this.pestanaPorConfirmar = null;
+      if (this.destruida) return;
+      if (salir) {
+        this.pestana = pedida;
+        this.cdr.markForCheck();
+      }
+      this.escribirPestana();
+    });
   }
 
   /** La pestaña en la dirección (`?pestana=`), sin apilar historial; Deportes es la de por defecto y no se escribe. */

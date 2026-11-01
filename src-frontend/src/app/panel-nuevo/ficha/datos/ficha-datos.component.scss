@@ -99,10 +99,6 @@
   color: var(--pn-peligro);
 }
 
-.datos__interruptor {
-  @include b.interruptor;
-}
-
 @media (max-width: 1023.98px) {
   .datos {
     grid-template-columns: minmax(0, 1fr);

@@ -46,7 +46,9 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
   ] as const;
 
   ngOnInit(): void { this.ficha.bloqueSalud = this; }
-  ngOnChanges(cambios: SimpleChanges): void { if (cambios['alumnoId']) this.descartarSalud(); }
+  ngOnChanges(cambios: SimpleChanges): void {
+    if (cambios['alumnoId'] || (cambios['anonimizado'] && this.anonimizado)) this.descartarSalud();
+  }
   ngOnDestroy(): void {
     this.descartarSalud();
     if (this.ficha.bloqueSalud === this) this.ficha.bloqueSalud = null;
@@ -117,6 +119,14 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
     this.error = null;
   }
   private texto(v: string | null | undefined): string | null { return v?.trim() || null; }
+  /**
+   * Texto ligado a una respuesta. Las fichas importadas de papel pueden traer texto sin un «Sí»: el bloque no lo enseña,
+   * así que guardar otra cosa no debe borrarlo. Solo se borra al pasar de «Sí» a otra respuesta.
+   */
+  private textoLigado(respuesta: boolean | null, leida: boolean | null, escrito: string, leido: string | null): string | null {
+    if (respuesta === true) return this.texto(escrito);
+    return leida === true ? null : leido;
+  }
   get cambios(): number {
     const f = this.formulario, s = this.salud;
     if (!this.editando || !f || !s) return 0;
@@ -129,8 +139,8 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
       + Number(this.texto(f.alergias) !== this.texto(s.alergias));
   }
   guardar(): void {
-    const f = this.formulario;
-    if (!f || this.guardando || this.soloLectura || this.anonimizado || !this.cambios) return;
+    const f = this.formulario, s = this.salud;
+    if (!f || !s || this.guardando || this.soloLectura || this.anonimizado || !this.cambios) return;
     this.intentado = true;
     if (this.otraVacia) return;
     const cuerpo: GuardarSalud = {
@@ -138,9 +148,9 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
       discapacidadTipos: f.tieneDiscapacidad === true ? [...f.discapacidadTipos] : [],
       discapacidadOtra: f.tieneDiscapacidad === true && f.discapacidadTipos.includes('OTRA') ? this.texto(f.discapacidadOtra) : null,
       lesionEnfermedad: f.lesionEnfermedad,
-      descripcion: f.lesionEnfermedad === true ? this.texto(f.descripcion) : null,
+      descripcion: this.textoLigado(f.lesionEnfermedad, s.lesionEnfermedad, f.descripcion, s.descripcion),
       impideActividad: f.impideActividad,
-      impideDetalle: f.impideActividad === true ? this.texto(f.impideDetalle) : null,
+      impideDetalle: this.textoLigado(f.impideActividad, s.impideActividad, f.impideDetalle, s.impideDetalle),
       alergias: this.texto(f.alergias),
     };
     const id = this.alumnoId, revision = ++this.revision;

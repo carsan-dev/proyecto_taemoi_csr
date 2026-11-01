@@ -1015,7 +1015,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
    */
   actualizarAlumno(id: number) {
     const formData = new FormData();
-    const { tieneDiscapacidad: _discapacidad, ...alumnoEditado } = this.alumnoForm.value;
+    const alumnoEditado = { ...this.alumnoForm.value };
     const nifNormalizado =
       typeof alumnoEditado.nif === 'string' ? alumnoEditado.nif.trim().toUpperCase() : alumnoEditado.nif;
     alumnoEditado.nif = nifNormalizado === '' ? null : nifNormalizado;

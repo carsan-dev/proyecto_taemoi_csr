@@ -23,9 +23,7 @@
     </header>
     <ng-container *ngTemplateOutlet="campos; context: { $implicit: contacto }"></ng-container>
   </section>
-  @if (ficha.alumno.alumnoEliminado !== true) {
   <pn-ficha-salud [ficha]="ficha" [alumnoId]="ficha.alumnoId!" [anonimizado]="ficha.alumno.alumnoEliminado === true" [soloLectura]="ficha.fichaDeOtraSede" />
-  }
 </div>
 
 <ng-template #campos let-lista>
