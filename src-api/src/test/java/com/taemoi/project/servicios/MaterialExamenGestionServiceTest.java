@@ -1415,6 +1415,105 @@ class MaterialExamenGestionServiceTest {
 		assertEquals(500L, Files.size(propia(1L, "taekwondo", B01).resolve("videos").resolve("01_saludo.mp4")));
 	}
 
+	// ------------------------------------------------------------------ carpeta heredada vacía tras desplegar
+
+	/** Lo que recrea un {@code git reset --hard} en el servidor: el repositorio versiona estos {@code .gitkeep}. */
+	private Path esqueletoLegado(String disciplina, String carpeta) throws IOException {
+		Path legada = bloqueLegado(disciplina, carpeta);
+		for (String subcarpeta : List.of("temario", "videos", "documentacion")) {
+			Files.createDirectories(legada.resolve(subcarpeta));
+			Files.writeString(legada.resolve(subcarpeta).resolve(".gitkeep"), "");
+		}
+		return legada;
+	}
+
+	@Test
+	void esqueletoLegadoJuntoALaPropia_noEsConflicto_yNoSeToca() throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_guardia.mp4");
+		Path legada = esqueletoLegado(KB, B01);
+
+		assertEquals("Guardia", gestion.cambiarTitulo(KB, B01, "01_guardia.mp4", "Guardia").videos().get(0).titulo());
+		assertEquals("nuevo.mp4", gestion.subirVideo(KB, B01, "nuevo.mp4", cuerpoVideo(100)).fichero());
+
+		assertEquals(Set.of(".gitkeep"), nombres(legada.resolve("videos")));
+		assertEquals(Set.of(".gitkeep"), nombres(legada.resolve("temario")));
+		assertEquals(Set.of(".gitkeep"), nombres(legada.resolve("documentacion")));
+	}
+
+	@Test
+	void carpetaLegadaSoloConDirectoriosVaciosYOcultos_noCuentaComoLegada() throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_guardia.mp4");
+		Path legada = bloqueLegado(KB, B01);
+		Files.createDirectories(legada.resolve("videos").resolve("vacia"));
+		Files.writeString(legada.resolve(".DS_Store"), "x");
+
+		assertEquals(1, gestion.cambiarTitulo(KB, B01, "01_guardia.mp4", "Guardia").videos().size());
+
+		assertTrue(Files.isRegularFile(legada.resolve(".DS_Store")));
+	}
+
+	@Test
+	void sinPropiaYConEsqueleto_seCreaLaPropiaYNoSeMueveNada() throws Exception {
+		Path legada = esqueletoLegado(KB, B01);
+
+		gestion.subirVideo(KB, B01, "guardia.mp4", cuerpoVideo(100));
+
+		Path carpeta = propia(1L, "kickboxing", B01);
+		assertEquals(Set.of("guardia.mp4"), nombres(carpeta.resolve("videos")));
+		assertEquals(Set.of(), nombres(carpeta.resolve("temario")), "los .gitkeep no viajan");
+		assertEquals(Set.of(".gitkeep"), nombres(legada.resolve("videos")));
+		assertEquals(Set.of(".gitkeep"), nombres(legada.resolve("documentacion")));
+		verify(auditoria, times(1)).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void trasAdoptar_elEsqueletoRecreadoNoBloqueaLaSiguienteEscritura() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		alumno(80L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(80L, TKD);
+		gestion.cambiarTitulo(TKD, B01, "01_saludo.mp4", "saludo");
+		assertFalse(Files.exists(legada));
+
+		esqueletoLegado(TKD, B01);
+
+		assertEquals(antes, instantanea(80L, TKD));
+		assertEquals(1, gestion.cambiarTitulo(TKD, B01, "01_saludo.mp4", "saludo").videos().size());
+		assertEquals(antes, instantanea(80L, TKD));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "videos/01_legado.mp4", "temario/temario.pdf", "documentacion/subcarpeta/guia.pdf", "index.json",
+			"cualquier_cosa.txt" })
+	void unFicheroRealEnLaLegada_sigueSiendoConflicto(String fichero) throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_guardia.mp4");
+		Path legada = esqueletoLegado(KB, B01);
+		Files.createDirectories(legada.resolve(fichero).getParent());
+		Files.writeString(legada.resolve(fichero), "material real");
+
+		MaterialExamenException error = assertThrows(MaterialExamenException.class,
+				() -> gestion.cambiarTitulo(KB, B01, "01_guardia.mp4", "Guardia"));
+
+		assertEquals(HttpStatus.CONFLICT, error.getEstado());
+		assertTrue(error.getMessage().contains("dos carpetas"));
+		assertEquals("material real", Files.readString(legada.resolve(fichero)));
+		assertFalse(Files.exists(carpeta.resolve("index.json")));
+	}
+
+	@Test
+	void unFicheroRealEnLaLegadaSinPropia_seAdoptaLoDemasIncluido() throws Exception {
+		Path legada = esqueletoLegado(KB, B01);
+		video(legada, "01_guardia.mp4");
+
+		gestion.cambiarTitulo(KB, B01, "01_guardia.mp4", "Guardia");
+
+		assertFalse(Files.exists(legada));
+		assertEquals(Set.of(".gitkeep", "01_guardia.mp4"), nombres(propia(1L, "kickboxing", B01).resolve("videos")));
+	}
+
 	// ------------------------------------------------------------------ apoyo
 
 	/** Las nueve escrituras, con cuerpos que fallan si se leen: lo que se rechaza antes no recibe nada. */

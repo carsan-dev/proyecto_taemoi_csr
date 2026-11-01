@@ -454,7 +454,8 @@ public class MaterialExamenGestionService {
 	/**
 	 * Devuelve la carpeta propia del bloque, lista para escribir. Debe llamarse bajo el bloqueo. Si es la escuela por
 	 * defecto, no hay propia y sí heredada, crea solo los padres y mueve la heredada entera; un fallo deja el material donde
-	 * estaba. Con las dos carpetas no mezcla: la escritura falla.
+	 * estaba. Con las dos carpetas no mezcla: la escritura falla. Una heredada sin ningún fichero real no cuenta: es el
+	 * esqueleto de {@code .gitkeep} del repositorio, que un {@code git reset} puede recrear tras adoptar, y no se toca.
 	 */
 	private Path adoptar(BloqueDeCatalogo bloque) {
 		Path base = base();
@@ -463,7 +464,7 @@ public class MaterialExamenGestionService {
 			if (bloque.organizacion().equals(organizacionPorDefecto)) {
 				Path legada = CarpetasMaterial.legada(base, bloque.disciplina(), bloque.id());
 				boolean hayPropia = Files.isDirectory(propia);
-				boolean hayLegada = Files.isDirectory(legada);
+				boolean hayLegada = Files.isDirectory(legada) && CarpetasMaterial.tieneFicherosReales(legada);
 				if (hayPropia && hayLegada) {
 					logger.error("Material de examen con dos carpetas: organizacion={} disciplina={} bloque={}",
 							bloque.organizacion(), bloque.disciplina(), bloque.id());
