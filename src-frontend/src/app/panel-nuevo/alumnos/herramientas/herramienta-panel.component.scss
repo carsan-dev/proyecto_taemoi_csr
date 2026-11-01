@@ -185,3 +185,79 @@ fieldset > .herramienta__leyenda {
   padding: 10px;
   color: var(--pn-tinta-2);
 }
+
+// Interruptor «Marcar lo ya pasado» (mismo patrón que el de eventos): texto a la vista y pista; encendido, en el acento.
+.herramienta__interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover:not([aria-disabled='true']) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-disabled='true'] {
+    cursor: progress;
+  }
+}
+
+.herramienta__interruptor-texto {
+  min-width: 0;
+}
+
+.herramienta__pista {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.herramienta__bola {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--pn-tinta-2);
+  transition: transform var(--pn-transicion), background-color var(--pn-transicion);
+}
+
+[aria-checked='true'] > .herramienta__pista {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento);
+
+  .herramienta__bola {
+    background: var(--pn-superficie);
+    transform: translateX(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .herramienta__interruptor,
+  .herramienta__pista,
+  .herramienta__bola {
+    transition: none;
+  }
+}

@@ -88,6 +88,17 @@ describe('ProfesorService', () => {
     expect(hoja?.blob.size).toBe(4);
   });
 
+  it('la hoja de asistencia pide marcada=true solo si se pide marcada', () => {
+    servicio.hojaAsistencia(7, 2026, 10, true).subscribe();
+    const marcada = http.expectOne((r) => r.url === `${api}/grupos/7/asistencia`);
+    expect(marcada.request.params.get('marcada')).toBe('true');
+    marcada.flush(new Blob(['%PDF']));
+    servicio.hojaAsistencia(7, 2026, 10).subscribe();
+    const enBlanco = http.expectOne((r) => r.url === `${api}/grupos/7/asistencia`);
+    expect(enBlanco.request.params.has('marcada')).toBeFalse();
+    enBlanco.flush(new Blob(['%PDF']));
+  });
+
   it('sin Content-Disposition propone un nombre con grupo y mes', () => {
     expect(nombreDeContentDisposition(null, 'Asistencia-grupo-7-2026-03.pdf')).toBe('Asistencia-grupo-7-2026-03.pdf');
     expect(nombreDeContentDisposition("attachment; filename*=UTF-8''Hoja%20octubre.pdf", 'x.pdf')).toBe('Hoja octubre.pdf');

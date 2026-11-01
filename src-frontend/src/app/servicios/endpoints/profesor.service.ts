@@ -92,8 +92,11 @@ export class ProfesorService {
     return this.http.get<SaludAlumno>(`${this.api}/alumnos/${alumnoId}/salud`, this.opciones());
   }
 
-  hojaAsistencia(grupoId: number, year: number, month: number): Observable<HojaAsistencia> {
-    const params = new HttpParams().set('year', year).set('month', month);
+  hojaAsistencia(grupoId: number, year: number, month: number, marcada = false): Observable<HojaAsistencia> {
+    let params = new HttpParams().set('year', year).set('month', month);
+    if (marcada) {
+      params = params.set('marcada', 'true');
+    }
     const porDefecto = `Asistencia-grupo-${grupoId}-${year}-${String(month).padStart(2, '0')}.pdf`;
     return this.http
       .get(`${this.api}/grupos/${grupoId}/asistencia`, {

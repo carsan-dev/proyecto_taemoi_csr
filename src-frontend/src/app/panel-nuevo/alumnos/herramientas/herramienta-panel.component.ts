@@ -73,6 +73,8 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
   pdfPulsado: AccionInforme | null = null;
   /** Decisión 142: la hoja de asistencia de las clases de una sede; `null`, todas, como hoy. */
   sedeAsistencia: number | null = null;
+  /** La hoja sale con X (asistió) y – (faltó); apagado, en blanco. */
+  marcarAsistencia = true;
 
   get textos(): { titulo: string; descripcion: string } {
     return TITULOS[this.herramienta];
@@ -220,11 +222,9 @@ export class HerramientaPanelComponent extends HerramientasAlumnosComponent {
 
   // ------------------------------------------------------------------ avisos, confirmaciones y carga del panel nuevo
 
-  /** Sin sede, la petición de siempre. */
+  /** Siempre lleva la sede y si la hoja sale marcada; la pantalla antigua (el padre) sigue pidiéndola en blanco. */
   protected override solicitudAsistencia(year: number, month: number, grupo: string): Observable<Blob> {
-    return this.sedeAsistencia === null
-      ? super.solicitudAsistencia(year, month, grupo)
-      : this.endpoints.descargarAsistencia(year, month, grupo, undefined, this.sedeAsistencia);
+    return this.endpoints.descargarAsistencia(year, month, grupo, undefined, this.sedeAsistencia, this.marcarAsistencia);
   }
 
   protected override avisarExito(texto: string): void {
