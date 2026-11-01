@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.archivos.CarpetasMaterial;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
@@ -203,6 +204,40 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return crearArchivo(match.get().path(), null);
 	}
 
+	@Override
+	public BloqueEnDisco leerBloque(String disciplina, String bloqueId) {
+		Path carpeta = obtenerCarpetaBloque(disciplina, bloqueId);
+		if (!Files.isDirectory(carpeta)) {
+			return new BloqueEnDisco(carpeta, null, List.of(), List.of());
+		}
+		return new BloqueEnDisco(
+				carpeta,
+				resolverTemario(carpeta.resolve("temario")),
+				resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json")).stream()
+						.map(video -> new VideoEnDisco(video.fileName(), video.title(), video.order(), video.path()))
+						.toList(),
+				resolverDocumentacion(carpeta.resolve("documentacion")).stream()
+						.map(documento -> new DocumentoEnDisco(documento.fileName(), documento.title(),
+								documento.mimeType(), documento.path()))
+						.toList());
+	}
+
+	@Override
+	public MaterialExamenArchivo describirArchivo(Path ruta, String mimeForzado) {
+		return crearArchivo(ruta, mimeForzado);
+	}
+
+	@Override
+	public String tituloDesdeArchivo(String fichero) {
+		return generarTituloDesdeArchivo(fichero);
+	}
+
+	@Override
+	public boolean esVideoTaegukOPumse(String fichero, String titulo) {
+		String nombre = ((fichero != null ? fichero : "") + " " + (titulo != null ? titulo : "")).toUpperCase(Locale.ROOT);
+		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
+	}
+
 	private MaterialContext resolverContexto(Long alumnoId, String deporte) {
 		if (alumnoId == null || alumnoId <= 0) {
 			throw new IllegalArgumentException("El alumnoId es obligatorio");
@@ -297,7 +332,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			}
 
 			List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
-					.filter(this::esVideoTaegukOPumse)
+					.filter(video -> esVideoTaegukOPumse(video.fileName(), video.title()))
 					.map(video -> new VideoFileEntry(
 							video.fileName(),
 							video.title(),
@@ -325,13 +360,6 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 						+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
 	}
 
-	private boolean esVideoTaegukOPumse(VideoFileEntry video) {
-		String fileName = video.fileName() != null ? video.fileName() : "";
-		String title = video.title() != null ? video.title() : "";
-		String nombre = (fileName + " " + title).toUpperCase(Locale.ROOT);
-		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
-	}
-
 	/** Nombre del grado en el catálogo (D3); sin nombre, el código con guiones, como antes. */
 	private String nombreGrado(VideoGroupEntry grupo) {
 		return grupo.nombre() != null ? grupo.nombre() : grupo.grado().replace('_', '-');
@@ -340,27 +368,16 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	/**
 	 * Carpeta del bloque de la escuela activa: {@code org-<id>/materiales/<deporte>/<bloque>}. Solo la
 	 * escuela por defecto recurre a la carpeta heredada {@code Materiales_Examen/<deporte>/<bloque>}
-	 * cuando la suya no existe; otra escuela nunca lee material ajeno.
+	 * cuando la suya no existe; otra escuela nunca lee material ajeno. Leer nunca crea ni mueve carpetas.
 	 */
 	private Path obtenerCarpetaBloque(String deporte, String bloqueId) {
 		Long organizacion = RutasArchivos.organizacionActiva();
 		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
-		String deporteDir = deporte.toLowerCase(Locale.ROOT);
-		Path propia = base.resolve(RutasArchivos.carpetaOrganizacion(organizacion))
-				.resolve(RutasArchivos.CARPETA_MATERIALES)
-				.resolve(deporteDir)
-				.resolve(bloqueId)
-				.normalize();
-		if (!propia.startsWith(base)) {
-			throw new IllegalArgumentException("Bloque de material fuera del directorio permitido");
-		}
+		Path propia = CarpetasMaterial.propia(base, organizacion, deporte, bloqueId);
 		if (Files.isDirectory(propia) || !organizacion.equals(organizacionPorDefecto)) {
 			return propia;
 		}
-		return base.resolve(RutasArchivos.CARPETA_MATERIALES_LEGADO)
-				.resolve(deporteDir)
-				.resolve(bloqueId)
-				.normalize();
+		return CarpetasMaterial.legada(base, deporte, bloqueId);
 	}
 
 	private Path resolverTemario(Path carpetaTemario) {
