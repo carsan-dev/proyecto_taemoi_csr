@@ -1,8 +1,13 @@
 package com.taemoi.project.archivos;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Carpetas del material de examen de un bloque (fase3-e8c-plan.md, 8c-R). Cada escuela tiene la suya, {@code
@@ -33,6 +38,19 @@ public final class CarpetasMaterial {
 		return dentroDeLaBase(raiz, raiz.resolve(RutasArchivos.CARPETA_MATERIALES_LEGADO)
 				.resolve(disciplina.toLowerCase(Locale.ROOT))
 				.resolve(ALIAS_LEGADO.getOrDefault(bloque, bloque)));
+	}
+
+	/**
+	 * ¿Hay algo que no sea esqueleto? Directorios y ocultos ({@code .gitkeep}, temporales) no son material; ante la duda, lo
+	 * que no sea un directorio cuenta, y un error al recorrer se propaga: mejor no escribir que dar por vacía una carpeta.
+	 */
+	public static boolean tieneFicherosReales(Path carpeta) throws IOException {
+		try (Stream<Path> rutas = Files.walk(carpeta)) {
+			return rutas.anyMatch(ruta -> !Files.isDirectory(ruta, LinkOption.NOFOLLOW_LINKS)
+					&& !ruta.getFileName().toString().startsWith("."));
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
 	}
 
 	private static Path dentroDeLaBase(Path raiz, Path carpeta) {

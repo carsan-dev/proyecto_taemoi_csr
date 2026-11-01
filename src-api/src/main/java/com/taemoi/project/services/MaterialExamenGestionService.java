@@ -16,10 +16,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -200,7 +202,10 @@ public class MaterialExamenGestionService {
 		}
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_VIDEOS));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			entradasDe(leerParaEscribir(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_VIDEOS);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			String extension = extension(limpio);
@@ -208,16 +213,17 @@ public class MaterialExamenGestionService {
 					CABECERA_VIDEO_FALSA);
 			String fichero = bajoBloqueo(bloque, () -> {
 				String destino = nombreLibre(carpeta, limpio);
-				List<EntradaIndice> entradas = entradasDe(leer(bloque));
-				int orden = entradas.stream().mapToInt(EntradaIndice::order).max().orElse(0) + 1;
+				List<EntradaIndice> anteriores = entradasDe(leerParaEscribir(bloque));
+				int orden = anteriores.stream().mapToInt(EntradaIndice::order).max().orElse(0) + 1;
+				List<EntradaIndice> entradas = new ArrayList<>(anteriores);
 				entradas.add(new EntradaIndice(destino, tituloDeSubida(nombre, destino), orden));
-				Path definitivo = carpeta.resolve(destino);
-				Files.move(temporal, definitivo, StandardCopyOption.ATOMIC_MOVE);
+				// Primero el índice: la lectura parte del disco, así que una entrada sin fichero no se ve. Al revés, un vídeo
+				// sin entrada saldría en otro sitio. Tras una caída aquí, el temporal se limpia a las 24 horas.
+				escribirIndice(carpeta.getParent(), entradas);
 				try {
-					escribirIndice(carpeta.getParent(), entradas);
+					moverFichero(temporal, carpeta.resolve(destino));
 				} catch (IOException e) {
-					// Un vídeo sin entrada cambiaría de sitio al regenerar el índice: la subida falla entera.
-					Files.deleteIfExists(definitivo);
+					escribirIndice(carpeta.getParent(), anteriores);
 					throw e;
 				}
 				return destino;
@@ -236,7 +242,9 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
-		String extension = extension(exigirVideo(leer(bloque), fichero).fichero());
+		BloqueEnDisco inicial = leerParaEscribir(bloque);
+		String extension = extension(exigirVideo(inicial, fichero).fichero());
+		comprobarIndiceAsegurable(inicial);
 
 		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_VIDEOS));
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
@@ -244,10 +252,10 @@ public class MaterialExamenGestionService {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_VIDEO, c -> RecepcionCruda.cabeceraDeVideo(extension, c),
 					CABECERA_VIDEO_FALSA);
 			String guardado = bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				VideoEnDisco actual = exigirVideo(disco, fichero);
 				asegurarIndice(disco);
-				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, actual.ruta());
 				return actual.fichero();
 			});
 			auditar(AuditoriaAccion.UPDATE, ruta(bloque, "/videos/" + guardado + "/contenido"),
@@ -263,9 +271,11 @@ public class MaterialExamenGestionService {
 		comprobarNombreGuardado(fichero);
 		String nuevo = tituloValido(titulo);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirVideo(leer(bloque), fichero);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
+			exigirVideo(inicial, fichero);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			String actual = exigirVideo(disco, fichero).fichero();
 			escribirIndice(carpeta, entradasDe(disco).stream()
 					.map(e -> e.file().equals(actual) ? new EntradaIndice(e.file(), nuevo, e.order()) : e)
@@ -281,9 +291,11 @@ public class MaterialExamenGestionService {
 	public MaterialGestionDTO.Detalle reordenarVideos(String disciplina, String bloqueId, List<String> ficheros) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		bajoBloqueo(bloque, () -> {
-			comprobarPermutacion(leer(bloque), ficheros);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
+			comprobarPermutacion(inicial, ficheros);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			comprobarPermutacion(disco, ficheros);
 			Map<String, EntradaIndice> porFichero = new TreeMap<>();
 			entradasDe(disco).forEach(e -> porFichero.put(e.file(), e));
@@ -303,15 +315,17 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirVideo(leer(bloque), fichero);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
+			exigirVideo(inicial, fichero);
+			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			VideoEnDisco video = exigirVideo(disco, fichero);
 			List<EntradaIndice> todas = entradasDe(disco);
 			// Primero el índice: si no se puede borrar el fichero, se restaura y el bloque queda como estaba.
 			escribirIndice(carpeta, todas.stream().filter(e -> !e.file().equals(video.fichero())).toList());
 			try {
-				Files.delete(video.ruta());
+				borrarFichero(video.ruta());
 			} catch (IOException e) {
 				escribirIndice(carpeta, todas);
 				throw e;
@@ -331,15 +345,18 @@ public class MaterialExamenGestionService {
 		DocumentoSecurityUtils.detectarMimePermitido(TEMARIO, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_TEMARIO));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			comprobarIndiceAsegurable(leerParaEscribir(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_TEMARIO);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, RecepcionCruda::cabeceraDePdf, CABECERA_PDF_FALSA);
 			bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				Path anterior = disco.temario();
 				asegurarIndice(disco);
-				Files.move(temporal, carpeta.resolve(TEMARIO), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, carpeta.resolve(TEMARIO));
 				if (anterior != null && !anterior.getFileName().toString().equalsIgnoreCase(TEMARIO)) {
 					// Con temario.pdf en su sitio, el anterior ya no se sirve: un fallo aquí no invalida la subida.
 					borrarSinFallar(anterior);
@@ -362,14 +379,17 @@ public class MaterialExamenGestionService {
 		DocumentoSecurityUtils.detectarMimePermitido(limpio, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
-		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS));
+		Path carpeta = bajoBloqueo(bloque, () -> {
+			comprobarIndiceAsegurable(leerParaEscribir(bloque));
+			return subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS);
+		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, cabeceraDeDocumento(limpio), CABECERA_PDF_FALSA);
 			String fichero = bajoBloqueo(bloque, () -> {
-				asegurarIndice(leer(bloque));
+				asegurarIndice(leerParaEscribir(bloque));
 				String destino = nombreLibre(carpeta, limpio);
-				Files.move(temporal, carpeta.resolve(destino), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, carpeta.resolve(destino));
 				return destino;
 			});
 			auditar(AuditoriaAccion.CREATE, ruta(bloque, "/documentacion"),
@@ -384,9 +404,11 @@ public class MaterialExamenGestionService {
 			CuerpoCrudo cuerpo) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
-		String existente = exigirDocumento(leer(bloque), fichero).fichero();
+		BloqueEnDisco inicial = leerParaEscribir(bloque);
+		String existente = exigirDocumento(inicial, fichero).fichero();
 		DocumentoSecurityUtils.detectarMimePermitido(existente, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
+		comprobarIndiceAsegurable(inicial);
 
 		Path carpeta = bajoBloqueo(bloque, () -> subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS));
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
@@ -394,10 +416,10 @@ public class MaterialExamenGestionService {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, cabeceraDeDocumento(existente),
 					CABECERA_PDF_FALSA);
 			String guardado = bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				DocumentoEnDisco actual = exigirDocumento(disco, fichero);
 				asegurarIndice(disco);
-				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, actual.ruta());
 				return actual.fichero();
 			});
 			auditar(AuditoriaAccion.UPDATE, ruta(bloque, "/documentacion/" + guardado + "/contenido"),
@@ -412,9 +434,11 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			exigirDocumento(leer(bloque), fichero);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
+			exigirDocumento(inicial, fichero);
+			comprobarIndiceAsegurable(inicial);
 			adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			DocumentoEnDisco documento = exigirDocumento(disco, fichero);
 			asegurarIndice(disco);
 			Files.delete(documento.ruta());
@@ -430,7 +454,8 @@ public class MaterialExamenGestionService {
 	/**
 	 * Devuelve la carpeta propia del bloque, lista para escribir. Debe llamarse bajo el bloqueo. Si es la escuela por
 	 * defecto, no hay propia y sí heredada, crea solo los padres y mueve la heredada entera; un fallo deja el material donde
-	 * estaba. Con las dos carpetas no mezcla: la escritura falla.
+	 * estaba. Con las dos carpetas no mezcla: la escritura falla. Una heredada sin ningún fichero real no cuenta: es el
+	 * esqueleto de {@code .gitkeep} del repositorio, que un {@code git reset} puede recrear tras adoptar, y no se toca.
 	 */
 	private Path adoptar(BloqueDeCatalogo bloque) {
 		Path base = base();
@@ -439,7 +464,7 @@ public class MaterialExamenGestionService {
 			if (bloque.organizacion().equals(organizacionPorDefecto)) {
 				Path legada = CarpetasMaterial.legada(base, bloque.disciplina(), bloque.id());
 				boolean hayPropia = Files.isDirectory(propia);
-				boolean hayLegada = Files.isDirectory(legada);
+				boolean hayLegada = Files.isDirectory(legada) && CarpetasMaterial.tieneFicherosReales(legada);
 				if (hayPropia && hayLegada) {
 					logger.error("Material de examen con dos carpetas: organizacion={} disciplina={} bloque={}",
 							bloque.organizacion(), bloque.disciplina(), bloque.id());
@@ -467,6 +492,15 @@ public class MaterialExamenGestionService {
 	/** Movimiento atómico o nada: {@code ATOMIC_MOVE} no copia nunca entre sistemas de ficheros. */
 	protected void moverCarpeta(Path origen, Path destino) throws IOException {
 		Files.move(origen, destino, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	/** Publica un fichero o el índice desde su temporal, en la misma carpeta. */
+	protected void moverFichero(Path origen, Path destino) throws IOException {
+		Files.move(origen, destino, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	protected void borrarFichero(Path fichero) throws IOException {
+		Files.delete(fichero);
 	}
 
 	private <T> T bajoBloqueo(BloqueDeCatalogo bloque, AccionConFicheros<T> accion) {
@@ -517,17 +551,42 @@ public class MaterialExamenGestionService {
 
 	// ------------------------------------------------------------------ índice
 
-	/** Lo que las familias ya ven, con su título y su orden: la primera escritura lo fija en el índice. */
+	/**
+	 * Lo que las familias ya ven, con su título y su orden: la primera escritura lo fija en el índice. Toda reescritura del
+	 * índice sale de aquí. El lector funde en una entrada los nombres que solo difieren en mayúsculas, así que un bloque con
+	 * dos de ellos no se puede reescribir sin dar el título o el orden de uno al otro: 409 y no se escribe nada. Las escrituras
+	 * lo llaman también antes de adoptar, para que el material ni se mueva.
+	 */
 	private static List<EntradaIndice> entradasDe(BloqueEnDisco disco) {
+		Set<String> nombres = new HashSet<>();
 		List<EntradaIndice> entradas = new ArrayList<>();
-		disco.videos().forEach(v -> entradas.add(new EntradaIndice(v.fichero(), v.titulo(), v.orden())));
+		for (VideoEnDisco video : disco.videos()) {
+			if (!nombres.add(video.fichero().toLowerCase(Locale.ROOT))) {
+				logger.error("Material de examen con nombres que solo difieren en mayúsculas: carpeta={}", disco.carpeta());
+				throw new MaterialExamenException(HttpStatus.CONFLICT,
+						"Este bloque tiene vídeos cuyo nombre solo se distingue por las mayúsculas y no se puede cambiar. "
+								+ "Avisa al administrador.");
+			}
+			entradas.add(new EntradaIndice(video.fichero(), video.titulo(), video.orden()));
+		}
 		return entradas;
 	}
 
 	private void asegurarIndice(BloqueEnDisco disco) throws IOException {
-		if (!Files.isRegularFile(disco.carpeta().resolve(INDICE))) {
+		if (!hayIndice(disco)) {
 			escribirIndice(disco.carpeta(), entradasDe(disco));
 		}
+	}
+
+	/** Lo que {@link #asegurarIndice} exigirá, sin escribir nada. */
+	private static void comprobarIndiceAsegurable(BloqueEnDisco disco) {
+		if (!hayIndice(disco)) {
+			entradasDe(disco);
+		}
+	}
+
+	private static boolean hayIndice(BloqueEnDisco disco) {
+		return Files.isRegularFile(disco.carpeta().resolve(INDICE));
 	}
 
 	private void escribirIndice(Path carpeta, List<EntradaIndice> entradas) throws IOException {
@@ -535,7 +594,7 @@ public class MaterialExamenGestionService {
 		try {
 			Files.write(temporal, json.writerWithDefaultPrettyPrinter().writeValueAsBytes(new Indice(entradas)),
 					StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-			Files.move(temporal, carpeta.resolve(INDICE), StandardCopyOption.ATOMIC_MOVE);
+			moverFichero(temporal, carpeta.resolve(INDICE));
 		} finally {
 			borrarSinFallar(temporal);
 		}
@@ -661,15 +720,31 @@ public class MaterialExamenGestionService {
 	}
 
 	private static VideoEnDisco exigirVideo(BloqueEnDisco disco, String fichero) {
-		String buscado = fichero.trim();
-		return disco.videos().stream().filter(v -> v.fichero().equalsIgnoreCase(buscado)).findFirst()
+		return porNombre(disco.videos(), VideoEnDisco::fichero, fichero)
 				.orElseThrow(() -> new NoSuchElementException("Ese vídeo no existe en este bloque."));
 	}
 
 	private static DocumentoEnDisco exigirDocumento(BloqueEnDisco disco, String fichero) {
-		String buscado = fichero.trim();
-		return disco.documentos().stream().filter(d -> d.fichero().equalsIgnoreCase(buscado)).findFirst()
+		return porNombre(disco.documentos(), DocumentoEnDisco::fichero, fichero)
 				.orElseThrow(() -> new NoSuchElementException("Ese documento no existe en este bloque."));
+	}
+
+	/**
+	 * Con dos ficheros que solo difieren en mayúsculas, borrar o sustituir el que no era sería irreparable: primero el
+	 * nombre exacto; sin él, el único que coincida sin mayúsculas; si son varios, 409.
+	 */
+	private static <T> Optional<T> porNombre(List<T> ficheros, Function<T, String> nombre, String fichero) {
+		String buscado = fichero.trim();
+		Optional<T> exacto = ficheros.stream().filter(f -> nombre.apply(f).equals(buscado)).findFirst();
+		if (exacto.isPresent()) {
+			return exacto;
+		}
+		List<T> parecidos = ficheros.stream().filter(f -> nombre.apply(f).equalsIgnoreCase(buscado)).toList();
+		if (parecidos.size() > 1) {
+			throw new MaterialExamenException(HttpStatus.CONFLICT,
+					"Hay varios ficheros con ese nombre que solo se distinguen por las mayúsculas. Usa el nombre exacto.");
+		}
+		return parecidos.stream().findFirst();
 	}
 
 	private static Predicate<byte[]> cabeceraDeDocumento(String fichero) {
@@ -722,6 +797,10 @@ public class MaterialExamenGestionService {
 
 	private BloqueEnDisco leer(BloqueDeCatalogo bloque) {
 		return lectura.leerBloque(bloque.disciplina(), bloque.id());
+	}
+
+	private BloqueEnDisco leerParaEscribir(BloqueDeCatalogo bloque) {
+		return lectura.leerBloqueParaEscribir(bloque.disciplina(), bloque.id());
 	}
 
 	private Path base() {

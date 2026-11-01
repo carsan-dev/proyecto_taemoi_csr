@@ -16,6 +16,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -30,19 +32,23 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.MembresiaRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.JwtService;
 
 /**
@@ -76,11 +82,15 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired MembresiaRepository membresias;
+	@Autowired AlumnoRepository alumnos;
+	@Autowired ContadorService contadores;
+	@Autowired JdbcTemplate jdbc;
 
 	@MockitoBean JavaMailSender mailSender;
 
 	private final HttpClient cliente = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
 	String sesion;
+	long alumnoId;
 
 	@BeforeAll
 	void preparar() {
@@ -97,6 +107,25 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(ORG1,
 				() -> membresias.save(new Membresia(usuario.getId(), ORG1, RolMembresia.ADMINISTRADOR)));
 		sesion = "jwt=" + jwtService.generateToken(usuario, 600_000, ORG1);
+		alumnoId = TenantContext.calcularCon(ORG1, () -> {
+			Alumno alumno = new Alumno();
+			alumno.setNombre("ALUMNO " + sufijo);
+			alumno.setApellidos("PRUEBA TOMCAT");
+			alumno.setNumeroExpediente(contadores.siguienteNumeroExpediente());
+			alumno.setFechaNacimiento(Date.valueOf(LocalDate.of(1995, 4, 4)));
+			alumno.setDireccion("Calle Prueba 8");
+			alumno.setTelefono("600000008");
+			alumno.setActivo(true);
+			alumno.setAutorizacionWeb(true);
+			alumno.setEmail("tomcat-" + sufijo + "@example.test");
+			return alumnos.save(alumno).getId();
+		});
+		jdbc.update("""
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
+				  organizacion_id, fecha_alta, fecha_alta_inicial, fecha_grado, disciplina_id, grado_id)
+				SELECT TRUE, FALSE, ?, 0, 1, 1, ?, '2023-09-01', '2023-09-01', '2024-01-01', d.id, g.id
+				FROM disciplina d JOIN grado g ON g.sistema_grados_id = d.sistema_grados_id
+				WHERE d.organizacion_id = ? AND d.codigo = 'KICKBOXING' AND g.codigo = 'BLANCO'""", alumnoId, ORG1, ORG1);
 	}
 
 	@BeforeEach
@@ -106,8 +135,10 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** Sin borrar nada: el alumno se retira para no interferir con otras clases. */
 	@AfterAll
 	void borrarRaiz() throws IOException {
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", alumnoId);
 		vaciarDisco();
 		Files.deleteIfExists(DOCUMENTOS);
 	}
@@ -150,6 +181,102 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void unaFamiliaPideUnVideoYUnTemario_conLasCabecerasDeSiempre_yCadaLecturaDejaSuFila() throws Exception {
+		Path bloque = DOCUMENTOS.resolve("Materiales_Examen/kickboxing/b01_inicio_a_amarillo");
+		byte[] contenido = new byte[256 * 1024];
+		System.arraycopy("ftyp".getBytes(StandardCharsets.US_ASCII), 0, contenido, 4, 4);
+		Files.createDirectories(bloque.resolve("videos"));
+		Files.write(bloque.resolve("videos/01_guardia.mp4"), contenido);
+		Files.createDirectories(bloque.resolve("temario"));
+		Files.writeString(bloque.resolve("temario/temario.pdf"), "%PDF-1.7\nprueba");
+		String raiz = "/api/alumnos/" + alumnoId + "/deportes/KICKBOXING/material-examen";
+		String video = raiz + "/videos/01_guardia.mp4";
+
+		HttpResponse<byte[]> completo = cliente.send(peticion(video).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(200, completo.statusCode());
+		assertEquals(contenido.length, completo.body().length);
+		assertEquals(String.valueOf(contenido.length), completo.headers().firstValue("Content-Length").orElse(""));
+		assertEquals("bytes", completo.headers().firstValue("Accept-Ranges").orElse(""));
+		assertEquals("video/mp4", completo.headers().firstValue("Content-Type").orElse(""));
+		assertTrue(completo.headers().firstValue("Content-Disposition").orElse("").startsWith("inline"));
+
+		HttpResponse<byte[]> rango = cliente.send(peticion(video).header("Range", "bytes=4-7").GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(206, rango.statusCode());
+		assertEquals("ftyp", new String(rango.body(), StandardCharsets.US_ASCII));
+		assertEquals("bytes 4-7/" + contenido.length, rango.headers().firstValue("Content-Range").orElse(""));
+		assertEquals("4", rango.headers().firstValue("Content-Length").orElse(""));
+
+		HttpResponse<byte[]> fuera = cliente.send(peticion(video).header("Range", "bytes=999999-").GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(416, fuera.statusCode());
+
+		HttpResponse<byte[]> temario = cliente.send(peticion(raiz + "/temario?download=true").GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertEquals(200, temario.statusCode());
+		assertTrue(temario.headers().firstValue("Content-Disposition").orElse("").startsWith("attachment"));
+
+		assertEquals(List.of(200, 206, 416), jdbc.queryForList(
+				"SELECT estado_http FROM auditoria_evento WHERE endpoint = ? ORDER BY id", Integer.class, video));
+		assertEquals(List.of(200), jdbc.queryForList(
+				"SELECT estado_http FROM auditoria_evento WHERE endpoint = ? ORDER BY id", Integer.class, raiz + "/temario"));
+		String parametros = jdbc.queryForObject("SELECT query_params_json FROM auditoria_evento WHERE endpoint = ?",
+				String.class, raiz + "/temario");
+		assertTrue(parametros.contains("download"), parametros);
+	}
+
+	@Test
+	void unFormularioAnonimoEnUnaRutaDeMaterial_noSeLee() throws Exception {
+		// Tomcat lee el cuerpo si se le piden los parámetros; aquí el cliente solo manda la cabecera y se queda esperando.
+		for (String ruta : List.of(RUTA + "?nombre=a.mp4",
+				"/api/alumnos/" + alumnoId + "/deportes/KICKBOXING/material-examen/videos/a.mp4")) {
+			try (Socket socket = new Socket("localhost", puerto)) {
+				socket.setSoTimeout(5_000);
+				OutputStream salida = socket.getOutputStream();
+				salida.write(("POST " + ruta + " HTTP/1.1\r\nHost: localhost\r\n"
+						+ "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: 1000000\r\n\r\n")
+						.getBytes(StandardCharsets.US_ASCII));
+				salida.flush();
+
+				String estado = new String(socket.getInputStream().readNBytes(12), StandardCharsets.US_ASCII);
+				assertTrue(estado.contains("401"), ruta + ": " + estado);
+			}
+		}
+	}
+
+	@Test
+	void elJsonDelPanel_sinContentLength_411() throws Exception {
+		for (HttpRequest.Builder peticion : List.of(peticion(RUTA + "/orden").method("PUT", cuerpoSinLongitud("[]")),
+				peticion(RUTA + "/a.mp4").method("PATCH", cuerpoSinLongitud("{\"titulo\":\"Hola\"}")))) {
+			HttpResponse<String> respuesta = cliente.send(peticion.header("Content-Type", "application/json").build(),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertEquals(411, respuesta.statusCode(), respuesta.body());
+			assertTrue(respuesta.body().contains("mensaje"), respuesta.body());
+		}
+	}
+
+	@Test
+	void elJsonDelPanel_masDe64KB_413_yHasta64KBSeLee() throws Exception {
+		String relleno = "x".repeat(64 * 1024);
+		String limite = "{\"titulo\":\"" + relleno.substring(13) + "\"}";
+		assertEquals(64 * 1024, limite.length());
+
+		HttpResponse<String> cabe = cliente.send(json(RUTA + "/a.mp4", "PATCH", limite), HttpResponse.BodyHandlers.ofString());
+		assertEquals(400, cabe.statusCode(), "el título es largo, pero el cuerpo se ha leído");
+		assertTrue(cabe.body().contains("120 caracteres"), cabe.body());
+
+		HttpResponse<String> titulo = cliente.send(json(RUTA + "/a.mp4", "PATCH", limite + " "),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(413, titulo.statusCode(), titulo.body());
+		assertTrue(titulo.body().contains("mensaje"), titulo.body());
+
+		HttpResponse<String> orden = cliente.send(json(RUTA + "/orden", "PUT", "[\"" + relleno + "\"]"),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(413, orden.statusCode(), orden.body());
+	}
+
+	@Test
 	void unClienteQueCorta_noDejaTemporalNiEntrada() throws Exception {
 		byte[] inicio = new byte[1024 * 1024];
 		System.arraycopy("ftyp".getBytes(StandardCharsets.US_ASCII), 0, inicio, 4, 4);
@@ -166,6 +293,16 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(), temporales());
 		assertFalse(Files.exists(carpetaDeVideos().resolve("cortado.mp4")));
 		assertFalse(Files.exists(carpetaDeVideos().getParent().resolve("index.json")));
+	}
+
+	private HttpRequest json(String ruta, String metodo, String cuerpo) {
+		return peticion(ruta).header("Content-Type", "application/json")
+				.method(metodo, HttpRequest.BodyPublishers.ofString(cuerpo)).build();
+	}
+
+	private static HttpRequest.BodyPublisher cuerpoSinLongitud(String cuerpo) {
+		// Un cuerpo de longitud desconocida sale en chunked.
+		return HttpRequest.BodyPublishers.ofInputStream(() -> new ByteArrayInputStream(cuerpo.getBytes(StandardCharsets.UTF_8)));
 	}
 
 	private HttpRequest.Builder peticion(String ruta) {

@@ -21,6 +21,14 @@ public interface MaterialExamenService {
 	 */
 	BloqueEnDisco leerBloque(String disciplina, String bloqueId);
 
+	/**
+	 * {@link #leerBloque} para quien va a escribir. La lectura de las familias tolera un {@code index.json} dañado y sigue
+	 * con el orden por nombre; reescribirlo desde ahí perdería los títulos.
+	 *
+	 * @throws com.taemoi.project.exceptions.MaterialExamenException 409 si {@code index.json} existe y no se puede leer
+	 */
+	BloqueEnDisco leerBloqueParaEscribir(String disciplina, String bloqueId);
+
 	/** Datos de un fichero para servirlo; {@code mimeForzado} nulo, el detectado. */
 	MaterialExamenArchivo describirArchivo(Path ruta, String mimeForzado);
 

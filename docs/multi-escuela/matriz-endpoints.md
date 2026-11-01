@@ -486,16 +486,17 @@ bajo `/api/material-examen/{disciplina}/{bloque}`:
 | `/temario`, `/videos/{fichero}`, `/documentacion/{fichero}` | `GET`, `HEAD` | fichero con `Range`; no se audita ni pasa por los envoltorios del filtro |
 | `/videos?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 500 MB |
 | `/videos/{fichero}/contenido` | `PUT` | cuerpo crudo, 500 MB; conserva título y orden |
-| `/videos/{fichero}` | `PATCH` | `{"titulo": …}`, de 1 a 120 caracteres |
-| `/videos/orden` | `PUT` | lista completa de ficheros; si no es una permutación exacta, 409 |
+| `/videos/{fichero}` | `PATCH` | `{"titulo": …}`, de 1 a 120 caracteres; JSON de 64 KB como máximo |
+| `/videos/orden` | `PUT` | lista completa de ficheros; si no es una permutación exacta, 409; JSON de 64 KB como máximo |
 | `/videos/{fichero}` | `DELETE` | 404 si no existe |
 | `/temario` | `PUT` | cuerpo crudo, PDF, 50 MB; deja `temario.pdf` |
 | `/documentacion?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 50 MB |
 | `/documentacion/{fichero}/contenido` | `PUT` | cuerpo crudo, 50 MB |
 | `/documentacion/{fichero}` | `DELETE` | 404 si no existe |
 
-Errores con `{mensaje}` en español: 400 (nombre, título o cuerpo incompleto), 404, 409 (permutación incorrecta, o bloque con
-las dos carpetas), 411, 413, 415 (cabecera falsa o cuerpo de formulario) y 507 (menos de tamaño + 2 GB libres). Cada escritura
+Errores con `{mensaje}` en español: 400 (nombre, título o cuerpo incompleto), 404, 409 (permutación incorrecta, bloque con las
+dos carpetas, `index.json` ilegible o nombres que solo difieren en mayúsculas), 411, 413, 415 (cabecera falsa o cuerpo de
+formulario) y 507 (menos de tamaño + 2 GB libres). Cada escritura
 correcta deja su registro en el módulo `materiales` y entra en `EscrituraConRegistroPropio`; el caso contra MySQL de las nueve
 está en `MaterialExamenIntegrationTest`.
 
