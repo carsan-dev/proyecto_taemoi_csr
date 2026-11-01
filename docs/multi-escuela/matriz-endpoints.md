@@ -494,8 +494,9 @@ bajo `/api/material-examen/{disciplina}/{bloque}`:
 | `/documentacion/{fichero}/contenido` | `PUT` | cuerpo crudo, 50 MB |
 | `/documentacion/{fichero}` | `DELETE` | 404 si no existe |
 
-Errores con `{mensaje}` en español: 400 (nombre, título o cuerpo incompleto), 404, 409 (permutación incorrecta, o bloque con
-las dos carpetas), 411, 413, 415 (cabecera falsa o cuerpo de formulario) y 507 (menos de tamaño + 2 GB libres). Cada escritura
+Errores con `{mensaje}` en español: 400 (nombre, título o cuerpo incompleto), 404, 409 (permutación incorrecta, bloque con las
+dos carpetas, `index.json` ilegible o nombres que solo difieren en mayúsculas), 411, 413, 415 (cabecera falsa o cuerpo de
+formulario) y 507 (menos de tamaño + 2 GB libres). Cada escritura
 correcta deja su registro en el módulo `materiales` y entra en `EscrituraConRegistroPropio`; el caso contra MySQL de las nueve
 está en `MaterialExamenIntegrationTest`.
 

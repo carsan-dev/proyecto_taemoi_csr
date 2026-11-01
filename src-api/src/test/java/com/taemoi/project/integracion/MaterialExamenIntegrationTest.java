@@ -364,6 +364,21 @@ class MaterialExamenIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void unIndiceDanado_409ConSuMensaje_yElPanelSigueLeyendo() throws Exception {
+		legado("taekwondo", B01, "videos", "01_saludo.mp4");
+		Path indice = DOCUMENTOS.resolve("Materiales_Examen/taekwondo").resolve(B01).resolve("index.json");
+		Files.writeString(indice, "roto");
+
+		MockHttpServletResponse titulo = respuesta(patch(BLOQUE + "/videos/01_saludo.mp4").content("{\"titulo\":\"Otro\"}")
+				.contentType(MediaType.APPLICATION_JSON), tGestor);
+
+		assertEquals(409, titulo.getStatus());
+		assertTrue(mensaje(titulo).contains("índice"), mensaje(titulo));
+		assertEquals("roto", Files.readString(indice));
+		assertEquals(1, leer(get(BLOQUE), tGestor).get("videos").size());
+	}
+
+	@Test
 	void unErrorAlPedirUnFichero_saleAunqueNoSeAcepteJson() throws Exception {
 		MockHttpServletResponse respuesta = respuesta(get(BLOQUE + "/videos/.oculto.mp4").accept("video/mp4"), tGestor);
 
