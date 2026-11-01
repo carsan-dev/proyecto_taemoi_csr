@@ -40,6 +40,13 @@ public class AlumnoSalud extends EntidadOrganizacion {
 	@Column(name = "alergias", columnDefinition = "TEXT")
 	private String alergiasCifradas;
 
+	/** Nombres de {@link TipoDiscapacidad} separados por comas, cifrados; {@code null} sin tipos. */
+	@Column(name = "discapacidad_tipos", columnDefinition = "TEXT")
+	private String discapacidadTiposCifrados;
+
+	@Column(name = "discapacidad_otra", columnDefinition = "TEXT")
+	private String discapacidadOtraCifrada;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "ENUM('FICHA_PAPEL','PREINSCRIPCION','APP')")
 	private OrigenDato origen;
@@ -96,6 +103,22 @@ public class AlumnoSalud extends EntidadOrganizacion {
 
 	public void setAlergiasCifradas(String alergiasCifradas) {
 		this.alergiasCifradas = alergiasCifradas;
+	}
+
+	public String getDiscapacidadTiposCifrados() {
+		return discapacidadTiposCifrados;
+	}
+
+	public void setDiscapacidadTiposCifrados(String discapacidadTiposCifrados) {
+		this.discapacidadTiposCifrados = discapacidadTiposCifrados;
+	}
+
+	public String getDiscapacidadOtraCifrada() {
+		return discapacidadOtraCifrada;
+	}
+
+	public void setDiscapacidadOtraCifrada(String discapacidadOtraCifrada) {
+		this.discapacidadOtraCifrada = discapacidadOtraCifrada;
 	}
 
 	public OrigenDato getOrigen() {
