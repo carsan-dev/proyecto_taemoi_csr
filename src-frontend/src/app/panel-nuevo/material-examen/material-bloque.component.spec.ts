@@ -712,6 +712,51 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       });
     });
 
+    describe('al destruir la pantalla', () => {
+      const pdf = (nombre: string): File => new File(['%PDF-1.7'], nombre, { type: 'application/pdf' });
+
+      it('corta la subida del temario', async () => {
+        cargar(VACIO);
+        elegirFicheros('.material__seccion--temario input', [pdf('plan.pdf')]);
+        await esperar();
+        const r = http.expectOne(`${API}/temario`);
+        fixture.destroy();
+        expect(r.cancelled).toBeTrue();
+      });
+
+      it('corta la subida de un documento', async () => {
+        cargar(VACIO);
+        elegirFicheros('.material__seccion--documentos input', [pdf('normas.pdf')]);
+        await esperar();
+        const r = http.expectOne(`${API}/documentacion?nombre=normas.pdf`);
+        fixture.destroy();
+        expect(r.cancelled).toBeTrue();
+      });
+
+      it('corta la sustitución de un documento', async () => {
+        cargar();
+        spyOn(HTMLInputElement.prototype, 'click');
+        comp().accionDocumento(detalle().documentos[0], 'sustituir');
+        const selector = el().querySelectorAll<HTMLInputElement>('.material__seccion--documentos input')[1];
+        const lista = new DataTransfer();
+        lista.items.add(pdf('otro.pdf'));
+        selector.files = lista.files;
+        selector.dispatchEvent(new Event('change'));
+        await esperar();
+        const r = http.expectOne(`${API}/documentacion/normas.pdf/contenido`);
+        fixture.destroy();
+        expect(r.cancelled).toBeTrue();
+      });
+
+      it('no envía lo que aún se estaba preparando', async () => {
+        cargar(VACIO);
+        elegirFicheros('.material__seccion--temario input', [pdf('plan.pdf')]);
+        fixture.destroy();
+        await new Promise((r) => setTimeout(r, 50));
+        http.expectNone(`${API}/temario`);
+      });
+    });
+
     it('un fallo de la API enseña su mensaje', async () => {
       cargar(VACIO);
       elegirFicheros('.material__seccion--documentos input', [new File(['%PDF'], 'normas.pdf', { type: 'application/pdf' })]);

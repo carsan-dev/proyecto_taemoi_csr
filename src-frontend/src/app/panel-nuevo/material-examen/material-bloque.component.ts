@@ -129,6 +129,7 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   private ficheroASustituir: string | null = null;
   private documentoASustituir: string | null = null;
   private lectura?: Subscription;
+  /** Lo que se corta al salir: «Salir y cortar» vale también para el temario y los documentos en vuelo. */
   private readonly suscripciones = new Subscription();
   private consulta: MediaQueryList | null = null;
   private destruido = false;
@@ -599,19 +600,21 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       this.cdr.markForCheck();
       return;
     }
-    this.api.subirTemario(this.disciplina, this.bloqueId, archivo).subscribe({
-      next: (detalle) => {
-        this.enviandoTemario = false;
-        this.aplicar(detalle);
-        this.avisos.exito('Temario guardado.');
-        this.cdr.markForCheck();
-      },
-      error: (error: unknown) => {
-        this.enviandoTemario = false;
-        this.avisos.error(mensajeErrorSubida(error, 'No se pudo subir el temario. Inténtalo de nuevo.'));
-        this.cdr.markForCheck();
-      },
-    });
+    this.suscripciones.add(
+      this.api.subirTemario(this.disciplina, this.bloqueId, archivo).subscribe({
+        next: (detalle) => {
+          this.enviandoTemario = false;
+          this.aplicar(detalle);
+          this.avisos.exito('Temario guardado.');
+          this.cdr.markForCheck();
+        },
+        error: (error: unknown) => {
+          this.enviandoTemario = false;
+          this.avisos.error(mensajeErrorSubida(error, 'No se pudo subir el temario. Inténtalo de nuevo.'));
+          this.cdr.markForCheck();
+        },
+      })
+    );
   }
 
   verTemario(evento: Event): void {
@@ -682,19 +685,21 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   }
 
   private enviarDocumento<T>(peticion: Observable<T>, aDetalle: (respuesta: T) => DetalleBloque, exito: string): void {
-    peticion.subscribe({
-      next: (respuesta) => {
-        this.enviandoDocumento = false;
-        this.aplicar(aDetalle(respuesta));
-        this.avisos.exito(exito);
-        this.cdr.markForCheck();
-      },
-      error: (error: unknown) => {
-        this.enviandoDocumento = false;
-        this.avisos.error(mensajeErrorSubida(error, 'No se pudo subir el documento. Inténtalo de nuevo.'));
-        this.cdr.markForCheck();
-      },
-    });
+    this.suscripciones.add(
+      peticion.subscribe({
+        next: (respuesta) => {
+          this.enviandoDocumento = false;
+          this.aplicar(aDetalle(respuesta));
+          this.avisos.exito(exito);
+          this.cdr.markForCheck();
+        },
+        error: (error: unknown) => {
+          this.enviandoDocumento = false;
+          this.avisos.error(mensajeErrorSubida(error, 'No se pudo subir el documento. Inténtalo de nuevo.'));
+          this.cdr.markForCheck();
+        },
+      })
+    );
   }
 
   accionDocumento(d: DocumentoDetalle, accion: string): void {
