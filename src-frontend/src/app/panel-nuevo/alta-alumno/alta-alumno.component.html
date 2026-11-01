@@ -365,6 +365,11 @@
             <span class="alta__pista" aria-hidden="true"><span class="alta__bola"></span></span>
             <span>Tiene discapacidad</span>
           </button>
+          @if (valor('tieneDiscapacidad')) {
+          <pn-selector-discapacidad id="alta-discapacidad" [tipos]="valor('discapacidadTipos')" [otra]="valor('discapacidadOtra')"
+            [deshabilitado]="enviando" [error]="intentado && !!form.get('discapacidadOtra')?.invalid"
+            (tiposChange)="cambiarTipos($event)" (otraChange)="cambiarOtra($event)" />
+          }
         </section>
       </div>
 

@@ -134,10 +134,11 @@ describe('app routes', () => {
       expect(routes.filter((route) => route.path === '**').length).toBe(2);
     });
 
-    it('la salida sin guardar sigue en Preinscripciones, Productos y cargos y Mi perfil', () => {
+    it('la salida sin guardar sigue en Preinscripciones, Productos y cargos, Mi perfil y la ficha del alumno', () => {
       expect(routes.find((route) => route.path === 'panel/mi-perfil')!.canDeactivate).toEqual([salirSinGuardarGuard]);
       expect(routes.find((route) => route.path === 'preinscripciones')!.canDeactivate).toEqual([salirSinGuardarGuard]);
       expect(routes.find((route) => route.path === 'alumnos/:id/productos')!.canDeactivate).toEqual([salirSinGuardarGuard]);
+      expect(routes.find((route) => route.path === 'alumnosEditar/:id')!.canDeactivate).toEqual([salirSinGuardarGuard]);
     });
 
     it('alumnosEditar sin id (decisión 333): redirige al listado, solo con la ruta exacta', () => {

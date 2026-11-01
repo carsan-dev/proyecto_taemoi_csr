@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Location } from '@angular/common';
 import { Component, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FichaPagosComponent } from './pagos/ficha-pagos.component';
@@ -26,6 +27,7 @@ import { calcularEdad } from '../../utilities/calcular-edad';
 import { PendienteAlumno } from '../alumnos/pendientes-alumno.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { MOISKIMDO_PRUEBA } from '../tema-prueba';
+import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { DialogosFichaPanel } from './dialogos/dialogos-ficha-panel';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
@@ -947,6 +949,125 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=otra');
       expect(m.el().querySelector('[role="tab"][aria-selected="true"]')!.id).toBe('ficha-pestana-deportes');
     });
+
+    describe('cambio solo de `?pestana=` con Salud a medias (no pasa por `canDeactivate`)', () => {
+      const CANCELA = { confirmado: false, valor: null };
+      const CONFIRMA = { confirmado: true, valor: null };
+
+      function editarSalud(m: Montaje<FichaAlumnoComponent>) {
+        const salud = m.comp.bloqueSalud!;
+        salud.saludAbierta = true;
+        salud.salud = { alumnoId: 7, registrado: true, tieneDiscapacidad: false, discapacidadTipos: [], discapacidadOtra: null,
+          lesionEnfermedad: null, descripcion: null, impideActividad: null, impideDetalle: null, alergias: null };
+        salud.editar(); salud.formulario!.alergias = 'Dato ficticio';
+        return salud;
+      }
+
+      async function navegar(m: Montaje<FichaAlumnoComponent>, url: string): Promise<void> {
+        await TestBed.inject(Router).navigateByUrl(url);
+        await m.asentar();
+      }
+
+      itSinReloj('cancelar sigue en la pestaña, conserva lo escrito y restaura la dirección con un solo diálogo', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CANCELA);
+        await navegar(m, '/alumnosEditar/7?pestana=pagos');
+        expect(m.comp.pestana).toBe('datos');
+        expect(m.comp.bloqueSalud).toBe(salud);
+        expect(salud.formulario!.alergias).toBe('Dato ficticio');
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=datos');
+        expect(confirmar).toHaveBeenCalledTimes(1);
+        expect(confirmar.calls.mostRecent().args[0].nombre).toBe('salir-sin-guardar');
+      });
+
+      itSinReloj('confirmar cambia de pestaña, descarta y deja la dirección pedida', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CONFIRMA);
+        await navegar(m, '/alumnosEditar/7?pestana=pagos');
+        expect(m.comp.pestana).toBe('pagos');
+        expect(salud.formulario).toBeNull();
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=pagos');
+        expect(m.el().querySelector('[role="tab"][aria-selected="true"]')!.id).toBe('ficha-pestana-pagos');
+        expect(confirmar).toHaveBeenCalledTimes(1);
+      });
+
+      itSinReloj('una pestaña desconocida también pregunta y, al cancelar, se restaura la dirección', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CANCELA);
+        await navegar(m, '/alumnosEditar/7?pestana=otra');
+        expect(m.comp.pestana).toBe('datos');
+        expect(salud.cambios).toBe(1);
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=datos');
+        expect(confirmar).toHaveBeenCalledTimes(1);
+      });
+
+      itSinReloj('Atrás del navegador: cancelar conserva la edición y restaura la dirección', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
+        await navegar(m, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CANCELA);
+        TestBed.inject(Router).setUpLocationChangeListener();
+        TestBed.inject(Location).back();
+        await m.asentar();
+        expect(m.comp.pestana).toBe('datos');
+        expect(salud.formulario!.alergias).toBe('Dato ficticio');
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=datos');
+        expect(TestBed.inject(Location).path()).toBe('/alumnosEditar/7?pestana=datos');
+        expect(confirmar).toHaveBeenCalledTimes(1);
+      });
+
+      itSinReloj('con el diálogo abierto no se abre otro y al confirmar vale la última pestaña pedida', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        let responder!: (r: typeof CONFIRMA) => void;
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.returnValue(new Promise((r) => (responder = r)));
+        await navegar(m, '/alumnosEditar/7?pestana=pagos');
+        await navegar(m, '/alumnosEditar/7?pestana=documentos');
+        expect(confirmar).toHaveBeenCalledTimes(1);
+        expect(m.comp.pestana).toBe('datos');
+        responder(CONFIRMA);
+        await m.asentar();
+        expect(m.comp.pestana).toBe('documentos');
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=documentos');
+        expect(salud.formulario).toBeNull();
+      });
+
+      itSinReloj('mientras guarda no pregunta, no cambia de pestaña y restaura la dirección', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        salud.guardando = true;
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CONFIRMA);
+        await navegar(m, '/alumnosEditar/7?pestana=pagos');
+        expect(m.comp.pestana).toBe('datos');
+        expect(m.comp.bloqueSalud).toBe(salud);
+        expect(salud.guardando).toBeTrue();
+        expect(salud.formulario!.alergias).toBe('Dato ficticio');
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=datos');
+        expect(confirmar).not.toHaveBeenCalled();
+      });
+
+      itSinReloj('sin `?pestana=` no hay otra pestaña pedida: no pregunta y conserva la edición', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const salud = editarSalud(m);
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CONFIRMA);
+        await navegar(m, '/alumnosEditar/7');
+        expect(m.comp.pestana).toBe('datos');
+        expect(salud.formulario!.alergias).toBe('Dato ficticio');
+        expect(TestBed.inject(Router).url).toBe('/alumnosEditar/7?pestana=datos');
+        expect(confirmar).not.toHaveBeenCalled();
+      });
+
+      itSinReloj('sin cambios de Salud la dirección cambia de pestaña sin preguntar', async () => {
+        const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+        const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo(CANCELA);
+        await navegar(m, '/alumnosEditar/7?pestana=pagos');
+        expect(m.comp.pestana).toBe('pagos');
+        expect(confirmar).not.toHaveBeenCalled();
+      });
+    });
   });
 
   // ---------------------------------------------------------------- acciones: lo mismo que hoy
@@ -1365,6 +1486,48 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
         [],
         [{ metodo: 'PUT', url: '/alumnos/7/observaciones', cuerpo: { observaciones: 'Otra nota inventada' } }]
       );
+    });
+
+    itSinReloj('Salud no existe en anonimizada y Datos personales nunca edita discapacidad', async () => {
+      const datos = datosPorDefecto(); datos.alumno.alumnoEliminado = true;
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', datos);
+      expect(m.el().querySelector('pn-ficha-salud section')).toBeNull();
+      expect(m.el().querySelector('#salud-titulo')).toBeNull();
+      m.http.expectNone(r => r.url.endsWith('/salud'));
+      m.comp.toggleEditBasicInfo(); await m.asentar();
+      expect(m.el().querySelector('#tieneDiscapacidad')).toBeNull();
+      expect(texto(m.el(), '#alumno-informacion-personal')).toContain('Discapacidad');
+    });
+
+    itSinReloj('Salud anterior/siguiente: cancelar conserva alumno y confirmar descarta', async () => {
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+      const salud = m.comp.bloqueSalud!;
+      salud.saludAbierta = true;
+      salud.salud = { alumnoId: 7, registrado: true, tieneDiscapacidad: false, discapacidadTipos: [], discapacidadOtra: null,
+        lesionEnfermedad: null, descripcion: null, impideActividad: null, impideDetalle: null, alergias: null };
+      salud.editar(); salud.formulario!.alergias = 'Dato ficticio';
+      const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo({ confirmado: false, valor: null });
+      m.comp.irAlSiguiente(); await m.asentar();
+      expect(m.comp.alumnoId).toBe(7); expect(salud.formulario!.alergias).toBe('Dato ficticio');
+      confirmar.and.resolveTo({ confirmado: true, valor: null });
+      m.comp.irAlAnterior(); await m.asentar();
+      expect(m.comp.alumnoId).toBe(3); expect(salud.formulario).toBeNull();
+    });
+
+    itSinReloj('Salud confirma al salir o cambiar de pestaña; cancelar conserva edición', async () => {
+      const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos');
+      const salud = m.comp.bloqueSalud!;
+      salud.saludAbierta = true;
+      salud.salud = { alumnoId: 7, registrado: true, tieneDiscapacidad: false, discapacidadTipos: [], discapacidadOtra: null,
+        lesionEnfermedad: null, descripcion: null, impideActividad: null, impideDetalle: null, alergias: null };
+      salud.editar(); salud.formulario!.alergias = 'Dato ficticio';
+      const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo({ confirmado: false, valor: null });
+      expect(await m.comp.puedeSalir()).toBeFalse(); expect(salud.formulario!.alergias).toBe('Dato ficticio');
+      m.comp.cambiarPestana('deportes'); await m.asentar();
+      expect(m.comp.pestana).toBe('datos'); expect(salud.cambios).toBe(1);
+      confirmar.and.resolveTo({ confirmado: true, valor: null });
+      m.comp.cambiarPestana('deportes'); await m.asentar();
+      expect(m.comp.pestana).toBe('deportes'); expect(salud.formulario).toBeNull();
     });
 
     itSinReloj('datos y contacto: «Editar datos» abre la edición; guardar envía lo mismo que hoy y cancelar no envía nada', async () => {

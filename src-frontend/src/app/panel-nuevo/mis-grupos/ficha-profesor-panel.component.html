@@ -182,17 +182,28 @@
             <p class="ficha__vacio" role="status">Cargando…</p>
           } @else if (errorSalud) {
             <pn-bloque-error [titulo]="errorSalud" (reintentar)="pedirSalud()" />
-          } @else if (salud && !salud.registrado) {
+          } @else if (salud && !salud.registrado && !salud.tieneDiscapacidad) {
             <p class="ficha__vacio">Sin datos de salud registrados.</p>
           } @else if (salud) {
             <dl class="ficha__datos">
               <div>
+                <dt>Discapacidad</dt>
+                <dd>{{ salud.tieneDiscapacidad === null ? 'Sin indicar' : salud.tieneDiscapacidad ? 'Sí' : 'No' }}
+                  @if (salud.tieneDiscapacidad) {
+                  <span class="salud-pastillas">
+                    @for (tipo of tiposSalud; track tipo) {<span class="pas">{{ etiquetasDiscapacidad[tipo] }}</span>}
+                  </span>
+                  @if (salud.discapacidadTipos.includes('OTRA') && salud.discapacidadOtra) {<span class="ficha__detalle">{{ salud.discapacidadOtra }}</span>}
+                  }
+                </dd>
+              </div>
+              <div>
                 <dt>Lesión o enfermedad</dt>
-                <dd>{{ salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="ficha__detalle">{{ salud.descripcion }}</span>}</dd>
+                <dd>{{ salud.lesionEnfermedad === null ? 'Sin indicar' : salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="ficha__detalle">{{ salud.descripcion }}</span>}</dd>
               </div>
               <div>
                 <dt>Le impide alguna actividad</dt>
-                <dd>{{ salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="ficha__detalle">{{ salud.impideDetalle }}</span>}</dd>
+                <dd>{{ salud.impideActividad === null ? 'Sin indicar' : salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="ficha__detalle">{{ salud.impideDetalle }}</span>}</dd>
               </div>
               <div>
                 <dt>Alergias</dt>

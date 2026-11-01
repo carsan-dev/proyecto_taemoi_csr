@@ -73,6 +73,7 @@ class PreinscripcionServiceTest {
 	@Mock ConsentimientoService consentimientos;
 	@Mock com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 	@Mock com.taemoi.project.repositories.PreinscripcionDocumentosRepository documentos;
+	@Mock AlumnoSaludService alumnoSalud;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -85,7 +86,7 @@ class PreinscripcionServiceTest {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo());
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud);
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -723,6 +724,57 @@ class PreinscripcionServiceTest {
 	}
 
 	@Test
+	void quitarLaDiscapacidadDeLaFicha_limpiaSusTipos() {
+		Alumno existente = alumnoParaVincular(true);
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.TIENE_DISCAPACIDAD), null));
+
+		assertFalse(existente.getTieneDiscapacidad());
+		verify(alumnoSalud).limpiarDiscapacidad(3L);
+	}
+
+	@Test
+	void sinConfirmarElCampo_laDiscapacidadDeLaFichaNoCambia() {
+		Alumno existente = alumnoParaVincular(true);
+
+		service.finalizar("PRE-1", request(3L, Set.of(), null));
+
+		assertTrue(existente.getTieneDiscapacidad());
+		verifyNoInteractions(alumnoSalud);
+	}
+
+	@Test
+	void siLaFichaNoTeniaDiscapacidad_noHayNadaQueLimpiar() {
+		Alumno existente = alumnoParaVincular(false);
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.TIENE_DISCAPACIDAD), null));
+
+		assertFalse(existente.getTieneDiscapacidad());
+		verifyNoInteractions(alumnoSalud);
+	}
+
+	@Test
+	void confirmarDiscapacidadEnLaFicha_noLimpiaSusTipos() {
+		Alumno existente = alumnoParaVincular(true);
+		preinscripcion.setTieneDiscapacidad(true);
+
+		service.finalizar("PRE-1", request(3L, Set.of(CampoActualizable.TIENE_DISCAPACIDAD), null));
+
+		assertTrue(existente.getTieneDiscapacidad());
+		verifyNoInteractions(alumnoSalud);
+	}
+
+	private Alumno alumnoParaVincular(boolean discapacidad) {
+		Alumno existente = alumnoExistente(true);
+		existente.setTieneDiscapacidad(discapacidad);
+		when(alumnos.findByNif("12345678Z")).thenReturn(Optional.of(existente));
+		when(alumnos.findById(3L)).thenReturn(Optional.of(existente));
+		when(alumnoDeportes.findByAlumnoIdAndDeporte(3L, Deporte.TAEKWONDO.name()))
+				.thenReturn(Optional.of(deporte(existente, true)));
+		return existente;
+	}
+
+	@Test
 	void exigeConfirmarDiscapacidadEnSolicitudHistorica() {
 		preinscripcion.setTieneDiscapacidad(null);
 
@@ -805,7 +857,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo());
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud);
 
 		servicioPromocion.promocionarTodas();
 

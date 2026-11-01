@@ -206,6 +206,9 @@
             ],
             "scripts": [],
             "include": [
+              "src/app/panel-nuevo/salud/salud-alumno.service.spec.ts",
+              "src/app/panel-nuevo/salud/selector-discapacidad.component.spec.ts",
+              "src/app/panel-nuevo/ficha/salud/ficha-salud.component.spec.ts",
               "src/app/panel-nuevo/formato/formato-es.spec.ts",
               "src/app/panel-nuevo/formato/eur.pipe.spec.ts",
               "src/app/panel-nuevo/formato/plural.pipe.spec.ts",

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { Subscription, take } from 'rxjs';
 import { filter } from 'rxjs/operators';
@@ -17,6 +17,9 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { CobroCargoService, teclaPanelCargos } from '../cobro/cobro-cargo';
 import { eur, fecha, numero, plural } from '../formato/formato-es';
 import { enfocarOpcion, teclaEnMenu } from '../navegacion/teclado-menu';
+import { ConfirmacionService } from '../dialogo/confirmacion.service';
+import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
+import type { FichaSaludComponent } from './salud/ficha-salud.component';
 import { FichaDatosComponent } from './datos/ficha-datos.component';
 import { FichaDeportesComponent } from './deportes/ficha-deportes.component';
 import { DialogosAlumnoPanelComponent } from './dialogos/dialogos-alumno-panel.component';
@@ -98,6 +101,11 @@ class CobrosEnVuelo extends Set<number> {
   providers: [{ provide: DIALOGOS_FICHA, useClass: DialogosFichaPanel }],
 })
 export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnDestroy {
+  bloqueSalud: FichaSaludComponent | null = null;
+  private confirmandoSalidaSalud = false;
+  /** Última pestaña pedida por la dirección mientras se decide si se abandona Salud. */
+  private pestanaPorConfirmar: Pestana | null = null;
+  private readonly confirmacionSalud = inject(ConfirmacionService);
   private readonly pendientesApi = inject(PendientesAlumnoService);
   private readonly cobros = inject(CobroCargoService);
   private readonly rutaActiva = inject(ActivatedRoute);
@@ -146,6 +154,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
 
   override ngOnInit(): void {
     super.ngOnInit();
+    this.suscripciones.add(this.rutaActiva.paramMap.subscribe(() => this.bloqueSalud?.descartarSalud()));
     this.suscripciones.add(
       this.permisosSesion.obtener().subscribe({
         next: (p) => {
@@ -161,7 +170,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       this.rutaActiva.queryParamMap.subscribe((parametros) => {
         const pedida = parametros.get('pestana');
         if (pedida !== null) {
-          this.pestana = PESTANAS.some((p) => p.clave === pedida) ? (pedida as Pestana) : 'deportes';
+          this.irAPestanaDeLaDireccion(PESTANAS.some((p) => p.clave === pedida) ? (pedida as Pestana) : 'deportes');
         }
       })
     );
@@ -269,6 +278,41 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
 
   get posicion(): string {
     return this.totalPaginas > 0 ? `${numero(this.paginaActual)} de ${numero(this.totalPaginas)}` : '';
+  }
+
+  async puedeSalir(): Promise<boolean> {
+    const salud = this.bloqueSalud;
+    if (salud?.guardando) return false;
+    if (!salud?.cambios) return true;
+    if (this.confirmandoSalidaSalud) return false;
+    this.confirmandoSalidaSalud = true;
+    try {
+      const r = await this.confirmacionSalud.confirmar({
+        titulo: '¿Salir sin guardar?',
+        mensaje: textoSalirSinGuardar(salud.cambios),
+        accion: 'Salir sin guardar', cancelar: 'Seguir editando',
+        destructivo: true, nombre: 'salir-sin-guardar',
+      });
+      if (r.confirmado) salud.descartarSalud();
+      return r.confirmado;
+    } finally { this.confirmandoSalidaSalud = false; }
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  antesDeDescargar(evento: BeforeUnloadEvent): void {
+    if (this.bloqueSalud?.cambios || this.bloqueSalud?.guardando) {
+      evento.preventDefault();
+      evento.returnValue = '';
+    }
+  }
+
+  override cambiarPagina(numeroPagina: number): void {
+    if (this.bloqueSalud?.guardando) return;
+    if (this.bloqueSalud?.cambios) {
+      void this.puedeSalir().then(salir => { if (salir) super.cambiarPagina(numeroPagina); });
+      return;
+    }
+    super.cambiarPagina(numeroPagina);
   }
 
   irAlAnterior(): void {
@@ -531,6 +575,12 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   // ------------------------------------------------------------------ pestañas
 
   cambiarPestana(clave: Pestana, enfocar = false): void {
+    if (clave === this.pestana) return;
+    if (this.bloqueSalud?.guardando) return;
+    if (this.bloqueSalud?.cambios) {
+      void this.puedeSalir().then(salir => { if (salir) this.cambiarPestana(clave, enfocar); });
+      return;
+    }
     this.pestana = clave;
     this.escribirPestana();
     if (enfocar) {
@@ -568,6 +618,33 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       return null;
     }
     return `${texto}, ${plural(this.pendiente.cargos, 'cargo vencido', 'cargos vencidos')}`;
+  }
+
+  /**
+   * Atrás, Adelante o un enlace que solo cambia `?pestana=` no pasan por `canDeactivate` y cambiar de pestaña destruye
+   * el bloque de Salud: se decide aquí. Si no se abandona, la dirección vuelve a la pestaña en la que se sigue.
+   */
+  private irAPestanaDeLaDireccion(clave: Pestana): void {
+    if (this.pestanaPorConfirmar) {
+      this.pestanaPorConfirmar = clave;
+      return;
+    }
+    if (clave === this.pestana) return;
+    if (!this.bloqueSalud?.guardando && !this.bloqueSalud?.cambios) {
+      this.pestana = clave;
+      return;
+    }
+    this.pestanaPorConfirmar = clave;
+    void this.puedeSalir().catch(() => false).then((salir) => {
+      const pedida = this.pestanaPorConfirmar!;
+      this.pestanaPorConfirmar = null;
+      if (this.destruida) return;
+      if (salir) {
+        this.pestana = pedida;
+        this.cdr.markForCheck();
+      }
+      this.escribirPestana();
+    });
   }
 
   /** La pestaña en la dirección (`?pestana=`), sin apilar historial; Deportes es la de por defecto y no se escribe. */

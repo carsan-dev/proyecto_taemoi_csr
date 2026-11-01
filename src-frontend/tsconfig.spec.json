@@ -174,7 +174,10 @@
     "src/app/servicios/endpoints/solicitudes.service.spec.ts",
     "src/app/componentes/generales/pedir-al-propietario/pedir-al-propietario.spec.ts",
     "src/app/utils/subida-archivos.util.spec.ts",
-    "src/app/panel-nuevo/ficha/ficha-alumno-base.subidas.spec.ts"
+    "src/app/panel-nuevo/ficha/ficha-alumno-base.subidas.spec.ts",
+    "src/app/panel-nuevo/salud/salud-alumno.service.spec.ts",
+    "src/app/panel-nuevo/salud/selector-discapacidad.component.spec.ts",
+    "src/app/panel-nuevo/ficha/salud/ficha-salud.component.spec.ts"
   ],
   "include": [
     "src/**/*.d.ts"

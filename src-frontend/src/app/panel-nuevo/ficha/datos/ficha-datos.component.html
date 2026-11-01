@@ -12,17 +12,8 @@
     </header>
     <ng-container *ngTemplateOutlet="campos; context: { $implicit: personales }"></ng-container>
     <div class="datos__fila">
-      @if (ficha.editingBasicInfo) {
-      <div class="datos__interruptor">
-        <input type="checkbox" role="switch" id="tieneDiscapacidad" class="datos__interruptor-control"
-          [checked]="ficha.pendingBasicInfoChanges.tieneDiscapacidad ?? ficha.alumno.tieneDiscapacidad"
-          (change)="ficha.onBasicInfoChange('tieneDiscapacidad', $event)" />
-        <label for="tieneDiscapacidad">Discapacidad</label>
-      </div>
-      } @else {
       <span class="datos__etiqueta">Discapacidad</span>
       <span class="datos__valor">{{ ficha.alumno.tieneDiscapacidad ? 'Sí' : 'No' }}</span>
-      }
     </div>
   </section>
 
@@ -32,6 +23,7 @@
     </header>
     <ng-container *ngTemplateOutlet="campos; context: { $implicit: contacto }"></ng-container>
   </section>
+  <pn-ficha-salud [ficha]="ficha" [alumnoId]="ficha.alumnoId!" [anonimizado]="ficha.alumno.alumnoEliminado === true" [soloLectura]="ficha.fichaDeOtraSede" />
 </div>
 
 <ng-template #campos let-lista>

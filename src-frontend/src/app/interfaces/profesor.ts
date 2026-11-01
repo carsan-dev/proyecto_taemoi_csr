@@ -1,3 +1,5 @@
+import type { TipoDiscapacidad } from './tipo-discapacidad';
+
 /**
  * Pantallas del profesor (entrega 7, pieza E7-5). Espejo de ProfesorDTOs.java y ProfesorRequests.java de la API
  * (`/api/profesor/**`). Las respuestas ya traen los nombres de grado: estas pantallas no piden el catálogo. Las fechas
@@ -109,6 +111,11 @@ export type TipoPase = 'examen' | 'recompensa';
 
 /** AlumnoSaludDTO. `registrado = false`: todavía no hay datos. */
 export interface SaludAlumno {
+  tieneDiscapacidad: boolean | null;
+  discapacidadTipos: TipoDiscapacidad[];
+  discapacidadOtra: string | null;
+  origen?: string | null;
+  actualizadoEn?: string | null;
   alumnoId: number;
   registrado: boolean;
   lesionEnfermedad: boolean | null;

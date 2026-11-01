@@ -67,7 +67,8 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 	private static final String IMPIDE = "IMPIDE-FICTICIO-E72";
 	private static final LocalDate NACIMIENTO = LocalDate.of(2015, 3, 20);
 	private static final Set<String> CLAVES_SALUD = Set.of("salud", "registrado", "lesionEnfermedad", "descripcion",
-			"impideActividad", "impideDetalle", "alergias", "origen", "actualizadoEn");
+			"impideActividad", "impideDetalle", "alergias", "origen", "actualizadoEn", "tieneDiscapacidad",
+			"discapacidadTipos", "discapacidadOtra");
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -173,7 +174,8 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 		JsonNode salud = json.readTree(r.getResponse().getContentAsString());
 		assertEquals(Set.of("alumnoId", "registrado", "lesionEnfermedad", "descripcion", "impideActividad",
-				"impideDetalle", "alergias", "origen", "actualizadoEn"), campos(salud), "mismo DTO que gestión");
+				"impideDetalle", "alergias", "origen", "actualizadoEn", "tieneDiscapacidad", "discapacidadTipos",
+				"discapacidadOtra"), campos(salud), "mismo DTO que gestión");
 		assertEquals(tutelado, salud.get("alumnoId").asLong());
 		assertTrue(salud.get("registrado").asBoolean());
 		assertEquals(DESCRIPCION, salud.get("descripcion").asText());
@@ -199,6 +201,30 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(payload != null && payload.toString().contains(DESCRIPCION), "nunca el contenido");
 
 		assertEquals(200, estado(head(ruta), tProfA), "HEAD como GET (también registra la lectura)");
+	}
+
+	/** El profesor lee el booleano y los tipos con la misma lectura auditada; escribirlos sigue siendo solo de gestión. */
+	@Test
+	void lecturaSaludDevuelveLaDiscapacidad() throws Exception {
+		long conDiscapacidad = e.alumno("E72DISC" + e.marca, e.sA, true);
+		miembro(e.gA, conDiscapacidad);
+		String otra = "OTRA-FICTICIA-E72";
+		MvcResult guardado = peticion(put("/api/alumnos/" + conDiscapacidad + "/salud")
+				.contentType(MediaType.APPLICATION_JSON).content("{\"tieneDiscapacidad\":true,"
+						+ "\"discapacidadTipos\":[\"AUDITIVA\",\"OTRA\"],\"discapacidadOtra\":\"" + otra + "\"}"), tGestor);
+		assertEquals(200, guardado.getResponse().getStatus(), guardado.getResponse().getContentAsString());
+		long antes = eventosSalud(conDiscapacidad, profA);
+
+		MvcResult r = peticion(get("/api/profesor/alumnos/" + conDiscapacidad + "/salud"), tProfA);
+
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		JsonNode salud = json.readTree(r.getResponse().getContentAsString());
+		assertTrue(salud.get("tieneDiscapacidad").asBoolean());
+		assertEquals(List.of("AUDITIVA", "OTRA"), json.convertValue(salud.get("discapacidadTipos"), List.class));
+		assertEquals(otra, salud.get("discapacidadOtra").asText());
+		assertEquals(antes + 1, eventosSalud(conDiscapacidad, profA));
+		assertEquals(403, estado(put("/api/alumnos/" + conDiscapacidad + "/salud").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"tieneDiscapacidad\":false}"), tProfA));
 	}
 
 	@Test

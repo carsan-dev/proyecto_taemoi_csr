@@ -687,7 +687,9 @@ cancelar). Capturas con «Pagos a la vista».
 **Riesgos:** perder una acción poco usada (el inventario manda); el formulario de edición; la salud (si aparece, con las
 mismas reglas de lectura y registro de hoy). La ficha de hoy muestra un dato de salud, «Discapacidad» (Sí/No, editable con
 «Editar»): la nueva lo muestra y lo edita en «Datos y contacto» con el mismo DTO y el mismo guardado (`PUT /alumnos/{id}`),
-así que le aplica las mismas reglas de lectura y de registro que hoy, sin registro aparte.
+así que le aplica las mismas reglas de lectura y de registro que hoy, sin registro aparte. Decisiones 407 y 408
+(01/11/2026): «Discapacidad» sigue en «Datos personales» solo como lectura y se edita en el bloque «Salud», con el
+tipo cifrado y la lectura registrada, por `PUT /alumnos/{id}/salud`.
 
 **Notas para la PR:** tabla del Anexo A marcada; qué quedó a un clic; cinturones medidos.
 

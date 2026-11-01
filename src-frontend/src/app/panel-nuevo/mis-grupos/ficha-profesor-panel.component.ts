@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, finalize, firstValueFrom } from 'rxjs';
 
+import { ORDEN_DISCAPACIDAD, TIPOS_DISCAPACIDAD } from '../../interfaces/tipo-discapacidad';
 import { AsistenciaDeAlumno, DiaAsistencia } from '../../interfaces/asistencia';
 import {
   ContactoAlumno,
@@ -117,6 +118,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   /** Un pase en marcha (el diálogo abierto): impide abrir otro. */
   pasando = false;
 
+  readonly etiquetasDiscapacidad = TIPOS_DISCAPACIDAD;
+  get tiposSalud() { return ORDEN_DISCAPACIDAD.filter(t => this.salud?.discapacidadTipos.includes(t)); }
   saludAbierta = false;
   cargandoSalud = false;
   salud: SaludAlumno | null = null;

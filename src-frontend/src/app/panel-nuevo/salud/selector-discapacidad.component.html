@@ -1,0 +1,24 @@
+<div class="campo">
+  <span class="lbl" [id]="id + '-tipos'">Tipo de discapacidad <span>opcional</span></span>
+  <p class="sec" [id]="id + '-ayuda'">Puedes marcar varios.</p>
+  <div class="ops" role="group" [attr.aria-labelledby]="id + '-tipos'" [attr.aria-describedby]="id + '-ayuda'">
+    @for (tipo of orden; track tipo) {
+    <button type="button" class="op" [attr.aria-pressed]="tipos.includes(tipo)" [disabled]="deshabilitado" (click)="alternar(tipo)">
+      @if (tipos.includes(tipo)) {<span class="marca" aria-hidden="true">✓</span>}
+      {{ etiquetas[tipo] }}
+    </button>
+    }
+  </div>
+</div>
+@if (tipos.includes('OTRA')) {
+<div class="campo otra">
+  <label class="lbl" [for]="id + '-otra'">Indica cuál <span>obligatorio</span></label>
+  <input class="ctl" [id]="id + '-otra'" [value]="otra" maxlength="4000" required [disabled]="deshabilitado"
+    [attr.aria-invalid]="error ? 'true' : null" [attr.aria-describedby]="id + '-contador' + (error ? ' ' + id + '-error' : '')"
+    (input)="otraChange.emit($any($event.target).value)" />
+  <div class="bajo">
+    <span class="error" [id]="id + '-error'">@if (error) {Indica cuál es la discapacidad.}</span>
+    <span [id]="id + '-contador'">{{ otra.length }} / 4000</span>
+  </div>
+</div>
+}

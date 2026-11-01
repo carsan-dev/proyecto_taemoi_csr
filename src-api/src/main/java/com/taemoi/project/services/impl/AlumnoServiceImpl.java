@@ -159,6 +159,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private AlumnoSaludRepository alumnoSaludRepository;
 
+	/** Quita los tipos de discapacidad del alumno que deja de tenerla. */
+	@Autowired
+	private com.taemoi.project.services.AlumnoSaludService alumnoSaludService;
+
 	@Autowired
 	private TurnoRepository turnoRepository;
 
@@ -848,7 +852,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 						alumnoActualizado.getAutorizacionWeb());
 			}
 
-			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
+			// Nulo (o ausente) = sin cambios: el panel lo edita con la salud. Si deja de tener discapacidad, sin tipos.
+			Boolean tieneDiscapacidad = alumnoActualizado.getTieneDiscapacidad();
+			if (tieneDiscapacidad != null) {
+				boolean dejaDeTenerla = Boolean.TRUE.equals(alumnoExistente.getTieneDiscapacidad()) && !tieneDiscapacidad;
+				alumnoExistente.setTieneDiscapacidad(tieneDiscapacidad);
+				if (dejaDeTenerla) {
+					alumnoSaludService.limpiarDiscapacidad(id);
+				}
+			}
 
 			// Manejo de la imagen del alumno
 			try {
@@ -1885,15 +1897,23 @@ public class AlumnoServiceImpl implements AlumnoService {
 	 * sus convocatorias, que se quedan. Una sola transacción; una segunda llamada no hace nada. Con un encargo con la
 	 * devolución pendiente, 409 antes de tocar nada (como el borrado).
 	 *
+	 * <p>Lo primero es bloquear la fila del alumno, igual que {@code AlumnoSaludService#guardar}: las dos operaciones se
+	 * serializan, así que esa escritura no puede deshacer lo anonimizado ni recrear su fila de salud. El estado se decide
+	 * con lo confirmado, no con la ficha que la sesión pudiera tener ya cargada (open-in-view).
+	 *
 	 * @return {@code false} si el alumno no es de la escuela activa.
 	 */
 	@Override
 	@Transactional
 	public boolean anonimizarAlumno(@NonNull Long id) {
-		return alumnoRepository.buscarPorIdEnOrganizacionActiva(id).map(alumno -> {
-			if (alumno.getAnonimizadoEn() != null) {
-				return true;
-			}
+		Optional<AlumnoRepository.EstadoSedeAlumno> estado = alumnoRepository.bloquearEstadoDeSede(id);
+		if (estado.isEmpty()) {
+			return false;
+		}
+		if (estado.get().getAnonimizadoEn() != null) {
+			return true;
+		}
+		return alumnoRepository.releerBloqueado(id).map(alumno -> {
 			List<Long> cargosDelAlumno = new ArrayList<>();
 			alumno.getProductosAlumno().forEach(pa -> cargosDelAlumno.add(pa.getId()));
 			alumno.getConvocatorias().stream().map(AlumnoConvocatoria::getProductoAlumno).filter(Objects::nonNull)

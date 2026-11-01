@@ -130,6 +130,63 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     quitarTokens();
   });
 
+  it('POST nunca incluye tipos ni Otra; PUT salud termina antes de navegar', () => {
+    crear(); rellenar();
+    comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['OTRA'], discapacidadOtra: 'Detalle ficticio' });
+    comp().darDeAlta();
+    const post = http.expectOne(API + '/alumnos/crear');
+    const cuerpo = JSON.parse((post.request.body as FormData).get('nuevo') as string);
+    expect(cuerpo.tieneDiscapacidad).toBeTrue();
+    expect('discapacidadTipos' in cuerpo).toBeFalse(); expect('discapacidadOtra' in cuerpo).toBeFalse();
+    post.flush({ id: 55 });
+    expect(navegar).not.toHaveBeenCalled(); expect(comp().enviando).toBeTrue();
+    const put = http.expectOne(API + '/alumnos/55/salud');
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual({ tieneDiscapacidad: true, discapacidadTipos: ['OTRA'], discapacidadOtra: 'Detalle ficticio', origen: null,
+      lesionEnfermedad: null, descripcion: null, impideActividad: null, impideDetalle: null, alergias: null });
+    put.flush({});
+    expect(navegar).toHaveBeenCalledWith(['/alumnosEditar', 55]);
+    expect(textosAvisos()).toContain('Alumno creado con 1 deporte(s)');
+  });
+
+  it('fallo del PUT: alumno creado, aviso y navegación, sin repetir POST', () => {
+    crear(); rellenar();
+    comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['FISICA'] }); comp().darDeAlta();
+    http.expectOne(API + '/alumnos/crear').flush({ id: 55 });
+    http.expectOne(API + '/alumnos/55/salud').flush({ mensaje: 'Fallo' }, { status: 500, statusText: 'Error' });
+    expect(navegar).toHaveBeenCalledWith(['/alumnosEditar', 55]);
+    expect(textosAvisos()).toContain('Alumno creado. No se guardó el tipo de discapacidad: añádelo en su ficha, en Salud.');
+    comp().darDeAlta();
+    http.expectNone(API + '/alumnos/crear'); expect(comp().enviando).toBeFalse();
+  });
+
+  it('sin id con tipos avisa y navega al listado, sin PUT ni otro POST', () => {
+    crear(); rellenar(); comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['FISICA'] }); comp().darDeAlta();
+    http.expectOne(API + '/alumnos/crear').flush({});
+    expect(navegar).toHaveBeenCalledWith(['/alumnosListar']);
+    expect(textosAvisos()).toContain('Alumno creado. No se guardó el tipo de discapacidad: añádelo en su ficha, en Salud.');
+    http.expectNone(r => r.url.endsWith('/salud') || r.url.endsWith('/crear'));
+  });
+
+  it('sin tipos no hace PUT salud, aunque tenga discapacidad', () => {
+    crear(); rellenar(); comp().form.patchValue({ tieneDiscapacidad: true }); comp().darDeAlta();
+    http.expectOne(API + '/alumnos/crear').flush({ id: 55 });
+    http.expectNone(r => r.url.endsWith('/salud'));
+    expect(navegar).toHaveBeenCalledWith(['/alumnosEditar', 55]);
+  });
+
+  it('Otra vacía invalida el formulario y entra en Faltan; apagar vacía la selección', () => {
+    crear(); rellenar(); comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['OTRA'] });
+    comp().darDeAlta(); fixture.detectChanges();
+    expect(comp().form.invalid).toBeTrue();
+    expect(texto(el().querySelector('.alta__resumen-errores'))).toContain('Indica cuál es la discapacidad.');
+    expect(texto(el().querySelector('#alta-discapacidad-error'))).toBe('Indica cuál es la discapacidad.');
+    http.expectNone(API + '/alumnos/crear');
+    comp().cambiarOtra('Texto'); expect(comp().form.valid).toBeTrue();
+    comp().alternarDiscapacidad();
+    expect(comp().valor('discapacidadTipos')).toEqual([]); expect(comp().valor('discapacidadOtra')).toBe('');
+  });
+
   it('mantiene la autorización web como un segmento compacto y conserva el valor booleano', () => {
     crear();
     const segmento = el().querySelector<HTMLElement>('.alta__segmento')!;

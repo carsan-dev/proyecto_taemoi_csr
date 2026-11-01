@@ -27,7 +27,8 @@ import jakarta.persistence.LockModeType;
  */
 @Repository
 public interface AlumnoRepository
-		extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno>, AlumnoIdsRepository {
+		extends JpaRepository<Alumno, Long>, JpaSpecificationExecutor<Alumno>, AlumnoIdsRepository,
+		AlumnoBloqueoRepository {
 
 	/**
 	 * Guarda un objeto AlumnoDTO en la base de datos.
@@ -298,7 +299,8 @@ public interface AlumnoRepository
 
 	/**
 	 * Pieza 9-1: bloquea (SELECT ... FOR UPDATE) el alumno de la escuela activa y devuelve su estado confirmado, sin
-	 * cargar la entidad (una consulta con bloqueo no refresca la instancia que la sesión ya tuviera).
+	 * cargar la entidad (una consulta con bloqueo no refresca la instancia que la sesión ya tuviera). También serializa
+	 * guardar la salud y eliminar anonimizando; para escribir en la ficha, {@link #releerBloqueado}.
 	 */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT a.sedePrincipalId AS sedePrincipalId, a.anonimizadoEn AS anonimizadoEn FROM Alumno a WHERE a.id = :id")
