@@ -87,6 +87,20 @@ describe('ColaSubidas', () => {
     expect(nombres()).toEqual(['b.mp4']);
   });
 
+  it('cada subida terminada dice el sello con el que empezó, no el de su final', async () => {
+    let sello = 7;
+    cola.iniciar('T', 'b', () => sello);
+    const inicios: number[] = [];
+    cola.terminada.subscribe((t) => inicios.push(t.inicio));
+
+    await cola.agregar([fichero('a.mp4'), fichero('b.mp4')]);
+    sello = 8;
+    terminar(0, { fichero: 'a.mp4', bloque: DETALLE });
+    sello = 9;
+    terminar(1, { fichero: 'b.mp4', bloque: DETALLE });
+    expect(inicios).toEqual([7, 8]);
+  });
+
   it('prevalida extensión y tamaño: no envía nada y deja la fila solo con Quitar', async () => {
     await cola.agregar([fichero('Examen_completo.mov', 612 * MB)]);
     expect(envios.length).toBe(0);

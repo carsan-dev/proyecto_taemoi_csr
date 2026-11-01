@@ -289,6 +289,150 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       expect(barra()).not.toBeNull();
     });
 
+    describe('detalles cruzados: uno más viejo nunca pisa a uno más nuevo', () => {
+      const A = video('a.mp4', 'Posiciones básicas');
+      const B = video('b.mp4', 'Técnicas de brazo');
+      const C = video('c.mp4', 'Taeguk Il Jang');
+      const D = video('d.mp4', 'Nuevo');
+      const conD = (): DetalleBloque => detalle({ videos: [A, B, C, D] });
+
+      async function subirD(): Promise<TestRequest> {
+        elegirFicheros('input[multiple]', [ficheroVideo('d.mp4')]);
+        await esperar();
+        return http.expectOne(`${API}/videos?nombre=d.mp4`);
+      }
+
+      function guardar(): TestRequest {
+        comp().mover(0, 1);
+        pintar();
+        boton(barra()!, 'Guardar orden').click();
+        return http.expectOne(`${API}/videos/orden`);
+      }
+
+      it('la respuesta de guardar, llegada tras la subida, no borra el vídeo y se relee el bloque', async () => {
+        cargar();
+        const subida = await subirD();
+        const orden = guardar();
+
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        orden.flush(detalle({ videos: [B, A, C] }));
+        pintar();
+        expect(titulos()).toEqual(['Técnicas de brazo', 'Posiciones básicas', 'Taeguk Il Jang', 'Nuevo']);
+        expect(barra()).toBeNull();
+        expect(exito).toHaveBeenCalledWith('Orden guardado.');
+
+        http.expectOne(API).flush(detalle({ videos: [B, A, C, D] }));
+        pintar();
+        expect(titulos()).toEqual(['Técnicas de brazo', 'Posiciones básicas', 'Taeguk Il Jang', 'Nuevo']);
+        expect(barra()).toBeNull();
+      });
+
+      it('la subida que acaba tras guardar no recoloca el orden: se relee', async () => {
+        cargar();
+        const subida = await subirD();
+        const orden = guardar();
+
+        orden.flush(detalle({ videos: [B, A, C] }));
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        http.expectOne(API).flush(detalle({ videos: [B, A, C, D] }));
+        pintar();
+        expect(titulos()).toEqual(['Técnicas de brazo', 'Posiciones básicas', 'Taeguk Il Jang', 'Nuevo']);
+        expect(barra()).toBeNull();
+      });
+
+      it('dos escrituras cruzadas: la segunda respuesta no se aplica y se relee', async () => {
+        cargar();
+        comp().editando = 'a.mp4';
+        comp().guardarTitulo('Otro');
+        const titulo = http.expectOne(`${API}/videos/a.mp4`);
+        comp().editando = null;
+        pintar();
+        abrirMenu(filas()[2]);
+        opcion('Eliminar').click();
+        await esperar();
+        const borrado = http.expectOne(`${API}/videos/c.mp4`);
+
+        borrado.flush(detalle({ videos: [A, B] }));
+        titulo.flush(detalle({ videos: [video('a.mp4', 'Otro'), B, C] }));
+        pintar();
+        expect(titulos()).toEqual(['Posiciones básicas', 'Técnicas de brazo']);
+
+        http.expectOne(API).flush(detalle({ videos: [video('a.mp4', 'Otro'), B] }));
+        pintar();
+        expect(titulos()).toEqual(['Otro', 'Técnicas de brazo']);
+      });
+
+      it('una relectura adelantada por una escritura se descarta y se repite', async () => {
+        cargar();
+        const subida = await subirD();
+        guardar().flush({ mensaje: 'La lista de vídeos ha cambiado.' }, { status: 409, statusText: 'Conflict' });
+        const lectura = http.expectOne(API);
+
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        lectura.flush(detalle());
+        pintar();
+        expect(titulos()).toContain('Nuevo');
+
+        http.expectOne(API).flush(conD());
+        pintar();
+        expect(titulos()).toContain('Nuevo');
+      });
+
+      it('si el orden choca con un vídeo nuevo (409), se conserva, con el nuevo al final, y se avisa', () => {
+        cargar();
+        guardar().flush({ mensaje: 'La lista de vídeos ha cambiado.' }, { status: 409, statusText: 'Conflict' });
+        expect(error).toHaveBeenCalledWith('La lista de vídeos ha cambiado.');
+
+        http.expectOne(API).flush(conD());
+        pintar();
+        expect(titulos()).toEqual(['Técnicas de brazo', 'Posiciones básicas', 'Taeguk Il Jang', 'Nuevo']);
+        expect(barra()).not.toBeNull();
+
+        boton(barra()!, 'Guardar orden').click();
+        const otra = http.expectOne(`${API}/videos/orden`);
+        expect(otra.request.body).toEqual(['b.mp4', 'a.mp4', 'c.mp4', 'd.mp4']);
+        otra.flush(detalle({ videos: [B, A, C, D] }));
+        pintar();
+        expect(barra()).toBeNull();
+      });
+
+      it('una relectura por escrituras cruzadas conserva el orden sin guardar', async () => {
+        cargar();
+        const subida = await subirD();
+        comp().editando = 'a.mp4';
+        comp().guardarTitulo('Otro');
+        http.expectOne(`${API}/videos/a.mp4`).flush(detalle({ videos: [video('a.mp4', 'Otro'), B, C] }));
+        comp().mover(0, 1);
+
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        http.expectOne(API).flush(detalle({ videos: [video('a.mp4', 'Otro'), B, C, D] }));
+        pintar();
+        expect(titulos()).toEqual(['Técnicas de brazo', 'Otro', 'Taeguk Il Jang', 'Nuevo']);
+        expect(barra()).not.toBeNull();
+      });
+
+      it('tras destruir la pantalla no se relee', async () => {
+        cargar();
+        const subida = await subirD();
+        const orden = guardar();
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        fixture.destroy();
+        orden.flush(detalle({ videos: [B, A, C] }));
+        http.expectNone(API);
+      });
+
+      it('sin cruces no se relee nada de más', async () => {
+        cargar();
+        const subida = await subirD();
+        subida.flush({ fichero: 'd.mp4', bloque: conD() });
+        pintar();
+        guardar().flush(detalle({ videos: [B, A, C, D] }));
+        pintar();
+        expect(barra()).toBeNull();
+        http.expectNone(API);
+      });
+    });
+
     it('en móvil: subir y bajar van en el menú y el botón es «Guardar»', () => {
       cargar(detalle(), true);
       expect(el().querySelector('.vid__subir')).toBeNull();

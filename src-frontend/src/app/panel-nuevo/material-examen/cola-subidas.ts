@@ -26,6 +26,8 @@ export interface SubidaVideo {
 export interface SubidaTerminada {
   nombre: string;
   detalle: DetalleBloque;
+  /** El sello de `iniciar` al empezar el envío. */
+  inicio: number;
 }
 
 /** Comprueba que el navegador puede leer el fichero con solo un byte: el vídeo no se copia a memoria. */
@@ -56,10 +58,13 @@ export class ColaSubidas implements OnDestroy {
   private contador = 0;
   private activa: { clave: number; suscripcion: Subscription } | null = null;
   private destruida = false;
+  private sello: () => number = () => 0;
 
-  iniciar(disciplina: string, bloque: string): void {
+  /** `sello` lo pone la pantalla: se anota al empezar cada envío para que, al acabar, sepa qué pasó entretanto. */
+  iniciar(disciplina: string, bloque: string, sello: () => number = () => 0): void {
     this.disciplina = disciplina;
     this.bloque = bloque;
+    this.sello = sello;
   }
 
   ngOnDestroy(): void {
@@ -133,6 +138,7 @@ export class ColaSubidas implements OnDestroy {
     }
     this.actualizar(item.clave, { estado: 'subiendo' });
     let cargados = 0;
+    const inicio = this.sello();
     // `activa` se fija antes de suscribirse: una respuesta síncrona no debe dejarla apuntando a una subida ya acabada.
     const activa = { clave: item.clave, suscripcion: new Subscription() };
     this.activa = activa;
@@ -143,7 +149,7 @@ export class ColaSubidas implements OnDestroy {
             cargados = evento.loaded;
             this.actualizar(item.clave, { cargados, total: evento.total ?? item.total });
           } else if (evento.type === HttpEventType.Response && evento.body) {
-            this.acabar(item, evento.body);
+            this.acabar(item, evento.body, inicio);
           }
         },
         error: (error) => {
@@ -161,10 +167,10 @@ export class ColaSubidas implements OnDestroy {
       : this.api.subirVideo(this.disciplina, this.bloque, item.archivo);
   }
 
-  private acabar(item: SubidaVideo, cuerpo: SubidaMaterial | DetalleBloque): void {
+  private acabar(item: SubidaVideo, cuerpo: SubidaMaterial | DetalleBloque, inicio: number): void {
     this.activa = null;
     this.items.update((lista) => lista.filter((i) => i.clave !== item.clave));
-    this.terminada.next({ nombre: item.nombre, detalle: 'bloque' in cuerpo ? cuerpo.bloque : cuerpo });
+    this.terminada.next({ nombre: item.nombre, detalle: 'bloque' in cuerpo ? cuerpo.bloque : cuerpo, inicio });
     this.siguiente();
   }
 }

@@ -57,6 +57,9 @@ type MandoOrden = 'asa' | 'subir' | 'bajar';
  * subida y orden, temario y documentación. Tras cada escritura manda el detalle que devuelve la API. El orden local se
  * guarda aparte: lo que llega mientras hay un orden sin guardar respeta ese orden y añade lo nuevo al final.
  *
+ * La API no versiona el detalle y las respuestas pueden cruzarse (un vídeo tarda minutos en subir): cada petición anota
+ * el `sello` al empezar y, si al volver ha llegado otro detalle entretanto, no sabe cuál es más nuevo y relee el bloque.
+ *
  * Los vídeos van tal cual (hasta 500 MB, no caben en memoria) y por la cola, con su progreso; el temario y los documentos
  * pasan por `prepararFicheroParaSubida`, por el fallo de lectura de Chrome en Android.
  */
@@ -133,6 +136,8 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   private readonly suscripciones = new Subscription();
   private consulta: MediaQueryList | null = null;
   private destruido = false;
+  /** Sube cada vez que cambia el detalle. */
+  private sello = 0;
   private readonly alCambiarAncho = (e: MediaQueryListEvent): void => {
     this.movil = e.matches;
     this.cdr.detectChanges();
@@ -233,10 +238,10 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
     const parametros = this.ruta.snapshot.paramMap;
     this.disciplina = parametros.get('disciplina') ?? '';
     this.bloqueId = parametros.get('bloque') ?? '';
-    this.cola.iniciar(this.disciplina, this.bloqueId);
+    this.cola.iniciar(this.disciplina, this.bloqueId, () => this.sello);
     this.suscripciones.add(
-      this.cola.terminada.subscribe(({ nombre, detalle }) => {
-        this.aplicar(detalle);
+      this.cola.terminada.subscribe(({ nombre, detalle, inicio }) => {
+        this.recibir(detalle, inicio);
         this.anunciar(`Subida terminada: ${nombre}.`);
         this.cdr.markForCheck();
       })
@@ -255,15 +260,23 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
     this.consulta?.removeEventListener?.('change', this.alCambiarAncho);
   }
 
-  cargar(): void {
+  /** `alLeer` corre con el bloque ya en pantalla. Si una escritura se adelanta a la lectura, esta se repite. */
+  cargar(alLeer?: () => void): void {
+    if (this.destruido) {
+      return;
+    }
     this.lectura?.unsubscribe();
     this.estado = 'cargando';
+    const inicio = this.sello;
     this.lectura = this.api.detalle(this.disciplina, this.bloqueId).subscribe({
       next: (detalle) => {
-        this.detalle = detalle;
-        this.videos = detalle.videos;
-        this.movido = null;
+        if (inicio !== this.sello) {
+          this.cargar(alLeer);
+          return;
+        }
+        this.aplicar(detalle);
         this.estado = 'listo';
+        alLeer?.();
         this.cdr.markForCheck();
       },
       error: () => {
@@ -275,11 +288,25 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
 
   /** El detalle que devuelve cada escritura. Si hay un orden sin guardar, se conserva. */
   private aplicar(detalle: DetalleBloque): void {
-    const conservar = this.ordenSinGuardar;
-    this.detalle = detalle;
-    this.videos = conservar ? fusionarOrden(this.videos, detalle.videos) : detalle.videos;
+    this.poner(detalle, this.ordenSinGuardar ? fusionarOrden(this.videos, detalle.videos) : detalle.videos);
     if (!this.ordenSinGuardar) {
       this.movido = null;
+    }
+  }
+
+  private poner(detalle: DetalleBloque, videos: VideoDetalle[]): void {
+    this.sello++;
+    this.detalle = detalle;
+    this.videos = videos;
+  }
+
+  /** La respuesta de una escritura que empezó con el sello `inicio`: si otro detalle llegó entretanto, se relee. */
+  private recibir(detalle: DetalleBloque, inicio: number, alAcabar?: () => void): void {
+    if (inicio === this.sello) {
+      this.aplicar(detalle);
+      alAcabar?.();
+    } else {
+      this.cargar(alAcabar);
     }
   }
 
@@ -426,11 +453,19 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       return;
     }
     this.guardandoOrden = true;
+    const inicio = this.sello;
     this.api.ordenarVideos(this.disciplina, this.bloqueId, this.videos.map((v) => v.fichero)).subscribe({
       next: (detalle) => {
         this.guardandoOrden = false;
-        this.detalle = detalle;
-        this.videos = detalle.videos;
+        if (inicio === this.sello) {
+          this.poner(detalle, detalle.videos);
+        } else {
+          // Llegó otro detalle mientras se guardaba: de esta respuesta vale el orden, y de aquel, qué vídeos hay.
+          const ultimo = this.detalle ?? detalle;
+          const videos = fusionarOrden(detalle.videos, ultimo.videos);
+          this.poner({ ...ultimo, videos }, videos);
+          this.cargar();
+        }
         this.movido = null;
         this.avisos.exito('Orden guardado.');
         this.cdr.markForCheck();
@@ -438,7 +473,8 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       error: (error: unknown) => {
         this.guardandoOrden = false;
         this.avisos.error(mensajeErrorSubida(error, 'No se pudo guardar el orden. Inténtalo de nuevo.'));
-        // Otra persona cambió la lista: el orden local ya no vale.
+        // La lista cambió (otra persona o una subida de esta pantalla): el mensaje de la API lo dice, y al releer el orden
+        // local se conserva, con lo nuevo al final, para volver a guardarlo.
         if (error instanceof HttpErrorResponse && error.status === 409) {
           this.cargar();
         }
@@ -503,10 +539,11 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       return;
     }
     this.guardandoTitulo = true;
+    const inicio = this.sello;
     this.api.cambiarTitulo(this.disciplina, this.bloqueId, v.fichero, titulo).subscribe({
       next: (detalle) => {
         this.guardandoTitulo = false;
-        this.aplicar(detalle);
+        this.recibir(detalle, inicio);
         this.editando = null;
         this.avisos.exito('Título guardado.');
         this.cdr.markForCheck();
@@ -546,10 +583,10 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
 
   /** Una escritura que devuelve el detalle: lo aplica, o enseña el mensaje de la API. */
   private escribir(peticion: Observable<DetalleBloque>, porDefecto: string, alAcabar?: () => void): void {
+    const inicio = this.sello;
     peticion.subscribe({
       next: (detalle) => {
-        this.aplicar(detalle);
-        alAcabar?.();
+        this.recibir(detalle, inicio, alAcabar);
         this.cdr.markForCheck();
       },
       error: (error: unknown) => {
@@ -600,11 +637,12 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       this.cdr.markForCheck();
       return;
     }
+    const inicio = this.sello;
     this.suscripciones.add(
       this.api.subirTemario(this.disciplina, this.bloqueId, archivo).subscribe({
         next: (detalle) => {
           this.enviandoTemario = false;
-          this.aplicar(detalle);
+          this.recibir(detalle, inicio);
           this.avisos.exito('Temario guardado.');
           this.cdr.markForCheck();
         },
@@ -685,11 +723,12 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   }
 
   private enviarDocumento<T>(peticion: Observable<T>, aDetalle: (respuesta: T) => DetalleBloque, exito: string): void {
+    const inicio = this.sello;
     this.suscripciones.add(
       peticion.subscribe({
         next: (respuesta) => {
           this.enviandoDocumento = false;
-          this.aplicar(aDetalle(respuesta));
+          this.recibir(aDetalle(respuesta), inicio);
           this.avisos.exito(exito);
           this.cdr.markForCheck();
         },
