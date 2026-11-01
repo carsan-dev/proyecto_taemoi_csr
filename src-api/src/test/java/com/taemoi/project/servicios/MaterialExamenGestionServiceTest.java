@@ -140,9 +140,13 @@ class MaterialExamenGestionServiceTest {
 		}
 	}
 
-	/** Doble con los dos puntos que un test no puede provocar de verdad: el movimiento y el espacio en disco. */
+	/** Doble con lo que un test no puede provocar de verdad: los movimientos, el borrado y el espacio en disco. */
 	private class GestionDePrueba extends MaterialExamenGestionService {
 		IOException falloAlMover;
+		/** Destinos de {@link #moverFichero} que fallan, por nombre de fichero. */
+		java.util.function.Predicate<String> falloAlPublicar = nombre -> false;
+		final List<String> publicados = new ArrayList<>();
+		IOException falloAlBorrar;
 		long espacio = Long.MAX_VALUE;
 
 		GestionDePrueba() {
@@ -156,6 +160,24 @@ class MaterialExamenGestionServiceTest {
 				throw falloAlMover;
 			}
 			super.moverCarpeta(origen, destino);
+		}
+
+		@Override
+		protected void moverFichero(Path origen, Path destino) throws IOException {
+			String nombre = destino.getFileName().toString();
+			publicados.add(nombre);
+			if (falloAlPublicar.test(nombre)) {
+				throw new IOException("sin poder publicar " + nombre);
+			}
+			super.moverFichero(origen, destino);
+		}
+
+		@Override
+		protected void borrarFichero(Path fichero) throws IOException {
+			if (falloAlBorrar != null) {
+				throw falloAlBorrar;
+			}
+			super.borrarFichero(fichero);
 		}
 
 		@Override
@@ -1239,6 +1261,158 @@ class MaterialExamenGestionServiceTest {
 		lectura.carpetasResueltas = 0;
 		assertEquals(0, lectura.leerBloque(KB, B01).videos().size());
 		assertEquals(1, lectura.carpetasResueltas, "otra escuela nunca recurre a la legada");
+	}
+
+	// ------------------------------------------------------------------ publicación
+
+	/** Un bloque con el índice ya escrito, un título propio y lo que ve la familia antes de la escritura que va a fallar. */
+	private String bloqueConIndice(Long alumnoId) throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		video(legada, "02_soguis.mp4");
+		gestion.cambiarTitulo(TKD, B01, "01_saludo.mp4", "El saludo");
+		org.mockito.Mockito.clearInvocations(auditoria);
+		doble.publicados.clear();
+		alumno(alumnoId, TKD, TipoGrado.BLANCO);
+		return instantanea(alumnoId, TKD);
+	}
+
+	private List<String> ficherosDelIndice(Path carpeta) throws IOException {
+		List<String> ficheros = new ArrayList<>();
+		json.readTree(carpeta.resolve("index.json").toFile()).get("videos").forEach(e -> ficheros.add(e.get("file").asText()));
+		return ficheros;
+	}
+
+	@Test
+	void subirVideo_primeroElIndiceYDespuesElFichero() throws Exception {
+		bloqueConIndice(70L);
+
+		gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100));
+
+		assertEquals(List.of("index.json", "nuevo.mp4"), doble.publicados);
+	}
+
+	@Test
+	void subirVideo_sinPoderEscribirElIndice_500YNoAparece() throws Exception {
+		String antes = bloqueConIndice(71L);
+		Path carpeta = propia(1L, "taekwondo", B01);
+		String indice = Files.readString(carpeta.resolve("index.json"));
+		doble.falloAlPublicar = "index.json"::equals;
+
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR,
+				estadoDe(() -> gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100))));
+
+		assertEquals(indice, Files.readString(carpeta.resolve("index.json")));
+		assertEquals(Set.of("01_saludo.mp4", "02_soguis.mp4"), nombres(carpeta.resolve("videos")));
+		sinTemporales(carpeta);
+		assertEquals(antes, instantanea(71L, TKD));
+		verify(auditoria, never()).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void subirVideo_sinPoderMover_restauraElIndice() throws Exception {
+		String antes = bloqueConIndice(72L);
+		Path carpeta = propia(1L, "taekwondo", B01);
+		doble.falloAlPublicar = "nuevo.mp4"::equals;
+
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR,
+				estadoDe(() -> gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100))));
+
+		assertEquals(List.of("01_saludo.mp4", "02_soguis.mp4"), ficherosDelIndice(carpeta));
+		assertEquals(Set.of("01_saludo.mp4", "02_soguis.mp4"), nombres(carpeta.resolve("videos")));
+		sinTemporales(carpeta);
+		assertEquals(antes, instantanea(72L, TKD));
+		assertEquals("El saludo", gestion.detalle(TKD, B01).videos().get(0).titulo());
+		verify(auditoria, never()).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void trasUnaCaidaEntreElIndiceYElMovimiento_laEntradaEsInocuaYSePuedeRepetir() throws Exception {
+		String antes = bloqueConIndice(73L);
+		Path carpeta = propia(1L, "taekwondo", B01);
+		// Mover falla y restaurar también: lo que dejaría una caída entre los dos pasos.
+		java.util.concurrent.atomic.AtomicInteger indices = new java.util.concurrent.atomic.AtomicInteger();
+		doble.falloAlPublicar = nombre -> "nuevo.mp4".equals(nombre)
+				|| ("index.json".equals(nombre) && indices.incrementAndGet() > 1);
+		estadoDe(() -> gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100)));
+		assertTrue(ficherosDelIndice(carpeta).contains("nuevo.mp4"), "la entrada sin fichero");
+
+		assertEquals(antes, instantanea(73L, TKD));
+		assertEquals(2, gestion.detalle(TKD, B01).videos().size());
+		assertEquals(2, gestion.listar().totales().videos());
+
+		doble.falloAlPublicar = nombre -> false;
+		assertEquals("nuevo.mp4", gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100)).fichero());
+		assertEquals(List.of("01_saludo.mp4", "02_soguis.mp4", "nuevo.mp4"), ficherosDelIndice(carpeta));
+		assertEquals(3, gestion.detalle(TKD, B01).videos().get(2).orden());
+	}
+
+	@Test
+	void eliminarVideo_sinPoderBorrar_restauraElIndice() throws Exception {
+		String antes = bloqueConIndice(74L);
+		Path carpeta = propia(1L, "taekwondo", B01);
+		doble.falloAlBorrar = new IOException("fichero en uso");
+
+		assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, estadoDe(() -> gestion.eliminarVideo(TKD, B01, "01_saludo.mp4")));
+
+		assertEquals(List.of("01_saludo.mp4", "02_soguis.mp4"), ficherosDelIndice(carpeta));
+		assertEquals(Set.of("01_saludo.mp4", "02_soguis.mp4"), nombres(carpeta.resolve("videos")));
+		assertEquals(antes, instantanea(74L, TKD));
+		sinTemporales(carpeta);
+		verify(auditoria, never()).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void adoptar_conEmpatesDeOrden_mismaInstantaneaExacta() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_b.mp4");
+		video(legada, "01_a.mp4");
+		video(legada, "zeta.mp4");
+		video(legada, "Alfa.mov");
+		alumno(75L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(75L, TKD);
+		assertEquals(List.of("01_a.mp4", "01_b.mp4", "Alfa.mov", "zeta.mp4"),
+				lectura.obtenerMaterialExamen(75L, TKD).getVideos().stream().map(v -> v.getId()).toList());
+
+		gestion.cambiarTitulo(TKD, B01, "01_a.mp4", "a");
+
+		assertFalse(Files.exists(legada));
+		assertEquals(antes, instantanea(75L, TKD));
+	}
+
+	@Test
+	void un415SobreUnBloqueLegado_noCambiaLoQueVenLasFamilias() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "02_soguis.mp4");
+		video(legada, "01_saludo.mp4");
+		pdf(legada.resolve("temario").resolve("Programa antiguo.pdf"));
+		pdf(legada.resolve("documentacion").resolve("guia.pdf"));
+		alumno(76L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(76L, TKD);
+		byte[] falso = "esto no es un video ni un pdf, solo texto".getBytes(StandardCharsets.UTF_8);
+
+		assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, estadoDe(() -> gestion.subirVideo(TKD, B01, "nuevo.mp4",
+				new CuerpoCrudo(new ByteArrayInputStream(falso), falso.length, "video/mp4"))));
+		assertEquals(antes, instantanea(76L, TKD), "también con la carpeta ya adoptada");
+		assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, estadoDe(() -> gestion.subirTemario(TKD, B01,
+				new CuerpoCrudo(new ByteArrayInputStream(falso), falso.length, "application/pdf"))));
+
+		assertEquals(antes, instantanea(76L, TKD));
+		assertEquals(Set.of("Programa antiguo.pdf"), nombres(propia(1L, "taekwondo", B01).resolve("temario")));
+		sinTemporales(propia(1L, "taekwondo", B01));
+	}
+
+	@Test
+	void unaSustitucionIntercaladaConUnaLectura_conservaLoQueSeVe() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		alumno(77L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(77L, TKD);
+		lectura.alResolverLaCarpeta = () -> gestion.sustituirVideo(TKD, B01, "01_saludo.mp4", cuerpoVideo(500));
+
+		assertEquals(antes, instantanea(77L, TKD));
+
+		assertEquals(500L, Files.size(propia(1L, "taekwondo", B01).resolve("videos").resolve("01_saludo.mp4")));
 	}
 
 	// ------------------------------------------------------------------ apoyo

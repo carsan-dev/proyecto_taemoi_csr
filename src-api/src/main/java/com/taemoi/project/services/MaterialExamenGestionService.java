@@ -213,16 +213,17 @@ public class MaterialExamenGestionService {
 					CABECERA_VIDEO_FALSA);
 			String fichero = bajoBloqueo(bloque, () -> {
 				String destino = nombreLibre(carpeta, limpio);
-				List<EntradaIndice> entradas = entradasDe(leerParaEscribir(bloque));
-				int orden = entradas.stream().mapToInt(EntradaIndice::order).max().orElse(0) + 1;
+				List<EntradaIndice> anteriores = entradasDe(leerParaEscribir(bloque));
+				int orden = anteriores.stream().mapToInt(EntradaIndice::order).max().orElse(0) + 1;
+				List<EntradaIndice> entradas = new ArrayList<>(anteriores);
 				entradas.add(new EntradaIndice(destino, tituloDeSubida(nombre, destino), orden));
-				Path definitivo = carpeta.resolve(destino);
-				Files.move(temporal, definitivo, StandardCopyOption.ATOMIC_MOVE);
+				// Primero el índice: la lectura parte del disco, así que una entrada sin fichero no se ve. Al revés, un vídeo
+				// sin entrada saldría en otro sitio. Tras una caída aquí, el temporal se limpia a las 24 horas.
+				escribirIndice(carpeta.getParent(), entradas);
 				try {
-					escribirIndice(carpeta.getParent(), entradas);
+					moverFichero(temporal, carpeta.resolve(destino));
 				} catch (IOException e) {
-					// Un vídeo sin entrada cambiaría de sitio al regenerar el índice: la subida falla entera.
-					Files.deleteIfExists(definitivo);
+					escribirIndice(carpeta.getParent(), anteriores);
 					throw e;
 				}
 				return destino;
@@ -254,7 +255,7 @@ public class MaterialExamenGestionService {
 				BloqueEnDisco disco = leerParaEscribir(bloque);
 				VideoEnDisco actual = exigirVideo(disco, fichero);
 				asegurarIndice(disco);
-				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, actual.ruta());
 				return actual.fichero();
 			});
 			auditar(AuditoriaAccion.UPDATE, ruta(bloque, "/videos/" + guardado + "/contenido"),
@@ -324,7 +325,7 @@ public class MaterialExamenGestionService {
 			// Primero el índice: si no se puede borrar el fichero, se restaura y el bloque queda como estaba.
 			escribirIndice(carpeta, todas.stream().filter(e -> !e.file().equals(video.fichero())).toList());
 			try {
-				Files.delete(video.ruta());
+				borrarFichero(video.ruta());
 			} catch (IOException e) {
 				escribirIndice(carpeta, todas);
 				throw e;
@@ -355,7 +356,7 @@ public class MaterialExamenGestionService {
 				BloqueEnDisco disco = leerParaEscribir(bloque);
 				Path anterior = disco.temario();
 				asegurarIndice(disco);
-				Files.move(temporal, carpeta.resolve(TEMARIO), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, carpeta.resolve(TEMARIO));
 				if (anterior != null && !anterior.getFileName().toString().equalsIgnoreCase(TEMARIO)) {
 					// Con temario.pdf en su sitio, el anterior ya no se sirve: un fallo aquí no invalida la subida.
 					borrarSinFallar(anterior);
@@ -388,7 +389,7 @@ public class MaterialExamenGestionService {
 			String fichero = bajoBloqueo(bloque, () -> {
 				asegurarIndice(leerParaEscribir(bloque));
 				String destino = nombreLibre(carpeta, limpio);
-				Files.move(temporal, carpeta.resolve(destino), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, carpeta.resolve(destino));
 				return destino;
 			});
 			auditar(AuditoriaAccion.CREATE, ruta(bloque, "/documentacion"),
@@ -418,7 +419,7 @@ public class MaterialExamenGestionService {
 				BloqueEnDisco disco = leerParaEscribir(bloque);
 				DocumentoEnDisco actual = exigirDocumento(disco, fichero);
 				asegurarIndice(disco);
-				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
+				moverFichero(temporal, actual.ruta());
 				return actual.fichero();
 			});
 			auditar(AuditoriaAccion.UPDATE, ruta(bloque, "/documentacion/" + guardado + "/contenido"),
@@ -490,6 +491,15 @@ public class MaterialExamenGestionService {
 	/** Movimiento atómico o nada: {@code ATOMIC_MOVE} no copia nunca entre sistemas de ficheros. */
 	protected void moverCarpeta(Path origen, Path destino) throws IOException {
 		Files.move(origen, destino, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	/** Publica un fichero o el índice desde su temporal, en la misma carpeta. */
+	protected void moverFichero(Path origen, Path destino) throws IOException {
+		Files.move(origen, destino, StandardCopyOption.ATOMIC_MOVE);
+	}
+
+	protected void borrarFichero(Path fichero) throws IOException {
+		Files.delete(fichero);
 	}
 
 	private <T> T bajoBloqueo(BloqueDeCatalogo bloque, AccionConFicheros<T> accion) {
@@ -583,7 +593,7 @@ public class MaterialExamenGestionService {
 		try {
 			Files.write(temporal, json.writerWithDefaultPrettyPrinter().writeValueAsBytes(new Indice(entradas)),
 					StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-			Files.move(temporal, carpeta.resolve(INDICE), StandardCopyOption.ATOMIC_MOVE);
+			moverFichero(temporal, carpeta.resolve(INDICE));
 		} finally {
 			borrarSinFallar(temporal);
 		}
