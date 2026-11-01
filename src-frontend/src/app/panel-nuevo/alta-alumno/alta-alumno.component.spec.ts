@@ -149,6 +149,43 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     expect(textosAvisos()).toContain('Alumno creado con 1 deporte(s)');
   });
 
+  it('con un tipo sin Otra el detalle es opcional y va en el PUT recortado, nunca en el POST', () => {
+    crear(); rellenar();
+    comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['INTELECTUAL'], discapacidadOtra: '  Detalle ficticio  ' });
+    expect(comp().form.get('discapacidadOtra')!.valid).toBeTrue();
+    comp().darDeAlta();
+    const post = http.expectOne(API + '/alumnos/crear');
+    expect('discapacidadOtra' in JSON.parse((post.request.body as FormData).get('nuevo') as string)).toBeFalse();
+    post.flush({ id: 55 });
+    const put = http.expectOne(API + '/alumnos/55/salud');
+    expect(put.request.body.discapacidadTipos).toEqual(['INTELECTUAL']);
+    expect(put.request.body.discapacidadOtra).toBe('Detalle ficticio');
+    put.flush({});
+  });
+
+  it('con un tipo sin Otra y sin detalle, el PUT lleva el detalle a null', () => {
+    crear(); rellenar();
+    comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['FISICA'], discapacidadOtra: '   ' });
+    comp().darDeAlta();
+    http.expectOne(API + '/alumnos/crear').flush({ id: 55 });
+    const put = http.expectOne(API + '/alumnos/55/salud');
+    expect(put.request.body.discapacidadOtra).toBeNull();
+    put.flush({});
+  });
+
+  it('quitar Otra quedando otro tipo limpia el error y conserva el texto', () => {
+    crear(); rellenar(); comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['FISICA', 'OTRA'], discapacidadOtra: '' });
+    comp().darDeAlta(); fixture.detectChanges();
+    expect(comp().form.get('discapacidadOtra')!.invalid).toBeTrue();
+    http.expectNone(API + '/alumnos/crear');
+    comp().cambiarTipos(['FISICA']); fixture.detectChanges();
+    expect(comp().form.get('discapacidadOtra')!.valid).toBeTrue();
+    expect(texto(el().querySelector('#alta-discapacidad-error'))).toBe('');
+    comp().form.patchValue({ discapacidadTipos: ['FISICA', 'OTRA'], discapacidadOtra: 'Detalle ficticio' });
+    comp().cambiarTipos(['FISICA']);
+    expect(comp().valor('discapacidadOtra')).toBe('Detalle ficticio');
+  });
+
   it('fallo del PUT: alumno creado, aviso y navegación, sin repetir POST', () => {
     crear(); rellenar();
     comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['FISICA'] }); comp().darDeAlta();

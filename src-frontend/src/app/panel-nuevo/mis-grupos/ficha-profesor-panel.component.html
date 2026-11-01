@@ -193,7 +193,7 @@
                   <span class="salud-pastillas">
                     @for (tipo of tiposSalud; track tipo) {<span class="pas">{{ etiquetasDiscapacidad[tipo] }}</span>}
                   </span>
-                  @if (salud.discapacidadTipos.includes('OTRA') && salud.discapacidadOtra) {<span class="ficha__detalle">{{ salud.discapacidadOtra }}</span>}
+                  @if (salud.discapacidadOtra) {<span class="ficha__detalle">{{ salud.discapacidadOtra }}</span>}
                   }
                 </dd>
               </div>

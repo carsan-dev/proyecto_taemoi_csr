@@ -693,7 +693,7 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
       this.pedirSede
     );
     const tipos: TipoDiscapacidad[] = this.valor('tieneDiscapacidad') ? [...this.valor('discapacidadTipos')] : [];
-    const otra: string | null = tipos.includes('OTRA') ? this.valor('discapacidadOtra').trim() : null;
+    const otra: string | null = tipos.length ? this.valor('discapacidadOtra').trim() || null : null;
     this.enviando = true;
     this.api.crear(cuerpo, this.imagen).subscribe({
       next: (respuesta) => {

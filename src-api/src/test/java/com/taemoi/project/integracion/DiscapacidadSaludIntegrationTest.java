@@ -164,15 +164,82 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void sinOtra_elTextoSeDescarta_aunqueSeaDemasiadoLargo() throws Exception {
+	void tipoSinOtra_conTexto_seGuardaCifrado_yLaLecturaLoDevuelve() throws Exception {
 		long alumno = alumno(e.sA);
-		JsonNode r = ok(putSalud(alumno, """
-				{"tieneDiscapacidad":true,"discapacidadTipos":["VISUAL","AUDITIVA"],"discapacidadOtra":"%s"}
-				""".formatted("x".repeat(5000)), tGestor));
+		String texto = "Texto-ficticio-" + marca();
 
-		assertEquals(List.of("VISUAL", "AUDITIVA"), tipos(r));
+		JsonNode guardado = ok(putSalud(alumno, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":["FISICA"],"discapacidadOtra":"  %s  "}
+				""".formatted(texto), tGestor));
+
+		assertEquals(List.of("FISICA"), tipos(guardado));
+		assertEquals(texto, guardado.get("discapacidadOtra").asText(), "tras strip");
+		String crudo = (String) fila(alumno).get("discapacidad_otra");
+		assertTrue(crudo.startsWith("v1:"), "texto cifrado con versión de clave");
+		assertFalse(crudo.contains(texto), "el texto no está en claro");
+		assertEquals(texto, cifrador.descifrar(crudo, contexto("discapacidad_otra", alumno)));
+
+		JsonNode leido = ok(getSalud(alumno, tGestor));
+		assertEquals(List.of("FISICA"), tipos(leido));
+		assertEquals(texto, leido.get("discapacidadOtra").asText());
+	}
+
+	@Test
+	void tipoSinOtra_sinTexto_esValido_yQuitarloBorraLoGuardado() throws Exception {
+		long alumno = alumno(e.sA);
+		guardarFisicaConTexto(alumno);
+
+		JsonNode r = ok(putSalud(alumno, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":["FISICA"],"discapacidadOtra":"   "}
+				""", tGestor));
+
+		assertEquals(List.of("FISICA"), tipos(r));
 		assertTrue(r.get("discapacidadOtra").isNull());
+		assertNotNull(fila(alumno).get("discapacidad_tipos"));
 		assertNull(fila(alumno).get("discapacidad_otra"));
+	}
+
+	@Test
+	void tipoSinOtra_sinQuedarTipos_noSeGuardaElTexto() throws Exception {
+		long alumno = alumno(e.sA);
+		guardarFisicaConTexto(alumno);
+
+		JsonNode r = ok(putSalud(alumno, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":[],"discapacidadOtra":"Texto ficticio"}
+				""", tGestor));
+
+		assertEquals(List.of(), tipos(r));
+		assertTrue(r.get("discapacidadOtra").isNull());
+		assertNull(fila(alumno).get("discapacidad_tipos"));
+		assertNull(fila(alumno).get("discapacidad_otra"));
+	}
+
+	@Test
+	void tipoSinOtra_alCambiarANo_seBorraElTexto() throws Exception {
+		long alumno = alumno(e.sA);
+		guardarFisicaConTexto(alumno);
+
+		JsonNode r = ok(putSalud(alumno, "{\"tieneDiscapacidad\":false}", tGestor));
+
+		assertTrue(r.get("discapacidadOtra").isNull());
+		assertEquals(Boolean.FALSE, bandera(alumno));
+		assertNull(fila(alumno).get("discapacidad_tipos"));
+		assertNull(fila(alumno).get("discapacidad_otra"));
+	}
+
+	@Test
+	void tipoSinOtra_textoDemasiadoLargo_400_sinEscritura() throws Exception {
+		long alumno = alumno(e.sA);
+		ok(putSalud(alumno, "{\"tieneDiscapacidad\":false}", tGestor));
+		Map<String, Object> antes = fila(alumno);
+
+		MvcResult r = putSalud(alumno, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":["VISUAL","AUDITIVA"],"discapacidadOtra":"%s"}
+				""".formatted("x".repeat(4001)), tGestor);
+
+		assertEquals(400, r.getResponse().getStatus(), cuerpo(r));
+		assertEquals(antes, fila(alumno));
+		assertEquals(Boolean.FALSE, bandera(alumno));
 	}
 
 	@Test
@@ -598,6 +665,19 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void editarLaFicha_deTrueAFalse_borraElTextoDeUnTipoSinOtra() throws Exception {
+		long alumno = alumno(e.sA);
+		guardarFisicaConTexto(alumno);
+		assertNotNull(fila(alumno).get("discapacidad_otra"));
+
+		editarFicha(alumno, "\"tieneDiscapacidad\":false");
+
+		assertEquals(Boolean.FALSE, bandera(alumno));
+		assertNull(fila(alumno).get("discapacidad_tipos"));
+		assertNull(fila(alumno).get("discapacidad_otra"));
+	}
+
+	@Test
 	void editarLaFicha_deFalseAFalse_noTocaLaFila() throws Exception {
 		long alumno = alumno(e.sA);
 		ok(putSalud(alumno, "{\"tieneDiscapacidad\":false}", tGestor));
@@ -763,6 +843,12 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 
 	private static String marca() {
 		return UUID.randomUUID().toString().substring(0, 8);
+	}
+
+	private void guardarFisicaConTexto(long alumno) throws Exception {
+		ok(putSalud(alumno, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":["FISICA"],"discapacidadOtra":"Texto ficticio"}
+				""", tGestor));
 	}
 
 	private void guardarConTipos(long alumno) throws Exception {
