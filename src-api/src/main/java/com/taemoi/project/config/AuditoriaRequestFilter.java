@@ -1,7 +1,9 @@
 package com.taemoi.project.config;
 
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +12,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriUtils;
@@ -66,6 +69,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_FICHERO_MATERIAL = Pattern
 			.compile("^/api/material-examen/[^/]+/[^/]+/(temario|videos/[^/]+|documentacion/[^/]+)/?$");
 	private static final Set<String> METODOS_FICHERO_MATERIAL = Set.of("GET", "HEAD");
+	/**
+	 * Pieza R1: el mismo vídeo de 500 MB por las rutas de las familias. Estas sí se apuntan, con el estado y los parámetros
+	 * de la URL, porque la fila no necesita el cuerpo; lo que no se hace es copiar la respuesta ni la petición.
+	 */
+	private static final Pattern RUTA_FICHERO_FAMILIA = Pattern
+			.compile("^/api/alumnos/[^/]+/deportes/[^/]+/material-examen/(temario|videos/[^/]+|documentacion/[^/]+)/?$");
 	/**
 	 * Escrituras cuyo 2xx NO apunta este filtro porque ya deja su propio registro, más detallado, en la misma transacción
 	 * (método + ruta EXACTA tras {@link #normalizarParaComparar}). Los 4xx/5xx de estas rutas sí se apuntan aquí.
@@ -244,27 +253,32 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		HttpServletRequest wrappedRequest = esRutaDeMaterial(endpoint) ? request : new ContentCachingRequestWrapper(request);
-		ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
+		boolean ficheroDeFamilia = esFicheroDeFamilia(endpoint);
+		HttpServletRequest wrappedRequest = esRutaDeMaterial(endpoint) || ficheroDeFamilia
+				? request
+				: new ContentCachingRequestWrapper(request);
+		ContentCachingResponseWrapper copiaRespuesta = ficheroDeFamilia ? null : new ContentCachingResponseWrapper(response);
+		HttpServletResponse wrappedResponse = copiaRespuesta != null ? copiaRespuesta : response;
 
 		try {
 			filterChain.doFilter(wrappedRequest, wrappedResponse);
 		} finally {
 			try {
-				registrarEventoSiCorresponde(wrappedRequest, wrappedResponse, method, endpoint);
+				registrarEventoSiCorresponde(wrappedRequest, wrappedResponse.getStatus(), method, endpoint);
 			} catch (Exception ex) {
 				logger.error("Error registrando auditoria de request", ex);
 			}
-			wrappedResponse.copyBodyToResponse();
+			if (copiaRespuesta != null) {
+				copiaRespuesta.copyBodyToResponse();
+			}
 		}
 	}
 
 	private void registrarEventoSiCorresponde(
 			HttpServletRequest request,
-			ContentCachingResponseWrapper response,
+			int status,
 			String method,
 			String endpoint) {
-		int status = response.getStatus();
 		if (!esEstadoAuditable(status)) {
 			return;
 		}
@@ -296,7 +310,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
 		String queryParamsJson = auditoriaPayloadSanitizer
-				.serializarQueryParams(rutaSalud ? Map.of() : parametrosAuditables(endpoint, request.getParameterMap()));
+				.serializarQueryParams(rutaSalud ? Map.of() : parametrosAuditables(endpoint, parametrosDe(request, endpoint)));
 		String ipCliente = obtenerIpCliente(request);
 		String userAgent = truncar(request.getHeader("User-Agent"), MAX_USER_AGENT_CHARS);
 
@@ -310,6 +324,41 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 				status,
 				ipCliente,
 				userAgent);
+	}
+
+	/**
+	 * En las rutas de material no se le piden los parámetros a Tomcat: leería un cuerpo de formulario o multipart, y este
+	 * filtro corre antes de autorizar, también para un anónimo. Solo interesan los de la URL.
+	 */
+	private static Map<String, String[]> parametrosDe(HttpServletRequest request, String endpoint) {
+		return esRutaDeMaterial(endpoint) || esFicheroDeFamilia(endpoint)
+				? parametrosDeLaUrl(request.getQueryString())
+				: request.getParameterMap();
+	}
+
+	static Map<String, String[]> parametrosDeLaUrl(String consulta) {
+		Map<String, String[]> parametros = new LinkedHashMap<>();
+		if (consulta == null) {
+			return parametros;
+		}
+		for (String par : consulta.split("&")) {
+			int igual = par.indexOf('=');
+			String clave = decodificar(igual < 0 ? par : par.substring(0, igual));
+			if (!clave.isEmpty()) {
+				String valor = igual < 0 ? "" : decodificar(par.substring(igual + 1));
+				parametros.merge(clave, new String[] { valor }, (a, b) -> StringUtils.addStringToArray(a, valor));
+			}
+		}
+		return parametros;
+	}
+
+	/** Un valor mal codificado se guarda tal como llegó: la auditoría no falla por eso. */
+	private static String decodificar(String texto) {
+		try {
+			return URLDecoder.decode(texto, StandardCharsets.UTF_8);
+		} catch (IllegalArgumentException e) {
+			return texto;
+		}
 	}
 
 	/**
@@ -399,6 +448,11 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 
 	static boolean esRutaDeMaterial(String endpoint) {
 		return RUTA_MATERIAL.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/** Fichero de material pedido por la ruta de las familias, con cualquier método; la lista JSON del bloque no lo es. */
+	static boolean esFicheroDeFamilia(String endpoint) {
+		return RUTA_FICHERO_FAMILIA.matcher(normalizarParaComparar(endpoint)).matches();
 	}
 
 	/** Lectura de un fichero de material; las escrituras y las listas no lo son. */
