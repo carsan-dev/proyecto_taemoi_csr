@@ -41,6 +41,11 @@ public class AlumnoSaludService {
 	private static final String TIPOS = "discapacidad_tipos";
 	private static final String OTRA = "discapacidad_otra";
 	private static final String SEPARADOR_TIPOS = ",";
+	/**
+	 * Longitud de la lista de tipos en claro: con espacios hasta aquí, todas las combinaciones se cifran igual de largas y
+	 * la longitud de {@code discapacidad_tipos} no delata qué tipos hay. La lista completa son 51 caracteres.
+	 */
+	static final int LONGITUD_TIPOS_EN_CLARO = 64;
 
 	private final AlumnoSaludRepository salud;
 	private final AlumnoRepository alumnos;
@@ -83,6 +88,13 @@ public class AlumnoSaludService {
 	 * 400 no deja ninguna escritura parcial. Una ficha anonimizada no se modifica (decisión 287, 409 como el resto de
 	 * escrituras sobre ella).
 	 *
+	 * <p>Lo primero es bloquear la fila del alumno, igual que {@code AlumnoService#anonimizarAlumno}: las dos operaciones se
+	 * serializan. Sin ello, una anonimización confirmada entre la comprobación y la escritura se desharía entera.
+	 *
+	 * <p>Nunca descifra lo almacenado: la respuesta solo lleva lo que vino en la petición ya validado y el booleano del
+	 * alumno. Devolver lo guardado sería una lectura sin auditar: con {@code tieneDiscapacidad} nulo, los tipos salen vacíos y
+	 * el texto de «Otra» nulo, aunque haya guardados.
+	 *
 	 * <p>Discapacidad:
 	 * <ul>
 	 * <li>{@code tieneDiscapacidad} nulo: no cambia ni el booleano ni los tipos; llegar con tipos o texto de «Otra», 400.</li>
@@ -93,8 +105,7 @@ public class AlumnoSaludService {
 	 */
 	@Transactional
 	public AlumnoSaludDTO guardar(Long alumnoId, AlumnoSaludRequest datos) {
-		Alumno alumno = comprobarAlumno(alumnoId);
-		alumno.exigirNoAnonimizado();
+		Alumno alumno = bloquearFichaNoAnonimizada(alumnoId);
 		String descripcion = texto(datos.descripcion(), "La descripción");
 		String impideDetalle = texto(datos.impideDetalle(), "El detalle de lo que impide la actividad");
 		String alergias = texto(datos.alergias(), "Las alergias");
@@ -108,12 +119,13 @@ public class AlumnoSaludService {
 		registro.setAlergiasCifradas(cifrador.cifrar(alergias, contexto("alergias", alumnoId)));
 		if (datos.tieneDiscapacidad() != null) {
 			alumno.setTieneDiscapacidad(datos.tieneDiscapacidad());
-			registro.setDiscapacidadTiposCifrados(cifrador.cifrar(discapacidad.tipos(), contexto(TIPOS, alumnoId)));
+			registro.setDiscapacidadTiposCifrados(cifrador.cifrar(discapacidad.tiposEnClaro(), contexto(TIPOS, alumnoId)));
 			registro.setDiscapacidadOtraCifrada(cifrador.cifrar(discapacidad.otra(), contexto(OTRA, alumnoId)));
 		}
 		registro.setOrigen(datos.origen() != null ? datos.origen() : OrigenDato.APP);
 		registro.setActualizadoEn(Instant.now());
-		return aDto(salud.saveAndFlush(registro), alumno);
+		return AlumnoSaludDTO.de(salud.saveAndFlush(registro), descripcion, impideDetalle, alergias,
+				alumno.getTieneDiscapacidad(), discapacidad.tipos(), discapacidad.otra());
 	}
 
 	/**
@@ -126,9 +138,23 @@ public class AlumnoSaludService {
 		salud.limpiarDiscapacidad(alumnoId, Instant.now());
 	}
 
-	/** Lo que se guardará de discapacidad, en claro y ya validado; {@code tipos} son los nombres del enum separados por comas. */
-	private record Discapacidad(String tipos, String otra) {
-		private static final Discapacidad NADA = new Discapacidad(null, null);
+	/** Lo que se guardará de discapacidad, en claro y ya validado. Sin contenido en {@link #toString()}. */
+	record Discapacidad(List<TipoDiscapacidad> tipos, String otra) {
+		private static final Discapacidad NADA = new Discapacidad(List.of(), null);
+
+		/** Nombres del enum separados por comas, rellenos con espacios hasta {@link #LONGITUD_TIPOS_EN_CLARO}; sin tipos, {@code null}. */
+		private String tiposEnClaro() {
+			if (tipos.isEmpty()) {
+				return null;
+			}
+			String nombres = tipos.stream().map(Enum::name).collect(Collectors.joining(SEPARADOR_TIPOS));
+			return nombres + " ".repeat(LONGITUD_TIPOS_EN_CLARO - nombres.length());
+		}
+
+		@Override
+		public String toString() {
+			return "Discapacidad[sin contenido]";
+		}
 	}
 
 	/** Valida los campos de discapacidad del PUT. Ningún mensaje repite lo recibido. */
@@ -155,7 +181,7 @@ public class AlumnoSaludService {
 				throw new IllegalArgumentException("Indica cuál es la discapacidad.");
 			}
 		}
-		return new Discapacidad(elegidos.stream().map(Enum::name).collect(Collectors.joining(SEPARADOR_TIPOS)), otra);
+		return new Discapacidad(List.copyOf(elegidos), otra);
 	}
 
 	/** Lo guardado de discapacidad solo se descifra y se enseña si el booleano del alumno es {@code true}. */
@@ -177,7 +203,7 @@ public class AlumnoSaludService {
 			return List.of();
 		}
 		try {
-			return Arrays.stream(nombres.split(SEPARADOR_TIPOS)).map(TipoDiscapacidad::valueOf).toList();
+			return Arrays.stream(nombres.stripTrailing().split(SEPARADOR_TIPOS)).map(TipoDiscapacidad::valueOf).toList();
 		} catch (IllegalArgumentException e) {
 			// Sin causa: el mensaje de valueOf repetiría lo guardado.
 			throw new DatoCifradoIlegibleException("Tipo de discapacidad guardado desconocido.");
@@ -193,6 +219,24 @@ public class AlumnoSaludService {
 			throw new AlumnoNoEncontradoException("Alumno no encontrado.");
 		}
 		return alumnos.buscarPorIdEnOrganizacionActiva(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado."));
+	}
+
+	/**
+	 * Bloquea la fila del alumno de la escuela activa y decide con lo confirmado, no con la ficha que la sesión pudiera tener
+	 * ya cargada (open-in-view). El bloqueo es la primera sentencia de la transacción, así que sus lecturas ya ven lo que
+	 * confirmó quien tenía la fila.
+	 */
+	private Alumno bloquearFichaNoAnonimizada(Long alumnoId) {
+		if (alumnoId == null) {
+			throw new AlumnoNoEncontradoException("Alumno no encontrado.");
+		}
+		AlumnoRepository.EstadoSedeAlumno estado = alumnos.bloquearEstadoDeSede(alumnoId)
+				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado."));
+		if (estado.getAnonimizadoEn() != null) {
+			throw new IllegalStateException(Alumno.ALUMNO_ANONIMIZADO_NO_SE_MODIFICA);
+		}
+		return alumnos.releerBloqueado(alumnoId)
 				.orElseThrow(() -> new AlumnoNoEncontradoException("Alumno no encontrado."));
 	}
 

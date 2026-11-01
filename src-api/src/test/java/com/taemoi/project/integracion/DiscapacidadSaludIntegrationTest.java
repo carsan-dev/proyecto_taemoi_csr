@@ -134,8 +134,9 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(tiposCrudos.contains("FISICA"), "los tipos no están en claro");
 		assertFalse(tiposCrudos.contains("OTRA"), "los tipos no están en claro");
 		assertFalse(otraCruda.contains(otraTexto), "el texto no está en claro");
-		assertEquals("FISICA,OTRA", cifrador.descifrar(tiposCrudos, contexto("discapacidad_tipos", alumno)),
-				"nombres del enum, en su orden");
+		String tiposEnClaro = cifrador.descifrar(tiposCrudos, contexto("discapacidad_tipos", alumno));
+		assertEquals("FISICA,OTRA", tiposEnClaro.stripTrailing(), "nombres del enum, en su orden");
+		assertEquals(64, tiposEnClaro.length(), "con relleno hasta la longitud fija");
 		assertEquals(otraTexto, cifrador.descifrar(otraCruda, contexto("discapacidad_otra", alumno)));
 
 		JsonNode leido = ok(getSalud(alumno, tGestor));
@@ -199,9 +200,9 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 
 		JsonNode r = ok(putSalud(alumno, "{\"alergias\":\"Alergia ficticia\"}", tGestor));
 
-		assertTrue(r.get("tieneDiscapacidad").asBoolean());
-		assertEquals(List.of("FISICA", "OTRA"), tipos(r), "la respuesta también enseña lo que sigue guardado");
-		assertEquals("Texto ficticio", r.get("discapacidadOtra").asText());
+		assertTrue(r.get("tieneDiscapacidad").asBoolean(), "el booleano es del alumno y va en claro");
+		assertEquals(List.of(), tipos(r), "no se enseña lo guardado: sería una lectura sin auditar");
+		assertTrue(r.get("discapacidadOtra").isNull(), "no se enseña lo guardado: sería una lectura sin auditar");
 		assertEquals(Boolean.TRUE, bandera(alumno));
 		Map<String, Object> despues = fila(alumno);
 		assertEquals(antes.get("discapacidad_tipos"), despues.get("discapacidad_tipos"), "ni se recifra");
@@ -211,6 +212,45 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 		long sinBandera = alumno(e.sA);
 		ok(putSalud(sinBandera, "{\"alergias\":\"Alergia ficticia\"}", tGestor));
 		assertNull(bandera(sinBandera), "un alumno sin dato sigue sin dato");
+	}
+
+	/** {@code PUT /salud} no es una lectura: no devuelve nada que no viniera en la petición ni deja evento READ. */
+	@Test
+	void putVacio_noDevuelveLoGuardado_niDejaLectura() throws Exception {
+		long alumno = alumno(e.sA);
+		ok(putSalud(alumno, """
+				{"descripcion":"Descripcion ficticia","impideDetalle":"Detalle ficticio","alergias":"Alergia ficticia",
+				 "tieneDiscapacidad":true,"discapacidadTipos":["FISICA","OTRA"],"discapacidadOtra":"Texto ficticio"}
+				""", tGestor));
+		int lecturas = lecturas(alumno);
+
+		JsonNode r = ok(putSalud(alumno, "{}", tGestor));
+
+		assertTrue(r.get("tieneDiscapacidad").asBoolean());
+		assertEquals(List.of(), tipos(r));
+		assertTrue(r.get("discapacidadOtra").isNull());
+		assertTrue(r.get("descripcion").isNull(), "reemplazo completo: lo que no se envía queda vacío");
+		assertTrue(r.get("impideDetalle").isNull());
+		assertTrue(r.get("alergias").isNull());
+		assertEquals(lecturas, lecturas(alumno), "el PUT no es una lectura");
+	}
+
+	/** Lo enviado y ya validado: sin duplicados, en el orden del enum y tras strip; el texto de «Otra», también. */
+	@Test
+	void conBooleano_laRespuestaLlevaLoEnviado_yLosTextos() throws Exception {
+		long alumno = alumno(e.sA);
+
+		JsonNode r = ok(putSalud(alumno, """
+				{"descripcion":"  Descripcion ficticia  ","impideDetalle":"Detalle ficticio","alergias":"Alergia ficticia",
+				 "tieneDiscapacidad":true,"discapacidadTipos":["OTRA","VISUAL"],"discapacidadOtra":"  Texto ficticio  "}
+				""", tGestor));
+
+		assertEquals("Descripcion ficticia", r.get("descripcion").asText());
+		assertEquals("Detalle ficticio", r.get("impideDetalle").asText());
+		assertEquals("Alergia ficticia", r.get("alergias").asText());
+		assertEquals(List.of("VISUAL", "OTRA"), tipos(r));
+		assertEquals("Texto ficticio", r.get("discapacidadOtra").asText());
+		assertTrue(r.get("registrado").asBoolean());
 	}
 
 	@Test
@@ -329,6 +369,48 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 		MvcResult otraColumna = getSalud(destino, tGestor);
 		assertEquals(500, otraColumna.getResponse().getStatus(), cuerpo(otraColumna));
 		assertFalse(cuerpo(otraColumna).contains("FISICA"));
+	}
+
+	/** Quien lee la base sin la clave no distingue qué tipos hay por la longitud del cifrado. */
+	@Test
+	void dosCombinacionesDeLongitudDistinta_danLaMismaLongitudCifrada_yLaLecturaQuitaElRelleno() throws Exception {
+		long corta = alumno(e.sA);
+		long larga = alumno(e.sA);
+		ok(putSalud(corta, "{\"tieneDiscapacidad\":true,\"discapacidadTipos\":[\"VISUAL\"]}", tGestor));
+		ok(putSalud(larga, """
+				{"tieneDiscapacidad":true,"discapacidadTipos":["FISICA","INTELECTUAL","VISUAL","AUDITIVA","PSICOSOCIAL","OTRA"],
+				 "discapacidadOtra":"Texto ficticio"}""", tGestor));
+
+		assertEquals(((String) fila(corta).get("discapacidad_tipos")).length(),
+				((String) fila(larga).get("discapacidad_tipos")).length());
+
+		assertEquals(List.of("VISUAL"), tipos(ok(getSalud(corta, tGestor))));
+		assertEquals(List.of("FISICA", "INTELECTUAL", "VISUAL", "AUDITIVA", "PSICOSOCIAL", "OTRA"),
+				tipos(ok(getSalud(larga, tGestor))));
+	}
+
+	/** Lo guardado antes del relleno se sigue leyendo. */
+	@Test
+	void unValorSinRelleno_seSigueLeyendo() throws Exception {
+		long alumno = alumno(e.sA);
+		ok(putSalud(alumno, "{\"tieneDiscapacidad\":true}", tGestor));
+		jdbc.update("UPDATE alumno_salud SET discapacidad_tipos = ? WHERE alumno_id = ?",
+				cifrador.cifrar("AUDITIVA", contexto("discapacidad_tipos", alumno)), alumno);
+
+		assertEquals(List.of("AUDITIVA"), tipos(ok(getSalud(alumno, tGestor))));
+	}
+
+	@Test
+	void losTextosLibresNoSeRellenan() throws Exception {
+		long alumno = alumno(e.sA);
+		ok(putSalud(alumno, """
+				{"alergias":"Alergia ficticia","tieneDiscapacidad":true,"discapacidadTipos":["OTRA"],
+				 "discapacidadOtra":"Texto ficticio"}""", tGestor));
+		Map<String, Object> crudo = fila(alumno);
+
+		assertEquals("Alergia ficticia", cifrador.descifrar((String) crudo.get("alergias"), contexto("alergias", alumno)));
+		assertEquals("Texto ficticio",
+				cifrador.descifrar((String) crudo.get("discapacidad_otra"), contexto("discapacidad_otra", alumno)));
 	}
 
 	// ------------------------------------------------------------------ lectura

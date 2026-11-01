@@ -40,7 +40,7 @@ public class AlumnoSalud extends EntidadOrganizacion {
 	@Column(name = "alergias", columnDefinition = "TEXT")
 	private String alergiasCifradas;
 
-	/** Nombres de {@link TipoDiscapacidad} separados por comas, cifrados; {@code null} sin tipos. */
+	/** Nombres de {@link TipoDiscapacidad} separados por comas y rellenos a longitud fija, cifrados; {@code null} sin tipos. */
 	@Column(name = "discapacidad_tipos", columnDefinition = "TEXT")
 	private String discapacidadTiposCifrados;
 
