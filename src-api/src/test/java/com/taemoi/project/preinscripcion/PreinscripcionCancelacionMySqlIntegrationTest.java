@@ -100,6 +100,7 @@ class PreinscripcionCancelacionMySqlIntegrationTest extends MySqlIntegrationTest
 	@MockitoBean EmailService emailMock;
 	/** Entrega 6-2: sin restricción de sede (Optional vacío) y sin sede de alta, como la gestión de antes. */
 	@MockitoBean com.taemoi.project.acceso.GestionPorSede gestionPorSedeMock;
+	@MockitoBean com.taemoi.project.services.AlumnoSaludService alumnoSaludMock;
 
 	MockMvc mvc;
 	long turno;

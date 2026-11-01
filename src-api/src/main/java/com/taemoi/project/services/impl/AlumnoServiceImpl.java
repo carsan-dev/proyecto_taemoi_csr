@@ -159,6 +159,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private AlumnoSaludRepository alumnoSaludRepository;
 
+	/** Quita los tipos de discapacidad del alumno que deja de tenerla. */
+	@Autowired
+	private com.taemoi.project.services.AlumnoSaludService alumnoSaludService;
+
 	@Autowired
 	private TurnoRepository turnoRepository;
 
@@ -848,7 +852,15 @@ public class AlumnoServiceImpl implements AlumnoService {
 						alumnoActualizado.getAutorizacionWeb());
 			}
 
-			alumnoExistente.setTieneDiscapacidad(Optional.ofNullable(alumnoActualizado.getTieneDiscapacidad()).orElse(false));
+			// Nulo (o ausente) = sin cambios: el panel lo edita con la salud. Si deja de tener discapacidad, sin tipos.
+			Boolean tieneDiscapacidad = alumnoActualizado.getTieneDiscapacidad();
+			if (tieneDiscapacidad != null) {
+				boolean dejaDeTenerla = Boolean.TRUE.equals(alumnoExistente.getTieneDiscapacidad()) && !tieneDiscapacidad;
+				alumnoExistente.setTieneDiscapacidad(tieneDiscapacidad);
+				if (dejaDeTenerla) {
+					alumnoSaludService.limpiarDiscapacidad(id);
+				}
+			}
 
 			// Manejo de la imagen del alumno
 			try {
