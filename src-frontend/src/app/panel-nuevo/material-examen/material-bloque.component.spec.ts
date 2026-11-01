@@ -786,6 +786,45 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       expect(error).toHaveBeenCalledWith('Este documento solo se puede sustituir por otro PDF.');
     });
 
+    describe('sustituir un documento con el fichero preparado', () => {
+      function sustituir(archivo: File): void {
+        spyOn(HTMLInputElement.prototype, 'click');
+        comp().accionDocumento(detalle().documentos[0], 'sustituir');
+        const selector = el().querySelectorAll<HTMLInputElement>('.material__seccion--documentos input')[1];
+        const lista = new DataTransfer();
+        lista.items.add(archivo);
+        selector.files = lista.files;
+        selector.dispatchEvent(new Event('change'));
+      }
+
+      it('acepta el PDF sin extensión y con MIME válido que entrega Android', async () => {
+        cargar();
+        sustituir(new File(['%PDF-1.7'], 'Documento', { type: 'application/pdf' }));
+        await esperar();
+        const r = http.expectOne(`${API}/documentacion/normas.pdf/contenido`);
+        expect((r.request.body as File).name).toBe('Documento.pdf');
+        r.flush(detalle());
+        expect(exito).toHaveBeenCalledWith('Documento sustituido.');
+      });
+
+      it('acepta el PDF sin extensión ni MIME, reconocido por su firma', async () => {
+        cargar();
+        sustituir(new File(['%PDF-1.7'], 'Documento'));
+        await esperar();
+        http.expectOne(`${API}/documentacion/normas.pdf/contenido`).flush(detalle());
+        expect(error).not.toHaveBeenCalled();
+      });
+
+      it('sigue rechazando otro tipo una vez preparado, y se puede volver a elegir', async () => {
+        cargar();
+        sustituir(new File(['x'], 'Documento', { type: 'image/png' }));
+        await esperar();
+        expect(error).toHaveBeenCalledWith('Este documento solo se puede sustituir por otro PDF.');
+        expect(comp().enviandoDocumento).toBeFalse();
+        http.expectNone(`${API}/documentacion/normas.pdf/contenido`);
+      });
+    });
+
     describe('bloqueo desde la selección', () => {
       /** Un fichero cuya preparación no acaba hasta que se llame a `soltar`. */
       function lento(nombre: string, contenido = '%PDF-1.7'): { archivo: File; soltar: () => void } {

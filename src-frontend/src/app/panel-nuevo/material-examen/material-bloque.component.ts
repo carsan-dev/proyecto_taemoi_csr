@@ -695,21 +695,23 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
     const entrada = evento.target as HTMLInputElement;
     const guardado = this.documentoASustituir;
     this.documentoASustituir = null;
-    const elegido = entrada.files?.[0];
-    if (!guardado || !elegido) {
+    if (!guardado) {
       reiniciarSelectorArchivo(entrada);
-      return;
-    }
-    const motivo = motivoDocumentoSustituto(guardado, elegido.name);
-    if (motivo) {
-      reiniciarSelectorArchivo(entrada);
-      this.avisos.error(motivo);
       return;
     }
     const archivo = await this.prepararDocumento(entrada);
-    if (archivo) {
-      this.enviarDocumento(this.api.sustituirDocumento(this.disciplina, this.bloqueId, guardado, archivo), (d) => d, 'Documento sustituido.');
+    if (!archivo) {
+      return;
     }
+    // Tras preparar: Android puede entregar el PDF sin extensión, y es la preparación la que completa el nombre.
+    const motivo = motivoDocumentoSustituto(guardado, archivo.name);
+    if (motivo) {
+      this.enviandoDocumento = false;
+      this.avisos.error(motivo);
+      this.cdr.markForCheck();
+      return;
+    }
+    this.enviarDocumento(this.api.sustituirDocumento(this.disciplina, this.bloqueId, guardado, archivo), (d) => d, 'Documento sustituido.');
   }
 
   /** Prepara con el bloqueo puesto desde la selección; solo sigue puesto si hay fichero que enviar. */
