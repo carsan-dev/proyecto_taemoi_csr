@@ -150,6 +150,38 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void elJsonDelPanel_sinContentLength_411() throws Exception {
+		for (HttpRequest.Builder peticion : List.of(peticion(RUTA + "/orden").method("PUT", cuerpoSinLongitud("[]")),
+				peticion(RUTA + "/a.mp4").method("PATCH", cuerpoSinLongitud("{\"titulo\":\"Hola\"}")))) {
+			HttpResponse<String> respuesta = cliente.send(peticion.header("Content-Type", "application/json").build(),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertEquals(411, respuesta.statusCode(), respuesta.body());
+			assertTrue(respuesta.body().contains("mensaje"), respuesta.body());
+		}
+	}
+
+	@Test
+	void elJsonDelPanel_masDe64KB_413_yHasta64KBSeLee() throws Exception {
+		String relleno = "x".repeat(64 * 1024);
+		String limite = "{\"titulo\":\"" + relleno.substring(13) + "\"}";
+		assertEquals(64 * 1024, limite.length());
+
+		HttpResponse<String> cabe = cliente.send(json(RUTA + "/a.mp4", "PATCH", limite), HttpResponse.BodyHandlers.ofString());
+		assertEquals(400, cabe.statusCode(), "el título es largo, pero el cuerpo se ha leído");
+		assertTrue(cabe.body().contains("120 caracteres"), cabe.body());
+
+		HttpResponse<String> titulo = cliente.send(json(RUTA + "/a.mp4", "PATCH", limite + " "),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(413, titulo.statusCode(), titulo.body());
+		assertTrue(titulo.body().contains("mensaje"), titulo.body());
+
+		HttpResponse<String> orden = cliente.send(json(RUTA + "/orden", "PUT", "[\"" + relleno + "\"]"),
+				HttpResponse.BodyHandlers.ofString());
+		assertEquals(413, orden.statusCode(), orden.body());
+	}
+
+	@Test
 	void unClienteQueCorta_noDejaTemporalNiEntrada() throws Exception {
 		byte[] inicio = new byte[1024 * 1024];
 		System.arraycopy("ftyp".getBytes(StandardCharsets.US_ASCII), 0, inicio, 4, 4);
@@ -166,6 +198,16 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(), temporales());
 		assertFalse(Files.exists(carpetaDeVideos().resolve("cortado.mp4")));
 		assertFalse(Files.exists(carpetaDeVideos().getParent().resolve("index.json")));
+	}
+
+	private HttpRequest json(String ruta, String metodo, String cuerpo) {
+		return peticion(ruta).header("Content-Type", "application/json")
+				.method(metodo, HttpRequest.BodyPublishers.ofString(cuerpo)).build();
+	}
+
+	private static HttpRequest.BodyPublisher cuerpoSinLongitud(String cuerpo) {
+		// Un cuerpo de longitud desconocida sale en chunked.
+		return HttpRequest.BodyPublishers.ofInputStream(() -> new ByteArrayInputStream(cuerpo.getBytes(StandardCharsets.UTF_8)));
 	}
 
 	private HttpRequest.Builder peticion(String ruta) {

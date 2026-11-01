@@ -486,8 +486,8 @@ bajo `/api/material-examen/{disciplina}/{bloque}`:
 | `/temario`, `/videos/{fichero}`, `/documentacion/{fichero}` | `GET`, `HEAD` | fichero con `Range`; no se audita ni pasa por los envoltorios del filtro |
 | `/videos?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 500 MB |
 | `/videos/{fichero}/contenido` | `PUT` | cuerpo crudo, 500 MB; conserva título y orden |
-| `/videos/{fichero}` | `PATCH` | `{"titulo": …}`, de 1 a 120 caracteres |
-| `/videos/orden` | `PUT` | lista completa de ficheros; si no es una permutación exacta, 409 |
+| `/videos/{fichero}` | `PATCH` | `{"titulo": …}`, de 1 a 120 caracteres; JSON de 64 KB como máximo |
+| `/videos/orden` | `PUT` | lista completa de ficheros; si no es una permutación exacta, 409; JSON de 64 KB como máximo |
 | `/videos/{fichero}` | `DELETE` | 404 si no existe |
 | `/temario` | `PUT` | cuerpo crudo, PDF, 50 MB; deja `temario.pdf` |
 | `/documentacion?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 50 MB |
