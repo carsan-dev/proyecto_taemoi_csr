@@ -58,6 +58,15 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_IMAGEN_FOTO_EVENTO = Pattern.compile("^/api/eventos/[0-9]+/fotos/[0-9]+$");
 	private static final Set<String> METODOS_IMAGEN_FOTO_EVENTO = Set.of("GET", "HEAD");
 	/**
+	 * Pieza R1: material de examen. Un vídeo llega a 500 MB, así que ninguna petición de estas rutas copia su cuerpo y sus
+	 * ficheros no copian la respuesta ni se apuntan (un vídeo pide decenas de rangos). Se compara con la ruta normalizada:
+	 * si una forma rara de escribirla escapara, el fichero entero acabaría en memoria.
+	 */
+	private static final Pattern RUTA_MATERIAL = Pattern.compile("^/api/material-examen(/.*)?$");
+	private static final Pattern RUTA_FICHERO_MATERIAL = Pattern
+			.compile("^/api/material-examen/[^/]+/[^/]+/(temario|videos/[^/]+|documentacion/[^/]+)/?$");
+	private static final Set<String> METODOS_FICHERO_MATERIAL = Set.of("GET", "HEAD");
+	/**
 	 * Escrituras cuyo 2xx NO apunta este filtro porque ya deja su propio registro, más detallado, en la misma transacción
 	 * (método + ruta EXACTA tras {@link #normalizarParaComparar}). Los 4xx/5xx de estas rutas sí se apuntan aquí.
 	 *
@@ -151,7 +160,17 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
 		ASISTENCIA_PROFESOR("PUT", "/api/profesor/grupos/[^/]+/clases/[^/]+/[^/]+"),
 		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
-		ASISTENCIA_GESTION("PUT", "/api/grupos/[^/]+/clases/[^/]+/[^/]+");
+		ASISTENCIA_GESTION("PUT", "/api/grupos/[^/]+/clases/[^/]+/[^/]+"),
+		// Pieza R1: material de examen. MaterialExamenGestionService registra todo 2xx en el módulo materiales.
+		MATERIAL_VIDEO_SUBIR("POST", "/api/material-examen/[^/]+/[^/]+/videos"),
+		MATERIAL_VIDEO_SUSTITUIR("PUT", "/api/material-examen/[^/]+/[^/]+/videos/[^/]+/contenido"),
+		MATERIAL_VIDEO_TITULO("PATCH", "/api/material-examen/[^/]+/[^/]+/videos/[^/]+"),
+		MATERIAL_VIDEO_ORDEN("PUT", "/api/material-examen/[^/]+/[^/]+/videos/orden"),
+		MATERIAL_VIDEO_ELIMINAR("DELETE", "/api/material-examen/[^/]+/[^/]+/videos/[^/]+"),
+		MATERIAL_TEMARIO("PUT", "/api/material-examen/[^/]+/[^/]+/temario"),
+		MATERIAL_DOCUMENTO_SUBIR("POST", "/api/material-examen/[^/]+/[^/]+/documentacion"),
+		MATERIAL_DOCUMENTO_SUSTITUIR("PUT", "/api/material-examen/[^/]+/[^/]+/documentacion/[^/]+/contenido"),
+		MATERIAL_DOCUMENTO_ELIMINAR("DELETE", "/api/material-examen/[^/]+/[^/]+/documentacion/[^/]+");
 
 		private final String metodo;
 		private final Pattern ruta;
@@ -197,7 +216,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Map<Pattern, Set<String>> PARAMETROS_REDACTADOS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/miembros/?$"), Set.of("q"),
 			// Decisión 322: el perfil de la cuenta no lee parámetros, pero un GET con ?nombrePreferido=… no debe guardarlos.
-			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"));
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+			// Pieza R1: el nombre del fichero de una subida fallida, tal como lo escribió quien la hizo.
+			Pattern.compile("^/api/material-examen/[^/]+/[^/]+/(videos|documentacion)/?$"), Set.of("nombre"));
 	static final String VALOR_REDACTADO = "[redactado]";
 
 	private final AuditoriaService auditoriaService;
@@ -223,7 +244,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
+		HttpServletRequest wrappedRequest = esRutaDeMaterial(endpoint) ? request : new ContentCachingRequestWrapper(request);
 		ContentCachingResponseWrapper wrappedResponse = new ContentCachingResponseWrapper(response);
 
 		try {
@@ -239,7 +260,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	}
 
 	private void registrarEventoSiCorresponde(
-			ContentCachingRequestWrapper request,
+			HttpServletRequest request,
 			ContentCachingResponseWrapper response,
 			String method,
 			String endpoint) {
@@ -376,6 +397,16 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 				&& RUTA_IMAGEN_FOTO_EVENTO.matcher(endpoint).matches();
 	}
 
+	static boolean esRutaDeMaterial(String endpoint) {
+		return RUTA_MATERIAL.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/** Lectura de un fichero de material; las escrituras y las listas no lo son. */
+	static boolean esFicheroDeMaterial(String metodo, String endpoint) {
+		return METODOS_FICHERO_MATERIAL.contains(metodo)
+				&& RUTA_FICHERO_MATERIAL.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
 	private boolean debeAuditar(String method, String endpoint) {
 		if (endpoint == null || endpoint.isBlank()) {
 			return false;
@@ -386,7 +417,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		if (!AUDITABLE_METHODS.contains(method)) {
 			return false;
 		}
-		if (esImagenDeFotoEvento(method, endpoint)) {
+		if (esImagenDeFotoEvento(method, endpoint) || esFicheroDeMaterial(method, endpoint)) {
 			return false;
 		}
 		return !endpoint.startsWith("/api/auth/")
@@ -403,8 +434,11 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		return uri;
 	}
 
-	private String leerPayloadRequest(ContentCachingRequestWrapper request) {
-		byte[] buffer = request.getContentAsByteArray();
+	private String leerPayloadRequest(HttpServletRequest request) {
+		if (!(request instanceof ContentCachingRequestWrapper copia)) {
+			return "";
+		}
+		byte[] buffer = copia.getContentAsByteArray();
 		if (buffer == null || buffer.length == 0) {
 			return "";
 		}

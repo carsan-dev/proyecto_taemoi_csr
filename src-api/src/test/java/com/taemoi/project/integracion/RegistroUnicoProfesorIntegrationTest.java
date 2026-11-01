@@ -78,11 +78,17 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 	private static final String RESUMEN_GENERICO = "^(CREATE|UPDATE|DELETE|READ|OPERACION) \\S+( #\\d+)? -> \\d+$";
 	/**
 	 * El logo tiene su caso en LogoEscuelaIntegrationTest y el color de la marca (8b-T) en
-	 * MarcaEscuelaPanelIntegrationTest#registroEnLaEscuelaDestino_sinElValor (superadmin y escuela destino).
+	 * MarcaEscuelaPanelIntegrationTest#registroEnLaEscuelaDestino_sinElValor (superadmin y escuela destino). El material de
+	 * examen, en MaterialExamenIntegrationTest#cadaEscritura_soloSuRegistro_yLaFallida_soloElGenerico (sobre disco).
 	 */
 	private static final Set<EscrituraConRegistroPropio> CON_CASO_EN_OTRO_TEST = EnumSet.of(
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
-			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR);
+			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
+			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR, EscrituraConRegistroPropio.MATERIAL_VIDEO_TITULO,
+			EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,
+			EscrituraConRegistroPropio.MATERIAL_TEMARIO, EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUBIR,
+			EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUSTITUIR,
+			EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_ELIMINAR);
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;

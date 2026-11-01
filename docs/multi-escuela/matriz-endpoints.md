@@ -474,6 +474,31 @@ La regla de URL de los dos `GET` es `permitAll` y el controlador decide. Las esc
 columna mide la regla de URL `/imagenes/**`, que da `PERMITE`, y la barrera real es `AccesoArchivos`. Lo prueba
 `FotosEventoIntegrationTest`, para la foto y para su miniatura.
 
+Material de examen del panel (pieza R1, `fase3-e8c-plan.md`): 19 líneas nuevas en `MaterialExamenController`; ninguna
+casilla existente cambia. Todas son `DENIEGA` salvo para gestor y propietario, por la regla de URL `/api/material-examen/**`
+y por el `@PreAuthorize` de la clase. Las rutas de las familias siguen bajo `/api/alumnos/{alumnoId}/deportes/...`. Rutas
+bajo `/api/material-examen/{disciplina}/{bloque}`:
+
+| Ruta | Métodos | Lo que falta en la matriz |
+|---|---|---|
+| `/api/material-examen` (sin el resto) | `GET`, `HEAD` | disciplinas de la escuela activa con bloques, grados y totales |
+| (raíz del bloque) | `GET`, `HEAD` | detalle; 404 si la disciplina o el bloque no son del catálogo de la escuela |
+| `/temario`, `/videos/{fichero}`, `/documentacion/{fichero}` | `GET`, `HEAD` | fichero con `Range`; no se audita ni pasa por los envoltorios del filtro |
+| `/videos?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 500 MB |
+| `/videos/{fichero}/contenido` | `PUT` | cuerpo crudo, 500 MB; conserva título y orden |
+| `/videos/{fichero}` | `PATCH` | `{"titulo": …}`, de 1 a 120 caracteres |
+| `/videos/orden` | `PUT` | lista completa de ficheros; si no es una permutación exacta, 409 |
+| `/videos/{fichero}` | `DELETE` | 404 si no existe |
+| `/temario` | `PUT` | cuerpo crudo, PDF, 50 MB; deja `temario.pdf` |
+| `/documentacion?nombre=` | `POST` | 201 con `{fichero, bloque}`; cuerpo crudo, 50 MB |
+| `/documentacion/{fichero}/contenido` | `PUT` | cuerpo crudo, 50 MB |
+| `/documentacion/{fichero}` | `DELETE` | 404 si no existe |
+
+Errores con `{mensaje}` en español: 400 (nombre, título o cuerpo incompleto), 404, 409 (permutación incorrecta, o bloque con
+las dos carpetas), 411, 413, 415 (cabecera falsa o cuerpo de formulario) y 507 (menos de tamaño + 2 GB libres). Cada escritura
+correcta deja su registro en el módulo `materiales` y entra en `EscrituraConRegistroPropio`; el caso contra MySQL de las nueve
+está en `MaterialExamenIntegrationTest`.
+
 - `PERMITE` = la seguridad declarativa deja llegar la petición al controlador sin mirar el recurso. No garantiza
   un 200: el controlador o el servicio pueden seguir negando (p. ej. `AccesoArchivos` para ficheros, que
   responde 404).

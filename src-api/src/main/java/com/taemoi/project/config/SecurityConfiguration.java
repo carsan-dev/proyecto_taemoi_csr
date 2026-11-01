@@ -228,6 +228,10 @@ public class SecurityConfiguration {
 						// blanca de la sesión solo-profesor.
 						.requestMatchers("/api/sedes", "/api/sedes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
+						// Pieza R1 (fase3-e8c-plan.md): gestión del material de examen de la escuela, solo P y G. Misma
+						// posición y motivo que /api/sedes. Las rutas de las familias siguen bajo /api/alumnos.
+						.requestMatchers("/api/material-examen", "/api/material-examen/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 9-8 (decisión 373): restablecer la contraseña de un miembro, solo P. Antes de la regla
 						// general de miembros, que la abriría al gestor.
 						.requestMatchers(HttpMethod.PUT, "/api/miembros/*/contrasena")
