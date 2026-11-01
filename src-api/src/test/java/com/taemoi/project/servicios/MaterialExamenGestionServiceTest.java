@@ -1442,16 +1442,16 @@ class MaterialExamenGestionServiceTest {
 	}
 
 	@Test
-	void carpetaLegadaSoloConDirectoriosVaciosYOcultos_noCuentaComoLegada() throws Exception {
+	void carpetaLegadaSoloConDirectoriosVaciosYEsqueleto_noCuentaComoLegada() throws Exception {
 		Path carpeta = propia(1L, "kickboxing", B01);
 		video(carpeta, "01_guardia.mp4");
 		Path legada = bloqueLegado(KB, B01);
 		Files.createDirectories(legada.resolve("videos").resolve("vacia"));
-		Files.writeString(legada.resolve(".DS_Store"), "x");
+		Files.writeString(legada.resolve(".gitkeep"), "");
 
 		assertEquals(1, gestion.cambiarTitulo(KB, B01, "01_guardia.mp4", "Guardia").videos().size());
 
-		assertTrue(Files.isRegularFile(legada.resolve(".DS_Store")));
+		assertTrue(Files.isRegularFile(legada.resolve(".gitkeep")));
 	}
 
 	@Test
@@ -1514,6 +1514,39 @@ class MaterialExamenGestionServiceTest {
 		assertEquals(Set.of(".gitkeep", "01_guardia.mp4"), nombres(propia(1L, "kickboxing", B01).resolve("videos")));
 	}
 
+	@Test
+	void legadaConSoloOcultosReales_esMaterialYNuncaQuedaOculta() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		Files.createDirectories(legada.resolve("videos"));
+		Files.writeString(legada.resolve("videos").resolve(".gitkeep"), "");
+		Files.write(legada.resolve("videos").resolve(".taeguk.mp4"), mp4(32));
+		alumno(81L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(81L, TKD);
+		assertEquals(Set.of(".taeguk.mp4"), videosDeLaFamilia(81L));
+
+		assertThrows(NoSuchElementException.class, () -> gestion.cambiarTitulo(TKD, B01, "no.mp4", "Otro"));
+
+		assertEquals(antes, instantanea(81L, TKD));
+		assertEquals(Set.of(".taeguk.mp4"), videosDeLaFamilia(81L));
+
+		gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100));
+
+		assertFalse(Files.exists(legada), "la legada se adopta entera, ocultos incluidos");
+		assertEquals(Set.of(".gitkeep", ".taeguk.mp4", "nuevo.mp4"), nombres(propia(1L, "taekwondo", B01).resolve("videos")));
+		assertEquals(Set.of(".taeguk.mp4", "nuevo.mp4"), videosDeLaFamilia(81L));
+	}
+
+	@Test
+	void legadaConSubidaTemporal_sigueSiendoEsqueleto() throws Exception {
+		Path legada = esqueletoLegado(TKD, B01);
+		Files.writeString(legada.resolve("videos").resolve(".subida-abc"), "a medias");
+
+		gestion.subirVideo(TKD, B01, "nuevo.mp4", cuerpoVideo(100));
+
+		assertEquals(Set.of(".gitkeep", ".subida-abc"), nombres(legada.resolve("videos")));
+		assertEquals(Set.of("nuevo.mp4"), nombres(propia(1L, "taekwondo", B01).resolve("videos")));
+	}
+
 	// ------------------------------------------------------------------ apoyo
 
 	/** Las nueve escrituras, con cuerpos que fallan si se leen: lo que se rechaza antes no recibe nada. */
@@ -1555,6 +1588,11 @@ class MaterialExamenGestionServiceTest {
 
 	private String instantanea(Long alumnoId, String disciplina) throws Exception {
 		return json.writeValueAsString(lectura.obtenerMaterialExamen(alumnoId, disciplina));
+	}
+
+	private Set<String> videosDeLaFamilia(Long alumnoId) throws Exception {
+		return lectura.obtenerMaterialExamen(alumnoId, TKD).getVideos().stream().map(v -> v.getId())
+				.collect(java.util.stream.Collectors.toSet());
 	}
 
 	private void alumno(Long alumnoId, String disciplina, TipoGrado tipo) {

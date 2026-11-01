@@ -41,16 +41,21 @@ public final class CarpetasMaterial {
 	}
 
 	/**
-	 * ¿Hay algo que no sea esqueleto? Directorios y ocultos ({@code .gitkeep}, temporales) no son material; ante la duda, lo
-	 * que no sea un directorio cuenta, y un error al recorrer se propaga: mejor no escribir que dar por vacía una carpeta.
+	 * ¿Hay algo que no sea esqueleto? Son esqueleto los directorios, el {@code .gitkeep} del repositorio y las subidas a
+	 * medias ({@code .subida-*}); cualquier otro fichero, oculto o no, es material real, porque las familias lo ven. Ante la
+	 * duda, cuenta como real, y un error al recorrer se propaga: mejor no escribir que dar por vacía una carpeta.
 	 */
 	public static boolean tieneFicherosReales(Path carpeta) throws IOException {
 		try (Stream<Path> rutas = Files.walk(carpeta)) {
-			return rutas.anyMatch(ruta -> !Files.isDirectory(ruta, LinkOption.NOFOLLOW_LINKS)
-					&& !ruta.getFileName().toString().startsWith("."));
+			return rutas.anyMatch(ruta -> !Files.isDirectory(ruta, LinkOption.NOFOLLOW_LINKS) && !esEsqueleto(ruta));
 		} catch (UncheckedIOException e) {
 			throw e.getCause();
 		}
+	}
+
+	private static boolean esEsqueleto(Path ruta) {
+		String nombre = ruta.getFileName().toString();
+		return nombre.equals(".gitkeep") || nombre.startsWith(RecepcionCruda.PREFIJO_TEMPORAL);
 	}
 
 	private static Path dentroDeLaBase(Path raiz, Path carpeta) {
