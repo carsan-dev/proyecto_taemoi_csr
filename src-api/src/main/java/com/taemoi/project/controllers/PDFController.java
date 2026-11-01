@@ -272,6 +272,7 @@ public class PDFController {
 			@RequestParam(required = false) List<String> grupos,
 			@RequestParam(name = "deporte", required = false) String deporteParametro,
 			@RequestParam(required = false) Long sedeId,
+			@RequestParam(defaultValue = "false") boolean marcada,
 			HttpServletResponse response) throws IOException {
 		// Antes el enum Deporte (Spring respondía 400 a un valor no válido); ahora, el catálogo de la escuela.
 		String deporte = catalogoDisciplinas.validarParametro(deporteParametro);
@@ -288,9 +289,12 @@ public class PDFController {
 		}
 
 		// Decisión 142 (pieza 9-6): sedeId, por la sede de la clase; nunca por la sede principal del alumno.
-		byte[] pdfBytes = sedeId != null
-				? pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte, sedeId)
-				: pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte);
+		// marcada: la rejilla con lo guardado en «pasar lista»; sin ella (o false), la de siempre.
+		byte[] pdfBytes = marcada
+				? pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte, sedeId, true)
+				: sedeId != null
+						? pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte, sedeId)
+						: pdfService.generarListadoAsistencia(year, month, gruposSeleccionados, deporte);
 
 		String grupoSuffix = gruposSeleccionados.size() == 1 ? gruposSeleccionados.get(0) : "varios-dias";
 		String deporteSuffix = deporte != null ? "_" + deporte : "";

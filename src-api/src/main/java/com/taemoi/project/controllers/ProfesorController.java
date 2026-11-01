@@ -84,13 +84,14 @@ public class ProfesorController {
 
 	/**
 	 * Hoja de asistencia de un grupo suyo para un mes (E7-2, D7-15): el PDF de siempre, solo con los turnos y los alumnos
-	 * activos de ese grupo. Grupo ajeno: 403; año o mes no válidos: 400. Como el PDF de gestión, en adjunto.
+	 * activos de ese grupo; con {@code marcada}, la rejilla sale con lo guardado en «pasar lista». Grupo ajeno: 403; año
+	 * o mes no válidos: 400. Como el PDF de gestión, en adjunto.
 	 */
 	@GetMapping("/grupos/{grupoId}/asistencia")
 	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
 	public ResponseEntity<byte[]> asistencia(@PathVariable Long grupoId, @RequestParam int year,
-			@RequestParam int month) throws IOException {
-		byte[] pdf = profesor.asistencia(grupoId, year, month);
+			@RequestParam int month, @RequestParam(defaultValue = "false") boolean marcada) throws IOException {
+		byte[] pdf = profesor.asistencia(grupoId, year, month, marcada);
 		String fichero = "Asistencia-grupo-%d-%d-%02d.pdf".formatted(grupoId, year, month);
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fichero + "\"").body(pdf);

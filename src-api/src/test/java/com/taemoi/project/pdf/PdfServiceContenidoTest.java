@@ -5,13 +5,18 @@ import static com.taemoi.project.pdf.ContenidoPdf.conHoy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -24,10 +29,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.dtos.response.AlumnoConvocatoriaReporteDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
+import com.taemoi.project.entities.AsistenciaAlumno;
+import com.taemoi.project.entities.ClaseAsistencia;
 import com.taemoi.project.entities.Convocatoria;
 import com.taemoi.project.pdf.ContenidoPdf.Presentacion;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.repositories.AsistenciaAlumnoRepository;
+import com.taemoi.project.repositories.ClaseAsistenciaRepository;
 import com.taemoi.project.repositories.ConvocatoriaRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
@@ -59,6 +68,8 @@ class PdfServiceContenidoTest {
 	private final ConvocatoriaRepository convocatoriaRepository = mock(ConvocatoriaRepository.class);
 	private final ConvocatoriaService convocatoriaService = mock(ConvocatoriaService.class);
 	private final TarifaSedeService tarifaSede = mock(TarifaSedeService.class);
+	private final ClaseAsistenciaRepository claseAsistenciaRepository = mock(ClaseAsistenciaRepository.class);
+	private final AsistenciaAlumnoRepository asistenciaAlumnoRepository = mock(AsistenciaAlumnoRepository.class);
 	private final PDFServiceImpl servicio = new PDFServiceImpl();
 
 	@BeforeEach
@@ -67,6 +78,8 @@ class PdfServiceContenidoTest {
 		ReflectionTestUtils.setField(servicio, "gestionPorSede", mock(GestionPorSede.class));
 		ReflectionTestUtils.setField(servicio, "alumnoDeporteRepository", alumnoDeporteRepository);
 		ReflectionTestUtils.setField(servicio, "turnoRepository", turnoRepository);
+		ReflectionTestUtils.setField(servicio, "claseAsistenciaRepository", claseAsistenciaRepository);
+		ReflectionTestUtils.setField(servicio, "asistenciaAlumnoRepository", asistenciaAlumnoRepository);
 		ReflectionTestUtils.setField(servicio, "productoRepository", productoRepository);
 		ReflectionTestUtils.setField(servicio, "productoAlumnoRepository", productoAlumnoRepository);
 		ReflectionTestUtils.setField(servicio, "convocatoriaRepository", convocatoriaRepository);
@@ -213,6 +226,92 @@ class PdfServiceContenidoTest {
 				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L, 9L))),
 				Presentacion.de("CLUB MOI'S KIM DO", "Tae Kwon Do"),
 				"Octubre de 2026, turnos 9 y 11. Edad y meses en el grado con HOY.");
+	}
+
+	// ------------------------------------------------------------------ asistencia marcada
+
+	private static final String LEYENDA = "X: asistió · –: faltó · Vacía: sin lista";
+
+	@Test
+	void asistenciaSinMarcarNoConsultaListasNiPintaLeyenda() throws Exception {
+		byte[] sin = conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L, 9L)));
+		byte[] enFalse = conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L, 9L), false));
+		byte[] gestion = conHoy(() -> servicio.generarListadoAsistencia(2026, 10, List.of("Lunes"), null, null, false));
+
+		assertEquals(ContenidoPdf.lineas(sin), ContenidoPdf.lineas(enFalse));
+		assertFalse(String.join("\n", ContenidoPdf.lineas(enFalse)).contains("asistió"));
+		assertFalse(String.join("\n", ContenidoPdf.lineas(gestion)).contains("asistió"));
+		verifyNoInteractions(claseAsistenciaRepository, asistenciaAlumnoRepository);
+	}
+
+	@Test
+	void asistenciaMarcadaPintaLoGuardadoPorTurnoYFecha() throws Exception {
+		// Turno 9 (grupo 3): lunes 5 con lista (Ana presente, Carla falta); lunes 12 sin lista. Turno 11 (grupo 5):
+		// lunes 5 con lista de Bruno presente y sin fila de Eva (alumno sin fila en una lista guardada).
+		ClaseAsistencia infantil5 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 5));
+		ClaseAsistencia adultos5 = clase(101L, 5L, 11L, LocalDate.of(2026, 10, 5));
+		// Ignoradas: otro grupo en el turno 9 (lunes 12), día que no es columna (martes 6) y un turno que no sale.
+		ClaseAsistencia deOtroGrupo = clase(102L, 99L, 9L, LocalDate.of(2026, 10, 12));
+		ClaseAsistencia noEsColumna = clase(103L, 3L, 9L, LocalDate.of(2026, 10, 6));
+		ClaseAsistencia otroTurno = clase(104L, 3L, 77L, LocalDate.of(2026, 10, 19));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), eq(LocalDate.of(2026, 10, 1)),
+				eq(LocalDate.of(2026, 10, 31)))).thenReturn(
+						List.of(infantil5, adultos5, deOtroGrupo, noEsColumna, otroTurno));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(
+				new AsistenciaAlumno(100L, 1L, true), new AsistenciaAlumno(100L, 3L, false),
+				new AsistenciaAlumno(101L, 2L, true),
+				// Ana y Carla en la clase de otro grupo y en el martes: no marcan.
+				new AsistenciaAlumno(102L, 1L, true), new AsistenciaAlumno(103L, 3L, true),
+				new AsistenciaAlumno(104L, 1L, true),
+				// Ana en la lista del turno 11: no está en esa página.
+				new AsistenciaAlumno(101L, 1L, true)));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L, 9L), true)));
+
+		assertTrue(lineas.contains("7m 5001 11 Ana Prueba Uno 101 X"), String.join("\n", lineas));
+		assertTrue(lineas.contains("10m NO 13 Carla Prueba Tres 103 –"), String.join("\n", lineas));
+		assertTrue(lineas.contains("16m 5002 36 Bruno Prueba Dos 102 X"), String.join("\n", lineas));
+		assertTrue(lineas.contains("29m 1º 5005 26 Eva Prueba Cinco 105"), String.join("\n", lineas));
+		// Mismas columnas y una leyenda por página.
+		assertEquals(2, lineas.stream().filter(l -> l.equals("5 12 19 26")).count());
+		assertEquals(2, lineas.stream().filter(l -> l.equals(LEYENDA)).count(), String.join("\n", lineas));
+		// Una consulta de clases para todos los turnos y una de filas para todas las clases.
+		verify(claseAsistenciaRepository, times(1)).findByTurnoIdInAndFechaBetween(any(), any(), any());
+		verify(asistenciaAlumnoRepository, times(1)).findByClaseIdIn(any());
+	}
+
+	@Test
+	void asistenciaMarcadaDeGestionUsaLasMismasMarcas() throws Exception {
+		ClaseAsistencia infantil5 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 5));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), any(), any()))
+				.thenReturn(List.of(infantil5));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(new AsistenciaAlumno(100L, 1L, true)));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistencia(2026, 10, List.of("Lunes"), null, null, true)));
+
+		assertTrue(lineas.contains("7m 5001 11 Ana Prueba Uno 101 X"), String.join("\n", lineas));
+		verify(claseAsistenciaRepository, times(1)).findByTurnoIdInAndFechaBetween(any(), any(), any());
+		verify(asistenciaAlumnoRepository, times(1)).findByClaseIdIn(any());
+	}
+
+	@Test
+	void asistenciaMarcadaSinListasQuedaVaciaConLeyenda() throws Exception {
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(9L), true)));
+
+		assertTrue(lineas.contains("7m 5001 11 Ana Prueba Uno 101"), String.join("\n", lineas));
+		assertTrue(lineas.contains(LEYENDA));
+		// Sin clases guardadas no hay nada que leer en las filas.
+		verifyNoInteractions(asistenciaAlumnoRepository);
+	}
+
+	private static ClaseAsistencia clase(long id, long grupoId, long turnoId, LocalDate fecha) {
+		ClaseAsistencia clase = new ClaseAsistencia(grupoId, turnoId, fecha, "17:00", "18:00", null,
+				fecha.atStartOfDay());
+		ReflectionTestUtils.setField(clase, "id", id);
+		return clase;
 	}
 
 	// ------------------------------------------------------------------ cobros

@@ -18,6 +18,9 @@ public interface AsistenciaAlumnoRepository extends JpaRepository<AsistenciaAlum
 
 	List<AsistenciaAlumno> findByClaseId(Long claseId);
 
+	/** Filas de todas esas clases. Una consulta para todas las clases, sin N+1. */
+	List<AsistenciaAlumno> findByClaseIdIn(Collection<Long> claseIds);
+
 	/**
 	 * Filas {@code [claseId, filas, presentes]} de esas clases, sin las de alumnos anonimizados (se borran al anonimizar;
 	 * esto cubre un PUT en curso, como la lista). Una clase sin filas no sale.

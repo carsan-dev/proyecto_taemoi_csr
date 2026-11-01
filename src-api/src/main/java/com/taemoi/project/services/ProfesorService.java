@@ -275,6 +275,12 @@ public class ProfesorService {
 	 */
 	@Transactional(readOnly = true)
 	public byte[] asistencia(Long grupoId, int year, int month) throws IOException {
+		return asistencia(grupoId, year, month, false);
+	}
+
+	/** Como {@link #asistencia(Long, int, int)}; con {@code marcada}, la rejilla sale con lo guardado en «pasar lista». */
+	@Transactional(readOnly = true)
+	public byte[] asistencia(Long grupoId, int year, int month, boolean marcada) throws IOException {
 		if (grupoId == null || !gruposDelProfesor().contains(grupoId)) {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
@@ -283,7 +289,8 @@ public class ProfesorService {
 		}
 		List<Long> turnos = em.createQuery("SELECT t.id FROM Turno t WHERE t.grupo.id = :grupo ORDER BY t.id", Long.class)
 				.setParameter("grupo", grupoId).getResultList();
-		return pdf.generarListadoAsistenciaPorTurnos(year, month, turnos);
+		return marcada ? pdf.generarListadoAsistenciaPorTurnos(year, month, turnos, true)
+				: pdf.generarListadoAsistenciaPorTurnos(year, month, turnos);
 	}
 
 	// ------------------------------------------------------------------ grados (pieza E7-3)
