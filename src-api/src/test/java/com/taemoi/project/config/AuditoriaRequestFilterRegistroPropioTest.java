@@ -40,6 +40,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 	private record Ejemplo(String metodo, String ruta) {
 	}
 
+	private static final String MATERIAL = "/api/material-examen/TAEKWONDO/b01_inicio_a_amarillo";
+
 	private static final Map<EscrituraConRegistroPropio, Ejemplo> EJEMPLOS = new EnumMap<>(Map.ofEntries(
 			Map.entry(EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR,
 					new Ejemplo("PUT", "/api/plataforma/escuelas/7/logo")),
@@ -94,7 +96,22 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR,
 					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_GESTION,
-					new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26"))));
+					new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR, new Ejemplo("POST", MATERIAL + "/videos")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR,
+					new Ejemplo("PUT", MATERIAL + "/videos/01_saludo.mp4/contenido")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_TITULO,
+					new Ejemplo("PATCH", MATERIAL + "/videos/01_saludo.mp4")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, new Ejemplo("PUT", MATERIAL + "/videos/orden")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,
+					new Ejemplo("DELETE", MATERIAL + "/videos/01_saludo.mp4")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_TEMARIO, new Ejemplo("PUT", MATERIAL + "/temario")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUBIR,
+					new Ejemplo("POST", MATERIAL + "/documentacion")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUSTITUIR,
+					new Ejemplo("PUT", MATERIAL + "/documentacion/guia.pdf/contenido")),
+			Map.entry(EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_ELIMINAR,
+					new Ejemplo("DELETE", MATERIAL + "/documentacion/guia.pdf"))));
 
 	/**
 	 * Fuera de la lista: el filtro sigue apuntando su 2xx. El alta de profesor a un grupo con el MISMO rol responde 200
@@ -171,6 +188,18 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("POST", "/api/plataforma/escuelas/7/marca"),
 			new Ejemplo("PUT", "/api/plataforma/escuelas/7/marca/otra"),
 			new Ejemplo("PUT", "/api/plataforma/escuelas/marca"),
+			// Pieza R1: las lecturas de material y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/material-examen"),
+			new Ejemplo("GET", MATERIAL),
+			new Ejemplo("POST", "/api/material-examen"),
+			new Ejemplo("PUT", MATERIAL),
+			new Ejemplo("POST", MATERIAL + "/videos/01_saludo.mp4"),
+			new Ejemplo("PUT", MATERIAL + "/videos/01_saludo.mp4"),
+			new Ejemplo("PUT", MATERIAL + "/videos"),
+			new Ejemplo("POST", MATERIAL + "/temario"),
+			new Ejemplo("DELETE", MATERIAL + "/temario"),
+			new Ejemplo("PUT", MATERIAL + "/documentacion"),
+			new Ejemplo("PATCH", MATERIAL + "/documentacion/guia.pdf"),
 			new Ejemplo("POST", "/x/api/caja/profesor/cargos/88/cobrar"));
 
 	private static final List<String> METODOS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");

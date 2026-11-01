@@ -50,3 +50,22 @@ Con migración `V31_16`: `desplegar_migrar`. El orden es F1, y después F2 y F3.
 - La q16 sigue abierta para el cartel y para los documentos de eventos, públicos por ruta.
 - La web pública solo resuelve la organización 1 (decisión 10): la galería de otra escuela espera a la fase 4.
 - Los textos propios de Moiskimdo en la web de eventos no cambian.
+
+# E8c · Material de examen (8c-R): plan
+
+Decisiones 402 a 406, 415 y 416. Boceto aprobado: <https://claude.ai/artifact/CXnqDRDDU6TeiKwVHtq8R4>. La maqueta manda sobre este texto. Sin migración: `V31_18` sigue libre.
+
+- **Producción medida el 01/11:** 3,8 GB en `Materiales_Examen`, 35 ficheros de más de 50 MB, ningún `index.json`, 12 documentos y 0 alumnos activos de 5.º dan. La copia de las 16:15 deja 8,1 GB en el USB: indicio, no prueba, de que incluye los vídeos.
+- **Datos (416):** el material sigue en disco, sin tabla nueva. Título y orden van en el `index.json` del bloque, que se genera con todos los vídeos en la primera escritura.
+- **Moiskimdo:** nunca se crea una carpeta propia vacía, porque ocultaría la legada. La primera escritura en un bloque mueve la carpeta legada entera a `org-1/materiales/...` con un movimiento atómico, bajo bloqueo del bloque. Las lecturas no mueven nada. Si existen las dos carpetas, la escritura falla sin mezclar.
+- **Bloque 11 (406 y 415):** alias de lectura y adopción de `b11_negro_5_a_maximo` a la carpeta legada `b11_negro_5_a_negro_6`. No cambia la base de datos.
+- **Subida:** `multipart` es global y el límite de 500 MB solo vale aquí (403). Por eso el vídeo llega como cuerpo crudo por streaming, con `Content-Length` obligatorio, tope contado al leer, comprobación de cabecera, espacio libre y temporal oculto en la misma carpeta. El resto de rutas sigue en 50 MB.
+- **Filtro de auditoría:** `ContentCachingRequestWrapper` guardaría el vídeo en memoria. Estas rutas no pasan por el envoltorio y registran su escritura con `AuditoriaService` en `EscrituraConRegistroPropio`.
+- **Reproducción:** el visor del panel usa rutas propias con `Range`, sin alumno. Las rutas de familias no cambian.
+
+## Piezas de 8c-R
+
+- **R1 · API (`savvy-careful`: datos reales de Moiskimdo, permisos, ficheros y concurrencia):** lista, detalle, subir, sustituir, título, orden y eliminar bajo `/api/material-examen`, con `ROLE_MANAGER` o `ROLE_ADMIN`. `location` propia de nginx, matriz de permisos y `matriz-endpoints.md`.
+- **R2 · Panel (Claude con `impeccable`):** las seis mesas del boceto en Escuela → Material de examen, con barra de progreso, cancelar y reintentar. Ruta en la regex SPA de nginx.
+
+Despliegue: sin migración → `desplegar`, primero R1. Antes del merge, prueba en la app real con la copia local de 3,8 GB. Fuera: editar el reparto de grados (404) y los retos diarios.

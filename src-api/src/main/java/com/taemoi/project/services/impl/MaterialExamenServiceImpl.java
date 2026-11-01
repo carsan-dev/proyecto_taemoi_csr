@@ -5,6 +5,7 @@ import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,10 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.archivos.CarpetasMaterial;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.dtos.response.MaterialExamenDocumentoDTO;
 import com.taemoi.project.dtos.response.MaterialExamenDTO;
@@ -34,6 +38,7 @@ import com.taemoi.project.dtos.response.MaterialExamenVideoGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.exceptions.MaterialExamenException;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.MaterialExamenService;
 
@@ -203,6 +208,43 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 		return crearArchivo(match.get().path(), null);
 	}
 
+	@Override
+	public BloqueEnDisco leerBloque(String disciplina, String bloqueId) {
+		ContenidoBloque bloque = leerConReintento(disciplina, bloqueId, this::leerCarpeta);
+		return new BloqueEnDisco(
+				bloque.carpeta(),
+				bloque.temario(),
+				bloque.videos().stream()
+						.map(video -> new VideoEnDisco(video.fileName(), video.title(), video.order(), video.path()))
+						.toList(),
+				bloque.documentos().stream()
+						.map(documento -> new DocumentoEnDisco(documento.fileName(), documento.title(),
+								documento.mimeType(), documento.path()))
+						.toList());
+	}
+
+	@Override
+	public BloqueEnDisco leerBloqueParaEscribir(String disciplina, String bloqueId) {
+		exigirIndiceLegible(obtenerCarpetaBloque(disciplina, bloqueId).resolve("index.json"));
+		return leerBloque(disciplina, bloqueId);
+	}
+
+	@Override
+	public MaterialExamenArchivo describirArchivo(Path ruta, String mimeForzado) {
+		return crearArchivo(ruta, mimeForzado);
+	}
+
+	@Override
+	public String tituloDesdeArchivo(String fichero) {
+		return generarTituloDesdeArchivo(fichero);
+	}
+
+	@Override
+	public boolean esVideoTaegukOPumse(String fichero, String titulo) {
+		String nombre = ((fichero != null ? fichero : "") + " " + (titulo != null ? titulo : "")).toUpperCase(Locale.ROOT);
+		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
+	}
+
 	private MaterialContext resolverContexto(Long alumnoId, String deporte) {
 		if (alumnoId == null || alumnoId <= 0) {
 			throw new IllegalArgumentException("El alumnoId es obligatorio");
@@ -243,16 +285,13 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of(), List.of(), List.of());
 		}
 
-		Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueId);
+		ContenidoBloque bloque = leerConReintento(deporte, bloqueId, this::leerCarpeta);
 
-		if (!Files.isDirectory(carpetaBloque)) {
-			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
+		if (!bloque.existe()) {
+			logger.info("Bloque de material no encontrado en disco: {}", bloque.carpeta());
 			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of(), List.of(), List.of());
 		}
 
-		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
-		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
-		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
 		List<VideoGroupEntry> gruposVideosAnteriores = resolverGruposVideosAnteriores(deporte, esMenor, tipoGradoActual, bloqueId);
 		List<VideoFileEntry> videosAnteriores = gruposVideosAnteriores.stream()
 				.flatMap(grupo -> grupo.videos().stream())
@@ -261,11 +300,38 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 				gradoActual,
 				siguienteGrado,
 				bloqueId,
-				temario,
-				videos,
-				documentos,
+				bloque.temario(),
+				bloque.videos(),
+				bloque.documentos(),
 				videosAnteriores,
 				gruposVideosAnteriores);
+	}
+
+	/**
+	 * Lee una carpeta sin bloqueos: la adopción (MaterialExamenGestionService) puede mover la heredada mientras tanto. Si se
+	 * eligió la heredada y al acabar ya no está, lo leído puede estar vacío o a medias: se resuelve otra vez, una sola, y
+	 * ahora saldrá la propia. La comprobación va después de leer para cubrir también el movimiento a mitad de lectura.
+	 */
+	private <T> T leerConReintento(String deporte, String bloqueId, Function<Path, T> lector) {
+		Path carpeta = obtenerCarpetaBloque(deporte, bloqueId);
+		T leido = lector.apply(carpeta);
+		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
+		if (!Files.isDirectory(carpeta) && carpeta.equals(CarpetasMaterial.legada(base, deporte, bloqueId))) {
+			return lector.apply(obtenerCarpetaBloque(deporte, bloqueId));
+		}
+		return leido;
+	}
+
+	private ContenidoBloque leerCarpeta(Path carpeta) {
+		if (!Files.isDirectory(carpeta)) {
+			return new ContenidoBloque(carpeta, false, null, List.of(), List.of());
+		}
+		return new ContenidoBloque(
+				carpeta,
+				true,
+				resolverTemario(carpeta.resolve("temario")),
+				resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json")),
+				resolverDocumentacion(carpeta.resolve("documentacion")));
 	}
 
 	private List<VideoGroupEntry> resolverGruposVideosAnteriores(
@@ -291,13 +357,9 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			}
 			bloquesVisitados.add(bloqueAnterior);
 
-			Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueAnterior);
-			if (!Files.isDirectory(carpetaBloque)) {
-				continue;
-			}
-
-			List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
-					.filter(this::esVideoTaegukOPumse)
+			List<VideoFileEntry> videos = leerConReintento(deporte, bloqueAnterior,
+					carpeta -> resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json"))).stream()
+					.filter(video -> esVideoTaegukOPumse(video.fileName(), video.title()))
 					.map(video -> new VideoFileEntry(
 							video.fileName(),
 							video.title(),
@@ -325,13 +387,6 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 						+ UriUtils.encodePathSegment(videoId, StandardCharsets.UTF_8));
 	}
 
-	private boolean esVideoTaegukOPumse(VideoFileEntry video) {
-		String fileName = video.fileName() != null ? video.fileName() : "";
-		String title = video.title() != null ? video.title() : "";
-		String nombre = (fileName + " " + title).toUpperCase(Locale.ROOT);
-		return nombre.contains("TAEGUK") || nombre.contains("PUMSE");
-	}
-
 	/** Nombre del grado en el catálogo (D3); sin nombre, el código con guiones, como antes. */
 	private String nombreGrado(VideoGroupEntry grupo) {
 		return grupo.nombre() != null ? grupo.nombre() : grupo.grado().replace('_', '-');
@@ -340,27 +395,16 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	/**
 	 * Carpeta del bloque de la escuela activa: {@code org-<id>/materiales/<deporte>/<bloque>}. Solo la
 	 * escuela por defecto recurre a la carpeta heredada {@code Materiales_Examen/<deporte>/<bloque>}
-	 * cuando la suya no existe; otra escuela nunca lee material ajeno.
+	 * cuando la suya no existe; otra escuela nunca lee material ajeno. Leer nunca crea ni mueve carpetas.
 	 */
-	private Path obtenerCarpetaBloque(String deporte, String bloqueId) {
+	protected Path obtenerCarpetaBloque(String deporte, String bloqueId) {
 		Long organizacion = RutasArchivos.organizacionActiva();
 		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
-		String deporteDir = deporte.toLowerCase(Locale.ROOT);
-		Path propia = base.resolve(RutasArchivos.carpetaOrganizacion(organizacion))
-				.resolve(RutasArchivos.CARPETA_MATERIALES)
-				.resolve(deporteDir)
-				.resolve(bloqueId)
-				.normalize();
-		if (!propia.startsWith(base)) {
-			throw new IllegalArgumentException("Bloque de material fuera del directorio permitido");
-		}
+		Path propia = CarpetasMaterial.propia(base, organizacion, deporte, bloqueId);
 		if (Files.isDirectory(propia) || !organizacion.equals(organizacionPorDefecto)) {
 			return propia;
 		}
-		return base.resolve(RutasArchivos.CARPETA_MATERIALES_LEGADO)
-				.resolve(deporteDir)
-				.resolve(bloqueId)
-				.normalize();
+		return CarpetasMaterial.legada(base, deporte, bloqueId);
 	}
 
 	private Path resolverTemario(Path carpetaTemario) {
@@ -479,6 +523,29 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			logger.warn("No se pudo leer index.json de materiales en {}. Se usara orden por nombre.", indexPath);
 			return Map.of();
 		}
+	}
+
+	/**
+	 * Legible es lo que se podría reescribir sin perder nada: un {@code videos} con todas sus entradas identificadas. Lo que
+	 * no sea un fichero normal también falla: se intenta leer y no se da por ausente.
+	 */
+	private void exigirIndiceLegible(Path indexPath) {
+		if (Files.notExists(indexPath, LinkOption.NOFOLLOW_LINKS)) {
+			return;
+		}
+		try {
+			IndexFileDto indice = objectMapper.readValue(indexPath.toFile(), IndexFileDto.class);
+			if (indice != null && indice.getVideos() != null && indice.getVideos().stream()
+					.allMatch(video -> video != null && video.getFile() != null && !video.getFile().isBlank())) {
+				return;
+			}
+		} catch (IOException e) {
+			logger.error("No se pudo leer index.json de materiales en {}: causa={}", indexPath, e.getClass().getSimpleName());
+		}
+		logger.error("Material de examen con un index.json ilegible: {}", indexPath);
+		throw new MaterialExamenException(HttpStatus.CONFLICT,
+				"El índice de vídeos de este bloque está dañado y no se puede cambiar. El material sigue intacto. "
+						+ "Avisa al administrador.");
 	}
 
 	private int extraerOrden(String fileName) {
@@ -621,6 +688,14 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			baseDir = directorioDocumentosLinux;
 		}
 		return Path.of(baseDir).normalize();
+	}
+
+	private record ContenidoBloque(
+			Path carpeta,
+			boolean existe,
+			Path temario,
+			List<VideoFileEntry> videos,
+			List<DocumentoFileEntry> documentos) {
 	}
 
 	private record MaterialContext(

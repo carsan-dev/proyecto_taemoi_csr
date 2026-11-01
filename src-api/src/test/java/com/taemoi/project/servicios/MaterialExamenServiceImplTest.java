@@ -349,6 +349,34 @@ class MaterialExamenServiceImplTest {
 				material.getGruposVideosAnteriores().stream().map(g -> g.getTitulo()).toList());
 	}
 
+	/** Decisiones 406 y 415: el catálogo dice {@code _maximo}, pero la carpeta heredada se llama {@code _negro_6}. */
+	@Test
+	void bloque11_leeLaCarpetaHeredadaConSuAlias() throws Exception {
+		mockAlumnoConDeporte(19L, Deporte.TAEKWONDO, TipoGrado.NEGRO_5_DAN);
+		Path heredado = crearBloque("taekwondo", "b11_negro_5_a_negro_6");
+		Files.createDirectories(heredado.resolve("videos"));
+		Files.writeString(heredado.resolve("videos").resolve("01_kukkiwon.mp4"), "v1");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(19L, Deporte.TAEKWONDO.name());
+
+		assertEquals("b11_negro_5_a_maximo", material.getBloqueId());
+		assertEquals(List.of("01_kukkiwon.mp4"), material.getVideos().stream().map(v -> v.getId()).toList());
+	}
+
+	/** Otra escuela no recibe el alias: su carpeta es la propia, con el id del catálogo. */
+	@Test
+	void bloque11_otraEscuelaNoLeeElAliasHeredado() throws Exception {
+		TenantContext.set(2L);
+		mockAlumnoConDeporte(20L, Deporte.TAEKWONDO, TipoGrado.NEGRO_5_DAN);
+		Path heredado = crearBloque("taekwondo", "b11_negro_5_a_negro_6");
+		Files.createDirectories(heredado.resolve("videos"));
+		Files.writeString(heredado.resolve("videos").resolve("01_kukkiwon.mp4"), "v1");
+
+		MaterialExamenDTO material = service.obtenerMaterialExamen(20L, Deporte.TAEKWONDO.name());
+
+		assertEquals(0, material.getVideos().size());
+	}
+
 	private void mockAlumnoConDeporte(Long alumnoId, Deporte deporte, TipoGrado grado) {
 		AlumnoDeporte alumnoDeporte = new AlumnoDeporte();
 		alumnoDeporte.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte.name()));
