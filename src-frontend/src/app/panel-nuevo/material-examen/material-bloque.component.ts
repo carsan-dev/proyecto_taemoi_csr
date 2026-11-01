@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { DocumentoInforme, descargarDocumentoInforme } from '../../servicios/generales/informe-pdf.service';
 import {
   OpcionesSubida,
@@ -88,6 +89,7 @@ type MandoOrden = 'asa' | 'subir' | 'bajar';
 export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSinGuardar {
   private readonly api = inject(MaterialExamenApiService);
   private readonly catalogo = inject(CatalogoService);
+  private readonly autenticacion = inject(AuthenticationService);
   private readonly ruta = inject(ActivatedRoute);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
@@ -311,6 +313,10 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   }
 
   async puedeSalir(): Promise<boolean> {
+    // Sin sesión no hay nada que conservar: quedarse aquí solo cancelaría la redirección al login.
+    if (!this.autenticacion.comprobarLogueado()) {
+      return true;
+    }
     const subiendo = this.subiendo;
     const orden = this.ordenSinGuardar;
     if (!subiendo && !orden) {

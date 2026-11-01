@@ -6,6 +6,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -56,6 +57,7 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
   let exito: jasmine.Spy;
   let error: jasmine.Spy;
   let anuncio: jasmine.Spy;
+  let conSesion: boolean;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const comp = (): MaterialBloqueComponent => fixture.componentInstance;
@@ -120,6 +122,7 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
+    conSesion = true;
     TestBed.configureTestingModule({
       imports: [MaterialBloqueComponent],
       providers: [
@@ -128,6 +131,7 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
         provideHttpClientTesting(),
         { provide: CLIENTE_SUBIDAS, useExisting: HttpClient },
         { provide: CatalogoService, useValue: { etiquetaDisciplina: () => 'Taekwondo' } },
+        { provide: AuthenticationService, useValue: { comprobarLogueado: () => conSesion } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ disciplina: 'TAEKWONDO', bloque: 'b01' }), queryParamMap: convertToParamMap({}) } } },
       ],
     });
@@ -564,6 +568,25 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       soltar();
       await esperar();
       http.expectOne(`${API}/videos?nombre=a.mp4`).flush({ fichero: 'a.mp4', bloque: detalle() });
+    });
+
+    it('sin sesión no pregunta, ni con orden sin guardar', async () => {
+      cargar();
+      comp().mover(0, 1);
+      conSesion = false;
+      expect(await comp().puedeSalir()).toBeTrue();
+      expect(confirmar).not.toHaveBeenCalled();
+    });
+
+    it('sin sesión no pregunta, ni con una subida en curso', async () => {
+      cargar();
+      elegirFicheros('input[multiple]', [ficheroVideo('a.mp4')]);
+      await esperar();
+      const r = http.expectOne(`${API}/videos?nombre=a.mp4`);
+      conSesion = false;
+      expect(await comp().puedeSalir()).toBeTrue();
+      expect(confirmar).not.toHaveBeenCalled();
+      r.flush({ mensaje: 'No' }, { status: 401, statusText: 'Unauthorized' });
     });
 
     it('beforeunload solo avisa con algo en vuelo o sin guardar', () => {
