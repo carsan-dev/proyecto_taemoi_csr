@@ -619,6 +619,99 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       expect(error).toHaveBeenCalledWith('Este documento solo se puede sustituir por otro PDF.');
     });
 
+    describe('bloqueo desde la selección', () => {
+      /** Un fichero cuya preparación no acaba hasta que se llame a `soltar`. */
+      function lento(nombre: string, contenido = '%PDF-1.7'): { archivo: File; soltar: () => void } {
+        const archivo = new File([contenido], nombre, { type: 'application/pdf' });
+        let soltar = (): void => undefined;
+        const lectura = new Promise<ArrayBuffer>((r) => (soltar = () => r(new TextEncoder().encode(contenido).buffer)));
+        spyOn(archivo, 'arrayBuffer').and.returnValue(lectura);
+        return { archivo, soltar: () => soltar() };
+      }
+
+      it('una segunda selección de temario durante la preparación no lanza otra subida', async () => {
+        cargar(VACIO);
+        const primero = lento('uno.pdf');
+        const segundo = lento('dos.pdf');
+        elegirFicheros('.material__seccion--temario input', [primero.archivo]);
+        expect(comp().enviandoTemario).toBeTrue();
+        expect(comp().subiendo).toBeTrue();
+
+        elegirFicheros('.material__seccion--temario input', [segundo.archivo]);
+        primero.soltar();
+        segundo.soltar();
+        await esperar();
+
+        const r = http.expectOne(`${API}/temario`);
+        expect((r.request.body as File).name).toBe('uno.pdf');
+        expect(comp().enviandoTemario).toBeTrue();
+        r.flush(detalle());
+        expect(comp().enviandoTemario).toBeFalse();
+      });
+
+      it('una segunda selección de documento durante la preparación no lanza otra subida', async () => {
+        cargar(VACIO);
+        const primero = lento('uno.pdf');
+        const segundo = lento('dos.pdf');
+        elegirFicheros('.material__seccion--documentos input', [primero.archivo]);
+        expect(comp().enviandoDocumento).toBeTrue();
+
+        elegirFicheros('.material__seccion--documentos input', [segundo.archivo]);
+        primero.soltar();
+        segundo.soltar();
+        await esperar();
+
+        const r = http.expectOne(`${API}/documentacion?nombre=uno.pdf`);
+        expect(comp().enviandoDocumento).toBeTrue();
+        r.flush({ fichero: 'uno.pdf', bloque: detalle() });
+        expect(comp().enviandoDocumento).toBeFalse();
+      });
+
+      it('sustituir un documento durante la preparación de otro no lanza otra subida', async () => {
+        cargar();
+        const primero = lento('uno.pdf');
+        const segundo = lento('dos.pdf');
+        elegirFicheros('.material__seccion--documentos input', [primero.archivo]);
+
+        spyOn(HTMLInputElement.prototype, 'click');
+        comp().accionDocumento(detalle().documentos[0], 'sustituir');
+        const selector = el().querySelectorAll<HTMLInputElement>('.material__seccion--documentos input')[1];
+        const lista = new DataTransfer();
+        lista.items.add(segundo.archivo);
+        selector.files = lista.files;
+        selector.dispatchEvent(new Event('change'));
+        primero.soltar();
+        segundo.soltar();
+        await esperar();
+
+        http.expectOne(`${API}/documentacion?nombre=uno.pdf`).flush({ fichero: 'uno.pdf', bloque: detalle() });
+        http.expectNone(`${API}/documentacion/normas.pdf/contenido`);
+      });
+
+      it('si la preparación rechaza el fichero, se puede volver a elegir', async () => {
+        cargar(VACIO);
+        elegirFicheros('.material__seccion--temario input', [new File(['x'], 'plan.docx')]);
+        await esperar();
+        expect(comp().enviandoTemario).toBeFalse();
+
+        elegirFicheros('.material__seccion--documentos input', [new File(['x'], 'plan.exe')]);
+        await esperar();
+        expect(comp().enviandoDocumento).toBeFalse();
+
+        elegirFicheros('.material__seccion--temario input', [new File(['%PDF-1.7'], 'plan.pdf', { type: 'application/pdf' })]);
+        await esperar();
+        http.expectOne(`${API}/temario`).flush(detalle());
+      });
+
+      it('sin fichero elegido no se bloquea nada', async () => {
+        cargar(VACIO);
+        el().querySelector<HTMLInputElement>('.material__seccion--temario input')!.dispatchEvent(new Event('change'));
+        el().querySelector<HTMLInputElement>('.material__seccion--documentos input')!.dispatchEvent(new Event('change'));
+        await esperar();
+        expect(comp().subiendo).toBeFalse();
+      });
+    });
+
     it('un fallo de la API enseña su mensaje', async () => {
       cargar(VACIO);
       elegirFicheros('.material__seccion--documentos input', [new File(['%PDF'], 'normas.pdf', { type: 'application/pdf' })]);

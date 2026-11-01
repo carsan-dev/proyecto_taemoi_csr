@@ -112,7 +112,7 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   videos: VideoDetalle[] = [];
   movido: string | null = null;
   guardandoOrden = false;
-  /** Temario o documento en vuelo (van sin barra: son de hasta 50 MB). */
+  /** Temario o documento preparándose o en vuelo (van sin barra: son de hasta 50 MB). */
   enviandoTemario = false;
   enviandoDocumento = false;
   abriendoTemario = false;
@@ -574,13 +574,31 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
     return preparado.file;
   }
 
+  /** Con un envío ya en marcha, desde la selección, la nueva elección se ignora: no hay dos subidas a la vez. */
+  private sePuedeElegir(entrada: HTMLInputElement, ocupado: boolean): boolean {
+    if (!entrada.files?.length) {
+      return false;
+    }
+    if (ocupado) {
+      reiniciarSelectorArchivo(entrada);
+      return false;
+    }
+    return true;
+  }
+
   async elegirTemario(evento: Event): Promise<void> {
-    const archivo = await this.preparar(evento.target as HTMLInputElement, SUBIDA_TEMARIO);
-    if (!archivo || this.destruido) {
+    const entrada = evento.target as HTMLInputElement;
+    if (!this.sePuedeElegir(entrada, this.enviandoTemario)) {
       return;
     }
     this.enviandoTemario = true;
     this.cdr.markForCheck();
+    const archivo = await this.preparar(entrada, SUBIDA_TEMARIO);
+    if (!archivo || this.destruido) {
+      this.enviandoTemario = false;
+      this.cdr.markForCheck();
+      return;
+    }
     this.api.subirTemario(this.disciplina, this.bloqueId, archivo).subscribe({
       next: (detalle) => {
         this.enviandoTemario = false;
@@ -620,8 +638,8 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
   // ------------------------------------------------------------------ documentación
 
   async elegirDocumento(evento: Event): Promise<void> {
-    const archivo = await this.preparar(evento.target as HTMLInputElement, SUBIDA_DOCUMENTO);
-    if (archivo && !this.destruido) {
+    const archivo = await this.prepararDocumento(evento.target as HTMLInputElement);
+    if (archivo) {
       this.enviarDocumento(this.api.subirDocumento(this.disciplina, this.bloqueId, archivo), (r) => r.bloque, 'Documento añadido.');
     }
   }
@@ -641,15 +659,29 @@ export class MaterialBloqueComponent implements OnInit, OnDestroy, ConCambiosSin
       this.avisos.error(motivo);
       return;
     }
-    const archivo = await this.preparar(entrada, SUBIDA_DOCUMENTO);
-    if (archivo && !this.destruido) {
+    const archivo = await this.prepararDocumento(entrada);
+    if (archivo) {
       this.enviarDocumento(this.api.sustituirDocumento(this.disciplina, this.bloqueId, guardado, archivo), (d) => d, 'Documento sustituido.');
     }
   }
 
-  private enviarDocumento<T>(peticion: Observable<T>, aDetalle: (respuesta: T) => DetalleBloque, exito: string): void {
+  /** Prepara con el bloqueo puesto desde la selección; solo sigue puesto si hay fichero que enviar. */
+  private async prepararDocumento(entrada: HTMLInputElement): Promise<File | null> {
+    if (!this.sePuedeElegir(entrada, this.enviandoDocumento)) {
+      return null;
+    }
     this.enviandoDocumento = true;
     this.cdr.markForCheck();
+    const archivo = await this.preparar(entrada, SUBIDA_DOCUMENTO);
+    if (archivo && !this.destruido) {
+      return archivo;
+    }
+    this.enviandoDocumento = false;
+    this.cdr.markForCheck();
+    return null;
+  }
+
+  private enviarDocumento<T>(peticion: Observable<T>, aDetalle: (respuesta: T) => DetalleBloque, exito: string): void {
     peticion.subscribe({
       next: (respuesta) => {
         this.enviandoDocumento = false;
