@@ -3,8 +3,11 @@ package com.taemoi.project.controllers;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import org.springframework.core.io.InputStreamResource;
@@ -21,6 +24,9 @@ import com.taemoi.project.services.MaterialExamenService.MaterialExamenArchivo;
 /**
  * Respuesta de un fichero de disco con soporte de {@code Range}: la comparten las rutas de material de las familias
  * ({@link AlumnoController}) y las del panel ({@link MaterialExamenController}).
+ *
+ * <p>El fichero se abre una sola vez y se mide sobre ese descriptor, no con el tamaño de {@link MaterialExamenArchivo}: una
+ * sustitución simultánea es un movimiento atómico, así que quien ya abrió sigue con el contenido viejo y su tamaño viejo.
  */
 final class RespuestaArchivoConRange {
 
@@ -29,13 +35,29 @@ final class RespuestaArchivoConRange {
 
 	static ResponseEntity<Resource> servir(MaterialExamenArchivo archivo, HttpHeaders requestHeaders, boolean download)
 			throws IOException {
-		long fileSize = archivo.getSize();
 		MediaType mediaType = tipoSeguro(archivo.getMimeType());
 		List<HttpRange> ranges = requestHeaders.getRange();
 		String disposition = dispositionSegura(download, archivo.getFileName());
 
+		SeekableByteChannel canal = Files.newByteChannel(archivo.getPath(), StandardOpenOption.READ);
+		try {
+			ResponseEntity<Resource> respuesta = responder(canal, mediaType, ranges, disposition);
+			if (respuesta.getBody() == null) {
+				canal.close();
+			}
+			return respuesta;
+		} catch (IOException | RuntimeException e) {
+			canal.close();
+			throw e;
+		}
+	}
+
+	private static ResponseEntity<Resource> responder(SeekableByteChannel canal, MediaType mediaType, List<HttpRange> ranges,
+			String disposition) throws IOException {
+		long fileSize = canal.size();
+
 		if (ranges == null || ranges.isEmpty()) {
-			InputStreamResource fullResource = new InputStreamResource(Files.newInputStream(archivo.getPath()));
+			InputStreamResource fullResource = new InputStreamResource(Channels.newInputStream(canal));
 			return ResponseEntity.ok()
 					.contentType(mediaType)
 					.contentLength(fileSize)
@@ -55,9 +77,9 @@ final class RespuestaArchivoConRange {
 		}
 
 		long contentLength = end - start + 1;
-		InputStream source = Files.newInputStream(archivo.getPath());
-		skipFully(source, start);
-		InputStreamResource partialResource = new InputStreamResource(new LimitedInputStream(source, contentLength));
+		canal.position(start);
+		InputStreamResource partialResource = new InputStreamResource(
+				new LimitedInputStream(Channels.newInputStream(canal), contentLength));
 
 		return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
 				.contentType(mediaType)
@@ -84,21 +106,6 @@ final class RespuestaArchivoConRange {
 			return MediaType.parseMediaType(mediaTypeRaw);
 		} catch (Exception e) {
 			return MediaType.APPLICATION_OCTET_STREAM;
-		}
-	}
-
-	private static void skipFully(InputStream source, long bytesToSkip) throws IOException {
-		long totalSkipped = 0;
-		while (totalSkipped < bytesToSkip) {
-			long skipped = source.skip(bytesToSkip - totalSkipped);
-			if (skipped <= 0) {
-				int read = source.read();
-				if (read == -1) {
-					throw new IOException("No se pudo posicionar el stream en el rango solicitado");
-				}
-				skipped = 1;
-			}
-			totalSkipped += skipped;
 		}
 	}
 
