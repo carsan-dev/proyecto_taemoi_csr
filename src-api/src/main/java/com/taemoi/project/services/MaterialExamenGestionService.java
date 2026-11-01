@@ -203,7 +203,7 @@ public class MaterialExamenGestionService {
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
 
 		Path carpeta = bajoBloqueo(bloque, () -> {
-			entradasDe(leer(bloque));
+			entradasDe(leerParaEscribir(bloque));
 			return subcarpeta(adoptar(bloque), CARPETA_VIDEOS);
 		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
@@ -213,7 +213,7 @@ public class MaterialExamenGestionService {
 					CABECERA_VIDEO_FALSA);
 			String fichero = bajoBloqueo(bloque, () -> {
 				String destino = nombreLibre(carpeta, limpio);
-				List<EntradaIndice> entradas = entradasDe(leer(bloque));
+				List<EntradaIndice> entradas = entradasDe(leerParaEscribir(bloque));
 				int orden = entradas.stream().mapToInt(EntradaIndice::order).max().orElse(0) + 1;
 				entradas.add(new EntradaIndice(destino, tituloDeSubida(nombre, destino), orden));
 				Path definitivo = carpeta.resolve(destino);
@@ -241,7 +241,7 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		comprobarCuerpo(cuerpo, MAX_BYTES_VIDEO);
-		BloqueEnDisco inicial = leer(bloque);
+		BloqueEnDisco inicial = leerParaEscribir(bloque);
 		String extension = extension(exigirVideo(inicial, fichero).fichero());
 		comprobarIndiceAsegurable(inicial);
 
@@ -251,7 +251,7 @@ public class MaterialExamenGestionService {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_VIDEO, c -> RecepcionCruda.cabeceraDeVideo(extension, c),
 					CABECERA_VIDEO_FALSA);
 			String guardado = bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				VideoEnDisco actual = exigirVideo(disco, fichero);
 				asegurarIndice(disco);
 				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
@@ -270,11 +270,11 @@ public class MaterialExamenGestionService {
 		comprobarNombreGuardado(fichero);
 		String nuevo = tituloValido(titulo);
 		String guardado = bajoBloqueo(bloque, () -> {
-			BloqueEnDisco inicial = leer(bloque);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
 			exigirVideo(inicial, fichero);
 			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			String actual = exigirVideo(disco, fichero).fichero();
 			escribirIndice(carpeta, entradasDe(disco).stream()
 					.map(e -> e.file().equals(actual) ? new EntradaIndice(e.file(), nuevo, e.order()) : e)
@@ -290,11 +290,11 @@ public class MaterialExamenGestionService {
 	public MaterialGestionDTO.Detalle reordenarVideos(String disciplina, String bloqueId, List<String> ficheros) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		bajoBloqueo(bloque, () -> {
-			BloqueEnDisco inicial = leer(bloque);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
 			comprobarPermutacion(inicial, ficheros);
 			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			comprobarPermutacion(disco, ficheros);
 			Map<String, EntradaIndice> porFichero = new TreeMap<>();
 			entradasDe(disco).forEach(e -> porFichero.put(e.file(), e));
@@ -314,11 +314,11 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			BloqueEnDisco inicial = leer(bloque);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
 			exigirVideo(inicial, fichero);
 			entradasDe(inicial);
 			Path carpeta = adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			VideoEnDisco video = exigirVideo(disco, fichero);
 			List<EntradaIndice> todas = entradasDe(disco);
 			// Primero el índice: si no se puede borrar el fichero, se restaura y el bloque queda como estaba.
@@ -345,14 +345,14 @@ public class MaterialExamenGestionService {
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
 		Path carpeta = bajoBloqueo(bloque, () -> {
-			comprobarIndiceAsegurable(leer(bloque));
+			comprobarIndiceAsegurable(leerParaEscribir(bloque));
 			return subcarpeta(adoptar(bloque), CARPETA_TEMARIO);
 		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, RecepcionCruda::cabeceraDePdf, CABECERA_PDF_FALSA);
 			bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				Path anterior = disco.temario();
 				asegurarIndice(disco);
 				Files.move(temporal, carpeta.resolve(TEMARIO), StandardCopyOption.ATOMIC_MOVE);
@@ -379,14 +379,14 @@ public class MaterialExamenGestionService {
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
 
 		Path carpeta = bajoBloqueo(bloque, () -> {
-			comprobarIndiceAsegurable(leer(bloque));
+			comprobarIndiceAsegurable(leerParaEscribir(bloque));
 			return subcarpeta(adoptar(bloque), CARPETA_DOCUMENTOS);
 		});
 		Path temporal = RecepcionCruda.temporalEn(carpeta);
 		try {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, cabeceraDeDocumento(limpio), CABECERA_PDF_FALSA);
 			String fichero = bajoBloqueo(bloque, () -> {
-				asegurarIndice(leer(bloque));
+				asegurarIndice(leerParaEscribir(bloque));
 				String destino = nombreLibre(carpeta, limpio);
 				Files.move(temporal, carpeta.resolve(destino), StandardCopyOption.ATOMIC_MOVE);
 				return destino;
@@ -403,7 +403,7 @@ public class MaterialExamenGestionService {
 			CuerpoCrudo cuerpo) {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
-		BloqueEnDisco inicial = leer(bloque);
+		BloqueEnDisco inicial = leerParaEscribir(bloque);
 		String existente = exigirDocumento(inicial, fichero).fichero();
 		DocumentoSecurityUtils.detectarMimePermitido(existente, cuerpo.tipo());
 		comprobarCuerpo(cuerpo, MAX_BYTES_DOCUMENTO);
@@ -415,7 +415,7 @@ public class MaterialExamenGestionService {
 			RecepcionCruda.guardar(cuerpo, temporal, MAX_BYTES_DOCUMENTO, cabeceraDeDocumento(existente),
 					CABECERA_PDF_FALSA);
 			String guardado = bajoBloqueo(bloque, () -> {
-				BloqueEnDisco disco = leer(bloque);
+				BloqueEnDisco disco = leerParaEscribir(bloque);
 				DocumentoEnDisco actual = exigirDocumento(disco, fichero);
 				asegurarIndice(disco);
 				Files.move(temporal, actual.ruta(), StandardCopyOption.ATOMIC_MOVE);
@@ -433,11 +433,11 @@ public class MaterialExamenGestionService {
 		BloqueDeCatalogo bloque = bloque(disciplina, bloqueId);
 		comprobarNombreGuardado(fichero);
 		String guardado = bajoBloqueo(bloque, () -> {
-			BloqueEnDisco inicial = leer(bloque);
+			BloqueEnDisco inicial = leerParaEscribir(bloque);
 			exigirDocumento(inicial, fichero);
 			comprobarIndiceAsegurable(inicial);
 			adoptar(bloque);
-			BloqueEnDisco disco = leer(bloque);
+			BloqueEnDisco disco = leerParaEscribir(bloque);
 			DocumentoEnDisco documento = exigirDocumento(disco, fichero);
 			asegurarIndice(disco);
 			Files.delete(documento.ruta());
@@ -786,6 +786,10 @@ public class MaterialExamenGestionService {
 
 	private BloqueEnDisco leer(BloqueDeCatalogo bloque) {
 		return lectura.leerBloque(bloque.disciplina(), bloque.id());
+	}
+
+	private BloqueEnDisco leerParaEscribir(BloqueDeCatalogo bloque) {
+		return lectura.leerBloqueParaEscribir(bloque.disciplina(), bloque.id());
 	}
 
 	private Path base() {

@@ -994,29 +994,9 @@ class MaterialExamenGestionServiceTest {
 		Path legada = bloqueLegado(TKD, B01);
 		dosVideosQueSoloDifierenEnMayusculas(legada);
 		pdf(legada.resolve("documentacion").resolve("guia.pdf"));
-		InputStream prohibido = new InputStream() {
-			@Override
-			public int read() {
-				throw new AssertionError("no se lee el cuerpo");
-			}
-		};
-		Map<String, org.junit.jupiter.api.function.Executable> escrituras = new LinkedHashMap<>();
-		escrituras.put("subir", () -> gestion.subirVideo(TKD, B01, "nuevo.mp4", new CuerpoCrudo(prohibido, 100, "video/mp4")));
-		escrituras.put("título", () -> gestion.cambiarTitulo(TKD, B01, "a.mp4", "Otro"));
-		escrituras.put("orden", () -> gestion.reordenarVideos(TKD, B01, List.of("a.mp4", "A.mp4")));
-		escrituras.put("eliminar", () -> gestion.eliminarVideo(TKD, B01, "a.mp4"));
-		escrituras.put("sustituir",
-				() -> gestion.sustituirVideo(TKD, B01, "a.mp4", new CuerpoCrudo(prohibido, 100, "video/mp4")));
-		escrituras.put("temario", () -> gestion.subirTemario(TKD, B01, new CuerpoCrudo(prohibido, 100, "application/pdf")));
-		escrituras.put("documento",
-				() -> gestion.subirDocumento(TKD, B01, "a.pdf", new CuerpoCrudo(prohibido, 100, "application/pdf")));
-		escrituras.put("sustituir documento",
-				() -> gestion.sustituirDocumento(TKD, B01, "guia.pdf", new CuerpoCrudo(prohibido, 100, "application/pdf")));
-		escrituras.put("eliminar documento", () -> gestion.eliminarDocumento(TKD, B01, "guia.pdf"));
 
-		for (Map.Entry<String, org.junit.jupiter.api.function.Executable> escritura : escrituras.entrySet()) {
-			assertEquals(HttpStatus.CONFLICT, estadoDe(escritura.getValue()), escritura.getKey());
-		}
+		todasLasEscrituras("a.mp4", "guia.pdf", List.of("a.mp4", "A.mp4"))
+				.forEach((nombre, escritura) -> assertEquals(HttpStatus.CONFLICT, estadoDe(escritura), nombre));
 
 		assertEquals(Set.of("01_mayuscula.mp4", "02_minuscula.mp4"), nombres(legada.resolve("videos")));
 		assertEquals(Set.of("guia.pdf"), nombres(legada.resolve("documentacion")));
@@ -1065,7 +1045,119 @@ class MaterialExamenGestionServiceTest {
 		assertFalse(Files.exists(legada.resolve("index.json")));
 	}
 
+	// ------------------------------------------------------------------ índice ilegible
+
+	@ParameterizedTest
+	@ValueSource(strings = { "esto no es json", "", "null", "{}", "{\"videos\":null}", "{\"videos\":\"x\"}",
+			"{\"videos\":[null]}", "{\"videos\":[{\"title\":\"Sin fichero\"}]}", "{\"videos\":[{\"file\":\"  \"}]}",
+			"{\"videos\":[{\"file\":\"a.mp4\",\"order\":\"primero\"}]}" })
+	void indiceIlegible_ningunaEscrituraLoPisa_yLasFamiliasSiguenLeyendo(String contenido) throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "02_soguis.mp4");
+		video(legada, "01_saludo.mp4");
+		pdf(legada.resolve("documentacion").resolve("guia.pdf"));
+		Path indice = legada.resolve("index.json");
+		Files.writeString(indice, contenido);
+		alumno(50L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(50L, TKD);
+
+		todasLasEscrituras("01_saludo.mp4", "guia.pdf", List.of("02_soguis.mp4", "01_saludo.mp4"))
+				.forEach((nombre, escritura) -> {
+					MaterialExamenException error = assertThrows(MaterialExamenException.class, escritura, nombre);
+					assertEquals(HttpStatus.CONFLICT, error.getEstado(), nombre);
+					assertTrue(error.getMessage().contains("índice"), nombre + ": " + error.getMessage());
+				});
+
+		assertEquals(contenido, Files.readString(indice));
+		assertEquals(Set.of("01_saludo.mp4", "02_soguis.mp4"), nombres(legada.resolve("videos")));
+		assertFalse(Files.exists(raiz.resolve("org-1")), "ni siquiera se adopta");
+		assertEquals(antes, instantanea(50L, TKD));
+		assertEquals("01_saludo.mp4", lectura.obtenerMaterialExamen(50L, TKD).getVideos().get(0).getId(),
+				"la familia sigue con el orden por nombre");
+		assertEquals(2, gestion.detalle(TKD, B01).videos().size(), "el panel también lee");
+		verify(auditoria, never()).registrarAccesoSensible(any(), any(), any(), any(), any());
+	}
+
+	@Test
+	void unaCarpetaLlamadaIndex_tampocoSeEscribe() throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_a.mp4");
+		Files.createDirectories(carpeta.resolve("index.json"));
+
+		assertEquals(HttpStatus.CONFLICT, estadoDe(() -> gestion.cambiarTitulo(KB, B01, "01_a.mp4", "Otro")));
+
+		assertTrue(Files.isDirectory(carpeta.resolve("index.json")));
+	}
+
+	@Test
+	void indiceQueSeDanaDuranteLaSubida_noSePublicaNada() throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_a.mp4");
+		Files.writeString(carpeta.resolve("index.json"), "{\"videos\":[{\"file\":\"01_a.mp4\",\"title\":\"Mi título\"}]}");
+		byte[] bytes = mp4(100);
+		InputStream danaAlAcabar = new ByteArrayInputStream(bytes) {
+			@Override
+			public synchronized int read(byte[] destino, int desde, int cuantos) {
+				int leidos = super.read(destino, desde, cuantos);
+				if (leidos < 0) {
+					escribirSinFallar(carpeta.resolve("index.json"), "roto");
+				}
+				return leidos;
+			}
+		};
+
+		assertEquals(HttpStatus.CONFLICT,
+				estadoDe(() -> gestion.subirVideo(KB, B01, "nuevo.mp4", new CuerpoCrudo(danaAlAcabar, 100, "video/mp4"))));
+
+		assertEquals("roto", Files.readString(carpeta.resolve("index.json")));
+		assertEquals(Set.of("01_a.mp4"), nombres(carpeta.resolve("videos")));
+		sinTemporales(carpeta);
+	}
+
+	@Test
+	void indiceSinTituloNiOrden_yConUnaEntradaSinFichero_sigueSiendoLegible() throws Exception {
+		Path carpeta = propia(1L, "kickboxing", B01);
+		video(carpeta, "01_a.mp4");
+		video(carpeta, "02_b.mp4");
+		Files.writeString(carpeta.resolve("index.json"), "{\"videos\":[{\"file\":\"02_b.mp4\"},{\"file\":\"fantasma.mp4\",\"title\":\"x\"}]}");
+
+		assertEquals("Nuevo", gestion.cambiarTitulo(KB, B01, "01_a.mp4", "Nuevo").videos().get(0).titulo());
+	}
+
 	// ------------------------------------------------------------------ apoyo
+
+	/** Las nueve escrituras, con cuerpos que fallan si se leen: lo que se rechaza antes no recibe nada. */
+	private Map<String, org.junit.jupiter.api.function.Executable> todasLasEscrituras(String video, String documento,
+			List<String> orden) {
+		InputStream prohibido = new InputStream() {
+			@Override
+			public int read() {
+				throw new AssertionError("no se lee el cuerpo");
+			}
+		};
+		Map<String, org.junit.jupiter.api.function.Executable> escrituras = new LinkedHashMap<>();
+		escrituras.put("subir", () -> gestion.subirVideo(TKD, B01, "nuevo.mp4", new CuerpoCrudo(prohibido, 100, "video/mp4")));
+		escrituras.put("sustituir",
+				() -> gestion.sustituirVideo(TKD, B01, video, new CuerpoCrudo(prohibido, 100, "video/mp4")));
+		escrituras.put("título", () -> gestion.cambiarTitulo(TKD, B01, video, "Otro"));
+		escrituras.put("orden", () -> gestion.reordenarVideos(TKD, B01, orden));
+		escrituras.put("eliminar", () -> gestion.eliminarVideo(TKD, B01, video));
+		escrituras.put("temario", () -> gestion.subirTemario(TKD, B01, new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("documento",
+				() -> gestion.subirDocumento(TKD, B01, "a.pdf", new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("sustituir documento",
+				() -> gestion.sustituirDocumento(TKD, B01, documento, new CuerpoCrudo(prohibido, 100, "application/pdf")));
+		escrituras.put("eliminar documento", () -> gestion.eliminarDocumento(TKD, B01, documento));
+		return escrituras;
+	}
+
+	private static void escribirSinFallar(Path fichero, String contenido) {
+		try {
+			Files.writeString(fichero, contenido);
+		} catch (IOException e) {
+			throw new AssertionError(e);
+		}
+	}
 
 	private HttpStatus estadoDe(org.junit.jupiter.api.function.Executable accion) {
 		return assertThrows(MaterialExamenException.class, accion).getEstado();

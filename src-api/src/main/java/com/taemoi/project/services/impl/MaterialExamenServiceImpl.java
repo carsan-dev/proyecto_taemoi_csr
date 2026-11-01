@@ -5,6 +5,7 @@ import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
 
@@ -35,6 +37,7 @@ import com.taemoi.project.dtos.response.MaterialExamenVideoGrupoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.exceptions.MaterialExamenException;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.MaterialExamenService;
 
@@ -220,6 +223,12 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 						.map(documento -> new DocumentoEnDisco(documento.fileName(), documento.title(),
 								documento.mimeType(), documento.path()))
 						.toList());
+	}
+
+	@Override
+	public BloqueEnDisco leerBloqueParaEscribir(String disciplina, String bloqueId) {
+		exigirIndiceLegible(obtenerCarpetaBloque(disciplina, bloqueId).resolve("index.json"));
+		return leerBloque(disciplina, bloqueId);
 	}
 
 	@Override
@@ -496,6 +505,29 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			logger.warn("No se pudo leer index.json de materiales en {}. Se usara orden por nombre.", indexPath);
 			return Map.of();
 		}
+	}
+
+	/**
+	 * Legible es lo que se podría reescribir sin perder nada: un {@code videos} con todas sus entradas identificadas. Lo que
+	 * no sea un fichero normal también falla: se intenta leer y no se da por ausente.
+	 */
+	private void exigirIndiceLegible(Path indexPath) {
+		if (Files.notExists(indexPath, LinkOption.NOFOLLOW_LINKS)) {
+			return;
+		}
+		try {
+			IndexFileDto indice = objectMapper.readValue(indexPath.toFile(), IndexFileDto.class);
+			if (indice != null && indice.getVideos() != null && indice.getVideos().stream()
+					.allMatch(video -> video != null && video.getFile() != null && !video.getFile().isBlank())) {
+				return;
+			}
+		} catch (IOException e) {
+			logger.error("No se pudo leer index.json de materiales en {}: causa={}", indexPath, e.getClass().getSimpleName());
+		}
+		logger.error("Material de examen con un index.json ilegible: {}", indexPath);
+		throw new MaterialExamenException(HttpStatus.CONFLICT,
+				"El índice de vídeos de este bloque está dañado y no se puede cambiar. El material sigue intacto. "
+						+ "Avisa al administrador.");
 	}
 
 	private int extraerOrden(String fileName) {
