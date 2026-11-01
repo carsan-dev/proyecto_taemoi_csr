@@ -411,6 +411,15 @@ describe('FichaProfesorPanelComponent', () => {
     expect(bloque.textContent).not.toContain('Editar');
   });
 
+  it('lo que no consta se lee «Sin indicar», nunca «No»', () => {
+    crear();
+    profesor.salud.and.returnValue(of({ ...SALUD, tieneDiscapacidad: true, lesionEnfermedad: null, impideActividad: null }));
+    componente.conmutarSalud(); fixture.detectChanges();
+    const respuestas = Array.from(bloqueDe('Salud').querySelectorAll('dd')).map(d => d.textContent!.trim());
+    expect(respuestas[1]).toBe('Sin indicar');
+    expect(respuestas[2]).toBe('Sin indicar');
+  });
+
   for (const valor of [false, null]) {
     it('lee discapacidad ' + valor + ' sin inventar un Sí', () => {
       crear(); profesor.salud.and.returnValue(of({ ...SALUD, tieneDiscapacidad: valor }));

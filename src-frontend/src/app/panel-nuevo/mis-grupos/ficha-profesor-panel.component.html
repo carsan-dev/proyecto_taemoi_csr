@@ -199,11 +199,11 @@
               </div>
               <div>
                 <dt>Lesión o enfermedad</dt>
-                <dd>{{ salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="ficha__detalle">{{ salud.descripcion }}</span>}</dd>
+                <dd>{{ salud.lesionEnfermedad === null ? 'Sin indicar' : salud.lesionEnfermedad ? 'Sí' : 'No' }}@if (salud.lesionEnfermedad && salud.descripcion) {<span class="ficha__detalle">{{ salud.descripcion }}</span>}</dd>
               </div>
               <div>
                 <dt>Le impide alguna actividad</dt>
-                <dd>{{ salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="ficha__detalle">{{ salud.impideDetalle }}</span>}</dd>
+                <dd>{{ salud.impideActividad === null ? 'Sin indicar' : salud.impideActividad ? 'Sí' : 'No' }}@if (salud.impideActividad && salud.impideDetalle) {<span class="ficha__detalle">{{ salud.impideDetalle }}</span>}</dd>
               </div>
               <div>
                 <dt>Alergias</dt>
