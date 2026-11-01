@@ -411,6 +411,13 @@ describe('FichaProfesorPanelComponent', () => {
     expect(bloque.textContent).not.toContain('Editar');
   });
 
+  it('enseña el detalle de la discapacidad también sin el tipo Otra', () => {
+    crear();
+    profesor.salud.and.returnValue(of({ ...SALUD, registrado: true, tieneDiscapacidad: true, discapacidadTipos: ['INTELECTUAL'], discapacidadOtra: 'Detalle ficticio' }));
+    componente.conmutarSalud(); fixture.detectChanges();
+    expect(bloqueDe('Salud').textContent).toContain('Detalle ficticio');
+  });
+
   it('lo que no consta se lee «Sin indicar», nunca «No»', () => {
     crear();
     profesor.salud.and.returnValue(of({ ...SALUD, tieneDiscapacidad: true, lesionEnfermedad: null, impideActividad: null }));

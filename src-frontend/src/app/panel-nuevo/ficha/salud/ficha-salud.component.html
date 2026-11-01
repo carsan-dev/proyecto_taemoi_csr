@@ -79,7 +79,7 @@
           <div><dt>Tipo de discapacidad</dt><dd>
             @if (s.tieneDiscapacidad === true && tiposLectura.length) {
               <span class="pastillas">@for (tipo of tiposLectura; track tipo) {<span class="pas">{{ etiquetas[tipo] }}</span>}</span>
-              @if (s.discapacidadTipos.includes('OTRA') && s.discapacidadOtra) {<span class="detalle">{{ s.discapacidadOtra }}</span>}
+              @if (s.discapacidadOtra) {<span class="detalle">{{ s.discapacidadOtra }}</span>}
             } @else {<span [class.vacio]="s.tieneDiscapacidad !== false">{{ s.tieneDiscapacidad === false ? 'No aplica' : 'Sin indicar' }}</span>}
           </dd></div>
           <div><dt>Lesión o enfermedad</dt><dd [class.vacio]="s.lesionEnfermedad === null">{{ respuesta(s.lesionEnfermedad) }}

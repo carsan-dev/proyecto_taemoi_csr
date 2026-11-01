@@ -93,13 +93,13 @@ public class AlumnoSaludService {
 	 *
 	 * <p>Nunca descifra lo almacenado: la respuesta solo lleva lo que vino en la petición ya validado y el booleano del
 	 * alumno. Devolver lo guardado sería una lectura sin auditar: con {@code tieneDiscapacidad} nulo, los tipos salen vacíos y
-	 * el texto de «Otra» nulo, aunque haya guardados.
+	 * el texto del detalle nulo, aunque haya guardados.
 	 *
 	 * <p>Discapacidad:
 	 * <ul>
-	 * <li>{@code tieneDiscapacidad} nulo: no cambia ni el booleano ni los tipos; llegar con tipos o texto de «Otra», 400.</li>
-	 * <li>{@code true}: los tipos son opcionales (sin ellos, columnas a NULL); con {@code OTRA} el texto es obligatorio, y
-	 * sin {@code OTRA} se descarta.</li>
+	 * <li>{@code tieneDiscapacidad} nulo: no cambia ni el booleano ni los tipos; llegar con tipos o detalle, 400.</li>
+	 * <li>{@code true}: los tipos son opcionales (sin ellos, columnas a NULL y el detalle se descarta); con tipos se guarda
+	 * el detalle ({@code discapacidadOtra}), obligatorio con {@code OTRA} y opcional sin ella.</li>
 	 * <li>{@code false}: booleano a falso y columnas a NULL, se envíe lo que se envíe.</li>
 	 * </ul>
 	 */
@@ -174,12 +174,9 @@ public class AlumnoSaludService {
 			throw new IllegalArgumentException("Los tipos de discapacidad no son válidos.");
 		}
 		EnumSet<TipoDiscapacidad> elegidos = EnumSet.copyOf(tipos);
-		String otra = null;
-		if (elegidos.contains(TipoDiscapacidad.OTRA)) {
-			otra = texto(datos.discapacidadOtra(), "La discapacidad indicada");
-			if (otra == null) {
-				throw new IllegalArgumentException("Indica cuál es la discapacidad.");
-			}
+		String otra = texto(datos.discapacidadOtra(), "La discapacidad indicada");
+		if (otra == null && elegidos.contains(TipoDiscapacidad.OTRA)) {
+			throw new IllegalArgumentException("Indica cuál es la discapacidad.");
 		}
 		return new Discapacidad(List.copyOf(elegidos), otra);
 	}
