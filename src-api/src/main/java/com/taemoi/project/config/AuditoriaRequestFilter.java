@@ -37,7 +37,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	// PATCH desde la 6b-3c (marca «Lo puede vender el profesor» de /api/productos): se audita como el PUT.
 	private static final Set<String> AUDITABLE_METHODS = Set.of("GET", "POST", "PUT", "PATCH", "DELETE");
 	/**
-	 * Datos de salud: nunca se guarda el cuerpo; las lecturas correctas ya las audita AlumnoSaludService.
+	 * Datos de salud: nunca se guarda el cuerpo ni ningún parámetro de la URL, con cualquier método y estado; las lecturas
+	 * correctas ya las audita AlumnoSaludService.
 	 * Se reconoce por el controlador que atendió la petición y, si no llegó a ninguno (401/403/404), por
 	 * la ruta DECODIFICADA y normalizada (una ruta como {@code /api/alumnos/1/%73alud} también cuenta). Pieza E7-2: también
 	 * la lectura del profesor ({@code /api/profesor/alumnos/{id}/salud}), que registra AlumnoSaludService#obtenerComoProfesor.
@@ -274,7 +275,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
 		String queryParamsJson = auditoriaPayloadSanitizer
-				.serializarQueryParams(parametrosAuditables(endpoint, request.getParameterMap()));
+				.serializarQueryParams(rutaSalud ? Map.of() : parametrosAuditables(endpoint, request.getParameterMap()));
 		String ipCliente = obtenerIpCliente(request);
 		String userAgent = truncar(request.getHeader("User-Agent"), MAX_USER_AGENT_CHARS);
 

@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
@@ -394,6 +396,69 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 				"%" + marcador + "%", "%" + marcador + "%", "%" + marcador + "%"));
 	}
 
+	/**
+	 * En una ruta de salud ningún parámetro de la URL llega a {@code auditoria_evento}: con cualquier método y estado,
+	 * también en las peticiones que no llegan al controlador.
+	 */
+	@Test
+	void losParametrosDeLaUrlDeSalud_noLleganALaAuditoria_conCualquierMetodoYEstado() throws Exception {
+		long alumno = alumno(e.sA);
+		long deOtraSede = alumno(e.sB);
+		long sinSesion = alumno(e.sA);
+		long noPermitido = alumno(e.sA);
+		String marcador = "Parametro-ficticio-" + marca();
+		String parametros = "?discapacidadOtra=" + marcador + "&alergias=" + marcador;
+		String ruta = "/api/alumnos/" + alumno + "/salud";
+
+		assertEquals(200, putSalud(ruta + parametros, "{\"tieneDiscapacidad\":false}", tGestor).getResponse().getStatus());
+		assertEquals(200, peticion(get(ruta + parametros), tGestor).getResponse().getStatus());
+		assertEquals(400, putSalud(ruta + parametros, "{\"lesionEnfermedad\":\"asma\"}", tGestor).getResponse().getStatus());
+		assertEquals(403, putSalud("/api/alumnos/" + deOtraSede + "/salud" + parametros, "{}", tRespA).getResponse()
+				.getStatus());
+		assertEquals(403, peticion(get("/api/alumnos/" + deOtraSede + "/salud" + parametros), tRespA).getResponse()
+				.getStatus());
+		assertEquals(404, putSalud(ruta + parametros, "{}", tGestorOtra).getResponse().getStatus());
+		assertEquals(405, peticion(post("/api/alumnos/" + noPermitido + "/salud" + parametros), tGestor).getResponse()
+				.getStatus());
+		assertEquals(404, peticion(delete("/api/alumnos/" + noPermitido + "/salud/" + parametros), tGestor).getResponse()
+				.getStatus());
+		assertEquals(405, peticion(patch("/api/alumnos/" + noPermitido + "/salud" + parametros), tGestor).getResponse()
+				.getStatus());
+		int sinCookie = mvc.perform(get("/api/alumnos/" + sinSesion + "/salud" + parametros)).andReturn().getResponse()
+				.getStatus();
+		assertTrue(sinCookie == 401 || sinCookie == 403, "sin sesión no se atiende: " + sinCookie);
+		int delProfesor = peticion(get("/api/profesor/alumnos/" + alumno + "/salud" + parametros), tGestor).getResponse()
+				.getStatus();
+		assertTrue(delProfesor >= 400, "un gestor sin grupo no lee por la ruta del profesor: " + delProfesor);
+
+		assertEquals(0, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento
+				WHERE query_params_json LIKE ? OR payload_json LIKE ? OR resumen LIKE ? OR endpoint LIKE ?""", Integer.class,
+				"%" + marcador + "%", "%" + marcador + "%", "%" + marcador + "%", "%" + marcador + "%"));
+		// No es un cero vacío: las filas existen, con la columna sin parámetros.
+		assertEquals(2, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento
+				WHERE endpoint = ? AND accion = 'UPDATE' AND estado_http IN (200, 400) AND query_params_json = '{}'""",
+				Integer.class, ruta));
+		assertEquals(1, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento
+				WHERE endpoint LIKE ? AND estado_http = 405 AND metodo_http = 'POST' AND query_params_json = '{}'""",
+				Integer.class, "/api/alumnos/" + noPermitido + "/salud"));
+	}
+
+	/** Solo las rutas de salud: las demás siguen guardando sus parámetros. */
+	@Test
+	void fueraDeSalud_losParametrosDeLaUrlSeSiguenGuardando() throws Exception {
+		long alumno = alumno(e.sA);
+		String marcador = "Otra-ruta-ficticia-" + marca();
+
+		assertEquals(200, peticion(get("/api/alumnos/" + alumno + "/turnos?marca=" + marcador), tGestor).getResponse()
+				.getStatus());
+
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE query_params_json LIKE ?",
+				Integer.class, "%" + marcador + "%"));
+	}
+
 	// ------------------------------------------------------------------ actualizarAlumno
 
 	@Test
@@ -625,8 +690,11 @@ class DiscapacidadSaludIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private MvcResult putSalud(long alumno, String cuerpo, String token) throws Exception {
-		return peticion(put("/api/alumnos/" + alumno + "/salud").contentType(MediaType.APPLICATION_JSON).content(cuerpo),
-				token);
+		return putSalud("/api/alumnos/" + alumno + "/salud", cuerpo, token);
+	}
+
+	private MvcResult putSalud(String ruta, String cuerpo, String token) throws Exception {
+		return peticion(put(ruta).contentType(MediaType.APPLICATION_JSON).content(cuerpo), token);
 	}
 
 	private MvcResult getSalud(long alumno, String token) throws Exception {
