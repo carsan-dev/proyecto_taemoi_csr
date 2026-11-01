@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -209,17 +210,14 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 
 	@Override
 	public BloqueEnDisco leerBloque(String disciplina, String bloqueId) {
-		Path carpeta = obtenerCarpetaBloque(disciplina, bloqueId);
-		if (!Files.isDirectory(carpeta)) {
-			return new BloqueEnDisco(carpeta, null, List.of(), List.of());
-		}
+		ContenidoBloque bloque = leerConReintento(disciplina, bloqueId, this::leerCarpeta);
 		return new BloqueEnDisco(
-				carpeta,
-				resolverTemario(carpeta.resolve("temario")),
-				resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json")).stream()
+				bloque.carpeta(),
+				bloque.temario(),
+				bloque.videos().stream()
 						.map(video -> new VideoEnDisco(video.fileName(), video.title(), video.order(), video.path()))
 						.toList(),
-				resolverDocumentacion(carpeta.resolve("documentacion")).stream()
+				bloque.documentos().stream()
 						.map(documento -> new DocumentoEnDisco(documento.fileName(), documento.title(),
 								documento.mimeType(), documento.path()))
 						.toList());
@@ -287,16 +285,13 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			return new MaterialContext(gradoActual, siguienteGrado, null, null, List.of(), List.of(), List.of(), List.of());
 		}
 
-		Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueId);
+		ContenidoBloque bloque = leerConReintento(deporte, bloqueId, this::leerCarpeta);
 
-		if (!Files.isDirectory(carpetaBloque)) {
-			logger.info("Bloque de material no encontrado en disco: {}", carpetaBloque);
+		if (!bloque.existe()) {
+			logger.info("Bloque de material no encontrado en disco: {}", bloque.carpeta());
 			return new MaterialContext(gradoActual, siguienteGrado, bloqueId, null, List.of(), List.of(), List.of(), List.of());
 		}
 
-		Path temario = resolverTemario(carpetaBloque.resolve("temario"));
-		List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json"));
-		List<DocumentoFileEntry> documentos = resolverDocumentacion(carpetaBloque.resolve("documentacion"));
 		List<VideoGroupEntry> gruposVideosAnteriores = resolverGruposVideosAnteriores(deporte, esMenor, tipoGradoActual, bloqueId);
 		List<VideoFileEntry> videosAnteriores = gruposVideosAnteriores.stream()
 				.flatMap(grupo -> grupo.videos().stream())
@@ -305,11 +300,38 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 				gradoActual,
 				siguienteGrado,
 				bloqueId,
-				temario,
-				videos,
-				documentos,
+				bloque.temario(),
+				bloque.videos(),
+				bloque.documentos(),
 				videosAnteriores,
 				gruposVideosAnteriores);
+	}
+
+	/**
+	 * Lee una carpeta sin bloqueos: la adopción (MaterialExamenGestionService) puede mover la heredada mientras tanto. Si se
+	 * eligió la heredada y al acabar ya no está, lo leído puede estar vacío o a medias: se resuelve otra vez, una sola, y
+	 * ahora saldrá la propia. La comprobación va después de leer para cubrir también el movimiento a mitad de lectura.
+	 */
+	private <T> T leerConReintento(String deporte, String bloqueId, Function<Path, T> lector) {
+		Path carpeta = obtenerCarpetaBloque(deporte, bloqueId);
+		T leido = lector.apply(carpeta);
+		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
+		if (!Files.isDirectory(carpeta) && carpeta.equals(CarpetasMaterial.legada(base, deporte, bloqueId))) {
+			return lector.apply(obtenerCarpetaBloque(deporte, bloqueId));
+		}
+		return leido;
+	}
+
+	private ContenidoBloque leerCarpeta(Path carpeta) {
+		if (!Files.isDirectory(carpeta)) {
+			return new ContenidoBloque(carpeta, false, null, List.of(), List.of());
+		}
+		return new ContenidoBloque(
+				carpeta,
+				true,
+				resolverTemario(carpeta.resolve("temario")),
+				resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json")),
+				resolverDocumentacion(carpeta.resolve("documentacion")));
 	}
 
 	private List<VideoGroupEntry> resolverGruposVideosAnteriores(
@@ -335,12 +357,8 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			}
 			bloquesVisitados.add(bloqueAnterior);
 
-			Path carpetaBloque = obtenerCarpetaBloque(deporte, bloqueAnterior);
-			if (!Files.isDirectory(carpetaBloque)) {
-				continue;
-			}
-
-			List<VideoFileEntry> videos = resolverVideos(carpetaBloque.resolve("videos"), carpetaBloque.resolve("index.json")).stream()
+			List<VideoFileEntry> videos = leerConReintento(deporte, bloqueAnterior,
+					carpeta -> resolverVideos(carpeta.resolve("videos"), carpeta.resolve("index.json"))).stream()
 					.filter(video -> esVideoTaegukOPumse(video.fileName(), video.title()))
 					.map(video -> new VideoFileEntry(
 							video.fileName(),
@@ -379,7 +397,7 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 	 * escuela por defecto recurre a la carpeta heredada {@code Materiales_Examen/<deporte>/<bloque>}
 	 * cuando la suya no existe; otra escuela nunca lee material ajeno. Leer nunca crea ni mueve carpetas.
 	 */
-	private Path obtenerCarpetaBloque(String deporte, String bloqueId) {
+	protected Path obtenerCarpetaBloque(String deporte, String bloqueId) {
 		Long organizacion = RutasArchivos.organizacionActiva();
 		Path base = obtenerRutaBaseDocumentos().toAbsolutePath().normalize();
 		Path propia = CarpetasMaterial.propia(base, organizacion, deporte, bloqueId);
@@ -670,6 +688,14 @@ public class MaterialExamenServiceImpl implements MaterialExamenService {
 			baseDir = directorioDocumentosLinux;
 		}
 		return Path.of(baseDir).normalize();
+	}
+
+	private record ContenidoBloque(
+			Path carpeta,
+			boolean existe,
+			Path temario,
+			List<VideoFileEntry> videos,
+			List<DocumentoFileEntry> documentos) {
 	}
 
 	private record MaterialContext(

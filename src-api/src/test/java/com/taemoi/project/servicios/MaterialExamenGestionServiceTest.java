@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -105,10 +106,25 @@ class MaterialExamenGestionServiceTest {
 	 */
 	private class LectorDePrueba extends MaterialExamenServiceImpl {
 		final Map<String, String> nombres = new HashMap<>();
+		/** Se ejecuta una vez, justo después de resolver la carpeta: la adopción que llega a mitad de una lectura. */
+		Runnable alResolverLaCarpeta;
+		int carpetasResueltas;
 
 		@Override
 		public BloqueEnDisco leerBloque(String disciplina, String bloqueId) {
 			return renombrado(super.leerBloque(disciplina, bloqueId));
+		}
+
+		@Override
+		protected Path obtenerCarpetaBloque(String deporte, String bloqueId) {
+			Path carpeta = super.obtenerCarpetaBloque(deporte, bloqueId);
+			carpetasResueltas++;
+			if (alResolverLaCarpeta != null) {
+				Runnable intercalado = alResolverLaCarpeta;
+				alResolverLaCarpeta = null;
+				intercalado.run();
+			}
+			return carpeta;
 		}
 
 		BloqueEnDisco renombrado(BloqueEnDisco disco) {
@@ -1122,6 +1138,107 @@ class MaterialExamenGestionServiceTest {
 		Files.writeString(carpeta.resolve("index.json"), "{\"videos\":[{\"file\":\"02_b.mp4\"},{\"file\":\"fantasma.mp4\",\"title\":\"x\"}]}");
 
 		assertEquals("Nuevo", gestion.cambiarTitulo(KB, B01, "01_a.mp4", "Nuevo").videos().get(0).titulo());
+	}
+
+	// ------------------------------------------------------------------ lectores durante la adopción
+
+	/** Lo que hace la adopción: mover la carpeta entera. Con el cerrojo en otra petición, el lector no se entera. */
+	private Runnable adopcionDe(Path legada, Path propia) {
+		return () -> {
+			try {
+				Files.createDirectories(propia.getParent());
+				Files.move(legada, propia, StandardCopyOption.ATOMIC_MOVE);
+			} catch (IOException e) {
+				throw new AssertionError(e);
+			}
+		};
+	}
+
+	@Test
+	void familiaQueResuelveLaLegadaYOtraPeticionLaMueve_veLoMismo_noUnBloqueVacio() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		pdf(legada.resolve("temario").resolve("temario.pdf"));
+		pdf(legada.resolve("documentacion").resolve("guia.pdf"));
+		alumno(60L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(60L, TKD);
+		lectura.alResolverLaCarpeta = adopcionDe(legada, propia(1L, "taekwondo", B01));
+
+		assertEquals(antes, instantanea(60L, TKD));
+
+		assertFalse(Files.exists(legada));
+	}
+
+	@Test
+	void laCarpetaQueDesapareceAMitadDeLeer_tambienSeReintenta() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		video(legada, "02_soguis.mp4");
+		pdf(legada.resolve("temario").resolve("temario.pdf"));
+		Files.writeString(legada.resolve("index.json"), "{\"videos\":[{\"file\":\"01_saludo.mp4\",\"title\":\"El saludo\"}]}");
+		alumno(61L, TKD, TipoGrado.BLANCO);
+		String antes = instantanea(61L, TKD);
+		// El índice es lo primero que se lee de los vídeos: el temario ya salió de la legada y los vídeos ya no están ahí.
+		Runnable adopcion = adopcionDe(legada, propia(1L, "taekwondo", B01));
+		ReflectionTestUtils.setField(lectura, "objectMapper", new ObjectMapper() {
+			private boolean movida;
+
+			@Override
+			public <T> T readValue(java.io.File fichero, Class<T> tipo) throws IOException {
+				T leido = super.readValue(fichero, tipo);
+				if (!movida) {
+					movida = true;
+					adopcion.run();
+				}
+				return leido;
+			}
+		});
+
+		assertEquals(antes, instantanea(61L, TKD));
+	}
+
+	@Test
+	void unBloqueAnteriorQueSeAdoptaAMitad_noPierdeSusVideos() throws Exception {
+		Path anterior = bloqueLegado(TKD, B01);
+		video(anterior, "01_taeguk_il_jang.mp4");
+		Path actual = propia(1L, "taekwondo", B03);
+		video(actual, "01_naranja.mp4");
+		alumno(62L, TKD, TipoGrado.NARANJA);
+		String antes = instantanea(62L, TKD);
+		assertTrue(antes.contains("anterior__b01_inicio_a_amarillo__01_taeguk_il_jang.mp4"));
+		// El bloque actual es propio; la segunda carpeta que se resuelve es la del bloque anterior.
+		lectura.alResolverLaCarpeta = () -> lectura.alResolverLaCarpeta = adopcionDe(anterior, propia(1L, "taekwondo", B01));
+
+		assertEquals(antes, instantanea(62L, TKD));
+	}
+
+	@Test
+	void elPanelTambienReintenta() throws Exception {
+		Path legada = bloqueLegado(TKD, B01);
+		video(legada, "01_saludo.mp4");
+		lectura.alResolverLaCarpeta = adopcionDe(legada, propia(1L, "taekwondo", B01));
+
+		assertEquals(1, gestion.detalle(TKD, B01).videos().size());
+	}
+
+	@Test
+	void elReintentoEsUnoSolo_yNoHayReintentoSiNoSeEligioLaLegada() throws Exception {
+		alumno(63L, KB, TipoGrado.BLANCO);
+		lectura.carpetasResueltas = 0;
+
+		assertEquals(0, lectura.leerBloque(KB, B01).videos().size());
+		assertEquals(2, lectura.carpetasResueltas, "ni propia ni legada: una vuelta más y se acaba");
+
+		Path carpeta = propia(1L, "kickboxing", B02);
+		video(carpeta, "01_a.mp4");
+		lectura.carpetasResueltas = 0;
+		assertEquals(1, lectura.leerBloque(KB, B02).videos().size());
+		assertEquals(1, lectura.carpetasResueltas, "la propia no se mueve");
+
+		TenantContext.set(2L);
+		lectura.carpetasResueltas = 0;
+		assertEquals(0, lectura.leerBloque(KB, B01).videos().size());
+		assertEquals(1, lectura.carpetasResueltas, "otra escuela nunca recurre a la legada");
 	}
 
 	// ------------------------------------------------------------------ apoyo
