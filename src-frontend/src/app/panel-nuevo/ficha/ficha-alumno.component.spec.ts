@@ -1488,7 +1488,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       );
     });
 
-    itSinReloj('Salud no existe en anonimizada y Datos personales nunca edita discapacidad', async () => {
+    itSinReloj('Salud no existe en anonimizada e Información personal no muestra discapacidad', async () => {
       const datos = datosPorDefecto(); datos.alumno.alumnoEliminado = true;
       const m = await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=datos', datos);
       expect(m.el().querySelector('pn-ficha-salud section')).toBeNull();
@@ -1496,7 +1496,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       m.http.expectNone(r => r.url.endsWith('/salud'));
       m.comp.toggleEditBasicInfo(); await m.asentar();
       expect(m.el().querySelector('#tieneDiscapacidad')).toBeNull();
-      expect(texto(m.el(), '#alumno-informacion-personal')).toContain('Discapacidad');
+      expect(texto(m.el(), '#alumno-informacion-personal')).not.toContain('Discapacidad');
     });
 
     itSinReloj('Salud anterior/siguiente: cancelar conserva alumno y confirmar descarta', async () => {
