@@ -196,6 +196,24 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
   });
 
   describe('orden', () => {
+    it('en táctil, deslizar desde el asa arrastra sin esperar: el asa no desplaza la página', () => {
+      cargar(detalle(), true);
+      const asa = filas()[0].querySelector<HTMLElement>('.vid__asa')!;
+      const { left, top } = asa.getBoundingClientRect();
+      const tocar = (tipo: string, destino: EventTarget, y: number): void => {
+        const toque = new Touch({ identifier: 1, target: asa, clientX: left, clientY: y, pageX: left, pageY: y });
+        const activos = tipo === 'touchend' ? [] : [toque];
+        destino.dispatchEvent(new TouchEvent(tipo, { bubbles: true, cancelable: true, touches: activos, targetTouches: activos, changedTouches: [toque] }));
+      };
+
+      tocar('touchstart', asa, top);
+      tocar('touchmove', document, top + 20);
+      const arrastrando = el().querySelector('.cdk-drag-preview') !== null;
+      tocar('touchend', document, top + 20);
+
+      expect(arrastrando).toBeTrue();
+    });
+
     it('mover resalta la fila, lo anuncia y deja la barra', () => {
       cargar();
       expect(barra()).toBeNull();
