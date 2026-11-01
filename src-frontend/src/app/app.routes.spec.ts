@@ -8,6 +8,8 @@ import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { NoEncontradaPanelComponent } from './panel-nuevo/no-encontrada/no-encontrada.component';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
+import { MaterialExamenPanelComponent } from './panel-nuevo/material-examen/material-examen.component';
+import { MaterialBloqueComponent } from './panel-nuevo/material-examen/material-bloque.component';
 import { InicioComponent } from './panel-nuevo/inicio/inicio.component';
 import { AlumnosComponent } from './panel-nuevo/alumnos/alumnos.component';
 import { FichaAlumnoComponent } from './panel-nuevo/ficha/ficha-alumno.component';
@@ -71,6 +73,8 @@ const REDISENADAS: Rediseno[] = [
   ['eventosListar', EventosPanelComponent, GESTION],
   ['eventosCrear', EventoFormularioComponent, GESTION],
   ['eventosEditar/:id', EventoFormularioComponent, GESTION],
+  ['material-examen', MaterialExamenPanelComponent, GESTION],
+  ['material-examen/:disciplina/:bloque', MaterialBloqueComponent, GESTION],
   ['productosListar', ProductosComponent, GESTION],
   ['productosCrear', ProductoFormularioComponent, GESTION],
   ['productosEditar/:id', ProductoFormularioComponent, GESTION],
@@ -89,7 +93,7 @@ function permisos(roles: string[]) {
 }
 
 /** Lo que el responsable de sede no ve (decisión 370): el resto de pantallas de gestión le dejan pasar. */
-const SOLO_GESTION = /^(alumnosEliminar|eventos(Listar|Crear|Editar)|productos(Listar|Crear|Editar)|sedes|miembros)/;
+const SOLO_GESTION = /^(alumnosEliminar|eventos(Listar|Crear|Editar)|productos(Listar|Crear|Editar)|sedes|miembros|material-examen)/;
 
 describe('app routes', () => {
   for (const camino of ['plataformaErrores', 'plataformaLogos']) {
@@ -127,6 +131,11 @@ describe('app routes', () => {
         expect(await entrada.loadComponent!()).toBe(componente);
       });
     }
+
+    it('material-examen: el bloque avisa al salir con una subida o un orden sin guardar, y la lista no', () => {
+      expect(routes.find((r) => r.path === 'material-examen/:disciplina/:bloque')?.canDeactivate).toEqual([salirSinGuardarGuard]);
+      expect(routes.find((r) => r.path === 'material-examen')?.canDeactivate).toBeUndefined();
+    });
 
     it('ninguna ruta repite camino salvo los dos comodines (404 del panel y el público)', () => {
       const caminos = routes.map((route) => route.path).filter((path) => path !== '**');

@@ -1,0 +1,184 @@
+<div class="pn material" pnAcento>
+  <div class="material__pagina" [class.material__pagina--barra]="ordenSinGuardar">
+    <header class="material__cabecera">
+      <nav class="material__miga" aria-label="Miga de pan">
+        <a [routerLink]="['/material-examen']" [queryParams]="{ disciplina: disciplina }">Material de examen</a>
+        <span aria-hidden="true">/</span>
+        <span>{{ nombreDisciplina }}</span>
+      </nav>
+      @if (detalle) {
+      <h1 class="material__titulo">{{ detalle.nombre }}</h1>
+      <p class="material__sub">{{ descripcion }}</p>
+      }
+    </header>
+
+    @if (estado === 'error') {
+    <pn-bloque-error titulo="No se pudo cargar este bloque." (reintentar)="cargar()" />
+    } @else if (estado === 'cargando' && !detalle) {
+    <pn-esqueleto etiqueta="Cargando el bloque" aria-busy="true">
+      <div class="material__columnas">
+        <div class="material__seccion material__seccion--videos material__hueso"><span></span><span></span><span></span></div>
+        <div class="material__seccion material__seccion--temario material__hueso"><span></span></div>
+        <div class="material__seccion material__seccion--documentos material__hueso"><span></span></div>
+      </div>
+    </pn-esqueleto>
+    } @else if (detalle) {
+    <div class="material__columnas">
+      <!-- Temario -->
+      <section class="material__seccion material__seccion--temario" aria-labelledby="material-temario">
+        <h2 class="material__h2" id="material-temario">Temario</h2>
+        <input #selectorTemario class="material__oculto" type="file" tabindex="-1" aria-hidden="true" [attr.accept]="aceptaPdf" (change)="elegirTemario($event)" />
+        @if (detalle.temario; as t) {
+        <div class="fich">
+          <svg class="fich__icono" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7zM14 3v4h4"></path></svg>
+          <div class="fich__datos">
+            <div class="fich__nombre">{{ t.nombre }}</div>
+            <div class="fich__dato" data-cifras>{{ peso(t.bytes) }} · {{ fecha(t.fecha) }}</div>
+          </div>
+          <button type="button" class="texto" pnOcupado [ocupado]="abriendoTemario" textoOcupado="Abriendo…" (click)="verTemario($event)">Ver<span class="material__oculto"> el temario</span></button>
+          <button type="button" class="texto" pnOcupado [ocupado]="enviandoTemario" textoOcupado="Subiendo…" (click)="selectorTemario.click()">Sustituir<span class="material__oculto"> el temario</span></button>
+        </div>
+        } @else {
+        <div class="drop">
+          <p class="material__sub">Un PDF con el temario de este bloque.</p>
+          <button type="button" class="secundario" pnOcupado [ocupado]="enviandoTemario" textoOcupado="Subiendo…" (click)="selectorTemario.click()">Elegir PDF</button>
+        </div>
+        }
+      </section>
+
+      <!-- Vídeos -->
+      <section class="material__seccion material__seccion--videos" [class.material__seccion--encima]="arrastrando" aria-labelledby="material-videos"
+        (dragover)="alArrastrar($event, true)" (dragleave)="alArrastrar($event, false)" (drop)="alSoltar($event)">
+        <div class="material__tt">
+          <div>
+            <h2 class="material__h2" id="material-videos">Vídeos</h2>
+            <p class="material__sub" data-cifras>{{ lineaVideos }}</p>
+          </div>
+          @if (videos.length) {
+          <button type="button" class="secundario material__anadir-videos" (click)="selectorVideos.click()">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"></path></svg>
+            <span>Añadir vídeos</span>
+          </button>
+          }
+        </div>
+        <input #selectorVideos class="material__oculto" type="file" multiple tabindex="-1" aria-hidden="true" [attr.accept]="aceptaVideos" (change)="elegirVideos($event)" />
+        <input #selectorSustituto class="material__oculto" type="file" tabindex="-1" aria-hidden="true" [attr.accept]="aceptaVideos" (change)="elegirSustituto($event)" />
+
+        @if (videos.length) {
+        <div class="vids">
+          <ul class="vids__lista" cdkDropList cdkDropListLockAxis="y" [cdkDropListDisabled]="guardandoOrden" (cdkDropListDropped)="soltar($event)">
+            @for (v of videos; track v.fichero; let i = $index; let primero = $first; let ultimo = $last) {
+            <li class="vid" cdkDrag cdkDragPreviewContainer="parent" [cdkDragStartDelay]="retardoArrastre" [class.vid--movida]="movido === v.fichero" [attr.data-fichero]="v.fichero">
+              <button type="button" cdkDragHandle class="icono vid__asa" [attr.tabindex]="movil ? 0 : -1" [disabled]="guardandoOrden"
+                [attr.aria-label]="'Arrastrar «' + v.titulo + '» para ordenar, o usa las flechas'" (keydown)="teclaOrden($event, i, 'asa')">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"></path></svg>
+              </button>
+              <div class="vid__datos">
+                <div class="vid__titulo">{{ v.titulo }}</div>
+                <div class="vid__dato" data-cifras>{{ datoVideo(v) }}</div>
+                @if (movil && v.tambienEnSuperiores) {
+                <span class="pas pas--bajo">También en grados superiores</span>
+                }
+              </div>
+              @if (!movil) {
+              @if (v.tambienEnSuperiores) {
+              <span class="pas">También en grados superiores</span>
+              }
+              <button type="button" class="icono vid__subir" [disabled]="primero || guardandoOrden" [attr.aria-label]="'Subir «' + v.titulo + '»'"
+                (click)="mover(i, -1, 'subir')" (keydown)="teclaOrden($event, i, 'subir')">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"></path></svg>
+              </button>
+              <button type="button" class="icono vid__bajar" [disabled]="ultimo || guardandoOrden" [attr.aria-label]="'Bajar «' + v.titulo + '»'"
+                (click)="mover(i, 1, 'bajar')" (keydown)="teclaOrden($event, i, 'bajar')">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+              }
+              <pn-material-menu [etiqueta]="'Más opciones de «' + v.titulo + '»'" [opciones]="opcionesVideo(i, ultimo)" [deshabilitado]="guardandoOrden"
+                (elegir)="accionVideo(v, i, $event)" />
+            </li>
+            }
+          </ul>
+          @for (s of subidasEnCurso; track s.clave) {
+          <pn-material-subida-fila [item]="s" [movil]="movil" (cancelar)="cancelarSubida(s.clave)" (reintentar)="reintentarSubida(s.clave)" />
+          }
+        </div>
+        } @else {
+        <div class="drop">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"></path></svg>
+          <p class="drop__fuerte">Arrastra aquí los vídeos</p>
+          <button type="button" class="secundario material__anadir-videos" (click)="selectorVideos.click()">Elegir vídeos</button>
+        </div>
+        @for (s of subidasEnCurso; track s.clave) {
+        <pn-material-subida-fila [item]="s" [movil]="movil" (cancelar)="cancelarSubida(s.clave)" (reintentar)="reintentarSubida(s.clave)" />
+        }
+        }
+        @for (s of subidasFallidas; track s.clave) {
+        <pn-material-subida-fila [item]="s" [movil]="movil" (cancelar)="cancelarSubida(s.clave)" (reintentar)="reintentarSubida(s.clave)" />
+        }
+      </section>
+
+      <!-- Documentación -->
+      <section class="material__seccion material__seccion--documentos" aria-labelledby="material-documentos">
+        <div class="material__tt">
+          <h2 class="material__h2" id="material-documentos">Documentación</h2>
+          @if (detalle.documentos.length) {
+          <button type="button" class="texto" pnOcupado [ocupado]="enviandoDocumento" textoOcupado="Subiendo…" (click)="selectorDocumento.click()">Añadir<span class="material__oculto"> documento</span></button>
+          }
+        </div>
+        <input #selectorDocumento class="material__oculto" type="file" tabindex="-1" aria-hidden="true" [attr.accept]="aceptaDocumentos" (change)="elegirDocumento($event)" />
+        <input #selectorDocumentoSustituto class="material__oculto" type="file" tabindex="-1" aria-hidden="true" [attr.accept]="aceptaDocumentos" (change)="elegirDocumentoSustituto($event)" />
+        @if (detalle.documentos.length) {
+        <ul class="docs">
+          @for (d of detalle.documentos; track d.fichero) {
+          <li class="fich" [attr.data-fichero]="d.fichero">
+            <div class="fich__datos">
+              <div class="fich__nombre">{{ d.titulo }}</div>
+              <div class="fich__dato" data-cifras>{{ datoDocumento(d) }}</div>
+            </div>
+            <pn-material-menu [etiqueta]="'Más opciones de «' + d.titulo + '»'" [opciones]="opcionesDocumento()" [deshabilitado]="enviandoDocumento"
+              (elegir)="accionDocumento(d, $event)" />
+          </li>
+          }
+        </ul>
+        } @else {
+        <div class="drop">
+          <p class="material__sub">Normas, plantillas u otros documentos.</p>
+          <button type="button" class="secundario" pnOcupado [ocupado]="enviandoDocumento" textoOcupado="Subiendo…" (click)="selectorDocumento.click()">Añadir documento</button>
+        </div>
+        }
+      </section>
+    </div>
+    }
+  </div>
+
+  @if (ordenSinGuardar) {
+  <div class="material__barra" role="region" aria-label="Orden sin guardar">
+    <strong>Orden sin guardar</strong>
+    <button type="button" class="texto" [disabled]="guardandoOrden" (click)="descartarOrden()">Descartar</button>
+    <button type="button" class="primario" pnOcupado [ocupado]="guardandoOrden" textoOcupado="Guardando…" (click)="guardarOrden()">{{ movil ? 'Guardar' : 'Guardar orden' }}</button>
+  </div>
+  }
+
+  @if (videoEditado; as v) {
+  <pn-material-editar-video [video]="v" [contexto]="contexto" [taekwondo]="taekwondo" [guardando]="guardandoTitulo" [subidas]="subidasDelEditado" [movil]="movil"
+    (cerrar)="editando = null" (guardar)="guardarTitulo($event)" (sustituir)="sustituirDesdePanel($event)"
+    (cancelarSubida)="cola.cancelar($event)" (reintentarSubida)="cola.reintentar($event)" />
+  }
+
+  @if (viendo; as v) {
+  <pn-panel-lateral [titulo]="v.titulo" [descripcion]="contexto" [ancho]="720" (cerrar)="viendo = null">
+    @if (errorVideo) {
+    <pn-bloque-error titulo="Este navegador no puede reproducir el vídeo." [texto]="tipoFichero(v.fichero) + ' · ' + peso(v.bytes)" [reintentable]="false" />
+    } @else {
+    <video class="material__video" controls preload="metadata" playsinline [src]="urlViendo" [attr.aria-label]="v.titulo" (error)="errorVideo = true"></video>
+    }
+    <div pnPie class="material__pie-ver">
+      <button type="button" class="texto" (click)="viendo = null">Cerrar</button>
+    </div>
+  </pn-panel-lateral>
+  }
+
+  @if (documentosPdf.length) {
+  <pn-visor-pdf [documentos]="documentosPdf" [focoRetorno]="focoRetorno" (cerrar)="documentosPdf = []" />
+  }
+</div>

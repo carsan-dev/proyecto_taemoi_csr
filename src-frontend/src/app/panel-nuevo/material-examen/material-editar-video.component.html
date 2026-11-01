@@ -1,0 +1,37 @@
+<pn-panel-lateral titulo="Editar vídeo" [descripcion]="contexto" [bloqueado]="guardando" (cerrar)="cerrar.emit()">
+  <div class="editar">
+    <div class="editar__campo">
+      <label class="editar__etiqueta" for="material-titulo">Título <span>(obligatorio)</span></label>
+      <input #entrada class="editar__control" id="material-titulo" type="text" required [attr.maxlength]="max" [value]="titulo"
+        [attr.aria-invalid]="error ? 'true' : null" aria-describedby="material-titulo-ayuda" (input)="escribir(entrada.value)"
+        (keydown.enter)="confirmar()" />
+      <div class="editar__bajo" id="material-titulo-ayuda">
+        <span>
+          @if (error) {<span class="editar__error" role="alert">{{ error }}</span>} @else if (taekwondo) {Si lleva «Taeguk» o «Pumse», también lo ven los grados superiores.}
+        </span>
+        <span data-cifras>{{ titulo.length }} / {{ max }}</span>
+      </div>
+    </div>
+
+    <div class="editar__campo">
+      <span class="editar__etiqueta">Fichero</span>
+      <div class="editar__fichero">
+        <div class="editar__datos">
+          <div class="editar__nombre">{{ video.fichero }}</div>
+          <div class="editar__dato" data-cifras>{{ datosFichero }}</div>
+        </div>
+        <button type="button" class="editar__secundario" (click)="selector.click()">Sustituir</button>
+        <input #selector class="editar__oculto" type="file" tabindex="-1" aria-hidden="true" [attr.accept]="aceptaVideos" (change)="elegir($event)" />
+      </div>
+      <p class="editar__bajo">Sustituirlo mantiene el título y el orden.</p>
+      @for (s of subidas; track s.clave) {
+      <pn-material-subida-fila [item]="s" [movil]="movil" (cancelar)="cancelarSubida.emit(s.clave)" (reintentar)="reintentarSubida.emit(s.clave)" />
+      }
+    </div>
+  </div>
+
+  <div pnPie class="editar__pie">
+    <button type="button" class="editar__texto" [disabled]="guardando" (click)="cerrar.emit()">Cancelar</button>
+    <button type="button" pnOcupado class="editar__primario" [ocupado]="guardando" textoOcupado="Guardando…" (click)="confirmar()">Guardar</button>
+  </div>
+</pn-panel-lateral>

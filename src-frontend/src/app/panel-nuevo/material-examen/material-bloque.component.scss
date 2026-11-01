@@ -1,0 +1,481 @@
+// Un bloque de material de examen (bocetos `Bloque`, `Primera` y `MovilBloque`). Solo tokens de panel-nuevo.scss bajo .pn
+// (DESIGN.md). Los botones de icono miden 44 px aunque el boceto pinte 40: los objetivos táctiles mandan.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.material {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.material__pagina {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  max-width: 1232px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.material__pagina--barra {
+  padding-bottom: 104px;
+}
+
+.material__oculto {
+  @include c.oculto;
+}
+
+.material__miga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  a {
+    color: var(--pn-acento);
+    text-underline-offset: 3px;
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+    }
+  }
+}
+
+.material__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+  text-wrap: balance;
+}
+
+.material__sub {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ botones
+
+.primario {
+  @include c.boton-primario;
+}
+
+.secundario {
+  @include c.boton-secundario;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.texto {
+  @include c.boton-texto;
+  flex: none;
+  padding: 0 10px;
+}
+
+.primario,
+.secundario,
+.texto {
+  min-height: 44px;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.icono {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: none;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+// ------------------------------------------------------------------ columnas
+
+.material__columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'videos temario'
+    'videos documentos';
+  align-items: start;
+  gap: 20px;
+}
+
+.material__seccion {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.material__seccion--temario {
+  grid-area: temario;
+}
+
+.material__seccion--videos {
+  grid-area: videos;
+}
+
+.material__seccion--documentos {
+  grid-area: documentos;
+}
+
+// Soltar ficheros sobre el bloque.
+.material__seccion--encima {
+  border-color: var(--pn-acento);
+  background: var(--pn-acento-suave);
+}
+
+.material__tt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.material__h2 {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+  text-wrap: balance;
+}
+
+// ------------------------------------------------------------------ vídeos
+
+.vids {
+  overflow: hidden;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+}
+
+.vids__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 6px 4px 6px 8px;
+  background: var(--pn-superficie);
+  border-bottom: 1px solid var(--pn-linea);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.vids pn-material-subida-fila {
+  border-top: 1px solid var(--pn-linea);
+}
+
+.vid--movida {
+  background: var(--pn-acento-suave);
+}
+
+.vid__asa {
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.vid__datos {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 4px;
+}
+
+.vid__titulo {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.vid__dato {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.pas {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-marca-primario-suave);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.pas--bajo {
+  margin-top: 4px;
+}
+
+// Arrastre (CDK).
+.vid.cdk-drag-preview {
+  box-sizing: border-box;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.vid.cdk-drag-placeholder {
+  background: var(--pn-acento-suave);
+  opacity: 0.5;
+}
+
+.vids__lista.cdk-drop-list-dragging .vid:not(.cdk-drag-placeholder),
+.vid.cdk-drag-animating {
+  transition: transform 150ms ease-out;
+}
+
+// ------------------------------------------------------------------ zona vacía
+
+.drop {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border: 1.5px dashed var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  text-align: center;
+
+  > svg {
+    width: 24px;
+    height: 24px;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.drop__fuerte {
+  margin: 0;
+  font-weight: 600;
+}
+
+// ------------------------------------------------------------------ ficheros
+
+.fich {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+}
+
+.fich__icono {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--pn-tinta-2);
+}
+
+.fich__datos {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fich__nombre {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.fich__dato {
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.docs {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  .fich:not(:last-child) {
+    border-bottom: 1px solid var(--pn-linea);
+  }
+}
+
+// ------------------------------------------------------------------ barra y vídeo
+
+.material__barra {
+  @include c.barra-cambios;
+}
+
+.material__video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-marca-primario);
+}
+
+.material__pie-ver {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+// La región viva de `LiveAnnouncer` va en el body con `cdk-visually-hidden`, y esa hoja no se carga en el panel: sin esto
+// el anuncio se vería al pie de la página (el mismo arreglo que en `eventos.component.scss`).
+::ng-deep .cdk-live-announcer-element.cdk-visually-hidden {
+  @include c.oculto;
+}
+
+// ------------------------------------------------------------------ esqueleto
+
+.material__hueso {
+  span {
+    display: block;
+    height: 44px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (max-width: 1023.98px) {
+  .material__columnas {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'temario'
+      'videos'
+      'documentos';
+    gap: 14px;
+  }
+
+  .material__barra {
+    @include c.barra-cambios-sobre-navegacion;
+  }
+
+  .material__pagina--barra {
+    padding-bottom: 168px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .material__pagina {
+    gap: 14px;
+    padding: var(--pn-espacio-m);
+  }
+
+  .material__pagina--barra {
+    padding-bottom: 160px;
+  }
+
+  .material__titulo {
+    font-size: 1.375rem;
+  }
+
+  .material__seccion {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .material__seccion--videos .material__tt {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .material__tt .material__anadir-videos {
+    width: 100%;
+  }
+
+  .vid {
+    gap: 2px;
+    min-height: 64px;
+    padding: 6px 0 6px 2px;
+  }
+
+  .vid__datos {
+    padding-left: 0;
+  }
+
+  .fich__icono {
+    display: none;
+  }
+
+  .fich {
+    gap: 8px;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 599px) {
+  .material__barra {
+    @include c.barra-cambios-compacta;
+
+    button {
+      min-height: 44px;
+      padding: 0 10px;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .material__seccion,
+  .icono,
+  .vids__lista.cdk-drop-list-dragging .vid:not(.cdk-drag-placeholder),
+  .vid.cdk-drag-animating {
+    transition: none;
+  }
+}

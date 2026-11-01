@@ -1,0 +1,89 @@
+// Menú «⋯» del material (boceto `Bloque.dc.html`). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+
+:host {
+  display: block;
+  flex: none;
+}
+
+.menu__boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: none;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion), color var(--pn-transicion);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover:not(:disabled),
+  &[aria-expanded='true'] {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.menu__lista {
+  position: fixed;
+  z-index: 40;
+  box-sizing: border-box;
+  display: grid;
+  width: 220px;
+  padding: 4px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+}
+
+.menu__opcion {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+    background: var(--pn-marca-primario-suave);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.menu__opcion--peligro {
+  color: var(--pn-peligro);
+}
