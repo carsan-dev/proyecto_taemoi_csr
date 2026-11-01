@@ -110,6 +110,36 @@ describe('FichaSaludComponent', () => {
     c.guardar(); fixture.detectChanges(); http.expectNone(URL);
     expect(el().textContent).toContain('Indica cuál es la discapacidad.');
   });
+  it('con un tipo sin Otra el detalle se enseña, se envía recortado y cuenta como cambio', () => {
+    abrir({ ...DTO, discapacidadTipos: ['INTELECTUAL'], discapacidadOtra: 'Detalle guardado' });
+    expect(el().querySelector('dl')!.textContent).toContain('Detalle guardado');
+    c.editar(); fixture.detectChanges();
+    expect((el().querySelector('#ficha-discapacidad-otra') as HTMLInputElement).value).toBe('Detalle guardado');
+    c.formulario!.discapacidadOtra = '  Detalle nuevo  '; expect(c.cambios).toBe(1);
+    c.guardar();
+    const req = http.expectOne(URL);
+    expect(req.request.body.discapacidadTipos).toEqual(['INTELECTUAL']);
+    expect(req.request.body.discapacidadOtra).toBe('Detalle nuevo');
+    req.flush({ ...DTO, discapacidadTipos: ['INTELECTUAL'], discapacidadOtra: 'Detalle nuevo' });
+  });
+  it('sin Otra el detalle es opcional: vaciarlo guarda y lo borra', () => {
+    abrir({ ...DTO, discapacidadOtra: 'Detalle guardado' });
+    c.editar(); c.formulario!.discapacidadOtra = '   '; c.guardar();
+    const req = http.expectOne(URL);
+    expect(req.request.body.discapacidadOtra).toBeNull();
+    req.flush(DTO);
+  });
+  it('sin tipos o con No, el detalle no se envía', () => {
+    abrir(); c.editar(); c.formulario!.discapacidadTipos = []; c.formulario!.discapacidadOtra = 'Resto'; c.guardar();
+    const sinTipos = http.expectOne(URL);
+    expect(sinTipos.request.body.discapacidadOtra).toBeNull();
+    sinTipos.flush({ ...DTO, discapacidadTipos: [] });
+    c.editar(); c.formulario!.tieneDiscapacidad = false; c.formulario!.discapacidadOtra = 'Resto'; c.guardar();
+    const conNo = http.expectOne(URL);
+    expect(conNo.request.body.discapacidadTipos).toEqual([]);
+    expect(conNo.request.body.discapacidadOtra).toBeNull();
+    conNo.flush({ ...DTO, tieneDiscapacidad: false, discapacidadTipos: [] });
+  });
   it('PUT exacto, sin metadatos de lectura; al terminar sale de la edición', () => {
     abrir(); c.editar(); c.formulario!.tieneDiscapacidad = false; c.guardar();
     const req = http.expectOne(URL);

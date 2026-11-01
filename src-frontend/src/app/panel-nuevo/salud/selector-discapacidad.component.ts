@@ -18,10 +18,13 @@ export class SelectorDiscapacidadComponent {
   readonly orden = ORDEN_DISCAPACIDAD;
   readonly etiquetas = TIPOS_DISCAPACIDAD;
 
+  get obligatoria(): boolean { return this.tipos.includes('OTRA'); }
+  get conError(): boolean { return this.error && this.obligatoria; }
+
   alternar(tipo: TipoDiscapacidad): void {
     if (this.deshabilitado) return;
     const elegidos = this.tipos.includes(tipo) ? this.tipos.filter(t => t !== tipo) : [...this.tipos, tipo];
     this.tiposChange.emit(this.orden.filter(t => elegidos.includes(t)));
-    if (tipo === 'OTRA' && !elegidos.includes('OTRA')) this.otraChange.emit('');
+    if (!elegidos.length) this.otraChange.emit('');
   }
 }

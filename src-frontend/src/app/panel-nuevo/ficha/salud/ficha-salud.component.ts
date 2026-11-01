@@ -146,7 +146,7 @@ export class FichaSaludComponent implements OnInit, OnChanges, OnDestroy {
     const cuerpo: GuardarSalud = {
       tieneDiscapacidad: f.tieneDiscapacidad,
       discapacidadTipos: f.tieneDiscapacidad === true ? [...f.discapacidadTipos] : [],
-      discapacidadOtra: f.tieneDiscapacidad === true && f.discapacidadTipos.includes('OTRA') ? this.texto(f.discapacidadOtra) : null,
+      discapacidadOtra: f.tieneDiscapacidad === true && f.discapacidadTipos.length > 0 ? this.texto(f.discapacidadOtra) : null,
       lesionEnfermedad: f.lesionEnfermedad,
       descripcion: this.textoLigado(f.lesionEnfermedad, s.lesionEnfermedad, f.descripcion, s.descripcion),
       impideActividad: f.impideActividad,

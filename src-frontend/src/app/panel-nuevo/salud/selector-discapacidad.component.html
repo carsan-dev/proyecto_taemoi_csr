@@ -10,14 +10,14 @@
     }
   </div>
 </div>
-@if (tipos.includes('OTRA')) {
+@if (tipos.length > 0) {
 <div class="campo otra">
-  <label class="lbl" [for]="id + '-otra'">Indica cuál <span>obligatorio</span></label>
-  <input class="ctl" [id]="id + '-otra'" [value]="otra" maxlength="4000" required [disabled]="deshabilitado"
-    [attr.aria-invalid]="error ? 'true' : null" [attr.aria-describedby]="id + '-contador' + (error ? ' ' + id + '-error' : '')"
+  <label class="lbl" [for]="id + '-otra'">Indica cuál <span>{{ obligatoria ? 'obligatorio' : 'opcional' }}</span></label>
+  <input class="ctl" [id]="id + '-otra'" [value]="otra" maxlength="4000" [required]="obligatoria" [disabled]="deshabilitado"
+    [attr.aria-invalid]="conError ? 'true' : null" [attr.aria-describedby]="id + '-contador' + (conError ? ' ' + id + '-error' : '')"
     (input)="otraChange.emit($any($event.target).value)" />
   <div class="bajo">
-    <span class="error" [id]="id + '-error'">@if (error) {Indica cuál es la discapacidad.}</span>
+    <span class="error" [id]="id + '-error'">@if (conError) {Indica cuál es la discapacidad.}</span>
     <span [id]="id + '-contador'">{{ otra.length }} / 4000</span>
   </div>
 </div>

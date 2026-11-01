@@ -168,6 +168,41 @@ class AlumnoSaludServiceTest {
 	}
 
 	@Test
+	void tipoSinOtra_conTexto_loCifraYLoDevuelve() {
+		AlumnoSaludService service = conCifradorDePrueba(new Alumno());
+
+		AlumnoSaludDTO dto = service.guardar(7L, peticion(true, List.of(TipoDiscapacidad.INTELECTUAL), "  Texto ficticio  "));
+
+		verify(cifrador).cifrar("Texto ficticio", CONTEXTO_OTRA);
+		assertEquals(List.of(TipoDiscapacidad.INTELECTUAL), dto.discapacidadTipos());
+		assertEquals("Texto ficticio", dto.discapacidadOtra());
+	}
+
+	@Test
+	void tipoSinOtra_elTextoEsOpcional() {
+		AlumnoSaludService service = conCifradorDePrueba(new Alumno());
+
+		AlumnoSaludDTO dto = service.guardar(7L, peticion(true, List.of(TipoDiscapacidad.FISICA), "   "));
+
+		verify(cifrador).cifrar(isNull(), eq(CONTEXTO_OTRA));
+		verify(cifrador, never()).cifrar(eq(""), anyString());
+		assertNull(dto.discapacidadOtra());
+	}
+
+	@Test
+	void conOtra_elTextoSigueSiendoObligatorio_400_sinTocarNada() {
+		Alumno alumno = new Alumno();
+		AlumnoSaludService service = conCifradorDePrueba(alumno);
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> service.guardar(7L,
+				peticion(true, List.of(TipoDiscapacidad.FISICA, TipoDiscapacidad.OTRA), "   ")));
+
+		assertEquals("Indica cuál es la discapacidad.", error.getMessage());
+		assertFalse(alumno.getTieneDiscapacidad());
+		verify(salud, never()).saveAndFlush(any());
+	}
+
+	@Test
 	void sinTipos_nuncaCifraUnaCadenaVacia() {
 		AlumnoSaludService service = conCifradorDePrueba(new Alumno());
 
