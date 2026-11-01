@@ -635,7 +635,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       return;
     }
     this.pestanaPorConfirmar = clave;
-    void this.puedeSalir().then((salir) => {
+    void this.puedeSalir().catch(() => false).then((salir) => {
       const pedida = this.pestanaPorConfirmar!;
       this.pestanaPorConfirmar = null;
       if (this.destruida) return;
