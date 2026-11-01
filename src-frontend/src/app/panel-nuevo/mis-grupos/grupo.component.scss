@@ -82,7 +82,7 @@
   .pn.grupo-profesor h1 { font-size: 1.375rem; }
   .pn.grupo-profesor .grupo-profesor__asistencia { display: grid; }
   .pn.grupo-profesor .grupo-profesor__mes select { width: 100%; }
-  .pn.grupo-profesor .grupo-profesor__interruptor { justify-self: start; }
+  .pn.grupo-profesor .grupo-profesor__interruptor { justify-self: start; margin-inline-start: -8px; }
   .pn.grupo-profesor .grupo-profesor__boton { width: 100%; min-height: 44px; }
   .pn.grupo-profesor .grupo-profesor__hoy-fila .grupo-profesor__boton { width: auto; }
   .pn.grupo-profesor .grupo-profesor__hoy--error .grupo-profesor__boton { width: auto; }
