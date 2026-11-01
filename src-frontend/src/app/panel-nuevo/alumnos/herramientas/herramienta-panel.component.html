@@ -22,6 +22,14 @@
       </div>
       <p class="herramienta__ayuda" id="pn-asistencia-dias-ayuda" data-cifras>{{ diasElegidos }}</p>
     </fieldset>
+    <div class="herramienta__campo">
+      <button type="button" role="switch" class="herramienta__interruptor" [attr.aria-checked]="marcarAsistencia"
+        aria-describedby="pn-asistencia-marcar-ayuda" (click)="marcarAsistencia = !marcarAsistencia">
+        <span class="herramienta__interruptor-texto">Marcar lo ya pasado</span>
+        <span class="herramienta__pista" aria-hidden="true"><span class="herramienta__bola"></span></span>
+      </button>
+      <p class="herramienta__ayuda" id="pn-asistencia-marcar-ayuda">X si asistió, – si faltó. Apágalo para la hoja en blanco.</p>
+    </div>
   </div>
   }
   @case ('listado-mensualidades') {

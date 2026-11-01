@@ -302,6 +302,7 @@ describe('GrupoPanelComponent', () => {
     const peticion = http.expectOne(r => r.url === `${api}/grupos/7/asistencia`);
     expect(peticion.request.params.get('year')).toBe(String(mes.year));
     expect(peticion.request.params.get('month')).toBe(String(mes.month));
+    expect(peticion.request.params.get('marcada')).toBe('true');
     peticion.flush(new Blob(['pdf'], { type: 'application/pdf' }), { headers: { 'Content-Disposition': 'attachment; filename="lista.pdf"' } });
     tick();
     expect(fixture.componentInstance.documentos[0].nombreArchivo).toBe('lista.pdf');
@@ -319,6 +320,52 @@ describe('GrupoPanelComponent', () => {
     expect(elemento().textContent).toContain('No se ha podido descargar la hoja de asistencia.');
     expect(fixture.componentInstance.descargando).toBeFalse();
   }));
+
+  describe('interruptor «Marcar lo ya pasado»', () => {
+    const interruptor = () => elemento().querySelector<HTMLButtonElement>('.grupo-profesor__asistencia .grupo-profesor__interruptor')!;
+    const botonHoja = () => elemento().querySelector<HTMLButtonElement>('.grupo-profesor__asistencia .grupo-profesor__boton')!;
+
+    it('va entre el mes y «Hoja en PDF», encendido, y alterna aria-checked', () => {
+      cargar();
+      const hijos = Array.from(elemento().querySelector('.grupo-profesor__asistencia')!.children);
+      expect(hijos.indexOf(interruptor())).toBe(1);
+      expect(hijos.indexOf(botonHoja())).toBe(2);
+      expect(interruptor().textContent).toContain('Marcar lo ya pasado');
+      expect(interruptor().getAttribute('aria-checked')).toBe('true');
+      interruptor().click();
+      fixture.detectChanges();
+      expect(interruptor().getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('apagado, la hoja se pide sin marcada', () => {
+      cargar();
+      interruptor().click();
+      botonHoja().click();
+      const peticion = http.expectOne(r => r.url === `${api}/grupos/7/asistencia`);
+      expect(peticion.request.params.has('marcada')).toBeFalse();
+      peticion.flush(new Blob(['pdf']));
+    });
+
+    it('mientras descarga está deshabilitado y no cambia; el reintento tras error conserva lo elegido', fakeAsync(() => {
+      cargar();
+      interruptor().click();
+      botonHoja().click();
+      fixture.detectChanges();
+      expect(interruptor().getAttribute('aria-disabled')).toBe('true');
+      interruptor().click();
+      expect(fixture.componentInstance.marcarAsistencia).toBeFalse();
+      http.expectOne(r => r.url === `${api}/grupos/7/asistencia`).flush(null, { status: 500, statusText: 'Error' });
+      tick();
+      fixture.detectChanges();
+      expect(interruptor().getAttribute('aria-disabled')).toBeNull();
+      expect(interruptor().getAttribute('aria-checked')).toBe('false');
+      fixture.componentInstance.descargarAsistencia();
+      const reintento = http.expectOne(r => r.url === `${api}/grupos/7/asistencia`);
+      expect(reintento.request.params.has('marcada')).toBeFalse();
+      reintento.flush(new Blob(['pdf']));
+      tick();
+    }));
+  });
 
   describe('tarjeta de hoy', () => {
     const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({

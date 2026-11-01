@@ -152,6 +152,20 @@ describe('EndpointsService', () => {
     });
   });
 
+  it('la hoja de asistencia añade marcada=true solo si se pide marcada', () => {
+    const getSpy = jasmine.createSpy('get').and.returnValue(of(new Blob()));
+    const service = createService(getSpy);
+
+    service.descargarAsistencia(2026, 9, 'lunes', undefined, 2, true).subscribe();
+    expect(getSpy.calls.mostRecent().args[1].params.get('marcada')).toBe('true');
+    expect(getSpy.calls.mostRecent().args[1].params.get('sedeId')).toBe('2');
+
+    service.descargarAsistencia(2026, 9, 'lunes', undefined, 2, false).subscribe();
+    expect(getSpy.calls.mostRecent().args[1].params.has('marcada')).toBeFalse();
+    service.descargarAsistencia(2026, 9, 'lunes').subscribe();
+    expect(getSpy.calls.mostRecent().args[1].params.has('marcada')).toBeFalse();
+  });
+
   it('cambia «Mi caja» de un producto con PATCH y cuerpo vendibleProfesor', (done) => {
     const patchSpy = jasmine.createSpy('patch').and.returnValue(of({ id: 7, vendibleProfesor: true }));
     const service = new EndpointsService({ patch: patchSpy } as any);

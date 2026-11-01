@@ -1,6 +1,7 @@
 package com.taemoi.project.repositories;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,9 @@ import com.taemoi.project.entities.ClaseAsistencia;
 public interface ClaseAsistenciaRepository extends JpaRepository<ClaseAsistencia, Long> {
 
 	Optional<ClaseAsistencia> findByTurnoIdAndFecha(Long turnoId, LocalDate fecha);
+
+	/** Clases de esos turnos en esas fechas, ambas incluidas. Una consulta para todos los turnos, sin N+1. */
+	List<ClaseAsistencia> findByTurnoIdInAndFechaBetween(Collection<Long> turnoIds, LocalDate desde, LocalDate hasta);
 
 	/** Clases de un grupo en esas fechas, ambas incluidas, también las de turnos ya borrados. */
 	List<ClaseAsistencia> findByGrupoIdAndFechaBetween(Long grupoId, LocalDate desde, LocalDate hasta);

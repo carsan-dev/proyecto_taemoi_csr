@@ -70,6 +70,8 @@ export class GrupoPanelComponent implements OnInit {
   filtro: Filtro = FILTROS.todos;
   mes = this.meses[0].valor;
   descargando = false;
+  /** La hoja sale con X (asistió) y – (faltó); apagado, en blanco. Se conserva entre reintentos. */
+  marcarAsistencia = true;
   errorAsistencia: string | null = null;
   documentos: DocumentoInforme[] = [];
   focoRetorno: HTMLElement | null = null;
@@ -247,6 +249,11 @@ export class GrupoPanelComponent implements OnInit {
     void this.router.navigate(['/mis-grupos/alumnos', alumno.id], { queryParams: { grupo: this.grupoId } });
   }
 
+  alternarMarcar(): void {
+    if (this.descargando) return;
+    this.marcarAsistencia = !this.marcarAsistencia;
+  }
+
   descargarAsistencia(evento?: Event): void {
     if (this.descargando) return;
     const mes = this.meses.find(m => m.valor === this.mes) ?? this.meses[0];
@@ -254,7 +261,7 @@ export class GrupoPanelComponent implements OnInit {
     this.descargando = true;
     this.errorAsistencia = null;
     this.cargaHoja = forkJoin({
-      hoja: this.profesor.hojaAsistencia(this.grupoId, mes.year, mes.month),
+      hoja: this.profesor.hojaAsistencia(this.grupoId, mes.year, mes.month, this.marcarAsistencia),
       estilos: from(this.estilos.cargar()),
     }).pipe(
       takeUntilDestroyed(this.destruir),

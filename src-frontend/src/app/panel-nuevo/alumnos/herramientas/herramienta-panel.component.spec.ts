@@ -188,6 +188,12 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     expect(panel().textContent).toContain('Se generan 2 PDF, uno por día.');
     const lunes = panel().querySelector<HTMLInputElement>('fieldset input[type="checkbox"]')!;
     expect(lunes.checked).toBeTrue();
+    // La pantalla de hoy pide la hoja en blanco: para igualarla se apaga el interruptor (encendido por defecto).
+    const marcar = interruptorMarcar();
+    expect(marcar.getAttribute('aria-checked')).toBe('true');
+    marcar.click();
+    pintar();
+    expect(marcar.getAttribute('aria-checked')).toBe('false');
     botonPie('Ver PDF').click();
     pintar();
     expect(anotar()).toEqual(deHoy);
@@ -524,6 +530,10 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     });
   });
 
+  function interruptorMarcar(): HTMLButtonElement {
+    return panel().querySelector<HTMLButtonElement>('button[role="switch"]')!;
+  }
+
   describe('listado de asistencia por sede (9-6, decisión 142)', () => {
     function pedir(): string[] {
       elegir('#pn-asistencia-mes', '09');
@@ -537,6 +547,19 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
     it('con una sede no hay selector y la petición es la de hoy', () => {
       abrir('asistencia');
       expect(panel().querySelector('#pn-asistencia-sede')).toBeNull();
+      expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&marcada=true&grupo=lunes']);
+    });
+
+    it('el interruptor «Marcar lo ya pasado» está encendido, describe su ayuda y apagado quita marcada', () => {
+      abrir('asistencia');
+      const marcar = interruptorMarcar();
+      expect(marcar.textContent).toContain('Marcar lo ya pasado');
+      expect(marcar.getAttribute('aria-checked')).toBe('true');
+      expect(marcar.getAttribute('aria-describedby')).toBe('pn-asistencia-marcar-ayuda');
+      expect(panel().querySelector('#pn-asistencia-marcar-ayuda')!.textContent).toContain('Apágalo para la hoja en blanco');
+      marcar.click();
+      pintar();
+      expect(marcar.getAttribute('aria-checked')).toBe('false');
       expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&grupo=lunes']);
     });
 
@@ -550,7 +573,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
       permisosSesion = GESTION_VARIAS_SEDES;
       abrir('asistencia');
       elegir('#pn-asistencia-sede', '2');
-      expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&sedeId=2&grupo=lunes']);
+      expect(pedir()).toEqual(['/informes/asistencia?year=2026&month=9&sedeId=2&marcada=true&grupo=lunes']);
     });
   });
 });

@@ -24,6 +24,11 @@
             @for (opcion of meses; track opcion.valor) { <option [value]="opcion.valor">{{ opcion.etiqueta }}</option> }
           </select>
         </label>
+        <button type="button" role="switch" class="grupo-profesor__interruptor" [attr.aria-checked]="marcarAsistencia"
+          [attr.aria-disabled]="descargando ? 'true' : null" (click)="alternarMarcar()">
+          <span class="grupo-profesor__interruptor-texto">Marcar lo ya pasado</span>
+          <span class="grupo-profesor__pista" aria-hidden="true"><span class="grupo-profesor__bola"></span></span>
+        </button>
         <button pnOcupado type="button" class="grupo-profesor__boton" [ocupado]="descargando"
           textoOcupado="Generando…" (click)="descargarAsistencia($event)">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6v20h12V6zM14 2v5h5M9 12h6M9 16h6" /></svg>Hoja en PDF

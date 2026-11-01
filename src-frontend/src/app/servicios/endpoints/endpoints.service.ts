@@ -2160,7 +2160,8 @@ export class EndpointsService {
     month: number,
     grupo: string | string[],
     deporte?: string,
-    sedeId?: number | null
+    sedeId?: number | null,
+    marcada?: boolean
   ): Observable<Blob> {
     let params = new HttpParams()
       .set('year', year.toString())
@@ -2168,6 +2169,10 @@ export class EndpointsService {
 
     if (sedeId) {
       params = params.set('sedeId', sedeId);
+    }
+
+    if (marcada) {
+      params = params.set('marcada', 'true');
     }
 
     if (Array.isArray(grupo)) {

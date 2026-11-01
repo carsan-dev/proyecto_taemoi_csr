@@ -71,6 +71,13 @@ public class PDFServiceImpl implements PDFService {
 	@Autowired
 	private com.taemoi.project.repositories.TurnoRepository turnoRepository;
 
+	/** Lo guardado en «pasar lista», para el listado de asistencia marcado (escuela activa por {@code @TenantId}). */
+	@Autowired
+	private com.taemoi.project.repositories.ClaseAsistenciaRepository claseAsistenciaRepository;
+
+	@Autowired
+	private com.taemoi.project.repositories.AsistenciaAlumnoRepository asistenciaAlumnoRepository;
+
 	@Autowired
 	private ProductoRepository productoRepository;
 
@@ -1085,6 +1092,12 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte, Long sedeId)
 			throws IOException {
+		return generarListadoAsistencia(year, month, grupos, deporte, sedeId, false);
+	}
+
+	@Override
+	public byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte, Long sedeId,
+			boolean marcada) throws IOException {
 		gestionPorSede.exigirSedeDeFiltro(sedeId);
 		List<String> gruposFiltrados = grupos == null ? Collections.emptyList()
 				: grupos.stream().filter(g -> g != null && !g.isBlank()).map(String::trim).distinct()
@@ -1124,7 +1137,7 @@ public class PDFServiceImpl implements PDFService {
 		// HTML Header with styles
 		abrirHtmlAsistencia(html, marca);
 
-		boolean firstPage = true;
+		List<PaginaAsistencia> paginas = new ArrayList<>();
 
 		for (String grupo : gruposFiltrados) {
 			List<AlumnoDeporte> allAlumnosDeporte = alumnoDeporteRepository.findActivosByDeporteIn(deportesFiltrar)
@@ -1194,17 +1207,12 @@ public class PDFServiceImpl implements PDFService {
 				}
 
 				for (TurnoWithAlumnos twa : turnosDeporte) {
-					// Add page break before each page except the first
-					if (!firstPage) {
-						html.append("<div class='page-break'></div>");
-					}
-					firstPage = false;
-
-					paginaAsistencia(html, marca, year, month, deporteActual, grupo, twa.turno, twa.alumnos, fechas);
+					paginas.add(new PaginaAsistencia(deporteActual, grupo, twa.turno, twa.alumnos, fechas));
 				}
 			}
 		}
 
+		renderizarPaginasAsistencia(html, marca, year, month, paginas, marcada);
 		html.append("</body></html>");
 
 		return renderizarAsistencia(html.toString());
@@ -1220,6 +1228,13 @@ public class PDFServiceImpl implements PDFService {
 	@Override
 	@org.springframework.transaction.annotation.Transactional(readOnly = true)
 	public byte[] generarListadoAsistenciaPorTurnos(int year, int month, List<Long> turnoIds) throws IOException {
+		return generarListadoAsistenciaPorTurnos(year, month, turnoIds, false);
+	}
+
+	@Override
+	@org.springframework.transaction.annotation.Transactional(readOnly = true)
+	public byte[] generarListadoAsistenciaPorTurnos(int year, int month, List<Long> turnoIds, boolean marcada)
+			throws IOException {
 		if (month < 1 || month > 12) {
 			throw new IllegalArgumentException("Mes no válido.");
 		}
@@ -1241,7 +1256,7 @@ public class PDFServiceImpl implements PDFService {
 		MarcaEscuela marca = marcaEscuela.deActiva();
 		StringBuilder html = new StringBuilder();
 		abrirHtmlAsistencia(html, marca);
-		boolean firstPage = true;
+		List<PaginaAsistencia> paginas = new ArrayList<>();
 		for (com.taemoi.project.entities.Turno turno : turnos) {
 			String deporte = turno.getGrupo().getDeporte();
 			java.util.Set<Long> delGrupo = turno.getGrupo().getAlumnos().stream().map(Alumno::getId)
@@ -1256,15 +1271,80 @@ public class PDFServiceImpl implements PDFService {
 			if (alumnos.isEmpty()) {
 				continue;
 			}
-			if (!firstPage) {
-				html.append("<div class='page-break'></div>");
-			}
-			firstPage = false;
-			paginaAsistencia(html, marca, year, month, deporte, turno.getDiaSemana(), turno, alumnos,
-					fechasDelMes(year, month, diaDeLaSemana(turno)));
+			paginas.add(new PaginaAsistencia(deporte, turno.getDiaSemana(), turno, alumnos,
+					fechasDelMes(year, month, diaDeLaSemana(turno))));
 		}
+		renderizarPaginasAsistencia(html, marca, year, month, paginas, marcada);
 		html.append("</body></html>");
 		return renderizarAsistencia(html.toString());
+	}
+
+	/** Una página del listado de asistencia, pendiente de pintar: un turno, su disciplina, sus alumnos y sus fechas. */
+	private record PaginaAsistencia(String deporte, String dia, com.taemoi.project.entities.Turno turno,
+			List<AlumnoDeporte> alumnos, List<LocalDate> fechas) {
+	}
+
+	/** Casilla de la rejilla: un turno, una fecha y un alumno. */
+	private record CasillaAsistencia(Long turnoId, LocalDate fecha, Long alumnoId) {
+	}
+
+	/**
+	 * Pinta las páginas del listado, una detrás de otra. Con {@code marcada}, la rejilla sale con lo pasado en «pasar
+	 * lista» (ver {@link #marcasDeAsistencia}); sin ella, vacía como siempre y sin ninguna consulta de listas.
+	 */
+	private void renderizarPaginasAsistencia(StringBuilder html, MarcaEscuela marca, int year, int month,
+			List<PaginaAsistencia> paginas, boolean marcada) {
+		Map<CasillaAsistencia, Boolean> marcas = marcada ? marcasDeAsistencia(year, month, paginas) : null;
+		boolean primera = true;
+		for (PaginaAsistencia pagina : paginas) {
+			if (!primera) {
+				html.append("<div class='page-break'></div>");
+			}
+			primera = false;
+			paginaAsistencia(html, marca, year, month, pagina.deporte(), pagina.dia(), pagina.turno(), pagina.alumnos(),
+					pagina.fechas(), marcas);
+		}
+	}
+
+	/**
+	 * Lo guardado en «pasar lista» para esas páginas, con dos consultas en total (clases de todos los turnos en el mes y
+	 * filas de todas esas clases) y un mapa en memoria; {@code true} presente, {@code false} falta, sin entrada sin lista.
+	 * Solo cuenta la clase guardada cuyo grupo es el del turno (como {@code AsistenciaService#lista}). Las dos entidades
+	 * son de la escuela activa ({@code @TenantId}): lo de otra escuela no llega a salir.
+	 */
+	private Map<CasillaAsistencia, Boolean> marcasDeAsistencia(int year, int month, List<PaginaAsistencia> paginas) {
+		Map<Long, Long> grupoDelTurno = new java.util.HashMap<>();
+		for (PaginaAsistencia pagina : paginas) {
+			if (pagina.turno().getId() != null && pagina.turno().getGrupo() != null) {
+				grupoDelTurno.put(pagina.turno().getId(), pagina.turno().getGrupo().getId());
+			}
+		}
+		Map<CasillaAsistencia, Boolean> marcas = new java.util.HashMap<>();
+		if (grupoDelTurno.isEmpty()) {
+			return marcas;
+		}
+		LocalDate inicio = LocalDate.of(year, month, 1);
+		Map<Long, com.taemoi.project.entities.ClaseAsistencia> clases = new java.util.HashMap<>();
+		for (com.taemoi.project.entities.ClaseAsistencia clase : claseAsistenciaRepository
+				.findByTurnoIdInAndFechaBetween(grupoDelTurno.keySet(), inicio,
+						inicio.with(TemporalAdjusters.lastDayOfMonth()))) {
+			if (clase.getTurnoId() != null && clase.getGrupoId() != null
+					&& clase.getGrupoId().equals(grupoDelTurno.get(clase.getTurnoId()))) {
+				clases.put(clase.getId(), clase);
+			}
+		}
+		if (clases.isEmpty()) {
+			return marcas;
+		}
+		for (com.taemoi.project.entities.AsistenciaAlumno fila : asistenciaAlumnoRepository
+				.findByClaseIdIn(clases.keySet())) {
+			com.taemoi.project.entities.ClaseAsistencia clase = clases.get(fila.getClaseId());
+			if (clase != null) {
+				marcas.put(new CasillaAsistencia(clase.getTurnoId(), clase.getFecha(), fila.getAlumnoId()),
+						fila.isPresente());
+			}
+		}
+		return marcas;
 	}
 
 	private static DayOfWeek diaDeLaSemana(com.taemoi.project.entities.Turno turno) {
@@ -1360,7 +1440,8 @@ public class PDFServiceImpl implements PDFService {
 
 	/** Una página del listado de asistencia: un turno y una disciplina (el de gestión y el del profesor, E7-2). */
 	private void paginaAsistencia(StringBuilder html, MarcaEscuela marca, int year, int month, String deporte, String dia,
-			com.taemoi.project.entities.Turno turno, List<AlumnoDeporte> alumnos, List<LocalDate> fechas) {
+			com.taemoi.project.entities.Turno turno, List<AlumnoDeporte> alumnos, List<LocalDate> fechas,
+			Map<CasillaAsistencia, Boolean> marcas) {
 		// Sort alumnos by nombre
 		alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
 
@@ -1371,8 +1452,12 @@ public class PDFServiceImpl implements PDFService {
 		String nombreMes = Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es"));
 		String titulo = "Listado de asistencia - " + conMayuscula(nombreMes) + " " + year;
 		// El día, con mayúscula inicial en los dos listados (gestión lo recibe como venga escrito: «lunes»).
-		String contexto = contexto(EstiloPdf.esc(deporte.replace("_", " ")), "Total: " + totalAlumnos + " alumnos",
-				EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr));
+		String diaYTurno = EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr);
+		String disciplina = EstiloPdf.esc(deporte.replace("_", " "));
+		String total = "Total: " + totalAlumnos + " alumnos";
+		// Con marcas, la leyenda va aquí: bajo la rejilla, una hoja justa la mandaría sola a otra página.
+		String contexto = marcas == null ? contexto(disciplina, total, diaYTurno)
+				: contexto(disciplina, total, diaYTurno, "X: asistió &#183; &#8211;: faltó &#183; Vacía: sin lista");
 		html.append(EstiloPdf.cabecera(marca.colorPrimario(), marca.logoInformes(), marca.asistenciaPrincipalHtml(),
 				marca.asistenciaSubtituloHtml(), titulo, contexto, EstiloPdf.esc(EstiloPdf.fechaGeneracion())));
 
@@ -1453,11 +1538,13 @@ public class PDFServiceImpl implements PDFService {
 			html.append("<th>").append(f.getDayOfMonth()).append("</th>");
 		}
 		html.append("</tr></thead><tbody>");
-		for (int i = 0; i < totalAlumnos; i++) {
+		for (AlumnoDeporte ad : alumnos) {
 			html.append("<tr>");
-			for (@SuppressWarnings("unused")
-			LocalDate f : fechas) {
-				html.append("<td></td>");
+			for (LocalDate f : fechas) {
+				// Sin marcas, la casilla vacía de siempre; con ellas, X asistió, – faltó y vacía sin lista.
+				Boolean presente = marcas == null ? null
+						: marcas.get(new CasillaAsistencia(turno.getId(), f, ad.getAlumno().getId()));
+				html.append(presente == null ? "<td></td>" : presente ? "<td>X</td>" : "<td>&#8211;</td>");
 			}
 			html.append("</tr>");
 		}

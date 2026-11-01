@@ -327,6 +327,62 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(textoB.contains("E72TUTELADO" + e.marca));
 	}
 
+	/**
+	 * El PDF marcado ({@code marcada=true}) en las dos rutas: la X de la lista guardada de su turno y su fecha, la leyenda,
+	 * y nada de una clase de otro grupo ni de otra escuela (aunque apunten al mismo turno). Sin el parámetro o a false,
+	 * sin marcas ni leyenda.
+	 */
+	@Test
+	void pdfAsistenciaMarcada() throws Exception {
+		// Lunes 7 de septiembre de 2026: lista guardada de gA en tA con el tutelado presente.
+		clase(e.org, e.gA, e.tA, "2026-09-07", tutelado, true);
+		// Lunes 14: clase del turno tA pero de OTRO grupo (gB): no cuenta.
+		clase(e.org, e.gB, e.tA, "2026-09-14", tutelado, true);
+		// Lunes 21: clase de OTRA escuela que apunta al mismo turno: no cuenta.
+		clase(otra.org, otra.gA, e.tA, "2026-09-21", tutelado, true);
+
+		String ruta = "/api/profesor/grupos/" + e.gA + "/asistencia";
+		String sin = texto(peticion(get(ruta).param("year", "2026").param("month", "9"), tProfA).getResponse()
+				.getContentAsByteArray());
+		String enFalse = texto(peticion(get(ruta).param("year", "2026").param("month", "9").param("marcada", "false"),
+				tProfA).getResponse().getContentAsByteArray());
+		assertEquals(sin, enFalse);
+		assertFalse(sin.contains("X:asistió"), sin);
+
+		MvcResult r = peticion(get(ruta).param("year", "2026").param("month", "9").param("marcada", "true"), tProfA);
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		String marcada = texto(r.getResponse().getContentAsByteArray());
+		assertTrue(marcada.contains("X:asistió·–:faltó·Vacía:sinlista"), marcada);
+		assertEquals(cuenta(sin, 'X') + 2, cuenta(marcada, 'X'), "la X del 7 y la de la leyenda; nada del 14 ni del 21");
+
+		// Gestión: el mismo criterio por turno y fecha.
+		MvcResult g = peticion(get("/api/informes/asistencia").param("year", "2026").param("month", "9")
+				.param("grupo", "lunes").param("deporte", "TAEKWONDO").param("marcada", "true"), tGestor);
+		assertEquals(200, g.getResponse().getStatus(), g.getResponse().getContentAsString());
+		String deGestion = texto(g.getResponse().getContentAsByteArray());
+		assertTrue(deGestion.contains("X:asistió·–:faltó·Vacía:sinlista"), deGestion);
+		long leyendas = paginas(pdfGestion()).size();
+		assertEquals(cuenta(texto(pdfGestion()), 'X') + leyendas + 1, cuenta(deGestion, 'X'),
+				"la X del 7 y una leyenda por página");
+
+		// Grupo ajeno: sigue el 403 con el parámetro.
+		assertEquals(403, estado(get(ruta + "?year=2026&month=9&marcada=true"), tProfB));
+	}
+
+	private void clase(long org, long grupo, long turno, String fecha, long alumno, boolean presente) {
+		jdbc.update("""
+				INSERT INTO clase_asistencia (organizacion_id, grupo_id, turno_id, fecha, hora_inicio, hora_fin, registrado_en)
+				VALUES (?, ?, ?, ?, '18:00', '19:00', NOW(6))""", org, grupo, turno, fecha);
+		long clase = jdbc.queryForObject("SELECT id FROM clase_asistencia WHERE turno_id = ? AND fecha = ?", Long.class,
+				turno, fecha);
+		jdbc.update("INSERT INTO asistencia_alumno (organizacion_id, clase_id, alumno_id, presente) VALUES (?, ?, ?, ?)",
+				org, clase, alumno, presente);
+	}
+
+	private static long cuenta(String texto, char c) {
+		return texto.chars().filter(x -> x == c).count();
+	}
+
 	@Test
 	void pdfAsistenciaGrupoAjeno_403() throws Exception {
 		assertEquals(403, estado(get("/api/profesor/grupos/" + e.gB + "/asistencia?year=2026&month=9"), tProfA));

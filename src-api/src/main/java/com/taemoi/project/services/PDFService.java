@@ -61,6 +61,17 @@ public interface PDFService {
 	 */
 	byte[] generarListadoAsistenciaPorTurnos(int year, int month, List<Long> turnoIds) throws IOException;
 
+	/**
+	 * Como {@link #generarListadoAsistencia(int, int, List, String, Long)} con {@code marcada}: la rejilla sale con lo
+	 * guardado en «pasar lista» (X asistió, – faltó, vacía sin lista) y una leyenda. Con {@code false}, el de siempre.
+	 */
+	byte[] generarListadoAsistencia(int year, int month, List<String> grupos, String deporte, Long sedeId,
+			boolean marcada) throws IOException;
+
+	/** Como {@link #generarListadoAsistenciaPorTurnos(int, int, List)} con {@code marcada}, igual que arriba. */
+	byte[] generarListadoAsistenciaPorTurnos(int year, int month, List<Long> turnoIds, boolean marcada)
+			throws IOException;
+
 	byte[] generarInformeConvocatoria(Long convocatoriaId);
 
 	byte[] generarInformeCompetidores();
