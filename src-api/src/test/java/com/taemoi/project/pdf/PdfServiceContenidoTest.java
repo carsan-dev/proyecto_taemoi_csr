@@ -275,7 +275,7 @@ class PdfServiceContenidoTest {
 		assertTrue(lineas.contains("29m 1º 5005 26 Eva Prueba Cinco 105"), String.join("\n", lineas));
 		// Mismas columnas y una leyenda por página.
 		assertEquals(2, lineas.stream().filter(l -> l.equals("5 12 19 26")).count());
-		assertEquals(2, lineas.stream().filter(l -> l.equals(LEYENDA)).count(), String.join("\n", lineas));
+		assertEquals(2, lineas.stream().filter(l -> l.contains(LEYENDA)).count(), String.join("\n", lineas));
 		// Una consulta de clases para todos los turnos y una de filas para todas las clases.
 		verify(claseAsistenciaRepository, times(1)).findByTurnoIdInAndFechaBetween(any(), any(), any());
 		verify(asistenciaAlumnoRepository, times(1)).findByClaseIdIn(any());
@@ -302,7 +302,7 @@ class PdfServiceContenidoTest {
 				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(9L), true)));
 
 		assertTrue(lineas.contains("7m 5001 11 Ana Prueba Uno 101"), String.join("\n", lineas));
-		assertTrue(lineas.contains(LEYENDA));
+		assertTrue(lineas.stream().anyMatch(l -> l.contains(LEYENDA)), String.join("\n", lineas));
 		// Sin clases guardadas no hay nada que leer en las filas.
 		verifyNoInteractions(asistenciaAlumnoRepository);
 	}

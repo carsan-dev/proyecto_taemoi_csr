@@ -1452,8 +1452,12 @@ public class PDFServiceImpl implements PDFService {
 		String nombreMes = Month.of(month).getDisplayName(TextStyle.FULL, Locale.of("es"));
 		String titulo = "Listado de asistencia - " + conMayuscula(nombreMes) + " " + year;
 		// El día, con mayúscula inicial en los dos listados (gestión lo recibe como venga escrito: «lunes»).
-		String contexto = contexto(EstiloPdf.esc(deporte.replace("_", " ")), "Total: " + totalAlumnos + " alumnos",
-				EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr));
+		String diaYTurno = EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr);
+		String disciplina = EstiloPdf.esc(deporte.replace("_", " "));
+		String total = "Total: " + totalAlumnos + " alumnos";
+		// Con marcas, la leyenda va aquí: bajo la rejilla, una hoja justa la mandaría sola a otra página.
+		String contexto = marcas == null ? contexto(disciplina, total, diaYTurno)
+				: contexto(disciplina, total, diaYTurno, "X: asistió &#183; &#8211;: faltó &#183; Vacía: sin lista");
 		html.append(EstiloPdf.cabecera(marca.colorPrimario(), marca.logoInformes(), marca.asistenciaPrincipalHtml(),
 				marca.asistenciaSubtituloHtml(), titulo, contexto, EstiloPdf.esc(EstiloPdf.fechaGeneracion())));
 
@@ -1552,10 +1556,6 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</div>");
 		html.append("</div>");
 		html.append("</div>");
-		if (marcas != null) {
-			html.append("<div style='margin: 1.5mm 4mm 0 4mm; font-size: 7pt; color: #5d6573; text-align: center;'>")
-					.append("X: asistió &#183; &#8211;: faltó &#183; Vacía: sin lista</div>");
-		}
 	}
 
 	/** Primera letra en mayúscula («lunes» → «Lunes», «septiembre» → «Septiembre»); el resto, igual. */
