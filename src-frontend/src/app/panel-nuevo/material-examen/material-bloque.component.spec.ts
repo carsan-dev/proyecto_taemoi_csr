@@ -405,6 +405,23 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       expect(confirmar).not.toHaveBeenCalled();
     });
 
+    it('un vídeo que aún se está preparando ya retiene al salir', async () => {
+      cargar();
+      const archivo = ficheroVideo('a.mp4');
+      let soltar = (): void => undefined;
+      const lectura = new Promise<ArrayBuffer>((r) => (soltar = () => r(new ArrayBuffer(1))));
+      spyOn(archivo, 'slice').and.returnValue({ arrayBuffer: () => lectura } as unknown as Blob);
+      confirmar.and.resolveTo({ confirmado: false });
+
+      elegirFicheros('input[multiple]', [archivo]);
+      expect(await comp().puedeSalir()).toBeFalse();
+      expect(confirmar.calls.mostRecent().args[0].titulo).toBe('¿Salir y cortar la subida?');
+
+      soltar();
+      await esperar();
+      http.expectOne(`${API}/videos?nombre=a.mp4`).flush({ fichero: 'a.mp4', bloque: detalle() });
+    });
+
     it('beforeunload solo avisa con algo en vuelo o sin guardar', () => {
       cargar();
       const sinCambios = new Event('beforeunload', { cancelable: true }) as BeforeUnloadEvent;

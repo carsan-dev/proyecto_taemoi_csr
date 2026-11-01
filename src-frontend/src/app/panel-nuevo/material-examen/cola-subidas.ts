@@ -7,7 +7,8 @@ import { MaterialExamenApiService } from './material-examen-api.service';
 import { DetalleBloque, SubidaMaterial } from './material-examen.models';
 import { motivoFalloSubida, motivoVideo } from './material-examen-vista';
 
-export type EstadoSubida = 'espera' | 'subiendo' | 'fallo';
+/** `preparando`: elegido, pendiente de la lectura previa; ya figura en la cola, pero aún no le puede tocar el turno. */
+export type EstadoSubida = 'preparando' | 'espera' | 'subiendo' | 'fallo';
 
 export interface SubidaVideo {
   clave: number;
@@ -46,7 +47,7 @@ export class ColaSubidas implements OnDestroy {
   private readonly api = inject(MaterialExamenApiService);
 
   readonly items = signal<SubidaVideo[]>([]);
-  /** Hay algo subiendo o esperando turno; los fallos no cuentan. */
+  /** Hay algo subiendo, esperando turno o preparándose; los fallos no cuentan. */
   readonly enCurso = computed(() => this.items().some((item) => item.estado !== 'fallo'));
   readonly terminada = new Subject<SubidaTerminada>();
 
@@ -68,32 +69,39 @@ export class ColaSubidas implements OnDestroy {
     this.items.set([]);
   }
 
-  /** Añade los ficheros en el orden recibido. Con `sustituye`, cada uno reemplaza a ese vídeo. */
+  /**
+   * Añade los ficheros en el orden recibido, ya en la cola desde la selección: salir mientras se leen también pregunta, y
+   * se pueden cancelar. Con `sustituye`, cada uno reemplaza a ese vídeo.
+   */
   async agregar(archivos: readonly File[], sustituye: string | null = null): Promise<void> {
-    for (const archivo of archivos) {
-      let motivo = motivoVideo(archivo, sustituye);
-      if (!motivo && !(await legible(archivo))) {
-        motivo = MOTIVO_LECTURA;
+    const nuevos = archivos.map((archivo) => this.crear(archivo, sustituye));
+    this.items.update((lista) => [...lista, ...nuevos]);
+    for (const { clave, archivo, estado } of nuevos) {
+      if (estado === 'preparando') {
+        const sePuedeLeer = await legible(archivo);
+        if (this.destruida) {
+          return;
+        }
+        // Si lo cancelaron mientras se leía, ya no está en la lista y esto no cambia nada.
+        this.actualizar(clave, sePuedeLeer ? { estado: 'espera' } : { estado: 'fallo', motivo: MOTIVO_LECTURA });
+        this.siguiente();
       }
-      if (this.destruida) {
-        return;
-      }
-      this.items.update((lista) => [
-        ...lista,
-        {
-          clave: ++this.contador,
-          nombre: archivo.name,
-          sustituye,
-          archivo,
-          estado: motivo ? 'fallo' : 'espera',
-          cargados: 0,
-          total: archivo.size,
-          motivo,
-          reintentable: false,
-        },
-      ]);
-      this.siguiente();
     }
+  }
+
+  private crear(archivo: File, sustituye: string | null): SubidaVideo {
+    const motivo = motivoVideo(archivo, sustituye);
+    return {
+      clave: ++this.contador,
+      nombre: archivo.name,
+      sustituye,
+      archivo,
+      estado: motivo ? 'fallo' : 'preparando',
+      cargados: 0,
+      total: archivo.size,
+      motivo,
+      reintentable: false,
+    };
   }
 
   /** Quita la fila: en una subida en curso, corta el envío; en un fallo, solo la borra. */

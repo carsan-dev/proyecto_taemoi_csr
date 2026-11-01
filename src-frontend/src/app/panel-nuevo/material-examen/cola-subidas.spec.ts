@@ -193,6 +193,69 @@ describe('ColaSubidas', () => {
     expect(cola.enCurso()).toBeFalse();
   });
 
+  describe('mientras se prepara', () => {
+    /** Un fichero cuya lectura previa no acaba hasta que se llame a `soltar`. */
+    function lento(nombre: string): { archivo: File; soltar: () => void } {
+      const archivo = fichero(nombre);
+      let soltar = (): void => undefined;
+      const lectura = new Promise<ArrayBuffer>((r) => (soltar = () => r(new ArrayBuffer(1))));
+      spyOn(archivo, 'slice').and.returnValue({ arrayBuffer: () => lectura } as unknown as Blob);
+      return { archivo, soltar: () => soltar() };
+    }
+
+    it('el fichero ya cuenta como pendiente desde la selección, sin enviarse', async () => {
+      const { archivo, soltar } = lento('a.mp4');
+      const hecho = cola.agregar([archivo]);
+      expect(cola.enCurso()).toBeTrue();
+      expect(nombres()).toEqual(['a.mp4']);
+      expect(envios.length).toBe(0);
+
+      soltar();
+      await hecho;
+      expect(envios.length).toBe(1);
+      expect(cola.items()[0].estado).toBe('subiendo');
+    });
+
+    it('toda la selección figura a la vez, aunque el primero aún se esté leyendo', async () => {
+      const { archivo, soltar } = lento('a.mp4');
+      const hecho = cola.agregar([archivo, fichero('b.mp4')]);
+      expect(nombres()).toEqual(['a.mp4', 'b.mp4']);
+      soltar();
+      await hecho;
+      expect(cola.items().map((i) => i.estado)).toEqual(['subiendo', 'espera']);
+    });
+
+    it('cancelarlo evita que se envíe', async () => {
+      const { archivo, soltar } = lento('a.mp4');
+      const hecho = cola.agregar([archivo]);
+      cola.cancelar(cola.items()[0].clave);
+      expect(cola.enCurso()).toBeFalse();
+      soltar();
+      await hecho;
+      expect(envios.length).toBe(0);
+      expect(nombres()).toEqual([]);
+    });
+
+    it('si no se puede leer, pasa a fallo y deja de contar como pendiente', async () => {
+      const roto = fichero('a.mp4');
+      spyOn(roto, 'slice').and.returnValue({ arrayBuffer: () => Promise.reject(new Error('NotReadable')) } as unknown as Blob);
+      const hecho = cola.agregar([roto]);
+      expect(cola.enCurso()).toBeTrue();
+      await hecho;
+      expect(cola.enCurso()).toBeFalse();
+      expect(cola.items()[0].motivo).toBe(MOTIVO_LECTURA);
+    });
+
+    it('al destruirse no envía lo que estaba preparando', async () => {
+      const { archivo, soltar } = lento('a.mp4');
+      const hecho = cola.agregar([archivo]);
+      TestBed.resetTestingModule();
+      soltar();
+      await hecho;
+      expect(envios.length).toBe(0);
+    });
+  });
+
   it('al destruirse corta la subida en curso', async () => {
     await cola.agregar([fichero('a.mp4')]);
     TestBed.resetTestingModule();
