@@ -1,0 +1,282 @@
+// Escuela → Material de examen (bocetos `Main.dc.html` y `MovilLista.dc.html`). Solo tokens de panel-nuevo.scss bajo .pn
+// (DESIGN.md). Filas, no tarjetas; los dos cintos son decorativos: el nombre del bloque y los grados dicen lo mismo.
+
+:host {
+  display: block;
+}
+
+.material {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.material__pagina {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  max-width: 1232px;
+  margin: 0 auto;
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl);
+}
+
+.material__cabecera {
+  display: grid;
+  gap: 4px;
+}
+
+.material__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado);
+  color: var(--pn-tinta);
+  text-wrap: balance;
+}
+
+.material__sub,
+.material__resumen {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.material__sub--movil {
+  display: none;
+}
+
+.material__resumen {
+  margin-bottom: 20px;
+}
+
+// ------------------------------------------------------------------ pestañas
+
+.material__pestanas {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--pn-linea-fuerte);
+}
+
+.material__pestana {
+  flex: none;
+  min-height: 44px;
+  margin-bottom: -1px;
+  padding: 0 14px;
+  border: 0;
+  background: transparent;
+  color: var(--pn-tinta-2);
+  font: var(--pn-cuerpo);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--pn-transicion), box-shadow var(--pn-transicion);
+
+  &:hover {
+    color: var(--pn-tinta);
+  }
+
+  &[aria-selected='true'] {
+    color: var(--pn-acento);
+    box-shadow: inset 0 -2px 0 var(--pn-acento);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+// ------------------------------------------------------------------ lista
+
+.material__lista {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  li:not(:last-child) .fila {
+    border-bottom: 1px solid var(--pn-linea);
+  }
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 72px 20px;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 10px 12px 10px 16px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+.fila__cintos {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.fila__cinto {
+  width: 18px;
+  height: 9px;
+  border: 1px solid var(--pn-cinto-borde);
+  border-radius: 2px;
+}
+
+.fila__datos {
+  display: grid;
+  min-width: 0;
+}
+
+.fila__nombre {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--pn-tinta);
+}
+
+.fila__grados {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.fila__pastillas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fila__pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-marca-primario-suave);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+}
+
+.fila__pastilla--bien {
+  background: color-mix(in srgb, var(--pn-bien) 12%, var(--pn-superficie));
+  color: var(--pn-bien);
+}
+
+.fila__peso {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  text-align: right;
+}
+
+.fila__flecha {
+  width: 20px;
+  height: 20px;
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ carga
+
+.material__hueso {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pn-linea);
+
+  span {
+    height: 14px;
+    border-radius: var(--pn-radio-s);
+    background: var(--pn-serie-pista);
+  }
+
+  span:first-child {
+    width: 34%;
+  }
+
+  span:last-child {
+    width: 52%;
+  }
+}
+
+// ------------------------------------------------------------------ móvil
+
+@media (max-width: 767.98px) {
+  .material__pagina {
+    gap: 14px;
+    padding: var(--pn-espacio-m);
+  }
+
+  .material__titulo {
+    font-size: 1.375rem;
+  }
+
+  .material__sub--escritorio,
+  .material__resumen {
+    display: none;
+  }
+
+  .material__sub--movil {
+    display: block;
+  }
+
+  .fila {
+    grid-template-columns: minmax(0, 1fr) 20px;
+    grid-template-areas:
+      'cintos flecha'
+      'datos flecha'
+      'pastillas flecha';
+    gap: 0 10px;
+    min-height: 72px;
+    padding: 10px 8px 10px 14px;
+  }
+
+  .fila__cintos {
+    grid-area: cintos;
+    margin-bottom: 4px;
+  }
+
+  .fila__datos {
+    grid-area: datos;
+  }
+
+  .fila__pastillas {
+    grid-area: pastillas;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .fila__flecha {
+    grid-area: flecha;
+  }
+
+  .fila__grados,
+  .fila__peso {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .material__pestana,
+  .fila {
+    transition: none;
+  }
+}

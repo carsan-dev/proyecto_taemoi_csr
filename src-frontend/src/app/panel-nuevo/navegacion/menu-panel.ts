@@ -135,6 +135,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
     entradas: [
       { etiqueta: 'Eventos', ruta: '/eventosListar', icono: 'bi-calendar-check' },
       { etiqueta: 'Crear evento', ruta: '/eventosCrear', icono: 'bi-calendar-plus' },
+      { etiqueta: 'Material de examen', ruta: '/material-examen', icono: 'bi-collection-play', condicion: 'gestion' },
       { etiqueta: 'Sedes', ruta: '/sedes', icono: 'bi-geo-alt', condicion: 'sedes' },
       { etiqueta: 'Miembros', ruta: '/miembros', icono: 'bi-person-gear', condicion: 'miembros' },
       { etiqueta: 'Configuración', ruta: '/configuracion-sistema', icono: 'bi-sliders', condicion: 'propietario' },
@@ -153,6 +154,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/eventosListar',
       '/eventosCrear',
       '/eventosEditar',
+      '/material-examen',
       '/sedes',
       '/miembros',
       '/configuracion-sistema',
@@ -169,8 +171,8 @@ export const BARRA_INFERIOR: readonly IdSeccion[] = ['inicio', 'alumnos', 'tesor
 /**
  * Lo que ve el responsable de sede (decisión 370), con Mi caja y Mis grupos si también es profesor (371). Es una lista
  * de permitidas: una entrada nueva del menú no le llega hasta que se decida. Conserva «Ver la web», donde la tiene la
- * gestión (sección Escuela, sola). No incluye «Eliminar alumno», Productos, Eventos, Sedes, Miembros, Configuración ni el
- * registro.
+ * gestión (sección Escuela, sola). No incluye «Eliminar alumno», Productos, Eventos, Material de examen, Sedes, Miembros,
+ * Configuración ni el registro.
  */
 const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
   '/adminpage',

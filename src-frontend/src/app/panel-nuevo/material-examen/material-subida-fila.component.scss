@@ -1,0 +1,139 @@
+// Fila de la cola de vídeos (`Bloque.dc.html` y `Primera.dc.html`). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md):
+// el fondo y el borde del fallo salen de `peligro`, no de los hex del boceto.
+@use '../capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.oculto {
+  @include c.oculto;
+}
+
+.boton {
+  @include c.boton-texto;
+  flex: none;
+  min-height: 44px;
+  padding: 0 10px;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+// ------------------------------------------------------------------ en curso
+
+.subida {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'nombre boton'
+    'pista pista'
+    'texto texto';
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 8px 12px 12px;
+  background: var(--pn-superficie-2);
+}
+
+.subida__nombre {
+  grid-area: nombre;
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.subida__cancelar {
+  grid-area: boton;
+}
+
+.subida__pista {
+  grid-area: pista;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-serie-pista);
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--pn-acento);
+    transition: width var(--pn-transicion);
+  }
+}
+
+.subida__texto {
+  grid-area: texto;
+  margin: 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ fallo
+
+.fallo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--pn-peligro) 35%, var(--pn-superficie));
+  border-radius: var(--pn-radio-m);
+  background: color-mix(in srgb, var(--pn-peligro) 6%, var(--pn-superficie));
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 2px;
+    color: var(--pn-peligro);
+  }
+}
+
+.fallo__datos {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fallo__nombre {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.fallo__motivo {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--pn-peligro);
+}
+
+@media (max-width: 767.98px) {
+  .subida {
+    grid-template-areas:
+      'nombre nombre'
+      'pista pista'
+      'texto boton';
+  }
+
+  .fallo {
+    flex-wrap: wrap;
+  }
+
+  .fallo__datos {
+    flex-basis: calc(100% - 28px);
+  }
+
+  .fallo .boton:first-of-type {
+    margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subida__pista span {
+    transition: none;
+  }
+}

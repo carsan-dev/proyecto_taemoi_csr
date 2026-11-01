@@ -1,0 +1,129 @@
+// Panel «Editar vídeo» (boceto `Editar.dc.html`). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.editar {
+  display: grid;
+  gap: 18px;
+}
+
+.editar__campo {
+  display: grid;
+  gap: 6px;
+}
+
+.editar__etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+
+  span {
+    font-weight: 400;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.editar__control {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+}
+
+.editar__bajo {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+
+  [data-cifras] {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+.editar__error {
+  font-weight: 600;
+  color: var(--pn-peligro);
+}
+
+.editar__fichero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie-2);
+}
+
+.editar__datos {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.editar__nombre {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.editar__dato {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.editar__oculto {
+  @include c.oculto;
+}
+
+.editar__pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.editar__primario {
+  @include c.boton-primario;
+}
+
+.editar__secundario {
+  @include c.boton-secundario;
+  flex: none;
+}
+
+.editar__texto {
+  @include c.boton-texto;
+}
+
+.editar__primario,
+.editar__secundario,
+.editar__texto {
+  min-height: 44px;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}

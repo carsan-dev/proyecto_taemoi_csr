@@ -477,6 +477,24 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Escuela → Material de examen (R2): gestión por disciplina y bloque. El de las familias va dentro de `userpage`.
+    path: 'material-examen',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/material-examen/material-examen.component').then(m => m.MaterialExamenPanelComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    path: 'material-examen/:disciplina/:bloque',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.management),
+    loadComponent: () => import('./panel-nuevo/material-examen/material-bloque.component').then(m => m.MaterialBloqueComponent),
+    canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'configuracion-sistema',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),

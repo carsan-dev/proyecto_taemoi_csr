@@ -22,6 +22,7 @@ const NO_VE = [
   '/alumnosEliminar',
   '/eventosListar',
   '/eventosCrear',
+  '/material-examen',
   '/productosListar',
   '/productosCrear',
   '/sedes',

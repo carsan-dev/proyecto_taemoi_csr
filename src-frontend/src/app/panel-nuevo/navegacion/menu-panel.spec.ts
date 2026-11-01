@@ -186,6 +186,27 @@ describe('menu-panel: Sedes (E9-3)', () => {
     expect(rutasDeGestion({ ...base, propietario: false, sedes: true })).toContain('/sedes');
   });
 
+  it('Material de examen: en Escuela, solo con gestión y nunca para quien solo es profesor', () => {
+    const conGestion = { ...base, gestion: true };
+    const escuela = menuVisible(conGestion).find((seccion) => seccion.id === 'escuela')!;
+    expect(escuela.entradas.find((e) => e.ruta === '/material-examen')).toEqual(
+      jasmine.objectContaining({ etiqueta: 'Material de examen', condicion: 'gestion' })
+    );
+    expect(rutasDeGestion(conGestion)).toContain('/material-examen');
+    expect(rutasDeGestion({ ...base, gestion: false })).not.toContain('/material-examen');
+    expect(rutasDeGestion({ ...base, soloProfesor: true, profesor: true, misGrupos: true })).not.toContain('/material-examen');
+  });
+
+  it('el responsable de sede no ve Material de examen aunque la condición de gestión le deje pasar', () => {
+    expect(rutasDeGestion({ ...base, panelSede: true })).not.toContain('/material-examen');
+    expect(rutasDeGestion({ ...base, panelSede: true, profesor: true, misGrupos: true })).not.toContain('/material-examen');
+  });
+
+  it('/material-examen y sus bloques encienden la entrada Escuela', () => {
+    expect(seccionActiva('/material-examen')).toBe('escuela');
+    expect(seccionActiva('/material-examen/TAEKWONDO/b01_inicio_a_amarillo')).toBe('escuela');
+  });
+
   it('/sedes enciende la entrada Escuela', () => {
     expect(seccionActiva('/sedes')).toBe('escuela');
   });

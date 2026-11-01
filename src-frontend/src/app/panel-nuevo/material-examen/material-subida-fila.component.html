@@ -1,0 +1,22 @@
+@if (item.estado === 'fallo') {
+<div class="fallo" role="alert">
+  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5h.01M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"></path></svg>
+  <div class="fallo__datos">
+    <div class="fallo__nombre">{{ item.nombre }}</div>
+    <p class="fallo__motivo">{{ item.motivo }}</p>
+  </div>
+  @if (item.reintentable) {
+  <button type="button" class="boton" (click)="reintentar.emit()">Reintentar<span class="oculto"> {{ item.nombre }}</span></button>
+  }
+  <button type="button" class="boton" (click)="cancelar.emit()">Quitar<span class="oculto"> {{ item.nombre }}</span></button>
+</div>
+} @else {
+<div class="subida">
+  <span class="subida__nombre">{{ item.nombre }}</span>
+  <button type="button" class="boton subida__cancelar" (click)="cancelar.emit()">Cancelar<span class="oculto"> {{ item.nombre }}</span></button>
+  <div class="subida__pista" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="valor" [attr.aria-label]="'Subida de ' + item.nombre">
+    <span [style.width.%]="valor"></span>
+  </div>
+  <p class="subida__texto" data-cifras>{{ texto }}</p>
+</div>
+}
