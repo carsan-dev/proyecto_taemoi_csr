@@ -308,6 +308,31 @@ class AlumnoSubidasWebMvcTest {
 		assertThat(dto.getValue().getFotoAlumno()).isNull();
 	}
 
+	/** Solo de entrada se ignora: la respuesta del alta y de la edición sigue llevando la foto del alumno. */
+	@Test
+	void crearYActualizar_laRespuestaSigueLlevandoLaFoto() throws Exception {
+		Alumno conFoto = alumnoCreado();
+		Imagen foto = new Imagen("foto.webp", "image/webp", "/imagenes/org-1/alumnos/foto.webp",
+				"org-1/alumnos/foto.webp");
+		foto.setId(55L);
+		conFoto.setFotoAlumno(foto);
+		when(alumnoService.crearAlumnoDesdeDTO(any(AlumnoDTO.class))).thenReturn(conFoto);
+		when(alumnoService.fechaNacimientoValida(any())).thenReturn(true);
+		when(alumnoService.datosAlumnoValidos(any(AlumnoDTO.class), anyBoolean())).thenReturn(true);
+		when(alumnoService.actualizarAlumno(eq(ALUMNO), any(AlumnoDTO.class), any(), any())).thenReturn(conFoto);
+
+		mockMvc.perform(multipart("/api/alumnos/crear")
+				.param("nuevo", "{\"nombre\":\"Prueba\"}")
+				.with(admin()).with(csrf()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.fotoAlumno.id").value(55));
+		mockMvc.perform(multipart(HttpMethod.PUT, "/api/alumnos/{id}", ALUMNO)
+				.param("alumnoEditado", "{\"nombre\":\"Prueba\"}")
+				.with(admin()).with(csrf()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.fotoAlumno.id").value(55));
+	}
+
 	@Test
 	void actualizarAlumnoConFotoHeicResponde400(CapturedOutput salida) throws Exception {
 		when(alumnoService.fechaNacimientoValida(any())).thenReturn(true);
