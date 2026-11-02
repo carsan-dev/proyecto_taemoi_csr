@@ -2414,8 +2414,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Producto producto = buscarProductoDeGrado(convocatoria.getDeporte(), gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null, comportamientoLegado.activo()) + " - "
-				+ formatearNombreDeporte(convocatoria.getDeporte());
+		String conceptoConDeporte = conceptoCargoDeGrado(producto, convocatoria.getDeporte());
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2551,8 +2550,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 		Producto producto = buscarProductoDeGrado(deporte, gradoSiguiente, porRecompensa, rojoBordado);
 
 		// Construir concepto con el nombre del deporte al final
-		String conceptoConDeporte = com.taemoi.project.services.CatalogoLegadoTaemoi.conceptoBase(producto, null, comportamientoLegado.activo()) + " - "
-				+ formatearNombreDeporte(deporte);
+		String conceptoConDeporte = conceptoCargoDeGrado(producto, deporte);
 
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
@@ -2567,6 +2565,20 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
 		return productoAlumno;
+	}
+
+	/**
+	 * Concepto del cargo de examen o recompensa: el del producto y el código de la disciplina al final. En los de ROJO
+	 * (normal y bordado) el color es el nombre del grado ROJO en el catálogo de la disciplina: en kickboxing,
+	 * «DERECHO A EXAMEN MARRÓN BORDADO - KICKBOXING»; en taekwondo, igual que siempre.
+	 */
+	private String conceptoCargoDeGrado(Producto producto, String deporte) {
+		boolean legado = comportamientoLegado.activo();
+		String nombreGradoRojo = CatalogoLegadoTaemoi.conceptoNombraGradoRojo(producto, legado)
+				? progresionGrados.buscarGrado(deporte, CatalogoLegadoTaemoi.GRADO_ROJO).map(Grado::getNombre).orElse(null)
+				: null;
+		return CatalogoLegadoTaemoi.conceptoBase(producto, null, legado, nombreGradoRojo) + " - "
+				+ formatearNombreDeporte(deporte);
 	}
 
 	/**

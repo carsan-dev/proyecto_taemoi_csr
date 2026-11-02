@@ -3,8 +3,12 @@ package com.taemoi.project.services;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
@@ -221,6 +225,37 @@ public final class CatalogoLegadoTaemoi {
 			return producto.getConcepto().trim();
 		}
 		return legadoSinCodigo != null ? legadoSinCodigo : producto.getConcepto();
+	}
+
+	/** Códigos de V24 cuyo concepto nombra el grado ROJO: examen y recompensa a ROJO, normal y bordado. */
+	private static final Set<String> CONCEPTO_CON_GRADO_ROJO = Set.of("EXAMEN_ROJO", "EXAMEN_ROJO_BORDADO",
+			"RECOMPENSA_ROJO", "RECOMPENSA_ROJO_BORDADO");
+	private static final Pattern PALABRA_ROJO = Pattern.compile("\\bROJO\\b");
+
+	/**
+	 * Si el concepto heredado del producto ({@link #conceptoBase(Producto, String, boolean)}) nombra el grado ROJO: solo
+	 * con comportamiento heredado y para los códigos de examen y recompensa a ROJO (normal y bordado).
+	 */
+	public static boolean conceptoNombraGradoRojo(Producto producto, boolean legado) {
+		return producto != null && esCodigoLegado(producto.getCodigo(), legado)
+				&& CONCEPTO_CON_GRADO_ROJO.contains(producto.getCodigo());
+	}
+
+	/**
+	 * {@link #conceptoBase(Producto, String, boolean)} con el nombre que el grado ROJO tiene en la disciplina del cargo:
+	 * en kickboxing ese cinturón es marrón, así que «DERECHO A EXAMEN ROJO BORDADO» pasa a «DERECHO A EXAMEN MARRÓN
+	 * BORDADO». Solo si {@link #conceptoNombraGradoRojo} y {@code nombreGradoRojo} no está en blanco; la palabra ROJO se
+	 * cambia por ese nombre en mayúsculas (en taekwondo es «ROJO»: no cambia nada). Solo el texto del concepto: el
+	 * producto, su importe y el grado que concede son los mismos.
+	 */
+	public static String conceptoBase(Producto producto, String legadoSinCodigo, boolean legado, String nombreGradoRojo) {
+		String concepto = conceptoBase(producto, legadoSinCodigo, legado);
+		if (concepto == null || nombreGradoRojo == null || nombreGradoRojo.isBlank()
+				|| !conceptoNombraGradoRojo(producto, legado)) {
+			return concepto;
+		}
+		return PALABRA_ROJO.matcher(concepto)
+				.replaceFirst(Matcher.quoteReplacement(nombreGradoRojo.trim().toUpperCase(Locale.ROOT)));
 	}
 
 	/**
