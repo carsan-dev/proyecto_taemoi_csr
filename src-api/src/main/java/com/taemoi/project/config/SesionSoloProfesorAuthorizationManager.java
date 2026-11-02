@@ -30,8 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
  * <ul>
  * <li>{@link #LISTA_BLANCA}: su caja ({@code /api/caja/profesor/**}), sus rutas de la entrega 7
  * ({@code /api/profesor/**}), lo imprescindible de sesión (roles, quién es,
- * si es de plataforma, selector y cambio de escuela), leer la marca y el logo de su escuela activa (pieza 8b-3o) y
- * {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
+ * si es de plataforma, selector y cambio de escuela), leer la marca y el logo de su escuela activa (pieza 8b-3o), leer y
+ * guardar su perfil (decisión 419) y {@code /api/plataforma/**}, que además exige ROLE_ADMIN_PLATAFORMA (un administrador
  * de plataforma que también es profesor no la pierde);</li>
  * <li>lo público: lo que esas mismas reglas conceden a un anónimo.</li>
  * </ul>
@@ -190,6 +190,10 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				// PNG del logo. Solo GET (HEAD cuenta como GET); escribir u otra ruta de /api/escuela sigue cerrado.
 				rutas.matcher(HttpMethod.GET, "/api/escuela/marca"),
 				rutas.matcher(HttpMethod.GET, "/api/escuela/logo"),
+				// Decisión 419: su perfil, para activar el modo privado de importes. Solo GET (HEAD cuenta como GET) y PUT
+				// de exactamente esta ruta; el resto de /api/panel sigue cerrado.
+				rutas.matcher(HttpMethod.GET, "/api/panel/mi-perfil"),
+				rutas.matcher(HttpMethod.PUT, "/api/panel/mi-perfil"),
 				// Administrador de plataforma que además es profesor: su regla exige ROLE_ADMIN_PLATAFORMA.
 				rutas.matcher("/api/plataforma/**"));
 	}

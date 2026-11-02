@@ -140,8 +140,9 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void permisos_propietario() throws Exception {
 		JsonNode p = permisos(tPropietario);
 		assertEquals(Set.of("roles", "esAdminPlataforma", "sedes", "variasSedes", "tieneGrupos", "capacidades",
-				"nombreVisible", "nombreSaludo", "cumpleanos"),
+				"nombreVisible", "nombreSaludo", "cumpleanos", "importesTapados"),
 				campos(p), "claves del DTO");
+		assertFalse(p.get("importesTapados").asBoolean(), "419: por defecto, a la vista");
 		assertEquals("Usuario P.", p.get("nombreVisible").asText(), "8b-T: nombre e inicial del primer apellido");
 		assertEquals("Usuario", p.get("nombreSaludo").asText(), "322: sin preferido, la primera palabra del nombre");
 		assertFalse(p.get("cumpleanos").asBoolean(), "8b-M2: sin ficha propia, nunca cumpleaños");
@@ -265,6 +266,19 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Usuario P.", p.get("nombreVisible").asText(), "322: sin preferido, nombre e inicial");
 		assertEquals("Usuario", p.get("nombreSaludo").asText(), "322: sin preferido, la primera palabra del nombre");
 		assertFalse(p.get("cumpleanos").asBoolean(), "sin membresía ni ficha, nunca cumpleaños");
+		assertFalse(p.get("importesTapados").asBoolean(), "419: por defecto, a la vista");
+	}
+
+	/** Decisión 419: la rama sin autoridades de escuela también lee la preferencia de la cuenta. */
+	@Test
+	void permisos_soloPlataforma_conImportesTapados() throws Exception {
+		String email = "it-e6-plataforma-" + e.marca + "@example.test";
+		jdbc.update("UPDATE usuario SET importes_tapados = TRUE WHERE es_admin_plataforma = TRUE AND email = ?", email);
+		try {
+			assertTrue(permisos(tPlataforma).get("importesTapados").asBoolean());
+		} finally {
+			jdbc.update("UPDATE usuario SET importes_tapados = FALSE WHERE email = ?", email);
+		}
 	}
 
 	@Test

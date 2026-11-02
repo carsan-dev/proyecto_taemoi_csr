@@ -322,7 +322,7 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(403, estado(get("/api/alumnos"), token));
 		assertEquals(403, estado(get("/api/alumnos/" + e.aA), token));
 		assertEquals(403, estado(get("/api/tesoreria/resumen"), token));
-		assertEquals(403, estado(get("/api/panel/mi-perfil"), token), "sigue fuera de su lista blanca");
+		assertEquals(200, estado(get("/api/panel/mi-perfil"), token), "419: en su lista blanca");
 		assertEquals(200, estado(get("/api/caja/profesor/cargos-pendientes"), token));
 	}
 

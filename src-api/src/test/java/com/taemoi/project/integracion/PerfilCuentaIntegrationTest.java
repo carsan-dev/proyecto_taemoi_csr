@@ -4,8 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.nio.charset.StandardCharsets;
@@ -44,10 +47,11 @@ import com.taemoi.project.services.JwtService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * Decisión 322 contra MySQL, con la cadena de filtros completa: {@code GET} y {@code PUT /api/panel/mi-perfil} solo para
- * P y G y solo sobre la cuenta de la sesión; la ficha manda en la escuela activa y no cruza escuelas; el cambio se ve en
- * el siguiente {@code GET /api/auth/permisos}; y ni el registro ni el JSON de la entidad sacan el nombre ni la fecha. Dos
- * escuelas sintéticas ({@link EscuelaConSedesDePrueba}). Datos inventados.
+ * Decisiones 322 y 419 contra MySQL, con la cadena de filtros completa: {@code GET} y {@code PUT /api/panel/mi-perfil}
+ * para P, G, R y profesor y solo sobre la cuenta de la sesión; la ficha manda en la escuela activa y no cruza escuelas; el
+ * cambio se ve en el siguiente {@code GET /api/auth/permisos}; ni el registro ni el JSON de la entidad sacan el nombre ni
+ * la fecha; y {@code importesTapados} es de la cuenta, no de la escuela, y solo cambia si llega en el cuerpo. Dos escuelas
+ * sintéticas ({@link EscuelaConSedesDePrueba}). Datos inventados.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,7 +61,7 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 	private static final String RUTA = "/api/panel/mi-perfil";
 	private static final String PERMISOS = "/api/auth/permisos";
 	private static final Set<String> CLAVES = Set.of("nombrePreferido", "nombreBase", "cumpleDia", "cumpleMes",
-			"cumpleFicha");
+			"cumpleFicha", "importesTapados");
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -103,6 +107,8 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(p.get("cumpleDia").isNull(), p.toString());
 		assertTrue(p.get("cumpleMes").isNull(), p.toString());
 		assertTrue(p.get("cumpleFicha").isNull(), p.toString());
+		assertTrue(p.get("importesTapados").isBoolean(), p.toString());
+		assertFalse(p.get("importesTapados").asBoolean(), "419: por defecto, a la vista");
 		assertEquals(200, estado(head(RUTA), token(e, propietario)));
 
 		long gestor = cuentaCon(e, "ADMINISTRADOR");
@@ -117,11 +123,53 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void soloProfesorYFamilia_403() throws Exception {
-		for (String token : List.of(tSoloProf, tFamilia)) {
-			assertEquals(403, estado(get(RUTA), token));
-			assertEquals(403, estado(cuerpo("{\"nombrePreferido\":\"Luci\"}"), token));
+	void familia_403() throws Exception {
+		assertEquals(403, estado(get(RUTA), tFamilia));
+		assertEquals(403, estado(head(RUTA), tFamilia));
+		assertEquals(403, estado(cuerpo("{\"importesTapados\":true}"), tFamilia));
+	}
+
+	/** Decisión 419: la sesión solo-profesor usa su perfil, con su ficha si la tiene, y solo eso de {@code /api/panel}. */
+	@Test
+	void soloProfesor_usaSuPerfil() throws Exception {
+		long cuenta = cuentaCon(e, "PROFESOR");
+		ficha(e, cuenta, "PROPIO", LocalDate.of(1990, 3, 14));
+		String t = token(e, cuenta);
+		assertEquals(CLAVES, campos(leer(get(RUTA), t, 200)));
+		assertEquals(200, estado(head(RUTA), t));
+		long antes = ultimoEvento();
+
+		JsonNode p = guardar(t, "{\"nombrePreferido\":\"Luci\",\"importesTapados\":true}");
+
+		assertEquals("Luci", p.get("nombrePreferido").asText());
+		assertTrue(p.get("importesTapados").asBoolean());
+		assertEquals(14, p.get("cumpleFicha").get("dia").asInt(), p.toString());
+		assertEquals(p, leer(get(RUTA), t, 200), "el PUT devuelve lo mismo que el GET");
+		assertTrue(leer(get(PERMISOS), t, 200).get("importesTapados").asBoolean());
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#" + cuenta, eventosDesde(antes).get(0).get("resumen"));
+	}
+
+	/** Solo GET y PUT de exactamente esa ruta: {@code /api/panel/**} no existe más allá y la gestión sigue cerrada. */
+	@Test
+	void soloProfesor_sigueFueraDelRestoDelPanelYDeLaGestion() throws Exception {
+		for (MockHttpServletRequestBuilder peticion : List.of(post(RUTA), delete(RUTA), patch(RUTA), get(RUTA + "/21"),
+				put(RUTA + "/21"), get(RUTA + "-otra"), put(RUTA + "-otra"), get("/api/panel"), get("/api/panel/otra"),
+				put("/api/panel/otra"), get("/api/miembros"), get("/api/alumnos"), get("/api/tesoreria/resumen"),
+				get("/api/escuela"))) {
+			MvcResult r = mvc.perform(peticion.cookie(new Cookie("jwt", tSoloProf))).andReturn();
+			assertEquals(403, r.getResponse().getStatus(),
+					r.getRequest().getMethod() + " " + r.getRequest().getRequestURI());
 		}
+	}
+
+	/** El profesor que además es familia pasa por la regla de URL, no por la lista blanca; solo toca su propia cuenta. */
+	@Test
+	void familiaYProfesor_usaSuPerfil() throws Exception {
+		long cuenta = e.cuentaFamilia(usuarios, "c" + UUID.randomUUID().toString().substring(0, 8));
+		membresia(e, cuenta, "PROFESOR");
+		String t = token(e, cuenta);
+		assertEquals(200, estado(get(RUTA), t));
+		assertTrue(guardar(t, "{\"importesTapados\":true}").get("importesTapados").asBoolean());
 	}
 
 	/** Pieza 9-5: el responsable de sede usa su perfil, el de su propia cuenta. */
@@ -154,6 +202,102 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("2", columna(otraCuenta, "cumple_dia"));
 		assertEquals("5", columna(otraCuenta, "cumple_mes"));
 		assertEquals("Sin tocar", leer(get(RUTA), token(e, otraCuenta), 200).get("nombrePreferido").asText());
+	}
+
+	@Test
+	void importesTapados_unaCuentaNoTocaAOtra_aunqueMandeSuIdEnElCuerpo() throws Exception {
+		long una = cuentaCon(e, "ADMINISTRADOR");
+		long otraCuenta = cuentaCon(e, "PROFESOR");
+
+		guardar(token(e, una), json.writeValueAsString(Map.of("id", otraCuenta, "usuarioId", otraCuenta,
+				"importesTapados", true)));
+
+		assertEquals("1", columna(una, "importes_tapados"));
+		assertEquals("0", columna(otraCuenta, "importes_tapados"));
+		assertFalse(leer(get(RUTA), token(e, otraCuenta), 200).get("importesTapados").asBoolean());
+		assertFalse(leer(get(PERMISOS), token(e, otraCuenta), 200).get("importesTapados").asBoolean());
+	}
+
+	// ------------------------------------------------------------------ importes tapados (decisión 419)
+
+	@Test
+	void importesTapados_seGuardaYSeLee_yVuelveAlDesactivarlo() throws Exception {
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		String t = token(e, cuenta);
+		assertEquals("0", columna(cuenta, "importes_tapados"), "cuenta nueva, a la vista");
+
+		JsonNode tapado = guardar(t, "{\"importesTapados\":true}");
+		assertTrue(tapado.get("importesTapados").asBoolean());
+		assertEquals("1", columna(cuenta, "importes_tapados"));
+		assertEquals(tapado, leer(get(RUTA), t, 200), "el PUT devuelve lo mismo que el GET");
+
+		assertFalse(guardar(t, "{\"importesTapados\":false}").get("importesTapados").asBoolean());
+		assertEquals("0", columna(cuenta, "importes_tapados"));
+	}
+
+	/** Un cliente antiguo manda el perfil sin este campo: no puede apagarlo. */
+	@Test
+	void importesTapados_ausenteONull_conservaElValor() throws Exception {
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		String t = token(e, cuenta);
+		guardar(t, "{\"importesTapados\":true}");
+
+		assertTrue(guardar(t, "{\"nombrePreferido\":\"Luci\"}").get("importesTapados").asBoolean());
+		assertTrue(guardar(t, "{\"nombrePreferido\":\"Luci\",\"importesTapados\":null}").get("importesTapados")
+				.asBoolean());
+		assertEquals("1", columna(cuenta, "importes_tapados"));
+
+		guardar(t, "{\"importesTapados\":false}");
+		assertFalse(guardar(t, "{\"nombrePreferido\":\"Luci\"}").get("importesTapados").asBoolean());
+		assertEquals("0", columna(cuenta, "importes_tapados"));
+	}
+
+	/** {@code usuario} es global: la preferencia viaja con la cuenta entre sus escuelas. */
+	@Test
+	void importesTapados_cuentaConDosEscuelas_conservaLaPreferencia() throws Exception {
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		membresia(otra, cuenta, "PROFESOR");
+
+		guardar(token(e, cuenta), "{\"importesTapados\":true}");
+
+		assertTrue(leer(get(RUTA), token(otra, cuenta), 200).get("importesTapados").asBoolean());
+		assertTrue(leer(get(PERMISOS), token(otra, cuenta), 200).get("importesTapados").asBoolean());
+		assertFalse(guardar(token(otra, cuenta), "{\"importesTapados\":false}").get("importesTapados").asBoolean());
+		assertFalse(leer(get(RUTA), token(e, cuenta), 200).get("importesTapados").asBoolean());
+		assertFalse(leer(get(PERMISOS), token(e, cuenta), 200).get("importesTapados").asBoolean());
+	}
+
+	@Test
+	void importesTapados_valorNoBooleano_400_yNoCambiaNada() throws Exception {
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		String t = token(e, cuenta);
+		guardar(t, "{\"importesTapados\":true}");
+		long antes = ultimoEvento();
+
+		assertEquals(400, estado(cuerpo("{\"importesTapados\":\"quizá\"}"), t));
+		assertEquals(400, estado(cuerpo("{\"importesTapados\":[true]}"), t));
+
+		assertEquals("1", columna(cuenta, "importes_tapados"));
+		List<Map<String, Object>> filas = eventosDesde(antes);
+		assertEquals(2, filas.size(), filas.toString());
+		for (Map<String, Object> fila : filas) {
+			assertTrue(String.valueOf(fila.get("payload_json")).contains("\"importesTapados\":\"[redactado]\""),
+					fila.toString());
+			assertFalse(String.valueOf(fila.get("payload_json")).contains("quizá"), fila.toString());
+		}
+	}
+
+	/** Sin caché: el principal se carga en cada petición, para gestión y para la sesión solo-profesor. */
+	@Test
+	void importesTapados_llegaAlSiguienteGetDePermisos() throws Exception {
+		for (long cuenta : List.of(cuentaCon(e, "ADMINISTRADOR"), cuentaCon(e, "PROFESOR"))) {
+			String t = token(e, cuenta);
+			assertFalse(leer(get(PERMISOS), t, 200).get("importesTapados").asBoolean());
+			guardar(t, "{\"importesTapados\":true}");
+			assertTrue(leer(get(PERMISOS), t, 200).get("importesTapados").asBoolean());
+			guardar(t, "{\"importesTapados\":false}");
+			assertFalse(leer(get(PERMISOS), t, 200).get("importesTapados").asBoolean());
+		}
 	}
 
 	// ------------------------------------------------------------------ la ficha
@@ -336,7 +480,7 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 		antes = ultimoEvento();
 		assertEquals(400, estado(cuerpo("{\"nombrePreferido\":\"" + nombre + "\",\"cumpleDia\":31,\"cumpleMes\":4}"), t));
 		assertEquals(400, estado(cuerpo("{ \"nombrePreferido\":\"" + nombre), t));
-		assertEquals(403, estado(cuerpo("{\"nombrePreferido\":\"" + nombre + "\"}"), tSoloProf));
+		assertEquals(403, estado(cuerpo("{\"nombrePreferido\":\"" + nombre + "\"}"), tFamilia));
 		List<Map<String, Object>> fallidas = eventosDesde(antes);
 		assertEquals(3, fallidas.size(), fallidas.toString());
 		for (Map<String, Object> fila : fallidas) {
@@ -351,6 +495,28 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 				"%" + nombre + "%", "%" + nombre + "%"));
 	}
 
+	/** Decisión 419: cambiar solo la preferencia cuenta como cambio; repetirla, no. Nunca sale su valor. */
+	@Test
+	void elRegistro_laPreferenciaCuentaComoCambio_sinGuardarSuValor() throws Exception {
+		long cuenta = cuentaCon(e, "ADMINISTRADOR");
+		String t = token(e, cuenta);
+
+		long antes = ultimoEvento();
+		guardar(t, "{\"importesTapados\":true}");
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#" + cuenta, eventosDesde(antes).get(0).get("resumen"));
+
+		antes = ultimoEvento();
+		guardar(t, "{\"importesTapados\":true}");
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#" + cuenta + " sinCambios=SI",
+				eventosDesde(antes).get(0).get("resumen"));
+
+		antes = ultimoEvento();
+		guardar(t, "{}");
+		Map<String, Object> ausente = eventosDesde(antes).get(0);
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#" + cuenta + " sinCambios=SI", ausente.get("resumen"));
+		assertNull(ausente.get("payload_json"), "sin cuerpo");
+	}
+
 	/** Parámetros de la URL en el GET (200) y en el PUT (400): el registro no guarda ni el nombre ni la fecha. */
 	@Test
 	void elRegistro_noGuardaLosParametrosDeLaUrl() throws Exception {
@@ -359,7 +525,7 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 		String t = token(e, cuenta);
 		long antes = ultimoEvento();
 
-		String consulta = "?nombrePreferido=" + nombre + "&cumpleDia=14&cumpleMes=9&otro=visible";
+		String consulta = "?nombrePreferido=" + nombre + "&cumpleDia=14&cumpleMes=9&importesTapados=true&otro=visible";
 		assertEquals(200, estado(get(RUTA + consulta), t));
 		assertEquals(400, estado(put(RUTA + consulta).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nombrePreferido\":\"x\",\"cumpleDia\":31,\"cumpleMes\":4}".getBytes(StandardCharsets.UTF_8)), t));
@@ -371,6 +537,7 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 			assertFalse(params.contains(nombre), params);
 			assertFalse(params.contains("14"), params);
 			assertFalse(params.contains("\"9\""), params);
+			assertFalse(params.contains("true"), params);
 		}
 		assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE id > ? AND query_params_json LIKE ?",
 				Long.class, antes, "%" + nombre + "%"));
@@ -395,6 +562,7 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(usuario.has("nombrePreferido"), cuerpo);
 		assertFalse(usuario.has("cumpleDia"), cuerpo);
 		assertFalse(usuario.has("cumpleMes"), cuerpo);
+		assertFalse(usuario.has("importesTapados"), cuerpo);
 		assertFalse(cuerpo.contains(nombre), cuerpo);
 	}
 

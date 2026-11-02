@@ -47,7 +47,7 @@ import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.repositories.UsuarioAlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 
-/** Decisión 322: el perfil de la cuenta de la sesión, sin Spring. */
+/** Decisiones 322 y 419: el perfil de la cuenta de la sesión, sin Spring. */
 class PerfilCuentaServiceTest {
 
 	private static final long USUARIO = 7L;
@@ -110,7 +110,7 @@ class PerfilCuentaServiceTest {
 	}
 
 	private PerfilCuentaDTO guardar(String nombre, Integer dia, Integer mes) {
-		return servicio.guardar(new PerfilCuentaRequest(nombre, dia, mes));
+		return servicio.guardar(new PerfilCuentaRequest(nombre, dia, mes, null));
 	}
 
 	private void noEscribio() {
@@ -128,14 +128,14 @@ class PerfilCuentaServiceTest {
 
 	@Test
 	void obtener_sinPerfil_todoNuloMenosLaBase() {
-		assertEquals(new PerfilCuentaDTO(null, "Lucía M.", null, null, null), servicio.obtener());
+		assertEquals(new PerfilCuentaDTO(null, "Lucía M.", null, null, null, false), servicio.obtener());
 	}
 
 	@Test
 	void obtener_conPerfilYFicha() {
 		guardados("Luci", 2, 5);
 		fichaPropia(LocalDate.of(1990, 3, 14), false);
-		assertEquals(new PerfilCuentaDTO("Luci", "Lucía M.", 2, 5, new PerfilCuentaDTO.DiaMes(14, 3)),
+		assertEquals(new PerfilCuentaDTO("Luci", "Lucía M.", 2, 5, new PerfilCuentaDTO.DiaMes(14, 3), false),
 				servicio.obtener());
 	}
 
@@ -318,6 +318,41 @@ class PerfilCuentaServiceTest {
 		assertEquals(PerfilCuentaService.CUMPLE_IMPOSIBLE, mensajeDe(() -> guardar(null, 31, 4)));
 	}
 
+	// ------------------------------------------------------------------ importes tapados (decisión 419)
+
+	private PerfilCuentaDTO guardarTapados(Boolean tapados) {
+		return servicio.guardar(new PerfilCuentaRequest(null, null, null, tapados));
+	}
+
+	@Test
+	void importesTapados_seGuardaEnLaGestionada_yVuelve() {
+		assertTrue(guardarTapados(true).importesTapados());
+		assertTrue(gestionada.isImportesTapados());
+		assertFalse(principal.isImportesTapados(), "el principal de la sesión no se toca");
+		assertTrue(servicio.obtener().importesTapados());
+		assertFalse(guardarTapados(false).importesTapados());
+		assertFalse(gestionada.isImportesTapados());
+	}
+
+	/** Un cliente antiguo no manda el campo: no lo apaga ni lo enciende. */
+	@Test
+	void importesTapados_nullConservaElValor() {
+		gestionada.setImportesTapados(true);
+		assertTrue(guardarTapados(null).importesTapados());
+		assertTrue(gestionada.isImportesTapados());
+		gestionada.setImportesTapados(false);
+		assertFalse(guardarTapados(null).importesTapados());
+		assertFalse(gestionada.isImportesTapados());
+	}
+
+	@Test
+	void importesTapados_siFallaLaValidacion_noSeGuarda() {
+		assertThrows(IllegalArgumentException.class,
+				() -> servicio.guardar(new PerfilCuentaRequest(null, 31, 4, true)));
+		assertFalse(gestionada.isImportesTapados());
+		verifyNoInteractions(auditoria);
+	}
+
 	// ------------------------------------------------------------------ escritura
 
 	@Test
@@ -387,6 +422,29 @@ class PerfilCuentaServiceTest {
 	}
 
 	@Test
+	void registro_cambiarSoloLaPreferencia_noEsSinCambios() {
+		guardados("Luci", 14, 3);
+		servicio.guardar(new PerfilCuentaRequest("Luci", 14, 3, true));
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#7", resumenRegistrado());
+	}
+
+	@Test
+	void registro_laMismaPreferencia_esSinCambios() {
+		guardados("Luci", 14, 3);
+		gestionada.setImportesTapados(true);
+		servicio.guardar(new PerfilCuentaRequest("Luci", 14, 3, true));
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#7 sinCambios=SI", resumenRegistrado());
+	}
+
+	@Test
+	void registro_preferenciaNula_esSinCambios() {
+		guardados("Luci", 14, 3);
+		gestionada.setImportesTapados(true);
+		guardar("Luci", 14, 3);
+		assertEquals("PANEL PERFIL_CAMBIADO usuario=#7 sinCambios=SI", resumenRegistrado());
+	}
+
+	@Test
 	void registro_siFallaLaValidacion_noSeRegistra() {
 		assertThrows(IllegalArgumentException.class, () -> guardar(null, 31, 4));
 		verifyNoInteractions(auditoria);
@@ -401,10 +459,12 @@ class PerfilCuentaServiceTest {
 	@Test
 	void entidad_fueraDelJson() {
 		guardados("Luci", 14, 3);
+		gestionada.setImportesTapados(true);
 		JsonNode nodo = new ObjectMapper().findAndRegisterModules().valueToTree(gestionada);
 		assertTrue(nodo.has("nombre"), nodo.toString());
 		assertFalse(nodo.has("nombrePreferido"), nodo.toString());
 		assertFalse(nodo.has("cumpleDia"), nodo.toString());
 		assertFalse(nodo.has("cumpleMes"), nodo.toString());
+		assertFalse(nodo.has("importesTapados"), nodo.toString());
 	}
 }

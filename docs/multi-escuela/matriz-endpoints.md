@@ -44,7 +44,7 @@ Desde la entrega 5b, RESPONSABLE_SEDE y PROFESOR tienen autoridad propia. Hasta 
 lo mismo que SOLO_PLATAFORMA salvo en `/api/plataforma/**` y su caja. Desde la decisión 180 la columna es la sesión
 solo-profesor, que ya abre sesión: `SesionSoloProfesorAuthorizationManager` (envuelve las reglas de URL) la deja
 pasar solo en su caja, en `PROFESOR_SESION_180` (`GET/HEAD /api/auth/roles`, `/api/auth/user`,
-`/api/auth/organizaciones`, `/api/auth/plataforma`, `/api/auth/permisos`; `POST /api/auth/organizacion`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
+`/api/auth/organizaciones`, `/api/auth/plataforma`, `/api/auth/permisos`; `POST /api/auth/organizacion`; desde la decisión 419, `GET`/`HEAD`/`PUT /api/panel/mi-perfil`) y donde pasa el anónimo; el resto, `DENIEGA` ya en la
 URL. Casillas cambiadas: `GET/HEAD /api/auth/roles` y `/api/auth/user`, `DENIEGA` → `PERMITE` (su `@PreAuthorize`
 admite `ROLE_PROFESOR`); ninguna otra columna cambia. Desde la entrega 6-1,
 RESPONSABLE_SEDE gestiona alumnos, grupos y turnos de sus sedes: `ALCANCE` en las rutas por id (`@acceso.alumnoEnSede`,
@@ -428,6 +428,22 @@ fecha) y está en `EscrituraConRegistroPropio` (`PANEL_MI_PERFIL`); en sus 4xx, 
 `nombreVisible` es el preferido si lo hay, `nombreSaludo` es nuevo (el preferido entero o la primera palabra del nombre)
 y `cumpleanos` lo decide la ficha con fecha o, sin ella, la cuenta. Lo prueban `PerfilCuentaIntegrationTest`,
 `PerfilCuentaServiceTest`, `PermisosSesionCumpleanosTest` y `RegistroUnicoProfesorIntegrationTest`.
+
+Modo privado de importes (decisión 419, V31_18): 0 líneas nuevas y 3 casillas cambiadas respecto a lo anterior: PROFESOR
+pasa de `DENIEGA` a `PERMITE` en `GET`, `HEAD` y `PUT /api/panel/mi-perfil`, que quedan en `PROFESOR_SESION_180`. Regla de URL propia y
+`@PreAuthorize` por método con `ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_RESPONSABLE_SEDE` (pieza 9-5) y `ROLE_PROFESOR`; en la
+lista blanca de la sesión solo-profesor, solo `GET` (HEAD cuenta como GET) y `PUT` de exactamente esa ruta: otro método u
+otra ruta de `/api/panel/**`, `DENIEGA` en la URL. La matriz no modela combinaciones: FAMILIA + PROFESOR entra por la
+regla de URL y la familia sola (`ROLE_USER`), ANONIMO y SOLO_PLATAFORMA siguen en `DENIEGA`. Opera solo sobre la cuenta de
+la sesión y `usuario` es global: la preferencia es la misma en todas las escuelas de la cuenta.
+- `GET`/`HEAD` y `PUT` devuelven además `importesTapados` (booleano). En el cuerpo del `PUT`, `importesTapados` ausente o
+  `null` conserva lo guardado, para que un cliente antiguo no lo apague; `nombrePreferido`, `cumpleDia` y `cumpleMes`
+  siguen sustituyéndose. Cuenta para `sinCambios`; el registro no guarda su valor.
+- `importesTapados` también va en `CLAVES_REDACTADAS_POR_RUTA` y `PARAMETROS_REDACTADOS_POR_RUTA`.
+- `GET /api/auth/permisos` (línea existente, sin cambio de permisos) añade `importesTapados`, leído de la cuenta que ya
+  carga la sesión, sin consulta, también en la sesión solo-plataforma y en la solo-profesor. `Usuario` no lo saca en JSON.
+  Lo prueban `PerfilCuentaIntegrationTest`, `PerfilCuentaServiceTest`, `PermisosSesionIntegrationTest` y
+  `ImportesTapadosV31_18MigracionIntegrationTest`.
 
 Pasar lista (decisión 324, V31_15, `fase3-pasar-lista.md`): 18 líneas nuevas, 9 bajo `/api/profesor/grupos/{grupoId}`
 (`ProfesorController`) y 9 bajo `/api/grupos/{grupoId}` (`GrupoAsistenciaController`), con el mismo `AsistenciaService`.

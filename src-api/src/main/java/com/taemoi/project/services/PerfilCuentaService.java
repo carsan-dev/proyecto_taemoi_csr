@@ -88,11 +88,16 @@ public class PerfilCuentaService {
 			validarCumple(dia, mes);
 		}
 
+		// Decisión 419: sin valor en el cuerpo se conserva lo guardado; un cliente antiguo no lo manda.
+		boolean tapados = solicitud.importesTapados() != null ? solicitud.importesTapados() : cuenta.isImportesTapados();
+
 		boolean sinCambios = Objects.equals(nombre, cuenta.getNombrePreferido())
-				&& Objects.equals(dia, cuenta.getCumpleDia()) && Objects.equals(mes, cuenta.getCumpleMes());
+				&& Objects.equals(dia, cuenta.getCumpleDia()) && Objects.equals(mes, cuenta.getCumpleMes())
+				&& tapados == cuenta.isImportesTapados();
 		cuenta.setNombrePreferido(nombre);
 		cuenta.setCumpleDia(dia);
 		cuenta.setCumpleMes(mes);
+		cuenta.setImportesTapados(tapados);
 		registro.registrar(RegistroAccionesPanel.Accion.PERFIL_CAMBIADO, RUTA, valores(usuarioId, sinCambios));
 		return dto(cuenta, ficha);
 	}
@@ -137,7 +142,7 @@ public class PerfilCuentaService {
 	private static PerfilCuentaDTO dto(Usuario cuenta, Optional<PerfilCuentaDTO.DiaMes> ficha) {
 		return new PerfilCuentaDTO(cuenta.getNombrePreferido(),
 				PermisosSesionService.nombreVisible(cuenta.getNombre(), cuenta.getApellidos()), cuenta.getCumpleDia(),
-				cuenta.getCumpleMes(), ficha.orElse(null));
+				cuenta.getCumpleMes(), ficha.orElse(null), cuenta.isImportesTapados());
 	}
 
 	private static Map<String, Object> valores(Long usuario, boolean sinCambios) {

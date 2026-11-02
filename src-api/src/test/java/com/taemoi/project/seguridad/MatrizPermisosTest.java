@@ -463,8 +463,10 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/escuela/marca",
 					"8b-3o (decisión 326): nombre, logo y tema de su escuela activa para la cabecera del panel nuevo");
 			m.put(metodo + " /api/escuela/logo", "8b-3o (decisión 326): el PNG del logo subido de su escuela activa");
+			m.put(metodo + " /api/panel/mi-perfil", "decisión 419: su propio perfil, sin ids (modo privado de importes)");
 		}
 		m.put("POST /api/auth/organizacion", "cambio de escuela");
+		m.put("PUT /api/panel/mi-perfil", "decisión 419: guardar su propio perfil, sin ids (modo privado de importes)");
 		return Map.copyOf(m);
 	}
 

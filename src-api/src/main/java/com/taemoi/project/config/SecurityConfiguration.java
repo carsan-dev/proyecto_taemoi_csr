@@ -241,12 +241,13 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/miembros", "/api/miembros/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-I (fase3-e8b-plan.md §3): la regla nació para el interruptor del diseño nuevo, retirado
-						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil): P y G y,
-						// pieza 9-5, R (solo su propia cuenta, sin ids). Misma posición que /api/miembros; fuera de la lista
-						// blanca solo-profesor.
+						// (0a10bf31, V31_13). Decisión 322: hoy solo el perfil de la cuenta (/api/panel/mi-perfil): P y G,
+						// pieza 9-5, R y, decisión 419, el profesor (solo su propia cuenta, sin ids). Misma posición que
+						// /api/miembros; GET y PUT en la lista blanca solo-profesor. Familia sola, fuera; el resto de
+						// /api/panel, gestión.
 						.requestMatchers("/api/panel/mi-perfil")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
-								Roles.ROLE_RESPONSABLE_SEDE.toString())
+								Roles.ROLE_RESPONSABLE_SEDE.toString(), Roles.ROLE_PROFESOR.toString())
 						.requestMatchers("/api/panel", "/api/panel/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString())
 						// Pieza 8b-T (fase3-e8b-plan.md §4): marca de la escuela activa (color y logo) para el panel nuevo, solo P y G.
