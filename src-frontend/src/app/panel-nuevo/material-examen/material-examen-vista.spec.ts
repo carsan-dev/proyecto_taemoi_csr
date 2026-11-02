@@ -112,6 +112,25 @@ describe('material-examen-vista', () => {
       });
     });
 
+    describe('bloque de rojo a negro: del rojo a Negro 1º DAN', () => {
+      const rojo = [{ codigo: 'ROJO', nombre: 'ROJO' }];
+      const negro1 = { codigo: 'NEGRO_1_DAN', nombre: 'NEGRO 1º DAN' };
+
+      it('con catálogo de taekwondo', () => {
+        const buscar = (c: string) => (c === 'ROJO' ? { nombre: 'ROJO' } : c === 'NEGRO_1_DAN' ? { nombre: 'NEGRO 1º DAN' } : undefined);
+        expect(textoGrados([rojo[0], negro1], 'b06_rojo_a_negro_1', buscar)).toBe('Alumnos de Rojo a Negro 1º DAN');
+      });
+
+      it('con catálogo de kickboxing, el rojo es marrón', () => {
+        const buscar = (c: string) => (c === 'ROJO' ? { nombre: 'MARRÓN' } : c === 'NEGRO_1_DAN' ? { nombre: 'NEGRO 1º DAN' } : undefined);
+        expect(textoGrados([{ codigo: 'MARRON', nombre: 'MARRÓN' }, negro1], 'b06_rojo_a_negro_1', buscar)).toBe('Alumnos de Marrón a Negro 1º DAN');
+      });
+
+      it('sin catálogo, toma el primer grado del bloque', () => {
+        expect(textoGrados([{ codigo: 'ROJO', nombre: 'ROJO' }], 'b06_rojo_a_negro_1')).toBe('Alumnos de Rojo a Negro 1º DAN');
+      });
+    });
+
     it('vacío sin grados', () => {
       expect(textoGrados([])).toBe('');
       expect(fraseGrados([])).toBe('');
