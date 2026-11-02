@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -18,6 +19,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -44,7 +46,9 @@ import com.taemoi.project.config.SecurityConfiguration;
 import com.taemoi.project.controllers.AlumnoController;
 import com.taemoi.project.controllers.RespuestaFotoAlumno;
 import com.taemoi.project.dtos.AlumnoDTO;
+import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Documento;
+import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -252,6 +256,58 @@ class AlumnoSubidasWebMvcTest {
 				.andExpect(jsonPath("$.mensaje").value("No se pudo leer la imagen del alumno."));
 	}
 
+	/** Decisión 422: la foto solo entra por la subida; una {@code fotoAlumno} en el JSON del alta se ignora sin error. */
+	private static final String JSON_CON_FOTO = "{\"nombre\":\"Prueba\",\"fotoAlumno\":{\"nombre\":\"passwd\","
+			+ "\"ruta\":\"/etc/passwd\",\"tipo\":\"image/png\",\"url\":\"/imagenes/alumnos/passwd\"}}";
+
+	@Test
+	void crearAlumno_laFotoDelJsonSeIgnora() throws Exception {
+		when(alumnoService.crearAlumnoDesdeDTO(any(AlumnoDTO.class))).thenReturn(alumnoCreado());
+		mockMvc.perform(multipart("/api/alumnos/crear")
+				.param("nuevo", JSON_CON_FOTO)
+				.with(admin()).with(csrf()))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<AlumnoDTO> dto = ArgumentCaptor.forClass(AlumnoDTO.class);
+		verify(alumnoService).crearAlumnoDesdeDTO(dto.capture());
+		assertThat(dto.getValue().getNombre()).isEqualTo("Prueba");
+		assertThat(dto.getValue().getFotoAlumno()).isNull();
+	}
+
+	@Test
+	void crearAlumno_conSubida_laFotoEsLaSubidaYNoLaDelJson() throws Exception {
+		Imagen subida = new Imagen("subida.webp", "image/webp", "/imagenes/org-1/alumnos/subida.webp",
+				"org-1/alumnos/subida.webp");
+		when(imagenService.guardarImagen(any(MultipartFile.class))).thenReturn(subida);
+		when(alumnoService.crearAlumnoDesdeDTO(any(AlumnoDTO.class))).thenReturn(alumnoCreado());
+		mockMvc.perform(multipart("/api/alumnos/crear")
+				.file(new MockMultipartFile("file", "foto.jpg", "image/jpeg", new byte[] { 1, 2 }))
+				.param("nuevo", JSON_CON_FOTO)
+				.with(admin()).with(csrf()))
+				.andExpect(status().isCreated());
+
+		ArgumentCaptor<AlumnoDTO> dto = ArgumentCaptor.forClass(AlumnoDTO.class);
+		verify(alumnoService).crearAlumnoDesdeDTO(dto.capture());
+		assertThat(dto.getValue().getFotoAlumno()).isSameAs(subida);
+	}
+
+	@Test
+	void actualizarAlumno_laFotoDelJsonSeIgnora() throws Exception {
+		when(alumnoService.fechaNacimientoValida(any())).thenReturn(true);
+		when(alumnoService.datosAlumnoValidos(any(AlumnoDTO.class), anyBoolean())).thenReturn(true);
+		when(alumnoService.actualizarAlumno(eq(ALUMNO), any(AlumnoDTO.class), any(), any()))
+				.thenReturn(alumnoCreado());
+		mockMvc.perform(multipart(HttpMethod.PUT, "/api/alumnos/{id}", ALUMNO)
+				.param("alumnoEditado", JSON_CON_FOTO)
+				.with(admin()).with(csrf()))
+				.andExpect(status().isOk());
+
+		ArgumentCaptor<AlumnoDTO> dto = ArgumentCaptor.forClass(AlumnoDTO.class);
+		verify(alumnoService).actualizarAlumno(eq(ALUMNO), dto.capture(), any(), any());
+		assertThat(dto.getValue().getNombre()).isEqualTo("Prueba");
+		assertThat(dto.getValue().getFotoAlumno()).isNull();
+	}
+
 	@Test
 	void actualizarAlumnoConFotoHeicResponde400(CapturedOutput salida) throws Exception {
 		when(alumnoService.fechaNacimientoValida(any())).thenReturn(true);
@@ -306,6 +362,13 @@ class AlumnoSubidasWebMvcTest {
 				.file(new MockMultipartFile("archivo", "dni.pdf", "application/pdf", new byte[] { 1 }))
 				.with(manager()).with(csrf()))
 				.andExpect(status().isNotFound());
+	}
+
+	private static Alumno alumnoCreado() {
+		Alumno alumno = new Alumno();
+		alumno.setId(ALUMNO);
+		alumno.setNombre("Prueba");
+		return alumno;
 	}
 
 	private static RequestPostProcessor familia() {

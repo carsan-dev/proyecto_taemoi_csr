@@ -51,6 +51,12 @@ public class AlumnoDTO {
 	private String categoria;
 	private String grado;
 	private Date fechaGrado;
+	/**
+	 * Solo de salida (decisión 422): la foto entra únicamente por la subida del fichero, que el controlador asigna con
+	 * {@link #setFotoAlumno}. Si llega en el JSON del alta o de la edición se ignora: con ella se podía guardar una ruta
+	 * cualquiera del disco.
+	 */
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	private Imagen fotoAlumno;
 	private Boolean tieneLicencia;
 	private Integer numeroLicencia;
