@@ -267,14 +267,17 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 
 	// ---------------- GradoUtils ----------------
 
-	/** Desde V30 el nombre visible es el del catálogo de Taemoi (D3/D4), ya no el de GradoUtils. */
+	/**
+	 * Desde V30 el nombre visible es el del catálogo de Taemoi (D3/D4), ya no el de GradoUtils. En kickboxing, ROJO es
+	 * «MARRÓN» (V30) y desde V31_19 también en los intermedios («AZUL-MARRÓN», «MARRÓN-NEGRO 1º PUM»…).
+	 */
 	@Test
 	void nombreVisible_elDeV30() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			for (Deporte deporte : CON_GRADOS) {
 				for (TipoGrado tipo : TipoGrado.values()) {
-					String esperado = deporte == Deporte.KICKBOXING && tipo == TipoGrado.ROJO ? "MARRÓN"
-							: CatalogoVisualMigracionIntegrationTest.ESPERADO.get(tipo.name())[0];
+					String deV30 = CatalogoVisualMigracionIntegrationTest.ESPERADO.get(tipo.name())[0];
+					String esperado = deporte == Deporte.KICKBOXING ? deV30.replace("ROJO", "MARRÓN") : deV30;
 					assertEquals(esperado, progresion.obtenerNombreVisible(codigo(deporte), tipo.name()),
 							deporte + "/" + tipo);
 				}

@@ -82,8 +82,12 @@ public final class CatalogoTaemoiEnMemoria {
 		for (Object[] fila : TAEKWONDO) {
 			todos.add(grado(++id, tkd, fila, (String) fila[1], (Integer) fila[2], AplicaGrado.valueOf((String) fila[3])));
 		}
-		// Copia de kickboxing (V23): ROJO = «MARRÓN» y marrón (V30), DAN tras ROJO, PUM al final, intermedios y PUM nunca destino.
+		// Copia de kickboxing (V23): ROJO = «MARRÓN» y marrón (V30), intermedios con MARRÓN en vez de ROJO (V31_19), DAN tras
+		// ROJO, PUM al final, intermedios y PUM nunca destino.
 		Map<String, Integer> desplazamiento = Map.of("NEGRO", -3, "ROJO_NEGRO", 5);
+		Map<String, String> nombresKickboxing = Map.of("ROJO", "MARRÓN", "AZUL_ROJO", "AZUL-MARRÓN",
+				"ROJO_NEGRO_1_PUM", "MARRÓN-NEGRO 1º PUM", "ROJO_NEGRO_2_PUM", "MARRÓN-NEGRO 2º PUM",
+				"ROJO_NEGRO_3_PUM", "MARRÓN-NEGRO 3º PUM");
 		for (Object[] fila : TAEKWONDO) {
 			String codigo = (String) fila[0];
 			int orden = (Integer) fila[2];
@@ -93,7 +97,7 @@ public final class CatalogoTaemoiEnMemoria {
 				orden += desplazamiento.get("NEGRO");
 			}
 			AplicaGrado aplica = "MENORES".equals(fila[3]) ? AplicaGrado.NINGUNO : AplicaGrado.TODOS;
-			Grado copia = grado(++id, kb, fila, codigo.equals("ROJO") ? "MARRÓN" : (String) fila[1], orden, aplica);
+			Grado copia = grado(++id, kb, fila, nombresKickboxing.getOrDefault(codigo, (String) fila[1]), orden, aplica);
 			if (codigo.equals("ROJO")) {
 				copia.setColor1("#8B4513");
 				copia.setColor2(null);

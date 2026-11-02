@@ -439,14 +439,15 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		altaCon("PDF-TKD", ANIO - 30, "TAEKWONDO", "ROJO", "ADULTO");
 
 		String kb = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeKickboxingPorGrado(true)));
-		assertEquals(1, apariciones(kb, "MARRÓN"), kb);
+		// Un solo apartado MARRÓN (los PUM de kickboxing, si hay, son «MARRÓN-NEGRO nº PUM» desde V31_19).
+		assertEquals(1, apariciones(kb, "MARRÓN") - apariciones(kb, "MARRÓN-"), kb);
 		assertFalse(java.util.regex.Pattern.compile("(?m)^\\s*ROJO(\\s|$)").matcher(kb).find(),
 				"en kickboxing el rojo se llama MARRÓN: " + kb);
 		String tkd = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeTaekwondoPorGrado(true)));
 		assertEquals(0, apariciones(tkd, "MARRÓN"), tkd);
 		assertTrue(apariciones(tkd, "ROJO") >= 1, tkd);
 		String ambos = texto(TenantContext.calcularCon(ORG_TAEMOI, () -> pdfService.generarInformeAlumnosPorGrado(true)));
-		assertEquals(1, apariciones(ambos, "MARRÓN"), ambos);
+		assertEquals(1, apariciones(ambos, "MARRÓN") - apariciones(ambos, "MARRÓN-"), ambos);
 	}
 
 	/**
@@ -455,7 +456,8 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 	 */
 	@Test
 	void informesPorGradoYConvocatoria_mantienenElOrdenDeSiempre_DanAntesQuePumAntesQueRojo() {
-		Object[][] disciplinas = { { "TAEKWONDO", "ADULTO", "ROJO", "ROJO" }, { "KICKBOXING", "KICKBOXING", "MARRÓN", "MARRÓN" } };
+		Object[][] disciplinas = { { "TAEKWONDO", "ADULTO", "ROJO", "ROJO", "ROJO-NEGRO 1º PUM" },
+				{ "KICKBOXING", "KICKBOXING", "MARRÓN", "MARRÓN", "MARRÓN-NEGRO 1º PUM" } };
 		for (Object[] d : disciplinas) {
 			String disciplina = (String) d[0];
 			String tarifa = (String) d[1];
@@ -467,7 +469,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 					? pdfService.generarInformeTaekwondoPorGrado(true)
 					: pdfService.generarInformeKickboxingPorGrado(true)));
 			int iDan = porGrado.indexOf("NEGRO 1º DAN");
-			int iPum = porGrado.indexOf("ROJO-NEGRO 1º PUM");
+			int iPum = porGrado.indexOf((String) d[4]);
 			int iRojo = java.util.regex.Pattern.compile("(?m)^\\s*" + d[2] + "(\\s|$)").matcher(porGrado).results()
 					.mapToInt(java.util.regex.MatchResult::start).findFirst().orElse(-1);
 			assertTrue(iDan >= 0 && iPum > iDan && iRojo > iPum, disciplina + " por grado: " + porGrado);
@@ -486,7 +488,7 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 			String pdf = texto(TenantContext.calcularCon(ORG_TAEMOI,
 					() -> tx.execute(s -> pdfService.generarInformeConvocatoria(convocatoria))));
 			int cDan = pdf.indexOf("DE NEGRO 1º DAN");
-			int cPum = pdf.indexOf("DE ROJO-NEGRO 1º PUM");
+			int cPum = pdf.indexOf("DE " + d[4]);
 			int cRojo = pdf.indexOf("DE " + d[3] + "\n") >= 0 ? pdf.indexOf("DE " + d[3] + "\n")
 					: java.util.regex.Pattern.compile("DE " + d[3] + "(?!-)").matcher(pdf).results()
 							.mapToInt(java.util.regex.MatchResult::start).findFirst().orElse(-1);
