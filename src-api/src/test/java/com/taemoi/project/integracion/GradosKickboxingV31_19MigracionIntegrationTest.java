@@ -33,8 +33,9 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
  * franja roja #FF0000 (AZUL-ROJO y ROJO-NEGRO 1º/2º/3º PUM): nombre con MARRÓN y franja #8B4513. Sobre una base en V31_18
  * con las semillas de Taemoi, otro sistema de Taemoi con plantilla KICKBOXING que no es el de la disciplina y una segunda
  * escuela con los mismos valores: solo cambian nombre y colores de esas cuatro filas; ni códigos, ni taekwondo, ni
- * productos, ni las otras escuelas. Un valor que no sea exactamente el sembrado no se toca (los demás de la fila, sí).
- * Repetirla no cambia nada; tras un fallo se completa. Ejecuta {@code docs/multi-escuela/postcheck-grados-kickboxing.sql}.
+ * productos, ni las otras escuelas. Un valor que no sea exactamente el sembrado (byte a byte, también con un espacio
+ * final) no se toca (los demás de la fila, sí); si la disciplina apunta a un sistema sin plantilla KICKBOXING, nada.
+ * Repetirla no cambia nada; tras un fallo (también a mitad de la sentencia) no aplica nada y se completa. Ejecuta {@code docs/multi-escuela/postcheck-grados-kickboxing.sql}.
  * Datos inventados.
  */
 @Tag("migracion")
@@ -246,6 +247,93 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 		jdbc.execute("DROP TRIGGER it_v31_19_fallo");
 		ejecutarV31_19();
 		assertEquals(esperadoTrasV31_19(gradosAntes), grados());
+	}
+
+	/**
+	 * Comparación sin relleno: con PAD SPACE (utf8mb4_bin) «AZUL-ROJO » con un espacio final sería igual a «AZUL-ROJO» y
+	 * se sobrescribiría. Un valor con espacio final es una personalización: no se toca; el resto de la fila, sí. (color_1 y
+	 * color_2 son VARCHAR(7): «#FF0000 » no cabe, así que no hay color con espacio final que probar.)
+	 */
+	@Test
+	@Order(9)
+	void unNombreConEspacioFinal_noSeToca_elRestoDeLaFilaSi() throws Exception {
+		restaurarAntesDeV31_19();
+		jdbc.update("UPDATE grado SET nombre = 'AZUL-ROJO ' WHERE sistema_grados_id = ? AND codigo = 'AZUL_ROJO'", kb);
+		jdbc.update("UPDATE grado SET nombre = 'ROJO-NEGRO 3º PUM  ' WHERE sistema_grados_id = ? AND codigo = 'ROJO_NEGRO_3_PUM'",
+				kb);
+		ejecutarV31_19();
+		assertEquals(List.of("AZUL-ROJO ", "#0000FF", MARRON), valores(kb, "AZUL_ROJO"));
+		assertEquals(List.of("ROJO-NEGRO 3º PUM  ", MARRON, "#000000"), valores(kb, "ROJO_NEGRO_3_PUM"));
+		assertEquals(List.of("MARRÓN-NEGRO 1º PUM", MARRON, "#000000"), valores(kb, "ROJO_NEGRO_1_PUM"));
+		assertEquals(List.of("MARRÓN-NEGRO 2º PUM", MARRON, "#000000"), valores(kb, "ROJO_NEGRO_2_PUM"));
+		restaurarAntesDeV31_19();
+		ejecutarV31_19();
+		assertEquals(esperadoTrasV31_19(gradosAntes), grados());
+	}
+
+	/**
+	 * Si la disciplina KICKBOXING de la organización 1 apunta a un sistema cuya plantilla_origen no es exactamente
+	 * KICKBOXING (el de taekwondo, el suyo marcado como TAEKWONDO, o «KICKBOXING » con espacio final), la migración no
+	 * toca nada: la tabla grado queda íntegra.
+	 */
+	@Test
+	@Order(10)
+	void disciplinaKickboxingEnUnSistemaSinPlantillaKickboxing_noCambiaNada() throws Exception {
+		try {
+			restaurarAntesDeV31_19();
+			jdbc.update("UPDATE disciplina SET sistema_grados_id = ? WHERE organizacion_id = 1 AND codigo = 'KICKBOXING'", tkd);
+			ejecutarV31_19();
+			assertEquals(gradosAntes, grados(), "disciplina KICKBOXING en el sistema de taekwondo");
+			jdbc.update("UPDATE disciplina SET sistema_grados_id = ? WHERE organizacion_id = 1 AND codigo = 'KICKBOXING'", kb);
+
+			for (String plantilla : List.of("TAEKWONDO", "KICKBOXING ")) {
+				jdbc.update("UPDATE sistema_grados SET plantilla_origen = ? WHERE id = ?", plantilla, kb);
+				ejecutarV31_19();
+				assertEquals(gradosAntes, grados(), "plantilla_origen «" + plantilla + "»");
+			}
+		} finally {
+			jdbc.update("UPDATE disciplina SET sistema_grados_id = ? WHERE organizacion_id = 1 AND codigo = 'KICKBOXING'", kb);
+			jdbc.update("UPDATE sistema_grados SET plantilla_origen = 'KICKBOXING' WHERE id = ?", kb);
+		}
+		assertEquals(filasAntes.get("disciplina"), jdbc.queryForList("SELECT * FROM disciplina ORDER BY id"));
+		assertEquals(filasAntes.get("sistema_grados"), jdbc.queryForList("SELECT * FROM sistema_grados ORDER BY id"));
+		ejecutarV31_19();
+		assertEquals(esperadoTrasV31_19(gradosAntes), grados());
+	}
+
+	/**
+	 * Fallo a mitad de la sentencia: el trigger deja pasar las dos primeras filas afectadas y falla en la tercera (cuenta
+	 * con una variable de sesión; cada ejecución abre una conexión nueva). InnoDB deshace la sentencia entera: nada
+	 * aplicado. Sin el trigger, volver a lanzarla la completa.
+	 */
+	@Test
+	@Order(11)
+	void falloEnLaTerceraFila_noAplicaNada_yRepetirLaCompleta() throws Exception {
+		restaurarAntesDeV31_19();
+		try {
+			jdbc.execute("""
+					CREATE TRIGGER it_v31_19_fallo_a_mitad BEFORE UPDATE ON grado FOR EACH ROW
+					BEGIN
+					  SET @it_v31_19_filas = COALESCE(@it_v31_19_filas, 0) + 1;
+					  IF @it_v31_19_filas = 3 THEN
+					    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado en la tercera fila de V31_19';
+					  END IF;
+					END""");
+			Exception fallo = assertThrows(Exception.class, this::ejecutarV31_19);
+			assertTrue(String.valueOf(causaRaiz(fallo).getMessage()).contains("tercera fila"), fallo.toString());
+			assertEquals(gradosAntes, grados(), "nada aplicado");
+		} finally {
+			jdbc.execute("DROP TRIGGER IF EXISTS it_v31_19_fallo_a_mitad");
+		}
+		ejecutarV31_19();
+		assertEquals(esperadoTrasV31_19(gradosAntes), grados());
+	}
+
+	private static Throwable causaRaiz(Throwable t) {
+		while (t.getCause() != null && t.getCause() != t) {
+			t = t.getCause();
+		}
+		return t;
 	}
 
 	// ------------------------------------------------------------------ utilidades

@@ -23,8 +23,12 @@
 -- Si otra escuela tuviera un grado con el mismo valor, lo habría escrito ella y es suyo: no se toca.
 -- Filas: las del sistema de grados al que apunta la disciplina KICKBOXING de la organización 1 (y que tenga plantilla_origen
 -- KICKBOXING, como el de V23: así nunca se toca el de taekwondo), con el código de la tabla. Cada valor (nombre, color_1,
--- color_2) cambia por separado y solo si es EXACTAMENTE (comparación binaria) el que dejó V30: un valor distinto (otro
--- texto, otras mayúsculas, otro color) no se toca, aunque los demás de la fila sí cambien.
+-- color_2) cambia por separado y solo si es EXACTAMENTE el que dejó V30: un valor distinto (otro texto, otras mayúsculas,
+-- otro color, un espacio de más al final) no se toca, aunque los demás de la fila sí cambien.
+-- Comparación exacta: todas las igualdades (KICKBOXING, código, nombre y colores) comparan los bytes UTF-8 con
+-- CAST(CONVERT(x USING utf8mb4) AS BINARY). No vale COLLATE utf8mb4_bin: es PAD SPACE en MySQL 8 y daría
+-- 'AZUL-ROJO ' = 'AZUL-ROJO'. Las cadenas binarias no rellenan con espacios, no dependen de la versión (utf8mb4_0900_bin,
+-- NO PAD, solo existe desde 8.0.17) y es el patrón de postcheck-v24.sql.
 --
 -- Código anterior: no depende de estos nombres ni colores (solo los muestra), así que la imagen anterior funciona sobre
 -- este esquema. Vuelta atrás: el UPDATE inverso con la misma tabla (después -> antes), si hiciera falta.
@@ -39,12 +43,12 @@
 UPDATE grado g
 JOIN disciplina kb
   ON kb.organizacion_id = 1
- AND CONVERT(kb.codigo USING utf8mb4) COLLATE utf8mb4_bin = CONVERT('KICKBOXING' USING utf8mb4) COLLATE utf8mb4_bin
+ AND CAST(CONVERT(kb.codigo USING utf8mb4) AS BINARY) = CAST(CONVERT('KICKBOXING' USING utf8mb4) AS BINARY)
  AND kb.sistema_grados_id = g.sistema_grados_id
 JOIN sistema_grados sg
   ON sg.id = g.sistema_grados_id
  AND sg.organizacion_id = 1
- AND CONVERT(sg.plantilla_origen USING utf8mb4) COLLATE utf8mb4_bin = CONVERT('KICKBOXING' USING utf8mb4) COLLATE utf8mb4_bin
+ AND CAST(CONVERT(sg.plantilla_origen USING utf8mb4) AS BINARY) = CAST(CONVERT('KICKBOXING' USING utf8mb4) AS BINARY)
 JOIN (
   SELECT 'AZUL_ROJO' AS codigo, 'AZUL-ROJO' AS nombre_antes, 'AZUL-MARRÓN' AS nombre_despues,
          CAST(NULL AS CHAR(7)) AS color_1_antes, CAST('#FF0000' AS CHAR(7)) AS color_2_antes
@@ -52,21 +56,21 @@ JOIN (
   UNION ALL SELECT 'ROJO_NEGRO_2_PUM', 'ROJO-NEGRO 2º PUM', 'MARRÓN-NEGRO 2º PUM', '#FF0000', NULL
   UNION ALL SELECT 'ROJO_NEGRO_3_PUM', 'ROJO-NEGRO 3º PUM', 'MARRÓN-NEGRO 3º PUM', '#FF0000', NULL
 ) c
-  ON CONVERT(c.codigo USING utf8mb4) COLLATE utf8mb4_bin = CONVERT(g.codigo USING utf8mb4) COLLATE utf8mb4_bin
+  ON CAST(CONVERT(c.codigo USING utf8mb4) AS BINARY) = CAST(CONVERT(g.codigo USING utf8mb4) AS BINARY)
 SET g.nombre = CASE
-      WHEN CONVERT(g.nombre USING utf8mb4) COLLATE utf8mb4_bin = CONVERT(c.nombre_antes USING utf8mb4) COLLATE utf8mb4_bin
+      WHEN CAST(CONVERT(g.nombre USING utf8mb4) AS BINARY) = CAST(CONVERT(c.nombre_antes USING utf8mb4) AS BINARY)
         THEN c.nombre_despues
       ELSE g.nombre
     END,
     g.color_1 = CASE
       WHEN c.color_1_antes IS NOT NULL
-       AND CONVERT(g.color_1 USING utf8mb4) COLLATE utf8mb4_bin = CONVERT(c.color_1_antes USING utf8mb4) COLLATE utf8mb4_bin
+       AND CAST(CONVERT(g.color_1 USING utf8mb4) AS BINARY) = CAST(CONVERT(c.color_1_antes USING utf8mb4) AS BINARY)
         THEN '#8B4513'
       ELSE g.color_1
     END,
     g.color_2 = CASE
       WHEN c.color_2_antes IS NOT NULL
-       AND CONVERT(g.color_2 USING utf8mb4) COLLATE utf8mb4_bin = CONVERT(c.color_2_antes USING utf8mb4) COLLATE utf8mb4_bin
+       AND CAST(CONVERT(g.color_2 USING utf8mb4) AS BINARY) = CAST(CONVERT(c.color_2_antes USING utf8mb4) AS BINARY)
         THEN '#8B4513'
       ELSE g.color_2
     END

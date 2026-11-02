@@ -1,6 +1,10 @@
 -- Comprobación posterior de V31_19 (grados de kickboxing de la organización 1 sin rojo: AZUL-MARRÓN y MARRÓN-NEGRO
 -- 1º/2º/3º PUM, con la franja roja #FF0000 en marrón #8B4513). Solo lectura y SOLO RECUENTOS: no devuelve nombres, emails
 -- ni identificadores.
+-- Juego de caracteres: los literales con «Ó» y «º» (MARRÓN, 1º PUM…) solo se comparan bien si el cliente mysql habla
+-- utf8mb4. Si grados_kb_renombrados, grados_kb_marron o grados_tk_sembrados_con_rojo salen 0 o por debajo de lo
+-- esperado, revisa antes el juego de caracteres del cliente (p. ej. --default-character-set=utf8mb4) y no dudes de los
+-- datos hasta repetirla así (un 0 en grados_tk_marron tampoco prueba nada con otro juego de caracteres).
 --
 -- Deben ser (justo tras desplegar):
 --   flyway_31_19                  1   V31_19 aplicada con éxito
