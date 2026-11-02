@@ -882,7 +882,7 @@ class MaterialExamenGestionServiceTest {
 		assertEquals(11, tkd.bloques().size());
 		MaterialGestionDTO.BloqueResumen primero = tkd.bloques().get(0);
 		assertEquals(B01, primero.id());
-		assertEquals("Inicio a amarillo", primero.nombre());
+		assertEquals("Blanco a amarillo", primero.nombre());
 		assertEquals(List.of("BLANCO", "BLANCO_AMARILLO"),
 				primero.grados().stream().map(MaterialGestionDTO.GradoDelBloque::codigo).toList());
 		assertEquals("BLANCO-AMARILLO", primero.grados().get(1).nombre());
@@ -901,19 +901,19 @@ class MaterialExamenGestionServiceTest {
 
 	@Test
 	void nombresDeBloque_losDelBoceto_yUnoLegibleParaOtroId() {
-		assertEquals("Inicio a amarillo", MaterialExamenGestionService.nombreDeBloque(B01));
-		assertEquals("Amarillo a naranja", MaterialExamenGestionService.nombreDeBloque(B02));
-		assertEquals("Naranja a verde", MaterialExamenGestionService.nombreDeBloque(B03));
-		assertEquals("Verde a azul", MaterialExamenGestionService.nombreDeBloque("b04_verde_a_azul"));
-		assertEquals("Azul a rojo", MaterialExamenGestionService.nombreDeBloque("b05_azul_a_rojo"));
-		assertEquals("Rojo a negro", MaterialExamenGestionService.nombreDeBloque("b06_rojo_a_negro_1"));
-		assertEquals("Negro 1.º a 2.º", MaterialExamenGestionService.nombreDeBloque("b07_negro_1_a_negro_2"));
-		assertEquals("Negro 2.º a 3.º", MaterialExamenGestionService.nombreDeBloque("b08_negro_2_a_negro_3"));
-		assertEquals("Negro 3.º a 4.º", MaterialExamenGestionService.nombreDeBloque("b09_negro_3_a_negro_4"));
-		assertEquals("Negro 4.º a 5.º", MaterialExamenGestionService.nombreDeBloque("b10_negro_4_a_negro_5"));
-		assertEquals("Negro 5.º en adelante", MaterialExamenGestionService.nombreDeBloque(B11));
-		assertEquals("Tatami avanzado", MaterialExamenGestionService.nombreDeBloque("b12_tatami_avanzado"));
-		assertEquals("Competicion", MaterialExamenGestionService.nombreDeBloque("competicion"));
+		assertEquals("Blanco a amarillo", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B01));
+		assertEquals("Amarillo a naranja", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B02));
+		assertEquals("Naranja a verde", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B03));
+		assertEquals("Verde a azul", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b04_verde_a_azul"));
+		assertEquals("Azul a rojo", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b05_azul_a_rojo"));
+		assertEquals("Rojo a negro", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b06_rojo_a_negro_1"));
+		assertEquals("Negro 1.º a 2.º", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b07_negro_1_a_negro_2"));
+		assertEquals("Negro 2.º a 3.º", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b08_negro_2_a_negro_3"));
+		assertEquals("Negro 3.º a 4.º", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b09_negro_3_a_negro_4"));
+		assertEquals("Negro 4.º a 5.º", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b10_negro_4_a_negro_5"));
+		assertEquals("Negro 5.º en adelante", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B11));
+		assertEquals("Tatami avanzado", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "b12_tatami_avanzado"));
+		assertEquals("Competicion", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", "competicion"));
 	}
 
 	@Test
@@ -927,7 +927,7 @@ class MaterialExamenGestionServiceTest {
 		MaterialGestionDTO.Detalle detalle = gestion.detalle(TKD, B01);
 		assertEquals(List.of(true, true),
 				detalle.videos().stream().map(MaterialGestionDTO.VideoDetalle::tambienEnSuperiores).toList());
-		assertEquals("Inicio a amarillo", detalle.nombre());
+		assertEquals("Blanco a amarillo", detalle.nombre());
 		assertFalse(gestion.detalle(KB, B01).videos().get(0).tambienEnSuperiores());
 	}
 

@@ -193,7 +193,7 @@ class MaterialExamenIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(11, taekwondo.get("bloques").size());
 		JsonNode primero = taekwondo.get("bloques").get(0);
 		assertEquals(B01, primero.get("id").asText());
-		assertEquals("Inicio a amarillo", primero.get("nombre").asText());
+		assertEquals("Blanco a amarillo", primero.get("nombre").asText());
 		assertEquals("BLANCO", primero.get("grados").get(0).get("codigo").asText());
 		assertEquals(1, primero.get("videos").asInt());
 		assertEquals(1, taekwondo.get("bloques").get(10).get("videos").asInt(), "el bloque 11 lee su alias");
