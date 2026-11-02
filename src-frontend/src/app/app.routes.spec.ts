@@ -84,7 +84,6 @@ const REDISENADAS: Rediseno[] = [
   ['auditoriaSistema', RegistroAccionesComponent, PROPIETARIO],
   ['convocatoriasListar', ConvocatoriasComponent, GESTION],
   ['configuracion-sistema', ConfiguracionPanelComponent, PROPIETARIO],
-  ['panel/mi-perfil', MiPerfilComponent, GESTION],
 ];
 
 /** Permisos de una sesión (sin el interruptor del diseño, que desde 8b-Z no cuenta). */
@@ -131,6 +130,18 @@ describe('app routes', () => {
         expect(await entrada.loadComponent!()).toBe(componente);
       });
     }
+
+    it('panel/mi-perfil: abierta también al profesor y sin catálogo, que le daría 403 (decisión 419)', async () => {
+      const entradas = routes.filter((route) => route.path === 'panel/mi-perfil');
+      expect(entradas.length).toBe(1);
+      const [entrada] = entradas;
+      expect(entrada.canMatch).toEqual([estilosPanelGuard]);
+      expect(entrada.canActivate).toEqual(GESTION as any);
+      expect(entrada.resolve).toBeUndefined();
+      expect(entrada.data?.['portalContext']).toBe('admin');
+      expect(entrada.data?.['requiredRoles']).toEqual(['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR']);
+      expect(await entrada.loadComponent!()).toBe(MiPerfilComponent);
+    });
 
     it('material-examen: el bloque avisa al salir con una subida o un orden sin guardar, y la lista no', () => {
       expect(routes.find((r) => r.path === 'material-examen/:disciplina/:bloque')?.canDeactivate).toEqual([salirSinGuardarGuard]);
@@ -311,8 +322,8 @@ describe('app routes', () => {
     expect(resolverPortalContexto('/contacto')).toBe('public');
   });
 
-  it('toda ruta protegida por roleGuard resuelve el catálogo antes de activarse', () => {
-    const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard));
+  it('toda ruta protegida por roleGuard resuelve el catálogo antes de activarse, salvo Mi perfil (abierta al profesor)', () => {
+    const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard) && route.path !== 'panel/mi-perfil');
 
     expect(protectedRoutes.every((route) => route.resolve?.['catalogo'] === catalogoResolver)).toBeTrue();
   });

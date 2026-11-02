@@ -5,7 +5,10 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 
+import { of } from 'rxjs';
+
 import { environment } from '../../../environments/environment';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
@@ -19,7 +22,7 @@ const URL = `${environment.apiUrl}/panel/mi-perfil`;
 class OtraFalsa {}
 
 function perfil(parcial: Partial<MiPerfil> = {}): MiPerfil {
-  return { nombrePreferido: null, nombreBase: 'Lucía M.', cumpleDia: null, cumpleMes: null, cumpleFicha: null, ...parcial };
+  return { nombrePreferido: null, nombreBase: 'Lucía M.', cumpleDia: null, cumpleMes: null, cumpleFicha: null, importesTapados: false, ...parcial };
 }
 
 describe('MiPerfilComponent (8b-3o)', () => {
@@ -28,8 +31,10 @@ describe('MiPerfilComponent (8b-3o)', () => {
   let avisos: jasmine.SpyObj<AvisosService>;
   let permisos: jasmine.SpyObj<PermisosSesionService>;
   let confirmar: jasmine.Spy;
+  let roles: string[];
 
   beforeEach(async () => {
+    roles = ['ROLE_ADMIN'];
     avisos = jasmine.createSpyObj('Avisos', ['exito', 'error', 'info']);
     permisos = jasmine.createSpyObj('Permisos', ['refrescar', 'reiniciar']);
     confirmar = jasmine.createSpy('confirmar').and.resolveTo({ confirmado: false, valor: null });
@@ -43,6 +48,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
         ]),
         { provide: AvisosService, useValue: avisos },
         { provide: PermisosSesionService, useValue: permisos },
+        { provide: AuthenticationService, useFactory: () => ({ getRoles: () => of(roles) }) },
         { provide: ConfirmacionService, useValue: { confirmar } },
       ],
     });
@@ -87,11 +93,11 @@ describe('MiPerfilComponent (8b-3o)', () => {
     http.expectOne(URL).flush(perfil());
   });
 
-  it('título, subtítulo y las dos tarjetas', async () => {
+  it('título, subtítulo y las tres tarjetas', async () => {
     await abrir();
     expect(q('h1').textContent).toBe('Mi perfil');
     expect(q('.subtitulo').textContent).toBe('Solo cambia lo que ves en tu panel.');
-    expect(Array.from(el().querySelectorAll('h2')).map((h) => h.textContent)).toEqual(['Cómo te llamamos', 'Cumpleaños']);
+    expect(Array.from(el().querySelectorAll('h2')).map((h) => h.textContent)).toEqual(['Cómo te llamamos', 'Cumpleaños', 'Privacidad']);
     expect(el().querySelector('a')).toBeNull();
   });
 
@@ -242,7 +248,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
       expect(boton('Guardando').getAttribute('aria-busy')).toBe('true');
       const peticion = http.expectOne(URL);
       expect(peticion.request.method).toBe('PUT');
-      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: 14, cumpleMes: 3 });
+      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: 14, cumpleMes: 3, importesTapados: false });
       peticion.flush(perfil({ nombrePreferido: 'Luci', cumpleDia: 14, cumpleMes: 3 }));
       harness.detectChanges();
       expect(avisos.exito).toHaveBeenCalledOnceWith('Perfil guardado');
@@ -256,7 +262,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
       escribir('#nombre-panel', '');
       boton('Guardar').click();
       const peticion = http.expectOne(URL);
-      expect(peticion.request.body).toEqual({ nombrePreferido: null, cumpleDia: null, cumpleMes: null });
+      expect(peticion.request.body).toEqual({ nombrePreferido: null, cumpleDia: null, cumpleMes: null, importesTapados: false });
       peticion.flush(perfil());
     });
 
@@ -265,7 +271,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
       escribir('#nombre-panel', 'Luci');
       boton('Guardar').click();
       const peticion = http.expectOne(URL);
-      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: null, cumpleMes: null });
+      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: null, cumpleMes: null, importesTapados: false });
       peticion.flush(perfil({ nombrePreferido: 'Luci', cumpleFicha: { dia: 14, mes: 3 } }));
     });
 
@@ -274,7 +280,7 @@ describe('MiPerfilComponent (8b-3o)', () => {
       escribir('#nombre-panel', 'Luci');
       boton('Guardar').click();
       const peticion = http.expectOne(URL);
-      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: 9, cumpleMes: 5 });
+      expect(peticion.request.body).toEqual({ nombrePreferido: 'Luci', cumpleDia: 9, cumpleMes: 5, importesTapados: false });
       peticion.flush(perfil({ nombrePreferido: 'Luci', cumpleFicha: { dia: 14, mes: 3 }, cumpleDia: 9, cumpleMes: 5 }));
     });
 
@@ -291,6 +297,82 @@ describe('MiPerfilComponent (8b-3o)', () => {
       expect(permisos.refrescar).not.toHaveBeenCalled();
       expect(boton('Guardar').disabled).toBeFalse();
       await harness.navigateByUrl('/otra');
+    });
+  });
+
+  describe('privacidad (decisión 419)', () => {
+    const interruptor = () => q<HTMLButtonElement>('#privado');
+
+    function alternar(): void {
+      interruptor().click();
+      harness.detectChanges();
+    }
+
+    it('interruptor con etiqueta y ayuda enlazadas, tras «Cumpleaños»', async () => {
+      await abrir();
+      expect(interruptor().getAttribute('role')).toBe('switch');
+      expect(interruptor().getAttribute('aria-checked')).toBe('false');
+      expect(q(`#${interruptor().getAttribute('aria-labelledby')}`).textContent).toBe('Tapar los importes');
+      expect(q(`#${interruptor().getAttribute('aria-describedby')}`).textContent).toBe(
+        'Inicio, Tesorería, Caja y Mi caja abrirán con las cifras tapadas. Se aplica a tu cuenta en todos tus dispositivos.'
+      );
+    });
+
+    it('una sesión solo-profesor lee solo lo de Mi caja, también con familia', async () => {
+      roles = ['ROLE_USER', 'ROLE_PROFESOR'];
+      await abrir();
+      expect(q('#privado-ayuda').textContent).toBe(
+        'Mi caja abrirá con las cifras tapadas. Se aplica a tu cuenta en todos tus dispositivos.'
+      );
+    });
+
+    it('lee el valor guardado', async () => {
+      await abrir(perfil({ importesTapados: true }));
+      expect(interruptor().getAttribute('aria-checked')).toBe('true');
+      expect(barra()).toBeNull();
+    });
+
+    it('cuenta como un cambio y volver atrás lo quita', async () => {
+      await abrir();
+      alternar();
+      expect(interruptor().getAttribute('aria-checked')).toBe('true');
+      expect(q('.pendientes-aviso').textContent).toBe('1 cambio sin guardar');
+      escribir('#nombre-panel', 'Luci');
+      expect(q('.pendientes-aviso').textContent).toBe('2 cambios sin guardar');
+      escribir('#nombre-panel', '');
+      alternar();
+      expect(barra()).toBeNull();
+    });
+
+    it('Descartar lo revierte', async () => {
+      await abrir(perfil({ importesTapados: true }));
+      alternar();
+      expect(interruptor().getAttribute('aria-checked')).toBe('false');
+      boton('Descartar').click();
+      harness.detectChanges();
+      expect(interruptor().getAttribute('aria-checked')).toBe('true');
+      expect(barra()).toBeNull();
+    });
+
+    it('Guardar manda el campo y refresca los permisos', async () => {
+      await abrir();
+      alternar();
+      boton('Guardar').click();
+      const peticion = http.expectOne(URL);
+      expect(peticion.request.method).toBe('PUT');
+      expect(peticion.request.body).toEqual({ nombrePreferido: null, cumpleDia: null, cumpleMes: null, importesTapados: true });
+      peticion.flush(perfil({ importesTapados: true }));
+      harness.detectChanges();
+      expect(permisos.refrescar).toHaveBeenCalledTimes(1);
+      expect(interruptor().getAttribute('aria-checked')).toBe('true');
+      expect(barra()).toBeNull();
+    });
+
+    it('sin cambios guardados, avisa al salir', async () => {
+      await abrir();
+      alternar();
+      await harness.navigateByUrl('/otra');
+      expect(confirmar).toHaveBeenCalledTimes(1);
     });
   });
 

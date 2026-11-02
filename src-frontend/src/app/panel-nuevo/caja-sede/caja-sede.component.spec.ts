@@ -1117,4 +1117,82 @@ describe('CajaSedePanelComponent (8b-3j, Caja de sede del panel nuevo, P2 pesta�
     expect(pagina.scrollWidth).toBeLessThanOrEqual(pagina.clientWidth);
     host.remove();
   });
+
+  describe('modo privado de importes (decisión 419)', () => {
+    const verImportes = () => el().querySelector<HTMLButtonElement>('pn-ver-importes button');
+    const saldo = (): HTMLElement => el().querySelector<HTMLElement>('[data-clave="saldo"] .caja__cifra-valor')!;
+
+    function cargarConPreferencia(importesTapados: boolean, datos: Parameters<typeof responderSede>[1] = {}): void {
+      crear();
+      peticiones(SEDES).forEach((r) => r.flush({ ...permisos([sedeVisible(5, 'Sede Prueba')]), importesTapados }));
+      fixture.detectChanges();
+      responderSede(5, datos);
+    }
+
+    it('con la preferencia activa el saldo va tapado y los recuentos no; «Ver importes» lo destapa', () => {
+      cargarConPreferencia(true);
+
+      expect(saldo().querySelector('.importe')!.classList).toContain('importe--tapado');
+      expect(texto(saldo())).toContain('Importe oculto');
+      expect(el().querySelector('.caja__numero .importe')).toBeNull();
+
+      verImportes()!.click();
+      fixture.detectChanges();
+
+      expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+    });
+
+    it('con la preferencia apagada se ve como hoy y sin botón', () => {
+      cargarConPreferencia(false);
+
+      expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+      expect(verImportes()).toBeNull();
+      expect(texto(saldo())).toBe('1.240,00 €');
+    });
+
+    it('tapa la cifra de la diferencia y de las correcciones, no la palabra', () => {
+      cargarConPreferencia(true, {
+        entregas: [entregaVista({ diferencia: -1, movimientosDeCobro: [{ id: 40, tipo: 'ERROR', importe: 12, cobroId: 9, estado: 'ACTIVO' }] })],
+      });
+      elegir('entregas');
+
+      const pastilla = filaEntrega(7).querySelector<HTMLElement>('.caja__pastilla[data-tono="falta"]')!;
+      expect(texto(pastilla)).toMatch(/^falta /);
+      expect(pastilla.querySelector('.importe--tapado')).not.toBeNull();
+      const correccion = filaEntrega(7).querySelector<HTMLElement>('.caja__correcciones li')!;
+      expect(texto(correccion)).toMatch(/^Cobro deshecho /);
+      expect(correccion.querySelector('.importe--tapado')).not.toBeNull();
+    });
+
+    it('el formulario de entrega también: cifras, aviso, botón y el campo relleno; un aviso sin cifra se lee', () => {
+      cargarConPreferencia(true);
+      const form = abrirRecibir();
+      const contado = form.querySelector<HTMLInputElement>('.caja__contado')!;
+
+      expect(form.querySelector('.caja__cobro-importe .importe--tapado')).not.toBeNull();
+      expect(form.querySelector('.caja__deberia .importe--tapado')).not.toBeNull();
+      expect(form.querySelector('.caja__recibir-enviar .importe--tapado')).not.toBeNull();
+      expect(contado.classList).toContain('caja__contado--tapado');
+
+      escribirEn(contado, '1');
+      expect(texto(form.querySelector('.caja__aviso-cuadre'))).toMatch(/^Faltan /);
+      expect(form.querySelector('.caja__aviso-cuadre .importe--tapado')).not.toBeNull();
+
+      escribirEn(contado, 'abc');
+      expect(form.querySelector('.caja__aviso-cuadre .importe')).toBeNull();
+      expect(texto(form.querySelector('.caja__aviso-cuadre'))).toBe('Escribe un importe válido, por ejemplo 45,50.');
+    });
+
+    it('los aria-label de anular no dicen el importe mientras está tapado', () => {
+      cargarConPreferencia(true);
+      elegir('movimientos');
+
+      expect(boton(filaMovimiento(SUELTO.id), 'Anular Otro de importe oculto')).toBeDefined();
+
+      verImportes()!.click();
+      fixture.detectChanges();
+
+      expect(filaMovimiento(SUELTO.id).querySelector('.caja__accion')!.getAttribute('aria-label')).toContain('10,00');
+    });
+  });
 });

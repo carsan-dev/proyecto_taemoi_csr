@@ -10,9 +10,10 @@ package com.taemoi.project.dtos.response;
  * @param cumpleFicha     día y mes de la ficha de alumno PROPIA en la escuela activa, no anonimizada y con fecha de
  *                        nacimiento (con varias, la de menor id); {@code null} si no hay. Si existe, manda sobre lo
  *                        guardado en la cuenta.
+ * @param importesTapados decisión 419: el panel de esta cuenta abre con el dinero tapado.
  */
 public record PerfilCuentaDTO(String nombrePreferido, String nombreBase, Integer cumpleDia, Integer cumpleMes,
-		DiaMes cumpleFicha) {
+		DiaMes cumpleFicha, boolean importesTapados) {
 
 	/** Un cumpleaños sin año. */
 	public record DiaMes(int dia, int mes) {

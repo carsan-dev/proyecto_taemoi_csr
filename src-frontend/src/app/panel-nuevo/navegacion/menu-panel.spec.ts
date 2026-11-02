@@ -9,6 +9,7 @@ import {
   rutasDeGestion,
   seccionActiva,
   entradaActual,
+  visible,
 } from './menu-panel';
 
 interface Caso {
@@ -75,7 +76,7 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
       expect(secciones.map((s) => s.etiqueta)).toEqual(misGrupos ? ['Mis grupos', 'Mi caja'] : ['Mi caja']);
       expect(secciones.map((s) => s.ruta)).toEqual(misGrupos ? ['/mis-grupos', '/mi-caja'] : ['/mi-caja']);
       expect(secciones.every((s) => s.entradas.length === 0 && !s.contador)).toBeTrue();
-      expect(CUENTA_PANEL.filter((e) => !e.condicion || contexto[e.condicion])).toEqual([]);
+      expect(CUENTA_PANEL.filter((e) => visible(e, contexto)).map((e) => e.ruta)).toEqual(['/panel/mi-perfil']);
     });
   }
 
@@ -122,7 +123,7 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
 
   it('la cuenta lleva «Mi perfil»', () => {
     expect(CUENTA_PANEL.map((e) => [e.etiqueta, e.ruta, e.icono, e.condicion])).toEqual([
-      ['Mi perfil', '/panel/mi-perfil', 'bi-person', 'gestion'],
+      ['Mi perfil', '/panel/mi-perfil', 'bi-person', 'cuenta'],
     ]);
   });
 
@@ -132,10 +133,10 @@ describe('menu-panel: estructura (DESIGN.md, Navigation)', () => {
     });
   }
 
-  it('«Mi perfil» no se ve para solo-profesor ni sin contexto de gestión', () => {
+  it('«Mi perfil» se ve para solo-profesor y no sin rol del panel (decisión 419)', () => {
     const soloProfesor: ContextoMenu = { propietario: false, profesor: true, soloProfesor: true, gestion: false, misGrupos: true, plataforma: false };
-    expect(rutasDeGestion(soloProfesor)).not.toContain('/panel/mi-perfil');
-    expect(rutasDeGestion({ propietario: false, profesor: true, misGrupos: false, plataforma: false })).not.toContain('/panel/mi-perfil');
+    expect(rutasDeGestion(soloProfesor)).toContain('/panel/mi-perfil');
+    expect(rutasDeGestion({ propietario: false, profesor: false, misGrupos: false, plataforma: false })).not.toContain('/panel/mi-perfil');
   });
 
   it('«Mi perfil» no enciende ninguna entrada de la cabecera', () => {

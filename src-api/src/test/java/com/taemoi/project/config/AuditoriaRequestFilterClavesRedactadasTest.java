@@ -55,12 +55,12 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		}
 	}
 
-	/** Decisión 322: ni el nombre ni la fecha del perfil se guardan en el cuerpo de un 4xx de su PUT. */
+	/** Decisiones 322 y 419: ni el nombre, ni la fecha, ni la preferencia se guardan en el cuerpo de un 4xx de su PUT. */
 	@Test
 	void miPerfil_redactaNombreYCumple() {
 		for (String ruta : List.of("/api/panel/mi-perfil", "/api/panel/mi-perfil/", "/API/PANEL/MI-PERFIL",
 				"/api//panel/mi-perfil")) {
-			assertEquals(Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+			assertEquals(Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
 					AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
 		}
 		assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas("/api/panel/mi-perfil-otra"));
@@ -116,10 +116,12 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 	void miPerfil_parametrosRedactados() {
 		for (String ruta : List.of("/api/panel/mi-perfil", "/api/panel/mi-perfil/")) {
 			Map<String, String[]> guardados = AuditoriaRequestFilter.parametrosAuditables(ruta,
-					parametros("nombrePreferido", "Luci", "cumpleDia", "14", "cumpleMes", "9", "otro", "visible"));
+					parametros("nombrePreferido", "Luci", "cumpleDia", "14", "cumpleMes", "9", "importesTapados", "true",
+							"otro", "visible"));
 			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("nombrePreferido"), ruta);
 			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("cumpleDia"), ruta);
 			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("cumpleMes"), ruta);
+			assertArrayEquals(new String[] { "[redactado]" }, guardados.get("importesTapados"), ruta);
 			assertArrayEquals(new String[] { "visible" }, guardados.get("otro"), ruta);
 		}
 	}

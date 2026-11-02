@@ -8,11 +8,14 @@
           <p class="inicio__fecha">{{ fechaHoy }}</p>
         </div>
       </div>
-      <button type="button" class="inicio__boton-texto inicio__actualizar" (click)="actualizar()" [disabled]="cargando"
-        [attr.aria-busy]="cargando ? 'true' : null">
-        <i class="bi bi-arrow-clockwise" [class.inicio__girando]="cargando" aria-hidden="true"></i>
-        <span>{{ cargando ? 'Actualizando…' : 'Actualizar ahora' }}</span>
-      </button>
+      <div class="inicio__cabecera-acciones">
+        <pn-ver-importes />
+        <button type="button" class="inicio__boton-texto inicio__actualizar" (click)="actualizar()" [disabled]="cargando"
+          [attr.aria-busy]="cargando ? 'true' : null">
+          <i class="bi bi-arrow-clockwise" [class.inicio__girando]="cargando" aria-hidden="true"></i>
+          <span>{{ cargando ? 'Actualizando…' : 'Actualizar ahora' }}</span>
+        </button>
+      </div>
     </header>
 
     @if (sinSedes) {
@@ -108,7 +111,7 @@
           texto="El resto del inicio sigue disponible. Comprueba la conexión y vuelve a intentarlo." (reintentar)="reintentarPendiente()" />
         } @else if (pendiente) {
         <div class="inicio__pendiente-cuerpo">
-          <p class="inicio__pendiente-total" data-cifras>{{ eur(pendiente.total) }}</p>
+          <p class="inicio__pendiente-total" data-cifras><pn-importe>{{ eur(pendiente.total) }}</pn-importe></p>
           <p class="inicio__pendiente-resumen">
             Lo no pagado fuera de plazo, de cualquier mes (las mensualidades vencen el día
             {{ numero(pendiente.diaLimiteMensualidad) }}): {{ plural(pendiente.cargos, 'cargo', 'cargos') }} de
@@ -127,7 +130,7 @@
               <tr>
                 <th scope="row">{{ etiquetaTipo[f.tipo] }}</th>
                 <td data-cifras>{{ numero(f.cargos) }}</td>
-                <td data-cifras>{{ eur(f.importe) }}</td>
+                <td data-cifras><pn-importe>{{ eur(f.importe) }}</pn-importe></td>
               </tr>
               }
             </tbody>
@@ -142,7 +145,7 @@
               <tr>
                 <th scope="row">{{ mesLargo(f.mes) }}</th>
                 <td data-cifras>{{ numero(f.cargos) }}</td>
-                <td data-cifras>{{ eur(f.importe) }}</td>
+                <td data-cifras><pn-importe>{{ eur(f.importe) }}</pn-importe></td>
               </tr>
               }
             </tbody>
@@ -157,7 +160,7 @@
               <tr>
                 <th scope="row">{{ f.sede ?? 'Sin sede' }}</th>
                 <td data-cifras>{{ numero(f.cargos) }}</td>
-                <td data-cifras>{{ eur(f.importe) }}</td>
+                <td data-cifras><pn-importe>{{ eur(f.importe) }}</pn-importe></td>
               </tr>
               }
             </tbody>
@@ -175,7 +178,7 @@
                 <span class="inicio__cargo-detalle">{{ detalleCargo(c) }}</span>
               </span>
               <span class="inicio__cargo-accion">
-                <span class="inicio__cargo-importe" data-cifras>{{ eur(c.importe) }}</span>
+                <span class="inicio__cargo-importe" data-cifras><pn-importe>{{ eur(c.importe) }}</pn-importe></span>
                 <button type="button" class="inicio__boton-secundario inicio__cobrar" (click)="cobrar(c)"
                   [disabled]="cobrando.has(c.productoAlumnoId)"
                   [attr.aria-busy]="cobrando.has(c.productoAlumnoId) ? 'true' : null"

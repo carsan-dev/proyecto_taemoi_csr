@@ -1,8 +1,11 @@
 <div class="pn caja" pnAcento>
   <div class="caja__pagina">
     <header class="caja__cabecera">
-      <h1 class="caja__titulo">Caja de sede</h1>
-      <p class="caja__subtitulo">El efectivo de la sede: lo que hay en caja, lo que traen los profesores y lo que se ha apuntado.</p>
+      <div class="caja__titulos">
+        <h1 class="caja__titulo">Caja de sede</h1>
+        <p class="caja__subtitulo">El efectivo de la sede: lo que hay en caja, lo que traen los profesores y lo que se ha apuntado.</p>
+      </div>
+      <pn-ver-importes />
     </header>
 
     @if (cargandoSedes) {
@@ -68,7 +71,7 @@
         @for (c of cifras; track c.clave) {
         <div class="caja__cifra" [attr.data-clave]="c.clave">
           <dt class="caja__cifra-titulo">{{ c.titulo }}</dt>
-          <dd class="caja__cifra-valor" [attr.data-tono]="c.tono" data-cifras>{{ c.valor }}</dd>
+          <dd class="caja__cifra-valor" [attr.data-tono]="c.tono" data-cifras>@if (resumen) {<pn-importe>{{ c.valor }}</pn-importe>} @else {{{ c.valor }}}</dd>
           <dd class="caja__cifra-detalle">{{ c.detalle }}</dd>
         </div>
         }
@@ -121,7 +124,7 @@
                 }
               </p>
             </div>
-            <p class="caja__profesor-importe" data-cifras>{{ eur(p.importe) }}</p>
+            <p class="caja__profesor-importe" data-cifras><pn-importe>{{ eur(p.importe) }}</pn-importe></p>
             <button type="button" class="caja__recibir" [attr.aria-expanded]="entregaAbierta(p)"
               [attr.aria-controls]="entregaAbierta(p) ? 'caja-entrega-' + p.usuarioId : null"
               [disabled]="cargandoPendientes || (!!formEntrega?.enviando && !entregaAbierta(p))" (click)="alternarEntrega(p, $event)">
@@ -167,7 +170,7 @@
                           }
                         </span>
                       </span>
-                      <span class="caja__cobro-importe" data-cifras>{{ eur(c.importe) }}</span>
+                      <span class="caja__cobro-importe" data-cifras><pn-importe>{{ eur(c.importe) }}</pn-importe></span>
                     </label>
                   </li>
                   }
@@ -175,11 +178,12 @@
               </fieldset>
 
               <div class="caja__cuenta">
-                <p class="caja__deberia" aria-live="polite">Debería entregar <strong data-cifras>{{ eur(calc.declarado) }}</strong></p>
+                <p class="caja__deberia" aria-live="polite">Debería entregar <strong data-cifras><pn-importe>{{ eur(calc.declarado) }}</pn-importe></strong></p>
                 <div class="caja__campo caja__campo--contado">
                   <label class="caja__etiqueta" [for]="'caja-contado-' + p.usuarioId">Has contado</label>
                   <div class="caja__importe">
                     <input type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" class="caja__control caja__control--importe caja__contado"
+                      [class.caja__contado--tapado]="modo.tapado()"
                       [id]="'caja-contado-' + p.usuarioId" [value]="f.contado" [disabled]="f.enviando"
                       [attr.aria-invalid]="calc.contado === null ? 'true' : null" [attr.aria-describedby]="'caja-cuadre-' + p.usuarioId"
                       (input)="onContadoInput($any($event.target).value)" />
@@ -187,7 +191,7 @@
                   </div>
                 </div>
                 @if (avisoCuadre(calc); as aviso) {
-                <p class="caja__aviso-cuadre" [id]="'caja-cuadre-' + p.usuarioId" aria-live="polite" [attr.data-tono]="aviso.tono">{{ aviso.texto }}</p>
+                <p class="caja__aviso-cuadre" [id]="'caja-cuadre-' + p.usuarioId" aria-live="polite" [attr.data-tono]="aviso.tono">@if (aviso.partes; as partes) {{{ partes.antes }} <pn-importe>{{ partes.importe }}</pn-importe>{{ partes.despues }}} @else {{{ aviso.texto }}}</p>
                 } @else {
                 <p class="caja__aviso-cuadre" [id]="'caja-cuadre-' + p.usuarioId" aria-live="polite"></p>
                 }
@@ -210,7 +214,7 @@
               <div class="caja__form-pie">
                 <button type="button" class="caja__boton-texto" [disabled]="f.enviando" (click)="cerrarEntrega()">Cancelar</button>
                 <button type="submit" pnOcupado class="caja__boton-primario caja__recibir-enviar" [ocupado]="f.enviando"
-                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes">Recibir {{ eur(calc.contado ?? 0) }}</button>
+                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes"><span>Recibir <pn-importe>{{ eur(calc.contado ?? 0) }}</pn-importe></span></button>
               </div>
             </form>
             }
@@ -258,10 +262,10 @@
                 }
               </td>
               <td data-label="Recibió"><span class="caja__tachable">{{ e.recibidoPorNombre || '—' }}</span></td>
-              <td data-label="Contado" class="caja__num"><span class="caja__tachable caja__fuerte" data-cifras>{{ eur(e.importeContado) }}</span></td>
+              <td data-label="Contado" class="caja__num"><span class="caja__tachable caja__fuerte" data-cifras><pn-importe>{{ eur(e.importeContado) }}</pn-importe></span></td>
               <td data-label="Diferencia" class="caja__celda-diferencia">
                 <span class="caja__estados">
-                  <span class="caja__pastilla" [attr.data-tono]="cuadre(diferenciaVista(e)).estado" data-cifras>{{ cuadre(diferenciaVista(e)).texto }}</span>
+                  <span class="caja__pastilla" [attr.data-tono]="cuadre(diferenciaVista(e)).estado" data-cifras>@if (cuadre(diferenciaVista(e)).importe; as importe) {<span>{{ cuadre(diferenciaVista(e)).estado }} <pn-importe>{{ importe }}</pn-importe></span>} @else {{{ cuadre(diferenciaVista(e)).texto }}}</span>
                   @if (e.estado === 'ANULADA') {
                   &ngsp;<span class="caja__pastilla" data-tono="anulada">Anulada</span>
                   }
@@ -273,7 +277,7 @@
                 <ul class="caja__correcciones" aria-label="Correcciones de la entrega">
                   @for (m of correcciones(e); track m.id) {
                   <li [attr.data-anulado]="m.estado === 'ANULADO' ? 'true' : null" [attr.data-tipo]="m.tipo" data-cifras>
-                    {{ textoMovimientoDeCobro(m) }}@if (m.estado === 'ANULADO') {<span class="caja__oculto"> (anulado)</span>}
+                    {{ etiquetaMovimientoDeCobro(m) }} <pn-importe>{{ importeMovimientoDeCobro(m) }}</pn-importe>@if (m.estado === 'ANULADO') {<span class="caja__oculto"> (anulado)</span>}
                   </li>
                   }
                 </ul>
@@ -437,7 +441,7 @@
               </td>
               <td data-label="Alumno">{{ nombreAlumno(m) }}</td>
               <td data-label="Importe" class="caja__num">
-                <span class="caja__tachable caja__fuerte caja__importe-firmado" [attr.data-tono]="tonoImporte(m.importe)" data-cifras>{{ firmado(m.importe) }}</span>
+                <span class="caja__tachable caja__fuerte caja__importe-firmado" [attr.data-tono]="tonoImporte(m.importe)" data-cifras><pn-importe>{{ firmado(m.importe) }}</pn-importe></span>
               </td>
               <td data-label="Nota" class="caja__nota">
                 {{ m.nota || '—' }}
@@ -449,11 +453,11 @@
                 @switch (accionMovimiento(m)) {
                 @case ('anular') {
                 <button type="button" class="caja__accion caja__accion--peligro" (click)="anularMovimiento(m)"
-                  [attr.aria-label]="'Anular ' + etiquetaTipo(m.tipo) + ' de ' + eur(m.importe)">Anular</button>
+                  [attr.aria-label]="'Anular ' + etiquetaTipo(m.tipo) + ' de ' + modo.textoImporte(eur(m.importe))">Anular</button>
                 }
                 @case ('pedir') {
                 <button type="button" class="caja__accion" (click)="pedirAnularMovimiento(m)"
-                  [attr.aria-label]="'Pedir al propietario que anule ' + etiquetaTipo(m.tipo) + ' de ' + eur(m.importe)">Pedir anulación</button>
+                  [attr.aria-label]="'Pedir al propietario que anule ' + etiquetaTipo(m.tipo) + ' de ' + modo.textoImporte(eur(m.importe))">Pedir anulación</button>
                 }
                 }
               </td>

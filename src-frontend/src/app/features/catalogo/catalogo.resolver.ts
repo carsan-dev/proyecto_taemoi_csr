@@ -18,8 +18,8 @@ const MAX_INTENTOS_DESCARTADO = 3;
  * Si se agotan los intentos NO bloquea la navegación (la ruta se abre con listas vacías, D15), avisa una
  * sola vez por fallo (`notificarFallo`) y devuelve `false`.
  *
- * Registrado en `app.routes.ts` (`resolve.catalogo`) en todas las rutas protegidas por `roleGuard`
- * (los resolvers se ejecutan tras los guards: sin sesión no se pide el catálogo).
+ * Registrado en `app.routes.ts` (`resolve.catalogo`) en todas las rutas protegidas por `roleGuard`, salvo «Mi perfil»,
+ * que no lo usa y también abre el profesor (los resolvers se ejecutan tras los guards: sin sesión no se pide el catálogo).
  */
 export const catalogoResolver: ResolveFn<boolean> = () => {
   const catalogo = inject(CatalogoService);

@@ -17,7 +17,7 @@ import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 /** Las rutas autenticadas esperan al catálogo (tras los guards) para que los componentes lo lean de forma síncrona. */
 const CATALOGO_RESOLVE = { catalogo: catalogoResolver };
 
-type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER' | 'ROLE_RESPONSABLE_SEDE';
+type RouteRole = 'ROLE_ADMIN' | 'ROLE_MANAGER' | 'ROLE_USER' | 'ROLE_RESPONSABLE_SEDE' | 'ROLE_PROFESOR';
 export type PortalContext = 'public' | 'admin' | 'user';
 export interface AppRouteData {
   portalContext?: PortalContext;
@@ -28,6 +28,8 @@ const ROUTE_ROLE_SETS = {
   management: ['ROLE_ADMIN', 'ROLE_MANAGER'] as const satisfies readonly RouteRole[],
   /** Las pantallas de la decisión 370: gestión y responsable de sede; `roleGuard` exige a este PANEL_SEDE. */
   panelSede: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE'] as const satisfies readonly RouteRole[],
+  /** «Mi perfil»: las de la 370 y también el profesor (decisión 419). */
+  cuenta: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR'] as const satisfies readonly RouteRole[],
   adminOnly: ['ROLE_ADMIN'] as const satisfies readonly RouteRole[],
   userPortal: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] as const satisfies readonly RouteRole[],
 };
@@ -265,14 +267,14 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
-    // «Mi perfil» (decisión 322): nombre y cumpleaños de la cuenta; propietario, gestor y responsable (`/api/panel/**`).
+    // «Mi perfil» (decisiones 322 y 419): nombre, cumpleaños y privacidad de la cuenta; propietario, gestor, responsable
+    // y profesor. Sin catálogo: no lo usa, y una sesión solo profesor recibe 403 en todo lo que no sea lo suyo.
     path: 'panel/mi-perfil',
     canMatch: [estilosPanelGuard],
-    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
+    data: privateRouteData(ROUTE_ROLE_SETS.cuenta),
     loadComponent: () => import('./panel-nuevo/mi-perfil/mi-perfil.component').then(m => m.MiPerfilComponent),
     canActivate: [roleGuard],
     canDeactivate: [salirSinGuardarGuard],
-    resolve: CATALOGO_RESOLVE,
   },
   {
     path: 'alumnosCrear',

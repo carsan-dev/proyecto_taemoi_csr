@@ -55,6 +55,19 @@ describe('PermisosSesionService', () => {
     expect(await segunda).toEqual(['MIS_GRUPOS']);
   });
 
+  it('generacion sube solo con reiniciar(), no con refrescar() ni con un error', async () => {
+    expect(servicio.generacion).toBe(0);
+
+    const fallida = firstValueFrom(servicio.obtener()).catch(() => null);
+    http.expectOne(URL_PERMISOS).flush('error', { status: 500, statusText: 'Server Error' });
+    await fallida;
+    servicio.refrescar();
+    expect(servicio.generacion).toBe(0);
+
+    servicio.reiniciar();
+    expect(servicio.generacion).toBe(1);
+  });
+
   it('refrescar() emite refrescado$ y la siguiente obtener() hace un GET nuevo', async () => {
     const primera = firstValueFrom(servicio.obtener());
     http.expectOne(URL_PERMISOS).flush(permisos(['MI_CAJA']));

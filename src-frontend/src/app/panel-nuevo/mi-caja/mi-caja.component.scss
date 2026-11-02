@@ -8,7 +8,8 @@
   color: var(--pn-tinta);
 
   .mi-caja__pagina { max-width: 1280px; margin: 0 auto; padding: var(--pn-espacio-l) var(--pn-espacio-l) var(--pn-espacio-xl); }
-  h1 { margin: 0 0 20px; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); }
+  h1 { margin: 0; font: var(--pn-titulo-pantalla); letter-spacing: var(--pn-titulo-pantalla-espaciado); }
+  .mi-caja__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 8px; margin-bottom: 20px; }
   h2 { margin: 0; font: var(--pn-titulo-bloque); }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }

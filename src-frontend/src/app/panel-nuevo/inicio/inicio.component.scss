@@ -27,6 +27,13 @@
   margin-bottom: 20px;
 }
 
+.inicio__cabecera-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pn-espacio-xs);
+}
+
 .inicio__bienvenida {
   display: flex;
   align-items: center;
@@ -861,11 +868,14 @@
     font-size: 1.375rem;
   }
 
-  .inicio__actualizar {
+  .inicio__cabecera-acciones {
     grid-column: 1 / -1;
     justify-self: start;
-    min-height: 44px;
     margin-left: -10px;
+  }
+
+  .inicio__actualizar {
+    min-height: 44px;
   }
 
   .inicio__bloque {

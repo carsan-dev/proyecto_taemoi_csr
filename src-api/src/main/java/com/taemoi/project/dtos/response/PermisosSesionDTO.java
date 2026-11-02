@@ -22,10 +22,12 @@ import java.util.List;
  * @param cumpleanos     pieza 8b-M2: hoy (Europe/Madrid) es el cumpleaños de la cuenta (29-feb → 28-feb en años no
  *                          bisiestos): el de su ficha de alumno PROPIA en la escuela activa, o el guardado en la cuenta
  *                          si no hay ficha válida (decisión 322). Solo el booleano, nunca la fecha.
+ * @param importesTapados   decisión 419: el panel de esta cuenta abre con el dinero tapado. Es preferencia de la cuenta,
+ *                          no un permiso.
  */
 public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, List<Sede> sedes, boolean variasSedes,
 		boolean tieneGrupos, List<Capacidad> capacidades, String nombreVisible, String nombreSaludo,
-		boolean cumpleanos) {
+		boolean cumpleanos, boolean importesTapados) {
 
 	public PermisosSesionDTO {
 		roles = List.copyOf(roles);

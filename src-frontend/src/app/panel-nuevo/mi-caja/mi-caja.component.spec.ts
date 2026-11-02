@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { EMPTY, Subject, of, throwError } from 'rxjs';
+
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 
 import {
   AlumnoDeMisGrupos,
@@ -65,7 +67,8 @@ describe('MiCajaPanelComponent', () => {
   const el = () => fixture.nativeElement as HTMLElement;
   const texto = () => limpio(el().textContent);
 
-  function crear(opciones: { cargos?: unknown; encima?: unknown; solicitudes?: unknown } = {}): void {
+  function crear(opciones: { cargos?: unknown; encima?: unknown; solicitudes?: unknown; importesTapados?: boolean } = {}): void {
+    const sesion = of({ importesTapados: opciones.importesTapados ?? false } as PermisosSesion);
     caja = jasmine.createSpyObj<CajaProfesorService>('CajaProfesorService', [
       'cargosPendientes', 'cobrarCargo', 'deshacerCobro', 'productos', 'venderProducto', 'cobrosPendientesEntrega', 'alumnos',
       'misSolicitudes', 'cobrosEntregadosRecientes', 'productosEncargables', 'pedirEncargo', 'retirarSolicitud',
@@ -89,6 +92,7 @@ describe('MiCajaPanelComponent', () => {
         { provide: CajaProfesorService, useValue: caja },
         { provide: ConfirmacionService, useValue: confirmacion },
         { provide: AvisosService, useValue: avisos },
+        { provide: PermisosSesionService, useValue: { obtener: () => sesion, refrescado$: EMPTY } },
       ],
     });
     fixture = TestBed.createComponent(MiCajaPanelComponent);
@@ -1180,5 +1184,31 @@ describe('MiCajaPanelComponent', () => {
     expect(confirmacion.confirmar).not.toHaveBeenCalled();
     expect(componente.hojaEncargo).toBeNull();
     expect(caja.alumnos).not.toHaveBeenCalled();
+  });
+
+  // ------------------------------------------------------------------ modo privado (decisión 419)
+
+  it('con la preferencia activa «Llevas encima» y los cargos van tapados; los recuentos no', () => {
+    crear({ importesTapados: true });
+
+    const cifra = el().querySelector<HTMLElement>('.mi-caja__cifra')!;
+    expect(cifra.querySelector('.importe')!.classList).toContain('importe--tapado');
+    expect(limpio(cifra.textContent)).toContain('Importe oculto');
+    expect(el().querySelector('.mi-caja__cargo .importe--tapado')).not.toBeNull();
+    expect(el().querySelector('.mi-caja__n .importe')).toBeNull();
+
+    el().querySelector<HTMLButtonElement>('pn-ver-importes button')!.click();
+    fixture.detectChanges();
+
+    expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+    expect(limpio(cifra.textContent)).toBe('47,50 €');
+  });
+
+  it('con la preferencia apagada se ve como hoy y sin botón', () => {
+    crear();
+
+    expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+    expect(el().querySelector('pn-ver-importes button')).toBeNull();
+    expect(limpio(el().querySelector('.mi-caja__cifra')?.textContent)).toBe('47,50 €');
   });
 });

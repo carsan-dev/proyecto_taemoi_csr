@@ -25,6 +25,9 @@ import { BloqueVacioComponent } from '../carga/bloque-vacio.component';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { MascotaComponent } from '../mascota/mascota.component';
+import { ImporteComponent } from '../modo-privado/importe.component';
+import { ModoPrivadoService } from '../modo-privado/modo-privado.service';
+import { VerImportesComponent } from '../modo-privado/ver-importes.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { ReciboPagoService } from '../cobro/recibo-pago.service';
@@ -74,8 +77,10 @@ const SUBTITULO = 'Control de deudas, pagos pendientes y estado mensual por depo
     BloqueVacioComponent,
     BotonOcupadoComponent,
     FiltroSedeComponent,
+    ImporteComponent,
     MascotaComponent,
     PanelLateralComponent,
+    VerImportesComponent,
     VisorPdfComponent,
   ],
   providers: [{ provide: InformePdfService, useClass: InformePdfPanelService }],
@@ -84,6 +89,7 @@ const SUBTITULO = 'Control de deudas, pagos pendientes y estado mensual por depo
 })
 export class TesoreriaComponent implements OnInit, OnDestroy {
   readonly informes = inject(InformePdfService);
+  readonly modo = inject(ModoPrivadoService);
   private readonly endpoints = inject(EndpointsService);
   private readonly lecturas = inject(LecturasPanelService);
   readonly catalogo = inject(CatalogoService);

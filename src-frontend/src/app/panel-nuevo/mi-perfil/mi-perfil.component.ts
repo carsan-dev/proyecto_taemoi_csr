@@ -1,6 +1,8 @@
 import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
@@ -8,6 +10,7 @@ import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
+import { soloAccesosDeProfesor } from '../navegacion/menu-panel';
 import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
 import { ConCambiosSinGuardar } from '../productos-alumno/salir-sin-guardar.guard';
 import { MiPerfil, MiPerfilService } from './mi-perfil.service';
@@ -25,6 +28,8 @@ export const TEXTOS_MI_PERFIL = {
   errorGuardar: 'No se pudo guardar. Inténtalo de nuevo.',
   soloUno: 'Elige día y mes, o deja los dos vacíos.',
   guardado: 'Perfil guardado',
+  ayudaTaparGestion: 'Inicio, Tesorería, Caja y Mi caja abrirán con las cifras tapadas. Se aplica a tu cuenta en todos tus dispositivos.',
+  ayudaTaparProfesor: 'Mi caja abrirá con las cifras tapadas. Se aplica a tu cuenta en todos tus dispositivos.',
 } as const;
 
 /** Vacío (o solo espacios) equivale a «sin valor». */
@@ -34,8 +39,8 @@ function normalizar(texto: string | null | undefined): string | null {
 }
 
 /**
- * «Mi perfil» (decisión 322) en `/panel/mi-perfil`: el nombre con el que el panel llama a la cuenta y su cumpleaños. Solo
- * cambia lo que ve la propia cuenta en su panel.
+ * «Mi perfil» (decisión 322) en `/panel/mi-perfil`: el nombre con el que el panel llama a la cuenta, su cumpleaños y si
+ * abre con los importes tapados (decisión 419). Solo cambia lo que ve la propia cuenta en su panel.
  */
 @Component({
   selector: 'pn-mi-perfil',
@@ -49,6 +54,7 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
   private readonly avisos = inject(AvisosService);
   private readonly permisos = inject(PermisosSesionService);
   private readonly confirmacion = inject(ConfirmacionService);
+  private readonly roles = toSignal(inject(AuthenticationService).getRoles(), { initialValue: [] as string[] });
 
   readonly textos = TEXTOS_MI_PERFIL;
   readonly maxNombre = MAX_NOMBRE;
@@ -59,6 +65,7 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
   readonly nombre = signal('');
   readonly dia = signal<number | null>(null);
   readonly mes = signal<number | null>(null);
+  readonly importesTapados = signal(false);
   readonly guardando = signal(false);
   readonly errorCumple = signal(false);
   readonly errorGuardado = signal('');
@@ -87,8 +94,18 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
       perfil !== null && this.cumpleFicha() === null && (this.dia() !== perfil.cumpleDia || this.mes() !== perfil.cumpleMes)
     );
   });
-  readonly pendientes = computed(() => (this.nombreCambia() ? 1 : 0) + (this.cumpleCambia() ? 1 : 0));
+  readonly importesCambia = computed(() => {
+    const perfil = this.perfil();
+    return perfil !== null && this.importesTapados() !== (perfil.importesTapados === true);
+  });
+  readonly pendientes = computed(
+    () => (this.nombreCambia() ? 1 : 0) + (this.cumpleCambia() ? 1 : 0) + (this.importesCambia() ? 1 : 0)
+  );
   readonly hayCambios = computed(() => this.pendientes() > 0);
+  /** Una sesión solo-profesor solo ve Mi caja. */
+  readonly ayudaTapar = computed(() =>
+    soloAccesosDeProfesor(this.roles()) ? this.textos.ayudaTaparProfesor : this.textos.ayudaTaparGestion
+  );
 
   ngOnInit(): void {
     this.cargar();
@@ -110,6 +127,7 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
     this.nombre.set(perfil.nombrePreferido ?? '');
     this.dia.set(perfil.cumpleDia);
     this.mes.set(perfil.cumpleMes);
+    this.importesTapados.set(perfil.importesTapados === true);
     this.errorCumple.set(false);
     this.errorGuardado.set('');
   }
@@ -133,6 +151,11 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
       this.dia.set(null);
     }
     this.cumpleModificado();
+  }
+
+  alternarImportes(): void {
+    this.importesTapados.update((tapados) => !tapados);
+    this.errorGuardado.set('');
   }
 
   private cumpleModificado(): void {
@@ -164,12 +187,18 @@ export class MiPerfilComponent implements OnInit, ConCambiosSinGuardar {
     this.errorCumple.set(false);
     this.errorGuardado.set('');
     this.guardando.set(true);
-    this.servicio.guardar({ nombrePreferido: normalizar(this.nombre()), cumpleDia: dia, cumpleMes: mes }).subscribe({
+    const cambios = {
+      nombrePreferido: normalizar(this.nombre()),
+      cumpleDia: dia,
+      cumpleMes: mes,
+      importesTapados: this.importesTapados(),
+    };
+    this.servicio.guardar(cambios).subscribe({
       next: (guardado) => {
         this.guardando.set(false);
         this.aplicar(guardado);
         this.avisos.exito(this.textos.guardado);
-        // El botón de cuenta y el saludo de Inicio leen el nombre de la sesión: se vuelve a pedir sin recargar.
+        // El botón de cuenta, el saludo de Inicio y el modo privado leen la sesión: se vuelve a pedir sin recargar.
         this.permisos.refrescar();
       },
       error: (error) => {

@@ -1,6 +1,9 @@
 <section class="pn mi-caja" pnAcento>
   <div class="mi-caja__pagina">
-    <h1>Mi caja</h1>
+    <header class="mi-caja__cabecera">
+      <h1>Mi caja</h1>
+      <pn-ver-importes />
+    </header>
 
     <div class="mi-caja__rejilla">
       <!-- «Llevas encima»: arriba en el móvil; desde 1024 px, columna fija de 380 px a la derecha. -->
@@ -9,7 +12,7 @@
           [attr.aria-busy]="cargandoEncima ? 'true' : null">
           <h2 id="mi-caja-titulo-encima">Llevas encima</h2>
           @if (encima) {
-          <p class="mi-caja__cifra" data-cifras>{{ encima.importe | eur }}</p>
+          <p class="mi-caja__cifra" data-cifras><pn-importe>{{ encima.importe | eur }}</pn-importe></p>
           <p class="mi-caja__secundario" data-cifras>{{ cobrosSinEntregar(encima.numeroCobros) }} · Se entregan en la sede</p>
           } @else if (errorEncima) {
           <pn-bloque-error [titulo]="errorEncima" (reintentar)="cargarEncima()" />
@@ -104,7 +107,7 @@
                     <span>{{ cargo.concepto }}</span>
                     <span class="mi-caja__secundario" data-cifras>desde {{ diaMes(cargo.fechaAsignacion) }}</span>
                   </div>
-                  <span class="mi-caja__importe" [class.mi-caja__importe--vencido]="cargo.vencido" data-cifras>{{ cargo.importe | eur }}@if (cargo.vencido) {<small>vencido</small>}</span>
+                  <span class="mi-caja__importe" [class.mi-caja__importe--vencido]="cargo.vencido" data-cifras><pn-importe>{{ cargo.importe | eur }}</pn-importe>@if (cargo.vencido) {<small>vencido</small>}</span>
                   <button type="button" pnOcupado class="mi-caja__boton-texto" [ocupado]="cobrando.has(cargo.cargoId)"
                     textoOcupado="Cobrando…" [attr.aria-label]="'Cobrar ' + cargo.concepto + ' a ' + grupo.nombre"
                     (click)="abrirCobro(cargo)">Cobrar</button>
@@ -205,7 +208,7 @@
               @for (producto of productos; track producto.id) {
               <li class="mi-caja__fila mi-caja__fila--catalogo">
                 <span class="mi-caja__fila-texto">{{ producto.concepto }}</span>
-                <span class="mi-caja__importe" data-cifras>{{ producto.precio | eur }}</span>
+                <span class="mi-caja__importe" data-cifras><pn-importe>{{ producto.precio | eur }}</pn-importe></span>
                 <button type="button" pnOcupado class="mi-caja__boton-secundario" [ocupado]="vendiendo === producto.id"
                   textoOcupado="Vendiendo…" [deshabilitado]="!alumnoVenta"
                   [attr.aria-describedby]="alumnoVenta ? null : 'mi-caja-pista-venta'"
@@ -240,7 +243,7 @@
           } @else {
           <div class="mi-caja__sin-entregar">
             <h2>Sin entregar</h2>
-            <span class="mi-caja__importe" data-cifras>{{ encima.importe | eur }}</span>
+            <span class="mi-caja__importe" data-cifras><pn-importe>{{ encima.importe | eur }}</pn-importe></span>
           </div>
           <ul class="mi-caja__lista mi-caja__encima-lista" aria-label="Cobros sin entregar">
             @for (c of encima.cobros; track c.cobroId) {
@@ -250,7 +253,7 @@
                 <span class="mi-caja__secundario">{{ c.concepto }}@if (c.venta) { · venta } · {{ cuandoCobro(c) }}</span>
               </div>
               <div class="mi-caja__acciones">
-                <span class="mi-caja__importe" data-cifras>{{ c.importe | eur }}</span>
+                <span class="mi-caja__importe" data-cifras><pn-importe>{{ c.importe | eur }}</pn-importe></span>
                 <button type="button" class="mi-caja__boton-texto" (click)="abrirDeshacer(c)"
                   [attr.aria-label]="'Deshacer el cobro de ' + c.concepto + ' a ' + nombreCobro(c)">Deshacer</button>
               </div>
@@ -291,7 +294,7 @@
                     <span class="mi-caja__secundario" data-cifras>{{ c.concepto }} · entregado el {{ diaMes(c.fechaEntrega) }}@if (c.sedeNombre) { · {{ c.sedeNombre }}}</span>
                   </div>
                   <div class="mi-caja__acciones">
-                    <span class="mi-caja__importe" data-cifras>{{ c.importe | eur }}</span>
+                    <span class="mi-caja__importe" data-cifras><pn-importe>{{ c.importe | eur }}</pn-importe></span>
                     @if (c.solicitudPendienteId) {
                     <span class="mi-caja__pastilla">Esperando al propietario</span>
                     } @else if (!c.noSePuedePedir) {
@@ -376,7 +379,7 @@
                 <div class="mi-caja__encargo-l1">
                   <span class="mi-caja__fila-nombre">{{ nombreSolicitud(s) }}</span>
                   @if (s.importe !== null) {
-                  <span class="mi-caja__importe" data-cifras>{{ s.importe | eur }}</span>
+                  <span class="mi-caja__importe" data-cifras><pn-importe>{{ s.importe | eur }}</pn-importe></span>
                   }
                 </div>
                 <p class="mi-caja__secundario" data-cifras>{{ s.concepto }} · pedido el {{ diaMes(s.solicitadoEn) }}</p>
@@ -650,7 +653,7 @@
     <div class="mi-caja__encargo-l1">
       <span class="mi-caja__fila-nombre">{{ nombreSolicitud(s) }}</span>
       @if (s.importe !== null) {
-      <span class="mi-caja__importe" data-cifras>{{ s.importe | eur }}</span>
+      <span class="mi-caja__importe" data-cifras><pn-importe>{{ s.importe | eur }}</pn-importe></span>
       }
     </div>
     <p class="mi-caja__secundario" data-cifras>{{ s.concepto }} · pedido el {{ diaMes(s.solicitadoEn) }}</p>

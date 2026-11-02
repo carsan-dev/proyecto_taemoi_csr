@@ -68,7 +68,14 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				// Pieza 8b-3o: de /api/escuela solo leer la marca y el logo; escribir u otra ruta, cerrado.
 				{ "PUT", "/api/escuela/marca" }, { "POST", "/api/escuela/marca" }, { "DELETE", "/api/escuela/marca" },
 				{ "PUT", "/api/escuela/logo" }, { "POST", "/api/escuela/logo" }, { "DELETE", "/api/escuela/logo" },
-				{ "GET", "/api/escuela" }, { "GET", "/api/escuela/otra" }, { "GET", "/api/escuela/marca/otra" } }) {
+				{ "GET", "/api/escuela" }, { "GET", "/api/escuela/otra" }, { "GET", "/api/escuela/marca/otra" },
+				// Decisión 419: de /api/panel solo GET y PUT de exactamente Mi perfil; ni otro método ni otra ruta.
+				{ "POST", "/api/panel/mi-perfil" }, { "PATCH", "/api/panel/mi-perfil" },
+				{ "DELETE", "/api/panel/mi-perfil" }, { "GET", "/api/panel/mi-perfil/" },
+				{ "PUT", "/api/panel/mi-perfil/" }, { "GET", "/api/panel/mi-perfil/otra" },
+				{ "PUT", "/api/panel/mi-perfil/21" }, { "GET", "/api/panel/mi-perfil-otra" },
+				{ "PUT", "/api/panel/mi-perfil-otra" }, { "GET", "/api/panel" }, { "PUT", "/api/panel" },
+				{ "GET", "/api/panel/otra" }, { "PUT", "/api/panel/otra" } }) {
 			assertFalse(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 		}
 	}
@@ -90,7 +97,9 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				{ "PUT", "/api/profesor/alumnos/1/deportes/TAEKWONDO/apto" },
 				// Pieza 8b-3o (decisión 326): la marca y el logo de su escuela activa para el panel nuevo. Solo GET.
 				{ "GET", "/api/escuela/marca" }, { "HEAD", "/api/escuela/marca" }, { "GET", "/api/escuela/logo" },
-				{ "HEAD", "/api/escuela/logo" } }) {
+				{ "HEAD", "/api/escuela/logo" },
+				// Decisión 419: Mi perfil, para activar el modo privado de importes (HEAD como GET).
+				{ "GET", "/api/panel/mi-perfil" }, { "HEAD", "/api/panel/mi-perfil" }, { "PUT", "/api/panel/mi-perfil" } }) {
 			llamadas.clear();
 			assertTrue(decide(soloProfesor(), ruta[0], ruta[1]), ruta[0] + " " + ruta[1]);
 			assertEquals(List.of("sesion " + ruta[0] + " " + ruta[1]), llamadas, "decide la regla de siempre");

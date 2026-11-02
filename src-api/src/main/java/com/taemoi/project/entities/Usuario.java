@@ -128,6 +128,14 @@ public class Usuario implements UserDetails {
 	private Integer cumpleMes;
 
 	/**
+	 * Modo privado de importes (V31_18, decisión 419): el panel de esta cuenta abre con el dinero tapado. Es de la cuenta,
+	 * no de la escuela, y FUERA del JSON por el mismo motivo que el perfil. Solo la cambia {@code PerfilCuentaService}.
+	 */
+	@JsonIgnore
+	@Column(name = "importes_tapados", nullable = false)
+	private boolean importesTapados;
+
+	/**
 	 * Siempre vacío: las autoridades dependen de la organización activa y las calcula
 	 * {@code MembresiaService} a partir de las membresías (ver {@code JwtAuthenticationFilter}).
 	 * No usar como fuente de permisos.
@@ -305,6 +313,14 @@ public class Usuario implements UserDetails {
 
 	public void setCumpleMes(Integer cumpleMes) {
 		this.cumpleMes = cumpleMes;
+	}
+
+	public boolean isImportesTapados() {
+		return importesTapados;
+	}
+
+	public void setImportesTapados(boolean importesTapados) {
+		this.importesTapados = importesTapados;
 	}
 
 	public Long getId() {

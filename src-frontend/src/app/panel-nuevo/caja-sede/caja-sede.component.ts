@@ -42,6 +42,9 @@ import { paginasVisibles } from '../convocatorias/convocatorias-vista';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { ParteMensaje } from '../dialogo/dialogo.component';
 import { eur, numero, plural } from '../formato/formato-es';
+import { ImporteComponent } from '../modo-privado/importe.component';
+import { ModoPrivadoService } from '../modo-privado/modo-privado.service';
+import { VerImportesComponent } from '../modo-privado/ver-importes.component';
 import { variablesDelTema } from '../tema-escuela';
 import {
   AccionAnular,
@@ -55,6 +58,8 @@ import {
   accionEntrega,
   accionMovimiento,
   avisoCuadre,
+  etiquetaMovimientoDeCobro,
+  importeMovimientoDeCobro,
   avisoEfectivo,
   cifrasResumen,
   construirPeriodos,
@@ -72,7 +77,6 @@ import {
   numeroPestana,
   textoDesde,
   textoMostrando,
-  textoMovimientoDeCobro,
   tonoImporte,
 } from './caja-sede-vista';
 
@@ -130,11 +134,14 @@ interface ErrorDatos {
     BloqueErrorComponent,
     BloqueVacioComponent,
     BotonOcupadoComponent,
+    ImporteComponent,
+    VerImportesComponent,
   ],
   templateUrl: './caja-sede.component.html',
   styleUrls: ['./caja-sede.component.scss'],
 })
 export class CajaSedePanelComponent implements OnInit, OnDestroy {
+  readonly modo = inject(ModoPrivadoService);
   private readonly caja = inject(CajaService);
   private readonly auth = inject(AuthenticationService);
   private readonly endpoints = inject(EndpointsService);
@@ -167,7 +174,8 @@ export class CajaSedePanelComponent implements OnInit, OnDestroy {
   readonly fechaDia = fechaDia;
   readonly cuadre = cuadre;
   readonly diferenciaVista = diferenciaVista;
-  readonly textoMovimientoDeCobro = textoMovimientoDeCobro;
+  readonly etiquetaMovimientoDeCobro = etiquetaMovimientoDeCobro;
+  readonly importeMovimientoDeCobro = importeMovimientoDeCobro;
   readonly nombreAlumnoCobro = nombreAlumnoCobro;
   readonly avisoCuadre = avisoCuadre;
   readonly textoMostrando = textoMostrando;

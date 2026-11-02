@@ -53,6 +53,18 @@
         </div>
         }
       </section>
+
+      <section class="tarjeta" aria-labelledby="privacidad-titulo">
+        <h2 id="privacidad-titulo">Privacidad</h2>
+        <div class="privacidad-fila">
+          <span id="privado-etiqueta">Tapar los importes</span>
+          <button id="privado" type="button" role="switch" class="interruptor" [attr.aria-checked]="importesTapados()"
+            aria-labelledby="privado-etiqueta" aria-describedby="privado-ayuda" (click)="alternarImportes()">
+            <span class="interruptor__pista" aria-hidden="true"><span class="interruptor__bola"></span></span>
+          </button>
+        </div>
+        <p id="privado-ayuda" class="ayuda privacidad-ayuda">{{ ayudaTapar() }}</p>
+      </section>
     </fieldset>
 
     @if (errorGuardado()) { <p class="error error-guardado" role="alert">{{ errorGuardado() }}</p> }

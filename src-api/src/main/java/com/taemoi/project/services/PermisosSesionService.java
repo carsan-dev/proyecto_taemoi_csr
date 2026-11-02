@@ -54,6 +54,7 @@ import com.taemoi.project.repositories.UsuarioAlumnoRepository;
  * <li>{@code cumpleanos} (pieza 8b-M2 y decisión 322): hoy (Europe/Madrid) es el cumpleaños de la ficha de alumno con
  * relación {@code PROPIO} de la cuenta, en la organización de la sesión; sin ficha, anonimizada o sin fecha, decide el
  * día y mes guardados en la cuenta. Solo el booleano.</li>
+ * <li>{@code importesTapados} (decisión 419): la preferencia de la cuenta que ya está cargada, sin consulta.</li>
  * </ul>
  * Reutiliza el alcance de la petición ({@link AlcanceActual}): como mucho dos consultas pequeñas de sedes, sin N+1.
  */
@@ -82,7 +83,7 @@ public class PermisosSesionService {
 		boolean plataforma = tieneAutoridad(autenticacion, AutoridadPlataforma.ADMIN_PLATAFORMA);
 		if (autoridades.isEmpty()) {
 			return new PermisosSesionDTO(List.of(), plataforma, List.of(), false, false, List.of(),
-					nombreVisible(autenticacion), nombreSaludo(autenticacion), false);
+					nombreVisible(autenticacion), nombreSaludo(autenticacion), false, importesTapados(autenticacion));
 		}
 		AlcanceSesion alcance = alcanceActual.obtener();
 		boolean tieneGrupos = !alcance.grupos().isEmpty();
@@ -104,7 +105,8 @@ public class PermisosSesionService {
 				activas > 1, tieneGrupos, capacidades(autoridades, tieneGrupos),
 				nombreVisible(autenticacion), nombreSaludo(autenticacion),
 				cumpleanos(CobroService.usuarioActualId(), TenantContext.get(),
-						cuenta == null ? null : cuenta.getCumpleDia(), cuenta == null ? null : cuenta.getCumpleMes()));
+						cuenta == null ? null : cuenta.getCumpleDia(), cuenta == null ? null : cuenta.getCumpleMes()),
+				importesTapados(autenticacion));
 	}
 
 	/**
@@ -200,6 +202,12 @@ public class PermisosSesionService {
 	private static String nombreSaludo(Authentication autenticacion) {
 		Usuario cuenta = cuentaDeLaSesion(autenticacion);
 		return cuenta == null ? null : nombreSaludo(cuenta.getNombrePreferido(), cuenta.getNombre());
+	}
+
+	/** Decisión 419: si la cuenta de la sesión abre el panel con el dinero tapado. */
+	private static boolean importesTapados(Authentication autenticacion) {
+		Usuario cuenta = cuentaDeLaSesion(autenticacion);
+		return cuenta != null && cuenta.isImportesTapados();
 	}
 
 	/** Decisión 322: con nombre preferido, ese tal cual; si no, «Nombre A.». */

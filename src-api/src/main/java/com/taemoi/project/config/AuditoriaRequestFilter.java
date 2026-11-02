@@ -220,8 +220,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"),
 			// Pieza 8b-T: el color de la escuela en el cuerpo del PUT de la marca (los 4xx; el 2xx tiene registro propio).
 			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"),
-			// Decisión 322: el nombre y el cumpleaños del perfil de la cuenta (los 4xx; el 2xx tiene registro propio).
-			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+			// Decisiones 322 y 419: el nombre, el cumpleaños y la preferencia del perfil de la cuenta (los 4xx; el 2xx tiene
+			// registro propio).
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
 			// Decisión 324: los alumnos presentes, por los dos prefijos (los 4xx; el 2xx tiene registro propio). Esta fila
 			// sobrevive a la anonimización del alumno.
 			Pattern.compile("^/api(/profesor)?/grupos/[^/]+/clases/[^/]+/[^/]+/?$"), Set.of("presentes"));
@@ -233,7 +234,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Map<Pattern, Set<String>> PARAMETROS_REDACTADOS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/miembros/?$"), Set.of("q"),
 			// Decisión 322: el perfil de la cuenta no lee parámetros, pero un GET con ?nombrePreferido=… no debe guardarlos.
-			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes"),
+			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
 			// Pieza R1: el nombre del fichero de una subida fallida, tal como lo escribió quien la hizo.
 			Pattern.compile("^/api/material-examen/[^/]+/[^/]+/(videos|documentacion)/?$"), Set.of("nombre"));
 	static final String VALOR_REDACTADO = "[redactado]";
