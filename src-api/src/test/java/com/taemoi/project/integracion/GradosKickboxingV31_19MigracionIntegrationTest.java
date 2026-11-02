@@ -28,13 +28,14 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 /**
- * V31_19: en kickboxing el cinturón que el código llama ROJO es marrón. V30 ya llamó «MARRÓN» al grado ROJO del sistema de
- * kickboxing de la organización 1; V31_19 renombra los cuatro intermedios que aún decían «ROJO» (AZUL-ROJO y ROJO-NEGRO
- * 1º/2º/3º PUM). Sobre una base en V31_18 con las semillas de Taemoi, otro sistema de Taemoi con plantilla KICKBOXING que
- * no es el de la disciplina y una segunda escuela con los mismos nombres: solo cambia el nombre de esas cuatro filas; ni
- * códigos, ni colores, ni taekwondo, ni productos, ni las otras escuelas. Un nombre que no sea exactamente el sembrado no
- * se toca. Repetirla no cambia nada; tras un fallo se completa. Ejecuta
- * {@code docs/multi-escuela/postcheck-grados-kickboxing.sql}. Datos inventados.
+ * V31_19: en kickboxing el cinturón que el código llama ROJO es marrón. V30 ya llamó «MARRÓN» (#8B4513) al grado ROJO del
+ * sistema de kickboxing de la organización 1; V31_19 corrige los cuatro intermedios que aún decían «ROJO» y llevaban la
+ * franja roja #FF0000 (AZUL-ROJO y ROJO-NEGRO 1º/2º/3º PUM): nombre con MARRÓN y franja #8B4513. Sobre una base en V31_18
+ * con las semillas de Taemoi, otro sistema de Taemoi con plantilla KICKBOXING que no es el de la disciplina y una segunda
+ * escuela con los mismos valores: solo cambian nombre y colores de esas cuatro filas; ni códigos, ni taekwondo, ni
+ * productos, ni las otras escuelas. Un valor que no sea exactamente el sembrado no se toca (los demás de la fila, sí).
+ * Repetirla no cambia nada; tras un fallo se completa. Ejecuta {@code docs/multi-escuela/postcheck-grados-kickboxing.sql}.
+ * Datos inventados.
  */
 @Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -44,14 +45,21 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 	private static final String ESQUEMA = "taemoi_v31_19_it";
 	private static final String V31_19 = "db/migration/V31_19__grados_kickboxing_marron.sql";
 
-	/** codigo -> nombre antes (V30) y después (V31_19) en el sistema de kickboxing de la organización 1. */
+	private static final String MARRON = "#8B4513";
+
+	/**
+	 * codigo -> nombre, color_1, color_2 antes (V30) y después (V31_19) en el sistema de kickboxing de la organización 1:
+	 * { nombre antes, nombre después, color_1 antes, color_1 después, color_2 antes, color_2 después }.
+	 */
 	private static final Map<String, String[]> RENOMBRADOS = new LinkedHashMap<>();
 
 	static {
-		RENOMBRADOS.put("AZUL_ROJO", new String[] { "AZUL-ROJO", "AZUL-MARRÓN" });
-		RENOMBRADOS.put("ROJO_NEGRO_1_PUM", new String[] { "ROJO-NEGRO 1º PUM", "MARRÓN-NEGRO 1º PUM" });
-		RENOMBRADOS.put("ROJO_NEGRO_2_PUM", new String[] { "ROJO-NEGRO 2º PUM", "MARRÓN-NEGRO 2º PUM" });
-		RENOMBRADOS.put("ROJO_NEGRO_3_PUM", new String[] { "ROJO-NEGRO 3º PUM", "MARRÓN-NEGRO 3º PUM" });
+		RENOMBRADOS.put("AZUL_ROJO",
+				new String[] { "AZUL-ROJO", "AZUL-MARRÓN", "#0000FF", "#0000FF", "#FF0000", MARRON });
+		for (int n = 1; n <= 3; n++) {
+			RENOMBRADOS.put("ROJO_NEGRO_" + n + "_PUM", new String[] { "ROJO-NEGRO " + n + "º PUM",
+					"MARRÓN-NEGRO " + n + "º PUM", "#FF0000", MARRON, "#000000", "#000000" });
+		}
 	}
 
 	private static final List<String> TABLAS_SIN_CAMBIOS = List.of("sistema_grados", "disciplina", "producto", "alumno",
@@ -107,8 +115,10 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 				otra, sistemaOtra, otra, sistemaOtra);
 
 		for (Map.Entry<String, String[]> e : RENOMBRADOS.entrySet()) {
-			assertEquals(e.getValue()[0], nombre(kb, e.getKey()), "semilla de V30: " + e.getKey());
+			String[] v = e.getValue();
+			assertEquals(List.of(v[0], v[2], v[4]), valores(kb, e.getKey()), "semilla de V30: " + e.getKey());
 		}
+		assertEquals(List.of("MARRÓN", MARRON, "null"), valores(kb, "ROJO"), "V30: el ROJO de kickboxing ya es marrón");
 		gradosAntes = grados();
 		columnasAntes = jdbc.queryForList(COLUMNAS_DEL_ESQUEMA);
 		for (String tabla : TABLAS_SIN_CAMBIOS) {
@@ -128,16 +138,20 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 
 	@Test
 	@Order(2)
-	void kickboxingDeTaemoi_losCuatroIntermediosPasanAMarron() {
+	void kickboxingDeTaemoi_losCuatroIntermediosPasanAMarron_nombreYFranja() {
 		for (Map.Entry<String, String[]> e : RENOMBRADOS.entrySet()) {
-			assertEquals(e.getValue()[1], nombre(kb, e.getKey()), e.getKey());
+			String[] v = e.getValue();
+			assertEquals(List.of(v[1], v[3], v[5]), valores(kb, e.getKey()), e.getKey());
 		}
-		assertEquals("MARRÓN", nombre(kb, "ROJO"));
+		assertEquals(List.of("MARRÓN", MARRON, "null"), valores(kb, "ROJO"));
 		assertEquals(0L, jdbc.queryForObject(
 				"SELECT COUNT(*) FROM grado WHERE sistema_grados_id = ? AND UPPER(nombre) LIKE '%ROJO%'", Long.class, kb));
+		assertEquals(0L, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM grado WHERE sistema_grados_id = ?
+				  AND (UPPER(color_1) = '#FF0000' OR UPPER(color_2) = '#FF0000')""", Long.class, kb));
 	}
 
-	/** Del resto de la tabla grado nada cambia; de esas cuatro filas, solo el nombre (código, colores, orden… igual). */
+	/** Del resto de la tabla grado nada cambia; de esas cuatro filas, solo nombre y colores (código, orden… igual). */
 	@Test
 	@Order(3)
 	void soloCambiaElNombreDeEsasCuatroFilas() {
@@ -147,12 +161,15 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 	@Test
 	@Order(4)
 	void taekwondo_productos_otrosSistemasYOtrasEscuelas_sinCambios() {
-		assertEquals("AZUL-ROJO", nombre(tkd, "AZUL_ROJO"));
-		assertEquals("ROJO", nombre(tkd, "ROJO"));
-		assertEquals("ROJO-NEGRO 1º PUM", nombre(tkd, "ROJO_NEGRO_1_PUM"));
+		assertEquals(List.of("AZUL-ROJO", "#0000FF", "#FF0000"), valores(tkd, "AZUL_ROJO"));
+		assertEquals(List.of("ROJO", "#FF0000", "null"), valores(tkd, "ROJO"));
+		for (int n = 1; n <= 3; n++) {
+			assertEquals(List.of("ROJO-NEGRO " + n + "º PUM", "#FF0000", "#000000"), valores(tkd, "ROJO_NEGRO_" + n + "_PUM"));
+		}
 		assertEquals("AZUL-ROJO", nombre(otroSistemaTaemoi, "AZUL_ROJO"));
-		assertEquals(List.of("AZUL-ROJO", "ROJO-NEGRO 1º PUM"), jdbc.queryForList(
-				"SELECT nombre FROM grado WHERE organizacion_id = ? ORDER BY orden", String.class, otra));
+		assertEquals(List.of("AZUL-ROJO|#0000FF|#FF0000", "ROJO-NEGRO 1º PUM|#FF0000|#000000"), jdbc.queryForList(
+				"SELECT CONCAT_WS('|', nombre, color_1, color_2) FROM grado WHERE organizacion_id = ? ORDER BY orden",
+				String.class, otra));
 		for (String tabla : TABLAS_SIN_CAMBIOS) {
 			assertEquals(filasAntes.get(tabla), jdbc.queryForList("SELECT * FROM " + tabla + " ORDER BY id"), tabla);
 		}
@@ -171,23 +188,36 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 		assertEquals(5L, numero(fila, "grados_tk_con_rojo"));
 		assertEquals(5L, numero(fila, "grados_tk_sembrados_con_rojo"));
 		assertEquals(0L, numero(fila, "grados_tk_marron"));
-		assertEquals(8, fila.size(), "solo recuentos: " + fila.keySet());
+		assertEquals(0L, numero(fila, "grados_kb_con_ff0000"));
+		assertEquals(4L, numero(fila, "colores_kb_cambiados"));
+		assertEquals(5L, numero(fila, "grados_tk_con_ff0000"));
+		assertEquals(0L, numero(fila, "grados_tk_con_8b4513"));
+		assertEquals(12, fila.size(), "solo recuentos: " + fila.keySet());
 	}
 
-	/** Un nombre que la escuela hubiera cambiado (otro texto, o el mismo con otras mayúsculas) no se toca. */
+	/**
+	 * Un valor que la escuela hubiera cambiado (otro texto u otro color, o el mismo con otras mayúsculas) no se toca; los
+	 * demás valores de la fila, sí.
+	 */
 	@Test
 	@Order(6)
-	void unNombreDistintoDelSembrado_noSeToca() throws Exception {
+	void unValorDistintoDelSembrado_noSeToca_elRestoDeLaFilaSi() throws Exception {
+		restaurarAntesDeV31_19();
 		jdbc.update("UPDATE grado SET nombre = 'Azul-Rojo' WHERE sistema_grados_id = ? AND codigo = 'AZUL_ROJO'", kb);
 		jdbc.update("UPDATE grado SET nombre = 'ROJO-NEGRO 1er PUM' WHERE sistema_grados_id = ? AND codigo = 'ROJO_NEGRO_1_PUM'",
 				kb);
+		jdbc.update("UPDATE grado SET color_1 = '#ff0000' WHERE sistema_grados_id = ? AND codigo = 'ROJO_NEGRO_2_PUM'", kb);
+		jdbc.update("UPDATE grado SET color_1 = '#CC0000' WHERE sistema_grados_id = ? AND codigo = 'ROJO_NEGRO_3_PUM'", kb);
 		ejecutarV31_19();
-		assertEquals("Azul-Rojo", nombre(kb, "AZUL_ROJO"));
-		assertEquals("ROJO-NEGRO 1er PUM", nombre(kb, "ROJO_NEGRO_1_PUM"));
-		assertEquals("MARRÓN-NEGRO 2º PUM", nombre(kb, "ROJO_NEGRO_2_PUM"));
+		assertEquals(List.of("Azul-Rojo", "#0000FF", MARRON), valores(kb, "AZUL_ROJO"));
+		assertEquals(List.of("ROJO-NEGRO 1er PUM", MARRON, "#000000"), valores(kb, "ROJO_NEGRO_1_PUM"));
+		assertEquals(List.of("MARRÓN-NEGRO 2º PUM", "#ff0000", "#000000"), valores(kb, "ROJO_NEGRO_2_PUM"));
+		assertEquals(List.of("MARRÓN-NEGRO 3º PUM", "#CC0000", "#000000"), valores(kb, "ROJO_NEGRO_3_PUM"));
 		Map<String, Object> fila = postcheck();
 		assertEquals(2L, numero(fila, "grados_kb_con_rojo"), "el postcheck lo delata");
 		assertEquals(2L, numero(fila, "grados_kb_renombrados"));
+		assertEquals(1L, numero(fila, "grados_kb_con_ff0000"), "el postcheck lo delata");
+		assertEquals(2L, numero(fila, "colores_kb_cambiados"));
 		restaurarAntesDeV31_19();
 		ejecutarV31_19();
 		assertEquals(esperadoTrasV31_19(gradosAntes), grados());
@@ -226,7 +256,10 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 			Map<String, Object> copia = new LinkedHashMap<>(fila);
 			Object sistema = fila.get("sistema_grados_id");
 			if (sistema != null && ((Number) sistema).longValue() == kb && RENOMBRADOS.containsKey(fila.get("codigo"))) {
-				copia.put("nombre", RENOMBRADOS.get(fila.get("codigo"))[1]);
+				String[] v = RENOMBRADOS.get(fila.get("codigo"));
+				copia.put("nombre", v[1]);
+				copia.put("color_1", v[3]);
+				copia.put("color_2", v[5]);
 			}
 			esperado.add(copia);
 		}
@@ -235,8 +268,9 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 
 	private void restaurarAntesDeV31_19() {
 		for (Map.Entry<String, String[]> e : RENOMBRADOS.entrySet()) {
-			jdbc.update("UPDATE grado SET nombre = ? WHERE sistema_grados_id = ? AND codigo = ?", e.getValue()[0], kb,
-					e.getKey());
+			String[] v = e.getValue();
+			jdbc.update("UPDATE grado SET nombre = ?, color_1 = ?, color_2 = ? WHERE sistema_grados_id = ? AND codigo = ?",
+					v[0], v[2], v[4], kb, e.getKey());
 		}
 		assertEquals(gradosAntes, grados());
 	}
@@ -244,6 +278,13 @@ class GradosKickboxingV31_19MigracionIntegrationTest extends MySqlIntegrationTes
 	private String nombre(long sistema, String codigo) {
 		return jdbc.queryForObject("SELECT nombre FROM grado WHERE sistema_grados_id = ? AND codigo = ?", String.class,
 				sistema, codigo);
+	}
+
+	/** nombre, color_1, color_2 («null» si es NULL). */
+	private List<String> valores(long sistema, String codigo) {
+		Map<String, Object> g = jdbc.queryForMap(
+				"SELECT nombre, color_1, color_2 FROM grado WHERE sistema_grados_id = ? AND codigo = ?", sistema, codigo);
+		return List.of(String.valueOf(g.get("nombre")), String.valueOf(g.get("color_1")), String.valueOf(g.get("color_2")));
 	}
 
 	private List<Map<String, Object>> grados() {

@@ -82,7 +82,7 @@ public final class CatalogoTaemoiEnMemoria {
 		for (Object[] fila : TAEKWONDO) {
 			todos.add(grado(++id, tkd, fila, (String) fila[1], (Integer) fila[2], AplicaGrado.valueOf((String) fila[3])));
 		}
-		// Copia de kickboxing (V23): ROJO = «MARRÓN» y marrón (V30), intermedios con MARRÓN en vez de ROJO (V31_19), DAN tras
+		// Copia de kickboxing (V23): ROJO = «MARRÓN» y marrón (V30), intermedios con MARRÓN y #8B4513 en vez de ROJO (V31_19), DAN tras
 		// ROJO, PUM al final, intermedios y PUM nunca destino.
 		Map<String, Integer> desplazamiento = Map.of("NEGRO", -3, "ROJO_NEGRO", 5);
 		Map<String, String> nombresKickboxing = Map.of("ROJO", "MARRÓN", "AZUL_ROJO", "AZUL-MARRÓN",
@@ -101,6 +101,13 @@ public final class CatalogoTaemoiEnMemoria {
 			if (codigo.equals("ROJO")) {
 				copia.setColor1("#8B4513");
 				copia.setColor2(null);
+			}
+			// V31_19: la franja roja de los intermedios, también marrón.
+			if ("#FF0000".equals(copia.getColor1())) {
+				copia.setColor1("#8B4513");
+			}
+			if ("#FF0000".equals(copia.getColor2())) {
+				copia.setColor2("#8B4513");
 			}
 			todos.add(copia);
 		}
