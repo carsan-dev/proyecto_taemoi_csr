@@ -44,7 +44,7 @@
               </span>
               <span class="fila__datos">
                 <span class="fila__nombre">{{ b.nombre }}</span>
-                <span class="fila__grados">{{ textoGrados(b.grados) }}</span>
+                <span class="fila__grados">{{ subtitulo(actual, b) }}</span>
               </span>
               <span class="fila__pastillas" data-cifras>
                 @if (b.tieneTemario) {

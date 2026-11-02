@@ -39,7 +39,6 @@ export class MaterialExamenPanelComponent implements OnInit, OnDestroy {
   private lectura?: Subscription;
 
   readonly peso = peso;
-  readonly textoGrados = textoGrados;
   readonly textoVideos = textoVideos;
 
   get actual(): DisciplinaConBloques | undefined {
@@ -97,6 +96,11 @@ export class MaterialExamenPanelComponent implements OnInit, OnDestroy {
     this.elegir(codigo);
     this.cdr.detectChanges();
     this.host.nativeElement.querySelector<HTMLElement>(`[data-pestana="${codigo}"]`)?.focus();
+  }
+
+  subtitulo(disciplina: DisciplinaConBloques, bloque: BloqueResumen): string {
+    const esNegros = disciplina.codigo === 'TAEKWONDO' || disciplina.codigo === 'KICKBOXING';
+    return textoGrados(bloque.grados, esNegros ? bloque.id : '', (codigo) => this.catalogo.grado(disciplina.codigo, codigo));
   }
 
   cintos(disciplina: DisciplinaConBloques, bloque: BloqueResumen): [string, string] {

@@ -91,6 +91,27 @@ describe('material-examen-vista', () => {
       expect(textoGrados([{ codigo: 'ROJO_NEGRO_1_PUM', nombre: 'ROJO-NEGRO 1º PUM' }])).toBe('Alumnos de Rojo-negro 1º PUM');
     });
 
+    describe('bloques de negros: de DAN a DAN', () => {
+      const pum = [
+        { codigo: 'ROJO_NEGRO_1_PUM', nombre: 'ROJO-NEGRO 1º PUM' },
+        { codigo: 'NEGRO_1_DAN', nombre: 'NEGRO 1º DAN' },
+      ];
+      const ids = ['b07_negro_1_a_negro_2', 'b08_negro_2_a_negro_3', 'b09_negro_3_a_negro_4', 'b10_negro_4_a_negro_5'];
+      for (const [i, id] of ids.entries()) {
+        it(`${id}, con y sin catálogo`, () => {
+          const esperado = `Alumnos de Negro ${i + 1}º DAN a Negro ${i + 2}º DAN`;
+          expect(textoGrados(pum, id)).toBe(esperado);
+          const catalogo = (c: string) => ({ nombre: c.replace(/^NEGRO_(\d)_DAN$/, 'NEGRO $1º DAN') });
+          expect(textoGrados(pum, id, catalogo)).toBe(esperado);
+        });
+      }
+
+      it('b11 sigue en Negro 5º DAN y un bloque de color no cambia', () => {
+        expect(textoGrados([{ codigo: 'NEGRO_5_DAN', nombre: 'NEGRO 5º DAN' }], 'b11_negro_5_a_maximo')).toBe('Alumnos de Negro 5º DAN');
+        expect(textoGrados([blanco, blancoAmarillo], 'b01_inicio_a_amarillo')).toBe('Alumnos de Blanco a Blanco-amarillo');
+      });
+    });
+
     it('vacío sin grados', () => {
       expect(textoGrados([])).toBe('');
       expect(fraseGrados([])).toBe('');
