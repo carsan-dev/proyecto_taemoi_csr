@@ -30,7 +30,8 @@
   .grupo-profesor__fila:hover { background: var(--pn-superficie-2); }
   .grupo-profesor__fila--abierta, .grupo-profesor__fila--abierta:hover { background: var(--pn-acento-suave); }
   a:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
-  .grupo-profesor__avatar { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); font-size: 0.75rem; }
+  .grupo-profesor__avatar { display: flex; justify-content: center; align-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%; color: var(--pn-acento); background: var(--pn-acento-suave); font: var(--pn-etiqueta); font-size: 0.75rem; overflow: hidden; }
+  .grupo-profesor__avatar img { width: 100%; height: 100%; object-fit: cover; }
   .grupo-profesor__fila--abierta .grupo-profesor__avatar { background: var(--pn-superficie); }
   .grupo-profesor__identidad { flex: 1; min-width: 0; }
   // El nombre es el enlace; su ::after cubre la fila para que toda ella sea objetivo de clic.

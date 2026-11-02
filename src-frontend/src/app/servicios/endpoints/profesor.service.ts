@@ -81,6 +81,11 @@ export class ProfesorService {
       .pipe(map((lista) => (lista ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [] }))));
   }
 
+  /** La foto de la lista; `v` evita ver la anterior si cambia, porque el navegador la guarda 8 h. */
+  urlFoto(alumnoId: number, fotoId: number): string {
+    return `${this.api}/alumnos/${alumnoId}/imagen?w=120&v=${fotoId}`;
+  }
+
   ficha(alumnoId: number): Observable<FichaAlumnoProfesor> {
     return this.http.get<FichaAlumnoProfesor>(`${this.api}/alumnos/${alumnoId}`, this.opciones()).pipe(
       map((f) => ({ ...f, grupos: f.grupos ?? [], contacto: f.contacto ?? [], deportes: f.deportes ?? [] }))

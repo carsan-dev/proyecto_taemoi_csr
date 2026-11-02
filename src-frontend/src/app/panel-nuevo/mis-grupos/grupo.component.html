@@ -48,7 +48,13 @@
         <ul class="grupo-profesor__lista" aria-label="Alumnos activos">
           @for (alumno of visibles; track alumno.id) {
             <li class="grupo-profesor__fila" [class.grupo-profesor__fila--abierta]="alumnoAbierto?.id === alumno.id">
-              <span class="grupo-profesor__avatar" aria-hidden="true">{{ iniciales(alumno.nombre, alumno.apellidos) }}</span>
+              <span class="grupo-profesor__avatar" aria-hidden="true">
+                @if (foto(alumno); as f) {
+                <img [src]="f" alt="" width="40" height="40" loading="lazy" decoding="async" (error)="fotoFallida(alumno)" />
+                } @else {
+                {{ iniciales(alumno.nombre, alumno.apellidos) }}
+                }
+              </span>
               <span class="grupo-profesor__identidad">
                 <a class="grupo-profesor__alumno" [href]="enlaceAlumno(alumno)" [attr.data-alumno]="alumno.id"
                   [attr.aria-current]="alumnoAbierto?.id === alumno.id ? 'true' : null" (click)="abrirAlumno($event, alumno)">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</a>

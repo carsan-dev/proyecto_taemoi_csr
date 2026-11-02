@@ -72,6 +72,21 @@ describe('GrupoPanelComponent', () => {
     expect(elemento().textContent).toContain('Titular');
   });
 
+  it('con fotoId pinta la foto sin iniciales; sin fotoId quedan las iniciales; si falla, vuelven', () => {
+    cargar([{ ...alumnos[0], fotoId: 55 }, alumnos[1]]);
+    const filas = elemento().querySelectorAll('.grupo-profesor__fila');
+    const img = filas[0].querySelector<HTMLImageElement>('.grupo-profesor__avatar img')!;
+    expect(img.getAttribute('src')).toMatch(/\/alumnos\/21\/imagen\?w=120&v=55$/);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(filas[0].querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('');
+    expect(filas[1].querySelector('.grupo-profesor__avatar img')).toBeNull();
+    expect(filas[1].querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('HM');
+    img.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(filas[0].querySelector('.grupo-profesor__avatar img')).toBeNull();
+    expect(filas[0].querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('LR');
+  });
+
   it('migas «Mis grupos /» con enlace en vez de «Volver»', () => {
     cargar();
     const miga = elemento().querySelector('nav.grupo-profesor__migas a')!;
