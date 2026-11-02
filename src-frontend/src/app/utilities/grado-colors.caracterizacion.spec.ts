@@ -28,12 +28,14 @@ describe('grado-colors (caracterización)', () => {
       });
     });
 
-    it('D4: KICKBOXING ROJO es marrón #8B4513 (antes rojo); el resto de KB igual que la paleta', () => {
+    it('D4: KICKBOXING ROJO es marrón #8B4513 (antes rojo), y la franja roja de los intermedios (V31_19); el resto de KB igual que la paleta', () => {
       expect(getGradoColors('ROJO', 'KICKBOXING')).toEqual({ colors: ['#8B4513'], isSplit: false, needsBorder: false });
       expect(getGradoColors('ROJO', 'TAEKWONDO').colors).toEqual([R]);
       expect(getGradoColors('ROJO').colors).toEqual([R]); // sin deporte: paleta por nombre
       expect(getGradoTextStyle('ROJO', 'KICKBOXING')).toContain('color: #8B4513;');
-      CATALOGO_TAEMOI.sistemasGrados[1].grados.filter(g => g.codigo !== 'ROJO').forEach(g =>
+      expect(getGradoColors('AZUL_ROJO', 'KICKBOXING')).toEqual({ colors: [Z, '#8B4513'], isSplit: true, needsBorder: false });
+      expect(getGradoColors('ROJO_NEGRO_1_PUM', 'KICKBOXING')).toEqual({ colors: ['#8B4513', K], isSplit: true, needsBorder: false });
+      CATALOGO_TAEMOI.sistemasGrados[1].grados.filter(g => g.color1 !== '#8B4513' && g.color2 !== '#8B4513').forEach(g =>
         expect(getGradoColors(g.codigo, 'KICKBOXING')).toEqual(getGradoColors(g.codigo), g.codigo));
     });
 
@@ -137,7 +139,7 @@ describe('grado-colors (caracterización)', () => {
     it('KICKBOXING con otros grados: nombre del catálogo (D3); desconocidos, el código', () => {
       // D3: antes devolvía el código en bruto (AZUL_ROJO, NEGRO_1_DAN); ahora `grado.nombre`.
       expect(getGradoNombreParaDeporte('BLANCO', 'KICKBOXING')).toBe('BLANCO');
-      expect(getGradoNombreParaDeporte('AZUL_ROJO', 'KICKBOXING')).toBe('AZUL-ROJO');
+      expect(getGradoNombreParaDeporte('AZUL_ROJO', 'KICKBOXING')).toBe('AZUL-MARRÓN'); // V31_19
       expect(getGradoNombreParaDeporte('NEGRO_1_DAN', 'KICKBOXING')).toBe('NEGRO 1º DAN');
       expect(getGradoNombreParaDeporte('ROJO_NEGRO', 'KICKBOXING')).toBe('ROJO_NEGRO'); // no existe en el catálogo
     });

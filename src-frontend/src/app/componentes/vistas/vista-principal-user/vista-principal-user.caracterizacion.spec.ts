@@ -45,11 +45,11 @@ describe('vista-principal-user cinturones (caracterización)', () => {
       ['BLANCO_AMARILLO', 'TAEKWONDO', 'BLANCO-AMARILLO'], // D3
       ['AMARILLO_NARANJA', 'TAEKWONDO', 'AMARILLO-NARANJA'], // D3
       ['AZUL_ROJO', 'TAEKWONDO', 'AZUL-ROJO'], // D3
-      ['AZUL_ROJO', 'KICKBOXING', 'AZUL-ROJO'], // D3 (el nombre de KB no cambia para este grado)
+      ['AZUL_ROJO', 'KICKBOXING', 'AZUL-MARRÓN'], // D3 y V31_19
       ['ROJO', 'TAEKWONDO', 'ROJO'],
       ['ROJO', 'KICKBOXING', 'MARRÓN'], // D3, D4 (antes «MARRON»)
       ['ROJO_NEGRO_1_PUM', 'TAEKWONDO', 'ROJO-NEGRO 1º PUM'], // D3
-      ['ROJO_NEGRO_3_PUM', 'KICKBOXING', 'ROJO-NEGRO 3º PUM'], // D3
+      ['ROJO_NEGRO_3_PUM', 'KICKBOXING', 'MARRÓN-NEGRO 3º PUM'], // D3 y V31_19
       ['NEGRO_1_DAN', 'TAEKWONDO', 'NEGRO 1º DAN'], // D3
       ['NEGRO_5_DAN', 'KICKBOXING', 'NEGRO 5º DAN'], // D3
       ['', 'TAEKWONDO', ''],
@@ -88,16 +88,16 @@ describe('vista-principal-user cinturones (caracterización)', () => {
       });
     });
 
-    it('AZUL_ROJO en KB: color2 del catálogo (rojo del propio grado; solo el grado ROJO es marrón en KB, D4)', () => {
+    it('AZUL_ROJO en KB: color2 del catálogo (la franja roja es marrón en KB, V31_19)', () => {
       expect(crear().getBeltVisual('AZUL_ROJO', 'KICKBOXING')).toEqual(
-        visual('#FF0000', '#0000FF', true, [], 'AZUL-ROJO')
+        visual('#8B4513', '#0000FF', true, [], 'AZUL-MARRÓN')
       );
     });
 
-    // Antes el rojo de las franjas ROJO_NEGRO era marrón por código en KB; el catálogo (V30) solo hace marrón al grado ROJO.
+    // Antes el rojo de las franjas ROJO_NEGRO era marrón por código en KB; ahora el marrón sale del catálogo (V31_19).
     it('ROJO_NEGRO_3_PUM en KB: franjas del código y colores del catálogo', () => {
       expect(crear().getBeltVisual('ROJO_NEGRO_3_PUM', 'KICKBOXING')).toEqual(
-        visual('#000000', '#FF0000', true, [3, 9, 15], 'ROJO-NEGRO 3º PUM')
+        visual('#000000', '#8B4513', true, [3, 9, 15], 'MARRÓN-NEGRO 3º PUM')
       );
     });
 

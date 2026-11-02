@@ -106,7 +106,7 @@ export function coloresBloque(
   bloqueId = '',
   disciplina = ''
 ): [string, string] {
-  // The API's grades are the audience, not the transition: PUM grades also belong to black-belt blocks.
+  // Los grados de la API son a quién llega el bloque, no su transición: los PUM también están en bloques de cinturón negro.
   const tramo = /^b\d+_(inicio|blanco|amarillo|naranja|verde|azul|rojo|negro_\d+)_a_(amarillo|naranja|verde|azul|rojo|negro_\d+|maximo)$/.exec(bloqueId);
   if (tramo && (disciplina === 'TAEKWONDO' || disciplina === 'KICKBOXING')) {
     const color = (extremo: string): string => {

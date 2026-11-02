@@ -116,7 +116,7 @@ describe('material-examen-vista', () => {
     });
   });
 
-  describe('block transition presentation', () => {
+  describe('cintos de la transición del bloque', () => {
     const buscar = (disciplina: string) => (codigo: string) => {
       const id = CATALOGO_TAEMOI.disciplinas.find((d) => d.codigo === disciplina)?.sistemaGradosId;
       return CATALOGO_TAEMOI.sistemasGrados.find((s) => s.id === id)?.grados.find((g) => g.codigo === codigo);
@@ -124,18 +124,18 @@ describe('material-examen-vista', () => {
     const rojo = [{ codigo: 'ROJO', nombre: 'ROJO' }];
 
     for (const disciplina of ['TAEKWONDO', 'KICKBOXING']) {
-      it(disciplina + ': colors the first block from white to yellow', () => {
+      it(disciplina + ': el primer bloque va de blanco a amarillo', () => {
         expect(coloresBloque([{ codigo: 'BLANCO', nombre: 'BLANCO' }], buscar(disciplina), 'b01_inicio_a_amarillo', disciplina))
           .toEqual(['#FFFFFF', '#FFFF00']);
       });
 
-      it(disciplina + ': uses the destination of the block, not the last audience grade', () => {
+      it(disciplina + ': usa el destino del bloque, no el último grado al que llega', () => {
         expect(coloresBloque(rojo, buscar(disciplina), 'b06_rojo_a_negro_1', disciplina))
           .toEqual([disciplina === 'KICKBOXING' ? '#8B4513' : '#FF0000', '#000000']);
       });
 
       for (let dan = 1; dan <= 4; dan++) {
-        it(disciplina + ': both belts are black for DAN ' + dan + ' to ' + (dan + 1), () => {
+        it(disciplina + ': los dos cintos son negros del ' + dan + 'º al ' + (dan + 1) + 'º DAN', () => {
           const grados = [
             ...(dan <= 3 ? [{ codigo: 'ROJO_NEGRO_' + dan + '_PUM', nombre: 'ROJO-NEGRO ' + dan + 'º PUM' }] : []),
             { codigo: 'NEGRO_' + dan + '_DAN', nombre: 'NEGRO ' + dan + 'º DAN' },
@@ -145,7 +145,7 @@ describe('material-examen-vista', () => {
         });
       }
 
-      it(disciplina + ': black from fifth DAN onward and future numbered transitions', () => {
+      it(disciplina + ': negro desde el 5º DAN y en las futuras transiciones numeradas', () => {
         expect(coloresBloque([], buscar(disciplina), 'b11_negro_5_a_maximo', disciplina)).toEqual(['#000000', '#000000']);
         expect(coloresBloque([], buscar(disciplina), 'b12_negro_6_a_negro_7', disciplina)).toEqual(['#000000', '#000000']);
       });
@@ -157,19 +157,19 @@ describe('material-examen-vista', () => {
         ['b05_azul_a_rojo', '#0000FF', disciplina === 'KICKBOXING' ? '#8B4513' : '#FF0000'],
       ];
       for (const [id, origen, destino] of intermedios) {
-        it(disciplina + ': preserves the intermediate transition ' + id, () => {
+        it(disciplina + ': conserva la transición intermedia ' + id, () => {
           expect(coloresBloque([], buscar(disciplina), id, disciplina)).toEqual([origen, destino]);
         });
       }
     }
 
-    it('Kickboxing: the ROJO code uses the existing brown catalog color and label', () => {
+    it('Kickboxing: el código ROJO usa el nombre y el color marrón del catálogo', () => {
       expect(buscar('KICKBOXING')('ROJO')?.nombre).toBe('MARRÓN');
       expect(buscar('KICKBOXING')('ROJO')?.color1).toBe('#8B4513');
       expect(rojo).toEqual([{ codigo: 'ROJO', nombre: 'ROJO' }]);
     });
 
-    it('does not reinterpret other disciplines or unknown block IDs', () => {
+    it('no reinterpreta otras disciplinas ni identificadores de bloque desconocidos', () => {
       expect(coloresBloque(rojo, buscar('TAEKWONDO'), 'custom', 'TAEKWONDO')).toEqual(['#FF0000', '#FF0000']);
       expect(coloresBloque(rojo, buscar('TAEKWONDO'), 'b06_rojo_a_negro_1', 'PILATES')).toEqual(['#FF0000', '#FF0000']);
     });

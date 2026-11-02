@@ -96,7 +96,7 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
   });
 
   for (const codigo of ['TAEKWONDO', 'KICKBOXING']) {
-    it(codigo + ': renders the API names as received, with origin and destination belts', () => {
+    it(codigo + ': pinta los nombres de la API tal cual llegan, con los cintos de origen y destino', () => {
       const datos = disciplina(codigo, codigo, { bloques: [
         { id: 'b01_inicio_a_amarillo', nombre: 'Blanco a amarillo', grados: [{ codigo: 'BLANCO', nombre: 'BLANCO' }], tieneTemario: false, videos: 0, bytes: 0 },
         { id: 'b05_azul_a_rojo', nombre: codigo === 'KICKBOXING' ? 'Azul a marrón' : 'Azul a rojo', grados: [{ codigo: 'AZUL_ROJO', nombre: codigo === 'KICKBOXING' ? 'AZUL-MARRÓN' : 'AZUL-ROJO' }], tieneTemario: false, videos: 0, bytes: 0 },
