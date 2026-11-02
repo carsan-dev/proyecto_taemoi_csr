@@ -51,6 +51,7 @@ export class GrupoPanelComponent implements OnInit {
   private readonly estilos = inject(EstilosPanelService);
   private readonly destruir = inject(DestroyRef);
   private readonly anfitrion = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly fotosFallidas = new Set<number>();
   private carga?: Subscription;
   private cargaHoja?: Subscription;
   private cargaClases?: Subscription;
@@ -136,6 +137,15 @@ export class GrupoPanelComponent implements OnInit {
     if (!deporte.grado) return null;
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
     return { texto: gradoParaFrase(grado), fondo: grado.fondo };
+  }
+
+  /** La foto del avatar; nula sin foto o si no cargó (quedan las iniciales). */
+  foto(alumno: AlumnoDeGrupo): string | null {
+    return alumno.fotoId == null || this.fotosFallidas.has(alumno.id) ? null : this.profesor.urlFoto(alumno.id, alumno.fotoId);
+  }
+
+  fotoFallida(alumno: AlumnoDeGrupo): void {
+    this.fotosFallidas.add(alumno.id);
   }
 
   cargar(): void {

@@ -3,6 +3,7 @@ package com.taemoi.project.controllers;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -45,10 +46,12 @@ public class ProfesorController {
 
 	private final ProfesorService profesor;
 	private final AsistenciaService asistencia;
+	private final RespuestaFotoAlumno fotos;
 
-	public ProfesorController(ProfesorService profesor, AsistenciaService asistencia) {
+	public ProfesorController(ProfesorService profesor, AsistenciaService asistencia, RespuestaFotoAlumno fotos) {
 		this.profesor = profesor;
 		this.asistencia = asistencia;
+		this.fotos = fotos;
 	}
 
 	/** Sus grupos (§5.1). */
@@ -70,6 +73,19 @@ public class ProfesorController {
 	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
 	public ResponseEntity<ProfesorDTOs.Ficha> ficha(@PathVariable Long alumnoId) {
 		return ResponseEntity.ok(profesor.ficha(alumnoId));
+	}
+
+	/**
+	 * Foto de un alumno de sus grupos, para la lista de Mis grupos: {@code ?w=}, ETag y tipos como
+	 * {@code GET /api/alumnos/{alumnoId}/imagen}, que excluye la rama de profesor. Fuera de sus grupos: 403; de baja, sin
+	 * foto o sin fichero: 404, nunca redirección ({@code /imagenes/alumnos/**} es solo de gestión). {@code autorizacionWeb}
+	 * no afecta: es para la web pública, no para el panel interno.
+	 */
+	@GetMapping("/alumnos/{alumnoId}/imagen")
+	@PreAuthorize("@acceso.alumnoDeMisGruposAsignados(#alumnoId)")
+	public ResponseEntity<Resource> foto(@PathVariable Long alumnoId,
+			@RequestParam(name = "w", required = false) Integer anchoSolicitado) throws IOException {
+		return fotos.paraProfesor(profesor.fotoDelAlumno(alumnoId), anchoSolicitado);
 	}
 
 	/**

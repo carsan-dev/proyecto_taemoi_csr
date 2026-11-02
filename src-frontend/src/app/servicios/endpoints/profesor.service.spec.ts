@@ -38,6 +38,10 @@ describe('ProfesorService', () => {
     http.expectOne(`${api}/alumnos/3`).flush({ id: 3, nombre: 'A', apellidos: 'B', edad: null, grupos: [], contacto: [], deportes: [] });
   });
 
+  it('la URL de la foto lleva ancho y versión', () => {
+    expect(servicio.urlFoto(3, 9)).toBe(`${api}/alumnos/3/imagen?w=120&v=9`);
+  });
+
   it('la salud es una petición propia a /salud', () => {
     servicio.salud(3).subscribe();
     const req = http.expectOne(`${api}/alumnos/3/salud`);

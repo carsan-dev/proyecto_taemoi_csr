@@ -61,6 +61,14 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_IMAGEN_FOTO_EVENTO = Pattern.compile("^/api/eventos/[0-9]+/fotos/[0-9]+$");
 	private static final Set<String> METODOS_IMAGEN_FOTO_EVENTO = Set.of("GET", "HEAD");
 	/**
+	 * Foto de un alumno para el profesor: una pantalla de Mis grupos pide hasta 22. Como la galería (decisión 342), sin
+	 * copia en memoria y sin fila si se sirvió. A diferencia de ella, es una foto tras sesión: lo que no se sirvió (403,
+	 * 404, 5xx, también una excepción que sale de la cadena, ver {@link #estadoParaApuntar}) se apunta, con el estado y los
+	 * parámetros de la URL. Se compara con la ruta normalizada: si una forma rara de escribirla escapara, la foto acabaría
+	 * en memoria.
+	 */
+	private static final Pattern RUTA_FOTO_PROFESOR = Pattern.compile("^/api/profesor/alumnos/[^/]+/imagen/?$");
+	/**
 	 * Pieza R1: material de examen. Un vídeo llega a 500 MB, así que ninguna petición de estas rutas copia su cuerpo y sus
 	 * ficheros no copian la respuesta ni se apuntan (un vídeo pide decenas de rangos). Se compara con la ruta normalizada:
 	 * si una forma rara de escribirla escapara, el fichero entero acabaría en memoria.
@@ -254,18 +262,21 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		boolean ficheroDeFamilia = esFicheroDeFamilia(endpoint);
-		HttpServletRequest wrappedRequest = esRutaDeMaterial(endpoint) || ficheroDeFamilia
+		boolean ficheroSinCopia = esFicheroDeFamilia(endpoint) || esFotoDeProfesor(method, endpoint);
+		HttpServletRequest wrappedRequest = esRutaDeMaterial(endpoint) || ficheroSinCopia
 				? request
 				: new ContentCachingRequestWrapper(request);
-		ContentCachingResponseWrapper copiaRespuesta = ficheroDeFamilia ? null : new ContentCachingResponseWrapper(response);
+		ContentCachingResponseWrapper copiaRespuesta = ficheroSinCopia ? null : new ContentCachingResponseWrapper(response);
 		HttpServletResponse wrappedResponse = copiaRespuesta != null ? copiaRespuesta : response;
 
+		boolean cadenaCompleta = false;
 		try {
 			filterChain.doFilter(wrappedRequest, wrappedResponse);
+			cadenaCompleta = true;
 		} finally {
 			try {
-				registrarEventoSiCorresponde(wrappedRequest, wrappedResponse.getStatus(), method, endpoint);
+				int estado = estadoParaApuntar(wrappedResponse.getStatus(), cadenaCompleta, method, endpoint);
+				registrarEventoSiCorresponde(wrappedRequest, estado, method, endpoint);
 			} catch (Exception ex) {
 				logger.error("Error registrando auditoria de request", ex);
 			}
@@ -293,6 +304,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			return;
 		}
 
+		if (esFotoDeProfesor(method, endpoint) && status >= 200 && status < 300) {
+			return;
+		}
+
 		boolean rutaSalud = esPeticionDeSalud(request, endpoint);
 		if (rutaSalud && accion == AuditoriaAccion.READ && status >= 200 && status < 300) {
 			return;
@@ -310,8 +325,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		}
 		boolean payloadTruncado = payloadSanitizado != null && payloadSanitizado.length() > MAX_PAYLOAD_CHARS;
 		String payloadFinal = auditoriaPayloadSanitizer.truncarSiSuperaLimite(payloadSanitizado, MAX_PAYLOAD_CHARS);
-		String queryParamsJson = auditoriaPayloadSanitizer
-				.serializarQueryParams(rutaSalud ? Map.of() : parametrosAuditables(endpoint, parametrosDe(request, endpoint)));
+		String queryParamsJson = auditoriaPayloadSanitizer.serializarQueryParams(
+				rutaSalud ? Map.of() : parametrosAuditables(endpoint, parametrosDe(request, method, endpoint)));
 		String ipCliente = obtenerIpCliente(request);
 		String userAgent = truncar(request.getHeader("User-Agent"), MAX_USER_AGENT_CHARS);
 
@@ -331,8 +346,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	 * En las rutas de material no se le piden los parámetros a Tomcat: leería un cuerpo de formulario o multipart, y este
 	 * filtro corre antes de autorizar, también para un anónimo. Solo interesan los de la URL.
 	 */
-	private static Map<String, String[]> parametrosDe(HttpServletRequest request, String endpoint) {
-		return esRutaDeMaterial(endpoint) || esFicheroDeFamilia(endpoint)
+	private static Map<String, String[]> parametrosDe(HttpServletRequest request, String metodo, String endpoint) {
+		return esRutaDeMaterial(endpoint) || esFicheroDeFamilia(endpoint) || esFotoDeProfesor(metodo, endpoint)
 				? parametrosDeLaUrl(request.getQueryString())
 				: request.getParameterMap();
 	}
@@ -454,6 +469,21 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	/** Fichero de material pedido por la ruta de las familias, con cualquier método; la lista JSON del bloque no lo es. */
 	static boolean esFicheroDeFamilia(String endpoint) {
 		return RUTA_FICHERO_FAMILIA.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/** Lectura de la foto de un alumno por la ruta del profesor; {@code HEAD} no se audita nunca. */
+	static boolean esFotoDeProfesor(String metodo, String endpoint) {
+		return "GET".equals(metodo) && RUTA_FOTO_PROFESOR.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/**
+	 * El estado de la fila. Una excepción sin handler sale de la cadena con el estado aún en 200 (el 500 lo fija después el
+	 * contenedor), y la foto del profesor no se apunta en 2xx: sin esto, el fallo se perdería. Si ya había cabeceras
+	 * enviadas el cliente ve un corte, no un 500, pero tampoco se sirvió. Las demás rutas apuntan el estado de la respuesta.
+	 */
+	private static int estadoParaApuntar(int estado, boolean cadenaCompleta, String metodo, String endpoint) {
+		boolean fotoQueFallo = !cadenaCompleta && esFotoDeProfesor(metodo, endpoint);
+		return fotoQueFallo && estado < 400 ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : estado;
 	}
 
 	/** Lectura de un fichero de material; las escrituras y las listas no lo son. */

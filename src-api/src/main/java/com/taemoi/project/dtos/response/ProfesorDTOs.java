@@ -13,6 +13,8 @@ import com.taemoi.project.entities.RolAsignacionProfesor;
  * lo que pintan las pantallas §5.1-§5.3, con los nombres de grado ya resueltos (el catálogo sigue cerrado al profesor).
  * <b>Nunca</b> NIF, email, dirección, observaciones, tarifa, cobros ni fecha de nacimiento: un campo nuevo aquí se
  * revisa contra esa lista ({@code ProfesorGruposIntegrationTest.fichaSinNifEmailDireccion} comprueba las claves).
+ * De la foto, nunca la ruta ni la URL: el listado lleva solo su id ({@code fotoId}) y la imagen sale únicamente por
+ * {@code GET /api/profesor/alumnos/{alumnoId}/imagen}, que comprueba sus grupos.
  * Las fechas de grado salen como {@code "yyyy-MM-dd"} (no como el array por defecto de la aplicación).
  */
 public final class ProfesorDTOs {
@@ -39,8 +41,8 @@ public final class ProfesorDTOs {
 			Disciplina disciplina, List<TurnoDeGrupoResumenDTO> turnos) {
 	}
 
-	/** Un alumno activo del grupo (§5.2), con sus deportes activos. */
-	public record AlumnoDeGrupo(Long id, String nombre, String apellidos, List<DeporteEnLista> deportes) {
+	/** Un alumno activo del grupo (§5.2), con sus deportes activos. {@code fotoId} nulo si no tiene foto. */
+	public record AlumnoDeGrupo(Long id, String nombre, String apellidos, Long fotoId, List<DeporteEnLista> deportes) {
 	}
 
 	/**

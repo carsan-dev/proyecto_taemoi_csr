@@ -42,6 +42,7 @@ import com.taemoi.project.config.MethodSecurityCompatibilityConfig;
 import com.taemoi.project.config.OAuth2AuthenticationSuccessHandler;
 import com.taemoi.project.config.SecurityConfiguration;
 import com.taemoi.project.controllers.AlumnoController;
+import com.taemoi.project.controllers.RespuestaFotoAlumno;
 import com.taemoi.project.dtos.AlumnoDTO;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
@@ -101,6 +102,9 @@ class AlumnoSubidasWebMvcTest {
 
 	@MockitoBean
 	private ImagenService imagenService;
+
+	@MockitoBean
+	private RespuestaFotoAlumno respuestaFotoAlumno;
 
 	@MockitoBean
 	private DocumentoService documentoService;
