@@ -53,6 +53,42 @@ class CatalogoLegadoTaemoiConceptoGradoRojoTest {
 		assertFalse(CatalogoLegadoTaemoi.conceptoNombraGradoRojo(null, true));
 	}
 
+	/**
+	 * Producto heredado SIN código que el código anterior elegía por concepto (sin distinguir mayúsculas, acentos ni
+	 * espacios): en kickboxing también dice MARRÓN; en taekwondo, su nombre tal cual. Otros nombres no cambian.
+	 */
+	@Test
+	void heredadoSinCodigo_conElConceptoDeRojo_tambienConElNombreDeLaDisciplina() {
+		assertEquals("DERECHO A EXAMEN MARRÓN", sinCodigo("DERECHO A EXAMEN ROJO", "MARRÓN"));
+		assertEquals("DERECHO A EXAMEN MARRÓN BORDADO", sinCodigo("DERECHO A EXAMEN ROJO BORDADO", "MARRÓN"));
+		assertEquals("DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA", sinCodigo("DERECHO DE CAMBIO A ROJO POR RECOMPENSA", "MARRÓN"));
+		assertEquals("DERECHO DE CAMBIO A MARRÓN BORDADO POR RECOMPENSA",
+				sinCodigo("DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA", "MARRÓN"));
+		assertEquals("Derecho a examen MARRÓN bordado", sinCodigo("Derecho a examen rojo bordado", "MARRÓN"));
+		// Taekwondo: tal cual, también con otras mayúsculas.
+		assertEquals("DERECHO A EXAMEN ROJO BORDADO", sinCodigo("DERECHO A EXAMEN ROJO BORDADO", "ROJO"));
+		assertEquals("Derecho a examen rojo bordado", sinCodigo("Derecho a examen rojo bordado", "Rojo"));
+		// Otros productos sin código no cambian.
+		assertEquals("DERECHO A EXAMEN AZUL/ROJO", sinCodigo("DERECHO A EXAMEN AZUL/ROJO", "MARRÓN"));
+		assertEquals("DERECHO A EXAMEN ROJO BORDADO (ESPECIAL)", sinCodigo("DERECHO A EXAMEN ROJO BORDADO (ESPECIAL)", "MARRÓN"));
+		// Sin comportamiento heredado, tampoco.
+		Producto sinCodigo = producto(null, "DERECHO A EXAMEN ROJO BORDADO");
+		assertFalse(CatalogoLegadoTaemoi.conceptoNombraGradoRojo(sinCodigo, false));
+		assertEquals("DERECHO A EXAMEN ROJO BORDADO", CatalogoLegadoTaemoi.conceptoBase(sinCodigo, null, false, "MARRÓN"));
+	}
+
+	@Test
+	void conceptosConGradoRojo_examenYRecompensa_normalYBordado() {
+		assertEquals(java.util.List.of("DERECHO A EXAMEN ROJO", "DERECHO A EXAMEN ROJO BORDADO"),
+				CatalogoLegadoTaemoi.conceptosConGradoRojo(false));
+		assertEquals(java.util.List.of("DERECHO DE CAMBIO A ROJO POR RECOMPENSA",
+				"DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA"), CatalogoLegadoTaemoi.conceptosConGradoRojo(true));
+	}
+
+	private static String sinCodigo(String nombre, String nombreGradoRojo) {
+		return CatalogoLegadoTaemoi.conceptoBase(producto(null, nombre), null, true, nombreGradoRojo);
+	}
+
 	private static String concepto(String codigo, String nombreGradoRojo) {
 		return CatalogoLegadoTaemoi.conceptoBase(producto(codigo, "otro nombre"), null, true, nombreGradoRojo);
 	}

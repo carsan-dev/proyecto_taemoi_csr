@@ -1,5 +1,6 @@
 package com.taemoi.project.services;
 
+import java.text.Normalizer;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -230,32 +231,80 @@ public final class CatalogoLegadoTaemoi {
 	/** Códigos de V24 cuyo concepto nombra el grado ROJO: examen y recompensa a ROJO, normal y bordado. */
 	private static final Set<String> CONCEPTO_CON_GRADO_ROJO = Set.of("EXAMEN_ROJO", "EXAMEN_ROJO_BORDADO",
 			"RECOMPENSA_ROJO", "RECOMPENSA_ROJO_BORDADO");
-	private static final Pattern PALABRA_ROJO = Pattern.compile("\\bROJO\\b");
+	private static final Pattern PALABRA_ROJO = Pattern.compile("\\bROJO\\b",
+			Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
+	/**
+	 * Nombre del grado ROJO en kickboxing (V23/V30) si el catálogo no lo da: los conceptos de los cargos nuevos de
+	 * kickboxing dicen «MARRÓN» en lugar de ROJO.
+	 */
+	public static final String NOMBRE_GRADO_ROJO_KICKBOXING = "MARRÓN";
+
+	/**
+	 * Conceptos heredados que nombran el grado ROJO (examen, o recompensa con {@code recompensa}), normal y bordado, en
+	 * el orden de V24.
+	 */
+	public static List<String> conceptosConGradoRojo(boolean recompensa) {
+		String prefijo = recompensa ? "RECOMPENSA_" : "EXAMEN_";
+		return CONCEPTO_POR_CODIGO.entrySet().stream()
+				.filter(e -> CONCEPTO_CON_GRADO_ROJO.contains(e.getKey()) && e.getKey().startsWith(prefijo))
+				.map(Map.Entry::getValue)
+				.toList();
+	}
 
 	/**
 	 * Si el concepto heredado del producto ({@link #conceptoBase(Producto, String, boolean)}) nombra el grado ROJO: solo
-	 * con comportamiento heredado y para los códigos de examen y recompensa a ROJO (normal y bordado).
+	 * con comportamiento heredado y para los códigos de examen y recompensa a ROJO (normal y bordado) o para un producto
+	 * heredado SIN código cuyo nombre es uno de esos cuatro conceptos (sin distinguir mayúsculas, acentos ni espacios,
+	 * como lo elegía el código anterior a V27).
 	 */
 	public static boolean conceptoNombraGradoRojo(Producto producto, boolean legado) {
-		return producto != null && esCodigoLegado(producto.getCodigo(), legado)
-				&& CONCEPTO_CON_GRADO_ROJO.contains(producto.getCodigo());
+		if (producto == null || !legado) {
+			return false;
+		}
+		if (producto.getCodigo() == null) {
+			String nombre = normalizar(producto.getConcepto());
+			return CONCEPTO_CON_GRADO_ROJO.stream().anyMatch(c -> normalizar(CONCEPTO_POR_CODIGO.get(c)).equals(nombre));
+		}
+		return esCodigoLegado(producto.getCodigo(), legado) && CONCEPTO_CON_GRADO_ROJO.contains(producto.getCodigo());
 	}
 
 	/**
 	 * {@link #conceptoBase(Producto, String, boolean)} con el nombre que el grado ROJO tiene en la disciplina del cargo:
 	 * en kickboxing ese cinturón es marrón, así que «DERECHO A EXAMEN ROJO BORDADO» pasa a «DERECHO A EXAMEN MARRÓN
-	 * BORDADO». Solo si {@link #conceptoNombraGradoRojo} y {@code nombreGradoRojo} no está en blanco; la palabra ROJO se
-	 * cambia por ese nombre en mayúsculas (en taekwondo es «ROJO»: no cambia nada). Solo el texto del concepto: el
-	 * producto, su importe y el grado que concede son los mismos.
+	 * BORDADO». Solo si {@link #conceptoNombraGradoRojo}; el cambio es el de {@link #conGradoRojoComo}. Solo el texto del
+	 * concepto: el producto, su importe y el grado que concede son los mismos.
 	 */
 	public static String conceptoBase(Producto producto, String legadoSinCodigo, boolean legado, String nombreGradoRojo) {
 		String concepto = conceptoBase(producto, legadoSinCodigo, legado);
-		if (concepto == null || nombreGradoRojo == null || nombreGradoRojo.isBlank()
-				|| !conceptoNombraGradoRojo(producto, legado)) {
+		if (!conceptoNombraGradoRojo(producto, legado)) {
 			return concepto;
 		}
-		return PALABRA_ROJO.matcher(concepto)
-				.replaceFirst(Matcher.quoteReplacement(nombreGradoRojo.trim().toUpperCase(Locale.ROOT)));
+		return conGradoRojoComo(concepto, nombreGradoRojo);
+	}
+
+	/**
+	 * El concepto con la primera palabra ROJO (sin distinguir mayúsculas) cambiada por {@code nombreGradoRojo} en
+	 * mayúsculas. Sin cambios si el concepto es null o el nombre está en blanco o es el mismo ROJO (taekwondo).
+	 */
+	public static String conGradoRojoComo(String concepto, String nombreGradoRojo) {
+		if (concepto == null || nombreGradoRojo == null || nombreGradoRojo.isBlank()) {
+			return concepto;
+		}
+		String nombre = nombreGradoRojo.trim().toUpperCase(Locale.ROOT);
+		if (GRADO_ROJO.equals(nombre)) {
+			return concepto;
+		}
+		return PALABRA_ROJO.matcher(concepto).replaceFirst(Matcher.quoteReplacement(nombre));
+	}
+
+	/** Sin acentos, con los espacios seguidos en uno, sin espacios a los lados y en mayúsculas. */
+	private static String normalizar(String texto) {
+		if (texto == null) {
+			return "";
+		}
+		String sinAcentos = Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+		return sinAcentos.replaceAll("\\s+", " ").trim().toUpperCase(Locale.ROOT);
 	}
 
 	/**

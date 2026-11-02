@@ -281,6 +281,33 @@ class ProfesorGradosIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/**
+	 * Un pase pendiente sin producto (borrado: {@code producto_id} NULL) se reconoce por su concepto, también el de
+	 * kickboxing, que dice «MARRÓN» (el nombre de su grado ROJO): un segundo pase da 409 y no se crea otro cargo. La
+	 * comprobación mira solo la inscripción del cargo; el sufijo de la disciplina del concepto no cuenta.
+	 */
+	@Test
+	void pasePendienteSinProducto_conMarronDeKickboxingOConRojo_bloqueaOtroPase() throws Exception {
+		List<String> conceptos = List.of("DERECHO A EXAMEN MARRÓN BORDADO - KICKBOXING",
+				"DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA - KICKBOXING", "DERECHO A EXAMEN ROJO BORDADO - TAEKWONDO");
+		for (int i = 0; i < conceptos.size(); i++) {
+			String concepto = conceptos.get(i);
+			long a = alumno("E73PENDIENTE" + i, e.gA, e.sA, gAmarillo, true);
+			long ad = alumnoDeporte(a);
+			jdbc.update("""
+					INSERT INTO producto_alumno (organizacion_id, producto_id, alumno_id, alumno_deporte_id, concepto,
+					  fecha_asignacion, cantidad, precio, pagado, sede_id)
+					VALUES (?, NULL, ?, ?, ?, NOW(), 1, 27.0, FALSE, ?)""", e.org, a, ad, concepto, e.sA);
+			for (String tipo : List.of("pase-examen", "pase-recompensa")) {
+				MvcResult r = peticion(pase(a, "TAEKWONDO", tipo, null), tProfA);
+				assertEquals(409, r.getResponse().getStatus(), concepto + ": " + r.getResponse().getContentAsString());
+				assertEquals(ProfesorService.PASE_PENDIENTE, mensaje(r), concepto);
+			}
+			assertEquals(1, cargos(ad).size(), "ningún cargo nuevo: " + concepto);
+			assertEquals(0, accionesDe(a).size(), "el 409 no registra pase: " + concepto);
+		}
+	}
+
 	@Test
 	void paseRegistraAccionConIds() throws Exception {
 		long a = alumno("E73REGISTRO", e.gA, e.sA, gAmarillo, true);
