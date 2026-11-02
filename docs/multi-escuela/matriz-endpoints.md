@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (502 líneas; 164 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (523 líneas; 170 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -255,6 +255,16 @@ existente cambia ni la regla de URL. Declaradas en `PROFESOR_E7`; lo prueba `Pro
 - No hay `PUT /api/profesor/.../grado` (decisión 207): el cambio de grado directo sigue siendo solo de gestión y
   `DENIEGA` para PROFESOR.
 - El resto de roles, `DENIEGA` en las cuatro (PROPIETARIO y GESTOR usan las de gestión, D7-10).
+
+Foto de los alumnos en Mis grupos: 2 líneas nuevas bajo `/api/profesor`; ninguna casilla existente cambia ni la regla
+de URL (la de `/api/profesor/**` de la E7-1). Declaradas en `PROFESOR_E7`; lo prueba
+`ProfesorFotoAlumnoIntegrationTest`.
+- `GET/HEAD /api/profesor/alumnos/{alumnoId}/imagen?w=`: PROFESOR `ALCANCE` (`@acceso.alumnoDeMisGruposAsignados`,
+  también en el servicio; fuera de sus grupos, de otra escuela o inexistente, 403; de baja, sin foto, sin fichero o con
+  un tipo que no sea una foto raster, 404). Nunca redirige: `/imagenes/alumnos/**` es solo de gestión.
+  `Cache-Control: private`. Una foto servida no deja fila en `auditoria_evento` ni se copia en memoria; lo que no se
+  sirve sí se apunta. La lista de un grupo lleva solo `fotoId`.
+- El resto de roles, `DENIEGA` en las dos. `GET/HEAD /api/alumnos/{alumnoId}/imagen` sigue `DENIEGA` para PROFESOR.
 
 Pieza E7-4 (asignación de profesores, fase3-e7-profesor.md decisión 208, D7-19 a D7-21): 4 líneas nuevas de gestión
 bajo `/api/grupos/{grupoId}/profesores` (`GrupoProfesoresController`); ninguna casilla existente cambia. Ya caían en la

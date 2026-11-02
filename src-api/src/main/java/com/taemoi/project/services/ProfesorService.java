@@ -28,6 +28,7 @@ import com.taemoi.project.dtos.response.TurnoDeGrupoResumenDTO;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.Grado;
+import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.ProductoAlumno;
 import com.taemoi.project.entities.RolAsignacionProfesor;
 import com.taemoi.project.entities.Tutor;
@@ -142,8 +143,8 @@ public class ProfesorService {
 	}
 
 	/**
-	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por apellidos, nombre e id, cada uno con sus deportes activos (grado con
-	 * nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403.
+	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por apellidos, nombre e id, cada uno con el id de su foto y sus deportes
+	 * activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403.
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.AlumnoDeGrupo> alumnosDelGrupo(Long grupoId) {
@@ -159,18 +160,38 @@ public class ProfesorService {
 		String disciplina = disciplinaDelGrupo.get(0);
 		Map<Long, ProfesorDTOs.AlumnoDeGrupo> porAlumno = new LinkedHashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos FROM Grupo g JOIN g.alumnos a
+				SELECT a.id, a.nombre, a.apellidos, foto.id FROM Grupo g JOIN g.alumnos a LEFT JOIN a.fotoAlumno foto
 				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
-					new ArrayList<>()));
+					(Long) f[3], new ArrayList<>()));
 		}
 		for (FilaDeporte d : deportesActivos(porAlumno.keySet())) {
 			porAlumno.get(d.alumnoId()).deportes().add(new ProfesorDTOs.DeporteEnLista(d.codigo(), d.nombre(),
 					grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina)));
 		}
 		return porAlumno.values().stream().map(a -> new ProfesorDTOs.AlumnoDeGrupo(a.id(), a.nombre(), a.apellidos(),
-				List.copyOf(a.deportes()))).toList();
+				a.fotoId(), List.copyOf(a.deportes()))).toList();
+	}
+
+	/**
+	 * Foto de un alumno de sus grupos. Si no comparte ningún grupo → 403, sin revelar si existe ni si tiene foto; de baja
+	 * (D7-13) o sin foto → {@code null}, que la ruta responde con 404.
+	 */
+	@Transactional(readOnly = true)
+	public Imagen fotoDelAlumno(Long alumnoId) {
+		Set<Long> grupos = gruposDelProfesor();
+		if (alumnoId == null || grupos.isEmpty()) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		Long compartidos = em.createQuery(
+				"SELECT COUNT(g.id) FROM Grupo g JOIN g.alumnos a WHERE a.id = :alumno AND g.id IN :grupos", Long.class)
+				.setParameter("alumno", alumnoId).setParameter("grupos", grupos).getSingleResult();
+		if (compartidos == null || compartidos == 0) {
+			throw new AccessDeniedException("Acceso denegado.");
+		}
+		return em.createQuery("SELECT foto FROM Alumno a JOIN a.fotoAlumno foto WHERE a.id = :alumno AND a.activo = TRUE",
+				Imagen.class).setParameter("alumno", alumnoId).getResultStream().findFirst().orElse(null);
 	}
 
 	/**

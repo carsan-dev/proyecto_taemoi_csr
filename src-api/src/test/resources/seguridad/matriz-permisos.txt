@@ -446,6 +446,8 @@ PUT      /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/apto               
 PUT      /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/fecha-grado                          DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#actualizarFechaGrado
 POST     /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/pase-examen                          DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#paseExamen
 POST     /api/profesor/alumnos/{alumnoId}/deportes/{deporte}/pase-recompensa                      DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#paseRecompensa
+GET      /api/profesor/alumnos/{alumnoId}/imagen                                                  DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#foto
+HEAD     /api/profesor/alumnos/{alumnoId}/imagen                                                  DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#foto
 GET      /api/profesor/alumnos/{alumnoId}/salud                                                   DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#salud
 HEAD     /api/profesor/alumnos/{alumnoId}/salud                                                   DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          ALCANCE  # ProfesorController#salud
 GET      /api/profesor/grupos                                                                     DENIEGA DENIEGA DENIEGA DENIEGA     DENIEGA         DENIEGA          PERMITE  # ProfesorController#misGrupos

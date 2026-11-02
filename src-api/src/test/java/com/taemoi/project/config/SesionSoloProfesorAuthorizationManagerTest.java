@@ -55,6 +55,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 	@Test
 	void soloProfesorNoPasaFueraDeLaListaBlancaAunqueLaReglaFueraAuthenticated() {
 		for (String[] ruta : new String[][] { { "GET", "/api/alumnos" }, { "GET", "/api/grupos/resumen" },
+				{ "GET", "/api/alumnos/1/imagen" }, { "HEAD", "/api/alumnos/1/imagen" },
 				{ "GET", "/api/tesoreria/resumen" }, { "GET", "/api/productos" }, { "GET", "/api/auth/user/alumnos" },
 				{ "PUT", "/api/auth/user/recordatorios-racha-email" }, { "GET", "/api/admin/auditoria/eventos" },
 				{ "GET", "/api/informes/deudas" }, { "GET", "/api/caja/sedes/1/entregas" }, { "GET", "/api/caja" },
@@ -85,6 +86,7 @@ class SesionSoloProfesorAuthorizationManagerTest {
 				// Pieza E7-1 (D7-9): sus rutas propias, cualquier método (deciden la regla de URL y el @PreAuthorize).
 				{ "GET", "/api/profesor/grupos" }, { "HEAD", "/api/profesor/grupos" },
 				{ "GET", "/api/profesor/grupos/1/alumnos" }, { "GET", "/api/profesor/alumnos/1" },
+				{ "GET", "/api/profesor/alumnos/1/imagen" }, { "HEAD", "/api/profesor/alumnos/1/imagen" },
 				{ "PUT", "/api/profesor/alumnos/1/deportes/TAEKWONDO/apto" },
 				// Pieza 8b-3o (decisión 326): la marca y el logo de su escuela activa para el panel nuevo. Solo GET.
 				{ "GET", "/api/escuela/marca" }, { "HEAD", "/api/escuela/marca" }, { "GET", "/api/escuela/logo" },

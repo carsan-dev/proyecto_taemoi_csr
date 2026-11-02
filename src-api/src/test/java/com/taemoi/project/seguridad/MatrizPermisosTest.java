@@ -416,6 +416,9 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/profesor/grupos", grupos + "misGrupos_soloLosSuyos_conSedeRolDisciplinaYAlumnosActivos");
 			m.put(metodo + " /api/profesor/grupos/{grupoId}/alumnos", grupos + "grupoDeOtroProfesor_403");
 			m.put(metodo + " /api/profesor/alumnos/{alumnoId}", grupos + "alumnoDeOtroGrupo_403");
+			// Foto de un alumno de sus grupos, para la lista de Mis grupos.
+			m.put(metodo + " /api/profesor/alumnos/{alumnoId}/imagen",
+					"integracion.ProfesorFotoAlumnoIntegrationTest#alumnoDeOtroGrupo_403");
 			// E7-2: salud de un alumno de sus grupos (registrada, no-store) y hoja de asistencia de un grupo suyo.
 			m.put(metodo + " /api/profesor/alumnos/{alumnoId}/salud", saludAsistencia + "saludDeAlumnoDeOtroGrupo_403");
 			m.put(metodo + " /api/profesor/grupos/{grupoId}/asistencia", saludAsistencia + "pdfAsistenciaGrupoAjeno_403");
