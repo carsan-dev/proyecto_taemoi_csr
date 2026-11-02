@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { GrupoAlumnosModalComponent } from '../../componentes/generales/grupo-alumnos-modal/grupo-alumnos-modal.component';
+import { coloresGrado } from '../../features/catalogo/catalogo-reglas';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { iniciales } from '../alumnos/alumno-vista';
 import { BloqueErrorComponent } from '../carga/bloque-error.component';
@@ -101,7 +102,11 @@ export class AlumnosTipoPanelComponent extends GrupoAlumnosModalComponent implem
       .catalogo()
       ?.sistemasGrados.flatMap((s) => s.grados)
       .find((g) => g.color1 && g.nombre.trim().toUpperCase() === buscado);
-    return grado?.color1 ?? null;
+    if (!grado) {
+      return null;
+    }
+    const { colors, isSplit } = coloresGrado(grado);
+    return isSplit ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
   }
 
   foto(alumno: any): string | null {

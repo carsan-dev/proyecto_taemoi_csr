@@ -3,7 +3,9 @@
  *
  * - `CATALOGO_TAEMOI`: lo que devuelve el backend para la organización 1 tras V23/V24/V28/V30
  *   (rol gestor, con tarifas). Grados: V23 (orden, aplica_a, requiere_examen) + V30 (nombre, colores);
- *   kickboxing: copia con DAN orden-3, PUM orden+5, intermedios/PUM `NINGUNO` y ROJO = «MARRÓN» #8B4513.
+ *   kickboxing: copia con DAN orden-3, PUM orden+5, intermedios/PUM `NINGUNO`, ROJO = «MARRÓN» #8B4513 (V30)
+ *   y, como en `CatalogoTaemoiEnMemoria` de la API, AZUL-MARRÓN y MARRÓN-NEGRO nº PUM con la franja roja en
+ *   #8B4513 (V31_19).
  *   Tarifas: V24 (importes) + V30 (orden). Categorías: V28 (rangos de TAEKWONDO). `codigo` de las
  *   categorías tal como lo deja V28 (ContraccionCatalogoMigracionIntegrationTest): nulo salvo CADETE y SENIOR.
  * - `CATALOGO_SEGUNDA_ESCUELA`: como `CatalogoControllerIntegrationTest.segundaEscuela_soloVeSuCatalogo`
@@ -48,18 +50,27 @@ function gradosTaekwondo(): CatalogoGrado[] {
   }));
 }
 
+/** Kickboxing: el cinturón que el código llama ROJO es marrón (V30 y V31_19). */
+const MARRON = '#8B4513';
+const NOMBRES_KICKBOXING: Record<string, string> = {
+  AZUL_ROJO: 'AZUL-MARRÓN',
+  ROJO: 'MARRÓN',
+  ROJO_NEGRO_1_PUM: 'MARRÓN-NEGRO 1º PUM',
+  ROJO_NEGRO_2_PUM: 'MARRÓN-NEGRO 2º PUM',
+  ROJO_NEGRO_3_PUM: 'MARRÓN-NEGRO 3º PUM',
+};
+
 function gradosKickboxing(): CatalogoGrado[] {
   return FILAS_GRADOS.map(([codigo, nombre, ordenTkd, aplicaTkd, color1, color2]) => {
     const esDan = codigo.endsWith('_DAN');
     const esPum = codigo.endsWith('_PUM');
-    const esRojo = codigo === 'ROJO';
     return {
       codigo,
-      nombre: esRojo ? 'MARRÓN' : nombre,
+      nombre: NOMBRES_KICKBOXING[codigo] ?? nombre,
       orden: esDan ? ordenTkd - 3 : esPum ? ordenTkd + 5 : ordenTkd,
       aplicaA: (aplicaTkd === 'MENORES' ? 'NINGUNO' : 'TODOS') as AplicaGrado,
-      color1: esRojo ? '#8B4513' : color1,
-      color2: esRojo ? null : color2,
+      color1: color1 === '#FF0000' ? MARRON : color1,
+      color2: color2 === '#FF0000' ? MARRON : color2,
       requiereExamen: codigo !== 'BLANCO',
     };
   }).sort((a, b) => a.orden - b.orden);

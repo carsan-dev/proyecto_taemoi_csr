@@ -102,7 +102,8 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 		otroSistemaTaemoiAntes = jdbc.queryForList("SELECT * FROM grado WHERE sistema_grados_id = ? ORDER BY id", hapkido);
 		otrasEscuelasAntes = otrasEscuelas(jdbc);
 		tarifasOrg2Antes = tarifasSinOrden(jdbc, org2);
-		flyway(dataSource, null).migrate();
+		// Hasta V30: V31_19 renombra después los intermedios de kickboxing (su propio test).
+		flyway(dataSource, "30").migrate();
 	}
 
 	@Test
@@ -214,7 +215,7 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("""
 				CREATE TRIGGER it_v30_fallo_grado BEFORE UPDATE ON grado FOR EACH ROW
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado de V30 (grado)'""");
-		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuente, null).migrate());
+		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuente, "30").migrate());
 		assertTrue(mensajeCompleto(error).contains("fallo simulado de V30 (grado)"), mensajeCompleto(error));
 		assertEquals("Rojo", f.queryForObject("SELECT nombre FROM grado WHERE sistema_grados_id = ? AND codigo = 'ROJO'",
 				String.class, sistemaDe(f, 1, "TAEKWONDO")));
@@ -225,7 +226,7 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("""
 				CREATE TRIGGER it_v30_fallo_tarifa BEFORE UPDATE ON tarifa FOR EACH ROW
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado de V30 (tarifa)'""");
-		Flyway segundo = flyway(fuente, null);
+		Flyway segundo = flyway(fuente, "30");
 		segundo.repair();
 		error = assertThrows(FlywayException.class, segundo::migrate);
 		assertTrue(mensajeCompleto(error).contains("fallo simulado de V30 (tarifa)"), mensajeCompleto(error));
@@ -235,7 +236,7 @@ class CatalogoVisualMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("DROP TRIGGER it_v30_fallo_tarifa");
 
 		// c) Termina.
-		Flyway tercero = flyway(fuente, null);
+		Flyway tercero = flyway(fuente, "30");
 		tercero.repair();
 		tercero.migrate();
 		assertEquals(1, versionAplicada(f, "30"));

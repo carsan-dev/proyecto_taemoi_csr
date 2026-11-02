@@ -235,7 +235,8 @@ describe('catalogo-reglas', () => {
     describe('colores de grado', () => {
       const grados = [
         ...T.sistemasGrados[0].grados.map((g) => ['TAEKWONDO', g] as const),
-        ...T.sistemasGrados[1].grados.filter((g) => g.codigo !== 'ROJO').map((g) => ['KICKBOXING', g] as const),
+        // KB con marrón (ROJO de V30 y la franja de los intermedios de V31_19): getGradoColors los da rojos.
+        ...T.sistemasGrados[1].grados.filter((g) => g.color1 !== '#8B4513' && g.color2 !== '#8B4513').map((g) => ['KICKBOXING', g] as const),
       ];
 
       it('coloresGrado y estiloTextoGrado igual que getGradoColors / getGradoTextStyle', () => {

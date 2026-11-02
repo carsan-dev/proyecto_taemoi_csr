@@ -40,7 +40,10 @@ class CinturonesPdfTest {
 		}
 	}
 
-	/** Kickboxing: igual salvo el ROJO, que pasa a marrón #8B4513 de un solo color (D4). */
+	/**
+	 * Kickboxing: igual salvo el rojo, que es marrón #8B4513: el ROJO, de un solo color (D4, V30), y la franja roja de
+	 * AZUL_ROJO y de los ROJO_NEGRO_n_PUM (V31_19).
+	 */
 	@Test
 	void kickboxingConColoresDeV30_igualSalvoRojoMarron() {
 		for (TipoGrado tipo : TipoGrado.values()) {
@@ -53,8 +56,11 @@ class CinturonesPdfTest {
 						CinturonesPdf.encabezado(c));
 				continue;
 			}
-			assertEquals(CinturonesPdfLegado.inline(tipo.name(), 60, 12), CinturonesPdf.inline(c, 60, 12), tipo.name());
-			assertEquals(CinturonesPdfLegado.encabezado(tipo.name()), CinturonesPdf.encabezado(c), tipo.name());
+			assertEquals(CinturonesPdfLegado.inline(tipo.name(), 60, 12).replace("#FF0000", "#8B4513"),
+					CinturonesPdf.inline(c, 60, 12), tipo.name());
+			assertEquals(CinturonesPdfLegado.encabezado(tipo.name()).replace("#FF0000", "#8B4513"), CinturonesPdf.encabezado(c),
+					tipo.name());
+			assertFalse(CinturonesPdf.encabezado(c).contains("#FF0000"), tipo.name());
 		}
 	}
 

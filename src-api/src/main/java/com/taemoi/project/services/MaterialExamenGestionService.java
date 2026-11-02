@@ -87,7 +87,7 @@ public class MaterialExamenGestionService {
 	private static final String CABECERA_PDF_FALSA = "El fichero no es un PDF válido.";
 
 	private static final Map<String, String> NOMBRES_BLOQUE = Map.ofEntries(
-			Map.entry("b01_inicio_a_amarillo", "Inicio a amarillo"),
+			Map.entry("b01_inicio_a_amarillo", "Blanco a amarillo"),
 			Map.entry("b02_amarillo_a_naranja", "Amarillo a naranja"),
 			Map.entry("b03_naranja_a_verde", "Naranja a verde"),
 			Map.entry("b04_verde_a_azul", "Verde a azul"),
@@ -98,6 +98,11 @@ public class MaterialExamenGestionService {
 			Map.entry("b09_negro_3_a_negro_4", "Negro 3.º a 4.º"),
 			Map.entry("b10_negro_4_a_negro_5", "Negro 4.º a 5.º"),
 			Map.entry("b11_negro_5_a_maximo", "Negro 5.º en adelante"));
+
+	/** Kickboxing no tiene cinturón rojo: entre el azul y el negro va el marrón. */
+	private static final Map<String, String> NOMBRES_BLOQUE_KICKBOXING = Map.of(
+			"b05_azul_a_rojo", "Azul a marrón",
+			"b06_rojo_a_negro_1", "Marrón a negro");
 
 	private final CatalogoDisciplinasService catalogo;
 	private final ProgresionGradosService progresion;
@@ -143,7 +148,7 @@ public class MaterialExamenGestionService {
 			disciplina.bloques().forEach((id, grados) -> {
 				BloqueEnDisco disco = lectura.leerBloque(disciplina.codigo(), id);
 				long bytes = bytesDe(disco);
-				bloques.add(new MaterialGestionDTO.BloqueResumen(id, nombreDeBloque(id), grados, disco.temario() != null,
+				bloques.add(new MaterialGestionDTO.BloqueResumen(id, nombreDeBloque(disciplina.codigo(), id), grados, disco.temario() != null,
 						disco.videos().size(), bytes));
 				totales.sumar(disco.temario() != null ? 1 : 0, disco.videos().size(), bytes);
 			});
@@ -179,13 +184,25 @@ public class MaterialExamenGestionService {
 		return lectura.describirArchivo(exigirDocumento(leer(bloque), fichero).ruta(), null);
 	}
 
-	/** Nombre del boceto; para otro id, el id sin prefijo y legible. */
-	public static String nombreDeBloque(String id) {
+	/**
+	 * Nombre del bloque según la disciplina; para otro id, el id sin prefijo y legible. El bloque inicial es «Blanco a
+	 * amarillo» en todas y en kickboxing el rojo se llama marrón.
+	 */
+	public static String nombreDeBloque(String disciplina, String id) {
+		if ("KICKBOXING".equalsIgnoreCase(disciplina)) {
+			String propio = NOMBRES_BLOQUE_KICKBOXING.get(id);
+			if (propio != null) {
+				return propio;
+			}
+		}
 		String nombre = NOMBRES_BLOQUE.get(id);
 		if (nombre != null) {
 			return nombre;
 		}
 		String legible = id.replaceFirst("^b\\d+_", "").replace('_', ' ').trim();
+		if (legible.startsWith("inicio")) {
+			legible = "blanco" + legible.substring("inicio".length());
+		}
 		if (legible.isEmpty()) {
 			return id;
 		}
@@ -791,7 +808,7 @@ public class MaterialExamenGestionService {
 			return new MaterialGestionDTO.DocumentoDetalle(d.fichero(), d.titulo(), d.mime(), atributos.bytes(),
 					atributos.fecha());
 		}).toList();
-		return new MaterialGestionDTO.Detalle(bloque.disciplina(), bloque.id(), nombreDeBloque(bloque.id()), bloque.grados(),
+		return new MaterialGestionDTO.Detalle(bloque.disciplina(), bloque.id(), nombreDeBloque(bloque.disciplina(), bloque.id()), bloque.grados(),
 				temario, videos, documentos);
 	}
 
