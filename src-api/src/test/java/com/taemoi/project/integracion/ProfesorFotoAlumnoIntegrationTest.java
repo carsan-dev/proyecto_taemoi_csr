@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -36,6 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -49,6 +53,9 @@ import org.springframework.util.FileSystemUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.controllers.RespuestaFotoAlumno;
+import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
@@ -70,6 +77,8 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String CACHE_PROFESOR = "max-age=28800, must-revalidate, private";
 	private static final String CACHE_FAMILIAS = "max-age=28800, must-revalidate, public";
+	private static final byte[] SVG = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>"
+			.getBytes(StandardCharsets.UTF_8);
 	private static final Path IMAGENES;
 
 	static {
@@ -93,6 +102,7 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
 	@Autowired EntityManagerFactory emf;
+	@Autowired RespuestaFotoAlumno fotos;
 
 	@Value("${app.base.url}") String baseUrl;
 
@@ -156,8 +166,7 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		ficheroPerdido = enGrupo(e, e.gA, "FOTOPERDIDA");
 		foto(e, ficheroPerdido, "image/png", "png", null);
 		conSvg = enGrupo(e, e.gA, "FOTOSVG");
-		foto(e, conSvg, "image/svg+xml", "svg",
-				"<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>".getBytes(StandardCharsets.UTF_8));
+		foto(e, conSvg, "image/svg+xml", "svg", SVG);
 		conHtml = enGrupo(e, e.gA, "FOTOHTML");
 		foto(e, conHtml, "text/html", "html", "<script>alert(1)</script>".getBytes(StandardCharsets.UTF_8));
 		// El alumno de la familia está en gA: ni así la familia entra por la ruta del profesor.
@@ -328,6 +337,38 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/** Con {@code application/octet-stream} por defecto daría 200 con el SVG dentro: sin tipo válido no hay foto. */
+	@Test
+	void unTipoVacioOInvalido_404_sinBytes() throws Exception {
+		for (String tipo : List.of("", "   ", "no es un tipo", "image/", "/", "application/octet-stream", "image/*")) {
+			long alumno = enGrupo(e, e.gA, "FOTOTIPO" + UUID.randomUUID().toString().substring(0, 6));
+			foto(e, alumno, tipo, "svg", SVG);
+			for (MockHttpServletRequestBuilder peticion : List.of(get(fotoProfesor(alumno)),
+					get(fotoProfesor(alumno)).param("w", "300"))) {
+				MockHttpServletResponse r = respuesta(peticion, tProfA);
+				assertEquals(404, r.getStatus(), "tipo «" + tipo + "»");
+				assertEquals(0, r.getContentAsByteArray().length, "tipo «" + tipo + "»");
+				assertNull(r.getHeader("Location"));
+			}
+		}
+	}
+
+	/** {@code imagen.tipo} es NOT NULL en MySQL: el tipo nulo solo se puede probar contra la respuesta, sin fila. */
+	@Test
+	void unTipoNulo_404_sinBytes() throws Exception {
+		String ruta = "org-" + e.org + "/alumnos/" + UUID.randomUUID() + ".svg";
+		Files.createDirectories(IMAGENES.resolve(ruta).getParent());
+		Files.write(IMAGENES.resolve(ruta), SVG);
+
+		ResponseEntity<Resource> conTipo = fotos.paraProfesor(new Imagen("foto.svg", "image/png", null, ruta), null);
+		assertEquals(200, conTipo.getStatusCode().value(), "el fichero se encuentra: el 404 viene del tipo");
+
+		ResponseEntity<Resource> sinTipo = fotos.paraProfesor(new Imagen("foto.svg", null, null, ruta), null);
+		assertEquals(404, sinTipo.getStatusCode().value());
+		assertNull(sinTipo.getBody());
+		assertEquals(404, fotos.paraProfesor(new Imagen("foto.svg", null, null, ruta), 300).getStatusCode().value());
+	}
+
 	@Test
 	void sesionSinRolDeProfesor_403() throws Exception {
 		for (String token : List.of(tGestor, tPropietario, tFamilia, tResponsable)) {
@@ -345,6 +386,112 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(403, respuesta(get(fotoProfesor(conFoto)), tProfFP).getStatus());
 		assertEquals(200, respuesta(get(fotoProfesor(conFoto)), tGestorProf).getStatus(), "su grupo gA");
 		assertEquals(403, respuesta(get(fotoProfesor(deOtroGrupo)), tGestorProf).getStatus(), "el total no abre gB");
+	}
+
+	// ------------------------------------------------------------------ el permiso cae: de 200 a lo que toque
+
+	@Test
+	void asignacionRetirada_403() throws Exception {
+		long profesor = soloProfesor(e, "profretirado");
+		asignar(e, profesor, e.gA);
+		String token = e.token(jwtService, usuarios, profesor);
+		assertEquals(200, respuesta(get(fotoProfesor(conFoto)), token).getStatus());
+
+		assertEquals(204, respuesta(delete("/api/grupos/" + e.gA + "/profesores/" + profesor), tPropietario).getStatus());
+
+		assertEquals(403, respuesta(get(fotoProfesor(conFoto)), token).getStatus());
+	}
+
+	@Test
+	void alumnoQuitadoDelGrupo_403() throws Exception {
+		long alumno = enGrupo(e, e.gA, "FOTOQUITADO");
+		foto(e, alumno, "image/png", "png", png);
+		assertEquals(200, respuesta(get(fotoProfesor(alumno)), tProfA).getStatus());
+
+		assertEquals(204, respuesta(delete("/api/grupos/" + e.gA + "/alumnos/" + alumno), tPropietario).getStatus());
+
+		assertEquals(403, respuesta(get(fotoProfesor(alumno)), tProfA).getStatus());
+	}
+
+	@Test
+	void grupoBorrado_403() throws Exception {
+		GrupoConAlumnosDTO nuevo = new GrupoConAlumnosDTO();
+		nuevo.setNombre("Grupo a borrar " + e.marca);
+		nuevo.setDeporte("TAEKWONDO");
+		nuevo.setSedeId(e.sA);
+		long grupo = TenantContext.calcularCon(e.org, () -> grupoService.crearGrupo(nuevo).getId());
+		long profesor = soloProfesor(e, "profgrupoborrado");
+		asignar(e, profesor, grupo);
+		String token = e.token(jwtService, usuarios, profesor);
+		long alumno = enGrupo(e, grupo, "FOTOGRUPOBORRADO");
+		foto(e, alumno, "image/png", "png", png);
+		assertEquals(200, respuesta(get(fotoProfesor(alumno)), token).getStatus());
+
+		assertEquals(204, respuesta(delete("/api/grupos/" + grupo), tPropietario).getStatus());
+
+		assertEquals(403, respuesta(get(fotoProfesor(alumno)), token).getStatus());
+	}
+
+	/** Solo tenía la membresía de PROFESOR: sin ninguna activa, la sesión ya no vale en esta escuela. */
+	@Test
+	void membresiaRetirada_401() throws Exception {
+		long profesor = soloProfesor(e, "profsinmembresia");
+		asignar(e, profesor, e.gA);
+		String token = e.token(jwtService, usuarios, profesor);
+		assertEquals(200, respuesta(get(fotoProfesor(conFoto)), token).getStatus());
+
+		assertEquals(200, respuesta(delete("/api/miembros/" + profesor + "/roles/PROFESOR"), tPropietario).getStatus());
+
+		assertEquals(401, respuesta(get(fotoProfesor(conFoto)), token).getStatus());
+	}
+
+	/** Le queda FAMILIA: la sesión sigue viva y la asignación sigue en la tabla, pero sin ROLE_PROFESOR no entra. */
+	@Test
+	void cuentaQueSeQuedaSoloConFamilia_403() throws Exception {
+		long cuenta = e.cuentaFamilia(usuarios, "famexprof");
+		membresia(e, cuenta, "PROFESOR");
+		asignar(e, cuenta, e.gB);
+		String token = e.token(jwtService, usuarios, cuenta);
+		assertEquals(200, respuesta(get(fotoProfesor(deOtroGrupo)), token).getStatus());
+
+		assertEquals(200, respuesta(delete("/api/miembros/" + cuenta + "/roles/PROFESOR"), tPropietario).getStatus());
+
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM asignacion_profesor WHERE usuario_id = ?", Long.class, cuenta));
+		assertEquals(403, respuesta(get(fotoProfesor(deOtroGrupo)), token).getStatus());
+	}
+
+	/** El flujo real le saca de sus grupos y borra la foto con su fichero: queda fuera de los grupos del profesor. */
+	@Test
+	void alumnoAnonimizado_403_ySinFichero() throws Exception {
+		long alumno = enGrupo(e, e.gA, "FOTOANONIMIZADO");
+		foto(e, alumno, "image/png", "png", png);
+		Path fichero = IMAGENES.resolve(jdbc.queryForObject("""
+				SELECT i.ruta FROM imagen i JOIN alumno a ON a.foto_alumno_id = i.id WHERE a.id = ?""", String.class, alumno));
+		assertEquals(200, respuesta(get(fotoProfesor(alumno)), tProfA).getStatus());
+
+		assertEquals(200, respuesta(post("/api/alumnos/" + alumno + "/anonimizar"), tPropietario).getStatus());
+
+		assertFalse(Files.exists(fichero));
+		assertEquals(403, respuesta(get(fotoProfesor(alumno)), tProfA).getStatus());
+	}
+
+	/**
+	 * Defensa extra: ningún flujo deja a un alumno anonimizado activo, en el grupo y con foto, así que esta fila solo sale
+	 * con SQL. Sigue en la lista, porque la condición afecta solo a {@code fotoId}.
+	 */
+	@Test
+	void anonimizadoQueConservaraSuFoto_404_ySigueEnLaListaSinFotoId() throws Exception {
+		long alumno = enGrupo(e, e.gA, "FOTORESTO");
+		long imagen = foto(e, alumno, "image/png", "png", png);
+		assertEquals(200, respuesta(get(fotoProfesor(alumno)), tProfA).getStatus());
+		assertEquals(imagen, fila(leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tProfA), alumno).get("fotoId").asLong());
+
+		jdbc.update("UPDATE alumno SET anonimizado_en = NOW(6) WHERE id = ?", alumno);
+
+		MockHttpServletResponse r = respuesta(get(fotoProfesor(alumno)), tProfA);
+		assertEquals(404, r.getStatus());
+		assertEquals(0, r.getContentAsByteArray().length);
+		assertTrue(fila(leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tProfA), alumno).get("fotoId").isNull());
 	}
 
 	// ------------------------------------------------------------------ auditoría

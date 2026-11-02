@@ -1,8 +1,10 @@
 package com.taemoi.project.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -13,11 +15,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -26,6 +31,8 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 import com.taemoi.project.services.AuditoriaService;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -114,6 +121,88 @@ class AuditoriaRequestFilterFotoProfesorTest {
 		assertSame(respuesta, pase.respuesta());
 		verify(saneador).sanitizarPayload(eq(""), any());
 		verify(auditoria).registrarEvento(any(), eq("GET"), eq(FOTO), eq("[w]"), any(), anyBoolean(), eq(estado), any(), any());
+	}
+
+	private static Stream<Exception> fallos() {
+		return Stream.of(new IOException("disco"), new ServletException("cadena"), new IllegalArgumentException("resto"));
+	}
+
+	/** La cadena lanza sin fijar estado, como una {@code IOException} sin handler. */
+	private static FilterChain cadenaQueLanza(Exception fallo) {
+		return (req, res) -> {
+			if (fallo instanceof IOException e) {
+				throw e;
+			}
+			if (fallo instanceof ServletException e) {
+				throw e;
+			}
+			throw (RuntimeException) fallo;
+		};
+	}
+
+	/**
+	 * Al salir de la cadena el estado aún es 200: el 500 lo fija después el contenedor. Sin esta regla la omisión del 2xx se
+	 * comería el fallo. El filtro no toca la respuesta ni se traga la excepción: la necesita el contenedor para responder.
+	 */
+	@ParameterizedTest
+	@MethodSource("fallos")
+	void siLaCadenaLanza_seApuntaComo500_yLaExcepcionSigue(Exception fallo) {
+		MockHttpServletRequest peticion = new MockHttpServletRequest("GET", FOTO);
+		peticion.setQueryString("w=96");
+		MockHttpServletResponse respuesta = new MockHttpServletResponse();
+		when(saneador.serializarQueryParams(any())).thenAnswer(i -> i.getArgument(0, java.util.Map.class).keySet().toString());
+
+		Exception lanzada = assertThrows(Exception.class, () -> filtro.doFilter(peticion, respuesta, cadenaQueLanza(fallo)));
+
+		assertSame(fallo, lanzada);
+		assertEquals(200, respuesta.getStatus(), "el 500 no lo pone el filtro");
+		verify(saneador).sanitizarPayload(eq(""), any());
+		verify(auditoria).registrarEvento(any(), eq("GET"), eq(FOTO), eq("[w]"), any(), anyBoolean(), eq(500), any(), any());
+	}
+
+	@Test
+	void siLaCadenaLanzaConUnErrorYaFijado_seApuntaEseEstado() {
+		MockHttpServletRequest peticion = new MockHttpServletRequest("GET", FOTO);
+		FilterChain cadena = (req, res) -> {
+			((HttpServletResponse) res).setStatus(404);
+			throw new IOException("disco");
+		};
+
+		assertThrows(IOException.class, () -> filtro.doFilter(peticion, new MockHttpServletResponse(), cadena));
+
+		verify(auditoria).registrarEvento(any(), eq("GET"), eq(FOTO), any(), any(), anyBoolean(), eq(404), any(), any());
+	}
+
+	@Test
+	void siLaAuditoriaFalla_laExcepcionDeLaCadenaNoSePierde() {
+		when(saneador.serializarQueryParams(any())).thenThrow(new IllegalStateException("auditoria"));
+		IOException fallo = new IOException("disco");
+
+		IOException lanzada = assertThrows(IOException.class, () -> filtro.doFilter(new MockHttpServletRequest("GET", FOTO),
+				new MockHttpServletResponse(), cadenaQueLanza(fallo)));
+
+		assertSame(fallo, lanzada);
+	}
+
+	/** Solo cambia la foto: con una excepción, cualquier otra ruta se apunta (o se omite) como antes, con el estado 200. */
+	@ParameterizedTest
+	@ValueSource(strings = { "/api/profesor/alumnos/7", "/api/alumnos/7/imagen", "/api/profesor/grupos/7/alumnos" })
+	void lasRutasVecinas_siLaCadenaLanza_siguenApuntandoSuEstado(String ruta) {
+		assertThrows(IOException.class, () -> filtro.doFilter(new MockHttpServletRequest("GET", ruta),
+				new MockHttpServletResponse(), cadenaQueLanza(new IOException("disco"))));
+
+		verify(auditoria).registrarEvento(any(), eq("GET"), eq(ruta), any(), any(), anyBoolean(), eq(200), any(), any());
+	}
+
+	@Test
+	void laSaludYUnaEscrituraConRegistroPropio_siLaCadenaLanza_siguenSinFila() {
+		assertThrows(IOException.class, () -> filtro.doFilter(new MockHttpServletRequest("GET", "/api/profesor/alumnos/7/salud"),
+				new MockHttpServletResponse(), cadenaQueLanza(new IOException("disco"))));
+		assertThrows(IOException.class,
+				() -> filtro.doFilter(new MockHttpServletRequest("PUT", "/api/profesor/alumnos/7/deportes/TAEKWONDO/apto"),
+						new MockHttpServletResponse(), cadenaQueLanza(new IOException("disco"))));
+
+		verify(auditoria, never()).registrarEvento(any(), any(), any(), any(), any(), anyBoolean(), anyInt(), any(), any());
 	}
 
 	/** La ficha, la salud y la ruta antigua siguen como estaban: respuesta envuelta y una fila. */

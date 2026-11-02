@@ -144,7 +144,8 @@ public class ProfesorService {
 
 	/**
 	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por apellidos, nombre e id, cada uno con el id de su foto y sus deportes
-	 * activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403.
+	 * activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403. La condición
+	 * del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién sale en la lista.
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.AlumnoDeGrupo> alumnosDelGrupo(Long grupoId) {
@@ -160,7 +161,8 @@ public class ProfesorService {
 		String disciplina = disciplinaDelGrupo.get(0);
 		Map<Long, ProfesorDTOs.AlumnoDeGrupo> porAlumno = new LinkedHashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos, foto.id FROM Grupo g JOIN g.alumnos a LEFT JOIN a.fotoAlumno foto
+				SELECT a.id, a.nombre, a.apellidos, foto.id FROM Grupo g JOIN g.alumnos a
+				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
 				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
@@ -176,7 +178,8 @@ public class ProfesorService {
 
 	/**
 	 * Foto de un alumno de sus grupos. Si no comparte ningún grupo → 403, sin revelar si existe ni si tiene foto; de baja
-	 * (D7-13) o sin foto → {@code null}, que la ruta responde con 404.
+	 * (D7-13), anonimizado o sin foto → {@code null}, que la ruta responde con 404. Anonimizar ya borra la foto: la
+	 * condición es una defensa extra.
 	 */
 	@Transactional(readOnly = true)
 	public Imagen fotoDelAlumno(Long alumnoId) {
@@ -190,8 +193,10 @@ public class ProfesorService {
 		if (compartidos == null || compartidos == 0) {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
-		return em.createQuery("SELECT foto FROM Alumno a JOIN a.fotoAlumno foto WHERE a.id = :alumno AND a.activo = TRUE",
-				Imagen.class).setParameter("alumno", alumnoId).getResultStream().findFirst().orElse(null);
+		return em.createQuery("""
+				SELECT foto FROM Alumno a JOIN a.fotoAlumno foto
+				WHERE a.id = :alumno AND a.activo = TRUE AND a.anonimizadoEn IS NULL""", Imagen.class)
+				.setParameter("alumno", alumnoId).getResultStream().findFirst().orElse(null);
 	}
 
 	/**

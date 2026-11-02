@@ -146,15 +146,13 @@ public class RespuestaFotoAlumno {
 	}
 
 	/**
-	 * Una imagen que no sea SVG, o {@code application/octet-stream} (sin tipo válido), que con {@code nosniff} el navegador
-	 * no interpreta. Un SVG puede llevar scripts y la sesión va en una cookie: abierto como página correría en el dominio
-	 * del panel. Las fotos nuevas nunca lo son ({@code ImagenService} las recodifica); solo podría venir de filas heredadas.
+	 * Una imagen concreta que no sea SVG. Sin tipo, o con uno inválido, llega {@code application/octet-stream} y no se
+	 * sirve: el fichero podría ser cualquier cosa. Un SVG puede llevar scripts y la sesión va en una cookie: abierto como
+	 * página correría en el dominio del panel. Las fotos nuevas nunca lo son ({@code ImagenService} las recodifica); solo
+	 * podría venir de filas heredadas.
 	 */
 	private static boolean esFotoParaProfesor(MediaType mediaType) {
-		if (MediaType.APPLICATION_OCTET_STREAM.equals(mediaType)) {
-			return true;
-		}
-		return "image".equalsIgnoreCase(mediaType.getType())
+		return "image".equalsIgnoreCase(mediaType.getType()) && !mediaType.isWildcardSubtype()
 				&& !mediaType.getSubtype().toLowerCase(Locale.ROOT).contains("svg");
 	}
 

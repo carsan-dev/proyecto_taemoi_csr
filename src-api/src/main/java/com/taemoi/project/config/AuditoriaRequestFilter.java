@@ -63,8 +63,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	/**
 	 * Foto de un alumno para el profesor: una pantalla de Mis grupos pide hasta 22. Como la galería (decisión 342), sin
 	 * copia en memoria y sin fila si se sirvió. A diferencia de ella, es una foto tras sesión: lo que no se sirvió (403,
-	 * 404, 5xx) se apunta, con el estado y los parámetros de la URL. Se compara con la ruta normalizada: si una forma rara
-	 * de escribirla escapara, la foto acabaría en memoria.
+	 * 404, 5xx, también una excepción que sale de la cadena, ver {@link #estadoParaApuntar}) se apunta, con el estado y los
+	 * parámetros de la URL. Se compara con la ruta normalizada: si una forma rara de escribirla escapara, la foto acabaría
+	 * en memoria.
 	 */
 	private static final Pattern RUTA_FOTO_PROFESOR = Pattern.compile("^/api/profesor/alumnos/[^/]+/imagen/?$");
 	/**
@@ -267,11 +268,14 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		ContentCachingResponseWrapper copiaRespuesta = ficheroSinCopia ? null : new ContentCachingResponseWrapper(response);
 		HttpServletResponse wrappedResponse = copiaRespuesta != null ? copiaRespuesta : response;
 
+		boolean cadenaCompleta = false;
 		try {
 			filterChain.doFilter(wrappedRequest, wrappedResponse);
+			cadenaCompleta = true;
 		} finally {
 			try {
-				registrarEventoSiCorresponde(wrappedRequest, wrappedResponse.getStatus(), method, endpoint);
+				int estado = estadoParaApuntar(wrappedResponse.getStatus(), cadenaCompleta, method, endpoint);
+				registrarEventoSiCorresponde(wrappedRequest, estado, method, endpoint);
 			} catch (Exception ex) {
 				logger.error("Error registrando auditoria de request", ex);
 			}
@@ -469,6 +473,16 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	/** Lectura de la foto de un alumno por la ruta del profesor; {@code HEAD} no se audita nunca. */
 	static boolean esFotoDeProfesor(String metodo, String endpoint) {
 		return "GET".equals(metodo) && RUTA_FOTO_PROFESOR.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	/**
+	 * El estado de la fila. Una excepción sin handler sale de la cadena con el estado aún en 200 (el 500 lo fija después el
+	 * contenedor), y la foto del profesor no se apunta en 2xx: sin esto, el fallo se perdería. Si ya había cabeceras
+	 * enviadas el cliente ve un corte, no un 500, pero tampoco se sirvió. Las demás rutas apuntan el estado de la respuesta.
+	 */
+	private static int estadoParaApuntar(int estado, boolean cadenaCompleta, String metodo, String endpoint) {
+		boolean fotoQueFallo = !cadenaCompleta && esFotoDeProfesor(metodo, endpoint);
+		return fotoQueFallo && estado < 400 ? HttpServletResponse.SC_INTERNAL_SERVER_ERROR : estado;
 	}
 
 	/** Lectura de un fichero de material; las escrituras y las listas no lo son. */
