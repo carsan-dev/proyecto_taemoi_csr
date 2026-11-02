@@ -855,6 +855,36 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     responderRelectura();
   });
 
+  it('kickboxing: el grado rojo es marrón (misma pregunta, «Marrón (sin bordar)» / «Marrón bordado»); bordado envía rojoBordado: true', async () => {
+    cargar();
+    pestanas()[1].click();
+    fixture.detectChanges();
+    responderCifras({ 21: [] });
+    abrir(21, [], [APTO_ROJO]);
+    elegirApto(502);
+    botonEn(bloque(21), 'Agregar alumno').click();
+    pintar();
+    radio('Por antigüedad').click();
+    pintar();
+    botonEn(dialogo()!, 'Agregar').click();
+    await esperar();
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__titulo'))).toBe('Selecciona el grado marrón');
+    expect(texto(dialogo()!.querySelector('.pn-dialogo__mensaje'))).toBe(
+      'El alumno pasará a marrón en Kickboxing. Selecciona el tipo de grado marrón.'
+    );
+    expect(texto(dialogo()!)).not.toContain('ojo');
+    expect(radio('Marrón (sin bordar)').getAttribute('aria-checked')).toBe('true');
+    radio('Marrón bordado').click();
+    pintar();
+    botonEn(dialogo()!, 'Continuar').click();
+    await esperar();
+    const r = http.expectOne(`${API}/alumnos/21/alumno/502`);
+    expect(r.request.body).toEqual({ porRecompensa: false, rojoBordado: true });
+    r.flush({});
+    await esperar();
+    responderRelectura(21, [], [APTO_ROJO]);
+  });
+
   it('grado rojo: cancelar la segunda pregunta no envía nada', async () => {
     cargar();
     abrir();

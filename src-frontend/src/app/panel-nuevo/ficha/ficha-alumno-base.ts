@@ -21,7 +21,7 @@ import { ofreceDerechoExamenManual, ofreceRecompensa } from '../../features/cata
 import { formatDate } from '../../utilities/formatear-fecha';
 import { getGradoTextStyle, getGradoNombreParaDeporte } from '../../utilities/grado-colors';
 import { calcularCategoriaPorEdad } from '../../utilities/categoria-por-edad';
-import { esSiguienteGradoRojo } from '../../utilities/grado-progresion';
+import { colorGradoRojo, colorGradoRojoInicial, esSiguienteGradoRojo } from '../../utilities/grado-progresion';
 import { AlumnoService } from '../../features/alumno/services/alumno.service';
 import { PageScrollService } from '../../servicios/generales/page-scroll.service';
 import { attachSwalSelectSearch } from '../../utils/swal-search.util';
@@ -3700,8 +3700,9 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
 
     if (this.requiereSeleccionCinturonRojo(deporteSeleccionado, deporteData.grado)) {
       this.solicitarTipoCinturonRojo(
-        'Selecciona cinturon rojo',
-        `El alumno pasara a rojo en ${getDeporteLabel(deporteSeleccionado)}. Selecciona el tipo de cinturon.`
+        deporteSeleccionado,
+        `Selecciona cinturon ${colorGradoRojo(deporteSeleccionado)}`,
+        `El alumno pasara a ${colorGradoRojo(deporteSeleccionado)} en ${getDeporteLabel(deporteSeleccionado)}. Selecciona el tipo de cinturon.`
       ).then((rojoBordado) => {
         if (rojoBordado === null) {
           return;
@@ -3718,14 +3719,16 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
     return esSiguienteGradoRojo(deporte, gradoActual ?? null, this.alumno?.fechaNacimiento);
   }
 
-  private solicitarTipoCinturonRojo(titulo: string, texto: string): Promise<boolean | null> {
+  /** En kickboxing el grado ROJO es marrón: las opciones llevan el color del catálogo de la disciplina. */
+  private solicitarTipoCinturonRojo(deporte: string, titulo: string, texto: string): Promise<boolean | null> {
+    const color = colorGradoRojoInicial(deporte);
     return this.dialogos.fire({
       title: titulo,
       text: texto,
       input: 'radio',
       inputOptions: {
-        normal: 'Rojo (sin bordar)',
-        bordado: 'Rojo bordado',
+        normal: `${color} (sin bordar)`,
+        bordado: `${color} bordado`,
       },
       inputValue: 'normal',
       showCancelButton: true,
@@ -4714,7 +4717,8 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
     const gradoActual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado;
     if (this.requiereSeleccionCinturonRojo(deporte, gradoActual)) {
       this.solicitarTipoCinturonRojo(
-        'Pasar a rojo por recompensa',
+        deporte,
+        `Pasar a ${colorGradoRojo(deporte)} por recompensa`,
         `Se actualizará el grado en ${this.getDeporteLabel(deporte)} una vez realizado el pago y se añadirá el producto de recompensa. Selecciona el tipo de cinturón.`
       ).then((rojoBordado) => {
         if (rojoBordado === null) {
@@ -4776,7 +4780,8 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
     const gradoActual = this.deportesDelAlumno.find((d) => d.deporte === deporte)?.grado;
     if (this.requiereSeleccionCinturonRojo(deporte, gradoActual)) {
       this.solicitarTipoCinturonRojo(
-        'Pasar a rojo',
+        deporte,
+        `Pasar a ${colorGradoRojo(deporte)}`,
         `Se añadirá el producto de derecho de examen para ${this.getDeporteLabel(deporte)}. El grado se actualizará cuando se marque como pagado. Selecciona el tipo de cinturón.`
       ).then((rojoBordado) => {
         if (rojoBordado === null) {
