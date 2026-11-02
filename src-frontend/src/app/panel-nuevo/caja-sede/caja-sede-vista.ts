@@ -137,27 +137,41 @@ export function diferenciaVista(entrega: EntregaCaja): number {
   return entrega.diferencia - devuelto;
 }
 
-/** «cuadra», «falta 1,00 €», «sobra 0,50 €», en céntimos como hoy. */
-export function cuadre(diferencia: number): { estado: 'cuadra' | 'falta' | 'sobra'; texto: string } {
+/**
+ * «cuadra», «falta 1,00 €», «sobra 0,50 €», en céntimos como hoy. `importe` es la cifra suelta, para taparla sin tapar
+ * la palabra (decisión 419); null si cuadra.
+ */
+export function cuadre(diferencia: number): { estado: 'cuadra' | 'falta' | 'sobra'; texto: string; importe: string | null } {
   const cent = Math.round(diferencia * 100);
   if (cent === 0) {
-    return { estado: 'cuadra', texto: 'cuadra' };
+    return { estado: 'cuadra', texto: 'cuadra', importe: null };
   }
-  return diferencia < 0 ? { estado: 'falta', texto: `falta ${eur(-diferencia)}` } : { estado: 'sobra', texto: `sobra ${eur(diferencia)}` };
+  const estado = diferencia < 0 ? 'falta' : 'sobra';
+  const importe = eur(Math.abs(diferencia));
+  return { estado, texto: `${estado} ${importe}`, importe };
+}
+
+/** El nombre del movimiento de cobro de una entrega, sin la cifra. */
+export function etiquetaMovimientoDeCobro(m: MovimientoDeEntrega): string {
+  switch (m.tipo) {
+    case 'ERROR':
+      return 'Cobro deshecho';
+    case 'DEVOLUCION':
+      return 'Devolución';
+    default:
+      return etiquetaTipoMovimiento(m.tipo);
+  }
+}
+
+/** La cifra del movimiento de cobro, con su signo. */
+export function importeMovimientoDeCobro(m: MovimientoDeEntrega): string {
+  const signo = m.importe > 0 ? '+' : m.importe < 0 ? '−' : '';
+  return `${signo}${eur(Math.abs(m.importe))}`;
 }
 
 /** 6c-9: los ERROR (193) y la DEVOLUCION (D6c-10) de la entrega, con el texto de hoy. */
 export function textoMovimientoDeCobro(m: MovimientoDeEntrega): string {
-  const signo = m.importe > 0 ? '+' : m.importe < 0 ? '−' : '';
-  const importe = `${signo}${eur(Math.abs(m.importe))}`;
-  switch (m.tipo) {
-    case 'ERROR':
-      return `Cobro deshecho ${importe}`;
-    case 'DEVOLUCION':
-      return `Devolución ${importe}`;
-    default:
-      return `${etiquetaTipoMovimiento(m.tipo)} ${importe}`;
-  }
+  return `${etiquetaMovimientoDeCobro(m)} ${importeMovimientoDeCobro(m)}`;
 }
 
 export type AccionAnular = 'anular' | 'pedir';
@@ -199,16 +213,27 @@ export function nombreAlumnoCobro(cobro: CobroCaja): string {
   return `${cobro.alumnoNombre ?? ''} ${cobro.alumnoApellidos ?? ''}`.trim() || '—';
 }
 
+export interface AvisoCuadre {
+  tono: 'invalido' | 'falta' | 'sobra';
+  texto: string;
+  /** La frase partida por la cifra, para taparla sola (decisión 419); sin cifra, solo `texto`. */
+  partes?: { antes: string; importe: string; despues: string };
+}
+
+function avisoConCifra(tono: 'falta' | 'sobra', antes: string, importe: string, despues: string): AvisoCuadre {
+  return { tono, texto: `${antes} ${importe}${despues}`, partes: { antes, importe, despues } };
+}
+
 /** Lo que dice el formulario bajo «Has contado» (los textos de hoy); nada si cuadra. */
-export function avisoCuadre(calculo: CalculoEntrega): { tono: 'invalido' | 'falta' | 'sobra'; texto: string } | null {
+export function avisoCuadre(calculo: CalculoEntrega): AvisoCuadre | null {
   if (calculo.contado === null) {
     return { tono: 'invalido', texto: 'Escribe un importe válido, por ejemplo 45,50.' };
   }
   if (calculo.estado === 'falta') {
-    return { tono: 'falta', texto: `Faltan ${eur(-calculo.diferencia)}. Se apuntará un faltante en la caja.` };
+    return avisoConCifra('falta', 'Faltan', eur(-calculo.diferencia), '. Se apuntará un faltante en la caja.');
   }
   if (calculo.estado === 'sobra') {
-    return { tono: 'sobra', texto: `Sobran ${eur(calculo.diferencia)}. Se apuntará un sobrante en la caja.` };
+    return avisoConCifra('sobra', 'Sobran', eur(calculo.diferencia), '. Se apuntará un sobrante en la caja.');
   }
   return null;
 }

@@ -5,6 +5,8 @@
         <h1 class="tesoreria__titulo">Tesorería</h1>
         <p class="tesoreria__subtitulo" data-cifras>{{ subtitulo }}</p>
       </div>
+      <div class="tesoreria__cabecera-acciones">
+      <pn-ver-importes />
       <div class="tesoreria__menu-zona" (focusout)="alSalirDeZona($event, 'exportar')">
         <button #botonExportar type="button" id="tesoreria-exportar" pnOcupado class="tesoreria__boton-secundario"
           [ocupado]="informes.ocupado" textoOcupado="Generando…" aria-haspopup="menu" [attr.aria-expanded]="menuExportar"
@@ -34,6 +36,7 @@
           </button>
         </div>
         }
+      </div>
       </div>
     </header>
 
@@ -103,20 +106,20 @@
       <dl class="tesoreria__cifras">
         <div class="tesoreria__cifra">
           <dt class="tesoreria__cifra-titulo">Pendiente</dt>
-          <dd class="tesoreria__cifra-valor tesoreria__cifra-valor--pendiente" data-cifras>{{ eur(resumen.importePendiente) }}</dd>
+          <dd class="tesoreria__cifra-valor tesoreria__cifra-valor--pendiente" data-cifras><pn-importe>{{ eur(resumen.importePendiente) }}</pn-importe></dd>
           <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalPendientes) }} {{ resumen.totalPendientes === 1 ? 'cobro pendiente' : 'cobros pendientes' }}</dd>
         </div>
         <div class="tesoreria__cifra">
           <dt class="tesoreria__cifra-titulo">Cobrado</dt>
-          <dd class="tesoreria__cifra-valor" data-cifras>{{ eur(resumen.importePagado) }}</dd>
+          <dd class="tesoreria__cifra-valor" data-cifras><pn-importe>{{ eur(resumen.importePagado) }}</pn-importe></dd>
           <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalPagados) }} {{ resumen.totalPagados === 1 ? 'cobro pagado' : 'cobros pagados' }}</dd>
           @if (resumen.importeDevuelto) {
-          <dd class="tesoreria__cifra-detalle" data-cifras>De ello, {{ eur(resumen.importeDevuelto) }} devueltos</dd>
+          <dd class="tesoreria__cifra-detalle" data-cifras>De ello, <pn-importe>{{ eur(resumen.importeDevuelto) }}</pn-importe> devueltos</dd>
           }
         </div>
         <div class="tesoreria__cifra">
           <dt class="tesoreria__cifra-titulo">Total generado</dt>
-          <dd class="tesoreria__cifra-valor" data-cifras>{{ eur(resumen.importeTotal) }}</dd>
+          <dd class="tesoreria__cifra-valor" data-cifras><pn-importe>{{ eur(resumen.importeTotal) }}</pn-importe></dd>
           <dd class="tesoreria__cifra-detalle" data-cifras>{{ numero(resumen.totalMovimientos) }} {{ resumen.totalMovimientos === 1 ? 'movimiento' : 'movimientos' }}</dd>
         </div>
         <div class="tesoreria__cifra">
@@ -127,14 +130,20 @@
       </dl>
       @if (barra; as b) {
       <div class="tesoreria__reparto">
-        <div class="tesoreria__barra" role="img" [attr.aria-label]="b.texto" [class.tesoreria__barra--vacia]="b.vacia">
-          @if (b.cobrado > 0) {
-          <span class="tesoreria__barra-cobrado" [style.width.%]="b.cobrado" [attr.title]="'Cobrado ' + eur(resumen.importePagado)"></span>
-          }
-          @if (b.pendiente > 0) {
-          <span class="tesoreria__barra-pendiente" [style.width.%]="b.pendiente" [attr.title]="'Pendiente ' + eur(resumen.importePendiente)"></span>
-          }
-        </div>
+        <!-- Tapada, la barra no cuenta nada: el difuminado solo no esconde la proporción, así que va a mitades y sin textos. -->
+        @let tapada = modo.tapado();
+        @let anchoCobrado = tapada && !b.vacia ? 50 : b.cobrado;
+        @let anchoPendiente = tapada && !b.vacia ? 50 : b.pendiente;
+        <pn-importe bloque>
+          <div class="tesoreria__barra" role="img" [attr.aria-label]="tapada ? null : b.texto" [class.tesoreria__barra--vacia]="b.vacia">
+            @if (anchoCobrado > 0) {
+            <span class="tesoreria__barra-cobrado" [style.width.%]="anchoCobrado" [attr.title]="tapada ? null : 'Cobrado ' + eur(resumen.importePagado)"></span>
+            }
+            @if (anchoPendiente > 0) {
+            <span class="tesoreria__barra-pendiente" [style.width.%]="anchoPendiente" [attr.title]="tapada ? null : 'Pendiente ' + eur(resumen.importePendiente)"></span>
+            }
+          </div>
+        </pn-importe>
         @if (mesCobradoEntero) {
         <p class="tesoreria__cierre" role="status">
           <pn-mascota pose="confirmar" tamano="sm" animacion="celebrar" />
@@ -145,8 +154,8 @@
         <p class="tesoreria__leyenda-vacia">{{ b.texto }}</p>
         } @else {
         <ul class="tesoreria__leyenda" aria-hidden="true">
-          <li><span class="tesoreria__muestra tesoreria__muestra--cobrado"></span><span class="tesoreria__leyenda-nombre">Cobrado</span><span class="tesoreria__leyenda-valor" data-cifras> {{ eur(resumen.importePagado) }} · {{ textoPorcentaje(b.cobrado) }}</span></li>
-          <li><span class="tesoreria__muestra tesoreria__muestra--pendiente"></span><span class="tesoreria__leyenda-nombre">Pendiente</span><span class="tesoreria__leyenda-valor" data-cifras> {{ eur(resumen.importePendiente) }} · {{ textoPorcentaje(b.pendiente) }}</span></li>
+          <li><span class="tesoreria__muestra tesoreria__muestra--cobrado"></span><span class="tesoreria__leyenda-nombre">Cobrado</span><span class="tesoreria__leyenda-valor" data-cifras>&ngsp;<pn-importe>{{ eur(resumen.importePagado) }} · {{ textoPorcentaje(b.cobrado) }}</pn-importe></span></li>
+          <li><span class="tesoreria__muestra tesoreria__muestra--pendiente"></span><span class="tesoreria__leyenda-nombre">Pendiente</span><span class="tesoreria__leyenda-valor" data-cifras>&ngsp;<pn-importe>{{ eur(resumen.importePendiente) }} · {{ textoPorcentaje(b.pendiente) }}</pn-importe></span></li>
         </ul>
         }
       </div>
@@ -223,11 +232,11 @@
                   stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>Pendiente</span>
               }
             </div>
-            <p class="tesoreria__importe" data-cifras>{{ eur(m.precio) }}</p>
+            <p class="tesoreria__importe" data-cifras><pn-importe>{{ eur(m.precio) }}</pn-importe></p>
             <div class="tesoreria__acciones">
               @if (!m.pagado) {
               <button type="button" class="tesoreria__cobrar" aria-haspopup="dialog" [disabled]="ocupado(m) || sinId(m)"
-                [attr.aria-label]="'Cobrar ' + eur(m.precio) + ' de ' + m.concepto + ' a ' + m.alumnoNombreCompleto"
+                [attr.aria-label]="'Cobrar ' + modo.textoImporte(eur(m.precio)) + ' de ' + m.concepto + ' a ' + m.alumnoNombreCompleto"
                 (click)="cobrar(m)">Cobrar</button>
               }
               <div class="tesoreria__menu-zona" (focusout)="alSalirDeZona($event, 'fila')">

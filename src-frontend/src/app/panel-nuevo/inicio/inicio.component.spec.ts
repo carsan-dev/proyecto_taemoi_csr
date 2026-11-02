@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, EMPTY, of } from 'rxjs';
 import { By } from '@angular/platform-browser';
 
 import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
@@ -103,7 +103,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthenticationService, useValue: { getRoles: () => of(['ROLE_ADMIN']), tieneRolAdmin: () => true, tieneAccesoAdmin: () => true } },
-        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => permisos$ } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => permisos$, refrescado$: EMPTY } },
         { provide: PlataformaService, useValue: { esAdminPlataforma: () => of(false) } },
         {
           provide: CatalogoService,
@@ -699,6 +699,37 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
       responder();
       expect(elemento().querySelector('.inicio__sin-sedes')).toBeNull();
       expect(elemento().querySelector('[data-acceso="alta"]')).not.toBeNull();
+    });
+  });
+
+  describe('modo privado de importes (decisión 419)', () => {
+    const tapados = () => elemento().querySelectorAll('.importe--tapado').length;
+    const boton = () => elemento().querySelector<HTMLButtonElement>('pn-ver-importes button');
+
+    it('con la preferencia activa el total va tapado, y «Ver importes» lo destapa sin tocar los recuentos', () => {
+      permisos$.next({ importesTapados: true });
+      responder();
+      fixture.detectChanges();
+
+      expect(elemento().querySelector('.inicio__pendiente-total .importe')!.classList).toContain('importe--tapado');
+      expect(texto('.inicio__pendiente-total')).toContain('Importe oculto');
+      expect(elemento().querySelector('.inicio__desglose td:first-of-type .importe')).toBeNull();
+      expect(tapados()).toBeGreaterThan(1);
+
+      boton()!.click();
+      fixture.detectChanges();
+
+      expect(tapados()).toBe(0);
+      expect(texto('.inicio__pendiente-total')).toBe(`1.274,00${NBSP}€`);
+    });
+
+    it('con la preferencia apagada se ve como hoy y sin botón', () => {
+      responder();
+      fixture.detectChanges();
+
+      expect(tapados()).toBe(0);
+      expect(boton()).toBeNull();
+      expect(texto('.inicio__pendiente-total')).toBe(`1.274,00${NBSP}€`);
     });
   });
 });

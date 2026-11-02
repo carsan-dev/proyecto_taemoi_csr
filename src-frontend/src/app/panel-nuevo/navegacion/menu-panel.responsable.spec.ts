@@ -66,10 +66,11 @@ describe('menu-panel: responsable de sede (decisión 370)', () => {
     expect(rutas).toContain('/plataformaLogos');
   });
 
-  it('«Mi perfil» sale con gestión y con responsable; no con solo profesor', () => {
+  it('«Mi perfil» sale con gestión, con responsable y con profesor; no sin ninguno', () => {
     const perfil = CUENTA_PANEL[0];
     expect(visible(perfil, BASE)).toBeTrue();
     expect(visible(perfil, { ...BASE, panelSede: false, gestion: true })).toBeTrue();
+    expect(visible(perfil, { ...BASE, panelSede: false, profesor: true })).toBeTrue();
     expect(visible(perfil, { ...BASE, panelSede: false })).toBeFalse();
   });
 

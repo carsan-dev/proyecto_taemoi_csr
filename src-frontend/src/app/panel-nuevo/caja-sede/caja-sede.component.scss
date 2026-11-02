@@ -77,7 +77,17 @@
 // ------------------------------------------------------------------ cabecera, sede y periodo
 
 .caja__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pn-espacio-s) var(--pn-espacio-m);
   margin-bottom: 16px;
+}
+
+.caja__titulos {
+  flex: 1 1 16rem;
+  min-width: 0;
 }
 
 .caja__titulo {
@@ -178,6 +188,18 @@ select.caja__control {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+// El campo llega relleno con lo declarado (decisión 419): tapado como el resto, salvo mientras se escribe en él.
+.caja__contado--tapado:not(:focus) {
+  filter: blur(7px);
+  user-select: none;
+
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    color: transparent;
+    background: CanvasText;
+  }
 }
 
 .caja__importe-simbolo {

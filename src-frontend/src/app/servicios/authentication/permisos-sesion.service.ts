@@ -38,6 +38,8 @@ export interface PermisosSesion {
   nombreSaludo?: string | null;
   /** Hoy es el cumpleaños de la ficha propia de la cuenta (8b-M2); solo el booleano. Opcional: servidor anterior. */
   cumpleanos?: boolean;
+  /** Modo privado (decisión 419): la cuenta quiere los importes tapados. Opcional: servidor anterior. */
+  importesTapados?: boolean;
 }
 
 /**

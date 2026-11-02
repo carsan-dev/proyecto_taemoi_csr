@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { EMPTY, Observable, of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
@@ -71,6 +71,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
   let esAdmin: boolean;
   let esGestion: boolean;
   let parametros: Record<string, string>;
+  let permisos$: Observable<Partial<PermisosSesion>>;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const texto = (n: Element | null | undefined): string => (n?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -175,6 +176,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     esAdmin = true;
     esGestion = false;
     parametros = {};
+    permisos$ = of({});
     await TestBed.configureTestingModule({
       imports: [TesoreriaComponent],
       providers: [
@@ -187,7 +189,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
           provide: AuthenticationService,
           useValue: { rolesEstanCargados: () => true, tieneRolAdmin: () => esAdmin, tieneAccesoAdmin: () => esGestion, obtenerRoles: () => of([]) },
         },
-        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
+        { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => permisos$, refrescado$: EMPTY } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
         {
           provide: CatalogoService,
@@ -1228,6 +1230,44 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
       responder();
       fixture.componentInstance.exportar('csv');
       expect(params(http.expectOne((r) => r.url === `${API}/tesoreria/export/csv`))).toEqual({ ano: '2026', mes: '10', pagado: 'false', soloActivos: 'true' });
+    });
+  });
+
+  describe('modo privado de importes (decisión 419)', () => {
+    const valor = (): HTMLElement => el().querySelector<HTMLElement>('.tesoreria__cifra-valor--pendiente')!;
+    const verImportes = () => el().querySelector<HTMLButtonElement>('pn-ver-importes button');
+    const barraCobrado = () => el().querySelector<HTMLElement>('.tesoreria__barra-cobrado')!;
+
+    it('con la preferencia activa, las cifras y la gráfica van tapadas y no se dicen en ningún atributo', () => {
+      permisos$ = of({ importesTapados: true });
+      crear();
+      responder();
+
+      expect(valor().querySelector('.importe')!.classList).toContain('importe--tapado');
+      expect(texto(valor())).toContain('Importe oculto');
+      expect(el().querySelector('.tesoreria__cifra:last-child .importe')).toBeNull();
+      expect(el().querySelector('.tesoreria__importe .importe--tapado')).not.toBeNull();
+      expect(el().querySelector('pn-importe[bloque] .importe--tapado .tesoreria__barra')).not.toBeNull();
+      expect(el().querySelector('.tesoreria__barra')!.hasAttribute('aria-label')).toBeFalse();
+      expect(barraCobrado().hasAttribute('title')).toBeFalse();
+      expect(barraCobrado().style.width).toBe('50%');
+      expect(el().querySelector('.tesoreria__cobrar')!.getAttribute('aria-label')).toContain('Cobrar importe oculto de ');
+
+      verImportes()!.click();
+      fixture.detectChanges();
+
+      expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+      expect(barraCobrado().getAttribute('title')).toContain('Cobrado ');
+      expect(el().querySelector('.tesoreria__cobrar')!.getAttribute('aria-label')).not.toContain('importe oculto');
+    });
+
+    it('con la preferencia apagada se ve como hoy y sin botón', () => {
+      crear();
+      responder();
+
+      expect(el().querySelectorAll('.importe--tapado').length).toBe(0);
+      expect(verImportes()).toBeNull();
+      expect(texto(valor())).not.toContain('Importe oculto');
     });
   });
 });

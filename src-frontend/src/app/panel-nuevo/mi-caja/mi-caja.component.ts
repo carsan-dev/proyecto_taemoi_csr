@@ -55,6 +55,8 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { OpcionPastilla, ParteMensaje, ResultadoConfirmacion } from '../dialogo/dialogo.component';
 import { eur, numero, plural } from '../formato/formato-es';
 import { EurPipe } from '../formato/eur.pipe';
+import { ImporteComponent } from '../modo-privado/importe.component';
+import { VerImportesComponent } from '../modo-privado/ver-importes.component';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 
 /** Más reciente primero, por fecha de la solicitud (como la pantalla de hoy). */
@@ -133,7 +135,9 @@ export function iniciales(nombre: string | null | undefined, apellidos: string |
     BotonOcupadoComponent,
     EsqueletoComponent,
     EurPipe,
+    ImporteComponent,
     PanelLateralComponent,
+    VerImportesComponent,
   ],
   templateUrl: './mi-caja.component.html',
   styleUrl: './mi-caja.component.scss',

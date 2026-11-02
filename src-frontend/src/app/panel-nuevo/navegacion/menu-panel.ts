@@ -16,11 +16,12 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  * - `gestion`: ROLE_ADMIN o ROLE_MANAGER, o `panelSede` (`/api/panel/**`); falla cerrado si el contexto no lo trae.
  * - `sedes`: la capacidad SEDES de `GET /api/auth/permisos` (E9-3); falla cerrado si el contexto no la trae.
  * - `miembros`: la capacidad MIEMBROS de `GET /api/auth/permisos` (E9-4); falla cerrado si el contexto no la trae.
+ * - `cuenta`: `gestion` o `profesor` («Mi perfil», decisión 419); falla cerrado si el contexto no trae ninguno.
  */
-export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion' | 'sedes' | 'miembros';
+export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion' | 'sedes' | 'miembros' | 'cuenta';
 
 export type ContextoMenu = Readonly<
-  Record<Exclude<Condicion, 'gestion' | 'sedes' | 'miembros'>, boolean> & {
+  Record<Exclude<Condicion, 'gestion' | 'sedes' | 'miembros' | 'cuenta'>, boolean> & {
     soloProfesor?: boolean;
     /** La capacidad PANEL_SEDE de `GET /api/auth/permisos`: el menú de la decisión 370. */
     panelSede?: boolean;
@@ -191,10 +192,20 @@ const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
   '/',
 ]);
 
-/** Menú de cuenta: «Mi perfil» para propietario, gestor y responsable (una sesión solo-profesor no usa `/api/panel/**`). */
+/** Menú de cuenta: «Mi perfil» para propietario, gestor, responsable y profesor, también solo-profesor (decisión 419). */
 export const CUENTA_PANEL: readonly EntradaMenu[] = [
-  { etiqueta: 'Mi perfil', ruta: '/panel/mi-perfil', icono: 'bi-person', condicion: 'gestion' },
+  { etiqueta: 'Mi perfil', ruta: '/panel/mi-perfil', icono: 'bi-person', condicion: 'cuenta' },
 ];
+
+/** Profesor sin gestión ni responsable: los dos accesos directos (la familia + profesor también, decisión 326). */
+export function soloAccesosDeProfesor(roles: readonly string[]): boolean {
+  return (
+    roles.includes('ROLE_PROFESOR') &&
+    !roles.includes('ROLE_ADMIN') &&
+    !roles.includes('ROLE_MANAGER') &&
+    !roles.includes('ROLE_RESPONSABLE_SEDE')
+  );
+}
 
 /** Los enlaces legales del pie público (decisión 259): en «Más» y en la cuenta, junto a «Configurar cookies». */
 export const ENLACES_LEGALES: readonly EntradaMenu[] = [
@@ -206,6 +217,9 @@ export const ENLACES_LEGALES: readonly EntradaMenu[] = [
 export function visible(entrada: EntradaMenu, contexto: ContextoMenu): boolean {
   if (entrada.condicion === 'gestion' && contexto.panelSede) {
     return true;
+  }
+  if (entrada.condicion === 'cuenta') {
+    return contexto.gestion === true || contexto.panelSede === true || contexto.profesor === true;
   }
   return !entrada.condicion || contexto[entrada.condicion] === true;
 }

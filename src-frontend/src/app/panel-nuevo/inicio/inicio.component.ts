@@ -17,6 +17,8 @@ import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CobroCargoService } from '../cobro/cobro-cargo';
 import { DIAS_VENTANA_ERRORES, ventanaUltimosDias } from '../../utils/ventana-fechas.util';
 import { eur, fecha, fechaLarga, mes, numero, plural } from '../formato/formato-es';
+import { ImporteComponent } from '../modo-privado/importe.component';
+import { VerImportesComponent } from '../modo-privado/ver-importes.component';
 import { ClaseDeHoy, Ocupacion, aforosPorTurno, calcularOcupacion, clasesDeHoy } from './ocupacion';
 import { CargoVencido, PendienteVencido, PendienteVencidoService, TipoPendiente } from './pendiente-vencido.service';
 
@@ -171,7 +173,7 @@ const MINIATURA_POR_DEFECTO = 'assets/media/default.webp';
 @Component({
   selector: 'app-inicio',
   standalone: true,
-  imports: [MascotaComponent, RouterLink, EsqueletoComponent, BloqueErrorComponent, AcentoEscuelaDirective],
+  imports: [MascotaComponent, RouterLink, EsqueletoComponent, BloqueErrorComponent, AcentoEscuelaDirective, ImporteComponent, VerImportesComponent],
   templateUrl: './inicio.component.html',
   styleUrls: ['./inicio.component.scss'],
 })

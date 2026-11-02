@@ -15,6 +15,8 @@ export interface MiPerfil {
   cumpleMes: number | null;
   /** El cumpleaños sale de la ficha de alumno de la cuenta: no se edita aquí. */
   cumpleFicha: { dia: number; mes: number } | null;
+  /** Modo privado (decisión 419): abre con los importes tapados. Se aplica a la cuenta en todos sus dispositivos. */
+  importesTapados: boolean;
 }
 
 /** Cuerpo del `PUT`: lo único que se puede cambiar. */
@@ -22,6 +24,7 @@ export interface CambiosMiPerfil {
   nombrePreferido: string | null;
   cumpleDia: number | null;
   cumpleMes: number | null;
+  importesTapados: boolean;
 }
 
 /**

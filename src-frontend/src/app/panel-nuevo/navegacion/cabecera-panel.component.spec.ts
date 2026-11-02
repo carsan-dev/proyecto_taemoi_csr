@@ -540,12 +540,12 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       }
     });
 
-    itSinReloj('«Mi perfil» no sale en la cuenta de un solo-profesor', async () => {
+    itSinReloj('«Mi perfil» también sale en la cuenta de un solo-profesor (decisión 419)', async () => {
       roles = ['ROLE_PROFESOR'];
       datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: ['MI_CAJA'] });
       await montar('/mi-caja');
       responderMarca();
-      expect(abrirCuenta().querySelector('a[href="/panel/mi-perfil"]')).toBeNull();
+      expect(abrirCuenta().querySelector('a[href="/panel/mi-perfil"]')?.textContent?.trim()).toBe('Mi perfil');
     });
 
     itSinReloj('el nombre del botón se actualiza tras `refrescado$`, sin recargar', async () => {

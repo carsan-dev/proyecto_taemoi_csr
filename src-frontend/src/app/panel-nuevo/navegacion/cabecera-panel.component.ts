@@ -35,6 +35,7 @@ import {
   entradaActual,
   menuVisible,
   seccionActiva,
+  soloAccesosDeProfesor,
   visible,
 } from './menu-panel';
 import { RECARGAR_PAGINA } from '../../core/recargar-pagina';
@@ -100,16 +101,6 @@ type IdMenu = IdSeccion | 'cuenta';
 /** Pasar lista (`/mis-grupos/:id/lista`, `/gruposListar/:id/lista`): su barra fija de guardar sustituye a la navegación inferior. */
 export function ocultaBarraInferior(url: string): boolean {
   return /^\/(mis-grupos|gruposListar)\/\d+\/lista(?:[?#]|$)/.test(url);
-}
-
-/** Profesor sin gestión ni responsable: los dos accesos directos (la familia + profesor también, decisión 326). */
-function soloAccesosDeProfesor(roles: readonly string[]): boolean {
-  return (
-    roles.includes('ROLE_PROFESOR') &&
-    !roles.includes('ROLE_ADMIN') &&
-    !roles.includes('ROLE_MANAGER') &&
-    !roles.includes('ROLE_RESPONSABLE_SEDE')
-  );
 }
 
 /** Quién ve la bandeja de solicitudes y su contador. */
