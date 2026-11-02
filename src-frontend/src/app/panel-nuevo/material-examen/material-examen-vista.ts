@@ -85,8 +85,23 @@ function tramoGrados(grados: readonly GradoDelBloque[]): string {
   return grados.length === 1 ? primero : `${primero} a ${nombreGrado(grados[grados.length - 1].nombre)}`;
 }
 
-/** «Alumnos de Blanco a Blanco-amarillo»; con un solo grado, «Alumnos de Rojo». */
-export function textoGrados(grados: readonly GradoDelBloque[]): string {
+/**
+ * «Alumnos de Blanco a Blanco-amarillo»; con un solo grado, «Alumnos de Rojo». En los bloques de negros de Taekwondo y
+ * Kickboxing (`bNN_negro_N_a_negro_M`) el PUM y el DAN del mismo número comparten temario: el subtítulo va de DAN a DAN.
+ */
+export function textoGrados(
+  grados: readonly GradoDelBloque[],
+  bloqueId = '',
+  buscar?: (codigo: string) => Pick<CatalogoGrado, 'nombre'> | undefined
+): string {
+  const negros = /^b\d+_negro_(\d+)_a_negro_(\d+)$/.exec(bloqueId);
+  if (negros) {
+    const dan = (n: string): string => {
+      const nombre = buscar?.(`NEGRO_${n}_DAN`)?.nombre;
+      return nombre && nombre.includes(n) ? nombreGrado(nombre) : `Negro ${n}º DAN`;
+    };
+    return `Alumnos de ${dan(negros[1])} a ${dan(negros[2])}`;
+  }
   return grados.length ? `Alumnos de ${tramoGrados(grados)}` : '';
 }
 
