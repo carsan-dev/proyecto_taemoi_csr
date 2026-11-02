@@ -19,7 +19,7 @@ function disciplina(codigo: string, nombre: string, cambios: Partial<DisciplinaC
     bloques: [
       {
         id: 'b01_inicio_a_amarillo',
-        nombre: 'Inicio a amarillo',
+        nombre: 'Blanco a amarillo',
         grados: [
           { codigo: 'BLANCO', nombre: 'BLANCO' },
           { codigo: 'BLANCO_AMARILLO', nombre: 'BLANCO-AMARILLO' },
@@ -80,7 +80,7 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
   it('pinta cada bloque como en el boceto', () => {
     cargar({ disciplinas: [disciplina('TAEKWONDO', 'Taekwondo')] });
     const [primera, segunda] = filas();
-    expect(texto(primera.querySelector('.fila__nombre'))).toBe('Inicio a amarillo');
+    expect(texto(primera.querySelector('.fila__nombre'))).toBe('Blanco a amarillo');
     expect(texto(primera.querySelector('.fila__grados'))).toBe('Alumnos de Blanco a Blanco-amarillo');
     expect(texto(primera.querySelector('.fila__pastilla--bien'))).toBe('Temario');
     expect(texto(primera.querySelector('.fila__pastillas'))).toContain('7 vídeos');
@@ -98,14 +98,14 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
   for (const codigo of ['TAEKWONDO', 'KICKBOXING']) {
     it(codigo + ': renders the API names as received, with origin and destination belts', () => {
       const datos = disciplina(codigo, codigo, { bloques: [
-        { id: 'b01_inicio_a_amarillo', nombre: 'Inicio a amarillo', grados: [{ codigo: 'BLANCO', nombre: 'BLANCO' }], tieneTemario: false, videos: 0, bytes: 0 },
-        { id: 'b05_azul_a_rojo', nombre: 'Azul a rojo', grados: [{ codigo: 'AZUL', nombre: 'AZUL' }], tieneTemario: false, videos: 0, bytes: 0 },
-        { id: 'b06_rojo_a_negro_1', nombre: 'Rojo a negro', grados: [{ codigo: 'ROJO', nombre: codigo === 'KICKBOXING' ? 'MARRÓN' : 'ROJO' }], tieneTemario: false, videos: 0, bytes: 0 },
+        { id: 'b01_inicio_a_amarillo', nombre: 'Blanco a amarillo', grados: [{ codigo: 'BLANCO', nombre: 'BLANCO' }], tieneTemario: false, videos: 0, bytes: 0 },
+        { id: 'b05_azul_a_rojo', nombre: codigo === 'KICKBOXING' ? 'Azul a marrón' : 'Azul a rojo', grados: [{ codigo: 'AZUL_ROJO', nombre: codigo === 'KICKBOXING' ? 'AZUL-MARRÓN' : 'AZUL-ROJO' }], tieneTemario: false, videos: 0, bytes: 0 },
+        { id: 'b06_rojo_a_negro_1', nombre: codigo === 'KICKBOXING' ? 'Marrón a negro' : 'Rojo a negro', grados: [{ codigo: 'ROJO', nombre: codigo === 'KICKBOXING' ? 'MARRÓN' : 'ROJO' }], tieneTemario: false, videos: 0, bytes: 0 },
         ...[1, 2, 3, 4, 5].map((dan) => ({
           id: dan === 5 ? 'b11_negro_5_a_maximo' : 'b' + String(dan + 6).padStart(2, '0') + '_negro_' + dan + '_a_negro_' + (dan + 1),
           nombre: 'Negro ' + dan,
           grados: [
-            ...(dan <= 3 ? [{ codigo: 'ROJO_NEGRO_' + dan + '_PUM', nombre: 'ROJO-NEGRO PUM' }] : []),
+            ...(dan <= 3 ? [{ codigo: 'ROJO_NEGRO_' + dan + '_PUM', nombre: codigo === 'KICKBOXING' ? 'MARRÓN-NEGRO PUM' : 'ROJO-NEGRO PUM' }] : []),
             { codigo: 'NEGRO_' + dan + '_DAN', nombre: 'NEGRO DAN' },
           ],
           tieneTemario: false, videos: 0, bytes: 0,
@@ -113,7 +113,13 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
       ] });
       cargar({ disciplinas: [datos] });
       const nombres = filas().map((fila) => texto(fila.querySelector('.fila__nombre')));
-      expect(nombres.slice(0, 3)).toEqual(['Inicio a amarillo', 'Azul a rojo', 'Rojo a negro']);
+      expect(nombres.slice(0, 3)).toEqual(['Blanco a amarillo', codigo === 'KICKBOXING' ? 'Azul a marrón' : 'Azul a rojo', codigo === 'KICKBOXING' ? 'Marrón a negro' : 'Rojo a negro']);
+      const subtitulos = filas().map((fila) => texto(fila.querySelector('.fila__grados')));
+      expect(subtitulos[1]).toBe(codigo === 'KICKBOXING' ? 'Alumnos de Azul-marrón' : 'Alumnos de Azul-rojo');
+      expect(subtitulos[2]).toBe(codigo === 'KICKBOXING' ? 'Alumnos de Marrón' : 'Alumnos de Rojo');
+      if (codigo === 'KICKBOXING') {
+        expect(subtitulos.join(' ').toLowerCase()).not.toContain('rojo');
+      }
       const colorRojo = codigo === 'KICKBOXING' ? 'rgb(139, 69, 19)' : 'rgb(255, 0, 0)';
       const esperados = [
         ['rgb(255, 255, 255)', 'rgb(255, 255, 0)'],
@@ -125,7 +131,7 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
         expect(Array.from(fila.querySelectorAll<HTMLElement>('.fila__cinto')).map((cinto) => cinto.style.background)).toEqual(esperados[i]);
         expect(fila.getAttribute('href')).toBe('/material-examen/' + codigo + '/' + datos.bloques[i].id);
       });
-      expect(datos.bloques[0].nombre).toBe('Inicio a amarillo');
+      expect(datos.bloques[0].nombre).toBe('Blanco a amarillo');
       expect(datos.bloques[2].grados[0].codigo).toBe('ROJO');
     });
   }

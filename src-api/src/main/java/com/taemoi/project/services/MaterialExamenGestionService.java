@@ -644,10 +644,22 @@ public class MaterialExamenGestionService {
 					List<MaterialGestionDTO.GradoDelBloque> grados = bloques.computeIfAbsent(g.getBloqueTemario(),
 							id -> new ArrayList<>());
 					if (g.getOrden() != null) {
-						grados.add(new MaterialGestionDTO.GradoDelBloque(g.getCodigo(), g.getNombre()));
+						grados.add(new MaterialGestionDTO.GradoDelBloque(g.getCodigo(),
+								nombreDeGrado(disciplina, g.getNombre())));
 					}
 				});
 		return bloques;
+	}
+
+	/**
+	 * Nombre del grado que ve el panel. El catálogo de kickboxing ya llama MARRÓN al código ROJO, pero conserva «rojo» en los
+	 * intermedios (AZUL-ROJO, ROJO-NEGRO n.º PUM); aquí se alinean con él sin tocar la base de datos.
+	 */
+	static String nombreDeGrado(String disciplina, String nombre) {
+		if (nombre != null && "KICKBOXING".equalsIgnoreCase(disciplina)) {
+			return nombre.replaceAll("(?i)\\bROJO\\b", "MARRÓN");
+		}
+		return nombre;
 	}
 
 	private void comprobarCuerpo(CuerpoCrudo cuerpo, long maximo) {

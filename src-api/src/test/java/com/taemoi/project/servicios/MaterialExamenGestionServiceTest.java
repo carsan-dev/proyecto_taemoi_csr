@@ -900,6 +900,47 @@ class MaterialExamenGestionServiceTest {
 	}
 
 	@Test
+	void listadoYDetalle_titulosYGradosPorDisciplina_kickboxingSinRojo_taekwondoIgual() throws Exception {
+		MaterialGestionDTO.Listado listado = gestion.listar();
+		var tkd = listado.disciplinas().stream().filter(d -> TKD.equals(d.codigo())).findFirst().orElseThrow();
+		var kb = listado.disciplinas().stream().filter(d -> KB.equals(d.codigo())).findFirst().orElseThrow();
+		var tkdPorId = tkd.bloques().stream().collect(java.util.stream.Collectors.toMap(
+				MaterialGestionDTO.BloqueResumen::id, b -> b));
+		var kbPorId = kb.bloques().stream().collect(java.util.stream.Collectors.toMap(
+				MaterialGestionDTO.BloqueResumen::id, b -> b));
+
+		assertEquals("Blanco a amarillo", tkdPorId.get(B01).nombre());
+		assertEquals("Azul a rojo", tkdPorId.get("b05_azul_a_rojo").nombre());
+		assertEquals("Rojo a negro", tkdPorId.get("b06_rojo_a_negro_1").nombre());
+		assertEquals("Blanco a amarillo", kbPorId.get(B01).nombre());
+		assertEquals("Azul a marrón", kbPorId.get("b05_azul_a_rojo").nombre());
+		assertEquals("Marrón a negro", kbPorId.get("b06_rojo_a_negro_1").nombre());
+
+		assertEquals(List.of("AZUL", "AZUL-ROJO"),
+				tkdPorId.get("b05_azul_a_rojo").grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertEquals(List.of("AZUL", "AZUL-MARRÓN"),
+				kbPorId.get("b05_azul_a_rojo").grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertEquals(List.of("ROJO"),
+				tkdPorId.get("b06_rojo_a_negro_1").grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertEquals(List.of("MARRÓN"),
+				kbPorId.get("b06_rojo_a_negro_1").grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertTrue(tkdPorId.get("b07_negro_1_a_negro_2").grados().stream().anyMatch(g -> g.nombre().startsWith("ROJO-NEGRO")));
+		for (var bloque : kb.bloques()) {
+			assertFalse(bloque.grados().stream().anyMatch(g -> g.nombre().toUpperCase().contains("ROJO")),
+					bloque.id() + " " + bloque.grados());
+		}
+		assertTrue(kbPorId.get("b07_negro_1_a_negro_2").grados().stream().anyMatch(g -> g.nombre().startsWith("MARRÓN-NEGRO")));
+
+		assertEquals("Blanco a amarillo", gestion.detalle(KB, B01).nombre());
+		assertEquals("Azul a marrón", gestion.detalle(KB, "b05_azul_a_rojo").nombre());
+		assertEquals("Marrón a negro", gestion.detalle(KB, "b06_rojo_a_negro_1").nombre());
+		assertEquals(List.of("MARRÓN"),
+				gestion.detalle(KB, "b06_rojo_a_negro_1").grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertEquals("Azul a rojo", gestion.detalle(TKD, "b05_azul_a_rojo").nombre());
+		assertEquals("Rojo a negro", gestion.detalle(TKD, "b06_rojo_a_negro_1").nombre());
+	}
+
+	@Test
 	void nombresDeBloque_losDelBoceto_yUnoLegibleParaOtroId() {
 		assertEquals("Blanco a amarillo", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B01));
 		assertEquals("Amarillo a naranja", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B02));

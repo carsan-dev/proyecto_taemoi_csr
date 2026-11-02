@@ -25,7 +25,7 @@ function detalle(cambios: Partial<DetalleBloque> = {}): DetalleBloque {
   return {
     disciplina: 'TAEKWONDO',
     id: 'b01',
-    nombre: 'Inicio a amarillo',
+    nombre: 'Blanco a amarillo',
     grados: [
       { codigo: 'BLANCO', nombre: 'BLANCO' },
       { codigo: 'BLANCO_AMARILLO', nombre: 'BLANCO-AMARILLO' },
@@ -151,7 +151,7 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
     it('miga, título y a quién llega', () => {
       cargar();
       expect(texto(el().querySelector('.material__miga'))).toBe('Material de examen/Taekwondo');
-      expect(texto(el().querySelector('h1'))).toBe('Inicio a amarillo');
+      expect(texto(el().querySelector('h1'))).toBe('Blanco a amarillo');
       expect(texto(el().querySelector('.material__cabecera .material__sub'))).toBe('Lo ven las familias de alumnos de blanco a blanco-amarillo.');
     });
 
@@ -638,7 +638,7 @@ describe('MaterialBloqueComponent (pieza R2, un bloque)', () => {
       cargar();
       abrirEditar();
       expect(texto(panel()!.querySelector('.pn-panel__titulo'))).toBe('Editar vídeo');
-      expect(texto(panel()!.querySelector('.pn-panel__descripcion'))).toBe('Inicio a amarillo · Taekwondo');
+      expect(texto(panel()!.querySelector('.pn-panel__descripcion'))).toBe('Blanco a amarillo · Taekwondo');
       expect(entrada().value).toBe('Taeguk Il Jang');
       expect(texto(panel()!.querySelector('#material-titulo-ayuda'))).toBe('Si lleva «Taeguk» o «Pumse», también lo ven los grados superiores.14 / 120');
       expect(texto(panel()!.querySelector('.editar__nombre'))).toBe('c.mp4');
