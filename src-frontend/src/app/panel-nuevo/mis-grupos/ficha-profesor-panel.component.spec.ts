@@ -311,12 +311,28 @@ describe('FichaProfesorPanelComponent', () => {
       await fixture.whenStable();
       const grado = opcionesDialogo!.campos!.find((c) => c.id === 'grado-pase')!;
       expect(grado.opciones!.map((o) => o.texto)).toEqual(['Rojo', 'Rojo bordado']);
+      expect(JSON.stringify(opcionesDialogo!.bloques)).toContain('Rojo o Rojo bordado');
       expect(profesor.pasarGrado).toHaveBeenCalledWith(3, 'TAEKWONDO', 'examen', false);
 
       valoresDialogo = { 'tipo-pase': 'recompensa', 'grado-pase': 'rojo-bordado' };
       boton('Proponer pase')!.click();
       await fixture.whenStable();
       expect(profesor.pasarGrado.calls.mostRecent().args).toEqual([3, 'TAEKWONDO', 'recompensa', true]);
+    });
+
+    it('kickboxing: el rojo es marrón (nombre del grado que trae la API): «Marrón» / «Marrón bordado», mismo envío', async () => {
+      crear(ficha([deporte({ deporte: 'KICKBOXING', deporteNombre: 'Kickboxing', pideRojoBordado: true,
+        siguienteGrado: { codigo: 'ROJO', nombre: 'MARRÓN' } })]));
+      profesor.pasarGrado.and.returnValue(of(PASE));
+      valoresDialogo = { 'tipo-pase': 'examen', 'grado-pase': 'rojo-bordado' };
+      boton('Proponer pase')!.click();
+      await fixture.whenStable();
+      const grado = opcionesDialogo!.campos!.find((c) => c.id === 'grado-pase')!;
+      expect(grado.opciones!.map((o) => o.texto)).toEqual(['Marrón', 'Marrón bordado']);
+      const destino = JSON.stringify(opcionesDialogo!.bloques);
+      expect(destino).toContain('Marrón o Marrón bordado');
+      expect(destino).not.toContain('Rojo');
+      expect(profesor.pasarGrado).toHaveBeenCalledOnceWith(3, 'KICKBOXING', 'examen', true);
     });
 
     it('un fallo deja el diálogo con el error del servidor en línea y no avisa', async () => {

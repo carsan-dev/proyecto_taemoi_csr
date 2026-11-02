@@ -251,13 +251,19 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 
 	// ---------------- ExamMaterialBlockConfig ----------------
 
+	/**
+	 * Igual que ExamMaterialBlockConfig salvo los PUM de kickboxing: en kickboxing no existen y V31_20 les quita el bloque
+	 * (el antiguo les daba el de taekwondo).
+	 */
 	@Test
-	void bloqueDeTemario_igualQueExamMaterialBlockConfig() {
+	void bloqueDeTemario_igualQueExamMaterialBlockConfig_salvoLosPumDeKickboxing() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			for (Deporte deporte : DEPORTES_Y_NULO) {
 				for (TipoGrado grado : TipoGrado.values()) {
-					assertEquals(bloquesAntiguos.obtenerBloque(deporte, grado),
-							progresion.obtenerBloqueTemario(codigo(deporte), codigo(grado)), deporte + "/" + grado);
+					boolean pumDeKickboxing = deporte == Deporte.KICKBOXING && grado.name().endsWith("_PUM");
+					String esperado = pumDeKickboxing ? null : bloquesAntiguos.obtenerBloque(deporte, grado);
+					assertEquals(esperado, progresion.obtenerBloqueTemario(codigo(deporte), codigo(grado)),
+							deporte + "/" + grado);
 				}
 				assertEquals(bloquesAntiguos.obtenerBloque(deporte, null),
 						progresion.obtenerBloqueTemario(codigo(deporte), null));
@@ -412,7 +418,9 @@ class CatalogoParidadIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(Long.MAX_VALUE, progresion.obtenerMesesRequeridos("PILATES", "BLANCO", true));
 			assertEquals("N/A", progresion.obtenerNombreVisible("PILATES", "ROJO"));
 			assertEquals("N/A", progresion.obtenerNombreVisible(null, "ROJO"));
-			assertEquals("b07_negro_1_a_negro_2", progresion.obtenerBloqueTemario("KICKBOXING", "ROJO_NEGRO_1_PUM"));
+			assertNull(progresion.obtenerBloqueTemario("KICKBOXING", "ROJO_NEGRO_1_PUM"), "V31_20: sin PUM en kickboxing");
+			assertEquals("b07_negro_1_a_negro_2", progresion.obtenerBloqueTemario("KICKBOXING", "NEGRO_1_DAN"));
+			assertEquals("b07_negro_1_a_negro_2", progresion.obtenerBloqueTemario("TAEKWONDO", "ROJO_NEGRO_1_PUM"));
 			assertEquals(15, catalogo.obtenerEdadAdulto("KICKBOXING"));
 			assertThrows(IllegalArgumentException.class, () -> catalogo.obtenerEdadAdulto("NO_EXISTE"));
 		});

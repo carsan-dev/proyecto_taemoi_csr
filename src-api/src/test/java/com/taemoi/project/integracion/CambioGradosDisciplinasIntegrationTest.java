@@ -428,6 +428,147 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(pdf.contains("A MARRÓN"), pdf);
 	}
 
+	/**
+	 * En kickboxing el cinturón que el código llama ROJO es marrón: los cargos NUEVOS de examen y recompensa a ese grado
+	 * (normal y bordado) lo nombran con el nombre del grado en el catálogo de la disciplina («MARRÓN»); en taekwondo
+	 * siguen diciendo ROJO. Mismo producto (compartido) y mismo importe en las dos disciplinas.
+	 */
+	@Test
+	void cargosDePaseARojo_enKickboxingDicenMarron_enTaekwondoRojo_mismoProductoEImporte() {
+		// {porRecompensa, bordado, código de producto, concepto en taekwondo, concepto en kickboxing}
+		Object[][] casos = {
+				{ false, false, "EXAMEN_ROJO", "DERECHO A EXAMEN ROJO", "DERECHO A EXAMEN MARRÓN" },
+				{ false, true, "EXAMEN_ROJO_BORDADO", "DERECHO A EXAMEN ROJO BORDADO", "DERECHO A EXAMEN MARRÓN BORDADO" },
+				{ true, false, "RECOMPENSA_ROJO", "DERECHO DE CAMBIO A ROJO POR RECOMPENSA",
+						"DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA" },
+				{ true, true, "RECOMPENSA_ROJO_BORDADO", "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA",
+						"DERECHO DE CAMBIO A MARRÓN BORDADO POR RECOMPENSA" } };
+		long tkd = altaCon("PASE-ROJO-TKD", ANIO - 30, "TAEKWONDO", "AZUL", "ADULTO");
+		long kb = altaCon("PASE-ROJO-KB", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");
+		for (Object[] caso : casos) {
+			boolean porRecompensa = (Boolean) caso[0];
+			boolean bordado = (Boolean) caso[1];
+			Map<String, Object> cargoTkd = cargoDePase(tkd, "TAEKWONDO", bordado, porRecompensa);
+			Map<String, Object> cargoKb = cargoDePase(kb, "KICKBOXING", bordado, porRecompensa);
+			String codigo = (String) caso[2];
+			assertEquals(caso[3] + " - TAEKWONDO", cargoTkd.get("concepto"), codigo);
+			assertEquals(caso[4] + " - KICKBOXING", cargoKb.get("concepto"), codigo);
+			assertEquals(caso[2], cargoTkd.get("codigo"), codigo);
+			assertEquals(cargoTkd.get("producto_id"), cargoKb.get("producto_id"), "mismo producto: " + codigo);
+			assertEquals(((Number) cargoTkd.get("precio_producto")).doubleValue(),
+					((Number) cargoTkd.get("precio")).doubleValue(), 0.001, "importe del producto: " + codigo);
+			assertEquals(((Number) cargoTkd.get("precio")).doubleValue(), ((Number) cargoKb.get("precio")).doubleValue(),
+					0.001, "mismo importe: " + codigo);
+		}
+		// El grado no cambia hasta cobrar el cargo.
+		assertInscripcion(kb, "KICKBOXING", "AZUL", null);
+	}
+
+	/** La convocatoria de kickboxing crea el cargo del examen a marrón (también bordado) con «MARRÓN». */
+	@Test
+	void convocatoriaDeKickboxing_cargoDeExamenAMarronBordado_diceMarron() {
+		long kb = altaCon("CONVOCATORIA-MARRON", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");
+		long tkd = altaCon("CONVOCATORIA-ROJO", ANIO - 30, "TAEKWONDO", "AZUL", "ADULTO");
+		String[] conceptos = new String[2];
+		for (Object[] caso : new Object[][] { { kb, Deporte.KICKBOXING, 0 }, { tkd, Deporte.TAEKWONDO, 1 } }) {
+			long alumnoId = (Long) caso[0];
+			Deporte deporte = (Deporte) caso[1];
+			ConvocatoriaDTO dto = new ConvocatoriaDTO();
+			dto.setFechaConvocatoria(java.sql.Date.valueOf(LocalDate.now().plusDays(11)));
+			dto.setDeporte(deporte.name());
+			long convocatoria = TenantContext.calcularCon(ORG_TAEMOI, () -> convocatoriaService.crearConvocatoria(dto).getId());
+			TenantContext.ejecutarCon(ORG_TAEMOI, () -> tx.executeWithoutResult(s -> {
+				alumnoDeporteService.actualizarAptoParaExamen(alumnoId, deporte.name(), true);
+				alumnoService.agregarAlumnoAConvocatoria(alumnoId, convocatoria, false, true);
+			}));
+			conceptos[(Integer) caso[2]] = jdbc.queryForObject("""
+					SELECT pa.concepto FROM alumno_convocatoria ac JOIN producto_alumno pa ON pa.id = ac.producto_alumno_id
+					WHERE ac.convocatoria_id = ? AND ac.alumno_id = ?""", String.class, convocatoria, alumnoId);
+		}
+		assertEquals("DERECHO A EXAMEN MARRÓN BORDADO - KICKBOXING", conceptos[0]);
+		assertEquals("DERECHO A EXAMEN ROJO BORDADO - TAEKWONDO", conceptos[1]);
+	}
+
+	/**
+	 * Un cargo de pase a marrón de kickboxing sin producto (borrado: {@code producto_id} NULL) concede ROJO al pagarlo,
+	 * por su concepto, igual que el de taekwondo con ROJO.
+	 */
+	@Test
+	void pagarCargoDePaseARojoSinProducto_enKickboxingConMarron_promueveARojo() {
+		long kb = altaCon("SIN-PRODUCTO-KB", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");
+		long tkd = altaCon("SIN-PRODUCTO-TKD", ANIO - 30, "TAEKWONDO", "AZUL", "ADULTO");
+		Object[][] casos = { { kb, "KICKBOXING", "DERECHO A EXAMEN MARRÓN", "MARRÓN" },
+				{ kb, "KICKBOXING", "DERECHO A EXAMEN MARRÓN BORDADO", "MARRÓN" },
+				{ kb, "KICKBOXING", "DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA", "MARRÓN" },
+				{ kb, "KICKBOXING", "DERECHO DE CAMBIO A MARRÓN BORDADO POR RECOMPENSA", "MARRÓN" },
+				{ tkd, "TAEKWONDO", "DERECHO A EXAMEN ROJO", "ROJO" },
+				{ tkd, "TAEKWONDO", "DERECHO A EXAMEN ROJO BORDADO", "ROJO" },
+				{ tkd, "TAEKWONDO", "DERECHO DE CAMBIO A ROJO POR RECOMPENSA", "ROJO" },
+				{ tkd, "TAEKWONDO", "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA", "ROJO" } };
+		for (Object[] caso : casos) {
+			long alumnoId = (Long) caso[0];
+			String disciplina = (String) caso[1];
+			ponerGrado(alumnoId, disciplina, "AZUL");
+			pagar(cargo(alumnoId, disciplina, null, caso[2] + " - " + disciplina));
+			assertInscripcion(alumnoId, disciplina, "ROJO", (String) caso[3]);
+		}
+	}
+
+	/**
+	 * Con comportamiento heredado se cobra primero el producto heredado SIN código con el concepto de siempre: en
+	 * kickboxing el cargo también dice MARRÓN; en taekwondo, ROJO. Mismo producto e importe.
+	 */
+	@Test
+	void cargosDePaseARojo_conProductoHeredadoSinCodigo_enKickboxingDicenMarron() {
+		// {porRecompensa, bordado, código de producto, concepto en taekwondo, concepto en kickboxing}
+		Object[][] casos = {
+				{ false, false, "EXAMEN_ROJO", "DERECHO A EXAMEN ROJO", "DERECHO A EXAMEN MARRÓN" },
+				{ false, true, "EXAMEN_ROJO_BORDADO", "DERECHO A EXAMEN ROJO BORDADO", "DERECHO A EXAMEN MARRÓN BORDADO" },
+				{ true, false, "RECOMPENSA_ROJO", "DERECHO DE CAMBIO A ROJO POR RECOMPENSA",
+						"DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA" },
+				{ true, true, "RECOMPENSA_ROJO_BORDADO", "DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA",
+						"DERECHO DE CAMBIO A MARRÓN BORDADO POR RECOMPENSA" } };
+		long tkd = altaCon("HEREDADO-ROJO-TKD", ANIO - 30, "TAEKWONDO", "AZUL", "ADULTO");
+		long kb = altaCon("HEREDADO-ROJO-KB", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");
+		for (Object[] caso : casos) {
+			boolean porRecompensa = (Boolean) caso[0];
+			boolean bordado = (Boolean) caso[1];
+			String codigo = (String) caso[2];
+			// El producto clasificado pasa a heredado sin código mientras dura el caso.
+			Long id = jdbc.queryForObject("SELECT id FROM producto WHERE organizacion_id = 1 AND codigo = ?", Long.class,
+					codigo);
+			jdbc.update("UPDATE producto SET codigo = NULL WHERE id = ?", id);
+			try {
+				Map<String, Object> cargoTkd = cargoDePase(tkd, "TAEKWONDO", bordado, porRecompensa);
+				Map<String, Object> cargoKb = cargoDePase(kb, "KICKBOXING", bordado, porRecompensa);
+				assertNull(cargoTkd.get("codigo"), "heredado sin código: " + codigo);
+				assertNull(cargoKb.get("codigo"), "heredado sin código: " + codigo);
+				assertEquals(caso[3] + " - TAEKWONDO", cargoTkd.get("concepto"), codigo);
+				assertEquals(caso[4] + " - KICKBOXING", cargoKb.get("concepto"), codigo);
+				assertEquals(cargoTkd.get("producto_id"), cargoKb.get("producto_id"), "mismo producto: " + codigo);
+				assertEquals(((Number) cargoKb.get("precio_producto")).doubleValue(),
+						((Number) cargoKb.get("precio")).doubleValue(), 0.001, "importe del producto: " + codigo);
+				assertEquals(((Number) cargoTkd.get("precio")).doubleValue(),
+						((Number) cargoKb.get("precio")).doubleValue(), 0.001, "mismo importe: " + codigo);
+			} finally {
+				jdbc.update("UPDATE producto SET codigo = ? WHERE id = ?", codigo, id);
+			}
+		}
+		assertInscripcion(kb, "KICKBOXING", "AZUL", null);
+	}
+
+	/** Crea el cargo de pase como gestión y devuelve concepto, precio, producto, su código y su precio. */
+	private Map<String, Object> cargoDePase(long alumnoId, String deporte, boolean bordado, boolean porRecompensa) {
+		autenticar();
+		long cargoId = TenantContext.calcularCon(ORG_TAEMOI, () -> tx.execute(s -> {
+			alumnoDeporteService.actualizarAptoParaExamen(alumnoId, deporte, true);
+			return alumnoService.crearCargoDePase(alumnoId, deporte, bordado, porRecompensa).getId();
+		}));
+		return jdbc.queryForMap("""
+				SELECT pa.concepto, pa.precio, pa.producto_id, p.codigo, p.precio AS precio_producto
+				FROM producto_alumno pa JOIN producto p ON p.id = pa.producto_id WHERE pa.id = ?""", cargoId);
+	}
+
 	// =============================================================================
 	// Informes por grado y filtro por grado
 	// =============================================================================

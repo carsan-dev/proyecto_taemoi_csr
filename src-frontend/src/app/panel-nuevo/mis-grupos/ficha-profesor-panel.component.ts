@@ -28,6 +28,7 @@ import {
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
+import { colorGradoRojoInicial } from '../../utilities/grado-progresion';
 import { gradoFila, gradoParaFrase } from '../alumnos/alumno-vista';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
@@ -52,6 +53,19 @@ const TEXTO_TIPO_PASE: Record<TipoPase, string> = {
 const CAMPO_TIPO_PASE = 'tipo-pase';
 const CAMPO_GRADO_PASE = 'grado-pase';
 const ROJO_BORDADO = 'rojo-bordado';
+
+/**
+ * Color del grado ROJO en el pase que pide elegir bordado: el nombre del grado siguiente que trae la API (en kickboxing
+ * «MARRÓN»), con mayúscula inicial, porque una cuenta solo de profesor puede no tener el catálogo cargado. Sin nombre,
+ * el del catálogo de la disciplina.
+ */
+function colorRojoDelPase(d: DeporteDelAlumno): string {
+  const nombre = d.siguienteGrado?.nombre?.trim().toLocaleLowerCase('es-ES');
+  if (!nombre) {
+    return colorGradoRojoInicial(d.deporte);
+  }
+  return nombre.charAt(0).toLocaleUpperCase('es-ES') + nombre.slice(1);
+}
 
 /** Tipos de pase que hoy se ofrecen cuando hay pase (admitePases y apto): los dos. */
 export function tiposDePase(d: DeporteDelAlumno): TipoPase[] {
@@ -355,9 +369,16 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
 
   // ------------------------------------------------------------------ pases
 
-  /** Grado al que pasa, para el texto del diálogo (con Rojo / Rojo bordado, lo elige la persona en el diálogo). */
+  /**
+   * Grado al que pasa, para el texto del diálogo (con Rojo / Rojo bordado, lo elige la persona en el diálogo). En
+   * kickboxing el grado ROJO es marrón: «Marrón o Marrón bordado».
+   */
   private destinoPase(d: DeporteDelAlumno): string {
-    return d.pideRojoBordado ? 'Rojo o Rojo bordado' : d.siguienteGrado ? gradoParaFrase(gradoFila(d.siguienteGrado.codigo, d.deporte)) : '';
+    if (d.pideRojoBordado) {
+      const color = colorRojoDelPase(d);
+      return `${color} o ${color} bordado`;
+    }
+    return d.siguienteGrado ? gradoParaFrase(gradoFila(d.siguienteGrado.codigo, d.deporte)) : '';
   }
 
   /**
@@ -391,8 +412,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
         tipo: 'pastillas',
         etiqueta: 'Grado al que pasa',
         opciones: [
-          { valor: 'rojo', texto: 'Rojo' },
-          { valor: ROJO_BORDADO, texto: 'Rojo bordado' },
+          { valor: 'rojo', texto: colorRojoDelPase(d) },
+          { valor: ROJO_BORDADO, texto: `${colorRojoDelPase(d)} bordado` },
         ],
         valor: 'rojo',
       });

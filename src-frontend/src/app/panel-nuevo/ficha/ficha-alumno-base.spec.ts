@@ -225,3 +225,87 @@ describe('FichaAlumnoBase navegación entre alumnos', () => {
     expect(router.navigate).toHaveBeenCalledOnceWith(['/alumnosEditar', 9]);
   });
 });
+
+describe('FichaAlumnoBase cinturón rojo bordado por disciplina (en kickboxing el rojo es marrón)', () => {
+  let endpoints: any;
+  let fire: jasmine.Spy;
+
+  function crear(): FichaAlumnoBase {
+    endpoints = jasmine.createSpyObj('EndpointsService', [
+      'pasarGradoConDerechoExamen',
+      'pasarGradoPorRecompensa',
+      'agregarAlumnoAConvocatoria',
+    ]);
+    TestBed.configureTestingModule({ providers: [proveerCatalogoTesting(CATALOGO_TAEMOI)] });
+    const component = TestBed.runInInjectionContext(
+      () => new FichaAlumnoBase(endpoints, {} as any, new FormBuilder(), {} as any, {} as any, {} as any, {} as any)
+    );
+    // Se cancela la elección: solo importan los textos del diálogo y que no se envía nada.
+    const dialogos = (component as any).dialogos;
+    fire = jasmine.isSpy(dialogos.fire) ? dialogos.fire : spyOn(dialogos, 'fire');
+    fire.calls.reset();
+    fire.and.resolveTo({ isConfirmed: false } as any);
+    component.alumnoId = 7;
+    component.alumno = { id: 7, fechaNacimiento: '1990-01-01T12:00:00' };
+    component.deportesDelAlumno = [
+      { deporte: 'TAEKWONDO', grado: 'AZUL' },
+      { deporte: 'KICKBOXING', grado: 'AZUL' },
+    ] as any;
+    return component;
+  }
+
+  function dialogo(): any {
+    expect(fire).toHaveBeenCalledTimes(1);
+    return fire.calls.mostRecent().args[0];
+  }
+
+  it('«Pasar a marrón» en kickboxing y «Pasar a rojo» en taekwondo, con la misma redacción', async () => {
+    const kb = crear();
+    kb.pasarGradoConDerechoExamen('KICKBOXING');
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Pasar a marrón');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Marrón (sin bordar)', bordado: 'Marrón bordado' });
+    expect(endpoints.pasarGradoConDerechoExamen).not.toHaveBeenCalled();
+
+    TestBed.resetTestingModule();
+    const tkd = crear();
+    tkd.pasarGradoConDerechoExamen('TAEKWONDO');
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Pasar a rojo');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Rojo (sin bordar)', bordado: 'Rojo bordado' });
+  });
+
+  it('por recompensa: «Pasar a marrón por recompensa» en kickboxing y «Pasar a rojo por recompensa» en taekwondo', async () => {
+    const kb = crear();
+    kb.pasarGradoPorRecompensa('KICKBOXING');
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Pasar a marrón por recompensa');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Marrón (sin bordar)', bordado: 'Marrón bordado' });
+    expect(endpoints.pasarGradoPorRecompensa).not.toHaveBeenCalled();
+
+    TestBed.resetTestingModule();
+    const tkd = crear();
+    tkd.pasarGradoPorRecompensa('TAEKWONDO');
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Pasar a rojo por recompensa');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Rojo (sin bordar)', bordado: 'Rojo bordado' });
+  });
+
+  it('convocatoria: «Selecciona cinturon marrón» en kickboxing y «Selecciona cinturon rojo» en taekwondo', async () => {
+    const kb = crear();
+    kb.agregarAConvocatoriaPorDeporte({ id: 3, deporte: 'KICKBOXING' });
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Selecciona cinturon marrón');
+    expect(dialogo().text).toBe('El alumno pasara a marrón en Kickboxing. Selecciona el tipo de cinturon.');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Marrón (sin bordar)', bordado: 'Marrón bordado' });
+    expect(endpoints.agregarAlumnoAConvocatoria).not.toHaveBeenCalled();
+
+    TestBed.resetTestingModule();
+    const tkd = crear();
+    tkd.agregarAConvocatoriaPorDeporte({ id: 3, deporte: 'TAEKWONDO' });
+    await Promise.resolve();
+    expect(dialogo().title).toBe('Selecciona cinturon rojo');
+    expect(dialogo().text).toBe('El alumno pasara a rojo en Taekwondo. Selecciona el tipo de cinturon.');
+    expect(dialogo().inputOptions).toEqual({ normal: 'Rojo (sin bordar)', bordado: 'Rojo bordado' });
+  });
+});

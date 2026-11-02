@@ -1,5 +1,5 @@
 // Caracterización del comportamiento actual (Taemoi). Si cambia, debe ser una decisión explícita.
-import { esSiguienteGradoRojo, obtenerSiguienteGrado } from './grado-progresion';
+import { colorGradoRojo, colorGradoRojoInicial, esSiguienteGradoRojo, obtenerSiguienteGrado } from './grado-progresion';
 import { fijarCatalogoActual, restablecerCatalogoActual } from '../features/catalogo/testing/catalogo-actual.testing';
 import { CATALOGO_SEGUNDA_ESCUELA, CATALOGO_TAEMOI } from '../features/catalogo/testing/catalogo.fixtures';
 
@@ -157,6 +157,23 @@ describe('grado-progresion (caracterización)', () => {
       expect(esSiguienteGradoRojo('PILATES', 'AZUL', ADULTO)).toBeFalse();
       expect(esSiguienteGradoRojo(null, null, null)).toBeFalse();
       expect(esSiguienteGradoRojo('TAEKWONDO', 'ROJO', ADULTO)).toBeFalse();
+    });
+  });
+
+  describe('colorGradoRojo (D11 por disciplina: en kickboxing el rojo es marrón)', () => {
+    it('taekwondo «rojo», kickboxing «marrón», con mayúscula inicial «Rojo» / «Marrón»', () => {
+      expect(colorGradoRojo('TAEKWONDO')).toBe('rojo');
+      expect(colorGradoRojo('KICKBOXING')).toBe('marrón');
+      expect(colorGradoRojo('kickboxing')).toBe('marrón');
+      expect(colorGradoRojoInicial('TAEKWONDO')).toBe('Rojo');
+      expect(colorGradoRojoInicial('KICKBOXING')).toBe('Marrón');
+    });
+    it('sin catálogo, sin deporte o disciplina sin ese grado: «rojo»', () => {
+      expect(colorGradoRojo(null)).toBe('rojo');
+      expect(colorGradoRojo('PILATES')).toBe('rojo');
+      restablecerCatalogoActual();
+      expect(colorGradoRojo('KICKBOXING')).toBe('rojo');
+      expect(colorGradoRojoInicial('KICKBOXING')).toBe('Rojo');
     });
   });
 });

@@ -9,7 +9,7 @@ import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { mensajeDeError } from '../../servicios/endpoints/caja.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AccionInforme, InformePdfService } from '../../servicios/generales/informe-pdf.service';
-import { esSiguienteGradoRojo } from '../../utilities/grado-progresion';
+import { colorGradoRojo, colorGradoRojoInicial, esSiguienteGradoRojo } from '../../utilities/grado-progresion';
 import { AcentoEscuelaActual, AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { GradoFila, fotoDe, gradoFila } from '../alumnos/alumno-vista';
 import { InformePdfPanelService } from '../alumnos/herramientas/informe-pdf-panel.service';
@@ -697,14 +697,17 @@ export class ConvocatoriasComponent implements OnInit, OnDestroy {
     if (!apto || !esSiguienteGradoRojo(c.deporte, apto.grado, apto.fechaNacimiento ?? null)) {
       return { porRecompensa, rojoBordado: false };
     }
+    // En kickboxing el grado ROJO es marrón: el color sale del catálogo de la disciplina.
+    const color = colorGradoRojo(c.deporte);
+    const colorInicial = colorGradoRojoInicial(c.deporte);
     const rojo = await this.confirmacion.confirmar({
-      titulo: 'Selecciona el grado rojo',
-      mensaje: `El alumno pasará a rojo en ${this.etiquetaDisciplina(c.deporte)}. Selecciona el tipo de grado rojo.`,
+      titulo: `Selecciona el grado ${color}`,
+      mensaje: `El alumno pasará a ${color} en ${this.etiquetaDisciplina(c.deporte)}. Selecciona el tipo de grado ${color}.`,
       campo: {
-        etiqueta: 'Tipo de grado rojo',
+        etiqueta: `Tipo de grado ${color}`,
         opciones: [
-          { valor: 'normal', texto: 'Rojo (sin bordar)' },
-          { valor: 'bordado', texto: 'Rojo bordado' },
+          { valor: 'normal', texto: `${colorInicial} (sin bordar)` },
+          { valor: 'bordado', texto: `${colorInicial} bordado` },
         ],
         valor: 'normal',
         requerido: true,

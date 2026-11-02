@@ -3,10 +3,12 @@ package com.taemoi.project.services.impl;
 
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,8 +158,8 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	/**
 	 * Nombre de producto (en mayúsculas) -> código de grado que concede: con comportamiento heredado (solo
 	 * Taemoi), primero los nombres que usaba el código anterior ({@link CatalogoLegadoTaemoi}, los del antiguo
-	 * {@code TipoGrado} y las variantes «rojo bordado»); después, los productos clasificados de la
-	 * organización activa.
+	 * {@code TipoGrado} y las variantes «rojo bordado») y los de ROJO con el nombre de ese grado en kickboxing
+	 * («MARRÓN»); después, los productos clasificados de la organización activa.
 	 */
 	private Map<String, String> nombresQueConcedenGrado(TipoProducto tipo) {
 		boolean recompensa = tipo == TipoProducto.RECOMPENSA;
@@ -171,6 +173,13 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 			}
 			nombres.put((recompensa ? RECOMPENSA_ROJO_BORDADO : EXAMEN_ROJO_BORDADO).toUpperCase(Locale.ROOT),
 					CatalogoLegadoTaemoi.GRADO_ROJO);
+			// Los cargos nuevos de kickboxing nombran ese grado como su catálogo («MARRÓN»): también conceden ROJO.
+			for (String nombreRojo : nombresGradoRojoKickboxing()) {
+				for (String concepto : CatalogoLegadoTaemoi.conceptosConGradoRojo(recompensa)) {
+					nombres.put(CatalogoLegadoTaemoi.conGradoRojoComo(concepto, nombreRojo).toUpperCase(Locale.ROOT),
+							CatalogoLegadoTaemoi.GRADO_ROJO);
+				}
+			}
 		}
 		for (Producto producto : productos.findByTipoAndGradoIsNotNullOrderByIdAsc(tipo)) {
 			if (producto.getConcepto() != null && !producto.getConcepto().isBlank()) {
@@ -178,6 +187,24 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 			}
 		}
 		return nombres;
+	}
+
+	/**
+	 * Nombres del grado ROJO de kickboxing con los que se han podido escribir los conceptos de sus cargos: el del
+	 * catálogo de la disciplina, si lo tiene, y siempre {@link CatalogoLegadoTaemoi#NOMBRE_GRADO_ROJO_KICKBOXING}. Sin
+	 * excepciones (no marca la transacción del cobro para deshacerse).
+	 */
+	private List<String> nombresGradoRojoKickboxing() {
+		Set<String> nombres = new LinkedHashSet<>();
+		catalogo.buscarPorCodigo(CatalogoLegadoTaemoi.KICKBOXING)
+				.filter(Disciplina::tieneGrados)
+				.flatMap(d -> grados.findBySistemaGradosIdAndCodigo(d.getSistemaGrados().getId(),
+						CatalogoLegadoTaemoi.GRADO_ROJO))
+				.map(Grado::getNombre)
+				.filter(n -> !n.isBlank())
+				.ifPresent(n -> nombres.add(n.trim().toUpperCase(Locale.ROOT)));
+		nombres.add(CatalogoLegadoTaemoi.NOMBRE_GRADO_ROJO_KICKBOXING);
+		return List.copyOf(nombres);
 	}
 
 	/** Separador del sufijo de disciplina en los cargos («DERECHO A EXAMEN AZUL - Taekwondo»). */
