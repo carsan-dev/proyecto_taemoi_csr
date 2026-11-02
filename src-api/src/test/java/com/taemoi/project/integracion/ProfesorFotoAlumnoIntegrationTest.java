@@ -31,6 +31,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -597,44 +598,128 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void rutaAbsolutaFueraDeLaCarpeta_ningunaRutaSirveElFichero() throws Exception {
 		byte[] secreto = imagen(37, 23, "png");
-		String nombre = "secreto-" + UUID.randomUUID() + ".png";
-		Path fichero = TRAMPA.resolve(nombre);
-		Files.write(fichero, secreto);
+		Path fichero = secretoEnLaTrampa(secreto);
 		long alumno = enGrupo(e, e.gA, "FOTOFUERA");
-		fotoHeredada(e, alumno, nombre, fichero.toString(), null);
+		fotoHeredada(e, alumno, fichero.getFileName().toString(), fichero.toString(), null);
 
-		comprobarQueNoSeSirve(alumno, secreto);
+		comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
 	}
 
 	/** Fila heredada con un nombre que sube de carpeta: los respaldos por nombre llegarían al fichero de fuera. */
 	@Test
 	void nombreConRecorrido_ningunaRutaSirveElFichero_niRedirigeAEl() throws Exception {
 		byte[] secreto = imagen(41, 29, "png");
-		String fichero = "secreto-" + UUID.randomUUID() + ".png";
-		Files.write(TRAMPA.resolve(fichero), secreto);
+		Path fichero = secretoEnLaTrampa(secreto);
 		// En Linux «alumnos/..» solo se resuelve si la carpeta existe: se crea para que el respaldo llegue a la trampa.
 		Files.createDirectories(IMAGENES.resolve("alumnos"));
-		String nombre = "../../" + TRAMPA.getFileName() + "/" + fichero;
+		String nombre = "../../" + TRAMPA.getFileName() + "/" + fichero.getFileName();
 		long alumno = enGrupo(e, e.gA, "FOTORECORRIDO");
 		fotoHeredada(e, alumno, nombre, "alumnos/no-existe-" + UUID.randomUUID() + ".png", null);
 
-		comprobarQueNoSeSirve(alumno, secreto);
-		MockHttpServletResponse r = respuesta(get(fotoAntigua(alumno)), tGestor);
-		assertEquals(404, r.getStatus(), "sin fichero válido ni URL: como sin foto");
-		assertNull(r.getHeader("Location"));
+		comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
 	}
 
-	/** Las fotos heredadas buenas (ruta absoluta dentro de la carpeta, o solo por nombre) se siguen sirviendo igual. */
+	/** {@code ..\}, separadores mixtos y un nombre absoluto se rechazan igual que {@code ../}. */
+	@Test
+	void nombreConBarrasInvertidasMixtasOAbsoluto_seRechaza() throws Exception {
+		byte[] secreto = imagen(43, 31, "png");
+		Path fichero = secretoEnLaTrampa(secreto);
+		Files.createDirectories(IMAGENES.resolve("alumnos"));
+		String trampa = TRAMPA.getFileName().toString();
+		String nombreFichero = fichero.getFileName().toString();
+		for (String nombre : List.of("..\\..\\" + trampa + "\\" + nombreFichero,
+				"../..\\" + trampa + "/" + nombreFichero, fichero.toString())) {
+			long alumno = enGrupo(e, e.gA, "FOTONOMBRE" + UUID.randomUUID().toString().substring(0, 6));
+			fotoHeredada(e, alumno, nombre, "alumnos/no-existe-" + UUID.randomUUID() + ".png", null);
+
+			comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
+		}
+	}
+
+	/** Enlace simbólico de FICHERO dentro de la carpeta de imágenes que apunta a un secreto de fuera. */
+	@Test
+	void enlaceDeFicheroDentroQueApuntaFuera_sinBytesNiRedireccion() throws Exception {
+		byte[] secreto = imagen(47, 33, "png");
+		Path fichero = secretoEnLaTrampa(secreto);
+		Path alumnos = Files.createDirectories(IMAGENES.resolve("alumnos"));
+		Path enlace = alumnos.resolve("enlace-" + UUID.randomUUID() + ".png");
+		crearEnlaceOSaltar(enlace, fichero);
+		long alumno = enGrupo(e, e.gA, "FOTOENLACE");
+		fotoHeredada(e, alumno, enlace.getFileName().toString(), enlace.toString(), null);
+
+		comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
+	}
+
+	/** Enlace simbólico de DIRECTORIO en la carpeta de la escuela hacia fuera, con la ruta y la URL de una foto nueva. */
+	@Test
+	void enlaceDeDirectorioDentroQueApuntaFuera_sinBytesNiRedireccion() throws Exception {
+		byte[] secreto = imagen(53, 37, "png");
+		Path fichero = secretoEnLaTrampa(secreto);
+		Path alumnos = Files.createDirectories(IMAGENES.resolve("org-" + e.org).resolve("alumnos"));
+		String carpeta = "dir-" + UUID.randomUUID();
+		crearEnlaceOSaltar(alumnos.resolve(carpeta), TRAMPA);
+		String ruta = "org-" + e.org + "/alumnos/" + carpeta + "/" + fichero.getFileName();
+		long alumno = enGrupo(e, e.gA, "FOTODIRENLACE");
+		fotoConFila(e, alumno, fichero.getFileName().toString(), ruta, "/imagenes/" + ruta);
+
+		comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
+	}
+
+	/** Fichero de fuera y URL {@code file:} hacia él: sin foto en gestión, en la familia del alumno y en el profesor. */
+	@Test
+	void ficheroFueraConUrlFile_sinFotoNiLocation_enLasTresSesiones() throws Exception {
+		byte[] secreto = imagen(59, 41, "png");
+		Path fichero = secretoEnLaTrampa(secreto);
+		String url = fichero.toUri().toString();
+		assertTrue(url.startsWith("file:"));
+		long alumno = enGrupo(e, e.gA, "FOTOURLFILE");
+		fotoHeredada(e, alumno, fichero.getFileName().toString(), fichero.toString(), url);
+
+		comprobarSinFotoNiRedireccion(alumno, secreto, tGestor);
+		// La familia solo ve a su alumno: se le pone una fila igual mientras dura la prueba (la foto es única por alumno).
+		Long suya = jdbc.queryForObject("SELECT foto_alumno_id FROM alumno WHERE id = ?", Long.class, propioFamilia);
+		try {
+			fotoHeredada(e, propioFamilia, fichero.getFileName().toString(), fichero.toString(), url);
+			comprobarSinFotoNiRedireccion(propioFamilia, secreto, tFamilia);
+		} finally {
+			jdbc.update("UPDATE alumno SET foto_alumno_id = ? WHERE id = ?", suya, propioFamilia);
+		}
+	}
+
+	/** Sin fichero: la URL guardada solo redirige si es http(s) o /imagenes/…; file:, javascript: o //host, no. */
+	@Test
+	void sinFichero_unaUrlQueNoEsHttpNiDeImagenes_noRedirige() throws Exception {
+		for (String url : List.of("file:///etc/passwd", "javascript:alert(1)", "//otro.example/x.png",
+				"/imagenes/../api/usuarios")) {
+			long alumno = enGrupo(e, e.gA, "FOTOURL" + UUID.randomUUID().toString().substring(0, 6));
+			String ruta = "org-" + e.org + "/alumnos/no-existe-" + UUID.randomUUID() + ".png";
+			fotoConFila(e, alumno, "no-existe.png", ruta, url);
+			for (String ancho : new String[] { null, "300" }) {
+				MockHttpServletRequestBuilder peticion = get(fotoAntigua(alumno));
+				if (ancho != null) {
+					peticion.param("w", ancho);
+				}
+				MockHttpServletResponse r = respuesta(peticion, tGestor);
+				assertEquals(404, r.getStatus(), url);
+				assertNull(r.getHeader("Location"), url);
+			}
+		}
+	}
+
+	/**
+	 * Las fotos heredadas buenas (ruta absoluta dentro de la carpeta, o solo por nombre) se siguen sirviendo igual en las
+	 * dos rutas: original, con {@code w=300}, su ETag y el 304.
+	 */
 	@Test
 	void fotosHeredadasDentroDeLaCarpeta_seSiguenSirviendo() throws Exception {
 		Path alumnos = Files.createDirectories(IMAGENES.resolve("alumnos"));
-		byte[] porRuta = imagen(300, 200, "png");
+		byte[] porRuta = imagen(600, 400, "png");
 		String nombrePorRuta = UUID.randomUUID() + ".png";
 		Files.write(alumnos.resolve(nombrePorRuta), porRuta);
 		long conRutaAbsoluta = enGrupo(e, e.gA, "FOTOHEREDADA");
 		fotoHeredada(e, conRutaAbsoluta, nombrePorRuta, alumnos.resolve(nombrePorRuta).toString(), null);
 
-		byte[] porNombre = imagen(310, 210, "png");
+		byte[] porNombre = imagen(620, 410, "png");
 		String nombrePorNombre = UUID.randomUUID() + ".png";
 		Files.write(alumnos.resolve(nombrePorNombre), porNombre);
 		long soloPorNombre = enGrupo(e, e.gA, "FOTOPORNOMBRE");
@@ -642,44 +727,108 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		fotoHeredada(e, soloPorNombre, nombrePorNombre, "/srv/host-anterior/imagenes/alumnos/" + nombrePorNombre, null);
 
 		for (long alumno : List.of(conRutaAbsoluta, soloPorNombre)) {
-			byte[] esperado = alumno == conRutaAbsoluta ? porRuta : porNombre;
-			MockHttpServletResponse profesor = respuesta(get(fotoProfesor(alumno)), tProfA);
-			assertEquals(200, profesor.getStatus());
-			assertEquals(CACHE_PROFESOR, profesor.getHeader("Cache-Control"));
-			assertArrayEquals(esperado, profesor.getContentAsByteArray());
-			MockHttpServletResponse gestion = respuesta(get(fotoAntigua(alumno)), tGestor);
-			assertEquals(200, gestion.getStatus());
-			assertEquals(CACHE_FAMILIAS, gestion.getHeader("Cache-Control"));
-			assertArrayEquals(esperado, gestion.getContentAsByteArray());
+			boolean esPorRuta = alumno == conRutaAbsoluta;
+			byte[] esperado = esPorRuta ? porRuta : porNombre;
+			Path enDisco = alumnos.resolve(esPorRuta ? nombrePorRuta : nombrePorNombre);
+			for (String[] ruta : List.of(new String[] { fotoProfesor(alumno), tProfA, CACHE_PROFESOR },
+					new String[] { fotoAntigua(alumno), tGestor, CACHE_FAMILIAS })) {
+				MockHttpServletResponse original = respuesta(get(ruta[0]), ruta[1]);
+				assertEquals(200, original.getStatus(), ruta[0]);
+				assertEquals(ruta[2], original.getHeader("Cache-Control"));
+				assertEquals("image/png", original.getContentType());
+				assertArrayEquals(esperado, original.getContentAsByteArray());
+				assertEquals(etagDe(enDisco, 0, "image/png"), original.getHeader("ETag"));
+
+				MockHttpServletResponse reducida = respuesta(get(ruta[0]).param("w", "300"), ruta[1]);
+				assertEquals(200, reducida.getStatus(), ruta[0] + "?w=300");
+				assertEquals(ruta[2], reducida.getHeader("Cache-Control"));
+				if (hayCodificadorWebp()) {
+					assertEquals("image/webp", reducida.getContentType());
+				}
+				assertEquals(etagDe(enDisco, 300, reducida.getContentType()), reducida.getHeader("ETag"));
+
+				for (MockHttpServletResponse previa : List.of(original, reducida)) {
+					MockHttpServletRequestBuilder otraVez = get(ruta[0]).header("If-None-Match", previa.getHeader("ETag"));
+					if (previa == reducida) {
+						otraVez.param("w", "300");
+					}
+					MockHttpServletResponse r = respuesta(otraVez, ruta[1]);
+					assertEquals(304, r.getStatus(), ruta[0]);
+					assertEquals(0, r.getContentAsByteArray().length);
+				}
+			}
 		}
 	}
 
-	private void comprobarQueNoSeSirve(long alumno, byte[] secreto) throws Exception {
+	/**
+	 * Profesor 404; gestión o familia 404 sin redirección. En ningún caso los bytes del secreto ni una ruta interna
+	 * (de la trampa o de la carpeta de imágenes) en el cuerpo o en las cabeceras. Con y sin {@code w}.
+	 */
+	private void comprobarSinFotoNiRedireccion(long alumno, byte[] secreto, String tokenRutaAntigua) throws Exception {
 		for (String ancho : new String[] { null, "300" }) {
 			MockHttpServletRequestBuilder profesor = get(fotoProfesor(alumno));
-			MockHttpServletRequestBuilder gestion = get(fotoAntigua(alumno));
+			MockHttpServletRequestBuilder antigua = get(fotoAntigua(alumno));
 			if (ancho != null) {
 				profesor.param("w", ancho);
-				gestion.param("w", ancho);
+				antigua.param("w", ancho);
 			}
-			MockHttpServletResponse p = respuesta(profesor, tProfA);
-			assertEquals(404, p.getStatus(), "profesor, w=" + ancho);
-			assertNotEquals(secreto.length, p.getContentAsByteArray().length);
-			MockHttpServletResponse g = respuesta(gestion, tGestor);
-			assertNotEquals(200, g.getStatus(), "gestión, w=" + ancho);
-			assertNotEquals(secreto.length, g.getContentAsByteArray().length);
-			assertFalse(String.valueOf(g.getHeader("Location")).contains(TRAMPA.getFileName().toString()),
-					"no redirige a la trampa");
-			assertFalse(g.getContentAsString().contains(TRAMPA.getFileName().toString()), "no filtra la ruta");
+			if (alumno != propioFamilia) {
+				comprobarSinFoto(respuesta(profesor, tProfA), secreto, "profesor, w=" + ancho);
+			}
+			comprobarSinFoto(respuesta(antigua, tokenRutaAntigua), secreto, "ruta antigua, w=" + ancho);
 		}
+	}
+
+	private static void comprobarSinFoto(MockHttpServletResponse r, byte[] secreto, String caso) throws Exception {
+		assertEquals(404, r.getStatus(), caso);
+		assertNull(r.getHeader("Location"), caso);
+		assertFalse(java.util.Arrays.equals(secreto, r.getContentAsByteArray()), caso);
+		List<String> internas = List.of(TRAMPA.toString(), TRAMPA.getFileName().toString(), IMAGENES.toString(),
+				IMAGENES.getFileName().toString());
+		String cuerpo = r.getContentAsString();
+		for (String interna : internas) {
+			assertFalse(cuerpo.contains(interna), caso + ": ruta interna en el cuerpo");
+			for (String cabecera : r.getHeaderNames()) {
+				for (String valor : r.getHeaders(cabecera)) {
+					assertFalse(valor.contains(interna), caso + ": ruta interna en " + cabecera);
+				}
+			}
+		}
+	}
+
+	private static Path secretoEnLaTrampa(byte[] secreto) throws IOException {
+		Path fichero = TRAMPA.resolve("secreto-" + UUID.randomUUID() + ".png");
+		Files.write(fichero, secreto);
+		return fichero;
+	}
+
+	/** En Windows sin permiso para enlaces simbólicos la prueba se salta; en la CI (Linux) corre. */
+	private static void crearEnlaceOSaltar(Path enlace, Path destino) {
+		try {
+			Files.createSymbolicLink(enlace, destino);
+		} catch (IOException | UnsupportedOperationException | SecurityException ex) {
+			Assumptions.assumeTrue(false, "Sin permiso para crear enlaces simbólicos: " + ex.getClass().getSimpleName());
+		}
+	}
+
+	/** El ETag de hoy sobre un fichero concreto: tamaño y fecha, ancho y tipo. */
+	private static String etagDe(Path fichero, int ancho, String tipo) throws IOException {
+		return "\"" + Long.toHexString(Files.size(fichero)) + "-"
+				+ Long.toHexString(Files.getLastModifiedTime(fichero).toMillis()) + "-" + ancho + "-" + tipo + "\"";
 	}
 
 	/** Fila de {@code imagen} heredada (sin prefijo {@code org-<id>/}) con los campos tal cual. */
-	private void fotoHeredada(EscuelaConSedesDePrueba x, long alumno, String nombre, String ruta, String url) {
+	private long fotoHeredada(EscuelaConSedesDePrueba x, long alumno, String nombre, String ruta, String url) {
+		return fotoConFila(x, alumno, nombre, ruta, url);
+	}
+
+	/** Fila de {@code imagen} con los campos tal cual, como asignada al alumno. Devuelve su id. */
+	private long fotoConFila(EscuelaConSedesDePrueba x, long alumno, String nombre, String ruta, String url) {
 		jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, ?, ?, ?)", nombre, ruta,
 				"image/png", url, x.org);
 		long imagen = jdbc.queryForObject("SELECT MAX(id) FROM imagen WHERE ruta = ?", Long.class, ruta);
 		jdbc.update("UPDATE alumno SET foto_alumno_id = ? WHERE id = ?", imagen, alumno);
+		return imagen;
 	}
 
 	// ------------------------------------------------------------------ utilidades
