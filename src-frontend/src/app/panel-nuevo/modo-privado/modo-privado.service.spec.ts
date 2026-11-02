@@ -1,5 +1,6 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Observable, Subject, of, throwError } from 'rxjs';
 
 import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { ModoPrivadoService } from './modo-privado.service';
@@ -16,35 +17,45 @@ function permisos(importesTapados?: boolean): PermisosSesion {
   };
 }
 
+// Servicios reales (permisos y modo) con solo el HTTP simulado: lo que se prueba es cómo se reparten las peticiones.
 describe('ModoPrivadoService (decisión 419)', () => {
-  let refrescos: Subject<void>;
-  let obtener: jasmine.Spy<() => Observable<PermisosSesion>>;
+  let http: HttpTestingController;
+  let sesion: PermisosSesionService;
   let modo: ModoPrivadoService;
 
+  const pendientes = () => http.match((r) => r.url.endsWith('/auth/permisos'));
+
   beforeEach(() => {
-    refrescos = new Subject<void>();
-    obtener = jasmine.createSpy('obtener');
-    TestBed.configureTestingModule({
-      providers: [{ provide: PermisosSesionService, useValue: { obtener, refrescado$: refrescos } }],
-    });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    http = TestBed.inject(HttpTestingController);
+    sesion = TestBed.inject(PermisosSesionService);
     modo = TestBed.inject(ModoPrivadoService);
   });
+
+  afterEach(() => http.verify());
+
+  function responder(cuerpo: PermisosSesion | null): void {
+    const peticiones = pendientes();
+    expect(peticiones.length).toBe(1);
+    peticiones[0].flush(cuerpo);
+  }
 
   it('falla cerrado: mientras no se sabe, tapado y sin botón', () => {
     expect(modo.preferencia()).toBe('desconocida');
     expect(modo.tapado()).toBeTrue();
     expect(modo.disponible()).toBeFalse();
 
-    obtener.and.returnValue(new Subject<PermisosSesion>());
     modo.cargar();
 
+    expect(modo.preferencia()).toBe('desconocida');
     expect(modo.tapado()).toBeTrue();
     expect(modo.disponible()).toBeFalse();
+    responder(permisos(true));
   });
 
   it('con la preferencia activa, tapado y con botón; alternar destapa y tapar vuelve a tapar', () => {
-    obtener.and.returnValue(of(permisos(true)));
     modo.cargar();
+    responder(permisos(true));
 
     expect(modo.preferencia()).toBe('activa');
     expect(modo.tapado()).toBeTrue();
@@ -63,91 +74,127 @@ describe('ModoPrivadoService (decisión 419)', () => {
   });
 
   it('con la preferencia apagada, sin tapar y sin botón', () => {
-    obtener.and.returnValue(of(permisos(false)));
     modo.cargar();
+    responder(permisos(false));
 
     expect(modo.preferencia()).toBe('inactiva');
     expect(modo.tapado()).toBeFalse();
     expect(modo.disponible()).toBeFalse();
   });
 
-  it('un servidor que aún no manda el campo se ve como hoy', () => {
-    obtener.and.returnValue(of(permisos()));
+  it('un servidor que aún no manda el campo (undefined) se ve como hoy: sin modo, abierto', () => {
     modo.cargar();
+    responder(permisos());
 
     expect(modo.preferencia()).toBe('inactiva');
+    expect(modo.tapado()).toBeFalse();
   });
 
-  it('si la petición falla, sigue tapado y el botón da la salida', () => {
-    obtener.and.returnValue(throwError(() => new Error('sin red')));
+  it('un cuerpo nulo no abre: queda activa, tapado y con botón, como un error', () => {
     modo.cargar();
+    responder(null);
 
     expect(modo.preferencia()).toBe('activa');
     expect(modo.tapado()).toBeTrue();
     expect(modo.disponible()).toBeTrue();
   });
 
-  it('con la misma petición no vuelve a suscribirse ni vuelve a tapar lo destapado', () => {
-    const peticion$ = new Subject<PermisosSesion>();
-    let suscripciones = 0;
-    const contada$ = new Observable<PermisosSesion>((destino) => {
-      suscripciones++;
-      return peticion$.subscribe(destino);
-    });
-    obtener.and.returnValue(contada$);
+  it('si la petición falla, sigue tapado y el botón da la salida', () => {
     modo.cargar();
-    peticion$.next(permisos(true));
+    pendientes()[0].flush('error', { status: 500, statusText: 'Server Error' });
+
+    expect(modo.preferencia()).toBe('activa');
+    expect(modo.tapado()).toBeTrue();
+    expect(modo.disponible()).toBeTrue();
+  });
+
+  it('tras un error, un importe nuevo no relee ni vuelve a tapar lo destapado', () => {
+    modo.cargar();
+    pendientes()[0].flush('error', { status: 500, statusText: 'Server Error' });
+    modo.alternar();
+    expect(modo.tapado()).toBeFalse();
+
+    // Otro `pn-importe` que se pinta después.
+    modo.cargar();
+    modo.cargar();
+
+    expect(pendientes().length).toBe(0);
+    expect(modo.preferencia()).toBe('activa');
+    expect(modo.disponible()).toBeTrue();
+    expect(modo.destapado()).toBeTrue();
+    expect(modo.tapado()).toBeFalse();
+  });
+
+  it('varias llamadas con la petición en curso o ya resuelta hacen una sola petición y no tocan lo destapado', () => {
+    modo.cargar();
+    modo.cargar();
+    const peticiones = pendientes();
+    expect(peticiones.length).toBe(1);
+    peticiones[0].flush(permisos(true));
     modo.alternar();
 
     modo.cargar();
     modo.cargar();
 
-    expect(suscripciones).toBe(1);
-    expect(modo.tapado()).toBeFalse();
+    expect(pendientes().length).toBe(0);
+    expect(modo.destapado()).toBeTrue();
+    expect(modo.preferencia()).toBe('activa');
   });
 
-  it('otra sesión: la preferencia y lo destapado del usuario anterior no valen para el siguiente', () => {
-    obtener.and.returnValue(of(permisos(false)));
+  it('otra sesión (login de otro usuario): vuelve a desconocida, tapa y lee de nuevo', () => {
     modo.cargar();
+    responder(permisos(true));
+    modo.alternar();
     expect(modo.tapado()).toBeFalse();
 
-    const siguiente$ = new Subject<PermisosSesion>();
-    obtener.and.returnValue(siguiente$);
+    sesion.reiniciar();
     modo.cargar();
 
     expect(modo.preferencia()).toBe('desconocida');
-    expect(modo.tapado()).toBeTrue();
-
-    siguiente$.next(permisos(true));
-    modo.alternar();
-    expect(modo.tapado()).toBeFalse();
-
-    obtener.and.returnValue(new Subject<PermisosSesion>());
-    modo.cargar();
-
     expect(modo.destapado()).toBeFalse();
     expect(modo.tapado()).toBeTrue();
+    expect(modo.disponible()).toBeFalse();
+    responder(permisos(false));
+    expect(modo.preferencia()).toBe('inactiva');
   });
 
   it('una respuesta de la sesión anterior que llega tarde no pisa la de la nueva', () => {
-    const anterior$ = new Subject<PermisosSesion>();
-    obtener.and.returnValue(anterior$);
     modo.cargar();
+    const anterior = pendientes()[0];
 
-    obtener.and.returnValue(of(permisos(true)));
+    sesion.reiniciar();
     modo.cargar();
-    anterior$.next(permisos(false));
+    responder(permisos(true));
+    anterior.flush(permisos(false));
 
     expect(modo.preferencia()).toBe('activa');
   });
 
-  it('guardar Mi perfil (refrescado$) aplica la preferencia sin recargar', () => {
-    obtener.and.returnValue(of(permisos(false)));
+  it('guardar Mi perfil (refrescado$) aplica la preferencia nueva sin volver a tapar lo destapado', () => {
     modo.cargar();
+    responder(permisos(true));
+    modo.alternar();
+
+    sesion.refrescar();
+    responder(permisos(true));
+
+    expect(modo.preferencia()).toBe('activa');
+    expect(modo.destapado()).toBeTrue();
+
+    sesion.refrescar();
+    responder(permisos(false));
+
+    expect(modo.preferencia()).toBe('inactiva');
+    expect(modo.tapado()).toBeFalse();
+  });
+
+  it('guardar Mi perfil activando el modo con la pantalla abierta la tapa', () => {
+    modo.cargar();
+    responder(permisos(false));
     expect(modo.tapado()).toBeFalse();
 
-    obtener.and.returnValue(of(permisos(true)));
-    refrescos.next();
+    sesion.refrescar();
+    responder(permisos(true));
 
     expect(modo.preferencia()).toBe('activa');
     expect(modo.tapado()).toBeTrue();
@@ -156,8 +203,8 @@ describe('ModoPrivadoService (decisión 419)', () => {
   it('textoImporte no dice la cifra mientras está tapado', () => {
     expect(modo.textoImporte('12,00 €')).toBe('importe oculto');
 
-    obtener.and.returnValue(of(permisos(false)));
     modo.cargar();
+    responder(permisos(false));
 
     expect(modo.textoImporte('12,00 €')).toBe('12,00 €');
   });

@@ -23,7 +23,7 @@ describe('ImporteComponent (decisión 419)', () => {
     obtener.and.returnValue(of({ importesTapados: true } as PermisosSesion));
     TestBed.configureTestingModule({
       imports: [PaginaFalsa],
-      providers: [{ provide: PermisosSesionService, useValue: { obtener, refrescado$: new Subject<void>() } }],
+      providers: [{ provide: PermisosSesionService, useValue: { obtener, generacion: 0, refrescado$: new Subject<void>() } }],
     });
     fixture = TestBed.createComponent(PaginaFalsa);
   });

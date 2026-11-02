@@ -12,7 +12,7 @@ describe('VerImportesComponent (decisión 419)', () => {
   function montar(respuesta: Observable<PermisosSesion> = of({ importesTapados: true } as PermisosSesion)): void {
     TestBed.configureTestingModule({
       imports: [VerImportesComponent],
-      providers: [{ provide: PermisosSesionService, useValue: { obtener: () => respuesta, refrescado$: new Subject<void>() } }],
+      providers: [{ provide: PermisosSesionService, useValue: { obtener: () => respuesta, generacion: 0, refrescado$: new Subject<void>() } }],
     });
     modo = TestBed.inject(ModoPrivadoService);
     fixture = TestBed.createComponent(VerImportesComponent);

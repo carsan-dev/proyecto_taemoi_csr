@@ -1,8 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 
-import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 
 export type PreferenciaImportes = 'desconocida' | 'activa' | 'inactiva';
 
@@ -14,8 +14,8 @@ export type PreferenciaImportes = 'desconocida' | 'activa' | 'inactiva';
 export class ModoPrivadoService {
   private readonly permisos = inject(PermisosSesionService);
 
-  /** La petición de la que sale la preferencia: si cambia, es otra sesión o un refresco. */
-  private leida$: Observable<PermisosSesion> | null = null;
+  /** La generación de sesión de la que sale la preferencia; -1 mientras no se ha leído ninguna. */
+  private generacionLeida = -1;
   private lectura?: Subscription;
 
   readonly preferencia = signal<PreferenciaImportes>('desconocida');
@@ -25,23 +25,41 @@ export class ModoPrivadoService {
   readonly disponible = computed(() => this.preferencia() === 'activa');
 
   constructor() {
-    // Guardar «Mi perfil» se aplica sin recargar.
-    this.permisos.refrescado$.pipe(takeUntilDestroyed()).subscribe(() => this.cargar());
+    // Guardar «Mi perfil» se aplica sin recargar y sin volver a tapar lo que la persona destapó.
+    this.permisos.refrescado$.pipe(takeUntilDestroyed()).subscribe(() => {
+      if (this.permisos.generacion !== this.generacionLeida) {
+        this.cargar();
+      } else {
+        this.leer();
+      }
+    });
   }
 
-  /** Lee la preferencia; lo llama cada importe y cada botón, y solo hace algo si la petición de permisos es otra. */
+  /**
+   * Lo llama cada importe y cada botón. Solo hace algo cuando la sesión es otra (login, cierre de sesión, cambio de
+   * escuela): vuelve a «desconocida», tapa y lee. Tras un error no relee por sí solo, o cada importe nuevo volvería a
+   * tapar lo destapado.
+   */
   cargar(): void {
-    const peticion$ = this.permisos.obtener();
-    if (peticion$ === this.leida$) {
+    const generacion = this.permisos.generacion;
+    if (generacion === this.generacionLeida) {
       return;
     }
-    this.leida$ = peticion$;
+    this.generacionLeida = generacion;
     // Antes de suscribirse: lo del usuario anterior no vale para el siguiente.
     this.preferencia.set('desconocida');
     this.destapado.set(false);
+    this.leer();
+  }
+
+  private leer(): void {
     this.lectura?.unsubscribe();
-    this.lectura = peticion$.subscribe({
-      next: (permisos) => this.preferencia.set(permisos?.importesTapados === true ? 'activa' : 'inactiva'),
+    this.lectura = this.permisos.obtener().subscribe({
+      // Solo `importesTapados === false` abre; un campo ausente es un servidor sin el modo (opcional) y también abre.
+      next: (permisos) => {
+        const tapar = permisos === null || permisos === undefined ? true : permisos.importesTapados !== false && permisos.importesTapados !== undefined;
+        this.preferencia.set(tapar ? 'activa' : 'inactiva');
+      },
       // Sigue tapado, pero con el botón: no debe quedarse tapado sin salida.
       error: () => this.preferencia.set('activa'),
     });

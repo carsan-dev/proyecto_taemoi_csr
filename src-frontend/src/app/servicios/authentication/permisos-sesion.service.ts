@@ -66,8 +66,14 @@ export class PermisosSesionService {
   /** Las de la última respuesta vigente: {@link tiene} las lee sin suscribirse. */
   private capacidadesLeidas: readonly Capacidad[] = [];
   private readonly refrescos = new Subject<void>();
+  private generacionActual = 0;
   /** Avisa cuando la sesión cambió algo que se muestra (p. ej. el nombre de «Mi perfil»): hay que volver a pedirlos. */
   readonly refrescado$: Observable<void> = this.refrescos.asObservable();
+
+  /** Sube solo en {@link reiniciar} (login, cierre de sesión, cambio de escuela): quien guarda algo de la sesión sabe si es otra. */
+  get generacion(): number {
+    return this.generacionActual;
+  }
 
   constructor(private readonly http: HttpClient) {}
 
@@ -119,6 +125,7 @@ export class PermisosSesionService {
   reiniciar(): void {
     this.peticion$ = null;
     this.capacidadesLeidas = [];
+    this.generacionActual++;
   }
 
   /** Descarta los permisos y avisa a quien los muestra, sin recargar la página (guardar «Mi perfil»). */

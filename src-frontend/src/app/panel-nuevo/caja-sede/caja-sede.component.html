@@ -71,7 +71,7 @@
         @for (c of cifras; track c.clave) {
         <div class="caja__cifra" [attr.data-clave]="c.clave">
           <dt class="caja__cifra-titulo">{{ c.titulo }}</dt>
-          <dd class="caja__cifra-valor" [attr.data-tono]="c.tono" data-cifras><pn-importe>{{ c.valor }}</pn-importe></dd>
+          <dd class="caja__cifra-valor" [attr.data-tono]="c.tono" data-cifras>@if (resumen) {<pn-importe>{{ c.valor }}</pn-importe>} @else {{{ c.valor }}}</dd>
           <dd class="caja__cifra-detalle">{{ c.detalle }}</dd>
         </div>
         }
@@ -214,7 +214,7 @@
               <div class="caja__form-pie">
                 <button type="button" class="caja__boton-texto" [disabled]="f.enviando" (click)="cerrarEntrega()">Cancelar</button>
                 <button type="submit" pnOcupado class="caja__boton-primario caja__recibir-enviar" [ocupado]="f.enviando"
-                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes">Recibir <pn-importe>{{ eur(calc.contado ?? 0) }}</pn-importe></button>
+                  textoOcupado="Recibiendo…" [deshabilitado]="!puedeRecibir() || cargandoPendientes"><span>Recibir <pn-importe>{{ eur(calc.contado ?? 0) }}</pn-importe></span></button>
               </div>
             </form>
             }
@@ -265,7 +265,7 @@
               <td data-label="Contado" class="caja__num"><span class="caja__tachable caja__fuerte" data-cifras><pn-importe>{{ eur(e.importeContado) }}</pn-importe></span></td>
               <td data-label="Diferencia" class="caja__celda-diferencia">
                 <span class="caja__estados">
-                  <span class="caja__pastilla" [attr.data-tono]="cuadre(diferenciaVista(e)).estado" data-cifras>@if (cuadre(diferenciaVista(e)).importe; as importe) {{{ cuadre(diferenciaVista(e)).estado }} <pn-importe>{{ importe }}</pn-importe>} @else {{{ cuadre(diferenciaVista(e)).texto }}}</span>
+                  <span class="caja__pastilla" [attr.data-tono]="cuadre(diferenciaVista(e)).estado" data-cifras>@if (cuadre(diferenciaVista(e)).importe; as importe) {<span>{{ cuadre(diferenciaVista(e)).estado }} <pn-importe>{{ importe }}</pn-importe></span>} @else {{{ cuadre(diferenciaVista(e)).texto }}}</span>
                   @if (e.estado === 'ANULADA') {
                   &ngsp;<span class="caja__pastilla" data-tono="anulada">Anulada</span>
                   }
