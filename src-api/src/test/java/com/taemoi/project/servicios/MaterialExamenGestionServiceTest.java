@@ -940,6 +940,21 @@ class MaterialExamenGestionServiceTest {
 		assertEquals("Rojo a negro", gestion.detalle(TKD, "b06_rojo_a_negro_1").nombre());
 	}
 
+	/** Los nombres de grado salen del catálogo tal cual (V31_19 los corrige en la fuente): aquí no se reescriben. */
+	@Test
+	void nombresDeGrado_losDelCatalogoTalCual_sinReescribir() throws Exception {
+		catalogo.grado(KB, "AZUL_ROJO").setNombre("Azul-Rojo de la escuela");
+		catalogo.grado(TKD, "ROJO").setNombre("Rojo de la escuela");
+
+		var kb = gestion.listar().disciplinas().stream().filter(d -> KB.equals(d.codigo())).findFirst().orElseThrow();
+		var bloque = kb.bloques().stream().filter(b -> "b05_azul_a_rojo".equals(b.id())).findFirst().orElseThrow();
+
+		assertEquals(List.of("AZUL", "Azul-Rojo de la escuela"),
+				bloque.grados().stream().map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+		assertEquals(List.of("Rojo de la escuela"), gestion.detalle(TKD, "b06_rojo_a_negro_1").grados().stream()
+				.map(MaterialGestionDTO.GradoDelBloque::nombre).toList());
+	}
+
 	@Test
 	void nombresDeBloque_losDelBoceto_yUnoLegibleParaOtroId() {
 		assertEquals("Blanco a amarillo", MaterialExamenGestionService.nombreDeBloque("TAEKWONDO", B01));
