@@ -88,18 +88,24 @@ function tramoGrados(grados: readonly GradoDelBloque[]): string {
 /**
  * «Alumnos de Blanco a Blanco-amarillo»; con un solo grado, «Alumnos de Rojo». En los bloques de negros de Taekwondo y
  * Kickboxing (`bNN_negro_N_a_negro_M`) el PUM y el DAN del mismo número comparten temario: el subtítulo va de DAN a DAN.
+ * El bloque de rojo a negro (`bNN_rojo_a_negro_N`) va del rojo (marrón en kickboxing, según el catálogo) a Negro 1º DAN.
  */
 export function textoGrados(
   grados: readonly GradoDelBloque[],
   bloqueId = '',
   buscar?: (codigo: string) => Pick<CatalogoGrado, 'nombre'> | undefined
 ): string {
+  const dan = (n: string): string => {
+    const nombre = buscar?.(`NEGRO_${n}_DAN`)?.nombre;
+    return nombre && nombre.includes(n) ? nombreGrado(nombre) : `Negro ${n}º DAN`;
+  };
+  const rojoANegro = /^b\d+_rojo_a_negro_(\d+)$/.exec(bloqueId);
+  if (rojoANegro) {
+    const rojo = buscar?.('ROJO')?.nombre ?? grados[0]?.nombre;
+    return `Alumnos de ${rojo ? nombreGrado(rojo) : 'Rojo'} a ${dan(rojoANegro[1])}`;
+  }
   const negros = /^b\d+_negro_(\d+)_a_negro_(\d+)$/.exec(bloqueId);
   if (negros) {
-    const dan = (n: string): string => {
-      const nombre = buscar?.(`NEGRO_${n}_DAN`)?.nombre;
-      return nombre && nombre.includes(n) ? nombreGrado(nombre) : `Negro ${n}º DAN`;
-    };
     return `Alumnos de ${dan(negros[1])} a ${dan(negros[2])}`;
   }
   return grados.length ? `Alumnos de ${tramoGrados(grados)}` : '';

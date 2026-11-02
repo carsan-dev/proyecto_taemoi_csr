@@ -116,7 +116,7 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
       expect(nombres.slice(0, 3)).toEqual(['Blanco a amarillo', codigo === 'KICKBOXING' ? 'Azul a marrón' : 'Azul a rojo', codigo === 'KICKBOXING' ? 'Marrón a negro' : 'Rojo a negro']);
       const subtitulos = filas().map((fila) => texto(fila.querySelector('.fila__grados')));
       expect(subtitulos[1]).toBe(codigo === 'KICKBOXING' ? 'Alumnos de Azul-marrón' : 'Alumnos de Azul-rojo');
-      expect(subtitulos[2]).toBe(codigo === 'KICKBOXING' ? 'Alumnos de Marrón' : 'Alumnos de Rojo');
+      expect(subtitulos[2]).toBe(codigo === 'KICKBOXING' ? 'Alumnos de Marrón a Negro 1º DAN' : 'Alumnos de Rojo a Negro 1º DAN');
       if (codigo === 'KICKBOXING') {
         expect(subtitulos.join(' ').toLowerCase()).not.toContain('rojo');
       }
