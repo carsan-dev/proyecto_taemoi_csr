@@ -100,6 +100,6 @@ export class MaterialExamenPanelComponent implements OnInit, OnDestroy {
   }
 
   cintos(disciplina: DisciplinaConBloques, bloque: BloqueResumen): [string, string] {
-    return coloresBloque(bloque.grados, (codigo) => this.catalogo.grado(disciplina.codigo, codigo));
+    return coloresBloque(bloque.grados, (codigo) => this.catalogo.grado(disciplina.codigo, codigo), bloque.id, disciplina.codigo);
   }
 }

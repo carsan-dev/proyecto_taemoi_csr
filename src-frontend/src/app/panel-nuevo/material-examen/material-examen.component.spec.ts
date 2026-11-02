@@ -5,6 +5,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 
 import { environment } from '../../../environments/environment';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { MaterialExamenPanelComponent } from './material-examen.component';
 import { DisciplinaConBloques, ListadoMaterial } from './material-examen.models';
 
@@ -63,7 +64,10 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
         {
           provide: CatalogoService,
           useValue: {
-            grado: (_d: string, codigo: string) => ({ BLANCO: { color1: '#FFFFFF', color2: null }, BLANCO_AMARILLO: { color1: '#FFFFFF', color2: '#FFFF00' } })[codigo],
+            grado: (d: string, codigo: string) => {
+              const id = CATALOGO_TAEMOI.disciplinas.find((disciplina) => disciplina.codigo === d)?.sistemaGradosId;
+              return CATALOGO_TAEMOI.sistemasGrados.find((sistema) => sistema.id === id)?.grados.find((grado) => grado.codigo === codigo);
+            },
           },
         },
         { provide: ActivatedRoute, useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(consulta) } }) },
@@ -90,6 +94,41 @@ describe('MaterialExamenPanelComponent (pieza R2, lista de bloques)', () => {
     expect(segunda.querySelector('.fila__pastilla--bien')).toBeNull();
     expect(texto(segunda.querySelector('.fila__pastillas'))).toBe('Sin vídeos');
   });
+
+  for (const codigo of ['TAEKWONDO', 'KICKBOXING']) {
+    it(codigo + ': renders the API names as received, with origin and destination belts', () => {
+      const datos = disciplina(codigo, codigo, { bloques: [
+        { id: 'b01_inicio_a_amarillo', nombre: 'Inicio a amarillo', grados: [{ codigo: 'BLANCO', nombre: 'BLANCO' }], tieneTemario: false, videos: 0, bytes: 0 },
+        { id: 'b05_azul_a_rojo', nombre: 'Azul a rojo', grados: [{ codigo: 'AZUL', nombre: 'AZUL' }], tieneTemario: false, videos: 0, bytes: 0 },
+        { id: 'b06_rojo_a_negro_1', nombre: 'Rojo a negro', grados: [{ codigo: 'ROJO', nombre: codigo === 'KICKBOXING' ? 'MARRÓN' : 'ROJO' }], tieneTemario: false, videos: 0, bytes: 0 },
+        ...[1, 2, 3, 4, 5].map((dan) => ({
+          id: dan === 5 ? 'b11_negro_5_a_maximo' : 'b' + String(dan + 6).padStart(2, '0') + '_negro_' + dan + '_a_negro_' + (dan + 1),
+          nombre: 'Negro ' + dan,
+          grados: [
+            ...(dan <= 3 ? [{ codigo: 'ROJO_NEGRO_' + dan + '_PUM', nombre: 'ROJO-NEGRO PUM' }] : []),
+            { codigo: 'NEGRO_' + dan + '_DAN', nombre: 'NEGRO DAN' },
+          ],
+          tieneTemario: false, videos: 0, bytes: 0,
+        })),
+      ] });
+      cargar({ disciplinas: [datos] });
+      const nombres = filas().map((fila) => texto(fila.querySelector('.fila__nombre')));
+      expect(nombres.slice(0, 3)).toEqual(['Inicio a amarillo', 'Azul a rojo', 'Rojo a negro']);
+      const colorRojo = codigo === 'KICKBOXING' ? 'rgb(139, 69, 19)' : 'rgb(255, 0, 0)';
+      const esperados = [
+        ['rgb(255, 255, 255)', 'rgb(255, 255, 0)'],
+        ['rgb(0, 0, 255)', colorRojo],
+        [colorRojo, 'rgb(0, 0, 0)'],
+        ...Array.from({ length: 5 }, () => ['rgb(0, 0, 0)', 'rgb(0, 0, 0)']),
+      ];
+      filas().forEach((fila, i) => {
+        expect(Array.from(fila.querySelectorAll<HTMLElement>('.fila__cinto')).map((cinto) => cinto.style.background)).toEqual(esperados[i]);
+        expect(fila.getAttribute('href')).toBe('/material-examen/' + codigo + '/' + datos.bloques[i].id);
+      });
+      expect(datos.bloques[0].nombre).toBe('Inicio a amarillo');
+      expect(datos.bloques[2].grados[0].codigo).toBe('ROJO');
+    });
+  }
 
   it('resumen de la disciplina activa, sin pestañas si solo hay una', () => {
     cargar({ disciplinas: [disciplina('TAEKWONDO', 'Taekwondo')] });

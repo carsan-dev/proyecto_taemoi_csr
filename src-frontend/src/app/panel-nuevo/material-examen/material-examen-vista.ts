@@ -102,8 +102,23 @@ export function fraseGrados(grados: readonly GradoDelBloque[]): string {
 /** Los dos cintos de la fila: del color con el que se entra en el bloque al color con el que se sale. */
 export function coloresBloque(
   grados: readonly GradoDelBloque[],
-  buscar: (codigo: string) => Pick<CatalogoGrado, 'color1' | 'color2'> | undefined
+  buscar: (codigo: string) => Pick<CatalogoGrado, 'color1' | 'color2'> | undefined,
+  bloqueId = '',
+  disciplina = ''
 ): [string, string] {
+  // The API's grades are the audience, not the transition: PUM grades also belong to black-belt blocks.
+  const tramo = /^b\d+_(inicio|blanco|amarillo|naranja|verde|azul|rojo|negro_\d+)_a_(amarillo|naranja|verde|azul|rojo|negro_\d+|maximo)$/.exec(bloqueId);
+  if (tramo && (disciplina === 'TAEKWONDO' || disciplina === 'KICKBOXING')) {
+    const color = (extremo: string): string => {
+      const codigo = extremo === 'inicio' ? 'BLANCO' : extremo.toUpperCase();
+      const grado = codigo.startsWith('NEGRO_')
+        ? buscar(codigo + '_DAN') ?? buscar('NEGRO_1_DAN')
+        : buscar(codigo);
+      return coloresGrado(grado).colors[0];
+    };
+    const origen = color(tramo[1]);
+    return [origen, tramo[2] === 'maximo' ? origen : color(tramo[2])];
+  }
   const primero = coloresGrado(grados.length ? buscar(grados[0].codigo) : null).colors;
   const ultimo = coloresGrado(grados.length ? buscar(grados[grados.length - 1].codigo) : null).colors;
   return [primero[0], ultimo[ultimo.length - 1]];

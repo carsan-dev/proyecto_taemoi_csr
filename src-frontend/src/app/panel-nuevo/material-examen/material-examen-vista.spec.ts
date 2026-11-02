@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { CATALOGO_TAEMOI } from '../../features/catalogo/testing/catalogo.fixtures';
 import { MOTIVO_LECTURA } from '../../utils/subida-archivos.util';
 import { VideoDetalle } from './material-examen.models';
 import {
@@ -112,6 +113,65 @@ describe('material-examen-vista', () => {
       const [uno, dos] = coloresBloque([{ codigo: 'X', nombre: 'X' }], () => undefined);
       expect(uno).toBeTruthy();
       expect(dos).toBe(uno);
+    });
+  });
+
+  describe('block transition presentation', () => {
+    const buscar = (disciplina: string) => (codigo: string) => {
+      const id = CATALOGO_TAEMOI.disciplinas.find((d) => d.codigo === disciplina)?.sistemaGradosId;
+      return CATALOGO_TAEMOI.sistemasGrados.find((s) => s.id === id)?.grados.find((g) => g.codigo === codigo);
+    };
+    const rojo = [{ codigo: 'ROJO', nombre: 'ROJO' }];
+
+    for (const disciplina of ['TAEKWONDO', 'KICKBOXING']) {
+      it(disciplina + ': colors the first block from white to yellow', () => {
+        expect(coloresBloque([{ codigo: 'BLANCO', nombre: 'BLANCO' }], buscar(disciplina), 'b01_inicio_a_amarillo', disciplina))
+          .toEqual(['#FFFFFF', '#FFFF00']);
+      });
+
+      it(disciplina + ': uses the destination of the block, not the last audience grade', () => {
+        expect(coloresBloque(rojo, buscar(disciplina), 'b06_rojo_a_negro_1', disciplina))
+          .toEqual([disciplina === 'KICKBOXING' ? '#8B4513' : '#FF0000', '#000000']);
+      });
+
+      for (let dan = 1; dan <= 4; dan++) {
+        it(disciplina + ': both belts are black for DAN ' + dan + ' to ' + (dan + 1), () => {
+          const grados = [
+            ...(dan <= 3 ? [{ codigo: 'ROJO_NEGRO_' + dan + '_PUM', nombre: 'ROJO-NEGRO ' + dan + 'º PUM' }] : []),
+            { codigo: 'NEGRO_' + dan + '_DAN', nombre: 'NEGRO ' + dan + 'º DAN' },
+          ];
+          const id = 'b' + String(dan + 6).padStart(2, '0') + '_negro_' + dan + '_a_negro_' + (dan + 1);
+          expect(coloresBloque(grados, buscar(disciplina), id, disciplina)).toEqual(['#000000', '#000000']);
+        });
+      }
+
+      it(disciplina + ': black from fifth DAN onward and future numbered transitions', () => {
+        expect(coloresBloque([], buscar(disciplina), 'b11_negro_5_a_maximo', disciplina)).toEqual(['#000000', '#000000']);
+        expect(coloresBloque([], buscar(disciplina), 'b12_negro_6_a_negro_7', disciplina)).toEqual(['#000000', '#000000']);
+      });
+
+      const intermedios = [
+        ['b02_amarillo_a_naranja', '#FFFF00', '#FFA500'],
+        ['b03_naranja_a_verde', '#FFA500', '#008000'],
+        ['b04_verde_a_azul', '#008000', '#0000FF'],
+        ['b05_azul_a_rojo', '#0000FF', disciplina === 'KICKBOXING' ? '#8B4513' : '#FF0000'],
+      ];
+      for (const [id, origen, destino] of intermedios) {
+        it(disciplina + ': preserves the intermediate transition ' + id, () => {
+          expect(coloresBloque([], buscar(disciplina), id, disciplina)).toEqual([origen, destino]);
+        });
+      }
+    }
+
+    it('Kickboxing: the ROJO code uses the existing brown catalog color and label', () => {
+      expect(buscar('KICKBOXING')('ROJO')?.nombre).toBe('MARRÓN');
+      expect(buscar('KICKBOXING')('ROJO')?.color1).toBe('#8B4513');
+      expect(rojo).toEqual([{ codigo: 'ROJO', nombre: 'ROJO' }]);
+    });
+
+    it('does not reinterpret other disciplines or unknown block IDs', () => {
+      expect(coloresBloque(rojo, buscar('TAEKWONDO'), 'custom', 'TAEKWONDO')).toEqual(['#FF0000', '#FF0000']);
+      expect(coloresBloque(rojo, buscar('TAEKWONDO'), 'b06_rojo_a_negro_1', 'PILATES')).toEqual(['#FF0000', '#FF0000']);
     });
   });
 
