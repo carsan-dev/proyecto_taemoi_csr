@@ -48,6 +48,8 @@ export interface AlumnoDeGrupo {
   id: number;
   nombre: string;
   apellidos: string;
+  /** Id de su foto; nulo si no tiene. */
+  fotoId?: number | null;
   deportes: DeporteEnLista[];
 }
 

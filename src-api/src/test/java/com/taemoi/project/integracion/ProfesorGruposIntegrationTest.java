@@ -250,7 +250,8 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(tutelado, e.aGrupoA, e.aSinSede), idsEnOrden(alumnos, "id"),
 				"activos, por apellidos y nombre; sin el de baja: " + alumnos);
 		JsonNode lucia = fila(alumnos, "id", tutelado);
-		assertEquals(Set.of("id", "nombre", "apellidos", "deportes"), campos(lucia));
+		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes"), campos(lucia));
+		assertTrue(lucia.get("fotoId").isNull(), "sin foto, nulo");
 		assertEquals("LUCIA", lucia.get("nombre").asText());
 		assertEquals("AAA FICTICIA", lucia.get("apellidos").asText());
 		JsonNode deportes = lucia.get("deportes");
