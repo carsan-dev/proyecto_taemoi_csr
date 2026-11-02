@@ -80,10 +80,13 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	private static final byte[] SVG = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>"
 			.getBytes(StandardCharsets.UTF_8);
 	private static final Path IMAGENES;
+	/** Decisión 422: carpeta hermana de la de imágenes, fuera de ella. Su fichero nunca debe servirse. */
+	private static final Path TRAMPA;
 
 	static {
 		try {
 			IMAGENES = Files.createTempDirectory("taemoi-it-foto-profesor-").toAbsolutePath().normalize();
+			TRAMPA = Files.createTempDirectory("taemoi-it-foto-trampa-").toAbsolutePath().normalize();
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}
@@ -193,6 +196,7 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@AfterAll
 	void borrarFicheros() throws IOException {
 		FileSystemUtils.deleteRecursively(IMAGENES);
+		FileSystemUtils.deleteRecursively(TRAMPA);
 	}
 
 	@AfterEach
@@ -585,6 +589,97 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		long antes = filasDeAuditoria(ruta);
 		assertEquals(200, respuesta(get(ruta), tGestor).getStatus());
 		assertEquals(antes + 1, filasDeAuditoria(ruta));
+	}
+
+	// ------------------------------------------------------------------ decisión 422: la foto no sale de su carpeta
+
+	/** Fila heredada forzada por SQL con la ruta absoluta de un fichero de fuera de la carpeta de imágenes. */
+	@Test
+	void rutaAbsolutaFueraDeLaCarpeta_ningunaRutaSirveElFichero() throws Exception {
+		byte[] secreto = imagen(37, 23, "png");
+		String nombre = "secreto-" + UUID.randomUUID() + ".png";
+		Path fichero = TRAMPA.resolve(nombre);
+		Files.write(fichero, secreto);
+		long alumno = enGrupo(e, e.gA, "FOTOFUERA");
+		fotoHeredada(e, alumno, nombre, fichero.toString(), null);
+
+		comprobarQueNoSeSirve(alumno, secreto);
+	}
+
+	/** Fila heredada con un nombre que sube de carpeta: los respaldos por nombre llegarían al fichero de fuera. */
+	@Test
+	void nombreConRecorrido_ningunaRutaSirveElFichero_niRedirigeAEl() throws Exception {
+		byte[] secreto = imagen(41, 29, "png");
+		String fichero = "secreto-" + UUID.randomUUID() + ".png";
+		Files.write(TRAMPA.resolve(fichero), secreto);
+		// En Linux «alumnos/..» solo se resuelve si la carpeta existe: se crea para que el respaldo llegue a la trampa.
+		Files.createDirectories(IMAGENES.resolve("alumnos"));
+		String nombre = "../../" + TRAMPA.getFileName() + "/" + fichero;
+		long alumno = enGrupo(e, e.gA, "FOTORECORRIDO");
+		fotoHeredada(e, alumno, nombre, "alumnos/no-existe-" + UUID.randomUUID() + ".png", null);
+
+		comprobarQueNoSeSirve(alumno, secreto);
+		MockHttpServletResponse r = respuesta(get(fotoAntigua(alumno)), tGestor);
+		assertEquals(404, r.getStatus(), "sin fichero válido ni URL: como sin foto");
+		assertNull(r.getHeader("Location"));
+	}
+
+	/** Las fotos heredadas buenas (ruta absoluta dentro de la carpeta, o solo por nombre) se siguen sirviendo igual. */
+	@Test
+	void fotosHeredadasDentroDeLaCarpeta_seSiguenSirviendo() throws Exception {
+		Path alumnos = Files.createDirectories(IMAGENES.resolve("alumnos"));
+		byte[] porRuta = imagen(300, 200, "png");
+		String nombrePorRuta = UUID.randomUUID() + ".png";
+		Files.write(alumnos.resolve(nombrePorRuta), porRuta);
+		long conRutaAbsoluta = enGrupo(e, e.gA, "FOTOHEREDADA");
+		fotoHeredada(e, conRutaAbsoluta, nombrePorRuta, alumnos.resolve(nombrePorRuta).toString(), null);
+
+		byte[] porNombre = imagen(310, 210, "png");
+		String nombrePorNombre = UUID.randomUUID() + ".png";
+		Files.write(alumnos.resolve(nombrePorNombre), porNombre);
+		long soloPorNombre = enGrupo(e, e.gA, "FOTOPORNOMBRE");
+		// Ruta absoluta de otro host que aquí no existe: se encuentra por su nombre en <raíz>/alumnos.
+		fotoHeredada(e, soloPorNombre, nombrePorNombre, "/srv/host-anterior/imagenes/alumnos/" + nombrePorNombre, null);
+
+		for (long alumno : List.of(conRutaAbsoluta, soloPorNombre)) {
+			byte[] esperado = alumno == conRutaAbsoluta ? porRuta : porNombre;
+			MockHttpServletResponse profesor = respuesta(get(fotoProfesor(alumno)), tProfA);
+			assertEquals(200, profesor.getStatus());
+			assertEquals(CACHE_PROFESOR, profesor.getHeader("Cache-Control"));
+			assertArrayEquals(esperado, profesor.getContentAsByteArray());
+			MockHttpServletResponse gestion = respuesta(get(fotoAntigua(alumno)), tGestor);
+			assertEquals(200, gestion.getStatus());
+			assertEquals(CACHE_FAMILIAS, gestion.getHeader("Cache-Control"));
+			assertArrayEquals(esperado, gestion.getContentAsByteArray());
+		}
+	}
+
+	private void comprobarQueNoSeSirve(long alumno, byte[] secreto) throws Exception {
+		for (String ancho : new String[] { null, "300" }) {
+			MockHttpServletRequestBuilder profesor = get(fotoProfesor(alumno));
+			MockHttpServletRequestBuilder gestion = get(fotoAntigua(alumno));
+			if (ancho != null) {
+				profesor.param("w", ancho);
+				gestion.param("w", ancho);
+			}
+			MockHttpServletResponse p = respuesta(profesor, tProfA);
+			assertEquals(404, p.getStatus(), "profesor, w=" + ancho);
+			assertNotEquals(secreto.length, p.getContentAsByteArray().length);
+			MockHttpServletResponse g = respuesta(gestion, tGestor);
+			assertNotEquals(200, g.getStatus(), "gestión, w=" + ancho);
+			assertNotEquals(secreto.length, g.getContentAsByteArray().length);
+			assertFalse(String.valueOf(g.getHeader("Location")).contains(TRAMPA.getFileName().toString()),
+					"no redirige a la trampa");
+			assertFalse(g.getContentAsString().contains(TRAMPA.getFileName().toString()), "no filtra la ruta");
+		}
+	}
+
+	/** Fila de {@code imagen} heredada (sin prefijo {@code org-<id>/}) con los campos tal cual. */
+	private void fotoHeredada(EscuelaConSedesDePrueba x, long alumno, String nombre, String ruta, String url) {
+		jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, ?, ?, ?)", nombre, ruta,
+				"image/png", url, x.org);
+		long imagen = jdbc.queryForObject("SELECT MAX(id) FROM imagen WHERE ruta = ?", Long.class, ruta);
+		jdbc.update("UPDATE alumno SET foto_alumno_id = ? WHERE id = ?", imagen, alumno);
 	}
 
 	// ------------------------------------------------------------------ utilidades

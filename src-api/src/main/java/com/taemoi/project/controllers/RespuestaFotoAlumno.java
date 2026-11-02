@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 
 import javax.imageio.IIOImage;
@@ -23,6 +24,8 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -50,10 +53,17 @@ import com.taemoi.project.services.ImagenService;
  *
  * <p>El profesor se diferencia en tres cosas, porque su foto va tras sesión y no puede leer {@code /imagenes/alumnos/**}
  * (solo gestión): caché privada, sin redirección (sin fichero, 404) y solo fotos raster.
+ *
+ * <p>Decisión 422: en las dos rutas, un fichero que, resuelto sin enlaces, queda fuera de las carpetas de imágenes no
+ * se lee: cuenta como sin fichero. Un nombre con {@code ..} no se usa para los respaldos ni para la redirección.
  */
 @Component
 public class RespuestaFotoAlumno {
 
+	private static final Logger logger = LoggerFactory.getLogger(RespuestaFotoAlumno.class);
+	/** Raíces heredadas de los respaldos por nombre (Docker y local). */
+	private static final String RAIZ_HEREDADA_DOCKER = "/var/www/app/imagenes";
+	private static final String RAIZ_HEREDADA_LOCAL = "static_resources/imagenes";
 	private static final int MIN_ANCHO_IMAGEN = 120;
 	private static final int MAX_ANCHO_IMAGEN = 1800;
 	private static final float CALIDAD_WEBP_REDIMENSION = 0.76f;
@@ -350,7 +360,8 @@ public class RespuestaFotoAlumno {
 			candidatos.add(UrlArchivoSerializer.absoluta(urlImagen.trim(), baseUrl));
 		}
 		// Los respaldos por nombre en la carpeta heredada solo valen para imágenes heredadas (sin org-<id>/).
-		if (nombre != null && !nombre.isBlank() && RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
+		if (nombre != null && !nombre.isBlank() && !subeDeCarpeta(nombre)
+				&& RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
 			candidatos.add("/imagenes/alumnos/" + nombre);
 			if (baseUrl != null && !baseUrl.isBlank()) {
 				candidatos.add(baseUrl + "/imagenes/alumnos/" + nombre);
@@ -392,17 +403,27 @@ public class RespuestaFotoAlumno {
 
 		String nombre = obtenerNombreImagenPrioritario(imagen);
 		// Una imagen con prefijo org-<id>/ solo se lee de su ruta: nunca de ficheros heredados de la raíz.
-		if (nombre != null && !nombre.isBlank() && RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
+		if (nombre != null && !nombre.isBlank() && !subeDeCarpeta(nombre)
+				&& RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesLinux, nombre);
 			agregarCandidatosDesdeBase(candidatos, directorioImagenesWindows, nombre);
-			agregarCandidatoRuta(candidatos, "/var/www/app/imagenes/alumnos/" + nombre);
-			agregarCandidatoRuta(candidatos, "/var/www/app/imagenes/" + nombre);
-			agregarCandidatoRuta(candidatos, "static_resources/imagenes/alumnos/" + nombre);
+			agregarCandidatoRuta(candidatos, RAIZ_HEREDADA_DOCKER + "/alumnos/" + nombre);
+			agregarCandidatoRuta(candidatos, RAIZ_HEREDADA_DOCKER + "/" + nombre);
+			agregarCandidatoRuta(candidatos, RAIZ_HEREDADA_LOCAL + "/alumnos/" + nombre);
 		}
 
+		List<Path> raices = null;
+		boolean fueraDeLaCarpeta = false;
 		for (Path candidato : candidatos) {
 			try {
 				if (candidato != null && Files.exists(candidato) && Files.isRegularFile(candidato)) {
+					if (raices == null) {
+						raices = raicesDeImagenes();
+					}
+					if (!dentroDeAlguna(candidato, raices)) {
+						fueraDeLaCarpeta = true;
+						continue;
+					}
 					return candidato.toAbsolutePath().normalize();
 				}
 			} catch (Exception ignored) {
@@ -410,7 +431,63 @@ public class RespuestaFotoAlumno {
 			}
 		}
 
+		if (fueraDeLaCarpeta) {
+			// Sin la ruta: solo el id de la fila, para localizarla.
+			logger.warn("Foto de alumno fuera de la carpeta de imágenes; se trata como sin fichero (imagen {})",
+					imagen.getId());
+		}
 		return null;
+	}
+
+	/**
+	 * Decisión 422: carpetas de las que se puede leer una foto, como rutas reales (sin enlaces) de las que existen: las
+	 * configuradas y las dos heredadas que ya usan los respaldos por nombre.
+	 */
+	private List<Path> raicesDeImagenes() {
+		List<Path> raices = new ArrayList<>(4);
+		for (String raiz : List.of(Objects.toString(directorioImagenesLinux, ""),
+				Objects.toString(directorioImagenesWindows, ""), RAIZ_HEREDADA_DOCKER, RAIZ_HEREDADA_LOCAL)) {
+			if (raiz.isBlank()) {
+				continue; // Path.of("") sería el directorio de trabajo.
+			}
+			try {
+				Path real = Path.of(expandirVariablesRuta(raiz)).toRealPath();
+				if (Files.isDirectory(real) && !raices.contains(real)) {
+					raices.add(real);
+				}
+			} catch (IOException | RuntimeException ignored) {
+				// Carpeta que no existe en este entorno: no aporta raíz.
+			}
+		}
+		return raices;
+	}
+
+	/**
+	 * El fichero, resuelto sin enlaces y sin {@code ..}, queda dentro de alguna raíz. Cualquier fallo al resolverlo
+	 * cuenta como fuera (falla cerrado).
+	 */
+	private static boolean dentroDeAlguna(Path fichero, List<Path> raices) {
+		try {
+			Path real = fichero.toRealPath();
+			for (Path raiz : raices) {
+				if (real.startsWith(raiz) && !real.equals(raiz)) {
+					return true;
+				}
+			}
+		} catch (IOException | RuntimeException e) {
+			return false;
+		}
+		return false;
+	}
+
+	/** Un nombre con un segmento {@code ..}: los respaldos por nombre saldrían de su carpeta. */
+	private static boolean subeDeCarpeta(String nombre) {
+		for (String segmento : nombre.split("[/\\\\]")) {
+			if ("..".equals(segmento.trim())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private String obtenerNombreImagenPrioritario(Imagen imagen) {
