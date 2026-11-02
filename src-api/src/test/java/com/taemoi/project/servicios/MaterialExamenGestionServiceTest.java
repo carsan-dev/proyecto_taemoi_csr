@@ -929,7 +929,12 @@ class MaterialExamenGestionServiceTest {
 			assertFalse(bloque.grados().stream().anyMatch(g -> g.nombre().toUpperCase().contains("ROJO")),
 					bloque.id() + " " + bloque.grados());
 		}
-		assertTrue(kbPorId.get("b07_negro_1_a_negro_2").grados().stream().anyMatch(g -> g.nombre().startsWith("MARRÓN-NEGRO")));
+		// V31_20: en kickboxing no existen los PUM; b07 solo lleva el 1º DAN.
+		assertEquals(List.of("NEGRO_1_DAN"), kbPorId.get("b07_negro_1_a_negro_2").grados().stream()
+				.map(MaterialGestionDTO.GradoDelBloque::codigo).toList());
+		for (var bloque : kb.bloques()) {
+			assertFalse(bloque.grados().stream().anyMatch(g -> g.codigo().endsWith("_PUM")), bloque.id() + " " + bloque.grados());
+		}
 
 		assertEquals("Blanco a amarillo", gestion.detalle(KB, B01).nombre());
 		assertEquals("Azul a marrón", gestion.detalle(KB, "b05_azul_a_rojo").nombre());

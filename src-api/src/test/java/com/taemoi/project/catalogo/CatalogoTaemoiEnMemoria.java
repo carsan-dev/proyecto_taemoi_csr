@@ -83,7 +83,7 @@ public final class CatalogoTaemoiEnMemoria {
 			todos.add(grado(++id, tkd, fila, (String) fila[1], (Integer) fila[2], AplicaGrado.valueOf((String) fila[3])));
 		}
 		// Copia de kickboxing (V23): ROJO = «MARRÓN» y marrón (V30), intermedios con MARRÓN y #8B4513 en vez de ROJO (V31_19), DAN tras
-		// ROJO, PUM al final, intermedios y PUM nunca destino.
+		// ROJO, PUM al final y sin bloque (V31_20), intermedios y PUM nunca destino.
 		Map<String, Integer> desplazamiento = Map.of("NEGRO", -3, "ROJO_NEGRO", 5);
 		Map<String, String> nombresKickboxing = Map.of("ROJO", "MARRÓN", "AZUL_ROJO", "AZUL-MARRÓN",
 				"ROJO_NEGRO_1_PUM", "MARRÓN-NEGRO 1º PUM", "ROJO_NEGRO_2_PUM", "MARRÓN-NEGRO 2º PUM",
@@ -108,6 +108,10 @@ public final class CatalogoTaemoiEnMemoria {
 			}
 			if ("#FF0000".equals(copia.getColor2())) {
 				copia.setColor2("#8B4513");
+			}
+			// V31_20: en kickboxing no existen los PUM; sin bloque de temario.
+			if (codigo.startsWith("ROJO_NEGRO")) {
+				copia.setBloqueTemario(null);
 			}
 			todos.add(copia);
 		}
