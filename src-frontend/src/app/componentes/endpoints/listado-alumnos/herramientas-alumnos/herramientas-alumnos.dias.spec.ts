@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { HerramientasAlumnosComponent } from './herramientas-alumnos.component';
 import { EndpointsService } from '../../../../servicios/endpoints/endpoints.service';
@@ -42,7 +43,24 @@ describe('HerramientasAlumnosComponent: días del listado de asistencia (decisi�
     expect(crear(turnos('Domingo', 'Sábado')).grupos).toEqual([...laborables, 'sábado', 'domingo']);
   });
 
-  it('si fallan los turnos, los cinco de siempre', () => {
+  it('pide los turnos nuevos y sin avisos (silencioso)', () => {
+    const api = jasmine.createSpyObj('EndpointsService', ['obtenerTurnosDTO']);
+    api.obtenerTurnosDTO.and.returnValue(of([]));
+    TestBed.configureTestingModule({
+      providers: [
+        InformePdfService,
+        { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
+        { provide: EndpointsService, useValue: api },
+        proveerCatalogoTesting(CATALOGO_TAEMOI),
+      ],
+    });
+    TestBed.runInInjectionContext(() => new HerramientasAlumnosComponent()).ngOnInit();
+    expect(api.obtenerTurnosDTO).toHaveBeenCalledOnceWith(true, true);
+  });
+
+  it('si fallan los turnos, los cinco de siempre y sin popup', () => {
+    const swal = spyOn(Swal, 'fire');
     expect(crear(throwError(() => new Error())).grupos).toEqual(laborables);
+    expect(swal).not.toHaveBeenCalled();
   });
 });

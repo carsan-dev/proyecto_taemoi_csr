@@ -84,9 +84,9 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
     this.inicializarAlumnos();
   }
 
-  /** Los turnos de la escuela activa (petición ya cacheada que usa también /horarios); si falla, valen los del alumno. */
+  /** Los turnos de la escuela activa (siempre datos nuevos y sin avisos de error); si falla, valen los del alumno. */
   private cargarTurnosEscuela(): void {
-    const subscription = this.endpointsService.obtenerTurnosDTO().subscribe({
+    const subscription = this.endpointsService.obtenerTurnosDTO(true, true).subscribe({
       next: (turnos) => {
         this.turnosEscuela = Array.isArray(turnos) ? turnos : [];
         if (this.allTurnos.length > 0 && this.actualizarDias()) {

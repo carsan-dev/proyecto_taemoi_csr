@@ -100,8 +100,8 @@ export class HerramientasAlumnosComponent implements OnChanges, OnInit {
   }
 
   ngOnInit(): void {
-    // Los turnos de la escuela (petición cacheada) deciden si salen el sábado y el domingo; si falla, los cinco de siempre.
-    this.endpoints.obtenerTurnosDTO?.().subscribe({
+    // Los turnos de la escuela (datos nuevos, sin avisos de error) deciden si salen el sábado y el domingo; si falla, los cinco de siempre.
+    this.endpoints.obtenerTurnosDTO(true, true).subscribe({
       next: (turnos) => this.ponerDiasConFinDeSemana(Array.isArray(turnos) ? turnos : []),
       error: () => undefined,
     });

@@ -299,3 +299,33 @@ describe('EndpointsService', () => {
     });
   });
 });
+
+describe('EndpointsService: turnos para las columnas (decisión 380)', () => {
+  let servicio: EndpointsService;
+  let http: HttpTestingController;
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    servicio = TestBed.inject(EndpointsService);
+    http = TestBed.inject(HttpTestingController);
+  });
+  afterEach(() => http.verify());
+
+  it('silencioso: ignora la caché, va con credenciales y el error lo trata quien llama', () => {
+    servicio.obtenerTurnosDTO().subscribe();
+    http.expectOne((r) => r.url.endsWith('/turnos/dto')).flush([{ id: 1, diaSemana: 'Lunes' }]);
+    servicio.obtenerTurnosDTO(true, true).subscribe();
+    const req = http.expectOne((r) => r.url.endsWith('/turnos/dto'));
+    expect(req.request.withCredentials).toBeTrue();
+    expect(req.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    req.flush([]);
+  });
+
+  it('la llamada de /horarios sigue igual: usa la caché y no marca el error como local', () => {
+    servicio.obtenerTurnosDTO().subscribe();
+    const req = http.expectOne((r) => r.url.endsWith('/turnos/dto'));
+    expect(req.request.context.get(ERROR_HANDLED_LOCALLY)).toBeFalse();
+    req.flush([]);
+    servicio.obtenerTurnosDTO().subscribe();
+    http.expectNone((r) => r.url.endsWith('/turnos/dto'));
+  });
+});

@@ -96,6 +96,15 @@ describe('HorariosComponent', () => {
       component.buildTimetable();
     };
 
+    it('«miércoles», «MIÉRCOLES» y «Miercoles» caen en la celda de Miércoles', () => {
+      ['miércoles', 'MIÉRCOLES', 'Miercoles'].forEach((variante, i) => {
+        component.turnos = [{ ...turno(variante, i + 1), horaInicio: `1${i}:00`, horaFin: `1${i}:50` }];
+        component.buildTimetable();
+        expect(component.getTurnoEnCelda(component.timeSlots[0], 'Miércoles')?.turno.id).toBe(i + 1);
+        expect(component.getTurnosForDay('Lunes').length).toBe(0);
+      });
+    });
+
     it('sin turnos de fin de semana, cinco días y la misma rejilla de siempre', () => {
       pintar('Lunes', 'Viernes');
       expect(component.diasSemana).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);

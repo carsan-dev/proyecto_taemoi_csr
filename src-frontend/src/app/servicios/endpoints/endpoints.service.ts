@@ -1284,8 +1284,13 @@ export class EndpointsService {
       });
   }
 
-  obtenerTurnosDTO(forceRefresh: boolean = false): Observable<any[]> {
-    if (forceRefresh) {
+  /**
+   * `silencioso`: la pide una pantalla autenticada solo para decidir qué columnas pintar (decisión 380). Siempre pide
+   * datos nuevos (la caché es de la raíz y puede venir de una visita anónima o de otra sesión) con las credenciales de la
+   * sesión, y un fallo lo trata quien llama: el interceptor no abre ningún aviso.
+   */
+  obtenerTurnosDTO(forceRefresh: boolean = false, silencioso: boolean = false): Observable<any[]> {
+    if (forceRefresh || silencioso) {
       this.limpiarCacheTurnosDTO();
     }
 
@@ -1298,7 +1303,12 @@ export class EndpointsService {
     }
 
     const request$ = this.http
-      .get<any[]>(`${this.urlBase}/turnos/dto`)
+      .get<any[]>(
+        `${this.urlBase}/turnos/dto`,
+        silencioso
+          ? { withCredentials: true, context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) }
+          : undefined
+      )
       .pipe(
         tap((turnos) => {
           this.turnosDtoCache = Array.isArray(turnos) ? turnos : [];

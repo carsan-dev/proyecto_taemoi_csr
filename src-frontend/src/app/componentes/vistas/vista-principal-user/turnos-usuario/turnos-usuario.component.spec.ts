@@ -1,4 +1,5 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import Swal from 'sweetalert2';
 
 import { TurnosUsuarioComponent } from './turnos-usuario.component';
 
@@ -56,6 +57,17 @@ describe('TurnosUsuarioComponent', () => {
       cargar(component, [turno('Sábado', 2)]);
       expect(component.diasSemana.slice(5)).toEqual(['Sabado', 'Domingo']);
       expect(component.getTurnosForDay('Sabado').length).toBe(1);
+    });
+
+    it('pide los turnos nuevos y sin avisos; si falla no hay popup y quedan cinco días', () => {
+      const swal = spyOn(Swal, 'fire');
+      const obtenerTurnosDTO = jasmine.createSpy('obtenerTurnosDTO').and.returnValue(throwError(() => new Error()));
+      const component = new TurnosUsuarioComponent({ obtenerTurnosDTO } as any, {} as any, {} as any, {} as any);
+      (component as any).cargarTurnosEscuela();
+      cargar(component, [turno('Lunes', 1)]);
+      expect(obtenerTurnosDTO).toHaveBeenCalledOnceWith(true, true);
+      expect(component.diasSemana.length).toBe(5);
+      expect(swal).not.toHaveBeenCalled();
     });
 
     it('si no llegan los turnos de la escuela, valen los del alumno', () => {
