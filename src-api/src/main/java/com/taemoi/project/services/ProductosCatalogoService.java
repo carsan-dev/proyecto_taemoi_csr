@@ -81,6 +81,14 @@ public interface ProductosCatalogoService {
 	 */
 	Optional<String> buscarCodigoGradoConcedido(Long productoId, String conceptoCargo);
 
+	/**
+	 * Los pasos por concepto de {@link #buscarCodigoGradoConcedido} (2 y 3), con el catálogo leído UNA vez: la función
+	 * resuelve después cualquier número de conceptos sin más consultas (p. ej. todo el catálogo de la gestión). El paso
+	 * 1 (el grado enlazado del producto) lo mira quien la usa en el propio producto. La igualdad del paso 2 imita la
+	 * intercalación de la columna (sin distinguir mayúsculas ni acentos, sin espacios al final).
+	 */
+	java.util.function.Function<String, Optional<String>> prepararGradoConcedidoPorConcepto();
+
 	// ------------------------------------------------------------------------------------------
 	// Resolución de los productos que cobra el código (V27). Orden: el producto SIN clasificar con el
 	// concepto que buscaba el código hasta V27 (lo que elegía findFirstByConcepto: variantes de id menor

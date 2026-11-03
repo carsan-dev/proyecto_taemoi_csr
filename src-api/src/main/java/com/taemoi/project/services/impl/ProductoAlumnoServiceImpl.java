@@ -194,15 +194,51 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 * ({@link ProductosCatalogoService#buscarCodigoGradoConcedido}, que cubre los de Taemoi sin clasificar).
 	 */
 	private boolean esProductoDeExamenORecompensa(Producto producto) {
+		return esProductoDeExamenORecompensa(producto, null);
+	}
+
+	/**
+	 * {@link #esProductoDeExamenORecompensa(Producto)} con el catálogo ya preparado
+	 * ({@link ProductosCatalogoService#prepararGradoConcedidoPorConcepto}); {@code null}: se prepara solo si hace falta.
+	 * El grado enlazado del producto es el paso 1 de {@link ProductosCatalogoService#buscarCodigoGradoConcedido}.
+	 */
+	private boolean esProductoDeExamenORecompensa(Producto producto,
+			java.util.function.Function<String, java.util.Optional<String>> gradoPorConcepto) {
 		if (producto.getTipo() == TipoProducto.EXAMEN || producto.getTipo() == TipoProducto.RECOMPENSA
 				|| producto.getGrado() != null) {
 			return true;
 		}
-		String concepto = producto.getConcepto() != null ? producto.getConcepto() : "";
+		String concepto = producto.getConcepto();
+		if (concepto == null) {
+			return false;
+		}
 		if (concepto.contains("DERECHO A EXAMEN") || concepto.contains("PASE DE GRADO POR RECOMPENSA")) {
 			return true;
 		}
-		return productosCatalogo.buscarCodigoGradoConcedido(producto.getId(), producto.getConcepto()).isPresent();
+		java.util.function.Function<String, java.util.Optional<String>> resolver = gradoPorConcepto != null
+				? gradoPorConcepto
+				: productosCatalogo.prepararGradoConcedidoPorConcepto();
+		return resolver.apply(concepto).isPresent();
+	}
+
+	/**
+	 * La regla ÚNICA de «la vía genérica necesita deporte» (decisión del 03/11/2026): la matrícula y los exámenes y
+	 * recompensas. La usan la asignación genérica (400) y el catálogo de la gestión ({@link #requiereDeporteParaAsignar}).
+	 */
+	private boolean requiereDeporte(Producto producto,
+			java.util.function.Function<String, java.util.Optional<String>> gradoPorConcepto) {
+		return esMatricula(producto.getConcepto()) || esProductoDeExamenORecompensa(producto, gradoPorConcepto);
+	}
+
+	/**
+	 * {@link #requiereDeporte} para muchos productos: el catálogo se lee una vez al prepararlo (unas pocas consultas,
+	 * no una por producto).
+	 */
+	@Override
+	public java.util.function.Predicate<Producto> requiereDeporteParaAsignar() {
+		java.util.function.Function<String, java.util.Optional<String>> gradoPorConcepto = productosCatalogo
+				.prepararGradoConcedidoPorConcepto();
+		return producto -> producto != null && requiereDeporte(producto, gradoPorConcepto);
 	}
 
 	/**
@@ -401,11 +437,11 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 
 		String concepto;
 		if (alumnoDeporte == null) {
-			if (esMatricula(producto.getConcepto())) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-						"Seleccione un deporte del alumno para asignar la matrícula.");
-			}
-			if (esProductoDeExamenORecompensa(producto)) {
+			if (requiereDeporte(producto, null)) {
+				if (esMatricula(producto.getConcepto())) {
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+							"Seleccione un deporte del alumno para asignar la matrícula.");
+				}
 				// IllegalArgumentException: 400 con {"mensaje"} (GlobalExceptionHandler), que el panel puede mostrar.
 				throw new IllegalArgumentException(EXAMEN_O_RECOMPENSA_SIN_DEPORTE);
 			}

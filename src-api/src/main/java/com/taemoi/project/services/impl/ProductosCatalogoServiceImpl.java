@@ -129,8 +129,9 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 		if (porConcepto.isPresent()) {
 			return porConcepto;
 		}
-		Optional<String> porNombreContenido = gradoPorNombreContenido(conceptoCargo, TipoProducto.RECOMPENSA)
-				.or(() -> gradoPorNombreContenido(conceptoCargo, TipoProducto.EXAMEN));
+		Optional<String> porNombreContenido = gradoPorNombreContenido(conceptoCargo,
+				nombresQueConcedenGrado(TipoProducto.RECOMPENSA))
+				.or(() -> gradoPorNombreContenido(conceptoCargo, nombresQueConcedenGrado(TipoProducto.EXAMEN)));
 		porNombreContenido.ifPresent(codigo -> log.info(
 				"Grado {} concedido por nombre contenido en el concepto del cargo «{}» (producto {} sin grado)",
 				codigo, conceptoCargo, productoId));
@@ -141,11 +142,11 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 	 * Último respaldo: el nombre de producto de ese tipo contenido en el concepto (sin distinguir
 	 * mayúsculas) que sea más LARGO.
 	 */
-	private Optional<String> gradoPorNombreContenido(String concepto, TipoProducto tipo) {
+	private Optional<String> gradoPorNombreContenido(String concepto, Map<String, String> nombresQueConcedenGrado) {
 		String conceptoMayusculas = concepto.toUpperCase(Locale.ROOT);
 		String mejorNombre = null;
 		String mejorCodigo = null;
-		for (Map.Entry<String, String> candidato : nombresQueConcedenGrado(tipo).entrySet()) {
+		for (Map.Entry<String, String> candidato : nombresQueConcedenGrado.entrySet()) {
 			String nombre = candidato.getKey();
 			if (conceptoMayusculas.contains(nombre) && (mejorNombre == null || nombre.length() > mejorNombre.length())) {
 				mejorNombre = nombre;
@@ -205,6 +206,40 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 				.ifPresent(n -> nombres.add(n.trim().toUpperCase(Locale.ROOT)));
 		nombres.add(CatalogoLegadoTaemoi.NOMBRE_GRADO_ROJO_KICKBOXING);
 		return List.copyOf(nombres);
+	}
+
+	@Override
+	public java.util.function.Function<String, Optional<String>> prepararGradoConcedidoPorConcepto() {
+		// Paso 2: producto que concede grado con ese concepto (el de menor id), como la consulta por concepto.
+		Map<String, String> porConcepto = new java.util.HashMap<>();
+		for (Producto producto : productos.findByGradoIsNotNullOrderByIdAsc()) {
+			if (producto.getConcepto() != null) {
+				porConcepto.putIfAbsent(claveDeConcepto(producto.getConcepto()), producto.getGrado().getCodigo());
+			}
+		}
+		// Paso 3: nombres contenidos, primero recompensas y después exámenes.
+		Map<String, String> recompensas = nombresQueConcedenGrado(TipoProducto.RECOMPENSA);
+		Map<String, String> examenes = nombresQueConcedenGrado(TipoProducto.EXAMEN);
+		return concepto -> {
+			if (concepto == null) {
+				return Optional.empty();
+			}
+			Optional<String> exacto = Optional.ofNullable(porConcepto.get(claveDeConcepto(concepto)));
+			int sufijo = concepto.lastIndexOf(SEPARADOR_DISCIPLINA);
+			if (exacto.isEmpty() && sufijo > 0) {
+				exacto = Optional.ofNullable(porConcepto.get(claveDeConcepto(concepto.substring(0, sufijo))));
+			}
+			if (exacto.isPresent()) {
+				return exacto;
+			}
+			return gradoPorNombreContenido(concepto, recompensas).or(() -> gradoPorNombreContenido(concepto, examenes));
+		};
+	}
+
+	/** El concepto como lo compara la columna (utf8mb4_unicode_ci): sin acentos, en mayúsculas y sin espacios al final. */
+	private static String claveDeConcepto(String concepto) {
+		return java.text.Normalizer.normalize(concepto, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
+				.toUpperCase(Locale.ROOT).stripTrailing();
 	}
 
 	/** Separador del sufijo de disciplina en los cargos («DERECHO A EXAMEN AZUL - Taekwondo»). */

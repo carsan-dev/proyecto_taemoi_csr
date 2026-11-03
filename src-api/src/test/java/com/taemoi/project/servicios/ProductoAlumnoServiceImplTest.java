@@ -316,6 +316,46 @@ class ProductoAlumnoServiceImplTest {
 				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
 	}
 
+	/**
+	 * «requiereDeporte» del catálogo de la gestión: la regla de la vía genérica, con el catálogo leído UNA vez para toda
+	 * la lista (ni una consulta por producto).
+	 */
+	@Test
+	void requiereDeporte_todaLaListaConElCatalogoLeidoUnaVez() {
+		java.util.function.Predicate<Producto> requiere = productoAlumnoService.requiereDeporteParaAsignar();
+		List<Producto> lista = new ArrayList<>();
+		for (int i = 0; i < 30; i++) {
+			lista.add(producto(100L + i, "CAMISETA " + i));
+		}
+		for (Producto p : lista) {
+			assertFalse(requiere.test(p), p.getConcepto());
+		}
+		for (String concepto : List.of("Matrícula anual", "DERECHO A EXAMEN AZUL",
+				"DERECHO DE CAMBIO A ROJO POR RECOMPENSA", "derecho de cambio a verde-azul por recompensa")) {
+			assertEquals(true, requiere.test(producto(200L, concepto)), concepto);
+		}
+		Producto tipado = producto(300L, "PRUEBA DE NIVEL");
+		tipado.setCodigo("PRUEBA_NIVEL_PROPIA");
+		tipado.setTipo(com.taemoi.project.entities.TipoProducto.EXAMEN);
+		assertEquals(true, requiere.test(tipado));
+
+		verify(productoRepository, times(1)).findByGradoIsNotNullOrderByIdAsc();
+		verify(productoRepository, times(1))
+				.findByTipoAndGradoIsNotNullOrderByIdAsc(com.taemoi.project.entities.TipoProducto.RECOMPENSA);
+		verify(productoRepository, times(1))
+				.findByTipoAndGradoIsNotNullOrderByIdAsc(com.taemoi.project.entities.TipoProducto.EXAMEN);
+		verify(productoRepository, never()).findFirstByConceptoAndGradoIsNotNullOrderByIdAsc(any());
+		verify(productoRepository, never()).findById(any());
+	}
+
+	private static Producto producto(Long id, String concepto) {
+		Producto producto = new Producto();
+		producto.setId(id);
+		producto.setConcepto(concepto);
+		producto.setPrecio(10.0);
+		return producto;
+	}
+
 	/** Un producto sin efectos por la vía del deporte: concepto del catálogo tal cual, sin derecho a examen. */
 	@Test
 	void productoSinEfectos_porDeporte_igualQueAntes() {

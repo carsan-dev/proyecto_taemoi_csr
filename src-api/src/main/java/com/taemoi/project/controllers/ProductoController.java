@@ -41,6 +41,9 @@ public class ProductoController {
 	@Autowired
 	private ObjectMapper objectMapper;
 
+	@Autowired
+	private com.taemoi.project.services.ProductoAlumnoService productoAlumnoService;
+
 	@GetMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<?> obtenerProductos(@RequestParam(required = false) String concepto,
@@ -83,12 +86,14 @@ public class ProductoController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
 	public ResponseEntity<List<ObjectNode>> obtenerTodosLosProductos() {
 		List<Producto> productos = productoService.obtenerTodosLosProductos();
-		// Decisión del 03/11/2026: el panel de la gestión pide el deporte para asignar exámenes y recompensas, así que
-		// este listado (y solo este) añade el tipo del producto ({@code tipo}: EXAMEN, RECOMPENSA, OTRO…). El resto del
-		// producto, el JSON de siempre; la entidad sigue sin exponerlo ni aceptarlo en el cuerpo de las peticiones.
+		// Decisión del 03/11/2026: el panel de la gestión pide el deporte del alumno cuando la asignación genérica no
+		// vale (matrícula, exámenes y recompensas), así que este listado (y solo este) añade «requiereDeporte», con la
+		// misma regla que aplica esa asignación. El resto del producto, el JSON de siempre. El catálogo se prepara una
+		// vez para toda la lista.
+		java.util.function.Predicate<Producto> requiereDeporte = productoAlumnoService.requiereDeporteParaAsignar();
 		return ResponseEntity.ok(productos.stream().map(producto -> {
 			ObjectNode nodo = objectMapper.valueToTree(producto);
-			nodo.put("tipo", producto.getTipo() != null ? producto.getTipo().name() : null);
+			nodo.put("requiereDeporte", requiereDeporte.test(producto));
 			return nodo;
 		}).toList());
 	}

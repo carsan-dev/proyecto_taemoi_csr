@@ -60,6 +60,7 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 	String tGestor;
 	long kickboxing;
 	long examenRojo, examenRojoBordado, examenDeKickboxing, camiseta;
+	long examenSinClasificar, matricula, cinturonConGrado, cinturonSinClasificar;
 	String conceptoRojo, conceptoBordado;
 
 	@BeforeAll
@@ -87,6 +88,11 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 		examenRojoBordado = producto(conceptoBordado, "EXAMEN_ROJO_BORDADO_IT", "EXAMEN", null, rojo);
 		examenDeKickboxing = producto("EXAMEN SOLO KICK " + e.marca, "EXAMEN_KICK_IT", "EXAMEN", kickboxing, rojo);
 		camiseta = producto("CAMISETA KB " + e.marca, null, "OTRO", null, null);
+		examenSinClasificar = producto("DERECHO A EXAMEN AZUL " + e.marca, null, "OTRO", null, null);
+		matricula = producto("MATRÍCULA KB " + e.marca, null, "OTRO", null, null);
+		// Mismo concepto (con otras mayúsculas) que un producto que concede grado: el catálogo lo resuelve por concepto.
+		cinturonConGrado = producto("CINTURÓN CAFÉ " + e.marca, "CINTURON_CAFE_IT", "OTRO", null, rojo);
+		cinturonSinClasificar = producto("cinturón café " + e.marca, null, "OTRO", null, null);
 	}
 
 	@AfterEach
@@ -161,19 +167,44 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 				asignar(alumno, examenDeKickboxing, "KICKBOXING", false).get("concepto").asText());
 	}
 
-	/** El panel de la gestión necesita el tipo para pedir el deporte; el resto del producto, igual que antes. */
+	/**
+	 * El panel de la gestión necesita saber cuándo pedir el deporte: «requiereDeporte», la misma regla con la que la vía
+	 * genérica da 400. El resto del producto, igual que antes.
+	 */
 	@Test
-	void catalogoDeLaGestion_diceElTipoDeCadaProducto() throws Exception {
+	void catalogoDeLaGestion_diceQueProductosRequierenDeporte() throws Exception {
 		JsonNode todos = leer(get("/api/productos/todos"), 200);
 		JsonNode examen = buscar(todos, examenRojo);
-		assertEquals("EXAMEN", examen.get("tipo").asText());
+		assertTrue(examen.get("requiereDeporte").asBoolean(), examen.toString());
 		assertEquals(conceptoRojo, examen.get("concepto").asText());
 		assertEquals(20.0, examen.get("precio").asDouble(), 0.0);
 		assertTrue(examen.has("vendibleProfesor"), examen.toString());
-		assertFalse(examen.has("codigo") || examen.has("disciplina") || examen.has("grado"), examen.toString());
-		assertEquals("OTRO", buscar(todos, camiseta).get("tipo").asText());
+		assertFalse(examen.has("tipo") || examen.has("codigo") || examen.has("disciplina") || examen.has("grado"),
+				examen.toString());
+		for (long producto : new long[] { examenSinClasificar, matricula, cinturonConGrado, cinturonSinClasificar }) {
+			assertTrue(buscar(todos, producto).get("requiereDeporte").asBoolean(), buscar(todos, producto).toString());
+		}
+		assertFalse(buscar(todos, camiseta).get("requiereDeporte").asBoolean());
 		// La ficha de un producto no cambia.
-		assertFalse(leer(get("/api/productos/" + examenRojo), 200).has("tipo"));
+		JsonNode ficha = leer(get("/api/productos/" + examenRojo), 200);
+		assertFalse(ficha.has("requiereDeporte") || ficha.has("tipo"), ficha.toString());
+	}
+
+	/** Lo que el catálogo marca como «requiereDeporte», la vía genérica lo rechaza. */
+	@Test
+	void viaGenerica_rechazaLoQueElCatalogoMarca() throws Exception {
+		long alumno = alumnoConDosDeportes("KBREGLA");
+		for (long producto : new long[] { examenSinClasificar, cinturonSinClasificar }) {
+			JsonNode r = leer(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + producto)
+					.contentType(MediaType.APPLICATION_JSON).content("{\"cantidad\":1,\"pagado\":false}"), 400);
+			assertEquals("Seleccione un deporte del alumno para asignar este producto.", r.get("mensaje").asText());
+		}
+		assertEquals(400, mvc.perform(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + matricula)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"cantidad\":1,\"pagado\":false}")
+				.cookie(new Cookie("jwt", tGestor))).andReturn().getResponse().getStatus());
+		assertEquals(0L, cargosDe(alumno));
+		leer(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + camiseta)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"cantidad\":1,\"pagado\":false}"), 200);
 	}
 
 	// ------------------------------------------------------------------ ayudantes
@@ -183,8 +214,7 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 				INSERT INTO producto (concepto, precio, codigo, tipo, organizacion_id, vendible_profesor, disciplina_id,
 				  grado_id)
 				VALUES (?, 20.0, ?, ?, ?, FALSE, ?, ?)""", concepto, codigo, tipo, e.org, disciplina, grado);
-		return jdbc.queryForObject("SELECT id FROM producto WHERE organizacion_id = ? AND concepto = ?", Long.class,
-				e.org, concepto);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 	}
 
 	/** Alumno nuevo de la sede A inscrito en taekwondo y en kickboxing. */
