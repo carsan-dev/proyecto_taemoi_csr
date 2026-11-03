@@ -190,6 +190,68 @@ class ImagenServiceRutasHeredadasTest {
 		assertEquals(enBase.toAbsolutePath().normalize(), imagenService.resolverRutaArchivo(imagen(11L, enBase.toString())));
 	}
 
+	/**
+	 * Si el fichero existe, se devuelve su ruta real (sin enlaces): quien lo sirve o lo borra actúa sobre el fichero que
+	 * se comprobó, no sobre una ruta con un enlace que podría cambiar entre la comprobación y el uso.
+	 */
+	@Test
+	void ficheroQueExisteTrasUnEnlaceDentroDeLaBase_devuelveSuRutaReal() throws IOException {
+		Path destino = Files.createDirectories(base.resolve("org-1").resolve("reales"));
+		Path fichero = Files.write(destino.resolve("x.webp"), new byte[] { 1 });
+		crearEnlaceOSaltar(base.resolve("org-1").resolve("alumnos"), destino);
+
+		for (String ruta : List.of("org-1/alumnos/x.webp", base.resolve("org-1/alumnos/x.webp").toString())) {
+			Path resuelta = imagenService.resolverRutaArchivo(imagen(13L, ruta));
+			assertEquals(fichero.toRealPath(), resuelta, ruta);
+			assertEquals(fichero.toRealPath().toString(), resuelta.toString(), ruta);
+		}
+	}
+
+	@Test
+	void ficheroQueExisteEscritoConOtrasMayusculasEnWindows_devuelveSuRutaReal() throws IOException {
+		Assumptions.assumeTrue(File.separatorChar == '\\', "Solo en Windows: el disco no distingue mayúsculas");
+		Path fichero = Files.write(Files.createDirectories(base.resolve("alumnos")).resolve("vieja.webp"), new byte[] { 1 });
+		String otraForma = fichero.toString().replace("alumnos", "ALUMNOS").replace("vieja", "VIEJA");
+
+		Path resuelta = imagenService.resolverRutaArchivo(imagen(14L, otraForma));
+		assertEquals(fichero.toRealPath().toString(), resuelta.toString());
+	}
+
+	@Test
+	void ficheroQueNoExiste_devuelveLaRutaSinEnlaces() {
+		Path perdida = base.resolve("org-1").resolve("alumnos").resolve("perdida.webp");
+		assertEquals(perdida.toAbsolutePath().normalize(),
+				imagenService.resolverRutaArchivo(imagen(15L, "org-1/alumnos/perdida.webp")));
+	}
+
+	/**
+	 * Una carpeta heredada con menos de 2 segmentos ({@code /}, {@code C:\}, {@code /tmp}…) lo abarcaría casi todo: se
+	 * ignora con un aviso (una sola vez) y las demás siguen valiendo.
+	 */
+	@Test
+	void carpetaHeredadaDemasiadoAmplia_seIgnoraConUnAvisoYLasDemasSiguen() throws IOException {
+		Path raizDelDisco = tempDir.getRoot();
+		Path unSegmento = raizDelDisco.resolve(tempDir.getName(0));
+		Path enHeredada = Files.write(Files.createDirectories(heredada.resolve("alumnos")).resolve("v.webp"),
+				new byte[] { 1 });
+		for (Path amplia : List.of(raizDelDisco, unSegmento)) {
+			ReflectionTestUtils.setField(imagenService, "directoriosImagenesHeredados", amplia + "," + heredada);
+
+			List<ILoggingEvent> avisos = conAvisos(() -> {
+				assertNull(imagenService.resolverRutaArchivo(imagen(16L, secreto.toString())), amplia.toString());
+				imagenService.eliminarImagenDeSistema(imagen(16L, secreto.toString()));
+			});
+			assertTrue(Files.exists(secreto), amplia.toString());
+			assertEquals(1, avisos.stream().filter(a -> a.getFormattedMessage().contains("demasiado amplia")).count(),
+					amplia.toString());
+			assertEquals(enHeredada.toRealPath(), imagenService.resolverRutaArchivo(imagen(17L, enHeredada.toString())));
+
+			List<ILoggingEvent> otraVez = conAvisos(() -> imagenService.resolverRutaArchivo(imagen(18L, secreto.toString())));
+			assertTrue(otraVez.stream().noneMatch(a -> a.getFormattedMessage().contains("demasiado amplia")),
+					"El aviso sale una vez por valor configurado");
+		}
+	}
+
 	private static Imagen imagen(Long id, String ruta) {
 		Imagen imagen = new Imagen("foto.webp", "image/webp", null, ruta);
 		imagen.setId(id);

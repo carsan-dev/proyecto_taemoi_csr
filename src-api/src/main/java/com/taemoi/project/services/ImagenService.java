@@ -46,10 +46,11 @@ public interface ImagenService {
 	/**
 	 * Fichero de una imagen: las rutas relativas (nuevas, {@code org-<id>/…}) se resuelven bajo la raíz de
 	 * imágenes sin poder salir de ella; las absolutas (heredadas) solo valen si quedan dentro de la raíz o de una carpeta
-	 * de {@code app.imagenes.directorios-heredados}. Si el fichero existe, su ruta real (sin enlaces) también tiene que
-	 * quedar dentro.
+	 * de {@code app.imagenes.directorios-heredados} (las de menos de 2 segmentos, como {@code /}, se ignoran). Si el
+	 * fichero existe, su ruta real (sin enlaces) también tiene que quedar dentro y es la que se devuelve.
 	 *
-	 * @return la ruta, o {@code null} si la imagen no tiene ruta, no es válida o queda fuera.
+	 * @return la ruta real si el fichero existe, la ruta sin enlaces si no existe, o {@code null} si la imagen no tiene
+	 *         ruta, no es válida o queda fuera.
 	 */
 	Path resolverRutaArchivo(Imagen imagen);
 }

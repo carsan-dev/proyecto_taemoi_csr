@@ -1,7 +1,6 @@
 package com.taemoi.project.controladores;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -104,10 +103,8 @@ class RespuestaFotoAlumnoRedireccionTest {
 				"alumnos/no-existe.webp");
 		heredada.setId(3L);
 		ResponseEntity<Resource> r = respuesta(PROPIO, PROPIO).paraFamiliaOGestion(heredada, null);
-		URI destino = r.getHeaders().getLocation();
-		if (destino != null) {
-			assertFalse(destino.toString().contains("otro.example"), destino.toString());
-		}
+		assertEquals(302, r.getStatusCode().value());
+		assertEquals(URI.create("/imagenes/alumnos/vieja.webp"), r.getHeaders().getLocation());
 	}
 
 	private RespuestaFotoAlumno respuesta(String baseUrl, String origenes) {
