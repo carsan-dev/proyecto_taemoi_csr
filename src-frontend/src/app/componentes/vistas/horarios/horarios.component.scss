@@ -271,7 +271,7 @@ $full-color: #c62828;
 .timetable-header,
 .timetable-row {
   display: grid;
-  grid-template-columns: 110px repeat(5, 1fr);
+  grid-template-columns: 110px repeat(var(--dias, 5), 1fr);
 }
 
 .timetable-header {
@@ -1250,7 +1250,7 @@ $full-color: #c62828;
 @media (max-width: 1024px) {
   .timetable-header,
   .timetable-row {
-    grid-template-columns: 90px repeat(5, 1fr);
+    grid-template-columns: 90px repeat(var(--dias, 5), 1fr);
   }
 
   .time-column {

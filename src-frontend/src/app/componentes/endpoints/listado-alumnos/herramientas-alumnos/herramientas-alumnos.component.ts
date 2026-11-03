@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, Observable } from 'rxjs';
 import { catchError, finalize, map } from 'rxjs/operators';
@@ -14,6 +14,7 @@ import { showErrorToast, showSuccessToast } from '../../../../utils/toast.util';
 import { SelectorMesAnoComponent } from '../../../generales/selector-mes-ano/selector-mes-ano.component';
 import { getDeporteLabel } from '../../../../enums/deporte';
 import { generarPdf } from '../informes-alumnos';
+import { claveDiaSemana } from '../../../../utils/dias-semana.util';
 
 export type SeccionHerramientas = 'mensualidades' | 'asistencia' | 'listado-mensualidades';
 
@@ -34,7 +35,7 @@ export type SeccionHerramientas = 'mensualidades' | 'asistencia' | 'listado-mens
   templateUrl: './herramientas-alumnos.component.html',
   styleUrl: './herramientas-alumnos.component.scss',
 })
-export class HerramientasAlumnosComponent implements OnChanges {
+export class HerramientasAlumnosComponent implements OnChanges, OnInit {
   readonly informes = inject(InformePdfService);
   readonly catalogo = inject(CatalogoService);
   protected readonly endpoints = inject(EndpointsService);
@@ -70,6 +71,7 @@ export class HerramientasAlumnosComponent implements OnChanges {
   mensualidadesTab: 'general' | 'individual' = 'general';
   mesAnoAsistencia!: string;
   mesAnoMensualidad!: string;
+  /** Decisión 380: de lunes a viernes siempre; sábado y domingo solo si la escuela tiene turnos ese día. */
   grupos = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
   gruposSeleccionados: string[] = [];
   procesandoMensualidadesGenerales: boolean = false;
@@ -95,6 +97,22 @@ export class HerramientasAlumnosComponent implements OnChanges {
     const titulo = details.querySelector<HTMLElement>('summary');
     titulo?.focus({ preventScroll: true });
     details.scrollIntoView({ block: 'start' });
+  }
+
+  ngOnInit(): void {
+    // Los turnos de la escuela (datos nuevos, sin avisos de error) deciden si salen el sábado y el domingo; si falla, los cinco de siempre.
+    this.endpoints.obtenerTurnosDTO(true, true).subscribe({
+      next: (turnos) => this.ponerDiasConFinDeSemana(Array.isArray(turnos) ? turnos : []),
+      error: () => undefined,
+    });
+  }
+
+  private ponerDiasConFinDeSemana(turnos: ReadonlyArray<{ diaSemana?: unknown } | null>): void {
+    const claves = new Set(turnos.map((turno) => claveDiaSemana(turno?.diaSemana)));
+    const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    if (claves.has('sabado')) dias.push('sábado');
+    if (claves.has('domingo')) dias.push('domingo');
+    this.grupos = dias;
   }
 
   ngOnChanges(cambios: SimpleChanges): void {

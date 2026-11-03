@@ -114,7 +114,7 @@
       } @else {
         <!-- Desktop: Timetable Grid -->
         <div class="timetable-container desktop-view">
-          <div class="timetable">
+          <div class="timetable" [style.--dias]="diasSemana.length > 5 ? diasSemana.length : null">
             <!-- Header Row -->
             <div class="timetable-header">
               <div class="time-column header-cell">

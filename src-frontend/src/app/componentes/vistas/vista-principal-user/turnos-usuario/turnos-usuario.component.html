@@ -105,7 +105,7 @@
         }
 
         <div class="table-wrap desktop-view">
-          <div class="schedule-table">
+          <div class="schedule-table" [style.--dias]="diasSemana.length > 5 ? diasSemana.length : null">
             <div class="table-head">
               <div class="time-head">
                 <i class="bi bi-clock"></i>

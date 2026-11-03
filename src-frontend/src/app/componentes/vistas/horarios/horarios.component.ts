@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { CatalogoService } from '../../../features/catalogo/catalogo.service';
 import { disciplinaDeEtiquetaHorario } from '../../../features/catalogo/legado-taemoi';
+import { claveDiaSemana, diasConFinDeSemana } from '../../../utils/dias-semana.util';
 
 interface TimeSlot {
   horaInicio: string;
@@ -20,6 +21,11 @@ interface TurnoEnCelda {
   displayName: string;
 }
 
+const DIAS_LABORABLES = {
+  dias: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+  cortos: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
+};
+
 @Component({
   selector: 'app-horarios',
   standalone: true,
@@ -30,8 +36,9 @@ interface TurnoEnCelda {
 export class HorariosComponent implements OnInit, OnDestroy {
   usuarioLogueado: boolean = false;
   turnos: any[] = [];
-  diasSemana: string[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-  diasCortos: string[] = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
+  /** Decisión 380: lunes a viernes siempre; Sábado y Domingo solo si la escuela tiene turnos ese día. */
+  diasSemana: string[] = [...DIAS_LABORABLES.dias];
+  diasCortos: string[] = [...DIAS_LABORABLES.cortos];
   isLoading: boolean = true;
   selectedTurno: any = null;
   showModal: boolean = false;
@@ -109,6 +116,19 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   buildTimetable(): void {
+    // Los turnos ya son los de la escuela activa (los que no son de competición, que no se pintan).
+    const dias = diasConFinDeSemana(
+      DIAS_LABORABLES,
+      { dia: 'Sábado', corto: 'Sáb' },
+      { dia: 'Domingo', corto: 'Dom' },
+      this.turnos,
+    );
+    this.diasSemana = dias.dias;
+    this.diasCortos = dias.cortos;
+    if (this.selectedDayIndex >= this.diasSemana.length) {
+      this.selectedDayIndex = 0;
+    }
+
     // Extract unique time slots and sort them
     const timeSlotSet = new Map<string, TimeSlot>();
     const celdasPorFranjaYDia = new Map<string, TurnoEnCelda>();
@@ -128,7 +148,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
         return;
       }
 
-      const celdaKey = `${key}__${dia}`;
+      const celdaKey = `${key}__${claveDiaSemana(dia)}`;
       if (!celdasPorFranjaYDia.has(celdaKey)) {
         const sport = this.obtenerEtiquetaColor(turno);
         celdasPorFranjaYDia.set(celdaKey, {
@@ -153,7 +173,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
       const dayMap = new Map<string, TurnoEnCelda | null>();
 
       this.diasSemana.forEach(dia => {
-        const celdaKey = `${slotKey}__${dia}`;
+        const celdaKey = `${slotKey}__${claveDiaSemana(dia)}`;
         dayMap.set(dia, celdasPorFranjaYDia.get(celdaKey) ?? null);
       });
 
