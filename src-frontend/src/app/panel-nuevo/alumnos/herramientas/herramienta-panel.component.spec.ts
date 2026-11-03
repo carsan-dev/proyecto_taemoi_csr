@@ -66,6 +66,11 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
   function anotar(respuesta?: (r: TestRequest) => void): Peticion[] {
     const lista: Peticion[] = [];
     for (const r of http.match(() => true)) {
+      // Decisión 380: al abrirse, las herramientas piden los turnos para saber si hay sábado o domingo; no es de la herramienta.
+      if (r.request.method === 'GET' && r.request.url.endsWith('/turnos/dto')) {
+        r.flush([]);
+        continue;
+      }
       lista.push({ metodo: r.request.method, url: r.request.urlWithParams.replace(API, ''), cuerpo: r.request.body });
       if (respuesta) {
         respuesta(r);

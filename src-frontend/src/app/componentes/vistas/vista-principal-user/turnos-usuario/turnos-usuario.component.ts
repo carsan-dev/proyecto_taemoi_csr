@@ -8,6 +8,7 @@ import { EndpointsService } from '../../../../servicios/endpoints/endpoints.serv
 import { Turno } from '../../../../interfaces/turno';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
 import { SkeletonCardComponent } from '../../../generales/skeleton-card/skeleton-card.component';
+import { claveDiaSemana, diasConFinDeSemana } from '../../../../utils/dias-semana.util';
 
 interface TimeSlot {
   horaInicio: string;
@@ -36,6 +37,11 @@ interface HorariosAlumnoCache {
   turnos: Turno[];
 }
 
+const DIAS_LABORABLES = {
+  dias: ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'],
+  cortos: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'],
+};
+
 @Component({
   selector: 'app-turnos-usuario',
   standalone: true,
@@ -50,8 +56,11 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   cargando: boolean = true;
   allTurnos: Turno[] = [];
   deportesUnicos: DeporteInfo[] = [];
-  diasSemana: string[] = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes'];
-  diasCortos: string[] = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'];
+  /** Decisión 380: lunes a viernes siempre; Sabado y Domingo solo si la escuela tiene turnos ese día. */
+  diasSemana: string[] = [...DIAS_LABORABLES.dias];
+  diasCortos: string[] = [...DIAS_LABORABLES.cortos];
+  /** Los turnos de la escuela (no solo los del alumno): de ellos sale si hay columnas de fin de semana. */
+  private turnosEscuela: Turno[] = [];
   timeSlots: TimeSlot[] = [];
   timetableGrid: Map<string, Map<string, TurnoEnCelda[]>> = new Map();
   selectedDayIndex: number = 0;
@@ -71,7 +80,39 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.cargarTurnosEscuela();
     this.inicializarAlumnos();
+  }
+
+  /** Los turnos de la escuela activa (petición ya cacheada que usa también /horarios); si falla, valen los del alumno. */
+  private cargarTurnosEscuela(): void {
+    const subscription = this.endpointsService.obtenerTurnosDTO().subscribe({
+      next: (turnos) => {
+        this.turnosEscuela = Array.isArray(turnos) ? turnos : [];
+        if (this.allTurnos.length > 0 && this.actualizarDias()) {
+          this.buildTimetable();
+        }
+      },
+      error: () => undefined,
+    });
+    this.subscriptions.add(subscription);
+  }
+
+  /** Recalcula las columnas con los turnos de la escuela y los del alumno; devuelve si cambiaron. */
+  private actualizarDias(): boolean {
+    const dias = diasConFinDeSemana(
+      DIAS_LABORABLES,
+      { dia: 'Sabado', corto: 'Sab' },
+      { dia: 'Domingo', corto: 'Dom' },
+      [...this.turnosEscuela, ...this.allTurnos],
+    );
+    const cambio = dias.dias.join('|') !== this.diasSemana.join('|');
+    this.diasSemana = dias.dias;
+    this.diasCortos = dias.cortos;
+    if (this.selectedDayIndex >= this.diasSemana.length) {
+      this.selectedDayIndex = 0;
+    }
+    return cambio;
   }
 
   private inicializarAlumnos(): void {
@@ -326,6 +367,7 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
   }
 
   buildTimetable(): void {
+    this.actualizarDias();
     const timeSlotSet = new Map<string, TimeSlot>();
 
     this.allTurnos.forEach((turno) => {
@@ -578,6 +620,6 @@ export class TurnosUsuarioComponent implements OnInit, OnDestroy {
 
   private esDiaVisible(dia: string): boolean {
     const diaKey = this.normalizarDia(dia);
-    return this.diasSemana.some((item) => this.normalizarDia(item) === diaKey);
+    return ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].includes(diaKey);
   }
 }

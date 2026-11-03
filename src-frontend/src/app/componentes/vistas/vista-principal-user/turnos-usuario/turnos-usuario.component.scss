@@ -325,13 +325,13 @@ $competicion: #7b1fa2;
 }
 
 .schedule-table {
-  min-width: 860px;
+  min-width: max(860px, calc(112px + var(--dias, 5) * 146px));
 }
 
 .table-head,
 .table-row {
   display: grid;
-  grid-template-columns: 112px repeat(5, minmax(146px, 1fr));
+  grid-template-columns: 112px repeat(var(--dias, 5), minmax(146px, 1fr));
 }
 
 .table-head {
@@ -635,7 +635,7 @@ $competicion: #7b1fa2;
 
   .table-head,
   .table-row {
-    grid-template-columns: 92px repeat(5, minmax(126px, 1fr));
+    grid-template-columns: 92px repeat(var(--dias, 5), minmax(126px, 1fr));
   }
 
   .day-head {

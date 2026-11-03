@@ -88,4 +88,38 @@ describe('HorariosComponent', () => {
       expect(component.obtenerRangoEdades(turno)).toBe('10 - 14 años');
     });
   });
+
+  describe('días de la semana (decisión 380)', () => {
+    const turno = (diaSemana: string, id = 1) => ({ id, diaSemana, horaInicio: '18:00', horaFin: '19:00', tipoGrupo: 'Taekwondo' });
+    const pintar = (...dias: string[]) => {
+      component.turnos = dias.map((d, i) => turno(d, i + 1));
+      component.buildTimetable();
+    };
+
+    it('sin turnos de fin de semana, cinco días y la misma rejilla de siempre', () => {
+      pintar('Lunes', 'Viernes');
+      expect(component.diasSemana).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
+      expect(component.diasCortos.length).toBe(5);
+    });
+
+    it('con un turno en sábado, seis días con Sábado', () => {
+      pintar('Lunes', 'Sábado');
+      expect(component.diasSemana).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']);
+      expect(component.diasCortos[5]).toBe('Sáb');
+      const slot = component.timeSlots[0];
+      expect(component.getTurnoEnCelda(slot, 'Sábado')?.turno.id).toBe(2);
+    });
+
+    it('solo con domingo, seis días con Domingo detrás del viernes', () => {
+      pintar('Domingo');
+      expect(component.diasSemana).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Domingo']);
+      expect(component.getTurnosForDay('Domingo').length).toBe(1);
+    });
+
+    it('con sábado y domingo, siete días en orden', () => {
+      pintar('Domingo', 'Sábado');
+      expect(component.diasSemana.slice(5)).toEqual(['Sábado', 'Domingo']);
+      expect(component.diasSemana.length).toBe(7);
+    });
+  });
 });
