@@ -88,7 +88,9 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 			// eliminarAlumno no cambia.
 			Map.entry("solicitud.alumno_id", "SET NULL"),
 			Map.entry("tutor.alumno_id", "CASCADE"),
-			Map.entry("usuario.alumno_id", "NO ACTION"),
+			// E10-1 (V31_21): el vínculo antiguo queda a NULL al borrar la ficha. eliminarAlumno no cambia (sigue
+			// desvinculando la cuenta antes de borrar).
+			Map.entry("usuario.alumno_id", "SET NULL"),
 			Map.entry("usuario_alumno.alumno_id", "CASCADE"));
 
 	@Autowired MockMvc mvc;
@@ -225,6 +227,23 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ?",
 				heredado.getId(), org2));
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", tutora.getId()));
+	}
+
+	/**
+	 * E10-1 (V31_21): borrar en la base una ficha cuyo id está en usuario.alumno_id (sin pasar por eliminarAlumno, que
+	 * desvincula antes) ya no falla: la columna queda a NULL y la cuenta sigue.
+	 */
+	@Test
+	void borrarEnLaBaseUnaFichaConVinculoAntiguo_loDejaANullYConservaLaCuenta() {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("LEGADO", null));
+		Usuario cuenta = crearUsuario("legado-" + sufijo + "@example.test");
+		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, cuenta.getId());
+
+		jdbc.update("DELETE FROM alumno WHERE id = ?", alumno);
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM alumno WHERE id = ?", alumno));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", cuenta.getId()));
+		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, cuenta.getId()));
 	}
 
 	// ------------------------------------------------------------------ (c) alumno sin nada de lo anterior
