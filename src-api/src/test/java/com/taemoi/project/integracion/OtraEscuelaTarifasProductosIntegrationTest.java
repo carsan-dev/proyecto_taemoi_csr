@@ -146,12 +146,14 @@ class OtraEscuelaTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Map.of("Cuota mensual MAYO 2041 - TAEKWONDO", "MENSUALIDAD",
 				"Ficha de competición MAYO 2041", "TARIFA_COMPETIDOR"), categorias);
 
-		// Código propio: el tipo del catálogo decide (derecho a examen de un producto EXAMEN propio).
+		// Código propio: el tipo del catálogo decide (derecho a examen de un producto EXAMEN propio). Desde el
+		// 03/11/2026 un examen se asigna en un deporte del alumno.
 		Long paso = TenantContext.calcularCon(org, () -> producto("PASO_CINTURON", TipoProducto.EXAMEN,
 				"Paso de cinturón", 20.0, null).getId());
 		ProductoAlumnoDTO pagadoYa = new ProductoAlumnoDTO();
 		pagadoYa.setPagado(true);
-		TenantContext.ejecutarCon(org, () -> productoAlumnoService.asignarProductoAAlumno(alumno, paso, pagadoYa));
+		TenantContext.ejecutarCon(org,
+				() -> productoAlumnoService.asignarProductoAAlumnoDeporte(alumno, paso, "TAEKWONDO", pagadoYa));
 		assertTrue(jdbc.queryForObject("SELECT tiene_derecho_examen FROM alumno WHERE id = ?", Boolean.class, alumno));
 
 		// Renombrar un producto propio con cargos duplicaría los del periodo: 400. Sin cargos, o solo el

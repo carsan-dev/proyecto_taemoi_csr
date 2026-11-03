@@ -187,6 +187,75 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		return CatalogoLegadoTaemoi.tipoDeCatalogo(producto, legado()) == TipoProducto.EXAMEN;
 	}
 
+	/**
+	 * Si el producto es de examen o de recompensa (decisión del 03/11/2026: la gestión los asigna siempre eligiendo el
+	 * deporte del alumno). Lo es si su tipo es EXAMEN o RECOMPENSA, si tiene grado enlazado, si su concepto es de los
+	 * que dan derecho a examen ({@link #daDerechoAExamen}) o si el catálogo resuelve que su pago concede un grado
+	 * ({@link ProductosCatalogoService#buscarCodigoGradoConcedido}, que cubre los de Taemoi sin clasificar).
+	 */
+	private boolean esProductoDeExamenORecompensa(Producto producto) {
+		if (producto.getTipo() == TipoProducto.EXAMEN || producto.getTipo() == TipoProducto.RECOMPENSA
+				|| producto.getGrado() != null) {
+			return true;
+		}
+		String concepto = producto.getConcepto() != null ? producto.getConcepto() : "";
+		if (concepto.contains("DERECHO A EXAMEN") || concepto.contains("PASE DE GRADO POR RECOMPENSA")) {
+			return true;
+		}
+		return productosCatalogo.buscarCodigoGradoConcedido(producto.getId(), producto.getConcepto()).isPresent();
+	}
+
+	/**
+	 * Concepto del cargo de un producto asignado en un deporte del alumno: el del catálogo, con el deporte al final en
+	 * la matrícula si no lo nombra ya. En un examen o una recompensa: 400 si el producto es de otra disciplina y, en
+	 * kickboxing, el grado ROJO con su nombre del catálogo («MARRÓN»), como en los cargos automáticos
+	 * ({@link CatalogoLegadoTaemoi#conGradoRojoComo}; también el bordado). Taekwondo y los demás grados, sin cambios.
+	 */
+	private String conceptoDelCargoEnDeporte(Producto producto, AlumnoDeporte alumnoDeporte) {
+		String deporte = alumnoDeporte.getDeporte();
+		String concepto = producto.getConcepto();
+		if (esMatricula(concepto)) {
+			String deporteNombre = deporte.replace('_', ' ');
+			if (!normalizarConcepto(concepto).replace('_', ' ').matches(".*\\b" + deporteNombre + "\\b.*")) {
+				concepto += " - " + deporte;
+			}
+			return concepto;
+		}
+		if (!esProductoDeExamenORecompensa(producto)) {
+			return concepto;
+		}
+		exigirProductoDeLaDisciplina(producto, alumnoDeporte);
+		if (!CatalogoLegadoTaemoi.KICKBOXING.equals(deporte)) {
+			return concepto;
+		}
+		String codigoGrado = productosCatalogo.buscarCodigoGradoConcedido(producto.getId(), producto.getConcepto())
+				.orElse(null);
+		if (!CatalogoLegadoTaemoi.GRADO_ROJO.equals(codigoGrado)) {
+			return concepto;
+		}
+		String nombreGradoRojo = progresionGrados.buscarGrado(deporte, CatalogoLegadoTaemoi.GRADO_ROJO)
+				.map(com.taemoi.project.entities.Grado::getNombre)
+				.filter(nombre -> !nombre.isBlank())
+				.orElse(CatalogoLegadoTaemoi.NOMBRE_GRADO_ROJO_KICKBOXING);
+		return CatalogoLegadoTaemoi.conGradoRojoComo(concepto, nombreGradoRojo);
+	}
+
+	/**
+	 * Un examen o una recompensa de una disciplina concreta solo se asigna en esa disciplina (400 si no). Sin disciplina
+	 * es compartido entre disciplinas (los de Taemoi) y vale en cualquiera. Se comparan los ids (sin cargar la
+	 * disciplina perezosa del producto).
+	 */
+	private void exigirProductoDeLaDisciplina(Producto producto, AlumnoDeporte alumnoDeporte) {
+		if (producto.getDisciplina() == null || alumnoDeporte.getDisciplina() == null) {
+			return;
+		}
+		if (!Objects.equals(producto.getDisciplina().getId(), alumnoDeporte.getDisciplina().getId())) {
+			// 400 con {"mensaje"} (lo devuelve así el controlador de la asignación por deporte).
+			throw new IllegalArgumentException("Este producto es de otra disciplina: no se puede asignar en "
+					+ alumnoDeporte.getDeporte() + ".");
+		}
+	}
+
 	@Override
 	public ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO) {
 		Alumno alumno = alumnoRepository.findById(alumnoId)
@@ -313,11 +382,36 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 	 */
 	private ProductoAlumno crearCargoDeProducto(Alumno alumno, Producto producto, ProductoAlumnoDTO detallesDTO,
 			OrigenCobro origen, Long vendidoPor) {
+		return crearCargoDeProducto(alumno, producto, detallesDTO, origen, vendidoPor, null);
+	}
+
+	static final String EXAMEN_O_RECOMPENSA_SIN_DEPORTE = "Seleccione un deporte del alumno para asignar este producto.";
+
+	/**
+	 * {@link #crearCargoDeProducto(Alumno, Producto, ProductoAlumnoDTO, OrigenCobro, Long)} con la inscripción del
+	 * alumno en el deporte elegido ({@code alumnoDeporte}), la vía de «asignar por deporte». Sin deporte, la matrícula y
+	 * los exámenes y recompensas ({@link #esProductoDeExamenORecompensa}) → 400 (decisión del 03/11/2026: el cargo de
+	 * examen o recompensa va siempre ligado a un deporte). Con deporte, el concepto lo da
+	 * {@link #conceptoDelCargoEnDeporte}; el resto (sede activa, precio, cobro si nace pagado, derecho a examen) es el
+	 * mismo para las dos vías.
+	 */
+	private ProductoAlumno crearCargoDeProducto(Alumno alumno, Producto producto, ProductoAlumnoDTO detallesDTO,
+			OrigenCobro origen, Long vendidoPor, AlumnoDeporte alumnoDeporte) {
 		exigirSedeActivaParaCargo(alumno);
 
-		if (esMatricula(producto.getConcepto())) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-					"Seleccione un deporte del alumno para asignar la matrícula.");
+		String concepto;
+		if (alumnoDeporte == null) {
+			if (esMatricula(producto.getConcepto())) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+						"Seleccione un deporte del alumno para asignar la matrícula.");
+			}
+			if (esProductoDeExamenORecompensa(producto)) {
+				// IllegalArgumentException: 400 con {"mensaje"} (GlobalExceptionHandler), que el panel puede mostrar.
+				throw new IllegalArgumentException(EXAMEN_O_RECOMPENSA_SIN_DEPORTE);
+			}
+			concepto = producto.getConcepto();
+		} else {
+			concepto = conceptoDelCargoEnDeporte(producto, alumnoDeporte);
 		}
 		// Decisión 297 (ronda 2): el precio del catálogo que se copia al cargo, con 2 decimales como mucho (400 si no).
 		ImporteCargo.exigirPrecioValido(producto.getPrecio());
@@ -325,7 +419,8 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 		ProductoAlumno productoAlumno = new ProductoAlumno();
 		productoAlumno.setAlumno(alumno);
 		productoAlumno.setProducto(producto);
-		productoAlumno.setConcepto(producto.getConcepto());
+		productoAlumno.setAlumnoDeporte(alumnoDeporte);
+		productoAlumno.setConcepto(concepto);
 		productoAlumno.setPrecio(producto.getPrecio());
 		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
 		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
@@ -2059,32 +2154,10 @@ public class ProductoAlumnoServiceImpl implements ProductoAlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 					"El alumno no practica el deporte " + deporte));
 
-		ProductoAlumno productoAlumno = new ProductoAlumno();
-		productoAlumno.setAlumno(alumno);
-		productoAlumno.setProducto(producto);
-		productoAlumno.setAlumnoDeporte(alumnoDeporte);
-		String concepto = producto.getConcepto();
-		String deporteNombre = deporteEnum.replace('_', ' ');
-		if (esMatricula(concepto)
-				&& !normalizarConcepto(concepto).replace('_', ' ').matches(
-						".*\\b" + deporteNombre + "\\b.*")) {
-			concepto += " - " + deporteEnum;
-		}
-		productoAlumno.setConcepto(concepto);
-		ImporteCargo.exigirPrecioValido(producto.getPrecio());
-		productoAlumno.setPrecio(producto.getPrecio());
-		productoAlumno.setCantidad(detallesDTO.getCantidad() != null ? detallesDTO.getCantidad() : 1);
-		productoAlumno.setPagado(detallesDTO.getPagado() != null ? detallesDTO.getPagado() : false);
-		productoAlumno.setFechaAsignacion(new Date());
-		productoAlumno.setNotas(detallesDTO.getNotas());
-
-		if (productoAlumno.getPagado()) {
-			productoAlumno.setFechaPago(new Date());
-		}
-
-		ProductoAlumno savedProductoAlumno = guardarCargoNuevo(productoAlumno, detallesDTO.getMetodoPago());
-
-		return convertirADTO(savedProductoAlumno);
+		// El mismo creador que la asignación genérica, con la inscripción en el deporte (concepto, cobro de tesorería
+		// si nace pagado y derecho a examen si lo da).
+		return convertirADTO(crearCargoDeProducto(alumno, producto, detallesDTO, OrigenCobro.TESORERIA, null,
+				alumnoDeporte));
 	}
 
 	@Override

@@ -183,6 +183,152 @@ class ProductoAlumnoServiceImplTest {
 		assertNull(captor.getValue().getAlumnoDeporte());
 	}
 
+	// ----- Exámenes y recompensas: siempre con deporte; en kickboxing el grado ROJO es «MARRÓN» (03/11/2026)
+
+	/** Producto 20 del alumno 10 (sin clasificar: el grado que concede sale de su concepto) e inscripción en el deporte. */
+	private Producto prepararAsignacionEnDeporte(String concepto, String deporte) {
+		Alumno alumno = new Alumno();
+		alumno.setId(10L);
+		Producto producto = new Producto();
+		producto.setId(20L);
+		producto.setConcepto(concepto);
+		producto.setPrecio(25.0);
+		when(alumnoRepository.findById(10L)).thenReturn(Optional.of(alumno));
+		when(productoRepository.findById(20L)).thenReturn(Optional.of(producto));
+		AlumnoDeporte ad = new AlumnoDeporte();
+		ad.setAlumno(alumno);
+		ad.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(deporte));
+		org.mockito.Mockito.lenient().when(alumnoDeporteRepository.findByAlumnoIdAndDeporte(10L, deporte))
+				.thenReturn(Optional.of(ad));
+		org.mockito.Mockito.lenient().when(productoAlumnoRepository.save(any()))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+		return producto;
+	}
+
+	private ProductoAlumno cargoGuardado() {
+		ArgumentCaptor<ProductoAlumno> captor = ArgumentCaptor.forClass(ProductoAlumno.class);
+		verify(productoAlumnoRepository).save(captor.capture());
+		return captor.getValue();
+	}
+
+	@Test
+	void examenRojo_enKickboxing_diceMarronYQuedaAsociadoAlDeporte() {
+		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "KICKBOXING");
+		assertEquals("DERECHO A EXAMEN MARRÓN", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
+		ProductoAlumno cargo = cargoGuardado();
+		assertEquals("DERECHO A EXAMEN MARRÓN", cargo.getConcepto());
+		assertEquals("KICKBOXING", cargo.getAlumnoDeporte().getDeporte());
+	}
+
+	@Test
+	void examenRojoBordado_enKickboxing_diceMarronBordado() {
+		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO BORDADO", "KICKBOXING");
+		assertEquals("DERECHO A EXAMEN MARRÓN BORDADO", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
+	}
+
+	@Test
+	void recompensaRojo_enKickboxing_diceMarron() {
+		prepararAsignacionEnDeporte("DERECHO DE CAMBIO A ROJO POR RECOMPENSA", "KICKBOXING");
+		assertEquals("DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
+	}
+
+	@Test
+	void examenRojo_enTaekwondo_siguenSiendoRojo() {
+		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "TAEKWONDO");
+		assertEquals("DERECHO A EXAMEN ROJO", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "TAEKWONDO", new ProductoAlumnoDTO()).getConcepto());
+		assertEquals("TAEKWONDO", cargoGuardado().getAlumnoDeporte().getDeporte());
+	}
+
+	/** Solo el grado ROJO: AZUL/ROJO y ROJO/NEGRO conceden otro grado y no se tocan. */
+	@Test
+	void examenDeOtroGradoConRojoEnElNombre_enKickboxing_sinCambios() {
+		for (String concepto : List.of("DERECHO A EXAMEN AZUL/ROJO", "DERECHO A EXAMEN ROJO/NEGRO 1º PUM")) {
+			org.mockito.Mockito.reset(productoAlumnoRepository);
+			prepararAsignacionEnDeporte(concepto, "KICKBOXING");
+			assertEquals(concepto, productoAlumnoService
+					.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
+		}
+	}
+
+	@Test
+	void examenPagado_porDeporte_daDerechoAExamenYCobroDeTesoreria() {
+		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "KICKBOXING");
+		ProductoAlumnoDTO detalles = new ProductoAlumnoDTO();
+		detalles.setPagado(true);
+		productoAlumnoService.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", detalles);
+		ProductoAlumno cargo = cargoGuardado();
+		assertEquals(Boolean.TRUE, cargo.getAlumno().getTieneDerechoExamen());
+		assertNotNull(cargo.getFechaPago());
+		verify(cobros).registrar(any(), any(), any(),
+				org.mockito.ArgumentMatchers.eq(com.taemoi.project.entities.OrigenCobro.TESORERIA));
+	}
+
+	@Test
+	void examenORecompensa_porLaViaGenerica_400SinGuardar() {
+		for (String concepto : List.of("DERECHO A EXAMEN ROJO", "DERECHO DE CAMBIO A ROJO POR RECOMPENSA",
+				"DERECHO A EXAMEN VERDE MARZO 2026")) {
+			prepararAsignacion(concepto);
+			IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+					() -> productoAlumnoService.asignarProductoAAlumno(10L, 20L, new ProductoAlumnoDTO()));
+			assertEquals("Seleccione un deporte del alumno para asignar este producto.", ex.getMessage());
+		}
+		verify(productoAlumnoRepository, never()).save(any());
+	}
+
+	/** Clasificados por tipo o por grado enlazado, aunque el nombre no diga examen ni recompensa. */
+	@Test
+	void examenORecompensaClasificados_porLaViaGenerica_400SinGuardar() {
+		Producto porTipo = prepararAsignacionEnDeporte("PRUEBA DE NIVEL", "TAEKWONDO");
+		porTipo.setCodigo("PRUEBA_NIVEL_PROPIA");
+		porTipo.setTipo(com.taemoi.project.entities.TipoProducto.RECOMPENSA);
+		assertThrows(IllegalArgumentException.class,
+				() -> productoAlumnoService.asignarProductoAAlumno(10L, 20L, new ProductoAlumnoDTO()));
+
+		Producto porGrado = prepararAsignacionEnDeporte("PASO DE CINTURÓN", "TAEKWONDO");
+		com.taemoi.project.entities.Grado verde = new com.taemoi.project.entities.Grado();
+		verde.setCodigo("VERDE");
+		porGrado.setGrado(verde);
+		assertThrows(IllegalArgumentException.class,
+				() -> productoAlumnoService.asignarProductoAAlumno(10L, 20L, new ProductoAlumnoDTO()));
+		verify(productoAlumnoRepository, never()).save(any());
+	}
+
+	@Test
+	void examenDeOtraDisciplina_porDeporte_400SinGuardar() {
+		Producto producto = prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "TAEKWONDO");
+		producto.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi("KICKBOXING"));
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> productoAlumnoService.asignarProductoAAlumnoDeporte(10L, 20L, "TAEKWONDO",
+						new ProductoAlumnoDTO()));
+		assertEquals("Este producto es de otra disciplina: no se puede asignar en TAEKWONDO.", ex.getMessage());
+		verify(productoAlumnoRepository, never()).save(any());
+	}
+
+	@Test
+	void examenDeSuDisciplina_porDeporte_seAsigna() {
+		Producto producto = prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "KICKBOXING");
+		producto.setDisciplina(com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi("KICKBOXING"));
+		assertEquals("DERECHO A EXAMEN MARRÓN", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
+	}
+
+	/** Un producto sin efectos por la vía del deporte: concepto del catálogo tal cual, sin derecho a examen. */
+	@Test
+	void productoSinEfectos_porDeporte_igualQueAntes() {
+		prepararAsignacionEnDeporte("DOBOK ROJO", "KICKBOXING");
+		ProductoAlumnoDTO detalles = new ProductoAlumnoDTO();
+		detalles.setPagado(true);
+		assertEquals("DOBOK ROJO", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", detalles).getConcepto());
+		ProductoAlumno cargo = cargoGuardado();
+		assertEquals("KICKBOXING", cargo.getAlumnoDeporte().getDeporte());
+		assertEquals(Boolean.FALSE, cargo.getAlumno().getTieneDerechoExamen());
+	}
+
 	/** D6-17 y D6-23 (entrega 6-3): la masiva salta a los alumnos de sedes inactivas y dice cuántos. */
 	@Test
 	void mensualidadesGenerales_saltaAlumnosDeSedesInactivasYLosCuenta() {

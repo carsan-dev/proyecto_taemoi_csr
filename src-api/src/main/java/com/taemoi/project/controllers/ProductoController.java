@@ -24,6 +24,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.taemoi.project.dtos.request.VendibleProfesorRequests;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
@@ -35,6 +37,9 @@ public class ProductoController {
 
 	@Autowired
 	private ProductoService productoService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@GetMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
@@ -76,9 +81,16 @@ public class ProductoController {
 
 	@GetMapping("/todos")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<List<Producto>> obtenerTodosLosProductos() {
+	public ResponseEntity<List<ObjectNode>> obtenerTodosLosProductos() {
 		List<Producto> productos = productoService.obtenerTodosLosProductos();
-		return ResponseEntity.ok(productos);
+		// Decisión del 03/11/2026: el panel de la gestión pide el deporte para asignar exámenes y recompensas, así que
+		// este listado (y solo este) añade el tipo del producto ({@code tipo}: EXAMEN, RECOMPENSA, OTRO…). El resto del
+		// producto, el JSON de siempre; la entidad sigue sin exponerlo ni aceptarlo en el cuerpo de las peticiones.
+		return ResponseEntity.ok(productos.stream().map(producto -> {
+			ObjectNode nodo = objectMapper.valueToTree(producto);
+			nodo.put("tipo", producto.getTipo() != null ? producto.getTipo().name() : null);
+			return nodo;
+		}).toList());
 	}
 
 	@GetMapping("/{id}")
