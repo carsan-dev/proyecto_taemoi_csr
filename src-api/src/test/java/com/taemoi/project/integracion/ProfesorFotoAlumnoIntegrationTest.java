@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -109,6 +110,7 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired RespuestaFotoAlumno fotos;
 
 	@Value("${app.base.url}") String baseUrl;
+	@Value("${app.frontend.base-url}") String frontendBaseUrl;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -686,11 +688,16 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
-	/** Sin fichero: la URL guardada solo redirige si es http(s) o /imagenes/…; file:, javascript: o //host, no. */
+	/**
+	 * Sin fichero: la URL guardada solo redirige si es de un origen propio o /imagenes/…; file:, javascript:, //host, otro
+	 * host (http o https) o un usuario delante del host propio, no.
+	 */
 	@Test
 	void sinFichero_unaUrlQueNoEsHttpNiDeImagenes_noRedirige() throws Exception {
+		String hostPropio = URI.create(baseUrl).getAuthority();
 		for (String url : List.of("file:///etc/passwd", "javascript:alert(1)", "//otro.example/x.png",
-				"/imagenes/../api/usuarios")) {
+				"/imagenes/../api/usuarios", "https://otro.example/x.png", "http://otro.example/x.png",
+				"http://" + hostPropio + "@otro.example/x.png")) {
 			long alumno = enGrupo(e, e.gA, "FOTOURL" + UUID.randomUUID().toString().substring(0, 6));
 			String ruta = "org-" + e.org + "/alumnos/no-existe-" + UUID.randomUUID() + ".png";
 			fotoConFila(e, alumno, "no-existe.png", ruta, url);
@@ -704,6 +711,40 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 				assertNull(r.getHeader("Location"), url);
 			}
 		}
+	}
+
+	/**
+	 * Sin fichero y sin {@code app.imagenes.redireccion.origenes}: el valor por defecto anidado
+	 * ({@code app.base.url} y {@code app.frontend.base-url}) deja redirigir una URL ABSOLUTA de cualquiera de los dos a
+	 * esa misma URL. La misma URL en otro host se trata como sin foto.
+	 */
+	@Test
+	void sinFichero_urlAbsolutaDeUnOrigenPropioPorDefecto_redirigeYEnOtroHostNo() throws Exception {
+		for (String origen : List.of(baseUrl, frontendBaseUrl)) {
+			String url = origen + "/imagenes/org-" + e.org + "/alumnos/perdida-" + UUID.randomUUID() + ".png";
+			long alumno = conUrlSinFichero(url);
+			for (String ancho : new String[] { null, "300" }) {
+				MockHttpServletRequestBuilder peticion = get(fotoAntigua(alumno));
+				if (ancho != null) {
+					peticion.param("w", ancho);
+				}
+				MockHttpServletResponse r = respuesta(peticion, tGestor);
+				assertEquals(302, r.getStatus(), url);
+				assertEquals(url, r.getHeader("Location"), url);
+			}
+		}
+
+		String ajena = "https://otro.example/imagenes/org-" + e.org + "/alumnos/perdida.png";
+		long alumno = conUrlSinFichero(ajena);
+		MockHttpServletResponse r = respuesta(get(fotoAntigua(alumno)), tGestor);
+		assertEquals(404, r.getStatus());
+		assertNull(r.getHeader("Location"));
+	}
+
+	private long conUrlSinFichero(String url) {
+		long alumno = enGrupo(e, e.gA, "FOTOORIGEN" + UUID.randomUUID().toString().substring(0, 6));
+		fotoConFila(e, alumno, "no-existe.png", "org-" + e.org + "/alumnos/no-existe-" + UUID.randomUUID() + ".png", url);
+		return alumno;
 	}
 
 	/**

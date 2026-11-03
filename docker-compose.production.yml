@@ -48,6 +48,12 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
+      # Las dos siguientes se cambian en el .env del servidor (compose las sustituye aquí; el backend no lee ese .env)
+      # y SUSTITUYEN la lista por defecto: al añadir un valor, repite los de por defecto. Sin ellas, el valor de abajo.
+      # Carpetas de rutas absolutas heredadas en imagen.ruta (las de Linux de app.imagenes.directorios-heredados).
+      APP_IMAGENES_DIRECTORIOS_HEREDADOS: ${APP_IMAGENES_DIRECTORIOS_HEREDADOS:-/var/www/app/imagenes/,/opt/taemoi/static_resources/imagenes/}
+      # Orígenes propios a los que redirige la foto sin fichero: app.base.url y app.frontend.base-url del perfil production.
+      APP_IMAGENES_REDIRECCION_ORIGENES: ${APP_IMAGENES_REDIRECCION_ORIGENES:-${APP_BASE_URL:-https://moiskimdo.es},https://moiskimdo.es}
       APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
       - ${APP_IMAGENES_HOST_PATH:-/opt/taemoi/static_resources/imagenes}:/var/www/app/imagenes

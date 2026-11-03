@@ -8,9 +8,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.imageio.IIOException;
@@ -60,6 +64,23 @@ public class ImagenServiceImpl implements ImagenService {
 
 	@Value("${app.imagenes.directorio.windows}")
 	private String directorioImagenesWindows;
+
+	/**
+	 * Carpetas, separadas por comas, de las que versiones anteriores guardaban la ruta ABSOLUTA de una imagen. Una fila
+	 * con ruta absoluta solo se lee o se borra si queda dentro de la carpeta de imágenes o de una de estas. Sin valor,
+	 * solo vale la carpeta de imágenes.
+	 */
+	@Value("${app.imagenes.directorios-heredados:}")
+	private String directoriosImagenesHeredados;
+
+	/** Menos segmentos que esto ({@code /}, {@code C:\}, {@code /tmp}) abarcaría casi todo el disco: no vale de raíz. */
+	private static final int SEGMENTOS_MINIMOS_RAIZ_HEREDADA = 2;
+
+	/** Carpetas heredadas ya leídas del valor configurado (se vuelven a leer si el valor cambia). */
+	private volatile RaicesHeredadas raicesHeredadasLeidas;
+
+	private record RaicesHeredadas(String valor, List<Path> raices) {
+	}
 
 	@Override
 	public Imagen guardarImagen(MultipartFile archivo) throws IOException {
@@ -203,7 +224,10 @@ public class ImagenServiceImpl implements ImagenService {
 
 		Path rutaArchivo = resolverRutaArchivo(imagen);
 		if (rutaArchivo == null) {
-			throw new IllegalArgumentException("La ruta de la imagen no es valida.");
+			// Ruta fuera de las carpetas de imágenes o no válida: no es un fichero nuestro y no se toca. Quien borra (el
+			// alumno, su foto, el evento) sigue adelante; resolverRutaArchivo ya ha avisado con el id.
+			logger.warn("No se borra ningún fichero de la imagen {}: su ruta no es válida", imagen.getId());
+			return;
 		}
 		try {
 			if (Files.exists(rutaArchivo)) {
@@ -221,15 +245,131 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 		String ruta = imagen.getRuta().trim();
 		try {
+			Path base = obtenerRutaImagenesBase();
+			Path resuelta;
+			List<Path> raices;
 			if (RutasArchivos.esRutaAbsoluta(ruta)) {
-				// Fila heredada: ruta absoluta guardada por versiones anteriores.
-				return Path.of(ruta).toAbsolutePath().normalize();
+				// Fila heredada: ruta absoluta guardada por versiones anteriores. Solo dentro de una carpeta permitida.
+				raices = raicesPermitidas(base);
+				resuelta = Path.of(ruta).toAbsolutePath().normalize();
+				if (raices.stream().noneMatch(raiz -> dentroDe(resuelta, raiz))) {
+					logger.warn("Ruta absoluta de imagen fuera de las carpetas de imágenes; se ignora (imagen {})",
+							imagen.getId());
+					return null;
+				}
+			} else {
+				raices = List.of(base);
+				resuelta = RutasArchivos.resolverDentroDe(base, ruta);
 			}
-			return RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), ruta);
+			Path segura = rutaSeguraDentroDeAlguna(resuelta, raices);
+			if (segura == null) {
+				logger.warn("Fichero de imagen que sale de las carpetas de imágenes por un enlace; se ignora (imagen {})",
+						imagen.getId());
+			}
+			return segura;
 		} catch (RuntimeException e) {
-			logger.warn("Ruta de imagen no valida (id {}): {}", imagen.getId(), e.getMessage());
+			// Sin el mensaje: el de una ruta mal formada (InvalidPathException) lleva la ruta.
+			logger.warn("Ruta de imagen no valida (imagen {}): {}", imagen.getId(), e.getClass().getSimpleName());
 			return null;
 		}
+	}
+
+	/** La carpeta de imágenes y las heredadas configuradas, absolutas y normalizadas, sin repetir. */
+	private List<Path> raicesPermitidas(Path base) {
+		List<Path> raices = new ArrayList<>();
+		raices.add(base);
+		for (Path raiz : raicesHeredadas()) {
+			if (!raices.contains(raiz)) {
+				raices.add(raiz);
+			}
+		}
+		return raices;
+	}
+
+	/** Las heredadas del valor configurado; se leen (y avisan de las que se ignoran) una vez por valor. */
+	private List<Path> raicesHeredadas() {
+		String valor = directoriosImagenesHeredados;
+		RaicesHeredadas leidas = raicesHeredadasLeidas;
+		if (leidas == null || !Objects.equals(leidas.valor(), valor)) {
+			leidas = new RaicesHeredadas(valor, leerRaicesHeredadas(valor));
+			raicesHeredadasLeidas = leidas;
+		}
+		return leidas.raices();
+	}
+
+	private static List<Path> leerRaicesHeredadas(String lista) {
+		List<Path> raices = new ArrayList<>();
+		if (lista == null || lista.isBlank()) {
+			return List.of();
+		}
+		for (String valor : lista.split(",")) {
+			String directorio = expandirPerfilUsuario(valor.trim());
+			if (directorio.isEmpty()) {
+				continue;
+			}
+			try {
+				Path raiz = Path.of(directorio);
+				// Una relativa dependería del directorio de trabajo: no se acepta como raíz.
+				if (raiz.getRoot() == null) {
+					continue;
+				}
+				Path normalizada = raiz.toAbsolutePath().normalize();
+				if (normalizada.getNameCount() < SEGMENTOS_MINIMOS_RAIZ_HEREDADA) {
+					// «/» o «C:\» harían válida cualquier ruta absoluta del disco.
+					logger.warn("Carpeta heredada de imágenes demasiado amplia ({}): se ignora; ponga la carpeta completa",
+							normalizada);
+					continue;
+				}
+				if (!raices.contains(normalizada)) {
+					raices.add(normalizada);
+				}
+			} catch (RuntimeException e) {
+				// Valor que no es una ruta en este sistema: no aporta raíz.
+			}
+		}
+		return List.copyOf(raices);
+	}
+
+	/** {@code %USERPROFILE%} como en la carpeta de imágenes de Windows; si no hay perfil, el valor no se usa. */
+	private static String expandirPerfilUsuario(String directorio) {
+		if (!directorio.contains("%USERPROFILE%")) {
+			return directorio;
+		}
+		String perfil = System.getenv("USERPROFILE");
+		return perfil == null || perfil.isBlank() ? "" : directorio.replace("%USERPROFILE%", perfil);
+	}
+
+	/** Por segmentos (no por texto: {@code imagenes-otra} no está en {@code imagenes}) y sin ser la propia raíz. */
+	private static boolean dentroDe(Path ruta, Path raiz) {
+		return ruta.startsWith(raiz) && !ruta.equals(raiz);
+	}
+
+	/**
+	 * La ruta que se usa para leer o borrar. Si el fichero existe, su ruta real (sin enlaces), y solo si sigue dentro de
+	 * alguna raíz, también real: quien la usa actúa sobre el fichero comprobado y no sobre una ruta con enlaces que
+	 * podrían cambiar entre la comprobación y el uso. Si no existe no hay nada que leer ni borrar y vale la ruta sin
+	 * enlaces. {@code null} si queda fuera; cualquier fallo cuenta como fuera.
+	 */
+	private static Path rutaSeguraDentroDeAlguna(Path ruta, List<Path> raices) {
+		if (!Files.exists(ruta, LinkOption.NOFOLLOW_LINKS)) {
+			return ruta;
+		}
+		Path real;
+		try {
+			real = ruta.toRealPath();
+		} catch (IOException | RuntimeException e) {
+			return null;
+		}
+		for (Path raiz : raices) {
+			try {
+				if (Files.isDirectory(raiz) && dentroDe(real, raiz.toRealPath())) {
+					return real;
+				}
+			} catch (IOException | RuntimeException e) {
+				// Raíz que no se puede resolver: no aporta.
+			}
+		}
+		return null;
 	}
 
 	/** {@code org-<id>/<categoria>} de la escuela activa; falla cerrado si no hay ninguna. */

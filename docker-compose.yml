@@ -53,6 +53,10 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
       APP_IMAGENES_PATH_DOCKER: ${APP_IMAGENES_PATH_DOCKER}
+      # Sustituyen la lista por defecto (al añadir un valor, repite los de por defecto); sin ellas, el valor de abajo.
+      APP_IMAGENES_DIRECTORIOS_HEREDADOS: ${APP_IMAGENES_DIRECTORIOS_HEREDADOS:-/var/www/app/imagenes/,/opt/taemoi/static_resources/imagenes/}
+      # app.base.url y app.frontend.base-url del perfil docker.
+      APP_IMAGENES_REDIRECCION_ORIGENES: ${APP_IMAGENES_REDIRECCION_ORIGENES:-${APP_BASE_URL:-http://localhost},${APP_FRONTEND_BASE_URL:-https://moiskimdo.es}}
       APP_DOCUMENTOS_PATH_DOCKER: ${APP_DOCUMENTOS_PATH_DOCKER}
     volumes:
       - .env:/app/.env:ro

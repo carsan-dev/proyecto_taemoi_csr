@@ -34,13 +34,23 @@ public interface ImagenService {
 	 */
 	Imagen guardarLogoEscuela(Long organizacionId, byte[] png) throws IOException;
 
+	/**
+	 * Borra el fichero de la imagen. Si su ruta no es válida o queda fuera de las carpetas de imágenes
+	 * ({@link #resolverRutaArchivo} da {@code null}), no borra nada, avisa en el log con el id y vuelve sin error: quien
+	 * borra el alumno, su foto o el evento sigue adelante.
+	 *
+	 * @throws IllegalArgumentException si la imagen o su ruta son {@code null}
+	 */
 	void eliminarImagenDeSistema(Imagen imagen);
 
 	/**
 	 * Fichero de una imagen: las rutas relativas (nuevas, {@code org-<id>/…}) se resuelven bajo la raíz de
-	 * imágenes sin poder salir de ella; las absolutas (heredadas) se usan tal cual.
+	 * imágenes sin poder salir de ella; las absolutas (heredadas) solo valen si quedan dentro de la raíz o de una carpeta
+	 * de {@code app.imagenes.directorios-heredados} (las de menos de 2 segmentos, como {@code /}, se ignoran). Si el
+	 * fichero existe, su ruta real (sin enlaces) también tiene que quedar dentro y es la que se devuelve.
 	 *
-	 * @return la ruta, o {@code null} si la imagen no tiene ruta o no es válida.
+	 * @return la ruta real si el fichero existe, la ruta sin enlaces si no existe, o {@code null} si la imagen no tiene
+	 *         ruta, no es válida o queda fuera.
 	 */
 	Path resolverRutaArchivo(Imagen imagen);
 }

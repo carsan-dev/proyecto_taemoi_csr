@@ -56,7 +56,10 @@ import com.taemoi.project.services.ImagenService;
  *
  * <p>Decisión 422: en las dos rutas solo se lee un fichero cuya ruta real (sin enlaces) queda dentro de las carpetas
  * de imágenes, y se lee por esa ruta real. Si la fila apunta fuera (o su nombre no es un nombre de fichero simple), la
- * respuesta es 404 sin redirección. La redirección a la URL guardada solo va a {@code http(s)} o a {@code /imagenes/…}.
+ * respuesta es 404 sin redirección. La redirección a la URL guardada solo va a {@code /imagenes/…} o a un origen propio
+ * ({@code app.imagenes.redireccion.origenes}; por defecto {@code app.base.url} y {@code app.frontend.base-url}): mismo
+ * esquema, el mismo host exacto y el mismo puerto, sin usuario en la URL. A otro host no: quien abre la foto acabaría
+ * en un sitio ajeno, que además sabría quién la mira.
  */
 @Component
 public class RespuestaFotoAlumno {
@@ -86,14 +89,65 @@ public class RespuestaFotoAlumno {
 	private final String baseUrl;
 	private final String directorioImagenesLinux;
 	private final String directorioImagenesWindows;
+	private final List<Origen> origenesRedireccion;
 
 	public RespuestaFotoAlumno(ImagenService imagenService, @Value("${app.base.url}") String baseUrl,
 			@Value("${app.imagenes.directorio.linux:}") String directorioImagenesLinux,
-			@Value("${app.imagenes.directorio.windows:}") String directorioImagenesWindows) {
+			@Value("${app.imagenes.directorio.windows:}") String directorioImagenesWindows,
+			@Value("${app.imagenes.redireccion.origenes:${app.base.url:},${app.frontend.base-url:}}") String origenesRedireccion) {
 		this.imagenService = imagenService;
 		this.baseUrl = baseUrl;
 		this.directorioImagenesLinux = directorioImagenesLinux;
 		this.directorioImagenesWindows = directorioImagenesWindows;
+		this.origenesRedireccion = leerOrigenes(origenesRedireccion);
+	}
+
+	/** Esquema y host en minúsculas y puerto efectivo (443 o 80 si la URL no lo lleva). */
+	private record Origen(String esquema, String host, int puerto) {
+	}
+
+	/** Los orígenes {@code http(s)://host[:puerto]} de la lista separada por comas; los que no lo son se ignoran. */
+	private static List<Origen> leerOrigenes(String lista) {
+		List<Origen> origenes = new ArrayList<>();
+		if (lista == null) {
+			return origenes;
+		}
+		for (String valor : lista.split(",")) {
+			Origen origen = origenDe(valor.trim());
+			if (origen != null && !origenes.contains(origen)) {
+				origenes.add(origen);
+			}
+		}
+		return origenes;
+	}
+
+	/**
+	 * El origen de una URL absoluta {@code http(s)} con host y sin usuario, o {@code null}. Sin barras invertidas: cada
+	 * navegador las interpreta a su manera.
+	 */
+	private static Origen origenDe(String url) {
+		if (url == null || url.isEmpty() || url.indexOf('\\') >= 0) {
+			return null;
+		}
+		try {
+			URI uri = new URI(url);
+			if (!uri.isAbsolute() || uri.isOpaque() || uri.getRawUserInfo() != null || uri.getHost() == null
+					|| uri.getHost().isEmpty()) {
+				return null;
+			}
+			String esquema = uri.getScheme().toLowerCase(Locale.ROOT);
+			int puerto = uri.getPort();
+			if ("https".equals(esquema)) {
+				puerto = puerto < 0 ? 443 : puerto;
+			} else if ("http".equals(esquema)) {
+				puerto = puerto < 0 ? 80 : puerto;
+			} else {
+				return null;
+			}
+			return new Origen(esquema, uri.getHost().toLowerCase(Locale.ROOT), puerto);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	/**
@@ -393,21 +447,17 @@ public class RespuestaFotoAlumno {
 	}
 
 	/**
-	 * Decisión 422: la URL guardada solo se usa para redirigir si es {@code http(s)} con host o relativa a
-	 * {@code /imagenes/} sin {@code ..}. Cualquier otra ({@code file:}, {@code javascript:}, {@code //host}…) no.
+	 * Decisión 422: la URL guardada solo se usa para redirigir si es relativa a {@code /imagenes/} sin {@code ..} o de un
+	 * origen propio: {@code https} (o {@code http} si el origen propio lo es), el mismo host exacto sin distinguir
+	 * mayúsculas (no vale un subdominio ni un sufijo), el mismo puerto y sin usuario delante del host. Cualquier otra
+	 * ({@code file:}, {@code javascript:}, {@code //host}, otro host…) no.
 	 */
-	private static boolean esUrlRedirigible(String url) {
+	private boolean esUrlRedirigible(String url) {
 		if (url.startsWith(PREFIJO_URL_IMAGENES)) {
 			return url.indexOf('\\') < 0 && !tieneSegmentoPadre(url);
 		}
-		try {
-			URI uri = new URI(url);
-			String esquema = uri.getScheme();
-			return esquema != null && uri.getHost() != null
-					&& ("http".equalsIgnoreCase(esquema) || "https".equalsIgnoreCase(esquema));
-		} catch (Exception e) {
-			return false;
-		}
+		Origen origen = origenDe(url);
+		return origen != null && origenesRedireccion.contains(origen);
 	}
 
 	/** Fichero que se puede leer, por su ruta real, o si la fila se rechaza por apuntar fuera de la carpeta. */
@@ -430,6 +480,9 @@ public class RespuestaFotoAlumno {
 		if (RutasArchivos.esRutaAbsoluta(imagen.getRuta())) {
 			// Compatibilidad: rutas heredadas con variables (%USERPROFILE%…).
 			agregarCandidatoRuta(candidatos, imagen.getRuta());
+		} else if (rutaGuardada == null) {
+			// ImagenService la rechaza (p. ej. sale por un enlace): se mira igual para responder 404 sin redirigir.
+			agregarCandidatoRelativo(candidatos, imagen.getRuta());
 		}
 
 		String nombre = obtenerNombreImagenPrioritario(imagen);
@@ -574,6 +627,20 @@ public class RespuestaFotoAlumno {
 			candidatos.add(Path.of(expandirVariablesRuta(ruta)));
 		} catch (Exception ignored) {
 			// Ignore malformed paths coming from legacy DB rows.
+		}
+	}
+
+	/** La ruta relativa bajo la carpeta de imágenes configurada, sin salir de ella por {@code ..}. */
+	private void agregarCandidatoRelativo(List<Path> candidatos, String ruta) {
+		if (ruta == null || ruta.isBlank() || Objects.toString(directorioImagenesLinux, "").isBlank()
+				|| Objects.toString(directorioImagenesWindows, "").isBlank()) {
+			return;
+		}
+		try {
+			Path base = RutasArchivos.directorioBase(directorioImagenesLinux, directorioImagenesWindows);
+			candidatos.add(RutasArchivos.resolverDentroDe(base, ruta.trim()));
+		} catch (RuntimeException ignored) {
+			// Ruta no válida: no aporta candidata.
 		}
 	}
 

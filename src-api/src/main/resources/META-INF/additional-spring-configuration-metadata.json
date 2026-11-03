@@ -25,6 +25,16 @@
     "description": "Directorio de recursos estáticos en Windows"
   },
   {
+    "name": "app.imagenes.directorios-heredados",
+    "type": "java.lang.String",
+    "description": "Carpetas (separadas por comas) en las que una imagen con ruta absoluta heredada se puede leer o borrar, además de la carpeta de imágenes"
+  },
+  {
+    "name": "app.imagenes.redireccion.origenes",
+    "type": "java.lang.String",
+    "description": "Orígenes propios (separados por comas) a los que la foto de un alumno sin fichero puede redirigir; por defecto app.base.url y app.frontend.base-url"
+  },
+  {
     "name": "app.base.url",
     "type": "java.lang.String",
     "description": "Url base de la aplicación"
