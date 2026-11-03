@@ -74,6 +74,8 @@ class PreinscripcionServiceTest {
 	@Mock com.taemoi.project.acceso.GestionPorSede gestionPorSede;
 	@Mock com.taemoi.project.repositories.PreinscripcionDocumentosRepository documentos;
 	@Mock AlumnoSaludService alumnoSalud;
+	/** Pieza E10-2: sin filas de usuario_alumno (lista vacía), la ficha no tiene cuenta. */
+	@Mock com.taemoi.project.services.VinculoFamiliaService vinculos;
 
 	PreinscripcionService service;
 	Preinscripcion preinscripcion;
@@ -86,7 +88,7 @@ class PreinscripcionServiceTest {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud);
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos);
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -857,7 +859,7 @@ class PreinscripcionServiceTest {
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud);
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos);
 
 		servicioPromocion.promocionarTodas();
 

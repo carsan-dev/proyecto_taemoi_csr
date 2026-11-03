@@ -57,6 +57,10 @@ class AlumnoServiceImplFotoTest {
 	@Mock
 	private GestionPorSede gestionPorSede;
 
+	/** Pieza E10-2: sin filas en usuario_alumno (lista vacía), la ficha no tiene cuenta. */
+	@Mock
+	private com.taemoi.project.services.VinculoFamiliaService vinculoFamiliaService;
+
 	@InjectMocks
 	private AlumnoServiceImpl alumnoService;
 

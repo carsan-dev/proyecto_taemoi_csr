@@ -102,22 +102,27 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 			return usuario;
 		}
 
-		// Buscar los alumnos con este email que aún no tienen cuenta. Un alumno ya vinculado lo está a
-		// otra cuenta (con otro email, porque no hay ninguna con este): nunca se devuelve esa cuenta.
+		// Buscar los alumnos con este email que aún no tienen cuenta (decisión 428: sin ninguna fila en
+		// usuario_alumno; la cuenta nueva aún no existe, así que cualquier fila es de otra). Un alumno ya vinculado lo
+		// está a otra cuenta (con otro email, porque no hay ninguna con este): nunca se devuelve esa cuenta.
 		// Un email en blanco nunca vincula alumnos (aunque haya alumnos activos con el email vacío)
 		List<Alumno> alumnos = EmailUtils.puedeVincularAlumnos(email)
 				? alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email)
 				: List.of();
 		List<Alumno> alumnosSinCuenta = alumnos.stream()
-				.filter(alumno -> alumno.getUsuario() == null)
+				.filter(this::sinCuenta)
 				.toList();
 		if (alumnosSinCuenta.isEmpty()) {
 			// No hay ningún alumno libre con este email, no se puede crear usuario
 			throw sinAlumnoConEmail(email);
 		}
+		// Los inactivos libres del email, decididos ANTES de crear la cuenta (con el mismo criterio).
+		List<Alumno> inactivosSinCuenta = alumnoRepository.findAllByEmailIgnoreCase(email).stream()
+				.filter(alumno -> !Boolean.TRUE.equals(alumno.getActivo()))
+				.filter(this::sinCuenta)
+				.toList();
 
-		// Tomar el primer alumno libre para vincularlo al usuario (usuario.alumno_id es UNIQUE)
-		// (Los demás alumnos se accederán a través de usuario_alumno y, en Taemoi, del email compartido)
+		// El primer alumno libre da el nombre (si Google no lo trae) y la escuela de la cuenta nueva.
 		Alumno primerAlumno = alumnosSinCuenta.get(0);
 
 		// Crear nuevo usuario automáticamente
@@ -131,8 +136,6 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		String randomPassword = java.util.UUID.randomUUID().toString();
 		nuevoUsuario.setContrasena(passwordEncoder.encode(randomPassword));
 
-		// Vincular con el primer alumno
-		nuevoUsuario.setAlumno(primerAlumno);
 		nuevoUsuario.setUltimaOrganizacionId(primerAlumno.getOrganizacionId());
 
 		// Guardar el usuario
@@ -147,17 +150,16 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		for (Alumno alumno : alumnosSinCuenta) {
 			vinculoFamiliaService.vincularAlta(savedUser, alumno);
 		}
-		for (Alumno alumno : alumnoRepository.findAllByEmailIgnoreCase(email)) {
-			if (!Boolean.TRUE.equals(alumno.getActivo()) && alumno.getUsuario() == null) {
-				vinculoFamiliaService.vincularAlta(savedUser, alumno);
-			}
+		for (Alumno alumno : inactivosSinCuenta) {
+			vinculoFamiliaService.vincularAlta(savedUser, alumno);
 		}
 
-		// Actualizar la referencia en el primer alumno
-		primerAlumno.setUsuario(savedUser);
-		alumnoRepository.save(primerAlumno);
-
 		return savedUser;
+	}
+
+	/** Decisión 428: la ficha no tiene ninguna cuenta vinculada en {@code usuario_alumno}. */
+	private boolean sinCuenta(Alumno alumno) {
+		return vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(), alumno.getOrganizacionId()).isEmpty();
 	}
 
 	private static boolean emailVerificado(Object emailVerified) {

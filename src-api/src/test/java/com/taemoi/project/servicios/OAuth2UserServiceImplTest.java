@@ -38,8 +38,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.taemoi.project.config.OAuth2AuthenticationSuccessHandler;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AuthProvider;
+import com.taemoi.project.entities.OrigenUsuarioAlumno;
+import com.taemoi.project.entities.RelacionUsuarioAlumno;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.entities.UsuarioAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.JwtService;
@@ -98,12 +101,20 @@ class OAuth2UserServiceImplTest {
 		return a;
 	}
 
-	private static Usuario cuentaY(Alumno vinculado) {
+	/**
+	 * La ficha ya tiene la cuenta Y (decisión 428): una fila de usuario_alumno de otra cuenta, de cualquier origen y
+	 * relación (aquí, la MIGRACION/TUTOR de V31, la más común en producción).
+	 */
+	private Usuario cuentaY(Alumno vinculado) {
+		return cuentaY(vinculado, RelacionUsuarioAlumno.TUTOR, OrigenUsuarioAlumno.MIGRACION);
+	}
+
+	private Usuario cuentaY(Alumno vinculado, RelacionUsuarioAlumno relacion, OrigenUsuarioAlumno origen) {
 		Usuario y = new Usuario();
 		y.setId(7L);
 		y.setEmail(EMAIL_Y);
-		y.setAlumno(vinculado);
-		vinculado.setUsuario(y);
+		when(vinculos.cuentasDeLaFicha(eq(vinculado.getId()), any()))
+				.thenReturn(List.of(new UsuarioAlumno(y.getId(), vinculado.getId(), 1L, relacion, origen)));
 		return y;
 	}
 
@@ -124,7 +135,7 @@ class OAuth2UserServiceImplTest {
 				() -> servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
 
 		assertEquals(MENSAJE_SIN_ALUMNO, e.getMessage());
-		assertSame(y, alumnoX.getUsuario());
+		assertNotNull(y);
 		verificarSinEscrituras();
 	}
 
@@ -139,11 +150,9 @@ class OAuth2UserServiceImplTest {
 
 		assertNotSame(y, resultado);
 		assertEquals(EMAIL_X, resultado.getEmail());
-		assertSame(libre, resultado.getAlumno());
-		assertSame(resultado, libre.getUsuario());
-		assertSame(y, vinculado.getUsuario());
-		verify(alumnos).save(libre);
-		verify(alumnos, never()).save(vinculado);
+		verify(vinculos).vincularAlta(resultado, libre);
+		verify(vinculos, never()).vincularAlta(any(), eq(vinculado));
+		verify(alumnos, never()).save(any(Alumno.class));
 	}
 
 	@Test
@@ -156,11 +165,11 @@ class OAuth2UserServiceImplTest {
 		assertNotNull(resultado);
 		assertEquals(EMAIL_X, resultado.getEmail());
 		assertEquals(AuthProvider.GOOGLE, resultado.getAuthProvider());
-		assertSame(alumnoX, resultado.getAlumno());
-		assertSame(resultado, alumnoX.getUsuario());
 		verify(usuarios).save(resultado);
-		verify(alumnos).save(alumnoX);
 		verify(membresias).asegurarMembresia(eq(99L), any(), eq(RolMembresia.FAMILIA));
+		verify(vinculos).vincularAlta(resultado, alumnoX);
+		// Pieza E10-2: usuario.alumno_id ya no se escribe (ni la ficha se guarda para ello).
+		verify(alumnos, never()).save(any(Alumno.class));
 	}
 
 	@Test
@@ -267,17 +276,15 @@ class OAuth2UserServiceImplTest {
 
 		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
 
-		assertSame(primero, resultado.getAlumno(), "usuario.alumno_id sigue siendo el primer alumno libre");
 		verify(vinculos).vincularAlta(resultado, primero);
 		verify(vinculos).vincularAlta(resultado, hermano);
-		assertEquals(null, hermano.getUsuario(), "solo un alumno ocupa usuario.alumno_id (UNIQUE)");
-		verify(alumnos, never()).save(hermano);
+		verify(alumnos, never()).save(any(Alumno.class));
 	}
 
 	@Test
 	void alumnoDelEmailConOtraCuentaNoSeVinculaEnUsuarioAlumno() {
-		// Opción conservadora (decisión pendiente del propietario): el alumno con email X que ya tiene la cuenta
-		// Y no se vincula a la cuenta nueva X.
+		// Decisión 428: el alumno con email X que ya tiene la cuenta Y (fila en usuario_alumno) no se vincula a la
+		// cuenta nueva X.
 		Alumno vinculado = alumno(1L, EMAIL_X);
 		cuentaY(vinculado);
 		Alumno libre = alumno(2L, EMAIL_X);
@@ -287,6 +294,20 @@ class OAuth2UserServiceImplTest {
 
 		verify(vinculos).vincularAlta(resultado, libre);
 		verify(vinculos, never()).vincularAlta(any(), eq(vinculado));
+	}
+
+	@Test
+	void alumnoConFilaRegistroPropioDeOtraCuentaTampocoSeVincula() {
+		// Decisión 428: cuenta cualquier origen y relación, no solo las filas de la migración.
+		Alumno vinculado = alumno(1L, EMAIL_X);
+		cuentaY(vinculado, RelacionUsuarioAlumno.PROPIO, OrigenUsuarioAlumno.REGISTRO);
+		when(alumnos.findAllByEmailIgnoreCaseAndActivoTrue(EMAIL_X)).thenReturn(List.of(vinculado));
+
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
+
+		assertEquals(MENSAJE_SIN_ALUMNO, e.getMessage());
+		verificarSinEscrituras();
 	}
 
 	@Test
@@ -303,7 +324,7 @@ class OAuth2UserServiceImplTest {
 	}
 
 	@Test
-	void tambienSeVinculanLosAlumnosInactivosSinCuentaPeroNuncaOcupanAlumnoId() {
+	void tambienSeVinculanLosAlumnosInactivosSinCuenta() {
 		Alumno activo = alumno(1L, EMAIL_X);
 		Alumno inactivoLibre = alumno(2L, EMAIL_X);
 		inactivoLibre.setActivo(false);
@@ -315,11 +336,10 @@ class OAuth2UserServiceImplTest {
 
 		Usuario resultado = servicio.processOAuth2Login(google(EMAIL_X, true), "google");
 
-		assertSame(activo, resultado.getAlumno());
 		verify(vinculos).vincularAlta(resultado, activo);
 		verify(vinculos).vincularAlta(resultado, inactivoLibre);
 		verify(vinculos, never()).vincularAlta(any(), eq(inactivoDeY));
-		verify(alumnos, never()).save(inactivoLibre);
+		verify(alumnos, never()).save(any(Alumno.class));
 	}
 
 	@Test

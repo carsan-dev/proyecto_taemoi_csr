@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,38 @@ class VinculoFamiliaServiceImplTest {
 		assertEquals(2L, fila.getValue().getOrganizacionId());
 		assertEquals(OrigenUsuarioAlumno.REGISTRO, fila.getValue().getOrigen());
 		assertEquals(RelacionUsuarioAlumno.TUTOR, fila.getValue().getRelacion());
+	}
+
+	// ------------------------------------------------------------------ pieza E10-2: lecturas
+
+	@Test
+	void cuentasDeLaFicha_filtraPorLaOrganizacionYOrdenaPorCuenta() {
+		when(vinculos.findByAlumnoIdAndOrganizacionId(5L, 2L)).thenReturn(List.of(
+				new UsuarioAlumno(9L, 5L, 2L, RelacionUsuarioAlumno.TUTOR, OrigenUsuarioAlumno.MIGRACION),
+				new UsuarioAlumno(3L, 5L, 2L, RelacionUsuarioAlumno.PROPIO, OrigenUsuarioAlumno.REGISTRO)));
+
+		assertEquals(List.of(3L, 9L), servicio.cuentasDeLaFicha(5L, 2L).stream().map(UsuarioAlumno::getUsuarioId)
+				.toList());
+		verify(vinculos).findByAlumnoIdAndOrganizacionId(5L, 2L);
+	}
+
+	@Test
+	void cuentasDeLaFicha_sinAlumnoOSinOrganizacion_vacioSinConsultar() {
+		assertEquals(List.of(), servicio.cuentasDeLaFicha(null, 2L));
+		assertEquals(List.of(), servicio.cuentasDeLaFicha(5L, null));
+		verify(vinculos, never()).findByAlumnoIdAndOrganizacionId(any(), any());
+	}
+
+	@Test
+	void fichasPropiasDeLaCuenta_soloPropioDeEsaOrganizacionEnOrden() {
+		when(vinculos.findByUsuarioIdAndOrganizacionIdAndRelacion(9L, 2L, RelacionUsuarioAlumno.PROPIO))
+				.thenReturn(List.of(
+						new UsuarioAlumno(9L, 8L, 2L, RelacionUsuarioAlumno.PROPIO, OrigenUsuarioAlumno.MANUAL),
+						new UsuarioAlumno(9L, 4L, 2L, RelacionUsuarioAlumno.PROPIO, OrigenUsuarioAlumno.MIGRACION)));
+
+		assertEquals(List.of(4L, 8L), servicio.fichasPropiasDeLaCuenta(9L, 2L));
+		assertEquals(List.of(), servicio.fichasPropiasDeLaCuenta(9L, null));
+		assertEquals(List.of(), servicio.fichasPropiasDeLaCuenta(null, 2L));
 	}
 
 	@Test

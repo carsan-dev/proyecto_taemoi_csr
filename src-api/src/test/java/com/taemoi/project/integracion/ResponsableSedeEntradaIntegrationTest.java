@@ -131,7 +131,10 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 	void responsableSolo_vinculadoAUnAlumnoActivo_noRecibeFicha() throws Exception {
 		Usuario cuenta = cuenta("solo-vinculado");
 		e.responsable(cuenta.getId(), e.sA);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", e.aA, cuenta.getId());
+		// Pieza E10-2: vinculada como su ficha propia en usuario_alumno (usuario.alumno_id ya no se lee).
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'PROPIO', 'MIGRACION')""", cuenta.getId(), e.aA, e.org);
 
 		mvc.perform(get("/api/auth/user").cookie(jwt(login(cuenta.getEmail()))))
 				.andExpect(status().isOk())

@@ -158,7 +158,7 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 	void escuelaSinMarca_registroEscribeElVinculoYLaFamiliaVeSuAlumno() throws Exception {
 		String email = email("registro-sin-marca");
 		long propio = alumno(org2, "REG ADULTO", email, ADULTO);
-		// Hermano con el mismo email: el registro solo vincula el alumno registrado (como usuario.alumno_id).
+		// Hermano con el mismo email: el registro solo vincula el alumno registrado.
 		long hermano = alumno(org2, "REG HERMANO", email, MENOR);
 
 		long usuarioId = registrar(org2, email, propio);
@@ -166,11 +166,47 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "PROPIO", "origen", "REGISTRO")),
 				filas(usuarioId, propio));
 		assertEquals(List.of(), filas(usuarioId, hermano));
-		assertEquals(propio, jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId),
-				"usuario.alumno_id se mantiene hasta V32");
+		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId),
+				"Pieza E10-2: usuario.alumno_id ya no se escribe");
 
 		String token = loginConClave(email);
 		assertEquals(Set.of(propio), alumnosVisibles(token));
+	}
+
+	/** Decisión 428: la ficha con una fila de otra cuenta en usuario_alumno rechaza el registro y no crea nada. */
+	@Test
+	void registroDeUnaFichaConFilaDeOtraCuentaSeRechaza() {
+		String email = email("registro-con-cuenta");
+		long ficha = alumno(org2, "REG CON CUENTA", email, MENOR);
+		long cuentaY = cuentaConClave(email("registro-con-cuenta-y"), org2, RolMembresia.FAMILIA);
+		filaDeOtraCuenta(cuentaY, ficha, org2);
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> registrar(org2, email, ficha));
+
+		assertEquals("El alumno ya tiene usuario asociado.", error.getMessage());
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, email));
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM registro_pendiente WHERE email = ?", Integer.class,
+				email), "la solicitud inservible se borra como antes");
+		assertEquals(List.of(cuentaY), jdbc.queryForList("SELECT usuario_id FROM usuario_alumno WHERE alumno_id = ?",
+				Long.class, ficha));
+	}
+
+	/**
+	 * Decisión 428: solo cuenta usuario_alumno. Una ficha con el usuario.alumno_id heredado de otra cuenta pero sin
+	 * ninguna fila (lo que V31_21 deja fuera a propósito) admite el registro.
+	 */
+	@Test
+	void registroDeUnaFichaSinFilasSeAceptaAunqueTengaAlumnoIdHeredado() {
+		String email = email("registro-legado");
+		long ficha = alumno(org2, "REG LEGADO", email, ADULTO);
+		long cuentaY = cuentaConClave(email("registro-legado-y"), org2, RolMembresia.FAMILIA);
+		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", ficha, cuentaY);
+
+		long usuarioId = registrar(org2, email, ficha);
+
+		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "PROPIO", "origen", "REGISTRO")),
+				filas(usuarioId, ficha));
 	}
 
 	@Test
@@ -180,10 +216,11 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		long hermano = alumno(org2, "GOO HERMANO", email, ADULTO);
 		long inactivo = alumno(org2, "GOO INACTIVO", email, MENOR);
 		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", inactivo);
-		// Alumno con el email X que ya tiene OTRA cuenta Y (de otro email): opción conservadora, no se vincula.
+		// Alumno con el email X que ya tiene OTRA cuenta Y (de otro email; decisión 428: una fila en usuario_alumno,
+		// aquí de la migración): no se vincula.
 		long deOtraCuenta = alumno(org2, "GOO DE Y", email, MENOR);
 		long cuentaY = cuentaConClave(email("google-sin-marca-y"), org2, RolMembresia.FAMILIA);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", deOtraCuenta, cuentaY);
+		filaDeOtraCuenta(cuentaY, deOtraCuenta, org2);
 
 		String token = loginConGoogle(org2, email);
 
@@ -196,10 +233,10 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "TUTOR", "origen", "REGISTRO")),
 				filas(usuarioId, inactivo));
 		assertEquals(List.of(), filas(usuarioId, deOtraCuenta));
-		assertEquals(primero, jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId));
-		assertEquals(deOtraCuenta,
-				jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, cuentaY),
-				"la cuenta Y conserva su alumno");
+		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId),
+				"Pieza E10-2: usuario.alumno_id ya no se escribe");
+		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "TUTOR", "origen", "MIGRACION")),
+				filas(cuentaY, deOtraCuenta), "la cuenta Y conserva su alumno");
 
 		assertEquals(Set.of(primero, hermano), alumnosVisibles(token));
 
@@ -219,15 +256,15 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		String email = email("google-sin-libre");
 		long deOtraCuenta = alumno(org2, "GOO SOLO DE Y", email, MENOR);
 		long cuentaY = cuentaConClave(email("google-sin-libre-y"), org2, RolMembresia.FAMILIA);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", deOtraCuenta, cuentaY);
+		filaDeOtraCuenta(cuentaY, deOtraCuenta, org2);
 
 		MockHttpServletResponse respuesta = google(org2, email);
 
 		assertTrue(respuesta.getRedirectedUrl().contains("error=no_alumno_found"), respuesta.getRedirectedUrl());
 		assertNull(cookieJwt(respuesta));
 		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, email));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_alumno WHERE alumno_id = ?", Integer.class,
-				deOtraCuenta));
+		assertEquals(List.of(cuentaY), jdbc.queryForList("SELECT usuario_id FROM usuario_alumno WHERE alumno_id = ?",
+				Long.class, deOtraCuenta), "solo la fila de la cuenta Y");
 	}
 
 	// ------------------------------------------------------------------ Taemoi: nada visible cambia
@@ -265,11 +302,14 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Revisión de la 2b, caso (a): en Taemoi, cambiar el email de un hermano vinculado por Google le quita el acceso
-	 * a la familia, como antes (la fila REGISTRO solo cuenta con el email coincidente en las escuelas con la marca).
+	 * Revisión de la 2b, caso (a), con la pieza E10-2: en Taemoi, el hermano vinculado por Google ya TIENE cuenta (su
+	 * fila REGISTRO, decisión 428) y es la única, con su mismo email: cambiar el email del hermano lo lleva a la cuenta
+	 * (decisión 430), como antes con la ficha de usuario.alumno_id. La familia sigue viendo, con el email nuevo, la
+	 * ficha que lo tiene; la otra, que conserva el anterior, deja de verse (la fila REGISTRO solo cuenta con el email
+	 * coincidente en las escuelas con la marca).
 	 */
 	@Test
-	void taemoi_googleHermanoQueCambiaDeEmailDejaDeVerse() throws Exception {
+	void taemoi_googleHermanoQueCambiaDeEmail_seLlevaLaCuenta() throws Exception {
 		String email = email("google-taemoi-cambio");
 		long primero = alumno(ORG1, "GOO TC PRIMERO", email, MENOR);
 		long hermano = alumno(ORG1, "GOO TC HERMANO", email, MENOR);
@@ -281,15 +321,16 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Set.of(primero, hermano), alumnosVisibles(token));
 		assertEquals(200, estado("/api/alumnos/" + hermano + "/deportes", token));
 
-		// La gestión cambia el email del hermano (sin cuenta: la cuenta X no se toca).
-		actualizarEmail(ORG1, hermano, email("google-taemoi-cambio-y"));
+		String nuevo = email("google-taemoi-cambio-y");
+		actualizarEmail(ORG1, hermano, nuevo);
 
 		Usuario usuario = cuenta(usuarioId);
-		assertEquals(email, usuario.getEmail());
+		assertEquals(nuevo, usuario.getEmail(), "única cuenta vinculada y con el email de la ficha: se propaga");
 		assertEquals(reglaDeEmail(usuario, ORG1), accesiblesEnTaemoi(usuario));
-		assertEquals(Set.of(primero), alumnosVisibles(token));
-		assertEquals(403, estado("/api/alumnos/" + hermano + "/deportes", token));
-		assertEquals(200, estado("/api/alumnos/" + primero + "/deportes", token));
+		assertEquals(Set.of(hermano), accesiblesEnTaemoi(usuario));
+		String otraVez = loginConGoogle(ORG1, nuevo);
+		assertEquals(Set.of(hermano), alumnosVisibles(otraVez));
+		assertEquals(403, estado("/api/alumnos/" + primero + "/deportes", otraVez));
 	}
 
 	/**
@@ -518,5 +559,11 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}
+	}
+
+	/** Decisión 428: la ficha ya tiene la cuenta Y (fila de usuario_alumno, como las de la migración V31). */
+	private void filaDeOtraCuenta(long cuentaY, long alumnoId, long organizacionId) {
+		jdbc.update("INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen) "
+				+ "VALUES (?, ?, ?, 'TUTOR', 'MIGRACION')", cuentaY, alumnoId, organizacionId);
 	}
 }

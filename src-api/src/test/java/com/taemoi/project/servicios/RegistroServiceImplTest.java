@@ -1,7 +1,7 @@
 package com.taemoi.project.servicios;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -14,19 +14,25 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.taemoi.project.entities.Alumno;
+import com.taemoi.project.entities.OrigenUsuarioAlumno;
 import com.taemoi.project.entities.RegistroPendiente;
+import com.taemoi.project.entities.RelacionUsuarioAlumno;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.entities.UsuarioAlumno;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.RegistroPendienteRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
@@ -36,7 +42,7 @@ import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.services.impl.RegistroServiceImpl;
 
 /**
- * Confirmación del registro (fase 3, entrega 2b): además de {@code usuario.alumno_id}, escribe la fila de
+ * Confirmación del registro (fase 3, entrega 2b; pieza E10-2: ya sin {@code usuario.alumno_id}): escribe la fila de
  * {@code usuario_alumno} del alumno registrado, salvo que su email ya no sea el de la cuenta.
  */
 class RegistroServiceImplTest {
@@ -90,8 +96,38 @@ class RegistroServiceImplTest {
 		orden.verify(usuarios).save(cuenta.capture());
 		orden.verify(membresias).asegurarMembresia(9L, 2L, RolMembresia.FAMILIA);
 		orden.verify(vinculos).vincularAlta(cuenta.getValue(), alumno);
-		assertSame(alumno, cuenta.getValue().getAlumno(), "usuario.alumno_id se mantiene hasta V32");
 		assertEquals(EMAIL, cuenta.getValue().getEmail());
+		// Pieza E10-2: usuario.alumno_id ya no se escribe (ni la ficha se guarda para ello).
+		verify(alumnos, never()).save(any(Alumno.class));
+	}
+
+	/** Decisión 428: la ficha ya tiene cuenta si tiene una fila en usuario_alumno, de cualquier origen y relación. */
+	@ParameterizedTest
+	@CsvSource({ "TUTOR,MIGRACION", "PROPIO,MIGRACION", "PROPIO,REGISTRO", "TUTOR,MANUAL" })
+	void fichaConFilaDeOtraCuentaRechazaElRegistroSinCrearNada(RelacionUsuarioAlumno relacion,
+			OrigenUsuarioAlumno origen) {
+		when(vinculos.cuentasDeLaFicha(5L, 2L))
+				.thenReturn(List.of(new UsuarioAlumno(3L, 5L, 2L, relacion, origen)));
+
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> servicio.confirmarRegistro(TOKEN));
+
+		assertEquals("El alumno ya tiene usuario asociado.", e.getMessage());
+		verify(pendientes).delete(any(RegistroPendiente.class));
+		verify(usuarios, never()).save(any(Usuario.class));
+		verify(membresias, never()).asegurarMembresia(any(), any(), any());
+		verify(vinculos, never()).vincularAlta(any(), any());
+	}
+
+	@Test
+	void fichaSinFilasSeRegistra() {
+		when(vinculos.cuentasDeLaFicha(5L, 2L)).thenReturn(List.of());
+		when(alumnos.existsByIdAndEmailIgnoreCase(5L, EMAIL)).thenReturn(true);
+
+		servicio.confirmarRegistro(TOKEN);
+
+		verify(usuarios).save(any(Usuario.class));
+		verify(vinculos).vincularAlta(any(Usuario.class), eq(alumno));
 	}
 
 	@Test

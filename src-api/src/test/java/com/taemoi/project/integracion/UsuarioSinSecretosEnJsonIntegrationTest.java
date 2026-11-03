@@ -16,8 +16,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -53,12 +51,13 @@ import com.taemoi.project.services.ContadorService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * Regresión de seguridad: las respuestas que serializan la entidad {@link Usuario} (directa o embebida en
- * {@code Alumno.usuario}) no deben exponer el hash de la contraseña ni el token de restablecimiento.
+ * Regresión de seguridad: las respuestas que serializan la entidad {@code Alumno} no deben exponer el hash de la
+ * contraseña ni el token de restablecimiento de su cuenta.
  *
  * <p>Los endpoints {@code GET /api/admin} (paginado y sin paginar) y {@code GET /api/admin/{id}} devuelven
- * la entidad {@code Alumno}, que embebe su {@code Usuario}. Datos sintéticos: escuela propia (para que el
- * listado solo contenga este alumno), hash BCrypt de una cadena ficticia y un hash de token falso.
+ * la entidad {@code Alumno}. Hasta la pieza E10-2 embebía su {@code Usuario} (clave «usuario»); desde la decisión 434
+ * no lleva la cuenta vinculada. Datos sintéticos: escuela propia (para que el listado solo contenga este alumno),
+ * cuenta vinculada por {@code usuario_alumno}, hash BCrypt de una cadena ficticia y un hash de token falso.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -69,15 +68,6 @@ class UsuarioSinSecretosEnJsonIntegrationTest extends MySqlIntegrationTest {
 	private static final String CLAVE = "Clave-Segura-123";
 	private static final List<String> CLAVES_PROHIBIDAS = List.of(
 			"contrasena", "password", "resetTokenHash", "resetTokenExpiresAt");
-	/**
-	 * Forma JSON no sensible del usuario embebido, que debe mantenerse idéntica. Sin "roles": V31 quitó
-	 * esa relación de Usuario (las autoridades salen de las membresías y siguen en "authorities").
-	 */
-	private static final Set<String> CLAVES_USUARIO_ESPERADAS = new TreeSet<>(Set.of(
-			"id", "nombre", "apellidos", "email", "authProvider", "recordatorioRachaEmailHabilitado",
-			"ultimoRecordatorioRachaReset", "authorities", "username", "accountNonExpired",
-			"accountNonLocked", "credentialsNonExpired", "enabled"));
-
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
 	@Autowired JdbcTemplate jdbc;
@@ -118,8 +108,11 @@ class UsuarioSinSecretosEnJsonIntegrationTest extends MySqlIntegrationTest {
 				.substring(0, 64);
 		Usuario vinculado = crearUsuario(emailVinculado, hashContrasenaVinculado);
 		dar(vinculado, org, RolMembresia.FAMILIA);
-		jdbc.update("UPDATE usuario SET alumno_id = ?, reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?",
-				alumnoId, hashTokenFalso, Timestamp.valueOf(LocalDateTime.of(2099, 1, 2, 3, 4, 5)), vinculado.getId());
+		jdbc.update("UPDATE usuario SET reset_token_hash = ?, reset_token_expires_at = ? WHERE id = ?",
+				hashTokenFalso, Timestamp.valueOf(LocalDateTime.of(2099, 1, 2, 3, 4, 5)), vinculado.getId());
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'PROPIO', 'MANUAL')""", vinculado.getId(), alumnoId, org);
 
 		tokenAdmin = login(admin.getEmail());
 	}
@@ -133,20 +126,20 @@ class UsuarioSinSecretosEnJsonIntegrationTest extends MySqlIntegrationTest {
 	void listadoAdminSinPaginarNoExponeSecretosDelUsuario() throws Exception {
 		JsonNode cuerpo = getSinSecretos("/api/admin");
 		assertEquals(1, cuerpo.size(), "solo el alumno de esta escuela");
-		comprobarUsuarioEmbebidoConservaDatosNoSensibles(cuerpo.get(0));
+		comprobarSinCuentaEmbebida(cuerpo.get(0));
 	}
 
 	@Test
 	void listadoAdminPaginadoNoExponeSecretosDelUsuario() throws Exception {
 		JsonNode cuerpo = getSinSecretos("/api/admin?page=1&size=10");
 		assertEquals(1, cuerpo.get("content").size(), "solo el alumno de esta escuela");
-		comprobarUsuarioEmbebidoConservaDatosNoSensibles(cuerpo.get("content").get(0));
+		comprobarSinCuentaEmbebida(cuerpo.get("content").get(0));
 	}
 
 	@Test
 	void detalleAdminNoExponeSecretosDelUsuario() throws Exception {
 		JsonNode cuerpo = getSinSecretos("/api/admin/" + alumnoId);
-		comprobarUsuarioEmbebidoConservaDatosNoSensibles(cuerpo);
+		comprobarSinCuentaEmbebida(cuerpo);
 	}
 
 	@Test
@@ -191,19 +184,11 @@ class UsuarioSinSecretosEnJsonIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
-	/** La corrección solo quita campos sensibles: el usuario embebido sigue saliendo con sus datos. */
-	private void comprobarUsuarioEmbebidoConservaDatosNoSensibles(JsonNode alumno) {
+	/** Decisión 434 (pieza E10-2): el alumno ya no embebe su cuenta, ni con datos no sensibles. */
+	private void comprobarSinCuentaEmbebida(JsonNode alumno) {
 		assertEquals(alumnoId, alumno.get("id").asLong());
-		JsonNode usuario = alumno.get("usuario");
-		assertNotNull(usuario, "el alumno sigue embebiendo su usuario");
-		assertEquals(emailVinculado, usuario.get("email").asText());
-		assertEquals("Usuario", usuario.get("nombre").asText());
-		assertEquals("Prueba", usuario.get("apellidos").asText());
-		assertEquals("LOCAL", usuario.get("authProvider").asText());
-		assertFalse(usuario.has("alumno"), "la back-reference sigue sin serializarse");
-		Set<String> claves = new TreeSet<>();
-		usuario.fieldNames().forEachRemaining(claves::add);
-		assertEquals(CLAVES_USUARIO_ESPERADAS, claves, "solo se quitan los campos sensibles");
+		assertFalse(alumno.has("usuario"), "sin la clave usuario: " + alumno);
+		assertFalse(alumno.toString().contains(emailVinculado), "ni el email de la cuenta: " + alumno);
 	}
 
 	private String login(String email) throws Exception {

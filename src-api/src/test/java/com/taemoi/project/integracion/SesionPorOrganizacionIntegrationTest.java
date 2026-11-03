@@ -141,7 +141,7 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(ORG1, () -> crearEvento(eventoOrg1));
 		TenantContext.ejecutarCon(org2, () -> crearEvento(eventoOrg2));
 
-		// El admin de la escuela 1 está vinculado (usuario.alumno_id) a un alumno de la escuela 2.
+		// El admin de la escuela 1 está vinculado (usuario_alumno, PROPIO) a un alumno de la escuela 2.
 		adminOrg1 = crearUsuario("admin1-" + sufijo + "@example.test", alumnoOrg2, org2);
 		dar(adminOrg1, ORG1, RolMembresia.PROPIETARIO);
 		adminOrg2 = crearUsuario("admin2-" + sufijo + "@example.test", null, null);
@@ -464,7 +464,10 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 	void usuarioVinculadoAUnAlumnoDeOtraEscuelaSeCargaSinErrores() throws Exception {
 		Usuario cargado = TenantContext.calcularCon(ORG1,
 				() -> usuarios.findByEmailIgnoreCase(adminOrg1.getEmail()).orElseThrow());
-		assertEquals(alumnoOrg2, cargado.getAlumnoId(), "El id se lee sin cargar el alumno de la otra escuela");
+		assertEquals(adminOrg1.getId(), cargado.getId());
+		assertEquals(List.of(org2), jdbc.queryForList(
+				"SELECT organizacion_id FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ? AND relacion = 'PROPIO'",
+				Long.class, cargado.getId(), alumnoOrg2), "Su ficha propia es de la otra escuela");
 
 		String token = login(adminOrg1.getEmail());
 		mvc.perform(get("/api/auth/user").cookie(jwt(token)))
@@ -732,10 +735,13 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 			usuario.setEmail(email);
 			usuario.setContrasena(encoder.encode(CLAVE));
 			usuario.setAuthProvider(AuthProvider.LOCAL);
+			Usuario guardado = usuarios.save(usuario);
 			if (alumnoId != null) {
-				usuario.setAlumno(alumnos.findById(alumnoId).orElseThrow());
+				// Pieza E10-2: el vínculo es la fila de usuario_alumno (usuario.alumno_id ya no se mapea).
+				jdbc.update("INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen) "
+						+ "VALUES (?, ?, ?, 'PROPIO', 'MIGRACION')", guardado.getId(), alumnoId, org);
 			}
-			return usuarios.save(usuario);
+			return guardado;
 		});
 	}
 

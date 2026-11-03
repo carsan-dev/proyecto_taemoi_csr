@@ -58,11 +58,12 @@ import com.taemoi.project.services.RegistroService;
 import jakarta.servlet.http.Cookie;
 
 /**
- * R2-P2: la cuenta vinculada a un alumno ({@code usuario.alumno_id}, {@code Alumno.getUsuario()}) deja de cargarse con
- * cada alumno. Fija, contra MySQL, cada uso de la cuenta vinculada con y sin cuenta: el JSON de la entidad
- * ({@code /api/admin}), el registro, el primer login con Google, el cambio de email desde la gestión y el borrado del
- * alumno; y que un listado de alumnos ya no consulta la cuenta de cada uno. Escuela sintética propia (datos
- * inventados); usa el mismo contexto que {@link MoiskimdoAlumnosJsonDoradoIntegrationTest} (contador de sentencias).
+ * R2-P2: la cuenta vinculada a un alumno deja de cargarse con cada alumno. Desde la pieza E10-2 el vínculo es la fila de
+ * {@code usuario_alumno} (ni {@code usuario.alumno_id} ni {@code Alumno.getUsuario()}). Fija, contra MySQL, cada uso de
+ * la cuenta vinculada con y sin cuenta: el JSON de la entidad ({@code /api/admin}, sin la cuenta: decisión 434), el
+ * registro, el primer login con Google, el cambio de email desde la gestión y el borrado del alumno; y que un listado de
+ * alumnos no consulta la cuenta de cada uno. Escuela sintética propia (datos inventados); usa el mismo contexto que
+ * {@link MoiskimdoAlumnosJsonDoradoIntegrationTest} (contador de sentencias).
  */
 @SpringBootTest(properties = {
 		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias",
@@ -112,26 +113,26 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ JSON de la entidad
 
+	/** Decisión 434: la entidad ya no lleva la clave «usuario», con o sin cuenta vinculada. */
 	@Test
-	void fichaYListadoDeAdmin_llevanLaCuentaVinculadaONull() throws Exception {
+	void fichaYListadoDeAdmin_noLlevanLaCuentaVinculada() throws Exception {
 		long conCuenta = alumno("JSONCON", email("json-con"), true);
 		long sinCuenta = alumno("JSONSIN", email("json-sin"), true);
 		long cuenta = cuenta(email("json-cuenta"));
 		vincularCuenta(cuenta, conCuenta);
 
 		JsonNode con = leer("/api/admin/" + conCuenta);
-		assertEquals(cuenta, con.get("usuario").get("id").asLong());
-		assertEquals(email("json-cuenta"), con.get("usuario").get("email").asText());
-		assertFalse(con.get("usuario").has("contrasena"));
-		assertFalse(con.get("usuario").has("alumno"), "la referencia inversa no se serializa");
-		assertTrue(leer("/api/admin/" + sinCuenta).get("usuario").isNull());
+		assertEquals(conCuenta, con.get("id").asLong());
+		assertFalse(con.has("usuario"), con.toString());
+		assertFalse(con.toString().contains(email("json-cuenta")), "ni el email de la cuenta");
+		assertFalse(leer("/api/admin/" + sinCuenta).has("usuario"));
 
-		// Listado de entidades (paginado y sin paginar): cada alumno con su cuenta, o null.
+		// Listado de entidades (paginado y sin paginar): ningún alumno lleva la clave.
 		for (JsonNode lista : List.of(leer("/api/admin?page=1&size=50").get("content"), leer("/api/admin"))) {
 			Map<Long, JsonNode> porId = new HashMap<>();
-			lista.forEach(a -> porId.put(a.get("id").asLong(), a.get("usuario")));
-			assertEquals(cuenta, porId.get(conCuenta).get("id").asLong());
-			assertTrue(porId.get(sinCuenta).isNull());
+			lista.forEach(a -> porId.put(a.get("id").asLong(), a));
+			assertFalse(porId.get(conCuenta).has("usuario"));
+			assertFalse(porId.get(sinCuenta).has("usuario"));
 		}
 	}
 
@@ -150,6 +151,57 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(), porAlumno, "un select de usuario por alumno (N+1)");
 	}
 
+	// ------------------------------------------------------------------ alumnoDTO de /api/auth/user (decisión 431)
+
+	@Test
+	void alumnoDTO_familiaConFichaPropiaYTutorada_recibeLaPropia() throws Exception {
+		long tutorada = alumno("DTOTUTORADA", email("dto-tutorada"), true);
+		long propia = alumno("DTOPROPIA", email("dto-propia"), true);
+		long cuenta = cuenta(email("dto-familia"));
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'FAMILIA')", cuenta, org);
+		fila(cuenta, tutorada, "TUTOR", "MANUAL");
+		fila(cuenta, propia, "PROPIO", "MANUAL");
+
+		assertTrue(tutorada < propia);
+		assertEquals(propia, usuarioAutenticado(cuenta).get("alumnoDTO").get("id").asLong());
+
+		// Sin ficha PROPIO visible (la propia de baja): la de menor id entre las que ve.
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", propia);
+		assertEquals(tutorada, usuarioAutenticado(cuenta).get("alumnoDTO").get("id").asLong());
+	}
+
+	@Test
+	void alumnoDTO_gestorSinFamilia_recibeSuFichaPropiaSoloSiEstaActiva() throws Exception {
+		long propia = alumno("DTOGESTOR", email("dto-gestor-ficha"), true);
+		long cuenta = cuenta(email("dto-gestor"));
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')", cuenta,
+				org);
+		fila(cuenta, propia, "PROPIO", "MIGRACION");
+		long sinFicha = cuenta(email("dto-gestor-sin"));
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')",
+				sinFicha, org);
+
+		assertEquals(propia, usuarioAutenticado(cuenta).get("alumnoDTO").get("id").asLong());
+		assertFalse(usuarioAutenticado(sinFicha).hasNonNull("alumnoDTO"));
+
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", propia);
+		assertFalse(usuarioAutenticado(cuenta).hasNonNull("alumnoDTO"), "de baja: sin alumnoDTO");
+	}
+
+	private JsonNode usuarioAutenticado(long cuenta) throws Exception {
+		Usuario usuario = TenantContext.calcularCon(ORG1, () -> usuarios.findById(cuenta).orElseThrow());
+		String token = jwtService.generateToken(usuario, 600_000, org);
+		MvcResult r = mvc.perform(get("/api/auth/user").cookie(new Cookie("jwt", token))).andReturn();
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		return json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+	}
+
+	private void fila(long usuario, long alumno, String relacion, String origen) {
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, ?, ?)""", usuario, alumno, org, relacion, origen);
+	}
+
 	// ------------------------------------------------------------------ registro
 
 	@Test
@@ -165,13 +217,14 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", email("reg-con")));
 		assertEquals(0, contar("SELECT COUNT(*) FROM registro_pendiente WHERE email = ?", email("reg-con")),
 				"la solicitud inservible se borra");
-		assertEquals(conCuenta, alumnoDeLaCuenta(cuenta), "la cuenta existente no se toca");
+		assertEquals(List.of(conCuenta), fichasDeLaCuenta(cuenta), "la cuenta existente no se toca");
 
 		long sinCuenta = alumno("REGSIN", email("reg-sin"), true);
 		String tokenSin = solicitarRegistro(email("reg-sin"), sinCuenta);
 		TenantContext.ejecutarCon(org, () -> registroService.confirmarRegistro(tokenSin));
 		long nueva = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email("reg-sin"));
-		assertEquals(sinCuenta, alumnoDeLaCuenta(nueva));
+		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, nueva),
+				"usuario.alumno_id ya no se escribe");
 		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ? "
 				+ "AND rol = 'FAMILIA'", nueva, org));
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", nueva,
@@ -199,9 +252,10 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 		Usuario creada = TenantContext.calcularCon(org, () -> oauth2.processOAuth2Login(google(email), "google"));
 
-		assertEquals(libre, alumnoDeLaCuenta(creada.getId()), "el primer alumno libre");
-		assertEquals(otraCuenta, cuentaDelAlumno(deOtraCuenta));
-		assertEquals(terceraCuenta, cuentaDelAlumno(inactivoConCuenta));
+		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, creada.getId()),
+				"usuario.alumno_id ya no se escribe");
+		assertEquals(List.of(otraCuenta), cuentasDelAlumno(deOtraCuenta));
+		assertEquals(List.of(terceraCuenta), cuentasDelAlumno(inactivoConCuenta));
 		assertEquals(List.of(inactivoLibre, libre).stream().sorted().toList(), jdbc.queryForList(
 				"SELECT alumno_id FROM usuario_alumno WHERE usuario_id = ? ORDER BY alumno_id", Long.class,
 				creada.getId()), "vínculo de familia solo con los alumnos sin cuenta, también el inactivo");
@@ -312,16 +366,21 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		});
 	}
 
+	/** La ficha tiene cuenta (decisión 428): una fila de usuario_alumno, aquí la de la migración V31. */
 	private void vincularCuenta(long usuario, long alumno) {
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, usuario);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MIGRACION')""", usuario, alumno, org);
 	}
 
-	private Long alumnoDeLaCuenta(long usuario) {
-		return jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuario);
+	private List<Long> fichasDeLaCuenta(long usuario) {
+		return jdbc.queryForList("SELECT alumno_id FROM usuario_alumno WHERE usuario_id = ? ORDER BY alumno_id",
+				Long.class, usuario);
 	}
 
-	private Long cuentaDelAlumno(long alumno) {
-		return jdbc.queryForObject("SELECT id FROM usuario WHERE alumno_id = ?", Long.class, alumno);
+	private List<Long> cuentasDelAlumno(long alumno) {
+		return jdbc.queryForList("SELECT usuario_id FROM usuario_alumno WHERE alumno_id = ? ORDER BY usuario_id",
+				Long.class, alumno);
 	}
 
 	private String emailDelAlumno(long alumno) {

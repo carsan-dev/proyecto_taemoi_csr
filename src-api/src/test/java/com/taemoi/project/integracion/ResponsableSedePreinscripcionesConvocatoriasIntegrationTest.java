@@ -411,12 +411,18 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		long ficha = e.alumno("E6VINCULADA" + e.marca, e.sA, true);
 		jdbc.update("UPDATE alumno SET nif = ?, email = ? WHERE id = ?", dni, emailCuenta, ficha);
 		long cuenta = cuenta(emailCuenta);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", ficha, cuenta);
+		// Pieza E10-2 (decisión 428): la ficha tiene cuenta por su fila de usuario_alumno, de cualquier origen.
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'PROPIO', 'REGISTRO')""", cuenta, ficha, e.org);
 		String referencia = preinscripcion(e.org, e.gA, List.of(e.tA), dni, "nuevo-" + e.marca + "@example.test");
 
 		MvcResult cambio = peticion(post("/api/preinscripciones/" + referencia + "/finalizar")
 				.contentType(MediaType.APPLICATION_JSON).content(vincular(ficha, "USAR_PREINSCRIPCION")), tokenA);
 		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertNotEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).path("mensaje").asText(),
+				"es el 403 de la ficha con cuenta (6-2), no el de la decisión 96");
 		assertEquals("PENDIENTE", estadoDe(referencia));
 		assertEquals(emailCuenta, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, ficha));
 

@@ -198,6 +198,14 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.repositories.UsuarioAlumnoRepository usuarioAlumnoRepository;
 
+	/** Pieza E10-2: cuentas de la ficha (usuario_alumno), en lugar de usuario.alumno_id. */
+	@Autowired
+	private com.taemoi.project.services.VinculoFamiliaService vinculoFamiliaService;
+
+	/** Pieza E10-2 (decisión 429): qué fichas sigue viendo una cuenta al borrar o anonimizar otra. */
+	@Autowired
+	private com.taemoi.project.services.AccesoFamiliaService accesoFamiliaService;
+
 	/** Decisión 287 (ronda 2): cancela los cargos sin pagar del alumno que se elimina anonimizando. */
 	@Autowired
 	@org.springframework.context.annotation.Lazy
@@ -783,22 +791,28 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setNif(nifNormalizado);
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
-			Usuario usuario = alumnoExistente.getUsuario();
-			if (usuario == null) {
+			// Pieza E10-2: las cuentas de la ficha son sus filas de usuario_alumno (decisión 428).
+			List<Usuario> cuentas = cuentasDeLaFicha(alumnoExistente);
+			if (cuentas.isEmpty()) {
 				// Decisión 96: sin cuenta, el email da acceso de familia a la ficha; solo lo cambia la gestión.
 				gestionPorSede.exigirGestionParaCambiarEmail(alumnoExistente.getEmail(), normalizedEmail);
 			}
-			if (usuario != null && normalizedEmail != null) {
-				String usuarioEmail = usuario.getEmail();
-				if ((usuarioEmail == null || !usuarioEmail.equals(normalizedEmail))
-						&& gestionPorSede.restriccion().isPresent()) {
+			if (!cuentas.isEmpty() && normalizedEmail != null) {
+				boolean cambiaElDeAlgunaCuenta = cuentas.stream()
+						.anyMatch(cuenta -> cuenta.getEmail() == null || !cuenta.getEmail().equals(normalizedEmail));
+				if (cambiaElDeAlgunaCuenta && gestionPorSede.restriccion().isPresent()) {
 					// Entrega 6-1: el responsable de sede nunca cambia el email de una cuenta (es el de acceso; con él
 					// podría apropiarse de una cuenta de gestión). Cambiar el de un alumno con cuenta: 403; sin cambio
 					// en la ficha, la cuenta no se toca.
 					if (!java.util.Objects.equals(normalizedEmail, EmailUtils.normalizeEmail(alumnoExistente.getEmail()))) {
 						throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
 					}
-				} else if (usuarioEmail == null || !usuarioEmail.equals(normalizedEmail)) {
+				} else if (cuentas.size() == 1 && cambiaElDeAlgunaCuenta && java.util.Objects.equals(
+						EmailUtils.normalizeEmail(cuentas.get(0).getEmail()),
+						EmailUtils.normalizeEmail(alumnoExistente.getEmail()))) {
+					// Decisión 430: el email de la ficha pasa a la cuenta solo si es la única vinculada y su email
+					// era el de la ficha. Con varias cuentas, u otro email, la cuenta no se toca.
+					Usuario usuario = cuentas.get(0);
 					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
 					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
 							alumnoExistente.getOrganizacionId())) {
@@ -1831,18 +1845,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 				imagenRepository.delete(imagen);
 			}
 
-			if (alumno.getUsuario() != null) {
-				// La cuenta es global: se quita solo su acceso como familia a esta escuela y se borra
-				// únicamente si ya no le queda ninguna membresía (en ninguna escuela).
-				Usuario usuario = alumno.getUsuario();
-				alumno.setUsuario(null);
-				usuario.setAlumno(null);
-				if (membresiaService.retirarFamilia(usuario.getId(), alumno.getOrganizacionId())) {
-					usuarioRepository.save(usuario);
-				} else {
-					usuarioRepository.delete(usuario);
-				}
-			}
+			// Decisión 429: las cuentas vinculadas que se quedan sin ninguna ficha visible pierden FAMILIA aquí (y se
+			// borran sin ninguna membresía). Sus filas de esta ficha caen luego con el alumno (cascada).
+			retirarFamiliaDeCuentasSinOtraFicha(
+					vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(), alumno.getOrganizacionId()), alumno);
 
 			for (Grupo grupo : alumno.getGrupos()) {
 				grupo.getAlumnos().remove(alumno);
@@ -1876,6 +1882,48 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoRepository.delete(alumno);
 			return true;
 		}).orElse(false);
+	}
+
+	/**
+	 * Cuentas de la ficha ({@code usuario_alumno} de su escuela, decisión 428) en orden de id. Una fila sin cuenta no
+	 * puede existir (FK en cascada); si aun así faltara, se ignora.
+	 */
+	private List<Usuario> cuentasDeLaFicha(Alumno alumno) {
+		List<Usuario> cuentas = new ArrayList<>();
+		for (com.taemoi.project.entities.UsuarioAlumno vinculo : vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(),
+				alumno.getOrganizacionId())) {
+			usuarioRepository.findById(vinculo.getUsuarioId()).ifPresent(cuentas::add);
+		}
+		return cuentas;
+	}
+
+	/**
+	 * Decisión 429 (borrar y anonimizar): cada cuenta vinculada a la ficha (cualquier relación y origen) que, sin ella,
+	 * no ve ninguna otra ficha de la escuela como familia ({@code AccesoFamiliaService}, la misma regla del portal,
+	 * email de Moiskimdo incluido) pierde su membresía FAMILIA en esa escuela; si no le queda ninguna membresía en
+	 * ninguna escuela, se borra la cuenta. Las que siguen viendo otra ficha no se tocan, y la gestión se conserva.
+	 */
+	private void retirarFamiliaDeCuentasSinOtraFicha(List<com.taemoi.project.entities.UsuarioAlumno> vinculos,
+			Alumno alumno) {
+		Long alumnoId = alumno.getId();
+		Long organizacionId = alumno.getOrganizacionId();
+		List<Long> usuarioIds = vinculos.stream().map(com.taemoi.project.entities.UsuarioAlumno::getUsuarioId)
+				.distinct().sorted().toList();
+		for (Long usuarioId : usuarioIds) {
+			Optional<Usuario> cuenta = usuarioRepository.findById(usuarioId);
+			if (cuenta.isEmpty()) {
+				continue;
+			}
+			Usuario usuario = cuenta.get();
+			boolean veOtraFicha = accesoFamiliaService.idsAccesibles(usuario, organizacionId).stream()
+					.anyMatch(id -> !id.equals(alumnoId));
+			if (veOtraFicha) {
+				continue;
+			}
+			if (!membresiaService.retirarFamilia(usuarioId, organizacionId)) {
+				usuarioRepository.delete(usuario);
+			}
+		}
 	}
 
 	/** Pieza 8b-3l bis (decisión 287): respuesta 409 del borrado definitivo de un alumno con pagos. */
@@ -1947,20 +1995,13 @@ public class AlumnoServiceImpl implements AlumnoService {
 				imagenRepository.delete(imagen);
 			}
 
-			// El acceso de familia: los vínculos usuario_alumno (en el borrado caen en cascada) y la cuenta propia, como el
-			// borrado: se le quita su acceso de familia a esta escuela y se borra solo si no le queda ninguna membresía.
-			usuarioAlumnoRepository.deleteAll(
-					usuarioAlumnoRepository.findByAlumnoIdAndOrganizacionId(alumnoId, alumno.getOrganizacionId()));
-			if (alumno.getUsuario() != null) {
-				Usuario usuario = alumno.getUsuario();
-				alumno.setUsuario(null);
-				usuario.setAlumno(null);
-				if (membresiaService.retirarFamilia(usuario.getId(), alumno.getOrganizacionId())) {
-					usuarioRepository.save(usuario);
-				} else {
-					usuarioRepository.delete(usuario);
-				}
-			}
+			// El acceso de familia: los vínculos usuario_alumno (en el borrado caen en cascada) y, como el borrado
+			// (decisión 429), cada cuenta vinculada que se queda sin ninguna ficha visible pierde FAMILIA en esta
+			// escuela y se borra solo si no le queda ninguna membresía.
+			List<com.taemoi.project.entities.UsuarioAlumno> vinculos =
+					vinculoFamiliaService.cuentasDeLaFicha(alumnoId, alumno.getOrganizacionId());
+			usuarioAlumnoRepository.deleteAll(vinculos);
+			retirarFamiliaDeCuentasSinOtraFicha(vinculos, alumno);
 
 			for (Grupo grupo : new ArrayList<>(alumno.getGrupos())) {
 				grupo.getAlumnos().remove(alumno);

@@ -2,7 +2,9 @@ package com.taemoi.project.services.impl;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -51,6 +53,28 @@ public class VinculoFamiliaServiceImpl implements VinculoFamiliaService {
 		vinculos.save(new UsuarioAlumno(usuario.getId(), alumno.getId(), organizacionId, relacion,
 				OrigenUsuarioAlumno.REGISTRO));
 		return true;
+	}
+
+	@Override
+	public List<UsuarioAlumno> cuentasDeLaFicha(Long alumnoId, Long organizacionId) {
+		if (alumnoId == null || organizacionId == null) {
+			return List.of();
+		}
+		return vinculos.findByAlumnoIdAndOrganizacionId(alumnoId, organizacionId).stream()
+				.sorted(Comparator.comparing(UsuarioAlumno::getUsuarioId))
+				.toList();
+	}
+
+	@Override
+	public List<Long> fichasPropiasDeLaCuenta(Long usuarioId, Long organizacionId) {
+		if (usuarioId == null || organizacionId == null) {
+			return List.of();
+		}
+		return vinculos.findByUsuarioIdAndOrganizacionIdAndRelacion(usuarioId, organizacionId,
+				RelacionUsuarioAlumno.PROPIO).stream()
+				.map(UsuarioAlumno::getAlumnoId)
+				.sorted()
+				.toList();
 	}
 
 	private static LocalDate aFecha(Date fecha) {

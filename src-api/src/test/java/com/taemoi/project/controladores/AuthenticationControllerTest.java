@@ -2,7 +2,10 @@ package com.taemoi.project.controladores;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -34,6 +37,7 @@ import com.taemoi.project.services.AuthenticationService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.VinculoFamiliaService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationControllerTest {
@@ -54,6 +58,9 @@ class AuthenticationControllerTest {
 	private AccesoFamiliaService accesoFamilia;
 
 	@Mock
+	private VinculoFamiliaService vinculoFamilia;
+
+	@Mock
 	private PasswordResetService passwordResetService;
 
 	@Mock
@@ -67,48 +74,139 @@ class AuthenticationControllerTest {
 		SecurityContextHolder.clearContext();
 	}
 
+	// Decisión 431 (pieza E10-2): la ficha de alumnoDTO sale de usuario_alumno (fichas PROPIO), no de usuario.alumno_id.
+
 	@Test
-	void obtenerUsuarioAutenticado_roleUserConAlumnoAsociadoActivo_loMantiene() {
+	void obtenerUsuarioAutenticado_familiaConFichaPropiaYTutorada_devuelveLaPropia() {
 		String email = "familia@example.com";
-		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
-						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
-
-		Alumno asociadoActivo = crearAlumno(7L, "Ana", "Activa", true, email);
-		Alumno otroActivo = crearAlumno(8L, "Beto", "Activo", true, email);
-		Usuario usuario = crearUsuario(99L, email, asociadoActivo);
-
+		sesion(email, Roles.ROLE_USER);
+		Alumno tutorada = crearAlumno(5L, "Ana", "Hija", true, email);
+		Alumno propia = crearAlumno(9L, "Eva", "Madre", true, email);
+		Usuario usuario = crearUsuario(99L, email);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
-		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
-				.thenReturn(List.of(otroActivo, asociadoActivo));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(99L), any())).thenReturn(List.of(9L));
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario)).thenReturn(List.of(tutorada, propia));
 
 		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();
 
-		assertNotNull(response);
 		assertNotNull(response.getAlumnoDTO());
-		assertEquals(7L, response.getAlumnoDTO().getId());
+		assertEquals(9L, response.getAlumnoDTO().getId());
 	}
 
 	@Test
-	void obtenerUsuarioAutenticado_roleUserConAsociadoInactivo_devuelveAlumnoActivoPorEmail() {
+	void obtenerUsuarioAutenticado_familiaSoloTutora_devuelveLaDeMenorId() {
 		String email = "familia@example.com";
-		SecurityContextHolder.getContext()
-				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
-						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
-
-		Alumno asociadoInactivo = crearAlumno(10L, "Clara", "Inactiva", false, email);
-		Alumno activo = crearAlumno(11L, "Diego", "Activo", true, email);
-		Usuario usuario = crearUsuario(100L, email, asociadoInactivo);
-
+		sesion(email, Roles.ROLE_USER);
+		Alumno primera = crearAlumno(5L, "Ana", "Hija", true, email);
+		Alumno segunda = crearAlumno(8L, "Beto", "Hijo", true, email);
+		Usuario usuario = crearUsuario(99L, email);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
-		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario))
-				.thenReturn(List.of(activo));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(99L), any())).thenReturn(List.of());
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario)).thenReturn(List.of(primera, segunda));
 
 		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();
 
-		assertNotNull(response);
+		assertNotNull(response.getAlumnoDTO());
+		assertEquals(5L, response.getAlumnoDTO().getId());
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_familiaConFichaPropiaQueNoVe_devuelveLaQueVe() {
+		String email = "familia@example.com";
+		sesion(email, Roles.ROLE_USER);
+		Alumno activo = crearAlumno(11L, "Diego", "Activo", true, email);
+		Usuario usuario = crearUsuario(100L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		// La 10 es PROPIO pero inactiva: el acceso de familia no la da.
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(100L), any())).thenReturn(List.of(10L));
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario)).thenReturn(List.of(activo));
+
+		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();
+
 		assertNotNull(response.getAlumnoDTO());
 		assertEquals(11L, response.getAlumnoDTO().getId());
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_familiaSinFichasVisibles_sinAlumno() {
+		String email = "familia@example.com";
+		sesion(email, Roles.ROLE_USER);
+		Usuario usuario = crearUsuario(100L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(100L), any())).thenReturn(List.of(10L));
+		when(accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario)).thenReturn(List.of());
+
+		assertNull(authenticationController.obtenerUsuarioAutenticado().getAlumnoDTO());
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_gestorConFichaPropiaActiva_laDevuelve() {
+		String email = "gestor@example.com";
+		sesion(email, Roles.ROLE_MANAGER);
+		Usuario usuario = crearUsuario(200L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(200L), any())).thenReturn(List.of(30L));
+		when(alumnoRepository.buscarPorIdEnOrganizacionActiva(30L))
+				.thenReturn(Optional.of(crearAlumno(30L, "Gema", "Gestora", true, email)));
+
+		UsuarioConAlumnoAsociadoDTO response = authenticationController.obtenerUsuarioAutenticado();
+
+		assertNotNull(response.getAlumnoDTO());
+		assertEquals(30L, response.getAlumnoDTO().getId());
+		verifyNoInteractions(accesoFamilia);
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_gestorConFichaPropiaInactiva_sinAlumno() {
+		String email = "gestor@example.com";
+		sesion(email, Roles.ROLE_ADMIN);
+		Usuario usuario = crearUsuario(200L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(200L), any())).thenReturn(List.of(30L));
+		when(alumnoRepository.buscarPorIdEnOrganizacionActiva(30L))
+				.thenReturn(Optional.of(crearAlumno(30L, "Gema", "Gestora", false, email)));
+
+		assertNull(authenticationController.obtenerUsuarioAutenticado().getAlumnoDTO());
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_gestorConFichaPropiaDeOtraEscuela_sinAlumno() {
+		String email = "gestor@example.com";
+		sesion(email, Roles.ROLE_MANAGER);
+		Usuario usuario = crearUsuario(200L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(200L), any())).thenReturn(List.of(30L));
+		when(alumnoRepository.buscarPorIdEnOrganizacionActiva(30L)).thenReturn(Optional.empty());
+
+		assertNull(authenticationController.obtenerUsuarioAutenticado().getAlumnoDTO());
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_gestorSinFicha_sinAlumno() {
+		String email = "gestor@example.com";
+		sesion(email, Roles.ROLE_MANAGER);
+		Usuario usuario = crearUsuario(200L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+		when(vinculoFamilia.fichasPropiasDeLaCuenta(eq(200L), any())).thenReturn(List.of());
+
+		assertNull(authenticationController.obtenerUsuarioAutenticado().getAlumnoDTO());
+		verifyNoInteractions(alumnoRepository, accesoFamilia);
+	}
+
+	@Test
+	void obtenerUsuarioAutenticado_profesor_sinAlumnoNiConsultas() {
+		String email = "profe@example.com";
+		sesion(email, Roles.ROLE_PROFESOR);
+		Usuario usuario = crearUsuario(300L, email);
+		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
+
+		assertNull(authenticationController.obtenerUsuarioAutenticado().getAlumnoDTO());
+		verifyNoInteractions(vinculoFamilia, alumnoRepository, accesoFamilia);
+	}
+
+	private static void sesion(String email, Roles rol) {
+		SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
+				List.of(new SimpleGrantedAuthority(rol.name()))));
 	}
 
 	@Test
@@ -118,7 +216,7 @@ class AuthenticationControllerTest {
 				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
 						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
-		Usuario usuario = crearUsuario(101L, email, null);
+		Usuario usuario = crearUsuario(101L, email);
 		usuario.setRecordatorioRachaEmailHabilitado(true);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 
@@ -135,7 +233,7 @@ class AuthenticationControllerTest {
 				.setAuthentication(new UsernamePasswordAuthenticationToken(email, "token",
 						List.of(new SimpleGrantedAuthority(Roles.ROLE_USER.name()))));
 
-		Usuario usuario = crearUsuario(102L, email, null);
+		Usuario usuario = crearUsuario(102L, email);
 		usuario.setRecordatorioRachaEmailHabilitado(false);
 		when(usuarioService.encontrarPorEmail(email)).thenReturn(Optional.of(usuario));
 		when(usuarioService.actualizarUsuario(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -151,11 +249,10 @@ class AuthenticationControllerTest {
 		assertEquals(true, usuario.getRecordatorioRachaEmailHabilitado());
 	}
 
-	private Usuario crearUsuario(Long id, String email, Alumno alumno) {
+	private Usuario crearUsuario(Long id, String email) {
 		Usuario usuario = new Usuario();
 		usuario.setId(id);
 		usuario.setEmail(email);
-		usuario.setAlumno(alumno);
 		return usuario;
 	}
 

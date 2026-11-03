@@ -87,24 +87,5 @@
       "tipoTurno" : "No definido",
       "turno" : "De 17:00 a 18:00"
     }
-  ],
-  "usuario" : {
-    "accountNonExpired" : true,
-    "accountNonLocked" : true,
-    "apellidos" : "Dorado A03",
-    "authProvider" : "LOCAL",
-    "authorities" : [ ],
-    "credentialsNonExpired" : true,
-    "email" : "dorado-r2-familia-a03@example.test",
-    "enabled" : true,
-    "id" : "usuario:A03",
-    "nombre" : "Familia",
-    "recordatorioRachaEmailHabilitado" : true,
-    "ultimoRecordatorioRachaReset" : [
-      2026,
-      28,
-      9
-    ],
-    "username" : "dorado-r2-familia-a03@example.test"
-  }
+  ]
 }

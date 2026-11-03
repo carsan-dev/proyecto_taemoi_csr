@@ -150,7 +150,9 @@ public class RegistroServiceImpl implements RegistroService {
 		Alumno alumno = alumnoRepository.findById(registro.getAlumnoId())
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado."));
 
-		if (alumno.getUsuario() != null) {
+		// Decisión 428: la ficha ya tiene cuenta si tiene alguna fila en usuario_alumno (la cuenta nueva aún no existe,
+		// así que cualquier fila es de otra), de cualquier relación y origen.
+		if (!vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(), alumno.getOrganizacionId()).isEmpty()) {
 			registroPendienteRepository.delete(registro);
 			throw new IllegalArgumentException("El alumno ya tiene usuario asociado.");
 		}
@@ -161,20 +163,16 @@ public class RegistroServiceImpl implements RegistroService {
 		usuario.setEmail(registro.getEmail());
 		usuario.setContrasena(registro.getPasswordHash());
 		usuario.setAuthProvider(AuthProvider.LOCAL);
-		usuario.setAlumno(alumno);
 		usuario.setUltimaOrganizacionId(alumno.getOrganizacionId());
 		usuarioRepository.save(usuario);
 		// Familia en la escuela del alumno (sustituye a ROLE_USER en usuario_rol).
 		membresiaService.asegurarMembresia(usuario.getId(), alumno.getOrganizacionId(), RolMembresia.FAMILIA);
-		// Vínculo explícito de familia (fase 3, entrega 2b), además de usuario.alumno_id hasta V32. Solo si el
-		// alumno sigue teniendo el email de la cuenta (pudo cambiar desde la solicitud): como V31, una cuenta solo
-		// familia no se vincula con un alumno de otro email, que hoy no ve.
+		// Vínculo explícito de familia (fase 3, entrega 2b; desde la E10-2, el único: usuario.alumno_id ya no se
+		// escribe). Solo si el alumno sigue teniendo el email de la cuenta (pudo cambiar desde la solicitud): como
+		// V31, una cuenta solo familia no se vincula con un alumno de otro email, que hoy no ve.
 		if (alumnoRepository.existsByIdAndEmailIgnoreCase(alumno.getId(), registro.getEmail())) {
 			vinculoFamiliaService.vincularAlta(usuario, alumno);
 		}
-
-		alumno.setUsuario(usuario);
-		alumnoRepository.save(alumno);
 
 		registroPendienteRepository.delete(registro);
 	}

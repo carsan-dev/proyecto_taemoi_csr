@@ -8,24 +8,19 @@ import java.util.Collections;
 import java.util.Locale;
 
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -97,20 +92,14 @@ public class Usuario implements UserDetails {
 	@Column(name = "ultima_organizacion_id")
 	private Long ultimaOrganizacionId;
 
-	/**
-	 * LAZY: el alumno es de una organización ({@code @TenantId}) y el usuario es global. Cargar un
-	 * usuario (p. ej. al autenticar, antes de conocer la escuela) no debe cargar un alumno que puede
-	 * ser de otra escuela. Usar {@link #getAlumnoId()} para obtener el id sin inicializarlo.
+	/*
+	 * Pieza E10-2: la columna usuario.alumno_id ya no se mapea ni se escribe (sigue en la tabla hasta la V32, sin uso).
+	 * El vínculo de la cuenta con sus fichas es usuario_alumno (VinculoFamiliaService y AccesoFamiliaService).
 	 */
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "alumno_id")
-	@JsonBackReference
-	private Alumno alumno;
 
 	/**
 	 * Perfil de la cuenta (V31_14, decisión 322): nombre por el que quiere que la llamen y cumpleaños sin año (los dos
-	 * valores o ninguno, {@code ck_usuario_cumple}). Datos personales FUERA del JSON: {@code Alumno#getUsuario} saca esta
-	 * entidad en el JSON de alumno. Solo los cambia {@code PerfilCuentaService}, con sus reglas: sin {@code @Size} aquí
+	 * valores o ninguno, {@code ck_usuario_cumple}). Datos personales fuera del JSON de la cuenta. Solo los cambia {@code PerfilCuentaService}, con sus reglas: sin {@code @Size} aquí
 	 * porque el límite es de 40 puntos de código y {@code @Size} cuenta unidades UTF-16.
 	 */
 	@JsonIgnore
@@ -222,22 +211,6 @@ public class Usuario implements UserDetails {
 		return Boolean.TRUE.equals(esAdminPlataforma);
 	}
 
-	public Alumno getAlumno() {
-		return alumno;
-	}
-
-	/** Id del alumno asociado sin inicializar el proxy LAZY (no consulta la base de datos). */
-	@JsonIgnore
-	public Long getAlumnoId() {
-		if (alumno == null) {
-			return null;
-		}
-		if (alumno instanceof HibernateProxy proxy) {
-			return (Long) proxy.getHibernateLazyInitializer().getIdentifier();
-		}
-		return alumno.getId();
-	}
-
 	@JsonIgnore
 	public Long getUltimaOrganizacionId() {
 		return ultimaOrganizacionId;
@@ -245,10 +218,6 @@ public class Usuario implements UserDetails {
 
 	public void setUltimaOrganizacionId(Long ultimaOrganizacionId) {
 		this.ultimaOrganizacionId = ultimaOrganizacionId;
-	}
-
-	public void setAlumno(Alumno alumno) {
-		this.alumno = alumno;
 	}
 
 	public AuthProvider getAuthProvider() {
