@@ -26,8 +26,8 @@ import {
   TEXTOS_PRODUCTOS_ALUMNO as T,
   cuerpoAsignacion,
   diaLocal,
-  esExamenORecompensa,
   esMatricula,
+  requiereDeporte,
   estaCancelado,
   estadoPago,
   fechaConDia,
@@ -268,7 +268,7 @@ export class ProductosAlumnoEstado {
   );
   readonly matriculaElegida = computed(() => esMatricula(this.productoSeleccionado()?.concepto));
   /** Matrícula, derecho a examen o recompensa: el cargo va ligado a un deporte del alumno (ruta del deporte). */
-  readonly deporteRequerido = computed(() => this.matriculaElegida() || esExamenORecompensa(this.productoSeleccionado()));
+  readonly deporteRequerido = computed(() => this.matriculaElegida() || requiereDeporte(this.productoSeleccionado()));
   readonly sinDeportes = computed(() => this.deporteRequerido() && this.deportes().length === 0);
   readonly puedeAnadir = computed(
     () =>
@@ -750,9 +750,9 @@ export class ProductosAlumnoEstado {
     this.productoElegido.set(productoId);
     this.deporteElegido.set(null);
     this.errorAsignacion.set(null);
-    // Examen o recompensa con un solo deporte: va preseleccionado (el desplegable sigue visible).
+    // Producto que exige deporte (no matrícula) con un solo deporte: va preseleccionado (el desplegable sigue visible).
     const unico = this.deportes();
-    if (esExamenORecompensa(this.productoSeleccionado()) && unico.length === 1) {
+    if (!this.matriculaElegida() && requiereDeporte(this.productoSeleccionado()) && unico.length === 1) {
       this.deporteElegido.set(unico[0]);
     }
   }
@@ -774,7 +774,7 @@ export class ProductosAlumnoEstado {
       this.errorAsignacion.set('producto');
       return false;
     }
-    const conDeporte = esMatricula(producto.concepto) || esExamenORecompensa(producto);
+    const conDeporte = esMatricula(producto.concepto) || requiereDeporte(producto);
     const deporte = this.deporteElegido();
     if (conDeporte && (!deporte || !this.deportes().includes(deporte))) {
       this.errorAsignacion.set('deporte');

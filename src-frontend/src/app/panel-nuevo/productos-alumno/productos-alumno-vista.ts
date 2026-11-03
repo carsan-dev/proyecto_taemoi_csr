@@ -198,8 +198,8 @@ export interface ProductoCatalogo {
   id: number;
   concepto: string;
   precio: number | null;
-  /** `TipoProducto` del catálogo (EXAMEN, RECOMPENSA…), cuando la API lo envía. */
-  tipo?: string | null;
+  /** La API lo marca cuando la ruta genérica rechazaría el producto (matrícula, examen, recompensa, o que concede grado). */
+  requiereDeporte?: boolean;
 }
 
 /** Sin tildes y en mayúsculas, para comparar conceptos y buscar. */
@@ -212,9 +212,9 @@ export function esMatricula(concepto: string | null | undefined): boolean {
   return /\bMATRICULA\b/.test(normalizar(concepto));
 }
 
-/** Derecho a examen o recompensa, por el tipo del catálogo (nunca por el texto del concepto). */
-export function esExamenORecompensa(producto: Pick<ProductoCatalogo, 'tipo'> | null | undefined): boolean {
-  return producto?.tipo === 'EXAMEN' || producto?.tipo === 'RECOMPENSA';
+/** El producto exige elegir un deporte del alumno, según la marca `requiereDeporte` de la API. */
+export function requiereDeporte(producto: Pick<ProductoCatalogo, 'requiereDeporte'> | null | undefined): boolean {
+  return producto?.requiereDeporte === true;
 }
 
 /** «Matrícula taekwondo · 25,00 €» (boceto P1); sin precio, solo el concepto. */

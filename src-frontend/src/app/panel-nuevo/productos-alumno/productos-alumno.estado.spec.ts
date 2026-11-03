@@ -535,13 +535,14 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
     describe('derecho a examen y recompensa (deporte)', () => {
       const CON_TIPO = [
         ...CATALOGO,
-        { id: 3, concepto: 'Derecho a examen cinturón rojo', precio: 20, tipo: 'EXAMEN' },
-        { id: 4, concepto: 'Recompensa cinturón rojo', precio: 10, tipo: 'RECOMPENSA' },
-        { id: 5, concepto: 'Licencia', precio: 5, tipo: 'LICENCIA' },
+        { id: 3, concepto: 'Derecho a examen cinturón rojo', precio: 20, requiereDeporte: true },
+        { id: 4, concepto: 'Recompensa cinturón rojo', precio: 10, requiereDeporte: true },
+        { id: 5, concepto: 'Licencia', precio: 5, requiereDeporte: false },
+        { id: 6, concepto: 'DERECHO A EXAMEN cinturón rojo (antiguo)', precio: 15, requiereDeporte: true },
       ];
       const DOS_DEPORTES = { ...ALUMNO, deportes: [{ deporte: 'TAEKWONDO', activo: true }, { deporte: 'KICKBOXING', activo: true }] };
 
-      it('el desplegable de deporte se pide con examen y recompensa, no con otros productos', () => {
+      it('el desplegable de deporte se pide con los productos que requieren deporte, no con otros', () => {
         abrir([], ALUMNO, CON_TIPO);
         estado.elegirProducto(3);
         expect(estado.deporteRequerido()).toBeTrue();
@@ -578,7 +579,7 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
         abiertas().forEach((p) => p.flush([]));
       });
 
-      it('un producto sin tipo de examen usa la ruta genérica y descarta el deporte', () => {
+      it('un producto sin requiereDeporte usa la ruta genérica y descarta el deporte', () => {
         abrir([], DOS_DEPORTES, CON_TIPO);
         estado.elegirProducto(5);
         estado.elegirDeporte('KICKBOXING');
@@ -586,6 +587,18 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
         expect(estado.nuevas()[0].deporte).toBeNull();
         estado.guardar();
         una('POST', `${API}/productos-alumno/alumno/7/producto/5`).flush(cargo(9));
+        abiertas().forEach((p) => p.flush([]));
+      });
+
+      it('un producto antiguo sin tipo pero con requiereDeporte muestra el deporte y usa la ruta del deporte', () => {
+        abrir([], DOS_DEPORTES, CON_TIPO);
+        estado.elegirProducto(6);
+        expect(estado.deporteRequerido()).toBeTrue();
+        expect(estado.anadirALista()).toBeFalse();
+        estado.elegirDeporte('TAEKWONDO');
+        expect(estado.anadirALista()).toBeTrue();
+        estado.guardar();
+        una('POST', `${API}/productos-alumno/alumno/7/producto/6/deporte/TAEKWONDO`).flush(cargo(9));
         abiertas().forEach((p) => p.flush([]));
       });
 

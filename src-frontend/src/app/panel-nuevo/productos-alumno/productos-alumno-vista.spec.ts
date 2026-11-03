@@ -3,7 +3,7 @@ import { eur } from '../formato/formato-es';
 import {
   cuerpoAsignacion,
   diaLocal,
-  esExamenORecompensa,
+  requiereDeporte,
   esMatricula,
   estadoPago,
   etiquetaProducto,
@@ -139,12 +139,11 @@ describe('productos-alumno-vista (8b-3n)', () => {
       expect(esMatricula(null)).toBeFalse();
     });
 
-    it('examen y recompensa: por el tipo del catálogo, no por el texto', () => {
-      expect(esExamenORecompensa({ tipo: 'EXAMEN' })).toBeTrue();
-      expect(esExamenORecompensa({ tipo: 'RECOMPENSA' })).toBeTrue();
-      expect(esExamenORecompensa({ tipo: 'LICENCIA' })).toBeFalse();
-      expect(esExamenORecompensa({})).toBeFalse();
-      expect(esExamenORecompensa(null)).toBeFalse();
+    it('requiereDeporte: solo la marca de la API, no el texto', () => {
+      expect(requiereDeporte({ requiereDeporte: true })).toBeTrue();
+      expect(requiereDeporte({ requiereDeporte: false })).toBeFalse();
+      expect(requiereDeporte({})).toBeFalse();
+      expect(requiereDeporte(null)).toBeFalse();
     });
 
     it('etiqueta «concepto · precio» y búsqueda sin tildes', () => {
