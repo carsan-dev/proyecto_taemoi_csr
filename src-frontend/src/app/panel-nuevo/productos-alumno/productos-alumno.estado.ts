@@ -26,6 +26,7 @@ import {
   TEXTOS_PRODUCTOS_ALUMNO as T,
   cuerpoAsignacion,
   diaLocal,
+  esExamenORecompensa,
   esMatricula,
   estaCancelado,
   estadoPago,
@@ -57,7 +58,7 @@ export interface AsignacionNueva {
   /** Identificador local (no es un id del servidor). */
   clave: number;
   producto: ProductoCatalogo;
-  /** Solo en matrículas: el código del deporte del alumno. */
+  /** Solo en matrículas, derechos de examen y recompensas: el código del deporte del alumno. */
   deporte: string | null;
   /** El error del servidor del último guardado (decisión 296). */
   error: string | null;
@@ -266,13 +267,15 @@ export class ProductosAlumnoEstado {
     () => this.catalogo().find((p) => p.id === this.productoElegido()) ?? null
   );
   readonly matriculaElegida = computed(() => esMatricula(this.productoSeleccionado()?.concepto));
-  readonly sinDeportes = computed(() => this.matriculaElegida() && this.deportes().length === 0);
+  /** Matrícula, derecho a examen o recompensa: el cargo va ligado a un deporte del alumno (ruta del deporte). */
+  readonly deporteRequerido = computed(() => this.matriculaElegida() || esExamenORecompensa(this.productoSeleccionado()));
+  readonly sinDeportes = computed(() => this.deporteRequerido() && this.deportes().length === 0);
   readonly puedeAnadir = computed(
     () =>
       this.estado() === 'listo' &&
       !this.guardando() &&
       this.productoSeleccionado() !== null &&
-      (!this.matriculaElegida() || this.deportes().includes(this.deporteElegido() ?? ''))
+      (!this.deporteRequerido() || this.deportes().includes(this.deporteElegido() ?? ''))
   );
 
   readonly filas = computed<FilaCargo[]>(() => {
@@ -747,6 +750,11 @@ export class ProductosAlumnoEstado {
     this.productoElegido.set(productoId);
     this.deporteElegido.set(null);
     this.errorAsignacion.set(null);
+    // Examen o recompensa con un solo deporte: va preseleccionado (el desplegable sigue visible).
+    const unico = this.deportes();
+    if (esExamenORecompensa(this.productoSeleccionado()) && unico.length === 1) {
+      this.deporteElegido.set(unico[0]);
+    }
   }
 
   elegirDeporte(deporte: string | null): void {
@@ -766,14 +774,14 @@ export class ProductosAlumnoEstado {
       this.errorAsignacion.set('producto');
       return false;
     }
-    const matricula = esMatricula(producto.concepto);
+    const conDeporte = esMatricula(producto.concepto) || esExamenORecompensa(producto);
     const deporte = this.deporteElegido();
-    if (matricula && (!deporte || !this.deportes().includes(deporte))) {
+    if (conDeporte && (!deporte || !this.deportes().includes(deporte))) {
       this.errorAsignacion.set('deporte');
       return false;
     }
     this.nuevas.set([
-      { clave: this.siguienteClave++, producto, deporte: matricula ? deporte : null, error: null, fechaPrevista: fecha(new Date()) },
+      { clave: this.siguienteClave++, producto, deporte: conDeporte ? deporte : null, error: null, fechaPrevista: fecha(new Date()) },
       ...this.nuevas(),
     ]);
     this.productoElegido.set(null);

@@ -532,6 +532,71 @@ describe('ProductosAlumnoEstado (8b-3n)', () => {
       expect(estado.anadirALista()).toBeFalse();
     });
 
+    describe('derecho a examen y recompensa (deporte)', () => {
+      const CON_TIPO = [
+        ...CATALOGO,
+        { id: 3, concepto: 'Derecho a examen cinturón rojo', precio: 20, tipo: 'EXAMEN' },
+        { id: 4, concepto: 'Recompensa cinturón rojo', precio: 10, tipo: 'RECOMPENSA' },
+        { id: 5, concepto: 'Licencia', precio: 5, tipo: 'LICENCIA' },
+      ];
+      const DOS_DEPORTES = { ...ALUMNO, deportes: [{ deporte: 'TAEKWONDO', activo: true }, { deporte: 'KICKBOXING', activo: true }] };
+
+      it('el desplegable de deporte se pide con examen y recompensa, no con otros productos', () => {
+        abrir([], ALUMNO, CON_TIPO);
+        estado.elegirProducto(3);
+        expect(estado.deporteRequerido()).toBeTrue();
+        estado.elegirProducto(4);
+        expect(estado.deporteRequerido()).toBeTrue();
+        estado.elegirProducto(5);
+        expect(estado.deporteRequerido()).toBeFalse();
+        estado.elegirProducto(1);
+        expect(estado.deporteRequerido()).toBeFalse();
+        estado.elegirProducto(2);
+        expect(estado.deporteRequerido()).toBeTrue();
+      });
+
+      it('con un solo deporte va preseleccionado; al cambiar de producto se reinicia', () => {
+        abrir([], ALUMNO, CON_TIPO);
+        estado.elegirProducto(3);
+        expect(estado.deporteElegido()).toBe('TAEKWONDO');
+        estado.elegirProducto(5);
+        expect(estado.deporteElegido()).toBeNull();
+      });
+
+      it('con varios deportes es obligatorio y se envía por la ruta del deporte', () => {
+        abrir([], DOS_DEPORTES, CON_TIPO);
+        estado.elegirProducto(3);
+        expect(estado.deporteElegido()).toBeNull();
+        expect(estado.puedeAnadir()).toBeFalse();
+        expect(estado.anadirALista()).toBeFalse();
+        expect(estado.errorAsignacion()).toBe('deporte');
+        estado.elegirDeporte('KICKBOXING');
+        expect(estado.anadirALista()).toBeTrue();
+        expect(estado.nuevas()[0].deporte).toBe('KICKBOXING');
+        estado.guardar();
+        una('POST', `${API}/productos-alumno/alumno/7/producto/3/deporte/KICKBOXING`).flush(cargo(9));
+        abiertas().forEach((p) => p.flush([]));
+      });
+
+      it('un producto sin tipo de examen usa la ruta genérica y descarta el deporte', () => {
+        abrir([], DOS_DEPORTES, CON_TIPO);
+        estado.elegirProducto(5);
+        estado.elegirDeporte('KICKBOXING');
+        expect(estado.anadirALista()).toBeTrue();
+        expect(estado.nuevas()[0].deporte).toBeNull();
+        estado.guardar();
+        una('POST', `${API}/productos-alumno/alumno/7/producto/5`).flush(cargo(9));
+        abiertas().forEach((p) => p.flush([]));
+      });
+
+      it('sin deportes avisa, como la matrícula', () => {
+        abrir([], { ...ALUMNO, deportes: [] }, CON_TIPO);
+        estado.elegirProducto(4);
+        expect(estado.sinDeportes()).toBeTrue();
+        expect(estado.anadirALista()).toBeFalse();
+      });
+    });
+
     it('la búsqueda filtra las opciones', () => {
       abrir([]);
       estado.buscarProducto('matri');

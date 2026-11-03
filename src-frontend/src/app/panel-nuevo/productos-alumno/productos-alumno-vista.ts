@@ -22,7 +22,7 @@ export const TEXTOS_PRODUCTOS_ALUMNO = {
   errorAlumno: 'No se han podido cargar los productos del alumno.',
   sinProducto: 'Seleccione un producto',
   sinDeporte: 'Seleccione un deporte',
-  sinDeportes: 'No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar la matrícula.',
+  sinDeportes: 'No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar este producto.',
   vacio: 'No hay productos asignados a este alumno',
   guardado: 'Cambios aplicados correctamente',
   /** El error de una fila al guardar cuando el servidor no da mensaje (decisión 296). */
@@ -198,6 +198,8 @@ export interface ProductoCatalogo {
   id: number;
   concepto: string;
   precio: number | null;
+  /** `TipoProducto` del catálogo (EXAMEN, RECOMPENSA…), cuando la API lo envía. */
+  tipo?: string | null;
 }
 
 /** Sin tildes y en mayúsculas, para comparar conceptos y buscar. */
@@ -208,6 +210,11 @@ export function normalizar(texto: string | null | undefined): string {
 /** Matrícula: el concepto lleva la palabra MATRICULA, sin tildes (la regla de hoy y del servidor). */
 export function esMatricula(concepto: string | null | undefined): boolean {
   return /\bMATRICULA\b/.test(normalizar(concepto));
+}
+
+/** Derecho a examen o recompensa, por el tipo del catálogo (nunca por el texto del concepto). */
+export function esExamenORecompensa(producto: Pick<ProductoCatalogo, 'tipo'> | null | undefined): boolean {
+  return producto?.tipo === 'EXAMEN' || producto?.tipo === 'RECOMPENSA';
 }
 
 /** «Matrícula taekwondo · 25,00 €» (boceto P1); sin precio, solo el concepto. */

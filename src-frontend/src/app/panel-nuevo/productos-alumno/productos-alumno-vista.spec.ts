@@ -3,6 +3,7 @@ import { eur } from '../formato/formato-es';
 import {
   cuerpoAsignacion,
   diaLocal,
+  esExamenORecompensa,
   esMatricula,
   estadoPago,
   etiquetaProducto,
@@ -136,6 +137,14 @@ describe('productos-alumno-vista (8b-3n)', () => {
       expect(esMatricula('Mensualidad')).toBeFalse();
       expect(esMatricula('MATRICULAS')).toBeFalse();
       expect(esMatricula(null)).toBeFalse();
+    });
+
+    it('examen y recompensa: por el tipo del catálogo, no por el texto', () => {
+      expect(esExamenORecompensa({ tipo: 'EXAMEN' })).toBeTrue();
+      expect(esExamenORecompensa({ tipo: 'RECOMPENSA' })).toBeTrue();
+      expect(esExamenORecompensa({ tipo: 'LICENCIA' })).toBeFalse();
+      expect(esExamenORecompensa({})).toBeFalse();
+      expect(esExamenORecompensa(null)).toBeFalse();
     });
 
     it('etiqueta «concepto · precio» y búsqueda sin tildes', () => {
