@@ -459,9 +459,20 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 					((Number) cargoTkd.get("precio")).doubleValue(), 0.001, "importe del producto: " + codigo);
 			assertEquals(((Number) cargoTkd.get("precio")).doubleValue(), ((Number) cargoKb.get("precio")).doubleValue(),
 					0.001, "mismo importe: " + codigo);
+			// La asignación manual de la gestión por deporte (03/11/2026) da el mismo concepto que el cargo automático,
+			// salvo el sufijo de la disciplina.
+			long producto = ((Number) cargoKb.get("producto_id")).longValue();
+			assertEquals(caso[3], conceptoAsignadoPorDeporte(tkd, producto, "TAEKWONDO"), codigo);
+			assertEquals(caso[4], conceptoAsignadoPorDeporte(kb, producto, "KICKBOXING"), codigo);
 		}
 		// El grado no cambia hasta cobrar el cargo.
 		assertInscripcion(kb, "KICKBOXING", "AZUL", null);
+	}
+
+	private String conceptoAsignadoPorDeporte(long alumnoId, long productoId, String deporte) {
+		autenticar();
+		return TenantContext.calcularCon(ORG_TAEMOI, () -> tx.execute(s -> productoAlumnoService
+				.asignarProductoAAlumnoDeporte(alumnoId, productoId, deporte, new ProductoAlumnoDTO()).getConcepto()));
 	}
 
 	/** La convocatoria de kickboxing crea el cargo del examen a marrón (también bordado) con «MARRÓN». */

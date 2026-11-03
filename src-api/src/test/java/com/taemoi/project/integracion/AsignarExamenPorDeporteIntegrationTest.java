@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.nio.charset.StandardCharsets;
 
@@ -32,15 +33,19 @@ import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.ProductosCatalogoService;
 
 import jakarta.servlet.http.Cookie;
 
 /**
  * Decisión del propietario (03/11/2026) contra MySQL: la gestión asigna los exámenes y las recompensas eligiendo el
- * deporte del alumno. Por la vía genérica, 400; por la del deporte, el cargo queda ligado a esa inscripción y, en
- * kickboxing, el grado ROJO se llama como en su catálogo (aquí «CAFÉ», para distinguirlo del respaldo «MARRÓN»). El
- * catálogo de la gestión ({@code GET /api/productos/todos}) dice el tipo de cada producto. Escuela sintética propia
- * ({@link EscuelaConSedesDePrueba}) con kickboxing; datos inventados.
+ * deporte del alumno. Por la vía genérica, 400; por la del deporte, el deporte solo da el concepto y el 400 de otra
+ * disciplina: el cargo NO queda ligado a la inscripción, así que ni nacer pagado ni cobrarlo después sube el grado (como
+ * la vía genérica de antes). La matrícula sí queda ligada. En kickboxing el grado ROJO se llama como en su catálogo con
+ * la misma regla que los cargos automáticos: solo con el comportamiento heredado de Taemoi y en sus productos de ROJO
+ * (escuela {@code legado}, «MARRÓN»); en una escuela sin él (aquí, con el grado ROJO llamado «Café»), el concepto del
+ * catálogo tal cual. El catálogo de la gestión ({@code GET /api/productos/todos}) dice qué productos piden deporte.
+ * Escuelas sintéticas ({@link EscuelaConSedesDePrueba}) con kickboxing; datos inventados.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -53,6 +58,8 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired ProductosCatalogoService productosCatalogo;
+	@Autowired org.springframework.transaction.support.TransactionTemplate tx;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -62,6 +69,11 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 	long examenRojo, examenRojoBordado, examenDeKickboxing, camiseta;
 	long examenSinClasificar, matricula, cinturonConGrado, cinturonSinClasificar;
 	String conceptoRojo, conceptoBordado;
+
+	/** Escuela con el comportamiento heredado de Taemoi: kickboxing con AZUL y ROJO («Marrón») y productos de ROJO. */
+	EscuelaConSedesDePrueba legado;
+	String tGestorLegado;
+	long kickboxingLegado, examenRojoLegado, recompensaRojoLegado;
 
 	@BeforeAll
 	void preparar() {
@@ -93,6 +105,33 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 		// Mismo concepto (con otras mayúsculas) que un producto que concede grado: el catálogo lo resuelve por concepto.
 		cinturonConGrado = producto("CINTURÓN CAFÉ " + e.marca, "CINTURON_CAFE_IT", "OTRO", null, rojo);
 		cinturonSinClasificar = producto("cinturón café " + e.marca, null, "OTRO", null, null);
+		producto("PASE 1º NIVEL " + e.marca, "PASE_1_NIVEL_IT", "OTRO", null, rojo);
+
+		prepararEscuelaConComportamientoHeredado();
+	}
+
+	private void prepararEscuelaConComportamientoHeredado() {
+		legado = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-kb-marron-legado");
+		jdbc.update("UPDATE organizacion SET comportamiento_legado_taemoi = TRUE WHERE id = ?", legado.org);
+		tGestorLegado = legado.token(jwtService, usuarios, legado.gestor);
+		jdbc.update("INSERT INTO sistema_grados (organizacion_id, nombre, plantilla_origen) VALUES (?, 'Kick IT L', NULL)",
+				legado.org);
+		long sistema = jdbc.queryForObject("SELECT id FROM sistema_grados WHERE organizacion_id = ?", Long.class,
+				legado.org);
+		jdbc.update("""
+				INSERT INTO grado (organizacion_id, sistema_grados_id, codigo, nombre, orden, color_1, color_2, aplica_a)
+				VALUES (?, ?, 'AZUL', 'Azul', 1, '#0000FF', NULL, 'TODOS'),
+				       (?, ?, 'ROJO', 'Marrón', 2, '#8B4513', NULL, 'TODOS')""", legado.org, sistema, legado.org, sistema);
+		long rojo = jdbc.queryForObject("SELECT id FROM grado WHERE sistema_grados_id = ? AND codigo = 'ROJO'",
+				Long.class, sistema);
+		jdbc.update("""
+				INSERT INTO disciplina (organizacion_id, codigo, nombre, sistema_grados_id, edad_adulto, orden)
+				VALUES (?, 'KICKBOXING', 'Kickboxing IT L', ?, 15, 2)""", legado.org, sistema);
+		kickboxingLegado = jdbc.queryForObject(
+				"SELECT id FROM disciplina WHERE organizacion_id = ? AND codigo = 'KICKBOXING'", Long.class, legado.org);
+		examenRojoLegado = producto(legado, "DERECHO A EXAMEN ROJO", "EXAMEN_ROJO", "EXAMEN", rojo);
+		recompensaRojoLegado = producto(legado, "DERECHO DE CAMBIO A ROJO POR RECOMPENSA", "RECOMPENSA_ROJO",
+				"RECOMPENSA", rojo);
 	}
 
 	@AfterEach
@@ -111,34 +150,30 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0L, cobrosDe(alumno));
 	}
 
+	/** Sin comportamiento heredado, el concepto del catálogo tal cual (como el cargo automático), sin inscripción. */
 	@Test
-	void kickboxing_examenRojo_conElNombreDelCatalogoYLigadoALaInscripcion() throws Exception {
+	void kickboxing_sinComportamientoHeredado_examenRojo_conceptoDelCatalogoYSinInscripcion() throws Exception {
 		long alumno = alumnoConDosDeportes("KBROJO");
 		JsonNode cargo = asignar(alumno, examenRojo, "KICKBOXING", false);
-		String esperado = "DERECHO A EXAMEN CAFÉ " + e.marca;
-		assertEquals(esperado, cargo.get("concepto").asText());
+		assertEquals(conceptoRojo, cargo.get("concepto").asText());
 		long id = cargo.get("id").asLong();
-		assertEquals(esperado, jdbc.queryForObject("SELECT concepto FROM producto_alumno WHERE id = ?", String.class, id));
-		assertEquals(kickboxing, jdbc.queryForObject("""
-				SELECT ad.disciplina_id FROM producto_alumno pa JOIN alumno_deporte ad ON ad.id = pa.alumno_deporte_id
-				WHERE pa.id = ?""", Long.class, id));
+		assertEquals(conceptoRojo, jdbc.queryForObject("SELECT concepto FROM producto_alumno WHERE id = ?", String.class,
+				id));
+		assertNull(inscripcionDelCargo(id));
 	}
 
 	@Test
-	void kickboxing_examenRojoBordado() throws Exception {
+	void kickboxing_sinComportamientoHeredado_examenRojoBordado_sinCambios() throws Exception {
 		long alumno = alumnoConDosDeportes("KBBORD");
-		assertEquals("DERECHO A EXAMEN CAFÉ BORDADO " + e.marca,
-				asignar(alumno, examenRojoBordado, "KICKBOXING", false).get("concepto").asText());
+		assertEquals(conceptoBordado, asignar(alumno, examenRojoBordado, "KICKBOXING", false).get("concepto").asText());
 	}
 
 	@Test
-	void taekwondo_examenRojo_sinCambios() throws Exception {
+	void taekwondo_examenRojo_sinCambiosYSinInscripcion() throws Exception {
 		long alumno = alumnoConDosDeportes("KBTKD");
 		JsonNode cargo = asignar(alumno, examenRojo, "TAEKWONDO", false);
 		assertEquals(conceptoRojo, cargo.get("concepto").asText());
-		assertEquals(e.disciplina, jdbc.queryForObject("""
-				SELECT ad.disciplina_id FROM producto_alumno pa JOIN alumno_deporte ad ON ad.id = pa.alumno_deporte_id
-				WHERE pa.id = ?""", Long.class, cargo.get("id").asLong()));
+		assertNull(inscripcionDelCargo(cargo.get("id").asLong()));
 	}
 
 	@Test
@@ -152,6 +187,58 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 				"SELECT origen FROM cobro WHERE producto_alumno_id = ? AND estado = 'ACTIVO'", String.class, cargo));
 		assertNotNull(jdbc.queryForObject("SELECT fecha_pago FROM producto_alumno WHERE id = ?", java.util.Date.class,
 				cargo));
+		assertNull(inscripcionDelCargo(cargo));
+	}
+
+	/** La matrícula sí queda ligada a la inscripción del deporte elegido, como antes. */
+	@Test
+	void matricula_porDeporte_ligadaALaInscripcion() throws Exception {
+		long alumno = alumnoConDosDeportes("KBMAT");
+		JsonNode cargo = asignar(alumno, matricula, "KICKBOXING", false);
+		assertEquals("MATRÍCULA KB " + e.marca + " - KICKBOXING", cargo.get("concepto").asText());
+		assertEquals(kickboxing, jdbc.queryForObject("""
+				SELECT ad.disciplina_id FROM producto_alumno pa JOIN alumno_deporte ad ON ad.id = pa.alumno_deporte_id
+				WHERE pa.id = ?""", Long.class, cargo.get("id").asLong()));
+	}
+
+	// ------------------------------------------------------------------ escuela con comportamiento heredado
+
+	/** Examen a ROJO en kickboxing: «MARRÓN», sin inscripción; nace pagado: derecho a examen y el grado no sube. */
+	@Test
+	void legado_kickboxing_examenRojoPagado_marronDerechoAExamenYGradoSinCambios() throws Exception {
+		long alumno = alumnoLegadoEnKickboxingAzul("LGEXPAG");
+		JsonNode cargo = asignarEn(legado, tGestorLegado, alumno, examenRojoLegado, "KICKBOXING", true);
+		assertEquals("DERECHO A EXAMEN MARRÓN", cargo.get("concepto").asText());
+		assertNull(inscripcionDelCargo(cargo.get("id").asLong()));
+		assertTrue(derechoAExamen(alumno));
+		assertEquals("AZUL", gradoEnKickboxingLegado(alumno));
+	}
+
+	/** Pendiente y cobrado después por el PUT del cargo: el grado tampoco sube. */
+	@Test
+	void legado_kickboxing_examenRojoCobradoDespues_gradoSinCambios() throws Exception {
+		long alumno = alumnoLegadoEnKickboxingAzul("LGEXPUT");
+		long id = asignarEn(legado, tGestorLegado, alumno, examenRojoLegado, "KICKBOXING", false).get("id").asLong();
+		assertNull(inscripcionDelCargo(id));
+		cobrarPorElPut(id);
+		assertTrue(derechoAExamen(alumno));
+		assertEquals("AZUL", gradoEnKickboxingLegado(alumno));
+	}
+
+	@Test
+	void legado_kickboxing_recompensaRojo_marronYGradoSinCambiosPagadaOCobradaDespues() throws Exception {
+		long pagada = alumnoLegadoEnKickboxingAzul("LGREPAG");
+		JsonNode cargo = asignarEn(legado, tGestorLegado, pagada, recompensaRojoLegado, "KICKBOXING", true);
+		assertEquals("DERECHO DE CAMBIO A MARRÓN POR RECOMPENSA", cargo.get("concepto").asText());
+		assertNull(inscripcionDelCargo(cargo.get("id").asLong()));
+		assertEquals("AZUL", gradoEnKickboxingLegado(pagada));
+
+		long despues = alumnoLegadoEnKickboxingAzul("LGREPUT");
+		long id = asignarEn(legado, tGestorLegado, despues, recompensaRojoLegado, "KICKBOXING", false).get("id")
+				.asLong();
+		cobrarPorElPut(id);
+		assertNull(inscripcionDelCargo(id));
+		assertEquals("AZUL", gradoEnKickboxingLegado(despues));
 	}
 
 	@Test
@@ -190,6 +277,33 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(ficha.has("requiereDeporte") || ficha.has("tipo"), ficha.toString());
 	}
 
+	/**
+	 * El catálogo preparado en memoria (el de «requiereDeporte») resuelve el concepto como la consulta por concepto de
+	 * siempre contra la columna ({@code utf8mb4_0900_ai_ci} en V1: sin mayúsculas ni acentos y NO PAD, así que un
+	 * espacio de más al final ya no es el mismo concepto).
+	 */
+	@Test
+	void catalogoEnMemoria_resuelveLosConceptosComoLaConsulta() {
+		String base = "CINTURÓN CAFÉ " + e.marca;
+		String pase = "PASE 1º NIVEL " + e.marca;
+		java.util.List<String> conceptos = java.util.List.of(base, base.toLowerCase(java.util.Locale.ROOT),
+				"CINTURON CAFE " + e.marca, base + " ", base + "  ", " " + base, base + " - KICKBOXING", pase,
+				"PASE 1o NIVEL " + e.marca, "PASE 1O NIVEL " + e.marca, pase + " ");
+		java.util.Map<String, java.util.Optional<String>> porConsulta = new java.util.LinkedHashMap<>();
+		java.util.Map<String, java.util.Optional<String>> enMemoria = new java.util.LinkedHashMap<>();
+		TenantContext.ejecutarCon(e.org, () -> tx.executeWithoutResult(s -> {
+			java.util.function.Function<String, java.util.Optional<String>> preparado = productosCatalogo
+					.prepararGradoConcedidoPorConcepto();
+			for (String concepto : conceptos) {
+				porConsulta.put(concepto, productosCatalogo.buscarCodigoGradoConcedido(null, concepto));
+				enMemoria.put(concepto, preparado.apply(concepto));
+			}
+		}));
+		assertEquals(porConsulta, enMemoria);
+		assertEquals(java.util.Optional.of("ROJO"), enMemoria.get("CINTURON CAFE " + e.marca));
+		assertEquals(java.util.Optional.empty(), enMemoria.get(base + " "), "NO PAD: el espacio final cuenta");
+	}
+
 	/** Lo que el catálogo marca como «requiereDeporte», la vía genérica lo rechaza. */
 	@Test
 	void viaGenerica_rechazaLoQueElCatalogoMarca() throws Exception {
@@ -217,6 +331,44 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 	}
 
+	private long producto(EscuelaConSedesDePrueba escuela, String concepto, String codigo, String tipo, long grado) {
+		jdbc.update("""
+				INSERT INTO producto (concepto, precio, codigo, tipo, organizacion_id, vendible_profesor, grado_id)
+				VALUES (?, 20.0, ?, ?, ?, FALSE, ?)""", concepto, codigo, tipo, escuela.org, grado);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, escuela.org);
+	}
+
+	/** Alumno nuevo de la sede A de la escuela con comportamiento heredado, en kickboxing con grado AZUL. */
+	private long alumnoLegadoEnKickboxingAzul(String nombre) {
+		long alumno = legado.alumno(nombre + legado.marca, legado.sA, true);
+		jdbc.update("""
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
+				  organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id, grado_id)
+				SELECT TRUE, 1, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?, g.id
+				FROM grado g JOIN disciplina d ON d.sistema_grados_id = g.sistema_grados_id
+				WHERE d.id = ? AND g.codigo = 'AZUL'""", alumno, legado.org, kickboxingLegado, kickboxingLegado);
+		return alumno;
+	}
+
+	private String gradoEnKickboxingLegado(long alumno) {
+		return jdbc.queryForObject("""
+				SELECT g.codigo FROM alumno_deporte ad JOIN grado g ON g.id = ad.grado_id
+				WHERE ad.alumno_id = ? AND ad.disciplina_id = ?""", String.class, alumno, kickboxingLegado);
+	}
+
+	private Long inscripcionDelCargo(long cargo) {
+		return jdbc.queryForObject("SELECT alumno_deporte_id FROM producto_alumno WHERE id = ?", Long.class, cargo);
+	}
+
+	private void cobrarPorElPut(long cargo) throws Exception {
+		MvcResult r = mvc.perform(put("/api/productos-alumno/" + cargo).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pagado\":true,\"metodoPago\":\"EFECTIVO\"}").cookie(new Cookie("jwt", tGestorLegado)))
+				.andReturn();
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+		assertEquals(Boolean.TRUE, jdbc.queryForObject("SELECT pagado FROM producto_alumno WHERE id = ?", Boolean.class,
+				cargo));
+	}
+
 	/** Alumno nuevo de la sede A inscrito en taekwondo y en kickboxing. */
 	private long alumnoConDosDeportes(String nombre) {
 		long alumno = e.alumno(nombre + e.marca, e.sA, true);
@@ -229,9 +381,18 @@ class AsignarExamenPorDeporteIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private JsonNode asignar(long alumno, long producto, String deporte, boolean pagado) throws Exception {
-		return leer(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + producto + "/deporte/" + deporte)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"cantidad\":1,\"pagado\":" + pagado + ",\"metodoPago\":\"EFECTIVO\"}"), 200);
+		return asignarEn(e, tGestor, alumno, producto, deporte, pagado);
+	}
+
+	private JsonNode asignarEn(EscuelaConSedesDePrueba escuela, String token, long alumno, long producto,
+			String deporte, boolean pagado) throws Exception {
+		MvcResult r = mvc.perform(post("/api/productos-alumno/alumno/" + alumno + "/producto/" + producto + "/deporte/"
+				+ deporte).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"cantidad\":1,\"pagado\":" + pagado + ",\"metodoPago\":\"EFECTIVO\"}")
+				.cookie(new Cookie("jwt", token))).andReturn();
+		assertEquals(200, r.getResponse().getStatus(),
+				escuela.marca + ": " + r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+		return json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8));
 	}
 
 	private JsonNode buscar(JsonNode productos, long id) {

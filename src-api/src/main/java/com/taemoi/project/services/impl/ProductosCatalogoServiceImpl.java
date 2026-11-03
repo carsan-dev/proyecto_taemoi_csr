@@ -236,10 +236,14 @@ public class ProductosCatalogoServiceImpl implements ProductosCatalogoService {
 		};
 	}
 
-	/** El concepto como lo compara la columna (utf8mb4_unicode_ci): sin acentos, en mayúsculas y sin espacios al final. */
+	/**
+	 * El concepto como lo compara la columna {@code producto.concepto} en la consulta por concepto
+	 * ({@code utf8mb4_0900_ai_ci}, V1): sin distinguir acentos, mayúsculas ni variantes de compatibilidad («1º» = «1o»),
+	 * y NO PAD: los espacios del final SÍ cuentan («X » no es «X»), así que no se quitan.
+	 */
 	private static String claveDeConcepto(String concepto) {
-		return java.text.Normalizer.normalize(concepto, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "")
-				.toUpperCase(Locale.ROOT).stripTrailing();
+		return java.text.Normalizer.normalize(concepto, java.text.Normalizer.Form.NFKD).replaceAll("\\p{M}+", "")
+				.toUpperCase(Locale.ROOT);
 	}
 
 	/** Separador del sufijo de disciplina en los cargos («DERECHO A EXAMEN AZUL - Taekwondo»). */

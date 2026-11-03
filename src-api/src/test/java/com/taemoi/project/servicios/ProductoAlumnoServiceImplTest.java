@@ -211,14 +211,45 @@ class ProductoAlumnoServiceImplTest {
 		return captor.getValue();
 	}
 
+	/**
+	 * El deporte da el concepto, pero el cargo de examen o recompensa NO queda ligado a la inscripción (decisión del
+	 * 03/11/2026): sin inscripción, cobrarlo nunca sube el grado, como la vía genérica de antes.
+	 */
 	@Test
-	void examenRojo_enKickboxing_diceMarronYQuedaAsociadoAlDeporte() {
+	void examenRojo_enKickboxing_diceMarronYSinInscripcion() {
 		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "KICKBOXING");
 		assertEquals("DERECHO A EXAMEN MARRÓN", productoAlumnoService
 				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
 		ProductoAlumno cargo = cargoGuardado();
 		assertEquals("DERECHO A EXAMEN MARRÓN", cargo.getConcepto());
-		assertEquals("KICKBOXING", cargo.getAlumnoDeporte().getDeporte());
+		assertNull(cargo.getAlumnoDeporte());
+	}
+
+	/** Pagado al asignarlo: derecho a examen, sin inscripción y sin promoción del grado. */
+	@Test
+	void examenYRecompensaPagados_porDeporte_sinInscripcionNiPromocion() {
+		for (String concepto : List.of("DERECHO A EXAMEN ROJO", "DERECHO DE CAMBIO A ROJO POR RECOMPENSA")) {
+			org.mockito.Mockito.reset(productoAlumnoRepository, alumnoDeporteService);
+			prepararAsignacionEnDeporte(concepto, "KICKBOXING");
+			ProductoAlumnoDTO detalles = new ProductoAlumnoDTO();
+			detalles.setPagado(true);
+			productoAlumnoService.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", detalles);
+			assertNull(cargoGuardado().getAlumnoDeporte(), concepto);
+			verify(alumnoDeporteService, never()).actualizarGradoPorCodigo(any(), any(), any());
+		}
+	}
+
+	/**
+	 * Misma regla que los cargos automáticos (conceptoNombraGradoRojo): sin el comportamiento heredado de Taemoi, el
+	 * concepto del catálogo tal cual también en kickboxing.
+	 */
+	@Test
+	void examenRojo_enKickboxing_sinComportamientoHeredado_sinCambios() {
+		org.springframework.test.util.ReflectionTestUtils.setField(productoAlumnoService, "comportamientoLegado",
+				(com.taemoi.project.services.ComportamientoLegadoService) () -> false);
+		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "KICKBOXING");
+		assertEquals("DERECHO A EXAMEN ROJO", productoAlumnoService
+				.asignarProductoAAlumnoDeporte(10L, 20L, "KICKBOXING", new ProductoAlumnoDTO()).getConcepto());
 	}
 
 	@Test
@@ -240,7 +271,7 @@ class ProductoAlumnoServiceImplTest {
 		prepararAsignacionEnDeporte("DERECHO A EXAMEN ROJO", "TAEKWONDO");
 		assertEquals("DERECHO A EXAMEN ROJO", productoAlumnoService
 				.asignarProductoAAlumnoDeporte(10L, 20L, "TAEKWONDO", new ProductoAlumnoDTO()).getConcepto());
-		assertEquals("TAEKWONDO", cargoGuardado().getAlumnoDeporte().getDeporte());
+		assertNull(cargoGuardado().getAlumnoDeporte());
 	}
 
 	/** Solo el grado ROJO: AZUL/ROJO y ROJO/NEGRO conceden otro grado y no se tocan. */
