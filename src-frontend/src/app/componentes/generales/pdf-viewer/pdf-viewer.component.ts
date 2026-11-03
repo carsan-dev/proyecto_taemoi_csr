@@ -121,7 +121,7 @@ export class PdfViewerComponent implements OnChanges, AfterViewInit, OnDestroy {
   @HostListener('window:resize')
   programarRender(): void {
     if (this.visorExpandido) {
-      const headers = Array.from(document.querySelectorAll<HTMLElement>('header.fixed-header, .admin-top-navbar'));
+      const headers = Array.from(document.querySelectorAll<HTMLElement>('header.fixed-header'));
       this.visorExpandidoTopOffsetPx = Math.ceil(headers.reduce((bottom, header) => {
         const style = getComputedStyle(header);
         return style.display === 'none' || style.visibility === 'hidden' || header.classList.contains('is-hidden')
