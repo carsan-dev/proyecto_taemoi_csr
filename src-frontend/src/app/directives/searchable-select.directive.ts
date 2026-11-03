@@ -818,7 +818,6 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
     const selectors = [
       '.header-anonimo.fixed-header',
       '.header-user.fixed-header',
-      '.admin-top-navbar',
       'header.fixed-header',
       '.navbar.fixed-top',
       '.navbar.sticky-top',
