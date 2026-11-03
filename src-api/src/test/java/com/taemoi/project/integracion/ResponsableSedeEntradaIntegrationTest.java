@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -74,6 +75,7 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
 	@Autowired OAuth2AuthenticationSuccessHandler google;
+	@Value("${cors.allowed.origin}") String frontendUrl;
 
 	@MockitoBean JavaMailSender mailSender;
 
@@ -346,6 +348,29 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, estado(get("/api/auth/user/alumnos"), token));
 		assertEquals(200, estado(get("/api/alumnos/" + e.aA), token));
 		assertEquals(403, estado(get("/api/alumnos/" + e.aB), token));
+	}
+
+	/**
+	 * Decisión 384: con Google, R + F elige vista como con contraseña. El servidor no la decide (iba siempre a
+	 * {@code /userpage}): manda a la entrada del frontend, que aplica la misma regla, con la sesión en la cookie.
+	 */
+	@Test
+	void responsableYFamilia_conGoogle_vaALaEntradaQueEligeVista() throws Exception {
+		long cuenta = e.cuentaFamilia(usuarios, "rf-google");
+		e.responsable(cuenta, e.sA);
+		String email = jdbc.queryForObject("SELECT email FROM usuario WHERE id = ?", String.class, cuenta);
+
+		MockHttpServletResponse respuesta = loginGoogle(email);
+
+		assertEquals(frontendUrl + OAuth2AuthenticationSuccessHandler.RUTA_ENTRADA, respuesta.getRedirectedUrl());
+		String token = cookieJwt(respuesta.getHeaders(HttpHeaders.SET_COOKIE));
+		assertNotNull(token, "la cookie de sesión");
+		assertEquals(e.org, jwtService.verificar(token).organizacionId());
+		mvc.perform(get("/api/auth/roles").cookie(jwt(token)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_RESPONSABLE_SEDE", "ROLE_USER")));
+		assertEquals(List.of("PANEL_SEDE", "ELEGIR_VISTA"),
+				textos(leer(get("/api/auth/permisos"), token, 200).get("capacidades")));
 	}
 
 	/** Si R entra solo, perder a su último alumno como familia no le puede cerrar la puerta (decisión propia, 9-5). */

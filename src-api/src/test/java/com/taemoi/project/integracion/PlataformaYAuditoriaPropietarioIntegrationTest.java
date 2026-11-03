@@ -225,7 +225,8 @@ class PlataformaYAuditoriaPropietarioIntegrationTest extends MySqlIntegrationTes
 
 		MockHttpServletResponse respuesta = loginGoogle(google.getEmail());
 
-		assertEquals(frontendUrl + "/userpage", respuesta.getRedirectedUrl());
+		// Sin roles de escuela: la entrada del frontend le da el destino del login con contraseña (decisión 384).
+		assertEquals(frontendUrl + OAuth2AuthenticationSuccessHandler.RUTA_ENTRADA, respuesta.getRedirectedUrl());
 		String token = respuesta.getHeaders(HttpHeaders.SET_COOKIE).stream()
 				.filter(c -> c.startsWith("jwt=") && !c.startsWith("jwt=;"))
 				.map(c -> c.substring(4, c.indexOf(';')))

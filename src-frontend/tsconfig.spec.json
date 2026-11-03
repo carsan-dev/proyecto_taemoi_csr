@@ -122,6 +122,7 @@
     "src/app/componentes/vistas/registro-confirmar/registro-confirmar.token.spec.ts",
     "src/app/guards/role.guard.spec.ts",
     "src/app/guards/admin-only.guard.spec.ts",
+    "src/app/guards/entrada-google.guard.spec.ts",
     "src/app/servicios/generales/page-scroll.service.spec.ts",
     "src/app/servicios/generales/route-scroll-coordinator.service.spec.ts",
     "src/app/servicios/generales/scroll-lock.service.spec.ts",

@@ -34,6 +34,12 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+	/**
+	 * Entrada del frontend tras Google (ruta {@code login/google}): resuelve el destino con la misma regla que el login
+	 * con contraseña (vista preferida y capacidades de la sesión). Solo lleva la sesión en la cookie, nada en la URL.
+	 */
+	public static final String RUTA_ENTRADA = "/login/google";
+
 	private final OAuth2UserService oauth2UserService;
 	private final JwtService jwtService;
 	private final MembresiaService membresiaService;
@@ -113,14 +119,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 						construirCookieRememberMe(isProduction, domain).toString());
 			}
 
-			// Redirigir al frontend basado en el rol del usuario
-			String redirectPath;
-			if (autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER)) {
-				redirectPath = "/adminpage";
-			} else {
-				redirectPath = "/userpage";
-			}
-			String redirectUrl = frontendUrl + redirectPath;
+			String redirectUrl = frontendUrl + destino(autoridades);
 			getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
 		} catch (IllegalArgumentException e) {
@@ -134,6 +133,28 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 							  java.net.URLEncoder.encode("Error en la autenticación OAuth2", "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		}
+	}
+
+	/**
+	 * Destino tras entrar con Google, el mismo que con contraseña (decisión 384; la regla es
+	 * {@code AuthenticationService.resolverRutaInicioPorRoles} del frontend). Solo familia (con o sin profesor) y solo
+	 * gestión tienen un único destino posible y van directos, como antes. Las demás sesiones dependen de la vista
+	 * preferida del navegador (gestión + familia) o de las capacidades de responsable de sede ({@code ELEGIR_VISTA},
+	 * {@code PANEL_SEDE}), que el servidor no decide aquí: van a {@link #RUTA_ENTRADA}, que aplica esa regla.
+	 */
+	private static String destino(Set<Roles> autoridades) {
+		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
+		boolean familia = autoridades.contains(Roles.ROLE_USER);
+		if (autoridades.contains(Roles.ROLE_RESPONSABLE_SEDE)) {
+			return RUTA_ENTRADA;
+		}
+		if (gestion && !familia) {
+			return "/adminpage";
+		}
+		if (familia && !gestion) {
+			return "/userpage";
+		}
+		return RUTA_ENTRADA;
 	}
 
 	/** Mismos motivos que el login con contraseña; los dos de siempre conservan su texto. */
