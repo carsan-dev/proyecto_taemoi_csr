@@ -1,5 +1,6 @@
 package com.taemoi.project.servicios;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -114,7 +115,7 @@ class ImagenServiceImplTest {
 	}
 
 	@Test
-	void resolverYEliminar_mantienenLasRutasAbsolutasHeredadas() throws Exception {
+	void resolverYEliminar_mantienenLasRutasAbsolutasHeredadas(@TempDir Path otraCarpeta) throws Exception {
 		Path heredada = Files.createDirectories(tempDir.resolve("alumnos")).resolve("vieja.webp");
 		Files.write(heredada, new byte[] { 1 });
 		Imagen imagen = new Imagen("vieja.webp", "image/webp", "http://antiguo/imagenes/alumnos/vieja.webp",
@@ -123,6 +124,14 @@ class ImagenServiceImplTest {
 		assertEquals(heredada.toAbsolutePath().normalize(), imagenService.resolverRutaArchivo(imagen));
 		imagenService.eliminarImagenDeSistema(imagen);
 		assertFalse(Files.exists(heredada));
+
+		// La misma fila heredada apuntando fuera de las carpetas de imágenes: ni se resuelve ni se borra.
+		Path ajena = Files.write(otraCarpeta.resolve("vieja.webp"), new byte[] { 1 });
+		Imagen fuera = new Imagen("vieja.webp", "image/webp", "http://antiguo/imagenes/alumnos/vieja.webp",
+				ajena.toString());
+		assertNull(imagenService.resolverRutaArchivo(fuera));
+		assertDoesNotThrow(() -> imagenService.eliminarImagenDeSistema(fuera));
+		assertTrue(Files.exists(ajena));
 	}
 
 	@Test
@@ -134,9 +143,10 @@ class ImagenServiceImplTest {
 		imagenService.eliminarImagenDeSistema(imagen);
 		assertFalse(Files.exists(archivo));
 
+		// Una ruta que sale de la base no se resuelve; borrarla no toca nada ni corta a quien borra (alumno, evento).
 		Imagen maliciosa = new Imagen("x.webp", "image/webp", null, "../fuera.webp");
 		assertNull(imagenService.resolverRutaArchivo(maliciosa));
-		assertThrows(IllegalArgumentException.class, () -> imagenService.eliminarImagenDeSistema(maliciosa));
+		assertDoesNotThrow(() -> imagenService.eliminarImagenDeSistema(maliciosa));
 	}
 
 	@Test

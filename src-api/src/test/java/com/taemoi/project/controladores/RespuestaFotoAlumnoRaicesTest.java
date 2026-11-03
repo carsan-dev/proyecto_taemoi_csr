@@ -37,7 +37,7 @@ class RespuestaFotoAlumnoRaicesTest {
 		ImagenService imagenService = mock(ImagenService.class);
 		when(imagenService.resolverRutaArchivo(any(Imagen.class))).thenReturn(fichero);
 		RespuestaFotoAlumno respuesta = new RespuestaFotoAlumno(imagenService, "http://localhost:8080", inexistente,
-				inexistente);
+				inexistente, "http://localhost:8080");
 		Imagen imagen = new Imagen("foto.png", "image/png", null, fichero.toString());
 		imagen.setId(7L);
 
