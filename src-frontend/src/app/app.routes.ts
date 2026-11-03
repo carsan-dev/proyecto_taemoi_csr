@@ -4,6 +4,7 @@ import { adminOnlyGuard } from './guards/admin-only.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
+import { entradaGoogleGuard } from './guards/entrada-google.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
@@ -181,6 +182,13 @@ export const routes: Routes = [
     path: 'login',
     data: { seo: SEO_ROUTES.noIndex },
     component: VistaLoginComponent // Eager-load login page for better UX
+  },
+  {
+    // Entrada tras Google (decisión 384): sin pantalla; el guard redirige al destino del login con contraseña.
+    path: 'login/google',
+    data: { seo: SEO_ROUTES.noIndex },
+    canActivate: [entradaGoogleGuard],
+    children: [],
   },
   {
     path: 'recuperar-contrasena',

@@ -3,6 +3,7 @@ import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
+import { entradaGoogleGuard } from './guards/entrada-google.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
@@ -285,6 +286,19 @@ describe('app routes', () => {
       expect(route.canActivate).toEqual([roleGuard, adminOnlyGuard]);
       expect(route.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
     }
+  });
+
+  it('login/google (decisión 384): solo su guard, sin pantalla, roles ni catálogo, antes de los comodines', () => {
+    const indice = routes.findIndex((route) => route.path === 'login/google');
+    const ruta = routes[indice];
+
+    expect(ruta?.canActivate).toEqual([entradaGoogleGuard]);
+    expect(ruta?.component).toBeUndefined();
+    expect(ruta?.loadComponent).toBeUndefined();
+    expect(ruta?.data?.['requiredRoles']).toBeUndefined();
+    expect(ruta?.resolve?.['catalogo']).toBeUndefined();
+    expect(indice).toBeGreaterThanOrEqual(0);
+    expect(indice).toBeLessThan(routes.findIndex((route) => route.path === '**'));
   });
 
   it('protege errores de plataforma con su propio guard, sin roles de escuela ni catálogo', () => {
