@@ -236,11 +236,13 @@ class OtraEscuelaCatalogoPropioIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Map.of("Cuota del mes MAYO 2041 - TAEKWONDO", "MENSUALIDAD",
 				"Cuota de competición MAYO 2041", "TARIFA_COMPETIDOR"), categoriasTesoreria);
 
-		// Derecho a examen por el tipo del producto (en Taemoi, los códigos de V24 solo por concepto).
+		// Derecho a examen por el tipo del producto (en Taemoi, los códigos de V24 solo por concepto). Desde el
+		// 03/11/2026 un examen se asigna en un deporte del alumno.
 		Long examen = TenantContext.calcularCon(org, () -> productos.findByCodigo("EXAMEN_AMARILLO").orElseThrow().getId());
 		ProductoAlumnoDTO pagado = new ProductoAlumnoDTO();
 		pagado.setPagado(true);
-		TenantContext.ejecutarCon(org, () -> productoAlumnoService.asignarProductoAAlumno(alumno, examen, pagado));
+		TenantContext.ejecutarCon(org,
+				() -> productoAlumnoService.asignarProductoAAlumnoDeporte(alumno, examen, "TAEKWONDO", pagado));
 		assertTrue(jdbc.queryForObject("SELECT tiene_derecho_examen FROM alumno WHERE id = ?", Boolean.class, alumno));
 
 		// Taemoi no ve nada de esto.

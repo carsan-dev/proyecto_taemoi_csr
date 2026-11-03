@@ -24,6 +24,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.Valid;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.taemoi.project.dtos.request.VendibleProfesorRequests;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.entities.TipoProducto;
@@ -35,6 +37,12 @@ public class ProductoController {
 
 	@Autowired
 	private ProductoService productoService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
+	@Autowired
+	private com.taemoi.project.services.ProductoAlumnoService productoAlumnoService;
 
 	@GetMapping
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
@@ -76,9 +84,18 @@ public class ProductoController {
 
 	@GetMapping("/todos")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE')")
-	public ResponseEntity<List<Producto>> obtenerTodosLosProductos() {
+	public ResponseEntity<List<ObjectNode>> obtenerTodosLosProductos() {
 		List<Producto> productos = productoService.obtenerTodosLosProductos();
-		return ResponseEntity.ok(productos);
+		// Decisión del 03/11/2026: el panel de la gestión pide el deporte del alumno cuando la asignación genérica no
+		// vale (matrícula, exámenes y recompensas), así que este listado (y solo este) añade «requiereDeporte», con la
+		// misma regla que aplica esa asignación. El resto del producto, el JSON de siempre. El catálogo se prepara una
+		// vez para toda la lista.
+		java.util.function.Predicate<Producto> requiereDeporte = productoAlumnoService.requiereDeporteParaAsignar();
+		return ResponseEntity.ok(productos.stream().map(producto -> {
+			ObjectNode nodo = objectMapper.valueToTree(producto);
+			nodo.put("requiereDeporte", requiereDeporte.test(producto));
+			return nodo;
+		}).toList());
 	}
 
 	@GetMapping("/{id}")

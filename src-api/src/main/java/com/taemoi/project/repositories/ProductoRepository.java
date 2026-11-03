@@ -26,6 +26,9 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 	/** Producto que concede grado con ese concepto exacto (el clasificado de menor id). */
 	Optional<Producto> findFirstByConceptoAndGradoIsNotNullOrderByIdAsc(String concepto);
 
+	/** Todos los productos que conceden grado, por id (resolver muchos conceptos con una sola consulta). */
+	List<Producto> findByGradoIsNotNullOrderByIdAsc();
+
 	/** Productos de ese tipo que conceden grado (los clasificados). */
 	List<Producto> findByTipoAndGradoIsNotNullOrderByIdAsc(TipoProducto tipo);
 

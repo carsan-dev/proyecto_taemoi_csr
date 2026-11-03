@@ -22,7 +22,7 @@ export const TEXTOS_PRODUCTOS_ALUMNO = {
   errorAlumno: 'No se han podido cargar los productos del alumno.',
   sinProducto: 'Seleccione un producto',
   sinDeporte: 'Seleccione un deporte',
-  sinDeportes: 'No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar la matrícula.',
+  sinDeportes: 'No hay deportes disponibles. Compruebe los deportes del alumno antes de asignar este producto.',
   vacio: 'No hay productos asignados a este alumno',
   guardado: 'Cambios aplicados correctamente',
   /** El error de una fila al guardar cuando el servidor no da mensaje (decisión 296). */
@@ -198,6 +198,8 @@ export interface ProductoCatalogo {
   id: number;
   concepto: string;
   precio: number | null;
+  /** La API lo marca cuando la ruta genérica rechazaría el producto (matrícula, examen, recompensa, o que concede grado). */
+  requiereDeporte?: boolean;
 }
 
 /** Sin tildes y en mayúsculas, para comparar conceptos y buscar. */
@@ -208,6 +210,11 @@ export function normalizar(texto: string | null | undefined): string {
 /** Matrícula: el concepto lleva la palabra MATRICULA, sin tildes (la regla de hoy y del servidor). */
 export function esMatricula(concepto: string | null | undefined): boolean {
   return /\bMATRICULA\b/.test(normalizar(concepto));
+}
+
+/** El producto exige elegir un deporte del alumno, según la marca `requiereDeporte` de la API. */
+export function requiereDeporte(producto: Pick<ProductoCatalogo, 'requiereDeporte'> | null | undefined): boolean {
+  return producto?.requiereDeporte === true;
 }
 
 /** «Matrícula taekwondo · 25,00 €» (boceto P1); sin precio, solo el concepto. */

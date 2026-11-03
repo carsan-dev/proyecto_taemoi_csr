@@ -9,6 +9,13 @@ import com.taemoi.project.entities.Alumno;
 
 public interface ProductoAlumnoService {
 
+	/**
+	 * Si la asignación genérica de la gestión rechazaría el producto por necesitar un deporte del alumno (matrícula,
+	 * examen o recompensa). Prepara el catálogo una vez: sirve para evaluar todo el catálogo sin una consulta por
+	 * producto.
+	 */
+	java.util.function.Predicate<com.taemoi.project.entities.Producto> requiereDeporteParaAsignar();
+
 	ProductoAlumnoDTO asignarProductoAAlumno(Long alumnoId, Long productoId, ProductoAlumnoDTO detallesDTO);
 
 	List<ProductoAlumnoDTO> obtenerProductosDeAlumno(Long alumnoId);

@@ -3,6 +3,7 @@ import { eur } from '../formato/formato-es';
 import {
   cuerpoAsignacion,
   diaLocal,
+  requiereDeporte,
   esMatricula,
   estadoPago,
   etiquetaProducto,
@@ -136,6 +137,13 @@ describe('productos-alumno-vista (8b-3n)', () => {
       expect(esMatricula('Mensualidad')).toBeFalse();
       expect(esMatricula('MATRICULAS')).toBeFalse();
       expect(esMatricula(null)).toBeFalse();
+    });
+
+    it('requiereDeporte: solo la marca de la API, no el texto', () => {
+      expect(requiereDeporte({ requiereDeporte: true })).toBeTrue();
+      expect(requiereDeporte({ requiereDeporte: false })).toBeFalse();
+      expect(requiereDeporte({})).toBeFalse();
+      expect(requiereDeporte(null)).toBeFalse();
     });
 
     it('etiqueta «concepto · precio» y búsqueda sin tildes', () => {

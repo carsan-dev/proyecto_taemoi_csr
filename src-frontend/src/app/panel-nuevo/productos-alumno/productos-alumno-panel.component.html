@@ -42,9 +42,9 @@
           </select></div>
           <p id="asignar-producto-error" class="error">{{ e.errorAsignacion() === 'producto' ? textos.sinProducto : '' }}</p>
         </div>
-        @if (e.matriculaElegida()) {
+        @if (e.deporteRequerido()) {
           <div>
-            <label for="asignar-deporte">Deporte de la matrícula <span class="obligatorio">obligatorio</span></label>
+            <label for="asignar-deporte">{{ e.matriculaElegida() ? 'Deporte de la matrícula' : 'Deporte' }} <span class="obligatorio">obligatorio</span></label>
             @if (e.sinDeportes()) { <p class="error">{{ textos.sinDeportes }}</p> }
             @else {
               <select id="asignar-deporte" (change)="e.elegirDeporte(valor($event))"
